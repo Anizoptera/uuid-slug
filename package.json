@@ -12,9 +12,7 @@
     "dist",
     "src",
     "README.md",
-    "LICENSE",
-    "NOTICE",
-    "AGENTS.md"
+    "LICENSE"
   ],
   "exports": {
     ".": {
@@ -38,12 +36,13 @@
   },
   "scripts": {
     "build": "tsdown",
-    "check": "bun run format:check && bun run typecheck && bun run test && bun run build && bun run bench:smoke && bunx publint && bunx @arethetypeswrong/cli --pack . --profile esm-only && bun run artifact:check",
+    "check": "bun run format:check && bun run claude-link:check && bun run typecheck && bun run build && bun run test && bun run bench:smoke && bun run artifact:check",
     "clean": "rm -rf dist bench/reports",
+    "claude-link:check": "test -L CLAUDE.md && test \"$(readlink CLAUDE.md)\" = AGENTS.md",
     "format": "bunx prettier --write .",
     "format:check": "bunx prettier --check .",
-    "prepublishOnly": "publish-clean --guard-only",
-    "publish:clean": "publish-clean -- --access public",
+    "prepublishOnly": "bun run check && publish-clean --guard-only",
+    "publish:clean": "bun run check && publish-clean -- --access public --tag latest",
     "test": "bunx vitest run && bun test test/*.bun.test.ts",
     "typecheck": "bunx tsc -p tsconfig.json --noEmit",
     "bench:smoke": "bun bench/run.ts --smoke",

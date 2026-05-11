@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
 const FORBIDDEN_TEXT = [
@@ -15,6 +16,8 @@ const FORBIDDEN_PATHS = [
   "test/",
   ".github/",
   "scripts/",
+  "AGENTS.md",
+  "NOTICE",
   "vitest.config",
   "tsconfig",
 ];
@@ -107,6 +110,36 @@ async function main() {
         if (text.includes(forbidden))
           throw new Error(`Forbidden private source text leaked in ${file}`);
       }
+    }
+
+    run(
+      "bunx",
+      ["publint", "run", extracted, "--pack", "false"],
+      process.cwd(),
+    );
+    const packRoot = await mkdtemp(path.join(tmpdir(), "uuid-slug-pack-"));
+    try {
+      run(
+        "pnpm",
+        ["pack", "--pack-destination", packRoot, "--dir", extracted],
+        process.cwd(),
+      );
+      const tarball = (await readdir(packRoot)).find((file) =>
+        file.endsWith(".tgz"),
+      );
+      if (!tarball) throw new Error("pnpm pack did not create a tarball.");
+      run(
+        "bunx",
+        [
+          "@arethetypeswrong/cli",
+          path.join(packRoot, tarball),
+          "--profile",
+          "esm-only",
+        ],
+        process.cwd(),
+      );
+    } finally {
+      await rm(packRoot, { recursive: true, force: true });
     }
   } finally {
     if (cleanupRoot) await rm(cleanupRoot, { recursive: true, force: true });
