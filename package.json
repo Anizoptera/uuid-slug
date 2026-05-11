@@ -52,7 +52,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@anizoptera/publish-clean": "file:../publish-clean",
+    "@anizoptera/publish-clean": "github:Anizoptera/publish-clean#6fe8fff46c8a1b067b0f2d422136153b3b006f5e",
     "@arethetypeswrong/cli": "^0.18.2",
     "@kripod/uuidv7": "^0.3.4",
     "@types/bun": "^1.3.13",
