@@ -23,4 +23,6 @@ Sentinels are a separate transmission class. They bypass masking and use direct 
 
 ## Release
 
-Release automation uses release-please for version and changelog PRs, then npm trusted publishing via GitHub Actions OIDC. Maintenance branches publish with branch-specific dist-tags instead of `latest`.
+Release automation uses release-please for version and changelog PRs, then npm trusted publishing through one GitHub Actions workflow. The publish job runs `publish-clean`, validates the cleaned artifact, and publishes with an explicit `latest` dist-tag.
+
+The built current package is the primary pre-publish check. Installing the published package later is a registry and bin-wiring smoke test, not a substitute for validating the artifact produced by the current commit.
