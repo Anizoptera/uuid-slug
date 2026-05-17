@@ -52,7 +52,7 @@ Runtime dependencies are forbidden. Benchmark candidates are dev-only and exclud
 
 ## Publishing
 
-Release checks publish from a cleaned package artifact, not the source tree. The artifact check runs `publish-clean`, blocks private project files and benchmark dependencies, then runs package validators against the cleaned package that npm would receive.
+Release checks publish from a cleaned package artifact, not the source tree. The artifact check runs `publish-clean`, blocks private project files and benchmark dependencies, then runs package validators against the final cleaned npm tarball.
 
 Use an explicit npm dist-tag:
 
@@ -60,4 +60,6 @@ Use an explicit npm dist-tag:
 pnpm run publish:clean
 ```
 
-The project script publishes with `--tag latest`.
+The project script publishes with `--access public --tag latest --provenance`.
+`@anizoptera/publish-clean` is consumed from npm; regenerate `bun.lock` after
+the first publish-clean release exists on the registry.

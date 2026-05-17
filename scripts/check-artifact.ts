@@ -1,6 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 
 const FORBIDDEN_TEXT = [
@@ -55,7 +54,11 @@ async function main() {
       throw new Error(
         "publish-clean did not report an extracted package path.",
       );
+    const tarballMatch = /\[dry-run\] Final tarball at: (.+)$/m.exec(dryRun);
+    if (!tarballMatch?.[1])
+      throw new Error("publish-clean did not report a final npm tarball path.");
     const extracted = match[1].trim();
+    const tarball = tarballMatch[1].trim();
     cleanupRoot = path.dirname(extracted);
     const files = run("find", [extracted, "-type", "f"], process.cwd())
       .trim()
@@ -117,30 +120,11 @@ async function main() {
       ["publint", "run", extracted, "--pack", "false"],
       process.cwd(),
     );
-    const packRoot = await mkdtemp(path.join(tmpdir(), "uuid-slug-pack-"));
-    try {
-      run(
-        "pnpm",
-        ["pack", "--pack-destination", packRoot, "--dir", extracted],
-        process.cwd(),
-      );
-      const tarball = (await readdir(packRoot)).find((file) =>
-        file.endsWith(".tgz"),
-      );
-      if (!tarball) throw new Error("pnpm pack did not create a tarball.");
-      run(
-        "bunx",
-        [
-          "@arethetypeswrong/cli",
-          path.join(packRoot, tarball),
-          "--profile",
-          "esm-only",
-        ],
-        process.cwd(),
-      );
-    } finally {
-      await rm(packRoot, { recursive: true, force: true });
-    }
+    run(
+      "bunx",
+      ["@arethetypeswrong/cli", tarball, "--profile", "esm-only"],
+      process.cwd(),
+    );
   } finally {
     if (cleanupRoot) await rm(cleanupRoot, { recursive: true, force: true });
   }
