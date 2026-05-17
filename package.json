@@ -4,6 +4,9 @@
   "description": "Zero-dependency UUID v4/v7 generation, direct base64url slugs, and configurable masked UUID slugs.",
   "license": "Apache-2.0",
   "author": "Anizoptera",
+  "contributors": [
+    "Art Shendrik"
+  ],
   "homepage": "https://github.com/Anizoptera/uuid-slug#readme",
   "repository": {
     "type": "git",
