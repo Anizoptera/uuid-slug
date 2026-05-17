@@ -1,6 +1,6 @@
 {
   "name": "@anizoptera/uuid-slug",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Zero-dependency UUID v4/v7 generation, direct base64url slugs, and configurable masked UUID slugs.",
   "license": "Apache-2.0",
   "author": "Anizoptera",
