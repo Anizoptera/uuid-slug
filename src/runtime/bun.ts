@@ -8,8 +8,7 @@ type BunUuid = {
 
 function bunObject(): BunUuid {
   const candidate = globalThis as typeof globalThis & { Bun?: BunUuid };
-  if (!candidate.Bun?.randomUUIDv7)
-    throw new UuidRuntimeError("Bun.randomUUIDv7 is unavailable.");
+  if (!candidate.Bun?.randomUUIDv7) throw new UuidRuntimeError("Bun.randomUUIDv7 is unavailable.");
   return candidate.Bun;
 }
 

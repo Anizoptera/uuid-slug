@@ -35,25 +35,16 @@ const FORBIDDEN_DEPS = [
 function run(command: string, args: string[], cwd: string) {
   const result = spawnSync(command, args, { cwd, encoding: "utf8" });
   if (result.status !== 0)
-    throw new Error(
-      `${command} ${args.join(" ")} failed\n${result.stdout}\n${result.stderr}`,
-    );
+    throw new Error(`${command} ${args.join(" ")} failed\n${result.stdout}\n${result.stderr}`);
   return result.stdout;
 }
 
 async function main() {
   let cleanupRoot: null | string = null;
   try {
-    const dryRun = run(
-      "publish-clean",
-      ["--dry-run", "--no-git-checks"],
-      process.cwd(),
-    );
+    const dryRun = run("publish-clean", ["--dry-run", "--no-git-checks"], process.cwd());
     const match = /\[dry-run\] Extracted package at: (.+)$/m.exec(dryRun);
-    if (!match?.[1])
-      throw new Error(
-        "publish-clean did not report an extracted package path.",
-      );
+    if (!match?.[1]) throw new Error("publish-clean did not report an extracted package path.");
     const tarballMatch = /\[dry-run\] Final tarball at: (.+)$/m.exec(dryRun);
     if (!tarballMatch?.[1])
       throw new Error("publish-clean did not report a final npm tarball path.");
@@ -67,22 +58,17 @@ async function main() {
       .map((file) => path.relative(extracted, file).replaceAll(path.sep, "/"));
 
     const forbiddenPath = files.find((file) =>
-      FORBIDDEN_PATHS.some(
-        (prefix) => file.startsWith(prefix) || file.includes(`/${prefix}`),
-      ),
+      FORBIDDEN_PATHS.some((prefix) => file.startsWith(prefix) || file.includes(`/${prefix}`)),
     );
     if (forbiddenPath)
-      throw new Error(
-        `Forbidden path leaked into package artifact: ${forbiddenPath}`,
-      );
+      throw new Error(`Forbidden path leaked into package artifact: ${forbiddenPath}`);
 
     const packageJson = JSON.parse(
       await readFile(path.join(extracted, "package.json"), "utf8"),
     ) as Record<string, unknown>;
     if (
-      Object.keys(
-        (packageJson.dependencies as Record<string, unknown> | undefined) ?? {},
-      ).length > 0
+      Object.keys((packageJson.dependencies as Record<string, unknown> | undefined) ?? {}).length >
+      0
     )
       throw new Error("Runtime dependencies leaked into package artifact.");
     for (const field of [
@@ -94,17 +80,13 @@ async function main() {
       const deps = packageJson[field] as Record<string, unknown> | undefined;
       for (const dep of FORBIDDEN_DEPS) {
         if (deps && dep in deps)
-          throw new Error(
-            `Dev dependency leaked into packed manifest ${field}: ${dep}`,
-          );
+          throw new Error(`Dev dependency leaked into packed manifest ${field}: ${dep}`);
       }
     }
 
     for (const file of files) {
       if (!/\.(?:js|ts|json|md|txt|map)$/.test(file)) continue;
-      const text = await readFile(path.join(extracted, file), "utf8").catch(
-        () => "",
-      );
+      const text = await readFile(path.join(extracted, file), "utf8").catch(() => "");
       for (const dep of FORBIDDEN_DEPS) {
         if (text.includes(`from "${dep}"`) || text.includes(`from '${dep}'`))
           throw new Error(`Dev dependency import leaked in ${file}: ${dep}`);
@@ -115,16 +97,8 @@ async function main() {
       }
     }
 
-    run(
-      "bunx",
-      ["publint", "run", extracted, "--pack", "false"],
-      process.cwd(),
-    );
-    run(
-      "bunx",
-      ["@arethetypeswrong/cli", tarball, "--profile", "esm-only"],
-      process.cwd(),
-    );
+    run("bunx", ["publint", "run", extracted, "--pack", "false"], process.cwd());
+    run("bunx", ["@arethetypeswrong/cli", tarball, "--profile", "esm-only"], process.cwd());
   } finally {
     if (cleanupRoot) await rm(cleanupRoot, { recursive: true, force: true });
   }

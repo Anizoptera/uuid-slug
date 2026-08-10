@@ -1,33 +1,20 @@
 import { UuidSlugError } from "./errors";
-import type {
-  ExplicitMaskSchema,
-  MaskSchema,
-  MaskSchemaOptions,
-} from "./types";
+import type { ExplicitMaskSchema, MaskSchema, MaskSchemaOptions } from "./types";
 
-const LEGACY_PERMUTE = Uint8Array.from([
-  9, 13, 3, 8, 14, 0, 11, 7, 6, 1, 15, 4, 2, 5, 10, 12,
-]);
+const LEGACY_PERMUTE = Uint8Array.from([9, 13, 3, 8, 14, 0, 11, 7, 6, 1, 15, 4, 2, 5, 10, 12]);
 const LEGACY_XOR = Uint8Array.from([
-  0xa2, 0x70, 0x32, 0x7f, 0x98, 0xb8, 0x9b, 0x5e, 0x1b, 0x26, 0xb6, 0x16, 0x96,
-  0xf9, 0xea, 0x3e,
+  0xa2, 0x70, 0x32, 0x7f, 0x98, 0xb8, 0x9b, 0x5e, 0x1b, 0x26, 0xb6, 0x16, 0x96, 0xf9, 0xea, 0x3e,
 ]);
 
 function clone16(bytes: Uint8Array, name: string): Error | Uint8Array {
   if (bytes.length !== 16)
-    return new UuidSlugError(
-      "invalid_mask_schema",
-      `${name} must contain exactly 16 bytes.`,
-    );
+    return new UuidSlugError("invalid_mask_schema", `${name} must contain exactly 16 bytes.`);
   return new Uint8Array(bytes);
 }
 
 function inversePermutation(permute: Uint8Array): Error | Uint8Array {
   if (permute.length !== 16)
-    return new UuidSlugError(
-      "invalid_mask_schema",
-      "Permutation must contain exactly 16 bytes.",
-    );
+    return new UuidSlugError("invalid_mask_schema", "Permutation must contain exactly 16 bytes.");
   const seen = new Uint8Array(16);
   const inverse = new Uint8Array(16);
   for (let i = 0; i < 16; i += 1) {
@@ -111,32 +98,17 @@ export const LEGACY_MASK_SCHEMA_V1: MaskSchema = completeSchema(
   4,
 ) as MaskSchema;
 
-export function defineMaskSchema(
-  schema: ExplicitMaskSchema,
-): Error | MaskSchema {
-  return completeSchema(
-    schema.id ?? "explicit",
-    schema.xor,
-    schema.permute,
-    schema.tagBits,
-  );
+export function defineMaskSchema(schema: ExplicitMaskSchema): Error | MaskSchema {
+  return completeSchema(schema.id ?? "explicit", schema.xor, schema.permute, schema.tagBits);
 }
 
-export function createMaskSchema(
-  options: MaskSchemaOptions,
-): Error | MaskSchema {
+export function createMaskSchema(options: MaskSchemaOptions): Error | MaskSchema {
   const seed = seedBytes(options.seed);
   if (seed.length === 0)
-    return new UuidSlugError(
-      "invalid_mask_schema",
-      "Mask seed must not be empty.",
-    );
+    return new UuidSlugError("invalid_mask_schema", "Mask seed must not be empty.");
   const tagBits = options.tagBits ?? 6;
   if (tagBits !== 4 && tagBits !== 6)
-    return new UuidSlugError(
-      "invalid_mask_schema",
-      "Mask tagBits must be 4 or 6.",
-    );
+    return new UuidSlugError("invalid_mask_schema", "Mask tagBits must be 4 or 6.");
   return completeSchema(
     options.id ?? "seeded",
     derivedBytes(seed, 1, 16),

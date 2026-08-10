@@ -82,16 +82,8 @@ export interface UuidSlugCodec {
   maskedSlugToUuid(slug: string): Error | UuidString;
   uuidV7ToMaskedSlug(uuid: string): Error | PublicUuidV7Slug;
   maskedSlugToUuidV7(slug: string): Error | UuidV7String;
-  parseUuid(
-    uuid: string,
-    out?: Uint8Array,
-    offset?: number,
-  ): Error | Uint8Array;
+  parseUuid(uuid: string, out?: Uint8Array, offset?: number): Error | Uint8Array;
   formatUuid(bytes: Uint8Array, offset?: number): Error | UuidString;
-  parseUuidSlug(
-    slug: string,
-    out?: Uint8Array,
-    offset?: number,
-  ): Error | Uint8Array;
+  parseUuidSlug(slug: string, out?: Uint8Array, offset?: number): Error | Uint8Array;
   formatUuidSlug(bytes: Uint8Array, offset?: number): Error | UuidSlug;
 }

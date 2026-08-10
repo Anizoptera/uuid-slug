@@ -42,25 +42,22 @@ import {
 } from "./uuid";
 import type { FreshValidationOptions, UuidV7SentinelDefinition } from "./types";
 
-export const UUID_V7_SENTINEL_DEFINITIONS: readonly UuidV7SentinelDefinition[] =
-  [
-    {
-      name: "nil",
-      uuid: "00000000-0000-7000-8000-000000000000" as UuidV7String,
-    },
-    {
-      name: "anonymousUser",
-      uuid: "00000000-0001-7000-8000-000000000000" as UuidV7String,
-    },
-    {
-      name: "unknownUser",
-      uuid: "00000000-0002-7000-8000-000000000000" as UuidV7String,
-    },
-  ];
+export const UUID_V7_SENTINEL_DEFINITIONS: readonly UuidV7SentinelDefinition[] = [
+  {
+    name: "nil",
+    uuid: "00000000-0000-7000-8000-000000000000" as UuidV7String,
+  },
+  {
+    name: "anonymousUser",
+    uuid: "00000000-0001-7000-8000-000000000000" as UuidV7String,
+  },
+  {
+    name: "unknownUser",
+    uuid: "00000000-0002-7000-8000-000000000000" as UuidV7String,
+  },
+];
 
-function schemaFromOption(
-  mask: UuidSlugCodecOptions["mask"],
-): Error | MaskSchema {
+function schemaFromOption(mask: UuidSlugCodecOptions["mask"]): Error | MaskSchema {
   if (!mask) return DEFAULT_MASK_SCHEMA;
   if ("xor" in mask && "permute" in mask && "inverse" in mask) return mask;
   return createMaskSchema(mask);
@@ -85,11 +82,21 @@ function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
   return { bySlug, byUuid, sentinels };
 }
 
+/**
+ * Randomness is drawn into a private buffer and copied out instead of filled through a view
+ * of the caller's array. `fillRandom` requires a plain `ArrayBuffer` because Web Crypto
+ * rejects a `SharedArrayBuffer` view, and a caller-supplied `out` carries no such guarantee.
+ * Reused rather than allocated per call, matching the v7 generator, so the cost is one
+ * 16-byte copy.
+ */
+const v4Random = new Uint8Array(16);
+
 function generateUuidV4Bytes(out?: Uint8Array, offset = 0): Error | Uint8Array {
   const target = out ?? new Uint8Array(16);
   if (offset < 0 || offset + 16 > target.length)
     return new UuidSlugError("invalid_buffer", "Output buffer is too small.");
-  runtime.fillRandom(target.subarray(offset, offset + 16));
+  runtime.fillRandom(v4Random);
+  target.set(v4Random, offset);
   target[offset + 6] = ((target[offset + 6] ?? 0) & 0x0f) | 0x40;
   target[offset + 8] = ((target[offset + 8] ?? 0) & 0x3f) | 0x80;
   return target;
@@ -100,15 +107,11 @@ function errorOrThrow<T>(value: Error | T): T {
   return value;
 }
 
-export function createUuidSlugCodec(
-  options: UuidSlugCodecOptions = {},
-): UuidSlugCodec {
+export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlugCodec {
   const schema = errorOrThrow(schemaFromOption(options.mask));
   const legacyMasks = options.legacy?.masks ?? [];
   const generator = options.generator ?? createRuntimeGenerator(runtime);
-  const sentinelState = createSentinels(
-    options.sentinels ?? UUID_V7_SENTINEL_DEFINITIONS,
-  );
+  const sentinelState = createSentinels(options.sentinels ?? UUID_V7_SENTINEL_DEFINITIONS);
 
   function decodeMasked(slug: string): Error | UuidString {
     const sentinel = sentinelState.bySlug.get(slug);
@@ -134,9 +137,7 @@ export function createUuidSlugCodec(
     uuidV4() {
       const native = runtime.uuidV4?.();
       if (native) return native as UuidV4String;
-      return errorOrThrow(
-        formatUuid(errorOrThrow(generateUuidV4Bytes())),
-      ) as UuidV4String;
+      return errorOrThrow(formatUuid(errorOrThrow(generateUuidV4Bytes()))) as UuidV4String;
     },
     uuidV7() {
       return generator.uuidV7();
@@ -144,20 +145,14 @@ export function createUuidSlugCodec(
     uuidV4Bytes: generateUuidV4Bytes,
     uuidV7Bytes: generator.uuidV7Bytes,
     uuidV4Slug() {
-      return errorOrThrow(
-        uuidBytesToSlug(errorOrThrow(generateUuidV4Bytes())),
-      ) as UuidV4Slug;
+      return errorOrThrow(uuidBytesToSlug(errorOrThrow(generateUuidV4Bytes()))) as UuidV4Slug;
     },
     uuidV7Slug() {
       if (runtime.uuidV7Slug) return runtime.uuidV7Slug() as UuidV7Slug;
-      return errorOrThrow(
-        uuidBytesToSlug(errorOrThrow(generator.uuidV7Bytes())),
-      ) as UuidV7Slug;
+      return errorOrThrow(uuidBytesToSlug(errorOrThrow(generator.uuidV7Bytes()))) as UuidV7Slug;
     },
     uuidV7MaskedSlug() {
-      return errorOrThrow(
-        uuidV7BytesToMaskedSlug(errorOrThrow(generator.uuidV7Bytes()), schema),
-      );
+      return errorOrThrow(uuidV7BytesToMaskedSlug(errorOrThrow(generator.uuidV7Bytes()), schema));
     },
     uuidToSlug,
     slugToUuid,
@@ -171,10 +166,7 @@ export function createUuidSlugCodec(
       if (decoded instanceof Error) return decoded;
       return isUuidV7String(decoded)
         ? decoded
-        : new UuidSlugError(
-            "invalid_uuid_version",
-            "Decoded UUID is not UUIDv7.",
-          );
+        : new UuidSlugError("invalid_uuid_version", "Decoded UUID is not UUIDv7.");
     },
     parseUuid,
     formatUuid,
@@ -190,25 +182,16 @@ export function validateUuidV7Fresh(
   options: FreshValidationOptions = {},
 ): Error | UuidV7String {
   if (!isUuidV7String(uuid))
-    return new UuidSlugError(
-      "invalid_uuid",
-      "Expected canonical UUIDv7 string.",
-    );
+    return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
   const bytes = parseUuid(uuid);
   if (bytes instanceof Error) return bytes;
   const windowMs = options.windowMs ?? 86_400_000;
   const now = options.now?.() ?? Date.now();
   const timestamp = extractUuidV7Timestamp(bytes);
   if (timestamp < now - windowMs || timestamp > now + windowMs)
-    return new UuidSlugError(
-      "stale_uuid",
-      "UUIDv7 timestamp is outside the accepted window.",
-    );
+    return new UuidSlugError("stale_uuid", "UUIDv7 timestamp is outside the accepted window.");
   if (!hasUuidV7Entropy(bytes))
-    return new UuidSlugError(
-      "invalid_uuid",
-      "UUIDv7 random payload is degenerate.",
-    );
+    return new UuidSlugError("invalid_uuid", "UUIDv7 random payload is degenerate.");
   return uuid;
 }
 
@@ -232,11 +215,4 @@ export function validateMaskedUuidV7SlugFresh(
   return valid instanceof Error ? valid : (slug as MaskedUuidV7Slug);
 }
 
-export {
-  isUuidSlug,
-  isUuidString,
-  isUuidV4Slug,
-  isUuidV4String,
-  isUuidV7Slug,
-  isUuidV7String,
-};
+export { isUuidSlug, isUuidString, isUuidV4Slug, isUuidV4String, isUuidV7Slug, isUuidV7String };

@@ -5,7 +5,7 @@ import type { Runtime } from "./runtime/types";
 
 export interface UuidV7GeneratorOptions {
   readonly clock?: () => number;
-  readonly fillRandom: (bytes: Uint8Array) => void;
+  readonly fillRandom: (bytes: Uint8Array<ArrayBuffer>) => void;
 }
 
 function writeTimestamp(bytes: Uint8Array, ms: number) {
@@ -36,9 +36,7 @@ function readCounterSeed(bytes: Uint8Array) {
   );
 }
 
-export function createUuidV7Generator(
-  options: UuidV7GeneratorOptions,
-): UuidV7Generator {
+export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator {
   const clock = options.clock ?? Date.now;
   const random = new Uint8Array(16);
   let lastMs = -1;
@@ -99,11 +97,9 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
       try {
         return runtime.uuidV7Bytes(out, offset);
       } catch (cause) {
-        return new UuidSlugError(
-          "rng_unavailable",
-          "Runtime UUIDv7 byte generation failed.",
-          { cause },
-        );
+        return new UuidSlugError("rng_unavailable", "Runtime UUIDv7 byte generation failed.", {
+          cause,
+        });
       }
     },
   };

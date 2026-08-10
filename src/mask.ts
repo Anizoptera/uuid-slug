@@ -23,8 +23,7 @@ function checksum4(bytes: Uint8Array): number {
 
 function checksum6(bytes: Uint8Array): number {
   let acc = 0;
-  for (let i = 0; i < bytes.length; i += 1)
-    acc = (acc + (bytes[i] ?? 0) * (i + 17)) & 0xff;
+  for (let i = 0; i < bytes.length; i += 1) acc = (acc + (bytes[i] ?? 0) * (i + 17)) & 0xff;
   return ((acc >>> 2) ^ acc) & 0x3f;
 }
 
@@ -55,10 +54,7 @@ export function uuidToMaskedSlugWithSchema(
   const raw = parseUuid(uuid);
   if (raw instanceof Error) return raw;
   if (uuidVersion(raw) !== 7 || !isRfcVariant(raw))
-    return new UuidSlugError(
-      "invalid_uuid_version",
-      "Masked UUID slugs currently require UUIDv7.",
-    );
+    return new UuidSlugError("invalid_uuid_version", "Masked UUID slugs currently require UUIDv7.");
   return uuidV7BytesToMaskedSlug(raw, schema);
 }
 
@@ -75,10 +71,7 @@ export function uuidV7BytesToMaskedSlug(
   return slug instanceof Error ? slug : (slug as MaskedUuidV7Slug);
 }
 
-export function maskedSlugToUuidWithSchema(
-  slug: string,
-  schema: MaskSchema,
-): Error | UuidString {
+export function maskedSlugToUuidWithSchema(slug: string, schema: MaskSchema): Error | UuidString {
   const mixed = slugToUuidBytes(slug);
   if (mixed instanceof Error) return mixed;
   const unmixed = new Uint8Array(16);
@@ -89,10 +82,7 @@ export function maskedSlugToUuidWithSchema(
   const foundTag = extractTag(unmixed, schema.tagBits);
   restoreV7(unmixed, schema.tagBits);
   if (tagFor(unmixed, schema.tagBits) !== foundTag)
-    return new UuidSlugError(
-      "invalid_uuid_slug",
-      "Masked UUID slug failed schema validation.",
-    );
+    return new UuidSlugError("invalid_uuid_slug", "Masked UUID slug failed schema validation.");
   return formatUuid(unmixed);
 }
 

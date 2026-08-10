@@ -42,33 +42,22 @@ describe("direct UUID slugs", () => {
 describe("masked UUID slugs", () => {
   it("preserves legacy mask vectors without exposing private source names", () => {
     const codec = createUuidSlugCodec({ mask: LEGACY_MASK_SCHEMA_V1 });
-    expect(codec.uuidV7ToMaskedSlug(SAMPLE_V7_A)).toBe(
-      "1Ss6ySW5dzcEvgT55sfIJA",
-    );
-    expect(codec.uuidV7ToMaskedSlug(SAMPLE_V7_B)).toBe(
-      "SjSJ7Am5xQbzvo0B7XIWag",
-    );
-    expect(codec.maskedSlugToUuidV7("1Ss6ySW5dzcEvgT55sfIJA")).toBe(
-      SAMPLE_V7_A,
-    );
+    expect(codec.uuidV7ToMaskedSlug(SAMPLE_V7_A)).toBe("1Ss6ySW5dzcEvgT55sfIJA");
+    expect(codec.uuidV7ToMaskedSlug(SAMPLE_V7_B)).toBe("SjSJ7Am5xQbzvo0B7XIWag");
+    expect(codec.maskedSlugToUuidV7("1Ss6ySW5dzcEvgT55sfIJA")).toBe(SAMPLE_V7_A);
   });
 
   it("uses direct precomputed sentinel slugs for sentinel transmission", () => {
     const codec = createUuidSlugCodec({ mask: LEGACY_MASK_SCHEMA_V1 });
     const [, anonymousUser, unknownUser] = codec.sentinels;
-    if (!anonymousUser || !unknownUser)
-      throw new Error("sentinel setup failed");
+    if (!anonymousUser || !unknownUser) throw new Error("sentinel setup failed");
     expect(codec.sentinels.map((item) => item.slug)).toEqual([
       "AAAAAAAAcACAAAAAAAAAAA",
       "AAAAAAABcACAAAAAAAAAAA",
       "AAAAAAACcACAAAAAAAAAAA",
     ]);
-    expect(codec.uuidV7ToMaskedSlug(anonymousUser.uuid)).toBe(
-      "AAAAAAABcACAAAAAAAAAAA",
-    );
-    expect(codec.maskedSlugToUuidV7("AAAAAAACcACAAAAAAAAAAA")).toBe(
-      unknownUser.uuid,
-    );
+    expect(codec.uuidV7ToMaskedSlug(anonymousUser.uuid)).toBe("AAAAAAABcACAAAAAAAAAAA");
+    expect(codec.maskedSlugToUuidV7("AAAAAAACcACAAAAAAAAAAA")).toBe(unknownUser.uuid);
   });
 
   it("rejects wrong schemas unless a legacy schema is explicitly configured", () => {

@@ -7,12 +7,8 @@ import { uuidv7 as uuidv7Package } from "uuidv7";
 import { createUuidSlugCodec } from "../src/index";
 
 const smoke = process.argv.includes("--smoke");
-const iterations = Number(
-  process.env.UUID_SLUG_BENCH_ITERATIONS ?? (smoke ? 10_000 : 1_000_000),
-);
-const stressCount = Number(
-  process.env.UUID_SLUG_STRESS_COUNT ?? (smoke ? 1_000 : 100_000),
-);
+const iterations = Number(process.env.UUID_SLUG_BENCH_ITERATIONS ?? (smoke ? 10_000 : 1_000_000));
+const stressCount = Number(process.env.UUID_SLUG_STRESS_COUNT ?? (smoke ? 1_000 : 100_000));
 const codec = createUuidSlugCodec();
 
 interface BenchCandidate {
@@ -23,9 +19,7 @@ interface BenchCandidate {
 
 interface BunUuidGlobal {
   readonly Bun?: {
-    randomUUIDv7?: (
-      encoding?: "hex" | "buffer" | "base64url",
-    ) => string | Uint8Array;
+    randomUUIDv7?: (encoding?: "hex" | "buffer" | "base64url") => string | Uint8Array;
   };
 }
 
@@ -115,8 +109,7 @@ function stress(candidate: BenchCandidate) {
 }
 
 for (const candidate of candidates) {
-  if (candidate.uuidV4)
-    measure(`${candidate.name}.v4.string`, candidate.uuidV4);
+  if (candidate.uuidV4) measure(`${candidate.name}.v4.string`, candidate.uuidV4);
   if (candidate.uuidV7) {
     measure(`${candidate.name}.v7.string`, candidate.uuidV7);
     stress(candidate);

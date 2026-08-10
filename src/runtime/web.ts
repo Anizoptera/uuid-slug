@@ -14,8 +14,7 @@ export const runtime: Runtime = {
   },
   uuidV4() {
     const crypto = cryptoObject();
-    if (!crypto.randomUUID)
-      throw new UuidRuntimeError("Web Crypto randomUUID is unavailable.");
+    if (!crypto.randomUUID) throw new UuidRuntimeError("Web Crypto randomUUID is unavailable.");
     return crypto.randomUUID();
   },
 };

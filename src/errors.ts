@@ -11,11 +11,7 @@ export type UuidSlugErrorCode =
 export class UuidSlugError extends Error {
   readonly code: UuidSlugErrorCode;
 
-  constructor(
-    code: UuidSlugErrorCode,
-    message: string,
-    options?: ErrorOptions,
-  ) {
+  constructor(code: UuidSlugErrorCode, message: string, options?: ErrorOptions) {
     super(message, options);
     this.name = "UuidSlugError";
     this.code = code;

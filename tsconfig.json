@@ -11,7 +11,13 @@
     "rootDir": ".",
     "skipLibCheck": true,
     "strict": true,
-    "target": "ES2022"
+    "target": "ES2022",
+
+    // TypeScript 6 changed the default from "every @types package" to none, so a leaf
+    // config that relied on the old behaviour silently loses bun:test and node globals.
+    // The tests, benches and scripts here need both; src is kept runtime-neutral by the
+    // per-runtime entry points, not by withholding these.
+    "types": ["node", "bun"]
   },
   "include": [
     "src/**/*.ts",
