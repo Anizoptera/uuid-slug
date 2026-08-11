@@ -9,6 +9,10 @@
 - Publish through `publish-clean`, validate the final cleaned npm tarball, and pass `--access public --provenance`. The npm dist-tag is derived from the git tag, never hardcoded: a version with a prerelease component publishes as `next`, everything else as `latest`. A bare `npm install` resolves `latest`, so a hardcoded one hands every consumer the next release candidate the moment someone runs `bun run release prerelease`.
 - Keep `@anizoptera/publish-clean` as a normal npm dependency. Never pin it to a GitHub SHA or tarball URL: this package publishes through it, so a source nobody else can resolve makes the release unreproducible for anyone but us.
 - Keep npm publication in `.github/workflows/release.yml`; npm trusted publishing is keyed by workflow filename.
+- Release is two jobs, and the split is what makes both true at once: `verify` runs `bun run check` on the
+  tagged commit holding NO permissions, and `publish` declares `needs: verify` and does only what the
+  credential is for. Never merge them: the suite must not run beside a live OIDC identity, and `preversion`
+  is fast local feedback, never the gate — a hand-made tag would otherwise reach the registry, permanently.
 - Releasing is four commands and no bot: `bun run changelog v<next>` drafts the section from the
   commits since the last tag, you EDIT it, you COMMIT it, then `bun run release <next>` and
   `git push --follow-tags`. The commit is not optional bookkeeping: the bump aborts on a
