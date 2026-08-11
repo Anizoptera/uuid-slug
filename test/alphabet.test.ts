@@ -1,0 +1,120 @@
+// SPDX-License-Identifier: Apache-2.0
+
+import { describe, expect, it } from "vitest";
+import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "../src/alphabet";
+import { decodeBase64Url, encodeBase64Url, isBase64Url } from "../src/base64url";
+import { createUuidSlugCodec } from "../src/index";
+import { LEGACY_MASK_SCHEMA_V1 } from "../src/schema";
+import golden from "./fixtures-wire-format.json";
+
+const randomBytes = (length: number) => {
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return bytes;
+};
+
+describe("bit-packing codec", () => {
+  // An oracle only has value when it can fail independently of the code under test. Comparing
+  // against this package's own previous output would agree by construction; `Buffer` is a
+  // separate implementation of the same RFC 4648 alphabet.
+  it("encodes base64url identically to node Buffer across every length boundary", () => {
+    for (let length = 0; length <= 64; length += 1) {
+      const bytes = randomBytes(length);
+      expect(encodeBase64Url(bytes)).toBe(Buffer.from(bytes).toString("base64url"));
+    }
+  });
+
+  // No platform ships base32, so the independent channel is the definition itself: the bytes as
+  // one big integer, left-aligned to a whole number of characters, read five bits at a time.
+  it("encodes base32hex identically to a bit-level reference", () => {
+    for (let length = 1; length <= 33; length += 1) {
+      const bytes = randomBytes(length);
+      let value = 0n;
+      for (const byte of bytes) value = (value << 8n) | BigInt(byte);
+      const chars = Math.ceil((length * 8) / 5);
+      value <<= BigInt(chars * 5 - length * 8);
+      let expected = "";
+      for (let i = chars - 1; i >= 0; i -= 1)
+        expected += BASE32HEX.chars[Number((value >> BigInt(i * 5)) & 31n)];
+      expect(encode(bytes, BASE32HEX)).toBe(expected);
+    }
+  });
+
+  it("round-trips both alphabets through the shared decoder", () => {
+    for (const alpha of [BASE64URL, BASE32HEX])
+      for (let length = 1; length <= 33; length += 1) {
+        const bytes = randomBytes(length);
+        const out = new Uint8Array(length);
+        expect(decodeInto(encode(bytes, alpha), alpha, out, 0, length)).toBe(0);
+        expect([...out]).toEqual([...bytes]);
+      }
+  });
+
+  // The spare bits are what let a schema id ride along at no cost in length. If this ever stops
+  // holding, the masked slug silently grows a character.
+  it("leaves exactly 4 spare bits in base64url and 2 in base32hex for 16 bytes", () => {
+    expect(spareBits(BASE64URL, 16)).toBe(4);
+    expect(spareBits(BASE32HEX, 16)).toBe(2);
+  });
+
+  it("carries a trailing value in the spare bits without changing the length", () => {
+    const bytes = randomBytes(16);
+    for (const [alpha, length] of [
+      [BASE64URL, 22],
+      [BASE32HEX, 26],
+    ] as const) {
+      const plain = encode(bytes, alpha);
+      const seen = new Set<string>();
+      for (let tail = 0; tail < 4; tail += 1) {
+        const encoded = encode(bytes, alpha, tail, 2);
+        expect(encoded).toHaveLength(length);
+        seen.add(encoded);
+        const out = new Uint8Array(16);
+        expect(decodeInto(encoded, alpha, out, 0, 16, 2)).toBe(tail);
+        expect([...out]).toEqual([...bytes]);
+      }
+      // Tail 0 must reproduce the plain encoding byte for byte, or identifiers issued before the
+      // tail existed stop validating.
+      expect(encode(bytes, alpha, 0, 2)).toBe(plain);
+      expect(seen.size).toBe(4);
+    }
+  });
+
+  it.each([
+    ["padded", "AAAA===="],
+    ["a character outside the alphabet", "AAA*"],
+    ["a length no byte count can produce", "AAAAA"],
+    ["non-zero padding bits", "AB"],
+    ["a non-ascii character", "AAÿA"],
+  ])("rejects %s", (_what, value) => {
+    expect(decodeBase64Url(value)).toBeInstanceOf(Error);
+  });
+
+  it.each([
+    ["", false],
+    [null, false],
+    [undefined, false],
+    ["AAAA", true],
+    ["AAAAAAAAcACAAAAAAAAAAA", true],
+  ])("isBase64Url(%o) is %s", (value, expected) => {
+    expect(isBase64Url(value)).toBe(expected);
+  });
+});
+
+// Slugs already issued in production must survive every future change to the encoder or the mask
+// layer. The vectors were generated from the shipped implementation, so this fails loudly the
+// moment the wire format moves, whether or not the move was intentional.
+describe("wire format compatibility", () => {
+  const codecs = {
+    default: createUuidSlugCodec({}),
+    "legacy-v1": createUuidSlugCodec({ mask: LEGACY_MASK_SCHEMA_V1 }),
+    "seeded-v2": createUuidSlugCodec({ mask: { seed: "golden-vector-seed", tagBits: 6 } }),
+  };
+
+  it.each(golden)("$schema $uuid encodes and decodes unchanged", (vector) => {
+    const codec = codecs[vector.schema as keyof typeof codecs];
+    expect(codec.uuidToSlug(vector.uuid)).toBe(vector.direct);
+    expect(codec.uuidV7ToMaskedSlug(vector.uuid)).toBe(vector.masked);
+    expect(codec.maskedSlugToUuidV7(vector.masked)).toBe(vector.uuid);
+  });
+});

@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export type UuidSlugErrorCode =
+  | "invalid_base32"
   | "invalid_base64url"
   | "invalid_buffer"
   | "invalid_mask_schema"
+  | "invalid_timestamp"
   | "invalid_uuid"
   | "invalid_uuid_slug"
   | "invalid_uuid_version"

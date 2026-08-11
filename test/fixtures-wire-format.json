@@ -1,0 +1,74 @@
+[
+  {
+    "schema": "default",
+    "uuid": "00000000-0000-7000-8000-000000000000",
+    "direct": "AAAAAAAAcACAAAAAAAAAAA",
+    "masked": "AAAAAAAAcACAAAAAAAAAAA"
+  },
+  {
+    "schema": "default",
+    "uuid": "ffffffff-ffff-7fff-bfff-ffffffffffff",
+    "direct": "________f_-__________w",
+    "masked": "_QxPQnlIVaTT57goB5HpKw"
+  },
+  {
+    "schema": "default",
+    "uuid": "019ff19b-58b8-7000-9b1b-df713bd5562c",
+    "direct": "AZ_xm1i4cACbG99xO9VWLA",
+    "masked": "82ir673v2ne3aZhv-bsWSw"
+  },
+  {
+    "schema": "default",
+    "uuid": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051",
+    "direct": "AZChssPUfl-KmwwdLj9AUQ",
+    "masked": "o7kr_ah0lAqeBUsD-VFJRA"
+  },
+  {
+    "schema": "seeded-v2",
+    "uuid": "00000000-0000-7000-8000-000000000000",
+    "direct": "AAAAAAAAcACAAAAAAAAAAA",
+    "masked": "AAAAAAAAcACAAAAAAAAAAA"
+  },
+  {
+    "schema": "seeded-v2",
+    "uuid": "ffffffff-ffff-7fff-bfff-ffffffffffff",
+    "direct": "________f_-__________w",
+    "masked": "z39Fj_AyczlJG91YcsHy0g"
+  },
+  {
+    "schema": "seeded-v2",
+    "uuid": "019ff19b-58b8-7000-9b1b-df713bd5562c",
+    "direct": "AZ_xm1i4cACbG99xO9VWLA",
+    "masked": "QNZva_4SE363lbmc1T6WAQ"
+  },
+  {
+    "schema": "seeded-v2",
+    "uuid": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051",
+    "direct": "AZChssPUfl-KmwwdLj9AUQ",
+    "masked": "DsCF667BHBK3-WiJTmG_fA"
+  },
+  {
+    "schema": "legacy-v1",
+    "uuid": "00000000-0000-7000-8000-000000000000",
+    "direct": "AAAAAAAAcACAAAAAAAAAAA",
+    "masked": "AAAAAAAAcACAAAAAAAAAAA"
+  },
+  {
+    "schema": "legacy-v1",
+    "uuid": "ffffffff-ffff-7fff-bfff-ffffffffffff",
+    "direct": "________f_-__________w",
+    "masked": "XY_NwGdHZKHU2UnpaQYVwQ"
+  },
+  {
+    "schema": "legacy-v1",
+    "uuid": "019ff19b-58b8-7000-9b1b-df713bd5562c",
+    "direct": "AZ_xm1i4cACbG99xO9VWLA",
+    "masked": "uaWp5M656l4ruZpOZ0E1BQ"
+  },
+  {
+    "schema": "legacy-v1",
+    "uuid": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051",
+    "direct": "AZChssPUfl-KmwwdLj9AUQ",
+    "masked": "OU-A9di5hgHltufVNy3mEA"
+  }
+]
