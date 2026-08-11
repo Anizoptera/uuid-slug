@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { UuidSlugError } from "./errors";
+import { FEISTEL_KEY_WORDS, feistel16 } from "./feistel";
 import type { ExplicitMaskSchema, MaskSchema, MaskSchemaOptions } from "./types";
 
 const LEGACY_PERMUTE = Uint8Array.from([9, 13, 3, 8, 14, 0, 11, 7, 6, 1, 15, 4, 2, 5, 10, 12]);
@@ -78,7 +79,12 @@ function derivedPermutation(seed: Uint8Array) {
   return permute;
 }
 
-function completeSchema(
+/**
+ * The original scheme: reorder the bytes, then XOR each with a constant. Retained because slugs
+ * masked with it are in production and must keep decoding — it is not a candidate for new ones,
+ * since one output byte per input byte means ids sharing a timestamp share bytes.
+ */
+function substitutionSchema(
   id: string,
   xorInput: Uint8Array,
   permuteInput: Uint8Array,
@@ -90,18 +96,55 @@ function completeSchema(
   if (permute instanceof Error) return permute;
   const inverse = inversePermutation(permute);
   if (inverse instanceof Error) return inverse;
-  return { id, inverse, permute, tagBits, xor };
+  return {
+    id,
+    // Slot 0: these slugs were issued before the marker existed, so their spare bits are zero.
+    slugId: 0,
+    tagBits,
+    mix(input, output, forward) {
+      for (let i = 0; i < 16; i += 1) {
+        if (forward) output[i] = (input[permute[i] as number] as number) ^ (xor[i] as number);
+        else {
+          const source = inverse[i] as number;
+          output[i] = (input[source] as number) ^ (xor[source] as number);
+        }
+      }
+    },
+  };
 }
 
-export const LEGACY_MASK_SCHEMA_V1: MaskSchema = completeSchema(
+function feistelSchema(id: string, seed: Uint8Array, tagBits: 4 | 6): MaskSchema {
+  // A distinct purpose byte keeps this key material independent of the substitution scheme's,
+  // so a seed used under both schemes does not reuse bits across them.
+  const material = derivedBytes(seed, 3, FEISTEL_KEY_WORDS * 4);
+  const keys = new Int32Array(FEISTEL_KEY_WORDS);
+  for (let i = 0; i < keys.length; i += 1)
+    keys[i] =
+      ((material[i * 4] as number) << 24) |
+      ((material[i * 4 + 1] as number) << 16) |
+      ((material[i * 4 + 2] as number) << 8) |
+      (material[i * 4 + 3] as number) |
+      0;
+  return {
+    id,
+    slugId: 1,
+    tagBits,
+    mix(input, output, forward) {
+      feistel16(input, 0, keys, forward, output, 0);
+    },
+  };
+}
+
+export const LEGACY_MASK_SCHEMA_V1: MaskSchema = substitutionSchema(
   "legacy-mask-v1",
   LEGACY_XOR,
   LEGACY_PERMUTE,
   4,
 ) as MaskSchema;
 
+/** An explicit permutation and XOR table can only describe the substitution scheme. */
 export function defineMaskSchema(schema: ExplicitMaskSchema): Error | MaskSchema {
-  return completeSchema(schema.id ?? "explicit", schema.xor, schema.permute, schema.tagBits);
+  return substitutionSchema(schema.id ?? "explicit", schema.xor, schema.permute, schema.tagBits);
 }
 
 export function createMaskSchema(options: MaskSchemaOptions): Error | MaskSchema {
@@ -111,15 +154,26 @@ export function createMaskSchema(options: MaskSchemaOptions): Error | MaskSchema
   const tagBits = options.tagBits ?? 6;
   if (tagBits !== 4 && tagBits !== 6)
     return new UuidSlugError("invalid_mask_schema", "Mask tagBits must be 4 or 6.");
-  return completeSchema(
-    options.id ?? "seeded",
-    derivedBytes(seed, 1, 16),
-    derivedPermutation(seed),
-    tagBits,
-  );
+  const id = options.id ?? "seeded";
+  if ((options.kind ?? "feistel") === "substitution")
+    return substitutionSchema(id, derivedBytes(seed, 1, 16), derivedPermutation(seed), tagBits);
+  return feistelSchema(id, seed, tagBits);
 }
+
+const DEFAULT_SEED = "anizoptera.uuid-slug.default-mask.v1";
 
 export const DEFAULT_MASK_SCHEMA: MaskSchema = createMaskSchema({
   id: "default",
-  seed: "anizoptera.uuid-slug.default-mask.v1",
+  seed: DEFAULT_SEED,
+}) as MaskSchema;
+
+/**
+ * The default codec's previous scheme, kept so slugs it already issued keep decoding. Costs
+ * nothing in ambiguity: it occupies slot 0 and the current default occupies slot 1, so a slug's
+ * marker selects one of them outright rather than both being tried.
+ */
+export const DEFAULT_MASK_SCHEMA_LEGACY: MaskSchema = createMaskSchema({
+  id: "default-legacy",
+  kind: "substitution",
+  seed: DEFAULT_SEED,
 }) as MaskSchema;

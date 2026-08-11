@@ -27,16 +27,42 @@ export interface UuidV7Generator {
   uuidV7Bytes(out?: Uint8Array, offset?: number): Error | Uint8Array;
 }
 
+/**
+ * A schema is its mixing step, not the data behind one. Holding `mix` as a function rather than
+ * exposing a permutation and an XOR table is what lets the masking code stay ignorant of which
+ * scheme it is running: adding one is a new constructor in `schema.ts` and no branch anywhere.
+ */
 export interface MaskSchema {
   readonly id: string;
-  readonly inverse: Uint8Array;
-  readonly permute: Uint8Array;
+  /**
+   * Which of the four scheme slots this occupies in a slug's spare bits. Decoding reads it and
+   * applies exactly the matching schema, so schemes never have to be told apart by trial and
+   * checksum — the id partitions them. Slot 0 is the original permute-and-XOR family, whose
+   * slugs predate the marker and therefore encode a zero there.
+   */
+  readonly slugId: MaskSchemaSlugId;
   readonly tagBits: 4 | 6;
-  readonly xor: Uint8Array;
+  /**
+   * Transforms 16 bytes; `forward: false` MUST be the exact inverse. `input` and `output` MUST
+   * NOT be the same array: a scheme that permutes reads source bytes it would already have
+   * overwritten, which corrupts silently rather than failing.
+   */
+  mix(input: Uint8Array, output: Uint8Array, forward: boolean): void;
 }
+
+export type MaskSchemaSlugId = 0 | 1 | 2 | 3;
+
+/** Named rather than numbered, so a schema's scheme survives being written down and read back. */
+export type MaskSchemeKind = "feistel" | "substitution";
 
 export interface MaskSchemaOptions {
   readonly id?: string;
+  /**
+   * Defaults to `feistel`. `substitution` exists to decode slugs issued before the Feistel and
+   * SHOULD NOT be chosen for new ones: it maps one output byte per input byte, so ids sharing a
+   * timestamp share bytes — measured, 4 of 16 held constant across a second.
+   */
+  readonly kind?: MaskSchemeKind;
   readonly seed: string | Uint8Array;
   readonly tagBits?: 4 | 6;
 }

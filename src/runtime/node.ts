@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import crypto from "node:crypto";
-import { producesOrderedValues } from "./monotonic";
 import type { Runtime } from "./types";
 
 /**
@@ -29,15 +28,6 @@ const nodeRuntime: Runtime = {
   },
 };
 
-/**
- * Presence is necessary and not sufficient — Node's native generator is unordered inside a
- * millisecond, so adopting it would trade this package's sortability for throughput without
- * anyone asking. Left undefined when it fails, which routes v7 through the portable generator
- * and its 42-bit counter exactly as on a Node without the method at all.
- */
-const nativeIsOrdered =
-  nativeUuidV7 !== undefined && producesOrderedValues(() => nativeUuidV7.call(crypto));
-
-if (nativeUuidV7 && nativeIsOrdered) nodeRuntime.uuidV7 = () => nativeUuidV7.call(crypto);
+if (nativeUuidV7) nodeRuntime.uuidV7 = () => nativeUuidV7.call(crypto);
 
 export const runtime = nodeRuntime;

@@ -7,7 +7,7 @@ import {
   uuidV7BytesToMaskedSlug,
   maskedSlugToUuidWithSchema,
 } from "./mask";
-import { createMaskSchema, DEFAULT_MASK_SCHEMA } from "./schema";
+import { createMaskSchema, DEFAULT_MASK_SCHEMA, DEFAULT_MASK_SCHEMA_LEGACY } from "./schema";
 import type {
   MaskSchema,
   MaskedUuidSlug,
@@ -61,8 +61,10 @@ export const UUID_V7_SENTINEL_DEFINITIONS: readonly UuidV7SentinelDefinition[] =
 
 function schemaFromOption(mask: UuidSlugCodecOptions["mask"]): Error | MaskSchema {
   if (!mask) return DEFAULT_MASK_SCHEMA;
-  if ("xor" in mask && "permute" in mask && "inverse" in mask) return mask;
-  return createMaskSchema(mask);
+  // A built schema carries its mixing step; an options object carries only a seed to derive one
+  // from. One discriminating property beats sniffing several, which silently stops discriminating
+  // when a scheme is added whose data fields differ.
+  return "mix" in mask ? mask : createMaskSchema(mask);
 }
 
 function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
@@ -111,7 +113,24 @@ function errorOrThrow<T>(value: Error | T): T {
 
 export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlugCodec {
   const schema = errorOrThrow(schemaFromOption(options.mask));
-  const legacyMasks = options.legacy?.masks ?? [];
+  // A codec configured by seed also decodes that seed's pre-Feistel slugs, without being asked.
+  // Masking changed scheme after slugs were already issued in production, and an upgrade that
+  // silently stops decoding them is not an upgrade. This costs nothing in ambiguity because the
+  // two schemes occupy different marker slots, so a slug selects one outright. Schemas passed as
+  // built objects get no such partner: there is no seed to derive it from.
+  const seededLegacy =
+    options.mask && !("mix" in options.mask)
+      ? createMaskSchema({
+          ...options.mask,
+          id: `${options.mask.id ?? "seeded"}-legacy`,
+          kind: "substitution",
+        })
+      : undefined;
+  const legacyMasks = [
+    ...(options.legacy?.masks ?? []),
+    ...(seededLegacy instanceof Error || seededLegacy === undefined ? [] : [seededLegacy]),
+    ...(options.mask ? [] : [DEFAULT_MASK_SCHEMA_LEGACY]),
+  ];
   const generator = options.generator ?? createRuntimeGenerator(runtime);
   const sentinelState = createSentinels(options.sentinels ?? UUID_V7_SENTINEL_DEFINITIONS);
 

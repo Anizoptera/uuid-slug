@@ -27,6 +27,12 @@ function writeCounter(bytes: Uint8Array, counter: bigint) {
   bytes[11] = Number(counter & 0xffn);
 }
 
+/** The 48 bits RFC 9562 gives the timestamp; beyond it the value cannot be represented. */
+const MAX_TIMESTAMP = 0xffff_ffff_ffff;
+
+export const isValidUuidV7Timestamp = (ms: number): boolean =>
+  Number.isFinite(ms) && ms >= 0 && ms <= MAX_TIMESTAMP;
+
 function readCounterSeed(bytes: Uint8Array) {
   return (
     (BigInt(bytes[0] ?? 0) << 34n) |
@@ -50,20 +56,42 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
     counter = readCounterSeed(random);
   }
 
-  function bytes(out?: Uint8Array, offset = 0): Error | Uint8Array {
+  function bytes(out?: Uint8Array, offset = 0, timestamp?: number): Error | Uint8Array {
     const target = out ?? new Uint8Array(16);
     if (offset < 0 || offset + 16 > target.length)
       return new UuidSlugError("invalid_buffer", "Output buffer is too small.");
-    const now = Math.trunc(clock());
-    if (lastMs < 0 || now > lastMs) reseed(now);
-    else {
-      counter += 1n;
-      if (counter > 0x3ffffffffffn) reseed(lastMs + 1);
-      else options.fillRandom(random);
+    // The two modes differ only in where the millisecond and the 42-bit sequence come from, so
+    // they share one write path. A caller-supplied instant takes a RANDOM sequence rather than
+    // the monotonic counter, and leaves `lastMs`/`counter` untouched: that counter orders values
+    // issued inside the CURRENT millisecond, and a caller naming an arbitrary instant is not
+    // extending that sequence. Feeding a supplied timestamp through it would be worse than
+    // useless — an older instant fails the `now > lastMs` test and the value would carry the
+    // clock's millisecond instead of the requested one.
+    let ms: number;
+    let sequence: bigint;
+    if (timestamp !== undefined) {
+      if (!isValidUuidV7Timestamp(timestamp))
+        return new UuidSlugError(
+          "invalid_timestamp",
+          `UUIDv7 timestamp must be a whole number of milliseconds in 0..${MAX_TIMESTAMP}.`,
+        );
+      options.fillRandom(random);
+      ms = Math.trunc(timestamp);
+      sequence = readCounterSeed(random);
+    } else {
+      const now = Math.trunc(clock());
+      if (lastMs < 0 || now > lastMs) reseed(now);
+      else {
+        counter += 1n;
+        if (counter > 0x3ffffffffffn) reseed(lastMs + 1);
+        else options.fillRandom(random);
+      }
+      ms = lastMs;
+      sequence = counter;
     }
     const uuid = target.subarray(offset, offset + 16);
-    writeTimestamp(uuid, lastMs);
-    writeCounter(uuid, counter);
+    writeTimestamp(uuid, ms);
+    writeCounter(uuid, sequence);
     target[offset + 12] = random[12] ?? 0;
     target[offset + 13] = random[13] ?? 0;
     target[offset + 14] = random[14] ?? 0;

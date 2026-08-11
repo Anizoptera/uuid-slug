@@ -116,5 +116,9 @@ describe("wire format compatibility", () => {
     expect(codec.uuidToSlug(vector.uuid)).toBe(vector.direct);
     expect(codec.uuidV7ToMaskedSlug(vector.uuid)).toBe(vector.masked);
     expect(codec.maskedSlugToUuidV7(vector.masked)).toBe(vector.uuid);
+    // `maskedLegacy` holds the slug the substitution scheme issued before the Feistel became the
+    // default. These are the values live systems already handed out, so a codec that stops
+    // reading them has broken production regardless of what it does with new ids.
+    expect(codec.maskedSlugToUuidV7(vector.maskedLegacy)).toBe(vector.uuid);
   });
 });

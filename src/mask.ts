@@ -1,14 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "./alphabet";
+import type { Alphabet } from "./alphabet";
 import { UuidSlugError } from "./errors";
-import {
-  formatUuid,
-  isRfcVariant,
-  parseUuid,
-  slugToUuidBytes,
-  uuidBytesToSlug,
-  uuidVersion,
-} from "./uuid";
+import { formatUuid, isRfcVariant, parseUuid, uuidVersion } from "./uuid";
 import type {
   MaskSchema,
   MaskedUuidSlug,
@@ -60,27 +55,45 @@ export function uuidToMaskedSlugWithSchema(
   return uuidV7BytesToMaskedSlug(raw, schema);
 }
 
+/**
+ * Width of the scheme marker carried in the encoding's spare low bits. Two is not a preference
+ * but the maximum both alphabets can hold for free: 16 bytes occupy 128 of the 132 bits in 22
+ * base64url characters and 130 of the 130 in 26 base32hex characters, so three bits would cost
+ * base32hex a 27th character. Four schemes is the ceiling that follows.
+ */
+export const SCHEMA_ID_BITS = 2;
+
+for (const alpha of [BASE64URL, BASE32HEX])
+  if (spareBits(alpha, 16) < SCHEMA_ID_BITS)
+    throw new Error(`${alpha.name} cannot carry the mask scheme marker without growing a slug.`);
+
 export function uuidV7BytesToMaskedSlug(
   raw: Uint8Array,
   schema: MaskSchema,
+  alpha: Alphabet = BASE64URL,
 ): Error | MaskedUuidV7Slug {
   const tagged = new Uint8Array(raw);
   injectTag(tagged, tagFor(raw, schema.tagBits), schema.tagBits);
   const mixed = new Uint8Array(16);
-  for (let i = 0; i < 16; i += 1)
-    mixed[i] = (tagged[schema.permute[i] ?? 0] ?? 0) ^ (schema.xor[i] ?? 0);
-  const slug = uuidBytesToSlug(mixed);
-  return slug instanceof Error ? slug : (slug as MaskedUuidV7Slug);
+  schema.mix(tagged, mixed, true);
+  return encode(mixed, alpha, schema.slugId, SCHEMA_ID_BITS) as MaskedUuidV7Slug;
 }
 
-export function maskedSlugToUuidWithSchema(slug: string, schema: MaskSchema): Error | UuidString {
-  const mixed = slugToUuidBytes(slug);
-  if (mixed instanceof Error) return mixed;
+export function maskedSlugToUuidWithSchema(
+  slug: string,
+  schema: MaskSchema,
+  alpha: Alphabet = BASE64URL,
+): Error | UuidString {
+  const mixed = new Uint8Array(16);
+  const slugId = decodeInto(slug, alpha, mixed, 0, 16, SCHEMA_ID_BITS);
+  if (slugId instanceof Error) return slugId;
+  // The marker makes scheme selection exact. Without it a caller holding several schemas would
+  // decode under each in turn and accept the first whose tag happened to match, which is a
+  // 1-in-2^tagBits chance per wrong candidate of returning a plausible but wrong UUID.
+  if (slugId !== schema.slugId)
+    return new UuidSlugError("invalid_uuid_slug", "Masked UUID slug uses a different mask scheme.");
   const unmixed = new Uint8Array(16);
-  for (let i = 0; i < 16; i += 1) {
-    const source = schema.inverse[i] ?? 0;
-    unmixed[i] = (mixed[source] ?? 0) ^ (schema.xor[source] ?? 0);
-  }
+  schema.mix(mixed, unmixed, false);
   const foundTag = extractTag(unmixed, schema.tagBits);
   restoreV7(unmixed, schema.tagBits);
   if (tagFor(unmixed, schema.tagBits) !== foundTag)
