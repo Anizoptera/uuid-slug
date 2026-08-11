@@ -12,11 +12,19 @@
   has one, so on Bun and Node they never touch this package's own `fillRandom`; only the byte and
   slug forms do so unconditionally. An entropy check through the string forms alone observes
   nothing of our code and passes against any randomness at all.
-- A capability probe must test the PROPERTY this package needs, never the method's presence. Node
-  26.6.0 added `crypto.randomUUIDv7`, which re-randomises all 74 random bits per call and so sorts
-  in creation order 50% of the time inside a millisecond; delegating on presence traded away
-  sortability on a runtime upgrade, with no consumer code change. `src/runtime/monotonic.ts` owns
-  the probe. Presence is necessary and never sufficient.
+- Intra-millisecond ordering is NOT guaranteed and MUST NOT be made one (Art's ruling,
+  2026-08-11). Native v7 generators differ — Node 26.6.0's re-randomises all 74 random bits per
+  call and sorts in creation order about half the time, Bun's advances a 12-bit counter — and this
+  package delegates to whichever the runtime provides. That divergence is measured and disclosed,
+  never suppressed: do not add a monotonicity probe, and do not reject a native generator for it.
+  The guarantees are enumerated in README §Guarantees, which is their single source; a test may
+  assert those and nothing stronger. Measuring what each implementation actually does belongs in
+  `bench/`, where the numbers inform rather than gate.
+- A guarantee this package has not written down is not a guarantee. A test asserting one is the
+  agent inventing a requirement and then repairing the code to satisfy it — which happened here:
+  strict ordering was asserted, a native generator was rejected for failing it at a 6.4x
+  throughput cost, and it was reported as a defect fix. Add the promise to README §Guarantees
+  first, with a ruling, or assert less.
 - Anything returning bytes must return a plain `Uint8Array`. Bun's native v7 yields a node
   `Buffer`, which satisfies the declared type structurally while `toString("hex")` and
   `JSON.stringify` both behave differently — code written on Bun then produces different bytes on

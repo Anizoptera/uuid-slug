@@ -9,17 +9,26 @@ read ratios, not digits.
 
 ## What this changed
 
-**Node's native UUIDv7 is not ordered, and adopting it silently cost this package its
-sortability.** `crypto.randomUUIDv7` arrived in Node 26.6.0 and re-randomises all 74 random bits
-on every call: consecutive values inside one millisecond sort in creation order **50.06%** of the
-time. A coin flip. Because the runtime adapter delegated on the method being PRESENT, a consumer
-upgrading Node would have swapped a sortable identifier for an unsortable one with no change to
-their code, and CI could not see it — it pins Node 24, which has no such method.
+**Intra-millisecond ordering differs by runtime, and this package does not promise it.**
+`crypto.randomUUIDv7` arrived in Node 26.6.0 and re-randomises all 74 random bits on every call:
+consecutive values inside one millisecond sort in creation order **50.06%** of the time. Bun's
+advances a 12-bit counter and reaches 99.98%. The portable generator reaches 100%. All three are
+conformant — RFC 9562 §6.2 leaves the choice to the implementation.
 
-The adapters now probe the property rather than the presence (`src/runtime/monotonic.ts`), and CI
-runs the suite on `current` as well as `lts/*`. Cost on Node 26: v7 falls back to the portable
-generator, 6.21M → 0.97M ops/s. That is the price of the guarantee, and it is the maintainer's to
-revisit — the alternative is a v7 that does not sort, which is a v4 with a timestamp leak.
+The package delegates to whichever generator the runtime provides and discloses the difference
+rather than flattening it (ruling, 2026-08-11). What it does guarantee is enumerated in
+README §Guarantees and asserted by the suite: conformance, cryptographic randomness, no repeats,
+and time ordering to the millisecond. Ordering _inside_ a millisecond is explicitly not promised —
+use a sequence column if you need it.
+
+This audit briefly did the opposite: it asserted strict ordering in a test, rejected Node's native
+generator for failing it at a 6.4× throughput cost, and reported that as a defect fix. The
+guarantee was never written down anywhere; the test had invented it hours earlier. The rule that
+came out of it is in `AGENTS.md` — a promise this package has not published is not a promise, and
+a test may assert the published ones and nothing stronger.
+
+CI now runs the suite on `current` as well as `lts/*`, which is how a runtime that changes
+behaviour under this package becomes visible at all.
 
 **`uuidV7Bytes` returned a different TYPE per runtime.** Bun's native hands back a node `Buffer`,
 which satisfies `Uint8Array` structurally, so nothing in the type system objected. But

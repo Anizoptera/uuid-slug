@@ -164,6 +164,29 @@ random half is degenerate. `validateUuidV7SlugFresh` and `validateMaskedUuidV7Sl
 the same starting from a slug. Useful for one-shot ids like a signup link; it is a sanity
 check on the id itself, not authentication.
 
+## Guarantees
+
+What this package promises, and — just as importantly — what it does not. Each line is measured
+across every supported runtime by `bun run bench:matrix`; the current figures are in
+[`bench/RESULTS.md`](bench/RESULTS.md).
+
+- **Conformance.** Every generated id is a valid RFC 9562 UUID: correct version and variant bits.
+- **Randomness.** All random bits come from a cryptographic source — `crypto.getRandomValues` or
+  `node:crypto`, never `Math.random`, on any code path. Values do not repeat.
+- **Time ordering, to the millisecond.** A v7 carries a 48-bit millisecond timestamp in its
+  leading bits, so ids created in _different_ milliseconds sort by creation time. This is what
+  makes it a good database key.
+- **NOT ordered within a millisecond.** Two ids created in the same millisecond may sort in
+  either order. RFC 9562 §6.2 leaves this to the implementation and runtimes genuinely differ —
+  measured, a platform generator may re-randomise every random bit per call, giving roughly a coin
+  flip. Do not use a v7 to recover the order of events inside a millisecond; use a sequence column.
+- **NOT lexicographically sortable as a slug.** The 22-character base64url form is the same 16
+  bytes in a shorter alphabet, and the value round-trips exactly — but base64url's alphabet is not
+  in ASCII order, so comparing slugs as _strings_ does not track time. Sort by the UUID, or by a
+  timestamp column. A masked slug is deliberately unordered by design.
+- **One type for bytes.** `uuidV4Bytes` and `uuidV7Bytes` return a plain `Uint8Array` on every
+  runtime, never a platform-specific subclass whose `toString` or JSON shape differs.
+
 ## Runtime
 
 No runtime dependencies, on any platform.
