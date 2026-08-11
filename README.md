@@ -107,8 +107,9 @@ which flavour a value is and survive narrowing; they are not enforced at runtime
 
 ## API
 
-Everything below is a method on a codec, and also a top-level export bound to the default
-codec.
+Everything below is a method on a codec. Each is also a top-level export bound to the
+default codec, under the same name, except the sentinel list, which is
+`UUID_V7_SENTINELS`.
 
 | Method                                                  | Returns               | What it does                              |
 | ------------------------------------------------------- | --------------------- | ----------------------------------------- |
