@@ -15,28 +15,45 @@
  */
 import { performance } from "node:perf_hooks";
 
-import { candidates, codec } from "./candidates";
+import { candidates, codec, nativeVariants, runtimeName } from "./candidates";
 
 const smoke = process.argv.includes("--smoke");
 const iterations = Number(process.env.UUID_SLUG_BENCH_ITERATIONS ?? (smoke ? 10_000 : 1_000_000));
 
-function measure(name: string, fn: () => string) {
-  // Warm up so the figure reflects optimised code rather than the climb to it.
-  for (let i = 0; i < 1_000; i += 1) fn();
-  let blackhole = 0;
-  const start = performance.now();
-  // Consuming a byte of each result keeps a JIT from eliminating the call as dead.
-  for (let i = 0; i < iterations; i += 1) blackhole ^= fn().charCodeAt(0);
-  const elapsed = performance.now() - start;
+const report = (name: string, note: string, elapsed: number, blackhole: number) =>
   console.log(
     JSON.stringify({
       blackhole,
       elapsedMs: elapsed,
       iterations,
       name,
+      note,
       opsPerSecond: Math.round((iterations / elapsed) * 1000),
+      runtime: runtimeName,
     }),
   );
+
+function measure(name: string, fn: () => string, note = "") {
+  // Warm up so the figure reflects optimised code rather than the climb to it.
+  for (let i = 0; i < 1_000; i += 1) fn();
+  let blackhole = 0;
+  const start = performance.now();
+  // Consuming a byte of each result keeps a JIT from eliminating the call as dead.
+  for (let i = 0; i < iterations; i += 1) blackhole ^= fn().charCodeAt(0);
+  report(name, note, performance.now() - start, blackhole);
+}
+
+/**
+ * Deliberately a separate loop rather than a branch inside `measure`. A byte-returning generator
+ * is measured precisely to see the cost WITHOUT string work, so paying a per-iteration type test
+ * to share one function would tax the row whose whole claim is that it avoids that tax.
+ */
+function measureBytes(name: string, fn: () => Uint8Array, note = "") {
+  for (let i = 0; i < 1_000; i += 1) fn();
+  let blackhole = 0;
+  const start = performance.now();
+  for (let i = 0; i < iterations; i += 1) blackhole ^= fn()[0] ?? 0;
+  report(name, note, performance.now() - start, blackhole);
 }
 
 for (const candidate of candidates) {
@@ -46,3 +63,21 @@ for (const candidate of candidates) {
 
 measure("package.v7.slug", () => codec.uuidV7Slug());
 measure("package.v7.maskedSlug", () => codec.uuidV7MaskedSlug());
+// Timed by the byte loop, so it stands beside `bun.v7.buffer` on equal terms. The result check
+// is inside the timed section on purpose: `uuidV7Bytes` reports failure by returning an Error
+// rather than throwing, so every real caller pays this branch and a row that skipped it would be
+// measuring an API nobody can actually use.
+measureBytes(
+  "package.v7.bytes",
+  () => {
+    const bytes = codec.uuidV7Bytes();
+    if (bytes instanceof Error) throw bytes;
+    return bytes;
+  },
+  "raw 16 bytes",
+);
+
+for (const variant of nativeVariants) {
+  if (variant.text) measure(`native.${variant.name}`, variant.text, variant.note);
+  if (variant.bytes) measureBytes(`native.${variant.name}`, variant.bytes, variant.note);
+}
