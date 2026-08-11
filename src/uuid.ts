@@ -56,7 +56,7 @@ export function formatUuid(bytes: Uint8Array, offset = 0): Error | UuidString {
     out += HEX[byte >>> 4];
     out += HEX[byte & 0x0f];
   }
-  return out as UuidString;
+  return out;
 }
 
 export function uuidVersion(bytes: Uint8Array, offset = 0): number {
@@ -69,7 +69,7 @@ export function isRfcVariant(bytes: Uint8Array, offset = 0): boolean {
 
 export function isUuidString(uuid: null | string | undefined): uuid is UuidString {
   if (!uuid) return false;
-  return parseUuid(uuid) instanceof Error ? false : true;
+  return !(parseUuid(uuid) instanceof Error);
 }
 
 export function isUuidV4String(uuid: null | string | undefined): uuid is UuidV4String {
@@ -114,7 +114,7 @@ export function slugToUuid(slug: string): Error | UuidString {
 
 export function isUuidSlug(slug: null | string | undefined): slug is UuidSlug {
   if (!slug || slug.length !== SLUG_LENGTH) return false;
-  return parseUuidSlug(slug) instanceof Error ? false : true;
+  return !(parseUuidSlug(slug) instanceof Error);
 }
 
 export function isUuidV4Slug(slug: null | string | undefined): slug is UuidV4Slug {

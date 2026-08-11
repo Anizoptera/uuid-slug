@@ -71,7 +71,7 @@
     "bench:smoke": "bun bench/run.ts --smoke",
     "build": "tsdown",
     "changelog": "git-cliff --unreleased --prepend CHANGELOG.md --tag",
-    "check": "bun run format:check && bun run claude-link:check && bun run typecheck && bun run build && bun run test && bun run bench:smoke && bun run artifact:check",
+    "check": "bun run format:check && bun run lint && bun run claude-link:check && bun run typecheck && bun run build && bun run test && bun run bench:smoke && bun run artifact:check",
     "claude-link:check": "test -L CLAUDE.md && test \"$(readlink CLAUDE.md)\" = AGENTS.md",
     "clean": "rm -rf dist bench/reports",
     "format": "oxfmt .",
@@ -83,7 +83,9 @@
     "test": "vitest run && bun test test/*.bun.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "version": "grep -qF \"## [$npm_package_version]\" CHANGELOG.md || { echo \"CHANGELOG.md has no ## [$npm_package_version] section. Run: bun run changelog v$npm_package_version, edit it, then COMMIT it -- the bump refuses a dirty tree.\" >&2; exit 1; }",
-    "bench:matrix": "bun bench/matrix.ts"
+    "bench:matrix": "bun bench/matrix.ts",
+    "lint": "oxlint --type-aware",
+    "lint:fix": "oxlint --type-aware --fix"
   },
   "dependencies": {},
   "devDependencies": {
@@ -95,6 +97,8 @@
     "fastv7": "^1.0.2",
     "git-cliff": "^2.13.1",
     "oxfmt": "^0.63.0",
+    "oxlint": "^1.78.0",
+    "oxlint-tsgolint": "^7.0.2001",
     "playwright": "^1.62.1",
     "pnpm": "^11.21.0",
     "publint": "^0.3.23",

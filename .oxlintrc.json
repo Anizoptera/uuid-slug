@@ -1,0 +1,31 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "import", "promise", "node"],
+  "options": { "typeAware": true },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error"
+  },
+  "rules": {
+    // Fights `noUncheckedIndexedAccess`: every `bytes[i] as number` after an index read is
+    // reported as an unsafe narrowing, when it is the pattern that setting demands.
+    "typescript/no-unsafe-type-assertion": "off",
+    // Its premise is false for typed arrays. `Uint8Array.prototype.slice` returns a Uint8Array,
+    // so `[...bytes.slice(a, b)]` is a conversion to a plain array, not a redundant copy — and
+    // its auto-fix silently removed one, turning a passing assertion into a failing one.
+    "unicorn/no-useless-spread": "off"
+  },
+  // A benchmark that awaits inside a loop is doing so deliberately: running the runtimes
+  // concurrently would have them contend for the same cores and measure the contention rather
+  // than the code. The artifact check is sequential for the same reason it is ordered.
+  "overrides": [
+    {
+      "files": ["bench/**", "scripts/**"],
+      "rules": {
+        "no-await-in-loop": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["dist", "bench/reports"]
+}

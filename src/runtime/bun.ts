@@ -39,11 +39,11 @@ const toOwnBytes = (bytes: Uint8Array, out?: Uint8Array, offset = 0) => {
 };
 
 if (nativeUuidV7) {
-  bunRuntime.uuidV7 = () => nativeUuidV7("hex") as string;
-  bunRuntime.uuidV7Slug = () => nativeUuidV7("base64url") as string;
-  bunRuntime.uuidV7At = (timestamp: number) => nativeUuidV7("hex", timestamp) as string;
+  bunRuntime.uuidV7 = () => nativeUuidV7("hex");
+  bunRuntime.uuidV7Slug = () => nativeUuidV7("base64url");
+  bunRuntime.uuidV7At = (timestamp: number) => nativeUuidV7("hex", timestamp);
   bunRuntime.uuidV7BytesAt = (timestamp: number, out?: Uint8Array, offset = 0) =>
-    toOwnBytes(nativeUuidV7("buffer", timestamp) as Uint8Array, out, offset);
+    toOwnBytes(nativeUuidV7("buffer", timestamp), out, offset);
   bunRuntime.uuidV7Bytes = (out?: Uint8Array, offset = 0) => {
     const bytes = nativeUuidV7("buffer") as Uint8Array;
     return toOwnBytes(bytes, out, offset);

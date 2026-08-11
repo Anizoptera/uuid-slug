@@ -76,6 +76,8 @@ export function instrument(): EntropyInstrument {
     "crypto.getRandomValues",
     (bump) => {
       const host = globalThis.crypto;
+      // Held only to reassign on restore, never invoked through this reference, so no `this` is lost.
+      // eslint-disable-next-line typescript/unbound-method -- saved for restoration, never called
       const original = host.getRandomValues;
       // Returns the argument rather than the wrapped call's result: Web Crypto fills in place
       // and its return value IS the array it was handed, so this is identical behaviour and
@@ -125,6 +127,7 @@ export function instrument(): EntropyInstrument {
       [...counts.entries()]
         .filter(([, calls]) => calls > 0)
         .map(([label]) => label)
+        // eslint-disable-next-line unicorn/no-array-sort -- sorts the array `map` just created
         .sort(),
     restore: () => {
       for (const undo of undoAll) undo();

@@ -86,7 +86,7 @@ async function run(
     env: { ...process.env, UUID_SLUG_ENTROPY_SAMPLES: "50000" },
   });
   if (result.exitCode !== 0) {
-    console.error(`${runtime.label}: ${entry} exited ${result.exitCode}\n${result.stderr}`);
+    console.error(`${runtime.label}: ${entry} exited ${result.exitCode}\n${String(result.stderr)}`);
     return null;
   }
   const records = result.stdout
@@ -94,7 +94,11 @@ async function run(
     .split("\n")
     .filter(Boolean)
     .map((line) => JSON.parse(line) as Record<string, unknown>);
-  const version = String(records[0]?.runtime ?? runtime.label);
+  // Each record's `runtime` is whatever the child process reported, so it is `unknown` here.
+  // Coercing it with `String()` turned a non-string into the literal "[object Object]" in the
+  // report rather than falling back to the label, which is the bug this narrowing removes.
+  const reported = records[0]?.runtime;
+  const version = typeof reported === "string" ? reported : runtime.label;
   return { records, version };
 }
 
@@ -143,8 +147,10 @@ for (const { version, records } of entropy) {
         // generator with no counter re-randomises inside the millisecond and cannot be sorted
         // within one, however good its bits are.
         `${(((r.nonDecreasingPairs as number) / (samples - 1)) * 100).toFixed(2)}%`.padStart(9) +
-        `${r.counterBits}b @ ${((r.counterHolds as number) * 100).toFixed(2)}%`.padStart(16) +
-        `${r.minOnesRatio}-${r.maxOnesRatio}`.padStart(15),
+        `${String(r.counterBits)}b @ ${((r.counterHolds as number) * 100).toFixed(2)}%`.padStart(
+          16,
+        ) +
+        `${String(r.minOnesRatio)}-${String(r.maxOnesRatio)}`.padStart(15),
     );
   }
 }

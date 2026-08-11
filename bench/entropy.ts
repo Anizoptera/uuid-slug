@@ -85,7 +85,7 @@ function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>
 
   let conformingValues = 0;
   let nonDecreasingPairs = 0;
-  const ones = new Array<number>(74).fill(0);
+  const ones = Array.from<number>({ length: 74 }).fill(0);
   for (let i = 0; i < samples; i += 1) {
     const hex = (values[i] ?? "").replaceAll("-", "");
     if (hex[12] === "7" && "89ab".includes(hex[16] ?? "")) conformingValues += 1;

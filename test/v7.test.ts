@@ -107,6 +107,8 @@ describe("uuidv7 buffer handling", () => {
     const target = new Uint8Array(32).fill(0xab);
     const result = generator.uuidV7Bytes(target, 8);
     expect(result).toBe(target);
+    // Spread, not `slice` alone: `Uint8Array.prototype.slice` returns a Uint8Array, and `toEqual`
+    // treats that as unequal to a plain array however identical the contents.
     expect([...target.slice(0, 8)]).toEqual(Array.from<number>({ length: 8 }).fill(0xab));
     expect([...target.slice(24)]).toEqual(Array.from<number>({ length: 8 }).fill(0xab));
   });
@@ -136,6 +138,6 @@ describe("uuidv7 entropy use", () => {
     });
     const first = bytesOf(generator);
     const second = bytesOf(generator);
-    expect([...second.slice(12)]).not.toEqual([...first.slice(12)]);
+    expect(second.slice(12)).not.toEqual(first.slice(12));
   });
 });

@@ -5,7 +5,7 @@ import { UuidSlugError } from "./errors";
 import type { Base64UrlString } from "./types";
 
 export function encodeBase64Url(bytes: Uint8Array): Base64UrlString {
-  return encode(bytes, BASE64URL) as Base64UrlString;
+  return encode(bytes, BASE64URL);
 }
 
 export function decodeBase64Url(value: string, out?: Uint8Array, offset = 0): Error | Uint8Array {
@@ -24,5 +24,5 @@ export function isBase64Url(value: null | string | undefined): value is Base64Ur
   // The empty string decodes to zero bytes without error, but an identifier of no characters is
   // never what a caller means by "is this a slug"; rejecting it keeps the guard usable as one.
   if (!value) return false;
-  return decodeBase64Url(value) instanceof Error ? false : true;
+  return !(decodeBase64Url(value) instanceof Error);
 }

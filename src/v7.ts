@@ -140,7 +140,7 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
     uuidV7() {
       if (!runtime.uuidV7) return fallback.uuidV7();
       try {
-        return runtime.uuidV7() as UuidV7String;
+        return runtime.uuidV7();
       } catch {
         return fallback.uuidV7();
       }

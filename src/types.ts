@@ -23,8 +23,8 @@ export interface FreshValidationOptions {
 }
 
 export interface UuidV7Generator {
-  uuidV7(): UuidV7String;
-  uuidV7Bytes(out?: Uint8Array, offset?: number): Error | Uint8Array;
+  uuidV7(this: void): UuidV7String;
+  uuidV7Bytes(this: void, out?: Uint8Array, offset?: number): Error | Uint8Array;
 }
 
 /**
@@ -106,13 +106,20 @@ export interface UuidSlugCodecOptions {
  */
 export interface UuidSlugCodec {
   readonly sentinels: readonly UuidV7Sentinel[];
-  uuidV4(): UuidV4String;
-  uuidV7(): UuidV7String;
-  uuidV4Bytes(out?: Uint8Array, offset?: number): Error | Uint8Array;
-  uuidV7Bytes(out?: Uint8Array, offset?: number): Error | Uint8Array;
-  uuidV4Slug(): UuidV4Slug;
-  uuidV7Slug(): UuidV7Slug;
-  uuidV7MaskedSlug(): MaskedUuidV7Slug;
+  /**
+   * Every method declares `this: void`, which is load-bearing rather than decoration: the
+   * top-level shortcuts are plain references (`export const uuidV7 = defaultCodec.uuidV7`), so a
+   * method reaching for `this` would break the moment it was detached from the codec. The
+   * annotation makes the compiler reject such an implementation instead of leaving the hazard to
+   * a reviewer, and is what lets those references stay free of `.bind`.
+   */
+  uuidV4(this: void): UuidV4String;
+  uuidV7(this: void): UuidV7String;
+  uuidV4Bytes(this: void, out?: Uint8Array, offset?: number): Error | Uint8Array;
+  uuidV7Bytes(this: void, out?: Uint8Array, offset?: number): Error | Uint8Array;
+  uuidV4Slug(this: void): UuidV4Slug;
+  uuidV7Slug(this: void): UuidV7Slug;
+  uuidV7MaskedSlug(this: void): MaskedUuidV7Slug;
   /**
    * Masking is UUIDv7-only. The tag that detects a wrong schema is carried in the version and
    * variant bits, which are constant for v7 and therefore free; any other version would have to
@@ -120,8 +127,8 @@ export interface UuidSlugCodec {
    * scheme marker. Supporting every version would cost a 23rd character on every masked slug
    * forever, to hide a timestamp that only v7 has.
    */
-  uuidV7ToMaskedSlug(uuid: string): Error | PublicUuidV7Slug;
-  maskedSlugToUuidV7(slug: string): Error | UuidV7String;
+  uuidV7ToMaskedSlug(this: void, uuid: string): Error | PublicUuidV7Slug;
+  maskedSlugToUuidV7(this: void, slug: string): Error | UuidV7String;
   /**
    * Decodes to whatever version comes out, where `maskedSlugToUuidV7` insists on v7.
    *
@@ -131,5 +138,5 @@ export interface UuidSlugCodec {
    * and are rejected by the v7 form. Deleting this on the assumption it was a duplicate was
    * measured to break exactly that migration path.
    */
-  maskedSlugToUuid(slug: string): Error | UuidString;
+  maskedSlugToUuid(this: void, slug: string): Error | UuidString;
 }

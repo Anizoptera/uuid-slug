@@ -16,7 +16,6 @@ import type {
   UuidSlugCodec,
   UuidSlugCodecOptions,
   UuidString,
-  UuidV4Slug,
   UuidV4String,
   UuidV7Sentinel,
   UuidV7String,
@@ -43,15 +42,15 @@ import type { FreshValidationOptions, UuidV7SentinelDefinition } from "./types";
 export const UUID_V7_SENTINEL_DEFINITIONS: readonly UuidV7SentinelDefinition[] = [
   {
     name: "nil",
-    uuid: "00000000-0000-7000-8000-000000000000" as UuidV7String,
+    uuid: "00000000-0000-7000-8000-000000000000",
   },
   {
     name: "anonymousUser",
-    uuid: "00000000-0001-7000-8000-000000000000" as UuidV7String,
+    uuid: "00000000-0001-7000-8000-000000000000",
   },
   {
     name: "unknownUser",
-    uuid: "00000000-0002-7000-8000-000000000000" as UuidV7String,
+    uuid: "00000000-0002-7000-8000-000000000000",
   },
 ];
 
@@ -72,7 +71,7 @@ function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
     if (slug instanceof Error) throw slug;
     const sentinel = {
       name: definition.name,
-      slug: slug as SentinelUuidV7Slug,
+      slug: slug,
       uuid: definition.uuid,
     };
     sentinels.push(sentinel);
@@ -146,14 +145,14 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
   function uuidV7ToMaskedSlug(uuid: string): Error | PublicUuidV7Slug {
     const sentinel = sentinelState.byUuid.get(uuid);
     if (sentinel) return sentinel;
-    return uuidToMaskedSlugWithSchema(uuid, schema) as Error | PublicUuidV7Slug;
+    return uuidToMaskedSlugWithSchema(uuid, schema);
   }
 
   return {
     sentinels: sentinelState.sentinels,
     uuidV4() {
       const native = runtime.uuidV4?.();
-      if (native) return native as UuidV4String;
+      if (native) return native;
       return errorOrThrow(formatUuid(errorOrThrow(generateUuidV4Bytes()))) as UuidV4String;
     },
     uuidV7() {
@@ -162,11 +161,11 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
     uuidV4Bytes: generateUuidV4Bytes,
     uuidV7Bytes: generator.uuidV7Bytes,
     uuidV4Slug() {
-      return errorOrThrow(formatUuidSlug(errorOrThrow(generateUuidV4Bytes()))) as UuidV4Slug;
+      return errorOrThrow(formatUuidSlug(errorOrThrow(generateUuidV4Bytes())));
     },
     uuidV7Slug() {
-      if (runtime.uuidV7Slug) return runtime.uuidV7Slug() as UuidV7Slug;
-      return errorOrThrow(formatUuidSlug(errorOrThrow(generator.uuidV7Bytes()))) as UuidV7Slug;
+      if (runtime.uuidV7Slug) return runtime.uuidV7Slug();
+      return errorOrThrow(formatUuidSlug(errorOrThrow(generator.uuidV7Bytes())));
     },
     uuidV7MaskedSlug() {
       return errorOrThrow(uuidV7BytesToMaskedSlug(errorOrThrow(generator.uuidV7Bytes()), schema));
@@ -210,7 +209,7 @@ export function validateUuidV7SlugFresh(
   const uuid = slugToUuid(slug);
   if (uuid instanceof Error) return uuid;
   const valid = validateUuidV7Fresh(uuid, options);
-  return valid instanceof Error ? valid : (slug as UuidV7Slug);
+  return valid instanceof Error ? valid : slug;
 }
 
 export function validateMaskedUuidV7SlugFresh(
@@ -220,7 +219,7 @@ export function validateMaskedUuidV7SlugFresh(
   const uuid = defaultCodec.maskedSlugToUuidV7(slug);
   if (uuid instanceof Error) return uuid;
   const valid = validateUuidV7Fresh(uuid, options);
-  return valid instanceof Error ? valid : (slug as MaskedUuidV7Slug);
+  return valid instanceof Error ? valid : slug;
 }
 
 export { isUuidSlug, isUuidString, isUuidV4Slug, isUuidV4String, isUuidV7Slug, isUuidV7String };

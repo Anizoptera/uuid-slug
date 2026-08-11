@@ -76,7 +76,7 @@ export function uuidV7BytesToMaskedSlug(
   injectTag(tagged, tagFor(raw, schema.tagBits), schema.tagBits);
   const mixed = new Uint8Array(16);
   schema.mix(tagged, mixed, true);
-  return encode(mixed, alpha, schema.slugId, SCHEMA_ID_BITS) as MaskedUuidV7Slug;
+  return encode(mixed, alpha, schema.slugId, SCHEMA_ID_BITS);
 }
 
 export function maskedSlugToUuidWithSchema(
