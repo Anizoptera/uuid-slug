@@ -56,9 +56,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # Both versions come from `.tool-versions`, the single toolchain declaration
-      # asdf also reads. Bun builds `dist` and Node runs publish-clean, which packs
-      # and signs, so drift between a laptop and a runner is drift in the artifact.
+      # Both versions come from `.tool-versions`, the single toolchain declaration asdf also
+      # reads. Bun builds `dist` and runs publish-clean, which packs; Node is still required
+      # because `npm` is a Node script and it is npm that uploads and signs. Drift in either
+      # version is drift in the artifact, which is why neither comes from runner defaults.
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
@@ -113,7 +114,12 @@ jobs:
             *-*) dist_tag=next ;;
             *) dist_tag=latest ;;
           esac
-          ./node_modules/.bin/publish-clean $mode --tarball-out release-artifacts -- --access public --tag "$dist_tag" --provenance
+          # Run through `bun`, not the bin's own `#!/usr/bin/env node` shebang: the gzip
+          # encoder belongs to whichever runtime executes the CLI, and Bun's (libdeflate)
+          # packs this package into 33,319 bytes against Node's 33,413 for a byte-identical
+          # inner archive. Never switch a released tag between runtimes — a repair re-run
+          # must reproduce the published bytes, and the two encoders do not agree.
+          bun ./node_modules/.bin/publish-clean $mode --tarball-out release-artifacts -- --access public --tag "$dist_tag" --provenance
       # No npm credential is passed to this job. Publishing authenticates with the OIDC
       # identity against the trusted publisher bound to this repository and this workflow
       # *filename*, so renaming or moving this file breaks publishing, and the error will
