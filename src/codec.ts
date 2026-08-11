@@ -179,6 +179,7 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
         ? decoded
         : new UuidSlugError("invalid_uuid_version", "Decoded UUID is not UUIDv7.");
     },
+    maskedSlugToUuid: decodeMasked,
   };
 }
 

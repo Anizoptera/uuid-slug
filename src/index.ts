@@ -68,5 +68,6 @@ export const uuidV4Slug = defaultCodec.uuidV4Slug;
 export const uuidV7Slug = defaultCodec.uuidV7Slug;
 export const uuidV7MaskedSlug = defaultCodec.uuidV7MaskedSlug;
 export const uuidV7ToMaskedSlug = defaultCodec.uuidV7ToMaskedSlug;
+export const maskedSlugToUuid = defaultCodec.maskedSlugToUuid;
 export const maskedSlugToUuidV7 = defaultCodec.maskedSlugToUuidV7;
 export const UUID_V7_SENTINELS = defaultCodec.sentinels;

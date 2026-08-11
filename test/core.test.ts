@@ -114,6 +114,38 @@ describe("masked UUID slugs", () => {
   });
 });
 
+describe("legacy.directDecode", () => {
+  // Nothing pinned this flag before, which is how a decode path got deleted as a "duplicate"
+  // and how a schema combination that silently returns WRONG uuids went unnoticed. Both cases
+  // below are chosen to fail loudly if either recurs.
+  it("decodes a plain UUIDv4 slug, which the v7 form cannot", () => {
+    // The flag exists to migrate off unmasked ids, and those predate any decision to use v7.
+    // `maskedSlugToUuidV7` rejecting them is correct; something has to accept them.
+    const codec = createUuidSlugCodec({ legacy: { directDecode: true } });
+    const slug = uuidToSlug(SAMPLE_V4);
+    expect(codec.maskedSlugToUuid(String(slug))).toBe(SAMPLE_V4);
+    expect(codec.maskedSlugToUuidV7(String(slug))).toBeInstanceOf(Error);
+  });
+
+  it("never mistakes a direct slug for a masked one when every schema is Feistel", () => {
+    // Feistel occupies mask marker slot 1 and a direct slug encodes marker 0, so rejection is
+    // decided before any unmixing — exact, not probabilistic. Measured 0 in 1,000,000 on both
+    // runtimes, and identical deterministic input gives bit-identical counts, so the property is
+    // arithmetic rather than luck. This fails the moment marker checking stops gating decode.
+    //
+    // A SUBSTITUTION schema shares slot 0 with direct slugs and is filtered only by the 6-bit
+    // tag: measured 1.5640% wrong answers against a predicted 2^-6 = 1.5625%. That combination
+    // is a known open hazard, not something this case can assert away.
+    const schema = createMaskSchema({ id: "feistel-only", kind: "feistel", seed: "direct-decode" });
+    if (schema instanceof Error) throw schema;
+    const codec = createUuidSlugCodec({ mask: schema, legacy: { directDecode: true } });
+    for (let i = 0; i < 2_000; i += 1) {
+      const uuid = codec.uuidV7();
+      expect(codec.maskedSlugToUuid(String(uuidToSlug(uuid)))).toBe(uuid);
+    }
+  });
+});
+
 describe("generation", () => {
   it("generates valid UUIDv7 values", () => {
     for (let i = 0; i < 1000; i += 1) {

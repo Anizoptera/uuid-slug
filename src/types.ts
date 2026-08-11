@@ -122,4 +122,14 @@ export interface UuidSlugCodec {
    */
   uuidV7ToMaskedSlug(uuid: string): Error | PublicUuidV7Slug;
   maskedSlugToUuidV7(slug: string): Error | UuidV7String;
+  /**
+   * Decodes to whatever version comes out, where `maskedSlugToUuidV7` insists on v7.
+   *
+   * NOT a redundant widening of that method, which is what it looks like: with
+   * `legacy.directDecode` enabled a slug that matches no schema is tried as a plain unmasked
+   * slug, and a system migrating off unmasked ids may well have UUIDv4 ones. Those decode here
+   * and are rejected by the v7 form. Deleting this on the assumption it was a duplicate was
+   * measured to break exactly that migration path.
+   */
+  maskedSlugToUuid(slug: string): Error | UuidString;
 }
