@@ -1,34 +1,46 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Measures what every UUIDv7 implementation actually does with randomness, so a choice between
- * them rests on observation rather than on each package's description of itself.
+ * Measures what every UUIDv7 implementation does with randomness, so a choice between them
+ * rests on observation rather than on each package's description of itself.
  *
  * REPORTS, never gates. The subjects are third-party libraries whose behaviour changes only
  * when a version is bumped here, so running this on every check would spend time re-deriving a
- * constant — and would fail this repository's lane for a property of somebody else's package
- * that nobody here can fix. THIS package's own guarantees are gated in `test/entropy.test.ts`
- * and `test/v7.test.ts`, which are deterministic and run in milliseconds.
+ * constant, and failing this repository's lane for a property of somebody else's package helps
+ * nobody. THIS package's guarantees are gated in `test/entropy.test.ts` and
+ * `test/runtime.bun.test.ts`, deterministically and in milliseconds.
  *
- * It replaces a collision count over 100,000 samples, which was theatre: a v7 holds 74 random
- * bits, so a repeat cannot be observed at that sample size even from an implementation seeded
- * with a constant. A check that cannot fail measures nothing.
+ * Three measures, no thresholds and no statistics. An earlier version of this file reached for
+ * a monobit test, found it blind to half of a counter, bolted a lag-1 flip rate on top and
+ * documented the period-four bit that still evaded both — three layers to answer a question
+ * with an exact answer. Measured 2026-08-11, that stack reported 11, 31 and 41 structured bits
+ * where the direct measurement below reports 12, 32 and 42: wrong, on every candidate, in the
+ * direction that flatters. When a property can be measured exactly, estimating it is a bug.
  *
- * WHAT EACH COLUMN ANSWERS, and why it is worth the loop:
+ * - `distinct` counts different random fields. This is the catastrophic-failure detector, and
+ *   the reason it is worth its line: a generator with a constant seed, a small pool of
+ *   pre-drawn values, or a weak LCG shows up instantly and unmistakably. Measured over 200,000
+ *   samples: a constant seed yields 1 distinct value, a pool of 1,000 yields 1,000, a textbook
+ *   LCG yields 5,596. Nothing else here catches a generator that repeats itself while every
+ *   individual value still looks fine.
+ * - `counter` is the width, in bits, of a leading counter that advances by exactly one within a
+ *   millisecond, printed with the share of consecutive pairs that actually obey it. Both halves
+ *   are needed and neither is a threshold. At ~100% those bits are fully determined by the
+ *   previous value, so 74 minus the width is what an attacker cannot guess. Well below that, the
+ *   width means something else entirely: `uuidv7-js` reports 42 bits at 50%, which is RFC 9562
+ *   §6.2 Method 3 — a monotonic counter advanced by a RANDOM increment rather than by one, so
+ *   those 42 bits are partly determined and partly not. A single derived "unguessable bits"
+ *   column would have to print a confident number for that row, and every number it could print
+ *   is wrong, which is why the reader gets the two measured quantities instead. A counter is a
+ *   sanctioned design and a fact about unguessability, not a defect.
+ * - `P(1)` is the narrowest and widest share of ones across the 74 random bit positions. A
+ *   stuck or heavily skewed bit is visible immediately without a significance threshold; a
+ *   healthy generator sits at 0.50 on both ends.
  *
- * - `source`   Which entropy source the implementation reached for. See `instrument.ts` for why
- *              an unobserved result means unmeasured, never insecure.
- * - `v7`       Share of values whose version and variant bits are correct. These sit in bits the
- *              entropy source also writes, so a missing mask yields something that looks
- *              well-formed and is not a v7.
- * - `ordered`  Share of consecutive pairs that do not go backwards. Time ordering is the whole
- *              reason to prefer v7 over v4, and it is a property of the generator, not the format.
- * - `guessable` Random-field bit positions whose skew is past 6 sigma — far beyond chance at
- *              these sample sizes, so it is structure. In practice it is a counter: legitimate
- *              under RFC 9562 §6.2, and it means those bits are PREDICTABLE from a previous
- *              value and must not be counted toward unguessability.
- * - `Δbits`    Mean bits differing between consecutive values, out of 74. Half, near 37, means
- *              consecutive values are unrelated; far below it means one value narrows the next.
+ * What this does NOT do: judge subtle statistical quality. A generator that passes all three
+ * and is still weak needs a real battery (PractRand, dieharder), which is a different tool.
+ * `instrument.ts` covers the one case no output inspection ever can — a library calling
+ * `Math.random`, whose values are indistinguishable from a CSPRNG's by any test here.
  */
 import { candidates, type BenchCandidate } from "./candidates";
 import { instrument } from "./instrument";
@@ -36,110 +48,99 @@ import { instrument } from "./instrument";
 const smoke = process.argv.includes("--smoke");
 const samples = Number(process.env.UUID_SLUG_ENTROPY_SAMPLES ?? (smoke ? 20_000 : 200_000));
 
-/** Bits 52–63 (`rand_a`) and 66–127 (`rand_b`): everything RFC 9562 declares random. */
-const RANDOM_BITS: readonly number[] = [
-  ...Array.from({ length: 12 }, (_, i) => 52 + i),
-  ...Array.from({ length: 62 }, (_, i) => 66 + i),
-];
+/** Widest counter this scans for: the whole random field. */
+const FIELD_BITS = 74n;
 
-const hexToBytes = (uuid: string, out: Uint8Array) => {
-  let index = 0;
-  for (let i = 0; i < uuid.length; i += 1) {
-    const code = uuid.charCodeAt(i);
-    if (code === 45 /* '-' */) continue;
-    const nibble = code <= 57 ? code - 48 : (code | 0x20) - 87;
-    if (index % 2 === 0) out[index >> 1] = nibble << 4;
-    else out[index >> 1] = (out[index >> 1] ?? 0) | nibble;
-    index += 1;
-  }
+/** The 74 bits RFC 9562 declares random — `rand_a` (12) then `rand_b` (62) — as one integer. */
+const randomField = (uuid: string): bigint => {
+  const value = BigInt(`0x${uuid.replaceAll("-", "")}`);
+  return (((value >> 64n) & 0xfffn) << 62n) | (value & ((1n << 62n) - 1n));
 };
 
-const bitAt = (bytes: Uint8Array, position: number) =>
-  ((bytes[position >> 3] ?? 0) >> (7 - (position & 7))) & 1;
+const timestamp = (uuid: string) => uuid.replaceAll("-", "").slice(0, 12);
 
 interface Report {
   candidate: string;
   samples: number;
   sources: string[];
+  distinctFields: number;
   conformingValues: number;
   nonDecreasingPairs: number;
-  maxBiasSigma: number;
-  /**
-   * Positions carrying structure rather than entropy. A LOWER BOUND — see `guessableBits`
-   * below for the one counter bit that evades both detectors.
-   */
-  guessableBits: number[];
-  meanConsecutiveHamming: number;
+  counterBits: number;
+  counterHolds: number;
+  minOnesRatio: number;
+  maxOnesRatio: number;
 }
 
 function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>): Report | null {
   if (!candidate.uuidV7) return null;
-  const ones = new Array<number>(RANDOM_BITS.length).fill(0);
-  const flips = new Array<number>(RANDOM_BITS.length).fill(0);
-  const current = new Uint8Array(16);
-  const previous = new Uint8Array(16);
-  let conformingValues = 0;
-  let nonDecreasingPairs = 0;
-  let hammingTotal = 0;
 
   sources.reset();
-  for (let i = 0; i < samples; i += 1) {
-    hexToBytes(candidate.uuidV7(), current);
-    if ((current[6] ?? 0) >> 4 === 0x7 && (current[8] ?? 0) >> 6 === 0b10) conformingValues += 1;
+  const values: string[] = [];
+  for (let i = 0; i < samples; i += 1) values.push(candidate.uuidV7());
+  const used = sources.used();
 
-    let hamming = 0;
-    for (let b = 0; b < RANDOM_BITS.length; b += 1) {
-      const bit = bitAt(current, RANDOM_BITS[b] ?? 0);
-      ones[b] = (ones[b] ?? 0) + bit;
-      if (i > 0 && bit !== bitAt(previous, RANDOM_BITS[b] ?? 0)) {
-        hamming += 1;
-        flips[b] = (flips[b] ?? 0) + 1;
-      }
-    }
-    if (i > 0) {
-      hammingTotal += hamming;
-      // Byte order over all 16 bytes is the order a database index imposes.
-      let comparison = 0;
-      for (let k = 0; k < 16 && comparison === 0; k += 1)
-        comparison = (current[k] ?? 0) - (previous[k] ?? 0);
-      if (comparison >= 0) nonDecreasingPairs += 1;
-    }
-    previous.set(current);
+  const fields = values.map(randomField);
+  const distinctFields = new Set(fields).size;
+
+  let conformingValues = 0;
+  let nonDecreasingPairs = 0;
+  const ones = new Array<number>(74).fill(0);
+  for (let i = 0; i < samples; i += 1) {
+    const hex = (values[i] ?? "").replaceAll("-", "");
+    if (hex[12] === "7" && "89ab".includes(hex[16] ?? "")) conformingValues += 1;
+    // Lexicographic order over the canonical form is the order a database index imposes.
+    if (i > 0 && hex >= (values[i - 1] ?? "").replaceAll("-", "")) nonDecreasingPairs += 1;
+    const field = fields[i] ?? 0n;
+    for (let b = 0; b < 74; b += 1)
+      ones[b] = (ones[b] ?? 0) + Number((field >> BigInt(73 - b)) & 1n);
   }
 
-  // Two independent tests, unioned, because either alone is blind to half of a counter.
-  //
-  // A fair bit is Binomial(n, 1/2): mean n/2, sd sqrt(n)/2, so six sigma is far past anything
-  // chance produces here and what clears it is structure. That is the MARGINAL frequency, and
-  // it sees only a counter's high bits, which sit near zero. The low bits of a counter are
-  // uniform over any run — measured 2026-08-11 against `Bun.randomUUIDv7` over 100,000 values,
-  // the counter's least significant bit scored P(1) = 0.500 at z = -0.1, a flawless result
-  // from a bit that is fully determined by its predecessor.
-  //
-  // The LAG-1 flip rate catches those: a random bit differs from the previous value's bit half
-  // the time, a counter's lowest bit differs every time (z = +316 in that same run) and the
-  // ones above it flip at 1/4, 1/8, 1/16 and so on. Of Bun's twelve counter bits, the marginal
-  // test found six and the union finds eleven.
-  //
-  // The residue is exact and worth stating: a counter bit of period four flips at exactly half
-  // and is uniform at exactly half, so it passes both. Catching it needs a lag-2 test, and one
-  // bit in seventy-four does not pay for the third detector. Read the column as a floor.
-  const deviation = Math.sqrt(samples) / 2;
-  const flipDeviation = Math.sqrt(samples - 1) / 2;
-  const sigmas = ones.map((count) => (count - samples / 2) / deviation);
-  const flipSigmas = flips.map((count) => (count - (samples - 1) / 2) / flipDeviation);
-  const structured = (index: number) =>
-    Math.abs(sigmas[index] ?? 0) > 6 || Math.abs(flipSigmas[index] ?? 0) > 6;
+  // Same-millisecond pairs only: across a millisecond boundary every implementation reseeds,
+  // so a pair spanning one says nothing about whether a counter is running inside a tick.
+  const pairs: [bigint, bigint][] = [];
+  for (let i = 1; i < samples; i += 1)
+    if (timestamp(values[i] ?? "") === timestamp(values[i - 1] ?? ""))
+      pairs.push([fields[i - 1] ?? 0n, fields[i] ?? 0n]);
 
+  // The width whose leading slice advances by exactly one most often, with the share of pairs that
+  // obey it reported beside it instead of thresholded. Two properties of this scan are worth
+  // stating because both were got wrong first. The +1 property does NOT grow with width: it peaks
+  // AT the counter's true width and fails on either side, since a narrower slice holds only the
+  // counter's high bits (which do not step by one) and a wider one drags in random bits. And
+  // unanimity is the wrong bar: a 12-bit counter holds 4096 values per millisecond, so a fast
+  // generator exhausts and wraps inside one tick, and a single wrap among 200,000 pairs erased the
+  // whole measurement. A share near 1 means a counter of that width; the low shares an
+  // unstructured field yields are printed too, so no rule in this file decides which is which.
+  let counterBits = 0;
+  let counterHolds = 0;
+  if (pairs.length > 100)
+    for (let width = 1n; width <= FIELD_BITS; width += 1n) {
+      const shift = FIELD_BITS - width;
+      let held = 0;
+      for (const [before, after] of pairs) if (after >> shift === (before >> shift) + 1n) held += 1;
+      const share = held / pairs.length;
+      // `>=` resolves a tie to the WIDER slice. Ties are not expected — beside a real counter the
+      // neighbouring widths collapse to chance — so this only fixes the degenerate case where no
+      // width beats another and the answer should be the whole field rather than its first bit.
+      if (share >= counterHolds) {
+        counterHolds = share;
+        counterBits = Number(width);
+      }
+    }
+
+  const ratios = ones.map((count) => count / samples);
   return {
     candidate: candidate.name,
     samples,
-    sources: sources.used(),
+    sources: used,
+    distinctFields,
     conformingValues,
     nonDecreasingPairs,
-    maxBiasSigma: Number(Math.max(...sigmas.map(Math.abs)).toFixed(2)),
-    guessableBits: RANDOM_BITS.filter((_, i) => structured(i)),
-    meanConsecutiveHamming: Number((hammingTotal / (samples - 1)).toFixed(2)),
+    counterBits,
+    counterHolds: Number(counterHolds.toFixed(4)),
+    minOnesRatio: Number(Math.min(...ratios).toFixed(3)),
+    maxOnesRatio: Number(Math.max(...ratios).toFixed(3)),
   };
 }
 
@@ -154,17 +155,17 @@ if (sources.unavailable.length > 0)
 
 const percent = (part: number, whole: number) => `${((part / whole) * 100).toFixed(1)}%`;
 console.error(
-  `\n${"candidate".padEnd(16)}${"entropy source".padEnd(26)}${"v7".padStart(7)}${"ordered".padStart(9)}${"guessable".padStart(11)}${"Δbits".padStart(7)}`,
+  `\n${"candidate".padEnd(16)}${"entropy source".padEnd(25)}${"distinct".padStart(9)}${"v7".padStart(7)}${"ordered".padStart(8)}${"counter".padStart(16)}${"P(1) range".padStart(15)}`,
 );
 for (const r of reports)
   console.error(
     r.candidate.padEnd(16) +
-      // "unobserved" states only what was seen. The cause may be a native generator drawing
-      // below JavaScript or a reference captured at import; both are unmeasured, neither is a
-      // finding, and naming one of them here would assert what this instrument cannot see.
-      (r.sources.length > 0 ? r.sources.join(",") : "unobserved").slice(0, 25).padEnd(26) +
+      // "unobserved" states only what was seen: a native generator drawing below JavaScript and
+      // a reference captured at import are both unmeasured, and neither is a finding.
+      (r.sources.length > 0 ? r.sources.join(",") : "unobserved").slice(0, 24).padEnd(25) +
+      String(r.distinctFields).padStart(9) +
       percent(r.conformingValues, r.samples).padStart(7) +
-      percent(r.nonDecreasingPairs, r.samples - 1).padStart(9) +
-      `${r.guessableBits.length}/74`.padStart(11) +
-      String(r.meanConsecutiveHamming).padStart(7),
+      percent(r.nonDecreasingPairs, r.samples - 1).padStart(8) +
+      `${r.counterBits}b @ ${(r.counterHolds * 100).toFixed(2)}%`.padStart(16) +
+      `${r.minOnesRatio}-${r.maxOnesRatio}`.padStart(15),
   );

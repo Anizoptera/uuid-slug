@@ -43,5 +43,14 @@ export function sourcesUsedBy(generate: () => unknown, calls = 100): string[] {
   }
 }
 
+/**
+ * Distinct outputs over `calls` draws, which is the only check here that catches a randomness
+ * source failing GROSSLY rather than subtly. A constant seed, a pool of pre-drawn values or a
+ * weak LCG each satisfies every per-value assertion in this suite — correct version, correct
+ * variant, correct length, ascending timestamps — and each collapses this number immediately.
+ */
+export const distinctValuesFrom = (generate: () => unknown, calls = 5_000): number =>
+  new Set(Array.from({ length: calls }, () => String(generate()))).size;
+
 export const insecureAmong = (sources: readonly string[]): string[] =>
   sources.filter((source) => INSECURE_SOURCES.includes(source));

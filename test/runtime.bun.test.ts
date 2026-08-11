@@ -11,7 +11,13 @@
  */
 import { describe, expect, test } from "bun:test";
 
-import { codec, generators, insecureAmong, sourcesUsedBy } from "./entropy-probe";
+import {
+  codec,
+  distinctValuesFrom,
+  generators,
+  insecureAmong,
+  sourcesUsedBy,
+} from "./entropy-probe";
 import { createUuidSlugCodec, isUuidV7String } from "../src/index";
 
 describe("bun runtime", () => {
@@ -24,6 +30,12 @@ describe("bun runtime", () => {
   test("never reaches for Math.random on any generation path", () => {
     for (const [name, generate] of generators) {
       expect([name, insecureAmong(sourcesUsedBy(generate))]).toEqual([name, []]);
+    }
+  });
+
+  test("never repeats a value on any generation path", () => {
+    for (const [name, generate] of generators) {
+      expect([name, distinctValuesFrom(generate)]).toEqual([name, 5_000]);
     }
   });
 

@@ -14,11 +14,24 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { codec, generators, insecureAmong, sourcesUsedBy } from "./entropy-probe";
+import {
+  codec,
+  distinctValuesFrom,
+  generators,
+  insecureAmong,
+  sourcesUsedBy,
+} from "./entropy-probe";
 
 describe("entropy source", () => {
   it.each(generators)("never reaches for Math.random in %s", (_name, generate) => {
     expect(insecureAmong(sourcesUsedBy(generate))).toEqual([]);
+  });
+
+  it.each(generators)("never repeats a value in %s", (_name, generate) => {
+    // The instrument above proves WHICH source was called; this proves the source is producing
+    // fresh bits. A seed frozen at module load, a reused buffer, or a pool of pre-drawn values
+    // all call `getRandomValues` exactly as expected and satisfy every other case in this suite.
+    expect(distinctValuesFrom(generate)).toBe(5_000);
   });
 
   it("draws its own randomness from a source that can be shown to be cryptographic", () => {

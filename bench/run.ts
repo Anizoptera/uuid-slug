@@ -4,12 +4,14 @@
  * Throughput of each UUID implementation, in one process so every candidate meets the same
  * JIT, allocator and clock.
  *
- * Speed only. The uniqueness stress that used to live here counted collisions over 100,000
- * values and was removed rather than kept "just in case": a v7 carries 74 random bits, so a
- * repeat cannot occur at that sample size even from an implementation seeded with a constant,
- * and a check that cannot fail is time spent to learn nothing. What it was reaching for —
- * whether those bits are actually unpredictable — is measured properly in `entropy.ts`, which
- * finds the counters a collision count never could.
+ * Speed only. The uniqueness stress that used to live here was deleted on the argument that a
+ * 74-bit field cannot repeat at that sample size, so the check could never fail. The argument
+ * was wrong, and it was wrong in the way that matters: it reasoned about a HEALTHY generator's
+ * birthday bound, which says nothing about a broken one. Measured over 200,000 values, a
+ * constant seed yields ONE distinct field, a pool of pre-drawn values yields the pool, and a
+ * textbook LCG yields 5,596 — the gross failures a collision count catches instantly and every
+ * per-value conformance check passes straight through. It lives in `entropy.ts` as `distinct`,
+ * beside the counter measurement, so both run over one sample set instead of two.
  */
 import { performance } from "node:perf_hooks";
 
