@@ -7,6 +7,6 @@
 - Sentinel slugs are always direct legacy/raw UUID slugs and are precomputed per codec instance.
 - Benchmark dependencies stay dev-only and must not appear in the packed artifact.
 - Publish through `publish-clean`, validate the final cleaned npm tarball, and pass `--access public --tag latest --provenance` unless another release policy is intentional.
-- Keep `@anizoptera/publish-clean` as an npm dependency, not a GitHub SHA; regenerate `bun.lock` after the package exists on npm.
+- Keep `@anizoptera/publish-clean` as a normal npm dependency. Never pin it to a GitHub SHA or tarball URL: this package publishes through it, so a source nobody else can resolve makes the release unreproducible for anyone but us.
 - Keep npm publication in `.github/workflows/release.yml`; npm trusted publishing is keyed by workflow filename.
 - Run `bun run check` before committing.

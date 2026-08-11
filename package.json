@@ -1,14 +1,17 @@
 {
   "name": "@anizoptera/uuid-slug",
   "version": "0.2.0",
-  "description": "Zero-dependency UUID v4/v7 generation, direct base64url slugs, and configurable masked UUID slugs.",
+  "description": "Short URL-safe UUIDs: 22-character base64url slugs, plus reversible masking that hides the UUIDv7 timestamp. Zero dependencies.",
   "keywords": [
     "base64url",
     "browser",
     "bun",
     "deno",
+    "identifier",
     "node",
+    "short-uuid",
     "slug",
+    "url-safe",
     "uuid",
     "uuidv7",
     "zero-dependencies"
