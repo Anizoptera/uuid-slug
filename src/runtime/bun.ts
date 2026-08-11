@@ -1,35 +1,34 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { UuidRuntimeError } from "../errors";
 import { runtime as webRuntime } from "./web";
 import type { Runtime } from "./types";
 
-type BunUuid = {
-  randomUUIDv7(format?: "base64url" | "buffer" | "hex"): string | Uint8Array;
-};
+type BunUuid = (format?: "base64url" | "buffer" | "hex") => string | Uint8Array;
 
-function bunObject(): BunUuid {
-  const candidate = globalThis as typeof globalThis & { Bun?: BunUuid };
-  if (!candidate.Bun?.randomUUIDv7) throw new UuidRuntimeError("Bun.randomUUIDv7 is unavailable.");
-  return candidate.Bun;
-}
+/**
+ * Probed once at module load, not per call. This module is only ever selected by the `bun`
+ * export condition, so the global is there; what can differ is the version, and a Bun old
+ * enough to lack `randomUUIDv7` should degrade to the portable generator rather than throw
+ * from a method that claims to exist. `Runtime.uuidV7` and friends are optional so that
+ * absence is representable — a method that exists but throws makes the caller catch and fall
+ * back on every single call instead.
+ */
+const bun = (globalThis as typeof globalThis & { Bun?: { randomUUIDv7?: BunUuid } }).Bun;
+const nativeUuidV7 = bun?.randomUUIDv7?.bind(bun);
 
-const bunRuntime: Runtime = {
-  fillRandom: webRuntime.fillRandom,
-  uuidV7() {
-    return bunObject().randomUUIDv7("hex") as string;
-  },
-  uuidV7Bytes(out?: Uint8Array, offset = 0) {
-    const bytes = bunObject().randomUUIDv7("buffer") as Uint8Array;
+const bunRuntime: Runtime = { fillRandom: webRuntime.fillRandom };
+
+if (webRuntime.uuidV4) bunRuntime.uuidV4 = webRuntime.uuidV4;
+
+if (nativeUuidV7) {
+  bunRuntime.uuidV7 = () => nativeUuidV7("hex") as string;
+  bunRuntime.uuidV7Slug = () => nativeUuidV7("base64url") as string;
+  bunRuntime.uuidV7Bytes = (out?: Uint8Array, offset = 0) => {
+    const bytes = nativeUuidV7("buffer") as Uint8Array;
     if (!out) return bytes;
     out.set(bytes, offset);
     return out;
-  },
-  uuidV7Slug() {
-    return bunObject().randomUUIDv7("base64url") as string;
-  },
-};
-
-if (webRuntime.uuidV4) bunRuntime.uuidV4 = webRuntime.uuidV4;
+  };
+}
 
 export const runtime = bunRuntime;
