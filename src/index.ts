@@ -54,8 +54,6 @@ export {
   parseUuid,
   parseUuidSlug,
   slugToUuid,
-  slugToUuidBytes,
-  uuidBytesToSlug,
   uuidToSlug,
 } from "./uuid";
 export { createRuntimeGenerator, createUuidV7Generator } from "./v7";
@@ -69,8 +67,6 @@ export const uuidV7Bytes = defaultCodec.uuidV7Bytes;
 export const uuidV4Slug = defaultCodec.uuidV4Slug;
 export const uuidV7Slug = defaultCodec.uuidV7Slug;
 export const uuidV7MaskedSlug = defaultCodec.uuidV7MaskedSlug;
-export const uuidToMaskedSlug = defaultCodec.uuidToMaskedSlug;
-export const maskedSlugToUuid = defaultCodec.maskedSlugToUuid;
 export const uuidV7ToMaskedSlug = defaultCodec.uuidV7ToMaskedSlug;
 export const maskedSlugToUuidV7 = defaultCodec.maskedSlugToUuidV7;
 export const UUID_V7_SENTINELS = defaultCodec.sentinels;

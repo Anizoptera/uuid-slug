@@ -88,13 +88,13 @@ export function isUuidV7Bytes(bytes: Uint8Array): boolean {
   return bytes.length === 16 && uuidVersion(bytes) === 7 && isRfcVariant(bytes);
 }
 
-export function uuidBytesToSlug(bytes: Uint8Array, offset = 0): Error | UuidSlug {
+export function formatUuidSlug(bytes: Uint8Array, offset = 0): Error | UuidSlug {
   if (offset < 0 || offset + 16 > bytes.length)
     return new UuidSlugError("invalid_buffer", "UUID byte buffer is too small.");
   return encodeBase64Url(bytes.subarray(offset, offset + 16)) as UuidSlug;
 }
 
-export function slugToUuidBytes(slug: string, out?: Uint8Array, offset = 0): Error | Uint8Array {
+export function parseUuidSlug(slug: string, out?: Uint8Array, offset = 0): Error | Uint8Array {
   if (slug.length !== SLUG_LENGTH)
     return new UuidSlugError("invalid_uuid_slug", "UUID slug must be 22 characters.");
   return decodeBase64Url(slug, out, offset);
@@ -103,37 +103,29 @@ export function slugToUuidBytes(slug: string, out?: Uint8Array, offset = 0): Err
 export function uuidToSlug(uuid: string): Error | UuidSlug {
   const bytes = parseUuid(uuid);
   if (bytes instanceof Error) return bytes;
-  return uuidBytesToSlug(bytes);
+  return formatUuidSlug(bytes);
 }
 
 export function slugToUuid(slug: string): Error | UuidString {
-  const bytes = slugToUuidBytes(slug);
+  const bytes = parseUuidSlug(slug);
   if (bytes instanceof Error) return bytes;
   return formatUuid(bytes);
 }
 
-export function formatUuidSlug(bytes: Uint8Array, offset = 0): Error | UuidSlug {
-  return uuidBytesToSlug(bytes, offset);
-}
-
-export function parseUuidSlug(slug: string, out?: Uint8Array, offset = 0): Error | Uint8Array {
-  return slugToUuidBytes(slug, out, offset);
-}
-
 export function isUuidSlug(slug: null | string | undefined): slug is UuidSlug {
   if (!slug || slug.length !== SLUG_LENGTH) return false;
-  return slugToUuidBytes(slug) instanceof Error ? false : true;
+  return parseUuidSlug(slug) instanceof Error ? false : true;
 }
 
 export function isUuidV4Slug(slug: null | string | undefined): slug is UuidV4Slug {
   if (!slug) return false;
-  const bytes = slugToUuidBytes(slug);
+  const bytes = parseUuidSlug(slug);
   return bytes instanceof Error ? false : uuidVersion(bytes) === 4 && isRfcVariant(bytes);
 }
 
 export function isUuidV7Slug(slug: null | string | undefined): slug is UuidV7Slug {
   if (!slug) return false;
-  const bytes = slugToUuidBytes(slug);
+  const bytes = parseUuidSlug(slug);
   return bytes instanceof Error ? false : uuidVersion(bytes) === 7 && isRfcVariant(bytes);
 }
 

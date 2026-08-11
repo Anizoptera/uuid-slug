@@ -14,7 +14,7 @@
  */
 import { describe, expect, test } from "bun:test";
 import { BASE32HEX, BASE64URL, decodeInto, encode } from "../src/alphabet";
-import { createUuidSlugCodec } from "../src/index";
+import { createUuidSlugCodec, uuidToSlug } from "../src/index";
 import { LEGACY_MASK_SCHEMA_V1 } from "../src/schema";
 import golden from "./fixtures-wire-format.json";
 
@@ -28,7 +28,7 @@ describe("wire format is identical across runtimes", () => {
   for (const vector of golden) {
     test(`${vector.schema} ${vector.uuid}`, () => {
       const codec = codecs[vector.schema as keyof typeof codecs];
-      expect(codec.uuidToSlug(vector.uuid)).toBe(vector.direct);
+      expect(uuidToSlug(vector.uuid)).toBe(vector.direct);
       expect(codec.uuidV7ToMaskedSlug(vector.uuid)).toBe(vector.masked);
       expect(codec.maskedSlugToUuidV7(vector.masked)).toBe(vector.uuid);
       expect(codec.maskedSlugToUuidV7(vector.maskedLegacy)).toBe(vector.uuid);

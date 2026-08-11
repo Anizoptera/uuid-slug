@@ -10,11 +10,9 @@ import {
 import { createMaskSchema, DEFAULT_MASK_SCHEMA, DEFAULT_MASK_SCHEMA_LEGACY } from "./schema";
 import type {
   MaskSchema,
-  MaskedUuidSlug,
   MaskedUuidV7Slug,
   PublicUuidV7Slug,
   SentinelUuidV7Slug,
-  UuidSlug,
   UuidSlugCodec,
   UuidSlugCodecOptions,
   UuidString,
@@ -36,9 +34,7 @@ import {
   isUuidV7String,
   isUuidString,
   parseUuid,
-  parseUuidSlug,
   slugToUuid,
-  uuidBytesToSlug,
   uuidToSlug,
   extractUuidV7Timestamp,
 } from "./uuid";
@@ -166,21 +162,15 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
     uuidV4Bytes: generateUuidV4Bytes,
     uuidV7Bytes: generator.uuidV7Bytes,
     uuidV4Slug() {
-      return errorOrThrow(uuidBytesToSlug(errorOrThrow(generateUuidV4Bytes()))) as UuidV4Slug;
+      return errorOrThrow(formatUuidSlug(errorOrThrow(generateUuidV4Bytes()))) as UuidV4Slug;
     },
     uuidV7Slug() {
       if (runtime.uuidV7Slug) return runtime.uuidV7Slug() as UuidV7Slug;
-      return errorOrThrow(uuidBytesToSlug(errorOrThrow(generator.uuidV7Bytes()))) as UuidV7Slug;
+      return errorOrThrow(formatUuidSlug(errorOrThrow(generator.uuidV7Bytes()))) as UuidV7Slug;
     },
     uuidV7MaskedSlug() {
       return errorOrThrow(uuidV7BytesToMaskedSlug(errorOrThrow(generator.uuidV7Bytes()), schema));
     },
-    uuidToSlug,
-    slugToUuid,
-    uuidToMaskedSlug(uuid) {
-      return uuidV7ToMaskedSlug(uuid) as Error | MaskedUuidSlug;
-    },
-    maskedSlugToUuid: decodeMasked,
     uuidV7ToMaskedSlug,
     maskedSlugToUuidV7(slug) {
       const decoded = decodeMasked(slug);
@@ -189,10 +179,6 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
         ? decoded
         : new UuidSlugError("invalid_uuid_version", "Decoded UUID is not UUIDv7.");
     },
-    parseUuid,
-    formatUuid,
-    parseUuidSlug,
-    formatUuidSlug,
   };
 }
 

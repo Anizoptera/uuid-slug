@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "../src/alphabet";
 import { decodeBase64Url, encodeBase64Url, isBase64Url } from "../src/base64url";
-import { createUuidSlugCodec } from "../src/index";
+import { createUuidSlugCodec, uuidToSlug } from "../src/index";
 import { LEGACY_MASK_SCHEMA_V1 } from "../src/schema";
 import golden from "./fixtures-wire-format.json";
 
@@ -113,7 +113,7 @@ describe("wire format compatibility", () => {
 
   it.each(golden)("$schema $uuid encodes and decodes unchanged", (vector) => {
     const codec = codecs[vector.schema as keyof typeof codecs];
-    expect(codec.uuidToSlug(vector.uuid)).toBe(vector.direct);
+    expect(uuidToSlug(vector.uuid)).toBe(vector.direct);
     expect(codec.uuidV7ToMaskedSlug(vector.uuid)).toBe(vector.masked);
     expect(codec.maskedSlugToUuidV7(vector.masked)).toBe(vector.uuid);
     // `maskedLegacy` holds the slug the substitution scheme issued before the Feistel became the

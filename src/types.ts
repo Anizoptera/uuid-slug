@@ -95,6 +95,15 @@ export interface UuidSlugCodecOptions {
   readonly sentinels?: readonly UuidV7SentinelDefinition[];
 }
 
+/**
+ * Only what depends on the codec's own state: the generator it draws from, and the mask schema
+ * plus sentinels it was built with.
+ *
+ * The plain conversions (`uuidToSlug`, `parseUuid`, `formatUuidSlug`, …) are module-level
+ * functions and deliberately absent here. They are pure — the same input gives the same output
+ * whatever seed the codec holds — so carrying them as methods implied a dependency on the seed
+ * that does not exist, and was the single most misleading thing about the previous shape.
+ */
 export interface UuidSlugCodec {
   readonly sentinels: readonly UuidV7Sentinel[];
   uuidV4(): UuidV4String;
@@ -104,14 +113,13 @@ export interface UuidSlugCodec {
   uuidV4Slug(): UuidV4Slug;
   uuidV7Slug(): UuidV7Slug;
   uuidV7MaskedSlug(): MaskedUuidV7Slug;
-  uuidToSlug(uuid: string): Error | UuidSlug;
-  slugToUuid(slug: string): Error | UuidString;
-  uuidToMaskedSlug(uuid: string): Error | MaskedUuidSlug;
-  maskedSlugToUuid(slug: string): Error | UuidString;
+  /**
+   * Masking is UUIDv7-only. The tag that detects a wrong schema is carried in the version and
+   * variant bits, which are constant for v7 and therefore free; any other version would have to
+   * store its real version somewhere, and the spare encoding bits are already spent on the
+   * scheme marker. Supporting every version would cost a 23rd character on every masked slug
+   * forever, to hide a timestamp that only v7 has.
+   */
   uuidV7ToMaskedSlug(uuid: string): Error | PublicUuidV7Slug;
   maskedSlugToUuidV7(slug: string): Error | UuidV7String;
-  parseUuid(uuid: string, out?: Uint8Array, offset?: number): Error | Uint8Array;
-  formatUuid(bytes: Uint8Array, offset?: number): Error | UuidString;
-  parseUuidSlug(slug: string, out?: Uint8Array, offset?: number): Error | Uint8Array;
-  formatUuidSlug(bytes: Uint8Array, offset?: number): Error | UuidSlug;
 }
