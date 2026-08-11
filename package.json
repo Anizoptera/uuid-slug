@@ -76,6 +76,7 @@
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "prepublishOnly": "node -e \"console.error('Use pnpm run publish:clean to publish the cleaned artifact.'); process.exit(1)\"",
+    "preversion": "bun run check",
     "publish:clean": "bun run check && publish-clean -- --access public --tag latest --provenance",
     "test": "vitest run && bun test test/*.bun.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
