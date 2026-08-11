@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
 const FORBIDDEN_TEXT = [
@@ -40,22 +41,28 @@ function run(command: string, args: string[], cwd: string) {
 }
 
 async function main() {
-  let cleanupRoot: null | string = null;
+  // --tarball-out is the only supported way to obtain the published bytes: it writes them
+  // into a directory this script names and therefore owns, so cleanup is not conditional on
+  // parsing anything. Reading paths out of the CLI's stdout instead couples this check to
+  // the wording of a human-facing message — it broke silently when that wording changed.
+  const root = await mkdtemp(path.join(tmpdir(), "uuid-slug-artifact-"));
   try {
-    const dryRun = run("publish-clean", ["--dry-run", "--no-git-checks"], process.cwd());
-    const match = /\[dry-run\] Extracted package at: (.+)$/m.exec(dryRun);
-    if (!match?.[1]) throw new Error("publish-clean did not report an extracted package path.");
-    const tarballMatch = /\[dry-run\] Final tarball at: (.+)$/m.exec(dryRun);
-    if (!tarballMatch?.[1])
-      throw new Error("publish-clean did not report a final npm tarball path.");
-    const extracted = match[1].trim();
-    const tarball = tarballMatch[1].trim();
-    cleanupRoot = path.dirname(extracted);
-    const files = run("find", [extracted, "-type", "f"], process.cwd())
+    run("publish-clean", ["--dry-run", "--no-git-checks", "--tarball-out", root], process.cwd());
+    const packed = (await readdir(root)).filter((entry) => entry.endsWith(".tgz"));
+    const [name] = packed;
+    if (packed.length !== 1 || !name)
+      throw new Error(`expected exactly one tarball in ${root}, found ${packed.length}`);
+
+    const tarball = path.join(root, name);
+    run("tar", ["xzf", tarball, "-C", root], process.cwd());
+    const extracted = path.join(root, "package");
+    // The tarball's own listing, rather than a walk of the extracted tree: it is the
+    // shipped index, and it cannot disagree with what a consumer receives.
+    const files = run("tar", ["tzf", tarball], process.cwd())
       .trim()
       .split("\n")
-      .filter(Boolean)
-      .map((file) => path.relative(extracted, file).replaceAll(path.sep, "/"));
+      .filter((line) => line.length > 0 && !line.endsWith("/"))
+      .map((line) => line.replace(/^package\//, ""));
 
     const forbiddenPath = files.find((file) =>
       FORBIDDEN_PATHS.some((prefix) => file.startsWith(prefix) || file.includes(`/${prefix}`)),
@@ -100,7 +107,7 @@ async function main() {
     run("bunx", ["publint", "run", extracted, "--pack", "false"], process.cwd());
     run("bunx", ["@arethetypeswrong/cli", tarball, "--profile", "esm-only"], process.cwd());
   } finally {
-    if (cleanupRoot) await rm(cleanupRoot, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true });
   }
 }
 

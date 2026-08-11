@@ -1,5 +1,8 @@
 # Changelog
 
+Notable changes per release, newest first. This file is the source of the GitHub Release
+notes: the section for a version is published verbatim when its tag is pushed.
+
 ## [0.2.0](https://github.com/Anizoptera/uuid-slug/compare/v0.1.0...v0.2.0) (2026-08-11)
 
 
@@ -12,7 +15,3 @@
 
 * pin working tsdown loader dependency ([0002bf1](https://github.com/Anizoptera/uuid-slug/commit/0002bf13d7a7534524be480e76c7957a4d3fe40e))
 * use public publish-clean dependency ([073e6c2](https://github.com/Anizoptera/uuid-slug/commit/073e6c24d967f13999cd8500b5c28876f7be9359))
-
-## Changelog
-
-All notable changes are managed by release-please from Conventional Commits.

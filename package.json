@@ -65,19 +65,21 @@
     "provenance": true
   },
   "scripts": {
+    "artifact:check": "bun scripts/check-artifact.ts",
+    "bench:full": "bun bench/run.ts",
+    "bench:smoke": "bun bench/run.ts --smoke",
     "build": "tsdown",
+    "changelog": "git-cliff --unreleased --prepend CHANGELOG.md --tag",
     "check": "bun run format:check && bun run claude-link:check && bun run typecheck && bun run build && bun run test && bun run bench:smoke && bun run artifact:check",
-    "clean": "rm -rf dist bench/reports",
     "claude-link:check": "test -L CLAUDE.md && test \"$(readlink CLAUDE.md)\" = AGENTS.md",
+    "clean": "rm -rf dist bench/reports",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "prepublishOnly": "node -e \"console.error('Use pnpm run publish:clean to publish the cleaned artifact.'); process.exit(1)\"",
     "publish:clean": "bun run check && publish-clean -- --access public --tag latest --provenance",
     "test": "vitest run && bun test test/*.bun.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "bench:smoke": "bun bench/run.ts --smoke",
-    "bench:full": "bun bench/run.ts",
-    "artifact:check": "bun scripts/check-artifact.ts"
+    "version": "grep -qF \"## [$npm_package_version]\" CHANGELOG.md || { echo \"CHANGELOG.md has no ## [$npm_package_version] section. Run: bun run changelog v$npm_package_version, edit it, then re-run this.\" >&2; exit 1; }; git add CHANGELOG.md"
   },
   "dependencies": {},
   "devDependencies": {
@@ -87,6 +89,7 @@
     "@types/bun": "^1.3.14",
     "@types/node": "^26.2.0",
     "fastv7": "^1.0.2",
+    "git-cliff": "^2.13.1",
     "oxfmt": "^0.63.0",
     "playwright": "^1.62.1",
     "pnpm": "^11.21.0",
