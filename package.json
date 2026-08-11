@@ -75,9 +75,9 @@
     "clean": "rm -rf dist bench/reports",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "prepublishOnly": "node -e \"console.error('Use pnpm run publish:clean to publish the cleaned artifact.'); process.exit(1)\"",
+    "prepublishOnly": "bun run publish:clean",
     "preversion": "bun run check",
-    "publish:clean": "bun run check && publish-clean -- --access public --tag latest --provenance",
+    "publish:clean": "printf '%s\\n' '\n  There is no local publish. Releases are published by CI, from a pushed tag.\n\n    bun run changelog v<next>   draft the section from the commits since the last tag\n    $EDITOR CHANGELOG.md        say what a consumer gets, not what changed in the tree\n    pnpm version <next>         runs the lane, then commits and annotates the tag\n    git push --follow-tags      .github/workflows/release.yml publishes it\n\n  Why not from here: npm refuses to sign a publish that did not come from a cloud CI\n  runner, so a laptop release is permanently unsigned. This repo also holds no npm\n  token -- release.yml authenticates over OIDC against the trusted publisher bound to\n  that workflow filename.\n\n  The tag is the release. Nothing else publishes.\n' >&2; exit 1",
     "test": "vitest run && bun test test/*.bun.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "version": "grep -qF \"## [$npm_package_version]\" CHANGELOG.md || { echo \"CHANGELOG.md has no ## [$npm_package_version] section. Run: bun run changelog v$npm_package_version, edit it, then re-run this.\" >&2; exit 1; }; git add CHANGELOG.md"
