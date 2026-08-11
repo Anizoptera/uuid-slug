@@ -1,7 +1,7 @@
 # @anizoptera/uuid-slug
 
 Short, URL-safe UUIDs. Turns a 36-character UUID into 22 characters, and optionally hides
-the timestamp a UUIDv7 wears on its sleeve.
+the creation time that a UUIDv7 puts on display.
 
 [![npm version](https://img.shields.io/npm/v/@anizoptera/uuid-slug?label=npm)](https://www.npmjs.com/package/@anizoptera/uuid-slug)
 [![CI](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml)
