@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 export { decodeBase64Url, encodeBase64Url, isBase64Url } from "./base64url";
 export {
   UUID_V7_SENTINEL_DEFINITIONS,

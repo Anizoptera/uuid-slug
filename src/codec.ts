@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 import { runtime } from "#runtime";
 import { UuidSlugError } from "./errors";
 import {

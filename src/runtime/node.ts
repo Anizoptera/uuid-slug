@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 import crypto from "node:crypto";
 import { UuidRuntimeError } from "../errors";
 import type { Runtime } from "./types";

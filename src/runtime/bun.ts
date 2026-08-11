@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 import { UuidRuntimeError } from "../errors";
 import { runtime as webRuntime } from "./web";
 import type { Runtime } from "./types";

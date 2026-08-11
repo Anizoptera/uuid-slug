@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 import { decodeBase64Url, encodeBase64Url } from "./base64url";
 import { UuidSlugError } from "./errors";
 import type {
