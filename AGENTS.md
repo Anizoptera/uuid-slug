@@ -1,6 +1,21 @@
 # @anizoptera/uuid-slug
 
 - Runtime dependencies are forbidden.
+- A change to any `src/runtime/*` adapter must be gated in BOTH runners. Vitest runs on Node and
+  resolves `#runtime` to `runtime/node.ts`; `bun test test/*.bun.test.ts` resolves the `bun`
+  condition to `runtime/bun.ts` and the `runtime/web.ts` it takes `fillRandom` from. Neither run
+  constrains the other's adapter — measured 2026-08-11, `Math.random` written into
+  `runtime/web.ts` left the ENTIRE vitest suite green, on the runtime most consumers use. The
+  shared cases live in `test/entropy-probe.ts` so one list serves both.
+- A generator that delegates to the platform must be probed through a path that cannot delegate.
+  `uuidV4()`, `uuidV7()` and `uuidV7Slug()` hand off to a native generator whenever the runtime
+  has one, so on Bun and Node they never touch this package's own `fillRandom`; only the byte and
+  slug forms do so unconditionally. An entropy check through the string forms alone observes
+  nothing of our code and passes against any randomness at all.
+- `Runtime` methods are optional so ABSENCE is representable. Never define one that throws when
+  the platform lacks the capability: the caller treats a defined method as a working one, so it
+  calls, catches and falls back on every single invocation. That cost 64% of v7 throughput on
+  Node until 0.2.1. Probe once at module load and leave the method undefined.
 - Masked slugs and sentinels are core functionality, not compatibility add-ons.
 - Do not add old API aliases or compatibility subpaths.
 - Do not mention private source project names in public files, commits, tests, fixtures, or reports.
