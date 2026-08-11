@@ -44,7 +44,13 @@ describe("entropy source", () => {
     // real finding: our own entropy could not be attributed. The delegating paths cannot make
     // that claim — a native generator draws inside the engine, below any JavaScript patch —
     // so they only assert the negative.
-    const used = sourcesUsedBy(() => codec.uuidV4Bytes());
+    // Randomness is drawn a pool at a time, so most calls attribute no source at all and the
+    // window has to span a refill. Looping until one appears keeps this independent of the pool
+    // size, and costs a `Math.random` implementation nothing in detection: that attributes an
+    // insecure source on the very first call rather than never attributing one.
+    let used: readonly string[] = [];
+    for (let i = 0; i < 20_000 && used.length === 0; i += 1)
+      used = sourcesUsedBy(() => codec.uuidV4Bytes());
     expect(used).not.toEqual([]);
     expect(insecureAmong(used)).toEqual([]);
   });

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import crypto from "node:crypto";
+import { pooledFill } from "./pool";
 import type { Runtime } from "./types";
 
 /**
@@ -15,14 +16,15 @@ const nativeUuidV7 = (crypto as typeof crypto & { randomUUIDv7?: () => string })
 
 const nodeRuntime: Runtime = {
   /**
-   * `randomFillSync` writes into the caller's buffer. `randomBytes` would allocate a fresh
+   * `randomFillSync` writes into the buffer it is given. `randomBytes` would allocate a fresh
    * `Buffer` per call and copy out of it, leaving a second, unzeroed copy of the random
    * material on the heap for the collector to get to whenever it does. Measured 14% faster
-   * as well, but the copy is the reason.
+   * as well, but the copy is the reason. Pooled because the per-call cost dominates at 16
+   * bytes; see `pool.ts`.
    */
-  fillRandom(bytes) {
-    crypto.randomFillSync(bytes);
-  },
+  fillRandom: pooledFill((into) => {
+    crypto.randomFillSync(into);
+  }),
   uuidV4() {
     return crypto.randomUUID();
   },
