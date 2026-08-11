@@ -33,3 +33,31 @@ jobs:
           node-version-file: .tool-versions
           package-manager-cache: false
       - run: bun run check
+
+  # This package's sortability depends on what the RUNTIME's native UUIDv7 does, and that changed
+  # underneath it: Node 26.6.0 added `crypto.randomUUIDv7`, which re-randomises all 74 random bits
+  # per call and so sorts in creation order only about half the time inside a millisecond. The
+  # pinned lane above cannot see it — it runs the Node in `.tool-versions` — so the defect reached
+  # a consumer's database index before it reached a red build. `current` tracks the newest release
+  # deliberately: an unpinned runtime is the point of a canary, and the adapters probe behaviour
+  # rather than version numbers precisely so a new engine keeps this green on its own.
+  runtimes:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [lts/*, current]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .tool-versions
+      - run: bun install --frozen-lockfile
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      # Vitest only: it is the suite that runs on Node, and the Bun suite is covered above.
+      - run: bunx vitest run

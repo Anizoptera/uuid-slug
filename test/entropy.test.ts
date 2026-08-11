@@ -15,6 +15,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  byteGenerators,
   codec,
   distinctValuesFrom,
   generators,
@@ -25,6 +26,10 @@ import {
 describe("entropy source", () => {
   it.each(generators)("never reaches for Math.random in %s", (_name, generate) => {
     expect(insecureAmong(sourcesUsedBy(generate))).toEqual([]);
+  });
+
+  it.each(byteGenerators)("returns plain Uint8Array bytes from %s", (_name, generate) => {
+    expect((generate() as Uint8Array).constructor.name).toBe("Uint8Array");
   });
 
   it.each(generators)("never repeats a value in %s", (_name, generate) => {

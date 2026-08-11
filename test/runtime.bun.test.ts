@@ -12,6 +12,7 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  byteGenerators,
   codec,
   distinctValuesFrom,
   generators,
@@ -30,6 +31,15 @@ describe("bun runtime", () => {
   test("never reaches for Math.random on any generation path", () => {
     for (const [name, generate] of generators) {
       expect([name, insecureAmong(sourcesUsedBy(generate))]).toEqual([name, []]);
+    }
+  });
+
+  test("returns plain Uint8Array bytes, never a node Buffer", () => {
+    // Bun's native v7 hands back a Buffer; this is the gate that keeps it from reaching a
+    // consumer, where it would make `toString("hex")` and `JSON.stringify` runtime-dependent.
+    for (const [name, generate] of byteGenerators) {
+      const bytes = generate();
+      expect([name, (bytes as Uint8Array).constructor.name]).toEqual([name, "Uint8Array"]);
     }
   });
 

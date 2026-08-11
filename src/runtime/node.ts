@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import crypto from "node:crypto";
+import { producesOrderedValues } from "./monotonic";
 import type { Runtime } from "./types";
 
 /**
- * Node grew `crypto.randomUUIDv7` in 26.1.0, so on every earlier release this is `undefined`
+ * Node grew `crypto.randomUUIDv7` in 26.6.0, so on every earlier release this is `undefined`
  * and the capability is simply absent. Probed once here rather than inside the method:
  * `Runtime.uuidV7` is optional precisely so a consumer can branch on its presence, and a
  * method that exists but always throws defeats that — the caller reaches for it, catches, and
@@ -28,6 +29,15 @@ const nodeRuntime: Runtime = {
   },
 };
 
-if (nativeUuidV7) nodeRuntime.uuidV7 = () => nativeUuidV7.call(crypto);
+/**
+ * Presence is necessary and not sufficient — Node's native generator is unordered inside a
+ * millisecond, so adopting it would trade this package's sortability for throughput without
+ * anyone asking. Left undefined when it fails, which routes v7 through the portable generator
+ * and its 42-bit counter exactly as on a Node without the method at all.
+ */
+const nativeIsOrdered =
+  nativeUuidV7 !== undefined && producesOrderedValues(() => nativeUuidV7.call(crypto));
+
+if (nativeUuidV7 && nativeIsOrdered) nodeRuntime.uuidV7 = () => nativeUuidV7.call(crypto);
 
 export const runtime = nodeRuntime;

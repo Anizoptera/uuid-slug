@@ -12,6 +12,21 @@
   has one, so on Bun and Node they never touch this package's own `fillRandom`; only the byte and
   slug forms do so unconditionally. An entropy check through the string forms alone observes
   nothing of our code and passes against any randomness at all.
+- A capability probe must test the PROPERTY this package needs, never the method's presence. Node
+  26.6.0 added `crypto.randomUUIDv7`, which re-randomises all 74 random bits per call and so sorts
+  in creation order 50% of the time inside a millisecond; delegating on presence traded away
+  sortability on a runtime upgrade, with no consumer code change. `src/runtime/monotonic.ts` owns
+  the probe. Presence is necessary and never sufficient.
+- Anything returning bytes must return a plain `Uint8Array`. Bun's native v7 yields a node
+  `Buffer`, which satisfies the declared type structurally while `toString("hex")` and
+  `JSON.stringify` both behave differently — code written on Bun then produces different bytes on
+  Node with nothing raising. Copy at the adapter boundary; both suites pin the constructor.
+- `String()` on a typed array is a UTF-8 DECODE, not a serialisation: invalid sequences all become
+  U+FFFD, so distinct identifiers collapse to one key. It produced 11 false duplicates in 200,000
+  draws whose bytes were provably unique. Key typed arrays by `join(",")` or hex.
+- The `runtimes` job in `check.yml` runs the suite on the newest Node deliberately unpinned. The
+  guarantees here depend on native behaviour that changes between releases, and the pinned lane
+  cannot see a method that does not exist yet.
 - `Runtime` methods are optional so ABSENCE is representable. Never define one that throws when
   the platform lacks the capability: the caller treats a defined method as a working one, so it
   calls, catches and falls back on every single invocation. That cost 64% of v7 throughput on
