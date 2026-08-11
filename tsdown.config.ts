@@ -56,7 +56,13 @@ const common = {
 } satisfies UserConfig;
 
 export default defineConfig([
-  { ...common, dts: true, clean: true, outDir: "dist" },
+  // `platform` is explicit here because the DEFAULT is node, and this build is the one reached by
+  // `main`/`module` — the path taken by any tool that ignores `exports` (legacy bundlers, classic
+  // module resolution). Left unset, it baked `node:crypto` and `randomFillSync` into the file a
+  // browser build resolves, which fails at bundle time or ships a broken bundle. The web adapter
+  // uses `crypto.getRandomValues` only, so it is correct on Node, Bun, Deno and the browser alike;
+  // the specific builds below still give each platform its own best path.
+  { ...common, dts: true, clean: true, outDir: "dist", platform: "browser" },
   { ...common, dts: false, outDir: "dist/node", platform: "node" },
   { ...common, dts: false, outDir: "dist/web", platform: "browser" },
 ]);
