@@ -76,7 +76,8 @@
 - `Runtime` methods are optional so ABSENCE is representable. Never define one that throws when
   the platform lacks the capability: the caller treats a defined method as a working one, so it
   calls, catches and falls back on every single invocation. That cost 64% of v7 throughput on
-  Node until 0.2.1. Probe once at module load and leave the method undefined.
+  Node until the adapters were changed to probe instead. Probe once at module load and leave the
+  method undefined.
 - Masked slugs and sentinels are core functionality, not compatibility add-ons.
 - No MASKED operation may be a top-level export (Art's ruling, 2026-08-12). A bare function can
   only carry `defaultCodec`'s key, and that key is `DEFAULT_MASK_SCHEMA`'s seed — a string literal
@@ -113,14 +114,14 @@
   Sentinels stay base64url for the same reason they exist: they are matched against masked input.
   Decoding infers the alphabet from the length, 22 or 26, so it takes no alphabet argument and a
   caller cannot pick the wrong one.
-- A frozen constant must say what FREEZES it, not what chose it. `ROUNDS` in `feistel.ts` gets this
-  right ("wire-format-bearing"); the key-derivation purpose byte in `schema.ts` did not — it was
-  justified by keeping key material separate from a substitution scheme that had since been
-  deleted, so the stated reason evaluated to nothing and the honest next act was to delete the byte.
-  Doing so would have changed the round keys for every seed and orphaned every masked slug ever
-  issued. Origin explains how a value was picked and expires when its sibling does; the constraint
-  is what a future reader needs, and for anything reachable from an issued id the constraint is the
-  wire format. Same for the seed, the alphabets, the tag widths.
+- A frozen constant must say what FREEZES it, not what chose it. Everything reachable from an issued
+  id is frozen by the WIRE FORMAT, and that is the constraint a future reader needs: `ROUNDS` and the
+  two derivation chain keys in `schema.ts` say so, and so does `keyIterations`, which looks like a
+  tuning knob and is key material. A constant justified by its ORIGIN instead invites deletion the
+  moment its sibling goes: a key-derivation purpose byte here was defended as separating key material
+  from a substitution scheme that had since been deleted, so the stated reason evaluated to nothing
+  while removing the byte would have orphaned every masked slug ever issued. Same for the seed, the
+  alphabets, the tag widths.
 - A doc that names a symbol is code with no compiler. In public-API docs name the token the CALLER
   writes (`"base32hex"`), never the internal constant it resolves to (`BASE32HEX`) — the caller's
   token is the one the type union already checks, so a rename fails the build instead of leaving a
