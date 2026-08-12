@@ -146,11 +146,12 @@ export interface UuidSlugCodec extends UuidV7Generator {
   uuidV7Slug(this: void): UuidV7Slug;
   uuidV7MaskedSlug(this: void): MaskedUuidV7Slug;
   /**
-   * Masking is UUIDv7-only. The tag that detects a wrong schema is carried in the version and
-   * variant bits, which are constant for v7 and therefore free; any other version would have to
-   * store its real version somewhere, and the spare encoding bits are already spent on the
-   * scheme marker. Supporting every version would cost a 23rd character on every masked slug
-   * forever, to hide a timestamp that only v7 has.
+   * Masking is UUIDv7-only, and the reason is that the whole format is spent. The check rides in
+   * bits a v7 provably wastes — its constant version and variant, and the timestamp's top six —
+   * plus whatever the encoding has left over. Another version would have to store its real
+   * version and its full timestamp somewhere, and there is no somewhere: every one of the 132
+   * bits in 22 characters already has a job. Supporting all versions would cost a 23rd character
+   * on every masked slug forever, to hide a creation time only v7 discloses.
    */
   uuidV7ToMaskedSlug(this: void, uuid: string): Error | PublicUuidV7Slug;
   maskedSlugToUuidV7(this: void, slug: string): Error | UuidV7String;
