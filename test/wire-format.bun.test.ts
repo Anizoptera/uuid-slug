@@ -15,12 +15,12 @@
 import { describe, expect, test } from "bun:test";
 import { BASE32HEX, BASE64URL, decodeInto, encode } from "../src/alphabet";
 import { createUuidSlugCodec, uuidToSlug } from "../src/index";
-import { LEGACY_MASK_SCHEMA_V1 } from "../src/schema";
 import golden from "./fixtures-wire-format.json";
+import { EXPLICIT_SUBSTITUTION_SCHEMA } from "./mask-fixture";
 
 const codecs = {
   default: createUuidSlugCodec({}),
-  "legacy-v1": createUuidSlugCodec({ mask: LEGACY_MASK_SCHEMA_V1 }),
+  "explicit-substitution": createUuidSlugCodec({ mask: EXPLICIT_SUBSTITUTION_SCHEMA }),
   "seeded-v2": createUuidSlugCodec({ mask: { seed: "golden-vector-seed", tagBits: 6 } }),
 };
 

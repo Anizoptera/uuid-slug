@@ -59,28 +59,28 @@
     "direct": "AAAAAAAAcACAAAAAAAAAAA",
     "masked": "AAAAAAAAcACAAAAAAAAAAA",
     "maskedLegacy": "AAAAAAAAcACAAAAAAAAAAA",
-    "schema": "legacy-v1",
+    "schema": "explicit-substitution",
     "uuid": "00000000-0000-7000-8000-000000000000"
   },
   {
     "direct": "________f_-__________w",
-    "masked": "XY_NwGdHZKHU2UnpaQYVwQ",
-    "maskedLegacy": "XY_NwGdHZKHU2UnpaQYVwQ",
-    "schema": "legacy-v1",
+    "masked": "_67dzLuqmbh3ZlVEMyIRAA",
+    "maskedLegacy": "_67dzLuqmbh3ZlVEMyIRAA",
+    "schema": "explicit-substitution",
     "uuid": "ffffffff-ffff-7fff-bfff-ffffffffffff"
   },
   {
     "direct": "AZ_xm1i4cACbG99xO9VWLA",
-    "masked": "uaWp5M656l4ruZpOZ0E1BQ",
-    "maskedLegacy": "uaWp5M656l4ruZpOZ0E1BQ",
-    "schema": "legacy-v1",
+    "masked": "m4r3wkRu-Uf5mBJk4IX1qQ",
+    "maskedLegacy": "m4r3wkRu-Uf5mBJk4IX1qQ",
+    "schema": "explicit-substitution",
     "uuid": "019ff19b-58b8-7000-9b1b-df713bd5562c"
   },
   {
     "direct": "AZChssPUfl-KmwwdLj9AUQ",
-    "masked": "OU-A9di5hgHltufVNy3mEA",
-    "maskedLegacy": "OU-A9di5hgHltufVNy3mEA",
-    "schema": "legacy-v1",
+    "masked": "spsdkht79omVmH63nR51vw",
+    "maskedLegacy": "spsdkht79omVmH63nR51vw",
+    "schema": "explicit-substitution",
     "uuid": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051"
   }
 ]

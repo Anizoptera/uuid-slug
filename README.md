@@ -144,7 +144,7 @@ createUuidSlugCodec({
 ```
 
 `tagBits` is how many bits of checksum go into the freed version and variant bits: 6 by
-default, 4 for compatibility with the older `LEGACY_MASK_SCHEMA_V1`. More bits means a
+default, or 4 to match a schema that already issued slugs with the narrower tag. More bits means a
 corrupt slug is more reliably rejected.
 
 `legacy.masks` is how you rotate a seed. Decoding tries the current schema first, then each

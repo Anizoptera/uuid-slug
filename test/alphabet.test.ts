@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "../src/alphabet";
 import { decodeBase64Url, encodeBase64Url, isBase64Url } from "../src/base64url";
 import { createUuidSlugCodec, uuidToSlug } from "../src/index";
-import { LEGACY_MASK_SCHEMA_V1 } from "../src/schema";
+import { EXPLICIT_SUBSTITUTION_SCHEMA } from "./mask-fixture";
 import golden from "./fixtures-wire-format.json";
 
 const randomBytes = (length: number) => {
@@ -107,7 +107,7 @@ describe("bit-packing codec", () => {
 describe("wire format compatibility", () => {
   const codecs = {
     default: createUuidSlugCodec({}),
-    "legacy-v1": createUuidSlugCodec({ mask: LEGACY_MASK_SCHEMA_V1 }),
+    "explicit-substitution": createUuidSlugCodec({ mask: EXPLICIT_SUBSTITUTION_SCHEMA }),
     "seeded-v2": createUuidSlugCodec({ mask: { seed: "golden-vector-seed", tagBits: 6 } }),
   };
 

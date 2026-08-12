@@ -4,11 +4,6 @@ import { UuidSlugError } from "./errors";
 import { FEISTEL_KEY_WORDS, feistel16 } from "./feistel";
 import type { ExplicitMaskSchema, MaskSchema, MaskSchemaOptions } from "./types";
 
-const LEGACY_PERMUTE = Uint8Array.from([9, 13, 3, 8, 14, 0, 11, 7, 6, 1, 15, 4, 2, 5, 10, 12]);
-const LEGACY_XOR = Uint8Array.from([
-  0xa2, 0x70, 0x32, 0x7f, 0x98, 0xb8, 0x9b, 0x5e, 0x1b, 0x26, 0xb6, 0x16, 0x96, 0xf9, 0xea, 0x3e,
-]);
-
 function clone16(bytes: Uint8Array, name: string): Error | Uint8Array {
   if (bytes.length !== 16)
     return new UuidSlugError("invalid_mask_schema", `${name} must contain exactly 16 bytes.`);
@@ -135,14 +130,14 @@ function feistelSchema(id: string, seed: Uint8Array, tagBits: 4 | 6): MaskSchema
   };
 }
 
-export const LEGACY_MASK_SCHEMA_V1: MaskSchema = substitutionSchema(
-  "legacy-mask-v1",
-  LEGACY_XOR,
-  LEGACY_PERMUTE,
-  4,
-) as MaskSchema;
-
-/** An explicit permutation and XOR table can only describe the substitution scheme. */
+/**
+ * An explicit permutation and XOR table can only describe the substitution scheme.
+ *
+ * This is the whole compatibility story for slugs minted before this package existed: supply the
+ * tables that system used and its slugs decode here. This package deliberately ships none of its
+ * own, because a mask table published on npm is a published key — it would hand every reader of
+ * the registry the ability to unmask the identifiers of whoever shipped with the default.
+ */
 export function defineMaskSchema(schema: ExplicitMaskSchema): Error | MaskSchema {
   return substitutionSchema(schema.id ?? "explicit", schema.xor, schema.permute, schema.tagBits);
 }

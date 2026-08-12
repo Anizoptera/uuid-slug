@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  LEGACY_MASK_SCHEMA_V1,
   createMaskSchema,
   createUuidSlugCodec,
   defineMaskSchema,
@@ -40,15 +39,10 @@ describe("direct UUID slugs", () => {
 });
 
 describe("masked UUID slugs", () => {
-  it("preserves legacy mask vectors without exposing private source names", () => {
-    const codec = createUuidSlugCodec({ mask: LEGACY_MASK_SCHEMA_V1 });
-    expect(codec.uuidV7ToMaskedSlug(SAMPLE_V7_A)).toBe("1Ss6ySW5dzcEvgT55sfIJA");
-    expect(codec.uuidV7ToMaskedSlug(SAMPLE_V7_B)).toBe("SjSJ7Am5xQbzvo0B7XIWag");
-    expect(codec.maskedSlugToUuidV7("1Ss6ySW5dzcEvgT55sfIJA")).toBe(SAMPLE_V7_A);
-  });
-
   it("uses direct precomputed sentinel slugs for sentinel transmission", () => {
-    const codec = createUuidSlugCodec({ mask: LEGACY_MASK_SCHEMA_V1 });
+    // Sentinels stay readable by eye on purpose, so a masked codec is what makes the assertion
+    // mean anything: it proves masking is bypassed for them rather than merely absent.
+    const codec = createUuidSlugCodec({ mask: { seed: "sentinel-bypass" } });
     const [, anonymousUser, unknownUser] = codec.sentinels;
     if (!anonymousUser || !unknownUser) throw new Error("sentinel setup failed");
     expect(codec.sentinels.map((item) => item.slug)).toEqual([
