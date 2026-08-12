@@ -126,6 +126,12 @@ export function isUuidV7String(uuid: null | string | undefined): uuid is UuidV7S
   return bytes instanceof Error ? false : uuidVersion(bytes) === 7 && isRfcVariant(bytes);
 }
 
+/**
+ * The only BYTE-level predicate, and the asymmetry against `isUuidV4String` is deliberate: masking
+ * accepts v7 alone, so a caller holding raw bytes has a reason to ask this and none to ask the v4
+ * question. `isUuidV4Bytes` is absent because nothing needs it, not because it was overlooked —
+ * add it when a caller appears, never for symmetry, since an export is permanent surface.
+ */
 export function isUuidV7Bytes(bytes: Uint8Array): boolean {
   return bytes.length === 16 && uuidVersion(bytes) === 7 && isRfcVariant(bytes);
 }
