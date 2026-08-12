@@ -12,7 +12,13 @@ import type { Runtime } from "./types";
  * falls back on EVERY call. Measured 2026-08-11 on Node 24.15.0, that throw cost 64% of v7
  * throughput (400k against 1.11M ops/s).
  */
-const nativeUuidV7 = (crypto as typeof crypto & { randomUUIDv7?: () => string }).randomUUIDv7;
+// Cast to a NARROW shape, never `typeof crypto & {...}`. `@types/node` is pinned ahead of the
+// runtime in `.tool-versions` and declares `randomUUIDv7` unconditionally, so intersecting keeps it
+// non-optional and the guard below reads as always-true to the compiler — the type would license a
+// refactor that drops the check and breaks every Node under 26.6, where the value is `undefined`.
+// A narrow cast is the only spelling that makes the optionality the code relies on visible.
+const nativeUuidV7: (() => string) | undefined = (crypto as { randomUUIDv7?: () => string })
+  .randomUUIDv7;
 
 const nodeRuntime: Runtime = {
   /**

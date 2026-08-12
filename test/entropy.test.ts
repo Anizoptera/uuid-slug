@@ -12,7 +12,9 @@
  * every other test stays green, and the identifiers become guessable while still looking
  * perfectly random.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+import { instrument } from "./instrument";
 
 import {
   attributedSourcesFor,
@@ -74,6 +76,36 @@ describe("generated v7 values", () => {
       const timestamp = hex.slice(0, 12);
       expect(timestamp >= previousTimestamp).toBe(true);
       previousTimestamp = timestamp;
+    }
+  });
+});
+
+/**
+ * Importing this package must draw NO randomness. That is what makes it safe to load inside a heap
+ * snapshot — V8 and JavaScriptCore startup snapshots, and the serverless platforms built on them:
+ * a snapshot that captured drawn bytes would hand every restored process the same identifiers.
+ *
+ * The property is currently incidental — `pool.ts` starts its pool empty and refills on first use —
+ * so this is the only thing standing between it and an obvious "optimisation" that pre-fills at
+ * module load. Nothing else could see that change: the bytes stay perfectly random inside any one
+ * process, so every other case in this file, and in the whole suite, keeps passing.
+ */
+describe("import-time entropy", () => {
+  it("touches no randomness source at module load", async () => {
+    // A fresh module registry, or the import below returns the instance the rest of this file
+    // already loaded and its module body never runs again — the test would then observe nothing
+    // and pass by construction.
+    vi.resetModules();
+    const sources = instrument();
+    try {
+      // `instrument()` exercises each source once to prove its patch took effect — the check that
+      // makes an empty result mean "nothing was called" rather than "nothing was watched" — so the
+      // counters start at one. Zeroing must happen after installing and before the import.
+      sources.reset();
+      await import("../src/index");
+      expect(sources.used()).toEqual([]);
+    } finally {
+      sources.restore();
     }
   });
 });

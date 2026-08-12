@@ -259,6 +259,12 @@ extension point, and it is checked — a codec proves your `mix` reverses itself
 construction if it does not, because a mixing step that is not invertible makes every id it
 encodes unreadable with nothing to notice at the time.
 
+**`createUuidSlugCodec` THROWS on a bad mask; `createMaskSchema` RETURNS the same error.** Both
+reject the same things — a seed under 16 bytes, an out-of-range `keyIterations`, a `mix` that does
+not reverse itself — and they differ because a constructor has nowhere to put an error value, while
+`createMaskSchema` is an ordinary call whose result you can inspect. Build the schema first when
+you want the error in hand rather than in a `try`.
+
 `previousMasks` is how you rotate a seed. Decoding tries `mask` first, then each entry in the
 order you list them, and the first whose check passes wins — so put the newest first, and keep
 the list short. Nothing else is ever tried: a codec decodes with the schemas you gave it and no

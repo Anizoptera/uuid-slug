@@ -57,7 +57,12 @@ interface BunGlobal {
  * cost difference worth measuring rather than a detail — the cached path is what a consumer gets
  * by default.
  */
-type NodeCryptoWithV7 = typeof nodeCrypto & {
+// NOT intersected with `typeof nodeCrypto`. `@types/node` is pinned ahead of the runtime in
+// `.tool-versions` and declares `randomUUIDv7` unconditionally, so an intersection keeps it
+// non-optional and every `nodeUuidV7 ? ... : []` below reads as always-true to the compiler — while
+// the value is genuinely `undefined` on Node under 26.6, which is why those rows are absent from
+// the Node 24 column of `RESULTS.md`. A narrow shape is what makes the optionality checkable.
+type NodeCryptoWithV7 = {
   randomUUIDv7?: (options?: { disableEntropyCache?: boolean }) => string;
 };
 

@@ -23,10 +23,13 @@ export interface Runtime {
    * ever checked. Measured 2026-08-12 — `uuidV7Slug` returned `string | UuidSlug`, which collapses
    * to `string`, so `codec.uuidV7Slug()` promised a `UuidV7Slug` the compiler never examined.
    *
-   * The brand cannot be produced from a platform call, so an adapter asserts it. That is the
-   * point: the assertion belongs next to the platform argument that decides the shape, where
-   * `nativeUuidV7("hex")` and `nativeUuidV7("base64url")` sit one literal apart and produce
-   * completely different strings. Both runners pin the actual shapes.
+   * No adapter asserts the brand, and none has to — that optional marker means the platform's
+   * plain `string` already satisfies it, which is exactly why the loose typing was invisible. The
+   * work is done by the DECLARATION here: it makes every CALLER of the hook see the branded type,
+   * so a hook returning the wrong shape is a compile error at the call site rather than a silent
+   * widening. Nothing in the type system can catch the shape itself, where `nativeUuidV7("hex")`
+   * and `nativeUuidV7("base64url")` sit one literal apart and produce completely different
+   * strings — so both runners pin the actual shapes by execution instead.
    */
   uuidV4?(this: void): UuidV4String;
   uuidV7?(this: void): UuidV7String;

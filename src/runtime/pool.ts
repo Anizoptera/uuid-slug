@@ -33,6 +33,13 @@ export function pooledFill(
   fill: (into: Uint8Array<ArrayBuffer>) => void,
 ): (bytes: Uint8Array<ArrayBuffer>) => void {
   const pool = new Uint8Array(POOL_BYTES);
+  // STARTS EMPTY, and must. Pre-filling here would move the first call's syscall off the hot path,
+  // which looks like a free win and is the one change that breaks heap-snapshot safety: a snapshot
+  // taken at import time (V8 or JavaScriptCore startup snapshots, and the serverless platforms
+  // built on them) would capture drawn randomness, and every process restored from it would issue
+  // the SAME identifiers. Nothing else would notice — the bytes stay perfectly random within any
+  // one process, so every other case in this suite passes. `test/entropy.test.ts` gates it by
+  // importing the package under the instrument and requiring that no source was touched.
   let offset = POOL_BYTES;
   return (bytes) => {
     const { length } = bytes;
