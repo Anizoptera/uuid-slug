@@ -5,10 +5,12 @@ import {
   defineMaskSchema,
   decodeBase64Url,
   encodeBase64Url,
+  extractUuidV7Timestamp,
   isUuidV7String,
   parseUuid,
   slugToUuid,
   uuidToSlug,
+  uuidV7BytesAt,
 } from "../src/index";
 
 const SAMPLE_V7_A = "01987008-ef3e-7f69-b677-22ec1a5bbdb2";
@@ -22,6 +24,48 @@ describe("base64url", () => {
     expect(decodeBase64Url(encoded)).toEqual(bytes);
     expect(decodeBase64Url(`${encoded}=`)).toBeInstanceOf(Error);
     expect(decodeBase64Url("A")).toBeInstanceOf(Error);
+  });
+});
+
+/** Zeroed but for the version and variant bytes, placed so a v7 appears to begin at `offset`. */
+const v7PatternAt = (length: number, offset: number) => {
+  const bytes = new Uint8Array(length);
+  bytes[offset + 6] = 0x70;
+  bytes[offset + 8] = 0x80;
+  return bytes;
+};
+
+describe("UUIDv7 timestamp extraction", () => {
+  // The defect this pins is silent rather than loud: a v4's first six bytes are random, so the
+  // old signature returned a confident date drawn from the next nine thousand years instead of
+  // reporting the wrong version. Anything built on it — a freshness window, an audit trail —
+  // accepted or rejected by coin flip while every type checked out.
+  it("refuses a UUIDv4 rather than reading its random bytes as a date", () => {
+    const v4 = parseUuid(SAMPLE_V4);
+    if (v4 instanceof Error) throw v4;
+    expect(extractUuidV7Timestamp(v4)).toBeInstanceOf(Error);
+  });
+
+  it("refuses a buffer too short to hold a UUID at the given offset", () => {
+    // Every buffer here carries a valid version and variant AT THE OFFSET ASKED FOR, so the bounds
+    // check is the only thing that can reject it. That matters: an all-zero buffer is rejected by
+    // the version check instead, which is how the first draft of this test passed unchanged against
+    // an implementation carrying no bounds check at all — proved by deleting the check and watching
+    // it stay green. The three cases are three distinct branches: past the end, past the end only
+    // once the offset is added, and a negative offset that stays inside the length.
+    expect(extractUuidV7Timestamp(v7PatternAt(15, 0))).toBeInstanceOf(Error);
+    expect(extractUuidV7Timestamp(v7PatternAt(16, 1), 1)).toBeInstanceOf(Error);
+    expect(extractUuidV7Timestamp(v7PatternAt(16, -1), -1)).toBeInstanceOf(Error);
+  });
+
+  it("reads back the exact instant a UUID was minted at, at any offset", () => {
+    // `uuidV7BytesAt` is the independent oracle: the instant is chosen here, not read back from
+    // whatever the generator happened to produce, so the two must agree on the 48-bit layout.
+    const instant = 1_700_000_000_123;
+    const buffer = new Uint8Array(32);
+    const written = uuidV7BytesAt(instant, buffer, 16);
+    if (written instanceof Error) throw written;
+    expect(extractUuidV7Timestamp(buffer, 16)).toBe(instant);
   });
 });
 

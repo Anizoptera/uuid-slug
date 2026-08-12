@@ -129,7 +129,22 @@ export function isUuidV7Slug(slug: null | string | undefined): slug is UuidV7Slu
   return bytes instanceof Error ? false : uuidVersion(bytes) === 7 && isRfcVariant(bytes);
 }
 
-export function extractUuidV7Timestamp(bytes: Uint8Array, offset = 0): number {
+/**
+ * The 48-bit millisecond a UUIDv7 was minted at.
+ *
+ * It REFUSES anything that is not a v7, which is the whole point of the return type: the first six
+ * bytes of a v4 are random, so reading them yields a confident, well-formed date drawn uniformly
+ * from the next nine thousand years. A caller that passed the wrong version got that date silently,
+ * and a freshness check built on it would accept or reject by coin flip while looking correct.
+ *
+ * Short input is reported separately from wrong version, because `uuidVersion` reads a missing byte
+ * as zero and would otherwise blame a truncated buffer for holding a v0.
+ */
+export function extractUuidV7Timestamp(bytes: Uint8Array, offset = 0): Error | number {
+  if (offset < 0 || offset + 16 > bytes.length)
+    return new UuidSlugError("invalid_buffer", "UUIDv7 needs sixteen bytes at the given offset.");
+  if (uuidVersion(bytes, offset) !== 7 || !isRfcVariant(bytes, offset))
+    return new UuidSlugError("invalid_uuid_version", "Timestamp is only defined for UUIDv7.");
   let timestamp = 0;
   for (let i = 0; i < 6; i += 1) timestamp = timestamp * 256 + (bytes[offset + i] ?? 0);
   return timestamp;

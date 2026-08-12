@@ -197,6 +197,7 @@ export function validateUuidV7Fresh(
   const windowMs = options.windowMs ?? 86_400_000;
   const now = options.now?.() ?? Date.now();
   const timestamp = extractUuidV7Timestamp(bytes);
+  if (timestamp instanceof Error) return timestamp;
   if (timestamp < now - windowMs || timestamp > now + windowMs)
     return new UuidSlugError("stale_uuid", "UUIDv7 timestamp is outside the accepted window.");
   if (!hasUuidV7Entropy(bytes))

@@ -137,7 +137,9 @@ is the point of sentinels.
 
 Also exported: type guards (`isUuidString`, `isUuidV4String`, `isUuidV7String`,
 `isUuidSlug`, `isUuidV4Slug`, `isUuidV7Slug`), base64url helpers (`encodeBase64Url`,
-`decodeBase64Url`, `isBase64Url`), `extractUuidV7Timestamp`, and the schema builders
+`decodeBase64Url`, `isBase64Url`), `extractUuidV7Timestamp` (an `Error` for anything that is not a
+UUIDv7 — a v4's first six bytes are random and would otherwise read back as a plausible date),
+and the schema builders
 `createMaskSchema` / `defineMaskSchema`.
 
 ### Codec options
