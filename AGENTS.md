@@ -73,6 +73,13 @@
 - The `runtimes` job in `check.yml` runs the suite on the newest Node deliberately unpinned. The
   guarantees here depend on native behaviour that changes between releases, and the pinned lane
   cannot see a method that does not exist yet.
+- A capability probe must cast to a NARROW shape, never an intersection with the ambient type.
+  `@types/node` is pinned ahead of the runtime in `.tool-versions` and declares new APIs
+  unconditionally, so `typeof crypto & { randomUUIDv7?: ... }` keeps the method NON-optional and the
+  `if (native)` guard beside it reads as always-true — the type then licenses the refactor that
+  deletes the guard and breaks every older runtime, where the value is `undefined`. `crypto as {
+randomUUIDv7?: ... }` is the only spelling that makes the optionality the code depends on visible
+  to the compiler. Two sites had the intersection form and both type-checked clean.
 - `Runtime` methods are optional so ABSENCE is representable. Never define one that throws when
   the platform lacks the capability: the caller treats a defined method as a working one, so it
   calls, catches and falls back on every single invocation. That cost 64% of v7 throughput on
