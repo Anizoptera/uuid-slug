@@ -313,6 +313,11 @@ across every supported runtime by `bun run bench:matrix`; the current figures ar
   masked slug is deliberately unordered whatever the alphabet: masked bytes are ciphertext.
 - **One type for bytes.** `uuidV4Bytes` and `uuidV7Bytes` return a plain `Uint8Array` on every
   runtime, never a platform-specific subclass whose `toString` or JSON shape differs.
+- **You pay for masking only if you mask.** The keyless operations — generating an id, converting
+  between a UUID and a plain slug — reach no codec, so a bundle that imports only those carries
+  none of the cipher, the key derivation or the sentinel table — a large majority of the code. It
+  needs nothing from you beyond importing what you use: the package ships one file per module, and
+  the property is gated against the built artifact rather than asserted.
 
 ## Runtime
 
