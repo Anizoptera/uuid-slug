@@ -15,7 +15,11 @@ import {
   UuidSlugError,
 } from "../src/index";
 import type { SlugAlphabet } from "../src/index";
+import * as api from "../src/index";
 import { deterministicUuidV7 } from "./deterministic-uuid";
+
+/** Bare identifiers inside a documentation fragment, for the export-parity gate below. */
+const identifiers = (text: string) => [...text.matchAll(/[A-Za-z_$][\w$]*/g)].map((m) => m[0]);
 
 const SAMPLE_V7_A = "01987008-ef3e-7f69-b677-22ec1a5bbdb2";
 const SAMPLE_V7_B = "01987bbb-178b-7858-93e8-fc5e5444913b";
@@ -41,6 +45,44 @@ describe("documented surface", () => {
     expect({
       invented: [...documented].filter((code) => !codes.includes(code)),
       undocumented: codes.filter((code) => !documented.has(code)),
+    }).toEqual({ invented: [], undocumented: [] });
+  });
+
+  it("documents every public export, and promises no call that does not exist", () => {
+    // The error-code case above exists because two lists nobody compares drift apart. The API list
+    // is the same defect one level up and was unguarded, which is how the README came to advertise
+    // `uuidToMaskedSlug(uuid)` -- no such export, no such codec member, and the first thing a
+    // reader copies -- while nine real exports went unmentioned.
+    //
+    // Both directions are checked, because each catches what the other cannot: undocumented
+    // exports are surface nobody can find, and invented names are surface that does not exist.
+    const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
+    // Inline code spans AND fenced blocks: the codec options are documented as a code sample, and
+    // a name that appears only in running prose is not documentation a reader can copy.
+    const documented = new Set([
+      ...[...readme.matchAll(/`([^`\n]+)`/g)].flatMap((m) => identifiers(m[1] ?? "")),
+      ...[...readme.matchAll(/```[a-z]*\n([\s\S]*?)```/g)].flatMap((m) => identifiers(m[1] ?? "")),
+    ]);
+
+    // Types are read out of the entry file rather than the module object: `import * as` sees
+    // values only, so a type export would otherwise be exempt from a rule about public surface.
+    const entry = readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
+    const exportedTypes = [...entry.matchAll(/export type \{([^}]+)\}/g)].flatMap((m) =>
+      (m[1] ?? "")
+        .split(",")
+        .map((name) => name.trim())
+        .filter(Boolean),
+    );
+
+    // `mix` is a member of the caller-supplied `MaskSchema`, not an export of this package, and
+    // the README has to show its signature to document the extension point.
+    const notOurs = new Set(["mix"]);
+    const reachable = new Set([...Object.keys(api), ...Object.keys(api.defaultCodec)]);
+    const promised = [...new Set([...readme.matchAll(/`([a-zA-Z_$][\w$]*)\(/g)].map((m) => m[1]))];
+
+    expect({
+      invented: promised.filter((name) => !reachable.has(name ?? "") && !notOurs.has(name ?? "")),
+      undocumented: [...Object.keys(api), ...exportedTypes].filter((n) => !documented.has(n)),
     }).toEqual({ invented: [], undocumented: [] });
   });
 
