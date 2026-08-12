@@ -53,6 +53,18 @@ const common = {
   format: ["esm"],
   outExtensions: () => ({ js: ".js" }),
   banner,
+  /**
+   * One output file per source module, NOT one bundle. A bundler can only drop what it can see as
+   * separable, and flattening every module into one file destroys exactly that information:
+   * measured 2026-08-12 on this package, an entry importing only `uuidToSlug` cost 12,725 bytes
+   * through the bundled artifact and 2,188 through the unbundled one, and `uuidV7Slug` 12,735
+   * against 4,559 — under two independent bundlers, which disagreed on everything else.
+   *
+   * It is worth nothing on its own and must not be reverted on its own: with the keyless shortcuts
+   * still bound as property reads of `defaultCodec`, unbundling saved one profile under one
+   * bundler and nothing anywhere else. The pair is the fix; see `src/keyless.ts` for the other half.
+   */
+  unbundle: true,
 } satisfies UserConfig;
 
 export default defineConfig([

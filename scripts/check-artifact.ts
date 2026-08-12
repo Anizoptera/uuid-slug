@@ -125,11 +125,23 @@ async function main() {
     // `tsdown.config.ts` records the regression this catches: with `platform` unset, the
     // browser-resolved build baked in `node:crypto` and `randomFillSync`, and nothing in this repo
     // executed or read a built file, so the only way to find out was a consumer's bundler failing.
+    // EVERY file of that build is scanned, not just its entry. The build is UNBUNDLED -- one output
+    // per source module -- so `dist/index.js` is a re-export barrel holding no code, and a builtin
+    // baked into the runtime adapter beside it would sail past a check that reads only the entry.
     {
-      const entry = "dist/index.js";
-      const text = await readFile(path.join(extracted, entry), "utf8");
-      const builtin = /["']node:[a-z_]+["']/.exec(text);
-      if (builtin) throw new Error(`${entry} must not reach a Node builtin, found ${builtin[0]}`);
+      const browserFiles = files.filter(
+        (file) =>
+          file.startsWith("dist/") && !file.startsWith("dist/node/") && file.endsWith(".js"),
+      );
+      // An empty list would pass vacuously, and the layout above is exactly the kind that changes.
+      if (browserFiles.length === 0)
+        throw new Error("No browser-build JavaScript found under dist/ to scan for Node builtins.");
+      for (const file of browserFiles) {
+        const builtin = /["']node:[a-z_]+["']/.exec(
+          await readFile(path.join(extracted, file), "utf8"),
+        );
+        if (builtin) throw new Error(`${file} must not reach a Node builtin, found ${builtin[0]}`);
+      }
     }
 
     // Executed, not just read. Both bundles are imported and made to produce one id of each kind,
