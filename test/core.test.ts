@@ -154,6 +154,21 @@ describe("masked UUID slugs", () => {
     ).toBe(SAMPLE_V7_A);
   });
 
+  it("rotates a seed without making the caller build a schema for the old one", () => {
+    // Rotation is the whole reason the list exists, so listing a previous SEED must cost what
+    // naming the current one costs. It used to demand a constructor and an error branch.
+    const before = createUuidSlugCodec({ mask: { seed: "key-v1" } });
+    const slug = before.uuidV7ToMaskedSlug(SAMPLE_V7_A);
+    if (slug instanceof Error) throw slug;
+    const after = createUuidSlugCodec({
+      legacy: { masks: [{ seed: "key-v1" }] },
+      mask: { seed: "key-v2" },
+    });
+    expect(after.maskedSlugToUuidV7(slug)).toBe(SAMPLE_V7_A);
+    // And the rotation actually rotated: new ids are issued under v2, not v1.
+    expect(after.uuidV7ToMaskedSlug(SAMPLE_V7_A)).not.toBe(slug);
+  });
+
   it("defensively clones explicit schema arrays", () => {
     const xor = new Uint8Array(16);
     const permute = Uint8Array.from({ length: 16 }, (_, i) => i);

@@ -167,7 +167,7 @@ and the schema builders
 createUuidSlugCodec({
   mask: { seed: "…" }, // or a schema built with defineMaskSchema
   sentinels: [{ name: "nil", uuid: "…" }],
-  legacy: { masks: [oldSchema], directDecode: false },
+  legacy: { masks: [{ seed: "…previous seed…" }], directDecode: false },
   generator: myUuidV7Generator,
 });
 ```

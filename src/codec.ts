@@ -115,7 +115,9 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
   // false-accept rate is the SUM over the list and is set by its weakest member. Measured
   // 2026-08-12 over 200,000 wrong-key decodes, the auto-added 6-bit partner accepted 211 while
   // the 16-bit schema it accompanied accepted 2 — a 16x widening nobody asked for.
-  const legacyMasks = options.legacy?.masks ?? [];
+  const legacyMasks = (options.legacy?.masks ?? []).map((mask) =>
+    errorOrThrow(schemaFromOption(mask)),
+  );
   const generator = options.generator ?? createRuntimeGenerator(runtime);
   const sentinelState = createSentinels(options.sentinels ?? UUID_V7_SENTINEL_DEFINITIONS);
 

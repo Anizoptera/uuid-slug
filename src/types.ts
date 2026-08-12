@@ -110,8 +110,21 @@ export interface UuidSlugCodecOptions {
   readonly generator?: UuidV7Generator;
   readonly legacy?: {
     readonly directDecode?: boolean;
-    readonly masks?: readonly MaskSchema[];
+    /**
+     * Schemas to try after `mask`, in the order given. Takes a seed exactly as `mask` does: a
+     * rotated seed is the ordinary reason this list exists, and requiring a pre-built schema for
+     * it meant the commonest case cost a constructor and an error branch that the current seed
+     * never needed. The asymmetry taught the wrong thing too — that a previous key is a different
+     * kind of thing from the current one, when rotation is only a change of position in this list.
+     */
+    readonly masks?: readonly (MaskSchema | MaskSchemaOptions)[];
   };
+  /**
+   * The schema that ENCODES, and the first tried when decoding. Kept separate from the list above
+   * rather than folded into one ordered array: in a single list the encoding schema is whichever
+   * happens to be first, so appending a rotated seed leaves you still issuing ids under the old
+   * one while believing you rotated. Nothing about that failure is visible.
+   */
   readonly mask?: MaskSchema | MaskSchemaOptions;
   readonly sentinels?: readonly UuidV7SentinelDefinition[];
 }
