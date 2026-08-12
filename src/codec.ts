@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { runtime } from "#runtime";
-import { BASE64URL } from "./alphabet";
 import { UuidSlugError } from "./errors";
 import {
   uuidToMaskedSlugWithSchema,
@@ -28,7 +27,6 @@ import {
   formatUuid,
   formatUuidSlug,
   hasUuidV7Entropy,
-  isSlugAlphabet,
   isUuidSlug,
   isUuidV4Slug,
   isUuidV4String,
@@ -132,19 +130,11 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
     errorOrThrow(schemaFromOption(mask)),
   );
   const generator = options.generator ?? createRuntimeGenerator(runtime);
-  const slugAlphabet = options.slugAlphabet ?? BASE64URL;
-  // Refused at construction rather than discovered at decode. Encoding works in any alphabet;
-  // reading back does not, because decoding recognises an alphabet by slug length. A codec that
-  // accepted an unlisted one would mint ids nothing can resolve, and nothing would say so.
-  if (!isSlugAlphabet(slugAlphabet))
-    throw new UuidSlugError(
-      "invalid_uuid_slug",
-      `Slugs in the ${slugAlphabet.name} alphabet cannot be decoded again; use BASE64URL or BASE32HEX.`,
-    );
+  const slugAlphabet = options.slugAlphabet ?? "base64url";
   // The runtime's own slug generator emits base64url and nothing else, so it can only serve the
   // default. Resolved once here rather than per call: the branch is on configuration, which cannot
   // change after construction.
-  const nativeSlug = slugAlphabet === BASE64URL ? runtime.uuidV7Slug : undefined;
+  const nativeSlug = slugAlphabet === "base64url" ? runtime.uuidV7Slug : undefined;
   const sentinelState = createSentinels(options.sentinels ?? UUID_V7_SENTINEL_DEFINITIONS);
 
   function decodeMasked(slug: string): Error | UuidString {

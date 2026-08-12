@@ -1,8 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
-  BASE32HEX,
-  BASE64URL,
   createMaskSchema,
   createUuidSlugCodec,
   decodeBase64Url,
@@ -15,7 +13,7 @@ import {
   uuidToSlug,
   uuidV7BytesAt,
 } from "../src/index";
-import type { Alphabet } from "../src/index";
+import type { SlugAlphabet } from "../src/index";
 import { deterministicUuidV7 } from "./deterministic-uuid";
 
 const SAMPLE_V7_A = "01987008-ef3e-7f69-b677-22ec1a5bbdb2";
@@ -142,48 +140,46 @@ describe("direct UUID slugs", () => {
       const hex = ms.toString(16).padStart(12, "0");
       return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-7000-8000-000000000000`;
     });
-    const slugsIn = (alpha: Alphabet) =>
+    const slugsIn = (alphabet: SlugAlphabet) =>
       uuids.map((uuid) => {
-        const slug = uuidToSlug(uuid, alpha);
+        const slug = uuidToSlug(uuid, alphabet);
         if (slug instanceof Error) throw slug;
         return String(slug);
       });
 
-    expect(ascending(slugsIn(BASE32HEX))).toBe(true);
+    expect(ascending(slugsIn("base32hex"))).toBe(true);
     // The falsifier. Without it this case passes against an implementation that ignores the
     // alphabet argument and returns base64url both times, which is precisely the way wiring a new
     // option fails.
-    expect(ascending(slugsIn(BASE64URL))).toBe(false);
+    expect(ascending(slugsIn("base64url"))).toBe(false);
   });
 
   it("mints codec slugs in the configured alphabet, but never sentinels or masked ones", () => {
     // The option's boundary is the point of this case. Sentinels are matched against masked input,
     // and masked slugs are base64url by ruling, so a codec-wide alphabet that leaked into either
     // would make sentinels unrecognisable exactly where they are used.
-    const codec = createUuidSlugCodec({ mask: { seed: "alpha" }, slugAlphabet: BASE32HEX });
+    const codec = createUuidSlugCodec({ mask: { seed: "alpha" }, slugAlphabet: "base32hex" });
     expect(codec.uuidV7Slug()).toHaveLength(26);
     expect(codec.uuidV4Slug()).toHaveLength(26);
     expect(codec.uuidV7MaskedSlug()).toHaveLength(22);
     expect(codec.sentinels[0]?.slug).toHaveLength(22);
   });
 
-  it("refuses an alphabet whose slugs could never be decoded again", () => {
-    // Encoding works in any power-of-two alphabet; decoding recognises one by slug length. A codec
-    // built on an unlisted alphabet would mint ids nothing can resolve, so it is refused where the
-    // mistake is made rather than at the first failed lookup.
-    const base16 = { ...BASE32HEX, bitsPerChar: 4, chars: "0123456789abcdef", name: "base16" };
-    expect(() => createUuidSlugCodec({ slugAlphabet: base16 })).toThrow(/cannot be decoded again/);
+  it("answers rather than crashing when JavaScript passes an alphabet name TypeScript forbids", () => {
+    // The union makes this unreachable from TypeScript, so the cast is the only way to reach the
+    // branch — and the branch exists because a JS caller would otherwise index `undefined`.
+    expect(uuidToSlug(SAMPLE_V4, "base16" as SlugAlphabet)).toBeInstanceOf(Error);
   });
 
   it("reads either alphabet back without being told which", () => {
     // Decoding takes no alphabet because the two lengths are disjoint. That is what lets a system
     // change alphabet without invalidating a single slug it has already handed out.
     for (const uuid of [SAMPLE_V7_A, SAMPLE_V4])
-      for (const [alpha, length] of [
-        [BASE64URL, 22],
-        [BASE32HEX, 26],
+      for (const [alphabet, length] of [
+        ["base64url", 22],
+        ["base32hex", 26],
       ] as const) {
-        const slug = uuidToSlug(uuid, alpha);
+        const slug = uuidToSlug(uuid, alphabet);
         if (slug instanceof Error) throw slug;
         expect(slug).toHaveLength(length);
         expect(slugToUuid(String(slug))).toBe(uuid);

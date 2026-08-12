@@ -19,7 +19,7 @@ import {
   insecureAmong,
   sourcesUsedBy,
 } from "./entropy-probe";
-import { BASE32HEX, createUuidSlugCodec, isUuidV7String, slugToUuid } from "../src/index";
+import { createUuidSlugCodec, isUuidV7String, slugToUuid } from "../src/index";
 
 describe("bun runtime", () => {
   test("imports the source condition and generates UUIDv7", () => {
@@ -34,7 +34,7 @@ describe("bun runtime", () => {
     // that method does not exist, so this hazard is invisible there — the same asymmetry recorded
     // for the entropy cases above, and the reason this assertion lives here rather than only in
     // the shared suite.
-    const local = createUuidSlugCodec({ slugAlphabet: BASE32HEX });
+    const local = createUuidSlugCodec({ slugAlphabet: "base32hex" });
     const slug = local.uuidV7Slug();
     expect(slug).toHaveLength(26);
     expect(isUuidV7String(slugToUuid(slug) as string)).toBe(true);

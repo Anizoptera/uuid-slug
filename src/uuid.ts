@@ -30,7 +30,16 @@ const UUID_BYTE_OFFSETS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32
  * MASKED slugs are always base64url (Art's ruling, 2026-08-12). Sort order there would be order of
  * ciphertext, which carries nothing, so the extra characters would buy only the case-insensitivity.
  */
-const SLUG_ALPHABETS = [BASE64URL, BASE32HEX] as const;
+const SLUG_ALPHABETS = { base32hex: BASE32HEX, base64url: BASE64URL } as const;
+
+/**
+ * Callers name an alphabet rather than passing one. `Alphabet` holds a decode table and a bit
+ * width — internals that would become public surface the moment the type escaped — and accepting
+ * an arbitrary one would also open a second extension point beside `MaskSchema`, which this
+ * package documents as its only one. A union of two names cannot be widened by a caller at all, so
+ * there is nothing to validate.
+ */
+export type SlugAlphabet = keyof typeof SLUG_ALPHABETS;
 
 /** Characters needed for 16 bytes: 22 in base64url, 26 in base32hex. */
 function slugLength(alpha: Alphabet) {
@@ -42,16 +51,16 @@ function slugLength(alpha: Alphabet) {
  * disjoint, so a slug names its own encoding and a caller cannot pick the wrong one. Indexed
  * rather than searched because every decode and every type guard pays this lookup.
  */
-const SLUG_ALPHABET_BY_LENGTH: readonly (Alphabet | undefined)[] = SLUG_ALPHABETS.reduce<
-  (Alphabet | undefined)[]
->((table, alpha) => {
+const SLUG_ALPHABET_BY_LENGTH: readonly (Alphabet | undefined)[] = Object.values(
+  SLUG_ALPHABETS,
+).reduce<(Alphabet | undefined)[]>((table, alpha) => {
   table[slugLength(alpha)] = alpha;
   return table;
 }, []);
 
-const SLUG_LENGTHS = SLUG_ALPHABETS.map((alpha) => `${slugLength(alpha)} (${alpha.name})`).join(
-  " or ",
-);
+const SLUG_LENGTHS = Object.values(SLUG_ALPHABETS)
+  .map((alpha) => `${slugLength(alpha)} (${alpha.name})`)
+  .join(" or ");
 
 function hexValue(code: number) {
   return code < HEX_DECODE.length ? HEX_DECODE[code] : -1;
@@ -121,24 +130,21 @@ export function isUuidV7Bytes(bytes: Uint8Array): boolean {
   return bytes.length === 16 && uuidVersion(bytes) === 7 && isRfcVariant(bytes);
 }
 
-/**
- * Whether slugs written in this alphabet can be READ BACK. Decoding identifies an alphabet by slug
- * length, so one absent from `SLUG_ALPHABETS` — a caller's own, or a third added to `alphabet.ts`
- * and not listed here — encodes perfectly and then decodes nowhere. Checked where an alphabet is
- * configured once and used forever, not per call.
- */
-export function isSlugAlphabet(alpha: Alphabet): boolean {
-  return SLUG_ALPHABET_BY_LENGTH[slugLength(alpha)] === alpha;
-}
-
-/** `alpha` MUST satisfy `isSlugAlphabet`, or the result will not decode. */
 export function formatUuidSlug(
   bytes: Uint8Array,
   offset = 0,
-  alpha: Alphabet = BASE64URL,
+  alphabet: SlugAlphabet = "base64url",
 ): Error | UuidSlug {
   if (offset < 0 || offset + 16 > bytes.length)
     return new UuidSlugError("invalid_buffer", "UUID byte buffer is too small.");
+  // Unreachable from TypeScript, where the name is a two-member union. Reached from JavaScript,
+  // which is why it answers rather than indexing into `undefined`.
+  const alpha = SLUG_ALPHABETS[alphabet];
+  if (!alpha)
+    return new UuidSlugError(
+      "invalid_uuid_slug",
+      `Unknown slug alphabet "${alphabet}"; expected ${Object.keys(SLUG_ALPHABETS).join(" or ")}.`,
+    );
   return encode(bytes.subarray(offset, offset + 16), alpha);
 }
 
@@ -155,10 +161,10 @@ export function parseUuidSlug(slug: string, out?: Uint8Array, offset = 0): Error
   return result instanceof Error ? result : target;
 }
 
-export function uuidToSlug(uuid: string, alpha: Alphabet = BASE64URL): Error | UuidSlug {
+export function uuidToSlug(uuid: string, alphabet: SlugAlphabet = "base64url"): Error | UuidSlug {
   const bytes = parseUuid(uuid);
   if (bytes instanceof Error) return bytes;
-  return formatUuidSlug(bytes, 0, alpha);
+  return formatUuidSlug(bytes, 0, alphabet);
 }
 
 export function slugToUuid(slug: string): Error | UuidString {

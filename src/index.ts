@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-export { BASE32HEX, BASE64URL } from "./alphabet";
-export type { Alphabet } from "./alphabet";
 export { decodeBase64Url, encodeBase64Url, isBase64Url } from "./base64url";
 export {
   UUID_V7_SENTINEL_DEFINITIONS,
@@ -52,6 +50,7 @@ export {
   slugToUuid,
   uuidToSlug,
 } from "./uuid";
+export type { SlugAlphabet } from "./uuid";
 export { createRuntimeGenerator, createUuidV7Generator } from "./v7";
 
 import { defaultCodec } from "./codec";

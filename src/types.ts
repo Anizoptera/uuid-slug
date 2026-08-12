@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Alphabet } from "./alphabet";
+import type { SlugAlphabet } from "./uuid";
 
 declare const brand: unique symbol;
 
@@ -155,7 +155,7 @@ export interface UuidSlugCodecOptions {
    * Costs throughput when set: `uuidV7Slug` can no longer use a runtime's native base64url slug
    * generator and falls back to generating bytes and encoding them.
    */
-  readonly slugAlphabet?: Alphabet;
+  readonly slugAlphabet?: SlugAlphabet;
 }
 
 /**
