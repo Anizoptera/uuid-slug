@@ -167,6 +167,14 @@ describe("direct UUID slugs", () => {
     expect(codec.sentinels[0]?.slug).toHaveLength(22);
   });
 
+  it("refuses an alphabet whose slugs could never be decoded again", () => {
+    // Encoding works in any power-of-two alphabet; decoding recognises one by slug length. A codec
+    // built on an unlisted alphabet would mint ids nothing can resolve, so it is refused where the
+    // mistake is made rather than at the first failed lookup.
+    const base16 = { ...BASE32HEX, bitsPerChar: 4, chars: "0123456789abcdef", name: "base16" };
+    expect(() => createUuidSlugCodec({ slugAlphabet: base16 })).toThrow(/cannot be decoded again/);
+  });
+
   it("reads either alphabet back without being told which", () => {
     // Decoding takes no alphabet because the two lengths are disjoint. That is what lets a system
     // change alphabet without invalidating a single slug it has already handed out.

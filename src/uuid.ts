@@ -121,6 +121,17 @@ export function isUuidV7Bytes(bytes: Uint8Array): boolean {
   return bytes.length === 16 && uuidVersion(bytes) === 7 && isRfcVariant(bytes);
 }
 
+/**
+ * Whether slugs written in this alphabet can be READ BACK. Decoding identifies an alphabet by slug
+ * length, so one absent from `SLUG_ALPHABETS` — a caller's own, or a third added to `alphabet.ts`
+ * and not listed here — encodes perfectly and then decodes nowhere. Checked where an alphabet is
+ * configured once and used forever, not per call.
+ */
+export function isSlugAlphabet(alpha: Alphabet): boolean {
+  return SLUG_ALPHABET_BY_LENGTH[slugLength(alpha)] === alpha;
+}
+
+/** `alpha` MUST satisfy `isSlugAlphabet`, or the result will not decode. */
 export function formatUuidSlug(
   bytes: Uint8Array,
   offset = 0,

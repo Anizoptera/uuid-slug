@@ -28,6 +28,7 @@ import {
   formatUuid,
   formatUuidSlug,
   hasUuidV7Entropy,
+  isSlugAlphabet,
   isUuidSlug,
   isUuidV4Slug,
   isUuidV4String,
@@ -132,6 +133,14 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
   );
   const generator = options.generator ?? createRuntimeGenerator(runtime);
   const slugAlphabet = options.slugAlphabet ?? BASE64URL;
+  // Refused at construction rather than discovered at decode. Encoding works in any alphabet;
+  // reading back does not, because decoding recognises an alphabet by slug length. A codec that
+  // accepted an unlisted one would mint ids nothing can resolve, and nothing would say so.
+  if (!isSlugAlphabet(slugAlphabet))
+    throw new UuidSlugError(
+      "invalid_uuid_slug",
+      `Slugs in the ${slugAlphabet.name} alphabet cannot be decoded again; use BASE64URL or BASE32HEX.`,
+    );
   // The runtime's own slug generator emits base64url and nothing else, so it can only serve the
   // default. Resolved once here rather than per call: the branch is on configuration, which cannot
   // change after construction.

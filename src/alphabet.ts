@@ -32,9 +32,14 @@ export const BASE64URL = alphabet(
 );
 
 /**
- * RFC 4648 §7 base32hex, not the §6 alphabet and not Crockford. Chosen because its characters
- * are in ASCII order, so encoded values sort the same way the underlying bytes do — the one
- * property base64url cannot offer, and the reason a second alphabet exists at all.
+ * The RFC 4648 §7 extended-hex digit values, not the §6 alphabet and not Crockford. Chosen because
+ * its characters are in ASCII order, so encoded values sort the same way the underlying bytes do —
+ * the one property base64url cannot offer, and the reason a second alphabet exists at all.
+ *
+ * Spelled LOWERCASE where the RFC writes `0-9A-V`, matching how this package renders UUIDs, and
+ * decoding accepts only that spelling so an id has exactly one form. The cost is interop: verified
+ * 2026-08-12 against CPython, `base64.b32hexdecode` rejects these slugs unless called with
+ * `casefold=True`. Upper-case them at the boundary if a strict RFC decoder has to read them.
  */
 export const BASE32HEX = alphabet(
   "base32hex",
