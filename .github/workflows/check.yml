@@ -51,7 +51,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [lts/*, current]
+        # `20` is the FLOOR declared in package.json `engines.node`, and it is here because a
+        # support claim nothing runs is not a support claim: until this entry existed, the manifest
+        # promised Node 20 while the lane tested only `lts/*` and `current`. Verified 2026-08-12 on
+        # Node 20.19.5 -- the whole vitest suite, both dist builds and a mask round trip all pass --
+        # so this pins a property the package HAS rather than asserting an aspiration.
+        # `scripts/check-artifact.ts` fails if `engines.node` moves away from `>=20` without this
+        # entry moving with it; the two are one claim in two files and nothing else couples them.
+        node: ["20", lts/*, current]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

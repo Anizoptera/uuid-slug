@@ -97,6 +97,32 @@ async function main() {
       }
     }
 
+    // The entry points, and ONLY these. `dist` is built unbundled -- one file per source module --
+    // so every internal module is now a separate shipped file that LOOKS like a usable entry, and
+    // `"./*": "./dist/*"` is the natural-looking change that would freeze this package's internal
+    // layout as public API permanently. Node's resolver blocks deep imports only for as long as
+    // this map stays closed. It is also pointless to open it: the module split already delivers the
+    // tree-shaking a deep import would be reached for (see src/keyless.ts).
+    const exportKeys = Object.keys((packageJson.exports as Record<string, unknown>) ?? {}).toSorted();
+    if (exportKeys.join(",") !== ".,./package.json")
+      throw new Error(
+        `Packed "exports" must expose exactly "." and "./package.json", found: ${exportKeys.join(", ")}. ` +
+          `A wildcard or subpath entry makes dist/'s internal module layout public API forever.`,
+      );
+
+    // The declared floor and the CI matrix are ONE claim living in two files, and nothing else
+    // couples them: `engines.node` promises consumers a runtime, and `check.yml`'s `runtimes`
+    // matrix is the only thing that ever runs it. Raising the floor without moving that entry
+    // silently reverts the package to promising a version no lane exercises, which is the state
+    // this check exists to end. Assert on the PACKED manifest, since that is what consumers read.
+    const engines = packageJson.engines as Record<string, string> | undefined;
+    if (engines?.node !== ">=20")
+      throw new Error(
+        `engines.node is "${String(engines?.node)}", not ">=20". That floor is pinned by the ` +
+          `"20" entry in the runtimes matrix of .github/workflows/check.yml -- change both ` +
+          `together, or the declared floor stops being tested.`,
+      );
+
     // EVERY shipped file is read, and an unreadable one FAILS. Both used to be the other way: an
     // extension allow-list skipped `.mjs`, `.cjs` and extensionless files, and `.catch(() => "")`
     // turned a file this script could not open into an empty string that passed every scan below.
