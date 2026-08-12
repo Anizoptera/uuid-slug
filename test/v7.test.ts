@@ -55,6 +55,18 @@ describe("uuidv7 bit layout", () => {
   });
 });
 
+/**
+ * Asserting intra-millisecond order here does NOT contradict README §Guarantees' "NOT ordered
+ * within a millisecond", and this block must not be deleted for looking like it does. That
+ * guarantee is about ids the package HANDS BACK, which on most runtimes come from a native
+ * generator whose intra-ms behaviour we neither control nor probe. These cases drive
+ * `createUuidV7Generator` with an injected clock and fill, which never delegates — so what is
+ * pinned is our own 42-bit sequence, not a promise about anyone else's.
+ *
+ * The ordering assertion is really a DUPLICATE check, which README does promise under Randomness.
+ * `constantFill` makes every reseed identical, so the counter is the only thing separating
+ * consecutive ids: break it and this emits the same UUID a thousand times.
+ */
 describe("uuidv7 monotonicity", () => {
   it("never repeats or goes backwards while the clock stands still", () => {
     const generator = createUuidV7Generator({
