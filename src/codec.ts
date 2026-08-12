@@ -76,6 +76,24 @@ function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
   const byUuid = new Map<string, SentinelUuidV7Slug>();
   const bySlug = new Map<string, UuidV7String>();
   for (const definition of definitions) {
+    // `uuid` is typed `UuidV7String`, and that types NOTHING: `Brand`'s marker is optional by
+    // design, so every string satisfies every brand and a v4 passed the declaration untouched.
+    // It then constructed fine, masked fine, and failed on EVERY decode forever after — a
+    // permanent, per-call error configured once at construction. Checked here for the same reason
+    // the invertibility proof is checked here: this is the last point at which a bad definition is
+    // still a caller's argument rather than a codec that cannot work.
+    if (!isUuidV7String(definition.uuid))
+      throw new UuidSlugError(
+        "invalid_uuid_version",
+        `Sentinel "${definition.name}" must be a UUIDv7, got ${String(definition.uuid)}.`,
+      );
+    // A duplicate collapses SILENTLY: both entries stay in `codec.sentinels`, while the lookup maps
+    // keep only the last, so the codec reports a sentinel it will never match.
+    if (byUuid.has(definition.uuid))
+      throw new UuidSlugError(
+        "invalid_uuid",
+        `Sentinel "${definition.name}" repeats the UUID of an earlier sentinel.`,
+      );
     // Always base64url, never the codec's `slugAlphabet`: a sentinel slug is matched against
     // MASKED input, which is base64url by definition, so one written in another alphabet could
     // never be recognised in the position it exists for.
@@ -83,8 +101,8 @@ function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
     if (slug instanceof Error) throw slug;
     const sentinel = {
       name: definition.name,
-      // `uuidToSlug` sees only a string and returns the version-agnostic brand. The definition's
-      // `uuid` is typed `UuidV7String`, so v7-ness is established here and nowhere deeper.
+      // `uuidToSlug` sees only a string and returns the version-agnostic brand; the v7-ness comes
+      // from the check above.
       slug: slug as SentinelUuidV7Slug,
       uuid: definition.uuid,
     };
@@ -149,7 +167,16 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
       const decoded = maskedSlugToUuidWithSchema(slug, previous);
       if (!(decoded instanceof Error)) return decoded;
     }
-    if (options.acceptUnmaskedSlugs === true) return slugToUuid(slug);
+    if (options.acceptUnmaskedSlugs === true) {
+      const unmasked = slugToUuid(slug);
+      if (!(unmasked instanceof Error)) return unmasked;
+    }
+    // The fallback's error is DROPPED, deliberately, and this returns `primary` whether or not the
+    // fallback ran. It answers a different question — "is this a plain slug?" — and for the failure
+    // that actually brings people here, a wrong or rotated key, its answer is untrue: the input is
+    // perfectly good base64url whose trailing bits ARE the mask check, so it reported
+    // `invalid_base64url: non-canonical trailing bits` and sent operators hunting a typo.
+    // `primary` says the schema did not match, which is what happened.
     return primary;
   }
 

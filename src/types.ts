@@ -226,10 +226,19 @@ export interface UuidSlugCodec extends UuidV7Generator {
    * supplied their own and returned a confident Error for valid slugs. There is no keyless
    * counterpart to this for the same reason; `validateUuidV7SlugFresh` stays module-level because
    * a PLAIN slug decodes without one.
+   *
+   * Returns the slug it was GIVEN, at the type it was given, which is the only type that is true
+   * of it. Declaring `MaskedUuidV7Slug` was a lie the compiler could not catch: that brand is
+   * `Base64UrlString & UuidSlug`, but with `acceptUnmaskedSlugs` the decode falls through to
+   * `slugToUuid`, which accepts 26-character base32hex too — so a base32hex slug came back typed as
+   * base64url and `isBase64Url` on it was false. Narrowing the fallback to base64url would have
+   * been the wrong repair: a codec built with `slugAlphabet: "base32hex"` has exactly those legacy
+   * ids, and refusing them breaks the migration this flag exists for. The behaviour is right; the
+   * claim about it was not.
    */
-  validateMaskedSlugFresh(
+  validateMaskedSlugFresh<S extends string>(
     this: void,
-    slug: string,
+    slug: S,
     freshness?: FreshValidationOptions,
-  ): Error | MaskedUuidV7Slug;
+  ): Error | S;
 }

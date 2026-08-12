@@ -6,11 +6,13 @@ import {
   decodeBase64Url,
   encodeBase64Url,
   extractUuidV7Timestamp,
+  isBase64Url,
   parseUuid,
   slugToUuid,
   UUID_SLUG_ERROR_CODES,
   uuidToSlug,
   uuidV7BytesAt,
+  UuidSlugError,
 } from "../src/index";
 import type { SlugAlphabet } from "../src/index";
 import { deterministicUuidV7 } from "./deterministic-uuid";
@@ -317,6 +319,74 @@ describe("acceptUnmaskedSlugs", () => {
     // in 200,000 against the 3.05 that 2^-16 predicts. The headroom absorbs a reseed, not a
     // format change.
     expect(confused).toBeLessThanOrEqual(4);
+  });
+
+  it("blames the schema, not the alphabet, when a slug matches no key", () => {
+    // The main failure this flag is present for is a wrong or rotated key, and turning it on used
+    // to CHANGE THE DIAGNOSIS for it: the fallback's error was returned and the masked one thrown
+    // away, so the operator was told `invalid_base64url: non-canonical trailing bits`. That is
+    // untrue — the input is well-formed base64url, and its trailing bits ARE the mask check — and
+    // it sends them hunting a typo in an id that has none. The flag must not change the answer to
+    // "why did this not decode".
+    const mine = createMaskSchema({ id: "feistel-only", seed: "the-key-in-use" });
+    const theirs = createMaskSchema({ id: "feistel-only", seed: "a-different-key" });
+    if (mine instanceof Error) throw mine;
+    if (theirs instanceof Error) throw theirs;
+    const foreign = String(createUuidSlugCodec({ mask: theirs }).uuidV7ToMaskedSlug(SAMPLE_V7_A));
+
+    for (const acceptUnmaskedSlugs of [false, true]) {
+      const codec = createUuidSlugCodec({ acceptUnmaskedSlugs, mask: mine });
+      const failure = codec.maskedSlugToUuid(foreign);
+      expect(failure).toBeInstanceOf(UuidSlugError);
+      expect((failure as UuidSlugError).code).toBe("invalid_uuid_slug");
+    }
+  });
+
+  it("returns a base32hex slug it accepted as itself, not as a base64url one", () => {
+    // `validateMaskedSlugFresh` used to declare `MaskedUuidV7Slug` — `Base64UrlString & UuidSlug` —
+    // while this path hands back a 26-character base32hex string, so the declared type was false
+    // and `isBase64Url` on the result was `false`. The behaviour is correct and must stay: a codec
+    // whose own alphabet is base32hex has exactly these legacy ids, which is what the flag is for.
+    // The signature is generic now, so the value is returned at the type it arrived as; `tsc` is
+    // what checks that half. This pins the behaviour the type had to be made honest about.
+    const codec = createUuidSlugCodec({ acceptUnmaskedSlugs: true, slugAlphabet: "base32hex" });
+    const legacy = String(uuidToSlug(SAMPLE_V7_A, "base32hex"));
+    expect(legacy).toHaveLength(26);
+    // `now` pinned to the sample's own instant, so the freshness window is satisfied and the case
+    // is about the returned VALUE rather than about the clock.
+    const minted = extractUuidV7Timestamp(parseUuid(SAMPLE_V7_A) as Uint8Array) as number;
+    expect(codec.validateMaskedSlugFresh(legacy, { now: () => minted })).toBe(legacy);
+    expect(isBase64Url(legacy)).toBe(false);
+  });
+});
+
+describe("sentinel definitions", () => {
+  // Everything else this constructor takes is proved at construction — `mix` invertibility, an
+  // empty seed. Sentinels were the gap, and the gap is invisible: `UuidV7SentinelDefinition.uuid`
+  // is typed `UuidV7String`, but `Brand`'s marker is OPTIONAL by design, so any string satisfies
+  // it and the compiler never looks. A v4 sentinel constructed fine, masked fine, and then failed
+  // on every single decode for the life of the codec.
+  it("refuses a sentinel that is not a UUIDv7", () => {
+    // A v4 is passed with NO cast, and that is the demonstration: `uuid` is declared `UuidV7String`
+    // and the compiler raises nothing. Writing `SAMPLE_V4 as UuidV7String` here was reported by
+    // oxlint as an unnecessary assertion — the type system agreeing, in its own words, that it
+    // cannot tell these apart. Only a runtime check can.
+    expect(() =>
+      createUuidSlugCodec({ sentinels: [{ name: "v4-sentinel", uuid: SAMPLE_V4 }] }),
+    ).toThrow(UuidSlugError);
+  });
+
+  it("refuses two sentinels sharing one UUID, which would collapse silently", () => {
+    // Both entries survive in `codec.sentinels` while the lookup maps keep only the last, so the
+    // codec reports a sentinel it can never match.
+    expect(() =>
+      createUuidSlugCodec({
+        sentinels: [
+          { name: "first", uuid: SAMPLE_V7_A },
+          { name: "second", uuid: SAMPLE_V7_A },
+        ],
+      }),
+    ).toThrow(UuidSlugError);
   });
 });
 
