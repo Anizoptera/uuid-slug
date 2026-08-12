@@ -1,19 +1,20 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# UUIDv7 across runtimes — measured 2026-08-11
+# UUIDv7 across runtimes — measured 2026-08-12
 
 A snapshot, not a claim about today. Apple M4 Max, macOS 26.5.2, Bun 1.3.14, Node 24.15.0 and
 Node 26.7.0. Reproduce with `bun run bench:matrix`; add runtimes through
 `UUID_SLUG_BENCH_RUNTIMES` (colon-separated executables). Numbers move a few percent per run —
-read ratios, not digits.
+read ratios, not digits. Every figure below comes from that command; nothing here is hand-entered.
 
 ## What this changed
 
 **Intra-millisecond ordering differs by runtime, and this package does not promise it.**
 `crypto.randomUUIDv7` arrived in Node 26.6.0 and re-randomises all 74 random bits on every call:
-consecutive values inside one millisecond sort in creation order **50.06%** of the time. Bun's
-advances a 12-bit counter and reaches 99.98%. The portable generator reaches 100%. All three are
-conformant — RFC 9562 §6.2 leaves the choice to the implementation.
+consecutive values inside one millisecond sort in creation order **49.97%** of the time — chance.
+Bun's advances a 12-bit counter and reaches 99.98%. Node 24, which has no native v7, runs this
+package's own generator and reaches 100%. All three are conformant; RFC 9562 §6.2 leaves the
+choice to the implementation.
 
 The package delegates to whichever generator the runtime provides and discloses the difference
 rather than flattening it (ruling, 2026-08-11). What it does guarantee is enumerated in
@@ -28,123 +29,133 @@ came out of it is in `AGENTS.md` — a promise this package has not published is
 a test may assert the published ones and nothing stronger.
 
 CI now runs the suite on `current` as well as `lts/*`, which is how a runtime that changes
-behaviour under this package becomes visible at all.
-
-**`uuidV7Bytes` returned a different TYPE per runtime.** Bun's native hands back a node `Buffer`,
-which satisfies `Uint8Array` structurally, so nothing in the type system objected. But
-`toString("hex")` returns hex from a Buffer and `"1,159,242,…"` from a Uint8Array, and
-`JSON.stringify` emits `{"type":"Buffer","data":[…]}` against `{"0":1,…}`. Code written and tested
-on Bun would produce different bytes on Node, silently. Now copied into a plain `Uint8Array`
-(−20% on that path, 18.0M → 15.1M) and pinned by a test in both runners.
+behaviour underneath this package turns a lane red rather than a consumer's index.
 
 ## Throughput, ops/s
 
 | operation               | bun 1.3.14 | node 24.15.0 | node 26.7.0 |
 | ----------------------- | ---------: | -----------: | ----------: |
-| `package.v4.string`     |     32.56M |        8.25M |       6.94M |
-| `package.v7.string`     |     17.24M |        0.98M |       0.97M |
-| `package.v7.slug`       |     15.58M |        1.09M |       1.01M |
-| `package.v7.maskedSlug` |      3.02M |        0.97M |       0.92M |
-| `package.v7.bytes`      |     15.14M |        1.35M |       1.28M |
-| `uuid` v4               |     30.04M |        6.84M |       6.13M |
-| `uuid` v7               |      5.90M |        1.34M |       1.33M |
-| `uuidv7`                |      4.56M |        3.09M |       2.90M |
-| `fastv7`                |      8.25M |        8.41M |       6.92M |
-| `uuidv7-js`             |      3.67M |        1.25M |       1.24M |
-| `@kripod/uuidv7`        |      2.08M |        0.68M |       0.64M |
+| `package.v4.string`     |     31.49M |        7.99M |       6.87M |
+| `package.v7.string`     |     16.01M |        2.65M |       5.69M |
+| `package.v7.slug`       |     14.83M |        2.95M |       2.78M |
+| `package.v7.bytes`      |     14.87M |        5.67M |       5.58M |
+| `package.v7.maskedSlug` |      3.20M |        2.05M |       1.98M |
+| `uuid` v7               |      5.44M |        1.34M |       1.28M |
+| `uuidv7`                |      3.72M |        3.06M |       2.74M |
+| `fastv7`                |      7.57M |        7.99M |       6.55M |
+| `uuidv7-js`             |      2.71M |        1.23M |       1.18M |
+| `@kripod/uuidv7`        |      2.05M |        0.65M |       0.62M |
 
-Same JavaScript, different engine, up to 3.3× apart (`@kripod/uuidv7`) — a library's ranking does
-not transfer between runtimes. `fastv7` is the only pure-JS candidate that does not collapse on
-Node, and on Node it beats every other library including this package's portable path.
+`package.v7.string` more than doubles between Node 24 and Node 26 — 2.65M to 5.69M — because 26.6
+added `crypto.randomUUIDv7` and the adapter adopts it. That is the same change that costs
+intra-millisecond ordering in the table below: one number moved because the other did.
+
+`package.v7.slug` does NOT follow it up, because a slug needs the bytes and the native string
+form would have to be parsed back. `package.v7.maskedSlug` is the slowest row by design — it is
+generation plus a four-round keyed cipher plus encoding.
 
 ### Native surfaces
 
-| native                                            | bun 1.3.14 | node 24.15.0 | node 26.7.0 | note                           |
-| ------------------------------------------------- | ---------: | -----------: | ----------: | ------------------------------ |
-| `Bun.randomUUIDv7("buffer")`                      |     19.68M |            — |           — | raw 16 bytes, fastest measured |
-| `Bun.randomUUIDv7("base64")`                      |     16.64M |            — |           — | 24 chars, padded               |
-| `Bun.randomUUIDv7("base64url")`                   |     16.26M |            — |           — | **22-char slug, natively**     |
-| `Bun.randomUUIDv7("hex")`                         |     16.20M |            — |           — | canonical 36-char              |
-| `Bun.randomUUIDv5`                                |      8.55M |            — |           — | deterministic, name-based      |
-| `crypto.randomUUIDv7()`                           |          — |            — |       6.28M | Node ≥26.6.0                   |
-| `crypto.randomUUIDv7({disableEntropyCache:true})` |          — |            — |       1.42M | 4.4× cost                      |
-| `crypto.randomUUID()`                             |     27.71M |        8.61M |       6.74M | v4                             |
-| `crypto.randomUUID({disableEntropyCache:true})`   |      3.58M |        1.51M |       1.49M | 5.7× cost                      |
-| `globalThis.crypto.randomUUID()`                  |     30.90M |        7.95M |       6.62M | Web Crypto binding             |
+| native                                            | bun 1.3.14 | node 24.15.0 | node 26.7.0 | note                       |
+| ------------------------------------------------- | ---------: | -----------: | ----------: | -------------------------- |
+| `Bun.randomUUIDv7("buffer")`                      |     19.95M |            — |           — | raw 16 bytes               |
+| `Bun.randomUUIDv7("base64")`                      |     16.97M |            — |           — | 24 chars, padded           |
+| `Bun.randomUUIDv7("base64url")`                   |     16.32M |            — |           — | **22-char slug, natively** |
+| `Bun.randomUUIDv7("hex")`                         |     15.89M |            — |           — | canonical 36-char          |
+| `Bun.randomUUIDv5`                                |      8.92M |            — |           — | deterministic, name-based  |
+| `crypto.randomUUIDv7()`                           |          — |            — |       5.86M | Node ≥26.6.0               |
+| `crypto.randomUUIDv7({disableEntropyCache:true})` |          — |            — |       1.41M | 4.2× cost                  |
+| `crypto.randomUUID()`                             |     31.08M |        8.63M |       7.08M | v4                         |
+| `crypto.randomUUID({disableEntropyCache:true})`   |      3.66M |        1.47M |       1.46M | 4.8–5.9× cost              |
+| `globalThis.crypto.randomUUID()`                  |     30.95M |        7.82M |       6.71M | Web Crypto binding         |
 
-Node's entropy cache is worth 4.4–5.7×; it batches enough randomness for 128 identifiers. This
-package draws entropy per call and does not batch — the clearest remaining optimisation for its
-portable path, which is what every Node consumer now runs.
+Node's entropy cache is worth 4.2–5.9×. This package batches too — `src/runtime/pool.ts` draws an
+8 KiB page and hands it out — so that is not a remaining optimisation, and an earlier version of
+this file claiming otherwise was already false when written.
 
-`Bun.randomUUIDv7("base64url")` produces the same 22-character encoding this package does
-(verified byte-identical against `Buffer.toString("base64url")` over 5,000 random inputs) at
-16.26M against this package's 15.58M — a 4% gap. The encoder is not the bottleneck.
+`Bun.randomUUIDv7("base64url")` produces the same 22-character encoding this package does. That
+agreement is a gate rather than a bench figure: `test/alphabet.test.ts` compares this package's
+encoder against `Buffer.toString("base64url")` across every length boundary. At 16.32M against
+this package's 14.83M the two are within a factor the run-to-run spread below does not let anyone
+call a finding.
 
 ## Randomness
 
-`distinct` — different random fields drawn. `ordered` — consecutive values that sort in creation
-order. `counter` — width of a leading counter advancing by exactly one, with the share of pairs
-obeying it. `P(1)` — narrowest and widest share of ones across the 74 random bits. Method and
-limits are documented in `bench/entropy.ts`; 50,000 samples per candidate per runtime.
+50,000 samples per candidate per runtime. Method and limits are documented in `bench/entropy.ts`.
 
-| candidate        | runtime | source            |    ordered | counter      |       unguessable |
-| ---------------- | ------- | ----------------- | ---------: | ------------ | ----------------: |
-| **package**      | bun     | native, below JS  |     99.98% | 12b @ 99.98% |           62 bits |
-| **package**      | node 24 | `randomFillSync`  |    100.00% | 42b @ 100%   |           32 bits |
-| **package**      | node 26 | `randomFillSync`  |    100.00% | 42b @ 100%   |           32 bits |
-| `uuid`           | all     | `getRandomValues` |    100.00% | 32b @ 100%   |           42 bits |
-| `uuidv7`         | all     | `getRandomValues` |    100.00% | 42b @ 100%   |           32 bits |
-| `fastv7`         | all     | `getRandomValues` |    100.00% | 12b @ 100%   |           62 bits |
-| `uuidv7-js`      | all     | `getRandomValues` |    100.00% | 42b @ ~50%   | partly determined |
-| `@kripod/uuidv7` | all     | not observable    |    100.00% | 12b @ 100%   |           62 bits |
-| `bun-native`     | bun     | native, below JS  |     99.98% | 12b @ 99.98% |           62 bits |
-| `node-native`    | node 26 | native, below JS  | **50.06%** | none         |           74 bits |
+- `distinct` — different random fields drawn.
+- `in-tick` — consecutive values **inside one millisecond** that strictly increase, over the
+  same-millisecond pairs only. Pairs spanning a tick order by their timestamp whatever the
+  generator does, so including them measured the clock.
+- `peak/ms` — most values drawn in any single millisecond. It is what decides whether a counter
+  wraps.
+- `counter` — width of a leading counter advancing by exactly one, with the share of pairs obeying
+  it.
+- `P(1)` — narrowest and widest share of ones across the 74 random bits.
+
+| candidate        | runtime | source            | in-tick | peak/ms |      counter |
+| ---------------- | ------- | ----------------- | ------: | ------: | -----------: |
+| **package**      | bun     | native, below JS  |  99.98% |  15,155 | 12b @ 99.98% |
+| **package**      | node 24 | `randomFillSync`  | 100.00% |   3,448 |   42b @ 100% |
+| **package**      | node 26 | native, below JS  |  49.97% |   8,389 |     1b @ 25% |
+| `uuid`           | all     | `getRandomValues` | 100.00% |   1,331 |   32b @ 100% |
+| `uuidv7`         | all     | `getRandomValues` | 100.00% |   3,459 |   42b @ 100% |
+| `fastv7`         | all     | `getRandomValues` | 100.00% |   4,096 |   12b @ 100% |
+| `uuidv7-js`      | all     | `getRandomValues` | 100.00% |   1,303 |   42b @ ~50% |
+| `@kripod/uuidv7` | all     | not observable    | 100.00% |     736 |   12b @ 100% |
+| `bun-native`     | bun     | native, below JS  |  99.98% |  14,319 | 12b @ 99.98% |
+| `node-native`    | node 26 | native, below JS  |  50.23% |   9,277 |     1b @ 25% |
 
 No candidate repeated a value, and none reached `Math.random` on any path.
 
-Three counter designs are visible, all sanctioned by RFC 9562 §6.2, trading unguessability
-against ordering:
+**`peak/ms` explains the ordering column better than the counter width does.** `fastv7` peaks at
+exactly 4,096 — the capacity of a 12-bit counter — because it waits for the next millisecond
+instead of wrapping, which is what buys it 100%. Bun's generator has the same 12 bits and peaks at
+15,155, so it wraps roughly four times per tick, and those wraps are the 0.02% out of order.
+Wrapping does not repeat a value: 50,000 draws gave 50,000 distinct fields.
 
-- **Fixed counter** (everything except the two below) — fully determined by the previous value,
-  so ordering is exact and those bits are free to an attacker.
+Three counter designs are visible, all sanctioned by RFC 9562 §6.2, trading unguessability against
+ordering:
+
+- **Fixed counter** (everything except the two below) — fully determined by the previous value, so
+  ordering is exact and those bits are free to an attacker. A 12-bit counter leaves 62 bits
+  unguessable, a 42-bit one leaves 32.
 - **Random increment** (`uuidv7-js`) — 42 bits advance by exactly one only ~50% of the time; the
-  rest is a random positive step, so the field is partly determined and still ordered.
-- **No counter** (`node-native`) — maximum unguessability, no intra-millisecond ordering.
-
-`unguessable` is stated only where the counter holds at ~100%; for a random increment no single
-number is honest. Bun's 12-bit counter holds 4096 values per millisecond and wraps beyond that,
-which is the 0.02% of pairs out of order — measured, not inferred, at 8,629 draws in one
-millisecond. Wrapping does **not** repeat a value: 200,000 draws produced 200,000 distinct fields.
+  rest is a random positive step, so the field is partly determined and still ordered. No single
+  unguessability figure is honest for it.
+- **No counter** (`node-native`, and this package on Node ≥26.6) — all 74 bits unguessable, no
+  intra-millisecond ordering.
 
 "not observable" is not a finding — a native generator draws below JavaScript, and a library that
-captures its source reference at import is instrumented too late. It states what was seen.
+captures its source reference at import is instrumented too late. It states what was seen, and it
+is why README §Guarantees scopes the cryptographic-randomness promise to this package's own code.
 
 ## Known limitation: slugs do not sort
 
 The 22-character base64url form is **not** lexicographically sortable, independent of any
 generator. The alphabet is ordered `A–Z a–z 0–9 - _` while ASCII orders `- 0–9 A–Z _ a–z`, so
-string comparison does not track byte order: 200,000 strictly increasing 16-byte inputs produced
-**15,720 order inversions** (7.9%). The README's design already directs the UUID to the database
-index and the slug to public URLs, so nothing here is broken — but "the same identifier in a
-shorter alphabet" is true of the value and not of its ordering, and a reader may store the slug
-expecting otherwise. A sort-preserving variant is possible at the same 22 characters by ordering
-the alphabet to match ASCII; that is a maintainer's decision, not a defect.
+string comparison does not track byte order. base32hex has no such gap — it runs `0–9 a–v`, which
+is ASCII order — which is the whole reason it is offered. `test/alphabet.test.ts` gates both
+halves against strictly increasing inputs: zero inversions in base32hex, some in base64url.
+
+The README's design already directs the UUID to the database index and the slug to public URLs, so
+nothing here is broken — but "the same identifier in a shorter alphabet" is true of the value and
+not of its ordering, and a reader may store the slug expecting otherwise. Use `base32hex` when the
+slug itself has to sort.
 
 ## Method, and what it does not cover
 
-One process per runtime, 1,000,000 iterations per row after a 1,000-iteration warm-up, one byte
-of each result consumed so nothing is optimised away. Three threats were tested rather than
-assumed:
+One process per runtime, one byte of each result consumed so nothing is optimised away. Two
+threats were tested rather than assumed:
 
 - **Warm-up** — 1,000 against 100,000 iterations moved Node by under 2%. Not a factor.
-- **Shared call site** — measuring every candidate through one function could go megamorphic;
-  isolated processes agreed with in-suite figures within run-to-run variance (~5%). Isolation
-  would have been complexity for nothing.
 - **Bundling** — Node cannot execute the repository's extensionless TypeScript imports, so each
-  bench is bundled for it. Under Bun that bundle measured 1.51M against 16.4M for the same code,
-  because a Node-targeted bundle resolves `#runtime` to the Node adapter. The bundle is therefore
-  correct for Node and invalid anywhere else, and is never cross-run.
+  bench is bundled for it. A Node-targeted bundle resolves `#runtime` to the Node adapter, so it is
+  correct for Node and invalid anywhere else, and is never cross-run. Inlining across module
+  boundaries can flatter a row a consumer would import unbundled.
 
-Not covered: memory and allocation behaviour, multi-core or worker contention, cold-start cost,
-and statistical randomness quality beyond the three measures above — a generator that passes all
-of them and is still weak needs a real battery (PractRand, dieharder), which is a different tool.
+Not covered, and stated rather than quietly assumed: memory and allocation behaviour, multi-core or
+worker contention, cold-start cost, whether measuring every candidate through one shared call site
+goes megamorphic, and statistical randomness quality beyond the measures above — a generator that
+passes all of them and is still weak needs a real battery (PractRand, dieharder), which is a
+different tool.

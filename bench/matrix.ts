@@ -136,7 +136,7 @@ for (const [name, row] of speed)
 for (const { version, records } of entropy) {
   console.log(`\n## Randomness — ${version}\n`);
   console.log(
-    `${"candidate".padEnd(16)}${"entropy source".padEnd(25)}${"distinct".padStart(9)}${"in-tick".padStart(9)}${"counter".padStart(16)}${"P(1) range".padStart(15)}`,
+    `${"candidate".padEnd(16)}${"entropy source".padEnd(25)}${"distinct".padStart(9)}${"in-tick".padStart(9)}${"peak/ms".padStart(9)}${"counter".padStart(16)}${"P(1) range".padStart(15)}`,
   );
   for (const r of records) {
     const sources = r.sources as string[];
@@ -153,6 +153,7 @@ for (const { version, records } of entropy) {
           ? "n/a"
           : `${(((r.orderedWithinTick as number) / sameTickPairs) * 100).toFixed(2)}%`
         ).padStart(9) +
+        String(r.peakDrawsPerTick).padStart(9) +
         `${String(r.counterBits)}b @ ${((r.counterHolds as number) * 100).toFixed(2)}%`.padStart(
           16,
         ) +

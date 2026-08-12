@@ -115,3 +115,32 @@ describe("wire format compatibility", () => {
     expect(vector.masked).toHaveLength(22);
   });
 });
+
+/**
+ * The sort claim, gated. README offers base32hex specifically because its slugs sort
+ * chronologically as plain strings, and says base64url's cannot — a property of the ALPHABETS, not
+ * of any generator: base32hex runs `0-9a-v`, which is ASCII order, while base64url runs
+ * `A-Za-z0-9-_`, which is not. Nothing asserted either half, so a reader could store a base64url
+ * slug expecting an ordered index and find out in production.
+ */
+describe("slug sort order", () => {
+  // Strictly increasing 16-byte values, so any inversion below is the encoding's and not the input's.
+  const rising = Array.from({ length: 2000 }, (_, i) => {
+    const bytes = new Uint8Array(16);
+    for (let byte = 0; byte < 16; byte += 1) bytes[byte] = (i >>> ((15 - byte) * 8)) & 0xff;
+    return bytes;
+  });
+  const inversions = (spell: (bytes: Uint8Array) => string) => {
+    let count = 0;
+    for (let i = 1; i < rising.length; i += 1)
+      if (spell(rising[i] as Uint8Array) <= spell(rising[i - 1] as Uint8Array)) count += 1;
+    return count;
+  };
+
+  it("preserves byte order in base32hex and does NOT in base64url", () => {
+    expect(inversions((bytes) => encode(bytes, BASE32HEX, 0, spareBits(BASE32HEX, 16)))).toBe(0);
+    expect(
+      inversions((bytes) => encode(bytes, BASE64URL, 0, spareBits(BASE64URL, 16))),
+    ).toBeGreaterThan(0);
+  });
+});

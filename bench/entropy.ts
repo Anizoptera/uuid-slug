@@ -42,7 +42,7 @@
  * `instrument.ts` covers the one case no output inspection ever can — a library calling
  * `Math.random`, whose values are indistinguishable from a CSPRNG's by any test here.
  */
-import { candidates, type BenchCandidate } from "./candidates";
+import { candidates, runtimeName, type BenchCandidate } from "./candidates";
 import { instrument } from "../test/instrument";
 
 const smoke = process.argv.includes("--smoke");
@@ -61,6 +61,13 @@ const timestamp = (uuid: string) => uuid.replaceAll("-", "").slice(0, 12);
 
 interface Report {
   candidate: string;
+  /**
+   * The engine's own name, as IT reported it. Without this field `bench/matrix.ts` falls back to
+   * the label it guessed from the executable path, so two Node versions both printed
+   * `## Randomness — node` — in the one section where they differ most, since a native v7 that
+   * exists on only one of them changes the row completely.
+   */
+  runtime: string;
   samples: number;
   sources: string[];
   distinctFields: number;
@@ -68,6 +75,12 @@ interface Report {
   /** Same-millisecond pairs that strictly increase, over the same-millisecond pairs seen. */
   orderedWithinTick: number;
   sameTickPairs: number;
+  /**
+   * Most values drawn inside a single millisecond. It is what decides whether a counter can wrap:
+   * a 12-bit counter holds 4096 per tick, so this figure crossing that is the measured explanation
+   * for the fraction of pairs out of order, rather than an inferred one.
+   */
+  peakDrawsPerTick: number;
   counterBits: number;
   counterHolds: number;
   minOnesRatio: number;
@@ -105,7 +118,12 @@ function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>
   // canonical forms are one value seen twice, which a database index does not order and
   // `distinctFields` already reports.
   const pairs: [bigint, bigint][] = [];
+  const drawsPerTick = new Map<string, number>();
   let orderedWithinTick = 0;
+  for (const value of values) {
+    const tick = timestamp(value);
+    drawsPerTick.set(tick, (drawsPerTick.get(tick) ?? 0) + 1);
+  }
   for (let i = 1; i < samples; i += 1) {
     if (timestamp(values[i] ?? "") !== timestamp(values[i - 1] ?? "")) continue;
     pairs.push([fields[i - 1] ?? 0n, fields[i] ?? 0n]);
@@ -143,12 +161,14 @@ function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>
   const ratios = ones.map((count) => count / samples);
   return {
     candidate: candidate.name,
+    runtime: runtimeName,
     samples,
     sources: used,
     distinctFields,
     conformingValues,
     orderedWithinTick,
     sameTickPairs: pairs.length,
+    peakDrawsPerTick: Math.max(...drawsPerTick.values()),
     counterBits,
     counterHolds: Number(counterHolds.toFixed(4)),
     minOnesRatio: Number(Math.min(...ratios).toFixed(3)),
@@ -167,7 +187,7 @@ if (sources.unavailable.length > 0)
 
 const percent = (part: number, whole: number) => `${((part / whole) * 100).toFixed(1)}%`;
 console.error(
-  `\n${"candidate".padEnd(16)}${"entropy source".padEnd(25)}${"distinct".padStart(9)}${"v7".padStart(7)}${"in-tick".padStart(8)}${"counter".padStart(16)}${"P(1) range".padStart(15)}`,
+  `\n${"candidate".padEnd(16)}${"entropy source".padEnd(25)}${"distinct".padStart(9)}${"v7".padStart(7)}${"in-tick".padStart(8)}${"peak/ms".padStart(9)}${"counter".padStart(16)}${"P(1) range".padStart(15)}`,
 );
 for (const r of reports)
   console.error(
@@ -178,6 +198,7 @@ for (const r of reports)
       String(r.distinctFields).padStart(9) +
       percent(r.conformingValues, r.samples).padStart(7) +
       (r.sameTickPairs === 0 ? "n/a" : percent(r.orderedWithinTick, r.sameTickPairs)).padStart(8) +
+      String(r.peakDrawsPerTick).padStart(9) +
       `${r.counterBits}b @ ${(r.counterHolds * 100).toFixed(2)}%`.padStart(16) +
       `${r.minOnesRatio}-${r.maxOnesRatio}`.padStart(15),
   );
