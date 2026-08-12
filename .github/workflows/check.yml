@@ -66,3 +66,32 @@ jobs:
           package-manager-cache: false
       # Vitest only: it is the suite that runs on Node, and the Bun suite is covered above.
       - run: bunx vitest run
+
+  # The browser bundle, executed by the engines that actually receive it. `exports["."]` sends
+  # `deno`, `browser` and `default` to `dist/index.js`, and until this job existed nothing ran
+  # that file anywhere except in-process under Bun. Chromium is the only lane that can prove it
+  # reaches for no Node-only capability, because it is the only engine that genuinely lacks one —
+  # verified 2026-08-12 by putting the Node build in its place, which fails naming `node:crypto`.
+  #
+  # Its own job, and OUT of `bun run check`, because it needs a ~150 MB Chromium download. Requiring
+  # that to commit would be paid on every laptop and every other CI job for a check that changes
+  # only when the build configuration does.
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .tool-versions
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run test:browser
+      # Deno resolves the `deno` export condition to the same bundle. It is here rather than in
+      # `bun run check` so a developer needs neither Deno nor a browser binary to commit.
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.x
+      - run: deno run --allow-read --allow-env scripts/probe-web-bundle.ts "$PWD/dist/index.js"

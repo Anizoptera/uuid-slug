@@ -5,8 +5,8 @@ import { defineConfig } from "tsdown";
 
 /**
  * Two lines on every built file, because each one is installed and read on its own: a
- * consumer resolves exactly one of `dist/index.js`, `dist/node/index.js` or
- * `dist/web/index.js` by condition, and may never see the others.
+ * consumer resolves exactly one of `dist/index.js` or `dist/node/index.js` by condition, and may
+ * never see the other.
  *
  * The licence line is the SPDX short-form identifier, the entire standard for declaring a
  * file's licence to a scanner that sees the file and nothing around it. REUSE 3.3 terminates
@@ -56,13 +56,17 @@ const common = {
 } satisfies UserConfig;
 
 export default defineConfig([
-  // `platform` is explicit here because the DEFAULT is node, and this build is the one reached by
-  // `main`/`module` — the path taken by any tool that ignores `exports` (legacy bundlers, classic
-  // module resolution). Left unset, it baked `node:crypto` and `randomFillSync` into the file a
-  // browser build resolves, which fails at bundle time or ships a broken bundle. The web adapter
-  // uses `crypto.getRandomValues` only, so it is correct on Node, Bun, Deno and the browser alike;
-  // the specific builds below still give each platform its own best path.
+  // TWO builds, not three. `platform` is explicit because the DEFAULT is node: left unset, this
+  // build baked `node:crypto` and `randomFillSync` into the file a browser resolves, which fails at
+  // bundle time or ships a broken bundle.
+  //
+  // This one is browser-platform and NOT optional in that: it is what `main`/`module` reach, the
+  // path taken by any tool that ignores `exports` (legacy bundlers, classic module resolution), so
+  // it has to be the safe one. That forces it to be identical to a dedicated browser build — and a
+  // third `dist/web` entry was exactly that, byte-for-byte, shipping the same 54 KB bundle and its
+  // 101 KB sourcemap twice. `exports` sends `browser`, `deno` and `default` here instead. The web
+  // adapter uses `crypto.getRandomValues` only, so this file is correct on Node, Bun, Deno and the
+  // browser alike; `dist/node` exists only because Node has a faster path.
   { ...common, dts: true, clean: true, outDir: "dist", platform: "browser" },
   { ...common, dts: false, outDir: "dist/node", platform: "node" },
-  { ...common, dts: false, outDir: "dist/web", platform: "browser" },
 ]);

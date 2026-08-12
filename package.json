@@ -53,10 +53,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "bun": "./src/index.ts",
-      "deno": "./dist/web/index.js",
-      "browser": "./dist/web/index.js",
+      "deno": "./dist/index.js",
+      "browser": "./dist/index.js",
       "node": "./dist/node/index.js",
-      "default": "./dist/web/index.js"
+      "default": "./dist/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -85,7 +85,8 @@
     "version": "grep -qF \"## [$npm_package_version]\" CHANGELOG.md || { echo \"CHANGELOG.md has no ## [$npm_package_version] section. Run: bun run changelog v$npm_package_version, edit it, then COMMIT it -- the bump refuses a dirty tree.\" >&2; exit 1; }",
     "bench:matrix": "bun bench/matrix.ts",
     "lint": "oxlint --type-aware",
-    "lint:fix": "oxlint --type-aware --fix"
+    "lint:fix": "oxlint --type-aware --fix",
+    "test:browser": "vitest run --config vitest.browser.config.ts"
   },
   "dependencies": {},
   "devDependencies": {
@@ -94,6 +95,8 @@
     "@kripod/uuidv7": "^0.3.4",
     "@types/bun": "^1.3.14",
     "@types/node": "^26.2.0",
+    "@vitest/browser": "^4.1.10",
+    "@vitest/browser-playwright": "^4.1.10",
     "fastv7": "^1.0.2",
     "git-cliff": "^2.13.1",
     "oxfmt": "^0.63.0",

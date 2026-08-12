@@ -33,6 +33,8 @@ const FORBIDDEN_DEPS = [
   "uuidv7-js",
   "@kripod/uuidv7",
   "playwright",
+  "@vitest/browser",
+  "@vitest/browser-playwright",
   "vitest",
   "tsdown",
 ];
@@ -118,20 +120,22 @@ async function main() {
         throw new Error(`A build-machine filesystem path leaked in ${file}`);
     }
 
-    // The browser-facing bundles must reach no Node builtin. `tsdown.config.ts` records the exact
-    // regression: with `platform` unset, the browser-resolved build baked in `node:crypto` and
-    // `randomFillSync`, and nothing in this repo executed or read a built file, so the only way to
-    // find out was a consumer's bundler failing.
-    for (const entry of ["dist/index.js", "dist/web/index.js"]) {
+    // The browser-facing bundle must reach no Node builtin. `dist/node/index.js` is EXCLUDED and
+    // must stay so -- it is the Node build and `node:crypto` is exactly what it is for.
+    // `tsdown.config.ts` records the regression this catches: with `platform` unset, the
+    // browser-resolved build baked in `node:crypto` and `randomFillSync`, and nothing in this repo
+    // executed or read a built file, so the only way to find out was a consumer's bundler failing.
+    {
+      const entry = "dist/index.js";
       const text = await readFile(path.join(extracted, entry), "utf8");
       const builtin = /["']node:[a-z_]+["']/.exec(text);
       if (builtin) throw new Error(`${entry} must not reach a Node builtin, found ${builtin[0]}`);
     }
 
-    // Executed, not just read. Every bundle is imported and made to produce one id of each kind,
+    // Executed, not just read. Both bundles are imported and made to produce one id of each kind,
     // because a build can be well-formed, dependency-free and still dead -- an entry that throws at
     // import time or resolves `#runtime` to nothing passes every textual check above.
-    for (const entry of ["dist/index.js", "dist/web/index.js", "dist/node/index.js"]) {
+    for (const entry of ["dist/index.js", "dist/node/index.js"]) {
       const module = (await import(path.join(extracted, entry))) as {
         isUuidV7String: (value: string) => boolean;
         uuidV4: () => string;
@@ -143,6 +147,20 @@ async function main() {
       if (module.uuidV7Slug().length !== 22 || module.uuidV4().length !== 36)
         throw new Error(`${entry} generated a malformed slug or v4`);
     }
+
+    // Executed by a SECOND engine, from the packed bytes. Every import above ran in this process,
+    // which is Bun -- and `exports["."]` sends Bun to `src/index.ts`, so nothing here had yet proved
+    // the browser bundle starts under any other runtime. Node is the one guaranteed present: this
+    // lane already needs it for publish-clean. Deno and a real browser are covered by the browser
+    // CI job, which is out of `bun run check` because it needs a Chromium download.
+    run(
+      "node",
+      [
+        path.join(process.cwd(), "scripts", "probe-web-bundle.ts"),
+        path.join(extracted, "dist/index.js"),
+      ],
+      process.cwd(),
+    );
 
     run("bunx", ["publint", "run", extracted, "--pack", "false"], process.cwd());
     run("bunx", ["@arethetypeswrong/cli", tarball, "--profile", "esm-only"], process.cwd());
