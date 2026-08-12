@@ -84,6 +84,11 @@
   Sentinels stay base64url for the same reason they exist: they are matched against masked input.
   Decoding infers the alphabet from the length, 22 or 26, so it takes no alphabet argument and a
   caller cannot pick the wrong one.
+- A doc that names a symbol is code with no compiler. In public-API docs name the token the CALLER
+  writes (`"base32hex"`), never the internal constant it resolves to (`BASE32HEX`) — the caller's
+  token is the one the type union already checks, so a rename fails the build instead of leaving a
+  doc pointing at something nobody can import. Three claims went stale exactly this way in one
+  session (2026-08-12); doc-alignment gates are ruled out (Art), so the wording must carry it.
 - Encoding MUST reject a v7 timestamped at or past 2^42 ms (year 2109) instead of truncating it.
   Truncation makes encoding non-injective, and two UUIDs sharing one slug cannot be recovered from.
 - A decoded masked slug is a CANDIDATE, never a verified id, and the contract must say so: with a

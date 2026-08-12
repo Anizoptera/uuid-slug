@@ -137,7 +137,7 @@ export interface UuidSlugCodecOptions {
   readonly mask?: MaskSchema | MaskSchemaOptions;
   readonly sentinels?: readonly UuidV7SentinelDefinition[];
   /**
-   * Alphabet for PLAIN slugs from `uuidV4Slug` and `uuidV7Slug`. `BASE32HEX` costs four characters
+   * Alphabet for PLAIN slugs from `uuidV4Slug` and `uuidV7Slug`. `"base32hex"` costs four characters
    * (26 rather than 22) and buys chronological sort order: its characters are in ASCII order and a
    * UUIDv7's leading bytes are its timestamp, so base32hex slugs sort by creation time as plain
    * strings. base64url's alphabet cannot — it runs `A-Za-z0-9-_`, so its character order and its
