@@ -65,14 +65,16 @@ export function createMaskSchema(options: MaskSchemaOptions): Error | MaskSchema
 
 /**
  * A schema's `mix` MUST be its own inverse; get that wrong and every id it encodes is unreadable,
- * with nothing to notice at the time. So prove it once, here, rather than trusting the caller —
- * a codec built from a broken schema must fail at construction, not at the first decode.
+ * with nothing to notice at the time. So a codec built from a broken schema fails at construction
+ * rather than at the first decode.
  *
- * Two probes: an all-zero block, which catches a `mix` that ignores `forward`, and one whose bytes
- * are all distinct, which catches a reordering applied in the same direction both ways. That is
- * what a permutation table gets wrong, and a table is no longer a special case with its own
- * bijection check — anyone bringing a foreign scheme now brings a function, so the guarantee has
- * to be checked on the function.
+ * This is a SMOKE TEST, not a proof, and the distinction is worth keeping straight: two probes
+ * cannot establish a bijection over 2^128, and a `mix` that round-trips these two blocks and
+ * mangles a third passes here. What the probes buy is the two mistakes anyone actually makes — an
+ * all-zero block catches a `mix` that ignores `forward`, and a block of distinct bytes catches a
+ * reordering applied in the same direction both ways, which is what a permutation table gets
+ * wrong. A table is no longer a special case with its own bijection check: anyone bringing a
+ * foreign scheme brings a function, so whatever can be checked has to be checked on the function.
  */
 export function verifyInvertible(schema: MaskSchema): Error | MaskSchema {
   const mixed = new Uint8Array(16);
