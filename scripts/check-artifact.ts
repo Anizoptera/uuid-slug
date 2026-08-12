@@ -3,13 +3,17 @@ import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-const FORBIDDEN_TEXT = [
-  [83, 99, 105, 101, 110, 99, 101, 32, 65, 73],
-  [115, 99, 105, 101, 110, 99, 101, 45, 97, 105],
-  [115, 104, 97, 114, 101, 100, 45, 117, 116, 105, 108],
-  [115, 104, 97, 114, 101, 100, 45, 112, 117, 98, 108, 105, 115, 104],
-  [64, 102, 108, 117, 120, 111, 45, 112, 114, 105, 118, 97, 116, 101],
-].map((codes) => String.fromCharCode(...codes));
+/**
+ * A build-machine path in a shipped file is the leak this package can actually produce: a bundler
+ * or a sourcemap that inlines `/Users/someone/...` or `/home/runner/...` publishes the layout of
+ * the machine that built it, and nothing else in the pipeline looks.
+ *
+ * What stood here before was five char-code-obfuscated names belonging to an unrelated private
+ * monorepo, with no comment saying so. They matched nothing in this tree and could not: this is a
+ * standalone public repository. A check that cannot fail is not a check, and the obfuscation made
+ * it unreadable as well.
+ */
+const BUILD_PATH_LEAK = /(?:\/Users\/|\/home\/[a-z]|[A-Z]:\\Users\\)/;
 
 const FORBIDDEN_PATHS = [
   "bench/",
@@ -91,17 +95,53 @@ async function main() {
       }
     }
 
+    // EVERY shipped file is read, and an unreadable one FAILS. Both used to be the other way: an
+    // extension allow-list skipped `.mjs`, `.cjs` and extensionless files, and `.catch(() => "")`
+    // turned a file this script could not open into an empty string that passed every scan below.
+    // Each reported clean for a reason other than cleanliness.
     for (const file of files) {
-      if (!/\.(?:js|ts|json|md|txt|map)$/.test(file)) continue;
-      const text = await readFile(path.join(extracted, file), "utf8").catch(() => "");
+      const text = await readFile(path.join(extracted, file), "utf8");
       for (const dep of FORBIDDEN_DEPS) {
-        if (text.includes(`from "${dep}"`) || text.includes(`from '${dep}'`))
+        // Bare specifier, subpath, `require` and dynamic `import` alike. Matching only
+        // `from "dep"` missed `require("uuid")`, `import("uuid")` and `from "uuid/v7"` — three
+        // spellings of the same leak, in a check whose whole job is that this package ships no
+        // dependency.
+        const specifier = String.raw`["']${dep.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}(?:/[^"']*)?["']`;
+        if (
+          new RegExp(String.raw`(?:\bfrom\s*|\brequire\s*\(\s*|\bimport\s*\(\s*)${specifier}`).test(
+            text,
+          )
+        )
           throw new Error(`Dev dependency import leaked in ${file}: ${dep}`);
       }
-      for (const forbidden of FORBIDDEN_TEXT) {
-        if (text.includes(forbidden))
-          throw new Error(`Forbidden private source text leaked in ${file}`);
-      }
+      if (BUILD_PATH_LEAK.test(text))
+        throw new Error(`A build-machine filesystem path leaked in ${file}`);
+    }
+
+    // The browser-facing bundles must reach no Node builtin. `tsdown.config.ts` records the exact
+    // regression: with `platform` unset, the browser-resolved build baked in `node:crypto` and
+    // `randomFillSync`, and nothing in this repo executed or read a built file, so the only way to
+    // find out was a consumer's bundler failing.
+    for (const entry of ["dist/index.js", "dist/web/index.js"]) {
+      const text = await readFile(path.join(extracted, entry), "utf8");
+      const builtin = /["']node:[a-z_]+["']/.exec(text);
+      if (builtin) throw new Error(`${entry} must not reach a Node builtin, found ${builtin[0]}`);
+    }
+
+    // Executed, not just read. Every bundle is imported and made to produce one id of each kind,
+    // because a build can be well-formed, dependency-free and still dead -- an entry that throws at
+    // import time or resolves `#runtime` to nothing passes every textual check above.
+    for (const entry of ["dist/index.js", "dist/web/index.js", "dist/node/index.js"]) {
+      const module = (await import(path.join(extracted, entry))) as {
+        isUuidV7String: (value: string) => boolean;
+        uuidV4: () => string;
+        uuidV7Slug: () => string;
+        uuidV7: () => string;
+      };
+      if (!module.isUuidV7String(module.uuidV7()))
+        throw new Error(`${entry} did not generate a valid UUIDv7`);
+      if (module.uuidV7Slug().length !== 22 || module.uuidV4().length !== 36)
+        throw new Error(`${entry} generated a malformed slug or v4`);
     }
 
     run("bunx", ["publint", "run", extracted, "--pack", "false"], process.cwd());

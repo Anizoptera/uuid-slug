@@ -39,8 +39,13 @@ jobs:
   # per call and so sorts in creation order only about half the time inside a millisecond. The
   # pinned lane above cannot see it — it runs the Node in `.tool-versions` — so the defect reached
   # a consumer's database index before it reached a red build. `current` tracks the newest release
-  # deliberately: an unpinned runtime is the point of a canary, and the adapters probe behaviour
-  # rather than version numbers precisely so a new engine keeps this green on its own.
+  # deliberately: an unpinned runtime is the point of a canary.
+  #
+  # The adapters probe for a capability's PRESENCE, never for its behaviour — there is no ordering
+  # probe and there must not be one, because intra-millisecond ordering is not a guarantee of this
+  # package and a probe would quietly make it one. So a new engine keeps this lane green only if
+  # its generator still satisfies what the suite asserts; a behavioural surprise like the one above
+  # is meant to turn it RED here, which is the whole reason the lane exists.
   runtimes:
     runs-on: ubuntu-latest
     strategy:

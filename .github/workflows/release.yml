@@ -86,6 +86,15 @@ jobs:
       # above, which this job waits on and which holds no permissions at all.
       - run: bun run build
 
+      # `verify` runs the lane, but it packs its OWN build in its OWN job, so nothing it
+      # inspected is what this job uploads. `artifact:check` re-runs here against the bytes
+      # about to be published: it packs through publish-clean, asserts the file list and the
+      # cleaned manifest, refuses a `node:` specifier in either browser bundle, and IMPORTS
+      # all three entries to make each generate an id. Determinism is claimed by
+      # `tsdown.config.ts` and enforced by nothing, which is exactly why the check belongs on
+      # both sides rather than on the earlier one. It costs about a second.
+      - run: bun run artifact:check
+
       # Every step below is repeatable, because a run that publishes and then fails
       # otherwise leaves the registry, the tag and the Release permanently out of step with
       # no way back: npm refuses to republish a version, so an existing version packs in
@@ -106,11 +115,17 @@ jobs:
             mode="--dry-run"
           fi
           # A bare `npm install` resolves whatever `latest` points at, so a prerelease must
-          # never carry it — that would hand every consumer a release candidate. Semver puts
-          # a hyphen only in the prerelease component, and the step above already proved the
-          # tag equals the manifest version, so the tag name decides this. `next` is the
-          # conventional prerelease dist-tag, not a requirement; change it deliberately.
-          case "${GITHUB_REF_NAME#v}" in
+          # never carry it — that would hand every consumer a release candidate. The step
+          # above already proved the tag equals the manifest version, so the tag name decides
+          # this. `next` is the conventional prerelease dist-tag, not a requirement; change it
+          # deliberately.
+          #
+          # BUILD METADATA IS STRIPPED FIRST. Semver puts a hyphen in the prerelease component
+          # AND allows one in build metadata after `+`, so matching a hyphen anywhere published
+          # `1.0.0+2026-08-12` — a stable release — under `next`, where nobody installing
+          # normally would ever receive it.
+          version="${GITHUB_REF_NAME#v}"
+          case "${version%%+*}" in
             *-*) dist_tag=next ;;
             *) dist_tag=latest ;;
           esac

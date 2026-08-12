@@ -25,6 +25,17 @@
       "rules": {
         "no-await-in-loop": "off"
       }
+    },
+    // The browser-facing adapter must reach no Node builtin. `tsdown.config.ts` records what
+    // happens otherwise: the browser build baked in `node:crypto`, and nothing caught it until a
+    // consumer's bundler did. `scripts/check-artifact.ts` now asserts the same thing on the built
+    // file, which catches a bundler resolving it in; this catches a person importing it, at the
+    // keystroke rather than at the pack. `runtime/node.ts` is excluded for the obvious reason.
+    {
+      "files": ["src/runtime/web.ts"],
+      "rules": {
+        "import/no-nodejs-modules": "error"
+      }
     }
   ],
   "ignorePatterns": ["dist", "bench/reports"]

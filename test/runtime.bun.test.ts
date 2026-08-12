@@ -38,7 +38,14 @@ describe("bun runtime", () => {
   test("imports the source condition and generates UUIDv7", () => {
     const local = createUuidSlugCodec();
     expect(isUuidV7String(local.uuidV7())).toBe(true);
-    expect(local.uuidV7Slug()).toHaveLength(22);
+    // DECODED, not just measured. Bun is the only runtime that defines `runtime.uuidV7Slug`, so
+    // this is the default path for most consumers of this package and the only lane that reaches
+    // it -- and a length assertion is nearly free here: unpadded base64url of 16 bytes is ALWAYS
+    // 22 characters, so `toHaveLength(22)` alone passed for any 22-character string whatsoever.
+    // The base32hex case below always decoded; the native default did not.
+    const slug = local.uuidV7Slug();
+    expect(slug).toHaveLength(22);
+    expect(isUuidV7String(slugToUuid(slug) as string)).toBe(true);
   });
 
   test("honours a base32hex slugAlphabet instead of the native base64url generator", () => {
