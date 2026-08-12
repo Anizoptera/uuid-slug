@@ -45,7 +45,7 @@ if (uuid instanceof Error) return badRequest(uuid.message);
 ```
 
 Keep the seed stable forever. Change it and every slug you already handed out comes back as
-`invalid_uuid_slug`, unless you list the old schema under `legacy.masks` (see below).
+`invalid_uuid_slug`, unless you list the old seed under `previousMasks` (see below).
 
 ## Two kinds of slug
 
@@ -67,7 +67,7 @@ part of the contract rather than implementation detail:
 - **A decoded slug is a candidate, not a proof.** Roughly one random 22-character string in
   65,536 passes the check and decodes to a well-formed UUID nobody ever issued. Look the result
   up in your own store; a wrong candidate is then a miss rather than a wrong answer. Every extra
-  schema you list under `legacy.masks` adds another 1-in-65,536, because each is tried in turn.
+  schema you list under `previousMasks` adds another 1-in-65,536, because each is tried in turn.
 - **Masking refuses a timestamp at or past 2^42 ms** — the year 2109 — with `invalid_timestamp`,
   because those six bits are spent on the check. Truncating instead would let two UUIDs share one
   slug, which nothing could recover from. Direct slugs have no such limit.
@@ -159,30 +159,34 @@ Also exported: type guards (`isUuidString`, `isUuidV4String`, `isUuidV7String`,
 `decodeBase64Url`, `isBase64Url`), `extractUuidV7Timestamp` (an `Error` for anything that is not a
 UUIDv7 — a v4's first six bytes are random and would otherwise read back as a plausible date),
 and the schema builders
-`createMaskSchema` / `defineMaskSchema`.
+`createMaskSchema`.
 
 ### Codec options
 
 ```ts
 createUuidSlugCodec({
-  mask: { seed: "…" }, // or a schema built with defineMaskSchema
+  mask: { seed: "…" }, // or your own { id, mix } schema
   sentinels: [{ name: "nil", uuid: "…" }],
-  legacy: { masks: [{ seed: "…previous seed…" }], directDecode: false },
+  previousMasks: [{ seed: "…previous seed…" }],
+  acceptUnmaskedSlugs: false,
   generator: myUuidV7Generator,
 });
 ```
 
-The check width is not a knob. It is fixed by the alphabet — 16 bits in 22 base64url characters,
-14 in 26 base32hex — because it is whatever the encoding has left after the UUID's 116 real bits.
-A schema built with `defineMaskSchema` may still declare a 4- or 6-bit tag, which exists only to
-read slugs some other system already issued under that layout.
+There is nothing else to configure. The check width is fixed by the alphabet — 16 bits in 22
+base64url characters, 14 in 26 base32hex — because it is whatever the encoding has left after the
+UUID's 116 real bits, and there is one mixing scheme rather than a choice of them.
 
-`legacy.masks` is how you rotate a seed. Decoding tries the current schema first, then each old
-one in the order you list them, and the first whose check passes wins — so put the newest first,
-and keep the list short. Nothing else is ever tried: a codec decodes with the schemas you gave it
-and no others. `directDecode: true` additionally accepts unmasked direct slugs, for migrating off
-unmasked ids; with it on, about one direct slug in 65,536 is read as masked instead and yields a
-wrong UUID, so leave it off once the migration is done.
+If you need a different cipher, pass a `MaskSchema` as `mask` instead of a seed: an `id` and a
+`mix(input, output, forward)` where `forward: false` is the exact inverse. That is the only
+extension point, and it is checked — a codec proves your `mix` reverses itself and throws at
+construction if it does not, because a mixing step that is not invertible makes every id it
+encodes unreadable with nothing to notice at the time.
+
+`previousMasks` is how you rotate a seed. Decoding tries `mask` first, then each entry in the
+order you list them, and the first whose check passes wins — so put the newest first, and keep
+the list short. Nothing else is ever tried: a codec decodes with the schemas you gave it and no
+others.
 
 ### Rejecting stale ids
 

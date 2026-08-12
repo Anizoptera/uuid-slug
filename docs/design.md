@@ -39,8 +39,7 @@ base32hex. Splitting it this way is what keeps the cipher a plain 128-bit one.
 
 1. FNV-1a over the seed bytes plus a purpose byte gives a 64-bit state.
 2. An xorshift64 stream expands that state into bytes.
-3. Purpose 3 gives eight 32-bit Feistel round keys, big-endian. (Purposes 1 and 2 give the XOR
-   mask and permutation of the older substitution scheme, kept only for reading its slugs.)
+3. Purpose 3 gives eight 32-bit Feistel round keys, big-endian.
 
 The same seed always yields the same schema, in any runtime, with no stored state. That is the
 whole point: two services sharing a seed agree without sharing anything else.
@@ -93,9 +92,10 @@ A slug that was corrupted, or produced under a different seed, fails that compar
 back as `invalid_uuid_slug`. One in `2^checkBits` gets through anyway, which is why a decoded slug
 is a candidate to look up rather than an answer to trust.
 
-A schema declaring a 4- or 6-bit tag is a different, older layout: a weak checksum instead of the
-folded hash, no spare-bit half, and no 2109 limit because it never claims byte 0. It exists to
-read slugs some other system already issued, so it is fixed wire format and is never "improved".
+There is one layout, not a family of them. A caller with their own cipher supplies a `mix`
+function and gets this same tag layout and check width around it; the package once carried
+narrower 4- and 6-bit tag tiers with their own weak checksums, but the only slugs those could
+read were its own pre-Feistel ones, so they went with that format.
 
 ## Telling schemas apart
 
@@ -116,7 +116,7 @@ always produces its fixed slug.
 
 ## Seed rotation
 
-`legacy.masks` holds previously used schemas, tried in the order given after the current one.
-`legacy.directDecode` additionally falls back to reading the slug as an unmasked direct slug,
+`previousMasks` holds previously used schemas, tried in the order given after the current one.
+`acceptUnmaskedSlugs` additionally falls back to reading the slug as an unmasked direct slug,
 which is the migration path for ids issued before masking existed — at the cost of reading about
 one direct slug in `2^checkBits` as a masked one instead.

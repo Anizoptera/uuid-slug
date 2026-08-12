@@ -47,10 +47,15 @@ export interface UuidV7Generator {
  * A schema is its mixing step, not the data behind one. Holding `mix` as a function rather than
  * exposing a permutation and an XOR table is what lets the masking code stay ignorant of which
  * scheme it is running: adding one is a new constructor in `schema.ts` and no branch anywhere.
+ *
+ * It is also the ONLY extension point, and deliberately so. This interface is public, so a caller
+ * with a scheme of their own supplies it directly; the package ships no table-shaped constructor
+ * beside it, because one would privilege a single foreign layout while being strictly less
+ * capable than the function it wraps. `createUuidSlugCodec` proves any schema it is given
+ * reverses itself before using it.
  */
 export interface MaskSchema {
   readonly id: string;
-  readonly tagBits: MaskTagBits;
   /**
    * Transforms 16 bytes; `forward: false` MUST be the exact inverse. `input` and `output` MUST
    * NOT be the same array: a scheme that permutes reads source bytes it would already have
@@ -60,39 +65,15 @@ export interface MaskSchema {
 }
 
 /**
- * How many of a UUIDv7's information-free bits the wrong-key check occupies, and thereby WHERE
- * it sits — the regions nest, so one number fixes the layout:
- *
- * - `4`  — byte 6's version nibble.
- * - `6`  — plus byte 8's two variant bits.
- * - `12` — plus byte 0's top six bits, the high end of the 48-bit timestamp, which stay zero until
- *   the year 2109. Claiming them is what makes a 16-bit check fit in 22 characters, and it is why
- *   this tier REFUSES to encode a timestamp at or past 2^42 ms instead of truncating it.
- *
- * 12 is the tier for slugs this package mints. 4 and 6 exist only to read slugs an older scheme
- * already issued, and their checksum is part of that wire format, so it is never "improved".
+ * There is no scheme to choose. The check's width is fixed by arithmetic — a UUIDv7 carries 116
+ * bits of content, so the encoding's remainder is the check — and the mixing step is the Feistel,
+ * because the only alternative this package ever shipped left the timestamp legible: one output
+ * byte per input byte meant 4 of 16 bytes held constant across a second, defeating the entire
+ * point of masking. A caller who genuinely needs a different cipher passes a `MaskSchema`.
  */
-export type MaskTagBits = 4 | 6 | 12;
-
-/** Named rather than numbered, so a schema's scheme survives being written down and read back. */
-export type MaskSchemeKind = "feistel" | "substitution";
-
 export interface MaskSchemaOptions {
   readonly id?: string;
-  /**
-   * Defaults to `feistel`. `substitution` exists to decode slugs issued before the Feistel and
-   * SHOULD NOT be chosen for new ones: it maps one output byte per input byte, so ids sharing a
-   * timestamp share bytes — measured, 4 of 16 held constant across a second.
-   */
-  readonly kind?: MaskSchemeKind;
   readonly seed: string | Uint8Array;
-}
-
-export interface ExplicitMaskSchema {
-  readonly id?: string;
-  readonly permute: Uint8Array;
-  readonly tagBits: 4 | 6;
-  readonly xor: Uint8Array;
 }
 
 export interface UuidV7SentinelDefinition {
@@ -108,17 +89,28 @@ export interface UuidV7Sentinel {
 
 export interface UuidSlugCodecOptions {
   readonly generator?: UuidV7Generator;
-  readonly legacy?: {
-    readonly directDecode?: boolean;
-    /**
-     * Schemas to try after `mask`, in the order given. Takes a seed exactly as `mask` does: a
-     * rotated seed is the ordinary reason this list exists, and requiring a pre-built schema for
-     * it meant the commonest case cost a constructor and an error branch that the current seed
-     * never needed. The asymmetry taught the wrong thing too — that a previous key is a different
-     * kind of thing from the current one, when rotation is only a change of position in this list.
-     */
-    readonly masks?: readonly (MaskSchema | MaskSchemaOptions)[];
-  };
+  /**
+   * Also decode plain, unmasked slugs when no schema matches — the migration path for ids issued
+   * before masking existed. Its own option rather than a field beside the key list, because the
+   * two answer different questions and share only the accident of both concerning the past.
+   *
+   * Turn it off once the migration ends. It costs one wrong answer per 2^checkBits: a direct slug
+   * that happens to satisfy a mask's check decodes as that mask instead, and both are the same 22
+   * characters of the same alphabet, so nothing else can tell them apart.
+   */
+  readonly acceptUnmaskedSlugs?: boolean;
+  /**
+   * Schemas to try after `mask`, in the order given — how a seed is rotated. Takes a seed exactly
+   * as `mask` does: a rotated seed is the ordinary reason this list exists, and requiring a
+   * pre-built schema for it cost the commonest case a constructor and an error branch that naming
+   * the current seed never needed. Named for rotation rather than for legacy, because a previous
+   * key is not a different kind of thing from the current one — rotation is only a change of
+   * position between this list and `mask`.
+   *
+   * Keep it short. Each entry is tried in turn, so the codec's wrong-answer rate is the sum over
+   * the whole list.
+   */
+  readonly previousMasks?: readonly (MaskSchema | MaskSchemaOptions)[];
   /**
    * The schema that ENCODES, and the first tried when decoding. Kept separate from the list above
    * rather than folded into one ordered array: in a single list the encoding schema is whichever

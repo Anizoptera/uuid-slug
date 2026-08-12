@@ -7,7 +7,7 @@ import {
   uuidV7BytesToMaskedSlug,
   maskedSlugToUuidWithSchema,
 } from "./mask";
-import { createMaskSchema, DEFAULT_MASK_SCHEMA } from "./schema";
+import { createMaskSchema, DEFAULT_MASK_SCHEMA, verifyInvertible } from "./schema";
 import type {
   MaskSchema,
   MaskedUuidV7Slug,
@@ -59,7 +59,12 @@ function schemaFromOption(mask: UuidSlugCodecOptions["mask"]): Error | MaskSchem
   // A built schema carries its mixing step; an options object carries only a seed to derive one
   // from. One discriminating property beats sniffing several, which silently stops discriminating
   // when a scheme is added whose data fields differ.
-  return "mix" in mask ? mask : createMaskSchema(mask);
+  //
+  // Every schema the codec will use passes through here, which is why the invertibility proof
+  // belongs here and nowhere else: a caller-supplied `mix` is the extension point now, and an
+  // unchecked one silently makes every id it encodes unreadable.
+  if (!("mix" in mask)) return createMaskSchema(mask);
+  return verifyInvertible(mask);
 }
 
 function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
@@ -115,7 +120,7 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
   // false-accept rate is the SUM over the list and is set by its weakest member. Measured
   // 2026-08-12 over 200,000 wrong-key decodes, the auto-added 6-bit partner accepted 211 while
   // the 16-bit schema it accompanied accepted 2 — a 16x widening nobody asked for.
-  const legacyMasks = (options.legacy?.masks ?? []).map((mask) =>
+  const previousMasks = (options.previousMasks ?? []).map((mask) =>
     errorOrThrow(schemaFromOption(mask)),
   );
   const generator = options.generator ?? createRuntimeGenerator(runtime);
@@ -126,11 +131,11 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
     if (sentinel) return sentinel;
     const primary = maskedSlugToUuidWithSchema(slug, schema);
     if (!(primary instanceof Error)) return primary;
-    for (const legacy of legacyMasks) {
-      const decoded = maskedSlugToUuidWithSchema(slug, legacy);
+    for (const previous of previousMasks) {
+      const decoded = maskedSlugToUuidWithSchema(slug, previous);
       if (!(decoded instanceof Error)) return decoded;
     }
-    if (options.legacy?.directDecode === true) return slugToUuid(slug);
+    if (options.acceptUnmaskedSlugs === true) return slugToUuid(slug);
     return primary;
   }
 

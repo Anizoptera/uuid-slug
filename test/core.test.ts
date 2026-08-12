@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   createMaskSchema,
   createUuidSlugCodec,
-  defineMaskSchema,
   decodeBase64Url,
   encodeBase64Url,
   extractUuidV7Timestamp,
@@ -136,7 +135,7 @@ describe("masked UUID slugs", () => {
     expect(codec.maskedSlugToUuidV7("AAAAAAACcACAAAAAAAAAAA")).toBe(unknownUser.uuid);
   });
 
-  it("rejects wrong schemas unless a legacy schema is explicitly configured", () => {
+  it("rejects a wrong schema unless the caller listed it as a previous one", () => {
     const first = createMaskSchema({ seed: "project-a" });
     const second = createMaskSchema({ seed: "project-b" });
     if (first instanceof Error || second instanceof Error)
@@ -148,8 +147,8 @@ describe("masked UUID slugs", () => {
     expect(b.maskedSlugToUuidV7(slug)).toBeInstanceOf(Error);
     expect(
       createUuidSlugCodec({
-        legacy: { masks: [first] },
         mask: second,
+        previousMasks: [first],
       }).maskedSlugToUuidV7(slug),
     ).toBe(SAMPLE_V7_A);
   });
@@ -161,58 +160,49 @@ describe("masked UUID slugs", () => {
     const slug = before.uuidV7ToMaskedSlug(SAMPLE_V7_A);
     if (slug instanceof Error) throw slug;
     const after = createUuidSlugCodec({
-      legacy: { masks: [{ seed: "key-v1" }] },
       mask: { seed: "key-v2" },
+      previousMasks: [{ seed: "key-v1" }],
     });
     expect(after.maskedSlugToUuidV7(slug)).toBe(SAMPLE_V7_A);
     // And the rotation actually rotated: new ids are issued under v2, not v1.
     expect(after.uuidV7ToMaskedSlug(SAMPLE_V7_A)).not.toBe(slug);
   });
 
-  it("defensively clones explicit schema arrays", () => {
-    const xor = new Uint8Array(16);
-    const permute = Uint8Array.from({ length: 16 }, (_, i) => i);
-    const schema = defineMaskSchema({
-      id: "clone-test",
-      permute,
-      tagBits: 6,
-      xor,
-    });
-    if (schema instanceof Error) throw schema;
-    const codec = createUuidSlugCodec({ mask: schema });
-    const before = codec.uuidV7ToMaskedSlug(SAMPLE_V7_A);
-    xor[0] = 255;
-    permute[0] = 9;
-    expect(codec.uuidV7ToMaskedSlug(SAMPLE_V7_A)).toBe(before);
+  it("refuses a caller's schema that does not reverse its own mixing step", () => {
+    // A `mix` is the only extension point, and getting the inverse wrong is silent: encoding still
+    // produces a slug, and every id issued under it is unreadable forever. So it must fail at
+    // construction. Two distinct ways to get it wrong, because one probe cannot see both.
+    const ignoresDirection = {
+      id: "one-way",
+      mix: (input: Uint8Array, output: Uint8Array) => output.set(input.map((b) => (b + 1) & 0xff)),
+    };
+    // Reorders identically in both directions — the classic permutation-table mistake, and the
+    // reason an all-zero probe alone is not enough: zeroes survive any reordering unchanged.
+    const reordersBothWays = {
+      id: "same-both-ways",
+      mix: (input: Uint8Array, output: Uint8Array) => {
+        for (let i = 0; i < 16; i += 1) output[i] = input[(i + 5) % 16] as number;
+      },
+    };
+    expect(() => createUuidSlugCodec({ mask: ignoresDirection })).toThrow(/reverse/);
+    expect(() => createUuidSlugCodec({ mask: reordersBothWays })).toThrow(/reverse/);
+    // And a correct one is accepted, so the guard is not simply rejecting everything.
+    expect(() => createUuidSlugCodec({ mask: { seed: "fine" } })).not.toThrow();
   });
 
-  it("rejects malformed schemas", () => {
-    expect(
-      defineMaskSchema({
-        permute: new Uint8Array(15),
-        tagBits: 6,
-        xor: new Uint8Array(16),
-      }),
-    ).toBeInstanceOf(Error);
-    expect(
-      defineMaskSchema({
-        permute: new Uint8Array(16),
-        tagBits: 6,
-        xor: new Uint8Array(16),
-      }),
-    ).toBeInstanceOf(Error);
+  it("rejects an empty seed", () => {
     expect(createMaskSchema({ seed: "" })).toBeInstanceOf(Error);
   });
 });
 
-describe("legacy.directDecode", () => {
+describe("acceptUnmaskedSlugs", () => {
   // Nothing pinned this flag before, which is how a decode path got deleted as a "duplicate"
   // and how a schema combination that silently returns WRONG uuids went unnoticed. Both cases
   // below are chosen to fail loudly if either recurs.
   it("decodes a plain UUIDv4 slug, which the v7 form cannot", () => {
     // The flag exists to migrate off unmasked ids, and those predate any decision to use v7.
     // `maskedSlugToUuidV7` rejecting them is correct; something has to accept them.
-    const codec = createUuidSlugCodec({ legacy: { directDecode: true } });
+    const codec = createUuidSlugCodec({ acceptUnmaskedSlugs: true });
     const slug = uuidToSlug(SAMPLE_V4);
     expect(codec.maskedSlugToUuid(String(slug))).toBe(SAMPLE_V4);
     expect(codec.maskedSlugToUuidV7(String(slug))).toBeInstanceOf(Error);
@@ -227,9 +217,9 @@ describe("legacy.directDecode", () => {
     //
     // The bound is what this asserts, because the rate is the thing that can silently regress.
     // Narrowing the check to the old 6-bit tag would put roughly 312 confusions in this sample.
-    const schema = createMaskSchema({ id: "feistel-only", kind: "feistel", seed: "direct-decode" });
+    const schema = createMaskSchema({ id: "feistel-only", seed: "direct-decode" });
     if (schema instanceof Error) throw schema;
-    const codec = createUuidSlugCodec({ mask: schema, legacy: { directDecode: true } });
+    const codec = createUuidSlugCodec({ acceptUnmaskedSlugs: true, mask: schema });
     let confused = 0;
     for (let i = 0; i < 20_000; i += 1) {
       const uuid = deterministicUuidV7(i);

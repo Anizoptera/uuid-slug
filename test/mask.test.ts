@@ -15,7 +15,8 @@ import {
   uuidToMaskedSlugWithSchema,
   uuidV7BytesToMaskedSlug,
 } from "../src/mask";
-import { createMaskSchema, defineMaskSchema } from "../src/schema";
+import { createMaskSchema } from "../src/schema";
+import { parseUuid } from "../src/uuid";
 import { deterministicUuidV7Bytes } from "./deterministic-uuid";
 
 const schemaOrThrow = (seed: string) => {
@@ -41,18 +42,24 @@ describe("the maskable range", () => {
     expect((refused as { code?: string }).code).toBe("invalid_timestamp");
   });
 
-  it("still masks that instant under a narrow tier, which does not claim those bits", () => {
-    // The refusal is not a property of masking; it is the price of spending byte 0's top six bits
-    // on the check. A tier that leaves them alone must keep encoding the full 48-bit range, and
-    // asserting so is what stops the refusal being widened into every schema by a later change.
-    const narrow = defineMaskSchema({
-      id: "narrow",
-      permute: Uint8Array.from({ length: 16 }, (_, i) => (i * 5 + 3) % 16),
-      tagBits: 4,
-      xor: Uint8Array.from({ length: 16 }, (_, i) => i * 0x11),
-    });
-    if (narrow instanceof Error) throw narrow;
-    expect(uuidToMaskedSlugWithSchema(FIRST_REFUSED, narrow)).toHaveLength(22);
+  it("round-trips under the RIGHT key in both alphabets, at both ends of the range", () => {
+    // The golden vectors cover base64url only, so nothing else proves a base32hex slug decodes
+    // back at all — the wrong-key cases below would stay green against a build whose right-key
+    // decode was broken, because a broken check rejects everything and rejecting is what they
+    // count. Both ends because byte 0 is the byte the tag borrows: all-ones there is the case a
+    // sloppy mask-and-restore corrupts, and all-zero is the case that hides it.
+    for (const [alpha, length] of [
+      [BASE64URL, 22],
+      [BASE32HEX, 26],
+    ] as const)
+      for (const uuid of [LAST_MASKABLE, "00000000-0000-7000-8000-000000000000"]) {
+        const raw = parseUuid(uuid);
+        if (raw instanceof Error) throw raw;
+        const slug = uuidV7BytesToMaskedSlug(raw, schema, alpha);
+        if (slug instanceof Error) throw slug;
+        expect(slug).toHaveLength(length);
+        expect(maskedSlugToUuidWithSchema(String(slug), schema, alpha)).toBe(uuid);
+      }
   });
 });
 

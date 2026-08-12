@@ -10,10 +10,9 @@ export {
   validateUuidV7SlugFresh,
 } from "./codec";
 export { UUID_SLUG_ERROR_CODES, UuidRuntimeError, UuidSlugError } from "./errors";
-export { DEFAULT_MASK_SCHEMA, createMaskSchema, defineMaskSchema } from "./schema";
+export { DEFAULT_MASK_SCHEMA, createMaskSchema } from "./schema";
 export type {
   Base64UrlString,
-  ExplicitMaskSchema,
   FreshValidationOptions,
   MaskSchema,
   MaskSchemaOptions,

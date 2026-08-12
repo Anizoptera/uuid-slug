@@ -11,29 +11,39 @@
  * The assertions stay in the suites: an assertion that drifts merely narrows coverage, and it is
  * visible on the page.
  */
-import { createUuidSlugCodec, defineMaskSchema } from "../src/index";
+import { createUuidSlugCodec } from "../src/index";
+import type { MaskSchema } from "../src/index";
 
 /**
- * A substitution schema built through the public `defineMaskSchema`, standing in for the mask
- * tables a consumer supplies for slugs their old system already issued. This package deliberately
- * ships none of its own — a mask table published on npm is a published key.
+ * A caller-supplied mixing step, standing in for a consumer who brings their own cipher. It is
+ * here because `MaskSchema` is the package's only extension point, so the golden vectors are what
+ * prove an outside scheme survives a change to the encoder or the tag layout.
  *
- * The tables are synthetic and derived from a formula so they cannot be mistaken for real key
- * material. The permutation `(i * 5 + 3) mod 16` is a bijection because 5 is invertible modulo 16,
- * and is chosen to be neither the identity nor self-inverse: a self-inverse table hides a
- * forward/inverse mix-up in the mask layer, because the wrong direction still gives the right
- * answer. `tagBits` is 4 rather than the default 6 so the narrower tag stays exercised.
+ * It doubles as the whole cost of that extension point: a permute-and-XOR scheme, the shape the
+ * package used to wrap in a constructor of its own, is these nine lines in user code.
+ *
+ * Synthetic and formula-derived so it cannot be mistaken for real key material. `(i * 5 + 3) mod
+ * 16` is a bijection because 5 is invertible modulo 16, and is deliberately neither the identity
+ * nor self-inverse — a self-inverse table hides a forward/inverse mix-up, since the wrong
+ * direction still gives the right answer.
  */
-const substitution = defineMaskSchema({
-  id: "explicit-substitution",
-  permute: Uint8Array.from({ length: 16 }, (_, i) => (i * 5 + 3) % 16),
-  tagBits: 4,
-  xor: Uint8Array.from({ length: 16 }, (_, i) => i * 0x11),
-});
-if (substitution instanceof Error) throw substitution;
+const permute = Uint8Array.from({ length: 16 }, (_, i) => (i * 5 + 3) % 16);
+const xor = Uint8Array.from({ length: 16 }, (_, i) => i * 0x11);
+const inverse = new Uint8Array(16);
+permute.forEach((target, i) => (inverse[target] = i));
+
+const customMix: MaskSchema = {
+  id: "custom-mix",
+  mix(input, output, forward) {
+    for (let i = 0; i < 16; i += 1) {
+      const source = forward ? (permute[i] as number) : (inverse[i] as number);
+      output[i] = (input[source] as number) ^ (xor[forward ? i : source] as number);
+    }
+  },
+};
 
 export const WIRE_FORMAT_CODECS = {
+  "custom-mix": createUuidSlugCodec({ mask: customMix }),
   default: createUuidSlugCodec({}),
-  "explicit-substitution": createUuidSlugCodec({ mask: substitution }),
   "seeded-v2": createUuidSlugCodec({ mask: { seed: "golden-vector-seed" } }),
 };
