@@ -37,7 +37,7 @@ export const ids = createUuidSlugCodec({
 });
 
 const publicId = ids.uuidV7MaskedSlug();
-// "CDBiXO8S_tf_43FriI8bmQ" — 22 characters, no timestamp anyone can read
+// "5H_IgM_-RK18wLQX8QpICO" — 22 characters, no timestamp anyone can read
 
 const uuid = ids.maskedSlugToUuidV7(publicId);
 if (uuid instanceof Error) return badRequest(uuid.message);

@@ -38,6 +38,21 @@ describe("documented surface", () => {
       undocumented: codes.filter((code) => !documented.has(code)),
     }).toEqual({ invented: [], undocumented: [] });
   });
+
+  it("shows a quick-start slug that really is that UUID under that seed", () => {
+    // The pair in the README survived a format change as a matched-looking lie: the slug decoded
+    // to nothing at all, and only running it revealed that. Example output is the first thing a
+    // reader tries, so it is API surface, and prose is where a format change hides longest.
+    //
+    // All three values are READ OUT of the README. A copy pasted in here would name that file and
+    // reach a constant instead, which passes just as happily after someone edits the example.
+    const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
+    const seed = /ID_MASK_SEED \?\? "([^"]+)"/.exec(readme)?.[1];
+    const slug = /\/\/ "([\w-]{22})"/.exec(readme)?.[1];
+    const uuid = /\/\/ "([\da-f-]{36})"/.exec(readme)?.[1];
+    if (!seed || !slug || !uuid) throw new Error("the README's quick start no longer parses");
+    expect(createUuidSlugCodec({ mask: { seed } }).maskedSlugToUuidV7(slug)).toBe(uuid);
+  });
 });
 
 describe("base64url", () => {
