@@ -7,6 +7,13 @@
   constrains the other's adapter — measured 2026-08-11, `Math.random` written into
   `runtime/web.ts` left the ENTIRE vitest suite green, on the runtime most consumers use. The
   shared cases live in `test/entropy-probe.ts` so one list serves both.
+- **A test names the code it means to reach; nothing checks that it got there.** Both instances
+  measured here stayed green while observing nothing. Delete the thing under test and watch the
+  test go red — reading cannot detect either case.
+  Where a function rejects for more than one reason, an input meant for the LATER rejection must
+  pass every earlier one, or the first guard answers and the named branch never runs. Measured
+  2026-08-12: three bounds cases built on all-zero buffers were rejected by the version check
+  instead, and stayed green with the bounds check deleted entirely.
 - A generator that delegates to the platform must be probed through a path that cannot delegate.
   `uuidV4()`, `uuidV7()` and `uuidV7Slug()` hand off to a native generator whenever the runtime
   has one, so on Bun and Node they never touch this package's own `fillRandom`; only the byte and
