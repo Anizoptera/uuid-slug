@@ -16,6 +16,8 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { isUuidV4String } from "../src/index";
+
 const fill = (bytes: Uint8Array) => {
   bytes.fill(0x7f);
   return bytes;
@@ -48,5 +50,20 @@ describe("web runtime capability probe", () => {
     const uuid = "3a1d2f4e-5b6c-4d7e-8f90-a1b2c3d4e5f6";
     const runtime = await adapterWith({ getRandomValues: fill, randomUUID: () => uuid });
     expect(runtime.uuidV4?.()).toBe(uuid);
+  });
+
+  it("produces a real v4 and real entropy against the unstubbed Web Crypto object", async () => {
+    // The two cases above drive a hand-built stub, so they prove the PROBE and nothing about the
+    // platform. This one runs the adapter against the genuine `globalThis.crypto` and checks the
+    // values, because the probe is typed through a cast (`Partial<Crypto>`) and a cast is a claim
+    // about the compiler, never a measurement: the DOM lib says `randomUUID` is always there and
+    // it is not. What the platform actually returns is the only thing that settles it.
+    vi.resetModules();
+    const runtime = (await import("../src/runtime/web")).runtime;
+    expect(isUuidV4String(runtime.uuidV4?.())).toBe(true);
+
+    const bytes = new Uint8Array(16);
+    runtime.fillRandom(bytes);
+    expect(bytes.some((byte) => byte !== 0)).toBe(true);
   });
 });
