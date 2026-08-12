@@ -1,6 +1,13 @@
 # @anizoptera/uuid-slug
 
 - Runtime dependencies are forbidden.
+- Anything whose behaviour DEPENDS on a runtime capability must be gated in BOTH runners, not just
+  edits to `src/runtime/*`. Code elsewhere that branches on an optional `Runtime` method is exactly
+  as runtime-asymmetric as the adapter itself, and reads as ordinary logic. Measured 2026-08-12: a
+  codec branch choosing between the native base64url slug generator and its own encoder, ungated on
+  the configured alphabet, left the ENTIRE vitest suite green — Bun is the only runtime defining
+  `runtime.uuidV7Slug`, so Node cannot reach the branch at all. Ask which runtimes can execute the
+  line, never which file it sits in.
 - A change to any `src/runtime/*` adapter must be gated in BOTH runners. Vitest runs on Node and
   resolves `#runtime` to `runtime/node.ts`; `bun test test/*.bun.test.ts` resolves the `bun`
   condition to `runtime/bun.ts` and the `runtime/web.ts` it takes `fillRandom` from. Neither run
@@ -65,6 +72,13 @@
   exactly 16; base32hex holds 26×5=130 and gets 14. One formula, `checkBits = slugBits − 116`, and
   no per-alphabet special case. Both widths are whole multiples of the character size, so encoding
   is a bijection and no slug has a second spelling.
+- base32hex belongs to PLAIN slugs and MUST NOT be wired into masking (Art's ruling, 2026-08-12).
+  It exists for sort order — a v7 leads with its timestamp and base32hex digits are in value order,
+  so its slugs sort chronologically — and masked bytes are ciphertext, which sorts in no useful
+  order. Wiring it there would spend 4 more characters and 2 bits of check to buy nothing.
+  Sentinels stay base64url for the same reason they exist: they are matched against masked input.
+  Decoding infers the alphabet from the length, 22 or 26, so it takes no alphabet argument and a
+  caller cannot pick the wrong one.
 - Encoding MUST reject a v7 timestamped at or past 2^42 ms (year 2109) instead of truncating it.
   Truncation makes encoding non-injective, and two UUIDs sharing one slug cannot be recovered from.
 - A decoded masked slug is a CANDIDATE, never a verified id, and the contract must say so: with a
