@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import type { UuidV4String, UuidV7Slug, UuidV7String } from "../types";
+
 export interface Runtime {
   /**
    * The buffer is pinned to a plain `ArrayBuffer` because Web Crypto's `getRandomValues`
@@ -13,10 +15,23 @@ export interface Runtime {
    * for `this` would work when called through the object and break once detached, which the
    * annotation turns into a compile error at the adapter instead.
    */
-  uuidV4?(this: void): string;
-  uuidV7?(this: void): string;
+  /**
+   * BRANDED rather than `string`, which is load-bearing. These values are returned straight out of
+   * the codec's own branded signatures, and `Brand`'s marker property is optional, so a bare
+   * `string` satisfies every one of them: typed loosely, the native fast paths widened silently
+   * while the portable fallbacks beside them needed a visible cast, and only the fallbacks were
+   * ever checked. Measured 2026-08-12 — `uuidV7Slug` returned `string | UuidSlug`, which collapses
+   * to `string`, so `codec.uuidV7Slug()` promised a `UuidV7Slug` the compiler never examined.
+   *
+   * The brand cannot be produced from a platform call, so an adapter asserts it. That is the
+   * point: the assertion belongs next to the platform argument that decides the shape, where
+   * `nativeUuidV7("hex")` and `nativeUuidV7("base64url")` sit one literal apart and produce
+   * completely different strings. Both runners pin the actual shapes.
+   */
+  uuidV4?(this: void): UuidV4String;
+  uuidV7?(this: void): UuidV7String;
   uuidV7Bytes?(this: void, out?: Uint8Array, offset?: number): Uint8Array;
-  uuidV7Slug?(this: void): string;
+  uuidV7Slug?(this: void): UuidV7Slug;
   /**
    * Generate at a caller-supplied millisecond. SEPARATE from `uuidV7` on purpose, because
    * accepting a timestamp is a capability a native generator has independently of generating at
@@ -26,6 +41,6 @@ export interface Runtime {
    * 2026-08-11, `Bun.randomUUIDv7("hex", 1577836800000)` yields the 2020 prefix `016f5e66e800`.
    * Left undefined otherwise, which routes the call to the portable generator.
    */
-  uuidV7At?(this: void, timestamp: number): string;
+  uuidV7At?(this: void, timestamp: number): UuidV7String;
   uuidV7BytesAt?(this: void, timestamp: number, out?: Uint8Array, offset?: number): Uint8Array;
 }

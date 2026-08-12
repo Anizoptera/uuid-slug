@@ -50,6 +50,19 @@
   strict ordering was asserted, a native generator was rejected for failing it at a 6.4x
   throughput cost, and it was reported as a defect fix. Add the promise to README §Guarantees
   first, with a ruling, or assert less.
+- Every value crossing the `Runtime` boundary must be typed with the BRAND the codec will return it
+  as, never `string`. `Brand`'s marker is optional, so a bare `string` satisfies every branded type
+  — which means a loosely typed native hook widens SILENTLY while the portable fallback beside it
+  needs a visible cast, and only the fallback ever gets checked. Measured 2026-08-12: `uuidV7Slug`
+  inferred `string | UuidSlug`, which collapses to `string`, so `codec.uuidV7Slug()` promised a
+  `UuidV7Slug` nothing examined; branding the hooks turned that into a compile error at the one
+  site that was actually wrong. Same failure mode as the `Buffer`-instead-of-`Uint8Array` case
+  above — a native value satisfying a declared type without being the right thing.
+  The optionality is DELIBERATE and stays (see `Brand` in `types.ts`): callers may pass string
+  literals, because these types separate values the package PRODUCES rather than policing input.
+  Its price, measured the same day by making the marker required: 18 sites in 8 files mint a brand
+  from an unbranded string. Do not read a brand as enforcement, and do not "fix" it by flipping the
+  marker — that is a caller-visible change and Art's to make.
 - Anything returning bytes must return a plain `Uint8Array`. Bun's native v7 yields a node
   `Buffer`, which satisfies the declared type structurally while `toString("hex")` and
   `JSON.stringify` both behave differently — code written on Bun then produces different bytes on

@@ -190,7 +190,13 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
     },
     uuidV7Slug() {
       if (nativeSlug) return nativeSlug();
-      return errorOrThrow(formatUuidSlug(errorOrThrow(generator.uuidV7Bytes()), 0, slugAlphabet));
+      // Same assertion `uuidV4Slug` makes for the same reason: the bytes come from a v7 generator,
+      // and the encoder sees only bytes so it cannot carry the version through. Until the runtime
+      // hooks were branded this cast was ABSENT and nothing complained — the native branch typed
+      // the union as bare `string`, which an optional brand accepts, so the promise went unchecked.
+      return errorOrThrow(
+        formatUuidSlug(errorOrThrow(generator.uuidV7Bytes()), 0, slugAlphabet),
+      ) as UuidV7Slug;
     },
     uuidV7MaskedSlug() {
       return errorOrThrow(uuidV7BytesToMaskedSlug(errorOrThrow(generator.uuidV7Bytes()), schema));
