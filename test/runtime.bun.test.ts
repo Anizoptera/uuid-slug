@@ -19,13 +19,25 @@ import {
   insecureAmong,
   sourcesUsedBy,
 } from "./entropy-probe";
-import { createUuidSlugCodec, isUuidV7String } from "../src/index";
+import { BASE32HEX, createUuidSlugCodec, isUuidV7String, slugToUuid } from "../src/index";
 
 describe("bun runtime", () => {
   test("imports the source condition and generates UUIDv7", () => {
     const local = createUuidSlugCodec();
     expect(isUuidV7String(local.uuidV7())).toBe(true);
     expect(local.uuidV7Slug()).toHaveLength(22);
+  });
+
+  test("honours a base32hex slugAlphabet instead of the native base64url generator", () => {
+    // Bun is the ONLY runtime that defines `runtime.uuidV7Slug`, and it emits base64url. A codec
+    // configured for another alphabet must therefore stop using it. Vitest runs on Node, where
+    // that method does not exist, so this hazard is invisible there — the same asymmetry recorded
+    // for the entropy cases above, and the reason this assertion lives here rather than only in
+    // the shared suite.
+    const local = createUuidSlugCodec({ slugAlphabet: BASE32HEX });
+    const slug = local.uuidV7Slug();
+    expect(slug).toHaveLength(26);
+    expect(isUuidV7String(slugToUuid(slug) as string)).toBe(true);
   });
 
   test("never reaches for Math.random on any generation path", () => {

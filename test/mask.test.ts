@@ -8,8 +8,6 @@
  * case that counts wrong answers, or one that reaches past the boundary on purpose, can see them.
  */
 import { describe, expect, it } from "vitest";
-import { BASE32HEX, BASE64URL } from "../src/alphabet";
-import type { Alphabet } from "../src/alphabet";
 import {
   maskedSlugToUuidWithSchema,
   uuidToMaskedSlugWithSchema,
@@ -42,24 +40,19 @@ describe("the maskable range", () => {
     expect((refused as { code?: string }).code).toBe("invalid_timestamp");
   });
 
-  it("round-trips under the RIGHT key in both alphabets, at both ends of the range", () => {
-    // The golden vectors cover base64url only, so nothing else proves a base32hex slug decodes
-    // back at all — the wrong-key cases below would stay green against a build whose right-key
-    // decode was broken, because a broken check rejects everything and rejecting is what they
-    // count. Both ends because byte 0 is the byte the tag borrows: all-ones there is the case a
-    // sloppy mask-and-restore corrupts, and all-zero is the case that hides it.
-    for (const [alpha, length] of [
-      [BASE64URL, 22],
-      [BASE32HEX, 26],
-    ] as const)
-      for (const uuid of [LAST_MASKABLE, "00000000-0000-7000-8000-000000000000"]) {
-        const raw = parseUuid(uuid);
-        if (raw instanceof Error) throw raw;
-        const slug = uuidV7BytesToMaskedSlug(raw, schema, alpha);
-        if (slug instanceof Error) throw slug;
-        expect(slug).toHaveLength(length);
-        expect(maskedSlugToUuidWithSchema(String(slug), schema, alpha)).toBe(uuid);
-      }
+  it("round-trips under the RIGHT key at both ends of the range", () => {
+    // The wrong-key cases below would stay green against a build whose right-key decode was
+    // broken, because a broken check rejects everything and rejecting is what they count. Both
+    // ends because byte 0 is the byte the tag borrows: all-ones there is the case a sloppy
+    // mask-and-restore corrupts, and all-zero is the case that hides it.
+    for (const uuid of [LAST_MASKABLE, "00000000-0000-7000-8000-000000000000"]) {
+      const raw = parseUuid(uuid);
+      if (raw instanceof Error) throw raw;
+      const slug = uuidV7BytesToMaskedSlug(raw, schema);
+      if (slug instanceof Error) throw slug;
+      expect(slug).toHaveLength(22);
+      expect(maskedSlugToUuidWithSchema(String(slug), schema)).toBe(uuid);
+    }
   });
 });
 
@@ -68,33 +61,21 @@ describe("the wrong-key check", () => {
   const theirs = schemaOrThrow("rate-probe-B");
   const SAMPLE = 100_000;
 
-  const acceptedUnderTheWrongKey = (alpha: Alphabet, length: number) => {
+  // The bound is a measured count on fixed input, not a confidence interval, and is wide enough to
+  // survive a reseed. What it discriminates is the loss of a whole region of the check — dropping
+  // back to the 12-bit tier puts about 24 in the sample. It does NOT separate 16 bits from 15, and
+  // no sample this suite can afford to run would.
+  it("accepts a foreign key's slug at the rate 16 bits predicts", () => {
     let accepted = 0;
     const raw = new Uint8Array(16);
     for (let i = 0; i < SAMPLE; i += 1) {
-      const slug = uuidV7BytesToMaskedSlug(deterministicUuidV7Bytes(i, raw), mine, alpha);
+      const slug = uuidV7BytesToMaskedSlug(deterministicUuidV7Bytes(i, raw), mine);
       if (slug instanceof Error) throw slug;
       // Asserted here rather than through `expect`, which at this sample size costs more than the
       // masking it is checking. A length change is a format change, so throwing is the right loud.
-      if (slug.length !== length) throw new Error(`${alpha.name} produced ${slug.length} chars`);
-      if (!(maskedSlugToUuidWithSchema(String(slug), theirs, alpha) instanceof Error))
-        accepted += 1;
+      if (slug.length !== 22) throw new Error(`masking produced ${slug.length} chars`);
+      if (!(maskedSlugToUuidWithSchema(String(slug), theirs) instanceof Error)) accepted += 1;
     }
-    return accepted;
-  };
-
-  // Both bounds are set from a measured count on fixed input, not from a confidence interval, and
-  // they are wide enough to survive a reseed. What they discriminate is the loss of a whole region
-  // of the check — dropping back to the 12-bit tier puts about 24 in each sample. They do NOT
-  // separate 16 bits from 15, and no sample this suite can afford to run would.
-  it("accepts a foreign key's 22-character slug at the rate 16 bits predicts", () => {
-    expect(acceptedUnderTheWrongKey(BASE64URL, 22)).toBeLessThanOrEqual(8);
-  });
-
-  it("accepts a foreign key's 26-character slug at the rate 14 bits predicts", () => {
-    // base32hex spends 130 bits on 26 characters against base64url's 132, so it has two fewer to
-    // give the check and is four times easier to fool. That is the format's arithmetic showing
-    // through, not a defect, and it is why the alphabet is part of the contract.
-    expect(acceptedUnderTheWrongKey(BASE32HEX, 26)).toBeLessThanOrEqual(18);
+    expect(accepted).toBeLessThanOrEqual(8);
   });
 });

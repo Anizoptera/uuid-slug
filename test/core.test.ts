@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  BASE32HEX,
+  BASE64URL,
   createMaskSchema,
   createUuidSlugCodec,
   decodeBase64Url,
@@ -13,11 +15,16 @@ import {
   uuidToSlug,
   uuidV7BytesAt,
 } from "../src/index";
+import type { Alphabet } from "../src/index";
 import { deterministicUuidV7 } from "./deterministic-uuid";
 
 const SAMPLE_V7_A = "01987008-ef3e-7f69-b677-22ec1a5bbdb2";
 const SAMPLE_V7_B = "01987bbb-178b-7858-93e8-fc5e5444913b";
 const SAMPLE_V4 = "b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5";
+
+/** Compared with `<` because that is what a database index or a sorted listing does to these. */
+const ascending = (slugs: readonly string[]) =>
+  slugs.every((slug, i) => i === 0 || (slugs[i - 1] as string) < slug);
 
 describe("documented surface", () => {
   it("lists every error code in the README, and no code the README invented", () => {
@@ -116,6 +123,63 @@ describe("direct UUID slugs", () => {
 
   it("rejects uppercase UUIDs instead of silently canonicalizing external input", () => {
     expect(parseUuid(SAMPLE_V7_A.toUpperCase())).toBeInstanceOf(Error);
+  });
+
+  // A UUIDv7 leads with its 48-bit timestamp, so slugs sort by creation time exactly when the
+  // alphabet's characters are in value order. That is the whole reason base32hex is offered.
+  it("sorts base32hex slugs by creation time, which base64url cannot do", () => {
+    // Spread across the encodable range so the ordering is decided by timestamp characters at
+    // several positions rather than by one lucky byte. Tails are constant: this is a claim about
+    // the timestamp prefix, and random tails would only add noise to it.
+    //
+    // The last instant is deliberate. base64url runs `A-Za-z0-9-_`, which is monotonic for its
+    // first 52 values — `A` < `z` in ASCII too — and only inverts once a 6-bit group reaches 52
+    // and encodes as `0`, which sorts BELOW `A`. 0x034000000000 is the smallest round instant
+    // whose second character does that. Without it every base64url slug here sorts correctly and
+    // the contrast below proves nothing.
+    const instants = [1, 2 ** 12, 2 ** 20, 2 ** 26, 2 ** 31, 2 ** 34, 2 ** 38, 0x034000000000];
+    const uuids = instants.map((ms) => {
+      const hex = ms.toString(16).padStart(12, "0");
+      return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-7000-8000-000000000000`;
+    });
+    const slugsIn = (alpha: Alphabet) =>
+      uuids.map((uuid) => {
+        const slug = uuidToSlug(uuid, alpha);
+        if (slug instanceof Error) throw slug;
+        return String(slug);
+      });
+
+    expect(ascending(slugsIn(BASE32HEX))).toBe(true);
+    // The falsifier. Without it this case passes against an implementation that ignores the
+    // alphabet argument and returns base64url both times, which is precisely the way wiring a new
+    // option fails.
+    expect(ascending(slugsIn(BASE64URL))).toBe(false);
+  });
+
+  it("mints codec slugs in the configured alphabet, but never sentinels or masked ones", () => {
+    // The option's boundary is the point of this case. Sentinels are matched against masked input,
+    // and masked slugs are base64url by ruling, so a codec-wide alphabet that leaked into either
+    // would make sentinels unrecognisable exactly where they are used.
+    const codec = createUuidSlugCodec({ mask: { seed: "alpha" }, slugAlphabet: BASE32HEX });
+    expect(codec.uuidV7Slug()).toHaveLength(26);
+    expect(codec.uuidV4Slug()).toHaveLength(26);
+    expect(codec.uuidV7MaskedSlug()).toHaveLength(22);
+    expect(codec.sentinels[0]?.slug).toHaveLength(22);
+  });
+
+  it("reads either alphabet back without being told which", () => {
+    // Decoding takes no alphabet because the two lengths are disjoint. That is what lets a system
+    // change alphabet without invalidating a single slug it has already handed out.
+    for (const uuid of [SAMPLE_V7_A, SAMPLE_V4])
+      for (const [alpha, length] of [
+        [BASE64URL, 22],
+        [BASE32HEX, 26],
+      ] as const) {
+        const slug = uuidToSlug(uuid, alpha);
+        if (slug instanceof Error) throw slug;
+        expect(slug).toHaveLength(length);
+        expect(slugToUuid(String(slug))).toBe(uuid);
+      }
   });
 });
 

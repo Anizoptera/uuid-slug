@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BASE64URL, decodeInto, encode, spareBits } from "./alphabet";
-import type { Alphabet } from "./alphabet";
 import { UuidSlugError } from "./errors";
 import { mix32, read32 } from "./feistel";
 import { formatUuid, isRfcVariant, parseUuid, uuidVersion } from "./uuid";
-import type { MaskSchema, MaskedUuidSlug, MaskedUuidV7Slug, UuidString } from "./types";
+import type { MaskSchema, MaskedUuidV7Slug, UuidString } from "./types";
 
 /**
  * The check must fail a wrong key with probability 2^-width, which holds only if the function
@@ -48,7 +47,7 @@ function restoreV7(bytes: Uint8Array) {
 export function uuidToMaskedSlugWithSchema(
   uuid: string,
   schema: MaskSchema,
-): Error | MaskedUuidSlug {
+): Error | MaskedUuidV7Slug {
   const raw = parseUuid(uuid);
   if (raw instanceof Error) return raw;
   if (uuidVersion(raw) !== 7 || !isRfcVariant(raw))
@@ -59,12 +58,18 @@ export function uuidToMaskedSlugWithSchema(
 /** The 12 check bits that fit inside the block; the rest ride in the encoding's spare bits. */
 const INNER_TAG_BITS = 12;
 
+/**
+ * A masked slug is always 22 base64url characters (Art's ruling, 2026-08-12), so the outer half of
+ * the check is a constant 4 bits. Derived rather than written as `4` because the derivation IS the
+ * rule — the check is whatever the encoding has left over, never a number somebody chose.
+ */
+const OUTER_TAG_BITS = spareBits(BASE64URL, 16);
+const TAG_BITS = INNER_TAG_BITS + OUTER_TAG_BITS;
+
 export function uuidV7BytesToMaskedSlug(
   raw: Uint8Array,
   schema: MaskSchema,
-  alpha: Alphabet = BASE64URL,
 ): Error | MaskedUuidV7Slug {
-  const outer = spareBits(alpha, 16);
   // Truncating instead would make encoding non-injective — two UUIDs would share one slug, and no
   // decoder could ever tell which was meant. Refusing is the only recoverable answer.
   if ((raw[0] ?? 0) > 0x03)
@@ -72,30 +77,25 @@ export function uuidV7BytesToMaskedSlug(
       "invalid_timestamp",
       "Masking requires a UUIDv7 timestamped before 2^42 ms (year 2109); its top six bits carry the check.",
     );
-  const tag = tagFor(raw, INNER_TAG_BITS + outer);
+  const tag = tagFor(raw, TAG_BITS);
   const tagged = new Uint8Array(raw);
-  injectTag(tagged, tag >>> outer);
+  injectTag(tagged, tag >>> OUTER_TAG_BITS);
   const mixed = new Uint8Array(16);
   schema.mix(tagged, mixed, true);
-  return encode(mixed, alpha, tag & ((1 << outer) - 1), outer);
+  return encode(mixed, BASE64URL, tag & ((1 << OUTER_TAG_BITS) - 1), OUTER_TAG_BITS);
 }
 
-export function maskedSlugToUuidWithSchema(
-  slug: string,
-  schema: MaskSchema,
-  alpha: Alphabet = BASE64URL,
-): Error | UuidString {
-  const outer = spareBits(alpha, 16);
+export function maskedSlugToUuidWithSchema(slug: string, schema: MaskSchema): Error | UuidString {
   const mixed = new Uint8Array(16);
-  const outerTag = decodeInto(slug, alpha, mixed, 0, 16, outer);
+  const outerTag = decodeInto(slug, BASE64URL, mixed, 0, 16, OUTER_TAG_BITS);
   if (outerTag instanceof Error) return outerTag;
   const unmixed = new Uint8Array(16);
   schema.mix(mixed, unmixed, false);
   // Both halves come out of the same decryption, so a wrong key garbles the observed check as
   // thoroughly as the payload: the tag needs no key of its own to tell keys apart.
-  const foundTag = (extractTag(unmixed) << outer) | outerTag;
+  const foundTag = (extractTag(unmixed) << OUTER_TAG_BITS) | outerTag;
   restoreV7(unmixed);
-  if (tagFor(unmixed, INNER_TAG_BITS + outer) !== foundTag)
+  if (tagFor(unmixed, TAG_BITS) !== foundTag)
     return new UuidSlugError("invalid_uuid_slug", "Masked UUID slug failed schema validation.");
   return formatUuid(unmixed);
 }

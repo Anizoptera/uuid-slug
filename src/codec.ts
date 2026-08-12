@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { runtime } from "#runtime";
+import { BASE64URL } from "./alphabet";
 import { UuidSlugError } from "./errors";
 import {
   uuidToMaskedSlugWithSchema,
@@ -16,6 +17,7 @@ import type {
   UuidSlugCodec,
   UuidSlugCodecOptions,
   UuidString,
+  UuidV4Slug,
   UuidV4String,
   UuidV7Sentinel,
   UuidV7String,
@@ -72,11 +74,16 @@ function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
   const byUuid = new Map<string, SentinelUuidV7Slug>();
   const bySlug = new Map<string, UuidV7String>();
   for (const definition of definitions) {
+    // Always base64url, never the codec's `slugAlphabet`: a sentinel slug is matched against
+    // MASKED input, which is base64url by definition, so one written in another alphabet could
+    // never be recognised in the position it exists for.
     const slug = uuidToSlug(definition.uuid);
     if (slug instanceof Error) throw slug;
     const sentinel = {
       name: definition.name,
-      slug: slug,
+      // `uuidToSlug` sees only a string and returns the version-agnostic brand. The definition's
+      // `uuid` is typed `UuidV7String`, so v7-ness is established here and nowhere deeper.
+      slug: slug as SentinelUuidV7Slug,
       uuid: definition.uuid,
     };
     sentinels.push(sentinel);
@@ -124,6 +131,11 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
     errorOrThrow(schemaFromOption(mask)),
   );
   const generator = options.generator ?? createRuntimeGenerator(runtime);
+  const slugAlphabet = options.slugAlphabet ?? BASE64URL;
+  // The runtime's own slug generator emits base64url and nothing else, so it can only serve the
+  // default. Resolved once here rather than per call: the branch is on configuration, which cannot
+  // change after construction.
+  const nativeSlug = slugAlphabet === BASE64URL ? runtime.uuidV7Slug : undefined;
   const sentinelState = createSentinels(options.sentinels ?? UUID_V7_SENTINEL_DEFINITIONS);
 
   function decodeMasked(slug: string): Error | UuidString {
@@ -160,11 +172,15 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
     uuidV7At: generator.uuidV7At,
     uuidV7BytesAt: generator.uuidV7BytesAt,
     uuidV4Slug() {
-      return errorOrThrow(formatUuidSlug(errorOrThrow(generateUuidV4Bytes())));
+      // The bytes came from `generateUuidV4Bytes`, which stamps version 4; the encoder sees only
+      // bytes and cannot carry that through.
+      return errorOrThrow(
+        formatUuidSlug(errorOrThrow(generateUuidV4Bytes()), 0, slugAlphabet),
+      ) as UuidV4Slug;
     },
     uuidV7Slug() {
-      if (runtime.uuidV7Slug) return runtime.uuidV7Slug();
-      return errorOrThrow(formatUuidSlug(errorOrThrow(generator.uuidV7Bytes())));
+      if (nativeSlug) return nativeSlug();
+      return errorOrThrow(formatUuidSlug(errorOrThrow(generator.uuidV7Bytes()), 0, slugAlphabet));
     },
     uuidV7MaskedSlug() {
       return errorOrThrow(uuidV7BytesToMaskedSlug(errorOrThrow(generator.uuidV7Bytes()), schema));

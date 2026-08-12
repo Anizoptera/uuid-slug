@@ -53,6 +53,16 @@ Keep the seed stable forever. Change it and every slug you already handed out co
 `uuidToSlug` and `slugToUuid` are exact inverses, and anyone can convert either way. Use it
 when you only want the identifier shorter.
 
+Pass `BASE32HEX` to get 26 characters instead, and gain one thing: **base32hex slugs of UUIDv7s
+sort by creation time as plain strings.** A v7 starts with its timestamp, and base32hex writes
+its digits in the same order as their values, so comparing two slugs compares two instants. That
+makes them usable directly as an ordered database key. base64url cannot do it — its alphabet runs
+`A-Za-z0-9-_`, so `0` stands for a larger value than `A` but sorts before it.
+
+You never say which alphabet you are reading. The two lengths are different, 22 and 26, so
+`slugToUuid` works out the encoding from the slug itself — which means switching alphabet leaves
+every slug you have already handed out working.
+
 **Masked slug.** The same 16 bytes put through a small block cipher keyed by your seed, then
 base64url-encoded. Every output bit depends on every input bit, so two ids created in the same
 second share nothing visible. Also 22 characters. Use it when the identifier is public and you
@@ -169,6 +179,7 @@ createUuidSlugCodec({
   sentinels: [{ name: "nil", uuid: "…" }],
   previousMasks: [{ seed: "…previous seed…" }],
   acceptUnmaskedSlugs: false,
+  slugAlphabet: BASE32HEX, // plain slugs only; masked slugs and sentinels stay base64url
   generator: myUuidV7Generator,
 });
 ```

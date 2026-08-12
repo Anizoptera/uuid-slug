@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { decodeBase64Url, encodeBase64Url } from "./base64url";
+import { BASE32HEX, BASE64URL, decodeInto, encode } from "./alphabet";
+import type { Alphabet } from "./alphabet";
 import { UuidSlugError } from "./errors";
 import type {
   UuidSlug,
@@ -17,8 +18,40 @@ for (let i = 0; i < 10; i += 1) HEX_DECODE[48 + i] = i;
 for (let i = 0; i < 6; i += 1) HEX_DECODE[97 + i] = 10 + i;
 
 const UUID_LENGTH = 36;
-const SLUG_LENGTH = 22;
 const UUID_BYTE_OFFSETS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34] as const;
+
+/**
+ * The alphabets a plain slug may be written in. base64url is the default and the shortest;
+ * base32hex costs four more characters and buys the one property base64url cannot offer: its
+ * characters are in ASCII order, so base32hex slugs of UUIDv7s sort chronologically as plain
+ * strings. Only the lowercase spelling decodes — the table is built from `chars` — so slugs have
+ * no second spelling, as everywhere else in this format.
+ *
+ * MASKED slugs are always base64url (Art's ruling, 2026-08-12). Sort order there would be order of
+ * ciphertext, which carries nothing, so the extra characters would buy only the case-insensitivity.
+ */
+const SLUG_ALPHABETS = [BASE64URL, BASE32HEX] as const;
+
+/** Characters needed for 16 bytes: 22 in base64url, 26 in base32hex. */
+function slugLength(alpha: Alphabet) {
+  return Math.ceil(128 / alpha.bitsPerChar);
+}
+
+/**
+ * Length -> alphabet, which is why decoding takes no alphabet argument: the two lengths are
+ * disjoint, so a slug names its own encoding and a caller cannot pick the wrong one. Indexed
+ * rather than searched because every decode and every type guard pays this lookup.
+ */
+const SLUG_ALPHABET_BY_LENGTH: readonly (Alphabet | undefined)[] = SLUG_ALPHABETS.reduce<
+  (Alphabet | undefined)[]
+>((table, alpha) => {
+  table[slugLength(alpha)] = alpha;
+  return table;
+}, []);
+
+const SLUG_LENGTHS = SLUG_ALPHABETS.map((alpha) => `${slugLength(alpha)} (${alpha.name})`).join(
+  " or ",
+);
 
 function hexValue(code: number) {
   return code < HEX_DECODE.length ? HEX_DECODE[code] : -1;
@@ -88,22 +121,33 @@ export function isUuidV7Bytes(bytes: Uint8Array): boolean {
   return bytes.length === 16 && uuidVersion(bytes) === 7 && isRfcVariant(bytes);
 }
 
-export function formatUuidSlug(bytes: Uint8Array, offset = 0): Error | UuidSlug {
+export function formatUuidSlug(
+  bytes: Uint8Array,
+  offset = 0,
+  alpha: Alphabet = BASE64URL,
+): Error | UuidSlug {
   if (offset < 0 || offset + 16 > bytes.length)
     return new UuidSlugError("invalid_buffer", "UUID byte buffer is too small.");
-  return encodeBase64Url(bytes.subarray(offset, offset + 16)) as UuidSlug;
+  return encode(bytes.subarray(offset, offset + 16), alpha);
 }
 
+/** Accepts either alphabet; the length says which, so there is nothing to pass and nothing to get wrong. */
 export function parseUuidSlug(slug: string, out?: Uint8Array, offset = 0): Error | Uint8Array {
-  if (slug.length !== SLUG_LENGTH)
-    return new UuidSlugError("invalid_uuid_slug", "UUID slug must be 22 characters.");
-  return decodeBase64Url(slug, out, offset);
+  const alpha = SLUG_ALPHABET_BY_LENGTH[slug.length];
+  if (!alpha)
+    return new UuidSlugError(
+      "invalid_uuid_slug",
+      `UUID slug must be ${SLUG_LENGTHS} characters, got ${slug.length}.`,
+    );
+  const target = out ?? new Uint8Array(16);
+  const result = decodeInto(slug, alpha, target, offset, 16);
+  return result instanceof Error ? result : target;
 }
 
-export function uuidToSlug(uuid: string): Error | UuidSlug {
+export function uuidToSlug(uuid: string, alpha: Alphabet = BASE64URL): Error | UuidSlug {
   const bytes = parseUuid(uuid);
   if (bytes instanceof Error) return bytes;
-  return formatUuidSlug(bytes);
+  return formatUuidSlug(bytes, 0, alpha);
 }
 
 export function slugToUuid(slug: string): Error | UuidString {
@@ -113,7 +157,7 @@ export function slugToUuid(slug: string): Error | UuidString {
 }
 
 export function isUuidSlug(slug: null | string | undefined): slug is UuidSlug {
-  if (!slug || slug.length !== SLUG_LENGTH) return false;
+  if (!slug) return false;
   return !(parseUuidSlug(slug) instanceof Error);
 }
 

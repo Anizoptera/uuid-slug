@@ -1,17 +1,34 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import type { Alphabet } from "./alphabet";
+
 declare const brand: unique symbol;
 
-export type Brand<T, Name extends string> = T & { readonly [brand]?: Name };
+/**
+ * Nominal marker. The names ACCUMULATE as a key set rather than replacing one another, which is
+ * what makes nesting work: `Brand<Brand<string, "A">, "B">` carries both keys, so it is assignable
+ * to the "A" brand but not the reverse and not to a sibling "C".
+ *
+ * Writing the name as the property's TYPE instead — `{ [brand]?: Name }` — intersects to
+ * `"A" & "B"`, i.e. `never`, on the second level. Every nested brand then has the same `never`
+ * marker and they are all mutually assignable: measured 2026-08-12, `UuidV4Slug` and `UuidV7Slug`
+ * were interchangeable, as were a plain slug and a masked one, for the entire life of the type.
+ *
+ * The property stays OPTIONAL so a string literal is still accepted wherever a brand is asked for.
+ * These types separate values the package produces; they are not a parsing obligation on callers.
+ */
+export type Brand<T, Name extends string> = T & { readonly [brand]?: { [K in Name]: true } };
 
 export type Base64UrlString = Brand<string, "Base64UrlString">;
 export type UuidString = Brand<string, "UuidString">;
 export type UuidV4String = Brand<UuidString, "UuidV4String">;
 export type UuidV7String = Brand<UuidString, "UuidV7String">;
-export type UuidSlug = Brand<Base64UrlString, "UuidSlug">;
+/** Either alphabet — 22 base64url characters or 26 base32hex — so NOT a `Base64UrlString`. */
+export type UuidSlug = Brand<string, "UuidSlug">;
 export type UuidV4Slug = Brand<UuidSlug, "UuidV4Slug">;
 export type UuidV7Slug = Brand<UuidSlug, "UuidV7Slug">;
-export type MaskedUuidSlug = Brand<UuidSlug, "MaskedUuidSlug">;
+/** Masked slugs are base64url only, so this narrows where `UuidSlug` cannot. */
+export type MaskedUuidSlug = Brand<Base64UrlString & UuidSlug, "MaskedUuidSlug">;
 export type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
 export type SentinelUuidV7Slug = Brand<UuidV7Slug, "SentinelUuidV7Slug">;
 export type PublicUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
@@ -119,6 +136,26 @@ export interface UuidSlugCodecOptions {
    */
   readonly mask?: MaskSchema | MaskSchemaOptions;
   readonly sentinels?: readonly UuidV7SentinelDefinition[];
+  /**
+   * Alphabet for PLAIN slugs from `uuidV4Slug` and `uuidV7Slug`. `BASE32HEX` costs four characters
+   * (26 rather than 22) and buys chronological sort order: its characters are in ASCII order and a
+   * UUIDv7's leading bytes are its timestamp, so base32hex slugs sort by creation time as plain
+   * strings. base64url's alphabet cannot — it runs `A-Za-z0-9-_`, so its character order and its
+   * value order disagree. Being alphanumeric also spares base32hex the `-` and `_` that make a
+   * base64url slug awkward to select by double-click.
+   *
+   * Codec-level rather than per call so a system cannot mint half its ids in each spelling.
+   * Decoding takes no such option: the two lengths are disjoint, so `slugToUuid` reads both and a
+   * change of alphabet leaves every previously issued slug working.
+   *
+   * It does NOT reach masked slugs or sentinels, which stay base64url. Masked bytes are ciphertext
+   * and sort in no useful order, and a sentinel is matched against masked input, so a sentinel in a
+   * different alphabet could never be recognised there.
+   *
+   * Costs throughput when set: `uuidV7Slug` can no longer use a runtime's native base64url slug
+   * generator and falls back to generating bytes and encoding them.
+   */
+  readonly slugAlphabet?: Alphabet;
 }
 
 /**
@@ -164,7 +201,7 @@ export interface UuidSlugCodec extends UuidV7Generator {
    * Decodes to whatever version comes out, where `maskedSlugToUuidV7` insists on v7.
    *
    * NOT a redundant widening of that method, which is what it looks like: with
-   * `legacy.directDecode` enabled a slug that matches no schema is tried as a plain unmasked
+   * `acceptUnmaskedSlugs` enabled a slug that matches no schema is tried as a plain unmasked
    * slug, and a system migrating off unmasked ids may well have UUIDv4 ones. Those decode here
    * and are rejected by the v7 form. Deleting this on the assumption it was a duplicate was
    * measured to break exactly that migration path.
