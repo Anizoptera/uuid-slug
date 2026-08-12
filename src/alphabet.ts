@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { UuidSlugError } from "./errors";
+import { checkRange, UuidSlugError } from "./errors";
 import type { UuidSlugErrorCode } from "./errors";
 
 /**
@@ -112,8 +112,8 @@ export function decodeInto(
   const expected = Math.ceil((byteLength * 8 + tailBits) / bitsPerChar);
   if (value.length !== expected)
     return new UuidSlugError(code, `Expected ${expected} ${name} characters, got ${value.length}.`);
-  if (offset < 0 || offset + byteLength > out.length)
-    return new UuidSlugError("invalid_buffer", "Output buffer is too small.");
+  const badRange = checkRange(out, offset, byteLength);
+  if (badRange) return badRange;
 
   let acc = 0;
   let bits = 0;

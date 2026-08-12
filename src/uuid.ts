@@ -2,7 +2,7 @@
 
 import { BASE32HEX, BASE64URL, decodeInto, encode } from "./alphabet";
 import type { Alphabet } from "./alphabet";
-import { UuidSlugError } from "./errors";
+import { checkRange, UuidSlugError } from "./errors";
 import type {
   UuidSlug,
   UuidString,
@@ -74,8 +74,8 @@ export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): Error | U
   }
 
   const target = out ?? new Uint8Array(16);
-  if (offset < 0 || offset + 16 > target.length)
-    return new UuidSlugError("invalid_buffer", "Output buffer is too small.");
+  const badRange = checkRange(target, offset, 16);
+  if (badRange) return badRange;
 
   for (let byteIndex = 0; byteIndex < UUID_BYTE_OFFSETS.length; byteIndex += 1) {
     const textOffset = UUID_BYTE_OFFSETS[byteIndex] ?? 0;
@@ -89,8 +89,8 @@ export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): Error | U
 }
 
 export function formatUuid(bytes: Uint8Array, offset = 0): Error | UuidString {
-  if (offset < 0 || offset + 16 > bytes.length)
-    return new UuidSlugError("invalid_buffer", "UUID byte buffer is too small.");
+  const badRange = checkRange(bytes, offset, 16);
+  if (badRange) return badRange;
   let out = "";
   for (let i = 0; i < 16; i += 1) {
     if (i === 4 || i === 6 || i === 8 || i === 10) out += "-";
@@ -135,8 +135,8 @@ export function formatUuidSlug(
   offset = 0,
   alphabet: SlugAlphabet = "base64url",
 ): Error | UuidSlug {
-  if (offset < 0 || offset + 16 > bytes.length)
-    return new UuidSlugError("invalid_buffer", "UUID byte buffer is too small.");
+  const badRange = checkRange(bytes, offset, 16);
+  if (badRange) return badRange;
   // Unreachable from TypeScript, where the name is a two-member union. Reached from JavaScript,
   // which is why it answers rather than indexing into `undefined`.
   const alpha = SLUG_ALPHABETS[alphabet];
@@ -202,8 +202,8 @@ export function isUuidV7Slug(slug: null | string | undefined): slug is UuidV7Slu
  * as zero and would otherwise blame a truncated buffer for holding a v0.
  */
 export function extractUuidV7Timestamp(bytes: Uint8Array, offset = 0): Error | number {
-  if (offset < 0 || offset + 16 > bytes.length)
-    return new UuidSlugError("invalid_buffer", "UUIDv7 needs sixteen bytes at the given offset.");
+  const badRange = checkRange(bytes, offset, 16);
+  if (badRange) return badRange;
   if (uuidVersion(bytes, offset) !== 7 || !isRfcVariant(bytes, offset))
     return new UuidSlugError("invalid_uuid_version", "Timestamp is only defined for UUIDv7.");
   let timestamp = 0;
@@ -211,7 +211,22 @@ export function extractUuidV7Timestamp(bytes: Uint8Array, offset = 0): Error | n
   return timestamp;
 }
 
+/**
+ * Whether a v7's 74 random bits are anything other than all-zero or all-one — the two patterns a
+ * generator produces when its entropy source is absent rather than working.
+ *
+ * Out of range answers `false`, and the direction is the whole point. Without the check the reads
+ * below fall through `?? 0`, so a missing byte is indistinguishable from a zero byte and only ever
+ * in the reassuring direction: a short buffer reported entropy PRESENT, and an offset past the end
+ * reported the degenerate case for data that was never examined. Both are answers about bytes the
+ * caller does not have. `false` is the honest one — it means "cannot be shown to carry entropy",
+ * which is what a caller acts on, and it is what a truly degenerate id gets too.
+ *
+ * Boolean rather than `Error | boolean` because the sole use is a guard in a condition; an error
+ * return would have every call site unwrap a value it is already treating as a yes/no.
+ */
 export function hasUuidV7Entropy(bytes: Uint8Array, offset = 0): boolean {
+  if (checkRange(bytes, offset, 16)) return false;
   const randA = (((bytes[offset + 6] ?? 0) & 0x0f) << 8) | (bytes[offset + 7] ?? 0);
   const randBFirst = (bytes[offset + 8] ?? 0) & 0x3f;
   let restZero = true;

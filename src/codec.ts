@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { runtime } from "#runtime";
-import { UuidSlugError } from "./errors";
+import { checkRange, UuidSlugError } from "./errors";
 import {
   uuidToMaskedSlugWithSchema,
   uuidV7BytesToMaskedSlug,
@@ -106,8 +106,8 @@ const v4Random = new Uint8Array(16);
 
 function generateUuidV4Bytes(out?: Uint8Array, offset = 0): Error | Uint8Array {
   const target = out ?? new Uint8Array(16);
-  if (offset < 0 || offset + 16 > target.length)
-    return new UuidSlugError("invalid_buffer", "Output buffer is too small.");
+  const badRange = checkRange(target, offset, 16);
+  if (badRange) return badRange;
   runtime.fillRandom(v4Random);
   target.set(v4Random, offset);
   target[offset + 6] = ((target[offset + 6] ?? 0) & 0x0f) | 0x40;

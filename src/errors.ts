@@ -37,3 +37,35 @@ export class UuidRuntimeError extends UuidSlugError {
     this.name = "UuidRuntimeError";
   }
 }
+
+/**
+ * The one range check for every entry point that reads or writes a caller's buffer at an offset.
+ *
+ * `Number.isInteger` is the load-bearing half and the reason this is shared rather than repeated.
+ * The obvious spelling — `offset < 0 || offset + need > buffer.length` — passes a fractional or
+ * NaN offset, because both of its comparisons are false for NaN and neither notices `0.5`. What
+ * follows is worse than a wrong answer: `bytes[0.5] = x` is not a store, so the write SILENTLY does
+ * nothing while the guard reports success, and an id can come back half-written with the caller's
+ * stale bytes in the rest of it. A string offset defeats the same test from the other side, by
+ * concatenation: `"4" + 16` is `"416"`, which is not greater than any plausible length.
+ *
+ * Seven near-identical copies of that test existed across this package and not one checked
+ * integrality — the copying is why. One copy is what stops the class returning.
+ */
+export function checkRange(
+  buffer: Uint8Array,
+  offset: number,
+  need: number,
+): undefined | UuidSlugError {
+  if (!Number.isInteger(offset))
+    return new UuidSlugError(
+      "invalid_buffer",
+      `Buffer offset must be a whole number, got ${typeof offset} ${String(offset)}.`,
+    );
+  if (offset < 0 || offset + need > buffer.length)
+    return new UuidSlugError(
+      "invalid_buffer",
+      `Buffer needs ${need} bytes at offset ${offset}, but holds ${buffer.length}.`,
+    );
+  return undefined;
+}

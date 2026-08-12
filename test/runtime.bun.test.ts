@@ -21,9 +21,20 @@ import {
   insecureAmong,
   sourcesUsedBy,
 } from "./entropy-probe";
+import { cases as bufferContractCases } from "./buffer-contract-probe";
 import { createUuidSlugCodec, isUuidV7String, slugToUuid } from "../src/index";
 
 describe("bun runtime", () => {
+  // The same list `test/buffer-contract.test.ts` runs on Node, against Bun's native byte writers.
+  // It is the case where the split lanes earn their cost: `uuidV7Bytes` here is
+  // `Bun.randomUUIDv7("buffer")` plus `TypedArray.set`, which coerces a NaN offset to 0 and throws
+  // on a fractional one — neither of which the portable generator Node runs would ever do.
+  for (const entry of bufferContractCases) {
+    test(entry.name, () => {
+      expect(entry.run()).toBeUndefined();
+    });
+  }
+
   test("imports the source condition and generates UUIDv7", () => {
     const local = createUuidSlugCodec();
     expect(isUuidV7String(local.uuidV7())).toBe(true);

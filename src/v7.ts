@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { UuidSlugError } from "./errors";
+import { checkRange, UuidSlugError } from "./errors";
 import type { UuidV7Generator, UuidV7String } from "./types";
 import { formatUuid } from "./uuid";
 import type { Runtime } from "./runtime/types";
@@ -104,8 +104,8 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
 
   function bytes(out?: Uint8Array, offset = 0, timestamp?: number): Error | Uint8Array {
     const target = out ?? new Uint8Array(16);
-    if (offset < 0 || offset + 16 > target.length)
-      return new UuidSlugError("invalid_buffer", "Output buffer is too small.");
+    const badRange = checkRange(target, offset, 16);
+    if (badRange) return badRange;
     // The two modes differ only in where the millisecond and the 42-bit sequence come from, so
     // they share one write path. A caller-supplied instant takes a RANDOM sequence rather than
     // the monotonic counter, and leaves `lastMs`/`counter` untouched: that counter orders values
@@ -139,13 +139,16 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
       sequenceHi = counterHi;
       sequenceLo = counterLo;
     }
+    // Every one of the sixteen bytes is written through the same view. It used to be split —
+    // `subarray` for the first twelve, `target[offset + n]` for the random tail — and the two
+    // disagree about a non-integer offset: `subarray` truncates it, direct indexing is a silent
+    // no-op. That produced an id whose random tail was whatever the caller's buffer already held,
+    // returned as success. `checkRange` now refuses such an offset, so the split can no longer
+    // diverge; writing through one view is what keeps it that way.
     const uuid = target.subarray(offset, offset + 16);
     writeTimestamp(uuid, ms);
     writeCounter(uuid, sequenceHi, sequenceLo);
-    target[offset + 12] = random[12] ?? 0;
-    target[offset + 13] = random[13] ?? 0;
-    target[offset + 14] = random[14] ?? 0;
-    target[offset + 15] = random[15] ?? 0;
+    for (let i = 12; i < 16; i += 1) uuid[i] = random[i] as number;
     return target;
   }
 
@@ -175,8 +178,20 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
         return fallback.uuidV7();
       }
     },
+    // The range is checked BEFORE delegating for the same reason the instant is: a native writer
+    // is handed the caller's buffer and offset directly, and answers differently from the portable
+    // path. Measured on Bun 1.3.14, `out.set(bytes, offset)` coerces a NaN offset to 0 and writes
+    // at the wrong place reporting success, while a fractional one throws a RangeError that the
+    // catch below would relabel `rng_unavailable` — blaming the entropy source for a caller's
+    // argument. Checking here is what makes every runtime give the one answer.
     uuidV7Bytes(out?: Uint8Array, offset = 0) {
+      // Guarded only on the branch that leaves this package: the fallback checks the same range
+      // itself, so checking before the branch would pay for it twice on every Node call.
       if (!runtime.uuidV7Bytes) return fallback.uuidV7Bytes(out, offset);
+      if (out) {
+        const badRange = checkRange(out, offset, 16);
+        if (badRange) return badRange;
+      }
       try {
         return runtime.uuidV7Bytes(out, offset);
       } catch (cause) {
@@ -205,6 +220,10 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
       const invalid = rejectInstant(timestamp);
       if (invalid) return invalid;
       if (!runtime.uuidV7BytesAt) return fallback.uuidV7BytesAt(timestamp, out, offset);
+      if (out) {
+        const badRange = checkRange(out, offset, 16);
+        if (badRange) return badRange;
+      }
       try {
         return runtime.uuidV7BytesAt(timestamp, out, offset);
       } catch (cause) {
