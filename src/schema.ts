@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { UuidSlugError } from "./errors";
-import { FEISTEL_KEY_WORDS, feistel16 } from "./feistel";
+import { FEISTEL_KEY_WORDS, feistel16, read32 } from "./feistel";
 import type { MaskSchema, MaskSchemaOptions } from "./types";
 
 function fnv1a64(data: Uint8Array) {
@@ -26,6 +26,16 @@ function next64(state: { value: bigint }) {
   return state.value;
 }
 
+/**
+ * Expands a seed into key material. NOT a KDF: the seed reaches the output only through
+ * `fnv1a64`, so the material carries at most 64 bits of entropy however long the seed is — a
+ * caller passing 32 random bytes gets 64 bits of key, not 256.
+ *
+ * That is enough here and stays. Masking buys obscurity, not secrecy (Art's ruling, 2026-08-12);
+ * a real KDF would need either a dependency or a synchronous SHA-256 of our own, because
+ * `crypto.subtle` is async-only and cannot sit under a synchronous constructor; and widening the
+ * state would change every key and orphan every masked slug already issued.
+ */
 function derivedBytes(seed: Uint8Array, purpose: number, length: number) {
   const state = {
     value: fnv1a64(Uint8Array.from([...seed, purpose])) || 0x9e3779b97f4a7c15n,
@@ -37,17 +47,15 @@ function derivedBytes(seed: Uint8Array, purpose: number, length: number) {
 }
 
 function feistelSchema(id: string, seed: Uint8Array): MaskSchema {
-  // A distinct purpose byte keeps this key material independent of the substitution scheme's,
-  // so a seed used under both schemes does not reuse bits across them.
+  // Domain separator, hashed with the seed so a second scheme deriving from the same seed cannot
+  // share key bits. Its VALUE is arbitrary; its stability is not — any other number gives every
+  // seed different round keys and makes every masked slug ever issued undecodable.
   const material = derivedBytes(seed, 3, FEISTEL_KEY_WORDS * 4);
   const keys = new Int32Array(FEISTEL_KEY_WORDS);
-  for (let i = 0; i < keys.length; i += 1)
-    keys[i] =
-      ((material[i * 4] as number) << 24) |
-      ((material[i * 4 + 1] as number) << 16) |
-      ((material[i * 4 + 2] as number) << 8) |
-      (material[i * 4 + 3] as number) |
-      0;
+  // Read through `read32` rather than assembled here: round keys are as wire-format-bearing as the
+  // block bytes, so they must be big-endian for the same reason, and a second copy of that
+  // assembly is a second thing to keep in step.
+  for (let i = 0; i < keys.length; i += 1) keys[i] = read32(material, i * 4);
   return {
     id,
     mix(input, output, forward) {
@@ -104,7 +112,8 @@ export function verifyInvertible(schema: MaskSchema): Error | MaskSchema {
  */
 const DEFAULT_SEED = "anizoptera.uuid-slug.default-mask.v1";
 
-export const DEFAULT_MASK_SCHEMA: MaskSchema = createMaskSchema({
-  id: "default",
-  seed: DEFAULT_SEED,
-}) as MaskSchema;
+// Built from `feistelSchema` rather than through `createMaskSchema`, whose only failure is an empty
+// seed — a check on CALLER input that a literal here cannot fail. Routing through it would return
+// `Error | MaskSchema` and force a cast that, at module scope, could only ever hide a real Error
+// behind a `MaskSchema` type for every default codec in the process.
+export const DEFAULT_MASK_SCHEMA: MaskSchema = feistelSchema("default", seedBytes(DEFAULT_SEED));

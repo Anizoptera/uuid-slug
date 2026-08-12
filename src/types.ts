@@ -90,6 +90,11 @@ export interface MaskSchema {
  */
 export interface MaskSchemaOptions {
   readonly id?: string;
+  /**
+   * Any non-empty length, but the derivation collapses it to at most 64 bits of key material, so
+   * passing 32 random bytes buys a 64-bit key and not a 256-bit one. Sufficient for obscurity,
+   * which is what masking is for; see `derivedBytes` in `schema.ts` for why it is not more.
+   */
   readonly seed: string | Uint8Array;
 }
 
