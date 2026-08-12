@@ -10,7 +10,7 @@
  * left the whole vitest suite green. One list, called from both, is what keeps a rule from
  * holding on the runtime that happens to be checked and not on the one consumers use.
  */
-import { instrument, INSECURE_SOURCES } from "../bench/instrument";
+import { instrument, INSECURE_SOURCES } from "./instrument";
 import { createUuidSlugCodec } from "../src/index";
 
 export const codec = createUuidSlugCodec();

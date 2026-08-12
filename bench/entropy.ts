@@ -43,7 +43,7 @@
  * `Math.random`, whose values are indistinguishable from a CSPRNG's by any test here.
  */
 import { candidates, type BenchCandidate } from "./candidates";
-import { instrument } from "./instrument";
+import { instrument } from "../test/instrument";
 
 const smoke = process.argv.includes("--smoke");
 const samples = Number(process.env.UUID_SLUG_ENTROPY_SAMPLES ?? (smoke ? 20_000 : 200_000));
@@ -65,7 +65,9 @@ interface Report {
   sources: string[];
   distinctFields: number;
   conformingValues: number;
-  nonDecreasingPairs: number;
+  /** Same-millisecond pairs that strictly increase, over the same-millisecond pairs seen. */
+  orderedWithinTick: number;
+  sameTickPairs: number;
   counterBits: number;
   counterHolds: number;
   minOnesRatio: number;
@@ -84,24 +86,33 @@ function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>
   const distinctFields = new Set(fields).size;
 
   let conformingValues = 0;
-  let nonDecreasingPairs = 0;
   const ones = Array.from<number>({ length: 74 }).fill(0);
   for (let i = 0; i < samples; i += 1) {
     const hex = (values[i] ?? "").replaceAll("-", "");
     if (hex[12] === "7" && "89ab".includes(hex[16] ?? "")) conformingValues += 1;
-    // Lexicographic order over the canonical form is the order a database index imposes.
-    if (i > 0 && hex >= (values[i - 1] ?? "").replaceAll("-", "")) nonDecreasingPairs += 1;
     const field = fields[i] ?? 0n;
     for (let b = 0; b < 74; b += 1)
       ones[b] = (ones[b] ?? 0) + Number((field >> BigInt(73 - b)) & 1n);
   }
 
-  // Same-millisecond pairs only: across a millisecond boundary every implementation reseeds,
-  // so a pair spanning one says nothing about whether a counter is running inside a tick.
+  // Same-millisecond pairs only: across a millisecond boundary every implementation reseeds, so a
+  // pair spanning one says nothing about whether a counter is running inside a tick.
+  //
+  // ORDERING IS COUNTED HERE, over the same pairs, for the same reason. Counting every consecutive
+  // pair instead — which this did — mixes in the cross-millisecond ones, and those order by their
+  // timestamp prefix whatever the generator does below it, so the figure rose with the draw rate
+  // and reported the clock rather than the generator. Strict `>` rather than `>=`: two equal
+  // canonical forms are one value seen twice, which a database index does not order and
+  // `distinctFields` already reports.
   const pairs: [bigint, bigint][] = [];
-  for (let i = 1; i < samples; i += 1)
-    if (timestamp(values[i] ?? "") === timestamp(values[i - 1] ?? ""))
-      pairs.push([fields[i - 1] ?? 0n, fields[i] ?? 0n]);
+  let orderedWithinTick = 0;
+  for (let i = 1; i < samples; i += 1) {
+    if (timestamp(values[i] ?? "") !== timestamp(values[i - 1] ?? "")) continue;
+    pairs.push([fields[i - 1] ?? 0n, fields[i] ?? 0n]);
+    // Lexicographic order over the canonical form is the order a database index imposes.
+    if ((values[i] ?? "").replaceAll("-", "") > (values[i - 1] ?? "").replaceAll("-", ""))
+      orderedWithinTick += 1;
+  }
 
   // The width whose leading slice advances by exactly one most often, with the share of pairs that
   // obey it reported beside it instead of thresholded. Two properties of this scan are worth
@@ -136,7 +147,8 @@ function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>
     sources: used,
     distinctFields,
     conformingValues,
-    nonDecreasingPairs,
+    orderedWithinTick,
+    sameTickPairs: pairs.length,
     counterBits,
     counterHolds: Number(counterHolds.toFixed(4)),
     minOnesRatio: Number(Math.min(...ratios).toFixed(3)),
@@ -155,7 +167,7 @@ if (sources.unavailable.length > 0)
 
 const percent = (part: number, whole: number) => `${((part / whole) * 100).toFixed(1)}%`;
 console.error(
-  `\n${"candidate".padEnd(16)}${"entropy source".padEnd(25)}${"distinct".padStart(9)}${"v7".padStart(7)}${"ordered".padStart(8)}${"counter".padStart(16)}${"P(1) range".padStart(15)}`,
+  `\n${"candidate".padEnd(16)}${"entropy source".padEnd(25)}${"distinct".padStart(9)}${"v7".padStart(7)}${"in-tick".padStart(8)}${"counter".padStart(16)}${"P(1) range".padStart(15)}`,
 );
 for (const r of reports)
   console.error(
@@ -165,7 +177,7 @@ for (const r of reports)
       (r.sources.length > 0 ? r.sources.join(",") : "unobserved").slice(0, 24).padEnd(25) +
       String(r.distinctFields).padStart(9) +
       percent(r.conformingValues, r.samples).padStart(7) +
-      percent(r.nonDecreasingPairs, r.samples - 1).padStart(8) +
+      (r.sameTickPairs === 0 ? "n/a" : percent(r.orderedWithinTick, r.sameTickPairs)).padStart(8) +
       `${r.counterBits}b @ ${(r.counterHolds * 100).toFixed(2)}%`.padStart(16) +
       `${r.minOnesRatio}-${r.maxOnesRatio}`.padStart(15),
   );

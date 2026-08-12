@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
+// Lives in `test/` rather than `bench/` because `test/entropy-probe.ts` GATES on it, and a
+// correctness gate must not break when the benchmark tree is refactored. It is a general-purpose
+// randomness detector, not a benchmark; `bench/entropy.ts` is the other caller and imports it here.
+
 /**
  * Counting wrappers over every entropy source reachable from JavaScript, so a caller can ask
  * which one an implementation actually reached for rather than trusting its description.

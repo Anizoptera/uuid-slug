@@ -6,8 +6,10 @@
  * the finding.
  *
  * Two reasons a row moves between engines, and only the second is obvious. Same code, different
- * JIT: `@kripod/uuidv7` measured 1.76M ops/s on Bun and 657k on Node, a 2.7x swing with nothing
- * changed. And DIFFERENT code: a package with conditional exports, or one that feature-detects
+ * JIT: a pure-JavaScript candidate can differ severalfold between Bun and Node with nothing changed
+ * — read the current spread off the table this prints, never off a figure quoted in prose here,
+ * which drifts with the machine and the runtime version. And DIFFERENT code: a package with
+ * conditional exports, or one that feature-detects
  * `node:crypto` against Web Crypto, runs a different implementation on each engine — so its
  * entropy SOURCE can differ too, which is why the audit is in this matrix and not just the
  * benchmark. Native availability differs as well: `Bun.randomUUIDv7` exists only on Bun, and
@@ -134,19 +136,23 @@ for (const [name, row] of speed)
 for (const { version, records } of entropy) {
   console.log(`\n## Randomness — ${version}\n`);
   console.log(
-    `${"candidate".padEnd(16)}${"entropy source".padEnd(25)}${"distinct".padStart(9)}${"ordered".padStart(9)}${"counter".padStart(16)}${"P(1) range".padStart(15)}`,
+    `${"candidate".padEnd(16)}${"entropy source".padEnd(25)}${"distinct".padStart(9)}${"in-tick".padStart(9)}${"counter".padStart(16)}${"P(1) range".padStart(15)}`,
   );
   for (const r of records) {
     const sources = r.sources as string[];
-    const samples = r.samples as number;
+    const sameTickPairs = r.sameTickPairs as number;
     console.log(
       String(r.candidate).padEnd(16) +
         (sources.length > 0 ? sources.join(",") : "unobserved").slice(0, 24).padEnd(25) +
         String(r.distinctFields).padStart(9) +
         // Ordering belongs beside the counter because the counter is what produces it: a
         // generator with no counter re-randomises inside the millisecond and cannot be sorted
-        // within one, however good its bits are.
-        `${(((r.nonDecreasingPairs as number) / (samples - 1)) * 100).toFixed(2)}%`.padStart(9) +
+        // within one, however good its bits are. Denominator is the same-millisecond pairs only —
+        // see `bench/entropy.ts`, where counting all pairs measured the clock instead.
+        (sameTickPairs === 0
+          ? "n/a"
+          : `${(((r.orderedWithinTick as number) / sameTickPairs) * 100).toFixed(2)}%`
+        ).padStart(9) +
         `${String(r.counterBits)}b @ ${((r.counterHolds as number) * 100).toFixed(2)}%`.padStart(
           16,
         ) +
