@@ -103,8 +103,9 @@ async function main() {
     // layout as public API permanently. Node's resolver blocks deep imports only for as long as
     // this map stays closed. It is also pointless to open it: the module split already delivers the
     // tree-shaking a deep import would be reached for (see src/keyless.ts).
-    const exportKeys = Object.keys((packageJson.exports as Record<string, unknown>) ?? {}).toSorted();
-    if (exportKeys.join(",") !== ".,./package.json")
+    const exportKeys = Object.keys((packageJson.exports as Record<string, unknown>) ?? {});
+    const ENTRY_POINTS = new Set([".", "./package.json"]);
+    if (exportKeys.length !== ENTRY_POINTS.size || exportKeys.some((key) => !ENTRY_POINTS.has(key)))
       throw new Error(
         `Packed "exports" must expose exactly "." and "./package.json", found: ${exportKeys.join(", ")}. ` +
           `A wildcard or subpath entry makes dist/'s internal module layout public API forever.`,

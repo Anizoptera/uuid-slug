@@ -19,7 +19,7 @@
  */
 import { runtime } from "#runtime";
 import { checkRange, errorOrThrow, UuidSlugError } from "./errors";
-import type { UuidV4Slug, UuidV4String, UuidV7Generator, UuidV7Slug } from "./types";
+import type { UuidV4Slug, UuidV4String, UuidV7Generator, UuidV7Slug, UuidV7String } from "./types";
 import { formatUuid, formatUuidSlug } from "./uuid";
 import type { SlugAlphabet } from "./uuid";
 import { createRuntimeGenerator } from "./v7";
@@ -75,14 +75,26 @@ export function uuidV4Slug(alphabet: SlugAlphabet = "base64url"): UuidV4Slug {
   return errorOrThrow(formatUuidSlug(errorOrThrow(uuidV4Bytes()), 0, alphabet)) as UuidV4Slug;
 }
 
-export const uuidV7 = (): ReturnType<UuidV7Generator["uuidV7"]> => v7().uuidV7();
+/*
+ * Return types are DECLARED, not inferred, on all four. Inference reads them off the generator, so
+ * a widened method there silently widens the package's public surface — and this package has
+ * already been bitten by exactly that: `uuidV7Slug` once inferred `string | UuidSlug`, which
+ * collapses to `string` because `Brand`'s marker is optional, so a branded return was promised that
+ * nothing checked. A declared type turns that into a compile error at the one site that is wrong.
+ */
+export const uuidV7 = (): UuidV7String => v7().uuidV7();
 
-export const uuidV7Bytes = (out?: Uint8Array, offset?: number) => v7().uuidV7Bytes(out, offset);
+export const uuidV7Bytes = (out?: Uint8Array, offset?: number): UuidSlugError | Uint8Array =>
+  v7().uuidV7Bytes(out, offset);
 
-export const uuidV7At = (timestamp: number) => v7().uuidV7At(timestamp);
+export const uuidV7At = (timestamp: number): UuidSlugError | UuidV7String =>
+  v7().uuidV7At(timestamp);
 
-export const uuidV7BytesAt = (timestamp: number, out?: Uint8Array, offset?: number) =>
-  v7().uuidV7BytesAt(timestamp, out, offset);
+export const uuidV7BytesAt = (
+  timestamp: number,
+  out?: Uint8Array,
+  offset?: number,
+): UuidSlugError | Uint8Array => v7().uuidV7BytesAt(timestamp, out, offset);
 
 /**
  * The alphabet is an argument here, exactly as it is on `uuidToSlug(uuid, alphabet)`, because

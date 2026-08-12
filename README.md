@@ -170,7 +170,9 @@ for that.
 - Slugs: `UuidSlug` (either alphabet), `UuidV4Slug`, `UuidV7Slug`; masked ones are base64url only
   — `MaskedUuidSlug`, `MaskedUuidV7Slug`, `SentinelUuidV7Slug`, and `PublicUuidV7Slug` for
   "masked or sentinel", which is what a masking call returns. `SlugAlphabet` names the two
-  alphabets, and `UuidBytes` brands 16 raw bytes.
+  alphabets, and `UuidBytes` brands 16 raw bytes — for annotating storage of your own, which is why
+  it appears in no signature here: every byte function takes an optional `out` buffer and returns
+  that buffer, so its return is a caller's array of any length, not 16 bytes.
 - Shapes: `UuidSlugCodec` and `UuidSlugCodecOptions`, `MaskSchema` and `MaskSchemaOptions`,
   `UuidV7Sentinel` and `UuidV7SentinelDefinition`, `UuidV7Generator` and
   `UuidV7GeneratorOptions`, `FreshValidationOptions`, `UuidSlugErrorCode`.
@@ -229,7 +231,9 @@ Also exported, all module-level:
 
 - Type guards: `isUuidString`, `isUuidV4String`, `isUuidV7String`, `isUuidSlug`, `isUuidV4Slug`,
   `isUuidV7Slug`, and `isUuidV7Bytes` for 16 bytes you already hold.
-- base64url helpers: `encodeBase64Url`, `decodeBase64Url`, `isBase64Url`.
+- base64url helpers: `encodeBase64Url`, `decodeBase64Url`, `isBase64Url`. `decodeBase64Url` returns
+  a view over exactly the bytes it decoded — with or without an `out` buffer — so `.length` is the
+  decoded length, never the buffer's. Given `out`, that view shares your buffer's memory.
 - `extractUuidV7Timestamp` — the instant a v7 was minted at, and an error for anything that is
   not a v7, because a v4's first six bytes are random and would otherwise read back as a
   plausible date. `hasUuidV7Entropy` answers whether the 74 random bits are anything but
