@@ -73,6 +73,11 @@
   candidate a miss rather than a wrong answer. Hence `unmask` returns the newest key's candidate
   rather than erroring when two keys both match (Art's ruling, 2026-08-12) — erroring discards a
   correct answer already in hand, and a wrong candidate ends at the same not-found either way.
+  It follows that a codec's false-accept rate is the SUM over every schema it tries, fixed by the
+  weakest member, so NOTHING may be appended to that list on the caller's behalf. A codec once
+  added two schemas of its own; measured 2026-08-12 over 200,000 wrong-key decodes, the auto-added
+  6-bit partner accepted 211 against the 16-bit schema's 2. Adding a decode path is spending the
+  caller's error budget, and only the caller may spend it.
 - The masked format published in 0.2.0 MUST NOT be given a compatibility decode path. Nothing ever
   consumed it (Art, 2026-08-12), so a second layout tried on every decode would add wrong-answer
   surface to protect no one. This is the exception, not the rule: it holds only because that

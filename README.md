@@ -53,12 +53,24 @@ Keep the seed stable forever. Change it and every slug you already handed out co
 `uuidToSlug` and `slugToUuid` are exact inverses, and anyone can convert either way. Use it
 when you only want the identifier shorter.
 
-**Masked slug.** The same 16 bytes, reordered and XORed with material derived from your
-seed, then base64url-encoded. The constant version and variant bits of a UUIDv7 are
-replaced by a small checksum, so the result has no fixed giveaway bits and a corrupted slug
-is rejected instead of decoding into a plausible wrong UUID. Use it when the identifier is
-public and you would rather not publish creation times. The exact steps are in
+**Masked slug.** The same 16 bytes put through a small block cipher keyed by your seed, then
+base64url-encoded. Every output bit depends on every input bit, so two ids created in the same
+second share nothing visible. Also 22 characters. Use it when the identifier is public and you
+would rather not publish creation times. The exact steps are in
 [how masking works](docs/design.md).
+
+A UUIDv7 only carries 116 bits you cannot predict — the version and variant are fixed, and the
+top six bits of the timestamp stay zero until the year 2109. 22 base64url characters hold 132
+bits, so the spare 16 carry a check that a wrong seed fails. Two things follow, and both are
+part of the contract rather than implementation detail:
+
+- **A decoded slug is a candidate, not a proof.** Roughly one random 22-character string in
+  65,536 passes the check and decodes to a well-formed UUID nobody ever issued. Look the result
+  up in your own store; a wrong candidate is then a miss rather than a wrong answer. Every extra
+  schema you list under `legacy.masks` adds another 1-in-65,536, because each is tried in turn.
+- **Masking refuses a timestamp at or past 2^42 ms** — the year 2109 — with `invalid_timestamp`,
+  because those six bits are spent on the check. Truncating instead would let two UUIDs share one
+  slug, which nothing could recover from. Direct slugs have no such limit.
 
 **Sentinels** are reserved UUIDs that skip masking on purpose, so they stay recognisable in
 logs and support tickets. Three are defined by default, and they always encode to the same
@@ -75,13 +87,19 @@ can never be misread as a masked slug.
 
 ## What masking is not
 
-Masking is obfuscation, not encryption. The mask is a fixed byte shuffle plus a fixed XOR,
-derived from your seed by a plain hash, not a key-derivation function. Anyone who sees a
-few slugs whose UUIDs they already know can work out the mask and read the rest.
+Masking is obfuscation, not encryption. The round keys come from your seed by a plain hash, not
+a key-derivation function, and the cipher is a four-round Feistel network whose round function is
+a bit-mixer rather than a cryptographic one. It raises the bar; it is not a security boundary.
 
-So: it stops a casual reader learning your creation times and record rates. It does not
-make an id secret. Masked slugs are not tokens, not capabilities, and not a substitute for
-an authorisation check.
+Be precise about what that does and does not buy. Someone holding one UUID and its slug learns
+essentially nothing, which was not true of the byte-shuffle scheme this replaced — there, a
+single known pair exposed most of the mask. But nothing here establishes resistance to someone
+holding _many_ pairs, and you should not assume it. If you need that guarantee, supply your own
+mixing step; a larger round count is not the answer.
+
+So: it stops a casual reader learning your creation times and record rates. It does not make an
+id secret. Masked slugs are not tokens, not capabilities, and not a substitute for an
+authorisation check.
 
 The top-level exports (`uuidV7MaskedSlug`, `maskedSlugToUuid`, and friends) use a default
 codec whose seed is a constant published in this package's source. Anyone holding the
@@ -98,9 +116,10 @@ One rule covers the whole API:
   `uuidV7Slug`, `uuidV7MaskedSlug`) return the value directly and throw if the runtime has
   no usable randomness, which is not a condition you can handle locally anyway.
 
-Errors are `UuidSlugError` with a `code` you can branch on: `invalid_base64url`,
-`invalid_buffer`, `invalid_mask_schema`, `invalid_uuid`, `invalid_uuid_slug`,
-`invalid_uuid_version`, `rng_unavailable`, `stale_uuid`.
+Errors are `UuidSlugError` with a `code` you can branch on: `invalid_base32`,
+`invalid_base64url`, `invalid_buffer`, `invalid_mask_schema`, `invalid_timestamp`,
+`invalid_uuid`, `invalid_uuid_slug`, `invalid_uuid_version`, `rng_unavailable`, `stale_uuid`.
+The same list is exported as `UUID_SLUG_ERROR_CODES`, and a test holds this paragraph to it.
 
 TypeScript sees branded types (`UuidV7Slug`, `MaskedUuidV7Slug`, and so on). They document
 which flavour a value is and survive narrowing; they are not enforced at runtime.
@@ -146,20 +165,24 @@ and the schema builders
 
 ```ts
 createUuidSlugCodec({
-  mask: { seed: "…", tagBits: 6 }, // or a schema built with defineMaskSchema
+  mask: { seed: "…" }, // or a schema built with defineMaskSchema
   sentinels: [{ name: "nil", uuid: "…" }],
   legacy: { masks: [oldSchema], directDecode: false },
   generator: myUuidV7Generator,
 });
 ```
 
-`tagBits` is how many bits of checksum go into the freed version and variant bits: 6 by
-default, or 4 to match a schema that already issued slugs with the narrower tag. More bits means a
-corrupt slug is more reliably rejected.
+The check width is not a knob. It is fixed by the alphabet — 16 bits in 22 base64url characters,
+14 in 26 base32hex — because it is whatever the encoding has left after the UUID's 116 real bits.
+A schema built with `defineMaskSchema` may still declare a 4- or 6-bit tag, which exists only to
+read slugs some other system already issued under that layout.
 
-`legacy.masks` is how you rotate a seed. Decoding tries the current schema first, then each
-old one in order, so slugs issued under a previous seed keep working. `directDecode: true`
-additionally accepts unmasked direct slugs, for migrating off unmasked ids.
+`legacy.masks` is how you rotate a seed. Decoding tries the current schema first, then each old
+one in the order you list them, and the first whose check passes wins — so put the newest first,
+and keep the list short. Nothing else is ever tried: a codec decodes with the schemas you gave it
+and no others. `directDecode: true` additionally accepts unmasked direct slugs, for migrating off
+unmasked ids; with it on, about one direct slug in 65,536 is read as masked instead and yields a
+wrong UUID, so leave it off once the migration is done.
 
 ### Rejecting stale ids
 

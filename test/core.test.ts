@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   createMaskSchema,
@@ -9,6 +10,7 @@ import {
   isUuidV7String,
   parseUuid,
   slugToUuid,
+  UUID_SLUG_ERROR_CODES,
   uuidToSlug,
   uuidV7BytesAt,
 } from "../src/index";
@@ -17,6 +19,26 @@ import { deterministicUuidV7 } from "./deterministic-uuid";
 const SAMPLE_V7_A = "01987008-ef3e-7f69-b677-22ec1a5bbdb2";
 const SAMPLE_V7_B = "01987bbb-178b-7858-93e8-fc5e5444913b";
 const SAMPLE_V4 = "b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5";
+
+describe("documented surface", () => {
+  it("lists every error code in the README, and no code the README invented", () => {
+    // A consumer branches on `code`, so an undocumented one is a branch nobody knows to write.
+    // The README had eight of ten for as long as ten existed: two people can read both lists and
+    // neither comparison happens, because nothing forces them into the same place at the same
+    // time. Backticked so a code appearing in ordinary prose cannot satisfy this by accident.
+    const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
+    const documented = new Set(
+      [...readme.matchAll(/`(invalid_[a-z0-9_]+|rng_unavailable|stale_uuid)`/g)].map(
+        (match) => match[1] ?? "",
+      ),
+    );
+    const codes: readonly string[] = UUID_SLUG_ERROR_CODES;
+    expect({
+      invented: [...documented].filter((code) => !codes.includes(code)),
+      undocumented: codes.filter((code) => !documented.has(code)),
+    }).toEqual({ invented: [], undocumented: [] });
+  });
+});
 
 describe("base64url", () => {
   it("round-trips arbitrary bytes and rejects non-canonical forms", () => {
