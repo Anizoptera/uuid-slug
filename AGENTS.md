@@ -113,6 +113,14 @@
   Sentinels stay base64url for the same reason they exist: they are matched against masked input.
   Decoding infers the alphabet from the length, 22 or 26, so it takes no alphabet argument and a
   caller cannot pick the wrong one.
+- A frozen constant must say what FREEZES it, not what chose it. `ROUNDS` in `feistel.ts` gets this
+  right ("wire-format-bearing"); the key-derivation purpose byte in `schema.ts` did not — it was
+  justified by keeping key material separate from a substitution scheme that had since been
+  deleted, so the stated reason evaluated to nothing and the honest next act was to delete the byte.
+  Doing so would have changed the round keys for every seed and orphaned every masked slug ever
+  issued. Origin explains how a value was picked and expires when its sibling does; the constraint
+  is what a future reader needs, and for anything reachable from an issued id the constraint is the
+  wire format. Same for the seed, the alphabets, the tag widths.
 - A doc that names a symbol is code with no compiler. In public-API docs name the token the CALLER
   writes (`"base32hex"`), never the internal constant it resolves to (`BASE32HEX`) — the caller's
   token is the one the type union already checks, so a rename fails the build instead of leaving a
