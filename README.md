@@ -78,6 +78,11 @@ its digits in the same order as their values, so comparing two slugs compares tw
 makes them usable directly as an ordered database key. base64url cannot do it — its alphabet runs
 `A-Za-z0-9-_`, so `0` stands for a larger value than `A` but sorts before it.
 
+base32hex is also the safer of the two for a **filename**: it is lowercase throughout, so it
+survives a case-insensitive filesystem unchanged, and a directory listing comes back in creation
+order for free. `uuidV7Slug("base32hex")` generates one directly; the alphabet is an argument on
+every keyless entry point that produces a slug, so nothing about choosing it requires a codec.
+
 You never say which alphabet you are reading. The two lengths are different, 22 and 26, so
 `slugToUuid` works out the encoding from the slug itself — which means switching alphabet leaves
 every slug you have already handed out working.
@@ -193,7 +198,8 @@ a module-level function on a codec is a `TypeError`.
 | `uuidV4()` / `uuidV7()`                                 | codec + top level | UUID string                   | Generate.                                |
 | `uuidV4Bytes(out?, offset?)` / `uuidV7Bytes(...)`       | codec + top level | `UuidSlugError \| Uint8Array` | Generate into a buffer you own.          |
 | `uuidV7At(ms)` / `uuidV7BytesAt(ms, out?, offset?)`     | codec + top level | `UuidSlugError \| ...`        | Generate at an instant you name.         |
-| `uuidV4Slug()` / `uuidV7Slug()`                         | codec + top level | direct slug                   | Generate and encode in one step.         |
+| `uuidV4Slug(alphabet?)` / `uuidV7Slug(alphabet?)`       | top level         | direct slug                   | Generate and encode in one step.         |
+| `codec.uuidV4Slug()` / `codec.uuidV7Slug()`             | codec             | direct slug                   | Same, in the codec's `slugAlphabet`.     |
 | `uuidV7MaskedSlug()`                                    | codec only        | masked slug                   | Generate a v7 and mask it.               |
 | `uuidV7ToMaskedSlug(uuid)` / `maskedSlugToUuidV7(slug)` | codec only        | `UuidSlugError \| ...`        | Masked slug, both ways; v7 only.         |
 | `maskedSlugToUuid(slug)`                                | codec only        | `UuidSlugError \| ...`        | Unmask, accepting any UUID version.      |

@@ -21,6 +21,7 @@ import { runtime } from "#runtime";
 import { checkRange, errorOrThrow, UuidSlugError } from "./errors";
 import type { UuidV4Slug, UuidV4String, UuidV7Generator, UuidV7Slug } from "./types";
 import { formatUuid, formatUuidSlug } from "./uuid";
+import type { SlugAlphabet } from "./uuid";
 import { createRuntimeGenerator } from "./v7";
 
 /**
@@ -62,10 +63,16 @@ export function uuidV4(): UuidV4String {
   return errorOrThrow(formatUuid(errorOrThrow(uuidV4Bytes()))) as UuidV4String;
 }
 
-export function uuidV4Slug(): UuidV4Slug {
+/**
+ * Takes the alphabet for the same reason `uuidV7Slug` does, and NOT because a v4 slug sorts — it
+ * does not. The alphabet is a choice of representation, so a project that has standardised on the
+ * 26-character lowercase form for its public ids needs its v4 slugs in it too; the pair differing
+ * would be an asymmetry with nothing behind it.
+ */
+export function uuidV4Slug(alphabet: SlugAlphabet = "base64url"): UuidV4Slug {
   // The bytes came from `uuidV4Bytes`, which stamps version 4; the encoder sees only bytes and
   // cannot carry that through, which is what the assertion stands in for.
-  return errorOrThrow(formatUuidSlug(errorOrThrow(uuidV4Bytes()), 0, "base64url")) as UuidV4Slug;
+  return errorOrThrow(formatUuidSlug(errorOrThrow(uuidV4Bytes()), 0, alphabet)) as UuidV4Slug;
 }
 
 export const uuidV7 = (): ReturnType<UuidV7Generator["uuidV7"]> => v7().uuidV7();
@@ -77,16 +84,23 @@ export const uuidV7At = (timestamp: number) => v7().uuidV7At(timestamp);
 export const uuidV7BytesAt = (timestamp: number, out?: Uint8Array, offset?: number) =>
   v7().uuidV7BytesAt(timestamp, out, offset);
 
-export function uuidV7Slug(): UuidV7Slug {
-  // The runtime's own slug generator emits base64url and nothing else, which is exactly what this
-  // keyless form produces — a codec is what lets the alphabet be configured, and there is no codec
-  // here to configure. Probed per call rather than resolved once, because resolving it at module
-  // scope would reintroduce the eager work the lazy cell above exists to avoid.
-  const native = runtime.uuidV7Slug;
+/**
+ * The alphabet is an argument here, exactly as it is on `uuidToSlug(uuid, alphabet)`, because
+ * choosing it needs no key: without it the only way to GENERATE a base32hex slug was to build a
+ * codec, so the sortable form cost the whole masking machinery while the unsortable one was free.
+ * Positional and last, matching `uuidToSlug`, so the two spellings of "encode in this alphabet"
+ * do not diverge.
+ */
+export function uuidV7Slug(alphabet: SlugAlphabet = "base64url"): UuidV7Slug {
+  // Gated on the ALPHABET, not merely on the hook's presence. The runtime's slug generator emits
+  // base64url and nothing else, so an ungated branch answers a base32hex request with a 22-char
+  // base64url string — and only Bun defines the hook, so vitest on Node cannot reach the branch at
+  // all and the entire suite stays green. `test/runtime.bun.test.ts` is what actually covers it.
+  // Probed per call rather than resolved once: resolving at module scope would reintroduce the
+  // eager work the lazy cell above exists to avoid.
+  const native = alphabet === "base64url" ? runtime.uuidV7Slug : undefined;
   if (native) return native();
   // Asserted for the same reason `uuidV4Slug` asserts: the bytes come from a v7 generator and the
   // encoder sees only bytes, so it returns the version-agnostic brand.
-  return errorOrThrow(
-    formatUuidSlug(errorOrThrow(v7().uuidV7Bytes()), 0, "base64url"),
-  ) as UuidV7Slug;
+  return errorOrThrow(formatUuidSlug(errorOrThrow(v7().uuidV7Bytes()), 0, alphabet)) as UuidV7Slug;
 }

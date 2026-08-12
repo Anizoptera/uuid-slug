@@ -22,7 +22,13 @@ import {
   sourcesUsedBy,
 } from "./entropy-probe";
 import { cases as bufferContractCases } from "./buffer-contract-probe";
-import { createUuidSlugCodec, isUuidV7String, slugToUuid } from "../src/index";
+import {
+  createUuidSlugCodec,
+  isUuidV7String,
+  slugToUuid,
+  uuidV4Slug,
+  uuidV7Slug,
+} from "../src/index";
 
 describe("bun runtime", () => {
   // The same list `test/buffer-contract.test.ts` runs on Node, against Bun's native byte writers.
@@ -58,6 +64,22 @@ describe("bun runtime", () => {
     const slug = local.uuidV7Slug();
     expect(slug).toHaveLength(26);
     expect(isUuidV7String(slugToUuid(slug) as string)).toBe(true);
+  });
+
+  test("the KEYLESS uuidV7Slug honours its alphabet argument, not the native generator", () => {
+    // The same hazard as the codec case above, on the bare function, and it needs its own case:
+    // the two resolve the native hook by different code. `uuidV7Slug` reads `runtime.uuidV7Slug`
+    // per call, so a branch gated on the hook's PRESENCE rather than on the requested alphabet
+    // returns a 22-character base64url string here and nowhere else -- Node has no such hook, so
+    // vitest cannot reach the branch and every case there passes either way.
+    const sortable = uuidV7Slug("base32hex");
+    expect(sortable).toHaveLength(26);
+    expect(sortable).toBe(sortable.toLowerCase());
+    expect(isUuidV7String(slugToUuid(sortable) as string)).toBe(true);
+    // The default must still take the native path and still round-trip; a fix that gated the
+    // branch away entirely would pass the assertions above.
+    expect(uuidV7Slug()).toHaveLength(22);
+    expect(uuidV4Slug("base32hex")).toHaveLength(26);
   });
 
   test("never reaches for Math.random on any generation path", () => {
