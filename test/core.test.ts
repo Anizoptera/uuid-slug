@@ -6,40 +6,17 @@ import {
   decodeBase64Url,
   encodeBase64Url,
   extractUuidV7Timestamp,
-  formatUuid,
   isUuidV7String,
   parseUuid,
   slugToUuid,
   uuidToSlug,
   uuidV7BytesAt,
 } from "../src/index";
-import { mix32 } from "../src/feistel";
+import { deterministicUuidV7 } from "./deterministic-uuid";
 
 const SAMPLE_V7_A = "01987008-ef3e-7f69-b677-22ec1a5bbdb2";
 const SAMPLE_V7_B = "01987bbb-178b-7858-93e8-fc5e5444913b";
 const SAMPLE_V4 = "b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5";
-
-/**
- * A UUIDv7 with the shape of a generated one but derived from a counter, so a rate measured over
- * many of them is a fixed number rather than a sample that fails a few runs in a hundred. Byte 0
- * is zeroed because the maskable range ends at 2^42 ms.
- */
-const deterministicUuidV7 = (index: number) => {
-  const bytes = new Uint8Array(16);
-  for (let word = 0; word < 4; word += 1) {
-    const value = mix32(index * 4 + word + 0x9e37_79b9);
-    bytes[word * 4] = value >>> 24;
-    bytes[word * 4 + 1] = (value >>> 16) & 0xff;
-    bytes[word * 4 + 2] = (value >>> 8) & 0xff;
-    bytes[word * 4 + 3] = value & 0xff;
-  }
-  bytes[0] = 0;
-  bytes[6] = ((bytes[6] as number) & 0x0f) | 0x70;
-  bytes[8] = ((bytes[8] as number) & 0x3f) | 0x80;
-  const uuid = formatUuid(bytes);
-  if (uuid instanceof Error) throw uuid;
-  return uuid;
-};
 
 describe("base64url", () => {
   it("round-trips arbitrary bytes and rejects non-canonical forms", () => {
