@@ -26,8 +26,10 @@ anything:
 
 22 base64url characters hold 132 bits and 26 base32hex characters hold 130, so the check gets
 whatever is left over: `checkBits = slugBits - 116`, which is 16 and 14 respectively. There is no
-per-alphabet special case and no setting to choose. Both widths are whole multiples of the
-character size, so encoding is a bijection and no slug has a second spelling.
+per-alphabet special case and no setting to choose. Both SLUG widths are whole multiples of the
+character size — 132 = 22x6 and 130 = 26x5 — so encoding is a bijection and no slug has a second
+spelling. The BYTE widths are not (16 is no multiple of 6, 14 none of 5), which is why the spare
+bits exist to carry the check at all.
 
 Only the 16-bit width ships. A masked slug is always 22 base64url characters, so the base32hex row
 is arithmetic rather than a format a consumer can ask for: it is what fixes the formula — a check
@@ -42,15 +44,35 @@ base32hex. Splitting it this way is what keeps the cipher a plain 128-bit one.
 
 `createMaskSchema({ seed })` derives everything deterministically:
 
-1. FNV-1a over the seed bytes plus a purpose byte gives a 64-bit state.
-2. An xorshift64 stream expands that state into bytes.
-3. Purpose 3 gives eight 32-bit Feistel round keys, big-endian.
+1. Two HalfSipHash-2-4 chains, keyed by distinct fixed constants, each hash the seed and then
+   re-hash it under their own previous output `keyIterations` times.
+2. Each of the four Feistel round-key pairs is one HalfSipHash output from each chain, XORed.
 
-The same seed always yields the same schema, in any runtime, with no stored state. That is the
-whole point: two services sharing a seed agree without sharing anything else.
+XORing two independently keyed chains is what makes the derived key 128 bits: HalfSipHash takes a
+64-bit key, and predicting a round key means breaking both. The construction this replaced put
+FNV-1a-64 into an xorshift64 stream, which capped the key at 64 bits however long the seed was.
 
-This is a hash, not a key-derivation function. Treat the seed as a project constant, not a
-credential.
+`keyIterations` is the work factor, and it is the only defence against a guessable seed. It
+defaults to 1 — the cheapest setting, because the cost is paid once per schema and most callers
+generate their seed properly. Measured on Bun, 2026-08-12, an attacker holding one (uuid, slug)
+pair and re-deriving candidate seeds:
+
+| keyIterations | candidate seeds/sec | schema construction |
+| ---: | ---: | ---: |
+| 1 (default) | 1,248,000 | 0.69 us |
+| 1,000 | 16,500 | 87 us |
+| 100,000 | 185 | ~8 ms |
+
+Note the direction of the default: the derivation it replaced managed 255,663 candidates/sec
+because BigInt arithmetic made it slow, so at `keyIterations: 1` seed guessing is now about five
+times FASTER. That is deliberate — a work factor is the caller's decision to pay, and it cannot
+rescue a seed somebody thought of anyway. A generated seed is not reachable at any of these rates.
+
+`keyIterations` is wire-format-bearing exactly as the seed is: change it and previously issued
+slugs stop decoding unless the old setting is listed under `previousMasks`.
+
+The same seed and count always yield the same schema, in any runtime, with no stored state. That
+is the whole point: two services sharing a seed agree without sharing anything else.
 
 ## The cipher
 
@@ -58,21 +80,28 @@ Four Feistel rounds over the 16 bytes, read as four big-endian 32-bit words: `le
 bytes 0-7 and `right0 right1` from bytes 8-15. Each round, with round keys `k0 k1`:
 
 ```
-a     = mix32(right0 ^ k0)
-b     = mix32(right1 ^ k1 ^ a)
-next0 = left0 ^ mix32(a ^ b)
-next1 = left1 ^ b
+f0, f1 = HalfSipHash-2-4(key = k0 k1, message = right0 right1)
+next0 = left0 ^ f0
+next1 = left1 ^ f1
 left  = right ;  right = next
 ```
 
-`mix32` is the `lowbias32` finalizer. Chaining `b` on `a` is what makes both output words depend
-on both input words. After the last round the words are written back **without** the final swap —
+The round function is a keyed pseudorandom function, which is what makes four rounds the right
+number rather than an arbitrary one: Luby-Rackoff turns a four-round Feistel into a strong
+pseudorandom permutation precisely when the round functions are PRFs. It is a rationale and not a
+proof about what ships — the theorem wants four independently sampled functions and these four key
+pairs come from one 128-bit key. The previous round function was `mix32(word ^ key)`, a fixed
+public bijection with the key merely XORed in front, which met no such hypothesis at all.
+
+After the last round the words are written back **without** the final swap —
 `right0 right1` to bytes 0-7, `left0 left1` to bytes 8-15 — which is what lets decryption be the
 same routine with the key pairs consumed in reverse. Encrypt and decrypt therefore cannot drift
 apart, whatever the round function does.
 
-This is not encryption and the round count is not a measured optimum; see the note at the top of
-`src/feistel.ts` for exactly what is and is not established.
+This is not encryption. `test/siphash.test.ts` holds the round function to the 64 published
+HalfSipHash vectors — the only check here that can fail against something other than this
+repository's own opinion — but no measurement in this tree grades the round count or the network;
+see the note at the top of `src/feistel.ts` for exactly what is and is not established.
 
 ## Encoding
 

@@ -143,7 +143,7 @@ describe("feistel mixing", () => {
     // Deliberately not a snapshot: `vitest -u` would rewrite a snapshot without anyone reading
     // the diff, which is precisely the mistake this guards against.
     expect(Buffer.from(apply(block, true)).toString("hex")).toBe(
-      "1fd9baddca8959ddb9f38b680d65b3a3",
+      "621e8b47229ec52e58686c204581903e",
     );
   });
 });

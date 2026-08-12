@@ -17,8 +17,9 @@ import { createMaskSchema } from "../src/schema";
 import { parseUuid } from "../src/uuid";
 import { deterministicUuidV7Bytes } from "./deterministic-uuid";
 
+/** Pads to the 16-byte seed floor, so cases can keep naming their key after what it tests. */
 const schemaOrThrow = (seed: string) => {
-  const schema = createMaskSchema({ id: seed, seed });
+  const schema = createMaskSchema({ id: seed, seed: seed.padEnd(16, ".") });
   if (schema instanceof Error) throw schema;
   return schema;
 };

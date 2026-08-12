@@ -45,5 +45,5 @@ const customMix: MaskSchema = {
 export const WIRE_FORMAT_CODECS = {
   "custom-mix": createUuidSlugCodec({ mask: customMix }),
   default: createUuidSlugCodec({}),
-  "seeded-v2": createUuidSlugCodec({ mask: { seed: "golden-vector-seed" } }),
+  "seeded-v2": createUuidSlugCodec({ mask: { seed: "golden-vector-seed-v3" } }),
 };

@@ -1,61 +1,101 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { UuidSlugError } from "./errors";
-import { FEISTEL_KEY_WORDS, feistel16, read32 } from "./feistel";
+import { FEISTEL_KEY_WORDS, feistel16 } from "./feistel";
+import { halfSipHash } from "./siphash";
 import type { MaskSchema, MaskSchemaOptions } from "./types";
 
-function fnv1a64(data: Uint8Array) {
-  let hash = 0xcbf29ce484222325n;
-  for (const byte of data) {
-    hash ^= BigInt(byte);
-    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
-  }
-  return hash;
-}
+/**
+ * Shortest seed accepted. It is DEFENCE IN DEPTH, never the protection: no length rule and no work
+ * factor saves a genuinely guessable seed — a dictionary word falls in minutes at 200 guesses/sec
+ * just as it does at 255,000. The actual protection is a seed nobody can guess, which is why the
+ * error below names the command that generates one and README says the same. What this rule buys is
+ * that the commonest silent mistake — a short human-chosen word — fails loudly at construction
+ * instead of masking nothing forever.
+ */
+const SEED_MIN_BYTES = 16;
+
+/**
+ * Ceiling on the work factor, so a mistyped `1e12` fails at construction instead of hanging the
+ * process with no output and nothing to read. The value is a backstop, not a recommendation: at the
+ * measured cost per iteration it bounds construction to a few seconds.
+ */
+const MAX_KEY_ITERATIONS = 1 << 24;
+
+/**
+ * Initial keys for the two derivation chains, nothing-up-my-sleeve: the little-endian ASCII of
+ * "uuid" with "slgA" and "slgB", so a reader can check they conceal no chosen structure.
+ *
+ * Their VALUES are arbitrary. Their STABILITY is wire-format-bearing — any other numbers give every
+ * seed different round keys and make every masked slug ever issued undecodable.
+ */
+const CHAIN_A_KEY1 = 0x41676c73;
+const CHAIN_B_KEY1 = 0x42676c73;
+const CHAIN_KEY0 = 0x64697575;
 
 function seedBytes(seed: string | Uint8Array) {
   if (typeof seed !== "string") return new Uint8Array(seed);
   return new TextEncoder().encode(seed);
 }
 
-function next64(state: { value: bigint }) {
-  state.value ^= state.value << 13n;
-  state.value ^= state.value >> 7n;
-  state.value ^= state.value << 17n;
-  state.value = BigInt.asUintN(64, state.value);
-  return state.value;
+/** Repack bytes as the little-endian 32-bit words `halfSipHash` absorbs. */
+function seedWords(seed: Uint8Array) {
+  const words = new Int32Array(Math.ceil(seed.length / 4) + 1);
+  for (const [index, byte] of seed.entries())
+    words[index >>> 2] = (words[index >>> 2] as number) | (byte << ((index & 3) * 8)) | 0;
+  return words;
 }
 
 /**
- * Expands a seed into key material. NOT a KDF: the seed reaches the output only through
- * `fnv1a64`, so the material carries at most 64 bits of entropy however long the seed is — a
- * caller passing 32 random bytes gets 64 bits of key, not 256.
+ * One keyed chain: hash the seed, then re-hash it under the previous output `iterations` times.
  *
- * That is enough here and stays. Masking buys obscurity, not secrecy (Art's ruling, 2026-08-12);
- * a real KDF would need either a dependency or a synchronous SHA-256 of our own, because
- * `crypto.subtle` is async-only and cannot sit under a synchronous constructor; and widening the
- * state would change every key and orphan every masked slug already issued.
+ * Iterating is the work factor D1 asks for, and it is the only lever this package has against the
+ * one failure a README paragraph cannot prevent. Measured 2026-08-12 before this existed: an
+ * attacker holding a single (uuid, slug) pair tested 255,663 candidate seeds per second and found
+ * the real one. Each iteration divides that rate, paid ONCE per codec construction and never per
+ * id — which is why the default is the cheapest setting and raising it is the caller's call.
+ *
+ * WIRE-FORMAT-BEARING, exactly like the seed: a different count is a different key, so every masked
+ * slug issued under the old one stops decoding.
  */
-function derivedBytes(seed: Uint8Array, purpose: number, length: number) {
-  const state = {
-    value: fnv1a64(Uint8Array.from([...seed, purpose])) || 0x9e3779b97f4a7c15n,
-  };
-  const out = new Uint8Array(length);
-  for (let i = 0; i < length; i += 1)
-    out[i] = Number((next64(state) >> BigInt((i % 8) * 8)) & 0xffn);
+function chain(key0: number, key1: number, words: Int32Array, length: number, iterations: number) {
+  const out = new Int32Array(2);
+  halfSipHash(key0, key1, words, length, out);
+  for (let i = 1; i < iterations; i += 1)
+    halfSipHash(out[0] as number, out[1] as number, words, length, out);
   return out;
 }
 
-function feistelSchema(id: string, seed: Uint8Array): MaskSchema {
-  // Domain separator, hashed with the seed so a second scheme deriving from the same seed cannot
-  // share key bits. Its VALUE is arbitrary; its stability is not — any other number gives every
-  // seed different round keys and makes every masked slug ever issued undecodable.
-  const material = derivedBytes(seed, 3, FEISTEL_KEY_WORDS * 4);
+/**
+ * Expand a seed into the Feistel's round keys.
+ *
+ * Two independent chains XORed is the standard cascade for widening a PRF's key: HalfSipHash takes a
+ * 64-bit key, and recovering a round key requires breaking BOTH chains, so the derived key is 128
+ * bits rather than 64. That matters because the construction it replaced capped the key at 64 bits
+ * however long the seed was — FNV-1a-64 into xorshift64 — so `MaskSchemaOptions.seed` had to warn
+ * that 32 random bytes bought a 64-bit key. It no longer does: the seed reaches the round keys
+ * through a 128-bit internal state at full width.
+ */
+function derivedKeys(seed: Uint8Array, iterations: number) {
+  const words = seedWords(seed);
+  const chainA = chain(CHAIN_KEY0, CHAIN_A_KEY1, words, seed.length, iterations);
+  const chainB = chain(CHAIN_KEY0, CHAIN_B_KEY1, words, seed.length, iterations);
   const keys = new Int32Array(FEISTEL_KEY_WORDS);
-  // Read through `read32` rather than assembled here: round keys are as wire-format-bearing as the
-  // block bytes, so they must be big-endian for the same reason, and a second copy of that
-  // assembly is a second thing to keep in step.
-  for (let i = 0; i < keys.length; i += 1) keys[i] = read32(material, i * 4);
+  const index = new Int32Array(1);
+  const fromA = new Int32Array(2);
+  const fromB = new Int32Array(2);
+  for (let word = 0; word < FEISTEL_KEY_WORDS; word += 2) {
+    index[0] = word;
+    halfSipHash(chainA[0] as number, chainA[1] as number, index, 4, fromA);
+    halfSipHash(chainB[0] as number, chainB[1] as number, index, 4, fromB);
+    keys[word] = (fromA[0] as number) ^ (fromB[0] as number);
+    keys[word + 1] = (fromA[1] as number) ^ (fromB[1] as number);
+  }
+  return keys;
+}
+
+function feistelSchema(id: string, seed: Uint8Array, iterations: number): MaskSchema {
+  const keys = derivedKeys(seed, iterations);
   return {
     id,
     mix(input, output, forward) {
@@ -66,9 +106,18 @@ function feistelSchema(id: string, seed: Uint8Array): MaskSchema {
 
 export function createMaskSchema(options: MaskSchemaOptions): UuidSlugError | MaskSchema {
   const seed = seedBytes(options.seed);
-  if (seed.length === 0)
-    return new UuidSlugError("invalid_mask_schema", "Mask seed must not be empty.");
-  return feistelSchema(options.id ?? "seeded", seed);
+  if (seed.length < SEED_MIN_BYTES)
+    return new UuidSlugError(
+      "invalid_mask_schema",
+      `Mask seed must be at least ${SEED_MIN_BYTES} bytes, got ${seed.length}. Generate one with \`openssl rand -base64 32\` rather than choosing it; a guessable seed hides nothing however long it is.`,
+    );
+  const iterations = options.keyIterations ?? 1;
+  if (!Number.isInteger(iterations) || iterations < 1 || iterations > MAX_KEY_ITERATIONS)
+    return new UuidSlugError(
+      "invalid_mask_schema",
+      `Mask keyIterations must be a whole number in 1..${MAX_KEY_ITERATIONS}, got ${String(options.keyIterations)}.`,
+    );
+  return feistelSchema(options.id ?? "seeded", seed, iterations);
 }
 
 /**
@@ -112,8 +161,8 @@ export function verifyInvertible(schema: MaskSchema): UuidSlugError | MaskSchema
  */
 const DEFAULT_SEED = "anizoptera.uuid-slug.default-mask.v1";
 
-// Built from `feistelSchema` rather than through `createMaskSchema`, whose only failure is an empty
-// seed — a check on CALLER input that a literal here cannot fail. Routing through it would return
+// Built from `feistelSchema` rather than through `createMaskSchema`, whose failures are a short seed and a
+// bad iteration count — checks on CALLER input that the literals here cannot fail. Routing through it would return
 // `UuidSlugError | MaskSchema` and force a cast that, at module scope, could only ever hide a real Error
 // behind a `MaskSchema` type for every default codec in the process.
-export const DEFAULT_MASK_SCHEMA: MaskSchema = feistelSchema("default", seedBytes(DEFAULT_SEED));
+export const DEFAULT_MASK_SCHEMA: MaskSchema = feistelSchema("default", seedBytes(DEFAULT_SEED), 1);

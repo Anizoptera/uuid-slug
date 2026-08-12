@@ -92,11 +92,27 @@ export interface MaskSchema {
 export interface MaskSchemaOptions {
   readonly id?: string;
   /**
-   * Any non-empty length, but the derivation collapses it to at most 64 bits of key material, so
-   * passing 32 random bytes buys a 64-bit key and not a 256-bit one. Sufficient for obscurity,
-   * which is what masking is for; see `derivedBytes` in `schema.ts` for why it is not more.
+   * GENERATE this, never choose it — `openssl rand -base64 32`. Masking hides a UUIDv7's creation
+   * time from a reader of the id; a seed somebody thought of is the one way that silently fails,
+   * because an attacker holding a single (uuid, slug) pair tests candidate seeds by re-deriving and
+   * re-encoding, measured here at 255,663 per second single-threaded. A human-chosen word does not
+   * survive that, at any length. At least 16 bytes are required, which is a floor against the
+   * commonest mistake and not the protection.
+   *
+   * Keep it stable FOREVER and out of the repository: it is the key, so changing it makes every
+   * masked slug already issued undecodable.
    */
   readonly seed: string | Uint8Array;
+  /**
+   * Work factor for turning the seed into key material, default 1 — the cheapest setting, chosen so
+   * that codec construction stays free for callers who do not need more. Each iteration divides an
+   * attacker's seed-guessing rate above, and is paid ONCE when the schema is built, never per id.
+   *
+   * WIRE-FORMAT-BEARING, exactly as `seed` is: a different count derives different keys, so every
+   * masked slug issued under the old count stops decoding. Rotate it the way a seed is rotated —
+   * the new setting in `mask`, the old one kept in `previousMasks` — never by editing in place.
+   */
+  readonly keyIterations?: number;
 }
 
 export interface UuidV7SentinelDefinition {

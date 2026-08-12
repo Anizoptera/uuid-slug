@@ -217,7 +217,10 @@ describe("direct UUID slugs", () => {
     // The option's boundary is the point of this case. Sentinels are matched against masked input,
     // and masked slugs are base64url by ruling, so a codec-wide alphabet that leaked into either
     // would make sentinels unrecognisable exactly where they are used.
-    const codec = createUuidSlugCodec({ mask: { seed: "alpha" }, slugAlphabet: "base32hex" });
+    const codec = createUuidSlugCodec({
+      mask: { seed: "alpha-test-seed-0000" },
+      slugAlphabet: "base32hex",
+    });
     expect(codec.uuidV7Slug()).toHaveLength(26);
     expect(codec.uuidV4Slug()).toHaveLength(26);
     expect(codec.uuidV7MaskedSlug()).toHaveLength(22);
@@ -250,7 +253,7 @@ describe("masked UUID slugs", () => {
   it("uses direct precomputed sentinel slugs for sentinel transmission", () => {
     // Sentinels stay readable by eye on purpose, so a masked codec is what makes the assertion
     // mean anything: it proves masking is bypassed for them rather than merely absent.
-    const codec = createUuidSlugCodec({ mask: { seed: "sentinel-bypass" } });
+    const codec = createUuidSlugCodec({ mask: { seed: "sentinel-bypass-test-seed-0000" } });
     const [, anonymousUser, unknownUser] = codec.sentinels;
     if (!anonymousUser || !unknownUser) throw new Error("sentinel setup failed");
     expect(codec.sentinels.map((item) => item.slug)).toEqual([
@@ -263,8 +266,8 @@ describe("masked UUID slugs", () => {
   });
 
   it("rejects a wrong schema unless the caller listed it as a previous one", () => {
-    const first = createMaskSchema({ seed: "project-a" });
-    const second = createMaskSchema({ seed: "project-b" });
+    const first = createMaskSchema({ seed: "project-a-test-seed-0000" });
+    const second = createMaskSchema({ seed: "project-b-test-seed-0000" });
     if (first instanceof Error || second instanceof Error)
       throw new Error("schema creation failed");
     const a = createUuidSlugCodec({ mask: first });
@@ -286,7 +289,7 @@ describe("masked UUID slugs", () => {
     // supplied a seed — the only ones for whom masking does anything — got a confident Error for
     // a slug their own codec had just issued. It shipped with no test at all, which is why: this
     // case goes red against that implementation and nothing else in the suite does.
-    const ids = createUuidSlugCodec({ mask: { seed: "not-the-published-one" } });
+    const ids = createUuidSlugCodec({ mask: { seed: "not-the-published-one-test-seed-0000" } });
     const slug = ids.uuidV7ToMaskedSlug(SAMPLE_V7_A);
     if (slug instanceof Error) throw slug;
     // `now` is pinned to the sample's own instant so the window, not the clock, decides.
@@ -304,12 +307,12 @@ describe("masked UUID slugs", () => {
   it("rotates a seed without making the caller build a schema for the old one", () => {
     // Rotation is the whole reason the list exists, so listing a previous SEED must cost what
     // naming the current one costs. It used to demand a constructor and an error branch.
-    const before = createUuidSlugCodec({ mask: { seed: "key-v1" } });
+    const before = createUuidSlugCodec({ mask: { seed: "key-v1-test-seed-0000" } });
     const slug = before.uuidV7ToMaskedSlug(SAMPLE_V7_A);
     if (slug instanceof Error) throw slug;
     const after = createUuidSlugCodec({
-      mask: { seed: "key-v2" },
-      previousMasks: [{ seed: "key-v1" }],
+      mask: { seed: "key-v2-test-seed-0000" },
+      previousMasks: [{ seed: "key-v1-test-seed-0000" }],
     });
     expect(after.maskedSlugToUuidV7(slug)).toBe(SAMPLE_V7_A);
     // And the rotation actually rotated: new ids are issued under v2, not v1.
@@ -335,11 +338,33 @@ describe("masked UUID slugs", () => {
     expect(() => createUuidSlugCodec({ mask: ignoresDirection })).toThrow(/reverse/);
     expect(() => createUuidSlugCodec({ mask: reordersBothWays })).toThrow(/reverse/);
     // And a correct one is accepted, so the guard is not simply rejecting everything.
-    expect(() => createUuidSlugCodec({ mask: { seed: "fine" } })).not.toThrow();
+    expect(() => createUuidSlugCodec({ mask: { seed: "fine-test-seed-0000" } })).not.toThrow();
   });
 
-  it("rejects an empty seed", () => {
-    expect(createMaskSchema({ seed: "" })).toBeInstanceOf(Error);
+  // Both are CALLER-input checks whose absence is silent: a short seed masks nothing while every
+  // round-trip still passes, and a bad iteration count either derives a different key or hangs
+  // construction with no output to read.
+  it.each([
+    ["empty seed", { seed: "" }],
+    ["seed under the 16-byte floor", { seed: "fifteen-bytes!" }],
+    ["fractional keyIterations", { seed: "long-enough-seed-here", keyIterations: 1.5 }],
+    ["zero keyIterations", { seed: "long-enough-seed-here", keyIterations: 0 }],
+    ["keyIterations past the ceiling", { seed: "long-enough-seed-here", keyIterations: 2 ** 30 }],
+  ])("refuses a %s", (_label, options) => {
+    expect(createMaskSchema(options)).toBeInstanceOf(Error);
+  });
+
+  it("derives a different key for a different iteration count, and the same one for a repeat", () => {
+    // keyIterations is part of the key, not a tuning knob: this is what makes the wire-format
+    // warning on it true rather than merely cautious.
+    const uuid = "019ff19b-58b8-7000-9b1b-df713bd5562c";
+    const slugAt = (keyIterations: number) => {
+      const schema = createMaskSchema({ seed: "rotation-seed-long-enough", keyIterations });
+      if (schema instanceof Error) throw schema;
+      return createUuidSlugCodec({ mask: schema }).uuidV7ToMaskedSlug(uuid);
+    };
+    expect(slugAt(1)).not.toBe(slugAt(2));
+    expect(slugAt(3)).toBe(slugAt(3));
   });
 });
 
@@ -365,7 +390,7 @@ describe("acceptUnmaskedSlugs", () => {
     //
     // The bound is what this asserts, because the rate is the thing that can silently regress.
     // Narrowing the check to the old 6-bit tag would put roughly 312 confusions in this sample.
-    const schema = createMaskSchema({ id: "feistel-only", seed: "direct-decode" });
+    const schema = createMaskSchema({ id: "feistel-only", seed: "direct-decode-test-seed-0000" });
     if (schema instanceof Error) throw schema;
     const codec = createUuidSlugCodec({ acceptUnmaskedSlugs: true, mask: schema });
     let confused = 0;
@@ -386,8 +411,8 @@ describe("acceptUnmaskedSlugs", () => {
     // untrue — the input is well-formed base64url, and its trailing bits ARE the mask check — and
     // it sends them hunting a typo in an id that has none. The flag must not change the answer to
     // "why did this not decode".
-    const mine = createMaskSchema({ id: "feistel-only", seed: "the-key-in-use" });
-    const theirs = createMaskSchema({ id: "feistel-only", seed: "a-different-key" });
+    const mine = createMaskSchema({ id: "feistel-only", seed: "the-key-in-use-test-seed-0000" });
+    const theirs = createMaskSchema({ id: "feistel-only", seed: "a-different-key-test-seed-0000" });
     if (mine instanceof Error) throw mine;
     if (theirs instanceof Error) throw theirs;
     const foreign = String(createUuidSlugCodec({ mask: theirs }).uuidV7ToMaskedSlug(SAMPLE_V7_A));

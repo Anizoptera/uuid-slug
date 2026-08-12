@@ -42,18 +42,26 @@ export const ids = createUuidSlugCodec({
 });
 
 const publicId = ids.uuidV7MaskedSlug();
-// "tLFYqmhT5_mq7ejo0G4FJ-" — 22 characters, no timestamp anyone can read
+// "OMw5wkFt8erGEmETKzK-Ze" — 22 characters, no timestamp anyone can read
 
 const uuid = ids.maskedSlugToUuidV7(publicId);
 if (uuid instanceof Error) return badRequest(uuid.message);
 // "019ff19b-58b8-7000-9b1b-df713bd5562c", safe to use as a database key
 ```
 
-**Generate the seed; do not think one up.** `openssl rand -base64 32` is enough. The seed is the
-only secret here, and a guessable one makes masking decorative: an attacker holding a single
-(UUID, slug) pair recovers a human-chosen seed by re-deriving and re-encoding candidates —
-measured at roughly 250,000 candidates per second in single-threaded JavaScript, so a dictionary
-word or a project name falls in seconds. A random 32 bytes does not fall at all.
+**Generate the seed; do not think one up.** `openssl rand -base64 32` is enough, and anything
+under 16 bytes is refused outright. The seed is the only secret here, and a guessable one makes
+masking decorative: an attacker holding a single (UUID, slug) pair recovers a human-chosen seed by
+re-deriving and re-encoding candidates — measured at 1,248,000 candidates per second in
+single-threaded JavaScript, so a dictionary word or a project name falls in seconds. A random 32
+bytes does not fall at all.
+
+`keyIterations` beside the seed buys time against that one failure and nothing else. It defaults
+to `1`, the cheapest setting, because the cost is paid once per codec and a generated seed does
+not need it. Measured on the same machine: `1000` costs 87 microseconds of construction and drops
+guessing to 16,500/sec; `100000` costs about 8 milliseconds and drops it to 185/sec. It is part of
+the key — change it and previously issued slugs stop decoding unless you list the old setting
+under `previousMasks`.
 
 Keep the seed stable forever. Change it and every slug you already handed out comes back as
 `invalid_uuid_slug`, unless you list the old seed under `previousMasks` (see below).
@@ -232,7 +240,7 @@ Also exported, all module-level:
 
 ```ts
 createUuidSlugCodec({
-  mask: { seed: "…" }, // or your own { id, mix } schema
+  mask: { seed: "…", keyIterations: 1 }, // or your own { id, mix } schema
   sentinels: [{ name: "nil", uuid: "…" }],
   previousMasks: [{ seed: "…previous seed…" }],
   acceptUnmaskedSlugs: false,
