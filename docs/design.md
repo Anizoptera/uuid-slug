@@ -29,6 +29,12 @@ whatever is left over: `checkBits = slugBits - 116`, which is 16 and 14 respecti
 per-alphabet special case and no setting to choose. Both widths are whole multiples of the
 character size, so encoding is a bijection and no slug has a second spelling.
 
+Only the base64url width ships: nothing in the public API accepts an alphabet, so 22 characters is
+the only masked slug a consumer can obtain. The base32hex column is what the shared bit-packing
+routine would produce, kept here because it is what fixes the formula — a check width is derived,
+never chosen — and because base32hex sorts in byte order, a property masking destroys and plain
+slugs would keep.
+
 The check does not fit in one place. Twelve bits go inside the block, where the cipher hides them;
 the rest ride in the bits the encoding has spare after 16 bytes — 4 for base64url, 2 for
 base32hex. Splitting it this way is what keeps the cipher a plain 128-bit one.

@@ -173,9 +173,9 @@ createUuidSlugCodec({
 });
 ```
 
-There is nothing else to configure. The check width is fixed by the alphabet — 16 bits in 22
-base64url characters, 14 in 26 base32hex — because it is whatever the encoding has left after the
-UUID's 116 real bits, and there is one mixing scheme rather than a choice of them.
+There is nothing else to configure. A masked slug is 22 base64url characters carrying a 16-bit
+check, because the check is whatever the encoding has left after the UUID's 116 real bits, and
+there is one mixing scheme rather than a choice of them.
 
 If you need a different cipher, pass a `MaskSchema` as `mask` instead of a seed: an `id` and a
 `mix(input, output, forward)` where `forward: false` is the exact inverse. That is the only

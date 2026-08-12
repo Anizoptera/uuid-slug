@@ -5,13 +5,7 @@ import type { Alphabet } from "./alphabet";
 import { UuidSlugError } from "./errors";
 import { mix32, read32 } from "./feistel";
 import { formatUuid, isRfcVariant, parseUuid, uuidVersion } from "./uuid";
-import type {
-  MaskSchema,
-  MaskedUuidSlug,
-  MaskedUuidV7Slug,
-  UuidString,
-  UuidV7String,
-} from "./types";
+import type { MaskSchema, MaskedUuidSlug, MaskedUuidV7Slug, UuidString } from "./types";
 
 /**
  * The check must fail a wrong key with probability 2^-width, which holds only if the function
@@ -104,12 +98,4 @@ export function maskedSlugToUuidWithSchema(
   if (tagFor(unmixed, INNER_TAG_BITS + outer) !== foundTag)
     return new UuidSlugError("invalid_uuid_slug", "Masked UUID slug failed schema validation.");
   return formatUuid(unmixed);
-}
-
-export function maskedSlugToUuidV7WithSchema(
-  slug: string,
-  schema: MaskSchema,
-): Error | UuidV7String {
-  const uuid = maskedSlugToUuidWithSchema(slug, schema);
-  return uuid instanceof Error ? uuid : (uuid as UuidV7String);
 }
