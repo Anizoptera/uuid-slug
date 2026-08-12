@@ -10,17 +10,33 @@
  * hide was still legible in the output. A Feistel diffuses every input bit across the whole
  * block, so no output byte is a function of one input byte: the same measurement yields 0 of 16.
  *
- * Four rounds is the Luby-Rackoff bound at which a Feistel becomes a strong pseudorandom
- * permutation. It is a bijection whatever the round function does — that is the property being
- * bought, since it means the 16 bytes map to 16 bytes and the inverse is the same routine with
- * the round keys reversed, so `mask` and `unmask` cannot drift apart.
+ * The bijection is the property being bought, and it holds whatever the round function does: 16
+ * bytes map to 16 bytes and the inverse is the same routine with the round keys reversed, so
+ * `mask` and `unmask` cannot drift apart.
  *
- * This raises the bar; it is not encryption. A single known UUID/slug pair exposed most of the
- * substitution mask, and reveals nothing here — but the round keys derive from the schema seed
- * through a non-cryptographic hash, so the keyspace, not the construction, is the weak point.
+ * Luby-Rackoff MUST NOT be cited for this construction, though an earlier version of this comment
+ * did. The theorem makes a four-round Feistel a strong pseudorandom permutation only when the
+ * round functions are independent pseudorandom functions; `mix32` is a bit-mixer, not a PRF, so
+ * the theorem says nothing about what is written here. Using a keyed SHA-256 in the rounds would
+ * earn the citation, at roughly 3.2 us per call against 95 ns (measured 2026-08-12).
+ *
+ * Nor does any measurement in this repository grade the round count. Strict avalanche across all
+ * input/output bit pairs, a same-millisecond burst where only a 12-bit counter varies, and a
+ * single-difference differential all PASS a TWO-round network, so none of them can separate a
+ * weak setting from a strong one. Their agreement is evidence about the instruments.
+ *
+ * So: this raises the bar and is NOT encryption, and that is a deliberate choice (Art's ruling,
+ * 2026-08-12 — obscurity is the requirement here, cryptographic security is not). A single known
+ * UUID/slug pair exposed most of the substitution mask this replaced and reveals nothing here,
+ * but do not read that as resistance to an attacker holding many pairs: nothing here establishes
+ * it. Callers who need that guarantee need a different mixing step, not a larger round count.
  */
 
-/** Round count. Below 4 the network is distinguishable from random; above buys nothing here. */
+/**
+ * Round count. Unproven margin, not a measured optimum — see the note above for why nothing here
+ * can grade it. It is wire-format-bearing: changing it changes every masked slug this package has
+ * ever issued, so it moves only alongside a deliberate format change.
+ */
 const ROUNDS = 4;
 
 /** Two 32-bit round keys per round, consumed as one flat array to keep the hot loop indexed. */
