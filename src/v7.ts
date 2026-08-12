@@ -55,7 +55,7 @@ const isValidUuidV7Timestamp = (ms: number): boolean =>
  * the runtime-backed one call it, and the runtime-backed one calls it BEFORE delegating: a native
  * generator may accept what we reject and answer wrongly rather than fail.
  */
-const rejectInstant = (ms: number): Error | undefined =>
+const rejectInstant = (ms: number): UuidSlugError | undefined =>
   isValidUuidV7Timestamp(ms)
     ? undefined
     : new UuidSlugError(
@@ -69,8 +69,8 @@ const rejectInstant = (ms: number): Error | undefined =>
  * `formatUuid` is version-agnostic: the v7-ness is established by the caller having produced the
  * bytes, not by anything the formatter can check.
  */
-const formatUuidV7 = (result: Error | Uint8Array): Error | UuidV7String =>
-  result instanceof Error ? result : (formatUuid(result) as Error | UuidV7String);
+const formatUuidV7 = (result: UuidSlugError | Uint8Array): UuidSlugError | UuidV7String =>
+  result instanceof Error ? result : (formatUuid(result) as UuidSlugError | UuidV7String);
 
 /**
  * Seeds the sequence from the same six random bytes and the same bit positions as before, split
@@ -110,7 +110,7 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
     counterLo = seedLo(random);
   }
 
-  function bytes(out?: Uint8Array, offset = 0, timestamp?: number): Error | Uint8Array {
+  function bytes(out?: Uint8Array, offset = 0, timestamp?: number): UuidSlugError | Uint8Array {
     const target = out ?? new Uint8Array(16);
     const badRange = checkRange(target, offset, 16);
     if (badRange) return badRange;

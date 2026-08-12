@@ -9,6 +9,13 @@ export {
   validateUuidV7SlugFresh,
 } from "./codec";
 export { UUID_SLUG_ERROR_CODES, UuidRuntimeError, UuidSlugError } from "./errors";
+/**
+ * Exported because `UuidSlugError.code` is public and the README tells consumers to branch on it.
+ * The type was emitted into the declarations and left out of the export list, so the property had
+ * a type no consumer could name — a switch over it could not be written without restating the ten
+ * literals by hand, which is exactly the duplication `UUID_SLUG_ERROR_CODES` exists to prevent.
+ */
+export type { UuidSlugErrorCode } from "./errors";
 export { DEFAULT_MASK_SCHEMA, createMaskSchema } from "./schema";
 export type {
   Base64UrlString,
@@ -50,7 +57,14 @@ export {
   uuidToSlug,
 } from "./uuid";
 export type { SlugAlphabet } from "./uuid";
-export { createRuntimeGenerator, createUuidV7Generator } from "./v7";
+/**
+ * `createRuntimeGenerator` is NOT exported (Art's ruling, 2026-08-12), pending the whole-API-shape
+ * review. It takes a `Runtime`, which is not exported either, so no consumer could construct an
+ * argument for it — a public function nobody could call. The capability it provides is already
+ * applied: every codec built without an explicit `generator` gets one.
+ */
+export { createUuidV7Generator } from "./v7";
+export type { UuidV7GeneratorOptions } from "./v7";
 
 import { defaultCodec } from "./codec";
 

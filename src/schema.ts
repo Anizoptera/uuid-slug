@@ -64,7 +64,7 @@ function feistelSchema(id: string, seed: Uint8Array): MaskSchema {
   };
 }
 
-export function createMaskSchema(options: MaskSchemaOptions): Error | MaskSchema {
+export function createMaskSchema(options: MaskSchemaOptions): UuidSlugError | MaskSchema {
   const seed = seedBytes(options.seed);
   if (seed.length === 0)
     return new UuidSlugError("invalid_mask_schema", "Mask seed must not be empty.");
@@ -84,7 +84,7 @@ export function createMaskSchema(options: MaskSchemaOptions): Error | MaskSchema
  * wrong. A table is no longer a special case with its own bijection check: anyone bringing a
  * foreign scheme brings a function, so whatever can be checked has to be checked on the function.
  */
-export function verifyInvertible(schema: MaskSchema): Error | MaskSchema {
+export function verifyInvertible(schema: MaskSchema): UuidSlugError | MaskSchema {
   const mixed = new Uint8Array(16);
   const restored = new Uint8Array(16);
   for (const probe of [new Uint8Array(16), Uint8Array.from({ length: 16 }, (_, i) => i * 17)]) {
@@ -114,6 +114,6 @@ const DEFAULT_SEED = "anizoptera.uuid-slug.default-mask.v1";
 
 // Built from `feistelSchema` rather than through `createMaskSchema`, whose only failure is an empty
 // seed — a check on CALLER input that a literal here cannot fail. Routing through it would return
-// `Error | MaskSchema` and force a cast that, at module scope, could only ever hide a real Error
+// `UuidSlugError | MaskSchema` and force a cast that, at module scope, could only ever hide a real Error
 // behind a `MaskSchema` type for every default codec in the process.
 export const DEFAULT_MASK_SCHEMA: MaskSchema = feistelSchema("default", seedBytes(DEFAULT_SEED));

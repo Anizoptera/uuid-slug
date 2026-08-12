@@ -47,7 +47,7 @@ function restoreV7(bytes: Uint8Array) {
 export function uuidToMaskedSlugWithSchema(
   uuid: string,
   schema: MaskSchema,
-): Error | MaskedUuidV7Slug {
+): UuidSlugError | MaskedUuidV7Slug {
   const raw = parseUuid(uuid);
   if (raw instanceof Error) return raw;
   if (uuidVersion(raw) !== 7 || !isRfcVariant(raw))
@@ -69,7 +69,7 @@ const TAG_BITS = INNER_TAG_BITS + OUTER_TAG_BITS;
 export function uuidV7BytesToMaskedSlug(
   raw: Uint8Array,
   schema: MaskSchema,
-): Error | MaskedUuidV7Slug {
+): UuidSlugError | MaskedUuidV7Slug {
   // Truncating instead would make encoding non-injective — two UUIDs would share one slug, and no
   // decoder could ever tell which was meant. Refusing is the only recoverable answer.
   if ((raw[0] ?? 0) > 0x03)
@@ -85,7 +85,10 @@ export function uuidV7BytesToMaskedSlug(
   return encode(mixed, BASE64URL, tag & ((1 << OUTER_TAG_BITS) - 1), OUTER_TAG_BITS);
 }
 
-export function maskedSlugToUuidWithSchema(slug: string, schema: MaskSchema): Error | UuidString {
+export function maskedSlugToUuidWithSchema(
+  slug: string,
+  schema: MaskSchema,
+): UuidSlugError | UuidString {
   const mixed = new Uint8Array(16);
   const outerTag = decodeInto(slug, BASE64URL, mixed, 0, 16, OUTER_TAG_BITS);
   if (outerTag instanceof Error) return outerTag;

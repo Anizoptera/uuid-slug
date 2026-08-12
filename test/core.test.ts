@@ -68,6 +68,22 @@ describe("base64url", () => {
     expect(decodeBase64Url(`${encoded}=`)).toBeInstanceOf(Error);
     expect(decodeBase64Url("A")).toBeInstanceOf(Error);
   });
+
+  it("returns exactly the bytes it decoded, whether or not a buffer was supplied", () => {
+    // The two forms used to disagree: with `out` the caller got their WHOLE buffer back, at its own
+    // size, with the data at `offset` and no way to learn how many bytes were written. The
+    // surrounding 0xab bytes below are what made that unusable — indistinguishable from decoded
+    // output, and the reason a caller had to recompute the length by hand.
+    const bytes = Uint8Array.from([0, 255, 128, 64, 1, 2, 3, 4]);
+    const encoded = encodeBase64Url(bytes);
+    const buffer = new Uint8Array(32).fill(0xab);
+    const written = decodeBase64Url(encoded, buffer, 8);
+    if (written instanceof Error) throw written;
+    expect(written).toEqual(bytes);
+    expect(written.byteOffset).toBe(8);
+    expect(written.buffer).toBe(buffer.buffer);
+    expect([...buffer.slice(0, 8)]).toEqual(Array.from<number>({ length: 8 }).fill(0xab));
+  });
 });
 
 /** Zeroed but for the version and variant bytes, placed so a v7 appears to begin at `offset`. */

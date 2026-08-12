@@ -66,7 +66,7 @@ function hexValue(code: number) {
   return code < HEX_DECODE.length ? HEX_DECODE[code] : -1;
 }
 
-export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): Error | Uint8Array {
+export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): UuidSlugError | Uint8Array {
   if (uuid.length !== UUID_LENGTH)
     return new UuidSlugError("invalid_uuid", "UUID must be 36 characters.");
   if (uuid[8] !== "-" || uuid[13] !== "-" || uuid[18] !== "-" || uuid[23] !== "-") {
@@ -88,7 +88,7 @@ export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): Error | U
   return target;
 }
 
-export function formatUuid(bytes: Uint8Array, offset = 0): Error | UuidString {
+export function formatUuid(bytes: Uint8Array, offset = 0): UuidSlugError | UuidString {
   const badRange = checkRange(bytes, offset, 16);
   if (badRange) return badRange;
   let out = "";
@@ -134,7 +134,7 @@ export function formatUuidSlug(
   bytes: Uint8Array,
   offset = 0,
   alphabet: SlugAlphabet = "base64url",
-): Error | UuidSlug {
+): UuidSlugError | UuidSlug {
   const badRange = checkRange(bytes, offset, 16);
   if (badRange) return badRange;
   // Unreachable from TypeScript, where the name is a two-member union. Reached from JavaScript,
@@ -149,7 +149,11 @@ export function formatUuidSlug(
 }
 
 /** Accepts either alphabet; the length says which, so there is nothing to pass and nothing to get wrong. */
-export function parseUuidSlug(slug: string, out?: Uint8Array, offset = 0): Error | Uint8Array {
+export function parseUuidSlug(
+  slug: string,
+  out?: Uint8Array,
+  offset = 0,
+): UuidSlugError | Uint8Array {
   const alpha = SLUG_ALPHABET_BY_LENGTH[slug.length];
   if (!alpha)
     return new UuidSlugError(
@@ -161,13 +165,16 @@ export function parseUuidSlug(slug: string, out?: Uint8Array, offset = 0): Error
   return result instanceof Error ? result : target;
 }
 
-export function uuidToSlug(uuid: string, alphabet: SlugAlphabet = "base64url"): Error | UuidSlug {
+export function uuidToSlug(
+  uuid: string,
+  alphabet: SlugAlphabet = "base64url",
+): UuidSlugError | UuidSlug {
   const bytes = parseUuid(uuid);
   if (bytes instanceof Error) return bytes;
   return formatUuidSlug(bytes, 0, alphabet);
 }
 
-export function slugToUuid(slug: string): Error | UuidString {
+export function slugToUuid(slug: string): UuidSlugError | UuidString {
   const bytes = parseUuidSlug(slug);
   if (bytes instanceof Error) return bytes;
   return formatUuid(bytes);
@@ -201,7 +208,7 @@ export function isUuidV7Slug(slug: null | string | undefined): slug is UuidV7Slu
  * Short input is reported separately from wrong version, because `uuidVersion` reads a missing byte
  * as zero and would otherwise blame a truncated buffer for holding a v0.
  */
-export function extractUuidV7Timestamp(bytes: Uint8Array, offset = 0): Error | number {
+export function extractUuidV7Timestamp(bytes: Uint8Array, offset = 0): UuidSlugError | number {
   const badRange = checkRange(bytes, offset, 16);
   if (badRange) return badRange;
   if (uuidVersion(bytes, offset) !== 7 || !isRfcVariant(bytes, offset))
@@ -222,7 +229,7 @@ export function extractUuidV7Timestamp(bytes: Uint8Array, offset = 0): Error | n
  * caller does not have. `false` is the honest one — it means "cannot be shown to carry entropy",
  * which is what a caller acts on, and it is what a truly degenerate id gets too.
  *
- * Boolean rather than `Error | boolean` because the sole use is a guard in a condition; an error
+ * Boolean rather than `UuidSlugError | boolean` because the sole use is a guard in a condition; an error
  * return would have every call site unwrap a value it is already treating as a yes/no.
  */
 export function hasUuidV7Entropy(bytes: Uint8Array, offset = 0): boolean {

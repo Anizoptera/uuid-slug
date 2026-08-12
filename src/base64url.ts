@@ -8,7 +8,20 @@ export function encodeBase64Url(bytes: Uint8Array): Base64UrlString {
   return encode(bytes, BASE64URL);
 }
 
-export function decodeBase64Url(value: string, out?: Uint8Array, offset = 0): Error | Uint8Array {
+/**
+ * Decodes into `out` at `offset` when given one, otherwise into a fresh array.
+ *
+ * Returns a view over EXACTLY the bytes decoded, in both cases. The two used to disagree: without
+ * `out` the result was `byteLength`-exact, with `out` it was the caller's entire buffer at its full
+ * size, with the data at `offset` and no way to learn how many bytes had been written short of
+ * recomputing `floor(value.length * 6 / 8)` by hand. One rule — "the bytes this call produced" —
+ * makes the length usable and leaves the caller's own buffer reachable, since they own it.
+ */
+export function decodeBase64Url(
+  value: string,
+  out?: Uint8Array,
+  offset = 0,
+): UuidSlugError | Uint8Array {
   // Padding is the most common malformed input by far, and the generic "invalid character"
   // message sends the reader looking for a typo instead of a stray "=".
   if (value.includes("="))
@@ -17,7 +30,7 @@ export function decodeBase64Url(value: string, out?: Uint8Array, offset = 0): Er
   const target = out ?? new Uint8Array(byteLength);
   const result = decodeInto(value, BASE64URL, target, offset, byteLength);
   if (result instanceof Error) return result;
-  return out ? target : target.subarray(0, byteLength);
+  return target.subarray(offset, offset + byteLength);
 }
 
 export function isBase64Url(value: null | string | undefined): value is Base64UrlString {

@@ -26,12 +26,7 @@ import {
   formatUuid,
   formatUuidSlug,
   hasUuidV7Entropy,
-  isUuidSlug,
-  isUuidV4Slug,
-  isUuidV4String,
-  isUuidV7Slug,
   isUuidV7String,
-  isUuidString,
   parseUuid,
   slugToUuid,
   uuidToSlug,
@@ -54,7 +49,7 @@ export const UUID_V7_SENTINEL_DEFINITIONS: readonly UuidV7SentinelDefinition[] =
   },
 ];
 
-function schemaFromOption(mask: UuidSlugCodecOptions["mask"]): Error | MaskSchema {
+function schemaFromOption(mask: UuidSlugCodecOptions["mask"]): UuidSlugError | MaskSchema {
   // Omitting `mask` yields a codec that masks under a seed published in this package's source, so
   // its masked slugs are decodable by anyone. That is a real configuration — tests and demos want
   // reproducible output — but it is never the one a caller protecting ids wants, and nothing about
@@ -122,7 +117,7 @@ function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
  */
 const v4Random = new Uint8Array(16);
 
-function generateUuidV4Bytes(out?: Uint8Array, offset = 0): Error | Uint8Array {
+function generateUuidV4Bytes(out?: Uint8Array, offset = 0): UuidSlugError | Uint8Array {
   const target = out ?? new Uint8Array(16);
   const badRange = checkRange(target, offset, 16);
   if (badRange) return badRange;
@@ -133,7 +128,7 @@ function generateUuidV4Bytes(out?: Uint8Array, offset = 0): Error | Uint8Array {
   return target;
 }
 
-function errorOrThrow<T>(value: Error | T): T {
+function errorOrThrow<T>(value: UuidSlugError | T): T {
   if (value instanceof Error) throw value;
   return value;
 }
@@ -158,7 +153,7 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
   const nativeSlug = slugAlphabet === "base64url" ? runtime.uuidV7Slug : undefined;
   const sentinelState = createSentinels(options.sentinels ?? UUID_V7_SENTINEL_DEFINITIONS);
 
-  function decodeMasked(slug: string): Error | UuidString {
+  function decodeMasked(slug: string): UuidSlugError | UuidString {
     const sentinel = sentinelState.bySlug.get(slug);
     if (sentinel) return sentinel;
     const primary = maskedSlugToUuidWithSchema(slug, schema);
@@ -180,13 +175,13 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
     return primary;
   }
 
-  function uuidV7ToMaskedSlug(uuid: string): Error | PublicUuidV7Slug {
+  function uuidV7ToMaskedSlug(uuid: string): UuidSlugError | PublicUuidV7Slug {
     const sentinel = sentinelState.byUuid.get(uuid);
     if (sentinel) return sentinel;
     return uuidToMaskedSlugWithSchema(uuid, schema);
   }
 
-  function maskedSlugToUuidV7(slug: string): Error | UuidV7String {
+  function maskedSlugToUuidV7(slug: string): UuidSlugError | UuidV7String {
     const decoded = decodeMasked(slug);
     if (decoded instanceof Error) return decoded;
     return isUuidV7String(decoded)
@@ -270,7 +265,7 @@ export const defaultCodec = createUuidSlugCodec();
 export function validateUuidV7Fresh(
   uuid: string,
   options: FreshValidationOptions = {},
-): Error | UuidV7String {
+): UuidSlugError | UuidV7String {
   if (!isUuidV7String(uuid))
     return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
   const bytes = parseUuid(uuid);
@@ -289,11 +284,9 @@ export function validateUuidV7Fresh(
 export function validateUuidV7SlugFresh(
   slug: string,
   options?: FreshValidationOptions,
-): Error | UuidV7Slug {
+): UuidSlugError | UuidV7Slug {
   const uuid = slugToUuid(slug);
   if (uuid instanceof Error) return uuid;
   const valid = validateUuidV7Fresh(uuid, options);
   return valid instanceof Error ? valid : slug;
 }
-
-export { isUuidSlug, isUuidString, isUuidV4Slug, isUuidV4String, isUuidV7Slug, isUuidV7String };

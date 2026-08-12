@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import type { UuidSlugError } from "./errors";
 import type { SlugAlphabet } from "./uuid";
 
 declare const brand: unique symbol;
@@ -41,7 +42,7 @@ export interface FreshValidationOptions {
 
 export interface UuidV7Generator {
   uuidV7(this: void): UuidV7String;
-  uuidV7Bytes(this: void, out?: Uint8Array, offset?: number): Error | Uint8Array;
+  uuidV7Bytes(this: void, out?: Uint8Array, offset?: number): UuidSlugError | Uint8Array;
   /**
    * Generate at a caller-supplied millisecond. A SEPARATE entry point rather than an optional
    * trailing parameter on the pair above, because an optional positional timestamp is silently
@@ -51,13 +52,13 @@ export interface UuidV7Generator {
    * Returns an Error rather than throwing on a bad instant: a caller-supplied value out of range
    * is ordinary input validation, not an exceptional condition.
    */
-  uuidV7At(this: void, timestamp: number): Error | UuidV7String;
+  uuidV7At(this: void, timestamp: number): UuidSlugError | UuidV7String;
   uuidV7BytesAt(
     this: void,
     timestamp: number,
     out?: Uint8Array,
     offset?: number,
-  ): Error | Uint8Array;
+  ): UuidSlugError | Uint8Array;
 }
 
 /**
@@ -193,7 +194,7 @@ export interface UuidSlugCodec extends UuidV7Generator {
    * a reviewer, and is what lets those references stay free of `.bind`.
    */
   uuidV4(this: void): UuidV4String;
-  uuidV4Bytes(this: void, out?: Uint8Array, offset?: number): Error | Uint8Array;
+  uuidV4Bytes(this: void, out?: Uint8Array, offset?: number): UuidSlugError | Uint8Array;
   uuidV4Slug(this: void): UuidV4Slug;
   uuidV7Slug(this: void): UuidV7Slug;
   uuidV7MaskedSlug(this: void): MaskedUuidV7Slug;
@@ -205,8 +206,8 @@ export interface UuidSlugCodec extends UuidV7Generator {
    * bits in 22 characters already has a job. Supporting all versions would cost a 23rd character
    * on every masked slug forever, to hide a creation time only v7 discloses.
    */
-  uuidV7ToMaskedSlug(this: void, uuid: string): Error | PublicUuidV7Slug;
-  maskedSlugToUuidV7(this: void, slug: string): Error | UuidV7String;
+  uuidV7ToMaskedSlug(this: void, uuid: string): UuidSlugError | PublicUuidV7Slug;
+  maskedSlugToUuidV7(this: void, slug: string): UuidSlugError | UuidV7String;
   /**
    * Decodes to whatever version comes out, where `maskedSlugToUuidV7` insists on v7.
    *
@@ -216,7 +217,7 @@ export interface UuidSlugCodec extends UuidV7Generator {
    * and are rejected by the v7 form. Deleting this on the assumption it was a duplicate was
    * measured to break exactly that migration path.
    */
-  maskedSlugToUuid(this: void, slug: string): Error | UuidString;
+  maskedSlugToUuid(this: void, slug: string): UuidSlugError | UuidString;
   /**
    * `maskedSlugToUuidV7` plus the freshness rules of `validateUuidV7Fresh`, returning the slug.
    *
@@ -240,5 +241,5 @@ export interface UuidSlugCodec extends UuidV7Generator {
     this: void,
     slug: S,
     freshness?: FreshValidationOptions,
-  ): Error | S;
+  ): UuidSlugError | S;
 }
