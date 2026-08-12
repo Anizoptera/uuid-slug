@@ -58,10 +58,10 @@ generate their seed properly. Measured on Bun, 2026-08-12, an attacker holding o
 pair and re-deriving candidate seeds:
 
 | keyIterations | candidate seeds/sec | schema construction |
-| ---: | ---: | ---: |
-| 1 (default) | 1,248,000 | 0.69 us |
-| 1,000 | 16,500 | 87 us |
-| 100,000 | 185 | ~8 ms |
+| ------------: | ------------------: | ------------------: |
+|   1 (default) |           1,248,000 |             0.69 us |
+|         1,000 |              16,500 |               87 us |
+|       100,000 |                 185 |               ~8 ms |
 
 Note the direction of the default: the derivation it replaced managed 255,663 candidates/sec
 because BigInt arithmetic made it slow, so at `keyIterations: 1` seed guessing is now about five
