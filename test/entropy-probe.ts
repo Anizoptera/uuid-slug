@@ -85,5 +85,51 @@ export const distinctValuesFrom = (generate: () => unknown, calls = 5_000): numb
 const distinctKey = (value: unknown): string =>
   value instanceof Uint8Array ? value.join(",") : String(value);
 
+/**
+ * Sources attributed to `generate`, retrying until at least one appears.
+ *
+ * Randomness is drawn a pool at a time, so most windows attribute no source at all and one has to
+ * span a refill. Retrying keeps this independent of the pool size AND of how many draws the cases
+ * before it happened to make — a single fixed window passes or fails on pool PHASE, so it fails on
+ * changes that have nothing to do with it. Measured 2026-08-12: adding 256 draws to an earlier
+ * case in the same file turned the Bun lane's single-window version red, and it had only ever
+ * been passing because the draw count ahead of it landed right.
+ *
+ * Retrying costs a `Math.random` implementation nothing in detection: that attributes an insecure
+ * source on the very first call rather than never attributing one.
+ */
+export function attributedSourcesFor(generate: () => unknown, attempts = 20_000): string[] {
+  for (let i = 0; i < attempts; i += 1) {
+    const used = sourcesUsedBy(generate);
+    if (used.length > 0) return used;
+  }
+  return [];
+}
+
+/**
+ * How many of the 128 bit positions never change across `calls` draws.
+ *
+ * A v4 has exactly six structural ones — four version bits and two variant bits — so any further
+ * constant bit is a random bit that is not random. Nothing else here can see that: the distinct
+ * count above, the source attribution, and the conformance cases all pass unchanged when a single
+ * bit is pinned. Measured 2026-08-12 by mutation, forcing one bit of byte 6 or byte 8 either way
+ * left the whole suite green.
+ *
+ * A COUNT rather than a list of positions on purpose: naming the positions would restate the
+ * layout the conformance cases already own, and would only catch a pinned bit where it was
+ * expected. Deterministic rather than statistical in any practical sense — over 256 draws a live
+ * bit stays constant with probability 2^-255.
+ */
+export function constantBitCount(generate: () => Error | Uint8Array, calls = 256): number {
+  const ones = new Uint32Array(128);
+  for (let draw = 0; draw < calls; draw += 1) {
+    const bytes = generate();
+    if (bytes instanceof Error) throw bytes;
+    for (let bit = 0; bit < 128; bit += 1)
+      ones[bit] = (ones[bit] as number) + (((bytes[bit >> 3] as number) >>> (7 - (bit & 7))) & 1);
+  }
+  return ones.reduce((total, count) => total + (count === 0 || count === calls ? 1 : 0), 0);
+}
+
 export const insecureAmong = (sources: readonly string[]): string[] =>
   sources.filter((source) => INSECURE_SOURCES.includes(source));

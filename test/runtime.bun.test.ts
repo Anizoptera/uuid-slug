@@ -12,8 +12,10 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  attributedSourcesFor,
   byteGenerators,
   codec,
+  constantBitCount,
   distinctValuesFrom,
   generators,
   insecureAmong,
@@ -61,8 +63,14 @@ describe("bun runtime", () => {
     }
   });
 
+  test("leaves every v4 bit random except the six the RFC fixes", () => {
+    // Bun draws `fillRandom` from `runtime/web.ts`, which vitest never loads, so a bit pinned
+    // there is invisible on the Node lane — the same asymmetry as the cases above.
+    expect(constantBitCount(() => codec.uuidV4Bytes())).toBe(6);
+  });
+
   test("draws its own randomness from a source that can be shown to be cryptographic", () => {
-    const used = sourcesUsedBy(() => codec.uuidV4Bytes());
+    const used = attributedSourcesFor(() => codec.uuidV4Bytes());
     expect(used).not.toEqual([]);
     expect(insecureAmong(used)).toEqual([]);
   });

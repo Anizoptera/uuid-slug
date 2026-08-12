@@ -15,8 +15,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  attributedSourcesFor,
   byteGenerators,
   codec,
+  constantBitCount,
   distinctValuesFrom,
   generators,
   insecureAmong,
@@ -39,18 +41,18 @@ describe("entropy source", () => {
     expect(distinctValuesFrom(generate)).toBe(5_000);
   });
 
+  it("leaves every v4 bit random except the six the RFC fixes", () => {
+    // The guarantee is that all random bits ARE random, not merely that values differ. A pinned
+    // bit narrows the id space silently and passes every other case here.
+    expect(constantBitCount(() => codec.uuidV4Bytes())).toBe(6);
+  });
+
   it("draws its own randomness from a source that can be shown to be cryptographic", () => {
     // `uuidV4Bytes` always goes through this package's `fillRandom`, so an empty result is a
     // real finding: our own entropy could not be attributed. The delegating paths cannot make
     // that claim — a native generator draws inside the engine, below any JavaScript patch —
     // so they only assert the negative.
-    // Randomness is drawn a pool at a time, so most calls attribute no source at all and the
-    // window has to span a refill. Looping until one appears keeps this independent of the pool
-    // size, and costs a `Math.random` implementation nothing in detection: that attributes an
-    // insecure source on the very first call rather than never attributing one.
-    let used: readonly string[] = [];
-    for (let i = 0; i < 20_000 && used.length === 0; i += 1)
-      used = sourcesUsedBy(() => codec.uuidV4Bytes());
+    const used = attributedSourcesFor(() => codec.uuidV4Bytes());
     expect(used).not.toEqual([]);
     expect(insecureAmong(used)).toEqual([]);
   });
