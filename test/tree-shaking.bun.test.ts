@@ -18,6 +18,8 @@
  * the two disagreed: through the BUNDLED artifact this same package tree-shook to nothing at all,
  * which is why `tsdown.config.ts` emits one file per module.
  */
+import { tmpdir } from "node:os";
+
 import { expect, test } from "bun:test";
 
 /**
@@ -29,10 +31,13 @@ import { expect, test } from "bun:test";
 const MASKING_WITNESS = "anizoptera.uuid-slug.default-mask.v1";
 
 const bundle = async (name: string) => {
-  const entry = `${import.meta.dir}/../.bundle-probe.ts`;
+  // Outside the repository, and with an ABSOLUTE import for that reason. A probe written into the
+  // working tree survives a hard crash of this process, where the cleanup below never runs, and is
+  // then left for the next person to lint, stage or commit.
+  const entry = `${tmpdir()}/uuid-slug-probe-${name}.ts`;
   await Bun.write(
     entry,
-    `import { ${name} } from "./dist/index.js";\nglobalThis.__probe = [${name}];\n`,
+    `import { ${name} } from "${import.meta.dir}/../dist/index.js";\nglobalThis.__probe = [${name}];\n`,
   );
   try {
     const built = await Bun.build({ entrypoints: [entry], minify: true, target: "browser" });
