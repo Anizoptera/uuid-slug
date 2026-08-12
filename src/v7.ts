@@ -91,6 +91,14 @@ const seedLo = (bytes: Uint8Array) =>
 export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator {
   const clock = options.clock ?? Date.now;
   const random = new Uint8Array(16);
+  /**
+   * Below every timestamp the clock check admits, which is what makes it the uninitialised
+   * sentinel rather than a value: `now > lastMs` alone therefore takes the reseed branch on the
+   * first call, and no separate "have we started" flag is needed. The coupling is deliberate and
+   * is why the clock is validated before this is compared against — an unvalidated clock returning
+   * a negative millisecond would make `lastMs` stay below it forever, so the monotonic counter
+   * would never be used and every call would reseed.
+   */
   let lastMs = -1;
   let counterHi = 0;
   let counterLo = 0;
@@ -124,16 +132,42 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
       sequenceHi = seedHi(random);
       sequenceLo = seedLo(random);
     } else {
-      const now = Math.trunc(clock());
-      if (lastMs < 0 || now > lastMs) reseed(now);
+      // Truncated THEN validated, in that order and not the other. A clock is allowed to be
+      // fractional — `performance.timeOrigin + performance.now()` is, and is a perfectly good one —
+      // so rejecting non-integers here would refuse a legitimate caller, unlike `rejectInstant`,
+      // where the fraction is in an argument the caller wrote out. What must not survive is a
+      // truncated value the format cannot carry: `writeTimestamp` keeps the low 48 bits of whatever
+      // it is handed, so NaN and 2**48 both silently produced the 1970 prefix and a negative
+      // millisecond produced the year 10889 by two's-complement wrap. All three now report.
+      // The raw reading is kept for the message rather than calling `clock()` again: a second call
+      // is a second reading, and the message would name a value other than the one refused.
+      const reading = clock();
+      const now = Math.trunc(reading);
+      if (!isValidUuidV7Timestamp(now))
+        return new UuidSlugError(
+          "invalid_timestamp",
+          `Clock returned ${String(reading)}, which is not a millisecond in 0..${MAX_TIMESTAMP}.`,
+        );
+      if (now > lastMs) reseed(now);
       else {
         counterLo = (counterLo + 1) >>> 0;
         if (counterLo === 0) counterHi += 1;
         // Past 42 bits the sequence no longer fits `rand_a` plus the borrowed `rand_b` bits.
         // Borrowing the next millisecond keeps ids ordered and unique rather than wrapping into
         // values this millisecond has already issued.
-        if (counterHi > 0x3ff) reseed(lastMs + 1);
-        else options.fillRandom(random);
+        if (counterHi > 0x3ff) {
+          // At the ceiling there is no next millisecond to borrow: `writeTimestamp` truncates to
+          // six bytes, so `lastMs + 1` wraps to 0 and the generator restarts in 1970 — ordering
+          // broken permanently, and silently, from that call onward. Unreachable on a real clock
+          // until the year 10889; reachable now from any clock that lands near the ceiling, which
+          // is why refusing is not theoretical.
+          if (lastMs >= MAX_TIMESTAMP)
+            return new UuidSlugError(
+              "invalid_timestamp",
+              `Sequence exhausted at the last representable millisecond (${MAX_TIMESTAMP}).`,
+            );
+          reseed(lastMs + 1);
+        } else options.fillRandom(random);
       }
       ms = lastMs;
       sequenceHi = counterHi;
@@ -155,9 +189,10 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
   return {
     uuidV7() {
       const formatted = formatUuidV7(bytes());
-      // The no-instant path can only fail on entropy, which the caller cannot act on and every
-      // other generator here reports by throwing. `uuidV7At` returns its Error instead, because
-      // there the failure is a value the caller passed in.
+      // Throws rather than returns, because this signature promises a string: the two ways it can
+      // fail — entropy, and a `clock` that returns something the format cannot carry — are both
+      // configuration the caller cannot act on per call. `uuidV7At` returns its Error instead,
+      // because there the failure is a value the caller passed in at the call site.
       if (formatted instanceof Error) throw formatted;
       return formatted;
     },

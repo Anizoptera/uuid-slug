@@ -157,6 +157,55 @@ describe("uuidv7 at a caller-supplied instant", () => {
   });
 });
 
+describe("uuidv7 clock contract", () => {
+  // The mirror of the supplied-instant cases above, and for a long time the half that was missing:
+  // `rejectInstant` guarded `uuidV7At` while `clock()` went straight to a write path that keeps the
+  // low 48 bits of whatever it is handed. Each value below produced a confident, well-formed,
+  // WRONG id rather than an error — NaN and 2**48 the 1970 prefix, a negative millisecond the year
+  // 10889 by two's-complement wrap.
+  it.each([NaN, Infinity, -1000, 2 ** 48])("refuses a clock reading of %d", (ms) => {
+    const generator = createUuidV7Generator({
+      clock: fixedClock(ms),
+      fillRandom: constantFill(0x00),
+    });
+    expect(generator.uuidV7Bytes()).toBeInstanceOf(Error);
+    expect(() => generator.uuidV7()).toThrow();
+  });
+
+  it("accepts a fractional clock, which a monotonic time source legitimately is", () => {
+    // The distinction the refusals above must not swallow: `performance.timeOrigin +
+    // performance.now()` is fractional and is a perfectly good clock, so the reading is truncated
+    // and then checked, never checked for integrality.
+    const generator = createUuidV7Generator({
+      clock: fixedClock(1_700_000_000_000.75),
+      fillRandom: constantFill(0x00),
+    });
+    expect(timestampOf(bytesOf(generator))).toBe(1_700_000_000_000);
+  });
+
+  it("refuses to borrow past the last representable millisecond instead of wrapping to 1970", () => {
+    // All-ones fill seeds the 42-bit sequence at its maximum — `seedHi` 0x3ff and `seedLo`
+    // 0xffffffff — so the second call increments into the borrow branch. At the ceiling there is
+    // no millisecond to borrow: `writeTimestamp` truncates to six bytes, so `lastMs + 1` wrapped
+    // to 0 and every id after it carried a 1970 timestamp, below every id already issued.
+    const atCeiling = createUuidV7Generator({
+      clock: fixedClock(2 ** 48 - 1),
+      fillRandom: constantFill(0xff),
+    });
+    expect(timestampOf(bytesOf(atCeiling))).toBe(2 ** 48 - 1);
+    expect(atCeiling.uuidV7Bytes()).toBeInstanceOf(Error);
+
+    // The control that proves the refusal is about the ceiling and not about the borrow itself:
+    // one millisecond lower, the same sequence borrows and lands ON the ceiling.
+    const belowCeiling = createUuidV7Generator({
+      clock: fixedClock(2 ** 48 - 2),
+      fillRandom: constantFill(0xff),
+    });
+    expect(timestampOf(bytesOf(belowCeiling))).toBe(2 ** 48 - 2);
+    expect(timestampOf(bytesOf(belowCeiling))).toBe(2 ** 48 - 1);
+  });
+});
+
 describe("uuidv7 buffer handling", () => {
   it("writes exactly its own sixteen bytes and leaves the rest of the buffer alone", () => {
     const generator = createUuidV7Generator({
