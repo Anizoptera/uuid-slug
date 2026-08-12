@@ -65,6 +65,22 @@
   calls, catches and falls back on every single invocation. That cost 64% of v7 throughput on
   Node until 0.2.1. Probe once at module load and leave the method undefined.
 - Masked slugs and sentinels are core functionality, not compatibility add-ons.
+- No MASKED operation may be a top-level export (Art's ruling, 2026-08-12). A bare function can
+  only carry `defaultCodec`'s key, and that key is `DEFAULT_MASK_SCHEMA`'s seed — a string literal
+  in the published tarball, verified 2026-08-12 by rebuilding the schema from it and recovering the
+  input UUID exactly. So the shortest spelling of the headline feature was the one that obfuscates
+  nothing, with a README paragraph as the only guard. `uuidV7MaskedSlug`, `uuidV7ToMaskedSlug`,
+  `maskedSlugToUuid`, `maskedSlugToUuidV7`, `UUID_V7_SENTINELS` and `validateMaskedUuidV7SlugFresh`
+  were removed for this; do not restore them, and do not add a keyed operation beside the keyless
+  shortcuts in `index.ts`. The default key itself STAYS — Art ruled the smaller break, so
+  `createUuidSlugCodec()` with no `mask` still masks under the public seed and `defaultCodec` is
+  still exported. Anything keyless (generation, plain slugs) is fine as a bare function.
+- A keyed operation belongs on the object holding the key. `validateMaskedUuidV7SlugFresh` was
+  module-level and reached for `defaultCodec`, so it answered under the published seed and returned
+  a confident Error for slugs the caller's own codec had just issued — wrong for exactly the people
+  masking correctly. It shipped with NO test, which is how it survived; its replacement
+  `codec.validateMaskedSlugFresh` has one that goes red against the old shape and nothing else in
+  the suite does. Hidden global state in a keyed path is the defect, not the missing test.
 - The masked layout is fixed by arithmetic, not taste: 22 characters, 16-bit check (Art's ruling,
   2026-08-12). A UUIDv7 carries 116 bits of real content — 42 timestamp bits (48 less the 6 that
   stay zero until 2109), 12 `rand_a`, 62 `rand_b` — because version and variant are constant for a

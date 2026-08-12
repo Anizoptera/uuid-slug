@@ -133,6 +133,11 @@ export interface UuidSlugCodecOptions {
    * rather than folded into one ordered array: in a single list the encoding schema is whichever
    * happens to be first, so appending a rotated seed leaves you still issuing ids under the old
    * one while believing you rotated. Nothing about that failure is visible.
+   *
+   * OPTIONAL, and omitting it is the one choice here with a security consequence: the codec then
+   * masks under `DEFAULT_MASK_SCHEMA`, whose seed is a string literal in this published package,
+   * so its masked slugs are readable by anyone who installed it. Supply `{ seed }` — any stable
+   * string you keep out of the repository — for masking to obfuscate anything at all.
    */
   readonly mask?: MaskSchema | MaskSchemaOptions;
   readonly sentinels?: readonly UuidV7SentinelDefinition[];
@@ -207,4 +212,19 @@ export interface UuidSlugCodec extends UuidV7Generator {
    * measured to break exactly that migration path.
    */
   maskedSlugToUuid(this: void, slug: string): Error | UuidString;
+  /**
+   * `maskedSlugToUuidV7` plus the freshness rules of `validateUuidV7Fresh`, returning the slug.
+   *
+   * Lives on the codec because unmasking needs the codec's key. Its module-level predecessor
+   * `validateMaskedUuidV7SlugFresh` did not: it reached for `defaultCodec`, whose seed is
+   * published in this package's source, so it answered under the wrong key for every caller who
+   * supplied their own and returned a confident Error for valid slugs. There is no keyless
+   * counterpart to this for the same reason; `validateUuidV7SlugFresh` stays module-level because
+   * a PLAIN slug decodes without one.
+   */
+  validateMaskedSlugFresh(
+    this: void,
+    slug: string,
+    freshness?: FreshValidationOptions,
+  ): Error | MaskedUuidV7Slug;
 }

@@ -221,6 +221,21 @@ describe("masked UUID slugs", () => {
     ).toBe(SAMPLE_V7_A);
   });
 
+  it("validates freshness against the codec's OWN key, not the package's published one", () => {
+    // The predecessor of this method was module-level and reached for `defaultCodec`, so it
+    // unmasked with the seed shipped in this package rather than the caller's. Every caller who
+    // supplied a seed — the only ones for whom masking does anything — got a confident Error for
+    // a slug their own codec had just issued. It shipped with no test at all, which is why: this
+    // case goes red against that implementation and nothing else in the suite does.
+    const ids = createUuidSlugCodec({ mask: { seed: "not-the-published-one" } });
+    const slug = ids.uuidV7ToMaskedSlug(SAMPLE_V7_A);
+    if (slug instanceof Error) throw slug;
+    // `now` is pinned to the sample's own instant so the window, not the clock, decides.
+    const at = extractUuidV7Timestamp(parseUuid(SAMPLE_V7_A) as Uint8Array) as number;
+    expect(ids.validateMaskedSlugFresh(slug, { now: () => at })).toBe(slug);
+    expect(ids.validateMaskedSlugFresh(slug, { now: () => at + 86_400_001 })).toBeInstanceOf(Error);
+  });
+
   it("rotates a seed without making the caller build a schema for the old one", () => {
     // Rotation is the whole reason the list exists, so listing a previous SEED must cost what
     // naming the current one costs. It used to demand a constructor and an error branch.

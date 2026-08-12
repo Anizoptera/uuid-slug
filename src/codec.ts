@@ -10,7 +10,6 @@ import {
 import { createMaskSchema, DEFAULT_MASK_SCHEMA, verifyInvertible } from "./schema";
 import type {
   MaskSchema,
-  MaskedUuidV7Slug,
   PublicUuidV7Slug,
   SentinelUuidV7Slug,
   UuidSlugCodec,
@@ -56,6 +55,10 @@ export const UUID_V7_SENTINEL_DEFINITIONS: readonly UuidV7SentinelDefinition[] =
 ];
 
 function schemaFromOption(mask: UuidSlugCodecOptions["mask"]): Error | MaskSchema {
+  // Omitting `mask` yields a codec that masks under a seed published in this package's source, so
+  // its masked slugs are decodable by anyone. That is a real configuration — tests and demos want
+  // reproducible output — but it is never the one a caller protecting ids wants, and nothing about
+  // the resulting slug reveals which they got. See `defaultCodec` and `UuidSlugCodecOptions.mask`.
   if (!mask) return DEFAULT_MASK_SCHEMA;
   // A built schema carries its mixing step; an options object carries only a seed to derive one
   // from. One discriminating property beats sniffing several, which silently stops discriminating
@@ -156,6 +159,14 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
     return uuidToMaskedSlugWithSchema(uuid, schema);
   }
 
+  function maskedSlugToUuidV7(slug: string): Error | UuidV7String {
+    const decoded = decodeMasked(slug);
+    if (decoded instanceof Error) return decoded;
+    return isUuidV7String(decoded)
+      ? decoded
+      : new UuidSlugError("invalid_uuid_version", "Decoded UUID is not UUIDv7.");
+  }
+
   return {
     sentinels: sentinelState.sentinels,
     uuidV4() {
@@ -185,17 +196,42 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
       return errorOrThrow(uuidV7BytesToMaskedSlug(errorOrThrow(generator.uuidV7Bytes()), schema));
     },
     uuidV7ToMaskedSlug,
-    maskedSlugToUuidV7(slug) {
-      const decoded = decodeMasked(slug);
-      if (decoded instanceof Error) return decoded;
-      return isUuidV7String(decoded)
-        ? decoded
-        : new UuidSlugError("invalid_uuid_version", "Decoded UUID is not UUIDv7.");
-    },
+    maskedSlugToUuidV7,
     maskedSlugToUuid: decodeMasked,
+    /**
+     * Unmask, then apply the same freshness rules as `validateUuidV7Fresh`, returning the slug.
+     *
+     * A METHOD rather than the module-level function it replaced: unmasking needs this codec's
+     * key, and the old free function reached for `defaultCodec` — so it silently answered under
+     * the seed published in this package's source and was wrong for every caller who supplied
+     * their own. Nothing about that failure was visible at the call site; it returned a confident
+     * Error for perfectly good slugs.
+     *
+     * Closes over the local `maskedSlugToUuidV7` rather than reaching through `this`: every method
+     * here declares `this: void` so it survives being detached (`const f = codec.maskedSlugToUuid`).
+     */
+    validateMaskedSlugFresh(slug, freshness) {
+      const uuid = maskedSlugToUuidV7(slug);
+      if (uuid instanceof Error) return uuid;
+      const valid = validateUuidV7Fresh(uuid, freshness);
+      return valid instanceof Error ? valid : slug;
+    },
   };
 }
 
+/**
+ * The codec behind the keyless top-level shortcuts (`uuidV7`, `uuidV7Slug`, …), which is all it is
+ * fit for.
+ *
+ * Its MASKED methods work and obfuscate NOTHING: no seed was supplied, so it fell back to
+ * `DEFAULT_MASK_SCHEMA`, whose seed is a string literal in this published package. Anyone holding
+ * the tarball decodes its masked slugs — verified 2026-08-12 by rebuilding the schema from that
+ * literal and recovering the input UUID exactly. The masked methods are absent from the top-level
+ * exports for this reason; reaching them still requires typing `defaultCodec`, which is the point
+ * (Art's ruling, 2026-08-12 — keep the default key, remove the bare shortcuts).
+ *
+ * Mask anything real through `createUuidSlugCodec({ mask: { seed } })` with a seed of your own.
+ */
 export const defaultCodec = createUuidSlugCodec();
 
 export function validateUuidV7Fresh(
@@ -222,16 +258,6 @@ export function validateUuidV7SlugFresh(
   options?: FreshValidationOptions,
 ): Error | UuidV7Slug {
   const uuid = slugToUuid(slug);
-  if (uuid instanceof Error) return uuid;
-  const valid = validateUuidV7Fresh(uuid, options);
-  return valid instanceof Error ? valid : slug;
-}
-
-export function validateMaskedUuidV7SlugFresh(
-  slug: string,
-  options?: FreshValidationOptions,
-): Error | MaskedUuidV7Slug {
-  const uuid = defaultCodec.maskedSlugToUuidV7(slug);
   if (uuid instanceof Error) return uuid;
   const valid = validateUuidV7Fresh(uuid, options);
   return valid instanceof Error ? valid : slug;

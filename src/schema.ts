@@ -89,6 +89,17 @@ export function verifyInvertible(schema: MaskSchema): Error | MaskSchema {
   return schema;
 }
 
+/**
+ * A PUBLIC key. It ships in the tarball, so every masked slug produced under it is decodable by
+ * anyone who installed this package, and it therefore provides none of the obscurity masking
+ * exists for.
+ *
+ * It is exported rather than hidden so that choosing it can be DELIBERATE: a test or demo wanting
+ * byte-identical output across machines writes `mask: DEFAULT_MASK_SCHEMA` and says so at the call
+ * site. The hazard is the SILENT path — `createUuidSlugCodec()` with no `mask` lands here without
+ * the caller writing anything — which is why that fallback and `defaultCodec` both carry the same
+ * warning, and why the masked methods are not exported as bare functions.
+ */
 const DEFAULT_SEED = "anizoptera.uuid-slug.default-mask.v1";
 
 export const DEFAULT_MASK_SCHEMA: MaskSchema = createMaskSchema({

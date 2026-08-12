@@ -5,7 +5,6 @@ export {
   UUID_V7_SENTINEL_DEFINITIONS,
   createUuidSlugCodec,
   defaultCodec,
-  validateMaskedUuidV7SlugFresh,
   validateUuidV7Fresh,
   validateUuidV7SlugFresh,
 } from "./codec";
@@ -63,8 +62,16 @@ export const uuidV7At = defaultCodec.uuidV7At;
 export const uuidV7BytesAt = defaultCodec.uuidV7BytesAt;
 export const uuidV4Slug = defaultCodec.uuidV4Slug;
 export const uuidV7Slug = defaultCodec.uuidV7Slug;
-export const uuidV7MaskedSlug = defaultCodec.uuidV7MaskedSlug;
-export const uuidV7ToMaskedSlug = defaultCodec.uuidV7ToMaskedSlug;
-export const maskedSlugToUuid = defaultCodec.maskedSlugToUuid;
-export const maskedSlugToUuidV7 = defaultCodec.maskedSlugToUuidV7;
-export const UUID_V7_SENTINELS = defaultCodec.sentinels;
+
+/*
+ * The MASKED methods are deliberately absent from this list, and must stay absent (Art's ruling,
+ * 2026-08-12). Everything bound above is keyless — the same value whoever calls it — so a bare
+ * function is an honest shape for it. Masking is keyed, and the only key a bare function could
+ * carry is `defaultCodec`'s, which is derived from a seed published in this package's source.
+ * Exported that way, the easiest-to-reach spelling of the headline feature was the one that
+ * obfuscates nothing, and a README paragraph was the only thing standing between a caller and it.
+ *
+ * Reach masking through a codec you built with your own seed: `createUuidSlugCodec({ mask: {
+ * seed } })`. Sentinels went with them for the same reason — a sentinel exists to be matched
+ * against masked input, so a sentinel list has no meaning apart from the codec that masks.
+ */

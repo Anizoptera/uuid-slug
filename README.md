@@ -111,10 +111,13 @@ So: it stops a casual reader learning your creation times and record rates. It d
 id secret. Masked slugs are not tokens, not capabilities, and not a substitute for an
 authorisation check.
 
-The top-level exports (`uuidV7MaskedSlug`, `maskedSlugToUuid`, and friends) use a default
-codec whose seed is a constant published in this package's source. Anyone holding the
-package can decode those. They exist for tests, demos and direct slugs — **if you mask
-anything real, build your own codec with your own seed.**
+One consequence is structural rather than advisory. A codec built without a `mask` uses a seed
+that is a constant in this package's source, so anyone holding the package decodes its masked
+slugs. That configuration is legitimate — tests and demos want reproducible output — but it is
+never what someone protecting ids wants, and the slug looks identical either way.
+
+So the masked operations are **not** available as top-level functions; only `defaultCodec` and a
+codec you construct expose them. **If you mask anything real, pass your own seed.**
 
 ## Errors are returned, not thrown
 
@@ -136,9 +139,12 @@ which flavour a value is and survive narrowing; they are not enforced at runtime
 
 ## API
 
-Everything below is a method on a codec. Each is also a top-level export bound to the
-default codec, under the same name, except the sentinel list, which is
-`UUID_V7_SENTINELS`.
+Everything below is a method on a codec. The KEYLESS ones — generation and direct slugs — are
+also top-level exports under the same name, bound to a shared default codec.
+
+The masked ones are not, and that is deliberate: a bare function can only carry the seed
+published in this package, so the easiest import of the headline feature would have been the one
+that obfuscates nothing. Build a codec with your own seed and call them on it.
 
 | Method                                                  | Returns               | What it does                              |
 | ------------------------------------------------------- | --------------------- | ----------------------------------------- |
@@ -152,6 +158,7 @@ default codec, under the same name, except the sentinel list, which is
 | `uuidV7ToMaskedSlug(uuid)` / `maskedSlugToUuidV7(slug)` | `Error \| ...`        | Same, but refuse anything that is not v7. |
 | `parseUuid` / `formatUuid`                              | `Error \| ...`        | UUID string to bytes and back.            |
 | `parseUuidSlug` / `formatUuidSlug`                      | `Error \| ...`        | Slug to bytes and back.                   |
+| `validateMaskedSlugFresh(slug, opts?)`                  | `Error \| ...`        | Unmask, then check the freshness window.  |
 | `sentinels`                                             | array                 | The reserved values this codec knows.     |
 
 The `At` pair exists for backfilling: giving existing rows v7 ids that sort by the time the row
@@ -208,9 +215,10 @@ const ok = validateUuidV7Fresh(uuid, { windowMs: 60_000 });
 ```
 
 Returns an error when the v7 timestamp sits outside the window (24 hours by default) or the
-random half is degenerate. `validateUuidV7SlugFresh` and `validateMaskedUuidV7SlugFresh` do
-the same starting from a slug. Useful for one-shot ids like a signup link; it is a sanity
-check on the id itself, not authentication.
+random half is degenerate. `validateUuidV7SlugFresh` does the same starting from a plain slug,
+and `codec.validateMaskedSlugFresh` from a masked one — a method, not a top-level function,
+because unmasking needs that codec's key. Useful for one-shot ids like a signup link; it is a
+sanity check on the id itself, not authentication.
 
 ## Guarantees
 
