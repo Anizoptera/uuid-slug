@@ -69,9 +69,14 @@
   2026-08-12). A UUIDv7 carries 116 bits of real content — 42 timestamp bits (48 less the 6 that
   stay zero until 2109), 12 `rand_a`, 62 `rand_b` — because version and variant are constant for a
   v7 and need not be stored. 22 base64url characters hold 132 bits, so the check gets 132−116,
-  exactly 16; base32hex holds 26×5=130 and gets 14. One formula, `checkBits = slugBits − 116`, and
-  no per-alphabet special case. Both widths are whole multiples of the character size, so encoding
-  is a bijection and no slug has a second spelling.
+  exactly 16 — `checkBits = slugBits − 116`. `mask.ts` pins BASE64URL and splits that 16 as the 12
+  bits displaced inside the block plus `spareBits(BASE64URL, 16)`; do NOT re-parameterise it by
+  alphabet to make the formula look general, because masking has only one alphabet (next bullet).
+  132 is a whole multiple of 6, so the check fills the spare exactly and masking is a bijection.
+  A PLAIN slug is canonical by a different mechanism — `decodeInto` REJECTS non-zero padding bits,
+  measured 2026-08-12 as rejecting every non-canonical sibling of a slug in both alphabets (15/15
+  base64url, 3/3 base32hex). Delete it and one id gains 2^spare spellings. The arithmetic above
+  is about MASKED slugs only and will not save a plain one.
 - base32hex belongs to PLAIN slugs and MUST NOT be wired into masking (Art's ruling, 2026-08-12).
   It exists for sort order — a v7 leads with its timestamp and base32hex digits are in value order,
   so its slugs sort chronologically — and masked bytes are ciphertext, which sorts in no useful
