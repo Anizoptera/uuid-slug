@@ -14,7 +14,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { createUuidV7Generator } from "../src/index";
+import { createUuidV7Generator, parseUuid, uuidV7At } from "../src/index";
 
 /** Fills with one repeated byte, so the counter seed lands on a known bound. */
 const constantFill = (byte: number) => (bytes: Uint8Array<ArrayBuffer>) => {
@@ -95,6 +95,65 @@ describe("uuidv7 monotonicity", () => {
     const second = bytesOf(generator);
     expect(timestampOf(second)).toBe(timestampOf(first) + 1);
     expect(compare(first, second)).toBeLessThan(0);
+  });
+});
+
+describe("uuidv7 at a caller-supplied instant", () => {
+  // The layout is a 48-bit big-endian field written by repeated division, so the cases that can
+  // fail are the ones a 32-bit shift would truncate. `2 ** 48 - 1` is RFC 9562's own bound
+  // rederived here rather than imported, so the test disagrees with the implementation if either
+  // moves; `timestampOf` reads the field back by an independent reduction.
+  it.each([0, 2 ** 32, 2 ** 40 + 12_345, 2 ** 48 - 1])("writes the instant %d exactly", (ms) => {
+    const generator = createUuidV7Generator({
+      clock: fixedClock(1),
+      fillRandom: constantFill(0x00),
+    });
+    const bytes = generator.uuidV7BytesAt(ms);
+    if (bytes instanceof Error) throw bytes;
+    expect(timestampOf(bytes)).toBe(ms);
+  });
+
+  // 1.5 is the case that motivated the check: the write path truncates, so a fractional instant
+  // silently became 1 while the error message promised a whole number of milliseconds. NaN and
+  // Infinity matter because a native generator need not reject them — measured 2026-08-12,
+  // `Bun.randomUUIDv7("hex", NaN)` returns the 1970 prefix rather than throwing.
+  it.each([1.5, -1, NaN, Infinity, 2 ** 48])("rejects the instant %d", (ms) => {
+    const generator = createUuidV7Generator({
+      clock: fixedClock(1),
+      fillRandom: constantFill(0x00),
+    });
+    expect(generator.uuidV7At(ms)).toBeInstanceOf(Error);
+  });
+
+  it("does not disturb the counter the untimestamped path is ordering", () => {
+    // A supplied instant takes a random sequence and must leave `lastMs` and the counter alone:
+    // routing it through the same reseed would either restart the sequence mid-millisecond or
+    // move `lastMs` to the supplied instant, and both hand out a value below one already issued.
+    // Nothing else observes that, because the two paths share every other line.
+    const generator = createUuidV7Generator({
+      clock: fixedClock(1_700_000_000_000),
+      fillRandom: constantFill(0x00),
+    });
+    let previous = bytesOf(generator);
+    for (let i = 0; i < 100; i += 1) {
+      expect(generator.uuidV7At(1_500_000_000_000)).not.toBeInstanceOf(Error);
+      const current = bytesOf(generator);
+      expect(compare(previous, current)).toBeLessThan(0);
+      previous = current;
+    }
+  });
+
+  it("is reachable from the package entry point", () => {
+    // Not a smoke test: these two entry points were implemented in `v7.ts`, declared on `Runtime`
+    // and given a native Bun path, yet `createRuntimeGenerator` dropped the argument and the codec
+    // never forwarded them, so nothing a consumer can call reached any of it. This asserts the
+    // whole chain — top-level binding, codec forwarding, and the runtime generator's own
+    // validate-then-delegate — against a value only the supplied instant can produce.
+    const uuid = uuidV7At(1_700_000_000_000);
+    if (uuid instanceof Error) throw uuid;
+    const bytes = parseUuid(uuid);
+    if (bytes instanceof Error) throw bytes;
+    expect(timestampOf(bytes)).toBe(1_700_000_000_000);
   });
 });
 

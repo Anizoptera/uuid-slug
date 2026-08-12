@@ -115,6 +115,7 @@ default codec, under the same name, except the sentinel list, which is
 | ------------------------------------------------------- | --------------------- | ----------------------------------------- |
 | `uuidV4()` / `uuidV7()`                                 | UUID string           | Generate.                                 |
 | `uuidV4Bytes(out?, offset?)` / `uuidV7Bytes(...)`       | `Error \| Uint8Array` | Generate into a buffer you own.           |
+| `uuidV7At(ms)` / `uuidV7BytesAt(ms, out?, offset?)`     | `Error \| ...`        | Generate at an instant you name.          |
 | `uuidV4Slug()` / `uuidV7Slug()`                         | direct slug           | Generate and encode in one step.          |
 | `uuidV7MaskedSlug()`                                    | masked slug           | Generate a v7 and mask it.                |
 | `uuidToSlug(uuid)` / `slugToUuid(slug)`                 | `Error \| ...`        | Direct slug, both ways.                   |
@@ -123,6 +124,13 @@ default codec, under the same name, except the sentinel list, which is
 | `parseUuid` / `formatUuid`                              | `Error \| ...`        | UUID string to bytes and back.            |
 | `parseUuidSlug` / `formatUuidSlug`                      | `Error \| ...`        | Slug to bytes and back.                   |
 | `sentinels`                                             | array                 | The reserved values this codec knows.     |
+
+The `At` pair exists for backfilling: giving existing rows v7 ids that sort by the time the row
+was actually created, and building a genuinely old id to test the freshness validators against.
+It takes the instant FIRST so a stray `Array.from({length: n}, uuidV7BytesAt)` cannot pass the
+index as a timestamp, and it returns an `Error` for an instant outside 0..2^48-1 or one that is
+not a whole number of milliseconds, rather than truncating it. Each such id carries a random
+sequence and does not advance the counter that orders ids minted at the current time.
 
 `uuidV7ToMaskedSlug` returns an unmasked sentinel slug when the input is a sentinel, which
 is the point of sentinels.

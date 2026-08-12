@@ -25,6 +25,22 @@ export interface FreshValidationOptions {
 export interface UuidV7Generator {
   uuidV7(this: void): UuidV7String;
   uuidV7Bytes(this: void, out?: Uint8Array, offset?: number): Error | Uint8Array;
+  /**
+   * Generate at a caller-supplied millisecond. A SEPARATE entry point rather than an optional
+   * trailing parameter on the pair above, because an optional positional timestamp is silently
+   * mappable: `Array.from({length: n}, gen.uuidV7Bytes)` would pass the index as the instant and
+   * mint n ids dated 1970, with no type error. Taking the timestamp FIRST makes that impossible.
+   *
+   * Returns an Error rather than throwing on a bad instant: a caller-supplied value out of range
+   * is ordinary input validation, not an exceptional condition.
+   */
+  uuidV7At(this: void, timestamp: number): Error | UuidV7String;
+  uuidV7BytesAt(
+    this: void,
+    timestamp: number,
+    out?: Uint8Array,
+    offset?: number,
+  ): Error | Uint8Array;
 }
 
 /**
@@ -103,8 +119,14 @@ export interface UuidSlugCodecOptions {
  * functions and deliberately absent here. They are pure — the same input gives the same output
  * whatever seed the codec holds — so carrying them as methods implied a dependency on the seed
  * that does not exist, and was the single most misleading thing about the previous shape.
+ *
+ * It EXTENDS `UuidV7Generator` rather than restating its methods, so that a generation capability
+ * cannot be added and left unreachable: the codec is the only way a consumer reaches the generator,
+ * and a new method on that interface now fails to compile here until it is forwarded. Restating the
+ * signatures instead made the four v7 entry points a clerical obligation nothing enforced, and two
+ * of them sat implemented-but-unwired through a release.
  */
-export interface UuidSlugCodec {
+export interface UuidSlugCodec extends UuidV7Generator {
   readonly sentinels: readonly UuidV7Sentinel[];
   /**
    * Every method declares `this: void`, which is load-bearing rather than decoration: the
@@ -114,9 +136,7 @@ export interface UuidSlugCodec {
    * a reviewer, and is what lets those references stay free of `.bind`.
    */
   uuidV4(this: void): UuidV4String;
-  uuidV7(this: void): UuidV7String;
   uuidV4Bytes(this: void, out?: Uint8Array, offset?: number): Error | Uint8Array;
-  uuidV7Bytes(this: void, out?: Uint8Array, offset?: number): Error | Uint8Array;
   uuidV4Slug(this: void): UuidV4Slug;
   uuidV7Slug(this: void): UuidV7Slug;
   uuidV7MaskedSlug(this: void): MaskedUuidV7Slug;

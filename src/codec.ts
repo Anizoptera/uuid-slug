@@ -160,6 +160,8 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
     },
     uuidV4Bytes: generateUuidV4Bytes,
     uuidV7Bytes: generator.uuidV7Bytes,
+    uuidV7At: generator.uuidV7At,
+    uuidV7BytesAt: generator.uuidV7BytesAt,
     uuidV4Slug() {
       return errorOrThrow(formatUuidSlug(errorOrThrow(generateUuidV4Bytes())));
     },

@@ -39,8 +39,38 @@ function writeCounter(bytes: Uint8Array, hi: number, lo: number) {
 /** The 48 bits RFC 9562 gives the timestamp; beyond it the value cannot be represented. */
 const MAX_TIMESTAMP = 0xffff_ffff_ffff;
 
-export const isValidUuidV7Timestamp = (ms: number): boolean =>
-  Number.isFinite(ms) && ms >= 0 && ms <= MAX_TIMESTAMP;
+/**
+ * `Number.isInteger` rather than `isFinite`, because the error message promises a WHOLE number of
+ * milliseconds and `Math.trunc` on the write path would otherwise honour that promise silently:
+ * 1.5 became 1 with nothing reported. It also rejects NaN and Infinity, which matters because a
+ * native generator need not — measured 2026-08-12, `Bun.randomUUIDv7("hex", NaN)` and the same
+ * call at 2^48 both return the 1970 prefix `000000000000` without throwing, while -1 and 1.5 do
+ * throw. Validating here rather than trusting the platform is what makes the two agree.
+ */
+const isValidUuidV7Timestamp = (ms: number): boolean =>
+  Number.isInteger(ms) && ms >= 0 && ms <= MAX_TIMESTAMP;
+
+/**
+ * The one check and the one message for a caller-supplied instant. Both the portable generator and
+ * the runtime-backed one call it, and the runtime-backed one calls it BEFORE delegating: a native
+ * generator may accept what we reject and answer wrongly rather than fail.
+ */
+const rejectInstant = (ms: number): Error | undefined =>
+  isValidUuidV7Timestamp(ms)
+    ? undefined
+    : new UuidSlugError(
+        "invalid_timestamp",
+        `UUIDv7 timestamp must be a whole number of milliseconds in 0..${MAX_TIMESTAMP}.`,
+      );
+
+/**
+ * Both string forms differ only in where the instant comes from, so the byte-or-error result is
+ * carried through here rather than unwrapped twice. The narrowing is an assertion because
+ * `formatUuid` is version-agnostic: the v7-ness is established by the caller having produced the
+ * bytes, not by anything the formatter can check.
+ */
+const formatUuidV7 = (result: Error | Uint8Array): Error | UuidV7String =>
+  result instanceof Error ? result : (formatUuid(result) as Error | UuidV7String);
 
 /**
  * Seeds the sequence from the same six random bytes and the same bit positions as before, split
@@ -87,11 +117,8 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
     let sequenceHi: number;
     let sequenceLo: number;
     if (timestamp !== undefined) {
-      if (!isValidUuidV7Timestamp(timestamp))
-        return new UuidSlugError(
-          "invalid_timestamp",
-          `UUIDv7 timestamp must be a whole number of milliseconds in 0..${MAX_TIMESTAMP}.`,
-        );
+      const invalid = rejectInstant(timestamp);
+      if (invalid) return invalid;
       options.fillRandom(random);
       ms = Math.trunc(timestamp);
       sequenceHi = seedHi(random);
@@ -124,13 +151,16 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
 
   return {
     uuidV7() {
-      const result = bytes();
-      if (result instanceof Error) throw result;
-      const formatted = formatUuid(result);
+      const formatted = formatUuidV7(bytes());
+      // The no-instant path can only fail on entropy, which the caller cannot act on and every
+      // other generator here reports by throwing. `uuidV7At` returns its Error instead, because
+      // there the failure is a value the caller passed in.
       if (formatted instanceof Error) throw formatted;
-      return formatted as UuidV7String;
+      return formatted;
     },
-    uuidV7Bytes: bytes,
+    uuidV7At: (timestamp) => formatUuidV7(bytes(undefined, 0, timestamp)),
+    uuidV7Bytes: (out, offset) => bytes(out, offset),
+    uuidV7BytesAt: (timestamp, out, offset) => bytes(out, offset, timestamp),
   };
 }
 
@@ -149,6 +179,34 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
       if (!runtime.uuidV7Bytes) return fallback.uuidV7Bytes(out, offset);
       try {
         return runtime.uuidV7Bytes(out, offset);
+      } catch (cause) {
+        return new UuidSlugError("rng_unavailable", "Runtime UUIDv7 byte generation failed.", {
+          cause,
+        });
+      }
+    },
+    // Both timestamped paths reject the instant BEFORE reaching the platform, because a native
+    // generator that accepts it may answer wrongly instead of failing: measured 2026-08-12,
+    // `Bun.randomUUIDv7("hex", NaN)` and the same call at 2^48 both return the 1970 prefix
+    // `000000000000` silently, while -1 and 1.5 throw. Each then mirrors its untimestamped
+    // sibling on a platform failure — fall back for the string form, report for the byte form —
+    // so the four entry points behave predictably in pairs.
+    uuidV7At(timestamp: number) {
+      const invalid = rejectInstant(timestamp);
+      if (invalid) return invalid;
+      if (!runtime.uuidV7At) return fallback.uuidV7At(timestamp);
+      try {
+        return runtime.uuidV7At(timestamp);
+      } catch {
+        return fallback.uuidV7At(timestamp);
+      }
+    },
+    uuidV7BytesAt(timestamp: number, out?: Uint8Array, offset = 0) {
+      const invalid = rejectInstant(timestamp);
+      if (invalid) return invalid;
+      if (!runtime.uuidV7BytesAt) return fallback.uuidV7BytesAt(timestamp, out, offset);
+      try {
+        return runtime.uuidV7BytesAt(timestamp, out, offset);
       } catch (cause) {
         return new UuidSlugError("rng_unavailable", "Runtime UUIDv7 byte generation failed.", {
           cause,

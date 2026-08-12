@@ -16,6 +16,14 @@ import { createUuidSlugCodec } from "../src/index";
 export const codec = createUuidSlugCodec();
 
 /**
+ * A fixed instant for the timestamped entry points. It is a constant rather than `Date.now()` so
+ * the draws below differ ONLY in their random payload: at one millisecond the 42-bit sequence and
+ * the 32-bit tail are the entire difference between two values, which is what makes the distinct-
+ * count check able to see a backfill path that reuses one draw and collides every row.
+ */
+const INSTANT = 1_700_000_000_000;
+
+/**
  * Every entry point that produces randomness. `uuidV4`, `uuidV7` and `uuidV7Slug` hand off to
  * a native generator whenever the runtime has one, so only the byte and slug forms reach this
  * package's own `fillRandom` unconditionally — a probe through the string forms alone observes
@@ -27,6 +35,8 @@ export const generators: readonly (readonly [string, () => unknown])[] = [
   ["uuidV7Slug", () => codec.uuidV7Slug()],
   ["uuidV4Bytes", () => codec.uuidV4Bytes()],
   ["uuidV7Bytes", () => codec.uuidV7Bytes()],
+  ["uuidV7At", () => codec.uuidV7At(INSTANT)],
+  ["uuidV7BytesAt", () => codec.uuidV7BytesAt(INSTANT)],
   ["uuidV4Slug", () => codec.uuidV4Slug()],
   ["uuidV7MaskedSlug", () => codec.uuidV7MaskedSlug()],
 ];
@@ -40,6 +50,7 @@ export const generators: readonly (readonly [string, () => unknown])[] = [
 export const byteGenerators: readonly (readonly [string, () => Uint8Array | Error])[] = [
   ["uuidV4Bytes", () => codec.uuidV4Bytes()],
   ["uuidV7Bytes", () => codec.uuidV7Bytes()],
+  ["uuidV7BytesAt", () => codec.uuidV7BytesAt(INSTANT)],
 ];
 
 /** The instrument patches globals, so it is always removed, including on a failing assertion. */
