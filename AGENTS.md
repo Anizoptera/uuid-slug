@@ -47,6 +47,25 @@
   calls, catches and falls back on every single invocation. That cost 64% of v7 throughput on
   Node until 0.2.1. Probe once at module load and leave the method undefined.
 - Masked slugs and sentinels are core functionality, not compatibility add-ons.
+- The masked layout is fixed by arithmetic, not taste: 22 characters, 16-bit check (Art's ruling,
+  2026-08-12). A UUIDv7 carries 116 bits of real content — 42 timestamp bits (48 less the 6 that
+  stay zero until 2109), 12 `rand_a`, 62 `rand_b` — because version and variant are constant for a
+  v7 and need not be stored. 22 base64url characters hold 132 bits, so the check gets 132−116,
+  exactly 16; base32hex holds 26×5=130 and gets 14. One formula, `checkBits = slugBits − 116`, and
+  no per-alphabet special case. Both widths are whole multiples of the character size, so encoding
+  is a bijection and no slug has a second spelling.
+- Encoding MUST reject a v7 timestamped at or past 2^42 ms (year 2109) instead of truncating it.
+  Truncation makes encoding non-injective, and two UUIDs sharing one slug cannot be recovered from.
+- A decoded masked slug is a CANDIDATE, never a verified id, and the contract must say so: with a
+  16-bit check, 1 random string in 65,536 decodes to a well-formed UUID nobody issued, and k in
+  65,536 with k keys configured. Callers match against their own store, which is what makes a wrong
+  candidate a miss rather than a wrong answer. Hence `unmask` returns the newest key's candidate
+  rather than erroring when two keys both match (Art's ruling, 2026-08-12) — erroring discards a
+  correct answer already in hand, and a wrong candidate ends at the same not-found either way.
+- The masked format published in 0.2.0 MUST NOT be given a compatibility decode path. Nothing ever
+  consumed it (Art, 2026-08-12), so a second layout tried on every decode would add wrong-answer
+  surface to protect no one. This is the exception, not the rule: it holds only because that
+  release had no consumers.
 - Do not add old API aliases or compatibility subpaths.
 - Do not mention private source project names in public files, commits, tests, fixtures, or reports.
 - Sentinel slugs are always direct legacy/raw UUID slugs and are precomputed per codec instance.
