@@ -7,7 +7,7 @@ import {
   uuidV7BytesToMaskedSlug,
   maskedSlugToUuidWithSchema,
 } from "./mask";
-import { createMaskSchema, DEFAULT_MASK_SCHEMA, DEFAULT_MASK_SCHEMA_LEGACY } from "./schema";
+import { createMaskSchema, DEFAULT_MASK_SCHEMA } from "./schema";
 import type {
   MaskSchema,
   MaskedUuidV7Slug,
@@ -108,24 +108,14 @@ function errorOrThrow<T>(value: Error | T): T {
 
 export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlugCodec {
   const schema = errorOrThrow(schemaFromOption(options.mask));
-  // A codec configured by seed also decodes that seed's pre-Feistel slugs, without being asked.
-  // Masking changed scheme after slugs were already issued in production, and an upgrade that
-  // silently stops decoding them is not an upgrade. This costs nothing in ambiguity because the
-  // two schemes occupy different marker slots, so a slug selects one outright. Schemas passed as
-  // built objects get no such partner: there is no seed to derive it from.
-  const seededLegacy =
-    options.mask && !("mix" in options.mask)
-      ? createMaskSchema({
-          ...options.mask,
-          id: `${options.mask.id ?? "seeded"}-legacy`,
-          kind: "substitution",
-        })
-      : undefined;
-  const legacyMasks = [
-    ...(options.legacy?.masks ?? []),
-    ...(seededLegacy instanceof Error || seededLegacy === undefined ? [] : [seededLegacy]),
-    ...(options.mask ? [] : [DEFAULT_MASK_SCHEMA_LEGACY]),
-  ];
+  // Every schema a decode may try, and NOTHING a caller did not list. A codec once appended two
+  // schemas of its own — a substitution partner derived from any seed, and the default seed's
+  // pre-Feistel scheme — on the reasoning that a marker bit would select one outright. No marker
+  // exists: each schema is tried in turn and the first whose check passes wins, so the codec's
+  // false-accept rate is the SUM over the list and is set by its weakest member. Measured
+  // 2026-08-12 over 200,000 wrong-key decodes, the auto-added 6-bit partner accepted 211 while
+  // the 16-bit schema it accompanied accepted 2 — a 16x widening nobody asked for.
+  const legacyMasks = options.legacy?.masks ?? [];
   const generator = options.generator ?? createRuntimeGenerator(runtime);
   const sentinelState = createSentinels(options.sentinels ?? UUID_V7_SENTINEL_DEFINITIONS);
 

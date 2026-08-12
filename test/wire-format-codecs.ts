@@ -35,5 +35,5 @@ if (substitution instanceof Error) throw substitution;
 export const WIRE_FORMAT_CODECS = {
   default: createUuidSlugCodec({}),
   "explicit-substitution": createUuidSlugCodec({ mask: substitution }),
-  "seeded-v2": createUuidSlugCodec({ mask: { seed: "golden-vector-seed", tagBits: 6 } }),
+  "seeded-v2": createUuidSlugCodec({ mask: { seed: "golden-vector-seed" } }),
 };

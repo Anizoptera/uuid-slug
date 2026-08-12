@@ -7,13 +7,24 @@
   constrains the other's adapter — measured 2026-08-11, `Math.random` written into
   `runtime/web.ts` left the ENTIRE vitest suite green, on the runtime most consumers use. The
   shared cases live in `test/entropy-probe.ts` so one list serves both.
-- **A test names the code it means to reach; nothing checks that it got there.** Both instances
-  measured here stayed green while observing nothing. Delete the thing under test and watch the
-  test go red — reading cannot detect either case.
-  Where a function rejects for more than one reason, an input meant for the LATER rejection must
-  pass every earlier one, or the first guard answers and the named branch never runs. Measured
-  2026-08-12: three bounds cases built on all-zero buffers were rejected by the version check
-  instead, and stayed green with the bounds check deleted entirely.
+- **A measurement names the code it means to reach; nothing checks that it got there.** This binds
+  throwaway probes exactly as it binds committed tests, and every instance measured here looked
+  right while observing something else. Two mechanisms shadow the named target, neither detectable
+  by reading:
+  Guard ordering. Where a function rejects for more than one reason, an input meant for the LATER
+  rejection must pass every earlier one, or the first guard answers and the named branch never
+  runs. Measured 2026-08-12: three bounds cases built on all-zero buffers were rejected by the
+  version check instead, and stayed green with the bounds check deleted entirely. Delete the thing
+  under test and watch the test go red; that is the only instrument that catches it.
+  Fan-out behind one call. Before blaming a number on one piece of code, make sure the thing you
+  called runs only that piece. An entry point that tries several implementations reports the rate
+  of ALL of them together, and its try-list is invisible where you call it, so the number is an
+  upper bound on the union and a measurement of no single member. Measured 2026-08-12: a wrong-key
+  false-accept probe went through `maskedSlugToUuidV7` on a seed-configured codec, read 1 in 939
+  against a designed 1 in 65,536, and the 16-bit check was reported to the maintainer as delivering
+  only 10 bits. That codec auto-adds a 6-bit substitution partner for any seed; 211 of the 213
+  accepts were the partner's, and the check itself measured 2 in 200,000 — correct. Call the
+  component directly, or first prove the entry point dispatches to it alone.
 - A generator that delegates to the platform must be probed through a path that cannot delegate.
   `uuidV4()`, `uuidV7()` and `uuidV7Slug()` hand off to a native generator whenever the runtime
   has one, so on Bun and Node they never touch this package's own `fillRandom`; only the byte and

@@ -47,7 +47,7 @@ export const FEISTEL_KEY_WORDS = ROUNDS * 2;
  * cheapest function that gives the network its diffusion. Bijective, which a Feistel round
  * function need not be but may be.
  */
-function mix32(value: number): number {
+export function mix32(value: number): number {
   let x = (value ^ (value >>> 16)) >>> 0;
   x = Math.imul(x, 0x7feb352d);
   x = (x ^ (x >>> 15)) >>> 0;
@@ -56,7 +56,7 @@ function mix32(value: number): number {
 }
 
 /** Big-endian on purpose: the wire format must not depend on the host's byte order. */
-function read32(bytes: Uint8Array, offset: number): number {
+export function read32(bytes: Uint8Array, offset: number): number {
   return (
     ((bytes[offset] as number) << 24) |
     ((bytes[offset + 1] as number) << 16) |

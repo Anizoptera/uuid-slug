@@ -13,7 +13,7 @@
  * other.
  */
 import { describe, expect, test } from "bun:test";
-import { BASE32HEX, BASE64URL, decodeInto, encode } from "../src/alphabet";
+import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "../src/alphabet";
 import { uuidToSlug } from "../src/index";
 import golden from "./fixtures-wire-format.json";
 import { WIRE_FORMAT_CODECS as codecs } from "./wire-format-codecs";
@@ -25,23 +25,28 @@ describe("wire format is identical across runtimes", () => {
       expect(uuidToSlug(vector.uuid)).toBe(vector.direct);
       expect(codec.uuidV7ToMaskedSlug(vector.uuid)).toBe(vector.masked);
       expect(codec.maskedSlugToUuidV7(vector.masked)).toBe(vector.uuid);
-      expect(codec.maskedSlugToUuidV7(vector.maskedLegacy)).toBe(vector.uuid);
+      expect(vector.masked).toHaveLength(22);
     });
   }
 
-  test("both alphabets round-trip 16 bytes with a scheme marker", () => {
+  // The spare bits carry the outer half of the wrong-key check, so every value one can hold must
+  // survive the trip. A tail that round-trips for some values and not others would narrow the
+  // check silently: the slug still decodes, and only the rate of wrong-key acceptance moves.
+  test("both alphabets round-trip 16 bytes plus every value of their spare bits", () => {
     const bytes = new Uint8Array(16);
     crypto.getRandomValues(bytes);
     for (const [alpha, length] of [
       [BASE64URL, 22],
       [BASE32HEX, 26],
-    ] as const)
-      for (let marker = 0; marker < 4; marker += 1) {
-        const encoded = encode(bytes, alpha, marker, 2);
+    ] as const) {
+      const width = spareBits(alpha, 16);
+      for (let tail = 0; tail < 1 << width; tail += 1) {
+        const encoded = encode(bytes, alpha, tail, width);
         expect(encoded).toHaveLength(length);
         const out = new Uint8Array(16);
-        expect(decodeInto(encoded, alpha, out, 0, 16, 2)).toBe(marker);
+        expect(decodeInto(encoded, alpha, out, 0, 16, width)).toBe(tail);
         expect([...out]).toEqual([...bytes]);
       }
+    }
   });
 });

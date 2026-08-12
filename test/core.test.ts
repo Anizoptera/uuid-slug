@@ -6,16 +6,40 @@ import {
   decodeBase64Url,
   encodeBase64Url,
   extractUuidV7Timestamp,
+  formatUuid,
   isUuidV7String,
   parseUuid,
   slugToUuid,
   uuidToSlug,
   uuidV7BytesAt,
 } from "../src/index";
+import { mix32 } from "../src/feistel";
 
 const SAMPLE_V7_A = "01987008-ef3e-7f69-b677-22ec1a5bbdb2";
 const SAMPLE_V7_B = "01987bbb-178b-7858-93e8-fc5e5444913b";
 const SAMPLE_V4 = "b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5";
+
+/**
+ * A UUIDv7 with the shape of a generated one but derived from a counter, so a rate measured over
+ * many of them is a fixed number rather than a sample that fails a few runs in a hundred. Byte 0
+ * is zeroed because the maskable range ends at 2^42 ms.
+ */
+const deterministicUuidV7 = (index: number) => {
+  const bytes = new Uint8Array(16);
+  for (let word = 0; word < 4; word += 1) {
+    const value = mix32(index * 4 + word + 0x9e37_79b9);
+    bytes[word * 4] = value >>> 24;
+    bytes[word * 4 + 1] = (value >>> 16) & 0xff;
+    bytes[word * 4 + 2] = (value >>> 8) & 0xff;
+    bytes[word * 4 + 3] = value & 0xff;
+  }
+  bytes[0] = 0;
+  bytes[6] = ((bytes[6] as number) & 0x0f) | 0x70;
+  bytes[8] = ((bytes[8] as number) & 0x3f) | 0x80;
+  const uuid = formatUuid(bytes);
+  if (uuid instanceof Error) throw uuid;
+  return uuid;
+};
 
 describe("base64url", () => {
   it("round-trips arbitrary bytes and rejects non-canonical forms", () => {
@@ -165,22 +189,27 @@ describe("legacy.directDecode", () => {
     expect(codec.maskedSlugToUuidV7(String(slug))).toBeInstanceOf(Error);
   });
 
-  it("never mistakes a direct slug for a masked one when every schema is Feistel", () => {
-    // Feistel occupies mask marker slot 1 and a direct slug encodes marker 0, so rejection is
-    // decided before any unmixing — exact, not probabilistic. Measured 0 in 1,000,000 on both
-    // runtimes, and identical deterministic input gives bit-identical counts, so the property is
-    // arithmetic rather than luck. This fails the moment marker checking stops gating decode.
+  it("mistakes a direct slug for a masked one at the check's rate and no more often", () => {
+    // A direct slug and a masked one are the same 22 characters of the same alphabet, so the ONLY
+    // thing separating them is the check — one direct slug in 2^16 passes it and decodes to a
+    // UUID nobody issued. That is the ruled 16-bit format's price and it cannot be bought back:
+    // 16 check bits spend all 132 bits of a 22-character slug, leaving nothing for the scheme
+    // marker that used to make this exclusion exact.
     //
-    // A SUBSTITUTION schema shares slot 0 with direct slugs and is filtered only by the 6-bit
-    // tag: measured 1.5640% wrong answers against a predicted 2^-6 = 1.5625%. That combination
-    // is a known open hazard, not something this case can assert away.
+    // The bound is what this asserts, because the rate is the thing that can silently regress.
+    // Narrowing the check to the old 6-bit tag would put roughly 312 confusions in this sample.
     const schema = createMaskSchema({ id: "feistel-only", kind: "feistel", seed: "direct-decode" });
     if (schema instanceof Error) throw schema;
     const codec = createUuidSlugCodec({ mask: schema, legacy: { directDecode: true } });
-    for (let i = 0; i < 2_000; i += 1) {
-      const uuid = codec.uuidV7();
-      expect(codec.maskedSlugToUuid(String(uuidToSlug(uuid)))).toBe(uuid);
+    let confused = 0;
+    for (let i = 0; i < 20_000; i += 1) {
+      const uuid = deterministicUuidV7(i);
+      if (codec.maskedSlugToUuid(String(uuidToSlug(uuid))) !== uuid) confused += 1;
     }
+    // Deterministic input, so this is a fixed count rather than a sample: measured 1 here, and 3
+    // in 200,000 against the 3.05 that 2^-16 predicts. The headroom absorbs a reseed, not a
+    // format change.
+    expect(confused).toBeLessThanOrEqual(4);
   });
 });
 

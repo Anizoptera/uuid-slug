@@ -50,14 +50,7 @@ export interface UuidV7Generator {
  */
 export interface MaskSchema {
   readonly id: string;
-  /**
-   * Which of the four scheme slots this occupies in a slug's spare bits. Decoding reads it and
-   * applies exactly the matching schema, so schemes never have to be told apart by trial and
-   * checksum — the id partitions them. Slot 0 is the original permute-and-XOR family, whose
-   * slugs predate the marker and therefore encode a zero there.
-   */
-  readonly slugId: MaskSchemaSlugId;
-  readonly tagBits: 4 | 6;
+  readonly tagBits: MaskTagBits;
   /**
    * Transforms 16 bytes; `forward: false` MUST be the exact inverse. `input` and `output` MUST
    * NOT be the same array: a scheme that permutes reads source bytes it would already have
@@ -66,7 +59,20 @@ export interface MaskSchema {
   mix(input: Uint8Array, output: Uint8Array, forward: boolean): void;
 }
 
-export type MaskSchemaSlugId = 0 | 1 | 2 | 3;
+/**
+ * How many of a UUIDv7's information-free bits the wrong-key check occupies, and thereby WHERE
+ * it sits — the regions nest, so one number fixes the layout:
+ *
+ * - `4`  — byte 6's version nibble.
+ * - `6`  — plus byte 8's two variant bits.
+ * - `12` — plus byte 0's top six bits, the high end of the 48-bit timestamp, which stay zero until
+ *   the year 2109. Claiming them is what makes a 16-bit check fit in 22 characters, and it is why
+ *   this tier REFUSES to encode a timestamp at or past 2^42 ms instead of truncating it.
+ *
+ * 12 is the tier for slugs this package mints. 4 and 6 exist only to read slugs an older scheme
+ * already issued, and their checksum is part of that wire format, so it is never "improved".
+ */
+export type MaskTagBits = 4 | 6 | 12;
 
 /** Named rather than numbered, so a schema's scheme survives being written down and read back. */
 export type MaskSchemeKind = "feistel" | "substitution";
@@ -80,7 +86,6 @@ export interface MaskSchemaOptions {
    */
   readonly kind?: MaskSchemeKind;
   readonly seed: string | Uint8Array;
-  readonly tagBits?: 4 | 6;
 }
 
 export interface ExplicitMaskSchema {

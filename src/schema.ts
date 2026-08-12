@@ -93,8 +93,6 @@ function substitutionSchema(
   if (inverse instanceof Error) return inverse;
   return {
     id,
-    // Slot 0: these slugs were issued before the marker existed, so their spare bits are zero.
-    slugId: 0,
     tagBits,
     mix(input, output, forward) {
       for (let i = 0; i < 16; i += 1) {
@@ -108,7 +106,7 @@ function substitutionSchema(
   };
 }
 
-function feistelSchema(id: string, seed: Uint8Array, tagBits: 4 | 6): MaskSchema {
+function feistelSchema(id: string, seed: Uint8Array): MaskSchema {
   // A distinct purpose byte keeps this key material independent of the substitution scheme's,
   // so a seed used under both schemes does not reuse bits across them.
   const material = derivedBytes(seed, 3, FEISTEL_KEY_WORDS * 4);
@@ -122,8 +120,9 @@ function feistelSchema(id: string, seed: Uint8Array, tagBits: 4 | 6): MaskSchema
       0;
   return {
     id,
-    slugId: 1,
-    tagBits,
+    // Always the widest tier. A narrower check is only ever needed to READ slugs an older scheme
+    // issued, and a Feistel schema never has to: the substitution kind owns that job.
+    tagBits: 12,
     mix(input, output, forward) {
       feistel16(input, 0, keys, forward, output, 0);
     },
@@ -146,29 +145,18 @@ export function createMaskSchema(options: MaskSchemaOptions): Error | MaskSchema
   const seed = seedBytes(options.seed);
   if (seed.length === 0)
     return new UuidSlugError("invalid_mask_schema", "Mask seed must not be empty.");
-  const tagBits = options.tagBits ?? 6;
-  if (tagBits !== 4 && tagBits !== 6)
-    return new UuidSlugError("invalid_mask_schema", "Mask tagBits must be 4 or 6.");
   const id = options.id ?? "seeded";
+  // 6 rather than the Feistel's 12: this kind reproduces a scheme that predates the wider tier,
+  // and its whole value is decoding what that scheme already issued. Widening it would change
+  // those slugs and defeat the point.
   if ((options.kind ?? "feistel") === "substitution")
-    return substitutionSchema(id, derivedBytes(seed, 1, 16), derivedPermutation(seed), tagBits);
-  return feistelSchema(id, seed, tagBits);
+    return substitutionSchema(id, derivedBytes(seed, 1, 16), derivedPermutation(seed), 6);
+  return feistelSchema(id, seed);
 }
 
 const DEFAULT_SEED = "anizoptera.uuid-slug.default-mask.v1";
 
 export const DEFAULT_MASK_SCHEMA: MaskSchema = createMaskSchema({
   id: "default",
-  seed: DEFAULT_SEED,
-}) as MaskSchema;
-
-/**
- * The default codec's previous scheme, kept so slugs it already issued keep decoding. Costs
- * nothing in ambiguity: it occupies slot 0 and the current default occupies slot 1, so a slug's
- * marker selects one of them outright rather than both being tried.
- */
-export const DEFAULT_MASK_SCHEMA_LEGACY: MaskSchema = createMaskSchema({
-  id: "default-legacy",
-  kind: "substitution",
   seed: DEFAULT_SEED,
 }) as MaskSchema;
