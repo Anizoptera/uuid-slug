@@ -236,10 +236,14 @@ across every supported runtime by `bun run bench:matrix`; the current figures ar
   either order. RFC 9562 §6.2 leaves this to the implementation and runtimes genuinely differ —
   measured, a platform generator may re-randomise every random bit per call, giving roughly a coin
   flip. Do not use a v7 to recover the order of events inside a millisecond; use a sequence column.
-- **NOT lexicographically sortable as a slug.** The 22-character base64url form is the same 16
-  bytes in a shorter alphabet, and the value round-trips exactly — but base64url's alphabet is not
-  in ASCII order, so comparing slugs as _strings_ does not track time. Sort by the UUID, or by a
-  timestamp column. A masked slug is deliberately unordered by design.
+- **Sortable as a slug only in base32hex.** A 26-character base32hex slug compares as a plain
+  string in creation order, to the same millisecond granularity as the guarantee above: its digits
+  are in ASCII order and a v7 leads with its timestamp. That is the whole reason the alphabet is
+  offered.
+- **NOT sortable as a base64url slug.** The default 22-character form is the same 16 bytes in a
+  shorter alphabet, and the value round-trips exactly — but that alphabet runs `A-Za-z0-9-_`, so
+  its character order and its value order disagree. Sort by the UUID, or by a timestamp column. A
+  masked slug is deliberately unordered whatever the alphabet: masked bytes are ciphertext.
 - **One type for bytes.** `uuidV4Bytes` and `uuidV7Bytes` return a plain `Uint8Array` on every
   runtime, never a platform-specific subclass whose `toString` or JSON shape differs.
 

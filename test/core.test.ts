@@ -6,7 +6,6 @@ import {
   decodeBase64Url,
   encodeBase64Url,
   extractUuidV7Timestamp,
-  isUuidV7String,
   parseUuid,
   slugToUuid,
   UUID_SLUG_ERROR_CODES,
@@ -234,6 +233,12 @@ describe("masked UUID slugs", () => {
     const at = extractUuidV7Timestamp(parseUuid(SAMPLE_V7_A) as Uint8Array) as number;
     expect(ids.validateMaskedSlugFresh(slug, { now: () => at })).toBe(slug);
     expect(ids.validateMaskedSlugFresh(slug, { now: () => at + 86_400_001 })).toBeInstanceOf(Error);
+    // Both edges exactly, because the README says an id is refused when it sits OUTSIDE the
+    // window — so the boundary itself is inside it, and nothing else says which. Relaxing either
+    // comparison to its non-strict form left the suite green (measured 2026-08-12); an off-by-one
+    // here silently expires ids a day early, or accepts ones a day stale.
+    expect(ids.validateMaskedSlugFresh(slug, { now: () => at + 86_400_000 })).toBe(slug);
+    expect(ids.validateMaskedSlugFresh(slug, { now: () => at - 86_400_000 })).toBe(slug);
   });
 
   it("rotates a seed without making the caller build a schema for the old one", () => {
@@ -315,22 +320,29 @@ describe("acceptUnmaskedSlugs", () => {
   });
 });
 
-describe("generation", () => {
-  it("generates valid UUIDv7 values", () => {
-    for (let i = 0; i < 1000; i += 1) {
-      const uuid = createUuidSlugCodec().uuidV7();
-      expect(isUuidV7String(uuid)).toBe(true);
-    }
+// The v7 generator is pinned from several directions — `test/v7.test.ts` for the bit layout and
+// the buffer bounds, `test/entropy.test.ts` for conformance across 2000 draws. The v4 path shares
+// neither, and had no case of its own: measured 2026-08-12 by mutation, moving its version stamp
+// to byte 7, its variant stamp to byte 9, or relaxing its bounds guard to `&&` each left the whole
+// suite green.
+describe("UUIDv4 generation", () => {
+  it("stamps version 4 and the RFC variant, in exactly sixteen bytes", () => {
+    // README §Guarantees promises correct version and variant bits for EVERY generated id. This is
+    // the only case that holds that promise for a v4. The length is asserted with them because the
+    // same line decides it, and a 17-byte "UUID" fails no other case here.
+    const bytes = createUuidSlugCodec().uuidV4Bytes();
+    if (bytes instanceof Error) throw bytes;
+    expect(bytes).toHaveLength(16);
+    expect((bytes[6] as number) >> 4).toBe(0x4);
+    expect((bytes[8] as number) >> 6).toBe(0b10);
   });
 
-  it("generates unique masked UUIDv7 slugs across a smoke run", () => {
-    const seen = new Set<string>();
+  it("refuses a buffer it cannot fit rather than writing past the end", () => {
+    // Both arms of the guard, matching the v7 case: past the end once the offset is added, and a
+    // negative offset that stays inside the length. A short write is silent — the bytes past the
+    // end are dropped and the id comes back truncated with no error anywhere.
     const codec = createUuidSlugCodec();
-    for (let i = 0; i < 1000; i += 1) {
-      const slug = codec.uuidV7MaskedSlug();
-      expect(slug).not.toBeInstanceOf(Error);
-      expect(seen.has(String(slug))).toBe(false);
-      seen.add(String(slug));
-    }
+    expect(codec.uuidV4Bytes(new Uint8Array(16), 1)).toBeInstanceOf(Error);
+    expect(codec.uuidV4Bytes(new Uint8Array(16), -1)).toBeInstanceOf(Error);
   });
 });

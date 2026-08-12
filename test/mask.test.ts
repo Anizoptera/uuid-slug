@@ -40,6 +40,22 @@ describe("the maskable range", () => {
     expect((refused as { code?: string }).code).toBe("invalid_timestamp");
   });
 
+  it("refuses anything that is not a UUIDv7, rather than stamping one on at decode", () => {
+    // Decoding calls `restoreV7`, which forces the version and variant constants back on, so
+    // WHATEVER is masked comes back as a v7: mask a v4 and it decodes to a well-formed id nobody
+    // ever issued, silently. Nothing else here reaches this guard — measured 2026-08-12, relaxing
+    // its `||` to `&&` left the whole suite green.
+    //
+    // Two cases because the guard has two arms and either alone leaves the other unprobed: a v4
+    // carrying a perfectly correct variant, and a v7 whose variant the RFC does not define.
+    expect(
+      uuidToMaskedSlugWithSchema("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5", schema),
+    ).toBeInstanceOf(Error);
+    expect(
+      uuidToMaskedSlugWithSchema("03ffffff-ffff-7fff-0fff-ffffffffffff", schema),
+    ).toBeInstanceOf(Error);
+  });
+
   it("round-trips under the RIGHT key at both ends of the range", () => {
     // The wrong-key cases below would stay green against a build whose right-key decode was
     // broken, because a broken check rejects everything and rejecting is what they count. Both
