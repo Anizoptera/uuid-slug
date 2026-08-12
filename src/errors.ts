@@ -39,6 +39,17 @@ export class UuidRuntimeError extends UuidSlugError {
 }
 
 /**
+ * The bridge from this package's `Error | T` return convention to the generator convention, where
+ * a failure throws. Shared rather than repeated because every module that has both conventions
+ * meeting in it needs exactly this, and a local copy is one `instanceof` away from being written
+ * as a truthiness test that swallows a legitimate falsy result.
+ */
+export function errorOrThrow<T>(value: UuidSlugError | T): T {
+  if (value instanceof Error) throw value;
+  return value;
+}
+
+/**
  * The one range check for every entry point that reads or writes a caller's buffer at an offset.
  *
  * `Number.isInteger` is the load-bearing half and the reason this is shared rather than repeated.

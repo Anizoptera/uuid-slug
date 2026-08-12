@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { runtime } from "#runtime";
-import { checkRange, UuidSlugError } from "./errors";
+import { errorOrThrow, UuidSlugError } from "./errors";
+// A v4 has ONE implementation however it is reached. The keyless module owns it because that is
+// the module a consumer who never masks pulls in; importing it here costs a codec consumer nothing
+// it was not already paying, whereas the reverse direction would put the codec back on the keyless
+// path and undo the whole saving that split exists for.
+import { uuidV4Bytes as generateUuidV4Bytes } from "./keyless";
 import {
   uuidToMaskedSlugWithSchema,
   uuidV7BytesToMaskedSlug,
@@ -106,31 +111,6 @@ function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
     bySlug.set(sentinel.slug, definition.uuid);
   }
   return { bySlug, byUuid, sentinels };
-}
-
-/**
- * Randomness is drawn into a private buffer and copied out instead of filled through a view
- * of the caller's array. `fillRandom` requires a plain `ArrayBuffer` because Web Crypto
- * rejects a `SharedArrayBuffer` view, and a caller-supplied `out` carries no such guarantee.
- * Reused rather than allocated per call, matching the v7 generator, so the cost is one
- * 16-byte copy.
- */
-const v4Random = new Uint8Array(16);
-
-function generateUuidV4Bytes(out?: Uint8Array, offset = 0): UuidSlugError | Uint8Array {
-  const target = out ?? new Uint8Array(16);
-  const badRange = checkRange(target, offset, 16);
-  if (badRange) return badRange;
-  runtime.fillRandom(v4Random);
-  target.set(v4Random, offset);
-  target[offset + 6] = ((target[offset + 6] ?? 0) & 0x0f) | 0x40;
-  target[offset + 8] = ((target[offset + 8] ?? 0) & 0x3f) | 0x80;
-  return target;
-}
-
-function errorOrThrow<T>(value: UuidSlugError | T): T {
-  if (value instanceof Error) throw value;
-  return value;
 }
 
 export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlugCodec {
@@ -260,7 +240,15 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
  *
  * Mask anything real through `createUuidSlugCodec({ mask: { seed } })` with a seed of your own.
  */
-export const defaultCodec = createUuidSlugCodec();
+// Annotated PURE so a bundle that never names it can drop it: a module-scope CONSTRUCTION call is
+// otherwise a side effect no bundler may remove, and this one reaches the cipher, the mask schema
+// and the sentinel table. Sound because `createUuidSlugCodec()` with no options cannot fail — the
+// only throwing paths are caller-supplied sentinels and a caller-supplied mix — and nothing else
+// observes the construction. The annotation is worth nothing on its own: it was measured saving
+// ZERO bytes while `index.ts` bound its shortcuts as PROPERTY READS of this value, since a read at
+// module scope forces the evaluation the annotation permits skipping. Keep the shortcuts keyless
+// (see `keyless.ts`) or this goes dead again.
+export const defaultCodec = /*#__PURE__*/ createUuidSlugCodec();
 
 export function validateUuidV7Fresh(
   uuid: string,
