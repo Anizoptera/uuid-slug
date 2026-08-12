@@ -14,15 +14,9 @@
  */
 import { describe, expect, test } from "bun:test";
 import { BASE32HEX, BASE64URL, decodeInto, encode } from "../src/alphabet";
-import { createUuidSlugCodec, uuidToSlug } from "../src/index";
+import { uuidToSlug } from "../src/index";
 import golden from "./fixtures-wire-format.json";
-import { EXPLICIT_SUBSTITUTION_SCHEMA } from "./mask-fixture";
-
-const codecs = {
-  default: createUuidSlugCodec({}),
-  "explicit-substitution": createUuidSlugCodec({ mask: EXPLICIT_SUBSTITUTION_SCHEMA }),
-  "seeded-v2": createUuidSlugCodec({ mask: { seed: "golden-vector-seed", tagBits: 6 } }),
-};
+import { WIRE_FORMAT_CODECS as codecs } from "./wire-format-codecs";
 
 describe("wire format is identical across runtimes", () => {
   for (const vector of golden) {

@@ -3,8 +3,8 @@
 import { describe, expect, it } from "vitest";
 import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "../src/alphabet";
 import { decodeBase64Url, encodeBase64Url, isBase64Url } from "../src/base64url";
-import { createUuidSlugCodec, uuidToSlug } from "../src/index";
-import { EXPLICIT_SUBSTITUTION_SCHEMA } from "./mask-fixture";
+import { uuidToSlug } from "../src/index";
+import { WIRE_FORMAT_CODECS as codecs } from "./wire-format-codecs";
 import golden from "./fixtures-wire-format.json";
 
 const randomBytes = (length: number) => {
@@ -105,12 +105,6 @@ describe("bit-packing codec", () => {
 // layer. The vectors were generated from the shipped implementation, so this fails loudly the
 // moment the wire format moves, whether or not the move was intentional.
 describe("wire format compatibility", () => {
-  const codecs = {
-    default: createUuidSlugCodec({}),
-    "explicit-substitution": createUuidSlugCodec({ mask: EXPLICIT_SUBSTITUTION_SCHEMA }),
-    "seeded-v2": createUuidSlugCodec({ mask: { seed: "golden-vector-seed", tagBits: 6 } }),
-  };
-
   it.each(golden)("$schema $uuid encodes and decodes unchanged", (vector) => {
     const codec = codecs[vector.schema as keyof typeof codecs];
     expect(uuidToSlug(vector.uuid)).toBe(vector.direct);
