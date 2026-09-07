@@ -161,7 +161,9 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
         "Masked UUID slugs require 16 UUIDv7 bytes.",
       );
     for (const sentinel of sentinelState.encoded) {
-      if (sentinel.bytes.every((byte, index) => byte === bytes[index])) return sentinel.slug;
+      let index = 0;
+      while (index < 16 && sentinel.bytes[index] === bytes[index]) index += 1;
+      if (index === 16) return sentinel.slug;
     }
     const slug = uuidV7BytesToMaskedSlug(bytes, schema);
     if (slug instanceof Error) return slug;

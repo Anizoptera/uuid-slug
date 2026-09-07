@@ -75,8 +75,21 @@ export function spareBits(alpha: Alphabet, byteLength: number): number {
  * before the tail existed valid afterwards.
  */
 export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {
-  if (nativeToBase64 && alpha === BASE64URL && tailBits === 0)
-    return nativeToBase64.call(bytes, BASE64_OPTIONS);
+  if (
+    nativeToBase64 &&
+    alpha === BASE64URL &&
+    tailBits >= 0 &&
+    tailBits <= spareBits(alpha, bytes.length)
+  ) {
+    const encoded = nativeToBase64.call(bytes, BASE64_OPTIONS);
+    if (tailBits === 0) return encoded;
+    // The native result zeroes padding. Spend only those spare low bits on the mask check;
+    // replacing the final character leaves the UUID payload and the wire length unchanged.
+    const last = encoded.length - 1;
+    const digit = alpha.decode[encoded.charCodeAt(last)] as number;
+    const trailing = (tail & ((1 << tailBits) - 1)) << (spareBits(alpha, bytes.length) - tailBits);
+    return encoded.slice(0, last) + alpha.chars[digit | trailing];
+  }
   const { bitsPerChar, chars } = alpha;
   const mask = (1 << bitsPerChar) - 1;
   let out = "";

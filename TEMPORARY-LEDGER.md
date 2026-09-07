@@ -39,6 +39,10 @@ Profile and optimize the current package on latest Node and Bun without changing
 
 ### Measured implementation decisions
 
+- Native base64 encoding now carries masked tail bits by replacing only the spare low bits of the final character. Sentinel comparison uses direct indexed bytes rather than allocating a closure and invoking `every` per candidate. Fixed wire vectors, every spare-bit value, and sentinel/callback regressions pass in both runtimes.
+- Portable v7 writes directly at the checked offset, removing its per-call subarray. Node v7 owned bytes measured 165→74 ns, caller-owned 79→54 ns, explicit timestamp bytes 59→35 ns; Bun injected portable output measured 44→23 ns. Latest Node targeted unit: 128 cases pass; latest Bun buffer/runtime/boundary/wire cases pass. Final matched replay pending.
+- Next: keep freshness/decode intermediates as bytes until a public string is actually needed; compare allocation and CPU results before accepting the refactor.
+
 - Native Uint8Array.toHex plus UUID slicing outperformed nibble/byte/unrolled loops, Buffer views/copies, array joins, per-byte radix conversion and DataView word formatting on Node 26.8.1 and Bun 1.4.2. Preserve a byte-table fallback for older engines.
 - Native toBase64 initially regressed Bun v4 generation because formatUuidSlug still allocated a subarray. Removing that view for an already exact 16-byte input changed the measured median from 335 ns to 71 ns (baseline 237 ns); plain encode changed from 245 ns to 72 ns. Keep strict portable decoding; native permissiveness does not match the contract.
 - Rotation now decodes text once and creates mismatch errors only after all keys fail; callbacks still receive fresh ciphertext and preserve primary causes. Combined with native formatting, previous-key median changed from 4438 to 485 ns on Node and 660 to 355 ns on Bun. Latest Node targeted mask/core/boundary suite passes 44 cases; latest Bun shared boundary/wire suite passes. Final repeated comparison remains pending.

@@ -10,10 +10,10 @@ export interface UuidV7GeneratorOptions {
   readonly fillRandom: (bytes: Uint8Array<ArrayBuffer>) => void;
 }
 
-function writeTimestamp(bytes: Uint8Array, ms: number) {
+function writeTimestamp(bytes: Uint8Array, ms: number, offset: number) {
   let value = Math.trunc(ms);
   for (let i = 5; i >= 0; i -= 1) {
-    bytes[i] = value & 0xff;
+    bytes[offset + i] = value & 0xff;
     value = Math.floor(value / 256);
   }
 }
@@ -27,13 +27,13 @@ function writeTimestamp(bytes: Uint8Array, ms: number) {
  * increment-and-write step alone: 9.99M ops/s (Bun) and 11.8M (Node) as a BigInt, against 252M
  * and 149M in this form. The bit layout is unchanged, so the ids are identical either way.
  */
-function writeCounter(bytes: Uint8Array, hi: number, lo: number) {
-  bytes[6] = 0x70 | ((hi >>> 6) & 0x0f);
-  bytes[7] = (((hi & 0x3f) << 2) | (lo >>> 30)) & 0xff;
-  bytes[8] = 0x80 | ((lo >>> 24) & 0x3f);
-  bytes[9] = (lo >>> 16) & 0xff;
-  bytes[10] = (lo >>> 8) & 0xff;
-  bytes[11] = lo & 0xff;
+function writeCounter(bytes: Uint8Array, hi: number, lo: number, offset: number) {
+  bytes[offset + 6] = 0x70 | ((hi >>> 6) & 0x0f);
+  bytes[offset + 7] = (((hi & 0x3f) << 2) | (lo >>> 30)) & 0xff;
+  bytes[offset + 8] = 0x80 | ((lo >>> 24) & 0x3f);
+  bytes[offset + 9] = (lo >>> 16) & 0xff;
+  bytes[offset + 10] = (lo >>> 8) & 0xff;
+  bytes[offset + 11] = lo & 0xff;
 }
 
 /** The 48 bits RFC 9562 gives the timestamp; beyond it the value cannot be represented. */
@@ -189,16 +189,11 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
       sequenceHi = counterHi;
       sequenceLo = counterLo;
     }
-    // Every one of the sixteen bytes is written through the same view. It used to be split —
-    // `subarray` for the first twelve, `target[offset + n]` for the random tail — and the two
-    // disagree about a non-integer offset: `subarray` truncates it, direct indexing is a silent
-    // no-op. That produced an id whose random tail was whatever the caller's buffer already held,
-    // returned as success. `checkRange` now refuses such an offset, so the split can no longer
-    // diverge; writing through one view is what keeps it that way.
-    const uuid = target.subarray(offset, offset + 16);
-    writeTimestamp(uuid, ms);
-    writeCounter(uuid, sequenceHi, sequenceLo);
-    for (let i = 12; i < 16; i += 1) uuid[i] = random[i] as number;
+    // The checked offset applies to every store. Write directly into the target so callers
+    // reusing an output buffer also avoid allocating a temporary typed-array view.
+    writeTimestamp(target, ms, offset);
+    writeCounter(target, sequenceHi, sequenceLo, offset);
+    for (let i = 12; i < 16; i += 1) target[offset + i] = random[i] as number;
     return target;
   }
 
