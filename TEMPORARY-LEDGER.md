@@ -1,90 +1,60 @@
-Implement the approved audit repairs, prove each changed behavior, and keep dependency work on hold until Art releases it.
+Finish the approved audit repairs without changing publish-clean until Art releases that package.
 
 # Working ledger
 
-This temporary SOP owns the implementation checklist and evidence. Keep unfinished items here until completed; durable contracts belong in their existing project owners.
+This temporary SOP owns remaining tasks and evidence. Durable contracts stay in README, docs/design.md, project guidance, and source comments.
 
 ## Authority and boundaries
 
-- Baseline: `5cea76decbe953ac0cb64f7daf1cc344dc65a941`; implement the full approved audit plan.
-- Preserve the masked wire format, timestamp bound, 16-bit check, raw sentinels, first-match key rotation, optional brands, public default schema, plain-only base32hex, and zero runtime dependencies.
-- Do not add an intra-millisecond ordering guarantee, old aliases, compatibility decoders, or new cipher.
-- Freshness windows must be finite and nonnegative; zero and fractions remain valid, with inclusive symmetric boundaries.
-- Art has reserved `publish-clean` for another agent. Do not change that repository or its dependency integration until Art explicitly releases it. The delegated extension task was interrupted immediately after this instruction; await its no-change/readback report.
-- No publication or tag is authorized by this ledger. Prepare and verify changes before any necessary release decision.
-- WIP limit: one implementation unit. Add the regression first, observe failure, fix, run targeted checks, review the whole unit, and commit only owned paths. Art’s latest instruction reserves full checks for full-work completion and overrides the earlier check-before-every-commit rule.
+- Baseline: `5cea76decbe953ac0cb64f7daf1cc344dc65a941`; Art approved implementation of the full audit plan.
+- Preserve the masked wire format, timestamp bound, 16-bit check, raw sentinels, first-match explicit key rotation, optional brands, public default schema, plain-only base32hex, and zero runtime dependencies.
+- Do not add intra-millisecond ordering, old aliases, compatibility decoders, or a new cipher.
+- Art ruled freshness windows finite and nonnegative; zero/fractions and inclusive symmetric boundaries remain valid.
+- Art reserved publish-clean for another agent. Its delegated task was interrupted. That agent reports only read-only discovery, no changes, no commits, and no background processes. Its initial checkout contained foreign release-workflow/script/test edits; preserve them when work resumes.
+- No publication or tag is authorized by this ledger. Prepare concrete verified changes before any necessary release decision.
+- WIP: one implementation unit. Use regressions that expose the failure, targeted checks for finished units, explicit-path Conventional Commits, and full checks at integrated completion. Art's latest directive overrides the older full-check-before-every-commit instruction.
+- All HLD changes require Art's ruling. Internal implementation choices derive from accepted behavior.
+- Feedback ceilings: target/warn/error 0.3/1/5 seconds per case, 3/20/30 seconds per fast lane, 1/10/20 seconds per hook, 30/240/300 seconds per routine complete lane. Timers bound hangs, never establish readiness.
 
-## Ordered implementation checklist
+## Completed units
 
-### A. Identity and configuration — complete
+- [x] A — Preserve identity: both masked encoders recognize raw sentinels and reject ciphertext collisions; generated output carries PublicUuidV7Slug. Protect sentinel metadata and schema witnesses, preserve callback causes, capture scalar options, and reject inherited alphabet names. Original regressions failed before repair; Node/Bun contract and fixed wire-vector cases pass.
+- [x] B — Repair runtime/freshness boundaries: honor injected generators in both alphabets, validate omitted-buffer offsets and explicit timestamps, preserve entropy/clock causes, share v4 implementation, narrow Bun capability types, and retain finite fractional freshness semantics. Shared Node/Bun regressions pass.
+- [x] C — Validate distribution: inspect supplied archives without repacking; execute extracted package-name consumers on Node/Bun/Deno/Chromium; compile emitted declarations with TypeScript 5.7; check module graphs and all dependency declarations. Reject malformed archives, isolate bundle scratch directories, remove README regex gates, use Oxc declaration emission, and derive the CI floor from the manifest. The .mjs/.cjs cases fail when the narrower module selection is restored.
+- [x] D — Repair ungated release steps: share Markdown AST note extraction between local versioning and CI, validate tags/notes before upload, reuse credential-free runtime/browser checks on tags, and compare retained archives with registry SHA-512 integrity before attestation/attachment. Existing GitHub release notes are updated. Real subprocess/local HTTP cases cover first publication, retries, missing notes, tag mismatch, uploader failure, outage, and altered archives. Exact pre-upload archive wiring remains below.
+- [x] E — Review measurements/docs: reject incomplete benchmark children while preserving partial results; add real conversions/freshness/rotation measurements and a hung-child bound. Root reviewed both agents' changes, corrected remaining unsupported source claims, and independently ran their regressions and real Bun/Node smoke. Public guidance retains operative Art rulings and requires a configured quick-start seed.
 
-Implemented sentinel-aware byte encoding, collision rejection, public sentinel return type, protected schema witness/cause handling, scalar capture, immutable sentinel metadata, and own-key alphabet lookup. All original eight regressions failed before repair. Targeted Node contract/core/mask tests and Bun contract/golden tests pass; typecheck and lint pass. No wire-format changes. The commit records the final unit diff.
+## Performance work — authorized by Art while publication is held
 
-### B. Runtime and freshness contracts — complete
+Profile and optimize the current package on latest Node and Bun without changing its public contracts or wire format.
 
-Custom generators now govern both alphabets; absent output buffers use effective-capacity checks; explicit invalid instants cannot become clock requests. Entropy and clock exceptions retain typed causes; v4 implementation is shared instead of duplicated. Bun hooks have narrow branded signatures. Freshness reads once, rejects invalid finite-window/clock settings, and preserves inclusive fractional bounds. Seven Bun regressions failed before repair; targeted Node runtime/buffer/generator tests and Bun boundary cases pass. Full-tree typecheck temporarily sees the independent benchmark task’s in-progress edits; scoped checks govern this unit until that task finishes.
+- [ ] Establish exact latest runtime versions and executable identities; preserve project pins and use isolated tools.
+- [ ] Capture a baseline through package imports with varying inputs, repeated warmed samples, observable output, and no competing benchmark processes.
+- [ ] Profile CPU attribution, allocations/GC, retained heap, cold import/construction, caller-owned buffers, entropy refills, and burst/event-loop cost.
+- [ ] Cover v4/v7 native and portable generation, explicit timestamps, both plain alphabets, masking, sentinels, key rotation, freshness, malformed inputs, and custom callbacks.
+- [ ] Rank measured costs; compare removal, shared work, lookup tables, runtime primitives, specialization, buffer ownership, and algorithm-preserving rewrites before implementation. Reject speculative complexity or changed guarantees.
+- [ ] Implement each supported improvement, preserve independent vectors and boundary regressions, measure both runtimes against the same baseline, and commit verified units.
+- [ ] Publish reproducible profiling commands, results, rejected alternatives, resource trade-offs, limits, and any decisions needing Art in the relevant benchmark documentation.
+- [ ] Run final runtime/browser/artifact checks, audit the entire performance diff, and leave a clean owned tree; retain all held publication tasks.
 
-### C. Distribution and verification — active
+## Remaining dependency work — held by Art
 
-- [x] Refactor archive checker into inspection of a supplied final archive; keep current pack entry operational until dependency extension is available.
-- [x] Execute extracted package-name imports under Node and Bun; cover custom generators, sentinels, conversions, brands, and buffer identity.
-- [x] Execute packed browser/default exports in Chromium and Deno; use a Node-floor-compatible JavaScript consumer harness.
-- [x] Reject all runtime dependency declarations; inspect actual module graphs rather than import regex blacklists.
-- [x] Couple runtime CI floor to manifest; typecheck browser config.
-- [x] Remove README regex gates; existing executable API cases remain. Packed consumer examples are tracked above.
-- [x] Isolate tree-shaking temporary directories and cleanup; all three bundle cases pass.
-- [x] Use Oxc declaration emission with explicit codec/alphabet types; build and semantic typecheck pass without the experimental TypeScript warning.
-- [x] Test emitted declarations with a TypeScript 5.7 consumer.
-- [x] Review the archive-checker diff, verify rejection guards and CI parsing, then commit. Runtime workflow parsing and its executed floor-selection step return Node 20 from the manifest.
+- [ ] Wait for Art's explicit release of publish-clean; inspect its then-current guidance/tree and preserve concurrent changes.
+- [ ] Implement optional nonempty publish-clean.validateArtifact argv: append the absolute final tarball path, run in package cwd without a shell, in all modes, before retention/upload.
+- [ ] Reject invalid configuration, launch/nonzero failure, or archive mutation; keep successful validation quiet and failed diagnostics actionable. Reuse existing infrastructure; no runtime dependencies or repacking.
+- [ ] Add subprocess regressions for ordering, upload prevention, unchanged bytes, hostile arguments, and cleanup; update the dependency's existing help/docs, run its required check, review, and commit scoped changes.
+- [ ] Independently audit the dependency result and arrange its reviewed registry release before adopting a normal npm dependency. No Git/local pin; publication needs its own authorization.
+- [ ] Configure uuid-slug to validate and publish the same archive in one packing invocation; remove the separate workflow artifact pack. Prove no recursive packing and exact inspected/uploaded/attested bytes; preserve tag-derived dist-tag.
 
-Extracted Node/Bun/Deno/Chromium consumers pass; TypeScript 5.7 compiles emitted declarations with brand-negative cases. Fifteen malformed-archive cases reject dependencies, unused-module imports, wildcard exports, development files, and machine paths. Browser package self-reference passes through Vite. Reverting module selection to only .js/.ts makes both .mjs/.cjs rejection cases fail; all supported module extensions are inspected.
+## Acceptance
 
-### D. Release gates
+- [x] Audit the current accumulated diff against baseline, including agent-owned paths, for contract changes, error propagation, runtime branches, retained comments, artifact conditions, retry identity, and unnecessary checks. The benchmark agent's initial nonexistent codec methods were caught by root typecheck and corrected. Root's final module-extension audit caught and fixed a gap in archive inspection.
+- [x] Verify current uuid-slug changes: bun run check exited zero in 2.31 seconds, including 205 Vitest and 152 Bun cases, build, formatting, type-aware lint, semantic types, smoke benchmark, and archive validation. Packed browser/Deno and Vite browser tests pass. Actionlint passes. Node 20.20.2, 22.23.2, and 26.8.1 each pass all 205 Node cases; the same retained archive passes consumer validation under Node 20 and 26. TypeScript 5.7 tests positive and negative emitted-brand contracts.
+- [ ] After dependency integration, rerun the relevant process regressions and complete local/runtime/browser/declaration checks; audit the final total diff and verify a clean owned tree before claiming the full plan complete.
 
-- [x] Share structured Markdown release-note extraction between local validation and CI; ignore headings in fences, reject missing/empty sections, preserve original section bytes.
-- [x] Validate tag/manifest and notes before any upload; test failures through executable process seams.
-- [x] Require reusable credential-free runtime/browser checks on tagged revisions; preserve trusted workflow filename and permission separation.
-- [x] Compare archive to registry integrity before existing-version repair/attestation; reject mismatches; update existing GitHub release notes.
-- [ ] Wire exact validated archive publication after dependency hold is released; preserve tag-derived dist-tag.
-- [x] Verify and commit the ungated release repairs: 10 release cases, semantic typecheck, type-aware lint, actionlint, and diff whitespace pass. Exact archive hook remains under F.
+## Limits and proposals
 
-Release-note AST tests preserve CRLF/fenced content and reject missing/empty/duplicate sections. Real child-process probes cover mismatched tags, first publication versus retries, upload failure, and digest mismatch. The registry fixture distinguishes 404 from outages; notes become attachable only after byte integrity passes. No live upload was performed.
-
-### E. Measurements and consumer documentation — complete
-
-- [x] Reject failed, empty, malformed, duplicate, inconsistent and invalid benchmark output per child; preserve valid partial output.
-- [x] Benchmark plain/masked conversions, freshness and both key-rotation paths; verify the older-key fixture actually reaches that key.
-- [x] Require a configured quick-start seed; distinguish candidate lookup, freshness, obfuscation, byte ownership and injected entropy.
-- [x] Condense project guidance while retaining operative Art rulings. Root compared it with the original contract list.
-- [x] Remove unsupported crypto-strength and stale source-comment claims; preserve wire-format reasons.
-- [x] Independently re-run benchmark regressions (including a hung child) and real Bun/Node smoke; both runtime boundary suites and semantic typecheck pass. The two-sample matrix checks transport only, not performance.
-- [x] Build before parallel local checks so packed declaration fixtures also work from a clean checkout.
-
-### F. Dependency extension — held by Art
-
-- [ ] Wait for explicit release of `publish-clean`; inspect its then-current tree and avoid the other agent's changes.
-- [ ] Implement optional nonempty `publish-clean.validateArtifact` argv setting: append absolute final tarball path, package cwd, no shell, all modes, before retention/upload.
-- [ ] Fail invalid config, launch/nonzero, or archive mutation; quiet guard success and useful failure diagnostics; reuse existing infrastructure with no runtime dependencies/repack.
-- [ ] Add subprocess tests for validation order, upload prevention, unchanged bytes, hostile arguments, and cleanup; update help/docs; run package check and commit scoped changes.
-- [ ] Independently audit dependency result and arrange its reviewed registry release before adopting a normal registry dependency; no Git/local pin.
-- [ ] Switch uuid-slug to configured validator with one packing invocation; prove no recursive pack and exact inspected/uploaded/attested bytes.
-
-### G. Final acceptance
-
-- [ ] Reconcile every item above with source, tests, and evidence; retain any held work explicitly.
-- [ ] Run required local check, browser/Deno, supported Node matrix, declaration floor, and publication process regressions.
-- [ ] Audit full accumulated diff against baseline for accidental API/wire changes, unnecessary code, missing guards, stale docs, and foreign edits.
-- [ ] Confirm granular commits and clean owned tree; report actual limits without claiming DO-178C or cryptographic assurance.
-
-## Evidence and progress
-
-- Audit baseline: existing check passed 190 Vitest and 88 Bun tests; Chromium passed two tests and Deno smoke passed. Independent probes nevertheless reproduced identity, runtime, freshness, schema, and benchmark failures described above.
-- Distribution work is active. Benchmark fixes are delegated as an independent bounded task; root must review its diff and evidence before accepting it. No dependency work is active.
-- Art requires fast feedback: target/warn/error 0.3/1/5 seconds per case, 3/20/30 seconds per fast lane, 1/10/20 seconds per hook, and 30/240/300 seconds per complete routine lane. Timers bound hangs, never establish readiness.
-- All HLD changes require Art’s ruling; internal implementation choices derive from the already accepted behavior. No additional end-user scope has been proposed.
-
-## Open issues and proposals
-
-- Dependency extension and final publication integration are held by Art, not omitted.
-- Oxc required explicit codec, alphabet-map, and alphabet-constant annotations; the completed build and semantic typecheck pass. Targeted core (30) and tree-shaking (3) cases pass.
-- Publication remains a separate reviewed action; registry dependency availability must be checked when the dependency hold is released.
+- The plan is incomplete while the dependency hold remains. Current release.yml still checks a separate pack; it does not yet prove that the exact uploaded archive passed the new validator before upload.
+- No live publication, remote CI run, DO-178C assessment, or cryptographic assurance was performed. Local workflow lint and process tests do not prove hosted credential behavior.
+- The two-sample benchmark matrix verified transport and branch selection only, not throughput or randomness quality.
+- No additional out-of-scope proposal was established as necessary during implementation.
