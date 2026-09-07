@@ -1,39 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Runs the speed benchmark and the entropy audit under every available runtime and prints them
- * side by side, because a per-runtime figure is not a detail of these measurements — it is often
- * the finding.
- *
- * Two reasons a row moves between engines, and only the second is obvious. Same code, different
- * JIT: a pure-JavaScript candidate can differ severalfold between Bun and Node with nothing changed
- * — read the current spread off the table this prints, never off a figure quoted in prose here,
- * which drifts with the machine and the runtime version. And DIFFERENT code: a package with
- * conditional exports, or one that feature-detects
- * `node:crypto` against Web Crypto, runs a different implementation on each engine — so its
- * entropy SOURCE can differ too, which is why the audit is in this matrix and not just the
- * benchmark. Native availability differs as well: `Bun.randomUUIDv7` exists only on Bun, and
- * `crypto.randomUUIDv7` landed in Node v26.6.0, so it is absent on every earlier line.
- *
- * Node cannot execute these files directly — the repository's TypeScript uses extensionless
- * relative imports, which Node's ESM resolver rejects — so each is bundled for it first with the
- * toolchain already in the repo rather than by adding a loader dependency. The bundle is a real
- * measurement caveat and not a free one: inlining across module boundaries can flatter a row that
- * a consumer would import unbundled.
- *
- * Point it at extra runtimes with `UUID_SLUG_BENCH_RUNTIMES`, a colon-separated list of
- * executables — for example a freshly downloaded Node that has native v7 while the installed one
- * does not.
+ * Compare speed and sampled randomness across runtimes without overlapping their workloads.
+ * Node needs a bundle because its ESM resolver rejects extensionless TypeScript imports;
+ * bundler inlining is a measurement caveat. Each child must identify its runtime and emit
+ * valid records. Failed children leave partial results visible and fail the overall command.
  */
-import { mkdirSync } from "node:fs";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const reports = join(here, "reports");
-mkdirSync(reports, { recursive: true });
-
-const smoke = process.argv.includes("--smoke");
 const extras = (process.env.UUID_SLUG_BENCH_RUNTIMES ?? "").split(":").filter(Boolean);
 
 interface Runtime {
@@ -53,17 +31,16 @@ const runtimes: readonly Runtime[] = [
   })),
 ];
 
-async function bundle(entry: string): Promise<string> {
+async function bundle(entry: string, reports: string): Promise<string> {
   const outfile = join(reports, `${entry}.node.mjs`);
-  const built = Bun.spawnSync([
-    "bun",
-    "build",
-    join(here, `${entry}.ts`),
-    "--target=node",
-    `--outfile=${outfile}`,
-  ]);
-  if (built.exitCode !== 0)
-    throw new Error(`bundling ${entry}.ts for Node failed: ${built.stderr.toString()}`);
+  const built = await Bun.build({
+    entrypoints: [join(here, `${entry}.ts`)],
+    target: "node",
+    outdir: reports,
+    naming: `${entry}.node.mjs`,
+  });
+  if (!built.success)
+    throw new Error(`bundling ${entry}.ts for Node failed: ${built.logs.map(String).join("\n")}`);
   return outfile;
 }
 
@@ -73,91 +50,213 @@ async function bundle(entry: string): Promise<string> {
  */
 async function run(
   runtime: Runtime,
-  entry: string,
-  bundled: string,
-): Promise<{ records: Record<string, unknown>[]; version: string } | null> {
-  const target = runtime.bundled ? bundled : join(here, `${entry}.ts`);
+  entry: "run" | "entropy",
+  target: string,
+  smoke: boolean,
+): Promise<{ records: Record<string, unknown>[]; version: string; failed: boolean }> {
   const argv = [...runtime.command, target, ...(smoke ? ["--smoke"] : [])];
-  // A quarter of the standalone audit's sample size, because this runs it once per runtime and a
-  // multi-minute matrix is a broken feedback loop. Nothing it measures needs the larger set: the
-  // counter scan reads consecutive same-millisecond pairs, of which 50,000 values yield tens of
-  // thousands, and a generator that repeats itself does so long before then. Run `bench:entropy`
-  // for the full pass.
-  const result = Bun.spawnSync(argv, {
-    stderr: "pipe",
-    env: { ...process.env, UUID_SLUG_ENTROPY_SAMPLES: "50000" },
-  });
-  if (result.exitCode !== 0) {
-    console.error(`${runtime.label}: ${entry} exited ${result.exitCode}\n${String(result.stderr)}`);
-    return null;
+  // Bound the default matrix sample without overriding an explicit caller-selected sample.
+  const records: Record<string, unknown>[] = [];
+  let version = "";
+  let failed = false;
+  const fail = (message: string) => {
+    failed = true;
+    console.error(`${runtime.label}: ${entry}: ${message}`);
+  };
+  try {
+    const child = Bun.spawn(argv, {
+      stdout: "pipe",
+      stderr: "pipe",
+      env: { UUID_SLUG_ENTROPY_SAMPLES: smoke ? "20000" : "50000", ...process.env },
+    });
+    const [stdout, stderr, status] = await Promise.all([
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+      child.exited,
+    ]);
+    if (status !== 0) fail(`exited ${status}\n${stderr}`);
+    const names = new Set<string>();
+    for (const [index, line] of stdout.split("\n").entries()) {
+      if (!line.trim()) continue;
+      try {
+        const record: unknown = JSON.parse(line);
+        if (!validRecord(record, entry)) throw new Error("invalid measurement fields");
+        const reported = record.runtime as string;
+        const name = record[entry === "run" ? "name" : "candidate"] as string;
+        if (version && reported !== version) throw new Error("runtime changes between records");
+        if (names.has(name)) throw new Error(`duplicate measurement ${name}`);
+        version = reported;
+        names.add(name);
+        records.push(record);
+      } catch (cause) {
+        fail(`line ${index + 1}: ${String(cause)}`);
+      }
+    }
+  } catch (cause) {
+    fail(`could not run ${argv[0]}: ${String(cause)}`);
   }
-  const records = result.stdout
-    .toString()
-    .split("\n")
-    .filter(Boolean)
-    .map((line) => JSON.parse(line) as Record<string, unknown>);
-  // Each record's `runtime` is whatever the child process reported, so it is `unknown` here.
-  // Coercing it with `String()` turned a non-string into the literal "[object Object]" in the
-  // report rather than falling back to the label, which is the bug this narrowing removes.
-  const reported = records[0]?.runtime;
-  const version = typeof reported === "string" ? reported : runtime.label;
-  return { records, version };
+  if (records.length === 0) fail("no valid measurements");
+  return { records, version: version || runtime.label, failed };
 }
 
-const speedBundle = await bundle("run");
-const entropyBundle = await bundle("entropy");
-
-const speed = new Map<string, Map<string, number>>();
-const entropy: { version: string; records: Record<string, unknown>[] }[] = [];
-const versions: string[] = [];
-
-for (const runtime of runtimes) {
-  const speedRun = await run(runtime, "run", speedBundle);
-  if (!speedRun) continue;
-  versions.push(speedRun.version);
-  for (const record of speedRun.records) {
-    const name = String(record.name);
-    const row = speed.get(name) ?? new Map<string, number>();
-    row.set(speedRun.version, Number(record.opsPerSecond));
-    speed.set(name, row);
-  }
-  const entropyRun = await run(runtime, "entropy", entropyBundle);
-  if (entropyRun) entropy.push({ version: entropyRun.version, records: entropyRun.records });
+/** Reject broken report transport, not poor performance or weak randomness. */
+function validRecord(value: unknown, entry: "run" | "entropy"): value is Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  if (typeof record.runtime !== "string" || !record.runtime.trim()) return false;
+  const name = record[entry === "run" ? "name" : "candidate"];
+  if (typeof name !== "string" || !name.trim()) return false;
+  const fields =
+    entry === "run"
+      ? ["opsPerSecond", "elapsedMs", "iterations"]
+      : [
+          "samples",
+          "distinctFields",
+          "sameTickPairs",
+          "orderedWithinTick",
+          "peakDrawsPerTick",
+          "counterBits",
+          "counterHolds",
+          "minOnesRatio",
+          "maxOnesRatio",
+        ];
+  if (
+    !fields.every(
+      (field) =>
+        typeof record[field] === "number" && Number.isFinite(record[field]) && record[field] >= 0,
+    )
+  )
+    return false;
+  if (entry === "run")
+    return (
+      (record.elapsedMs as number) > 0 &&
+      Number.isSafeInteger(record.iterations) &&
+      (record.iterations as number) > 0
+    );
+  return (
+    Number.isSafeInteger(record.samples) &&
+    (record.samples as number) > 0 &&
+    [
+      "distinctFields",
+      "sameTickPairs",
+      "orderedWithinTick",
+      "peakDrawsPerTick",
+      "counterBits",
+    ].every((field) => Number.isSafeInteger(record[field])) &&
+    (record.distinctFields as number) <= (record.samples as number) &&
+    (record.peakDrawsPerTick as number) <= (record.samples as number) &&
+    (record.sameTickPairs as number) < (record.samples as number) &&
+    (record.orderedWithinTick as number) <= (record.sameTickPairs as number) &&
+    (record.counterBits as number) <= 74 &&
+    (record.counterHolds as number) <= 1 &&
+    (record.minOnesRatio as number) <= (record.maxOnesRatio as number) &&
+    (record.maxOnesRatio as number) <= 1 &&
+    Array.isArray(record.sources) &&
+    record.sources.every((source) => typeof source === "string")
+  );
 }
 
-const thousands = (value: number | undefined) =>
+/** Run every requested member; failed members must not erase successful measurements. */
+export async function runMatrix(
+  selected: readonly Runtime[],
+  targets: Readonly<Record<"run" | "entropy", string>>,
+  smoke = false,
+): Promise<number> {
+  const speed = new Map<string, Map<number, number>>();
+  const entropy: { version: string; records: Record<string, unknown>[] }[] = [];
+  const versions: string[] = [];
+  let failed = false;
+
+  for (const runtime of selected) {
+    const target = (entry: "run" | "entropy") =>
+      runtime.bundled ? targets[entry] : join(here, `${entry}.ts`);
+    const speedRun = await run(runtime, "run", target("run"), smoke);
+    failed ||= speedRun.failed;
+    // Index by the requested member, since distinct executables can report the same version.
+    const column = versions.length;
+    versions.push(`${runtime.label} (${speedRun.version})`);
+    for (const record of speedRun.records) {
+      const name = String(record.name);
+      const row = speed.get(name) ?? new Map<number, number>();
+      row.set(column, record.opsPerSecond as number);
+      speed.set(name, row);
+    }
+    const entropyRun = await run(runtime, "entropy", target("entropy"), smoke);
+    failed ||= entropyRun.failed;
+    if (
+      speedRun.records.length &&
+      entropyRun.records.length &&
+      speedRun.version !== entropyRun.version
+    ) {
+      console.error(`${runtime.label}: runtime changes between speed and entropy reports`);
+      failed = true;
+    }
+    if (entropyRun.records.length > 0)
+      entropy.push({
+        version: `${runtime.label} (${entropyRun.version})`,
+        records: entropyRun.records,
+      });
+  }
+
+  const operationWidth = Math.max(28, ...Array.from(speed.keys(), (name) => name.length + 2));
+  const columnWidth = Math.max(16, ...versions.map((version) => version.length + 2));
+  console.log(`\n## Throughput, ops/s\n`);
+  console.log(
+    `${"operation".padEnd(operationWidth)}${versions.map((v) => v.padStart(columnWidth)).join("")}`,
+  );
+  for (const [name, row] of speed)
+    console.log(
+      name.padEnd(operationWidth) +
+        versions.map((_, index) => millions(row.get(index)).padStart(columnWidth)).join(""),
+    );
+
+  for (const { version, records } of entropy) {
+    console.log(`\n## Randomness — ${version}\n`);
+    console.log(
+      `${"candidate".padEnd(16)}${"entropy source".padEnd(25)}${"distinct".padStart(9)}${"in-tick".padStart(9)}${"peak/ms".padStart(9)}${"counter".padStart(16)}${"P(1) range".padStart(15)}`,
+    );
+    for (const r of records) {
+      const sources = r.sources as string[];
+      const sameTickPairs = r.sameTickPairs as number;
+      console.log(
+        String(r.candidate).padEnd(16) +
+          (sources.length > 0 ? sources.join(",") : "unobserved").slice(0, 24).padEnd(25) +
+          String(r.distinctFields).padStart(9) +
+          // Ordering belongs beside the counter because the counter is what produces it: a
+          // generator with no counter re-randomises inside the millisecond and cannot be sorted
+          // within one, however good its bits are. Denominator is the same-millisecond pairs only —
+          // see `bench/entropy.ts`, where counting all pairs measured the clock instead.
+          (sameTickPairs === 0
+            ? "n/a"
+            : `${(((r.orderedWithinTick as number) / sameTickPairs) * 100).toFixed(2)}%`
+          ).padStart(9) +
+          String(r.peakDrawsPerTick).padStart(9) +
+          `${String(r.counterBits)}b @ ${((r.counterHolds as number) * 100).toFixed(2)}%`.padStart(
+            16,
+          ) +
+          `${String(r.minOnesRatio)}-${String(r.maxOnesRatio)}`.padStart(15),
+      );
+    }
+  }
+  return failed ? 1 : 0;
+}
+
+const millions = (value: number | undefined) =>
   value === undefined ? "—" : `${(value / 1_000_000).toFixed(2)}M`;
 
-console.log(`\n## Throughput, ops/s\n`);
-console.log(`${"operation".padEnd(28)}${versions.map((v) => v.padStart(16)).join("")}`);
-for (const [name, row] of speed)
-  console.log(name.padEnd(28) + versions.map((v) => thousands(row.get(v)).padStart(16)).join(""));
-
-for (const { version, records } of entropy) {
-  console.log(`\n## Randomness — ${version}\n`);
-  console.log(
-    `${"candidate".padEnd(16)}${"entropy source".padEnd(25)}${"distinct".padStart(9)}${"in-tick".padStart(9)}${"peak/ms".padStart(9)}${"counter".padStart(16)}${"P(1) range".padStart(15)}`,
-  );
-  for (const r of records) {
-    const sources = r.sources as string[];
-    const sameTickPairs = r.sameTickPairs as number;
-    console.log(
-      String(r.candidate).padEnd(16) +
-        (sources.length > 0 ? sources.join(",") : "unobserved").slice(0, 24).padEnd(25) +
-        String(r.distinctFields).padStart(9) +
-        // Ordering belongs beside the counter because the counter is what produces it: a
-        // generator with no counter re-randomises inside the millisecond and cannot be sorted
-        // within one, however good its bits are. Denominator is the same-millisecond pairs only —
-        // see `bench/entropy.ts`, where counting all pairs measured the clock instead.
-        (sameTickPairs === 0
-          ? "n/a"
-          : `${(((r.orderedWithinTick as number) / sameTickPairs) * 100).toFixed(2)}%`
-        ).padStart(9) +
-        String(r.peakDrawsPerTick).padStart(9) +
-        `${String(r.counterBits)}b @ ${((r.counterHolds as number) * 100).toFixed(2)}%`.padStart(
-          16,
-        ) +
-        `${String(r.minOnesRatio)}-${String(r.maxOnesRatio)}`.padStart(15),
+if (import.meta.main) {
+  const reports = await mkdtemp(join(tmpdir(), "uuid-slug-bench-"));
+  try {
+    const [speedTarget, entropyTarget] = await Promise.all([
+      bundle("run", reports),
+      bundle("entropy", reports),
+    ]);
+    process.exitCode = await runMatrix(
+      runtimes,
+      { run: speedTarget, entropy: entropyTarget },
+      process.argv.includes("--smoke"),
     );
+  } finally {
+    await rm(reports, { recursive: true, force: true });
   }
 }

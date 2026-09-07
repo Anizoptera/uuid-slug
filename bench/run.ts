@@ -1,24 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Throughput of each UUID implementation, in one process so every candidate meets the same
- * JIT, allocator and clock.
- *
- * Speed only. The uniqueness stress that used to live here was deleted on the argument that a
- * 74-bit field cannot repeat at that sample size, so the check could never fail. The argument
- * was wrong, and it was wrong in the way that matters: it reasoned about a HEALTHY generator's
- * birthday bound, which says nothing about a broken one. Measured over 200,000 values, a
- * constant seed yields ONE distinct field, a pool of pre-drawn values yields the pool, and a
- * textbook LCG yields 5,596 — the gross failures a collision count catches instantly and every
- * per-value conformance check passes straight through. It lives in `entropy.ts` as `distinct`,
- * beside the counter measurement, so both run over one sample set instead of two.
+ * Measure each UUID implementation and consumer operation under the same runtime, allocator
+ * and clock. Generation, conversion and byte-returning paths have separate loops so the
+ * benchmark does not charge unrelated work to an operation. Randomness measurements live
+ * in entropy.ts and impose no performance thresholds.
  */
 import { performance } from "node:perf_hooks";
 
 import { candidates, codec, nativeVariants, runtimeName } from "./candidates";
+import { errorOrThrow as unwrap } from "../src/errors";
+import { createUuidSlugCodec, slugToUuid, uuidToSlug, validateUuidV7Fresh } from "../src/index";
 
 const smoke = process.argv.includes("--smoke");
 const iterations = Number(process.env.UUID_SLUG_BENCH_ITERATIONS ?? (smoke ? 10_000 : 1_000_000));
+if (!Number.isSafeInteger(iterations) || iterations <= 0)
+  throw new Error("UUID_SLUG_BENCH_ITERATIONS must be a positive safe integer");
 
 const report = (name: string, note: string, elapsed: number, blackhole: number) =>
   console.log(
@@ -63,6 +60,41 @@ for (const candidate of candidates) {
 
 measure("package.v7.slug", () => codec.uuidV7Slug());
 measure("package.v7.maskedSlug", () => codec.uuidV7MaskedSlug());
+
+// Fixed inputs exclude generation and key derivation from conversion costs. Error discrimination
+// stays inside the timed call because callers of these APIs must handle the returned error.
+const input = "0191c2bb-6d00-7123-8123-123456789abc";
+for (const alphabet of ["base64url", "base32hex"] as const) {
+  const slug = unwrap(uuidToSlug(input, alphabet));
+  measure(`package.${alphabet}.encode`, () => unwrap(uuidToSlug(input, alphabet)));
+  measure(`package.${alphabet}.decode`, () => unwrap(slugToUuid(slug)));
+}
+const timestamp = Number.parseInt(input.slice(0, 13).replace("-", ""), 16);
+const freshness = { now: () => timestamp };
+measure("package.v7.fresh", () => unwrap(validateUuidV7Fresh(input, freshness)));
+const current = { id: "current", seed: "benchmark-current-key" };
+const previous = { id: "previous", seed: "benchmark-previous-key" };
+const masked = createUuidSlugCodec({ mask: current });
+const rotated = createUuidSlugCodec({ mask: current, previousMasks: [previous] });
+const maskedSlug = unwrap(masked.uuidV7ToMaskedSlug(input));
+const previousSlug = unwrap(createUuidSlugCodec({ mask: previous }).uuidV7ToMaskedSlug(input));
+// A short mask check can accept another key's output; prove this fixture reaches the older key.
+if (
+  !(masked.maskedSlugToUuidV7(previousSlug) instanceof Error) ||
+  unwrap(rotated.maskedSlugToUuidV7(previousSlug)) !== input
+)
+  throw new Error(
+    "Rotation benchmark fixture must reject the current key and resolve through the previous key",
+  );
+measure("package.masked.encode", () => unwrap(masked.uuidV7ToMaskedSlug(input)));
+measure("package.masked.decode", () => unwrap(masked.maskedSlugToUuidV7(maskedSlug)));
+measure("package.rotation.current", () => unwrap(rotated.maskedSlugToUuidV7(maskedSlug)));
+measure("package.rotation.previous", () => unwrap(rotated.maskedSlugToUuidV7(previousSlug)));
+measure("package.masked.invalid", () => {
+  const result = masked.maskedSlugToUuidV7("invalid");
+  if (!(result instanceof Error)) throw new Error("invalid input was accepted");
+  return result.code;
+});
 // Timed by the byte loop, so it stands beside `bun.v7.buffer` on equal terms. The result check
 // is inside the timed section on purpose: `uuidV7Bytes` reports failure by returning an Error
 // rather than throwing, so every real caller pays this branch and a row that skipped it would be

@@ -1,52 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Measures what every UUIDv7 implementation does with randomness, so a choice between them
- * rests on observation rather than on each package's description of itself.
+ * Report observed randomness behavior without treating sample statistics as security guarantees.
+ * Distinct fields expose repetition within this sample; leading increments characterize
+ * counters; per-bit frequencies expose skew. None proves unpredictability. Native entropy
+ * sources and references captured before instrumentation can remain unobserved.
  *
- * REPORTS, never gates. The subjects are third-party libraries whose behaviour changes only
- * when a version is bumped here, so running this on every check would spend time re-deriving a
- * constant, and failing this repository's lane for a property of somebody else's package helps
- * nobody. THIS package's guarantees are gated in `test/entropy.test.ts` and
- * `test/runtime.bun.test.ts`, deterministically and in milliseconds.
- *
- * Three measures, no thresholds and no statistics. An earlier version of this file reached for
- * a monobit test, found it blind to half of a counter, bolted a lag-1 flip rate on top and
- * documented the period-four bit that still evaded both — three layers to answer a question
- * with an exact answer. Measured 2026-08-11, that stack reported 11, 31 and 41 structured bits
- * where the direct measurement below reports 12, 32 and 42: wrong, on every candidate, in the
- * direction that flatters. When a property can be measured exactly, estimating it is a bug.
- *
- * - `distinct` counts different random fields. This is the catastrophic-failure detector, and
- *   the reason it is worth its line: a generator with a constant seed, a small pool of
- *   pre-drawn values, or a weak LCG shows up instantly and unmistakably. Measured over 200,000
- *   samples: a constant seed yields 1 distinct value, a pool of 1,000 yields 1,000, a textbook
- *   LCG yields 5,596. Nothing else here catches a generator that repeats itself while every
- *   individual value still looks fine.
- * - `counter` is the width, in bits, of a leading counter that advances by exactly one within a
- *   millisecond, printed with the share of consecutive pairs that actually obey it. Both halves
- *   are needed and neither is a threshold. At ~100% those bits are fully determined by the
- *   previous value, so 74 minus the width is what an attacker cannot guess. Well below that, the
- *   width means something else entirely: `uuidv7-js` reports 42 bits at 50%, which is RFC 9562
- *   §6.2 Method 3 — a monotonic counter advanced by a RANDOM increment rather than by one, so
- *   those 42 bits are partly determined and partly not. A single derived "unguessable bits"
- *   column would have to print a confident number for that row, and every number it could print
- *   is wrong, which is why the reader gets the two measured quantities instead. A counter is a
- *   sanctioned design and a fact about unguessability, not a defect.
- * - `P(1)` is the narrowest and widest share of ones across the 74 random bit positions. A
- *   stuck or heavily skewed bit is visible immediately without a significance threshold; a
- *   healthy generator sits at 0.50 on both ends.
- *
- * What this does NOT do: judge subtle statistical quality. A generator that passes all three
- * and is still weak needs a real battery (PractRand, dieharder), which is a different tool.
- * `instrument.ts` covers the one case no output inspection ever can — a library calling
- * `Math.random`, whose values are indistinguishable from a CSPRNG's by any test here.
+ * Ordering is measured only between consecutive values sharing a timestamp. Counter width
+ * is reported with its observed agreement rate, never translated into unguessable bits.
+ * Package correctness gates live in test/; this report also includes third-party candidates.
  */
 import { candidates, runtimeName, type BenchCandidate } from "./candidates";
 import { instrument } from "../test/instrument";
 
 const smoke = process.argv.includes("--smoke");
 const samples = Number(process.env.UUID_SLUG_ENTROPY_SAMPLES ?? (smoke ? 20_000 : 200_000));
+if (!Number.isSafeInteger(samples) || samples <= 0)
+  throw new Error("UUID_SLUG_ENTROPY_SAMPLES must be a positive safe integer");
 
 /** Widest counter this scans for: the whole random field. */
 const FIELD_BITS = 74n;
