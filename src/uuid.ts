@@ -84,7 +84,7 @@ export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): UuidSlugE
   }
 
   const target = out ?? new Uint8Array(16);
-  const badRange = checkRange(target, offset, 16);
+  const badRange = checkRange(target.length, offset, 16);
   if (badRange) return badRange;
 
   for (let byteIndex = 0; byteIndex < UUID_BYTE_OFFSETS.length; byteIndex += 1) {
@@ -99,7 +99,7 @@ export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): UuidSlugE
 }
 
 export function formatUuid(bytes: Uint8Array, offset = 0): UuidSlugError | UuidString {
-  const badRange = checkRange(bytes, offset, 16);
+  const badRange = checkRange(bytes.length, offset, 16);
   if (badRange) return badRange;
   let out = "";
   for (let i = 0; i < 16; i += 1) {
@@ -151,7 +151,7 @@ export function formatUuidSlug(
   offset = 0,
   alphabet: SlugAlphabet = "base64url",
 ): UuidSlugError | UuidSlug {
-  const badRange = checkRange(bytes, offset, 16);
+  const badRange = checkRange(bytes.length, offset, 16);
   if (badRange) return badRange;
   // Unreachable from TypeScript, where the name is a two-member union. Reached from JavaScript,
   // which is why it answers rather than indexing into `undefined`.
@@ -221,7 +221,7 @@ export function isUuidV7Slug(slug: null | string | undefined): slug is UuidV7Slu
  * as zero and would otherwise blame a truncated buffer for holding a v0.
  */
 export function extractUuidV7Timestamp(bytes: Uint8Array, offset = 0): UuidSlugError | number {
-  const badRange = checkRange(bytes, offset, 16);
+  const badRange = checkRange(bytes.length, offset, 16);
   if (badRange) return badRange;
   if (uuidVersion(bytes, offset) !== 7 || !isRfcVariant(bytes, offset))
     return new UuidSlugError("invalid_uuid_version", "Timestamp is only defined for UUIDv7.");
@@ -245,7 +245,7 @@ export function extractUuidV7Timestamp(bytes: Uint8Array, offset = 0): UuidSlugE
  * return would have every call site unwrap a value it is already treating as a yes/no.
  */
 export function hasUuidV7Entropy(bytes: Uint8Array, offset = 0): boolean {
-  if (checkRange(bytes, offset, 16)) return false;
+  if (checkRange(bytes.length, offset, 16)) return false;
   const randA = (((bytes[offset + 6] ?? 0) & 0x0f) << 8) | (bytes[offset + 7] ?? 0);
   const randBFirst = (bytes[offset + 8] ?? 0) & 0x3f;
   let restZero = true;

@@ -53,7 +53,7 @@ export function errorOrThrow<T>(value: UuidSlugError | T): T {
  * The one range check for every entry point that reads or writes a caller's buffer at an offset.
  *
  * `Number.isInteger` is the load-bearing half and the reason this is shared rather than repeated.
- * The obvious spelling — `offset < 0 || offset + need > buffer.length` — passes a fractional or
+ * The obvious spelling — `offset < 0 || offset + need > capacity` — passes a fractional or
  * NaN offset, because both of its comparisons are false for NaN and neither notices `0.5`. What
  * follows is worse than a wrong answer: `bytes[0.5] = x` is not a store, so the write SILENTLY does
  * nothing while the guard reports success, and an id can come back half-written with the caller's
@@ -64,7 +64,7 @@ export function errorOrThrow<T>(value: UuidSlugError | T): T {
  * integrality — the copying is why. One copy is what stops the class returning.
  */
 export function checkRange(
-  buffer: Uint8Array,
+  capacity: number,
   offset: number,
   need: number,
 ): undefined | UuidSlugError {
@@ -73,10 +73,32 @@ export function checkRange(
       "invalid_buffer",
       `Buffer offset must be a whole number, got ${typeof offset} ${String(offset)}.`,
     );
-  if (offset < 0 || offset + need > buffer.length)
+  if (offset < 0 || offset + need > capacity)
     return new UuidSlugError(
       "invalid_buffer",
-      `Buffer needs ${need} bytes at offset ${offset}, but holds ${buffer.length}.`,
+      `Buffer needs ${need} bytes at offset ${offset}, but holds ${capacity}.`,
     );
   return undefined;
+}
+
+/** Preserve failures from an injected or platform entropy source without changing successful draws. */
+export function fillRandomBytes(
+  fill: (bytes: Uint8Array<ArrayBuffer>) => void,
+  bytes: Uint8Array<ArrayBuffer>,
+): UuidRuntimeError | undefined {
+  try {
+    fill(bytes);
+    return undefined;
+  } catch (cause) {
+    return new UuidRuntimeError("Random byte generation failed.", { cause });
+  }
+}
+
+/** Read once so a failing clock keeps its original cause and successful clocks have one observation. */
+export function readClock(clock: () => number): number | UuidSlugError {
+  try {
+    return clock();
+  } catch (cause) {
+    return new UuidSlugError("invalid_timestamp", "Clock reading failed.", { cause });
+  }
 }

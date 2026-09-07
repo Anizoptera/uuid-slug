@@ -18,7 +18,13 @@
  * the one that obfuscates nothing. Masking is reached through a codec built with your own seed.
  */
 import { runtime } from "#runtime";
-import { checkRange, errorOrThrow, UuidSlugError } from "./errors";
+import {
+  checkRange,
+  errorOrThrow,
+  fillRandomBytes,
+  UuidRuntimeError,
+  UuidSlugError,
+} from "./errors";
 import type { UuidV4Slug, UuidV4String, UuidV7Generator, UuidV7Slug, UuidV7String } from "./types";
 import { formatUuid, formatUuidSlug } from "./uuid";
 import type { SlugAlphabet } from "./uuid";
@@ -48,9 +54,10 @@ const v4Random = new Uint8Array(16);
 /** Shared with `createUuidSlugCodec`, so a v4 has one implementation however it is reached. */
 export function uuidV4Bytes(out?: Uint8Array, offset = 0): UuidSlugError | Uint8Array {
   const target = out ?? new Uint8Array(16);
-  const badRange = checkRange(target, offset, 16);
+  const badRange = checkRange(target.length, offset, 16);
   if (badRange) return badRange;
-  runtime.fillRandom(v4Random);
+  const failed = fillRandomBytes(runtime.fillRandom, v4Random);
+  if (failed) return failed;
   target.set(v4Random, offset);
   target[offset + 6] = ((target[offset + 6] ?? 0) & 0x0f) | 0x40;
   target[offset + 8] = ((target[offset + 8] ?? 0) & 0x3f) | 0x80;
@@ -58,8 +65,12 @@ export function uuidV4Bytes(out?: Uint8Array, offset = 0): UuidSlugError | Uint8
 }
 
 export function uuidV4(): UuidV4String {
-  const native = runtime.uuidV4?.();
-  if (native) return native;
+  try {
+    const native = runtime.uuidV4?.();
+    if (native) return native;
+  } catch (cause) {
+    throw new UuidRuntimeError("Runtime UUIDv4 generation failed.", { cause });
+  }
   return errorOrThrow(formatUuid(errorOrThrow(uuidV4Bytes()))) as UuidV4String;
 }
 

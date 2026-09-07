@@ -2,12 +2,17 @@
 
 import { runtime as webRuntime } from "./web";
 import type { Runtime } from "./types";
+import type { UuidV7String, UuidV7Slug } from "../types";
 
 /**
  * `Bun.randomUUIDv7(encoding, timestamp)` honours the timestamp for every encoding, which is why
  * this runtime can supply `uuidV7At` and Node cannot.
  */
-type BunUuid = (format?: "base64url" | "buffer" | "hex", timestamp?: number) => string | Uint8Array;
+interface BunUuid {
+  (format: "hex", timestamp?: number): UuidV7String;
+  (format: "base64url", timestamp?: number): UuidV7Slug;
+  (format: "buffer", timestamp?: number): Uint8Array;
+}
 
 /**
  * Probed once at module load, not per call. This module is only ever selected by the `bun`
@@ -17,7 +22,7 @@ type BunUuid = (format?: "base64url" | "buffer" | "hex", timestamp?: number) => 
  * absence is representable — a method that exists but throws makes the caller catch and fall
  * back on every single call instead.
  */
-const bun = (globalThis as typeof globalThis & { Bun?: { randomUUIDv7?: BunUuid } }).Bun;
+const bun = (globalThis as { Bun?: { randomUUIDv7?: BunUuid } }).Bun;
 const nativeUuidV7 = bun?.randomUUIDv7?.bind(bun);
 
 const bunRuntime: Runtime = { fillRandom: webRuntime.fillRandom };
@@ -45,7 +50,7 @@ if (nativeUuidV7) {
   bunRuntime.uuidV7BytesAt = (timestamp: number, out?: Uint8Array, offset = 0) =>
     toOwnBytes(nativeUuidV7("buffer", timestamp), out, offset);
   bunRuntime.uuidV7Bytes = (out?: Uint8Array, offset = 0) => {
-    const bytes = nativeUuidV7("buffer") as Uint8Array;
+    const bytes = nativeUuidV7("buffer");
     return toOwnBytes(bytes, out, offset);
   };
 }

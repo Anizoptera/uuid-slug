@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { runtime } from "#runtime";
-import { errorOrThrow, UuidSlugError } from "./errors";
+import { errorOrThrow, readClock, UuidSlugError } from "./errors";
 // A v4 has ONE implementation however it is reached. The keyless module owns it because that is
 // the module a consumer who never masks pulls in; importing it here costs a codec consumer nothing
 // it was not already paying, whereas the reverse direction would put the codec back on the keyless
 // path and undo the whole saving that split exists for.
-import { uuidV4Bytes as generateUuidV4Bytes } from "./keyless";
+import { uuidV4Bytes as generateUuidV4Bytes, uuidV4 as generateUuidV4 } from "./keyless";
 import { uuidV7BytesToMaskedSlug, maskedSlugToUuidWithSchema } from "./mask";
 import { createMaskSchema, DEFAULT_MASK_SCHEMA, verifyInvertible } from "./schema";
 import type {
@@ -17,14 +17,12 @@ import type {
   UuidSlugCodecOptions,
   UuidString,
   UuidV4Slug,
-  UuidV4String,
   UuidV7Sentinel,
   UuidV7String,
   UuidV7Slug,
 } from "./types";
 import { createRuntimeGenerator } from "./v7";
 import {
-  formatUuid,
   formatUuidSlug,
   hasUuidV7Entropy,
   isUuidV7String,
@@ -132,7 +130,10 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
   // The runtime's own slug generator emits base64url and nothing else, so it can only serve the
   // default. Resolved once here rather than per call: the branch is on configuration, which cannot
   // change after construction.
-  const nativeSlug = slugAlphabet === "base64url" ? runtime.uuidV7Slug : undefined;
+  const nativeSlug =
+    options.generator === undefined && slugAlphabet === "base64url"
+      ? runtime.uuidV7Slug
+      : undefined;
   const sentinelState = createSentinels(options.sentinels ?? UUID_V7_SENTINEL_DEFINITIONS);
 
   function decodeMasked(slug: string): UuidSlugError | UuidString {
@@ -192,11 +193,7 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
 
   return {
     sentinels: sentinelState.sentinels,
-    uuidV4() {
-      const native = runtime.uuidV4?.();
-      if (native) return native;
-      return errorOrThrow(formatUuid(errorOrThrow(generateUuidV4Bytes()))) as UuidV4String;
-    },
+    uuidV4: generateUuidV4,
     uuidV7() {
       return generator.uuidV7();
     },
@@ -275,12 +272,22 @@ export function validateUuidV7Fresh(
   uuid: string,
   options: FreshValidationOptions = {},
 ): UuidSlugError | UuidV7String {
-  if (!isUuidV7String(uuid))
-    return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
   const bytes = parseUuid(uuid);
-  if (bytes instanceof Error) return bytes;
+  if (bytes instanceof Error || !isUuidV7Bytes(bytes))
+    return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
   const windowMs = options.windowMs ?? 86_400_000;
-  const now = options.now?.() ?? Date.now();
+  if (!Number.isFinite(windowMs) || windowMs < 0)
+    return new UuidSlugError(
+      "invalid_timestamp",
+      "windowMs must be a finite, nonnegative number of milliseconds.",
+    );
+  const now = readClock(options.now ?? Date.now);
+  if (now instanceof Error) return now;
+  if (!Number.isFinite(now))
+    return new UuidSlugError(
+      "invalid_timestamp",
+      "now must return a finite number of Unix milliseconds.",
+    );
   const timestamp = extractUuidV7Timestamp(bytes);
   if (timestamp instanceof Error) return timestamp;
   if (timestamp < now - windowMs || timestamp > now + windowMs)

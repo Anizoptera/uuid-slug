@@ -112,7 +112,7 @@ export function decodeInto(
   const expected = Math.ceil((byteLength * 8 + tailBits) / bitsPerChar);
   if (value.length !== expected)
     return new UuidSlugError(code, `Expected ${expected} ${name} characters, got ${value.length}.`);
-  const badRange = checkRange(out, offset, byteLength);
+  const badRange = checkRange(out.length, offset, byteLength);
   if (badRange) return badRange;
 
   let acc = 0;

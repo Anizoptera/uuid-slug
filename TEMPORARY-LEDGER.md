@@ -20,17 +20,11 @@ This temporary SOP owns the implementation checklist and evidence. Keep unfinish
 
 Implemented sentinel-aware byte encoding, collision rejection, public sentinel return type, protected schema witness/cause handling, scalar capture, immutable sentinel metadata, and own-key alphabet lookup. All original eight regressions failed before repair. Targeted Node contract/core/mask tests and Bun contract/golden tests pass; typecheck and lint pass. No wire-format changes. The commit records the final unit diff.
 
-### B. Runtime and freshness contracts — active
+### B. Runtime and freshness contracts — complete
 
-- [ ] Reproduce Bun ignoring custom generators; keep native shortcut only for default generator/base64url.
-- [ ] Cover omitted-output offsets in the shared corpus; validate effective capacity without dummy allocation or duplicate fallback checks.
-- [ ] Reject invalid explicit timestamps, including `undefined`, without switching to clock mode.
-- [ ] Normalize entropy and clock failures at their boundary; preserve codes, causes, caller-buffer identity, and native fallback behavior.
-- [ ] Narrow Bun capability typing and brand encoding-specific results without ambient intersections.
-- [ ] Reject invalid freshness windows/readings; test zero/fractions, exact boundaries, stale values, and throwing clocks; read clock once.
-- [ ] Run both runners, targeted mutation controls, full check, review, and commit.
+Custom generators now govern both alphabets; absent output buffers use effective-capacity checks; explicit invalid instants cannot become clock requests. Entropy and clock exceptions retain typed causes; v4 implementation is shared instead of duplicated. Bun hooks have narrow branded signatures. Freshness reads once, rejects invalid finite-window/clock settings, and preserves inclusive fractional bounds. Seven Bun regressions failed before repair; targeted Node runtime/buffer/generator tests and Bun boundary cases pass. Full-tree typecheck temporarily sees the independent benchmark task’s in-progress edits; scoped checks govern this unit until that task finishes.
 
-### C. Distribution and verification
+### C. Distribution and verification — active
 
 - [ ] Refactor archive checker into inspection of a supplied final archive; keep current pack entry operational until dependency extension is available.
 - [ ] Execute extracted package-name imports under Node and Bun; cover custom generators, sentinels, conversions, brands, and buffer identity.

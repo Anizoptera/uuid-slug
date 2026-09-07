@@ -36,7 +36,9 @@ export type PublicUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 export type UuidBytes = Brand<Uint8Array, "UuidBytes">;
 
 export interface FreshValidationOptions {
+  /** Finite Unix milliseconds; read once per validation. */
   now?: () => number;
+  /** Finite, nonnegative radius around now, inclusive in both directions; default 24 hours. */
   windowMs?: number;
 }
 

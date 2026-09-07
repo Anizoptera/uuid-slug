@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { checkRange, UuidSlugError } from "./errors";
+import { checkRange, fillRandomBytes, readClock, UuidSlugError } from "./errors";
 import type { UuidV7Generator, UuidV7String } from "./types";
 import { formatUuid } from "./uuid";
 import type { Runtime } from "./runtime/types";
@@ -90,6 +90,7 @@ const seedLo = (bytes: Uint8Array) =>
 
 export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator {
   const clock = options.clock ?? Date.now;
+  const fill = options.fillRandom;
   const random = new Uint8Array(16);
   /**
    * Below every timestamp the clock check admits, which is what makes it the uninitialised
@@ -104,15 +105,22 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
   let counterLo = 0;
 
   function reseed(ms: number) {
-    options.fillRandom(random);
+    const failed = fillRandomBytes(fill, random);
+    if (failed) return failed;
     lastMs = ms;
     counterHi = seedHi(random);
     counterLo = seedLo(random);
+    return undefined;
   }
 
-  function bytes(out?: Uint8Array, offset = 0, timestamp?: number): UuidSlugError | Uint8Array {
+  function bytes(
+    out?: Uint8Array,
+    offset = 0,
+    timestamp?: number,
+    explicit = false,
+  ): UuidSlugError | Uint8Array {
     const target = out ?? new Uint8Array(16);
-    const badRange = checkRange(target, offset, 16);
+    const badRange = checkRange(target.length, offset, 16);
     if (badRange) return badRange;
     // The two modes differ only in where the millisecond and the 42-bit sequence come from, so
     // they share one write path. A caller-supplied instant takes a RANDOM sequence rather than
@@ -124,11 +132,12 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
     let ms: number;
     let sequenceHi: number;
     let sequenceLo: number;
-    if (timestamp !== undefined) {
-      const invalid = rejectInstant(timestamp);
+    if (explicit) {
+      const invalid = rejectInstant(timestamp as number);
       if (invalid) return invalid;
-      options.fillRandom(random);
-      ms = Math.trunc(timestamp);
+      const failed = fillRandomBytes(fill, random);
+      if (failed) return failed;
+      ms = timestamp as number;
       sequenceHi = seedHi(random);
       sequenceLo = seedLo(random);
     } else {
@@ -141,15 +150,18 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
       // millisecond produced the year 10889 by two's-complement wrap. All three now report.
       // The raw reading is kept for the message rather than calling `clock()` again: a second call
       // is a second reading, and the message would name a value other than the one refused.
-      const reading = clock();
+      const reading = readClock(clock);
+      if (reading instanceof Error) return reading;
       const now = Math.trunc(reading);
-      if (!isValidUuidV7Timestamp(now))
+      if (reading < 0 || !isValidUuidV7Timestamp(now))
         return new UuidSlugError(
           "invalid_timestamp",
           `Clock returned ${String(reading)}, which is not a millisecond in 0..${MAX_TIMESTAMP}.`,
         );
-      if (now > lastMs) reseed(now);
-      else {
+      if (now > lastMs) {
+        const failed = reseed(now);
+        if (failed) return failed;
+      } else {
         counterLo = (counterLo + 1) >>> 0;
         if (counterLo === 0) counterHi += 1;
         // Past 42 bits the sequence no longer fits `rand_a` plus the borrowed `rand_b` bits.
@@ -166,8 +178,12 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
               "invalid_timestamp",
               `Sequence exhausted at the last representable millisecond (${MAX_TIMESTAMP}).`,
             );
-          reseed(lastMs + 1);
-        } else options.fillRandom(random);
+          const failed = reseed(lastMs + 1);
+          if (failed) return failed;
+        } else {
+          const failed = fillRandomBytes(fill, random);
+          if (failed) return failed;
+        }
       }
       ms = lastMs;
       sequenceHi = counterHi;
@@ -196,9 +212,9 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
       if (formatted instanceof Error) throw formatted;
       return formatted;
     },
-    uuidV7At: (timestamp) => formatUuidV7(bytes(undefined, 0, timestamp)),
+    uuidV7At: (timestamp) => formatUuidV7(bytes(undefined, 0, timestamp, true)),
     uuidV7Bytes: (out, offset) => bytes(out, offset),
-    uuidV7BytesAt: (timestamp, out, offset) => bytes(out, offset, timestamp),
+    uuidV7BytesAt: (timestamp, out, offset) => bytes(out, offset, timestamp, true),
   };
 }
 
@@ -223,10 +239,8 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
       // Guarded only on the branch that leaves this package: the fallback checks the same range
       // itself, so checking before the branch would pay for it twice on every Node call.
       if (!runtime.uuidV7Bytes) return fallback.uuidV7Bytes(out, offset);
-      if (out) {
-        const badRange = checkRange(out, offset, 16);
-        if (badRange) return badRange;
-      }
+      const badRange = checkRange(out?.length ?? 16, offset, 16);
+      if (badRange) return badRange;
       try {
         return runtime.uuidV7Bytes(out, offset);
       } catch (cause) {
@@ -242,9 +256,9 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
     // sibling on a platform failure — fall back for the string form, report for the byte form —
     // so the four entry points behave predictably in pairs.
     uuidV7At(timestamp: number) {
+      if (!runtime.uuidV7At) return fallback.uuidV7At(timestamp);
       const invalid = rejectInstant(timestamp);
       if (invalid) return invalid;
-      if (!runtime.uuidV7At) return fallback.uuidV7At(timestamp);
       try {
         return runtime.uuidV7At(timestamp);
       } catch {
@@ -252,13 +266,11 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
       }
     },
     uuidV7BytesAt(timestamp: number, out?: Uint8Array, offset = 0) {
+      if (!runtime.uuidV7BytesAt) return fallback.uuidV7BytesAt(timestamp, out, offset);
       const invalid = rejectInstant(timestamp);
       if (invalid) return invalid;
-      if (!runtime.uuidV7BytesAt) return fallback.uuidV7BytesAt(timestamp, out, offset);
-      if (out) {
-        const badRange = checkRange(out, offset, 16);
-        if (badRange) return badRange;
-      }
+      const badRange = checkRange(out?.length ?? 16, offset, 16);
+      if (badRange) return badRange;
       try {
         return runtime.uuidV7BytesAt(timestamp, out, offset);
       } catch (cause) {
