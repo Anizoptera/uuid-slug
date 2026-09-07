@@ -1,0 +1,97 @@
+Use runtime-native encoding and avoid intermediate decoding work; measure mixed workloads as well as isolated calls before changing the parser.
+
+# Performance study
+
+This measurement compares performance baseline `37f6258` with `2c5ba55` on an Apple M4 Max with 128 GiB RAM, Node 26.8.1 and Bun 1.4.2. It is a local experiment, not a cross-hardware speed guarantee. Runtime dependencies and public wire formats are unchanged.
+
+## Method
+
+Follow the package-import commands in [the benchmark guide](README.md#profiling). For this replay set `UUID_SLUG_PROFILE_MS=5`; retain the default seven samples. Use three fresh process pairs per runtime, alternate before/after order, and run CPU measurements sequentially. Each process exercises the same 256 deterministic inputs and all cases. The table gives the median of the three per-process medians in nanoseconds per call, including driver consumption and error classification. Small differences can reflect JIT state, scheduler noise and clock overhead; these are not confidence intervals.
+
+Build both revisions separately and select the baseline with `UUID_SLUG_PROFILE_MODULE` pointing to its absolute file URL: emitted `dist/node/index.js` on Node, `src/index.ts` on Bun. Keep the driver identical. A filter changes warm-up history, so an isolated measurement does not explain a mixed-workload result by itself.
+
+## Measured calls
+
+| Call | Node before | Node after | Bun before | Bun after |
+|---|---:|---:|---:|---:|
+| `control` | 3 | 3 | 2 | 2 |
+| `v4.string` | 135 | 141 | 28 | 27 |
+| `v7.string` | 164 | 164 | 62 | 63 |
+| `v4.bytes` | 50 | 50 | 31 | 31 |
+| `v4.into` | 31 | 31 | 27 | 29 |
+| `v7.bytes` | 153 | 75 | 69 | 70 |
+| `v7.into` | 78 | 55 | 78 | 77 |
+| `v7.at` | 384 | 167 | 61 | 63 |
+| `v7.at.into` | 76 | 54 | 65 | 64 |
+| `portable.string` | 978 | 727 | 335 | 109 |
+| `portable.into` | 595 | 568 | 58 | 36 |
+| `v4.slug` | 296 | 153 | 256 | 69 |
+| `v7.slug` | 345 | 170 | 70 | 58 |
+| `v7.base32` | 365 | 258 | 311 | 228 |
+| `parse` | 68 | 82 | 39 | 34 |
+| `parse.into` | 49 | 62 | 31 | 31 |
+| `format` | 204 | 99 | 211 | 69 |
+| `plain.encode` | 317 | 181 | 245 | 71 |
+| `plain.decode` | 296 | 166 | 246 | 106 |
+| `base32.encode` | 338 | 268 | 259 | 188 |
+| `base32.decode` | 297 | 190 | 240 | 110 |
+| `slug.into` | 67 | 55 | 34 | 34 |
+| `guard.invalid.uuid` | 3267 | 8 | 142 | 15 |
+| `guard.invalid.slug` | 4044 | 16 | 187 | 21 |
+| `guard.uuid` | 75 | 58 | 45 | 32 |
+| `guard.slug` | 93 | 38 | 45 | 41 |
+| `fresh.uuid` | 111 | 125 | 54 | 53 |
+| `fresh.slug` | 409 | 95 | 288 | 49 |
+| `fresh.masked` | 624 | 227 | 443 | 173 |
+| `masked.generate` | 635 | 444 | 402 | 281 |
+| `masked.encode` | 452 | 381 | 363 | 245 |
+| `masked.decode` | 497 | 307 | 376 | 231 |
+| `rotation.current` | 497 | 334 | 375 | 246 |
+| `rotation.previous` | 4423 | 485 | 666 | 373 |
+| `sentinel.encode` | 164 | 80 | 121 | 43 |
+| `sentinel.decode` | 76 | 11 | 40 | 8 |
+| `invalid.uuid` | 3116 | 3429 | 137 | 135 |
+| `invalid.slug` | 3862 | 3817 | 174 | 183 |
+| `invalid.mask` | 4025 | 4027 | 308 | 320 |
+| `construct.codec` | 1990 | 1510 | 1912 | 1028 |
+| `construct.schema` | 523 | 463 | 402 | 297 |
+
+## Costs removed and alternatives rejected
+
+- Native hexadecimal/base64 encoding replaces JavaScript assembly where supported. Older runtimes keep portable paths. Exact-sized buffers bypass redundant views; caller-owned generation writes at the requested offset.
+- Boolean validation no longer constructs decoded buffers or discarded errors. A scanner shared with parsing regressed Bun in the measured trial and was rejected; both paths retain the same character table and contract corpus.
+- Rotation decodes text once and constructs a mismatch error only after all explicit keys fail. Custom callbacks still receive owned bytes. Removing those copies would alter ownership semantics.
+- Freshness consumes decoded bytes directly. Formatting remains at string-returning boundaries; it is not part of validation.
+- Async and synchronous construction share hash arithmetic and final key expansion. The initial continuation rewrite regressed masking; a single state branch replaced repeated optional-state lookups. Native generators remain delegated without introducing an ordering requirement.
+- Node's mixed-workload parser row regresses while isolated parsing improves. Restoring the exact baseline parser inside the current package measured about 93 ns for parsing and 74 ns for caller-owned parsing, versus 82/62 ns with the final parser. Direct lookup inlining and a combined sign check did not improve the mixed result and were discarded. This rules out restoring the old parser as a remedy; it does not identify the remaining JIT/workload cause. The mixed result remains disclosed, not relabelled as a speedup.
+
+## Allocation and key rotation
+
+Node Inspector allocation sampling used a 1,024-byte interval with both `includeObjectsCollectedByMajorGC` and `includeObjectsCollectedByMinorGC` enabled. Each operation ran 32,768 calls (construction: 2,048), after warm-up. The empty control sampled approximately zero bytes per call. These are sampling estimates from one matched process pair, not exact allocation counts:
+
+| Operation | Before bytes/call | After bytes/call |
+|---|---:|---:|
+| Slug predicate | 236 | 0 |
+| Caller-owned v4 generation | 1 | 1 |
+| Plain-slug freshness | 1,596 | 249 |
+| Masked freshness | 2,041 | 464 |
+| Previous-key decoding | 2,772 | 1,596 |
+| Codec construction | 9,577 | 6,336 |
+
+The remaining rotation allocations include callback ownership copies. Last-key decoding with 16 explicitly configured keys measured approximately 66.6→2.57 microseconds on Node and 4.91→2.62 microseconds on Bun. Every earlier key was separately checked to reject the fixture before attributing that measurement to the last key.
+
+Node/Bun CPU profiles and retained-heap profiles were also captured with the commands in the benchmark guide. Retained-heap profiles cannot measure gross allocation. Four repeated burst epochs did not establish a persistent leak; that limited observation is not proof of absence. Cold package imports remained in the millisecond range in fresh processes and are not a demonstrated optimization gain.
+
+## Cooperative construction
+
+The async constructor snapshots byte inputs before suspension, splits encoding/packing/hashing into checkpoints, and yields through ordinary host tasks. It preserves synchronous key material. A prioritized browser continuation failed to let an independently queued cancellation message run; ordinary message tasks passed the same installed-export test. Node/Bun use `setImmediate`.
+
+For a 19-byte seed at 65,536 iterations, real independent task gaps peaked at approximately 2.20 ms on Node and 2.25 ms on Bun, with total construction about 7.5/6.9 ms. A one-iteration 1 MiB byte seed measured about 5.5/18.4 ms total and 2.18/2.13 ms maximum observed task gaps. These are individual process observations, not maximum guarantees. Initial snapshots, allocation, GC and host scheduling are outside the slice target.
+
+Cancellation retention probes discarded 16 one-MiB jobs per epoch and collected between epochs. Node's eight epochs ended around 5.22 MB heap used. Bun's extended 32-epoch probe rose transiently to 3.79 MB, then settled near 1.72 MB rather than retaining every cancelled seed. This falsifies linear retention of all those inputs in that probe; it does not prove every application is leak-free.
+
+## Regression protection and limits
+
+`bun run perf:check` protects JavaScript-visible allocation, decoding, encoding and entropy work, plus coarse relative pipeline timings on both runtimes. Its injected result-preserving regressions must fail. Shared functional cases protect wire identity, ownership, invalid input and optional native branches. Async cases protect snapshots, UTF-8 chunk boundaries, cancellation and independent concurrent constructions; changing host yields to microtasks makes cancellation fail.
+
+The gates do not prove all performance properties. Relative timing cannot detect a slowdown shared by both sides. Constructor counters cannot see every engine allocation. Latest-runtime CI complements pinned runs, but this study did not execute hosted CI or measure every OS/architecture. Keep these limits when interpreting a pass.

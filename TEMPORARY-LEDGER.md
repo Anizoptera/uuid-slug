@@ -1,4 +1,4 @@
-Finish the approved audit repairs without changing publish-clean until Art releases that package.
+Finish the approved performance audit and validate the exact cleaned archive before publication.
 
 # Working ledger
 
@@ -10,7 +10,7 @@ This temporary SOP owns remaining tasks and evidence. Durable contracts stay in 
 - Preserve the masked wire format, timestamp bound, 16-bit check, raw sentinels, first-match explicit key rotation, optional brands, public default schema, plain-only base32hex, and zero runtime dependencies.
 - Do not add intra-millisecond ordering, old aliases, compatibility decoders, or a new cipher.
 - Art ruled freshness windows finite and nonnegative; zero/fractions and inclusive symmetric boundaries remain valid.
-- Art reserved publish-clean for another agent. Its delegated task was interrupted. That agent reports only read-only discovery, no changes, no commits, and no background processes. Its initial checkout contained foreign release-workflow/script/test edits; preserve them when work resumes.
+- Art released publish-clean for improvements: “publish-clean is also available for improvements now (/opt/apps/anizoptera/publish-clean)”. Its current tree is clean at version 0.8.0. Preserve its artifact and publication guarantees. Previously Art reserved publish-clean for another agent. Its delegated task was interrupted. That agent reports only read-only discovery, no changes, no commits, and no background processes. Its initial checkout contained foreign release-workflow/script/test edits; preserve them when work resumes.
 - No publication or tag is authorized by this ledger. Prepare concrete verified changes before any necessary release decision.
 - WIP: one implementation unit. Use regressions that expose the failure, targeted checks for finished units, explicit-path Conventional Commits, and full checks at integrated completion. Art's latest directive overrides the older full-check-before-every-commit instruction.
 - All HLD changes require Art's ruling. Internal implementation choices derive from accepted behavior.
@@ -31,18 +31,18 @@ Profile and optimize the current package on latest Node and Bun without changing
 - [x] Establish runtimes: official Node index reports 26.8.1; npm Bun latest and official Bun site report 1.4.2. Profile exact isolated executables; project pins unchanged.
 - [x] Capture package-import baselines: bench/profile.ts varies 256 input UUIDs, consumes outputs, samples repeatedly, records runtime/CPU/heap/batch time, and yields between samples. CPU measurements run sequentially.
 - [x] Add Node/Bun resource regression checks for avoidable allocations, discarded errors, repeated decoding, and entropy refills; add a short controlled timing lane for material slowdowns and falsify it with injected regressions. Art explicitly requested this protection during profiling.
-- [ ] Profile CPU attribution, allocations/GC, retained heap, cold import/construction, caller-owned buffers, entropy refills, and burst/event-loop cost.
-- [ ] Cover v4/v7 native and portable generation, explicit timestamps, both plain alphabets, masking, sentinels, key rotation, freshness, malformed inputs, and custom callbacks.
-- [ ] Rank measured costs; compare removal, shared work, lookup tables, runtime primitives, specialization, buffer ownership, and algorithm-preserving rewrites before implementation. Reject speculative complexity or changed guarantees.
-- [ ] Resolve measured Node parsing regression: final matched replay showed parse 70→93 ns and caller-owned parse 52→74 ns. The isolated parser did not reproduce the slowdown (69→69 ns); full-profile ordering remains a confounder. Removing redundant lookup bounds/nullish branches improved isolated Node to 62 ns and Bun to 22 ns; full-profile Node remains 84 ns, so do not attribute the entire difference to a changed parser algorithm.
+- [x] Profile CPU attribution, allocations/GC, retained heap, cold import/construction, caller-owned buffers, entropy refills, and burst/event-loop cost.
+- [x] Cover v4/v7 native and portable generation, explicit timestamps, both plain alphabets, masking, sentinels, key rotation, freshness, malformed inputs, and custom callbacks.
+- [x] Rank measured costs; compare removal, shared work, lookup tables, runtime primitives, specialization, buffer ownership, and algorithm-preserving rewrites before implementation. Reject speculative complexity or changed guarantees.
+- [x] Resolve measured Node parsing regression: final matched replay showed parse 70→93 ns and caller-owned parse 52→74 ns. The isolated parser did not reproduce the slowdown (69→69 ns); full-profile ordering remains a confounder. Removing redundant lookup bounds/nullish branches improved isolated Node to 62 ns and Bun to 22 ns; full-profile Node remains slower than baseline. Restoring the exact baseline parser in the current package worsens it to 93/74 ns; direct lookup/sign rewrites gave no gain and were reverted. Keep the simpler final parser; workload/JIT cause remains unproven and explicitly disclosed in bench/PERFORMANCE.md.
 - [x] Art approved the proposed opt-in asynchronous schema constructor, preserving the synchronous API and wire output: “I agree with your ruling. approved”, followed by “Design the API in the best way possible.”
 - [x] Withdraw the unnecessary seed-size question: adding a restriction was not required by the approved additive API. Preserve existing inputs and call-time byte snapshots; responsiveness is a target, not a new hard guarantee against memory-copy/GC/runtime pauses. A 1 MiB seed takes 7–9 ms in the current synchronous constructor, so the async implementation must also split hashing and preprocessing after the snapshot.
 - [x] Make the hash resumable while sharing its arithmetic with the synchronous path. The first optional-state rewrite regressed measured hot paths and was rejected; a single state branch and integer loop bounds restored the paired Node/Bun measurements. Interleaved continuations match all published vectors under several block limits in both runners; derivation integration remains next.
 - [x] Implement the approved async constructor with captured options, cooperative host-task yields, cancellation that stops computation, preserved causes and identical keys; finish the error contract and docs.
   - [x] Repair browser scheduling: Chromium completed derivation before an independently queued cancellation message under scheduler.yield; retain the failing consumer test and use ordinary host tasks. Node/Bun passing does not cover browser scheduling. Rebuilt Chromium consumer passes in 6 ms using ordinary message tasks; an initial retry read stale dist, so future package-consumer runs must follow build. Full bun run check exits zero with async consumers and resource/timing gates. Remaining async falsification and latest-runtime evidence stay open below.
-- [ ] Verify async construction against wire vectors, mutation across suspension, pre/mid-flight cancellation, concurrent constructions, real event-loop progress and installed Node/Bun/browser/Deno consumers. Extend resource/latency gates where the new work creates a material regression risk.
-- [ ] Finish remaining measured improvements and resource analysis; native encoding, rotation, generation views, and byte-based freshness units are implemented and individually gated. The read-only audit finished; root reproduced and repaired its findings listed below. Boolean predicates are implemented and gated; resource regression protection is implemented; final resource attribution and matched replay remain.
-- [ ] Publish reproducible profiling commands, results, rejected alternatives, resource trade-offs, limits, and any decisions needing Art in the relevant benchmark documentation.
+- [x] Verify async construction against wire vectors, mutation across suspension, pre/mid-flight cancellation, concurrent constructions, real event-loop progress and installed Node/Bun/browser/Deno consumers. Microtask-only mutation fails cancellation. Cleaned artifact Node/Bun/Deno/Chromium consumers pass; latest Node and Node 20 each pass 216 cases, latest Bun 166. Independent task gaps measured around 2.1–2.3 ms; extended cancellation retention returns to a plateau. Limits and reproduction are in bench/PERFORMANCE.md.
+- [x] Finish remaining measured improvements and resource analysis; native encoding, rotation, generation views, and byte-based freshness units are implemented and individually gated. The read-only audit finished; root reproduced and repaired its findings listed below. Boolean predicates are implemented and gated; resource regression protection is implemented; final resource attribution and matched replay remain.
+- [x] Publish reproducible profiling commands, results, rejected alternatives, resource trade-offs, limits, and any decisions needing Art in the relevant benchmark documentation.
 - [ ] Run final runtime/browser/artifact checks, audit the entire performance diff, and leave a clean owned tree; retain all held publication tasks.
 
 ### Measured implementation decisions
@@ -58,9 +58,9 @@ Profile and optimize the current package on latest Node and Bun without changing
 - Rotation now decodes text once and creates mismatch errors only after all keys fail; callbacks still receive fresh ciphertext and preserve primary causes. Combined with native formatting, previous-key median changed from 4438 to 485 ns on Node and 660 to 355 ns on Bun. Latest Node targeted mask/core/boundary suite passes 44 cases; latest Bun shared boundary/wire suite passes. Final repeated comparison remains pending.
 - Encoder targeted gates: latest Node and Node 20 each pass 93 buffer/alphabet cases; latest Bun passes shared buffer/runtime/wire cases. Typed-array shared backing, offsets, every byte value and base64 length boundaries are covered. Full integrated checks remain pending.
 
-## Remaining dependency work — held by Art
+## Remaining dependency work — released by Art
 
-- [ ] Wait for Art's explicit release of publish-clean; inspect its then-current guidance/tree and preserve concurrent changes.
+- [x] Inspect publish-clean after Art released it; read current guidance and clean tree before changes.
 - [ ] Implement optional nonempty publish-clean.validateArtifact argv: append the absolute final tarball path, run in package cwd without a shell, in all modes, before retention/upload.
 - [ ] Reject invalid configuration, launch/nonzero failure, or archive mutation; keep successful validation quiet and failed diagnostics actionable. Reuse existing infrastructure; no runtime dependencies or repacking.
 - [ ] Add subprocess regressions for ordering, upload prevention, unchanged bytes, hostile arguments, and cleanup; update the dependency's existing help/docs, run its required check, review, and commit scoped changes.
@@ -82,7 +82,7 @@ Profile and optimize the current package on latest Node and Bun without changing
 
 ## Limits and proposals
 
-- The plan is incomplete while the dependency hold remains. Current release.yml still checks a separate pack; it does not yet prove that the exact uploaded archive passed the new validator before upload.
+- The plan is incomplete until dependency integration and release coordination finish; the edit hold is released. Current release.yml still checks a separate pack; it does not yet prove that the exact uploaded archive passed the new validator before upload.
 - No live publication, remote CI run, DO-178C assessment, or cryptographic assurance was performed. Local workflow lint and process tests do not prove hosted credential behavior.
 - The two-sample benchmark matrix verified transport and branch selection only, not throughput or randomness quality.
 - No additional out-of-scope proposal was established as necessary during implementation.
