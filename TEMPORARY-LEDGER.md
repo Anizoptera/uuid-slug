@@ -26,16 +26,18 @@ Custom generators now govern both alphabets; absent output buffers use effective
 
 ### C. Distribution and verification — active
 
-- [ ] Refactor archive checker into inspection of a supplied final archive; keep current pack entry operational until dependency extension is available.
-- [ ] Execute extracted package-name imports under Node and Bun; cover custom generators, sentinels, conversions, brands, and buffer identity.
-- [ ] Execute packed browser/default exports in Chromium and Deno; use a Node-floor-compatible JavaScript consumer harness.
-- [ ] Reject all runtime dependency declarations; inspect actual module graphs rather than import regex blacklists.
-- [ ] Couple runtime CI floor to manifest; typecheck browser config.
+- [x] Refactor archive checker into inspection of a supplied final archive; keep current pack entry operational until dependency extension is available.
+- [x] Execute extracted package-name imports under Node and Bun; cover custom generators, sentinels, conversions, brands, and buffer identity.
+- [x] Execute packed browser/default exports in Chromium and Deno; use a Node-floor-compatible JavaScript consumer harness.
+- [x] Reject all runtime dependency declarations; inspect actual module graphs rather than import regex blacklists.
+- [x] Couple runtime CI floor to manifest; typecheck browser config.
 - [x] Remove README regex gates; existing executable API cases remain. Packed consumer examples are tracked above.
 - [x] Isolate tree-shaking temporary directories and cleanup; all three bundle cases pass.
 - [x] Use Oxc declaration emission with explicit codec/alphabet types; build and semantic typecheck pass without the experimental TypeScript warning.
-- [ ] Test emitted declarations with a TypeScript 5.7 consumer.
-- [ ] Run distribution checks, review, and commit.
+- [x] Test emitted declarations with a TypeScript 5.7 consumer.
+- [x] Review the archive-checker diff, verify rejection guards and CI parsing, then commit. Runtime workflow parsing and its executed floor-selection step return Node 20 from the manifest.
+
+Extracted Node/Bun/Deno/Chromium consumers pass; TypeScript 5.7 compiles emitted declarations with brand-negative cases. Thirteen malformed-archive cases reject dependencies, unused-module imports, wildcard exports, development files, and machine paths. Browser package self-reference passes through Vite.
 
 ### D. Release gates
 

@@ -81,12 +81,13 @@
     "publish:clean": "printf '%s\\n' '\n  There is no local publish. Releases are published by CI, from a pushed tag.\n\n    bun run changelog v<next>   draft the section from the commits since the last tag\n    $EDITOR CHANGELOG.md        say what a consumer gets, not what changed in the tree\n    git commit -am <msg>        the bump aborts on a dirty tree\n    bun run release <next>      runs the lane, then commits and annotates the tag\n    git push --follow-tags      .github/workflows/release.yml publishes it\n\n  Why not from here: npm refuses to sign a publish that did not come from a cloud CI\n  runner, so a laptop release is permanently unsigned. This repo also holds no npm\n  token -- release.yml authenticates over OIDC against the trusted publisher bound to\n  that workflow filename.\n\n  The tag is the release. Nothing else publishes.\n' >&2; exit 1",
     "release": "pnpm version",
     "test": "vitest run && bun test test/*.bun.test.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "bun node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
     "version": "grep -qF \"## [$npm_package_version]\" CHANGELOG.md || { echo \"CHANGELOG.md has no ## [$npm_package_version] section. Run: bun run changelog v$npm_package_version, edit it, then COMMIT it -- the bump refuses a dirty tree.\" >&2; exit 1; }",
     "bench:matrix": "bun bench/matrix.ts",
     "lint": "oxlint --type-aware",
     "lint:fix": "oxlint --type-aware --fix",
-    "test:browser": "vitest run --config vitest.browser.config.ts"
+    "test:browser": "vitest run --config vitest.browser.config.ts",
+    "artifact:web": "bun scripts/check-artifact.ts --web"
   },
   "dependencies": {},
   "devDependencies": {
@@ -107,6 +108,7 @@
     "publint": "^0.3.23",
     "tsdown": "^0.22.14",
     "typescript": "^7.0.2",
+    "typescript-floor": "npm:typescript@5.7.3",
     "uuid": "^14.0.1",
     "uuidv7": "^1.2.1",
     "uuidv7-js": "^2.0.0",
