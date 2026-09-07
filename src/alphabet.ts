@@ -47,6 +47,15 @@ export const BASE32HEX: Alphabet = alphabet(
   "invalid_base32",
 );
 
+// Native encoding is strict on output; decoding stays here because it must reject aliases,
+// whitespace and nonzero padding that platform decoders may accept.
+const nativeToBase64 = (
+  Uint8Array.prototype as {
+    toBase64?: (options: { alphabet: "base64url"; omitPadding: boolean }) => string;
+  }
+).toBase64;
+const BASE64_OPTIONS = { alphabet: "base64url", omitPadding: true } as const;
+
 /**
  * Bits left over when `byteLength` bytes are written in this alphabet. A slug rounds up to whole
  * characters, so the final character has spare low bits that carry no data: 4 for 16 bytes in
@@ -66,6 +75,8 @@ export function spareBits(alpha: Alphabet, byteLength: number): number {
  * before the tail existed valid afterwards.
  */
 export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {
+  if (nativeToBase64 && alpha === BASE64URL && tailBits === 0)
+    return nativeToBase64.call(bytes, BASE64_OPTIONS);
   const { bitsPerChar, chars } = alpha;
   const mask = (1 << bitsPerChar) - 1;
   let out = "";

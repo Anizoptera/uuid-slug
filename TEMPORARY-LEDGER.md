@@ -28,14 +28,21 @@ This temporary SOP owns remaining tasks and evidence. Durable contracts stay in 
 
 Profile and optimize the current package on latest Node and Bun without changing its public contracts or wire format.
 
-- [ ] Establish exact latest runtime versions and executable identities; preserve project pins and use isolated tools.
-- [ ] Capture a baseline through package imports with varying inputs, repeated warmed samples, observable output, and no competing benchmark processes.
+- [x] Establish runtimes: official Node index reports 26.8.1; npm Bun latest and official Bun site report 1.4.2. Profile exact isolated executables; project pins unchanged.
+- [x] Capture package-import baselines: bench/profile.ts varies 256 input UUIDs, consumes outputs, samples repeatedly, records runtime/CPU/heap/batch time, and yields between samples. CPU measurements run sequentially.
 - [ ] Profile CPU attribution, allocations/GC, retained heap, cold import/construction, caller-owned buffers, entropy refills, and burst/event-loop cost.
 - [ ] Cover v4/v7 native and portable generation, explicit timestamps, both plain alphabets, masking, sentinels, key rotation, freshness, malformed inputs, and custom callbacks.
 - [ ] Rank measured costs; compare removal, shared work, lookup tables, runtime primitives, specialization, buffer ownership, and algorithm-preserving rewrites before implementation. Reject speculative complexity or changed guarantees.
 - [ ] Implement each supported improvement, preserve independent vectors and boundary regressions, measure both runtimes against the same baseline, and commit verified units.
 - [ ] Publish reproducible profiling commands, results, rejected alternatives, resource trade-offs, limits, and any decisions needing Art in the relevant benchmark documentation.
 - [ ] Run final runtime/browser/artifact checks, audit the entire performance diff, and leave a clean owned tree; retain all held publication tasks.
+
+### Measured implementation decisions
+
+- Native Uint8Array.toHex plus UUID slicing outperformed nibble/byte/unrolled loops, Buffer views/copies, array joins, per-byte radix conversion and DataView word formatting on Node 26.8.1 and Bun 1.4.2. Preserve a byte-table fallback for older engines.
+- Native toBase64 initially regressed Bun v4 generation because formatUuidSlug still allocated a subarray. Removing that view for an already exact 16-byte input changed the measured median from 335 ns to 71 ns (baseline 237 ns); plain encode changed from 245 ns to 72 ns. Keep strict portable decoding; native permissiveness does not match the contract.
+- Node rotation profile identifies discarded Error construction as a major cost: previous-key success ~4438 ns versus current-key ~506 ns. Next unit must eliminate intermediate mismatch errors and repeated input work without hiding callback failures or changing first-key precedence.
+- Encoder targeted gates: latest Node and Node 20 each pass 93 buffer/alphabet cases; latest Bun passes shared buffer/runtime/wire cases. Typed-array shared backing, offsets, every byte value and base64 length boundaries are covered. Full integrated checks remain pending.
 
 ## Remaining dependency work — held by Art
 

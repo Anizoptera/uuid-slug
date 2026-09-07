@@ -13,6 +13,12 @@ import type {
 } from "./types";
 
 const HEX = "0123456789abcdef";
+const HEX_BYTES = Array.from(
+  { length: 256 },
+  (_, byte) => (HEX[byte >>> 4] as string) + (HEX[byte & 15] as string),
+);
+// Probe the standard primitive once; older runtimes retain the portable formatter.
+const nativeToHex = (Uint8Array.prototype as { toHex?: () => string }).toHex;
 const HEX_DECODE = new Int8Array(128).fill(-1);
 for (let i = 0; i < 10; i += 1) HEX_DECODE[48 + i] = i;
 for (let i = 0; i < 6; i += 1) HEX_DECODE[97 + i] = 10 + i;
@@ -104,12 +110,15 @@ export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): UuidSlugE
 export function formatUuid(bytes: Uint8Array, offset = 0): UuidSlugError | UuidString {
   const badRange = checkRange(bytes.length, offset, 16);
   if (badRange) return badRange;
+  if (nativeToHex) {
+    const hex = nativeToHex.call(bytes.length === 16 ? bytes : bytes.subarray(offset, offset + 16));
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
   let out = "";
   for (let i = 0; i < 16; i += 1) {
     if (i === 4 || i === 6 || i === 8 || i === 10) out += "-";
     const byte = bytes[offset + i] ?? 0;
-    out += HEX[byte >>> 4];
-    out += HEX[byte & 0x0f];
+    out += HEX_BYTES[byte];
   }
   return out;
 }
@@ -160,7 +169,7 @@ export function formatUuidSlug(
   // which is why it answers rather than indexing into `undefined`.
   const alpha = resolveSlugAlphabet(alphabet);
   if (alpha instanceof Error) return alpha;
-  return encode(bytes.subarray(offset, offset + 16), alpha);
+  return encode(bytes.length === 16 ? bytes : bytes.subarray(offset, offset + 16), alpha);
 }
 
 /** Accepts either alphabet; the length says which, so there is nothing to pass and nothing to get wrong. */

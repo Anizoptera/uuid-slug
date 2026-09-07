@@ -17,7 +17,7 @@
  * guard that errors after a partial write; an untouched buffer alone would pass a call that wrote
  * nothing and claimed success. Both together admit only "refused, and did nothing".
  */
-import { decodeBase64Url } from "../src/base64url";
+import { decodeBase64Url, encodeBase64Url } from "../src/base64url";
 import { UuidSlugError } from "../src/errors";
 import {
   createUuidSlugCodec,
@@ -85,6 +85,27 @@ function untouched(buffer: Uint8Array): string | undefined {
  * an offset it cannot honour, rather than sizing a fresh buffer around it.
  */
 export const cases: readonly ProbeCase[] = [
+  {
+    name: "encoders preserve all byte values, lengths and shared-buffer slices",
+    run: () => {
+      for (const backing of [new ArrayBuffer(80), new SharedArrayBuffer(80)]) {
+        const bytes = new Uint8Array(backing);
+        for (let shift = 0; shift < 256; shift += 16) {
+          for (let i = 0; i < bytes.length; i += 1) bytes[i] = (i + shift) & 255;
+          for (let length = 0; length <= 64; length += 1) {
+            const view = bytes.subarray(4, 4 + length);
+            if (encodeBase64Url(view) !== Buffer.from(view).toString("base64url"))
+              return `base64url differs for length ${length}, shift ${shift}`;
+          }
+          const hex = Buffer.from(bytes.subarray(4, 20)).toString("hex");
+          const expected = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+          if (formatUuid(bytes, 4) !== expected || formatUuid(bytes.subarray(4, 20)) !== expected)
+            return `UUID formatting differs for shift ${shift}`;
+        }
+      }
+      return undefined;
+    },
+  },
   ...writers.flatMap(([name, call]) =>
     HOSTILE_OFFSETS.map((offset) => ({
       name: `${name} refuses offset ${String(offset)} and writes nothing`,
