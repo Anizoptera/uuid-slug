@@ -108,10 +108,31 @@ export function uuidV7BytesToMaskedSlug(
 export function maskedSlugToUuidWithSchema(
   slug: string,
   schema: MaskSchema,
+  previous: readonly MaskSchema[] = [],
 ): UuidSlugError | UuidString {
   const mixed = new Uint8Array(16);
   const outerTag = decodeInto(slug, BASE64URL, mixed, 0, 16, OUTER_TAG_BITS);
   if (outerTag instanceof Error) return outerTag;
+  // A callback may mutate or retain its input. Each attempted key must receive fresh original
+  // ciphertext, as it would when decoding the text again; only the text validation is shared.
+  const primary = unmix(previous.length ? mixed.slice() : mixed, outerTag, schema);
+  if (primary && !(primary instanceof Error)) return primary;
+  for (const older of previous) {
+    const decoded = unmix(mixed.slice(), outerTag, older);
+    if (decoded && !(decoded instanceof Error)) return decoded;
+  }
+  // A key mismatch is ordinary rotation control flow. Allocate its diagnostic only if no key
+  // succeeds, while keeping the primary callback's error and cause when that was the failure.
+  return (
+    primary ?? new UuidSlugError("invalid_uuid_slug", "Masked UUID slug failed schema validation.")
+  );
+}
+
+function unmix(
+  mixed: Uint8Array,
+  outerTag: number,
+  schema: MaskSchema,
+): UuidSlugError | UuidString | undefined {
   const unmixed = new Uint8Array(16);
   const failed = applyMix(schema, mixed, unmixed, false);
   if (failed) return failed;
@@ -119,7 +140,6 @@ export function maskedSlugToUuidWithSchema(
   // thoroughly as the payload: the tag needs no key of its own to tell keys apart.
   const foundTag = (extractTag(unmixed) << OUTER_TAG_BITS) | outerTag;
   restoreV7(unmixed);
-  if (tagFor(unmixed, TAG_BITS) !== foundTag)
-    return new UuidSlugError("invalid_uuid_slug", "Masked UUID slug failed schema validation.");
+  if (tagFor(unmixed, TAG_BITS) !== foundTag) return undefined;
   return formatUuid(unmixed);
 }

@@ -1,10 +1,48 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { strict as assert } from "node:assert";
-import { createUuidSlugCodec, createUuidV7Generator, UuidSlugError } from "../src/index";
+import {
+  createMaskSchema,
+  createUuidSlugCodec,
+  createUuidV7Generator,
+  UuidSlugError,
+} from "../src/index";
 import type { MaskSchema, UuidSlugCodecOptions } from "../src/types";
 
 export const codecBoundaryCases = [
+  {
+    name: "rotation isolates mutating callbacks and preserves the primary failure cause",
+    run() {
+      const current = createMaskSchema({ seed: "profile-current-seed" });
+      assert.ok(!(current instanceof Error));
+      const previous = { seed: "profile-previous-seed" };
+      const older = createUuidSlugCodec({ mask: previous });
+      const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
+      const slug = older.uuidV7ToMaskedSlug(uuid);
+      assert.equal(typeof slug, "string");
+      assert.ok(
+        createUuidSlugCodec({ mask: current }).maskedSlugToUuid(slug as string) instanceof Error,
+      );
+      const cause = new Error("current key unavailable");
+      let fail = false;
+      const mutating: MaskSchema = {
+        id: "mutating-primary",
+        mix(input, output, forward) {
+          if (fail) throw cause;
+          current.mix(input, output, forward);
+          input.fill(0);
+        },
+      };
+      const codec = createUuidSlugCodec({ mask: mutating, previousMasks: [previous] });
+      assert.equal(codec.maskedSlugToUuidV7(slug as string), uuid);
+      fail = true;
+      assert.equal(codec.maskedSlugToUuidV7(slug as string), uuid);
+      const refused = codec.maskedSlugToUuidV7("______________________");
+      assert.ok(refused instanceof UuidSlugError);
+      assert.equal(refused.code, "invalid_mask_schema");
+      assert.equal(refused.cause, cause);
+    },
+  },
   {
     name: "refuses ciphertext that aliases a reserved sentinel",
     run() {

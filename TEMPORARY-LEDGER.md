@@ -41,7 +41,7 @@ Profile and optimize the current package on latest Node and Bun without changing
 
 - Native Uint8Array.toHex plus UUID slicing outperformed nibble/byte/unrolled loops, Buffer views/copies, array joins, per-byte radix conversion and DataView word formatting on Node 26.8.1 and Bun 1.4.2. Preserve a byte-table fallback for older engines.
 - Native toBase64 initially regressed Bun v4 generation because formatUuidSlug still allocated a subarray. Removing that view for an already exact 16-byte input changed the measured median from 335 ns to 71 ns (baseline 237 ns); plain encode changed from 245 ns to 72 ns. Keep strict portable decoding; native permissiveness does not match the contract.
-- Node rotation profile identifies discarded Error construction as a major cost: previous-key success ~4438 ns versus current-key ~506 ns. Next unit must eliminate intermediate mismatch errors and repeated input work without hiding callback failures or changing first-key precedence.
+- Rotation now decodes text once and creates mismatch errors only after all keys fail; callbacks still receive fresh ciphertext and preserve primary causes. Combined with native formatting, previous-key median changed from 4438 to 485 ns on Node and 660 to 355 ns on Bun. Latest Node targeted mask/core/boundary suite passes 44 cases; latest Bun shared boundary/wire suite passes. Final repeated comparison remains pending.
 - Encoder targeted gates: latest Node and Node 20 each pass 93 buffer/alphabet cases; latest Bun passes shared buffer/runtime/wire cases. Typed-array shared backing, offsets, every byte value and base64 length boundaries are covered. Full integrated checks remain pending.
 
 ## Remaining dependency work — held by Art

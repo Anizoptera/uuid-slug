@@ -139,12 +139,8 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
   function decodeMasked(slug: string): UuidSlugError | UuidString {
     const sentinel = sentinelState.bySlug.get(slug);
     if (sentinel) return sentinel;
-    const primary = maskedSlugToUuidWithSchema(slug, schema);
+    const primary = maskedSlugToUuidWithSchema(slug, schema, previousMasks);
     if (!(primary instanceof Error)) return primary;
-    for (const previous of previousMasks) {
-      const decoded = maskedSlugToUuidWithSchema(slug, previous);
-      if (!(decoded instanceof Error)) return decoded;
-    }
     if (acceptUnmaskedSlugs) {
       const unmasked = slugToUuid(slug);
       if (!(unmasked instanceof Error)) return unmasked;
@@ -186,6 +182,9 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
   function maskedSlugToUuidV7(slug: string): UuidSlugError | UuidV7String {
     const decoded = decodeMasked(slug);
     if (decoded instanceof Error) return decoded;
+    // Sentinels were validated at construction and unmasking restores the v7 constants.
+    // Only the optional plain-slug fallback can produce a different version or variant.
+    if (!acceptUnmaskedSlugs) return decoded as UuidV7String;
     return isUuidV7String(decoded)
       ? decoded
       : new UuidSlugError("invalid_uuid_version", "Decoded UUID is not UUIDv7.");
