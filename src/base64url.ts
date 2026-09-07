@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { BASE64URL, decodeInto, encode } from "./alphabet";
+import { BASE64URL, decodeInto, encode, isEncoded } from "./alphabet";
 import { UuidSlugError } from "./errors";
 import type { Base64UrlString } from "./types";
 
@@ -37,5 +37,5 @@ export function isBase64Url(value: null | string | undefined): value is Base64Ur
   // The empty string decodes to zero bytes without error, but an identifier of no characters is
   // never what a caller means by "is this a slug"; rejecting it keeps the guard usable as one.
   if (!value) return false;
-  return !(decodeBase64Url(value) instanceof Error);
+  return isEncoded(value, BASE64URL, Math.floor((value.length * BASE64URL.bitsPerChar) / 8));
 }

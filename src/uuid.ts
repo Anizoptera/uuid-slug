@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { BASE32HEX, BASE64URL, decodeInto, encode } from "./alphabet";
+import { BASE32HEX, BASE64URL, decodeInto, encode, isEncoded } from "./alphabet";
 import type { Alphabet } from "./alphabet";
 import { checkRange, UuidSlugError } from "./errors";
 import type {
@@ -133,21 +133,32 @@ export function isRfcVariant(bytes: Uint8Array, offset = 0): boolean {
   return (bytes[offset + 8] ?? 0) >>> 6 === 0b10;
 }
 
+// Predicates inspect the same hex table as parsing without allocating output bytes or Errors.
 export function isUuidString(uuid: null | string | undefined): uuid is UuidString {
-  if (!uuid) return false;
-  return !(parseUuid(uuid) instanceof Error);
+  if (!uuid || uuid.length !== UUID_LENGTH) return false;
+  if (uuid[8] !== "-" || uuid[13] !== "-" || uuid[18] !== "-" || uuid[23] !== "-") return false;
+  for (let i = 0; i < UUID_BYTE_OFFSETS.length; i += 1) {
+    const offset = UUID_BYTE_OFFSETS[i] as number;
+    if (
+      (hexValue(uuid.charCodeAt(offset)) ?? -1) < 0 ||
+      (hexValue(uuid.charCodeAt(offset + 1)) ?? -1) < 0
+    )
+      return false;
+  }
+  return true;
+}
+
+/** The string has already passed canonical validation, so the variant digit is a known hex value. */
+function stringHasRfcVariant(uuid: string): boolean {
+  return (HEX_DECODE[uuid.charCodeAt(19)] as number) >>> 2 === 2;
 }
 
 export function isUuidV4String(uuid: null | string | undefined): uuid is UuidV4String {
-  if (!uuid) return false;
-  const bytes = parseUuid(uuid);
-  return bytes instanceof Error ? false : uuidVersion(bytes) === 4 && isRfcVariant(bytes);
+  return isUuidString(uuid) && uuid[14] === "4" && stringHasRfcVariant(uuid);
 }
 
 export function isUuidV7String(uuid: null | string | undefined): uuid is UuidV7String {
-  if (!uuid) return false;
-  const bytes = parseUuid(uuid);
-  return bytes instanceof Error ? false : uuidVersion(bytes) === 7 && isRfcVariant(bytes);
+  return isUuidString(uuid) && uuid[14] === "7" && stringHasRfcVariant(uuid);
 }
 
 /**
@@ -208,19 +219,32 @@ export function slugToUuid(slug: string): UuidSlugError | UuidString {
 
 export function isUuidSlug(slug: null | string | undefined): slug is UuidSlug {
   if (!slug) return false;
-  return !(parseUuidSlug(slug) instanceof Error);
+  const alpha = SLUG_ALPHABET_BY_LENGTH[slug.length];
+  return alpha !== undefined && isEncoded(slug, alpha, 16);
+}
+
+/** Read only the version/variant bytes after canonical validation, without decoding a whole UUID. */
+function slugByte(slug: string, alpha: Alphabet, offset: number): number {
+  const start = Math.floor((offset * 8) / alpha.bitsPerChar);
+  const end = Math.floor((offset * 8 + 7) / alpha.bitsPerChar);
+  let value = 0;
+  for (let i = start; i <= end; i += 1)
+    value = (value << alpha.bitsPerChar) | (alpha.decode[slug.charCodeAt(i)] as number);
+  return (value >>> ((end + 1) * alpha.bitsPerChar - (offset + 1) * 8)) & 255;
+}
+
+function isVersionedSlug(slug: null | string | undefined, version: number): boolean {
+  if (!isUuidSlug(slug)) return false;
+  const alpha = SLUG_ALPHABET_BY_LENGTH[slug.length] as Alphabet;
+  return slugByte(slug, alpha, 6) >>> 4 === version && slugByte(slug, alpha, 8) >>> 6 === 2;
 }
 
 export function isUuidV4Slug(slug: null | string | undefined): slug is UuidV4Slug {
-  if (!slug) return false;
-  const bytes = parseUuidSlug(slug);
-  return bytes instanceof Error ? false : uuidVersion(bytes) === 4 && isRfcVariant(bytes);
+  return isVersionedSlug(slug, 4);
 }
 
 export function isUuidV7Slug(slug: null | string | undefined): slug is UuidV7Slug {
-  if (!slug) return false;
-  const bytes = parseUuidSlug(slug);
-  return bytes instanceof Error ? false : uuidVersion(bytes) === 7 && isRfcVariant(bytes);
+  return isVersionedSlug(slug, 7);
 }
 
 /**

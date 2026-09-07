@@ -15,6 +15,7 @@ export interface Alphabet {
   /** Character code -> value, `-1` for anything outside the alphabet. */
   readonly decode: Int16Array;
   readonly name: string;
+  readonly invalidChars: RegExp;
 }
 
 function alphabet(name: string, chars: string, code: UuidSlugErrorCode): Alphabet {
@@ -22,7 +23,14 @@ function alphabet(name: string, chars: string, code: UuidSlugErrorCode): Alphabe
   if (!Number.isInteger(bitsPerChar)) throw new Error(`${name} alphabet must be a power of two.`);
   const decode = new Int16Array(128).fill(-1);
   for (let i = 0; i < chars.length; i += 1) decode[chars.charCodeAt(i)] = i;
-  return { bitsPerChar, chars, code, decode, name };
+  return {
+    bitsPerChar,
+    chars,
+    code,
+    decode,
+    name,
+    invalidChars: new RegExp(`[^${chars.replaceAll("-", "\\-")}]`),
+  };
 }
 
 export const BASE64URL: Alphabet = alphabet(
@@ -65,6 +73,20 @@ const BASE64_OPTIONS = { alphabet: "base64url", omitPadding: true } as const;
 export function spareBits(alpha: Alphabet, byteLength: number): number {
   const bits = byteLength * 8;
   return (alpha.bitsPerChar - (bits % alpha.bitsPerChar)) % alpha.bitsPerChar;
+}
+
+/** Boolean validation needs no output buffer or diagnostic allocation. */
+export function isEncoded(value: string, alpha: Alphabet, byteLength: number): boolean {
+  if (
+    value.length !== Math.ceil((byteLength * 8) / alpha.bitsPerChar) ||
+    alpha.invalidChars.test(value)
+  )
+    return false;
+  const spare = spareBits(alpha, byteLength);
+  return (
+    spare === 0 ||
+    ((alpha.decode[value.charCodeAt(value.length - 1)] as number) & ((1 << spare) - 1)) === 0
+  );
 }
 
 /**
