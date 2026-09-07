@@ -76,3 +76,11 @@ for (const code of [
       "browser artifact module graph failed",
     ));
 }
+
+for (const extension of ["mjs", "cjs"]) {
+  test(`inspects unreferenced ${extension} modules too`, () =>
+    rejected(
+      { ...base, [`package/dist/hidden.${extension}`]: 'import "unknown-package";' },
+      "browser artifact module graph failed",
+    ));
+}

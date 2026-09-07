@@ -37,7 +37,7 @@ Custom generators now govern both alphabets; absent output buffers use effective
 - [x] Test emitted declarations with a TypeScript 5.7 consumer.
 - [x] Review the archive-checker diff, verify rejection guards and CI parsing, then commit. Runtime workflow parsing and its executed floor-selection step return Node 20 from the manifest.
 
-Extracted Node/Bun/Deno/Chromium consumers pass; TypeScript 5.7 compiles emitted declarations with brand-negative cases. Thirteen malformed-archive cases reject dependencies, unused-module imports, wildcard exports, development files, and machine paths. Browser package self-reference passes through Vite.
+Extracted Node/Bun/Deno/Chromium consumers pass; TypeScript 5.7 compiles emitted declarations with brand-negative cases. Fifteen malformed-archive cases reject dependencies, unused-module imports, wildcard exports, development files, and machine paths. Browser package self-reference passes through Vite. Reverting module selection to only .js/.ts makes both .mjs/.cjs rejection cases fail; all supported module extensions are inspected.
 
 ### D. Release gates
 

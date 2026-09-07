@@ -61,13 +61,12 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
             : target === "node"
               ? "package/dist/node/"
               : "package/dist/";
-        const extension = target === "bun" ? ".ts" : ".js";
         const entrypoints = [...entries.keys()]
           .filter(
             (name) =>
               name.startsWith(prefix) &&
-              name.endsWith(extension) &&
-              !name.endsWith(".d.ts") &&
+              /\.[cm]?[jt]sx?$/.test(name) &&
+              !/\.d\.[cm]?ts$/.test(name) &&
               (target !== "browser" || !name.startsWith("package/dist/node/")),
           )
           .map((name) => path.join(root, name));
