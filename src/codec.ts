@@ -7,7 +7,7 @@ import { errorOrThrow, readClock, UuidSlugError } from "./errors";
 // it was not already paying, whereas the reverse direction would put the codec back on the keyless
 // path and undo the whole saving that split exists for.
 import { uuidV4Bytes as generateUuidV4Bytes, uuidV4 as generateUuidV4 } from "./keyless";
-import { uuidV7BytesToMaskedSlug, maskedSlugToUuidWithSchema } from "./mask";
+import { uuidV7BytesToMaskedSlug, decodeMaskedSlug } from "./mask";
 import { createMaskSchema, DEFAULT_MASK_SCHEMA, verifyInvertible } from "./schema";
 import type {
   MaskSchema,
@@ -15,7 +15,6 @@ import type {
   SentinelUuidV7Slug,
   UuidSlugCodec,
   UuidSlugCodecOptions,
-  UuidString,
   UuidV4Slug,
   UuidV7Sentinel,
   UuidV7String,
@@ -25,11 +24,11 @@ import { createRuntimeGenerator } from "./v7";
 import {
   formatUuidSlug,
   hasUuidV7Entropy,
-  isUuidV7String,
   isUuidV7Bytes,
   resolveSlugAlphabet,
   parseUuid,
-  slugToUuid,
+  formatUuid,
+  parseUuidSlug,
   extractUuidV7Timestamp,
 } from "./uuid";
 import type { FreshValidationOptions, UuidV7SentinelDefinition } from "./types";
@@ -70,7 +69,7 @@ function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
   const sentinels: UuidV7Sentinel[] = [];
   const byUuid = new Set<string>();
   const encoded: { bytes: Uint8Array; slug: SentinelUuidV7Slug }[] = [];
-  const bySlug = new Map<string, UuidV7String>();
+  const bySlug = new Map<string, { uuid: UuidV7String; bytes: Uint8Array }>();
   for (const definition of definitions) {
     // `uuid` is typed `UuidV7String`, and that types NOTHING: `Brand`'s marker is optional by
     // design, so every string satisfies every brand and a v4 passed the declaration untouched.
@@ -106,7 +105,7 @@ function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
     sentinels.push(sentinel);
     byUuid.add(definition.uuid);
     encoded.push({ bytes, slug: sentinel.slug });
-    bySlug.set(sentinel.slug, definition.uuid);
+    bySlug.set(sentinel.slug, { uuid: definition.uuid, bytes });
   }
   return { bySlug, encoded, sentinels: Object.freeze(sentinels) };
 }
@@ -136,13 +135,11 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
       : undefined;
   const sentinelState = createSentinels(options.sentinels ?? UUID_V7_SENTINEL_DEFINITIONS);
 
-  function decodeMasked(slug: string): UuidSlugError | UuidString {
-    const sentinel = sentinelState.bySlug.get(slug);
-    if (sentinel) return sentinel;
-    const primary = maskedSlugToUuidWithSchema(slug, schema, previousMasks);
+  function decodeMasked(slug: string): UuidSlugError | Uint8Array {
+    const primary = decodeMaskedSlug(slug, schema, previousMasks);
     if (!(primary instanceof Error)) return primary;
     if (acceptUnmaskedSlugs) {
-      const unmasked = slugToUuid(slug);
+      const unmasked = parseUuidSlug(slug);
       if (!(unmasked instanceof Error)) return unmasked;
     }
     // The fallback's error is DROPPED, deliberately, and this returns `primary` whether or not the
@@ -182,14 +179,14 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
   }
 
   function maskedSlugToUuidV7(slug: string): UuidSlugError | UuidV7String {
+    const sentinel = sentinelState.bySlug.get(slug);
+    if (sentinel) return sentinel.uuid;
     const decoded = decodeMasked(slug);
     if (decoded instanceof Error) return decoded;
-    // Sentinels were validated at construction and unmasking restores the v7 constants.
-    // Only the optional plain-slug fallback can produce a different version or variant.
-    if (!acceptUnmaskedSlugs) return decoded as UuidV7String;
-    return isUuidV7String(decoded)
-      ? decoded
-      : new UuidSlugError("invalid_uuid_version", "Decoded UUID is not UUIDv7.");
+    // Mask decoding restores v7 constants; only the plain fallback can carry another version.
+    if (acceptUnmaskedSlugs && !isUuidV7Bytes(decoded))
+      return new UuidSlugError("invalid_uuid_version", "Decoded UUID is not UUIDv7.");
+    return formatUuid(decoded) as UuidSlugError | UuidV7String;
   }
 
   return {
@@ -224,7 +221,12 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
     },
     uuidV7ToMaskedSlug,
     maskedSlugToUuidV7,
-    maskedSlugToUuid: decodeMasked,
+    maskedSlugToUuid(slug) {
+      const sentinel = sentinelState.bySlug.get(slug);
+      if (sentinel) return sentinel.uuid;
+      const bytes = decodeMasked(slug);
+      return bytes instanceof Error ? bytes : formatUuid(bytes);
+    },
     /**
      * Unmask, then apply the same freshness rules as `validateUuidV7Fresh`, returning the slug.
      *
@@ -234,13 +236,16 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
      * their own. Nothing about that failure was visible at the call site; it returned a confident
      * Error for perfectly good slugs.
      *
-     * Closes over the local `maskedSlugToUuidV7` rather than reaching through `this`: every method
-     * here declares `this: void` so it survives being detached (`const f = codec.maskedSlugToUuid`).
+     * Decode directly to bytes instead of formatting and reparsing a UUID. The method does not
+     * access `this`, so it also works when detached from the codec.
      */
     validateMaskedSlugFresh(slug, freshness) {
-      const uuid = maskedSlugToUuidV7(slug);
-      if (uuid instanceof Error) return uuid;
-      const valid = validateUuidV7Fresh(uuid, freshness);
+      const bytes = sentinelState.bySlug.get(slug)?.bytes ?? decodeMasked(slug);
+      if (bytes instanceof Error) return bytes;
+      // The v7-specific decoder reports this before freshness validation does.
+      if (!isUuidV7Bytes(bytes))
+        return new UuidSlugError("invalid_uuid_version", "Decoded UUID is not UUIDv7.");
+      const valid = validateFreshBytes(bytes, freshness);
       return valid instanceof Error ? valid : slug;
     },
   };
@@ -274,8 +279,22 @@ export function validateUuidV7Fresh(
   options: FreshValidationOptions = {},
 ): UuidSlugError | UuidV7String {
   const bytes = parseUuid(uuid);
-  if (bytes instanceof Error || !isUuidV7Bytes(bytes))
+  if (bytes instanceof Error)
     return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
+  const valid = validateFreshBytes(bytes, options);
+  return valid instanceof Error ? valid : uuid;
+}
+
+/** Capture decoded fields before calling an external clock, which can reenter a custom schema. */
+function validateFreshBytes(
+  bytes: Uint8Array,
+  options: FreshValidationOptions = {},
+): UuidSlugError | undefined {
+  if (!isUuidV7Bytes(bytes))
+    return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
+  const timestamp = extractUuidV7Timestamp(bytes);
+  if (timestamp instanceof Error) return timestamp;
+  const hasEntropy = hasUuidV7Entropy(bytes);
   const windowMs = options.windowMs ?? 86_400_000;
   if (!Number.isFinite(windowMs) || windowMs < 0)
     return new UuidSlugError(
@@ -289,21 +308,18 @@ export function validateUuidV7Fresh(
       "invalid_timestamp",
       "now must return a finite number of Unix milliseconds.",
     );
-  const timestamp = extractUuidV7Timestamp(bytes);
-  if (timestamp instanceof Error) return timestamp;
   if (timestamp < now - windowMs || timestamp > now + windowMs)
     return new UuidSlugError("stale_uuid", "UUIDv7 timestamp is outside the accepted window.");
-  if (!hasUuidV7Entropy(bytes))
-    return new UuidSlugError("invalid_uuid", "UUIDv7 random payload is degenerate.");
-  return uuid;
+  if (!hasEntropy) return new UuidSlugError("invalid_uuid", "UUIDv7 random payload is degenerate.");
+  return undefined;
 }
 
 export function validateUuidV7SlugFresh(
   slug: string,
   options?: FreshValidationOptions,
 ): UuidSlugError | UuidV7Slug {
-  const uuid = slugToUuid(slug);
-  if (uuid instanceof Error) return uuid;
-  const valid = validateUuidV7Fresh(uuid, options);
+  const bytes = parseUuidSlug(slug);
+  if (bytes instanceof Error) return bytes;
+  const valid = validateFreshBytes(bytes, options);
   return valid instanceof Error ? valid : slug;
 }

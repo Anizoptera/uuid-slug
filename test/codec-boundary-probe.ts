@@ -11,6 +11,34 @@ import type { MaskSchema, UuidSlugCodecOptions } from "../src/types";
 
 export const codecBoundaryCases = [
   {
+    name: "freshness captures the decoded payload before an external clock can mutate it",
+    run() {
+      let decoded: Uint8Array = new Uint8Array(0);
+      const codec = createUuidSlugCodec({
+        mask: {
+          id: "retaining",
+          mix(input, output, forward) {
+            output.set(input);
+            if (!forward) decoded = output;
+          },
+        },
+      });
+      const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
+      const slug = codec.uuidV7ToMaskedSlug(uuid);
+      assert.equal(typeof slug, "string");
+      assert.equal(
+        codec.validateMaskedSlugFresh(slug as string, {
+          now: () => {
+            decoded.fill(0);
+            return 0x0190a1b2c3d4;
+          },
+          windowMs: 0,
+        }),
+        slug,
+      );
+    },
+  },
+  {
     name: "rotation isolates mutating callbacks and preserves the primary failure cause",
     run() {
       const current = createMaskSchema({ seed: "profile-current-seed" });

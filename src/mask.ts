@@ -105,11 +105,11 @@ export function uuidV7BytesToMaskedSlug(
   return encode(mixed, BASE64URL, tag & ((1 << OUTER_TAG_BITS) - 1), OUTER_TAG_BITS);
 }
 
-export function maskedSlugToUuidWithSchema(
+export function decodeMaskedSlug(
   slug: string,
   schema: MaskSchema,
   previous: readonly MaskSchema[] = [],
-): UuidSlugError | UuidString {
+): UuidSlugError | Uint8Array {
   const mixed = new Uint8Array(16);
   const outerTag = decodeInto(slug, BASE64URL, mixed, 0, 16, OUTER_TAG_BITS);
   if (outerTag instanceof Error) return outerTag;
@@ -132,7 +132,7 @@ function unmix(
   mixed: Uint8Array,
   outerTag: number,
   schema: MaskSchema,
-): UuidSlugError | UuidString | undefined {
+): UuidSlugError | Uint8Array | undefined {
   const unmixed = new Uint8Array(16);
   const failed = applyMix(schema, mixed, unmixed, false);
   if (failed) return failed;
@@ -141,5 +141,14 @@ function unmix(
   const foundTag = (extractTag(unmixed) << OUTER_TAG_BITS) | outerTag;
   restoreV7(unmixed);
   if (tagFor(unmixed, TAG_BITS) !== foundTag) return undefined;
-  return formatUuid(unmixed);
+  return unmixed;
+}
+
+/** String conversion for callers that need a canonical UUID rather than decoded bytes. */
+export function maskedSlugToUuidWithSchema(
+  slug: string,
+  schema: MaskSchema,
+): UuidSlugError | UuidString {
+  const bytes = decodeMaskedSlug(slug, schema);
+  return bytes instanceof Error ? bytes : formatUuid(bytes);
 }

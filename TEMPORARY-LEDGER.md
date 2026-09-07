@@ -33,7 +33,7 @@ Profile and optimize the current package on latest Node and Bun without changing
 - [ ] Profile CPU attribution, allocations/GC, retained heap, cold import/construction, caller-owned buffers, entropy refills, and burst/event-loop cost.
 - [ ] Cover v4/v7 native and portable generation, explicit timestamps, both plain alphabets, masking, sentinels, key rotation, freshness, malformed inputs, and custom callbacks.
 - [ ] Rank measured costs; compare removal, shared work, lookup tables, runtime primitives, specialization, buffer ownership, and algorithm-preserving rewrites before implementation. Reject speculative complexity or changed guarantees.
-- [ ] Implement each supported improvement, preserve independent vectors and boundary regressions, measure both runtimes against the same baseline, and commit verified units.
+- [ ] Finish remaining measured improvements and resource analysis; native encoding, rotation, generation views, and byte-based freshness units are implemented and individually gated. A read-only auditor is checking the accumulated performance diff; root must independently reproduce any finding before accepting it.
 - [ ] Publish reproducible profiling commands, results, rejected alternatives, resource trade-offs, limits, and any decisions needing Art in the relevant benchmark documentation.
 - [ ] Run final runtime/browser/artifact checks, audit the entire performance diff, and leave a clean owned tree; retain all held publication tasks.
 
@@ -41,7 +41,7 @@ Profile and optimize the current package on latest Node and Bun without changing
 
 - Native base64 encoding now carries masked tail bits by replacing only the spare low bits of the final character. Sentinel comparison uses direct indexed bytes rather than allocating a closure and invoking `every` per candidate. Fixed wire vectors, every spare-bit value, and sentinel/callback regressions pass in both runtimes.
 - Portable v7 writes directly at the checked offset, removing its per-call subarray. Node v7 owned bytes measured 165→74 ns, caller-owned 79→54 ns, explicit timestamp bytes 59→35 ns; Bun injected portable output measured 44→23 ns. Latest Node targeted unit: 128 cases pass; latest Bun buffer/runtime/boundary/wire cases pass. Final matched replay pending.
-- Next: keep freshness/decode intermediates as bytes until a public string is actually needed; compare allocation and CPU results before accepting the refactor.
+- Freshness now validates decoded bytes directly; format only at a string-returning boundary. Capture timestamp/entropy before external freshness callbacks can mutate a retained custom-schema output. Plain-slug freshness measured 403→100 ns Node and 273→47 ns Bun; masked freshness 628→227 ns Node and 402→154 ns Bun. Latest Node targeted suite passes 82 cases; Bun shared boundary/runtime/wire cases pass.
 
 - Native Uint8Array.toHex plus UUID slicing outperformed nibble/byte/unrolled loops, Buffer views/copies, array joins, per-byte radix conversion and DataView word formatting on Node 26.8.1 and Bun 1.4.2. Preserve a byte-table fallback for older engines.
 - Native toBase64 initially regressed Bun v4 generation because formatUuidSlug still allocated a subarray. Removing that view for an already exact 16-byte input changed the measured median from 335 ns to 71 ns (baseline 237 ns); plain encode changed from 245 ns to 72 ns. Keep strict portable decoding; native permissiveness does not match the contract.
