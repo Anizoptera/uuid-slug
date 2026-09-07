@@ -7,11 +7,7 @@ import { errorOrThrow, UuidSlugError } from "./errors";
 // it was not already paying, whereas the reverse direction would put the codec back on the keyless
 // path and undo the whole saving that split exists for.
 import { uuidV4Bytes as generateUuidV4Bytes } from "./keyless";
-import {
-  uuidToMaskedSlugWithSchema,
-  uuidV7BytesToMaskedSlug,
-  maskedSlugToUuidWithSchema,
-} from "./mask";
+import { uuidV7BytesToMaskedSlug, maskedSlugToUuidWithSchema } from "./mask";
 import { createMaskSchema, DEFAULT_MASK_SCHEMA, verifyInvertible } from "./schema";
 import type {
   MaskSchema,
@@ -32,9 +28,10 @@ import {
   formatUuidSlug,
   hasUuidV7Entropy,
   isUuidV7String,
+  isUuidV7Bytes,
+  resolveSlugAlphabet,
   parseUuid,
   slugToUuid,
-  uuidToSlug,
   extractUuidV7Timestamp,
 } from "./uuid";
 import type { FreshValidationOptions, UuidV7SentinelDefinition } from "./types";
@@ -64,7 +61,7 @@ function schemaFromOption(mask: UuidSlugCodecOptions["mask"]): UuidSlugError | M
   // from. One discriminating property beats sniffing several, which silently stops discriminating
   // when a scheme is added whose data fields differ.
   //
-  // Every schema the codec will use passes through here, which is why the invertibility proof
+  // Every schema the codec will use passes through here, which is why the invertibility smoke test
   // belongs here and nowhere else: a caller-supplied `mix` is the extension point now, and an
   // unchecked one silently makes every id it encodes unreadable.
   if (!("mix" in mask)) return createMaskSchema(mask);
@@ -73,16 +70,18 @@ function schemaFromOption(mask: UuidSlugCodecOptions["mask"]): UuidSlugError | M
 
 function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
   const sentinels: UuidV7Sentinel[] = [];
-  const byUuid = new Map<string, SentinelUuidV7Slug>();
+  const byUuid = new Set<string>();
+  const encoded: { bytes: Uint8Array; slug: SentinelUuidV7Slug }[] = [];
   const bySlug = new Map<string, UuidV7String>();
   for (const definition of definitions) {
     // `uuid` is typed `UuidV7String`, and that types NOTHING: `Brand`'s marker is optional by
     // design, so every string satisfies every brand and a v4 passed the declaration untouched.
     // It then constructed fine, masked fine, and failed on EVERY decode forever after — a
     // permanent, per-call error configured once at construction. Checked here for the same reason
-    // the invertibility proof is checked here: this is the last point at which a bad definition is
+    // the invertibility smoke test is checked here: this is the last point at which a bad definition is
     // still a caller's argument rather than a codec that cannot work.
-    if (!isUuidV7String(definition.uuid))
+    const bytes = errorOrThrow(parseUuid(definition.uuid));
+    if (!isUuidV7Bytes(bytes))
       throw new UuidSlugError(
         "invalid_uuid_version",
         `Sentinel "${definition.name}" must be a UUIDv7, got ${String(definition.uuid)}.`,
@@ -97,20 +96,21 @@ function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
     // Always base64url, never the codec's `slugAlphabet`: a sentinel slug is matched against
     // MASKED input, which is base64url by definition, so one written in another alphabet could
     // never be recognised in the position it exists for.
-    const slug = uuidToSlug(definition.uuid);
+    const slug = formatUuidSlug(bytes);
     if (slug instanceof Error) throw slug;
-    const sentinel = {
+    const sentinel = Object.freeze({
       name: definition.name,
-      // `uuidToSlug` sees only a string and returns the version-agnostic brand; the v7-ness comes
+      // `formatUuidSlug` returns the version-agnostic brand; the v7-ness comes
       // from the check above.
       slug: slug as SentinelUuidV7Slug,
       uuid: definition.uuid,
-    };
+    });
     sentinels.push(sentinel);
-    byUuid.set(definition.uuid, sentinel.slug);
+    byUuid.add(definition.uuid);
+    encoded.push({ bytes, slug: sentinel.slug });
     bySlug.set(sentinel.slug, definition.uuid);
   }
-  return { bySlug, byUuid, sentinels };
+  return { bySlug, encoded, sentinels: Object.freeze(sentinels) };
 }
 
 export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlugCodec {
@@ -127,6 +127,8 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
   );
   const generator = options.generator ?? createRuntimeGenerator(runtime);
   const slugAlphabet = options.slugAlphabet ?? "base64url";
+  errorOrThrow(resolveSlugAlphabet(slugAlphabet));
+  const acceptUnmaskedSlugs = options.acceptUnmaskedSlugs === true;
   // The runtime's own slug generator emits base64url and nothing else, so it can only serve the
   // default. Resolved once here rather than per call: the branch is on configuration, which cannot
   // change after construction.
@@ -142,7 +144,7 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
       const decoded = maskedSlugToUuidWithSchema(slug, previous);
       if (!(decoded instanceof Error)) return decoded;
     }
-    if (options.acceptUnmaskedSlugs === true) {
+    if (acceptUnmaskedSlugs) {
       const unmasked = slugToUuid(slug);
       if (!(unmasked instanceof Error)) return unmasked;
     }
@@ -155,10 +157,29 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
     return primary;
   }
 
+  function encodeMasked(bytes: Uint8Array): UuidSlugError | PublicUuidV7Slug {
+    if (!isUuidV7Bytes(bytes))
+      return new UuidSlugError(
+        "invalid_uuid_version",
+        "Masked UUID slugs require 16 UUIDv7 bytes.",
+      );
+    for (const sentinel of sentinelState.encoded) {
+      if (sentinel.bytes.every((byte, index) => byte === bytes[index])) return sentinel.slug;
+    }
+    const slug = uuidV7BytesToMaskedSlug(bytes, schema);
+    if (slug instanceof Error) return slug;
+    // Sentinel decoding takes precedence, so returning this ciphertext would recover a different UUID.
+    if (sentinelState.bySlug.has(slug))
+      return new UuidSlugError(
+        "invalid_mask_schema",
+        "Masked output collides with a reserved sentinel. Configure a different mask or sentinel set.",
+      );
+    return slug;
+  }
+
   function uuidV7ToMaskedSlug(uuid: string): UuidSlugError | PublicUuidV7Slug {
-    const sentinel = sentinelState.byUuid.get(uuid);
-    if (sentinel) return sentinel;
-    return uuidToMaskedSlugWithSchema(uuid, schema);
+    const bytes = parseUuid(uuid);
+    return bytes instanceof Error ? bytes : encodeMasked(bytes);
   }
 
   function maskedSlugToUuidV7(slug: string): UuidSlugError | UuidV7String {
@@ -201,7 +222,7 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
       ) as UuidV7Slug;
     },
     uuidV7MaskedSlug() {
-      return errorOrThrow(uuidV7BytesToMaskedSlug(errorOrThrow(generator.uuidV7Bytes()), schema));
+      return errorOrThrow(encodeMasked(errorOrThrow(generator.uuidV7Bytes())));
     },
     uuidV7ToMaskedSlug,
     maskedSlugToUuidV7,

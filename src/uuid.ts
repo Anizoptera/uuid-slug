@@ -41,6 +41,16 @@ const SLUG_ALPHABETS = { base32hex: BASE32HEX, base64url: BASE64URL } as const;
  */
 export type SlugAlphabet = keyof typeof SLUG_ALPHABETS;
 
+/** Reject inherited property names as well as unknown names from JavaScript callers. */
+export function resolveSlugAlphabet(alphabet: SlugAlphabet): Alphabet | UuidSlugError {
+  return Object.hasOwn(SLUG_ALPHABETS, alphabet)
+    ? SLUG_ALPHABETS[alphabet]
+    : new UuidSlugError(
+        "invalid_uuid_slug",
+        `Unknown slug alphabet "${alphabet}"; expected ${Object.keys(SLUG_ALPHABETS).join(" or ")}.`,
+      );
+}
+
 /** Characters needed for 16 bytes: 22 in base64url, 26 in base32hex. */
 function slugLength(alpha: Alphabet) {
   return Math.ceil(128 / alpha.bitsPerChar);
@@ -145,12 +155,8 @@ export function formatUuidSlug(
   if (badRange) return badRange;
   // Unreachable from TypeScript, where the name is a two-member union. Reached from JavaScript,
   // which is why it answers rather than indexing into `undefined`.
-  const alpha = SLUG_ALPHABETS[alphabet];
-  if (!alpha)
-    return new UuidSlugError(
-      "invalid_uuid_slug",
-      `Unknown slug alphabet "${alphabet}"; expected ${Object.keys(SLUG_ALPHABETS).join(" or ")}.`,
-    );
+  const alpha = resolveSlugAlphabet(alphabet);
+  if (alpha instanceof Error) return alpha;
   return encode(bytes.subarray(offset, offset + 16), alpha);
 }
 

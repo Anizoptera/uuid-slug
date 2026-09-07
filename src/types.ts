@@ -69,8 +69,8 @@ export interface UuidV7Generator {
  * It is also the ONLY extension point, and deliberately so. This interface is public, so a caller
  * with a scheme of their own supplies it directly; the package ships no table-shaped constructor
  * beside it, because one would privilege a single foreign layout while being strictly less
- * capable than the function it wraps. `createUuidSlugCodec` proves any schema it is given
- * reverses itself before using it.
+ * capable than the function it wraps. `createUuidSlugCodec` smoke-tests supplied schemas; callers remain responsible for
+ * invertibility across their full input domain.
  */
 export interface MaskSchema {
   readonly id: string;
@@ -213,7 +213,7 @@ export interface UuidSlugCodec extends UuidV7Generator {
   uuidV4Bytes(this: void, out?: Uint8Array, offset?: number): UuidSlugError | Uint8Array;
   uuidV4Slug(this: void): UuidV4Slug;
   uuidV7Slug(this: void): UuidV7Slug;
-  uuidV7MaskedSlug(this: void): MaskedUuidV7Slug;
+  uuidV7MaskedSlug(this: void): PublicUuidV7Slug;
   /**
    * Masking is UUIDv7-only, and the reason is that the whole format is spent. The check rides in
    * bits a v7 provably wastes — its constant version and variant, and the timestamp's top six —

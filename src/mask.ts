@@ -6,6 +6,25 @@ import { mix32, read32 } from "./feistel";
 import { formatUuid, isRfcVariant, parseUuid, uuidVersion } from "./uuid";
 import type { MaskSchema, MaskedUuidV7Slug, UuidString } from "./types";
 
+/** Custom callbacks can fail after construction; preserve their cause in the public error contract. */
+function applyMix(
+  schema: MaskSchema,
+  input: Uint8Array,
+  output: Uint8Array,
+  forward: boolean,
+): UuidSlugError | undefined {
+  try {
+    schema.mix(input, output, forward);
+    return undefined;
+  } catch (cause) {
+    return new UuidSlugError(
+      "invalid_mask_schema",
+      `Mask schema "${schema.id}" failed ${forward ? "encoding" : "decoding"}.`,
+      { cause },
+    );
+  }
+}
+
 /**
  * The check must fail a wrong key with probability 2^-width, which holds only if the function
  * spreads its input across its whole output — so this is an avalanche mixer, not a sum. Measured
@@ -81,7 +100,8 @@ export function uuidV7BytesToMaskedSlug(
   const tagged = new Uint8Array(raw);
   injectTag(tagged, tag >>> OUTER_TAG_BITS);
   const mixed = new Uint8Array(16);
-  schema.mix(tagged, mixed, true);
+  const failed = applyMix(schema, tagged, mixed, true);
+  if (failed) return failed;
   return encode(mixed, BASE64URL, tag & ((1 << OUTER_TAG_BITS) - 1), OUTER_TAG_BITS);
 }
 
@@ -93,7 +113,8 @@ export function maskedSlugToUuidWithSchema(
   const outerTag = decodeInto(slug, BASE64URL, mixed, 0, 16, OUTER_TAG_BITS);
   if (outerTag instanceof Error) return outerTag;
   const unmixed = new Uint8Array(16);
-  schema.mix(mixed, unmixed, false);
+  const failed = applyMix(schema, mixed, unmixed, false);
+  if (failed) return failed;
   // Both halves come out of the same decryption, so a wrong key garbles the observed check as
   // thoroughly as the payload: the tag needs no key of its own to tell keys apart.
   const foundTag = (extractTag(unmixed) << OUTER_TAG_BITS) | outerTag;

@@ -137,8 +137,16 @@ export function verifyInvertible(schema: MaskSchema): UuidSlugError | MaskSchema
   const mixed = new Uint8Array(16);
   const restored = new Uint8Array(16);
   for (const probe of [new Uint8Array(16), Uint8Array.from({ length: 16 }, (_, i) => i * 17)]) {
-    schema.mix(probe, mixed, true);
-    schema.mix(mixed, restored, false);
+    try {
+      schema.mix(probe.slice(), mixed, true);
+      schema.mix(mixed, restored, false);
+    } catch (cause) {
+      return new UuidSlugError(
+        "invalid_mask_schema",
+        `Mask schema "${schema.id}" failed its invertibility check.`,
+        { cause },
+      );
+    }
     if (restored.some((byte, i) => byte !== probe[i]))
       return new UuidSlugError(
         "invalid_mask_schema",
