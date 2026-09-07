@@ -13,12 +13,14 @@ import type {
 } from "./types";
 
 const HEX = "0123456789abcdef";
-const HEX_BYTES = Array.from(
-  { length: 256 },
-  (_, byte) => (HEX[byte >>> 4] as string) + (HEX[byte & 15] as string),
-);
-// Probe the standard primitive once; older runtimes retain the portable formatter.
+// Probe once and allocate the byte-pair fallback only on engines that need it.
 const nativeToHex = (Uint8Array.prototype as { toHex?: () => string }).toHex;
+const HEX_BYTES = nativeToHex
+  ? []
+  : /*#__PURE__*/ Array.from(
+      { length: 256 },
+      (_, byte) => (HEX[byte >>> 4] as string) + (HEX[byte & 15] as string),
+    );
 const HEX_DECODE = new Int8Array(128).fill(-1);
 for (let i = 0; i < 10; i += 1) HEX_DECODE[48 + i] = i;
 for (let i = 0; i < 6; i += 1) HEX_DECODE[97 + i] = 10 + i;

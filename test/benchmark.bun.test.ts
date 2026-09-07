@@ -44,6 +44,35 @@ afterAll(async () => {
   await rm(directory, { recursive: true, force: true });
 });
 
+test("profiling refuses failures after its initial success witness", async () => {
+  const api = join(import.meta.dir, "../src/index.ts");
+  const subject = join(directory, "fails-after-witness.mjs");
+  await Bun.write(
+    subject,
+    `
+export * from ${JSON.stringify(api)};
+import { formatUuid as original, UuidSlugError } from ${JSON.stringify(api)};
+let calls = 0;
+export function formatUuid(...args) {
+  return calls++ === 0 ? original(...args) : new UuidSlugError("invalid_uuid", "injected profiling failure");
+}
+`,
+  );
+  const child = Bun.spawn([process.execPath, join(import.meta.dir, "../bench/profile.ts")], {
+    env: { ...process.env, UUID_SLUG_PROFILE_MODULE: subject, UUID_SLUG_PROFILE_FILTER: "format" },
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [stdout, stderr, status] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ]);
+  expect(status).not.toBe(0);
+  expect(stderr).toContain("injected profiling failure");
+  expect(stdout).not.toContain('"name":"format"');
+});
+
 async function matrix(mode: string, timeoutMs = 30_000) {
   const matrixModule = join(import.meta.dir, "../bench/matrix.ts");
   const runtimes = [

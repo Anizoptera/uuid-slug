@@ -24,7 +24,14 @@ const portable = api.createUuidV7Generator({
   clock: () => instant,
   fillRandom: (bytes) => crypto.getRandomValues(bytes),
 });
-const ids = Array.from({ length: 256 }, (_, i) => unwrap(api.uuidV7At(instant + i)));
+// Fixed, varied payloads make separate runtime/revision processes exercise the same inputs.
+const ids = Array.from({ length: 256 }, (_, i) => {
+  const time = (instant + i).toString(16).padStart(12, "0");
+  const a = ((i * 251) & 4095).toString(16).padStart(3, "0");
+  const b = (0x8000 | ((i * 31337) & 16383)).toString(16);
+  const tail = (Math.imul(i + 1, 0x9e3779b1) >>> 0).toString(16).padStart(8, "0");
+  return `${time.slice(0, 8)}-${time.slice(8)}-7${a}-${b}-${tail}${i.toString(16).padStart(4, "0")}`;
+});
 const raw = ids.map((id) => unwrap(api.parseUuid(id)));
 const slugs = ids.map((id) => unwrap(api.uuidToSlug(id)));
 const base32 = ids.map((id) => unwrap(api.uuidToSlug(id, "base32hex")));
@@ -36,6 +43,8 @@ if (oldOnly.length === 0) throw new Error("No previous-key-only fixtures");
 const into = new Uint8Array(24);
 const sentinel = codec.sentinels[0];
 if (!sentinel) throw new Error("Missing sentinel fixture");
+const badUuid = "z".repeat(36);
+const badSlug = "!".repeat(22);
 const cases: Record<
   string,
   (i: number) => string | number | boolean | Uint8Array | Error | object
@@ -62,6 +71,8 @@ const cases: Record<
   "base32.encode": (i) => api.uuidToSlug(ids[i & 255] as string, "base32hex"),
   "base32.decode": (i) => api.slugToUuid(base32[i & 255] as string),
   "slug.into": (i) => api.parseUuidSlug(slugs[i & 255] as string, into, 4),
+  "guard.invalid.uuid": () => api.isUuidV7String(badUuid),
+  "guard.invalid.slug": () => api.isUuidV7Slug(badSlug),
   "guard.uuid": (i) => api.isUuidV7String(ids[i & 255]),
   "guard.slug": (i) => api.isUuidV7Slug(slugs[i & 255]),
   "fresh.uuid": (i) => api.validateUuidV7Fresh(ids[i & 255] as string, now),
@@ -74,16 +85,24 @@ const cases: Record<
   "rotation.previous": (i) => rotated.maskedSlugToUuidV7(oldOnly[i % oldOnly.length] as string),
   "sentinel.encode": () => codec.uuidV7ToMaskedSlug(sentinel.uuid),
   "sentinel.decode": () => codec.maskedSlugToUuidV7(sentinel.slug),
-  "invalid.uuid": () => api.parseUuid("z".repeat(36)),
-  "invalid.slug": () => api.parseUuidSlug("!".repeat(22)),
+  "invalid.uuid": () => api.parseUuid(badUuid),
+  "invalid.slug": () => api.parseUuidSlug(badSlug),
   "invalid.mask": (i) => codec.maskedSlugToUuidV7(oldOnly[i % oldOnly.length] as string),
   "construct.codec": () => api.createUuidSlugCodec({ mask: current }),
   "construct.schema": () => api.createMaskSchema(current),
 };
 let sink = 0;
-function batch(fn: (i: number) => ReturnType<(typeof cases)[string]>, count: number) {
+function batch(
+  fn: (i: number) => ReturnType<(typeof cases)[string]>,
+  count: number,
+  expectedError: boolean,
+) {
   for (let i = 0; i < count; i += 1) {
     const value = fn(i);
+    if (expectedError !== value instanceof Error)
+      throw new Error("Profile operation changed its expected success/failure outcome", {
+        cause: value,
+      });
     if (typeof value === "string") sink ^= value.charCodeAt(i % value.length);
     else if (typeof value === "number") sink ^= value;
     else if (typeof value === "boolean") sink ^= Number(value);
@@ -114,12 +133,14 @@ for (const [name, fn] of selected) {
   const witness = fn(0);
   if (name.startsWith("invalid.") !== witness instanceof Error)
     throw new Error(`Unexpected outcome for ${name}`, { cause: witness });
-  batch(fn, 2048);
+  const expectedError = name.startsWith("invalid.");
+  batch(fn, 2048, expectedError);
   gc?.();
   const heapBefore = process.memoryUsage();
   const cpuBefore = process.cpuUsage();
   const ns: number[] = [];
   let maxBatchMs = 0;
+  let maxUninterruptedMs = 0;
   let operations = 0;
   for (let sample = 0; sample < samples; sample += 1) {
     let count = 0;
@@ -127,11 +148,12 @@ for (const [name, fn] of selected) {
     let elapsed = 0;
     do {
       const began = performance.now();
-      batch(fn, 256);
+      batch(fn, 256, expectedError);
       maxBatchMs = Math.max(maxBatchMs, performance.now() - began);
       count += 256;
       elapsed = performance.now() - start;
     } while (elapsed < duration);
+    maxUninterruptedMs = Math.max(maxUninterruptedMs, elapsed);
     ns.push((elapsed * 1e6) / count);
     operations += count;
     await yieldToLoop();
@@ -147,6 +169,7 @@ for (const [name, fn] of selected) {
       ns,
       operations,
       maxBatchMs,
+      maxUninterruptedMs,
       sink,
       cpuUs: cpu.user + cpu.system,
       heapDelta: heapAfter.heapUsed - heapBefore.heapUsed,

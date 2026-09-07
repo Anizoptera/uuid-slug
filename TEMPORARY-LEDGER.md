@@ -57,6 +57,11 @@ Profile and optimize the current package on latest Node and Bun without changing
 - [ ] Independently audit the dependency result and arrange its reviewed registry release before adopting a normal npm dependency. No Git/local pin; publication needs its own authorization.
 - [ ] Configure uuid-slug to validate and publish the same archive in one packing invocation; remove the separate workflow artifact pack. Prove no recursive packing and exact inspected/uploaded/attested bytes; preserve tag-derived dist-tag.
 
+### Profiler audit corrections
+
+- The independent auditor identified late errors being counted as successful throughput, uninterrupted samples being longer than their inner batch timing, and an unused fallback hex table on native engines. Root reproduced the first by deleting the new guard: its regression fails with child exit 0; restoring it rejects the injected failure. Full uninterrupted interval is now reported separately; fallback table construction is conditional.
+- Compare deterministic varying inputs on all later runs. Early exploratory profiles used independently generated input sets and are provisional; final matched runs supersede their numerical claims.
+
 ## Acceptance
 
 - [x] Audit the current accumulated diff against baseline, including agent-owned paths, for contract changes, error propagation, runtime branches, retained comments, artifact conditions, retry identity, and unnecessary checks. The benchmark agent's initial nonexistent codec methods were caught by root typecheck and corrected. Root's final module-extension audit caught and fixed a gap in archive inspection.
