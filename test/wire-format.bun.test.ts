@@ -50,3 +50,6 @@ describe("wire format is identical across runtimes", () => {
     }
   });
 });
+
+import { verifyHashContinuations } from "./siphash-probe";
+test("interleaved hash continuations preserve every reference vector", verifyHashContinuations);
