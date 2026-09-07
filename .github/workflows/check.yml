@@ -61,6 +61,13 @@ jobs:
           package-manager-cache: false
       # Vitest only: it is the suite that runs on Node, and the Bun suite is covered above.
       - run: bunx vitest run
+      # Current engines exercise optional native paths that pinned runtimes cannot reach.
+      - if: matrix.node == 'current'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+      - if: matrix.node == 'current'
+        run: bun run build && bun test test/*.bun.test.ts && bun run perf:check
 
   # Packed browser/Deno consumers need external engines, so keep their setup outside local check.
   browser:

@@ -73,6 +73,39 @@ export function formatUuid(...args) {
   expect(stdout).not.toContain('"name":"format"');
 });
 
+test.each([
+  ["resources", 'new UuidSlugError("invalid_uuid", "discarded error");', "errors=1 exceeds 0"],
+  [
+    "latency",
+    "for (let i = 0; i < 64; i += 1) { const result = parseUuid(value); if (result instanceof Error) throw result; }",
+    "median ratio",
+  ],
+])("%s gate rejects a result-preserving regression", async (probe, extraWork, diagnostic) => {
+  const api = join(import.meta.dir, "../src/index.ts");
+  const subject = join(directory, `${probe}-regression.mjs`);
+  await Bun.write(
+    subject,
+    `
+export * from ${JSON.stringify(api)};
+import { isUuidV7String as original, parseUuid, UuidSlugError } from ${JSON.stringify(api)};
+export function isUuidV7String(value) { ${extraWork} return original(value); }
+`,
+  );
+  const child = Bun.spawn([process.execPath, join(import.meta.dir, `../bench/${probe}.ts`)], {
+    env: { ...process.env, UUID_SLUG_PROFILE_MODULE: subject },
+    stdout: "pipe",
+    stderr: "pipe",
+    timeout: 5000,
+  });
+  const [stdout, stderr, status] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ]);
+  expect(status).not.toBe(0);
+  expect(stdout + stderr).toContain(diagnostic);
+});
+
 async function matrix(mode: string, timeoutMs = 30_000) {
   const matrixModule = join(import.meta.dir, "../bench/matrix.ts");
   const runtimes = [

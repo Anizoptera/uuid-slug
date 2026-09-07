@@ -71,7 +71,7 @@
     "bench:smoke": "bun bench/run.ts --smoke",
     "build": "tsdown",
     "changelog": "git-cliff --unreleased --prepend CHANGELOG.md --tag",
-    "check": "bun run build && bun run --parallel format:check lint claude-link:check typecheck test bench:smoke artifact:check",
+    "check": "bun run build && bun run --parallel format:check lint claude-link:check typecheck test bench:smoke artifact:check && bun run perf:check",
     "claude-link:check": "test -L CLAUDE.md && test \"$(readlink CLAUDE.md)\" = AGENTS.md",
     "clean": "rm -rf dist bench/reports",
     "format": "oxfmt .",
@@ -87,7 +87,8 @@
     "lint": "oxlint --type-aware",
     "lint:fix": "oxlint --type-aware --fix",
     "test:browser": "vitest run --config vitest.browser.config.ts",
-    "artifact:web": "bun scripts/check-artifact.ts --web"
+    "artifact:web": "bun scripts/check-artifact.ts --web",
+    "perf:check": "bun bench/check.ts"
   },
   "dependencies": {},
   "devDependencies": {

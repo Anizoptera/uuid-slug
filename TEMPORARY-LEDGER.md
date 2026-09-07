@@ -30,11 +30,11 @@ Profile and optimize the current package on latest Node and Bun without changing
 
 - [x] Establish runtimes: official Node index reports 26.8.1; npm Bun latest and official Bun site report 1.4.2. Profile exact isolated executables; project pins unchanged.
 - [x] Capture package-import baselines: bench/profile.ts varies 256 input UUIDs, consumes outputs, samples repeatedly, records runtime/CPU/heap/batch time, and yields between samples. CPU measurements run sequentially.
-- [ ] Add Node/Bun resource regression checks for avoidable allocations, discarded errors, repeated decoding, and entropy refills; add a short controlled timing lane for material slowdowns and falsify it with injected regressions. Art explicitly requested this protection during profiling.
+- [x] Add Node/Bun resource regression checks for avoidable allocations, discarded errors, repeated decoding, and entropy refills; add a short controlled timing lane for material slowdowns and falsify it with injected regressions. Art explicitly requested this protection during profiling.
 - [ ] Profile CPU attribution, allocations/GC, retained heap, cold import/construction, caller-owned buffers, entropy refills, and burst/event-loop cost.
 - [ ] Cover v4/v7 native and portable generation, explicit timestamps, both plain alphabets, masking, sentinels, key rotation, freshness, malformed inputs, and custom callbacks.
 - [ ] Rank measured costs; compare removal, shared work, lookup tables, runtime primitives, specialization, buffer ownership, and algorithm-preserving rewrites before implementation. Reject speculative complexity or changed guarantees.
-- [ ] Finish remaining measured improvements and resource analysis; native encoding, rotation, generation views, and byte-based freshness units are implemented and individually gated. The read-only audit finished; root reproduced and repaired its findings listed below. Boolean predicates are implemented and gated; resource regression protection is the current unit.
+- [ ] Finish remaining measured improvements and resource analysis; native encoding, rotation, generation views, and byte-based freshness units are implemented and individually gated. The read-only audit finished; root reproduced and repaired its findings listed below. Boolean predicates are implemented and gated; resource regression protection is implemented; final resource attribution and matched replay remain.
 - [ ] Publish reproducible profiling commands, results, rejected alternatives, resource trade-offs, limits, and any decisions needing Art in the relevant benchmark documentation.
 - [ ] Run final runtime/browser/artifact checks, audit the entire performance diff, and leave a clean owned tree; retain all held publication tasks.
 
@@ -61,6 +61,8 @@ Profile and optimize the current package on latest Node and Bun without changing
 - [ ] Configure uuid-slug to validate and publish the same archive in one packing invocation; remove the separate workflow artifact pack. Prove no recursive packing and exact inspected/uploaded/attested bytes; preserve tag-derived dist-tag.
 
 ### Profiler audit corrections
+
+- Resource gates now count forwarded real operations in fresh Node/Bun processes. Controls exposed an inherited typed-array method and an optimized-away unused call; both instruments now prove reachability. Timing gates alternate related primitives and use median ratios; both gates reject result-preserving injected regressions. The integrated lane runs performance checks after competing tests finish; latest Node/Bun CI covers new capabilities.
 
 - The independent auditor identified late errors being counted as successful throughput, uninterrupted samples being longer than their inner batch timing, and an unused fallback hex table on native engines. Root reproduced the first by deleting the new guard: its regression fails with child exit 0; restoring it rejects the injected failure. Full uninterrupted interval is now reported separately; fallback table construction is conditional.
 - Compare deterministic varying inputs on all later runs. Early exploratory profiles used independently generated input sets and are provisional; final matched runs supersede their numerical claims.
