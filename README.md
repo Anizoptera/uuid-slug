@@ -155,7 +155,7 @@ format; use your store to check issuance.
   alphabets, and `UuidBytes` brands 16 raw bytes — for annotating storage of your own, which is why
   it appears in no signature here: a byte writer returns the caller's output array, which can be
   longer than the UUID range it writes.
-- Shapes: `UuidSlugCodec` and `UuidSlugCodecOptions`, `MaskSchema` and `MaskSchemaOptions`,
+- Shapes: `UuidSlugCodec` and `UuidSlugCodecOptions`, `MaskSchema`, `MaskSchemaOptions` and `AsyncMaskSchemaOptions`,
   `UuidV7Sentinel` and `UuidV7SentinelDefinition`, `UuidV7Generator` and
   `UuidV7GeneratorOptions`, `FreshValidationOptions`, `UuidSlugErrorCode`.
 
@@ -213,7 +213,7 @@ Also exported, all module-level:
   not a v7, because a v4's first six bytes are random and would otherwise read back as a
   plausible date. `hasUuidV7Entropy` answers whether the 74 random bits are anything but
   all-zero or all-one. This rejects obvious degeneracy; it does not measure unpredictability.
-- `createMaskSchema` builds a schema from a seed; `DEFAULT_MASK_SCHEMA` is the one a codec uses
+- `createMaskSchema` builds a schema from a seed; `createMaskSchemaAsync` adds cooperative cancellation; `DEFAULT_MASK_SCHEMA` is the one a codec uses
   when you pass no `mask`, exported so `mask: DEFAULT_MASK_SCHEMA` can be a visible choice rather
   than an omission. `UUID_V7_SENTINEL_DEFINITIONS` is the default sentinel list.
 - `createUuidV7Generator(options)` builds a generator from your own `clock` and `fillRandom`, for
@@ -246,6 +246,33 @@ is not a proof of invertibility; the caller remains responsible for the complete
 `createMaskSchema({ seed, keyIterations })` returns an error for invalid seed options.
 `createUuidSlugCodec` throws for invalid options, including a supplied schema that fails its
 smoke tests. Build a seed schema first when you want to inspect its returned error.
+
+For expensive derivation, await `createMaskSchemaAsync` and pass the completed schema to the codec:
+
+```ts
+import { createMaskSchemaAsync, createUuidSlugCodec } from "@anizoptera/uuid-slug";
+
+const controller = new AbortController();
+const schema = await createMaskSchemaAsync({
+  seed, // the same stored secret used by the synchronous constructor
+  keyIterations, // preserve the setting used for issued slugs
+  signal: controller.signal, // optional; call controller.abort(reason) to stop
+});
+if (schema instanceof Error) throw schema;
+const codec = createUuidSlugCodec({ mask: schema });
+```
+
+The async form derives the same keys and accepts the same seed settings. It splits encoding,
+packing and hashing into cooperative work slices, allowing host tasks to run during long
+construction. Cancellation stops derivation and returns `UuidSlugError` with code `aborted` and
+`signal.reason` as its cause. Invalid options return `invalid_mask_schema`; unexpected construction
+failures retain their cause. No partially derived schema is returned.
+
+Options are captured when called. Byte seeds are copied before the first suspension, so later
+caller mutation cannot change the key; synchronize concurrent writes to shared backing memory.
+The initial copy of a very large byte seed, allocation, GC and host scheduling can exceed the
+responsiveness target. Small derivations need no host yield. Construct once and reuse the schema;
+passing seed options to each new codec would repeat derivation.
 
 `previousMasks` is how you rotate a seed. Decoding tries `mask` first, then each entry in the
 order you list them, and the first whose check passes wins — so put the newest first, and keep

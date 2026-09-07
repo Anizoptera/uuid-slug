@@ -12,12 +12,13 @@ export { UUID_SLUG_ERROR_CODES, UuidRuntimeError, UuidSlugError } from "./errors
 /**
  * Exported because `UuidSlugError.code` is public and the README tells consumers to branch on it.
  * The type was emitted into the declarations and left out of the export list, so the property had
- * a type no consumer could name — a switch over it could not be written without restating the ten
+ * a type no consumer could name — a switch over it could not be written without restating the
  * literals by hand, which is exactly the duplication `UUID_SLUG_ERROR_CODES` exists to prevent.
  */
 export type { UuidSlugErrorCode } from "./errors";
-export { DEFAULT_MASK_SCHEMA, createMaskSchema } from "./schema";
+export { DEFAULT_MASK_SCHEMA, createMaskSchema, createMaskSchemaAsync } from "./schema";
 export type {
+  AsyncMaskSchemaOptions,
   Base64UrlString,
   FreshValidationOptions,
   MaskSchema,

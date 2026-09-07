@@ -112,6 +112,11 @@ export interface MaskSchemaOptions {
   readonly keyIterations?: number;
 }
 
+/** The synchronous seed options plus cooperative cancellation; no scheduling knobs are required. */
+export interface AsyncMaskSchemaOptions extends MaskSchemaOptions {
+  readonly signal?: AbortSignal;
+}
+
 export interface UuidV7SentinelDefinition {
   readonly name: string;
   readonly uuid: UuidV7String;

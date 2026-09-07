@@ -49,6 +49,19 @@ not an established security strength. The default iteration count is one. Increa
 construction cost and the cost of trying candidate seeds; it cannot replace a randomly generated
 seed. A known UUID/slug pair permits offline seed guessing.
 
+`createMaskSchemaAsync` uses the same packing, hash and key-expansion primitives. A continuation
+stores only partial hash state; output words are written after finalisation. Cooperative work
+bounds text/byte packing and message absorption as well as iteration batches, so a large seed
+cannot hide inside one uninterrupted hash. The driver yields to host tasks when its work slice
+expires and checks cancellation before continuing. Tiny derivations avoid scheduling altogether.
+The synchronous entry keeps an unlimited absorption budget and allocates no continuation.
+
+Capture scalar options and copy byte seeds before suspension. Strings are immutable and can be
+UTF-8 encoded in pieces; keep surrogate pairs together across piece boundaries. Memory copying,
+allocation and runtime pauses remain outside the work-slice target. A new size restriction or
+changed seed transformation would alter accepted inputs or keys and must not be introduced as a
+performance repair.
+
 ## Mixing the block
 
 The built-in scheme runs four Feistel rounds over four big-endian 32-bit words: `left0 left1`

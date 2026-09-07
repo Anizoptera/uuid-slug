@@ -127,7 +127,7 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
     const runner = path.join(root, "consumer.mjs");
     await Bun.write(
       runner,
-      'import * as api from "@anizoptera/uuid-slug";\nimport { probeConsumer } from "./probe.mjs";\nprobeConsumer(api);\n',
+      'import * as api from "@anizoptera/uuid-slug";\nimport { probeConsumer } from "./probe.mjs";\nawait probeConsumer(api);\n',
     );
     const consumers = await Promise.allSettled([
       command(

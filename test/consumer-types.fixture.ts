@@ -1,5 +1,8 @@
-import { createUuidSlugCodec, uuidV7Slug } from "@anizoptera/uuid-slug";
+import { createMaskSchemaAsync, createUuidSlugCodec, uuidV7Slug } from "@anizoptera/uuid-slug";
 import type {
+  AsyncMaskSchemaOptions,
+  MaskSchema,
+  UuidSlugError,
   MaskedUuidV7Slug,
   PublicUuidV7Slug,
   UuidV4Slug,
@@ -18,3 +21,12 @@ const v4: UuidV4Slug = plain;
 // @ts-expect-error A generated public slug may be a raw sentinel.
 const onlyMasked: MaskedUuidV7Slug = publicSlug;
 void [masked, v4, onlyMasked];
+
+const schemaOptions: AsyncMaskSchemaOptions = {
+  seed: "consumer-schema-seed",
+  signal: new AbortController().signal,
+};
+const pendingSchema: Promise<MaskSchema | UuidSlugError> = createMaskSchemaAsync(schemaOptions);
+// @ts-expect-error A pending schema cannot be used as a codec key before awaiting its result.
+createUuidSlugCodec({ mask: pendingSchema });
+void pendingSchema;

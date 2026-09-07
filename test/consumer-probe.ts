@@ -6,7 +6,7 @@ function equal(actual: unknown, expected: unknown, context: string): void {
 }
 
 /** Exercise public calls through the module supplied by the consumer's own resolver. */
-export function probeConsumer(api: typeof Api): void {
+export async function probeConsumer(api: typeof Api): Promise<void> {
   const uuid = "019ff19b-58b8-7000-9b1b-df713bd5562c";
   equal(api.isUuidV7String(api.uuidV7()), true, "v7 generation");
   equal(api.isUuidV4String(api.uuidV4()), true, "v4 generation");
@@ -26,6 +26,44 @@ export function probeConsumer(api: typeof Api): void {
       "011f71fb-0450-7121-8848-484a12121212",
       `${alphabet} custom generator`,
     );
+  }
+  const schemaOptions = { seed: "consumer-schema-seed", keyIterations: 1024 };
+  const synchronous = api.createMaskSchema(schemaOptions);
+  const asynchronous = await api.createMaskSchemaAsync(schemaOptions);
+  if (synchronous instanceof Error) throw synchronous;
+  if (asynchronous instanceof Error) throw asynchronous;
+  equal(
+    api.createUuidSlugCodec({ mask: asynchronous }).uuidV7ToMaskedSlug(uuid),
+    api.createUuidSlugCodec({ mask: synchronous }).uuidV7ToMaskedSlug(uuid),
+    "async schema wire identity",
+  );
+  // An independent host task must be able to cancel real derivation through the installed export.
+  const controller = new AbortController();
+  const channel = new MessageChannel();
+  channel.port1.addEventListener("message", () => controller.abort("consumer cancellation"), {
+    once: true,
+  });
+  channel.port1.start();
+  channel.port2.postMessage(null);
+  try {
+    const cancelled = await api.createMaskSchemaAsync({
+      seed: schemaOptions.seed,
+      keyIterations: 1 << 24,
+      signal: controller.signal,
+    });
+    equal(
+      cancelled instanceof api.UuidSlugError && cancelled.code,
+      "aborted",
+      "host-task cancellation",
+    );
+    equal(
+      cancelled instanceof api.UuidSlugError && cancelled.cause,
+      "consumer cancellation",
+      "cancellation cause",
+    );
+  } finally {
+    channel.port1.close();
+    channel.port2.close();
   }
   const codec = api.createUuidSlugCodec();
   equal(codec.uuidV7ToMaskedSlug(uuid), "uqgITQGagyxsoNARAd_pxu", "masked wire vector");

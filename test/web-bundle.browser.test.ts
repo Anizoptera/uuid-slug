@@ -3,7 +3,7 @@ import * as api from "@anizoptera/uuid-slug";
 import { probeConsumer } from "./consumer-probe";
 
 // Package self-reference exercises the browser export condition through Vite.
-test("public calls work in a browser without Node globals", () => {
+test("public calls work in a browser without Node globals", async () => {
   expect(typeof process).toBe("undefined");
-  probeConsumer(api);
+  await probeConsumer(api);
 });

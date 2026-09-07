@@ -3,7 +3,9 @@
 import { UuidSlugError } from "./errors";
 import { FEISTEL_KEY_WORDS, feistel16 } from "./feistel";
 import { halfSipHash } from "./siphash";
-import type { MaskSchema, MaskSchemaOptions } from "./types";
+import type { HashContinuation } from "./siphash";
+import { yieldToHost } from "./yield";
+import type { AsyncMaskSchemaOptions, MaskSchema, MaskSchemaOptions } from "./types";
 
 /** Reject short seeds early; length alone cannot make a chosen secret unpredictable. */
 const SEED_MIN_BYTES = 16;
@@ -30,9 +32,23 @@ function seedBytes(seed: string | Uint8Array) {
 /** Repack bytes as the little-endian 32-bit words `halfSipHash` absorbs. */
 function seedWords(seed: Uint8Array) {
   const words = new Int32Array(Math.ceil(seed.length / 4) + 1);
-  for (const [index, byte] of seed.entries())
-    words[index >>> 2] = (words[index >>> 2] as number) | (byte << ((index & 3) * 8)) | 0;
+  writeSeedWords(seed, words);
   return words;
+}
+
+/** Pack one byte range; a running byte offset also handles UTF-8 chunks ending mid-word. */
+function writeSeedWords(
+  seed: Uint8Array,
+  words: Int32Array,
+  offset = 0,
+  start = 0,
+  end = seed.length,
+) {
+  for (let index = start; index < end; index += 1) {
+    const absolute = offset + index;
+    words[absolute >>> 2] =
+      (words[absolute >>> 2] as number) | ((seed[index] as number) << ((absolute & 3) * 8));
+  }
 }
 
 /**
@@ -57,6 +73,11 @@ function derivedKeys(seed: Uint8Array, iterations: number) {
   const words = seedWords(seed);
   const chainA = chain(CHAIN_KEY0, CHAIN_A_KEY1, words, seed.length, iterations);
   const chainB = chain(CHAIN_KEY0, CHAIN_B_KEY1, words, seed.length, iterations);
+  return roundKeys(chainA, chainB);
+}
+
+/** The same final key expansion follows synchronous and cooperative derivation. */
+function roundKeys(chainA: Int32Array, chainB: Int32Array) {
   const keys = new Int32Array(FEISTEL_KEY_WORDS);
   const index = new Int32Array(1);
   const fromA = new Int32Array(2);
@@ -72,7 +93,10 @@ function derivedKeys(seed: Uint8Array, iterations: number) {
 }
 
 function feistelSchema(id: string, seed: Uint8Array, iterations: number): MaskSchema {
-  const keys = derivedKeys(seed, iterations);
+  return schemaFromKeys(id, derivedKeys(seed, iterations));
+}
+
+function schemaFromKeys(id: string, keys: Int32Array): MaskSchema {
   return {
     id,
     mix(input, output, forward) {
@@ -83,18 +107,148 @@ function feistelSchema(id: string, seed: Uint8Array, iterations: number): MaskSc
 
 export function createMaskSchema(options: MaskSchemaOptions): UuidSlugError | MaskSchema {
   const seed = seedBytes(options.seed);
-  if (seed.length < SEED_MIN_BYTES)
+  const short = invalidSeedLength(seed.length);
+  if (short) return short;
+  const iterations = options.keyIterations ?? 1;
+  const invalid = invalidIterations(iterations);
+  if (invalid) return invalid;
+  return feistelSchema(options.id ?? "seeded", seed, iterations);
+}
+
+function invalidSeedLength(length: number): UuidSlugError | undefined {
+  if (length < SEED_MIN_BYTES)
     return new UuidSlugError(
       "invalid_mask_schema",
-      `Mask seed must be at least ${SEED_MIN_BYTES} bytes, got ${seed.length}. Generate one with \`openssl rand -base64 32\` rather than choosing it; a guessable seed hides nothing however long it is.`,
+      `Mask seed must be at least ${SEED_MIN_BYTES} bytes, got ${length}. Generate one with \`openssl rand -base64 32\` rather than choosing it; a guessable seed hides nothing however long it is.`,
     );
-  const iterations = options.keyIterations ?? 1;
+  return undefined;
+}
+
+function invalidIterations(iterations: number): UuidSlugError | undefined {
   if (!Number.isInteger(iterations) || iterations < 1 || iterations > MAX_KEY_ITERATIONS)
     return new UuidSlugError(
       "invalid_mask_schema",
-      `Mask keyIterations must be a whole number in 1..${MAX_KEY_ITERATIONS}, got ${String(options.keyIterations)}.`,
+      `Mask keyIterations must be a whole number in 1..${MAX_KEY_ITERATIONS}, got ${String(iterations)}.`,
     );
-  return feistelSchema(options.id ?? "seeded", seed, iterations);
+  return undefined;
+}
+
+/** Bounded byte work between checkpoints, independent of total seed size or iteration count. */
+const CHUNK_BYTES = 4096;
+
+function* cooperativeChain(
+  key0: number,
+  key1: number,
+  words: Int32Array,
+  length: number,
+  iterations: number,
+): Generator<void, Int32Array, void> {
+  const out = new Int32Array(2);
+  out[0] = key0;
+  out[1] = key1;
+  const hashesPerChunk = Math.max(1, Math.floor(CHUNK_BYTES / (length + 4)));
+  let sinceCheckpoint = 0;
+  for (let i = 0; i < iterations; i += 1) {
+    let continuation: HashContinuation | undefined;
+    do {
+      continuation = halfSipHash(out[0], out[1], words, length, out, continuation, CHUNK_BYTES / 4);
+      if (continuation) yield;
+    } while (continuation);
+    sinceCheckpoint += 1;
+    if (sinceCheckpoint >= hashesPerChunk) {
+      sinceCheckpoint = 0;
+      yield;
+    }
+  }
+  return out;
+}
+
+function* cooperativeKeys(
+  seed: string | Uint8Array,
+  iterations: number,
+): Generator<void, Int32Array | UuidSlugError, void> {
+  // Byte seeds were snapshotted before suspension. Strings are immutable, so encoding can yield.
+  const chunks: Uint8Array[] = [];
+  let length = 0;
+  if (typeof seed === "string") {
+    const encoder = new TextEncoder();
+    for (let start = 0; start < seed.length;) {
+      let end = Math.min(seed.length, start + CHUNK_BYTES);
+      // Do not split a surrogate pair: encoding either half alone would substitute U+FFFD.
+      const last = seed.charCodeAt(end - 1);
+      const next = seed.charCodeAt(end);
+      if (end < seed.length && last >= 0xd800 && last <= 0xdbff && next >= 0xdc00 && next <= 0xdfff)
+        end -= 1;
+      const bytes = encoder.encode(seed.slice(start, end));
+      chunks.push(bytes);
+      length += bytes.length;
+      start = end;
+      yield;
+    }
+  } else {
+    chunks.push(seed);
+    length = seed.length;
+  }
+  const short = invalidSeedLength(length);
+  if (short) return short;
+  const words = new Int32Array(Math.ceil(length / 4) + 1);
+  let offset = 0;
+  for (const bytes of chunks) {
+    for (let start = 0; start < bytes.length; start += CHUNK_BYTES) {
+      writeSeedWords(bytes, words, offset, start, Math.min(bytes.length, start + CHUNK_BYTES));
+      yield;
+    }
+    offset += bytes.length;
+  }
+  chunks.length = 0;
+  const chainA = yield* cooperativeChain(CHAIN_KEY0, CHAIN_A_KEY1, words, length, iterations);
+  const chainB = yield* cooperativeChain(CHAIN_KEY0, CHAIN_B_KEY1, words, length, iterations);
+  return roundKeys(chainA, chainB);
+}
+
+/**
+ * Derive the same schema while allowing other host tasks to run. Options and byte contents are
+ * captured before suspension; cancellation returns an `aborted` error with the signal's reason
+ * as its cause. Checkpoints stop computation rather than racing a still-running derivation.
+ *
+ * Two-millisecond work slices leave headroom for host scheduling. This is a responsiveness target,
+ * not a bound on the initial byte snapshot, allocation, GC or scheduler delays. Tiny derivations
+ * need no host yield. Passing the result as a codec's `mask` avoids deriving it again.
+ */
+export async function createMaskSchemaAsync(
+  options: AsyncMaskSchemaOptions,
+): Promise<MaskSchema | UuidSlugError> {
+  try {
+    const { signal } = options;
+    const aborted = () =>
+      new UuidSlugError("aborted", "Mask schema construction was aborted.", {
+        cause: signal?.reason,
+      });
+    if (signal?.aborted) return aborted();
+    const { seed: input, keyIterations = 1, id = "seeded" } = options;
+    const invalid = invalidIterations(keyIterations);
+    if (invalid) return invalid;
+    const seed = typeof input === "string" ? input : new Uint8Array(input);
+    const steps = cooperativeKeys(seed, keyIterations);
+    let deadline = performance.now() + 2;
+    while (true) {
+      if (signal?.aborted) {
+        const failure = aborted();
+        steps.return(failure);
+        return failure;
+      }
+      const step = steps.next();
+      if (step.done)
+        return step.value instanceof Error ? step.value : schemaFromKeys(id, step.value);
+      if (performance.now() >= deadline) {
+        // eslint-disable-next-line no-await-in-loop -- each slice must yield before continuing the dependent derivation
+        await yieldToHost();
+        deadline = performance.now() + 2;
+      }
+    }
+  } catch (cause) {
+    return new UuidSlugError("invalid_mask_schema", "Mask schema construction failed.", { cause });
+  }
 }
 
 /**

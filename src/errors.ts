@@ -2,6 +2,7 @@
 
 /** Consumers can enumerate error codes at runtime without duplicating the type's vocabulary. */
 export const UUID_SLUG_ERROR_CODES = [
+  "aborted",
   "invalid_base32",
   "invalid_base64url",
   "invalid_buffer",
