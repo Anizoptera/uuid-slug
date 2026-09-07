@@ -84,7 +84,7 @@ const SLUG_LENGTHS = Object.values(SLUG_ALPHABETS)
   .join(" or ");
 
 function hexValue(code: number) {
-  return code < HEX_DECODE.length ? HEX_DECODE[code] : -1;
+  return HEX_DECODE[code] ?? -1;
 }
 
 export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): UuidSlugError | Uint8Array {
@@ -99,9 +99,9 @@ export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): UuidSlugE
   if (badRange) return badRange;
 
   for (let byteIndex = 0; byteIndex < UUID_BYTE_OFFSETS.length; byteIndex += 1) {
-    const textOffset = UUID_BYTE_OFFSETS[byteIndex] ?? 0;
-    const high = hexValue(uuid.charCodeAt(textOffset)) ?? -1;
-    const low = hexValue(uuid.charCodeAt(textOffset + 1)) ?? -1;
+    const textOffset = UUID_BYTE_OFFSETS[byteIndex] as number;
+    const high = hexValue(uuid.charCodeAt(textOffset));
+    const low = hexValue(uuid.charCodeAt(textOffset + 1));
     if (high < 0 || low < 0)
       return new UuidSlugError("invalid_uuid", `Invalid UUID hex at offset ${textOffset}.`);
     target[offset + byteIndex] = (high << 4) | low;
@@ -139,10 +139,7 @@ export function isUuidString(uuid: null | string | undefined): uuid is UuidStrin
   if (uuid[8] !== "-" || uuid[13] !== "-" || uuid[18] !== "-" || uuid[23] !== "-") return false;
   for (let i = 0; i < UUID_BYTE_OFFSETS.length; i += 1) {
     const offset = UUID_BYTE_OFFSETS[i] as number;
-    if (
-      (hexValue(uuid.charCodeAt(offset)) ?? -1) < 0 ||
-      (hexValue(uuid.charCodeAt(offset + 1)) ?? -1) < 0
-    )
+    if (hexValue(uuid.charCodeAt(offset)) < 0 || hexValue(uuid.charCodeAt(offset + 1)) < 0)
       return false;
   }
   return true;
