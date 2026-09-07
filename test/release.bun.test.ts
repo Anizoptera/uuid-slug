@@ -1,0 +1,144 @@
+import { createHash } from "node:crypto";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { expect, test } from "bun:test";
+import { rejects } from "node:assert/strict";
+import { releaseNotes } from "../scripts/release-notes";
+import { registryIntegrity, verifyIntegrity } from "../scripts/registry-integrity";
+
+const body = "\r\n\r\n- Keep bytes.\r\n\r\n```md\r\n## [9.0.0]\r\n```\r\n\r\n";
+test("preserves body bytes and ignores headings inside fences", () => {
+  expect(
+    releaseNotes(`## [1.2.3](https://example.test) - date${body}## [1.2.2]\nold`, "1.2.3"),
+  ).toBe(body);
+});
+for (const source of [
+  "```md\n## [1.2.3]\n- fake\n```",
+  "## [1.2.30]\n- wrong",
+  "## [1.2.3]\n\n",
+  "## [1.2.3]\n<!-- draft -->\n### Fixed\n",
+  "## [1.2.3]\n- a\n## [1.2.3]\n- b\n",
+]) {
+  test(`refuses unusable notes: ${JSON.stringify(source)}`, () =>
+    expect(() => releaseNotes(source, "1.2.3")).toThrow());
+}
+test("local and CI preflight process reject a missing section or mismatched tag", async () => {
+  const root = await mkdtemp(join(tmpdir(), "uuid-slug-release-"));
+  try {
+    await Bun.write(join(root, "package.json"), JSON.stringify({ name: "test", version: "1.2.3" }));
+    await Bun.write(join(root, "CHANGELOG.md"), "## [1.2.3]\n- Change.\n");
+    const run = async (tag: string) => {
+      const child = Bun.spawn(["bun", join(import.meta.dir, "../scripts/release-notes.ts"), tag], {
+        cwd: root,
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      const [status, stdout, stderr] = await Promise.all([
+        child.exited,
+        new Response(child.stdout).text(),
+        new Response(child.stderr).text(),
+      ]);
+      return { status, stdout, stderr };
+    };
+    expect(await run("v1.2.3")).toEqual({ status: 0, stdout: "\n- Change.\n", stderr: "" });
+    const mismatch = await run("v1.2.4");
+    expect(mismatch.status).toBe(1);
+    expect(mismatch.stderr).toContain("does not match");
+    await Bun.write(join(root, "CHANGELOG.md"), "## [1.2.2]\n- Old.\n");
+    expect((await run("v1.2.3")).status).toBe(1);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+test("registry retries accept identical bytes and reject changed or unknown digests", () => {
+  const bytes = new TextEncoder().encode("published archive");
+  const integrity = `sha512-${createHash("sha512").update(bytes).digest("base64")}`;
+  verifyIntegrity(bytes, integrity);
+  expect(() => verifyIntegrity(new TextEncoder().encode("repacked"), integrity)).toThrow("differs");
+  expect(() => verifyIntegrity(bytes, "sha1-unknown")).toThrow("differs");
+});
+test("registry transport distinguishes absence, outage and malformed metadata", async () => {
+  const server = Bun.serve({
+    port: 0,
+    fetch(request) {
+      switch (new URL(request.url).pathname) {
+        case "/missing":
+          return new Response(null, { status: 404 });
+        case "/outage":
+          return new Response(null, { status: 503 });
+        case "/invalid":
+          return Response.json({ dist: {} });
+        default:
+          return Response.json({ dist: { integrity: "sha512-published" } });
+      }
+    },
+  });
+  try {
+    expect(await registryIntegrity(new URL("/missing", server.url).href)).toBeUndefined();
+    expect(await registryIntegrity(server.url.href)).toBe("sha512-published");
+    await rejects(registryIntegrity(new URL("/outage", server.url).href), /503/);
+    await rejects(registryIntegrity(new URL("/invalid", server.url).href), /integrity/);
+  } finally {
+    await server.stop(true);
+  }
+});
+
+// A real child process stands in for the uploader, so failure and argv propagation cross
+// the same boundary as CI without contacting or publishing to a real registry.
+test("release process refuses invalid notes and mismatched archives before exposing notes for attachment", async () => {
+  const { publishRelease } = await import("../scripts/release-package");
+  const root = await mkdtemp(join(tmpdir(), "uuid-slug-publish-"));
+  const bytes = new TextEncoder().encode("published archive");
+  const digest = `sha512-${createHash("sha512").update(bytes).digest("base64")}`;
+  let integrity = digest;
+  let unpublished = false;
+  const server = Bun.serve({
+    port: 0,
+    fetch: () => {
+      if (unpublished) {
+        unpublished = false;
+        return new Response(null, { status: 404 });
+      }
+      return Response.json({ dist: { integrity } });
+    },
+  });
+  try {
+    await Bun.write(
+      join(root, "package.json"),
+      JSON.stringify({ name: "test", version: "1.2.3-rc.1" }),
+    );
+    await Bun.write(join(root, "CHANGELOG.md"), "## [1.2.3-rc.1]\n- Change.\n");
+    await Bun.write(
+      join(root, "node_modules/.bin/publish-clean"),
+      `
+      await Bun.write("invoked.json", JSON.stringify(process.argv.slice(2)));
+      const out = process.argv[process.argv.indexOf("--tarball-out") + 1];
+      await Bun.write(out + "/archive.tgz", "published archive");
+    `,
+    );
+    await rejects(publishRelease(root, "v9.0.0", server.url.origin), /does not match/);
+    expect(await Bun.file(join(root, "invoked.json")).exists()).toBe(false);
+    await publishRelease(root, "v1.2.3-rc.1", server.url.origin);
+    const args = await Bun.file(join(root, "invoked.json")).json();
+    expect(args).toContain("--dry-run");
+    expect(args.slice(-5)).toEqual(["--access", "public", "--tag", "next", "--provenance"]);
+    expect(await Bun.file(join(root, "release-artifacts/notes.md")).text()).toBe("\n- Change.\n");
+    await rm(join(root, "release-artifacts"), { recursive: true });
+    unpublished = true;
+    await publishRelease(root, "v1.2.3-rc.1", server.url.origin);
+    expect(await Bun.file(join(root, "invoked.json")).json()).not.toContain("--dry-run");
+    await rm(join(root, "release-artifacts"), { recursive: true });
+    integrity = "sha512-different";
+    await rejects(publishRelease(root, "v1.2.3-rc.1", server.url.origin), /differs/);
+    expect(await Bun.file(join(root, "release-artifacts/notes.md")).exists()).toBe(false);
+    await rm(join(root, "release-artifacts"), { recursive: true });
+    integrity = digest;
+    await Bun.write(join(root, "node_modules/.bin/publish-clean"), "process.exit(9);");
+    await rejects(publishRelease(root, "v1.2.3-rc.1", server.url.origin), /Command failed/);
+    expect(await Bun.file(join(root, "release-artifacts/notes.md")).exists()).toBe(false);
+  } finally {
+    await server.stop(true);
+    await rm(root, { recursive: true, force: true });
+  }
+});

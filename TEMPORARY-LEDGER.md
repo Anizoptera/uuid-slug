@@ -41,12 +41,14 @@ Extracted Node/Bun/Deno/Chromium consumers pass; TypeScript 5.7 compiles emitted
 
 ### D. Release gates
 
-- [ ] Share structured Markdown release-note extraction between local validation and CI; ignore headings in fences, reject missing/empty sections, preserve original section bytes.
-- [ ] Validate tag/manifest and notes before any upload; test failures through executable process seams.
-- [ ] Require reusable credential-free runtime/browser checks on tagged revisions; preserve trusted workflow filename and permission separation.
-- [ ] Compare archive to registry integrity before existing-version repair/attestation; reject mismatches; update existing GitHub release notes.
+- [x] Share structured Markdown release-note extraction between local validation and CI; ignore headings in fences, reject missing/empty sections, preserve original section bytes.
+- [x] Validate tag/manifest and notes before any upload; test failures through executable process seams.
+- [x] Require reusable credential-free runtime/browser checks on tagged revisions; preserve trusted workflow filename and permission separation.
+- [x] Compare archive to registry integrity before existing-version repair/attestation; reject mismatches; update existing GitHub release notes.
 - [ ] Wire exact validated archive publication after dependency hold is released; preserve tag-derived dist-tag.
-- [ ] Verify failure-sensitive workflow/process tests, review, and commit.
+- [x] Verify and commit the ungated release repairs: 10 release cases, semantic typecheck, type-aware lint, actionlint, and diff whitespace pass. Exact archive hook remains under F.
+
+Release-note AST tests preserve CRLF/fenced content and reject missing/empty/duplicate sections. Real child-process probes cover mismatched tags, first publication versus retries, upload failure, and digest mismatch. The registry fixture distinguishes 404 from outages; notes become attachable only after byte integrity passes. No live upload was performed.
 
 ### E. Measurements and consumer documentation
 
