@@ -1,7 +1,6 @@
 # @anizoptera/uuid-slug
 
-Short, URL-safe UUIDs. Turns a 36-character UUID into 22 characters, and optionally hides
-the creation time that a UUIDv7 puts on display.
+Use shorter UUIDs in URLs, with optional masking of UUIDv7 timestamps.
 
 [![npm version](https://img.shields.io/npm/v/@anizoptera/uuid-slug?label=npm)](https://www.npmjs.com/package/@anizoptera/uuid-slug)
 [![CI](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml)
@@ -15,8 +14,8 @@ are 22 characters, and nothing is lost: it is the same identifier in a shorter a
 UUIDv7 adds a second problem. It begins with a millisecond timestamp, which is exactly
 what you want in a database index and rarely what you want in public. A v7 id tells anyone
 who reads it when the record was created, and two of them tell them how fast you are
-creating records. This package can shuffle those bytes on the way out, so the public string
-gives none of that away, and shuffle them back when it comes in.
+creating records. Masking removes that directly readable structure from public identifiers,
+then recovers the UUID for a lookup. It is obfuscation, not an authorization boundary.
 
 It defines no new identifier scheme. Everything here is a UUID underneath.
 
@@ -36,35 +35,26 @@ that they will never be handed a `SharedArrayBuffer` view, which Web Crypto reje
 ```ts
 import { createUuidSlugCodec } from "@anizoptera/uuid-slug";
 
-// One codec per project. Reuse it: the seed is expanded once, at construction.
-export const ids = createUuidSlugCodec({
-  mask: { seed: process.env.ID_MASK_SEED ?? "sBmCyMv1ZTNPTsdRHKuMLcnGb3vRl9E4YWl7qYD6dwo" },
-});
+const seed = process.env.ID_MASK_SEED;
+if (!seed) throw new Error("Set ID_MASK_SEED to a stable, randomly generated secret.");
+
+// Reuse the codec: the seed is expanded once, at construction.
+export const ids = createUuidSlugCodec({ mask: { seed } });
 
 const publicId = ids.uuidV7MaskedSlug();
-// "OMw5wkFt8erGEmETKzK-Ze" — 22 characters, no timestamp anyone can read
-
 const uuid = ids.maskedSlugToUuidV7(publicId);
-if (uuid instanceof Error) return badRequest(uuid.message);
-// "019ff19b-58b8-7000-9b1b-df713bd5562c", safe to use as a database key
+if (uuid instanceof Error) throw uuid;
+// Look up uuid in your store and apply the caller's authorization policy.
 ```
 
-**Generate the seed; do not think one up.** `openssl rand -base64 32` is enough, and anything
-under 16 bytes is refused outright. The seed is the only secret here, and a guessable one makes
-masking decorative: an attacker holding a single (UUID, slug) pair recovers a human-chosen seed by
-re-deriving and re-encoding candidates — measured at 1,248,000 candidates per second in
-single-threaded JavaScript, so a dictionary word or a project name falls in seconds. A random 32
-bytes does not fall at all.
+**Generate the seed; do not think one up.** For example, run `openssl rand -base64 32` and
+store the result outside your source repository. Seeds shorter than 16 bytes are rejected, but
+length alone does not make a seed unpredictable: a known UUID/slug pair allows offline guesses.
 
-`keyIterations` beside the seed buys time against that one failure and nothing else. It defaults
-to `1`, the cheapest setting, because the cost is paid once per codec and a generated seed does
-not need it. Measured on the same machine: `1000` costs 87 microseconds of construction and drops
-guessing to 16,500/sec; `100000` costs about 8 milliseconds and drops it to 185/sec. It is part of
-the key — change it and previously issued slugs stop decoding unless you list the old setting
-under `previousMasks`.
-
-Keep the seed stable forever. Change it and every slug you already handed out comes back as
-`invalid_uuid_slug`, unless you list the old seed under `previousMasks` (see below).
+Keep the seed and `keyIterations` stable for as long as issued slugs must remain readable.
+Changing either derives different keys; retain the old settings in `previousMasks` during
+rotation. `keyIterations` defaults to `1`; increasing it adds construction and guessing cost,
+but does not turn a human-chosen seed into a suitable secret.
 
 ## Two kinds of slug
 
@@ -87,28 +77,27 @@ You never say which alphabet you are reading. The two lengths are different, 22 
 `slugToUuid` works out the encoding from the slug itself — which means switching alphabet leaves
 every slug you have already handed out working.
 
-**Masked slug.** The same 16 bytes put through a small block cipher keyed by your seed, then
-base64url-encoded. Every output bit depends on every input bit, so two ids created in the same
-second share nothing visible. Also 22 characters. Use it when the identifier is public and you
+**Masked slug.** A UUIDv7 payload and check passed through a small block cipher keyed by your
+seed, then base64url-encoded. Also 22 characters. Use it when the identifier is public and you
 would rather not publish creation times. The exact steps are in
 [how masking works](https://github.com/Anizoptera/uuid-slug/blob/main/docs/design.md).
 
-A UUIDv7 only carries 116 bits you cannot predict — the version and variant are fixed, and the
-top six bits of the timestamp stay zero until the year 2109. 22 base64url characters hold 132
-bits, so the spare 16 carry a check that a wrong seed fails. Two things follow, and both are
+A supported UUIDv7 carries 116 bits that the masked format must preserve — the version and
+variant are fixed, and the top six bits of the timestamp stay zero until the year 2109. 22 base64url characters hold 132
+bits, so the spare 16 carry a check for incorrect decoding. Two things follow, and both are
 part of the contract rather than implementation detail:
 
 - **A decoded slug is a candidate, not a proof.** Roughly one random 22-character string in
   65,536 passes the check and decodes to a well-formed UUID nobody ever issued. Look the result
   up in your own store; a wrong candidate is then a miss rather than a wrong answer. Every extra
-  schema you list under `previousMasks` adds another 1-in-65,536, because each is tried in turn.
+  distinct schema you try adds another opportunity for false acceptance; the combined rate is
+  at most the sum of the individual rates. Keep the rotation list short.
 - **Masking refuses a timestamp at or past 2^42 ms** — the year 2109 — with `invalid_timestamp`,
   because those six bits are spent on the check. Truncating instead would let two UUIDs share one
   slug, which nothing could recover from. Direct slugs have no such limit.
 
 **Sentinels** are reserved UUIDs that skip masking on purpose, so they stay recognisable in
-logs and support tickets. Three are defined by default, and they always encode to the same
-fixed slugs:
+logs and support tickets. The defaults always encode to these fixed slugs:
 
 | Name            | UUID                                   | Slug                     |
 | --------------- | -------------------------------------- | ------------------------ |
@@ -117,23 +106,22 @@ fixed slugs:
 | `unknownUser`   | `00000000-0002-7000-8000-000000000000` | `AAAAAAACcACAAAAAAAAAAA` |
 
 Pass your own list as `sentinels` to replace them. Decoding checks sentinels first, so they
-can never be misread as a masked slug.
+are reserved even if a mask could produce the same text. Encoding rejects a non-sentinel UUID
+whose masked output collides with a reserved slug, using `invalid_mask_schema`; it never returns
+a slug that would decode to the wrong sentinel.
 
 ## What masking is not
 
-Masking is obfuscation, not encryption. The round keys come from your seed by a plain hash, not
-a key-derivation function, and the cipher is a four-round Feistel network whose round function is
-a bit-mixer rather than a cryptographic one. It raises the bar; it is not a security boundary.
+Masking uses a four-round Feistel network with HalfSipHash-2-4 round functions and a
+seed-derived key schedule. It removes a directly readable timestamp; this package does not
+establish a confidentiality strength for that construction or resistance to known-pair attacks.
+A reference-vector test for the round function does not establish those properties for the
+whole construction. See [the mechanism and its limits](docs/design.md).
 
-Be precise about what that does and does not buy. Someone holding one UUID and its slug learns
-essentially nothing, which was not true of the byte-shuffle scheme this replaced — there, a
-single known pair exposed most of the mask. But nothing here establishes resistance to someone
-holding _many_ pairs, and you should not assume it. If you need that guarantee, supply your own
-mixing step; a larger round count is not the answer.
-
-So: it stops a casual reader learning your creation times and record rates. It does not make an
-id secret. Masked slugs are not tokens, not capabilities, and not a substitute for an
-authorisation check.
+Masked slugs are not authentication tokens or capabilities. The check detects many incorrect
+decodes; it is not a message authentication code. Confirm decoded candidates against your store
+and enforce authorization separately. Supplying a custom `mix` still leaves the same short check
+and does not turn the API into an authenticated-token system.
 
 One consequence is structural rather than advisory. A codec built without a `mask` uses a seed
 that is a constant in this package's source, so anyone holding the package decodes its masked
@@ -143,52 +131,45 @@ never what someone protecting ids wants, and the slug looks identical either way
 So the masked operations are **not** available as top-level functions; only `defaultCodec` and a
 codec you construct expose them. **If you mask anything real, pass your own seed.**
 
-## Errors are returned, not thrown
+## Handling errors
 
-One rule covers the whole API:
+Parsing, decoding, formatting, conversion, byte generation, and explicit-timestamp generation
+return `UuidSlugError | T`. Check `instanceof Error` before using the value. String-only
+generators return a value directly and throw on failure; constructing an invalid codec throws too.
 
-- **Give it input, get `UuidSlugError | T` back.** Every parse, decode, format and convert
-  function returns the error instead of throwing it. Check with `instanceof Error` before use;
-  the declared type is the concrete class, so the check narrows to something that has `code`.
-- **Give it nothing, get the value.** The generators (`uuidV4`, `uuidV7`, `uuidV4Slug`,
-  `uuidV7Slug`, `uuidV7MaskedSlug`) return the value directly and throw if the runtime has
-  no usable randomness, which is not a condition you can handle locally anyway.
-
-Errors are `UuidSlugError` with a `code` you can branch on: `invalid_base32`,
-`invalid_base64url`, `invalid_buffer`, `invalid_mask_schema`, `invalid_timestamp`,
-`invalid_uuid`, `invalid_uuid_slug`, `invalid_uuid_version`, `rng_unavailable`, `stale_uuid`.
-The same list is exported as `UUID_SLUG_ERROR_CODES`, and a test holds this paragraph to it.
+Use the error's `code` for handling and its `message` for diagnostics. `UuidSlugErrorCode` and
+`UUID_SLUG_ERROR_CODES` are the exported type and runtime list of codes. Errors wrapping failed
+entropy draws, clock readings, and custom `mix` calls preserve the original exception as `cause`.
 
 ## Types
 
 TypeScript sees branded types. They document which flavour a value is and survive narrowing, and
 they are **not enforced at runtime and not a parsing obligation**: the brand marker is optional,
-so any `string` satisfies any of them and passing one to a guard proves nothing. Use the guards
-for that.
+so a bare `string` satisfies each branded type without validation. Use guards to check its
+format; use your store to check issuance.
 
 - Strings: `UuidString`, `UuidV4String`, `UuidV7String`, `Base64UrlString`.
 - Slugs: `UuidSlug` (either alphabet), `UuidV4Slug`, `UuidV7Slug`; masked ones are base64url only
   — `MaskedUuidSlug`, `MaskedUuidV7Slug`, `SentinelUuidV7Slug`, and `PublicUuidV7Slug` for
   "masked or sentinel", which is what a masking call returns. `SlugAlphabet` names the two
   alphabets, and `UuidBytes` brands 16 raw bytes — for annotating storage of your own, which is why
-  it appears in no signature here: every byte function takes an optional `out` buffer and returns
-  that buffer, so its return is a caller's array of any length, not 16 bytes.
+  it appears in no signature here: a byte writer returns the caller's output array, which can be
+  longer than the UUID range it writes.
 - Shapes: `UuidSlugCodec` and `UuidSlugCodecOptions`, `MaskSchema` and `MaskSchemaOptions`,
   `UuidV7Sentinel` and `UuidV7SentinelDefinition`, `UuidV7Generator` and
   `UuidV7GeneratorOptions`, `FreshValidationOptions`, `UuidSlugErrorCode`.
 
-**A masked slug is also a valid direct slug**, and no type says so. Masked output is 22 base64url
-characters, so roughly 1 in 1,024 of them satisfies `isUuidV7Slug` and hands `slugToUuid` a
-well-formed UUID nobody issued — the canonical-trailing-bits, version and variant checks pass by
-chance. Guards answer "is this well formed", never "is this mine". Look the result up.
+**Some masked slugs also pass direct-slug guards.** Canonical trailing bits, version, and variant
+can all match by chance. A guard answers "is this well formed", never "is this mine". Decode with
+the matching API and look up the candidate; a brand or guard cannot establish issuance.
 
 ## API
 
 The **Where** column says how you reach each entry, and the distinction is not cosmetic — calling
 a module-level function on a codec is a `TypeError`.
 
-- **codec + top level.** Keyless: the same value whoever calls it. Bound to a shared default
-  codec and re-exported under the same name, so `import { uuidV7 }` works.
+- **codec + top level.** Keyless generation is available directly, for example `import { uuidV7 }`.
+  A codec can use your supplied v7 generator; top-level generation uses the platform adapter.
 - **codec only.** Keyed by your seed. Deliberately absent from the top level: a bare function
   could only carry the seed published in this package's source, which would make the
   easiest-to-reach spelling of the headline feature the one that obfuscates nothing.
@@ -202,7 +183,7 @@ a module-level function on a codec is a `TypeError`.
 | `uuidV7At(ms)` / `uuidV7BytesAt(ms, out?, offset?)`     | codec + top level | `UuidSlugError \| ...`        | Generate at an instant you name.         |
 | `uuidV4Slug(alphabet?)` / `uuidV7Slug(alphabet?)`       | top level         | direct slug                   | Generate and encode in one step.         |
 | `codec.uuidV4Slug()` / `codec.uuidV7Slug()`             | codec             | direct slug                   | Same, in the codec's `slugAlphabet`.     |
-| `uuidV7MaskedSlug()`                                    | codec only        | masked slug                   | Generate a v7 and mask it.               |
+| `uuidV7MaskedSlug()`                                    | codec only        | `PublicUuidV7Slug`             | Generate a masked or sentinel slug.       |
 | `uuidV7ToMaskedSlug(uuid)` / `maskedSlugToUuidV7(slug)` | codec only        | `UuidSlugError \| ...`        | Masked slug, both ways; v7 only.         |
 | `maskedSlugToUuid(slug)`                                | codec only        | `UuidSlugError \| ...`        | Unmask, accepting any UUID version.      |
 | `validateMaskedSlugFresh(slug, opts?)`                  | codec only        | `UuidSlugError \| ...`        | Unmask, then check the freshness window. |
@@ -214,18 +195,12 @@ a module-level function on a codec is a `TypeError`.
 There is no `uuidToMaskedSlug`: masking is defined for UUIDv7 only, because a v7 is the version
 that leaks a creation time and 22 characters have no room for a version tag as well as the check.
 
-The `At` pair exists for backfilling: giving existing rows v7 ids that sort by the time the row
-was actually created, and building a genuinely old id to test the freshness validators against.
-It takes the instant FIRST so a stray `Array.from({length: n}, uuidV7BytesAt)` cannot pass the
-index as a timestamp, and it returns an error for an instant outside 0..2^48-1 or one that is
-not a whole number of milliseconds, rather than truncating it. How it interacts with ids minted
-at the current time is runtime-specific and not promised either way — measured on Bun, whose
-native generator serves this path, a call to `uuidV7At` restarts the sequence that orders
-current-time ids. Ordering WITHIN a millisecond is not a guarantee of this package; see
-§Guarantees.
+The `At` pair supports backfilling with a known timestamp. It takes the instant first and returns
+an error unless it is a whole number of Unix milliseconds in 0..2^48-1. Its interaction with
+current-time generation is runtime-specific; within-millisecond ordering is not promised.
 
-`uuidV7ToMaskedSlug` returns an unmasked sentinel slug when the input is a sentinel, which
-is the point of sentinels.
+Both masking entry points return a raw sentinel slug when the UUID is registered as a sentinel.
+Their result type is `PublicUuidV7Slug`, the union of masked and sentinel slugs.
 
 Also exported, all module-level:
 
@@ -237,7 +212,7 @@ Also exported, all module-level:
 - `extractUuidV7Timestamp` — the instant a v7 was minted at, and an error for anything that is
   not a v7, because a v4's first six bytes are random and would otherwise read back as a
   plausible date. `hasUuidV7Entropy` answers whether the 74 random bits are anything but
-  all-zero or all-one, which is what a generator with no entropy source produces.
+  all-zero or all-one. This rejects obvious degeneracy; it does not measure unpredictability.
 - `createMaskSchema` builds a schema from a seed; `DEFAULT_MASK_SCHEMA` is the one a codec uses
   when you pass no `mask`, exported so `mask: DEFAULT_MASK_SCHEMA` can be a visible choice rather
   than an omission. `UUID_V7_SENTINEL_DEFINITIONS` is the default sentinel list.
@@ -263,17 +238,14 @@ There is nothing else to configure. A masked slug is 22 base64url characters car
 check, because the check is whatever the encoding has left after the UUID's 116 real bits, and
 there is one mixing scheme rather than a choice of them.
 
-If you need a different cipher, pass a `MaskSchema` as `mask` instead of a seed: an `id` and a
-`mix(input, output, forward)` where `forward: false` is the exact inverse. That is the only
-extension point, and it is checked — a codec proves your `mix` reverses itself and throws at
-construction if it does not, because a mixing step that is not invertible makes every id it
-encodes unreadable with nothing to notice at the time.
+To supply a different mixing implementation, pass a `MaskSchema`: an `id` and
+`mix(input, output, forward)`, where `forward: false` must reverse `forward: true` for every
+16-byte input. Construction runs round-trip smoke tests and throws if they fail. Passing them
+is not a proof of invertibility; the caller remains responsible for the complete domain.
 
-**`createUuidSlugCodec` THROWS on a bad mask; `createMaskSchema` RETURNS the same error.** Both
-reject the same things — a seed under 16 bytes, an out-of-range `keyIterations`, a `mix` that does
-not reverse itself — and they differ because a constructor has nowhere to put an error value, while
-`createMaskSchema` is an ordinary call whose result you can inspect. Build the schema first when
-you want the error in hand rather than in a `try`.
+`createMaskSchema({ seed, keyIterations })` returns an error for invalid seed options.
+`createUuidSlugCodec` throws for invalid options, including a supplied schema that fails its
+smoke tests. Build a seed schema first when you want to inspect its returned error.
 
 `previousMasks` is how you rotate a seed. Decoding tries `mask` first, then each entry in the
 order you list them, and the first whose check passes wins — so put the newest first, and keep
@@ -288,31 +260,33 @@ import { validateUuidV7Fresh } from "@anizoptera/uuid-slug";
 const ok = validateUuidV7Fresh(uuid, { windowMs: 60_000 });
 ```
 
-Returns an error when the v7 timestamp sits outside the window (24 hours by default) or the
-random half is degenerate. `validateUuidV7SlugFresh` does the same starting from a plain slug,
-and `codec.validateMaskedSlugFresh` from a masked one — a method, not a top-level function,
-because unmasking needs that codec's key. Useful for one-shot ids like a signup link; it is a
-sanity check on the id itself, not authentication.
+The timestamp must be inside the inclusive interval `now() - windowMs` through
+`now() + windowMs`; the default radius is 24 hours. `windowMs` must be finite and nonnegative;
+zero and finite fractions are valid. `now` defaults to `Date.now`, must return finite Unix
+milliseconds, and is read once per validation. Invalid settings return an error instead of
+disabling the check. Degenerate all-zero or all-one random bits are also rejected.
+
+`validateUuidV7SlugFresh` starts from a plain slug; `codec.validateMaskedSlugFresh` starts from
+a slug decoded with that codec. This is a symmetric timestamp sanity check, not past-only expiry,
+authentication, or replay prevention. Use ordinary decoding for permanent identifiers. For links
+with expiration or one-time use, check the stored expiry and consumption state as well.
 
 ## Guarantees
 
-What this package promises, and — just as importantly — what it does not. Each line is measured
-across every supported runtime by `bun run bench:matrix`; the current figures are in
-[`bench/RESULTS.md`](https://github.com/Anizoptera/uuid-slug/blob/main/bench/RESULTS.md).
+These are API contracts. Runtime measurements and their exercised conditions belong in
+[`bench/README.md`](bench/README.md); a benchmark pass is not proof of every guarantee.
 
-- **Conformance.** Every generated id is a valid RFC 9562 UUID: correct version and variant bits.
-- **Randomness.** Every random bit THIS PACKAGE draws comes from a cryptographic source —
-  `crypto.getRandomValues` or `node:crypto`, never `Math.random`. Values do not repeat. Scoped to
-  this package's own code on purpose: where a platform generator serves the call (`Bun
-.randomUUIDv7`, `crypto.randomUUID`) the draw happens inside the engine, below any JavaScript
-  binding, so it cannot be observed from here and is not claimed either way.
+- **Conformance.** Generated ids have RFC 9562 version and variant bits. A custom generator is
+  responsible for honoring its declared contract.
+- **Randomness.** Built-in portable generation draws from Web Crypto or `node:crypto`, never
+  `Math.random`. Native generation delegates to the platform; a caller-supplied `fillRandom`
+  controls its own entropy. Collisions are possible: enforce uniqueness in storage when required.
 - **Time ordering, to the millisecond.** A v7 carries a 48-bit millisecond timestamp in its
-  leading bits, so ids created in _different_ milliseconds sort by creation time. This is what
-  makes it a good database key.
+  leading bits, so UUID strings sort by their encoded timestamps across different milliseconds.
+  Backfilled timestamps or a clock adjustment need not reflect generation order.
 - **NOT ordered within a millisecond.** Two ids created in the same millisecond may sort in
-  either order. RFC 9562 §6.2 leaves this to the implementation and runtimes genuinely differ —
-  measured, a platform generator may re-randomise every random bit per call, giving roughly a coin
-  flip. Do not use a v7 to recover the order of events inside a millisecond; use a sequence column.
+  either order. RFC 9562 §6.2 permits different counter and random-bit strategies. Do not use a v7
+  to recover the order of events inside a millisecond; use a sequence column.
 - **Sortable as a slug only in base32hex.** A 26-character base32hex slug compares as a plain
   string in creation order, to the same millisecond granularity as the guarantee above: its digits
   are in ASCII order and a v7 leads with its timestamp. That is the whole reason the alphabet is
@@ -320,14 +294,14 @@ across every supported runtime by `bun run bench:matrix`; the current figures ar
 - **NOT sortable as a base64url slug.** The default 22-character form is the same 16 bytes in a
   shorter alphabet, and the value round-trips exactly — but that alphabet runs `A-Za-z0-9-_`, so
   its character order and its value order disagree. Sort by the UUID, or by a timestamp column. A
-  masked slug is deliberately unordered whatever the alphabet: masked bytes are ciphertext.
-- **One type for bytes.** `uuidV4Bytes` and `uuidV7Bytes` return a plain `Uint8Array` on every
-  runtime, never a platform-specific subclass whose `toString` or JSON shape differs.
+  masked slug has no chronological ordering; masking always uses base64url.
+- **One type for owned bytes.** Without an output buffer, byte generators return a plain
+  `Uint8Array`, never a platform-specific subclass. With an output buffer, they return that same
+  caller-owned array and write only the requested UUID range.
 - **You pay for masking only if you mask.** The keyless operations — generating an id, converting
   between a UUID and a plain slug — reach no codec, so a bundle that imports only those carries
-  none of the cipher, the key derivation or the sentinel table — a large majority of the code. It
-  needs nothing from you beyond importing what you use: the package ships one file per module, and
-  the property is gated against the built artifact rather than asserted.
+  none of the cipher, key derivation, or sentinel table. Use named imports with a tree-shaking
+  bundler; loading the complete module namespace does not promise that removal.
 
 ## Runtime
 
