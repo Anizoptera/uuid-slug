@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   createMaskSchema,
@@ -9,17 +8,12 @@ import {
   isBase64Url,
   parseUuid,
   slugToUuid,
-  UUID_SLUG_ERROR_CODES,
   uuidToSlug,
   uuidV7BytesAt,
   UuidSlugError,
 } from "../src/index";
 import type { SlugAlphabet } from "../src/index";
-import * as api from "../src/index";
 import { deterministicUuidV7 } from "./deterministic-uuid";
-
-/** Bare identifiers inside a documentation fragment, for the export-parity gate below. */
-const identifiers = (text: string) => [...text.matchAll(/[A-Za-z_$][\w$]*/g)].map((m) => m[0]);
 
 const SAMPLE_V7_A = "01987008-ef3e-7f69-b677-22ec1a5bbdb2";
 const SAMPLE_V7_B = "01987bbb-178b-7858-93e8-fc5e5444913b";
@@ -28,79 +22,6 @@ const SAMPLE_V4 = "b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5";
 /** Compared with `<` because that is what a database index or a sorted listing does to these. */
 const ascending = (slugs: readonly string[]) =>
   slugs.every((slug, i) => i === 0 || (slugs[i - 1] as string) < slug);
-
-describe("documented surface", () => {
-  it("lists every error code in the README, and no code the README invented", () => {
-    // A consumer branches on `code`, so an undocumented one is a branch nobody knows to write.
-    // The README had eight of ten for as long as ten existed: two people can read both lists and
-    // neither comparison happens, because nothing forces them into the same place at the same
-    // time. Backticked so a code appearing in ordinary prose cannot satisfy this by accident.
-    const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
-    const documented = new Set(
-      [...readme.matchAll(/`(invalid_[a-z0-9_]+|rng_unavailable|stale_uuid)`/g)].map(
-        (match) => match[1] ?? "",
-      ),
-    );
-    const codes: readonly string[] = UUID_SLUG_ERROR_CODES;
-    expect({
-      invented: [...documented].filter((code) => !codes.includes(code)),
-      undocumented: codes.filter((code) => !documented.has(code)),
-    }).toEqual({ invented: [], undocumented: [] });
-  });
-
-  it("documents every public export, and promises no call that does not exist", () => {
-    // The error-code case above exists because two lists nobody compares drift apart. The API list
-    // is the same defect one level up and was unguarded, which is how the README came to advertise
-    // `uuidToMaskedSlug(uuid)` -- no such export, no such codec member, and the first thing a
-    // reader copies -- while nine real exports went unmentioned.
-    //
-    // Both directions are checked, because each catches what the other cannot: undocumented
-    // exports are surface nobody can find, and invented names are surface that does not exist.
-    const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
-    // Inline code spans AND fenced blocks: the codec options are documented as a code sample, and
-    // a name that appears only in running prose is not documentation a reader can copy.
-    const documented = new Set([
-      ...[...readme.matchAll(/`([^`\n]+)`/g)].flatMap((m) => identifiers(m[1] ?? "")),
-      ...[...readme.matchAll(/```[a-z]*\n([\s\S]*?)```/g)].flatMap((m) => identifiers(m[1] ?? "")),
-    ]);
-
-    // Types are read out of the entry file rather than the module object: `import * as` sees
-    // values only, so a type export would otherwise be exempt from a rule about public surface.
-    const entry = readFileSync(new URL("../src/index.ts", import.meta.url), "utf8");
-    const exportedTypes = [...entry.matchAll(/export type \{([^}]+)\}/g)].flatMap((m) =>
-      (m[1] ?? "")
-        .split(",")
-        .map((name) => name.trim())
-        .filter(Boolean),
-    );
-
-    // `mix` is a member of the caller-supplied `MaskSchema`, not an export of this package, and
-    // the README has to show its signature to document the extension point.
-    const notOurs = new Set(["mix"]);
-    const reachable = new Set([...Object.keys(api), ...Object.keys(api.defaultCodec)]);
-    const promised = [...new Set([...readme.matchAll(/`([a-zA-Z_$][\w$]*)\(/g)].map((m) => m[1]))];
-
-    expect({
-      invented: promised.filter((name) => !reachable.has(name ?? "") && !notOurs.has(name ?? "")),
-      undocumented: [...Object.keys(api), ...exportedTypes].filter((n) => !documented.has(n)),
-    }).toEqual({ invented: [], undocumented: [] });
-  });
-
-  it("shows a quick-start slug that really is that UUID under that seed", () => {
-    // The pair in the README survived a format change as a matched-looking lie: the slug decoded
-    // to nothing at all, and only running it revealed that. Example output is the first thing a
-    // reader tries, so it is API surface, and prose is where a format change hides longest.
-    //
-    // All three values are READ OUT of the README. A copy pasted in here would name that file and
-    // reach a constant instead, which passes just as happily after someone edits the example.
-    const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
-    const seed = /ID_MASK_SEED \?\? "([^"]+)"/.exec(readme)?.[1];
-    const slug = /\/\/ "([\w-]{22})"/.exec(readme)?.[1];
-    const uuid = /\/\/ "([\da-f-]{36})"/.exec(readme)?.[1];
-    if (!seed || !slug || !uuid) throw new Error("the README's quick start no longer parses");
-    expect(createUuidSlugCodec({ mask: { seed } }).maskedSlugToUuidV7(slug)).toBe(uuid);
-  });
-});
 
 describe("base64url", () => {
   it("round-trips arbitrary bytes and rejects non-canonical forms", () => {

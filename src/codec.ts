@@ -266,7 +266,7 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
 // ZERO bytes while `index.ts` bound its shortcuts as PROPERTY READS of this value, since a read at
 // module scope forces the evaluation the annotation permits skipping. Keep the shortcuts keyless
 // (see `keyless.ts`) or this goes dead again.
-export const defaultCodec = /*#__PURE__*/ createUuidSlugCodec();
+export const defaultCodec: UuidSlugCodec = /*#__PURE__*/ createUuidSlugCodec();
 
 export function validateUuidV7Fresh(
   uuid: string,

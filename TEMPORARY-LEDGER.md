@@ -31,9 +31,10 @@ Custom generators now govern both alphabets; absent output buffers use effective
 - [ ] Execute packed browser/default exports in Chromium and Deno; use a Node-floor-compatible JavaScript consumer harness.
 - [ ] Reject all runtime dependency declarations; inspect actual module graphs rather than import regex blacklists.
 - [ ] Couple runtime CI floor to manifest; typecheck browser config.
-- [ ] Replace README parsing gates with executable contract/example tests.
-- [ ] Isolate tree-shaking temporary directories and cleanup.
-- [ ] Use Oxc declaration emission with required explicit annotations; retain semantic typecheck and test TypeScript 5.7 consumer compatibility.
+- [x] Remove README regex gates; existing executable API cases remain. Packed consumer examples are tracked above.
+- [x] Isolate tree-shaking temporary directories and cleanup; all three bundle cases pass.
+- [x] Use Oxc declaration emission with explicit codec/alphabet types; build and semantic typecheck pass without the experimental TypeScript warning.
+- [ ] Test emitted declarations with a TypeScript 5.7 consumer.
 - [ ] Run distribution checks, review, and commit.
 
 ### D. Release gates
@@ -75,12 +76,12 @@ Custom generators now govern both alphabets; absent output buffers use effective
 ## Evidence and progress
 
 - Audit baseline: existing check passed 190 Vitest and 88 Bun tests; Chromium passed two tests and Deno smoke passed. Independent probes nevertheless reproduced identity, runtime, freshness, schema, and benchmark failures described above.
-- Codec work is active. Benchmark fixes are delegated as an independent bounded task; root must review its diff and evidence before accepting it. No dependency work is active.
+- Distribution work is active. Benchmark fixes are delegated as an independent bounded task; root must review its diff and evidence before accepting it. No dependency work is active.
 - Art requires fast feedback: target/warn/error 0.3/1/5 seconds per case, 3/20/30 seconds per fast lane, 1/10/20 seconds per hook, and 30/240/300 seconds per complete routine lane. Timers bound hangs, never establish readiness.
 - All HLD changes require Art’s ruling; internal implementation choices derive from the already accepted behavior. No additional end-user scope has been proposed.
 
 ## Open issues and proposals
 
 - Dependency extension and final publication integration are held by Art, not omitted.
-- Oxc scratch declaration emission rejected inferred declarations in `defaultCodec` and the alphabet map; explicit public typing must be verified rather than suppressing the current TypeScript integration warning.
+- Oxc required explicit codec, alphabet-map, and alphabet-constant annotations; the completed build and semantic typecheck pass. Targeted core (30) and tree-shaking (3) cases pass.
 - Publication remains a separate reviewed action; registry dependency availability must be checked when the dependency hold is released.

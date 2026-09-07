@@ -30,7 +30,10 @@ const UUID_BYTE_OFFSETS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32
  * MASKED slugs are always base64url (Art's ruling, 2026-08-12). Sort order there would be order of
  * ciphertext, which carries nothing, so the extra characters would buy only the case-insensitivity.
  */
-const SLUG_ALPHABETS = { base32hex: BASE32HEX, base64url: BASE64URL } as const;
+const SLUG_ALPHABETS: { base32hex: Alphabet; base64url: Alphabet } = {
+  base32hex: BASE32HEX,
+  base64url: BASE64URL,
+} as const;
 
 /**
  * Callers name an alphabet rather than passing one. `Alphabet` holds a decode table and a bit

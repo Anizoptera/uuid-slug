@@ -19,6 +19,8 @@
  * which is why `tsdown.config.ts` emits one file per module.
  */
 import { tmpdir } from "node:os";
+import { mkdtemp, rm } from "node:fs/promises";
+import path from "node:path";
 
 import { expect, test } from "bun:test";
 
@@ -34,12 +36,13 @@ const bundle = async (name: string) => {
   // Outside the repository, and with an ABSOLUTE import for that reason. A probe written into the
   // working tree survives a hard crash of this process, where the cleanup below never runs, and is
   // then left for the next person to lint, stage or commit.
-  const entry = `${tmpdir()}/uuid-slug-probe-${name}.ts`;
-  await Bun.write(
-    entry,
-    `import { ${name} } from "${import.meta.dir}/../dist/index.js";\nglobalThis.__probe = [${name}];\n`,
-  );
+  const root = await mkdtemp(path.join(tmpdir(), "uuid-slug-probe-"));
+  const entry = path.join(root, "entry.ts");
   try {
+    await Bun.write(
+      entry,
+      `import { ${name} } from "${import.meta.dir}/../dist/index.js";\nglobalThis.__probe = [${name}];\n`,
+    );
     const built = await Bun.build({ entrypoints: [entry], minify: true, target: "browser" });
     // An unbuilt tree would otherwise fail as an unreadable import several frames away from the
     // cause; every lane that runs this builds first.
@@ -47,9 +50,11 @@ const bundle = async (name: string) => {
       throw new Error(
         `Bundle probe failed (run "bun run build" first):\n${built.logs.map(String).join("\n")}`,
       );
-    return await built.outputs[0]!.text();
+    const output = built.outputs[0];
+    if (!output) throw new Error("Bundle probe emitted no output.");
+    return await output.text();
   } finally {
-    await Bun.file(entry).delete();
+    await rm(root, { recursive: true, force: true });
   }
 };
 

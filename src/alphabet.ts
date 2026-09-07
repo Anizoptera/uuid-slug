@@ -25,7 +25,7 @@ function alphabet(name: string, chars: string, code: UuidSlugErrorCode): Alphabe
   return { bitsPerChar, chars, code, decode, name };
 }
 
-export const BASE64URL = alphabet(
+export const BASE64URL: Alphabet = alphabet(
   "base64url",
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_",
   "invalid_base64url",
@@ -41,7 +41,7 @@ export const BASE64URL = alphabet(
  * 2026-08-12 against CPython, `base64.b32hexdecode` rejects these slugs unless called with
  * `casefold=True`. Upper-case them at the boundary if a strict RFC decoder has to read them.
  */
-export const BASE32HEX = alphabet(
+export const BASE32HEX: Alphabet = alphabet(
   "base32hex",
   "0123456789abcdefghijklmnopqrstuv",
   "invalid_base32",

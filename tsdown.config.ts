@@ -43,7 +43,7 @@ const stamp = [
 const banner = { js: stamp, dts: stamp };
 
 /**
- * Identical across the three builds; only the platform and destination differ. `satisfies`
+ * Identical across the two builds; only the platform and destination differ. `satisfies`
  * rather than a plain literal, so the union-typed fields are checked here and widen the way
  * the spread needs — an annotation would erase the literal types, and a cast would assert
  * what this asks the compiler to prove.
@@ -79,6 +79,6 @@ export default defineConfig([
   // 101 KB sourcemap twice. `exports` sends `browser`, `deno` and `default` here instead. The web
   // adapter uses `crypto.getRandomValues` only, so this file is correct on Node, Bun, Deno and the
   // browser alike; `dist/node` exists only because Node has a faster path.
-  { ...common, dts: true, clean: true, outDir: "dist", platform: "browser" },
+  { ...common, dts: { generator: "oxc" }, clean: true, outDir: "dist", platform: "browser" },
   { ...common, dts: false, outDir: "dist/node", platform: "node" },
 ]);
