@@ -59,7 +59,7 @@ but does not turn a human-chosen seed into a suitable secret.
 ## Two kinds of slug
 
 **Direct slug.** The 16 UUID bytes as unpadded base64url, 22 characters. Pure re-encoding:
-`uuidToSlug` and `slugToUuid` are exact inverses, and anyone can convert either way. Use it
+`uuidToSlug` and `slugToUuid` preserve the UUID value, and anyone can convert either way. Use it
 when you only want the identifier shorter.
 
 Pass `"base32hex"` to get 26 characters instead, and gain one thing: **base32hex slugs of UUIDv7s
@@ -88,7 +88,7 @@ bits, so the spare 16 carry a check for incorrect decoding. Two things follow, a
 part of the contract rather than implementation detail:
 
 - **A decoded slug is a candidate, not a proof.** Roughly one random 22-character string in
-  65,536 passes the check and decodes to a well-formed UUID nobody ever issued. Look the result
+  65,536 passes the check and decodes to a well-formed, possibly unissued UUID. Look the result
   up in your own store; a wrong candidate is then a miss rather than a wrong answer. Every extra
   distinct schema you try adds another opportunity for false acceptance; the combined rate is
   at most the sum of the individual rates. Keep the rotation list short.

@@ -50,16 +50,15 @@ Extracted Node/Bun/Deno/Chromium consumers pass; TypeScript 5.7 compiles emitted
 
 Release-note AST tests preserve CRLF/fenced content and reject missing/empty/duplicate sections. Real child-process probes cover mismatched tags, first publication versus retries, upload failure, and digest mismatch. The registry fixture distinguishes 404 from outages; notes become attachable only after byte integrity passes. No live upload was performed.
 
-### E. Measurements and consumer documentation
+### E. Measurements and consumer documentation — complete
 
-- [ ] Reject failed, empty, missing, or malformed benchmark child output per requested member; preserve partial evidence and nonzero status.
-- [ ] Benchmark real plain/masked conversions and rotation paths; retain informative metrics without arbitrary throughput gates.
-- [ ] Replace public fallback seed in quick start with required configuration; retain explicitly ruled defaults.
-- [ ] Correct uniqueness, crypto-strength, inverse-proof, masked/plain overlap, and runtime-coverage claims.
-- [ ] Explain freshness versus expiry/authentication and database lookup of decoded candidates.
-- [ ] Keep README/API comments, design rationale, and benchmark procedure in their existing owners; condense project guidance without losing operative rulings or modifying global guidance.
-- [ ] Retain tricky wire-format comments; remove stale histories/rates and incorrect implementation explanations.
-- [ ] Run full check, review, and commit.
+- [x] Reject failed, empty, malformed, duplicate, inconsistent and invalid benchmark output per child; preserve valid partial output.
+- [x] Benchmark plain/masked conversions, freshness and both key-rotation paths; verify the older-key fixture actually reaches that key.
+- [x] Require a configured quick-start seed; distinguish candidate lookup, freshness, obfuscation, byte ownership and injected entropy.
+- [x] Condense project guidance while retaining operative Art rulings. Root compared it with the original contract list.
+- [x] Remove unsupported crypto-strength and stale source-comment claims; preserve wire-format reasons.
+- [x] Independently re-run benchmark regressions (including a hung child) and real Bun/Node smoke; both runtime boundary suites and semantic typecheck pass. The two-sample matrix checks transport only, not performance.
+- [x] Build before parallel local checks so packed declaration fixtures also work from a clean checkout.
 
 ### F. Dependency extension — held by Art
 

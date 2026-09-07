@@ -71,7 +71,7 @@
     "bench:smoke": "bun bench/run.ts --smoke",
     "build": "tsdown",
     "changelog": "git-cliff --unreleased --prepend CHANGELOG.md --tag",
-    "check": "bun run format:check && bun run lint && bun run claude-link:check && bun run typecheck && bun run build && bun run test && bun run bench:smoke && bun run artifact:check",
+    "check": "bun run build && bun run --parallel format:check lint claude-link:check typecheck test bench:smoke artifact:check",
     "claude-link:check": "test -L CLAUDE.md && test \"$(readlink CLAUDE.md)\" = AGENTS.md",
     "clean": "rm -rf dist bench/reports",
     "format": "oxfmt .",

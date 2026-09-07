@@ -94,21 +94,16 @@ export interface MaskSchema {
 export interface MaskSchemaOptions {
   readonly id?: string;
   /**
-   * GENERATE this, never choose it — `openssl rand -base64 32`. Masking hides a UUIDv7's creation
-   * time from a reader of the id; a seed somebody thought of is the one way that silently fails,
-   * because an attacker holding a single (uuid, slug) pair tests candidate seeds by re-deriving and
-   * re-encoding, measured here at 255,663 per second single-threaded. A human-chosen word does not
-   * survive that, at any length. At least 16 bytes are required, which is a floor against the
-   * commonest mistake and not the protection.
-   *
-   * Keep it stable FOREVER and out of the repository: it is the key, so changing it makes every
-   * masked slug already issued undecodable.
+   * Generate a secret, for example with `openssl rand -base64 32`, and keep it outside source
+   * control. At least 16 bytes are required; strings are UTF-8 encoded. A known UUID/slug pair
+   * permits offline guesses, so length alone is not protection. Preserve old seeds for decoding
+   * issued slugs; rotate by retaining their schema settings in `previousMasks`.
    */
   readonly seed: string | Uint8Array;
   /**
    * Work factor for turning the seed into key material, default 1 — the cheapest setting, chosen so
-   * that codec construction stays free for callers who do not need more. Each iteration divides an
-   * attacker's seed-guessing rate above, and is paid ONCE when the schema is built, never per id.
+   * that codec construction does only the requested work. Higher counts add construction and
+   * seed-guessing cost; they are paid when the schema is built, never per id.
    *
    * WIRE-FORMAT-BEARING, exactly as `seed` is: a different count derives different keys, so every
    * masked slug issued under the old count stops decoding. Rotate it the way a seed is rotated —

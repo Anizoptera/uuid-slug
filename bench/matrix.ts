@@ -53,6 +53,7 @@ async function run(
   entry: "run" | "entropy",
   target: string,
   smoke: boolean,
+  timeoutMs: number,
 ): Promise<{ records: Record<string, unknown>[]; version: string; failed: boolean }> {
   const argv = [...runtime.command, target, ...(smoke ? ["--smoke"] : [])];
   // Bound the default matrix sample without overriding an explicit caller-selected sample.
@@ -65,6 +66,7 @@ async function run(
   };
   try {
     const child = Bun.spawn(argv, {
+      timeout: timeoutMs,
       stdout: "pipe",
       stderr: "pipe",
       env: { UUID_SLUG_ENTROPY_SAMPLES: smoke ? "20000" : "50000", ...process.env },
@@ -161,6 +163,7 @@ export async function runMatrix(
   selected: readonly Runtime[],
   targets: Readonly<Record<"run" | "entropy", string>>,
   smoke = false,
+  timeoutMs = 30_000,
 ): Promise<number> {
   const speed = new Map<string, Map<number, number>>();
   const entropy: { version: string; records: Record<string, unknown>[] }[] = [];
@@ -170,7 +173,7 @@ export async function runMatrix(
   for (const runtime of selected) {
     const target = (entry: "run" | "entropy") =>
       runtime.bundled ? targets[entry] : join(here, `${entry}.ts`);
-    const speedRun = await run(runtime, "run", target("run"), smoke);
+    const speedRun = await run(runtime, "run", target("run"), smoke, timeoutMs);
     failed ||= speedRun.failed;
     // Index by the requested member, since distinct executables can report the same version.
     const column = versions.length;
@@ -181,7 +184,7 @@ export async function runMatrix(
       row.set(column, record.opsPerSecond as number);
       speed.set(name, row);
     }
-    const entropyRun = await run(runtime, "entropy", target("entropy"), smoke);
+    const entropyRun = await run(runtime, "entropy", target("entropy"), smoke, timeoutMs);
     failed ||= entropyRun.failed;
     if (
       speedRun.records.length &&
@@ -222,10 +225,8 @@ export async function runMatrix(
         String(r.candidate).padEnd(16) +
           (sources.length > 0 ? sources.join(",") : "unobserved").slice(0, 24).padEnd(25) +
           String(r.distinctFields).padStart(9) +
-          // Ordering belongs beside the counter because the counter is what produces it: a
-          // generator with no counter re-randomises inside the millisecond and cannot be sorted
-          // within one, however good its bits are. Denominator is the same-millisecond pairs only —
-          // see `bench/entropy.ts`, where counting all pairs measured the clock instead.
+          // Count only same-millisecond pairs; including different timestamps measures clock
+          // advancement rather than how the generator arranges its random field.
           (sameTickPairs === 0
             ? "n/a"
             : `${(((r.orderedWithinTick as number) / sameTickPairs) * 100).toFixed(2)}%`

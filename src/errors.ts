@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-/**
- * An array rather than a bare union, so the set of codes exists at runtime and can be checked
- * against. A union alone is invisible after compilation, which is how the README came to document
- * eight of the ten: nothing could compare the two, and reading both is not a check. Consumers also
- * get an exhaustive list to validate or switch over without restating it.
- */
+/** Consumers can enumerate error codes at runtime without duplicating the type's vocabulary. */
 export const UUID_SLUG_ERROR_CODES = [
   "invalid_base32",
   "invalid_base64url",

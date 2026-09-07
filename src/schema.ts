@@ -5,21 +5,10 @@ import { FEISTEL_KEY_WORDS, feistel16 } from "./feistel";
 import { halfSipHash } from "./siphash";
 import type { MaskSchema, MaskSchemaOptions } from "./types";
 
-/**
- * Shortest seed accepted. It is DEFENCE IN DEPTH, never the protection: no length rule and no work
- * factor saves a genuinely guessable seed — a dictionary word falls in minutes at 200 guesses/sec
- * just as it does at 255,000. The actual protection is a seed nobody can guess, which is why the
- * error below names the command that generates one and README says the same. What this rule buys is
- * that the commonest silent mistake — a short human-chosen word — fails loudly at construction
- * instead of masking nothing forever.
- */
+/** Reject short seeds early; length alone cannot make a chosen secret unpredictable. */
 const SEED_MIN_BYTES = 16;
 
-/**
- * Ceiling on the work factor, so a mistyped `1e12` fails at construction instead of hanging the
- * process with no output and nothing to read. The value is a backstop, not a recommendation: at the
- * measured cost per iteration it bounds construction to a few seconds.
- */
+/** Bound accidental work-factor typos; construction cost still depends on the runtime and seed. */
 const MAX_KEY_ITERATIONS = 1 << 24;
 
 /**
@@ -47,16 +36,9 @@ function seedWords(seed: Uint8Array) {
 }
 
 /**
- * One keyed chain: hash the seed, then re-hash it under the previous output `iterations` times.
- *
- * Iterating is the work factor D1 asks for, and it is the only lever this package has against the
- * one failure a README paragraph cannot prevent. Measured 2026-08-12 before this existed: an
- * attacker holding a single (uuid, slug) pair tested 255,663 candidate seeds per second and found
- * the real one. Each iteration divides that rate, paid ONCE per codec construction and never per
- * id — which is why the default is the cheapest setting and raising it is the caller's call.
- *
- * WIRE-FORMAT-BEARING, exactly like the seed: a different count is a different key, so every masked
- * slug issued under the old one stops decoding.
+ * Hash the seed under successive outputs, for `iterations` total hashes. This work is paid
+ * at construction, never per id. The count changes key material and must remain stable for
+ * issued slugs; retain the old count with its seed when rotating schemas.
  */
 function chain(key0: number, key1: number, words: Int32Array, length: number, iterations: number) {
   const out = new Int32Array(2);
@@ -67,14 +49,9 @@ function chain(key0: number, key1: number, words: Int32Array, length: number, it
 }
 
 /**
- * Expand a seed into the Feistel's round keys.
- *
- * Two independent chains XORed is the standard cascade for widening a PRF's key: HalfSipHash takes a
- * 64-bit key, and recovering a round key requires breaking BOTH chains, so the derived key is 128
- * bits rather than 64. That matters because the construction it replaced capped the key at 64 bits
- * however long the seed was — FNV-1a-64 into xorshift64 — so `MaskSchemaOptions.seed` had to warn
- * that 32 random bytes bought a 64-bit key. It no longer does: the seed reaches the round keys
- * through a 128-bit internal state at full width.
+ * Derive each round key by XORing outputs from two fixed derivation chains. Their combined
+ * state is 128 bits; that representation does not establish 128-bit security. Chain constants,
+ * word indices and byte order are frozen by the issued wire format.
  */
 function derivedKeys(seed: Uint8Array, iterations: number) {
   const words = seedWords(seed);
@@ -121,17 +98,10 @@ export function createMaskSchema(options: MaskSchemaOptions): UuidSlugError | Ma
 }
 
 /**
- * A schema's `mix` MUST be its own inverse; get that wrong and every id it encodes is unreadable,
- * with nothing to notice at the time. So a codec built from a broken schema fails at construction
- * rather than at the first decode.
- *
- * This is a SMOKE TEST, not a proof, and the distinction is worth keeping straight: two probes
- * cannot establish a bijection over 2^128, and a `mix` that round-trips these two blocks and
- * mangles a third passes here. What the probes buy is the two mistakes anyone actually makes — an
- * all-zero block catches a `mix` that ignores `forward`, and a block of distinct bytes catches a
- * reordering applied in the same direction both ways, which is what a permutation table gets
- * wrong. A table is no longer a special case with its own bijection check: anyone bringing a
- * foreign scheme brings a function, so whatever can be checked has to be checked on the function.
+ * Refuse schemas that cannot undo these representative blocks. The reverse call must invert
+ * the forward call; the same function need not be an involution. Finite probes are not a proof
+ * over the full domain. Preserve each original input separately so a mutating callback cannot
+ * rewrite the witness and make a destructive transformation appear reversible.
  */
 export function verifyInvertible(schema: MaskSchema): UuidSlugError | MaskSchema {
   const mixed = new Uint8Array(16);

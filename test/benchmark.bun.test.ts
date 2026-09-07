@@ -22,6 +22,7 @@ const record = speed
   : { runtime: "fixture 1", candidate: "measured", samples: 2, sources: [], distinctFields: 2,
       sameTickPairs: 1, orderedWithinTick: 0, peakDrawsPerTick: 2, counterBits: 0,
       counterHolds: 0, minOnesRatio: 0, maxOnesRatio: 1 };
+if (mode === "hang") { setInterval(() => {}, 1000); await new Promise(() => {}); }
 if (mode === "empty") process.exit(0);
 if (mode === "exit") { console.error("child failure"); process.exit(7); }
 if (mode === "entropy-empty" && !speed) process.exit(0);
@@ -43,7 +44,7 @@ afterAll(async () => {
   await rm(directory, { recursive: true, force: true });
 });
 
-async function matrix(mode: string) {
+async function matrix(mode: string, timeoutMs = 30_000) {
   const matrixModule = join(import.meta.dir, "../bench/matrix.ts");
   const runtimes = [
     {
@@ -62,7 +63,7 @@ async function matrix(mode: string) {
       "-e",
       `
     import { runMatrix } from ${JSON.stringify(matrixModule)};
-    process.exitCode = await runMatrix(${JSON.stringify(runtimes)}, {run: "", entropy: ""});
+    process.exitCode = await runMatrix(${JSON.stringify(runtimes)}, {run: "", entropy: ""}, false, ${timeoutMs});
   `,
     ],
     { stdout: "pipe", stderr: "pipe" },
@@ -138,3 +139,11 @@ test.each(["0", "-1", "1.5", "NaN", "Infinity"])(
     }
   },
 );
+
+// The timeout bounds a deliberately hung child; it does not decide readiness.
+test("hung runtime cannot hold the matrix indefinitely", async () => {
+  const result = await matrix("hang", 100);
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain("exited");
+  expect(result.stdout).toContain("Randomness — control (fixture 1)");
+});

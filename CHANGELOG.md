@@ -11,6 +11,10 @@ notes: the section for a version is published verbatim when its tag is pushed.
 - Return `PublicUuidV7Slug` from masked generation, including its sentinel possibility; callers requiring only `MaskedUuidV7Slug` must handle that case.
 - Reject invalid alphabet and destructive mask configuration; preserve custom-mask failures as typed errors with their original cause.
 
+- Honor injected generators in both alphabets and reject invalid explicit timestamps and omitted-buffer offsets.
+- Validate finite freshness windows and clock readings; preserve entropy and clock failure causes.
+- Validate packed consumers on supported runtimes and declarations with TypeScript 5.7.
+- Reject incomplete benchmark reports and mismatched release-retry archives.
 
 ## [0.2.0](https://github.com/Anizoptera/uuid-slug/compare/v0.1.0...v0.2.0) (2026-08-11)
 

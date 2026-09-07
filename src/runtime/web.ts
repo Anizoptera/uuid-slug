@@ -5,12 +5,8 @@ import { pooledFill } from "./pool";
 import type { Runtime } from "./types";
 
 /**
- * Resolved per call rather than bound once at load, which looks like a missed hoist and is not.
- * Binding `globalThis.crypto.getRandomValues` at import time makes this adapter permanently
- * invisible to any harness that installs a counting wrapper afterwards — which is exactly how
- * `bench/instrument.ts` proves the randomness is cryptographic, and it says so in its own words.
- * A hoist would leave that gate reporting "no source observed" for a package that draws on every
- * call, a false finding indistinguishable from a real one.
+ * Resolve Web Crypto per draw so instrumentation installed after import can observe the source.
+ * Binding it at module load would bypass `test/instrument.ts` and hide those calls from the gate.
  */
 function cryptoObject(): Crypto {
   const value = globalThis.crypto;

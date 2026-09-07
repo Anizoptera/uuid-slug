@@ -7,10 +7,9 @@
  * hostile ones: a clock that stands still or runs backwards, and randomness that is entirely
  * zeroes or entirely ones, which are exactly the seeds that drive the counter to its bounds.
  *
- * These properties are what make a v7 safe to use as a database key. RFC 9562 §6.2 requires
- * that values never go backwards within a generator, which is what a reader of a sorted index
- * relies on, and the version and variant bits must survive whatever the entropy source
- * returned or the value is not a v7 at all.
+ * Counter cases constrain this portable implementation, not the runtime-independent API.
+ * Native generators may choose different within-millisecond strategies. Version, variant,
+ * bounds and valid state transitions must survive hostile clock and entropy inputs.
  */
 import { describe, expect, it } from "vitest";
 
