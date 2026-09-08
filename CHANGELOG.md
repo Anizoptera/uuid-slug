@@ -3,7 +3,7 @@
 Notable changes per release, newest first. This file is the source of the GitHub Release
 notes: the section for a version is published verbatim when its tag is pushed.
 
-## [Unreleased]
+## [0.3.0] - 2026-09-08
 
 ### Breaking changes
 
@@ -32,7 +32,6 @@ notes: the section for a version is published verbatim when its tag is pushed.
 - Preserve raw sentinel slugs during generation and reject masked output that would decode as a different sentinel UUID.
 - Return `PublicUuidV7Slug` from masked generation, including its sentinel possibility; callers requiring only `MaskedUuidV7Slug` must handle that case.
 - Reject invalid alphabet and destructive mask configuration; preserve custom-mask failures as typed errors with their original cause.
-
 - Honor injected generators in both alphabets and reject invalid explicit timestamps and omitted-buffer offsets.
 - Validate finite freshness windows and clock readings; preserve entropy and clock failure causes.
 - Validate packed consumers on supported runtimes and declarations with TypeScript 5.7.
