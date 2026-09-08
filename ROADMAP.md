@@ -20,6 +20,14 @@ Build a public Rust crate with TypeScript semantic parity, prioritizing filesyst
 Art owns the HLD above; tasks below are engineering proposals, not approved public decisions.
 Public choices are recorded above; verify the engineering tasks below before claiming readiness.
 
+### Pending public decision
+
+UUID parsing failure is not yet aligned: malformed final characters in UUID text and plain slugs
+overwrite a valid TypeScript destination prefix; Rust parsing followed by `write_into` leaves it
+unchanged. The cross-language document promises unchanged storage. Art's decision is pending on
+requiring unchanged output or retaining partial writes; do not change either public behavior yet.
+TypeScript also checks destination bounds before character validity when input length is valid.
+
 ## Execution order
 
 Build the shared runner first; then develop plain conversion and hashing independently.
@@ -137,6 +145,9 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [x] Implement the v7 entropy predicate. Evidence: shared degenerate/random-field cases match;
   a passing predicate is not described as proof of randomness quality.
 - [ ] Reconcile every public capability with both implementations and its shared evidence.
+  - [ ] Resolve the pending parsing-failure decision, align both caller-buffer paths and document
+    their contract. Compare destination bytes on failure and combined malformed-text/bad-range
+    errors through Node, Bun and Wasm; error-code-only comparisons cannot establish this behavior.
   - [x] Compare the nonempty base64url guard and plain-slug freshness composition through
     native and browser adapters, including valid results, sentinel/version checks and error priority.
   - [x] Exercise direct UUID byte formatting, predicates, timestamps and offsets through each
