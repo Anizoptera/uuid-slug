@@ -66,9 +66,8 @@ export function halfSipHash(
   if (continuation) ({ v0, v1, v2, v3 } = continuation);
 
   // The length-stamped final block is absorbed exactly like a message block, so it rides the same
-  // loop rather than a second copy of it. Callers in this package always pass whole words; the
-  // partial-block arithmetic exists because the reference vectors cover every length from 0 to 63,
-  // and a branch no vector reaches is a branch nothing checks.
+  // loop rather than a second copy of it. Seeds may end mid-word; mask blocks use whole words.
+  // The reference vectors exercise every tail length, including an empty message.
   const fullWords = byteLength >>> 2;
   const spare = byteLength & 3;
   const tail = spare === 0 ? 0 : (words[fullWords] as number) & ((1 << (spare * 8)) - 1);

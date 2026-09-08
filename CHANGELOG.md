@@ -5,6 +5,15 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 ## [Unreleased]
 
+### Added
+
+- `createMaskSchemaAsync` derives the same keys as the synchronous constructor while yielding to other work. Pass an `AbortSignal` to stop derivation; cancellation returns an `aborted` error carrying the signal's reason.
+
+### Performance
+
+- Use available Node and Bun encoding primitives, avoid redundant byte views, and decode rotated-key input once. Freshness checks inspect decoded bytes directly; boolean predicates avoid constructing decoded buffers and discarded errors.
+- Add runtime-specific resource and timing regression checks. Reproducible measurements and their limits are documented in `bench/PERFORMANCE.md`; improvements vary by runtime and workload.
+
 ### Fixed
 
 - Preserve raw sentinel slugs during generation and reject masked output that would decode as a different sentinel UUID.
@@ -15,6 +24,7 @@ notes: the section for a version is published verbatim when its tag is pushed.
 - Validate finite freshness windows and clock readings; preserve entropy and clock failure causes.
 - Validate packed consumers on supported runtimes and declarations with TypeScript 5.7.
 - Reject incomplete benchmark reports and mismatched release-retry archives.
+- Validate the exact cleaned tarball before publication through publish-clean 0.9.1, without a separate validation pack.
 
 ## [0.2.0](https://github.com/Anizoptera/uuid-slug/compare/v0.1.0...v0.2.0) (2026-08-11)
 
