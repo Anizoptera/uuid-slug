@@ -141,7 +141,8 @@ export const codecBoundaryCases = [
         for (const suffix of ["=", "\n", "\r", "\u2028", "ÿ"])
           assert.equal(isBase64Url(encoded + suffix), false);
       }
-      for (const value of ["", null, undefined, "A", "AAAAA", "AB", "AAB"])
+      assert.equal(isBase64Url(""), true);
+      for (const value of [null, undefined, "A", "AAAAA", "AB", "AAB"])
         assert.equal(isBase64Url(value), false);
     },
   },

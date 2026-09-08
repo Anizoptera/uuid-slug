@@ -24,17 +24,6 @@ Public choices are recorded above; verify the engineering tasks below before cla
 
 ### Pending public decision
 
-UUID parsing failure is not yet aligned: malformed final characters in UUID text and plain slugs
-overwrite a valid TypeScript destination prefix; Rust parsing followed by `write_into` leaves it
-unchanged. The cross-language document promises unchanged storage. Art's decision is pending on
-requiring unchanged output or retaining partial writes; do not change either public behavior yet.
-TypeScript also checks destination bounds before character validity when input length is valid.
-Isolated validation-first and temporary-buffer prototypes preserve existing error codes, messages
-and precedence across malformed positions, padding aliases and invalid ranges on Node and Bun.
-Validation-first preserves caller storage without a temporary byte buffer; measured successful-call
-cost increases by tens of nanoseconds locally. Staging adds allocation. Proposed contract: preserve
-caller storage on failed UUID/plain-slug parsing; retain general byte-decoder partial-write semantics.
-
 Async byte-seed capture exceeds the responsiveness target for large inputs: local public-call
 probes crossed it at 64 MiB on Node/Bun and crossed the warning threshold at 256 MiB on Bun.
 The earlier ownership question is withdrawn: no concrete alternative was evaluated against the
@@ -177,7 +166,8 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   collisions, non-v7 plain UUIDs and explicit candidate enumeration match shared cases.
 - [x] Implement independent compatibility switches. Evidence: disabling each legacy path removes
   that path while preserving current formats and separately enabled compatibility.
-- [x] Implement arbitrary-byte base64url utilities, including allocation-free caller-buffer decoding.
+- [x] Implement canonical base64url utilities for every symmetrically encodable byte length,
+  including allocation-free caller-buffer decoding.
   Shared cases cover empty/malformed text, UTF-16 error priority, exact result slices and offsets.
   Invalid-range observations include destination bytes; matching errors cannot conceal writes.
 - [x] Implement guards matching conversion at version, variant, alphabet and padding boundaries.
@@ -185,11 +175,10 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   version nibble/variant prefix; explicit expected rejections prevent mutual false acceptance.
 - [x] Implement the v7 entropy predicate. Evidence: shared degenerate/random-field cases match;
   a passing predicate is not described as proof of randomness quality.
-- [ ] Reconcile every public capability with both implementations and its shared evidence.
-  - [ ] Resolve the pending parsing-failure decision, align both caller-buffer paths and document
-    their contract. Compare destination bytes on failure and combined malformed-text/bad-range
-    errors through Node, Bun and Wasm; error-code-only comparisons cannot establish this behavior.
-  - [x] Compare the nonempty base64url guard and plain-slug freshness composition through
+- [x] Reconcile every public capability with both implementations and its shared evidence.
+  - [x] Align fixed-size parsing and document its contract. Shared Node and Bun probes compare
+    destination bytes on failure; Rust constructs a parsed value before writing it to caller storage.
+  - [x] Compare the canonical base64url guard and plain-slug freshness composition through
     native and browser adapters, including valid results, sentinel/version checks and error priority.
   - [x] Exercise direct UUID byte formatting, predicates, timestamps and offsets through each
     adapter. Reject offsets beyond the target's integer width without truncation; browser cases
@@ -203,7 +192,7 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [x] Reconcile Node and Bun bridge coverage against the public capability mapping. Every shared
   operation has populated cases and a Rust dispatch path; both native transports pass the complete
   batch. Rust tests cover callback failure, atomic candidates, captured seeds and mid-work cancellation.
-  Caller-buffer parsing failure remains the separate unresolved parity task above.
+  Fixed-size parsing is atomic in both implementations; Node and Bun exercise caller storage.
 - [x] Audit the development bridge lifecycle. Valid-pointer bounds and released handles pass
   Miri; native hosts copy owned results and release in `finally`. Browser checks cover abort/drop
   and cleanup. One C panic boundary covers dispatch and ownership; invalid pointers and process

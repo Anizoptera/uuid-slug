@@ -87,6 +87,7 @@ function hexValue(code: number) {
   return HEX_DECODE[code] ?? -1;
 }
 
+/** Parse one canonical UUID; a failure leaves caller-supplied storage unchanged. */
 export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): UuidSlugError | Uint8Array {
   if (uuid.length !== UUID_LENGTH)
     return new UuidSlugError("invalid_uuid", "UUID must be 36 characters.");
@@ -98,12 +99,14 @@ export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): UuidSlugE
   const badRange = checkRange(target.length, offset, 16);
   if (badRange) return badRange;
 
+  for (const textOffset of UUID_BYTE_OFFSETS) {
+    if (hexValue(uuid.charCodeAt(textOffset)) < 0 || hexValue(uuid.charCodeAt(textOffset + 1)) < 0)
+      return new UuidSlugError("invalid_uuid", `Invalid UUID hex at offset ${textOffset}.`);
+  }
   for (let byteIndex = 0; byteIndex < UUID_BYTE_OFFSETS.length; byteIndex += 1) {
     const textOffset = UUID_BYTE_OFFSETS[byteIndex] as number;
     const high = hexValue(uuid.charCodeAt(textOffset));
     const low = hexValue(uuid.charCodeAt(textOffset + 1));
-    if (high < 0 || low < 0)
-      return new UuidSlugError("invalid_uuid", `Invalid UUID hex at offset ${textOffset}.`);
     target[offset + byteIndex] = (high << 4) | low;
   }
   return target;
@@ -182,7 +185,7 @@ export function formatUuidSlug(
   return encode(bytes.length === 16 ? bytes : bytes.subarray(offset, offset + 16), alpha);
 }
 
-/** Accepts either alphabet; the length says which, so there is nothing to pass and nothing to get wrong. */
+/** Accept either slug alphabet and leave caller-supplied storage unchanged on failure. */
 export function parseUuidSlug(
   slug: string,
   out?: Uint8Array,
@@ -195,6 +198,16 @@ export function parseUuidSlug(
       `UUID slug must be ${SLUG_LENGTHS} characters, got ${slug.length}.`,
     );
   const target = out ?? new Uint8Array(16);
+  const badRange = checkRange(target.length, offset, 16);
+  if (badRange) return badRange;
+  if (out && !isEncoded(slug, alpha, 16)) {
+    for (let i = 0; i < slug.length; i += 1) {
+      const code = slug.charCodeAt(i);
+      if (code >= 128 || (alpha.decode[code] as number) < 0)
+        return new UuidSlugError(alpha.code, `Invalid ${alpha.name} character at offset ${i}.`);
+    }
+    return new UuidSlugError(alpha.code, `${alpha.name} value has non-canonical trailing bits.`);
+  }
   const result = decodeInto(slug, alpha, target, offset, 16);
   return result instanceof Error ? result : target;
 }

@@ -91,7 +91,7 @@ describe("bit-packing codec", () => {
   });
 
   it.each([
-    ["", false],
+    ["", true],
     [null, false],
     [undefined, false],
     ["AAAA", true],

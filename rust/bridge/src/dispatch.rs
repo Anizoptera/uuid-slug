@@ -188,9 +188,7 @@ fn run(request: &Value) -> Result<Value, Error> {
             ]))
         }
         "base64Decode" => Ok(json!(Alphabet::Base64Url.decode(input)?)),
-        "base64Guard" => Ok(json!(
-            !input.is_empty() && Alphabet::Base64Url.decode(input).is_ok()
-        )),
+        "base64Guard" => Ok(json!(Alphabet::Base64Url.decode(input).is_ok())),
         "base64DecodeTo" => {
             // Wasm usize is 32-bit: casts would turn a rejected offset into an in-bounds write.
             let capacity =

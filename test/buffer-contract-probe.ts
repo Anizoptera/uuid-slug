@@ -34,6 +34,7 @@ const codec = createUuidSlugCodec();
 
 const UUID = "018f4f2e-4c3d-7000-8000-0123456789ab";
 const SLUG = "AY9PLkw9cACAAAEjRWeJqw";
+const BASE32_SLUG = "067kubic7lo0100004hkaps9lc";
 const INSTANT = 1_700_000_000_000;
 
 /** Fill byte chosen so any stray write shows up as a value no generator would produce wholesale. */
@@ -56,6 +57,26 @@ const writers: readonly (readonly [string, (out: Uint8Array, offset: number) => 
   ["uuidV4Bytes", (out, offset) => codec.uuidV4Bytes(out, offset)],
   ["uuidV7Bytes", (out, offset) => codec.uuidV7Bytes(out, offset)],
   ["uuidV7BytesAt", (out, offset) => codec.uuidV7BytesAt(INSTANT, out, offset)],
+];
+
+const malformedWriters: readonly (readonly [string, (out: Uint8Array) => unknown])[] = [
+  ["parseUuid", (out) => parseUuid(UUID.slice(0, -1) + "x", out)],
+  [
+    "parseUuidSlug invalid base64url character",
+    (out) => parseUuidSlug(SLUG.slice(0, -1) + "!", out),
+  ],
+  [
+    "parseUuidSlug non-canonical base64url padding",
+    (out) => parseUuidSlug(SLUG.slice(0, -1) + "x", out),
+  ],
+  [
+    "parseUuidSlug invalid base32hex character",
+    (out) => parseUuidSlug(BASE32_SLUG.slice(0, -1) + "w", out),
+  ],
+  [
+    "parseUuidSlug non-canonical base32hex padding",
+    (out) => parseUuidSlug(BASE32_SLUG.slice(0, -1) + "d", out),
+  ],
 ];
 
 /** Entry points that only READ at the offset, so only the report half of the invariant applies. */
@@ -114,6 +135,14 @@ export const cases: readonly ProbeCase[] = [
       },
     })),
   ),
+  ...malformedWriters.map(([name, call]) => ({
+    name: `${name} leaves no partial output`,
+    run: () => {
+      const buffer = new Uint8Array(BUFFER_BYTES).fill(FILL);
+      const result = call(buffer);
+      return result instanceof UuidSlugError ? untouched(buffer) : `returned ${String(result)}`;
+    },
+  })),
   ...readers.flatMap(([name, call]) =>
     HOSTILE_OFFSETS.map((offset) => ({
       name: `${name} refuses offset ${String(offset)}`,

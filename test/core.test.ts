@@ -24,10 +24,11 @@ const ascending = (slugs: readonly string[]) =>
   slugs.every((slug, i) => i === 0 || (slugs[i - 1] as string) < slug);
 
 describe("base64url", () => {
-  it("round-trips arbitrary bytes and rejects non-canonical forms", () => {
+  it("round-trips bytes including empty input and rejects non-canonical forms", () => {
     const bytes = Uint8Array.from([0, 255, 128, 64, 1, 2, 3, 4]);
     const encoded = encodeBase64Url(bytes);
     expect(decodeBase64Url(encoded)).toEqual(bytes);
+    expect(decodeBase64Url(encodeBase64Url(new Uint8Array()))).toEqual(new Uint8Array());
     expect(decodeBase64Url(`${encoded}=`)).toBeInstanceOf(Error);
     expect(decodeBase64Url("A")).toBeInstanceOf(Error);
   });

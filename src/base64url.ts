@@ -34,8 +34,8 @@ export function decodeBase64Url(
 }
 
 export function isBase64Url(value: null | string | undefined): value is Base64UrlString {
-  // The empty string decodes to zero bytes without error, but an identifier of no characters is
-  // never what a caller means by "is this a slug"; rejecting it keeps the guard usable as one.
-  if (!value) return false;
-  return isEncoded(value, BASE64URL, Math.floor((value.length * BASE64URL.bitsPerChar) / 8));
+  return (
+    value != null &&
+    isEncoded(value, BASE64URL, Math.floor((value.length * BASE64URL.bitsPerChar) / 8))
+  );
 }

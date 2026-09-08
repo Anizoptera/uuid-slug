@@ -39,7 +39,7 @@ Use validated `Uuid` values between operations; parse text once rather than at e
 | Plain slug conversion | `Uuid::slug`, `Uuid::parse_slug`, `Codec::uuid_to_slug` |
 | UUID/string/slug guards | Parse once, then `Uuid::is_v4`, `is_v7`, `is_rfc_variant` |
 | Base64url bytes | `Alphabet::Base64Url.encode`, `decode`, `decode_to` |
-| Nonempty base64url guard | Reject empty input, then check `Alphabet::Base64Url.decode` success |
+| Canonical base64url guard | Check `Alphabet::Base64Url.decode` success, including empty input |
 | v4 generation and caller storage | `generation::uuid_v4`, `uuid_v4_with`, `uuid_v4_into_with` |
 | v7 generation, explicit time and caller storage | `UuidV7Generator::generate`, `at`, and their `_with`/`_into_with` forms |
 | Generated plain or masked slugs | Generate a `Uuid`, then call `slug` or the keyed codec |
@@ -56,7 +56,8 @@ shared codecs without a hidden generator lock. Default generators use platform e
 `_with` callbacks must fill the entire destination or fail. Pass `generation::fill_os_random` to
 caller-buffer operations for the same platform source. Invalid destination ranges draw no entropy.
 `decode_to` returns only the decoded slice; malformed text can leave partial bytes, which must not
-be consumed on error. UUID parsing and generation commit their fixed-size output only on success.
+be consumed on error. UUID text and slug parsing validate the complete identifier before writing;
+all fixed-size parsing and generation commit caller storage only on success.
 
 ## Filesystem-safe output
 

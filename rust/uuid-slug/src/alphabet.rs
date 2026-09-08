@@ -103,7 +103,7 @@ impl Alphabet {
             _ => Err(self.error()),
         }
     }
-    /// Decode arbitrary bytes, rejecting impossible lengths and nonzero padding.
+    /// Decode every canonical unpadded spelling produced by `encode`, including empty input.
     pub fn decode(self, text: &str) -> Result<Vec<u8>, Error> {
         // The dependency's length arithmetic is bounded to usize::MAX / 8.
         if text.len() > usize::MAX / 8 {
@@ -213,7 +213,7 @@ mod tests {
         Ok(())
     }
     #[test]
-    fn arbitrary_base64_bytes_use_rfc_vectors() -> Result<(), Error> {
+    fn base64_bytes_match_rfc_vectors() -> Result<(), Error> {
         for (bytes, text) in [
             ("", ""),
             ("f", "Zg"),

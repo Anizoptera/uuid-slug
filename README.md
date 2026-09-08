@@ -211,7 +211,9 @@ Also exported, all module-level:
   `isUuidV7Slug`, and `isUuidV7Bytes` for 16 bytes you already hold.
 - base64url helpers: `encodeBase64Url`, `decodeBase64Url`, `isBase64Url`. `decodeBase64Url` returns
   a view over exactly the bytes it decoded — with or without an `out` buffer — so `.length` is the
-  decoded length, never the buffer's. Given `out`, that view shares your buffer's memory.
+  decoded length, never the buffer's. Given `out`, that view shares your buffer's memory. Every
+  canonical unpadded encoding produced by `encodeBase64Url`, including empty input, is accepted by
+  both the decoder and guard; malformed encodings return an error.
 - `extractUuidV7Timestamp` — the instant a v7 was minted at, and an error for anything that is
   not a v7, because a v4's first six bytes are random and would otherwise read back as a
   plausible date. `hasUuidV7Entropy` answers whether the 74 random bits are anything but
@@ -407,6 +409,9 @@ See [security boundaries](docs/security.md) for entropy failures, custom sources
 - **One type for owned bytes.** Without an output buffer, byte generators return a plain
   `Uint8Array`, never a platform-specific subclass. With an output buffer, they return that same
   caller-owned array and write only the requested UUID range.
+- **Atomic identifier parsing.** `parseUuid` and `parseUuidSlug` validate the complete identifier
+  before writing. Invalid text or destination ranges return an error and leave caller storage
+  unchanged.
 - **You pay for masking only if you mask.** The keyless operations — generating an id, converting
   between a UUID and a plain slug — reach no codec, so a bundle that imports only those carries
   none of the cipher, key derivation, or sentinel table. Use named imports with a tree-shaking
