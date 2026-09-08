@@ -33,7 +33,7 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   released bindings with an additional ABI/support commitment. Recommend development-only.
 - [ ] R4 — Obtain Art's crate-name ruling; recommend `uuid-slug` to match the repository.
 - [ ] R5 — Obtain Art's version-policy ruling; recommend independent Rust versions/tags so an
-  npm-only packaging fix does not force a Rust release. Verify registry ownership before publication.
+  npm-only packaging fix does not force a Rust release. Decide the initial version separately.
 - [ ] R6 — Obtain Art's support ruling: name OS/architecture targets and required optional
   integrations; test the lowest working toolchain instead of choosing an arbitrary MSRV.
 - [ ] Map every public export and codec method to Rust input, result and failure semantics.
@@ -84,10 +84,10 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 
 - [ ] Port HalfSipHash and deterministic key derivation. Done: shared reference vectors and
   UTF-8/byte seeds, UTF-16 replacement at JS bridges, little-endian hash words, big-endian block
-  words and wrapping arithmetic agree; chunk boundaries cannot change derived keys.
+  words, iteration bounds and wrapping arithmetic agree; chunk boundaries cannot change keys.
 - [ ] Implement cooperative cancelable derivation without imposing an application runtime.
-  Use one resumable hash state for sync driving and bounded async polling; adapters yield to host
-  tasks. Done: cancel/drop frees state, no lost wakeups, unrelated tasks progress during large seeds.
+  Share hash primitives, retain the direct sync path; snapshot mutable inputs before returning
+  the future. Prove abort-before-poll, mid-work abort/drop, stable keys and unrelated host progress.
 - [ ] Implement built-in masking and unmasking. Done: existing wire fixtures, timestamp overflow,
   checksum rejection and UUID identity preservation match TypeScript.
 - [ ] Implement custom schemas. Done: inverse-direction cases, callback errors and output
@@ -96,7 +96,7 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [ ] Implement sentinels and collision protection. Done: sentinel priority, encode collisions
   and retained callback outputs preserve identity under the shared cases.
 - [ ] Implement explicit key rotation. Done: first-match order, all distinct candidates and
-  failure behavior match; no implicit schema increases the caller's false-accept surface.
+  failure behavior match; normalize spelling once, not once per key; never append implicit schemas.
 - [ ] Add the approved safe masked spelling in TypeScript and Rust together. Done: all 132 bits
   survive cross-language conversion, strict padding rejects aliases, and old outputs stay valid.
 - [ ] Verify safe masked filenames on supported filesystems. Done: exact round trips for normal

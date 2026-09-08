@@ -53,6 +53,6 @@ Rust may use a small set of justified dependencies. Compare contract fit, failur
 supported targets, measured resource costs, build costs, licensing and maintenance before selecting
 one; implementation convenience alone does not justify it.
 
-Keep one resumable derivation state for synchronous and cooperative drivers; a Future alone does
-not yield to host tasks. Keep native test bridges outside npm runtime dependencies. Publishing
+Share hash primitives without forcing continuation overhead onto synchronous calls; a Future alone
+does not yield to host tasks. Keep native test bridges outside npm runtime dependencies. Publishing
 bindings as supported products requires a separate decision; test adapters do not imply ABI support.
