@@ -47,7 +47,17 @@ export function createMigration(
     const base32 = slug.length === 26 && usePlain;
     const tail = decodeInto(slug, base32 ? BASE32HEX : BASE64URL, bytes, 0, 16, base32 ? 0 : 4);
     if (tail instanceof Error) return tail;
-    const reserved = (useOriginal || usePlain) && sentinels.get(encode(bytes, BASE64URL));
+    // A base64 alias differs only in its final four bits; reuse the validated text instead of
+    // encoding all sixteen bytes again. Base32 input still needs the sentinel's base64 spelling.
+    const reserved =
+      (useOriginal || usePlain) &&
+      sentinels.get(
+        base32
+          ? encode(bytes, BASE64URL)
+          : tail === 0
+            ? slug
+            : slug.slice(0, 21) + BASE64URL.chars[((bytes[15] as number) & 3) << 4],
+      );
     if (reserved && firstOnly) return [reserved.uuid];
     const candidates: UuidString[] = reserved ? [reserved.uuid] : [];
     function add(value: Uint8Array) {

@@ -144,11 +144,13 @@ try {
     chars: 22,
   });
   check("migration first match", () => migration.decode(old as string), {
+    base64: 0,
     errors: 0,
     chars: 22,
     draws: 0,
   });
   check("migration candidates", () => migration.candidates(old as string), {
+    base64: 0,
     errors: 0,
     chars: 22,
     draws: 0,
