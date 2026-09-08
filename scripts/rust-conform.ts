@@ -117,6 +117,11 @@ export function evaluate(request: Request): Outcome {
       case "base64DecodeTo": {
         const out = new Uint8Array(request.capacity as number).fill(165);
         const decoded = ts.decodeBase64Url(input, out, request.offset as number);
+        // Matching error codes cannot establish that a rejected range left caller storage intact.
+        if (decoded instanceof ts.UuidSlugError && decoded.code === "invalid_buffer") {
+          deepStrictEqual(out, new Uint8Array(out.length).fill(165));
+          return result({ error: decoded.code, storage: Array.from(out) });
+        }
         return decoded instanceof Error
           ? result(decoded)
           : result({ bytes: Array.from(decoded), storage: Array.from(out) });

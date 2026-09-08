@@ -176,6 +176,7 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   that path while preserving current formats and separately enabled compatibility.
 - [x] Implement arbitrary-byte base64url utilities, including allocation-free caller-buffer decoding.
   Shared cases cover empty/malformed text, UTF-16 error priority, exact result slices and offsets.
+  Invalid-range observations include destination bytes; matching errors cannot conceal writes.
 - [x] Implement guards matching conversion at version, variant, alphabet and padding boundaries.
   Shared cases reject every nonzero plain padding spelling in both alphabets and exercise each
   version nibble/variant prefix; explicit expected rejections prevent mutual false acceptance.

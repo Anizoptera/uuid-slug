@@ -200,7 +200,14 @@ fn run(request: &Value) -> Result<Value, Error> {
             let offset = usize::try_from(request["offset"].as_u64().ok_or(Error::InvalidBuffer)?)
                 .unwrap_or(usize::MAX);
             let mut out = vec![165; capacity];
-            let decoded = Alphabet::Base64Url.decode_to(input, &mut out, offset)?;
+            // Expose rejected-range storage so the host can detect writes before an error.
+            let decoded = match Alphabet::Base64Url.decode_to(input, &mut out, offset) {
+                Ok(decoded) => decoded,
+                Err(Error::InvalidBuffer) => {
+                    return Ok(json!({"error": "invalid_buffer", "storage": out}));
+                }
+                Err(error) => return Err(error),
+            };
             let bytes = json!(decoded);
             Ok(json!({"bytes": bytes, "storage": out}))
         }
