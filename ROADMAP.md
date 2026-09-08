@@ -165,8 +165,9 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [ ] Measure cancellation latency and event-loop blocking through real host execution.
   Accept when: operations exceeding the 4 ms target are bounded/cooperative or off-loop, with 8 ms
   warnings and 32 ms errors; delays never substitute for completion signals.
-- [ ] Apply only measured optimizations that preserve contracts. Accept when: paired comparisons of
-  affected paths show the benefit and disclose tradeoffs; no unsupported universal speed claim.
+- [x] Apply measured optimizations without changing contracts. Caller-buffer decoding and
+  first-result migration each avoid one allocation per call in paired native traces, in both
+  orders. Callers still choose owned results or complete candidate enumeration when needed.
 
 ### 7. Distribution and release — public maintenance, medium effort
 
@@ -183,8 +184,9 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   and attestations identify the actual crate bytes rather than only the source commit.
   - [x] Implement reviewed-crate packaging and checksum preflight; run both locally against
     committed source. Publication and registry attestations remain separate remote actions.
-- [ ] Update consumer docs alongside each capability: executable public examples, retained
-  migration retirement/rollback consequences, and explicit availability.
+- [x] Update consumer docs alongside each capability. Rustdoc executes conversion, masking,
+  rotation and migration examples; the crate README explains feature availability and retaining
+  readers during migration or rollback. The public capability map names the remaining call sites.
 - [ ] Audit every changed line against public promises and tasks; reproduce material review
   claims, fix defects and declare unexercised targets/states. Passing tests alone cannot close this.
 - [ ] Present release notes, version/tag, artifact, support/provenance and rollback limits before publish.
