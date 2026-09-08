@@ -44,13 +44,7 @@ impl Alphabet {
         self.encoding().encode(bytes)
     }
     /// Encode exactly one 16-byte UUID payload.
-    pub fn encode(self, bytes: &[u8]) -> Result<String, Error> {
-        if bytes.len() != 16 {
-            return Err(Error::InvalidBuffer);
-        }
-        Ok(self.encode_raw(bytes))
-    }
-    pub(crate) fn encode_uuid(self, bytes: &[u8; 16]) -> String {
+    pub fn encode(self, bytes: &[u8; 16]) -> String {
         self.encode_raw(bytes)
     }
     /// Encode the 128-bit block and four external check bits without changing their wire order.
@@ -113,10 +107,10 @@ impl Alphabet {
         }
     }
     /// Decode exactly one canonical 16-byte UUID payload.
-    pub fn decode(self, text: &str) -> Result<Vec<u8>, Error> {
+    pub fn decode(self, text: &str) -> Result<[u8; 16], Error> {
         let mut decoded = [0; 16];
         self.decode_into(text, &mut decoded, 0)?;
-        Ok(decoded.to_vec())
+        Ok(decoded)
     }
 
     /// Decode into caller storage and return only the decoded range, without allocating.
@@ -180,7 +174,7 @@ mod tests {
                     }
                 );
             }
-            let text = alphabet.encode(&bytes)?;
+            let text = alphabet.encode(&bytes);
             let mut alias = text.into_bytes();
             let last = alias.len() - 1;
             // The chosen bytes encode with an even final digit in both alphabets.
@@ -202,14 +196,11 @@ mod tests {
     #[test]
     fn base64_uuid_payload_is_exact_and_transactional() -> Result<(), Error> {
         let bytes = [0xa5; 16];
-        let text = Alphabet::Base64Url.encode(&bytes)?;
+        let text = Alphabet::Base64Url.encode(&bytes);
         assert_eq!(Alphabet::Base64Url.decode(&text)?, bytes);
         for invalid in ["", "Zg", "Zg=", "Zh", "Zg\n", "é"] {
             assert!(Alphabet::Base64Url.decode(invalid).is_err());
         }
-        assert!(Alphabet::Base64Url.encode(&[]).is_err());
-        assert!(Alphabet::Base64Url.encode(&[0; 15]).is_err());
-        assert!(Alphabet::Base64Url.encode(&[0; 17]).is_err());
         let mut out = [165; 18];
         assert_eq!(Alphabet::Base64Url.decode_to(&text, &mut out, 1)?, &bytes);
         assert_eq!(&out[..1], &[165]);

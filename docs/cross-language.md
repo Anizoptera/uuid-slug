@@ -40,7 +40,7 @@ Use validated `Uuid` values between operations; parse text once rather than at e
 | Parse/format UUID; bytes and offsets | `Uuid::parse`, `from_slice`, `as_bytes`, `write_into`, `Display` |
 | Plain slug conversion | `Uuid::slug`, `Uuid::parse_slug`, `Codec::uuid_to_slug` |
 | UUID/string/slug guards | Parse once, then `Uuid::is_v4`, `is_v7`, `is_rfc_variant` |
-| Base64url UUID payload | `Alphabet::Base64Url.encode`, `decode`, `decode_to` |
+| Base64url UUID payload | `Alphabet::Base64Url.encode(&[u8; 16])`, `decode`, `decode_to` |
 | Canonical base64url guard | Check `Alphabet::Base64Url.decode` success for exactly 22 characters |
 | v4 generation and caller storage | `generation::uuid_v4`, `uuid_v4_with`, `uuid_v4_into_with` |
 | v7 generation, explicit time and caller storage | `UuidV7Generator::generate`, `at`, and their `_with`/`_into_with` forms |
@@ -57,8 +57,9 @@ Generators own mutable sequence state; codecs own immutable keys. Keeping them s
 shared codecs without a hidden generator lock. Default generators use platform entropy; custom
 `_with` callbacks must fill the entire destination or fail. Pass `generation::fill_os_random` to
 caller-buffer operations for the same platform source. Invalid destination ranges draw no entropy.
-Base64url helpers accept only a 16-byte UUID payload and its canonical 22-character spelling.
-They preserve every 16-byte value. UUID version and variant checks belong to UUID guards.
+`Alphabet::encode` accepts a 16-byte array and cannot receive another payload size. It preserves
+every 16-byte value. `decode` returns a 16-byte array or an error for non-canonical input. UUID
+version and variant checks belong to UUID guards.
 `decode_to`, UUID text and slug parsing validate the complete identifier before writing; all
 fixed-size decoding, parsing and generation commit caller storage only on success.
 
