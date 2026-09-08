@@ -30,6 +30,8 @@ TypeScript also checks destination bounds before character validity when input l
 
 Native CI awaits permission to push a review branch and open a draft PR. Release version selection
 and publication remain unapproved; neither local validation nor a continuation grants those actions.
+The native reference is marked `UNLICENSED` and unpublished. Permission to incorporate copied
+source under this crate's Apache-2.0 license is pending; behavioral study does not settle that right.
 
 ## Execution order
 
@@ -57,6 +59,9 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 
 - [ ] Inspect the native source and its consumers before copying; preserve reusable behavior,
   verify licensing, omit private project identifiers. Accept when: reviewed source delta and provenance.
+  - [x] Inspect the reference implementation, manifest and native generation/parse consumers.
+    Its compact-text acceptance and infallible generation differ from this package's contracts;
+    consumer adoption stays separate. Publication rights remain held by the decision above.
 - [x] Compare UUID/entropy/encoding/hash/error/serde dependencies for contract fit and measured
   cost; retain reasons, not sibling version pins. Keep default features explicit and audit the lock graph.
   - [x] Compare UUID-sized base64 caller-buffer encoding/decoding and owned strings in alternating
