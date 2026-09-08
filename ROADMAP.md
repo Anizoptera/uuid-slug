@@ -29,6 +29,11 @@ overwrite a valid TypeScript destination prefix; Rust parsing followed by `write
 unchanged. The cross-language document promises unchanged storage. Art's decision is pending on
 requiring unchanged output or retaining partial writes; do not change either public behavior yet.
 TypeScript also checks destination bounds before character validity when input length is valid.
+Isolated validation-first and temporary-buffer prototypes preserve existing error codes, messages
+and precedence across malformed positions, padding aliases and invalid ranges on Node and Bun.
+Validation-first preserves caller storage without a temporary byte buffer; measured successful-call
+cost increases by tens of nanoseconds locally. Staging adds allocation. Proposed contract: preserve
+caller storage on failed UUID/plain-slug parsing; retain general byte-decoder partial-write semantics.
 
 Async byte-seed capture exceeds the responsiveness target for large inputs: local public-call
 probes crossed it at 64 MiB on Node/Bun and crossed the warning threshold at 256 MiB on Bun.
