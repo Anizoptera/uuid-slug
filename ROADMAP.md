@@ -30,6 +30,11 @@ unchanged. The cross-language document promises unchanged storage. Art's decisio
 requiring unchanged output or retaining partial writes; do not change either public behavior yet.
 TypeScript also checks destination bounds before character validity when input length is valid.
 
+Async byte-seed capture exceeds the responsiveness target for large inputs: local public-call
+probes crossed it at 64 MiB on Node/Bun and crossed the warning threshold at 256 MiB on Bun.
+Art's decision is pending on retaining the initial-copy exception versus changing input ownership.
+Do not weaken call-time capture or impose a seed-size limit without that ruling.
+
 Native CI execution requires a maintainer-triggered run; the earlier push/draft-PR request is
 withdrawn. Release version selection remains unapproved. Remote writes, including publication,
 are forbidden by the ruling above; local validation cannot substitute for native CI evidence.
