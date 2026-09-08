@@ -128,6 +128,23 @@ export function decodeMaskedSlug(
   );
 }
 
+/** Decode every requested key without treating a checksum match as proof of identity. */
+export function decodeMaskedCandidates(
+  mixed: Uint8Array,
+  outerTag: number,
+  schemas: readonly MaskSchema[],
+): UuidSlugError | Uint8Array[] {
+  const candidates: Uint8Array[] = [];
+  for (const schema of schemas) {
+    // Custom callbacks may mutate their input; no key may alter what the next one sees.
+    const decoded = unmix(mixed.slice(), outerTag, schema);
+    // A failed callback means the candidate list is incomplete, not that its key mismatched.
+    if (decoded instanceof Error) return decoded;
+    if (decoded) candidates.push(decoded);
+  }
+  return candidates;
+}
+
 function unmix(
   mixed: Uint8Array,
   outerTag: number,

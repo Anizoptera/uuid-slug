@@ -4,10 +4,53 @@ import assert from "node:assert/strict";
 import { BASE64URL, decodeInto } from "../src/alphabet";
 import { createUuidSlugCodec } from "../src/codec";
 import { decodeOriginalMask, parseOriginalSlug } from "../src/legacy-mask";
+import { decodeMaskedCandidates } from "../src/mask";
+import { createMaskSchema } from "../src/schema";
 import { formatUuid, parseUuidSlug } from "../src/uuid";
 import fixtures from "./fixtures-original-slugs.json";
 
 export const legacyMaskCases = [
+  {
+    name: "enumerate matching rotation keys without input mutation or partial results",
+    run(this: void) {
+      const { seeds, slug, uuids } = fixtures.keyOverlap;
+      const schemas = seeds.map((seed) => {
+        const schema = createMaskSchema({ seed });
+        if (schema instanceof Error) throw schema;
+        return schema;
+      });
+      const mixed = new Uint8Array(16);
+      const tail = decodeInto(slug, BASE64URL, mixed, 0, 16, 4);
+      if (tail instanceof Error) throw tail;
+      const original = mixed.slice();
+      const mutating = schemas.map((schema) => ({
+        ...schema,
+        mix(input: Uint8Array, output: Uint8Array, forward: boolean) {
+          schema.mix(input, output, forward);
+          input.fill(0);
+        },
+      }));
+      const candidates = decodeMaskedCandidates(mixed, tail, mutating);
+      if (candidates instanceof Error) throw candidates;
+      assert.deepEqual(
+        candidates.map((bytes) => formatUuid(bytes)),
+        uuids,
+      );
+      assert.deepEqual(mixed, original);
+      const cause = new Error("key service unavailable");
+      const failed = decodeMaskedCandidates(mixed, tail, [
+        ...schemas,
+        {
+          id: "unavailable",
+          mix() {
+            throw cause;
+          },
+        },
+      ]);
+      assert.ok(failed instanceof Error);
+      assert.equal(failed.cause, cause);
+    },
+  },
   {
     name: "one slug can carry three distinct UUID interpretations",
     run(this: void) {
