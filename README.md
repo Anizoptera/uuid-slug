@@ -276,6 +276,24 @@ order you list them, and the first whose check passes wins — so put the newest
 the list short. Nothing else is ever tried: a codec decodes with the schemas you gave it and no
 others.
 
+### Changing an existing ID format
+
+Preserve the UUID; change only how it is encoded. Do not generate a replacement UUID when
+converting an existing ID: references and stored records must still identify the same object.
+
+Deploy readers that accept both formats before any writer issues the new format. Include
+background jobs, cached clients and extensions in that rollout. After switching writers, keep
+compatible readers available for rollback: an old-only reader cannot read newly issued IDs.
+
+Updating the database does not update bookmarks, shared links, cookies or client storage.
+Remove compatibility only when the old IDs in those places no longer need to work.
+No recent legacy traffic does not prove that old links are gone. To keep old URLs after removing
+their decoder, retain an application-owned mapping from each supported old slug to its UUID.
+
+Keep keys and sentinel definitions stable throughout the rollout. Non-v7 UUIDs and UUIDv7s
+timestamped at or beyond 2^42 ms cannot use the current masked format; preserve them as UUIDs
+or direct slugs. Never truncate the timestamp or substitute a new identity to make masking pass.
+
 ### Rejecting stale ids
 
 ```ts
