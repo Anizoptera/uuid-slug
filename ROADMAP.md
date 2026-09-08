@@ -173,11 +173,13 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 
 ### 7. Distribution and release — public maintenance, medium effort
 
-- [ ] Gate Node/Bun/Rust artifacts: failures propagate, required fixtures ship, npm stays native-free.
+- [x] Gate Node/Bun/Rust artifacts: final npm consumers and archive checks run before publication;
+  Cargo's credential-free preparation runs the extracted package's tests before saving reviewed bytes.
   - [x] Reject native build files during the existing npm archive scan. An unreferenced
     `dist/native.node` passed module-graph checks before the guard and is now rejected.
   - [x] Build and test the actual Cargo package, including its embedded fixtures and executable
-    documentation; verify its standalone manifest and bundled license outside the workspace.
+    documentation. The preparation command passes in a separate checkout; its packaged manifest
+    and bundled license are standalone. A failed packaged test prevents the reviewed archive copy.
 - [ ] Measure complete feedback lanes and remove redundant evidence. Accept when: routine complete
   lanes, including setup, stay below five minutes with 4–8× headroom; cache by lockfile/toolchain/
   target/profile. Run OS lanes independently; report cold builds separately without exempting them.

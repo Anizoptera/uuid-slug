@@ -28,9 +28,9 @@ export async function crateChecksum(version: string): Promise<string | undefined
   return checksum;
 }
 
-async function cargo(args: string[]): Promise<void> {
+async function cargo(args: string[], manifest = "rust/Cargo.toml"): Promise<void> {
   const child = Bun.spawn(
-    ["cargo", ...args, "--manifest-path", "rust/Cargo.toml", "--package", "uuid-slug", "--locked"],
+    ["cargo", ...args, "--manifest-path", manifest, "--package", "uuid-slug", "--locked"],
     { stdout: "inherit", stderr: "inherit", timeout: 240_000 },
   );
   if ((await child.exited) !== 0) throw new Error(`cargo ${args[0]} failed.`);
@@ -51,6 +51,11 @@ export async function releaseCrate(mode: string): Promise<void> {
     if ((await readdir(reviewedDirectory)).length)
       throw new Error("Reviewed crate directory must be empty before packaging.");
     await cargo(["package"]);
+    // Package verification only compiles the library; run fixtures and docs from extracted bytes.
+    await cargo(
+      ["test", "--all-features"],
+      join("rust/target/package", `uuid-slug-${version}`, "Cargo.toml"),
+    );
     await copyFile(packaged, reviewed);
     return;
   }
