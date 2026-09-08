@@ -22,8 +22,31 @@ jobs:
     permissions: {}
     uses: ./.github/workflows/check.yml
 
+  crate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .tool-versions
+      - run: bun install --frozen-lockfile
+      - name: Install the repository Rust toolchain
+        run: |
+          version=$(awk '$1 == "rust" { print $2 }' .tool-versions)
+          test -n "$version" && rustup toolchain install "$version" --profile minimal && rustup override set "$version"
+      - run: bun scripts/release-crate.ts prepare
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: reviewed-crate
+          path: rust/target/reviewed-crate/*.crate
+          if-no-files-found: error
+
   publish:
-    needs: verify
+    needs: [verify, crate]
     runs-on: ubuntu-latest
     # Bounded because the runner default is six hours and this workflow serialises on a
     # concurrency group that never cancels: one wedged run blocks every later release until
@@ -69,5 +92,54 @@ jobs:
             gh release create "$GITHUB_REF_NAME" --verify-tag --notes-file release-artifacts/notes.md
           fi
           gh release upload "$GITHUB_REF_NAME" release-artifacts/*.tgz --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  publish-crate:
+    needs: [verify, crate, publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .tool-versions
+      - run: bun install --frozen-lockfile
+      - name: Install the repository Rust toolchain
+        run: |
+          version=$(awk '$1 == "rust" { print $2 }' .tool-versions)
+          test -n "$version" && rustup toolchain install "$version" --profile minimal && rustup override set "$version"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: reviewed-crate
+          path: rust/target/reviewed-crate
+      - id: preflight
+        run: bun scripts/release-crate.ts check
+      # The initial crates.io publication requires an API token; remove this secret
+      # after configuring Anizoptera/uuid-slug + release.yml as a trusted publisher.
+      - id: bootstrap
+        env:
+          BOOTSTRAP_TOKEN: ${{ secrets.CRATES_IO_BOOTSTRAP_TOKEN }}
+        run: |
+          if test -n "$BOOTSTRAP_TOKEN"; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+      - id: auth
+        if: steps.preflight.outputs.published != 'true' && steps.bootstrap.outputs.available != 'true'
+        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
+      - run: bun scripts/release-crate.ts publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token || secrets.CRATES_IO_BOOTSTRAP_TOKEN }}
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: rust/target/reviewed-crate/*.crate
+      - name: Attach the registry-matching crate
+        run: gh release upload "$GITHUB_REF_NAME" rust/target/reviewed-crate/*.crate --clobber
         env:
           GH_TOKEN: ${{ github.token }}
