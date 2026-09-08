@@ -48,6 +48,8 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   verify licensing, omit private project identifiers. Accept when: reviewed source delta and provenance.
 - [ ] Compare UUID/entropy/encoding/hash/error/serde dependencies for contract fit and measured
   cost; retain reasons, not sibling version pins. Keep default features explicit and audit the lock graph.
+  - [x] Record contract-fit reasons and live replacement criteria in the cross-language dependency
+    section; inspect the product's normal graph separately with platform entropy enabled and disabled.
 - [x] Create `rust/Cargo.toml` with the product and unpublished bridge members; external consumers
   link the product alone. Keep OS entropy and bindings outside pure encoding/masking modules.
 - [x] Share wire/hash/original fixtures as data; use one comparator with independent producers.

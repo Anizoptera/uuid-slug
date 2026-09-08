@@ -87,6 +87,22 @@ Rust may use a small set of justified dependencies. Compare contract fit, failur
 supported targets, measured resource costs, build costs, licensing and maintenance before selecting
 one; implementation convenience alone does not justify it.
 
+Keep each dependency behind the contract it actually satisfies:
+
+| Concern | Choice and reason | Alternative and what would justify it |
+| --- | --- | --- |
+| UUID text | `uuid` parses and formats; local guards retain the narrower accepted spelling. Its generation features stay disabled. | Upstream generation would need fallible entropy and the same explicit sequence/error behavior. Its [random backend](https://docs.rs/crate/uuid/1.26.0/source/src/rng.rs) panics on a failed default entropy draw. |
+| Entropy | Direct [`getrandom`](https://docs.rs/getrandom/latest/getrandom/) calls retain failure reporting and platform backend selection. | Another RNG layer must add a required capability; merely wrapping the same OS source adds no entropy assurance. |
+| Encoding | [`data-encoding`](https://docs.rs/data-encoding/latest/data_encoding/) handles both alphabets, caller storage and canonical trailing bits. Local code preserves the mask's external check bits. | [`base64`](https://docs.rs/base64/latest/base64/) also supports caller storage, but leaves base32 separate. A second encoder requires measured benefit on our identifier-sized calls, not bulk throughput alone. |
+| Hashing | The shared wire vectors constrain the owned HalfSipHash primitive and derivation. | A replacement must match its word order, rounds and output exactly; a different hash changes issued identifiers. |
+| Errors | The public enum supplies stable codes and retained causes through standard traits. | An error helper must remove more maintenance than its added dependency and must preserve those codes and causes. |
+| Serialization | JSON belongs to development bridges and test fixtures, not the product's runtime graph. | A public serialization feature needs its own consumer contract; deriving it onto private validated fields can bypass parsing. |
+
+Inspect the product's resolved normal dependencies separately from workspace development dependencies.
+Check disabled defaults and each optional feature: workspace feature unification can hide missing
+dependencies. Native profiling constrains current call costs; it does not establish that one encoder
+is fastest on every architecture or that platform randomness is trustworthy under every host condition.
+
 Share hash primitives without forcing continuation overhead onto synchronous calls; a Future alone
 does not yield to host tasks. Node/Bun native bridges serve development only, remain unpublished,
 and stay outside npm. They do not create a supported public ABI.
