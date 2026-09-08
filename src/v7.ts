@@ -145,8 +145,8 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
       // is a second reading, and the message would name a value other than the one refused.
       const reading = readClock(clock);
       if (reading instanceof Error) return reading;
-      const now = Math.trunc(reading);
-      if (reading < 0 || !isValidUuidV7Timestamp(now))
+      const now = typeof reading === "number" ? Math.trunc(reading) : NaN;
+      if (typeof reading !== "number" || reading < 0 || !isValidUuidV7Timestamp(now))
         return new UuidSlugError(
           "invalid_timestamp",
           `Clock returned ${String(reading)}, which is not a millisecond in 0..${MAX_TIMESTAMP}.`,

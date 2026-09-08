@@ -1,5 +1,5 @@
 //! Store a fixed 16-bit check beside UUIDv7 content without losing timestamp or random bits.
-use crate::{Error, alphabet::Alphabet, schema::MaskSchema};
+use crate::{Error, alphabet::Alphabet, schema::MaskSchema, uuid::utf16_len};
 
 fn mix32(mut value: u32) -> u32 {
     value ^= value >> 16;
@@ -36,7 +36,7 @@ pub(crate) fn mask_bytes(raw: &[u8; 16], schema: &MaskSchema) -> Result<([u8; 16
 
 /// Parse text once before trying keys; canonical padding is checked in either alphabet.
 pub(crate) fn normalize(slug: &str) -> Result<([u8; 16], u8), Error> {
-    let alphabet = if slug.len() == 27 {
+    let alphabet = if utf16_len(slug) == 27 {
         Alphabet::Base32Hex
     } else {
         Alphabet::Base64Url

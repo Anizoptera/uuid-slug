@@ -434,6 +434,11 @@ export async function contractRequests(): Promise<Request[]> {
     mask: { seed: original.keyOverlap.seeds[0] },
     previous: [{ seed: original.keyOverlap.seeds[1] }],
   });
+  for (const input of ["é" + "A".repeat(21), "😀" + "A".repeat(20)])
+    requests.push({ op: "unplain", input });
+  for (const input of ["é" + "0".repeat(26), "😀" + "0".repeat(25)]) {
+    requests.push({ op: "unmask", input }, { op: "candidates", input });
+  }
   return requests;
 }
 

@@ -65,8 +65,12 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let message = match self {
             Self::Aborted => "Operation aborted.",
-            Self::InvalidBase32 => "Expected canonical lowercase base32hex with zero padding.",
-            Self::InvalidBase64Url => "Expected canonical unpadded base64url with zero padding.",
+            Self::InvalidBase32 => {
+                "Expected canonical lowercase base32hex with zero trailing bits."
+            }
+            Self::InvalidBase64Url => {
+                "Expected canonical 22-character unpadded base64url with zero trailing bits."
+            }
             Self::InvalidBuffer => "The requested byte range does not fit the buffer.",
             Self::InvalidMaskSchema => "Invalid mask schema or key parameters.",
             Self::InvalidTimestamp => "Timestamp must fit the operation's millisecond range.",

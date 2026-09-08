@@ -52,14 +52,13 @@ const SLUG_ALPHABETS: { base32hex: Alphabet; base64url: Alphabet } = {
  */
 export type SlugAlphabet = keyof typeof SLUG_ALPHABETS;
 
-/** Reject inherited property names as well as unknown names from JavaScript callers. */
+/** Reject values outside the public alphabet union when untyped JavaScript bypasses TypeScript. */
 export function resolveSlugAlphabet(alphabet: SlugAlphabet): Alphabet | UuidSlugError {
-  return Object.hasOwn(SLUG_ALPHABETS, alphabet)
-    ? SLUG_ALPHABETS[alphabet]
-    : new UuidSlugError(
-        "invalid_uuid_slug",
-        `Unknown slug alphabet "${alphabet}"; expected ${Object.keys(SLUG_ALPHABETS).join(" or ")}.`,
-      );
+  if (alphabet === "base64url" || alphabet === "base32hex") return SLUG_ALPHABETS[alphabet];
+  return new UuidSlugError(
+    "invalid_uuid_slug",
+    `Unknown slug alphabet; expected ${Object.keys(SLUG_ALPHABETS).join(" or ")}.`,
+  );
 }
 
 /** Characters needed for 16 bytes: 22 in base64url, 26 in base32hex. */

@@ -5,6 +5,7 @@ import {
   createMaskSchema,
   createUuidSlugCodec,
   createUuidV7Generator,
+  DEFAULT_MASK_SCHEMA,
   isUuidString,
   isUuidV4String,
   isUuidV7String,
@@ -13,10 +14,13 @@ import {
   isUuidV7Slug,
   uuidToSlug,
   slugToUuid,
+  UUID_SLUG_ERROR_CODES,
+  UUID_V7_SENTINEL_DEFINITIONS,
   UuidSlugError,
 } from "../src/index";
 import { isBase64Url } from "../src/base64url";
 import type { MaskSchema, UuidSlugCodecOptions } from "../src/types";
+import fixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
 import { uuidVariants } from "./uuid-variants";
 
 /** Compare the full payload independently of production bit packing. */
@@ -148,6 +152,17 @@ export const codecBoundaryCases = [
     },
   },
   {
+    name: "unknown runtime alphabet values return a package error",
+    run() {
+      const result = Reflect.apply(uuidToSlug, undefined, [
+        "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051",
+        Symbol("unknown"),
+      ]);
+      assert.ok(result instanceof UuidSlugError);
+      assert.equal(result.code, "invalid_uuid_slug");
+    },
+  },
+  {
     name: "freshness captures the decoded payload before an external clock can mutate it",
     run() {
       let decoded: Uint8Array = new Uint8Array(0);
@@ -178,16 +193,14 @@ export const codecBoundaryCases = [
   {
     name: "rotation isolates mutating callbacks and preserves the primary failure cause",
     run() {
-      const current = createMaskSchema({ seed: "profile-current-seed" });
+      const { seeds, slug } = fixtures.keyOverlap;
+      const currentSeed = seeds[0];
+      const previousSeed = seeds[1];
+      assert.ok(currentSeed);
+      assert.ok(previousSeed);
+      const current = createMaskSchema({ seed: currentSeed });
       assert.ok(!(current instanceof Error));
-      const previous = { seed: "profile-previous-seed" };
-      const older = createUuidSlugCodec({ mask: previous });
-      const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
-      const slug = older.uuidV7ToMaskedSlug(uuid);
-      assert.equal(typeof slug, "string");
-      assert.ok(
-        createUuidSlugCodec({ mask: current }).maskedSlugToUuid(slug as string) instanceof Error,
-      );
+      const previous = { seed: previousSeed };
       const cause = new Error("current key unavailable");
       let fail = false;
       const mutating: MaskSchema = {
@@ -199,10 +212,9 @@ export const codecBoundaryCases = [
         },
       };
       const codec = createUuidSlugCodec({ mask: mutating, previousMasks: [previous] });
-      assert.equal(codec.maskedSlugToUuidV7(slug as string), uuid);
+      assert.equal(codec.maskedSlugToUuidV7(slug), fixtures.keyOverlap.uuids[0]);
       fail = true;
-      assert.equal(codec.maskedSlugToUuidV7(slug as string), uuid);
-      const refused = codec.maskedSlugToUuidV7("______________________");
+      const refused = codec.maskedSlugToUuidV7(slug);
       assert.ok(refused instanceof UuidSlugError);
       assert.equal(refused.code, "invalid_mask_schema");
       assert.equal(refused.cause, cause);
@@ -289,6 +301,23 @@ export const codecBoundaryCases = [
       assert.ok(codec.maskedSlugToUuid("AAAAAAAAQACAAAAAAAAAAA") instanceof UuidSlugError);
       assert.ok(Object.isFrozen(codec.sentinels));
       assert.ok(codec.sentinels.every(Object.isFrozen));
+      assert.ok(Object.isFrozen(DEFAULT_MASK_SCHEMA));
+      assert.ok(Object.isFrozen(UUID_SLUG_ERROR_CODES));
+      assert.ok(Object.isFrozen(UUID_V7_SENTINEL_DEFINITIONS));
+      assert.ok(UUID_V7_SENTINEL_DEFINITIONS.every(Object.isFrozen));
+
+      const built = createMaskSchema({ seed: "stable-schema-reference" });
+      assert.ok(!(built instanceof Error));
+      const mutable: MaskSchema = {
+        id: built.id,
+        mix: (input, output, forward) => built.mix(input, output, forward),
+      };
+      const stable = createUuidSlugCodec({ mask: mutable });
+      const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
+      const slug = stable.uuidV7ToMaskedSlug(uuid);
+      assert.equal(typeof slug, "string");
+      mutable.mix = (input, output) => output.set(input);
+      assert.equal(stable.maskedSlugToUuidV7(slug as string), uuid);
     },
   },
   {

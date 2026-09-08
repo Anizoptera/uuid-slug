@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /** Consumers can enumerate error codes at runtime without duplicating the type's vocabulary. */
-export const UUID_SLUG_ERROR_CODES = [
+const ERROR_CODES = [
   "aborted",
   "invalid_base32",
   "invalid_base64url",
@@ -14,6 +14,8 @@ export const UUID_SLUG_ERROR_CODES = [
   "rng_unavailable",
   "stale_uuid",
 ] as const;
+
+export const UUID_SLUG_ERROR_CODES: typeof ERROR_CODES = Object.freeze(ERROR_CODES);
 
 export type UuidSlugErrorCode = (typeof UUID_SLUG_ERROR_CODES)[number];
 

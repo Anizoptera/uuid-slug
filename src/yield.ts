@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 const host = globalThis as {
-  setImmediate?: (callback: () => void) => unknown;
+  setImmediate?: (callback: () => void) => void;
 };
 const immediate = host.setImmediate?.bind(host);
 

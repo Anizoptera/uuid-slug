@@ -85,7 +85,9 @@ mod tests {
             ..Default::default()
         })?;
         failing.store(true, Ordering::Relaxed);
-        assert_eq!(fallback.masked_slug_to_uuid(&slug)?, uuid);
+        let error = fallback.masked_slug_to_uuid(&slug).unwrap_err();
+        assert_eq!(error.code(), "invalid_mask_schema");
+        assert!(std::error::Error::source(&error).is_some());
         let migration = first.migration(MigrationOptions::default());
         assert_eq!(
             migration.decode(&slug, Some(MigrationFormat::Current))?,
@@ -238,15 +240,14 @@ impl Codec {
 
     fn decode_masked(&self, slug: &str) -> Result<Uuid, Error> {
         let (bytes, tail) = crate::mask::normalize(slug)?;
-        let mut first_error = None;
-        for (index, schema) in self.schemas.iter().enumerate() {
+        for schema in &self.schemas {
             match crate::mask::candidate(bytes, tail, schema) {
                 Ok(Some(uuid)) => return Ok(Uuid::from_bytes(uuid)),
-                Err(error) if index == 0 => first_error = Some(error),
-                _ => {}
+                Ok(None) => {}
+                Err(error) => return Err(error),
             }
         }
-        Err(first_error.unwrap_or(Error::InvalidUuidSlug))
+        Err(Error::InvalidUuidSlug)
     }
 
     /// Create an opt-in reader without changing this codec's writer or ordinary decoder.
@@ -367,8 +368,9 @@ impl Migration<'_> {
         let current = format.is_none() || format == Some(Current);
         let original = self.options.original && (format.is_none() || format == Some(Original));
         let plain = self.options.plain && (format.is_none() || format == Some(Plain));
-        let base32_plain = slug.len() == 26 && plain;
-        let safe_masked = slug.len() == 27 && current;
+        let length = crate::uuid::utf16_len(slug);
+        let base32_plain = length == 26 && plain;
+        let safe_masked = length == 27 && current;
         let alpha = if base32_plain || safe_masked {
             Alphabet::Base32Hex
         } else {
@@ -377,7 +379,7 @@ impl Migration<'_> {
         let mut bytes = [0; 16];
         let tail = alpha.decode_into(slug, &mut bytes, if base32_plain { 0 } else { 4 })?;
         let raw = Uuid::from_bytes(bytes);
-        let reserved = if (original || plain) && slug.len() != 27 {
+        let reserved = if (original || plain) && length != 27 {
             self.codec.sentinel(&raw.slug(Alphabet::Base64Url))
         } else {
             None
@@ -399,13 +401,13 @@ impl Migration<'_> {
             return Ok(());
         }
         if original
-            && slug.len() == 22
+            && length == 22
             && let Some(uuid) = decode_original(bytes)
             && stop(uuid)
         {
             return Ok(());
         }
-        if plain && slug.len() != 27 {
+        if plain && length != 27 {
             stop(raw);
         }
         Ok(())

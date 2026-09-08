@@ -2,6 +2,10 @@
 use crate::{Alphabet, Error};
 use std::{fmt, str::FromStr};
 
+pub(crate) fn utf16_len(text: &str) -> usize {
+    text.encode_utf16().count()
+}
+
 /// A 128-bit UUID; generic parsing accepts every version and variant, including nil.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Uuid([u8; 16]);
@@ -27,7 +31,7 @@ impl Uuid {
     }
     /// Infer the plain alphabet from the disjoint 22- and 26-character lengths.
     pub fn parse_slug(text: &str) -> Result<Self, Error> {
-        let alphabet = match text.len() {
+        let alphabet = match utf16_len(text) {
             22 => Alphabet::Base64Url,
             26 => Alphabet::Base32Hex,
             _ => return Err(Error::InvalidUuidSlug),

@@ -97,12 +97,12 @@ function feistelSchema(id: string, seed: Uint8Array, iterations: number): MaskSc
 }
 
 function schemaFromKeys(id: string, keys: Int32Array): MaskSchema {
-  return {
+  return Object.freeze<MaskSchema>({
     id,
     mix(input, output, forward) {
       feistel16(input, 0, keys, forward, output, 0);
     },
-  };
+  });
 }
 
 export function createMaskSchema(options: MaskSchemaOptions): UuidSlugError | MaskSchema {

@@ -35,20 +35,20 @@ import {
 import type { FreshValidationOptions, UuidV7SentinelDefinition } from "./types";
 import type { SlugAlphabet } from "./uuid";
 
-export const UUID_V7_SENTINEL_DEFINITIONS: readonly UuidV7SentinelDefinition[] = [
-  {
+export const UUID_V7_SENTINEL_DEFINITIONS: readonly UuidV7SentinelDefinition[] = Object.freeze([
+  Object.freeze({
     name: "nil",
     uuid: "00000000-0000-7000-8000-000000000000",
-  },
-  {
+  }),
+  Object.freeze({
     name: "anonymousUser",
     uuid: "00000000-0001-7000-8000-000000000000",
-  },
-  {
+  }),
+  Object.freeze({
     name: "unknownUser",
     uuid: "00000000-0002-7000-8000-000000000000",
-  },
-];
+  }),
+]);
 
 function schemaFromOption(mask: UuidSlugCodecOptions["mask"]): UuidSlugError | MaskSchema {
   // Omitting `mask` yields a codec that masks under a seed published in this package's source, so
@@ -64,7 +64,9 @@ function schemaFromOption(mask: UuidSlugCodecOptions["mask"]): UuidSlugError | M
   // belongs here and nowhere else: a caller-supplied `mix` is the extension point now, and an
   // unchecked one silently makes every id it encodes unreadable.
   if (!("mix" in mask)) return createMaskSchema(mask);
-  return verifyInvertible(mask);
+  const verified = verifyInvertible(mask);
+  if (verified instanceof Error) return verified;
+  return Object.freeze({ id: verified.id, mix: verified.mix.bind(verified) });
 }
 
 function createSentinels(definitions: readonly UuidV7SentinelDefinition[], alphabet: SlugAlphabet) {
@@ -116,13 +118,8 @@ function createSentinels(definitions: readonly UuidV7SentinelDefinition[], alpha
 
 export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlugCodec {
   const schema = errorOrThrow(schemaFromOption(options.mask));
-  // Every schema a decode may try, and NOTHING a caller did not list. A codec once appended two
-  // schemas of its own — a substitution partner derived from any seed, and the default seed's
-  // pre-Feistel scheme — on the reasoning that a marker bit would select one outright. No marker
-  // exists: each schema is tried in turn and the first whose check passes wins, so the codec's
-  // false-accept rate is the SUM over the list and is set by its weakest member. Measured
-  // 2026-08-12 over 200,000 wrong-key decodes, the auto-added 6-bit partner accepted 211 while
-  // the 16-bit schema it accompanied accepted 2 — a 16x widening nobody asked for.
+  // Decode tries exactly the caller's schemas in order. Every added schema increases false
+  // acceptance, and the first passing schema decides the result, so no fallback is added here.
   const previousMasks = (options.previousMasks ?? []).map((mask) =>
     errorOrThrow(schemaFromOption(mask)),
   );

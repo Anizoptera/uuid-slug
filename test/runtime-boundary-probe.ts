@@ -165,6 +165,19 @@ export const runtimeBoundaryCases = [
     },
   },
   {
+    name: "rejects non-number clock results at the JavaScript boundary",
+    run(this: void) {
+      for (const value of ["123", 1n, Symbol("clock")]) {
+        const generator = Reflect.apply(createUuidV7Generator, undefined, [
+          { clock: () => value, fillRandom: (bytes: Uint8Array) => bytes.fill(0) },
+        ]);
+        const result = generator.uuidV7Bytes();
+        assert.ok(result instanceof UuidSlugError);
+        assert.equal(result.code, "invalid_timestamp");
+      }
+    },
+  },
+  {
     name: "refuses nonfinite and negative freshness configuration",
     run(this: void) {
       for (const windowMs of [NaN, Infinity, -Infinity, -1]) {

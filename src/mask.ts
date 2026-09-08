@@ -78,7 +78,7 @@ export function uuidV7BytesToMaskedSlug(
   raw: Uint8Array,
   schema: MaskSchema,
   alphabet: SlugAlphabet = "base64url",
-  reserved?: ReadonlyMap<string, unknown>,
+  reserved?: { readonly size: number; has(slug: string): boolean },
 ): UuidSlugError | MaskedUuidV7Slug {
   // Truncating instead would make encoding non-injective — two UUIDs would share one slug, and no
   // decoder could ever tell which was meant. Refusing is the only recoverable answer.
@@ -128,16 +128,14 @@ export function decodeMaskedSlug(
   // A callback may mutate or retain its input. Each attempted key must receive fresh original
   // ciphertext, as it would when decoding the text again; only the text validation is shared.
   const primary = unmix(previous.length ? mixed.slice() : mixed, outerTag, schema);
-  if (primary && !(primary instanceof Error)) return primary;
+  if (primary instanceof Error) return primary;
+  if (primary) return primary;
   for (const older of previous) {
     const decoded = unmix(mixed.slice(), outerTag, older);
-    if (decoded && !(decoded instanceof Error)) return decoded;
+    if (decoded instanceof Error) return decoded;
+    if (decoded) return decoded;
   }
-  // A key mismatch is ordinary rotation control flow. Allocate its diagnostic only if no key
-  // succeeds, while keeping the primary callback's error and cause when that was the failure.
-  return (
-    primary ?? new UuidSlugError("invalid_uuid_slug", "Masked UUID slug failed schema validation.")
-  );
+  return new UuidSlugError("invalid_uuid_slug", "Masked UUID slug failed schema validation.");
 }
 
 /** Append distinct UUIDs directly to the result, before another callback can mutate their bytes. */
