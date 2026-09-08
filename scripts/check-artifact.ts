@@ -26,6 +26,9 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
           name.split("/").some((part) => part === ".." || FORBIDDEN_PATHS.has(part))
         )
           throw new Error(`Forbidden artifact path: ${name}`);
+        // Module graphs cannot see unreferenced native build outputs in an allowed directory.
+        if (/\.(?:node|wasm|dll|dylib|so(?:\.\d+)*|a|lib|rlib|o|obj|exe)$/i.test(name))
+          throw new Error(`Native payload is forbidden in the npm package: ${name}`);
         if (BUILD_PATH_LEAK.test(await file.text()))
           throw new Error(`Build-machine path leaked in ${name}`);
       }),
