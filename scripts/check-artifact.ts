@@ -13,6 +13,8 @@ const project = path.resolve(import.meta.dir, "..");
 export async function inspectArtifact(tarball: string, web = false): Promise<void> {
   const root = await mkdtemp(path.join(tmpdir(), "uuid-slug-consumer-"));
   try {
+    // Version managers resolve from cwd; temporary consumers must use the project's toolchain.
+    await symlink(path.join(project, ".tool-versions"), path.join(root, ".tool-versions"));
     const archive = new Bun.Archive(await Bun.file(tarball).bytes());
     const entries = await archive.files();
     if (!entries.has("package/package.json"))
