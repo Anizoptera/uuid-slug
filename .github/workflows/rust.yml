@@ -40,7 +40,7 @@ jobs:
         run: |
           version=$(awk '$1 == "rust" { print $2 }' .tool-versions)
           test -n "$version" && rustup toolchain install "$version" --profile minimal --component rustfmt --component clippy && rustup override set "$version"
-      - uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cargo/registry
@@ -79,7 +79,7 @@ jobs:
         run: |
           version=$(awk '$1 == "rust" { print $2 }' .tool-versions)
           test -n "$version" && rustup toolchain install "$version" --profile minimal --target wasm32-unknown-unknown && rustup override set "$version"
-      - uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cargo/registry
