@@ -33,6 +33,7 @@ import {
   extractUuidV7Timestamp,
 } from "./uuid";
 import type { FreshValidationOptions, UuidV7SentinelDefinition } from "./types";
+import type { SlugAlphabet } from "./uuid";
 
 export const UUID_V7_SENTINEL_DEFINITIONS: readonly UuidV7SentinelDefinition[] = [
   {
@@ -66,7 +67,7 @@ function schemaFromOption(mask: UuidSlugCodecOptions["mask"]): UuidSlugError | M
   return verifyInvertible(mask);
 }
 
-function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
+function createSentinels(definitions: readonly UuidV7SentinelDefinition[], alphabet: SlugAlphabet) {
   const sentinels: UuidV7Sentinel[] = [];
   const byUuid = new Set<string>();
   const encoded: { bytes: Uint8Array; slug: SentinelUuidV7Slug }[] = [];
@@ -91,10 +92,8 @@ function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
         "invalid_uuid",
         `Sentinel "${definition.name}" repeats the UUID of an earlier sentinel.`,
       );
-    // Always base64url, never the codec's `slugAlphabet`: a sentinel slug is matched against
-    // MASKED input, which is base64url by definition, so one written in another alphabet could
-    // never be recognised in the position it exists for.
-    const slug = formatUuidSlug(bytes);
+    // Sentinels remain raw UUIDs; only their writer follows the masked alphabet selection.
+    const slug = formatUuidSlug(bytes, 0, alphabet);
     if (slug instanceof Error) throw slug;
     const sentinel = Object.freeze({
       name: definition.name,
@@ -107,6 +106,10 @@ function createSentinels(definitions: readonly UuidV7SentinelDefinition[]) {
     byUuid.add(definition.uuid);
     encoded.push({ bytes, slug: sentinel.slug });
     bySlug.set(sentinel.slug, { uuid: definition.uuid, bytes });
+    const alternate = errorOrThrow(
+      formatUuidSlug(bytes, 0, alphabet === "base64url" ? "base32hex" : "base64url"),
+    );
+    bySlug.set(alternate, { uuid: definition.uuid, bytes });
   }
   return { bySlug, encoded, sentinels: Object.freeze(sentinels) };
 }
@@ -126,6 +129,8 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
   const generator = options.generator ?? createRuntimeGenerator(runtime);
   const slugAlphabet = options.slugAlphabet ?? "base64url";
   errorOrThrow(resolveSlugAlphabet(slugAlphabet));
+  const maskedSlugAlphabet = options.maskedSlugAlphabet ?? "base64url";
+  errorOrThrow(resolveSlugAlphabet(maskedSlugAlphabet));
   const acceptUnmaskedSlugs = options.acceptUnmaskedSlugs === true;
   // The runtime's own slug generator emits base64url and nothing else, so it can only serve the
   // default. Resolved once here rather than per call: the branch is on configuration, which cannot
@@ -134,7 +139,10 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
     options.generator === undefined && slugAlphabet === "base64url"
       ? runtime.uuidV7Slug
       : undefined;
-  const sentinelState = createSentinels(options.sentinels ?? UUID_V7_SENTINEL_DEFINITIONS);
+  const sentinelState = createSentinels(
+    options.sentinels ?? UUID_V7_SENTINEL_DEFINITIONS,
+    maskedSlugAlphabet,
+  );
 
   function decodeMasked(slug: string): UuidSlugError | Uint8Array {
     const primary = decodeMaskedSlug(slug, schema, previousMasks);
@@ -163,15 +171,7 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
       while (index < 16 && sentinel.bytes[index] === bytes[index]) index += 1;
       if (index === 16) return sentinel.slug;
     }
-    const slug = uuidV7BytesToMaskedSlug(bytes, schema);
-    if (slug instanceof Error) return slug;
-    // Sentinel decoding takes precedence, so returning this ciphertext would recover a different UUID.
-    if (sentinelState.bySlug.has(slug))
-      return new UuidSlugError(
-        "invalid_mask_schema",
-        "Masked output collides with a reserved sentinel. Configure a different mask or sentinel set.",
-      );
-    return slug;
+    return uuidV7BytesToMaskedSlug(bytes, schema, maskedSlugAlphabet, sentinelState.bySlug);
   }
 
   function uuidV7ToMaskedSlug(uuid: string): UuidSlugError | PublicUuidV7Slug {

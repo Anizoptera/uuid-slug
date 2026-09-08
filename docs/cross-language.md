@@ -44,7 +44,7 @@ This is an alternate spelling, not a new masking scheme; retain the 16-bit check
 Safe sentinels remain raw UUID slugs: 26 base32hex characters, readable by the plain decoder.
 Padding them to 27 adds a spelling that the plain decoder rejects, with no identity benefit.
 Their length cannot collide with 27-character masked output. Keep old base64url reads and defaults.
-Masking has no chronological ordering. These extensions are planned, not yet published.
+Masking has no chronological ordering. These extensions are implemented, not yet published.
 
 ## Distribution and dependencies
 

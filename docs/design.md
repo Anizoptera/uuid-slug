@@ -20,16 +20,15 @@ Masking accepts UUIDv7 and preserves 116 payload bits:
 |    6 | top of timestamp, byte 0     | require zero; restore zero on decode            |
 |  116 | remaining payload           | 42 timestamp bits, 12 `rand_a`, 62 `rand_b`       |
 
-The masked format is fixed: 22 base64url characters hold 132 bits, leaving `132 - 116 = 16`
+The masked payload is fixed: 22 base64url characters hold 132 bits, leaving `132 - 116 = 16`
 check bits. Twelve replace the constant bits inside the 128-bit block; four occupy the encoding's
 spare bits. All 132 encoded bits have a role. Plain-slug padding rejection does not apply to these
 four check bits.
 
 A timestamp at or past 2^42 milliseconds is rejected before masking. Truncating it would allow
-different UUIDs to share a slug. The shipped base32hex encoder handles plain slugs only. Encoding
-the full masked payload requires 27 base32hex characters; forcing it into 26 would lose bits.
-See [the cross-language contract](cross-language.md#filesystem-safe-output) for the approved
-lossless extension. Masked output has no useful chronological ordering in either alphabet.
+different UUIDs to share a slug. The full masked payload uses 27 base32hex characters;
+forcing it into 26 would lose bits. Its three padding bits must be zero. Masked output
+has no useful chronological ordering in either alphabet.
 
 ## Deriving a schema from a seed
 
@@ -96,8 +95,8 @@ invertibility across the full domain. The caller remains responsible for that pr
    bits as the tag.
 3. Store the tag's upper 12 bits in the block: four in byte 6's high nibble, two in byte 8's top
    bits, and six in byte 0's top bits.
-4. Mix the 16-byte block and encode it as base64url, storing the remaining four tag bits in the
-   encoding's spare low bits.
+4. Mix the 16-byte block and append the remaining four tag bits. Encode these 132 bits as
+   22 base64url or 27 lowercase base32hex characters; base32hex ends with three zero padding bits.
 
 Decoding extracts the outer tag bits, reverses the mix, reads the inner tag, and restores the
 version, variant, and zero timestamp bits. It recomputes the tag from the restored UUID and
@@ -118,10 +117,12 @@ With `acceptUnmaskedSlugs`, only failure of every schema enables direct-slug dec
 slug may accidentally pass an earlier mask check and return a different candidate; the flag does
 not make the two representations distinguishable. Confirm candidates against the issuing store.
 
-Sentinels bypass masking and use precomputed direct base64url slugs. Decode checks them first.
+Sentinels bypass masking and use precomputed direct slugs in the masked output alphabet.
+Decode checks both raw spellings first: 22 base64url or 26 base32hex characters.
 Both explicit conversion and generation recognize sentinel UUIDs before masking. A non-sentinel
 UUID whose masked result collides with a reserved slug must fail encoding, because accepting it
-would decode to the sentinel and lose the original identity.
+would decode to the sentinel and lose the original identity. Safe writers also check the old
+base64url spelling, because converting a safe payload back must not change its identity.
 
 New masked output uses only the layout above. `codec.migration` can separately read the original
 fixed permutation/XOR layout when enabled; its four-bit check cannot establish identity either.

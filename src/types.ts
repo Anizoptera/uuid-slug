@@ -28,8 +28,8 @@ export type UuidV7String = Brand<UuidString, "UuidV7String">;
 export type UuidSlug = Brand<string, "UuidSlug">;
 export type UuidV4Slug = Brand<UuidSlug, "UuidV4Slug">;
 export type UuidV7Slug = Brand<UuidSlug, "UuidV7Slug">;
-/** Masked slugs are base64url only, so this narrows where `UuidSlug` cannot. */
-export type MaskedUuidSlug = Brand<Base64UrlString & UuidSlug, "MaskedUuidSlug">;
+/** A masked payload in either spelling; its check bits are not plain-encoding padding. */
+export type MaskedUuidSlug = Brand<UuidSlug, "MaskedUuidSlug">;
 export type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
 export type SentinelUuidV7Slug = Brand<UuidV7Slug, "SentinelUuidV7Slug">;
 export type PublicUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
@@ -193,14 +193,19 @@ export interface UuidSlugCodecOptions {
    * Decoding takes no such option: the two lengths are disjoint, so `slugToUuid` reads both and a
    * change of alphabet leaves every previously issued slug working.
    *
-   * It does NOT reach masked slugs or sentinels, which stay base64url. Masked bytes are ciphertext
-   * and sort in no useful order, and a sentinel is matched against masked input, so a sentinel in a
-   * different alphabet could never be recognised there.
+   * It does not select masked slugs or sentinels; use `maskedSlugAlphabet` for those.
    *
    * Costs throughput when set: `uuidV7Slug` can no longer use a runtime's native base64url slug
    * generator and falls back to generating bytes and encoding them.
    */
   readonly slugAlphabet?: SlugAlphabet;
+  /**
+   * Output spelling for masked IDs and sentinels; defaults to `"base64url"`.
+   * `"base32hex"` preserves the full masked payload in 27 lowercase characters (26 for raw
+   * sentinels), suitable for case-insensitive filesystems. Masked output has no sort-order promise.
+   * Readers accept both spellings regardless of this writer selection.
+   */
+  readonly maskedSlugAlphabet?: SlugAlphabet;
 }
 
 /**
@@ -256,14 +261,8 @@ export interface UuidSlugCodec extends UuidV7Generator {
    * counterpart to this for the same reason; `validateUuidV7SlugFresh` stays module-level because
    * a PLAIN slug decodes without one.
    *
-   * Returns the slug it was GIVEN, at the type it was given, which is the only type that is true
-   * of it. Declaring `MaskedUuidV7Slug` was a lie the compiler could not catch: that brand is
-   * `Base64UrlString & UuidSlug`, but with `acceptUnmaskedSlugs` the decode falls through to
-   * `slugToUuid`, which accepts 26-character base32hex too — so a base32hex slug came back typed as
-   * base64url and `isBase64Url` on it was false. Narrowing the fallback to base64url would have
-   * been the wrong repair: a codec built with `slugAlphabet: "base32hex"` has exactly those legacy
-   * ids, and refusing them breaks the migration this flag exists for. The behaviour is right; the
-   * claim about it was not.
+   * Preserve the input type: with `acceptUnmaskedSlugs`, a plain slug can pass too. Returning a
+   * masked brand would mislabel that identity; narrowing the fallback would break migration.
    */
   validateMaskedSlugFresh<S extends string>(
     this: void,

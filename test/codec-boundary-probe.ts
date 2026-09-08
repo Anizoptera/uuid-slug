@@ -12,12 +12,79 @@ import {
   isUuidV4Slug,
   isUuidV7Slug,
   uuidToSlug,
+  slugToUuid,
   UuidSlugError,
 } from "../src/index";
 import { isBase64Url } from "../src/base64url";
 import type { MaskSchema, UuidSlugCodecOptions } from "../src/types";
 
+/** Compare the full payload independently of production bit packing. */
+function bits(text: string, alphabet: string, width: number) {
+  return Array.from(text, (char) => alphabet.indexOf(char).toString(2).padStart(width, "0")).join(
+    "",
+  );
+}
+
 export const codecBoundaryCases = [
+  {
+    name: "safe masked spelling preserves all wire bits, strict padding, rotation and sentinel identity",
+    run() {
+      const mask = { seed: "safe-spelling-contract" };
+      const old = createUuidSlugCodec({ mask });
+      const safe = createUuidSlugCodec({ mask, maskedSlugAlphabet: "base32hex" });
+      const rotated = createUuidSlugCodec({
+        mask: { seed: "safe-rotated-contract" },
+        previousMasks: [mask],
+      });
+      const alphabet64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+      const alphabet32 = "0123456789abcdefghijklmnopqrstuv";
+      for (const uuid of [
+        "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051",
+        "03ffffff-ffff-7fff-bfff-ffffffffffff",
+      ]) {
+        const legacy = old.uuidV7ToMaskedSlug(uuid);
+        const encoded = safe.uuidV7ToMaskedSlug(uuid);
+        assert.equal(typeof legacy, "string");
+        assert.equal(typeof encoded, "string");
+        const text = encoded as string;
+        assert.equal(text.length, 27);
+        assert.equal(bits(text, alphabet32, 5), bits(legacy as string, alphabet64, 6) + "000");
+        for (const reader of [old, safe, rotated]) {
+          assert.equal(reader.maskedSlugToUuid(text), uuid);
+          assert.equal(reader.maskedSlugToUuid(legacy as string), uuid);
+          assert.deepEqual(reader.migration().candidates(text, "current"), [uuid]);
+          assert.deepEqual(reader.migration({ plain: true, original: true }).candidates(text), [
+            uuid,
+          ]);
+          for (let padding = 1; padding < 8; padding += 1) {
+            const alias =
+              text.slice(0, 26) + alphabet32[alphabet32.indexOf(text[26] as string) | padding];
+            assert.ok(reader.maskedSlugToUuid(alias) instanceof Error);
+            assert.ok(
+              reader.migration({ plain: true, original: true }).candidates(alias) instanceof Error,
+            );
+          }
+        }
+        assert.ok(safe.maskedSlugToUuid(text.toUpperCase()) instanceof Error);
+        assert.ok(old.maskedSlugToUuid(uuidToSlug(uuid, "base32hex") as string) instanceof Error);
+      }
+      for (const sentinel of safe.sentinels) {
+        assert.equal(sentinel.slug.length, 26);
+        assert.equal(slugToUuid(sentinel.slug), sentinel.uuid);
+        for (const reader of [old, safe]) {
+          assert.equal(reader.maskedSlugToUuid(sentinel.slug), sentinel.uuid);
+          assert.equal(reader.migration().decode(sentinel.slug), sentinel.uuid);
+          assert.equal(reader.maskedSlugToUuid(uuidToSlug(sentinel.uuid) as string), sentinel.uuid);
+        }
+      }
+      assert.equal(safe.uuidV7Slug().length, 22);
+      const plainSafe = createUuidSlugCodec({ mask, slugAlphabet: "base32hex" }).uuidV7ToMaskedSlug(
+        "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051",
+      );
+      assert.equal(typeof plainSafe, "string");
+      assert.equal((plainSafe as string).length, 22);
+    },
+  },
   {
     name: "boolean guards reject noncanonical characters and preserve every version and variant",
     run() {
@@ -158,14 +225,16 @@ export const codecBoundaryCases = [
           for (let i = 0; i < 16; i += 1) output[i] = (input[i] as number) ^ (xor[i] as number);
         },
       };
-      const codec = createUuidSlugCodec({ mask });
-      const result = codec.uuidV7ToMaskedSlug("019ff19b-58b8-7000-9b1b-df713bd55607");
-      assert.ok(result instanceof UuidSlugError);
-      assert.equal(result.code, "invalid_mask_schema");
-      assert.equal(
-        codec.maskedSlugToUuidV7("AAAAAAAAcACAAAAAAAAAAA"),
-        "00000000-0000-7000-8000-000000000000",
-      );
+      for (const maskedSlugAlphabet of ["base64url", "base32hex"] as const) {
+        const codec = createUuidSlugCodec({ mask, maskedSlugAlphabet });
+        const result = codec.uuidV7ToMaskedSlug("019ff19b-58b8-7000-9b1b-df713bd55607");
+        assert.ok(result instanceof UuidSlugError);
+        assert.equal(result.code, "invalid_mask_schema");
+        assert.equal(
+          codec.maskedSlugToUuidV7("AAAAAAAAcACAAAAAAAAAAA"),
+          "00000000-0000-7000-8000-000000000000",
+        );
+      }
     },
   },
   {

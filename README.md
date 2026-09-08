@@ -28,7 +28,7 @@ pnpm add @anizoptera/uuid-slug
 Requires TypeScript 5.7 or newer for `Uint8Array<ArrayBuffer>` declarations.
 Custom `fillRandom` callbacks receive an ordinary `ArrayBuffer` view, which Web Crypto accepts.
 
-A native Rust crate is planned under the [cross-language contract](docs/cross-language.md).
+A native Rust crate is being implemented under the [cross-language contract](docs/cross-language.md).
 It is not available yet. The npm package will remain TypeScript/JavaScript-only.
 
 ## Quick start
@@ -79,7 +79,8 @@ You never say which alphabet you are reading. The two lengths are different, 22 
 every slug you have already handed out working.
 
 **Masked slug.** A UUIDv7 payload and check passed through a small block cipher keyed by your
-seed, then base64url-encoded. Also 22 characters. Use it when the identifier is public and you
+seed, then encoded as 22 base64url characters by default, or 27 lowercase base32hex characters
+with `maskedSlugAlphabet: "base32hex"`. Both preserve the same payload and check. Use it when the identifier is public and you
 would rather not publish creation times. The exact steps are in
 [how masking works](https://github.com/Anizoptera/uuid-slug/blob/main/docs/design.md).
 
@@ -154,7 +155,7 @@ Branded types distinguish the values returned by this library. Their marker is o
 assigning a string does not validate it. Use guards to check format and your store to check issuance.
 
 - Strings: `UuidString`, `UuidV4String`, `UuidV7String`, `Base64UrlString`.
-- Slugs: `UuidSlug` (either alphabet), `UuidV4Slug`, `UuidV7Slug`; masked ones are base64url only
+- Slugs: `UuidSlug` (either alphabet), `UuidV4Slug`, `UuidV7Slug`; masked types cover both spellings
   — `MaskedUuidSlug`, `MaskedUuidV7Slug`, `SentinelUuidV7Slug`, and `PublicUuidV7Slug` for
   "masked or sentinel", which is what a masking call returns. `SlugAlphabet` names the two
   alphabets, and `UuidBytes` brands 16 raw bytes — for annotating storage of your own, which is why
@@ -231,13 +232,15 @@ createUuidSlugCodec({
   sentinels: [{ name: "nil", uuid: "…" }],
   previousMasks: [{ seed: "…previous seed…" }],
   acceptUnmaskedSlugs: false,
-  slugAlphabet: "base32hex", // plain slugs only; masked slugs and sentinels stay base64url
+  slugAlphabet: "base32hex", // plain output
+  maskedSlugAlphabet: "base32hex", // masked output and sentinel presentation
   generator: myUuidV7Generator,
 });
 ```
 
-The current masked format is fixed: 22 base64url characters, including a 16-bit check.
-Changing `slugAlphabet` affects plain slugs only.
+The masked payload is fixed at 132 bits, including a 16-bit check. Both alphabet options default
+to `"base64url"`. Readers accept either masked spelling without an alphabet argument. Safe
+sentinels use 26-character raw base32hex slugs; old 22-character sentinels remain readable.
 
 To supply a different mixing implementation, pass a `MaskSchema`: an `id` and
 `mix(input, output, forward)`, where `forward: false` must reverse `forward: true` for every
@@ -399,7 +402,7 @@ These are API contracts. Runtime measurements and their exercised conditions bel
 - **NOT sortable as a base64url slug.** The default 22-character form is the same 16 bytes in a
   shorter alphabet, and the value round-trips exactly — but that alphabet runs `A-Za-z0-9-_`, so
   its character order and its value order disagree. Sort by the UUID, or by a timestamp column. A
-  masked slug has no chronological ordering; masking always uses base64url.
+  masked slug has no chronological ordering in either alphabet.
 - **One type for owned bytes.** Without an output buffer, byte generators return a plain
   `Uint8Array`, never a platform-specific subclass. With an output buffer, they return that same
   caller-owned array and write only the requested UUID range.

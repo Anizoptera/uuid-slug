@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { BASE64URL, decodeInto, encode, spareBits } from "./alphabet";
+import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "./alphabet";
 import { UuidSlugError } from "./errors";
 import { mix32, read32 } from "./feistel";
 import { formatUuid } from "./uuid";
 import type { MaskSchema, MaskedUuidV7Slug, UuidString } from "./types";
+import type { SlugAlphabet } from "./uuid";
 
 /** Custom callbacks can fail after construction; preserve their cause in the public error contract. */
 function applyMix(
@@ -67,9 +68,8 @@ function restoreV7(bytes: Uint8Array) {
 const INNER_TAG_BITS = 12;
 
 /**
- * A masked slug is always 22 base64url characters (Art's ruling, 2026-08-12), so the outer half of
- * the check is a constant 4 bits. Derived rather than written as `4` because the derivation IS the
- * rule — the check is whatever the encoding has left over, never a number somebody chose.
+ * The existing base64url wire format fixes four outer check bits. Alternate spellings preserve
+ * all 132 bits; the safe base32hex spelling adds three zero padding bits, not more check bits.
  */
 const OUTER_TAG_BITS = spareBits(BASE64URL, 16);
 const TAG_BITS = INNER_TAG_BITS + OUTER_TAG_BITS;
@@ -77,6 +77,8 @@ const TAG_BITS = INNER_TAG_BITS + OUTER_TAG_BITS;
 export function uuidV7BytesToMaskedSlug(
   raw: Uint8Array,
   schema: MaskSchema,
+  alphabet: SlugAlphabet = "base64url",
+  reserved?: ReadonlyMap<string, unknown>,
 ): UuidSlugError | MaskedUuidV7Slug {
   // Truncating instead would make encoding non-injective — two UUIDs would share one slug, and no
   // decoder could ever tell which was meant. Refusing is the only recoverable answer.
@@ -91,7 +93,21 @@ export function uuidV7BytesToMaskedSlug(
   const mixed = new Uint8Array(16);
   const failed = applyMix(schema, tagged, mixed, true);
   if (failed) return failed;
-  return encode(mixed, BASE64URL, tag & ((1 << OUTER_TAG_BITS) - 1), OUTER_TAG_BITS);
+  const tail = tag & ((1 << OUTER_TAG_BITS) - 1);
+  // Raw sentinels have zero outer bits. Only that tail can collide with retained base64 reads;
+  // other safe writes need no second encoding to check a collision that cannot occur.
+  const canonical =
+    alphabet === "base64url" || (tail === 0 && reserved?.size)
+      ? encode(mixed, BASE64URL, tail, OUTER_TAG_BITS)
+      : undefined;
+  if (canonical !== undefined && reserved?.has(canonical))
+    return new UuidSlugError(
+      "invalid_mask_schema",
+      "Masked output collides with a reserved sentinel. Configure a different mask or sentinel set.",
+    );
+  return canonical !== undefined && alphabet === "base64url"
+    ? canonical
+    : encode(mixed, BASE32HEX, tail, OUTER_TAG_BITS);
 }
 
 export function decodeMaskedSlug(
@@ -100,7 +116,14 @@ export function decodeMaskedSlug(
   previous: readonly MaskSchema[] = [],
 ): UuidSlugError | Uint8Array {
   const mixed = new Uint8Array(16);
-  const outerTag = decodeInto(slug, BASE64URL, mixed, 0, 16, OUTER_TAG_BITS);
+  const outerTag = decodeInto(
+    slug,
+    slug.length === 27 ? BASE32HEX : BASE64URL,
+    mixed,
+    0,
+    16,
+    OUTER_TAG_BITS,
+  );
   if (outerTag instanceof Error) return outerTag;
   // A callback may mutate or retain its input. Each attempted key must receive fresh original
   // ciphertext, as it would when decoding the text again; only the text validation is shared.
