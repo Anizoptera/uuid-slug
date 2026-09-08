@@ -50,6 +50,9 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   cost; retain reasons, not sibling version pins. Keep default features explicit and audit the lock graph.
   - [x] Record contract-fit reasons and live replacement criteria in the cross-language dependency
     section; inspect the product's normal graph separately with platform entropy enabled and disabled.
+  - [x] Select dependency features explicitly. Encoding needs allocation; browser clock access
+    needs neither promise helpers nor dynamic evaluation. Native and browser checks pass without
+    those defaults; inspect the product graph separately from consumer feature unification.
 - [x] Create `rust/Cargo.toml` with the product and unpublished bridge members; external consumers
   link the product alone. Keep OS entropy and bindings outside pure encoding/masking modules.
 - [x] Share wire/hash/original fixtures as data; use one comparator with independent producers.
