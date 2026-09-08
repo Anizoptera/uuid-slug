@@ -39,14 +39,9 @@ describe("the maskable range", () => {
   });
 
   it("refuses anything that is not a UUIDv7, rather than stamping one on at decode", () => {
-    // Decoding calls `restoreV7`, which forces the version and variant constants back on, so
-    // WHATEVER is masked comes back as a v7: mask a v4 and it decodes to a well-formed id nobody
-    // ever issued, silently. Nothing else here reaches this guard — measured 2026-08-12, relaxing
-    // its `||` to `&&` left the whole suite green.
-    //
-    // Two cases because the guard has two arms and either alone leaves the other unprobed: a v4
-    // carrying a perfectly correct variant, and a v7 whose variant the RFC does not define.
-    expect(codec.uuidV7ToMaskedSlug("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5")).toBeInstanceOf(Error);
+    // Decoding restores v7 constants, so accepting another version or variant changes identity.
+    // Both inputs fit the timestamp range; its guard must not hide a missing version check.
+    expect(codec.uuidV7ToMaskedSlug("0198abcd-1234-4abc-9def-000000000001")).toBeInstanceOf(Error);
     expect(codec.uuidV7ToMaskedSlug("03ffffff-ffff-7fff-0fff-ffffffffffff")).toBeInstanceOf(Error);
   });
 
