@@ -57,8 +57,11 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 
 - [ ] Inspect the native source and its consumers before copying; preserve reusable behavior,
   verify licensing, omit private project identifiers. Accept when: reviewed source delta and provenance.
-- [ ] Compare UUID/entropy/encoding/hash/error/serde dependencies for contract fit and measured
+- [x] Compare UUID/entropy/encoding/hash/error/serde dependencies for contract fit and measured
   cost; retain reasons, not sibling version pins. Keep default features explicit and audit the lock graph.
+  - [x] Compare UUID-sized base64 caller-buffer encoding/decoding and owned strings in alternating
+    order, with the alternative's default features enabled and disabled. Both reject padding aliases;
+    local results do not justify splitting the existing two-alphabet dependency.
   - [x] Record contract-fit reasons and live replacement criteria in the cross-language dependency
     section; inspect the product's normal graph separately with platform entropy enabled and disabled.
   - [x] Select dependency features explicitly. Encoding needs allocation; browser clock access

@@ -103,6 +103,12 @@ Check disabled defaults and each optional feature: workspace feature unification
 dependencies. Native profiling constrains current call costs; it does not establish that one encoder
 is fastest on every architecture or that platform randomness is trustworthy under every host condition.
 
+Compare encoder changes with both caller storage and owned strings, varying dependency features.
+The local UUID-sized comparison favored a separate base64 encoder for caller storage, but its
+default features reversed the decoding advantage and owned-string differences were much smaller.
+Both rejected the tested padding aliases. Retain the shared encoder until a consumer-path gain justifies
+owning a second dependency while still keeping the first for base32.
+
 Share hash primitives without forcing continuation overhead onto synchronous calls; a Future alone
 does not yield to host tasks. Node/Bun native bridges serve development only, remain unpublished,
 and stay outside npm. They do not create a supported public ABI.
