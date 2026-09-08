@@ -250,6 +250,10 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [ ] Measure complete feedback lanes and remove redundant evidence. Accept when: routine complete
   lanes, including setup, stay below five minutes with 4–8× headroom; cache by lockfile/toolchain/
   target/profile. Run OS lanes independently; report cold builds separately without exempting them.
+  - [x] Run dependency installation and the complete root check in a fresh local checkout with
+    an empty Cargo target directory. macOS arm64 completed in 23.0 seconds using installed
+    toolchains and local dependency caches; Node and Bun each executed the full shared batch.
+    This does not measure toolchain downloads, browser setup or native GitHub runner timing.
 - [x] Validate packaged-source and local Git consumers outside the workspace on the declared
   minimum Rust version, with entropy enabled and disabled. External Wasm feature combinations
   compile; the extracted package's tests/docs pass and its bundled license matches the root.
