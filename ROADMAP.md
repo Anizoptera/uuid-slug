@@ -140,11 +140,11 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   cancellation and teardown; panic never unwinds across C and no failed call leaks owned storage.
   - [x] Run the existing pointer-copy/handle-release regression under Miri; retain native Node/Bun
     checks because Miri does not execute either host's ABI binding.
-- [ ] Benchmark direct Rust calls separately from Node/Bun crossings and batched calls.
-  Accept when: varied equivalent workloads, optimized artifacts, consumed outputs and repeated paired
+- [x] Benchmark direct Rust calls separately from Node/Bun crossings and batched calls.
+  Evidence: varied equivalent workloads, optimized artifacts, consumed outputs and repeated paired
   runs distinguish core work from transport and setup; include cheap ordinary single-ID calls.
-- [ ] Profile CPU, allocations, retained memory, entropy calls, construction cost and contention.
-  Accept when: measurements name reached paths, positive controls, machine/toolchain and limitations;
+- [x] Profile CPU, allocations, retained memory, entropy calls, construction cost and contention.
+  Evidence: measurements name reached paths, positive controls, machine/toolchain and limitations;
   throughput alone cannot justify a change.
   - [x] Record optimized direct-call and separate native-bridge timings, CPU time, peak RSS and
     context switches through `bun bench/rust.ts`; validate every process's complete output.

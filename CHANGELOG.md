@@ -3,6 +3,18 @@
 Notable changes per release, newest first. This file is the source of the GitHub Release
 notes: the section for a version is published verbatim when its tag is pushed.
 
+## [Unreleased]
+
+### Added
+
+- Use the Rust `uuid-slug` crate for UUID generation, plain encoding, keyed masking, sentinels, key rotation, migration and freshness checks. Browser generation uses the optional `wasm-js` feature; pure conversion and masking can run without platform entropy.
+- Select `maskedSlugAlphabet: "base32hex"` for lowercase masked filenames: 27 characters for masked values and 26 for raw sentinels. Decoding retains existing base64url spellings and key material. Masked output has no chronological ordering guarantee.
+- Rust callers can decode base64url into caller-owned storage and use first-result migration without allocating a candidate list.
+
+### Fixed
+
+- Leave portable UUIDv7 sequence state unchanged when entropy fails, so a failed attempt cannot corrupt retry state.
+
 ## [0.3.0] - 2026-09-08
 
 ### Breaking changes
