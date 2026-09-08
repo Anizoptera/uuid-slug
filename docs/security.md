@@ -9,8 +9,10 @@ randomness when the secure source fails. Custom entropy callbacks must fill ever
 from a cryptographic source or report failure; a successful partial fill cannot be detected reliably
 from its output. A plausible-looking UUID does not establish that this contract was met.
 
-The platform source choices are documented by [Bun](https://bun.sh/docs/runtime/utils#bunrandomuuidv7)
-and [getrandom](https://docs.rs/getrandom/latest/getrandom/#supported-targets). Review the selected
+The platform source choices are documented by [Node](https://nodejs.org/api/crypto.html#cryptorandomfillsyncbuffer-offset-size),
+[Web Crypto](https://www.w3.org/TR/webcrypto/#Crypto-method-getRandomValues),
+[Bun](https://bun.sh/docs/runtime/utils#bunrandomuuidv7) and
+[getrandom](https://docs.rs/getrandom/latest/getrandom/#supported-targets). Review the selected
 backend when changing a runtime, target or dependency; selecting a secure API is not an audit of
 the operating system that implements it.
 System entropy can block during early boot while the OS initializes its RNG. Applications with

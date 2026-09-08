@@ -293,3 +293,6 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
     deterministic contracts must make no entropy calls. Keep source-quality limits in security docs.
   - [x] Verify Rust v4/v7 and portable TypeScript v7 entropy-bit preservation with one-hot inputs;
     failed Rust prefixes preserve output and retry state across initialization, rollback and overflow.
+  - [x] Trace built-in generation to Node crypto, Web Crypto, Bun's native v7 generator and
+    `getrandom`; verify each selected API's current source contract against its primary documentation.
+    Runtime interception proves routing and failure behavior, not operating-system entropy quality.
