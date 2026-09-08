@@ -25,10 +25,8 @@ It defines no new identifier scheme. Everything here is a UUID underneath.
 pnpm add @anizoptera/uuid-slug
 ```
 
-TypeScript 5.7 or newer. The declarations pin one buffer parameter to
-`Uint8Array<ArrayBuffer>`, which is the type argument TypeScript grew in 5.7; earlier versions
-report `Uint8Array` as not generic. The pin is what promises anyone implementing `fillRandom`
-that they will never be handed a `SharedArrayBuffer` view, which Web Crypto rejects at runtime.
+Requires TypeScript 5.7 or newer for `Uint8Array<ArrayBuffer>` declarations.
+Custom `fillRandom` callbacks receive an ordinary `ArrayBuffer` view, which Web Crypto accepts.
 
 ## Quick start
 
@@ -105,7 +103,17 @@ logs and support tickets. The defaults always encode to these fixed slugs:
 | `anonymousUser` | `00000000-0001-7000-8000-000000000000` | `AAAAAAABcACAAAAAAAAAAA` |
 | `unknownUser`   | `00000000-0002-7000-8000-000000000000` | `AAAAAAACcACAAAAAAAAAAA` |
 
-Pass your own list as `sentinels` to replace them. Decoding checks sentinels first, so they
+Read the names, UUIDs and slugs from `codec.sentinels`. Pass your own list as `sentinels` to replace the defaults:
+
+```ts
+const ids = createUuidSlugCodec({
+  mask: { seed },
+  sentinels: [{ name: "unknownUser", uuid: "00000000-0002-7000-8000-000000000000" }],
+});
+console.table(ids.sentinels);
+```
+
+Keep sentinel definitions stable while their slugs are in use. Decoding checks sentinels first, so they
 are reserved even if a mask could produce the same text. Encoding rejects a non-sentinel UUID
 whose masked output collides with a reserved slug, using `invalid_mask_schema`; it never returns
 a slug that would decode to the wrong sentinel.
@@ -123,13 +131,9 @@ decodes; it is not a message authentication code. Confirm decoded candidates aga
 and enforce authorization separately. Supplying a custom `mix` still leaves the same short check
 and does not turn the API into an authenticated-token system.
 
-One consequence is structural rather than advisory. A codec built without a `mask` uses a seed
-that is a constant in this package's source, so anyone holding the package decodes its masked
-slugs. That configuration is legitimate — tests and demos want reproducible output — but it is
-never what someone protecting ids wants, and the slug looks identical either way.
-
-So the masked operations are **not** available as top-level functions; only `defaultCodec` and a
-codec you construct expose them. **If you mask anything real, pass your own seed.**
+**Supply your own secret seed for real identifiers.** Omitting `mask` uses the published default
+seed, so anyone can decode the result. Reserve that default for tests and demos.
+Masked operations are codec methods; `defaultCodec` uses the same public seed.
 
 ## Handling errors
 
@@ -143,10 +147,8 @@ entropy draws, clock readings, and custom `mix` calls preserve the original exce
 
 ## Types
 
-TypeScript sees branded types. They document which flavour a value is and survive narrowing, and
-they are **not enforced at runtime and not a parsing obligation**: the brand marker is optional,
-so a bare `string` satisfies each branded type without validation. Use guards to check its
-format; use your store to check issuance.
+Branded types distinguish the values returned by this library. Their marker is optional:
+assigning a string does not validate it. Use guards to check format and your store to check issuance.
 
 - Strings: `UuidString`, `UuidV4String`, `UuidV7String`, `Base64UrlString`.
 - Slugs: `UuidSlug` (either alphabet), `UuidV4Slug`, `UuidV7Slug`; masked ones are base64url only
@@ -165,16 +167,12 @@ the matching API and look up the candidate; a brand or guard cannot establish is
 
 ## API
 
-The **Where** column says how you reach each entry, and the distinction is not cosmetic — calling
-a module-level function on a codec is a `TypeError`.
+The **Where** column tells you whether to import a function or call a codec method.
 
 - **codec + top level.** Keyless generation is available directly, for example `import { uuidV7 }`.
   A codec can use your supplied v7 generator; top-level generation uses the platform adapter.
-- **codec only.** Keyed by your seed. Deliberately absent from the top level: a bare function
-  could only carry the seed published in this package's source, which would make the
-  easiest-to-reach spelling of the headline feature the one that obfuscates nothing.
-- **module only.** Pure functions over bytes and strings. They need no key and no generator, so
-  putting them on a codec would suggest a codec changes their answer.
+- **codec only.** Uses your configured keys or sentinels.
+- **module only.** Import these functions directly. Codec settings do not affect them.
 
 | Method                                                  | Where             | Returns                       | What it does                             |
 | ------------------------------------------------------- | ----------------- | ----------------------------- | ---------------------------------------- |
@@ -234,9 +232,8 @@ createUuidSlugCodec({
 });
 ```
 
-There is nothing else to configure. A masked slug is 22 base64url characters carrying a 16-bit
-check, because the check is whatever the encoding has left after the UUID's 116 real bits, and
-there is one mixing scheme rather than a choice of them.
+The current masked format is fixed: 22 base64url characters, including a 16-bit check.
+Changing `slugAlphabet` affects plain slugs only.
 
 To supply a different mixing implementation, pass a `MaskSchema`: an `id` and
 `mix(input, output, forward)`, where `forward: false` must reverse `forward: true` for every

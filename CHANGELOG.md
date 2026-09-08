@@ -5,9 +5,21 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 ## [Unreleased]
 
+### Breaking changes
+
+- Masking now uses a keyed Feistel construction and a fixed 16-bit check. The 0.2.0 permutation/XOR format and its key derivation differ; retaining the old seed in `previousMasks` alone does not migrate that format.
+- Call masked operations through your codec. Bare masked functions and `UUID_V7_SENTINELS` are removed; use `codec.sentinels`. Sentinels remain raw, recognizable slugs.
+- Replace `legacy.masks` with `previousMasks` for current-format key rotation, and `legacy.directDecode` with `acceptUnmaskedSlugs` for plain slugs. Masked freshness validation is now `codec.validateMaskedSlugFresh`.
+- Use standalone functions for plain conversion, parsing and formatting. Replace `slugToUuidBytes` with `parseUuidSlug` and `uuidBytesToSlug` with `formatUuidSlug`. `createRuntimeGenerator` is no longer exported.
+- Custom mask schemas expose `mix(input, output, forward)` instead of permutation/XOR tables. `defineMaskSchema`, `ExplicitMaskSchema`, `LEGACY_MASK_SCHEMA_V1` and configurable `tagBits` are removed from the current-format API.
+- Current-format seeds require at least 16 bytes. Masking rejects timestamps at or beyond `2^42` milliseconds; timestamp extraction rejects non-v7 UUIDs. Plain UUID slugs keep the full UUID value.
+
 ### Added
 
 - `createMaskSchemaAsync` derives the same keys as the synchronous constructor while yielding to other work. Pass an `AbortSignal` to stop derivation; cancellation returns an `aborted` error carrying the signal's reason.
+- Generate or encode plain slugs with `"base32hex"` for 26 lowercase characters ordered by timestamp. Decoding infers the alphabet from the length.
+- `uuidV7At` and `uuidV7BytesAt` generate UUIDv7s at a supplied timestamp. Custom generators must implement these methods.
+- `keyIterations` controls schema derivation work; keep it with the seed when rotating keys. `UUID_SLUG_ERROR_CODES` and `UuidSlugErrorCode` expose the error contract.
 
 ### Performance
 
