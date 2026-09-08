@@ -67,9 +67,9 @@ export function sourcesUsedBy(generate: () => unknown, calls = 100): string[] {
 
 /**
  * Distinct outputs over `calls` draws, which is the only check here that catches a randomness
- * source failing GROSSLY rather than subtly. A constant seed, a pool of pre-drawn values or a
- * weak LCG each satisfies every per-value assertion in this suite — correct version, correct
- * variant, correct length, ascending timestamps — and each collapses this number immediately.
+ * source repeating values rather than failing subtly. A cycling pool can preserve the version,
+ * variant and length while repeating identifiers. Predictable generators can pass this check;
+ * distinct outputs alone say nothing about cryptographic strength.
  */
 export const distinctValuesFrom = (generate: () => unknown, calls = 5_000): number =>
   new Set(Array.from({ length: calls }, () => distinctKey(generate()))).size;
@@ -117,8 +117,8 @@ export function attributedSourcesFor(generate: () => unknown, attempts = 20_000)
  *
  * A COUNT rather than a list of positions on purpose: naming the positions would restate the
  * layout the conformance cases already own, and would only catch a pinned bit where it was
- * expected. Deterministic rather than statistical in any practical sense — over 256 draws a live
- * bit stays constant with probability 2^-255.
+ * expected. Under independent unbiased draws, one bit stays constant over 256 draws with
+ * probability 2^-255; this bound does not apply to correlated or biased sources.
  */
 export function constantBitCount(generate: () => Error | Uint8Array, calls = 256): number {
   const ones = new Uint32Array(128);

@@ -37,15 +37,13 @@ describe("entropy source", () => {
   });
 
   it.each(generators)("never repeats a value in %s", (_name, generate) => {
-    // The instrument above proves WHICH source was called; this proves the source is producing
-    // fresh bits. A seed frozen at module load, a reused buffer, or a pool of pre-drawn values
-    // all call `getRandomValues` exactly as expected and satisfy every other case in this suite.
+    // Detect repeated outputs despite source calls; distinct samples do not prove fresh entropy.
     expect(distinctValuesFrom(generate)).toBe(5_000);
   });
 
   it("leaves every v4 bit random except the six the RFC fixes", () => {
-    // The guarantee is that all random bits ARE random, not merely that values differ. A pinned
-    // bit narrows the id space silently and passes every other case here.
+    // A pinned bit narrows the id space despite distinct outputs. This detects stuck bits,
+    // not bias, correlations, or predictability in a source whose bits all vary.
     expect(constantBitCount(() => codec.uuidV4Bytes())).toBe(6);
   });
 

@@ -1,4 +1,8 @@
 //! Generate RFC UUIDs with explicit state and fallible entropy; no global lock is required.
+//!
+//! Every `_with` callback must fill every requested byte from its chosen source or return an
+//! error. A successful partial fill cannot be distinguished reliably from valid random bytes.
+//! Use the default generators for platform CSPRNG entropy; custom callbacks own that guarantee.
 use crate::{Error, Uuid};
 
 /// Largest timestamp the UUIDv7 wire format can carry.
@@ -203,6 +207,44 @@ mod tests {
         assert_eq!(output, [19; 16]);
     }
     #[test]
+    fn generation_preserves_every_payload_bit() -> Result<(), Error> {
+        // A one-hot basis catches dropped or merged bits without judging random samples.
+        for version in [4, 7] {
+            let generate = |input: [u8; 16]| {
+                let fill = |out: &mut [u8]| {
+                    out.copy_from_slice(&input);
+                    Ok(())
+                };
+                if version == 4 {
+                    uuid_v4_with(fill)
+                } else {
+                    UuidV7Generator::new().at_with(0.0, fill)
+                }
+            };
+            let baseline = u128::from_be_bytes(*generate([0; 16])?.as_bytes());
+            let mut seen = 0_u128;
+            for bit in 0..128 {
+                let changed =
+                    u128::from_be_bytes(*generate((1_u128 << bit).to_be_bytes())?.as_bytes())
+                        ^ baseline;
+                assert!(
+                    changed.count_ones() <= 1,
+                    "one input bit changed multiple bits"
+                );
+                assert_eq!(seen & changed, 0, "input bits merged into one output bit");
+                seen |= changed;
+            }
+            let reserved = (15_u128 << 76) | (3_u128 << 62);
+            let payload = if version == 4 {
+                u128::MAX
+            } else {
+                (1_u128 << 80) - 1
+            };
+            assert_eq!(seen, payload & !reserved);
+        }
+        Ok(())
+    }
+    #[test]
     fn explicit_time_does_not_mutate_clock_sequence() -> Result<(), Error> {
         let mut generator = UuidV7Generator::new();
         let first = generator.generate_with(123.9, fill)?;
@@ -233,6 +275,44 @@ mod tests {
         generator.sequence = MAX_SEQUENCE;
         assert!(generator.generate_with(0.0, fill).is_err());
         assert_eq!(generator.sequence, MAX_SEQUENCE);
+        Ok(())
+    }
+
+    #[test]
+    fn partial_failed_draws_preserve_output_and_retry() -> Result<(), Error> {
+        for (last_ms, sequence, reading) in [
+            (None, 0, 10.0),
+            (Some(10), 17, 9.0),
+            (Some(10), 17, 11.0),
+            (Some(10), MAX_SEQUENCE, 9.0),
+        ] {
+            for prefix in 0..=16 {
+                let mut generator = UuidV7Generator { last_ms, sequence };
+                let fail = |out: &mut [u8]| {
+                    out[..prefix].fill(255);
+                    Err(Error::RngUnavailable)
+                };
+                let mut output = [19; 18];
+                assert!(uuid_v4_with(fail).is_err());
+                assert!(
+                    generator
+                        .generate_into_with(reading, &mut output, 1, fail)
+                        .is_err()
+                );
+                assert!(
+                    generator
+                        .at_into_with(reading, &mut output, 1, fail)
+                        .is_err()
+                );
+                assert_eq!(output, [19; 18]);
+                assert_eq!((generator.last_ms, generator.sequence), (last_ms, sequence));
+                let mut control = UuidV7Generator { last_ms, sequence };
+                assert_eq!(
+                    generator.generate_with(reading, fill)?,
+                    control.generate_with(reading, fill)?
+                );
+            }
+        }
         Ok(())
     }
 }

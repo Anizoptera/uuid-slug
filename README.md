@@ -383,6 +383,7 @@ with expiration or one-time use, check the stored expiry and consumption state a
 
 These are API contracts. Runtime measurements and their exercised conditions belong in
 [`bench/README.md`](bench/README.md); a benchmark pass is not proof of every guarantee.
+See [security boundaries](docs/security.md) for entropy failures, custom sources and masking limits.
 
 - **Conformance.** Generated ids have RFC 9562 version and variant bits. A custom generator is
   responsible for honoring its declared contract.

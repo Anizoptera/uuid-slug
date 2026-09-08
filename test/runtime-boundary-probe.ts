@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { strict as assert } from "node:assert";
+import { pooledFill } from "../src/runtime/pool";
 import {
   createUuidSlugCodec,
   createUuidV7Generator,
@@ -16,6 +17,69 @@ const makeGenerator = () =>
   createUuidV7Generator({ clock: () => timestamp, fillRandom: (bytes) => bytes.fill(0x12) });
 
 export const runtimeBoundaryCases = [
+  {
+    name: "preserves all portable v7 payload bits without merging input bits",
+    run(this: void) {
+      for (const explicit of [false, true]) {
+        const generate = (input: Uint8Array) => {
+          const generator = createUuidV7Generator({
+            clock: () => 0,
+            fillRandom: (bytes) => bytes.set(input),
+          });
+          const bytes = explicit ? generator.uuidV7BytesAt(0) : generator.uuidV7Bytes();
+          assert.ok(bytes instanceof Uint8Array);
+          return bytes.reduce((bits, byte) => (bits << 8n) | BigInt(byte), 0n);
+        };
+        const baseline = generate(new Uint8Array(16));
+        let seen = 0n;
+        for (let bit = 0; bit < 128; bit += 1) {
+          const input = new Uint8Array(16);
+          input[bit >> 3] = 1 << (bit & 7);
+          const changed = generate(input) ^ baseline;
+          assert.equal(changed & (changed - 1n), 0n, "one input bit changed multiple bits");
+          assert.equal(seen & changed, 0n, "input bits merged into one output bit");
+          seen |= changed;
+        }
+        const structural = (15n << 76n) | (3n << 62n);
+        assert.equal(seen, ((1n << 80n) - 1n) & ~structural);
+      }
+    },
+  },
+  {
+    name: "never publishes a partial entropy refill and erases consumed bytes",
+    run(this: void) {
+      const cause = new Error("partial entropy draw");
+      const sourceBuffers: Uint8Array[] = [];
+      let failing = false;
+      let value = 0x11;
+      const fill = pooledFill((bytes) => {
+        sourceBuffers.push(bytes);
+        bytes.fill(value, 0, failing ? bytes.length / 2 : bytes.length);
+        if (failing) throw cause;
+      });
+      assert.equal(sourceBuffers.length, 0);
+      const out = new Uint8Array(16);
+      fill(out);
+      const sourceBuffer = sourceBuffers[0];
+      assert.ok(sourceBuffer);
+      assert.ok(out.every((byte) => byte === 0x11));
+      assert.ok(sourceBuffer.subarray(0, out.length).every((byte) => byte === 0));
+      fill(new Uint8Array(sourceBuffer.length - out.length));
+      failing = true;
+      value = 0xaa;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        assert.throws(
+          () => fill(out),
+          (error) => error === cause,
+        );
+        assert.ok(out.every((byte) => byte === 0x11));
+      }
+      failing = false;
+      value = 0x22;
+      fill(out);
+      assert.ok(out.every((byte) => byte === 0x22));
+    },
+  },
   ...(["base64url", "base32hex"] as const).map((slugAlphabet) => ({
     name: `uses the supplied generator for ${slugAlphabet}`,
     run(this: void) {
@@ -62,7 +126,8 @@ export const runtimeBoundaryCases = [
       const cause = new Error("entropy offline");
       const generator = createUuidV7Generator({
         clock: () => timestamp,
-        fillRandom() {
+        fillRandom(bytes) {
+          bytes.fill(0xaa, 0, 8);
           throw cause;
         },
       });
