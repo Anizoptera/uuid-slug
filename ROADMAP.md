@@ -33,20 +33,14 @@ Public choices are recorded above; verify the engineering tasks below before cla
 
 ## Execution order
 
-### 1. Close local responsiveness and security evidence
-
-- [ ] Audit Rust and TypeScript security boundaries together. Trace each entropy path, failure and
-  retry state, masking boundary, parser write guarantee, bridge ownership, and unsafe boundary.
-  Fix material defects and update `docs/security.md` only when the durable boundary changes.
-
-### 2. Close supported-platform evidence
+### 1. Close supported-platform evidence
 
 - [ ] Run `.github/workflows/rust.yml` on every native runner. Require nonzero shared-parity
   observations per adapter and real filesystem round trips for plain, masked, and sentinel names.
   Preserve exact spelling and UUID identity, include base32 timestamp boundaries, and make no masked
   ordering claim. The workflow owns runner and target lists.
 
-### 3. Prepare release evidence
+### 2. Prepare release evidence
 
 - [ ] Measure complete feedback lanes and remove redundant evidence. Accept when: routine complete
   lanes, including setup, stay below five minutes with 4–8× headroom; cache by lockfile/toolchain/
