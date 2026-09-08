@@ -9,11 +9,12 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   is explicitly not guaranteed: do not gate it or reject a native generator for lacking it.
   Measure implementation differences in `bench/`, where results inform rather than gate.
 - Read `docs/design.md` before changing masking, schemas, or sentinels. Preserve its wire layout:
-  existing masked slugs are UUIDv7-only, 22 base64url characters, with a 16-bit check and timestamps below
-  2^42 milliseconds. Reject overflow rather than truncate. Preserve plain-slug padding rejection.
+  masked payloads are UUIDv7-only, with a 16-bit check and timestamps below 2^42 milliseconds.
+  Preserve both their 22-character base64url and lossless 27-character base32hex spellings.
+  Reject overflow rather than truncate. Preserve plain-slug padding rejection.
 - Read `docs/cross-language.md` before Rust work or changes shared with TypeScript. It owns
-  parity, approved filesystem-safe output and distribution boundaries. The shipped masked
-  representation remains base64url until the lossless safe spelling is implemented in both.
+  parity, approved filesystem-safe output and distribution boundaries. Keep base64url defaults;
+  select filesystem-safe masked output independently from the plain-slug alphabet.
   Preserve length-based alphabet inference for plain decoding.
 - Masked slugs and sentinels are core functionality. Sentinels use precomputed raw slugs per
   codec. Decode returns the first passing candidate in caller-specified key order, never proof
