@@ -22,6 +22,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
       },
     });
     const codec = api.createUuidSlugCodec({ generator, slugAlphabet: alphabet });
+    equal(codec.migration({ plain: true }).decode(slug, "plain"), uuid, `${alphabet} migration`);
     equal(
       api.slugToUuid(codec.uuidV7Slug()),
       "011f71fb-0450-7121-8848-484a12121212",
