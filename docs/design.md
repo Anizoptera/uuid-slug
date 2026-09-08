@@ -121,6 +121,7 @@ Both explicit conversion and generation recognize sentinel UUIDs before masking.
 UUID whose masked result collides with a reserved slug must fail encoding, because accepting it
 would decode to the sentinel and lose the original identity.
 
-There is one masked wire layout. Old API aliases, compatibility subpaths, and a decoder for the
-format published in 0.2.0 are intentionally absent; trying an extra layout would broaden false
-acceptance without a required consumer migration.
+New masked output uses only the layout above. `codec.migration` can separately read the original
+fixed permutation/XOR layout when enabled; its four-bit check cannot establish identity either.
+The format published in 0.2.0 remains unsupported. See README's migration sections for format
+selection and record lookup; do not add an old layout to ordinary decoding.

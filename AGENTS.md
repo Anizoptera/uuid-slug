@@ -24,6 +24,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   must explain this wire-format obligation, not historical reasons for choosing the constants.
 - Do not add old API aliases, compatibility subpaths, or a compatibility decoder for 0.2.0.
   Art ruled that release had no consumers; that exception does not justify breaking other formats.
+- Original fixed-mask compatibility is opt-in through `codec.migration`; read README's migration
+  sections before changing it. Preserve sentinel priority and stored trailing-bit aliases without
+  weakening ordinary strict decoding. Writers and accepted old formats remain independent.
 - Runtime dependencies are forbidden. Benchmark dependencies stay dev-only and outside the archive.
 - Public docs use caller-facing tokens such as `"base32hex"`, not internal symbol names.
   Documentation-alignment gates are ruled out; test the API behavior instead.

@@ -186,6 +186,7 @@ The **Where** column tells you whether to import a function or call a codec meth
 | `maskedSlugToUuid(slug)`                                | codec only        | `UuidSlugError \| ...`        | Unmask, accepting any UUID version.      |
 | `validateMaskedSlugFresh(slug, opts?)`                  | codec only        | `UuidSlugError \| ...`        | Unmask, then check the freshness window. |
 | `sentinels`                                             | codec only        | array                         | The reserved values this codec knows.    |
+| `migration(options?)`                                 | codec only        | migration reader              | Read selected old formats without changing new output. |
 | `uuidToSlug(uuid, alphabet?)` / `slugToUuid(slug)`      | module only       | `UuidSlugError \| ...`        | Direct slug, both ways.                  |
 | `parseUuid` / `formatUuid`                              | module only       | `UuidSlugError \| ...`        | UUID string to bytes and back.           |
 | `parseUuidSlug` / `formatUuidSlug`                      | module only       | `UuidSlugError \| ...`        | Slug to bytes and back.                  |
@@ -293,6 +294,63 @@ their decoder, retain an application-owned mapping from each supported old slug 
 Keep keys and sentinel definitions stable throughout the rollout. Non-v7 UUIDs and UUIDv7s
 timestamped at or beyond 2^42 ms cannot use the current masked format; preserve them as UUIDs
 or direct slugs. Never truncate the timestamp or substitute a new identity to make masking pass.
+
+### Reading original slugs during migration
+
+Create a migration reader from your codec. Enable only the old formats your application issued:
+
+```ts
+const reader = ids.migration({ original: true, plain: true });
+const uuid = reader.decode(incomingSlug);
+if (uuid instanceof Error) throw uuid;
+// Look up uuid and check the caller's access to the record.
+```
+
+`original` accepts the original fixed permutation/XOR format with its 4-bit checksum.
+It does **not** accept the different masked format from package version 0.2.0.
+`plain` accepts direct UUID slugs of any version, including old base64url spellings whose
+last four bits were ignored. Ordinary `slugToUuid` remains strict about those trailing bits.
+Neither option changes generation, ordinary codec methods, keys or sentinels.
+
+`decode` returns one UUID or `UuidSlugError`: sentinels first, then current keys, then enabled
+original and plain formats. A successful decode still needs a record lookup. The same slug can
+decode to different UUIDs in different formats; the original check has only four bits.
+
+When you know the input format, name it to avoid trying unrelated formats:
+
+```ts
+const uuid = reader.decode(oldSlug, "original"); // "plain" or "current" also works
+if (uuid instanceof Error) throw uuid;
+const replacement = ids.uuidV7ToMaskedSlug(uuid);
+if (replacement instanceof Error) throw replacement;
+// Keep uuid in the database; use replacement in new links.
+```
+
+Enable an old format before selecting it. Recognized sentinels always return their reserved UUID,
+including old trailing-bit aliases when reading original or plain slugs.
+
+For unknown formats, use `candidates` to find the matching record without guessing:
+
+```ts
+const candidates = reader.candidates(incomingSlug);
+if (candidates instanceof Error) throw candidates;
+const matches = candidates.length ? await findRecordsByUuids(candidates) : [];
+if (matches.length === 0) throw new Error("ID not found");
+if (matches.length !== 1) throw new Error("ID matches multiple records; supply its original format");
+const record = matches[0];
+// Check access to record before returning it.
+```
+
+`findRecordsByUuids` is your database query. Return distinct records by UUID. `candidates`
+returns distinct UUIDs in decoding order, or an empty array if none match. Malformed input and
+failed mask callbacks return an error. Callback errors keep their cause; they never produce a
+successful but incomplete list.
+
+Keep this reader while old inputs must work. Replace it with `ids.migration({ plain: true })`
+to stop trying the original mask, or `ids.migration({ original: true })` to stop plain decoding.
+`ids.migration()` tries only current keys and sentinels. Removing the migration reader entirely
+leaves ordinary codec decoding unchanged. Neither method can identify the issuing format from
+the slug alone, so successful decoding is not a reliable count of legacy traffic.
 
 ### Rejecting stale ids
 

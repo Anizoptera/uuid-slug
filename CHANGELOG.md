@@ -16,6 +16,7 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 ### Added
 
+- `codec.migration({ original: true, plain: true })` reads original fixed-mask IDs and old plain slugs without changing new output. `decode` returns one UUID candidate; name a known format or use `candidates` for application lookup. Disable each old format independently after migration. This does not add support for the unused 0.2.0 masked format.
 - `createMaskSchemaAsync` derives the same keys as the synchronous constructor while yielding to other work. Pass an `AbortSignal` to stop derivation; cancellation returns an `aborted` error carrying the signal's reason.
 - Generate or encode plain slugs with `"base32hex"` for 26 lowercase characters ordered by timestamp. Decoding infers the alphabet from the length.
 - `uuidV7At` and `uuidV7BytesAt` generate UUIDv7s at a supplied timestamp. Custom generators must implement these methods.
