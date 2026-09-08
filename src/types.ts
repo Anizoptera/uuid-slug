@@ -212,22 +212,14 @@ export interface UuidSlugCodecOptions {
  * whatever seed the codec holds — so carrying them as methods implied a dependency on the seed
  * that does not exist, and was the single most misleading thing about the previous shape.
  *
- * It EXTENDS `UuidV7Generator` rather than restating its methods, so that a generation capability
- * cannot be added and left unreachable: the codec is the only way a consumer reaches the generator,
- * and a new method on that interface now fails to compile here until it is forwarded. Restating the
- * signatures instead made the four v7 entry points a clerical obligation nothing enforced, and two
- * of them sat implemented-but-unwired through a release.
+ * Extending `UuidV7Generator` makes the compiler require forwarding every generator method.
  */
 export interface UuidSlugCodec extends UuidV7Generator {
   readonly sentinels: readonly UuidV7Sentinel[];
   /** Create an opt-in reader without changing generation or ordinary codec decoding. */
   migration(this: void, options?: UuidSlugMigrationOptions): UuidSlugMigration;
   /**
-   * Every method declares `this: void`, which is load-bearing rather than decoration: the
-   * top-level shortcuts are plain references (`export const uuidV7 = defaultCodec.uuidV7`), so a
-   * method reaching for `this` would break the moment it was detached from the codec. The
-   * annotation makes the compiler reject such an implementation instead of leaving the hazard to
-   * a reviewer, and is what lets those references stay free of `.bind`.
+   * `this: void` lets callers detach methods without `.bind`; implementations cannot rely on `this`.
    */
   uuidV4(this: void): UuidV4String;
   uuidV4Bytes(this: void, out?: Uint8Array, offset?: number): UuidSlugError | Uint8Array;

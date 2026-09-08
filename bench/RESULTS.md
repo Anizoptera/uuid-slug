@@ -106,25 +106,16 @@ call a finding.
 | `bun-native`     | bun     | native, below JS  |  99.98% |  14,319 | 12b @ 99.98% |
 | `node-native`    | node 26 | native, below JS  |  50.23% |   9,277 |     1b @ 25% |
 
-No candidate repeated a value, and none reached `Math.random` on any path.
+No candidate repeated a value in this sample. No calls reached the wrapped `Math.random` binding;
+native draws and references captured before instrumentation were not observed.
 
-**`peak/ms` explains the ordering column better than the counter width does.** `fastv7` peaks at
-exactly 4,096 — the capacity of a 12-bit counter — because it waits for the next millisecond
-instead of wrapping, which is what buys it 100%. Bun's generator has the same 12 bits and peaks at
-15,155, so it wraps roughly four times per tick, and those wraps are the 0.02% out of order.
-Wrapping does not repeat a value: 50,000 draws gave 50,000 distinct fields.
+`fastv7` peaked at 4,096 draws per millisecond, the capacity of a 12-bit counter. Bun exceeded
+that capacity and occasionally produced out-of-order values. Counter wrap is consistent with
+these observations; this probe does not isolate the cause or establish behavior under other loads.
 
-Three counter designs are visible, all sanctioned by RFC 9562 §6.2, trading unguessability against
-ordering:
-
-- **Fixed counter** (everything except the two below) — fully determined by the previous value, so
-  ordering is exact and those bits are free to an attacker. A 12-bit counter leaves 62 bits
-  unguessable, a 42-bit one leaves 32.
-- **Random increment** (`uuidv7-js`) — 42 bits advance by exactly one only ~50% of the time; the
-  rest is a random positive step, so the field is partly determined and still ordered. No single
-  unguessability figure is honest for it.
-- **No counter** (`node-native`, and this package on Node ≥26.6) — all 74 bits unguessable, no
-  intra-millisecond ordering.
+Leading-bit increments distinguish counter-like behavior in these samples. They do not establish
+how many bits an attacker can predict: that requires analysis of each generator and its entropy
+source. The table reports observed increment agreement and ordering, not security strength.
 
 "not observable" is not a finding — a native generator draws below JavaScript, and a library that
 captures its source reference at import is instrumented too late. It states what was seen, and it

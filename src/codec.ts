@@ -256,17 +256,8 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
 }
 
 /**
- * The codec behind the keyless top-level shortcuts (`uuidV7`, `uuidV7Slug`, …), which is all it is
- * fit for.
- *
- * Its MASKED methods work and obfuscate NOTHING: no seed was supplied, so it fell back to
- * `DEFAULT_MASK_SCHEMA`, whose seed is a string literal in this published package. Anyone holding
- * the tarball decodes its masked slugs — verified 2026-08-12 by rebuilding the schema from that
- * literal and recovering the input UUID exactly. The masked methods are absent from the top-level
- * exports for this reason; reaching them still requires typing `defaultCodec`, which is the point
- * (Art's ruling, 2026-08-12 — keep the default key, remove the bare shortcuts).
- *
- * Mask anything real through `createUuidSlugCodec({ mask: { seed } })` with a seed of your own.
+ * Uses the published default seed, so anyone can decode its masked slugs.
+ * Use `createUuidSlugCodec({ mask: { seed } })` with your own seed to hide identifiers.
  */
 // Annotated PURE so a bundle that never names it can drop it: a module-scope CONSTRUCTION call is
 // otherwise a side effect no bundler may remove, and this one reaches the cipher, the mask schema

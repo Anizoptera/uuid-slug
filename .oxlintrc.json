@@ -16,9 +16,7 @@
     // its auto-fix silently removed one, turning a passing assertion into a failing one.
     "unicorn/no-useless-spread": "off"
   },
-  // A benchmark that awaits inside a loop is doing so deliberately: running the runtimes
-  // concurrently would have them contend for the same cores and measure the contention rather
-  // than the code. The artifact check is sequential for the same reason it is ordered.
+  // Benchmark runtimes run serially to avoid contention; scripts also contain ordered I/O.
   "overrides": [
     {
       "files": ["bench/**", "scripts/**"],
@@ -26,11 +24,7 @@
         "no-await-in-loop": "off"
       }
     },
-    // The browser-facing adapter must reach no Node builtin. `tsdown.config.ts` records what
-    // happens otherwise: the browser build baked in `node:crypto`, and nothing caught it until a
-    // consumer's bundler did. `scripts/check-artifact.ts` now asserts the same thing on the built
-    // file, which catches a bundler resolving it in; this catches a person importing it, at the
-    // keystroke rather than at the pack. `runtime/node.ts` is excluded for the obvious reason.
+    // Catch direct Node imports here; the artifact check also catches transitive imports.
     {
       "files": ["src/runtime/web.ts"],
       "rules": {

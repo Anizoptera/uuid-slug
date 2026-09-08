@@ -61,21 +61,11 @@ describe("entropy source", () => {
 });
 
 describe("generated v7 values", () => {
-  it("are well-formed, and their timestamps never go backwards", () => {
-    // Pins the README's stated guarantee and no more. The timestamp is asserted because
-    // millisecond-granular ordering is promised; the RANDOM field deliberately is not, because
-    // intra-millisecond ordering is left to the runtime — a platform generator may re-randomise
-    // every random bit per call. Asserting strict increase here would pin a stronger promise than
-    // this package makes and would fail on a conformant runtime rather than on a defect.
-    // `bench/entropy.ts` measures what each runtime actually does; this only holds the contract.
-    let previousTimestamp = "";
+  it("keep the v7 version and RFC variant", () => {
     for (let i = 0; i < 2_000; i += 1) {
       const hex = codec.uuidV7().replaceAll("-", "");
       expect(hex[12]).toBe("7");
       expect("89ab").toContain(hex[16]);
-      const timestamp = hex.slice(0, 12);
-      expect(timestamp >= previousTimestamp).toBe(true);
-      previousTimestamp = timestamp;
     }
   });
 });

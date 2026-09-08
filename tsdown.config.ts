@@ -53,32 +53,16 @@ const common = {
   format: ["esm"],
   outExtensions: () => ({ js: ".js" }),
   banner,
-  /**
-   * One output file per source module, NOT one bundle. A bundler can only drop what it can see as
-   * separable, and flattening every module into one file destroys exactly that information:
-   * measured 2026-08-12 on this package, an entry importing only `uuidToSlug` cost 12,725 bytes
-   * through the bundled artifact and 2,188 through the unbundled one, and `uuidV7Slug` 12,735
-   * against 4,559 — under two independent bundlers, which disagreed on everything else.
-   *
-   * It is worth nothing on its own and must not be reverted on its own: with the keyless shortcuts
-   * still bound as property reads of `defaultCodec`, unbundling saved one profile under one
-   * bundler and nothing anywhere else. The pair is the fix; see `src/keyless.ts` for the other half.
-   */
+  // Separate modules let consumer bundlers drop masking from keyless imports. This also requires
+  // direct keyless exports: property reads from defaultCodec retain its construction and cipher.
+  // test/tree-shaking.bun.test.ts checks the emitted modules, not just source imports.
   unbundle: true,
 } satisfies UserConfig;
 
 export default defineConfig([
-  // TWO builds, not three. `platform` is explicit because the DEFAULT is node: left unset, this
-  // build baked `node:crypto` and `randomFillSync` into the file a browser resolves, which fails at
-  // bundle time or ships a broken bundle.
-  //
-  // This one is browser-platform and NOT optional in that: it is what `main`/`module` reach, the
-  // path taken by any tool that ignores `exports` (legacy bundlers, classic module resolution), so
-  // it has to be the safe one. That forces it to be identical to a dedicated browser build — and a
-  // third `dist/web` entry was exactly that, byte-for-byte, shipping the same 54 KB bundle and its
-  // 101 KB sourcemap twice. `exports` sends `browser`, `deno` and `default` here instead. The web
-  // adapter uses `crypto.getRandomValues` only, so this file is correct on Node, Bun, Deno and the
-  // browser alike; `dist/node` exists only because Node has a faster path.
+  // main/module and browser/deno/default exports share the browser-safe build. Explicit platform
+  // prevents Node builtins leaking into it. A separate web build would duplicate these bytes;
+  // only Node needs a different build to use its native adapter.
   { ...common, dts: { generator: "oxc" }, clean: true, outDir: "dist", platform: "browser" },
   { ...common, dts: false, outDir: "dist/node", platform: "node" },
 ]);
