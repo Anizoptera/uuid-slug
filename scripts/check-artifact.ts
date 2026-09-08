@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readdir, rm, symlink } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
 import { isBuiltin } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -201,30 +201,18 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  const web = args.includes("--web");
+  const web = args.includes("--web") || process.env.UUID_SLUG_ARTIFACT_WEB === "1";
   const files = args.filter((arg) => arg !== "--web");
   if (files.length > 1) throw new Error("Usage: check-artifact.ts [--web] [final.tgz]");
   if (files[0]) return inspectArtifact(path.resolve(files[0]), web);
-  const root = await mkdtemp(path.join(tmpdir(), "uuid-slug-artifact-"));
-  try {
-    await command(
-      "bun",
-      [
-        path.join(project, "node_modules/.bin/publish-clean"),
-        "--dry-run",
-        "--no-git-checks",
-        "--tarball-out",
-        root,
-      ],
-      project,
-    );
-    const packed = (await readdir(root)).filter((entry) => entry.endsWith(".tgz"));
-    if (packed.length !== 1 || !packed[0])
-      throw new Error(`Expected one tarball, found ${packed.length}.`);
-    await inspectArtifact(path.join(root, packed[0]), web);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
+  // The configured hook receives the final path; that branch never packs or invokes this one.
+  // Propagate optional browser coverage through the child without retaining or checking twice.
+  if (web) process.env.UUID_SLUG_ARTIFACT_WEB = "1";
+  await command(
+    "bun",
+    [path.join(project, "node_modules/.bin/publish-clean"), "--guard-only", "--no-git-checks"],
+    project,
+  );
 }
 
 if (import.meta.main)
