@@ -287,10 +287,12 @@ pub struct Migration<'a> {
 impl Migration<'_> {
     /// Decode with sentinel/current/original/plain priority, stopping at the first candidate.
     pub fn decode(&self, slug: &str, format: Option<MigrationFormat>) -> Result<Uuid, Error> {
-        self.read(slug, format, true)?
-            .into_iter()
-            .next()
-            .ok_or(Error::InvalidUuidSlug)
+        let mut result = None;
+        self.read(slug, format, |uuid| {
+            result = Some(uuid);
+            true
+        })?;
+        result.ok_or(Error::InvalidUuidSlug)
     }
 
     /// Collect distinct candidates atomically: a later callback error fails the whole call.
@@ -299,15 +301,23 @@ impl Migration<'_> {
         slug: &str,
         format: Option<MigrationFormat>,
     ) -> Result<Vec<Uuid>, Error> {
-        self.read(slug, format, false)
+        let mut result = Vec::new();
+        self.read(slug, format, |uuid| {
+            if !result.contains(&uuid) {
+                result.push(uuid);
+            }
+            false
+        })?;
+        Ok(result)
     }
 
+    // Share decoder priority without allocating a candidate list for first-result reads.
     fn read(
         &self,
         slug: &str,
         format: Option<MigrationFormat>,
-        first: bool,
-    ) -> Result<Vec<Uuid>, Error> {
+        mut stop: impl FnMut(Uuid) -> bool,
+    ) -> Result<(), Error> {
         use MigrationFormat::{Current, Original, Plain};
         if (format == Some(Original) && !self.options.original)
             || (format == Some(Plain) && !self.options.plain)
@@ -315,7 +325,8 @@ impl Migration<'_> {
             return Err(Error::InvalidUuidSlug);
         }
         if let Some(uuid) = self.codec.sentinel(slug) {
-            return Ok(vec![uuid]);
+            stop(uuid);
+            return Ok(());
         }
         let current = format.is_none() || format == Some(Current);
         let original = self.options.original && (format.is_none() || format == Some(Original));
@@ -335,41 +346,33 @@ impl Migration<'_> {
         } else {
             None
         };
-        let mut result: Vec<Uuid> = reserved.into_iter().collect();
-        if first && !result.is_empty() {
-            return Ok(result);
+        if reserved.is_some_and(&mut stop) {
+            return Ok(());
         }
         if current && !base32_plain {
             for schema in &self.codec.schemas {
                 if let Some(value) = crate::mask::candidate(bytes, tail, schema)? {
                     let uuid = Uuid::from_bytes(value);
-                    if !result.contains(&uuid) {
-                        result.push(uuid);
-                    }
-                    if first {
-                        return Ok(result);
+                    if stop(uuid) {
+                        return Ok(());
                     }
                 }
             }
         }
         if reserved.is_some() {
-            return Ok(result);
+            return Ok(());
         }
         if original
             && slug.len() == 22
             && let Some(uuid) = decode_original(bytes)
+            && stop(uuid)
         {
-            if !result.contains(&uuid) {
-                result.push(uuid);
-            }
-            if first {
-                return Ok(result);
-            }
+            return Ok(());
         }
-        if plain && slug.len() != 27 && !result.contains(&raw) {
-            result.push(raw);
+        if plain && slug.len() != 27 {
+            stop(raw);
         }
-        Ok(result)
+        Ok(())
     }
 }
 

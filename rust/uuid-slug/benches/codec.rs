@@ -67,5 +67,25 @@ fn main() -> Result<(), Error> {
     sample("construct/default", &ids, |_| {
         Codec::new(CodecOptions::default()).unwrap()
     });
+    let plain: Vec<String> = ids.iter().map(|id| id.slug(Alphabet::Base64Url)).collect();
+    let mut out = [0; 16];
+    sample("decode/owned", &ids, |_| {
+        cursor = (cursor + 1) % plain.len();
+        Alphabet::Base64Url.decode(&plain[cursor]).unwrap()
+    });
+    sample("decode/caller-buffer", &ids, |_| {
+        cursor = (cursor + 1) % plain.len();
+        black_box(
+            Alphabet::Base64Url
+                .decode_to(&plain[cursor], &mut out, 0)
+                .unwrap(),
+        );
+    });
+    let migration = compact.migration(Default::default());
+    sample("migration/first", &ids, |_| {
+        cursor = (cursor + 1) % encoded.len();
+        migration.decode(&encoded[cursor], None).unwrap()
+    });
+    println!("{{\"complete\":true}}");
     Ok(())
 }

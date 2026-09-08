@@ -33,7 +33,7 @@ jobs:
         with:
           node-version-file: .tool-versions
           package-manager-cache: false
-      - run: bun run check:js
+      - run: bun run check:js && bun run perf:check
 
   rust:
     uses: ./.github/workflows/rust.yml
