@@ -38,17 +38,11 @@ Public choices are recorded above; verify the engineering tasks below before cla
 - [ ] Run `.github/workflows/rust.yml` on every native runner. Require nonzero shared-parity
   observations per adapter and real filesystem round trips for plain, masked, and sentinel names.
   Preserve exact spelling and UUID identity, include base32 timestamp boundaries, and make no masked
-  ordering claim. The workflow owns runner and target lists.
+  ordering claim. Record cold setup and execution separately; each lane must keep 4–8× headroom
+  below five minutes. The workflow owns runner and target lists.
 
 ### 2. Prepare release evidence
 
-- [ ] Measure complete feedback lanes and remove redundant evidence. Accept when: routine complete
-  lanes, including setup, stay below five minutes with 4–8× headroom; cache by lockfile/toolchain/
-  target/profile. Measure native OS lanes independently and report cold setup separately.
-- [ ] Prepare Rust registry authentication and artifact provenance separately from npm release.
-  Prepare locally; only the maintainer may configure remote credentials or trigger publication.
-  Accept when: current provider requirements verified, credential-free verification precedes publish,
-  and attestations identify the actual crate bytes rather than only the source commit.
 - [ ] Audit every changed line against public promises and tasks; reproduce material review
   claims, fix defects and declare unexercised targets/states. Passing tests alone cannot close this.
 - [ ] Present release notes, version/tag, artifact, support/provenance and rollback limits before publish.
