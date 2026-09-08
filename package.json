@@ -1,6 +1,6 @@
 {
   "name": "@anizoptera/uuid-slug",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Short URL-safe UUIDs: 22-character base64url slugs, plus reversible masking that hides the UUIDv7 timestamp. Zero dependencies.",
   "keywords": [
     "base64url",
@@ -90,7 +90,6 @@
     "artifact:web": "bun scripts/check-artifact.ts --web",
     "perf:check": "bun bench/check.ts"
   },
-  "dependencies": {},
   "devDependencies": {
     "@anizoptera/publish-clean": "^0.9.1",
     "@arethetypeswrong/cli": "^0.18.5",
