@@ -110,6 +110,8 @@ export function evaluate(request: Request): Outcome {
         return result(ts.encodeBase64Url(Uint8Array.from(request.bytes as number[])));
       case "base64Decode":
         return result(ts.decodeBase64Url(input));
+      case "base64Guard":
+        return result(ts.isBase64Url(input));
       case "base64DecodeTo": {
         const out = new Uint8Array(request.capacity as number).fill(165);
         const decoded = ts.decodeBase64Url(input, out, request.offset as number);
@@ -118,8 +120,9 @@ export function evaluate(request: Request): Outcome {
           : result({ bytes: Array.from(decoded), storage: Array.from(out) });
       }
       case "fresh":
+      case "freshPlain":
         return result(
-          ts.validateUuidV7Fresh(input, {
+          (request.op === "fresh" ? ts.validateUuidV7Fresh : ts.validateUuidV7SlugFresh)(input, {
             now: () => Number(request.now),
             windowMs: Number(request.window),
           }),
@@ -282,7 +285,26 @@ export async function contractRequests(): Promise<Request[]> {
     }
   }
   for (const input of ["", "A", "Zg", "Zh", "Zg=", "Zg\n", "é", ...wire.map((v) => v.direct)]) {
-    for (const op of ["base64Decode", "unplain", "guards"]) requests.push({ op, input });
+    for (const op of ["base64Decode", "base64Guard", "unplain", "guards"])
+      requests.push({ op, input });
+  }
+  for (const input of [
+    "",
+    "A",
+    ordinary.direct,
+    first.direct,
+    ts.uuidToSlug(ordinary.uuid, "base32hex"),
+    ts.uuidToSlug("00000000-0000-4000-8000-000000000000"),
+  ]) {
+    if (input instanceof Error) throw input;
+    for (const now of [
+      0,
+      Number.parseInt(ordinary.uuid.replaceAll("-", "").slice(0, 12), 16),
+      2 ** 48,
+      "NaN",
+    ])
+      for (const window of [0, 1000, -1, "Infinity"])
+        requests.push({ op: "freshPlain", input, now, window });
   }
   for (let length = 0; length <= 64; length++)
     requests.push({
