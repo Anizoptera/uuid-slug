@@ -9,10 +9,12 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   is explicitly not guaranteed: do not gate it or reject a native generator for lacking it.
   Measure implementation differences in `bench/`, where results inform rather than gate.
 - Read `docs/design.md` before changing masking, schemas, or sentinels. Preserve its wire layout:
-  masked slugs are UUIDv7-only, 22 base64url characters, with a 16-bit check and timestamps below
+  existing masked slugs are UUIDv7-only, 22 base64url characters, with a 16-bit check and timestamps below
   2^42 milliseconds. Reject overflow rather than truncate. Preserve plain-slug padding rejection.
-- Keep base32hex confined to plain slugs; it exists for chronological string ordering. Masked
-  slugs and sentinels stay base64url. Plain decoding infers the alphabet from length.
+- Read `docs/cross-language.md` before Rust work or changes shared with TypeScript. It owns
+  parity, approved filesystem-safe output and distribution boundaries. The shipped masked
+  representation remains base64url until the lossless safe spelling is implemented in both.
+  Preserve length-based alphabet inference for plain decoding.
 - Masked slugs and sentinels are core functionality. Sentinels use precomputed raw slugs per
   codec. Decode returns the first passing candidate in caller-specified key order, never proof
   of issuance. Do not reject multiple matches or append fallback schemas on the caller's behalf.
@@ -27,7 +29,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Original fixed-mask compatibility is opt-in through `codec.migration`; read README's migration
   sections before changing it. Preserve sentinel priority and stored trailing-bit aliases without
   weakening ordinary strict decoding. Writers and accepted old formats remain independent.
-- Runtime dependencies are forbidden. Benchmark dependencies stay dev-only and outside the archive.
+- npm runtime dependencies are forbidden. Rust dependencies require the evidence described in
+  `docs/cross-language.md`. Benchmark dependencies stay dev-only and outside published artifacts.
 - Public docs use caller-facing tokens such as `"base32hex"`, not internal symbol names.
   Documentation-alignment gates are ruled out; test the API behavior instead.
 - Do not mention private source project names in public files, commits, tests, fixtures, or reports.

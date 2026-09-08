@@ -28,6 +28,9 @@ pnpm add @anizoptera/uuid-slug
 Requires TypeScript 5.7 or newer for `Uint8Array<ArrayBuffer>` declarations.
 Custom `fillRandom` callbacks receive an ordinary `ArrayBuffer` view, which Web Crypto accepts.
 
+A native Rust crate is planned under the [cross-language contract](docs/cross-language.md).
+It is not available yet. The npm package will remain TypeScript/JavaScript-only.
+
 ## Quick start
 
 ```ts

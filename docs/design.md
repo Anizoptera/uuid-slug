@@ -26,8 +26,10 @@ spare bits. All 132 encoded bits have a role. Plain-slug padding rejection does 
 four check bits.
 
 A timestamp at or past 2^42 milliseconds is rejected before masking. Truncating it would allow
-different UUIDs to share a slug. base32hex belongs only to plain slugs: its chronological ordering
-would be lost through masking, while its longer representation would leave fewer check bits.
+different UUIDs to share a slug. The shipped base32hex encoder handles plain slugs only. Encoding
+the full masked payload requires 27 base32hex characters; forcing it into 26 would lose bits.
+See [the cross-language contract](cross-language.md#filesystem-safe-output) for the approved
+lossless extension. Masked output has no useful chronological ordering in either alphabet.
 
 ## Deriving a schema from a seed
 
