@@ -28,7 +28,7 @@ Internal changes derive from these contracts; user-visible changes require Art's
 - [x] Complete final local checks after integration and release-note updates: bun run check, artifact:web, test:browser, workflow lint, and diff whitespace validation all exited zero.
 - [x] Commit the integration and release preparation using explicit paths: `fc627aa` contains the final-artifact integration; `ad1da1e` contains release notes and the corrected source comment. Only this ledger remains for the closure commit. Verify clean state immediately after that commit, then stop before versioning or publication.
 
-The final review found missing async/performance release notes; CHANGELOG.md now describes the additive API, cancellation, runtime optimizations, and exact-artifact publication validation. README, source contracts, and publish-clean 0.9.1 documentation already describe their corresponding behavior.
+CHANGELOG.md covers the async API, cancellation, runtime optimizations, and final-tarball checks. Art then identified misplaced validator instructions in publish-clean's README. Commit `4987de0` moves them under configuration, adds an option-table link, explains the script arguments and failures, and corrects the built-in-check limitation. Its package check passed. This documentation correction is local; the published 0.9.1 README is unchanged.
 
 ## Evidence and limits
 
