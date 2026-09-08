@@ -52,7 +52,9 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
     section; inspect the product's normal graph separately with platform entropy enabled and disabled.
   - [x] Select dependency features explicitly. Encoding needs allocation; browser clock access
     needs neither promise helpers nor dynamic evaluation. Native and browser checks pass without
-    those defaults; inspect the product graph separately from consumer feature unification.
+    those defaults. The same external Wasm consumer compiles with `js-sys` defaults disabled
+    and re-enabled by its own feature; Cargo's graph confirms the latter adds them back.
+    This establishes build compatibility for that combination, not browser runtime behavior.
 - [x] Create `rust/Cargo.toml` with the product and unpublished bridge members; external consumers
   link the product alone. Keep OS entropy and bindings outside pure encoding/masking modules.
 - [x] Share wire/hash/original fixtures as data; use one comparator with independent producers.
