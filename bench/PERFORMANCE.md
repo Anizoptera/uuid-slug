@@ -96,22 +96,32 @@ Migration parses each input once and stops at the first match for `decode`; `can
 all enabled formats. Resource checks cover both paths on Node and Bun, including zero discarded
 errors and no entropy draws. Ordinary codec calls do not enter the migration reader.
 
-A local probe on Node 26.8.1 and Bun 1.4.2 used the three-format overlap in
-`test/fixtures-original-slugs.json`: 5,000 warm-up calls, then seven batches of 10,000 calls per
-method. Median nanoseconds per call were:
+Reuse validated base64 text for sentinel lookup instead of encoding the decoded bytes again.
+Only the final character needs canonicalization for a trailing-bit alias; base32 still requires
+base64 encoding. Sentinel priority, candidate identities and strict ordinary decoding stay intact.
 
-| Call | Node | Bun |
-| --- | ---: | ---: |
-| Ordinary current decode | 274 | 189 |
-| Migration default | 439 | 271 |
-| All candidates | 766 | 585 |
-| Known original format | 328 | 259 |
-| Known plain format | 273 | 157 |
+Against `afa12c0`, three alternating fresh-process pairs used the method above on the same machine.
+The identical driver ran 46 cases, including varied migration inputs and original producer fixtures.
+Median nanoseconds per call (before → after):
 
-These are single-process, single-input measurements, not hardware-independent limits or a
-before/after speedup. The extra candidate work is requested work; use a known format when the
-application has that information. Allocation counters miss engine-internal allocations and do
-not establish a retained-memory bound.
+| Migration call | Node 24.20.0 | Node 26.8.1 | Bun 1.4.2 |
+| --- | ---: | ---: | ---: |
+| Current key | 604 → 451 | 503 → 419 | 294 → 284 |
+| Previous key | 748 → 614 | 672 → 597 | 423 → 408 |
+| All candidates | 989 → 810 | 909 → 808 | 711 → 695 |
+| Known plain | 452 → 244 | 355 → 210 | 184 → 139 |
+| Known original | 488 → 302 | 369 → 245 | 273 → 225 |
+
+Native base64 calls fell from one to zero per measured migration call on Node 26 and Bun;
+buffer, view, character-read, error and entropy counts did not increase. Node 24 avoids the portable
+encoder instead. The resource budget rejects the actual baseline implementation on Bun.
+Collected-heap deltas varied by kilobytes, including negative values; they do not measure gross
+allocation or establish a memory bound. Small Bun differences remain sensitive to JIT and scheduling.
+Separate base32-only pairs measured 429 → 423, 347 → 338 and 194 → 185 ns respectively;
+the encoder path is unchanged, so these small differences are not attributed to the optimization.
+Baseline CPU samples included encoding, parsing, hashing, GC and error construction. Equal-duration
+cases overrepresent rare errors relative to many applications; their sample shares are not a traffic
+model. Removing diagnostic errors or callback-owned buffers would change contracts, not remove waste.
 
 ## Regression protection and limits
 

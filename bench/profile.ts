@@ -3,6 +3,7 @@
 // Profile the public package with varying inputs; keep setup, GC and reporting outside timed batches.
 import { performance } from "node:perf_hooks";
 import { setImmediate as yieldToLoop } from "node:timers/promises";
+import originalFixtures from "../test/fixtures-original-slugs.json";
 
 const beforeImport = performance.now();
 const api: typeof import("../src/index") = await import(
@@ -20,6 +21,8 @@ const previous = { seed: "profile-previous-seed" };
 const codec = api.createUuidSlugCodec({ mask: current });
 const older = api.createUuidSlugCodec({ mask: previous });
 const rotated = api.createUuidSlugCodec({ mask: current, previousMasks: [previous] });
+const migration = rotated.migration({ original: true, plain: true });
+const originals = originalFixtures.issued.filter(({ slug, raw }) => slug !== raw);
 const portable = api.createUuidV7Generator({
   clock: () => instant,
   fillRandom: (bytes) => crypto.getRandomValues(bytes),
@@ -83,6 +86,12 @@ const cases: Record<
   "masked.decode": (i) => codec.maskedSlugToUuidV7(masked[i & 255] as string),
   "rotation.current": (i) => rotated.maskedSlugToUuidV7(masked[i & 255] as string),
   "rotation.previous": (i) => rotated.maskedSlugToUuidV7(oldOnly[i % oldOnly.length] as string),
+  "migration.current": (i) => migration.decode(masked[i & 255] as string),
+  "migration.previous": (i) => migration.decode(oldOnly[i % oldOnly.length] as string),
+  "migration.candidates": (i) => migration.candidates(masked[i & 255] as string),
+  "migration.plain": (i) => migration.decode(slugs[i & 255] as string, "plain"),
+  "migration.base32": (i) => migration.decode(base32[i & 255] as string, "plain"),
+  "migration.original": (i) => migration.decode(originals[i % originals.length]!.slug, "original"),
   "sentinel.encode": () => codec.uuidV7ToMaskedSlug(sentinel.uuid),
   "sentinel.decode": () => codec.maskedSlugToUuidV7(sentinel.slug),
   "invalid.uuid": () => api.parseUuid(badUuid),
