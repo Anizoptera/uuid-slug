@@ -73,6 +73,18 @@ export function evaluate(request: Request): Outcome {
       }
       case "parse":
         return result(ts.parseUuid(input));
+      case "byteOperations": {
+        const bytes = Uint8Array.from(request.bytes as number[]);
+        const offset = request.offset as number;
+        return result({
+          uuid: result(ts.formatUuid(bytes, offset)),
+          base64: result(ts.formatUuidSlug(bytes, offset, "base64url")),
+          base32: result(ts.formatUuidSlug(bytes, offset, "base32hex")),
+          timestamp: result(ts.extractUuidV7Timestamp(bytes, offset)),
+          entropy: ts.hasUuidV7Entropy(bytes, offset),
+          v7: ts.isUuidV7Bytes(bytes),
+        });
+      }
       case "plain":
         return result(ts.uuidToSlug(input, request.alphabet as SlugAlphabet | undefined));
       case "unplain":
@@ -194,6 +206,13 @@ export async function contractRequests(): Promise<Request[]> {
   const ordinary = wire[3];
   if (!first || !ordinary)
     throw new Error("Wire fixtures must include sentinel and ordinary UUIDs");
+  for (const text of [ordinary.uuid, first.uuid, "ffffffff-ffff-ffff-ffff-ffffffffffff"]) {
+    const uuid = ts.parseUuid(text);
+    if (uuid instanceof Error) throw uuid;
+    for (const bytes of [[], [...uuid].slice(0, 15), [...uuid], [165, ...uuid, 165]])
+      for (const offset of [0, 1, 2, 16, Number.MAX_SAFE_INTEGER])
+        requests.push({ op: "byteOperations", bytes, offset });
+  }
   for (const sentinels of [
     [],
     [{ name: "reserved", uuid: ordinary.uuid }],
@@ -292,7 +311,7 @@ export async function contractRequests(): Promise<Request[]> {
   }
   for (const input of ["", "A", "Zg", "Zh", "Zg=", "Zm9vYmFy", "Zm9v!mFy", "é"])
     for (const capacity of [0, 1, 6, 9])
-      for (const offset of [0, 1, 9])
+      for (const offset of [0, 1, 9, 2 ** 32, Number.MAX_SAFE_INTEGER])
         requests.push({ op: "base64DecodeTo", input, capacity, offset });
   for (const vector of original.issued) {
     for (const input of [vector.slug, vector.raw])

@@ -146,6 +146,29 @@ fn run(request: &Value) -> Result<Value, Error> {
             Ok(json!(uuid.to_string()))
         }
         "parse" => Ok(json!(Uuid::parse(input)?.as_bytes())),
+        "byteOperations" => {
+            let bytes: Vec<u8> = serde_json::from_value(request["bytes"].clone())
+                .map_err(|_| Error::InvalidBuffer)?;
+            // An offset wider than this target still produces each operation's range error.
+            let id = usize::try_from(request["offset"].as_u64().ok_or(Error::InvalidBuffer)?)
+                .map_err(|_| Error::InvalidBuffer)
+                .and_then(|offset| Uuid::from_slice(&bytes, offset));
+            let field = |operation: fn(Uuid) -> Result<Value, Error>| match &id {
+                Ok(uuid) => match operation(*uuid) {
+                    Ok(value) => json!({"value": value}),
+                    Err(error) => json!({"error": error.code()}),
+                },
+                Err(error) => json!({"error": error.code()}),
+            };
+            Ok(json!({
+                "uuid": field(|u| Ok(json!(u.to_string()))),
+                "base64": field(|u| Ok(json!(u.slug(Alphabet::Base64Url)))),
+                "base32": field(|u| Ok(json!(u.slug(Alphabet::Base32Hex)))),
+                "timestamp": field(|u| Ok(json!(u.timestamp()?))),
+                "entropy": id.as_ref().is_ok_and(Uuid::has_entropy),
+                "v7": bytes.len() == 16 && Uuid::from_slice(&bytes, 0).is_ok_and(|u| u.is_v7())
+            }))
+        }
         "plain" => Ok(json!(
             Uuid::parse(input)?.slug(alphabet(&request["alphabet"])?)
         )),
@@ -166,8 +189,13 @@ fn run(request: &Value) -> Result<Value, Error> {
         }
         "base64Decode" => Ok(json!(Alphabet::Base64Url.decode(input)?)),
         "base64DecodeTo" => {
-            let capacity = request["capacity"].as_u64().ok_or(Error::InvalidBuffer)? as usize;
-            let offset = request["offset"].as_u64().ok_or(Error::InvalidBuffer)? as usize;
+            // Wasm usize is 32-bit: casts would turn a rejected offset into an in-bounds write.
+            let capacity =
+                usize::try_from(request["capacity"].as_u64().ok_or(Error::InvalidBuffer)?)
+                    .map_err(|_| Error::InvalidBuffer)?;
+            // Keep it out of bounds while letting the decoder preserve its text-error priority.
+            let offset = usize::try_from(request["offset"].as_u64().ok_or(Error::InvalidBuffer)?)
+                .unwrap_or(usize::MAX);
             let mut out = vec![165; capacity];
             let decoded = Alphabet::Base64Url.decode_to(input, &mut out, offset)?;
             let bytes = json!(decoded);

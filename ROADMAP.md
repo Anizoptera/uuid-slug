@@ -128,6 +128,9 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [x] Implement the v7 entropy predicate. Evidence: shared degenerate/random-field cases match;
   a passing predicate is not described as proof of randomness quality.
 - [ ] Reconcile every public capability with both implementations and its shared evidence.
+  - [x] Exercise direct UUID byte formatting, predicates, timestamps and offsets through each
+    adapter. Reject offsets beyond the target's integer width without truncation; browser cases
+    reproduce and prevent the development base64 adapter's former wrap to offset zero.
 - [x] Run external Rust examples for generation, filenames, rotation and migration against the crate.
   Packaged-source and local Git consumers pass outside the workspace with entropy enabled and
   disabled; the filesystem example preserves exact names and identities on the local filesystem.
