@@ -16,6 +16,8 @@ Build a public Rust crate with TypeScript semantic parity, prioritizing filesyst
 - Publish the crate as `uuid-slug`; keep Node/Bun bindings development-only; support WebAssembly.
 - Reuse contract cases and extend benchmarks, profiling and resource measurements to Rust.
 - Consumer application adoption and stored-filename migration are separate work.
+- Remote write operations are forbidden; do not push, open PRs, upload tags, create releases,
+  publish packages, or change remote settings. Keep implementation and commits local.
 
 Art owns the HLD above; tasks below are engineering proposals, not approved public decisions.
 Public choices are recorded above; verify the engineering tasks below before claiming readiness.
@@ -28,8 +30,9 @@ unchanged. The cross-language document promises unchanged storage. Art's decisio
 requiring unchanged output or retaining partial writes; do not change either public behavior yet.
 TypeScript also checks destination bounds before character validity when input length is valid.
 
-Native CI awaits permission to push a review branch and open a draft PR. Release version selection
-and publication remain unapproved; neither local validation nor a continuation grants those actions.
+Native CI execution requires a maintainer-triggered run; the earlier push/draft-PR request is
+withdrawn. Release version selection remains unapproved. Remote writes, including publication,
+are forbidden by the ruling above; local validation cannot substitute for native CI evidence.
 The native reference is marked `UNLICENSED` and unpublished. Permission to incorporate copied
 source under this crate's Apache-2.0 license is pending; behavioral study does not settle that right.
 
@@ -228,6 +231,7 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   - [x] Run packaged-source and local Git consumers on the declared Rust minimum, with platform
     entropy enabled and disabled; exercise generation, rotation, migration and safe spellings.
 - [ ] Prepare Rust registry authentication and artifact provenance separately from npm release.
+  Prepare locally; only the maintainer may configure remote credentials or trigger publication.
   Accept when: current provider requirements verified, credential-free verification precedes publish,
   and attestations identify the actual crate bytes rather than only the source commit.
   - [x] Implement reviewed-crate packaging and checksum preflight; run both locally against
@@ -238,7 +242,8 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [ ] Audit every changed line against public promises and tasks; reproduce material review
   claims, fix defects and declare unexercised targets/states. Passing tests alone cannot close this.
 - [ ] Present release notes, version/tag, artifact, support/provenance and rollback limits before publish.
-- [ ] Publish the approved release and verify registry bytes and Git installation. Accept when: downloaded
+- [ ] Maintainer only: publish the approved release; then verify registry bytes and Git installation
+  through read-only checks. Accept when: downloaded
   package matches the reviewed artifact; both implementations retain their parity checks.
 
 ### 8. Security and safety audit — required before publication
