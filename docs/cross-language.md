@@ -82,8 +82,13 @@ Masking has no chronological ordering. These extensions are implemented, not yet
 
 ## Distribution and dependencies
 
+Publish one npm package and one Rust crate. Keep JavaScript chunks internal and Rust targets under
+one release identity. Add prebuilt Rust artifacts only when a measured consumer need justifies them.
+Keep Aponte consuming this repository's TypeScript source through its own repository wiring. Every
+published npm entry must resolve to built code, and the npm archive must exclude `src`.
+
 Keep the public npm package TypeScript/JavaScript-only, with no runtime dependencies or native
-payloads. Publish `uuid-slug` as a Rust crate, installable from this Git repository and crates.io.
+payloads. Keep the Rust crate installable from this Git repository and crates.io.
 Art requires matching Rust/TypeScript versions and common CPU architecture support from the first
 Rust release, including WebAssembly. Preserve portable behavior under architecture-specific tuning.
 Support x86-64 and Arm64 on Linux, macOS and Windows with native execution; compile-check i686 and

@@ -98,8 +98,9 @@ Reduce the TypeScript and Rust APIs because they expose internals. Ship smaller 
   sources and paths against the final archive.
 - [ ] Minify and optimize every JavaScript artifact; keep enough module structure for bundlers to
   remove every unused capability.
-- [ ] Publish one npm package and one Rust crate. Keep JavaScript chunks internal; do not create
-  packages, crates, or prebuilt binaries per target.
+- [ ] Publish one npm package and one Rust crate. Keep JavaScript chunks internal and Rust targets
+  under one release identity. Compare source-only Rust publication with prebuilt delivery; add
+  prebuilt artifacts only when a measured consumer need outweighs their release and trust cost.
 - [ ] Prove release linking removes unused Rust capabilities for native and WASM consumers. Add a
   feature only when it removes a measured cost that normal compilation cannot remove; keep platform
   dependencies behind the narrow feature that needs them.
@@ -134,7 +135,7 @@ Reduce the TypeScript and Rust APIs because they expose internals. Ship smaller 
   change, an explicit baseline update, both baseline diffs, semver evidence, and installed-package evidence.
 - [ ] Design one approval path for API changes. The approved HLD text is the local authority;
   ordinary checks and `api:update` cannot grant approval, and hosted protection requires Art's review.
-- [ ] Wire the fast baseline comparison into a version-controlled commit gate and `check.yml`.
+- [ ] Define how the fast baseline comparison enters a version-controlled commit gate and `check.yml`.
   Fresh-clone setup must enable it; bypassed local checks must still fail before merge. Only the
   explicit reviewed update path may change a baseline.
 - [ ] Reject one-language baseline updates unless an explicit exception names Art's ruling and the
@@ -173,7 +174,22 @@ Reduce the TypeScript and Rust APIs because they expose internals. Ship smaller 
 - [ ] Challenge the verification design separately: inject failures, check blind spots and runtimes,
   wait for completion signals, and remove slow, flaky, duplicate, implementation-restating, timeout-based, or false-green checks.
 
-### Phase 6: Implement and document
+### Phase 6: Install API and release gates
+
+- [ ] Extract and commit TypeScript and Rust API baselines from the current packed public artifacts.
+  These files are the only stored API registries and establish the boundary before public changes.
+- [ ] Add `api:check`: compare both built APIs with both baselines and require symmetric review when
+  either changes. Fail with the exact diff, reason, required review, and update command.
+- [ ] Add `api:update`: require the intended change class, run the fast lane, regenerate both
+  baselines, write only changed files, and show both diffs. Normal checks never rewrite baselines.
+- [ ] Mutation-test the API gate against added and hidden exports, overload changes, Rust visibility
+  and feature changes, weaker errors, and one-sided parity drift. Keep only tests with unique detection.
+- [ ] Add the credential-free release gate. Compare packaged APIs with approved baselines and selected
+  releases; verify package/source identity, parity, version, tag, and semver before publication.
+- [ ] Wire `api:check` into the version-controlled commit gate and `check.yml`; verify a fresh clone
+  enables the local gate and a bypassed local check still fails before merge.
+
+### Phase 7: Implement and document
 
 - [ ] Design each required internal refactor before editing: name the resisting seam, the smaller
   target shape, preserved behavior, and why the refactor costs less than changing in place.
@@ -187,16 +203,8 @@ Reduce the TypeScript and Rust APIs because they expose internals. Ship smaller 
   basis and required interactions without compatibility aliases or a feature power set.
 - [ ] Implement the approved minimal chunk graph and export map. Installed-package tests must prove
   every condition resolves the intended built artifact.
-- [ ] Extract and commit the approved TypeScript and Rust API baselines. The built public artifacts
-  are their sources; the baselines are the only stored API registries.
-- [ ] Add `api:check`: compare both built APIs with both baselines and require symmetric review when
-  either changes. Fail with the exact diff, reason, required review, and update command.
-- [ ] Add `api:update`: require the intended change class, run the fast lane, regenerate both
-  baselines, write only changed files, and show both diffs. Normal checks never rewrite baselines.
-- [ ] Mutation-test the API gate against added and hidden exports, overload changes, Rust visibility
-  and feature changes, weaker errors, and one-sided parity drift. Keep only tests with unique detection.
-- [ ] Add the credential-free release gate. Compare packaged APIs with approved baselines and selected
-  releases; verify package/source identity, parity, version, tag, and semver before publication.
+- [ ] Run `api:update` after implementing the TypeScript and Rust surfaces that Art approved. Review
+  both baseline diffs and reject any public item outside the ruling before committing either baseline.
 - [ ] Generate compact TypeScript and Rust API diffs in GitHub release notes from packaged baselines.
   Start with the approved `CHANGELOG.md` section verbatim, append generated evidence, and keep the
   generated tables out of the changelog. Retries must reproduce the same notes.
@@ -218,7 +226,7 @@ Reduce the TypeScript and Rust APIs because they expose internals. Ship smaller 
   superseded rationale from public docs, code comments, examples, changelog drafts, and scripts.
 - [ ] Keep final API decisions and reasons in durable owners. Do not retain transient command logs.
 
-### Phase 7: Verify and close
+### Phase 8: Verify and close
 
 - [ ] Run real encoder-to-decoder matrices in TypeScript and Rust for every supported spelling,
   schema version, key order, sentinel, migration format, boundary timestamp, invalid payload, and
@@ -231,8 +239,9 @@ Reduce the TypeScript and Rust APIs because they expose internals. Ship smaller 
   full callback writes, transactional output, owned `Uint8Array` results, and typed retained causes.
 - [ ] Measure common and advanced imports with Bun and the supported browser bundler; verify Node and
   Deno resolution separately. Reject masking in keyless bundles and avoid fixed-byte budgets.
-- [ ] Run the complete local check, web/browser artifact consumers, Rust feature matrix, public API
-  snapshot gate, predecessor semver comparison, final-archive inspection, and license verification.
+- [ ] Run the complete local check, web/browser artifact consumers, the selected Rust feature/target
+  basis and required interactions, public API snapshot gate, predecessor semver comparison,
+  final-archive inspection, and license verification.
 - [ ] Adversarially review the total final diff against every task in this section and every retained
   HLD contract. Remove redundant tests, snapshots, scripts, exports, chunks, comments, and docs.
 - [ ] Commit each verified code or durable-document change with explicit paths. Leave remote checks,
