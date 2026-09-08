@@ -17,6 +17,7 @@ import {
 } from "../src/index";
 import { isBase64Url } from "../src/base64url";
 import type { MaskSchema, UuidSlugCodecOptions } from "../src/types";
+import { uuidVariants } from "./uuid-variants";
 
 /** Compare the full payload independently of production bit packing. */
 function bits(text: string, alphabet: string, width: number) {
@@ -106,25 +107,15 @@ export const codecBoundaryCases = [
           );
         }
       }
-      for (let version = 0; version < 16; version += 1) {
-        for (let variant = 0; variant < 16; variant += 1) {
-          const value =
-            uuid.slice(0, 14) +
-            version.toString(16) +
-            uuid.slice(15, 19) +
-            variant.toString(16) +
-            uuid.slice(20);
-          const v4 = version === 4 && variant >= 8 && variant < 12;
-          const v7 = version === 7 && variant >= 8 && variant < 12;
-          assert.equal(isUuidV4String(value), v4);
-          assert.equal(isUuidV7String(value), v7);
-          assert.equal(isUuidV7String(value.toUpperCase()), false);
-          for (const alphabet of ["base64url", "base32hex"] as const) {
-            const slug = uuidToSlug(value, alphabet);
-            assert.equal(typeof slug, "string");
-            assert.equal(isUuidV4Slug(slug as string), v4);
-            assert.equal(isUuidV7Slug(slug as string), v7);
-          }
+      for (const { value, v4, v7 } of uuidVariants(uuid)) {
+        assert.equal(isUuidV4String(value), v4);
+        assert.equal(isUuidV7String(value), v7);
+        assert.equal(isUuidV7String(value.toUpperCase()), false);
+        for (const alphabet of ["base64url", "base32hex"] as const) {
+          const slug = uuidToSlug(value, alphabet);
+          assert.equal(typeof slug, "string");
+          assert.equal(isUuidV4Slug(slug as string), v4);
+          assert.equal(isUuidV7Slug(slug as string), v7);
         }
       }
       for (const [alphabet, chars, padding] of [

@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import * as ts from "../src/index";
 import type { MaskSchema, MaskSchemaOptions, MigrationFormat, SlugAlphabet } from "../src/index";
 import { bytePatterns } from "../test/byte-patterns";
+import { uuidVariants } from "../test/uuid-variants";
 import { loadRustBridge } from "./rust-bridge";
 
 type Request = Record<string, unknown> & { op: string; input?: string };
@@ -199,13 +200,12 @@ export async function contractRequests(): Promise<Request[]> {
   );
   const requests: Request[] = [];
   // Generic parsing accepts every version/variant; specialized guards must not widen with it.
-  for (let version = 0; version < 16; version++)
-    for (const variant of ["0", "4", "8", "c"])
-      for (const op of ["parse", "timestamp", "guards"])
-        requests.push({
-          op,
-          input: `0190a1b2-c3d4-${version.toString(16)}e5f-${variant}a9b-0c1d2e3f4051`,
-        });
+  for (const { value, v4, v7 } of uuidVariants("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")) {
+    deepStrictEqual(evaluate({ op: "guards", input: value }), {
+      value: [true, v4, v7, false, false, false],
+    });
+    for (const op of ["parse", "timestamp", "guards"]) requests.push({ op, input: value });
+  }
   const first = wire[0];
   const ordinary = wire[3];
   if (!first || !ordinary)
