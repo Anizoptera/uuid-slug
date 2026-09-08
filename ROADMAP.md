@@ -12,6 +12,7 @@ Build a public Rust crate with TypeScript semantic parity, prioritizing filesyst
 - Allow small, evidence-justified Rust dependencies; keep npm native-free and dependency-free.
 - Support Git installation and crates.io publication with maintained releases and provenance.
 - Keep Rust and TypeScript versions equal; support common CPU architectures from the first release.
+- Use native GitHub CI builds and tests from the first Rust increment.
 - Reuse contract cases and extend benchmarks, profiling and resource measurements to Rust.
 - Consumer application adoption and stored-filename migration are separate work.
 
@@ -60,7 +61,8 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   denied, then workspace tests including doctests. Run Cargo serially; run JS checks alongside it.
 - [ ] Check default, empty and each optional feature independently from Cargo metadata; include
   known interacting combinations. All-features alone hides missing feature dependencies.
-- [ ] Gate shared parity from the first Rust increment; fail missing observations per capability.
+- [ ] Run shared parity on native GitHub OS/CPU runners from the first Rust increment; fail missing
+  observations. Keep runner selection in the CI matrix, not a second target list in prose.
 - [ ] Connect the first Rust capability to Node through N-API. Done: the same shared case reaches
   Rust, preserves error/ownership semantics, and fails when the Rust result is deliberately wrong.
 - [ ] Connect that capability to Bun through FFI. Done: the same case reaches Rust; explicit

@@ -51,6 +51,8 @@ Keep the public npm package TypeScript/JavaScript-only, with no runtime dependen
 payloads. Publish Rust as a separate crate, installable from this Git repository and crates.io.
 Art requires matching Rust/TypeScript versions and common CPU architecture support from the first
 Rust release. Preserve a portable path; architecture-specific optimizations must retain semantics.
+Build and test natively in GitHub CI from the first Rust increment; cross-compilation alone does
+not validate runtime behavior. Report any target lacking native execution rather than implying it ran.
 Rust may use a small set of justified dependencies. Compare contract fit, failure behavior,
 supported targets, measured resource costs, build costs, licensing and maintenance before selecting
 one; implementation convenience alone does not justify it.
