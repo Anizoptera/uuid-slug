@@ -40,17 +40,18 @@ of the existing 132-bit masked payload needs 27 characters, with three zero padd
 nonzero padding on ordinary decoding. Preserve the entire masked payload, including the four tag
 bits outside its 16-byte block; re-encoding only that block would lose information.
 
-This is an alternate spelling, not a new masking scheme. It retains the 16-bit check and timestamp
-bound. Masking removes useful chronological ordering regardless of alphabet. Encoding selection,
-defaults, sentinel spelling and accepted-format routing must be settled before exposing this new
-form. These statements define required work, not availability in the published package.
+This is an alternate spelling, not a new masking scheme; retain the 16-bit check and timestamp bound.
+Safe sentinels remain raw UUID slugs: 26 base32hex characters, readable by the plain decoder.
+Padding them to 27 adds a spelling that the plain decoder rejects, with no identity benefit.
+Their length cannot collide with 27-character masked output. Keep old base64url reads and defaults.
+Masking has no chronological ordering. These extensions are planned, not yet published.
 
 ## Distribution and dependencies
 
 Keep the public npm package TypeScript/JavaScript-only, with no runtime dependencies or native
-payloads. Publish Rust as a separate crate, installable from this Git repository and crates.io.
+payloads. Publish `uuid-slug` as a Rust crate, installable from this Git repository and crates.io.
 Art requires matching Rust/TypeScript versions and common CPU architecture support from the first
-Rust release. Preserve a portable path; architecture-specific optimizations must retain semantics.
+Rust release, including WebAssembly. Preserve portable behavior under architecture-specific tuning.
 Build and test natively in GitHub CI from the first Rust increment; cross-compilation alone does
 not validate runtime behavior. Report any target lacking native execution rather than implying it ran.
 Rust may use a small set of justified dependencies. Compare contract fit, failure behavior,
@@ -58,5 +59,5 @@ supported targets, measured resource costs, build costs, licensing and maintenan
 one; implementation convenience alone does not justify it.
 
 Share hash primitives without forcing continuation overhead onto synchronous calls; a Future alone
-does not yield to host tasks. Keep native test bridges outside npm runtime dependencies. Publishing
-bindings as supported products requires a separate decision; test adapters do not imply ABI support.
+does not yield to host tasks. Node/Bun native bridges serve development only, remain unpublished,
+and stay outside npm. They do not create a supported public ABI.

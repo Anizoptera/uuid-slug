@@ -13,11 +13,12 @@ Build a public Rust crate with TypeScript semantic parity, prioritizing filesyst
 - Support Git installation and crates.io publication with maintained releases and provenance.
 - Keep Rust and TypeScript versions equal; support common CPU architectures from the first release.
 - Use native GitHub CI builds and tests from the first Rust increment.
+- Publish the crate as `uuid-slug`; keep Node/Bun bindings development-only; support WebAssembly.
 - Reuse contract cases and extend benchmarks, profiling and resource measurements to Rust.
 - Consumer application adoption and stored-filename migration are separate work.
 
 Art owns the HLD above; tasks below are engineering proposals, not approved public decisions.
-Implementation is not ready for approval while the numbered public decisions below remain open.
+Public choices are recorded above; verify the engineering tasks below before claiming readiness.
 
 ## Execution order
 
@@ -29,15 +30,14 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 
 - [ ] Preserve base64url defaults in both languages: Art's parity and compatibility requirements
   already decide this. Keep plain `slugAlphabet` semantics; select masked output independently.
-- [ ] R2 — Obtain Art's sentinel-spelling ruling: safe masked output uses a lossless 27-character
-  spelling of the existing sentinel, or the plain 26-character spelling with separate routing.
-- [ ] R3 — Obtain Art's binding-support ruling: development-only Node/Bun bridges, or separately
-  released bindings with an additional ABI/support commitment. Recommend development-only.
-- [ ] R4 — Obtain Art's crate-name ruling; recommend `uuid-slug` to match the repository.
+- [ ] Encode safe sentinels as raw 26-character base32hex UUIDs; retain existing 22-character
+  reads. Their length separates them from 27-character masked payloads without adding tag bits.
+- [ ] Keep Node/Bun bridge crates unpublished and outside npm; expose Rust directly as `uuid-slug`.
 - [ ] Wire one release version into npm and Cargo manifests; reject mismatched package/tag versions.
 - [ ] Derive the common-architecture target matrix from supported Rust targets and consumer needs;
   distinguish native execution from cross-compilation. Keep CPU-specific tuning optional.
-- [ ] R6 — Resolve the submitted browser WebAssembly question; CPU support does not decide host APIs.
+- [ ] Build and execute WebAssembly in a browser: verify host entropy, errors, cancellation and
+  shared wire cases; deterministic conversion/masking must not require JavaScript host services.
 - [ ] Map every public export and codec method to Rust input, result and failure semantics.
 
 ### 2. Establish the crate and shared evidence — high risk reduction, medium effort
