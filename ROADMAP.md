@@ -43,7 +43,6 @@ Public choices are recorded above; verify the engineering tasks below before cla
 
 ### 2. Prepare release evidence
 
-- [ ] Present release notes, version/tag, artifact, support/provenance and rollback limits before publish.
 - [ ] Maintainer only: publish the approved release; then verify registry bytes and Git installation
   through read-only checks. Require downloaded npm and crate bytes to match the reviewed artifacts,
   then run the documented Git and registry consumer checks for both implementations.
