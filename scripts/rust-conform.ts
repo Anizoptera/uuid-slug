@@ -182,6 +182,14 @@ export async function contractRequests(): Promise<Request[]> {
     await readFile("rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json", "utf8"),
   );
   const requests: Request[] = [];
+  // Generic parsing accepts every version/variant; specialized guards must not widen with it.
+  for (let version = 0; version < 16; version++)
+    for (const variant of ["0", "4", "8", "c"])
+      for (const op of ["parse", "timestamp", "guards"])
+        requests.push({
+          op,
+          input: `0190a1b2-c3d4-${version.toString(16)}e5f-${variant}a9b-0c1d2e3f4051`,
+        });
   const first = wire[0];
   const ordinary = wire[3];
   if (!first || !ordinary)
