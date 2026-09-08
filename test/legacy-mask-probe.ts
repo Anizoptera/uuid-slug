@@ -8,6 +8,7 @@ import { decodeMaskedCandidates } from "../src/mask";
 import { createMaskSchema } from "../src/schema";
 import { formatUuid, parseUuidSlug, uuidToSlug } from "../src/uuid";
 import fixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
+import { uuidTailAliases } from "./uuid-tail-aliases";
 
 export const legacyMaskCases = [
   {
@@ -81,9 +82,7 @@ export const legacyMaskCases = [
       for (const { uuid, slug, raw } of fixtures.issued) {
         const format = slug === raw ? "plain" : "original";
         assert.equal(reader.decode(slug, format), uuid);
-        const last = BASE64URL.decode[slug.charCodeAt(21)] as number;
-        for (let tail = 0; tail < 16; tail++) {
-          const alias = slug.slice(0, 21) + BASE64URL.chars[(last & ~15) | tail];
+        for (const alias of uuidTailAliases(slug)) {
           assert.equal(reader.decode(alias, format), uuid);
         }
       }
@@ -235,11 +234,9 @@ export const legacyMaskCases = [
         ...fixtures.plain,
         ...fixtures.issued.map(({ uuid, raw }) => ({ uuid, slug: raw })),
       ]) {
-        const last = BASE64URL.decode[vector.slug.charCodeAt(21)] as number;
-        for (let tail = 0; tail < 16; tail++) {
-          const alias = vector.slug.slice(0, 21) + BASE64URL.chars[last | tail];
+        for (const alias of uuidTailAliases(vector.slug)) {
           assert.equal(reader.decode(alias, "plain"), vector.uuid);
-          if (tail !== 0) assert.ok(parseUuidSlug(alias) instanceof Error);
+          if (alias !== vector.slug) assert.ok(parseUuidSlug(alias) instanceof Error);
         }
       }
       for (const invalid of [

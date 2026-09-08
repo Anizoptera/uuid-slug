@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import * as ts from "../src/index";
 import type { MaskSchema, MaskSchemaOptions, MigrationFormat, SlugAlphabet } from "../src/index";
 import { bytePatterns } from "../test/byte-patterns";
+import { uuidTailAliases } from "../test/uuid-tail-aliases";
 import { uuidVariants } from "../test/uuid-variants";
 import { loadRustBridge } from "./rust-bridge";
 
@@ -350,13 +351,14 @@ export async function contractRequests(): Promise<Request[]> {
       for (const offset of [0, 1, 9, 2 ** 32, Number.MAX_SAFE_INTEGER])
         requests.push({ op: "base64DecodeTo", input, capacity, offset });
   for (const vector of original.issued) {
-    for (const input of [vector.slug, vector.raw])
-      for (const op of ["migration", "candidates"]) {
-        for (const plain of [false, true])
-          for (const enabled of [false, true])
-            for (const format of [undefined, "plain", "current", "original"])
-              requests.push({ op, input, plain, original: enabled, format });
-      }
+    for (const slug of [vector.slug, vector.raw])
+      for (const input of uuidTailAliases(slug))
+        for (const op of ["migration", "candidates"]) {
+          for (const plain of [false, true])
+            for (const enabled of [false, true])
+              for (const format of [undefined, "plain", "current", "original"])
+                requests.push({ op, input, plain, original: enabled, format });
+        }
   }
   const masks = [
     undefined,

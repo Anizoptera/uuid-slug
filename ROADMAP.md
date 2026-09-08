@@ -99,7 +99,7 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   link the product alone. Keep OS entropy and bindings outside pure encoding/masking modules.
 - [x] Share wire/hash/original fixtures as data; use one comparator with independent producers.
   A sampled diagnostic may limit printed failures, never which observations determine the result.
-- [ ] Parameterize reusable behavioral cases over implementation adapters. Accept when: the first Rust
+- [x] Parameterize reusable behavioral cases over implementation adapters. Accept when: the first Rust
   increment runs shared cases; extract existing `test/*-probe.ts` closures without changing their
   expectations. Report missing cases per adapter; aggregate success cannot hide an empty adapter.
   - [x] Extract the buffer probe's byte patterns and reuse them for native and browser encoding
@@ -107,6 +107,8 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
     check platform-encoded expected strings before comparing the Rust results.
   - [x] Share the full version/variant matrix with the existing TypeScript boundary probe;
     require its explicit RFC classifications before comparing Rust parsing, timestamps and guards.
+  - [x] Share retained migration tail aliases with the existing TypeScript migration probe; native
+    and browser Rust adapters exercise every spelling without weakening ordinary strict decoding.
 - [x] Define owned/borrowed results and errors that retain causes, without panic or partial success.
   Fixed-size outputs commit only on success; candidates expose no partial result on callback failure. Native tests
   verify preserved causes, buffer bounds and retry state; ordinary input failures return `Result`.
