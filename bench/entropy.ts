@@ -22,12 +22,12 @@ if (!Number.isSafeInteger(samples) || samples <= 0)
 const FIELD_BITS = 74n;
 
 /** The 74 bits RFC 9562 declares random — `rand_a` (12) then `rand_b` (62) — as one integer. */
-const randomField = (uuid: string): bigint => {
-  const value = BigInt(`0x${uuid.replaceAll("-", "")}`);
+const randomField = (hex: string): bigint => {
+  const value = BigInt(`0x${hex}`);
   return (((value >> 64n) & 0xfffn) << 62n) | (value & ((1n << 62n) - 1n));
 };
 
-const timestamp = (uuid: string) => uuid.replaceAll("-", "").slice(0, 12);
+const timestamp = (hex: string) => hex.slice(0, 12);
 
 interface Report {
   candidate: string;
@@ -64,14 +64,22 @@ function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>
   const values: string[] = [];
   for (let i = 0; i < samples; i += 1) values.push(candidate.uuidV7());
   const used = sources.used();
+  // Normalize after sampling so reporting work cannot change the observed draw rate.
+  for (let i = 0; i < values.length; i++) values[i] = (values[i] as string).replaceAll("-", "");
 
   const fields = values.map(randomField);
   const distinctFields = new Set(fields).size;
 
   let conformingValues = 0;
+  let peakDrawsPerTick = 0;
+  const drawsPerTick = new Map<string, number>();
   const ones = Array.from<number>({ length: 74 }).fill(0);
   for (let i = 0; i < samples; i += 1) {
-    const hex = (values[i] ?? "").replaceAll("-", "");
+    const hex = values[i] ?? "";
+    const tick = timestamp(hex);
+    const count = (drawsPerTick.get(tick) ?? 0) + 1;
+    drawsPerTick.set(tick, count);
+    peakDrawsPerTick = Math.max(peakDrawsPerTick, count);
     if (hex[12] === "7" && "89ab".includes(hex[16] ?? "")) conformingValues += 1;
     const field = fields[i] ?? 0n;
     for (let b = 0; b < 74; b += 1)
@@ -88,18 +96,12 @@ function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>
   // canonical forms are one value seen twice, which a database index does not order and
   // `distinctFields` already reports.
   const pairs: [bigint, bigint][] = [];
-  const drawsPerTick = new Map<string, number>();
   let orderedWithinTick = 0;
-  for (const value of values) {
-    const tick = timestamp(value);
-    drawsPerTick.set(tick, (drawsPerTick.get(tick) ?? 0) + 1);
-  }
   for (let i = 1; i < samples; i += 1) {
     if (timestamp(values[i] ?? "") !== timestamp(values[i - 1] ?? "")) continue;
     pairs.push([fields[i - 1] ?? 0n, fields[i] ?? 0n]);
     // Lexicographic order over the canonical form is the order a database index imposes.
-    if ((values[i] ?? "").replaceAll("-", "") > (values[i - 1] ?? "").replaceAll("-", ""))
-      orderedWithinTick += 1;
+    if ((values[i] ?? "") > (values[i - 1] ?? "")) orderedWithinTick += 1;
   }
 
   // The width whose leading slice advances by exactly one most often, with the share of pairs that
@@ -138,7 +140,7 @@ function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>
     conformingValues,
     orderedWithinTick,
     sameTickPairs: pairs.length,
-    peakDrawsPerTick: Math.max(...drawsPerTick.values()),
+    peakDrawsPerTick,
     counterBits,
     counterHolds: Number(counterHolds.toFixed(4)),
     minOnesRatio: Number(Math.min(...ratios).toFixed(3)),
@@ -147,8 +149,12 @@ function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>
 }
 
 const sources = instrument();
-const reports = candidates.map((candidate) => audit(candidate, sources)).filter((r) => r !== null);
-sources.restore();
+let reports: Report[];
+try {
+  reports = candidates.map((candidate) => audit(candidate, sources)).filter((r) => r !== null);
+} finally {
+  sources.restore();
+}
 
 for (const report of reports) console.log(JSON.stringify(report));
 

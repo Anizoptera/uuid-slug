@@ -5,14 +5,8 @@
 // randomness detector, not a benchmark; `bench/entropy.ts` is the other caller and imports it here.
 
 /**
- * Counting wrappers over every entropy source reachable from JavaScript, so a caller can ask
- * which one an implementation actually reached for rather than trusting its description.
- *
- * This is the only check that can see the difference between a cryptographic source and a
- * seeded PRNG: `Math.random` output passes every statistical test a UUID audit can run, so no
- * amount of looking at the values reveals it. The distinction matters because a v7's random
- * field is what makes an identifier unguessable, and an identifier that can be guessed from a
- * previous one is an enumeration hole wherever it is exposed.
+ * Count calls through the wrapped Math.random, Web Crypto and Node crypto bindings.
+ * Source attribution can expose a weak RNG that output-distribution tests miss.
  *
  * TWO BOUNDARIES, both of which make an unobserved result mean "not measured", never "uses
  * nothing":
@@ -50,8 +44,16 @@ export function instrument(): EntropyInstrument {
     exercise: () => void,
   ) => {
     counts.set(label, 0);
-    const undo = install(() => counts.set(label, (counts.get(label) ?? 0) + 1));
-    exercise();
+    let undo: (() => void) | undefined;
+    try {
+      undo = install(() => counts.set(label, (counts.get(label) ?? 0) + 1));
+      exercise();
+    } catch (cause) {
+      // Construction failed before the caller received restore(). Undo every completed patch.
+      undo?.();
+      for (const restore of undoAll) restore();
+      throw cause;
+    }
     if ((counts.get(label) ?? 0) === 0) {
       undo();
       counts.delete(label);

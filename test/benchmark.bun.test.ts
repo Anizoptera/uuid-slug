@@ -44,6 +44,44 @@ afterAll(async () => {
   await rm(directory, { recursive: true, force: true });
 });
 
+test("failed entropy instrumentation restores globals before returning the error", async () => {
+  const module = join(import.meta.dir, "instrument.ts");
+  const child = Bun.spawn(
+    [
+      process.execPath,
+      "-e",
+      `
+    import assert from "node:assert/strict";
+    import { instrument } from ${JSON.stringify(module)};
+    const original = Math.random;
+    const descriptor = Object.getOwnPropertyDescriptor(crypto, "getRandomValues");
+    const draw = crypto.getRandomValues;
+    try {
+      Object.defineProperty(crypto, "getRandomValues", { value: draw, writable: false, configurable: true });
+      assert.throws(instrument);
+      assert.equal(Math.random, original);
+      const cause = new Error("entropy unavailable");
+      const fails = () => { throw cause; };
+      Object.defineProperty(crypto, "getRandomValues", { value: fails, writable: true, configurable: true });
+      assert.throws(instrument, error => error === cause);
+      assert.equal(Math.random, original);
+      assert.equal(crypto.getRandomValues, fails);
+    } finally {
+      if (descriptor) Object.defineProperty(crypto, "getRandomValues", descriptor);
+      else delete crypto.getRandomValues;
+    }
+  `,
+    ],
+    { stdout: "pipe", stderr: "pipe" },
+  );
+  const [status, stdout, stderr] = await Promise.all([
+    child.exited,
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+  ]);
+  expect({ status, stdout, stderr }).toEqual({ status: 0, stdout: "", stderr: "" });
+});
+
 test("profiling refuses failures after its initial success witness", async () => {
   const api = join(import.meta.dir, "../src/index.ts");
   const subject = join(directory, "fails-after-witness.mjs");
