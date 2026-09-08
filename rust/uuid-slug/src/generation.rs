@@ -156,6 +156,18 @@ pub fn uuid_v4_with(mut fill: impl FnMut(&mut [u8]) -> Result<(), Error>) -> Res
     bytes[8] = (bytes[8] & 63) | 0x80;
     Ok(Uuid::from_bytes(bytes))
 }
+/// Generate v4 into caller storage; reject invalid ranges before drawing entropy.
+/// An entropy error leaves the destination unchanged.
+pub fn uuid_v4_into_with(
+    out: &mut [u8],
+    offset: usize,
+    fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
+) -> Result<(), Error> {
+    let target = crate::uuid::range(out.len(), offset)?;
+    let id = uuid_v4_with(fill)?;
+    out[target].copy_from_slice(id.as_bytes());
+    Ok(())
+}
 /// Fill from the platform CSPRNG, retaining its error as the cause on failure.
 #[cfg(feature = "os-rng")]
 pub fn fill_os_random(out: &mut [u8]) -> Result<(), Error> {
@@ -204,6 +216,8 @@ mod tests {
                 .at_into_with(1.0, &mut output, usize::MAX, untouched)
                 .is_err()
         );
+        assert_eq!(output, [19; 16]);
+        assert!(uuid_v4_into_with(&mut output, 1, untouched).is_err());
         assert_eq!(output, [19; 16]);
     }
     #[test]
@@ -294,6 +308,7 @@ mod tests {
                 };
                 let mut output = [19; 18];
                 assert!(uuid_v4_with(fail).is_err());
+                assert!(uuid_v4_into_with(&mut output, 1, fail).is_err());
                 assert!(
                     generator
                         .generate_into_with(reading, &mut output, 1, fail)

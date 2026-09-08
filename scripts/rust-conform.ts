@@ -98,6 +98,13 @@ export function evaluate(request: Request): Outcome {
         return result(ts.encodeBase64Url(Uint8Array.from(request.bytes as number[])));
       case "base64Decode":
         return result(ts.decodeBase64Url(input));
+      case "base64DecodeTo": {
+        const out = new Uint8Array(request.capacity as number).fill(165);
+        const decoded = ts.decodeBase64Url(input, out, request.offset as number);
+        return decoded instanceof Error
+          ? result(decoded)
+          : result({ bytes: Array.from(decoded), storage: Array.from(out) });
+      }
       case "fresh":
         return result(
           ts.validateUuidV7Fresh(input, {
@@ -134,6 +141,13 @@ export function evaluate(request: Request): Outcome {
         return result(codec.maskedSlugToUuidV7(input));
       case "sentinels":
         return result(codec.sentinels);
+      case "freshMasked":
+        return result(
+          codec.validateMaskedSlugFresh(input, {
+            now: () => Number(request.now),
+            windowMs: Number(request.window),
+          }),
+        );
       case "migration":
         return result(
           codec
@@ -214,8 +228,12 @@ export async function contractRequests(): Promise<Request[]> {
     ...original.plain.map((v) => v.uuid),
   ]) {
     for (const op of ["parse", "timestamp", "entropy", "guards"]) requests.push({ op, input });
-    for (const alphabet of ["base64url", "base32hex"])
+    for (const alphabet of ["base64url", "base32hex"]) {
       requests.push({ op: "plain", input, alphabet });
+      const encoded = evaluate({ op: "plain", input, alphabet });
+      if ("value" in encoded && typeof encoded.value === "string")
+        for (const op of ["unplain", "guards"]) requests.push({ op, input: encoded.value });
+    }
   }
   for (const input of ["", "A", "Zg", "Zh", "Zg=", "Zg\n", "é", ...wire.map((v) => v.direct)]) {
     for (const op of ["base64Decode", "unplain", "guards"]) requests.push({ op, input });
@@ -225,12 +243,17 @@ export async function contractRequests(): Promise<Request[]> {
       op: "base64Encode",
       bytes: Array.from({ length }, (_, i) => (i * 19 + length) & 255),
     });
+  for (const input of ["", "A", "Zg", "Zh", "Zg=", "Zm9vYmFy", "Zm9v!mFy", "é"])
+    for (const capacity of [0, 1, 6, 9])
+      for (const offset of [0, 1, 9])
+        requests.push({ op: "base64DecodeTo", input, capacity, offset });
   for (const vector of original.issued) {
     for (const input of [vector.slug, vector.raw])
       for (const op of ["migration", "candidates"]) {
         for (const plain of [false, true])
           for (const enabled of [false, true])
-            requests.push({ op, input, plain, original: enabled });
+            for (const format of [undefined, "plain", "current", "original"])
+              requests.push({ op, input, plain, original: enabled, format });
       }
   }
   const masks = [
@@ -271,6 +294,30 @@ export async function contractRequests(): Promise<Request[]> {
     for (const now of [0, 1, 1.5, "NaN", "Infinity"])
       requests.push({ op: "fresh", input: first.uuid, now, window });
   }
+  const instant = Number.parseInt(ordinary.uuid.slice(0, 8) + ordinary.uuid.slice(9, 13), 16);
+  for (const distance of [-1.5, -1, 0, 1, 1.5]) {
+    requests.push({ op: "fresh", input: ordinary.uuid, now: instant + distance, window: 1 });
+    for (const maskedAlphabet of ["base64url", "base32hex"]) {
+      const key = { seed: "freshness-private-test-key" };
+      const encoded = evaluate({ op: "mask", input: ordinary.uuid, mask: key, maskedAlphabet });
+      if (!("value" in encoded) || typeof encoded.value !== "string")
+        throw new Error("Freshness fixture failed to encode");
+      for (const previous of [false, true])
+        requests.push({
+          op: "freshMasked",
+          input: encoded.value,
+          maskedAlphabet,
+          mask: previous ? { seed: "freshness-new-test-key" } : key,
+          previous: previous ? [key] : [],
+          now: instant + distance,
+          window: 1,
+        });
+    }
+  }
+  for (const input of [ordinary.direct, first.direct, "AAAAAAAAQACAAAAAAAAAAA"])
+    for (const acceptPlain of [false, true])
+      for (const op of ["unmask", "unmaskV7", "freshMasked"])
+        requests.push({ op, input, acceptPlain, now: instant, window: 1 });
   requests.push({
     op: "candidates",
     input: original.overlap.slug,

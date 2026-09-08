@@ -165,6 +165,14 @@ fn run(request: &Value) -> Result<Value, Error> {
             ]))
         }
         "base64Decode" => Ok(json!(Alphabet::Base64Url.decode(input)?)),
+        "base64DecodeTo" => {
+            let capacity = request["capacity"].as_u64().ok_or(Error::InvalidBuffer)? as usize;
+            let offset = request["offset"].as_u64().ok_or(Error::InvalidBuffer)? as usize;
+            let mut out = vec![165; capacity];
+            let decoded = Alphabet::Base64Url.decode_to(input, &mut out, offset)?;
+            let bytes = json!(decoded);
+            Ok(json!({"bytes": bytes, "storage": out}))
+        }
         "base64Encode" => {
             let bytes = request["bytes"]
                 .as_array()
@@ -196,6 +204,13 @@ fn run(request: &Value) -> Result<Value, Error> {
         "unmaskV7" => Ok(json!(
             codec(request)?.masked_slug_to_uuid_v7(input)?.to_string()
         )),
+        "freshMasked" => Ok(json!(codec(request)?.validate_masked_slug_fresh(
+            input,
+            Freshness {
+                now: number(&request["now"]),
+                window_ms: number(&request["window"])
+            },
+        )?)),
         "sentinels" => Ok(json!(
             codec(request)?
                 .sentinels()

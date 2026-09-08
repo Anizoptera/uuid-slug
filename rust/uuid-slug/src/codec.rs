@@ -13,6 +13,58 @@ pub struct Sentinel {
     pub slug: String,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
+
+    #[test]
+    fn callback_failure_respects_first_result_and_atomic_candidates() -> Result<(), Error> {
+        assert!(MaskSchema::custom("not-an-inverse", |_, _| Ok([1; 16])).is_err());
+        assert!(MaskSchema::custom("failed", |_, _| Err(Error::InvalidBuffer)).is_err());
+        let failing = Arc::new(AtomicBool::new(false));
+        let flag = failing.clone();
+        let custom = MaskSchema::custom("fallible", move |input, _| {
+            if flag.load(Ordering::Relaxed) {
+                Err(Error::InvalidBuffer)
+            } else {
+                Ok(input)
+            }
+        })?;
+        let uuid = Uuid::parse("01234567-89ab-7cde-8fab-0123456789ab")?;
+        let good = MaskSchema::default();
+        let writer = Codec::new(CodecOptions::default())?;
+        let slug = writer.uuid_v7_to_masked_slug(uuid)?;
+        let fallback = Codec::new(CodecOptions {
+            mask: custom.clone(),
+            previous_masks: vec![good.clone()],
+            ..Default::default()
+        })?;
+        let first = Codec::new(CodecOptions {
+            mask: good,
+            previous_masks: vec![custom],
+            ..Default::default()
+        })?;
+        failing.store(true, Ordering::Relaxed);
+        assert_eq!(fallback.masked_slug_to_uuid(&slug)?, uuid);
+        let migration = first.migration(MigrationOptions::default());
+        assert_eq!(
+            migration.decode(&slug, Some(MigrationFormat::Current))?,
+            uuid
+        );
+        // Candidate enumeration cannot expose its earlier result after a later callback fails.
+        let error = migration
+            .candidates(&slug, Some(MigrationFormat::Current))
+            .unwrap_err();
+        assert_eq!(error.code(), "invalid_mask_schema");
+        assert!(std::error::Error::source(&error).is_some());
+        Ok(())
+    }
+}
+
 /// Codec construction options. Existing output stays base64url unless explicitly changed.
 pub struct CodecOptions {
     /// Current write key; decoding tries this before previous keys.

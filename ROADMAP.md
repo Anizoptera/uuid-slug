@@ -39,7 +39,8 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   distinguish native execution from cross-compilation. Keep CPU-specific tuning optional.
 - [x] Build and execute WebAssembly in a browser: verify host entropy, errors, cancellation and
   shared wire cases; deterministic conversion/masking must not require JavaScript host services.
-- [ ] Map every public export and codec method to Rust input, result and failure semantics.
+- [x] Map public capabilities to Rust call sites in `docs/cross-language.md`; keep generator state
+  separate from immutable codecs and preserve checked caller-buffer operations.
 
 ### 2. Establish the crate and shared evidence — high risk reduction, medium effort
 
@@ -75,10 +76,10 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   cover strict text, slices/offsets and unchanged buffers on error; private validated fields prevent
   bypass through constructors or deserialization. Generic UUIDs still accept all version nibbles.
 - [x] Implement both plain alphabets; pass padding, length, byte-order and non-v7 contract cases.
-- [ ] Implement UUIDv4 generation. Done: actual entropy-path and bit-layout evidence, including
+- [x] Implement UUIDv4 generation. Evidence: actual entropy-path and bit-layout checks, including
   failure behavior, without assuming a platform hook exercises the portable implementation.
-- [ ] Implement v7 generation/extraction/explicit timestamps; pass bounds without promising strict order.
-- [ ] Implement the explicit stateful v7 generator. Done: state transitions and independent
+- [x] Implement v7 generation/extraction/explicit timestamps; pass bounds without promising strict order.
+- [x] Implement the explicit stateful v7 generator. Evidence: state transitions and independent
   ownership cover clock rollback, fractional clocks versus explicit instants, counter exhaustion,
   entropy failure/retry and explicit-time calls that leave the current sequence untouched.
 - [ ] Verify filesystem-safe plain output through real filesystem round trips on supported
@@ -108,18 +109,18 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 
 ### 5. Complete migration and validation — full parity, medium effort
 
-- [ ] Implement freshness validation. Done: finite nonnegative windows, fractions, inclusive
+- [x] Implement freshness validation. Evidence: ordinary and sentinel cases, finite windows, fractions, inclusive
   boundaries and codec-local masked validation match existing semantics.
 - [ ] Implement the opt-in original fixed-mask reader. Done: retained producer fixtures and
   accepted historical aliases match; the unsupported 0.2.0 scheme remains unsupported.
-- [ ] Implement known-format and mixed-format migration reads. Done: priority, sentinel/plain
+- [x] Implement known-format and mixed-format migration reads. Evidence: priority, sentinel/plain
   collisions, non-v7 plain UUIDs and explicit candidate enumeration match shared cases.
-- [ ] Implement independent compatibility switches. Done: disabling each legacy path removes
+- [x] Implement independent compatibility switches. Evidence: disabling each legacy path removes
   that path while preserving current formats and separately enabled compatibility.
-- [ ] Implement arbitrary-byte base64url utilities. Done: empty input, malformed input and
-  canonical encoding match the existing public utilities, not only UUID-sized inputs.
+- [x] Implement arbitrary-byte base64url utilities, including allocation-free caller-buffer decoding.
+  Shared cases cover empty/malformed text, UTF-16 error priority, exact result slices and offsets.
 - [ ] Implement guards matching conversion at version, variant, alphabet and padding boundaries.
-- [ ] Implement the v7 entropy predicate. Done: shared degenerate/random-field cases match;
+- [x] Implement the v7 entropy predicate. Evidence: shared degenerate/random-field cases match;
   a passing predicate is not described as proof of randomness quality.
 - [ ] Reconcile every public capability with both implementations and its shared evidence.
 - [ ] Run external Rust examples for generation, filenames, rotation and migration against the crate.

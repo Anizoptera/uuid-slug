@@ -29,6 +29,35 @@ Run shared cases through each implementation from its first increment; check non
 per adapter, because an aggregate pass can hide one that ran nothing. Keep native ownership and
 callback checks; map JS UTF-16 explicitly rather than pretending Rust strings cover its full domain.
 
+## Rust call sites
+
+Use validated `Uuid` values between operations; parse text once rather than at each codec call.
+
+| TypeScript capability | Rust entry point or composition |
+| --- | --- |
+| Parse/format UUID; bytes and offsets | `Uuid::parse`, `from_slice`, `as_bytes`, `write_into`, `Display` |
+| Plain slug conversion | `Uuid::slug`, `Uuid::parse_slug`, `Codec::uuid_to_slug` |
+| UUID/string/slug guards | Parse once, then `Uuid::is_v4`, `is_v7`, `is_rfc_variant` |
+| Base64url bytes | `Alphabet::Base64Url.encode`, `decode`, `decode_to` |
+| Nonempty base64url guard | Reject empty input, then check `Alphabet::Base64Url.decode` success |
+| v4 generation and caller storage | `generation::uuid_v4`, `uuid_v4_with`, `uuid_v4_into_with` |
+| v7 generation, explicit time and caller storage | `UuidV7Generator::generate`, `at`, and their `_with`/`_into_with` forms |
+| Generated plain or masked slugs | Generate a `Uuid`, then call `slug` or the keyed codec |
+| Timestamp and entropy predicate | `Uuid::timestamp`, `Uuid::has_entropy` |
+| Sync/async schemas and custom transforms | `create_mask_schema`, `create_mask_schema_async`, `MaskSchema::custom` |
+| Key rotation, masked conversion and sentinels | `CodecOptions`, `Codec::uuid_v7_to_masked_slug`, `masked_slug_to_uuid`, `masked_slug_to_uuid_v7`, `sentinels` |
+| Known/mixed-format migration and candidates | `Codec::migration`, `Migration::decode`, `candidates`, `MigrationOptions` |
+| Plain freshness | Parse UUID or plain slug, then `Freshness::validate`; retain the original text if needed |
+| Masked freshness | `Codec::validate_masked_slug_fresh` |
+| Error classification and causes | `Error::code` and `std::error::Error::source` |
+
+Generators own mutable sequence state; codecs own immutable keys. Keeping them separate allows
+shared codecs without a hidden generator lock. Default generators use platform entropy; custom
+`_with` callbacks must fill the entire destination or fail. Pass `generation::fill_os_random` to
+caller-buffer operations for the same platform source. Invalid destination ranges draw no entropy.
+`decode_to` returns only the decoded slice; malformed text can leave partial bytes, which must not
+be consumed on error. UUID parsing and generation commit their fixed-size output only on success.
+
 ## Filesystem-safe output
 
 Support lowercase filesystem-safe representations for both plain and masked identifiers in both

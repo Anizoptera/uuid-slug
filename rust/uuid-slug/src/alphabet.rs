@@ -113,6 +113,40 @@ impl Alphabet {
             .decode(text.as_bytes())
             .map_err(|_| self.error())
     }
+
+    /// Decode into caller storage and return only the decoded range, without allocating.
+    /// Invalid ranges leave storage unchanged. Invalid text can leave partial decoded bytes;
+    /// use the returned bytes only on success, as with the TypeScript caller-buffer decoder.
+    pub fn decode_to<'a>(
+        self,
+        text: &str,
+        out: &'a mut [u8],
+        offset: usize,
+    ) -> Result<&'a mut [u8], Error> {
+        if text.len() > usize::MAX / 8 {
+            return Err(Error::InvalidBuffer);
+        }
+        if text.contains('=') {
+            return Err(self.error());
+        }
+        let encoding = self.encoding();
+        // JS checks lengths and destination bounds in UTF-16 units before alphabet validity.
+        let symbols = if text.is_ascii() {
+            text.len()
+        } else {
+            text.encode_utf16().count()
+        };
+        let length = encoding.decode_len(symbols).map_err(|_| self.error())?;
+        let end = offset.checked_add(length).ok_or(Error::InvalidBuffer)?;
+        let target = out.get_mut(offset..end).ok_or(Error::InvalidBuffer)?;
+        if symbols != text.len() {
+            return Err(self.error());
+        }
+        encoding
+            .decode_mut(text.as_bytes(), target)
+            .map_err(|_| self.error())?;
+        Ok(target)
+    }
 }
 
 #[cfg(test)]
@@ -194,6 +228,22 @@ mod tests {
         }
         for invalid in ["A", "Zg=", "Zh", "Zg\n", "é"] {
             assert!(Alphabet::Base64Url.decode(invalid).is_err());
+        }
+        let mut out = [165; 9];
+        assert_eq!(
+            Alphabet::Base64Url.decode_to("Zm9vYmFy", &mut out, 1)?,
+            b"foobar"
+        );
+        assert_eq!(&out[..1], &[165]);
+        assert_eq!(&out[7..], &[165, 165]);
+        let saved = out;
+        for offset in [4, usize::MAX] {
+            assert!(
+                Alphabet::Base64Url
+                    .decode_to("Zm9vYmFy", &mut out, offset)
+                    .is_err()
+            );
+            assert_eq!(out, saved);
         }
         Ok(())
     }
