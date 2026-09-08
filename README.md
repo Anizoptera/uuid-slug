@@ -205,15 +205,19 @@ current-time generation is runtime-specific; within-millisecond ordering is not 
 Both masking entry points return a raw sentinel slug when the UUID is registered as a sentinel.
 Their result type is `PublicUuidV7Slug`, the union of masked and sentinel slugs.
 
+Each decoder accepts every value that a supported matching encoder can produce. Masked decoding
+always accepts both alphabets, sentinels, and current or previous mask schemas. Migration adds only
+the old formats you enable. Forms no supported encoder produces are invalid.
+
 Also exported, all module-level:
 
 - Type guards: `isUuidString`, `isUuidV4String`, `isUuidV7String`, `isUuidSlug`, `isUuidV4Slug`,
   `isUuidV7Slug`, and `isUuidV7Bytes` for 16 bytes you already hold.
-- base64url helpers: `encodeBase64Url`, `decodeBase64Url`, `isBase64Url`. `decodeBase64Url` returns
-  a view over exactly the bytes it decoded — with or without an `out` buffer — so `.length` is the
-  decoded length, never the buffer's. Given `out`, that view shares your buffer's memory. Every
-  canonical unpadded encoding produced by `encodeBase64Url`, including empty input, is accepted by
-  both the decoder and guard; malformed encodings return an error.
+- base64url helpers: `encodeBase64Url`, `decodeBase64Url`, `isBase64Url`. They accept only one
+  UUID payload: exactly 16 bytes or its canonical 22-character unpadded spelling. Other lengths
+  and malformed encodings return an error. Decoding into `out` commits all 16 bytes only after
+  validation and returns a view of that range in the caller's buffer. They preserve all 16-byte
+  values; use UUID guards when the version or variant matters.
 - `extractUuidV7Timestamp` — the instant a v7 was minted at, and an error for anything that is
   not a v7, because a v4's first six bytes are random and would otherwise read back as a
   plausible date. `hasUuidV7Entropy` answers whether the 74 random bits are anything but

@@ -313,19 +313,18 @@ export async function contractRequests(): Promise<Request[]> {
       for (const window of [0, 1000, -1, "Infinity"])
         requests.push({ op: "freshPlain", input, now, window });
   }
-  for (let length = 0; length <= 64; length++)
+  for (const length of [0, 1, 15, 16, 17, 64])
     requests.push({
       op: "base64Encode",
       bytes: Array.from({ length }, (_, i) => (i * 19 + length) & 255),
     });
-  // Reuse the runtime probe's byte patterns; the platform encoder supplies an independent oracle.
-  for (const { bytes } of bytePatterns(new ArrayBuffer(80)))
-    for (let length = 0; length <= 64; length++) {
-      const view = bytes.subarray(4, 4 + length);
-      const request: Request = { op: "base64Encode", bytes: Array.from(view) };
-      deepStrictEqual(evaluate(request), { value: Buffer.from(view).toString("base64url") });
-      requests.push(request);
-    }
+  // Reuse the runtime probe's byte patterns; every 16-byte shape remains valid UUID payload data.
+  for (const { bytes } of bytePatterns(new ArrayBuffer(80))) {
+    const view = bytes.subarray(4, 20);
+    const request: Request = { op: "base64Encode", bytes: Array.from(view) };
+    deepStrictEqual(evaluate(request), { value: Buffer.from(view).toString("base64url") });
+    requests.push(request);
+  }
   // Plain UUID padding cannot carry data: every nonzero spelling must be rejected.
   for (const alphabet of ["base64url", "base32hex"] as const) {
     const symbols =
@@ -346,9 +345,9 @@ export async function contractRequests(): Promise<Request[]> {
       requests.push(decode, guards);
     }
   }
-  for (const input of ["", "A", "Zg", "Zh", "Zg=", "Zm9vYmFy", "Zm9v!mFy", "é"])
-    for (const capacity of [0, 1, 6, 9])
-      for (const offset of [0, 1, 9, 2 ** 32, Number.MAX_SAFE_INTEGER])
+  for (const input of ["", "A", "Zg", "Zh", "Zg=", ordinary.direct, `${ordinary.direct}=`, "é"])
+    for (const capacity of [0, 1, 16, 17, 32])
+      for (const offset of [0, 1, 16, 17, 2 ** 32, Number.MAX_SAFE_INTEGER])
         requests.push({ op: "base64DecodeTo", input, capacity, offset });
   for (const vector of original.issued) {
     for (const slug of [vector.slug, vector.raw])

@@ -113,6 +113,9 @@ No marker identifies the producing schema. Decode with the current mask first, t
 schemas create more opportunities for false acceptance; the combined rate is bounded by the sum
 of their individual rates. The codec must not append schemas on the caller's behalf.
 
+Masked decoding always accepts both alphabets, sentinels, and current or previous schema outputs.
+Migration adds only the old formats the caller enables. Other forms are invalid.
+
 With `acceptUnmaskedSlugs`, only failure of every schema enables direct-slug decoding. A direct
 slug may accidentally pass an earlier mask check and return a different candidate; the flag does
 not make the two representations distinguishable. Confirm candidates against the issuing store.

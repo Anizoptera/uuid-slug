@@ -1,41 +1,47 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BASE64URL, decodeInto, encode, isEncoded } from "./alphabet";
-import { UuidSlugError } from "./errors";
+import { checkRange, UuidSlugError } from "./errors";
 import type { Base64UrlString } from "./types";
 
-export function encodeBase64Url(bytes: Uint8Array): Base64UrlString {
+const UUID_BYTES = 16;
+const UUID_BASE64URL_LENGTH = 22;
+
+export function encodeBase64Url(bytes: Uint8Array): Base64UrlString | UuidSlugError {
+  if (bytes.length !== UUID_BYTES)
+    return new UuidSlugError("invalid_buffer", "Base64url UUID input must contain 16 bytes.");
   return encode(bytes, BASE64URL);
 }
 
 /**
  * Decodes into `out` at `offset` when given one, otherwise into a fresh array.
  *
- * Returns a view over EXACTLY the bytes decoded, in both cases. The two used to disagree: without
- * `out` the result was `byteLength`-exact, with `out` it was the caller's entire buffer at its full
- * size, with the data at `offset` and no way to learn how many bytes had been written short of
- * recomputing `floor(value.length * 6 / 8)` by hand. One rule — "the bytes this call produced" —
- * makes the length usable and leaves the caller's own buffer reachable, since they own it.
+ * Decodes one UUID payload and commits the caller's buffer only after full validation.
  */
 export function decodeBase64Url(
   value: string,
   out?: Uint8Array,
   offset = 0,
 ): UuidSlugError | Uint8Array {
+  if (value.length !== UUID_BASE64URL_LENGTH)
+    return new UuidSlugError(
+      "invalid_base64url",
+      "Base64url UUID input must contain 22 characters.",
+    );
   // Padding is the most common malformed input by far, and the generic "invalid character"
   // message sends the reader looking for a typo instead of a stray "=".
   if (value.includes("="))
     return new UuidSlugError("invalid_base64url", "Base64url value must be unpadded.");
-  const byteLength = Math.floor((value.length * BASE64URL.bitsPerChar) / 8);
-  const target = out ?? new Uint8Array(byteLength);
-  const result = decodeInto(value, BASE64URL, target, offset, byteLength);
+  const decoded = new Uint8Array(UUID_BYTES);
+  const result = decodeInto(value, BASE64URL, decoded, 0, UUID_BYTES);
   if (result instanceof Error) return result;
-  return target.subarray(offset, offset + byteLength);
+  const target = out ?? new Uint8Array(UUID_BYTES);
+  const badRange = checkRange(target.length, offset, UUID_BYTES);
+  if (badRange) return badRange;
+  target.set(decoded, offset);
+  return target.subarray(offset, offset + UUID_BYTES);
 }
 
 export function isBase64Url(value: null | string | undefined): value is Base64UrlString {
-  return (
-    value != null &&
-    isEncoded(value, BASE64URL, Math.floor((value.length * BASE64URL.bitsPerChar) / 8))
-  );
+  return value?.length === UUID_BASE64URL_LENGTH && isEncoded(value, BASE64URL, UUID_BYTES);
 }

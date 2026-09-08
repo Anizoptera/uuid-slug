@@ -17,11 +17,9 @@ describe("bit-packing codec", () => {
   // An oracle only has value when it can fail independently of the code under test. Comparing
   // against this package's own previous output would agree by construction; `Buffer` is a
   // separate implementation of the same RFC 4648 alphabet.
-  it("encodes base64url identically to node Buffer across every length boundary", () => {
-    for (let length = 0; length <= 64; length += 1) {
-      const bytes = randomBytes(length);
-      expect(encodeBase64Url(bytes)).toBe(Buffer.from(bytes).toString("base64url"));
-    }
+  it("encodes a UUID payload identically to node Buffer", () => {
+    const bytes = randomBytes(16);
+    expect(encodeBase64Url(bytes)).toBe(Buffer.from(bytes).toString("base64url"));
   });
 
   // No platform ships base32, so the independent channel is the definition itself: the bytes as
@@ -82,19 +80,19 @@ describe("bit-packing codec", () => {
 
   it.each([
     ["padded", "AAAA===="],
-    ["a character outside the alphabet", "AAA*"],
+    ["a character outside the alphabet", "AAAAAAAAAAAAAAAAAAAAA!"],
     ["a length no byte count can produce", "AAAAA"],
-    ["non-zero padding bits", "AB"],
+    ["non-zero padding bits", "AAAAAAAAAAAAAAAAAAAAAB"],
     ["a non-ascii character", "AAÿA"],
   ])("rejects %s", (_what, value) => {
     expect(decodeBase64Url(value)).toBeInstanceOf(Error);
   });
 
   it.each([
-    ["", true],
+    ["", false],
     [null, false],
     [undefined, false],
-    ["AAAA", true],
+    ["AAAA", false],
     ["AAAAAAAAcACAAAAAAAAAAA", true],
   ])("isBase64Url(%o) is %s", (value, expected) => {
     expect(isBase64Url(value)).toBe(expected);

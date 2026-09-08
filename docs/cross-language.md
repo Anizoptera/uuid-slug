@@ -17,6 +17,8 @@ properties. Preserve issued identifiers when changing either implementation.
 Identical deterministic inputs must produce identical bytes, text, keys, and decoded candidates.
 Parity includes accepted and rejected inputs, defaults, error conditions, sentinel priority, key
 order, migration controls, freshness boundaries, cancellation, and ownership of returned data.
+Every decoder must accept every value that a supported matching encoder can produce. Options may
+add accepted forms; they must not remove existing ones. Forms no supported encoder produces are invalid.
 Generated identifiers must meet the same promises; random draws, scheduling, allocation strategy,
 and unpromised intra-millisecond ordering need not match.
 
@@ -38,8 +40,8 @@ Use validated `Uuid` values between operations; parse text once rather than at e
 | Parse/format UUID; bytes and offsets | `Uuid::parse`, `from_slice`, `as_bytes`, `write_into`, `Display` |
 | Plain slug conversion | `Uuid::slug`, `Uuid::parse_slug`, `Codec::uuid_to_slug` |
 | UUID/string/slug guards | Parse once, then `Uuid::is_v4`, `is_v7`, `is_rfc_variant` |
-| Base64url bytes | `Alphabet::Base64Url.encode`, `decode`, `decode_to` |
-| Canonical base64url guard | Check `Alphabet::Base64Url.decode` success, including empty input |
+| Base64url UUID payload | `Alphabet::Base64Url.encode`, `decode`, `decode_to` |
+| Canonical base64url guard | Check `Alphabet::Base64Url.decode` success for exactly 22 characters |
 | v4 generation and caller storage | `generation::uuid_v4`, `uuid_v4_with`, `uuid_v4_into_with` |
 | v7 generation, explicit time and caller storage | `UuidV7Generator::generate`, `at`, and their `_with`/`_into_with` forms |
 | Generated plain or masked slugs | Generate a `Uuid`, then call `slug` or the keyed codec |
@@ -55,9 +57,10 @@ Generators own mutable sequence state; codecs own immutable keys. Keeping them s
 shared codecs without a hidden generator lock. Default generators use platform entropy; custom
 `_with` callbacks must fill the entire destination or fail. Pass `generation::fill_os_random` to
 caller-buffer operations for the same platform source. Invalid destination ranges draw no entropy.
-`decode_to` returns only the decoded slice; malformed text can leave partial bytes, which must not
-be consumed on error. UUID text and slug parsing validate the complete identifier before writing;
-all fixed-size parsing and generation commit caller storage only on success.
+Base64url helpers accept only a 16-byte UUID payload and its canonical 22-character spelling.
+They preserve every 16-byte value. UUID version and variant checks belong to UUID guards.
+`decode_to`, UUID text and slug parsing validate the complete identifier before writing; all
+fixed-size decoding, parsing and generation commit caller storage only on success.
 
 ## Filesystem-safe output
 

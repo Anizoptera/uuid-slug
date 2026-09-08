@@ -7,7 +7,9 @@ Build a public Rust crate with TypeScript semantic parity, prioritizing filesyst
 - Deliver full Rust functionality with [parity from the first increment](docs/cross-language.md).
 - Provide filesystem-safe plain and masked forms in both languages; preserve issued formats.
 - Keep the ordinary decode result one UUID; candidate enumeration stays explicit.
-- Keep API verbs recognizable, with language-appropriate types and error handling.
+- Make each decoder accept every value that a supported matching encoder can produce.
+- Keep API verbs recognizable, with language-appropriate types and error handling; base64url
+  helpers accept exactly one 16-byte UUID payload and reject every other length.
 - Reuse the existing native implementation as source material, then refine it for public use.
 - Allow small, evidence-justified Rust dependencies; keep npm native-free and dependency-free.
 - Support Git installation and crates.io publication with maintained releases and provenance.
@@ -33,10 +35,6 @@ Public choices are recorded above; verify the engineering tasks below before cla
 
 ### 1. Close local responsiveness and security evidence
 
-- [ ] Measure cancellation latency and event-loop blocking through real host execution.
-  Use completion signals, verify results against synchronous construction, and measure initial
-  snapshots, allocation, garbage collection, scheduling, and cancellation on each supported host.
-  Preserve call-time byte ownership. Record evidence and limits in `bench/PERFORMANCE.md`.
 - [ ] Audit Rust and TypeScript security boundaries together. Trace each entropy path, failure and
   retry state, masking boundary, parser write guarantee, bridge ownership, and unsafe boundary.
   Fix material defects and update `docs/security.md` only when the durable boundary changes.

@@ -18,7 +18,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Read `docs/design.md` before changing masking, schemas, or sentinels. Preserve its wire layout:
   masked payloads are UUIDv7-only, with a 16-bit check and timestamps below 2^42 milliseconds.
   Preserve both their 22-character base64url and lossless 27-character base32hex spellings.
-  Reject overflow rather than truncate. Preserve plain-slug padding rejection.
+  Reject overflow rather than truncate. Base64url helpers accept exactly one 16-byte UUID payload
+  or its canonical 22-character spelling; reject every other length. Preserve plain-slug padding rejection.
 - Read `docs/cross-language.md` before Rust work or changes shared with TypeScript. It owns
   parity, approved filesystem-safe output and distribution boundaries. Keep base64url defaults;
   select filesystem-safe masked output independently from the plain-slug alphabet.
@@ -26,6 +27,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Masked slugs and sentinels are core functionality. Sentinels use precomputed raw slugs per
   codec. Decode returns the first passing candidate in caller-specified key order, never proof
   of issuance. Do not reject multiple matches or append fallback schemas on the caller's behalf.
+- Every decoder must accept every value that a supported matching encoder can produce. Options
+  may add accepted forms; they must not remove existing ones. Reject forms no encoder produces.
 - Keyed operations belong only on the codec holding the key, including masked freshness
   validation. Do not add top-level masked shortcuts. Art explicitly retains `defaultCodec` and
   the public `DEFAULT_MASK_SCHEMA`; warn callers to supply their own seed for real masking.

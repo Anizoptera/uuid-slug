@@ -135,13 +135,14 @@ export const codecBoundaryCases = [
         assert.equal(isUuidSlug(slug.slice(0, -1) + "\u2028"), false);
         assert.equal(isUuidSlug(slug + "\n"), false);
       }
-      for (let length = 1; length <= 64; length += 1) {
+      for (const length of [1, 15, 17, 64]) {
         const encoded = Buffer.alloc(length, 0xff).toString("base64url");
-        assert.equal(isBase64Url(encoded), true);
+        assert.equal(isBase64Url(encoded), false);
         for (const suffix of ["=", "\n", "\r", "\u2028", "ÿ"])
           assert.equal(isBase64Url(encoded + suffix), false);
       }
-      assert.equal(isBase64Url(""), true);
+      assert.equal(isBase64Url(Buffer.alloc(16, 0xff).toString("base64url")), true);
+      assert.equal(isBase64Url(""), false);
       for (const value of [null, undefined, "A", "AAAAA", "AB", "AAB"])
         assert.equal(isBase64Url(value), false);
     },

@@ -91,7 +91,10 @@ Node/Bun CPU profiles and retained-heap profiles were also captured with the com
 
 The async constructor snapshots byte inputs before suspension, splits encoding/packing/hashing into checkpoints, and yields through ordinary host tasks. It preserves synchronous key material. A prioritized browser continuation failed to let an independently queued cancellation message run; ordinary message tasks passed the same installed-export test. Node/Bun use `setImmediate`.
 
-For a 19-byte seed at 65,536 iterations, real independent task gaps peaked at approximately 2.20 ms on Node and 2.25 ms on Bun, with total construction about 7.5/6.9 ms. A one-iteration 1 MiB byte seed measured about 5.5/18.4 ms total and 2.18/2.13 ms maximum observed task gaps. These are individual process observations, not maximum guarantees. Initial snapshots, allocation, GC and host scheduling are outside the slice target.
+For a 19-byte seed at 65,536 iterations, completed construction matched the synchronous output.
+Independent host-task gaps measured 2.22 ms on Node 24.20.0, 4.29 ms on Bun 1.4.1,
+2.43 ms on Deno 2.9.6 and 2.30 ms in Chrome 152, with total construction between 6.6 and
+8.2 ms. These are local observations, not maximum guarantees.
 
 Direct constructor probes measured synchronous byte-seed capture at 2.305/2.365 ms for 1 MiB,
 3.527/3.472 ms for 16 MiB and 9.051/7.969 ms for 64 MiB on Bun/Node. The copy preserves the bytes
@@ -99,7 +102,18 @@ present when the call begins; an input cap or deferred copy would change that pu
 Keep the snapshot and treat its cost as an explicit responsiveness limit until a replacement
 preserves call-time ownership without blocking the caller.
 
-Cancellation retention probes discarded 16 one-MiB jobs per epoch and collected between epochs. Node's eight epochs ended around 5.22 MB heap used. Bun's extended 32-epoch probe rose transiently to 3.79 MB, then settled near 1.72 MB rather than retaining every cancelled seed. This falsifies linear retention of all those inputs in that probe; it does not prove every application is leak-free.
+With a one-MiB seed and the maximum iteration count, call-time capture took 2.10–2.59 ms across
+Node, Bun, Deno and Chrome. A queued timer or immediate observed cancellation after 2.10–4.46 ms,
+and the promise settled 0.04–0.26 ms later. Node delayed a queued MessageChannel task to
+9.92–10.04 ms, while the same task took 10.56 ms without derivation; that result measures Node's
+MessageChannel startup rather than package blocking.
+
+Cancellation retention probes discarded one-MiB jobs and forced collection between observations.
+Node's eight epochs ended around 5.22 MB heap used. Bun's extended 32-epoch probe rose transiently
+to 3.79 MB, then settled near 1.72 MB. Three fresh Deno processes retained 168.6–168.7 KiB after
+16 jobs; three fresh Chrome processes retained 86.9 KiB. These probes falsify retention proportional
+to all cancelled inputs in those runs. Heap-after-GC deltas do not measure gross allocation or prove
+that every application is leak-free.
 
 ## Migration decoding
 

@@ -14,7 +14,7 @@ notes: the section for a version is published verbatim when its tag is pushed.
 ### Fixed
 
 - Leave portable UUIDv7 sequence state unchanged when entropy fails, so a failed attempt cannot corrupt retry state.
-- Accept the empty canonical base64url spelling consistently in encoding, decoding and validation.
+- Restrict base64url byte helpers to one 16-byte UUID payload and reject every other length.
 - Leave caller-owned storage unchanged when UUID or plain-slug parsing rejects invalid input.
 
 ## [0.3.0] - 2026-09-08

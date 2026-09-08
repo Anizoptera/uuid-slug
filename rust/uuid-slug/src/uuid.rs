@@ -38,7 +38,7 @@ impl Uuid {
     }
     /// Encode the UUID unchanged in the chosen alphabet.
     pub fn slug(&self, alphabet: Alphabet) -> String {
-        alphabet.encode(&self.0)
+        alphabet.encode_uuid(&self.0)
     }
     /// Copy the UUID to a checked destination range; failure does not write.
     pub fn write_into(&self, out: &mut [u8], offset: usize) -> Result<(), Error> {

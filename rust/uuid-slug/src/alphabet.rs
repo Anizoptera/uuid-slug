@@ -40,9 +40,18 @@ impl Alphabet {
             Self::Base32Hex => Error::InvalidBase32,
         }
     }
-    /// Encode bytes with canonical zero padding and no `=` characters.
-    pub fn encode(self, bytes: &[u8]) -> String {
+    fn encode_raw(self, bytes: &[u8]) -> String {
         self.encoding().encode(bytes)
+    }
+    /// Encode exactly one 16-byte UUID payload.
+    pub fn encode(self, bytes: &[u8]) -> Result<String, Error> {
+        if bytes.len() != 16 {
+            return Err(Error::InvalidBuffer);
+        }
+        Ok(self.encode_raw(bytes))
+    }
+    pub(crate) fn encode_uuid(self, bytes: &[u8; 16]) -> String {
+        self.encode_raw(bytes)
     }
     /// Encode the 128-bit block and four external check bits without changing their wire order.
     pub(crate) fn encode_tail(
@@ -57,7 +66,7 @@ impl Alphabet {
         let mut full = [0; 17];
         full[..16].copy_from_slice(bytes);
         full[16] = tail << 4;
-        let mut text = self.encode(&full);
+        let mut text = self.encode_raw(&full);
         text.truncate(132usize.div_ceil(self.bits()));
         Ok(text)
     }
@@ -103,48 +112,26 @@ impl Alphabet {
             _ => Err(self.error()),
         }
     }
-    /// Decode every canonical unpadded spelling produced by `encode`, including empty input.
+    /// Decode exactly one canonical 16-byte UUID payload.
     pub fn decode(self, text: &str) -> Result<Vec<u8>, Error> {
-        // The dependency's length arithmetic is bounded to usize::MAX / 8.
-        if text.len() > usize::MAX / 8 {
-            return Err(Error::InvalidBuffer);
-        }
-        self.encoding()
-            .decode(text.as_bytes())
-            .map_err(|_| self.error())
+        let mut decoded = [0; 16];
+        self.decode_into(text, &mut decoded, 0)?;
+        Ok(decoded.to_vec())
     }
 
     /// Decode into caller storage and return only the decoded range, without allocating.
-    /// Invalid ranges leave storage unchanged. Invalid text can leave partial decoded bytes;
-    /// use the returned bytes only on success, as with the TypeScript caller-buffer decoder.
+    /// Invalid text and ranges leave storage unchanged.
     pub fn decode_to<'a>(
         self,
         text: &str,
         out: &'a mut [u8],
         offset: usize,
     ) -> Result<&'a mut [u8], Error> {
-        if text.len() > usize::MAX / 8 {
-            return Err(Error::InvalidBuffer);
-        }
-        if text.contains('=') {
-            return Err(self.error());
-        }
-        let encoding = self.encoding();
-        // JS checks lengths and destination bounds in UTF-16 units before alphabet validity.
-        let symbols = if text.is_ascii() {
-            text.len()
-        } else {
-            text.encode_utf16().count()
-        };
-        let length = encoding.decode_len(symbols).map_err(|_| self.error())?;
-        let end = offset.checked_add(length).ok_or(Error::InvalidBuffer)?;
+        let mut decoded = [0; 16];
+        self.decode_into(text, &mut decoded, 0)?;
+        let end = offset.checked_add(16).ok_or(Error::InvalidBuffer)?;
         let target = out.get_mut(offset..end).ok_or(Error::InvalidBuffer)?;
-        if symbols != text.len() {
-            return Err(self.error());
-        }
-        encoding
-            .decode_mut(text.as_bytes(), target)
-            .map_err(|_| self.error())?;
+        target.copy_from_slice(&decoded);
         Ok(target)
     }
 }
@@ -193,7 +180,7 @@ mod tests {
                     }
                 );
             }
-            let text = alphabet.encode(&bytes);
+            let text = alphabet.encode(&bytes)?;
             let mut alias = text.into_bytes();
             let last = alias.len() - 1;
             // The chosen bytes encode with an even final digit in both alphabets.
@@ -213,34 +200,31 @@ mod tests {
         Ok(())
     }
     #[test]
-    fn base64_bytes_match_rfc_vectors() -> Result<(), Error> {
-        for (bytes, text) in [
-            ("", ""),
-            ("f", "Zg"),
-            ("fo", "Zm8"),
-            ("foo", "Zm9v"),
-            ("foob", "Zm9vYg"),
-            ("fooba", "Zm9vYmE"),
-            ("foobar", "Zm9vYmFy"),
-        ] {
-            assert_eq!(Alphabet::Base64Url.encode(bytes.as_bytes()), text);
-            assert_eq!(Alphabet::Base64Url.decode(text)?, bytes.as_bytes());
-        }
-        for invalid in ["A", "Zg=", "Zh", "Zg\n", "é"] {
+    fn base64_uuid_payload_is_exact_and_transactional() -> Result<(), Error> {
+        let bytes = [0xa5; 16];
+        let text = Alphabet::Base64Url.encode(&bytes)?;
+        assert_eq!(Alphabet::Base64Url.decode(&text)?, bytes);
+        for invalid in ["", "Zg", "Zg=", "Zh", "Zg\n", "é"] {
             assert!(Alphabet::Base64Url.decode(invalid).is_err());
         }
-        let mut out = [165; 9];
-        assert_eq!(
-            Alphabet::Base64Url.decode_to("Zm9vYmFy", &mut out, 1)?,
-            b"foobar"
-        );
+        assert!(Alphabet::Base64Url.encode(&[]).is_err());
+        assert!(Alphabet::Base64Url.encode(&[0; 15]).is_err());
+        assert!(Alphabet::Base64Url.encode(&[0; 17]).is_err());
+        let mut out = [165; 18];
+        assert_eq!(Alphabet::Base64Url.decode_to(&text, &mut out, 1)?, &bytes);
         assert_eq!(&out[..1], &[165]);
-        assert_eq!(&out[7..], &[165, 165]);
+        assert_eq!(&out[17..], &[165]);
         let saved = out;
-        for offset in [4, usize::MAX] {
+        assert!(
+            Alphabet::Base64Url
+                .decode_to("AAAAAAAAAAAAAAAAAAAAA!", &mut out, 1)
+                .is_err()
+        );
+        assert_eq!(out, saved);
+        for offset in [3, usize::MAX] {
             assert!(
                 Alphabet::Base64Url
-                    .decode_to("Zm9vYmFy", &mut out, offset)
+                    .decode_to(&text, &mut out, offset)
                     .is_err()
             );
             assert_eq!(out, saved);

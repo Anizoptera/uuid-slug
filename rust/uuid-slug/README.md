@@ -26,6 +26,7 @@ assert_eq!(codec.masked_slug_to_uuid(&masked)?, uuid);
 Plain slugs hold all 128 UUID bits: 22 base64url or 26 lowercase base32hex characters.
 Masked slugs hold the same 132-bit payload in 22 base64url or 27 base32hex characters.
 Decoding infers the representation; nonzero padding is rejected. Sentinels remain raw UUIDs.
+Every decoder accepts every value that a supported matching encoder can produce.
 
 Masking is obfuscation, not authentication or encryption for secrets. Its 16-bit check can accept
 an unissued UUID; look up decoded candidates in your own store. Each configured key adds a possible

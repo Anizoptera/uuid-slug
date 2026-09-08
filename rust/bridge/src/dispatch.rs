@@ -220,7 +220,7 @@ fn run(request: &Value) -> Result<Value, Error> {
                         .ok_or(Error::InvalidBuffer)
                 })
                 .collect::<Result<Vec<_>, _>>()?;
-            Ok(json!(Alphabet::Base64Url.encode(&bytes)))
+            Ok(json!(Alphabet::Base64Url.encode(&bytes)?))
         }
         "fresh" | "freshPlain" => {
             let uuid = if request["op"] == "freshPlain" {

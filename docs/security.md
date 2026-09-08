@@ -34,6 +34,10 @@ Rust retains the entropy provider's error. In browsers, `getrandom` reports its 
 code rather than retaining the original JavaScript exception. TypeScript retains that exception.
 This diagnostic difference does not permit a failed draw to produce an identifier.
 
+Public base64url helpers encode and decode one 16-byte UUID payload. They reject every other byte
+or text length, including empty input. Invalid decoding leaves caller storage unchanged. The helpers
+preserve all 16-byte values; use UUID guards when the version or variant matters.
+
 TypeScript pools platform randomness without expanding it. Refills become usable only after the
 source returns successfully; a partial write followed by failure must be retried, never consumed.
 Consumed pool bytes are erased. Rust draws into private generator buffers before copying output;

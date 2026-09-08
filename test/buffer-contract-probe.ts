@@ -60,6 +60,7 @@ const writers: readonly (readonly [string, (out: Uint8Array, offset: number) => 
 ];
 
 const malformedWriters: readonly (readonly [string, (out: Uint8Array) => unknown])[] = [
+  ["decodeBase64Url invalid character", (out) => decodeBase64Url(SLUG.slice(0, -1) + "!", out)],
   ["parseUuid", (out) => parseUuid(UUID.slice(0, -1) + "x", out)],
   [
     "parseUuidSlug invalid base64url character",
@@ -108,15 +109,13 @@ function untouched(buffer: Uint8Array): string | undefined {
  */
 export const cases: readonly ProbeCase[] = [
   {
-    name: "encoders preserve all byte values, lengths and shared-buffer slices",
+    name: "encoders preserve UUID byte values and shared-buffer slices",
     run: () => {
       for (const backing of [new ArrayBuffer(80), new SharedArrayBuffer(80)]) {
         for (const { bytes, shift } of bytePatterns(backing)) {
-          for (let length = 0; length <= 64; length += 1) {
-            const view = bytes.subarray(4, 4 + length);
-            if (encodeBase64Url(view) !== Buffer.from(view).toString("base64url"))
-              return `base64url differs for length ${length}, shift ${shift}`;
-          }
+          const view = bytes.subarray(4, 20);
+          if (encodeBase64Url(view) !== Buffer.from(view).toString("base64url"))
+            return `base64url differs for shift ${shift}`;
           const hex = Buffer.from(bytes.subarray(4, 20)).toString("hex");
           const expected = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
           if (formatUuid(bytes, 4) !== expected || formatUuid(bytes.subarray(4, 20)) !== expected)

@@ -24,22 +24,34 @@ const ascending = (slugs: readonly string[]) =>
   slugs.every((slug, i) => i === 0 || (slugs[i - 1] as string) < slug);
 
 describe("base64url", () => {
-  it("round-trips bytes including empty input and rejects non-canonical forms", () => {
-    const bytes = Uint8Array.from([0, 255, 128, 64, 1, 2, 3, 4]);
+  it("round-trips one UUID payload and rejects every other byte length", () => {
+    const bytes = Uint8Array.from({ length: 16 }, (_, index) => index * 13);
     const encoded = encodeBase64Url(bytes);
+    if (encoded instanceof Error) throw encoded;
     expect(decodeBase64Url(encoded)).toEqual(bytes);
-    expect(decodeBase64Url(encodeBase64Url(new Uint8Array()))).toEqual(new Uint8Array());
+    expect(encodeBase64Url(new Uint8Array())).toBeInstanceOf(Error);
+    expect(encodeBase64Url(new Uint8Array(15))).toBeInstanceOf(Error);
+    expect(encodeBase64Url(new Uint8Array(17))).toBeInstanceOf(Error);
+    expect(decodeBase64Url(Buffer.alloc(15).toString("base64url"))).toBeInstanceOf(Error);
+    expect(decodeBase64Url(Buffer.alloc(17).toString("base64url"))).toBeInstanceOf(Error);
     expect(decodeBase64Url(`${encoded}=`)).toBeInstanceOf(Error);
     expect(decodeBase64Url("A")).toBeInstanceOf(Error);
   });
 
+  it("preserves every 16-byte payload without imposing a UUID version or variant", () => {
+    for (const bytes of [new Uint8Array(16), new Uint8Array(16).fill(0xff)]) {
+      const encoded = encodeBase64Url(bytes);
+      if (encoded instanceof Error) throw encoded;
+      expect(decodeBase64Url(encoded)).toEqual(bytes);
+      expect(isBase64Url(encoded)).toBe(true);
+    }
+  });
+
   it("returns exactly the bytes it decoded, whether or not a buffer was supplied", () => {
-    // The two forms used to disagree: with `out` the caller got their WHOLE buffer back, at its own
-    // size, with the data at `offset` and no way to learn how many bytes were written. The
-    // surrounding 0xab bytes below are what made that unusable — indistinguishable from decoded
-    // output, and the reason a caller had to recompute the length by hand.
-    const bytes = Uint8Array.from([0, 255, 128, 64, 1, 2, 3, 4]);
+    // The view identifies the written range without hiding the caller's buffer.
+    const bytes = Uint8Array.from({ length: 16 }, (_, index) => index * 13);
     const encoded = encodeBase64Url(bytes);
+    if (encoded instanceof Error) throw encoded;
     const buffer = new Uint8Array(32).fill(0xab);
     const written = decodeBase64Url(encoded, buffer, 8);
     if (written instanceof Error) throw written;
