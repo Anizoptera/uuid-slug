@@ -58,6 +58,9 @@ try {
   const codec = api.createUuidSlugCodec({ mask: primary });
   const rotated = api.createUuidSlugCodec({ mask: primary, previousMasks: [previous] });
   const older = api.createUuidSlugCodec({ mask: previous });
+  assert.ok(!(codec instanceof Error));
+  assert.ok(!(rotated instanceof Error));
+  assert.ok(!(older instanceof Error));
   const migration = rotated.migration({ original: true, plain: true });
   const masked = codec.uuidV7ToMaskedSlug(id);
   const old = older.uuidV7ToMaskedSlug(id);

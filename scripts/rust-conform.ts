@@ -1,6 +1,7 @@
 // Compare every requested result, including failures, through the real native development transport.
 import { deepStrictEqual } from "node:assert";
 import { readFile } from "node:fs/promises";
+import { unwrap } from "../dev/unwrap";
 import * as ts from "../src/index";
 import type { MaskSchema, MaskSchemaOptions, MigrationFormat, SlugAlphabet } from "../src/index";
 import { bytePatterns } from "../test/byte-patterns";
@@ -137,24 +138,28 @@ export function evaluate(request: Request): Outcome {
         );
     }
     const selectedMask = mask(request.mask);
-    const codec = ts.createUuidSlugCodec({
-      ...(selectedMask === undefined ? {} : { mask: selectedMask }),
-      ...(request.previous === undefined
-        ? {}
-        : {
-            previousMasks: (request.previous as unknown[]).map(
-              (value) => mask(value) as MaskSchemaOptions,
-            ),
-          }),
-      ...(request.alphabet === undefined ? {} : { slugAlphabet: request.alphabet as SlugAlphabet }),
-      ...(request.maskedAlphabet === undefined
-        ? {}
-        : { maskedSlugAlphabet: request.maskedAlphabet as SlugAlphabet }),
-      acceptUnmaskedSlugs: request.acceptPlain === true,
-      ...(request.sentinels === undefined
-        ? {}
-        : { sentinels: request.sentinels as ts.UuidV7SentinelDefinition[] }),
-    });
+    const codec = unwrap(
+      ts.createUuidSlugCodec({
+        ...(selectedMask === undefined ? {} : { mask: selectedMask }),
+        ...(request.previous === undefined
+          ? {}
+          : {
+              previousMasks: (request.previous as unknown[]).map(
+                (value) => mask(value) as MaskSchemaOptions,
+              ),
+            }),
+        ...(request.alphabet === undefined
+          ? {}
+          : { slugAlphabet: request.alphabet as SlugAlphabet }),
+        ...(request.maskedAlphabet === undefined
+          ? {}
+          : { maskedSlugAlphabet: request.maskedAlphabet as SlugAlphabet }),
+        acceptUnmaskedSlugs: request.acceptPlain === true,
+        ...(request.sentinels === undefined
+          ? {}
+          : { sentinels: request.sentinels as ts.UuidV7SentinelDefinition[] }),
+      }),
+    );
     switch (request.op) {
       case "mask":
         return result(codec.uuidV7ToMaskedSlug(input));

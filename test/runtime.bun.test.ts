@@ -29,6 +29,7 @@ import {
   uuidV4Slug,
   uuidV7Slug,
 } from "../src/index";
+import { unwrap } from "../dev/unwrap";
 
 describe("bun runtime", () => {
   // The same list `test/buffer-contract.test.ts` runs on Node, against Bun's native byte writers.
@@ -43,13 +44,13 @@ describe("bun runtime", () => {
 
   test("imports the source condition and generates UUIDv7", () => {
     const local = createUuidSlugCodec();
-    expect(isUuidV7String(local.uuidV7())).toBe(true);
+    expect(isUuidV7String(unwrap(local.uuidV7()))).toBe(true);
     // DECODED, not just measured. Bun is the only runtime that defines `runtime.uuidV7Slug`, so
     // this is the default path for most consumers of this package and the only lane that reaches
     // it -- and a length assertion is nearly free here: unpadded base64url of 16 bytes is ALWAYS
     // 22 characters, so `toHaveLength(22)` alone passed for any 22-character string whatsoever.
     // The base32hex case below always decoded; the native default did not.
-    const slug = local.uuidV7Slug();
+    const slug = unwrap(local.uuidV7Slug());
     expect(slug).toHaveLength(22);
     expect(isUuidV7String(slugToUuid(slug) as string)).toBe(true);
   });
@@ -60,8 +61,8 @@ describe("bun runtime", () => {
     // that method does not exist, so this hazard is invisible there — the same asymmetry recorded
     // for the entropy cases above, and the reason this assertion lives here rather than only in
     // the shared suite.
-    const local = createUuidSlugCodec({ slugAlphabet: "base32hex" });
-    const slug = local.uuidV7Slug();
+    const local = unwrap(createUuidSlugCodec({ slugAlphabet: "base32hex" }));
+    const slug = unwrap(local.uuidV7Slug());
     expect(slug).toHaveLength(26);
     expect(isUuidV7String(slugToUuid(slug) as string)).toBe(true);
   });
@@ -72,14 +73,14 @@ describe("bun runtime", () => {
     // per call, so a branch gated on the hook's PRESENCE rather than on the requested alphabet
     // returns a 22-character base64url string here and nowhere else -- Node has no such hook, so
     // vitest cannot reach the branch and every case there passes either way.
-    const sortable = uuidV7Slug("base32hex");
+    const sortable = unwrap(uuidV7Slug("base32hex"));
     expect(sortable).toHaveLength(26);
     expect(sortable).toBe(sortable.toLowerCase());
     expect(isUuidV7String(slugToUuid(sortable) as string)).toBe(true);
     // The default must still take the native path and still round-trip; a fix that gated the
     // branch away entirely would pass the assertions above.
-    expect(uuidV7Slug()).toHaveLength(22);
-    expect(uuidV4Slug("base32hex")).toHaveLength(26);
+    expect(unwrap(uuidV7Slug())).toHaveLength(22);
+    expect(unwrap(uuidV4Slug("base32hex"))).toHaveLength(26);
   });
 
   test("never reaches for Math.random on any generation path", () => {

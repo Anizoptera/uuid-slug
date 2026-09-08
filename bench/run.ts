@@ -8,8 +8,8 @@
  */
 import { performance } from "node:perf_hooks";
 
+import { unwrap } from "../dev/unwrap";
 import { candidates, codec, nativeVariants, runtimeName } from "./candidates";
-import { errorOrThrow as unwrap } from "../src/errors";
 import { createUuidSlugCodec, slugToUuid, uuidToSlug, validateUuidV7Fresh } from "../src/index";
 
 const smoke = process.argv.includes("--smoke");
@@ -58,8 +58,8 @@ for (const candidate of candidates) {
   if (candidate.uuidV7) measure(`${candidate.name}.v7.string`, candidate.uuidV7);
 }
 
-measure("package.v7.slug", () => codec.uuidV7Slug());
-measure("package.v7.maskedSlug", () => codec.uuidV7MaskedSlug());
+measure("package.v7.slug", () => unwrap(codec.uuidV7Slug()));
+measure("package.v7.maskedSlug", () => unwrap(codec.uuidV7MaskedSlug()));
 
 // Fixed inputs exclude generation and key derivation from conversion costs. Error discrimination
 // stays inside the timed call because callers of these APIs must handle the returned error.
@@ -74,10 +74,12 @@ const freshness = { now: () => timestamp };
 measure("package.v7.fresh", () => unwrap(validateUuidV7Fresh(input, freshness)));
 const current = { id: "current", seed: "benchmark-current-key" };
 const previous = { id: "previous", seed: "benchmark-previous-key" };
-const masked = createUuidSlugCodec({ mask: current });
-const rotated = createUuidSlugCodec({ mask: current, previousMasks: [previous] });
+const masked = unwrap(createUuidSlugCodec({ mask: current }));
+const rotated = unwrap(createUuidSlugCodec({ mask: current, previousMasks: [previous] }));
 const maskedSlug = unwrap(masked.uuidV7ToMaskedSlug(input));
-const previousSlug = unwrap(createUuidSlugCodec({ mask: previous }).uuidV7ToMaskedSlug(input));
+const previousSlug = unwrap(
+  unwrap(createUuidSlugCodec({ mask: previous })).uuidV7ToMaskedSlug(input),
+);
 // A short mask check can accept another key's output; prove this fixture reaches the older key.
 if (
   !(masked.maskedSlugToUuidV7(previousSlug) instanceof Error) ||

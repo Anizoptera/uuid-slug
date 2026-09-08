@@ -194,15 +194,7 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
   }
 
   return {
-    uuidV7() {
-      const formatted = formatUuidV7(bytes());
-      // Throws rather than returns, because this signature promises a string: the two ways it can
-      // fail — entropy, and a `clock` that returns something the format cannot carry — are both
-      // configuration the caller cannot act on per call. `uuidV7At` returns its Error instead,
-      // because there the failure is a value the caller passed in at the call site.
-      if (formatted instanceof Error) throw formatted;
-      return formatted;
-    },
+    uuidV7: () => formatUuidV7(bytes()),
     uuidV7At: (timestamp) => formatUuidV7(bytes(undefined, 0, timestamp, true)),
     uuidV7Bytes: (out, offset) => bytes(out, offset),
     uuidV7BytesAt: (timestamp, out, offset) => bytes(out, offset, timestamp, true),

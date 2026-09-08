@@ -2,6 +2,7 @@
 
 import { strict as assert } from "node:assert";
 import { pooledFill } from "../src/runtime/pool";
+import { unwrap } from "../dev/unwrap";
 import {
   createUuidSlugCodec,
   createUuidV7Generator,
@@ -84,7 +85,11 @@ export const runtimeBoundaryCases = [
     name: `uses the supplied generator for ${slugAlphabet}`,
     run(this: void) {
       assert.equal(
-        slugToUuid(createUuidSlugCodec({ generator: makeGenerator(), slugAlphabet }).uuidV7Slug()),
+        slugToUuid(
+          unwrap(
+            unwrap(createUuidSlugCodec({ generator: makeGenerator(), slugAlphabet })).uuidV7Slug(),
+          ),
+        ),
         uuid,
       );
     },
@@ -136,16 +141,13 @@ export const runtimeBoundaryCases = [
         generator.uuidV7Bytes(out, 4),
         generator.uuidV7BytesAt(timestamp, out, 4),
         generator.uuidV7At(timestamp),
+        generator.uuidV7(),
       ]) {
         assert.ok(value instanceof UuidSlugError);
         assert.equal(value.code, "rng_unavailable");
         assert.equal(value.cause, cause);
       }
       assert.ok(out.every((byte) => byte === 0x55));
-      assert.throws(
-        generator.uuidV7,
-        (error: Error) => error instanceof UuidSlugError && error.cause === cause,
-      );
     },
   },
   {
@@ -229,16 +231,20 @@ export const runtimeBoundaryCases = [
       const bytes = parseUuid("019ff19b-58b8-7000-9b1b-df713bd55607");
       assert.ok(!(bytes instanceof Error));
       const xor = Uint8Array.from(Buffer.from("c99ff19b58b890005b1bdf713bd55607", "hex"));
-      const codec = createUuidSlugCodec({
-        generator: { ...makeGenerator(), uuidV7Bytes: () => bytes },
-        mask: {
-          id: "collision",
-          mix(input, output) {
-            for (let i = 0; i < 16; i += 1) output[i] = (input[i] as number) ^ (xor[i] as number);
+      const codec = unwrap(
+        createUuidSlugCodec({
+          generator: { ...makeGenerator(), uuidV7Bytes: () => bytes },
+          mask: {
+            id: "collision",
+            mix(input, output) {
+              for (let i = 0; i < 16; i += 1) output[i] = (input[i] as number) ^ (xor[i] as number);
+            },
           },
-        },
-      });
-      assert.throws(codec.uuidV7MaskedSlug, { code: "invalid_mask_schema" });
+        }),
+      );
+      const failure = codec.uuidV7MaskedSlug();
+      assert.ok(failure instanceof UuidSlugError);
+      assert.equal(failure.code, "invalid_mask_schema");
     },
   },
 ];

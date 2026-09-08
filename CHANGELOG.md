@@ -5,6 +5,10 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 ## [0.4.0] - 2026-09-08
 
+### Breaking changes
+
+- UUID generators and configured codec construction return `UuidSlugError | T` instead of throwing. Rust alphabet helpers accept and return fixed 16-byte arrays for UUID payloads.
+
 ### Added
 
 - Use the Rust `uuid-slug` crate for UUID generation, plain encoding, keyed masking, sentinels, key rotation, migration and freshness checks. Browser generation uses the optional `wasm-js` feature; pure conversion and masking can run without platform entropy.

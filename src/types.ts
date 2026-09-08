@@ -31,7 +31,7 @@ export interface FreshValidationOptions {
 }
 
 export interface UuidV7Generator {
-  uuidV7(this: void): UuidV7String;
+  uuidV7(this: void): UuidSlugError | UuidV7String;
   uuidV7Bytes(this: void, out?: Uint8Array, offset?: number): UuidSlugError | Uint8Array;
   /**
    * Generate at a caller-supplied millisecond. A SEPARATE entry point rather than an optional
@@ -208,11 +208,11 @@ export interface UuidSlugCodec extends UuidV7Generator {
   /**
    * `this: void` lets callers detach methods without `.bind`; implementations cannot rely on `this`.
    */
-  uuidV4(this: void): UuidV4String;
+  uuidV4(this: void): UuidSlugError | UuidV4String;
   uuidV4Bytes(this: void, out?: Uint8Array, offset?: number): UuidSlugError | Uint8Array;
-  uuidV4Slug(this: void): UuidV4Slug;
-  uuidV7Slug(this: void): UuidV7Slug;
-  uuidV7MaskedSlug(this: void): PublicUuidV7Slug;
+  uuidV4Slug(this: void): UuidSlugError | UuidV4Slug;
+  uuidV7Slug(this: void): UuidSlugError | UuidV7Slug;
+  uuidV7MaskedSlug(this: void): UuidSlugError | PublicUuidV7Slug;
   /**
    * Masking is UUIDv7-only, and the reason is that the whole format is spent. The check rides in
    * bits a v7 provably wastes — its constant version and variant, and the timestamp's top six —

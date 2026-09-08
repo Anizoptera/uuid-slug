@@ -13,6 +13,7 @@
  */
 import { createUuidSlugCodec } from "../src/index";
 import type { MaskSchema } from "../src/index";
+import { unwrap } from "../dev/unwrap";
 
 /**
  * A caller-supplied mixing step, standing in for a consumer who brings their own cipher. It is
@@ -43,7 +44,7 @@ const customMix: MaskSchema = {
 };
 
 export const WIRE_FORMAT_CODECS = {
-  "custom-mix": createUuidSlugCodec({ mask: customMix }),
-  default: createUuidSlugCodec({}),
-  "seeded-v2": createUuidSlugCodec({ mask: { seed: "golden-vector-seed-v3" } }),
+  "custom-mix": unwrap(createUuidSlugCodec({ mask: customMix })),
+  default: unwrap(createUuidSlugCodec({})),
+  "seeded-v2": unwrap(createUuidSlugCodec({ mask: { seed: "golden-vector-seed-v3" } })),
 };

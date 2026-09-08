@@ -40,9 +40,11 @@ const seed = process.env.ID_MASK_SEED;
 if (!seed) throw new Error("Set ID_MASK_SEED to a stable, randomly generated secret.");
 
 // Reuse the codec: the seed is expanded once, at construction.
-export const ids = createUuidSlugCodec({ mask: { seed } });
+const ids = createUuidSlugCodec({ mask: { seed } });
+if (ids instanceof Error) throw ids;
 
 const publicId = ids.uuidV7MaskedSlug();
+if (publicId instanceof Error) throw publicId;
 const uuid = ids.maskedSlugToUuidV7(publicId);
 if (uuid instanceof Error) throw uuid;
 // Look up uuid in your store and apply the caller's authorization policy.
@@ -114,6 +116,7 @@ const ids = createUuidSlugCodec({
   mask: { seed },
   sentinels: [{ name: "unknownUser", uuid: "00000000-0002-7000-8000-000000000000" }],
 });
+if (ids instanceof Error) throw ids;
 console.table(ids.sentinels);
 ```
 
@@ -142,8 +145,8 @@ Masked operations are codec methods; `defaultCodec` uses the same public seed.
 ## Handling errors
 
 Parsing, decoding, formatting, conversion, byte generation, and explicit-timestamp generation
-return `UuidSlugError | T`. Check `instanceof Error` before using the value. String-only
-generators return a value directly and throw on failure; constructing an invalid codec throws too.
+return `UuidSlugError | T`. Check `instanceof Error` before using the value. Configured codec
+construction returns the same union; `createUuidSlugCodec()` without options cannot fail.
 
 Use the error's `code` for handling and its `message` for diagnostics. `UuidSlugErrorCode` and
 `UUID_SLUG_ERROR_CODES` are the exported type and runtime list of codes. Errors wrapping failed
@@ -227,8 +230,8 @@ Also exported, all module-level:
   than an omission. `UUID_V7_SENTINEL_DEFINITIONS` is the default sentinel list.
 - `createUuidV7Generator(options)` builds a generator from your own `clock` and `fillRandom`, for
   a `generator:` codec option. Its options type is `UuidV7GeneratorOptions`.
-- `UuidSlugError` and its subclass `UuidRuntimeError`, which is what the generators throw when the
-  runtime has no usable randomness. `UuidSlugErrorCode` types the `code` property.
+- `UuidSlugError` and its subclass `UuidRuntimeError`, returned when the runtime has no usable
+  randomness. `UuidSlugErrorCode` types the `code` property.
 
 ### Codec options
 
@@ -250,12 +253,12 @@ sentinels use 26-character raw base32hex slugs; old 22-character sentinels remai
 
 To supply a different mixing implementation, pass a `MaskSchema`: an `id` and
 `mix(input, output, forward)`, where `forward: false` must reverse `forward: true` for every
-16-byte input. Construction runs round-trip smoke tests and throws if they fail. Passing them
+16-byte input. Construction runs round-trip smoke tests and returns an error if they fail. Passing them
 is not a proof of invertibility; the caller remains responsible for the complete domain.
 
 `createMaskSchema({ seed, keyIterations })` returns an error for invalid seed options.
-`createUuidSlugCodec` throws for invalid options, including a supplied schema that fails its
-smoke tests. Build a seed schema first when you want to inspect its returned error.
+`createUuidSlugCodec(options)` returns an error for invalid options, including a supplied schema
+that fails its smoke tests.
 
 For expensive derivation, await `createMaskSchemaAsync` and pass the completed schema to the codec:
 
@@ -270,6 +273,7 @@ const schema = await createMaskSchemaAsync({
 });
 if (schema instanceof Error) throw schema;
 const codec = createUuidSlugCodec({ mask: schema });
+if (codec instanceof Error) throw codec;
 ```
 
 The async form derives the same keys and accepts the same seed settings. It splits encoding,

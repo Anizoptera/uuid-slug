@@ -13,7 +13,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { createUuidV7Generator, parseUuid, uuidV7At } from "../src/index";
+import { createUuidV7Generator, parseUuid, uuidV7At, UuidSlugError } from "../src/index";
 
 /** Fills with one repeated byte, so the counter seed lands on a known bound. */
 const constantFill = (byte: number) => (bytes: Uint8Array<ArrayBuffer>) => {
@@ -180,7 +180,9 @@ describe("uuidv7 clock contract", () => {
       fillRandom: constantFill(0x00),
     });
     expect(generator.uuidV7Bytes()).toBeInstanceOf(Error);
-    expect(() => generator.uuidV7()).toThrow();
+    const failure = generator.uuidV7();
+    expect(failure).toBeInstanceOf(UuidSlugError);
+    expect(failure instanceof UuidSlugError && failure.code).toBe("invalid_timestamp");
   });
 
   it("accepts a fractional clock, which a monotonic time source legitimately is", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createMaskSchema,
-  createUuidSlugCodec,
+  createUuidSlugCodec as createCodec,
   decodeBase64Url,
   encodeBase64Url,
   extractUuidV7Timestamp,
@@ -12,12 +12,16 @@ import {
   uuidV7BytesAt,
   UuidSlugError,
 } from "../src/index";
-import type { SlugAlphabet } from "../src/index";
+import type { SlugAlphabet, UuidSlugCodecOptions } from "../src/index";
+import { unwrap } from "../dev/unwrap";
 import { deterministicUuidV7 } from "./deterministic-uuid";
 
 const SAMPLE_V7_A = "01987008-ef3e-7f69-b677-22ec1a5bbdb2";
 const SAMPLE_V7_B = "01987bbb-178b-7858-93e8-fc5e5444913b";
 const SAMPLE_V4 = "b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5";
+
+const createUuidSlugCodec = (options?: UuidSlugCodecOptions) =>
+  options === undefined ? createCodec() : unwrap(createCodec(options));
 
 /** Compared with `<` because that is what a database index or a sorted listing does to these. */
 const ascending = (slugs: readonly string[]) =>
@@ -269,10 +273,9 @@ describe("masked UUID slugs", () => {
         for (let i = 0; i < 16; i += 1) output[i] = input[(i + 5) % 16] as number;
       },
     };
-    expect(() => createUuidSlugCodec({ mask: ignoresDirection })).toThrow(/reverse/);
-    expect(() => createUuidSlugCodec({ mask: reordersBothWays })).toThrow(/reverse/);
-    // And a correct one is accepted, so the guard is not simply rejecting everything.
-    expect(() => createUuidSlugCodec({ mask: { seed: "fine-test-seed-0000" } })).not.toThrow();
+    expect(createCodec({ mask: ignoresDirection })).toMatchObject({ code: "invalid_mask_schema" });
+    expect(createCodec({ mask: reordersBothWays })).toMatchObject({ code: "invalid_mask_schema" });
+    expect(createCodec({ mask: { seed: "fine-test-seed-0000" } })).not.toBeInstanceOf(Error);
   });
 
   // Both are CALLER-input checks whose absence is silent: a short seed masks nothing while every

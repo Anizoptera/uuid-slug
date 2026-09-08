@@ -3,7 +3,7 @@
 import { strict as assert } from "node:assert";
 import {
   createMaskSchema,
-  createUuidSlugCodec,
+  createUuidSlugCodec as createCodec,
   createUuidV7Generator,
   DEFAULT_MASK_SCHEMA,
   isUuidString,
@@ -20,8 +20,12 @@ import {
 } from "../src/index";
 import { isBase64Url } from "../src/base64url";
 import type { MaskSchema, UuidSlugCodecOptions } from "../src/types";
+import { unwrap } from "../dev/unwrap";
 import fixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
 import { uuidVariants } from "./uuid-variants";
+
+const createUuidSlugCodec = (options?: UuidSlugCodecOptions) =>
+  options === undefined ? createCodec() : unwrap(createCodec(options));
 
 /** Compare the full payload independently of production bit packing. */
 function bits(text: string, alphabet: string, width: number) {
@@ -82,7 +86,7 @@ export const codecBoundaryCases = [
           assert.equal(reader.maskedSlugToUuid(uuidToSlug(sentinel.uuid) as string), sentinel.uuid);
         }
       }
-      assert.equal(safe.uuidV7Slug().length, 22);
+      assert.equal(unwrap(safe.uuidV7Slug()).length, 22);
       const plainSafe = createUuidSlugCodec({ mask, slugAlphabet: "base32hex" }).uuidV7ToMaskedSlug(
         "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051",
       );
@@ -256,40 +260,34 @@ export const codecBoundaryCases = [
   {
     name: "rejects a schema that overwrites the invertibility witness",
     run() {
-      assert.throws(
-        () =>
-          createUuidSlugCodec({
-            mask: {
-              id: "destructive",
-              mix(input, output) {
-                input.fill(0);
-                output.fill(0);
-              },
-            },
-          }),
-        { code: "invalid_mask_schema" },
-      );
+      const error = createCodec({
+        mask: {
+          id: "destructive",
+          mix(input, output) {
+            input.fill(0);
+            output.fill(0);
+          },
+        },
+      });
+      assert.ok(error instanceof UuidSlugError);
+      assert.equal(error.code, "invalid_mask_schema");
     },
   },
   {
     name: "preserves a throwing schema's cause",
     run() {
       const cause = new Error("mix failed");
-      assert.throws(
-        () =>
-          createUuidSlugCodec({
-            mask: {
-              id: "throwing",
-              mix() {
-                throw cause;
-              },
-            },
-          }),
-        (error: Error) =>
-          error instanceof UuidSlugError &&
-          error.code === "invalid_mask_schema" &&
-          error.cause === cause,
-      );
+      const error = createCodec({
+        mask: {
+          id: "throwing",
+          mix() {
+            throw cause;
+          },
+        },
+      });
+      assert.ok(error instanceof UuidSlugError);
+      assert.equal(error.code, "invalid_mask_schema");
+      assert.equal(error.cause, cause);
     },
   },
   {
@@ -351,9 +349,9 @@ export const codecBoundaryCases = [
   ...["constructor", "toString", "__proto__"].map((slugAlphabet) => ({
     name: `rejects inherited alphabet ${slugAlphabet} at construction`,
     run() {
-      assert.throws(() => createUuidSlugCodec({ slugAlphabet } as UuidSlugCodecOptions), {
-        code: "invalid_uuid_slug",
-      });
+      const error = createCodec({ slugAlphabet } as UuidSlugCodecOptions);
+      assert.ok(error instanceof UuidSlugError);
+      assert.equal(error.code, "invalid_uuid_slug");
     },
   })),
 ] as const;

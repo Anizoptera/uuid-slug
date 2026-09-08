@@ -2,13 +2,7 @@
 
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
-import {
-  checkRange,
-  errorOrThrow,
-  fillRandomBytes,
-  UuidRuntimeError,
-  UuidSlugError,
-} from "./errors";
+import { checkRange, fillRandomBytes, UuidRuntimeError, UuidSlugError } from "./errors";
 import type { UuidV4Slug, UuidV4String, UuidV7Generator, UuidV7Slug, UuidV7String } from "./types";
 import { formatUuid, formatUuidSlug } from "./uuid";
 import type { SlugAlphabet } from "./uuid";
@@ -39,14 +33,16 @@ export function uuidV4Bytes(out?: Uint8Array, offset = 0): UuidSlugError | Uint8
   return target;
 }
 
-export function uuidV4(): UuidV4String {
+export function uuidV4(): UuidSlugError | UuidV4String {
   try {
     const native = runtime.uuidV4?.();
     if (native) return native;
   } catch (cause) {
-    throw new UuidRuntimeError("Runtime UUIDv4 generation failed.", { cause });
+    return new UuidRuntimeError("Runtime UUIDv4 generation failed.", { cause });
   }
-  return errorOrThrow(formatUuid(errorOrThrow(uuidV4Bytes()))) as UuidV4String;
+  const bytes = uuidV4Bytes();
+  if (bytes instanceof Error) return bytes;
+  return formatUuid(bytes) as UuidSlugError | UuidV4String;
 }
 
 /**
@@ -55,10 +51,12 @@ export function uuidV4(): UuidV4String {
  * 26-character lowercase form for its public ids needs its v4 slugs in it too; the pair differing
  * would be an asymmetry with nothing behind it.
  */
-export function uuidV4Slug(alphabet: SlugAlphabet = "base64url"): UuidV4Slug {
+export function uuidV4Slug(alphabet: SlugAlphabet = "base64url"): UuidSlugError | UuidV4Slug {
   // The bytes came from `uuidV4Bytes`, which stamps version 4; the encoder sees only bytes and
   // cannot carry that through, which is what the assertion stands in for.
-  return errorOrThrow(formatUuidSlug(errorOrThrow(uuidV4Bytes()), 0, alphabet)) as UuidV4Slug;
+  const bytes = uuidV4Bytes();
+  if (bytes instanceof Error) return bytes;
+  return formatUuidSlug(bytes, 0, alphabet) as UuidSlugError | UuidV4Slug;
 }
 
 /*
@@ -68,7 +66,7 @@ export function uuidV4Slug(alphabet: SlugAlphabet = "base64url"): UuidV4Slug {
  * collapses to `string` because `Brand`'s marker is optional, so a branded return was promised that
  * nothing checked. A declared type turns that into a compile error at the one site that is wrong.
  */
-export const uuidV7 = (): UuidV7String => v7().uuidV7();
+export const uuidV7 = (): UuidSlugError | UuidV7String => v7().uuidV7();
 
 export const uuidV7Bytes = (out?: Uint8Array, offset?: number): UuidSlugError | Uint8Array =>
   v7().uuidV7Bytes(out, offset);
@@ -89,7 +87,7 @@ export const uuidV7BytesAt = (
  * Positional and last, matching `uuidToSlug`, so the two spellings of "encode in this alphabet"
  * do not diverge.
  */
-export function uuidV7Slug(alphabet: SlugAlphabet = "base64url"): UuidV7Slug {
+export function uuidV7Slug(alphabet: SlugAlphabet = "base64url"): UuidSlugError | UuidV7Slug {
   // Gated on the ALPHABET, not merely on the hook's presence. The runtime's slug generator emits
   // base64url and nothing else, so an ungated branch answers a base32hex request with a 22-char
   // base64url string — and only Bun defines the hook, so vitest on Node cannot reach the branch at
@@ -99,8 +97,16 @@ export function uuidV7Slug(alphabet: SlugAlphabet = "base64url"): UuidV7Slug {
   //
   // Only base64url can use the native slug path; base32hex needs bytes for package encoding.
   const native = alphabet === "base64url" ? runtime.uuidV7Slug : undefined;
-  if (native) return native();
+  if (native) {
+    try {
+      return native();
+    } catch (cause) {
+      return new UuidRuntimeError("Runtime UUIDv7 slug generation failed.", { cause });
+    }
+  }
   // Asserted for the same reason `uuidV4Slug` asserts: the bytes come from a v7 generator and the
   // encoder sees only bytes, so it returns the version-agnostic brand.
-  return errorOrThrow(formatUuidSlug(errorOrThrow(v7().uuidV7Bytes()), 0, alphabet)) as UuidV7Slug;
+  const bytes = v7().uuidV7Bytes();
+  if (bytes instanceof Error) return bytes;
+  return formatUuidSlug(bytes, 0, alphabet) as UuidSlugError | UuidV7Slug;
 }

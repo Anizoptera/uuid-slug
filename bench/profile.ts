@@ -4,23 +4,20 @@
 import { performance } from "node:perf_hooks";
 import { setImmediate as yieldToLoop } from "node:timers/promises";
 import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
+import { unwrap } from "../dev/unwrap";
 
 const beforeImport = performance.now();
 const api: typeof import("../src/index") = await import(
   process.env.UUID_SLUG_PROFILE_MODULE ?? "@anizoptera/uuid-slug"
 );
 const importMs = performance.now() - beforeImport;
-const unwrap = <T>(value: T | InstanceType<typeof api.UuidSlugError>): T => {
-  if (value instanceof Error) throw value;
-  return value;
-};
 const instant = 1_725_000_000_000;
 const now = { now: () => instant };
 const current = { seed: "profile-current-seed" };
 const previous = { seed: "profile-previous-seed" };
-const codec = api.createUuidSlugCodec({ mask: current });
-const older = api.createUuidSlugCodec({ mask: previous });
-const rotated = api.createUuidSlugCodec({ mask: current, previousMasks: [previous] });
+const codec = unwrap(api.createUuidSlugCodec({ mask: current }));
+const older = unwrap(api.createUuidSlugCodec({ mask: previous }));
+const rotated = unwrap(api.createUuidSlugCodec({ mask: current, previousMasks: [previous] }));
 const migration = rotated.migration({ original: true, plain: true });
 const originals = originalFixtures.issued.filter(({ slug, raw }) => slug !== raw);
 const portable = api.createUuidV7Generator({

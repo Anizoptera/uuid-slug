@@ -8,6 +8,7 @@ import { decodeMaskedCandidates } from "../src/mask";
 import { createMaskSchema } from "../src/schema";
 import { formatUuid, parseUuidSlug, uuidToSlug } from "../src/uuid";
 import fixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
+import { unwrap } from "../dev/unwrap";
 import { uuidTailAliases } from "./uuid-tail-aliases";
 
 export const legacyMaskCases = [
@@ -31,7 +32,7 @@ export const legacyMaskCases = [
       });
       const primary = masks[0];
       assert.ok(primary);
-      const codec = createUuidSlugCodec({ mask: primary, previousMasks: masks.slice(1) });
+      const codec = unwrap(createUuidSlugCodec({ mask: primary, previousMasks: masks.slice(1) }));
       enabled = true;
       assert.deepEqual(codec.migration().candidates(slug), uuids);
     },
@@ -41,29 +42,33 @@ export const legacyMaskCases = [
     run(this: void) {
       const uuid = "0198abcd-1234-7abc-9def-000000000001";
       let tagged = new Uint8Array(16);
-      const identity = createUuidSlugCodec({
-        mask: {
-          id: "identity",
-          mix(input, output, forward) {
-            output.set(input);
-            if (forward) tagged = input.slice();
+      const identity = unwrap(
+        createUuidSlugCodec({
+          mask: {
+            id: "identity",
+            mix(input, output, forward) {
+              output.set(input);
+              if (forward) tagged = input.slice();
+            },
           },
-        },
-      });
+        }),
+      );
       identity.uuidV7ToMaskedSlug(uuid);
       const sentinel = identity.sentinels[0];
       assert.ok(sentinel);
       const raw = parseUuidSlug(sentinel.slug);
       if (raw instanceof Error) throw raw;
       const key = tagged.map((byte, index) => byte ^ (raw[index] as number));
-      const codec = createUuidSlugCodec({
-        mask: {
-          id: "sentinel-alias",
-          mix(input, output) {
-            for (let i = 0; i < 16; i++) output[i] = (input[i] as number) ^ (key[i] as number);
+      const codec = unwrap(
+        createUuidSlugCodec({
+          mask: {
+            id: "sentinel-alias",
+            mix(input, output) {
+              for (let i = 0; i < 16; i++) output[i] = (input[i] as number) ^ (key[i] as number);
+            },
           },
-        },
-      });
+        }),
+      );
       const slug = codec.uuidV7ToMaskedSlug(uuid);
       if (slug instanceof Error) throw slug;
       assert.notEqual(slug, sentinel.slug);
@@ -104,17 +109,19 @@ export const legacyMaskCases = [
     name: "migration returns one default candidate and all distinct lookup candidates",
     run(this: void) {
       const { seed, slug, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
-      const codec = createUuidSlugCodec({ mask: { seed }, previousMasks: [{ seed }] });
+      const codec = unwrap(createUuidSlugCodec({ mask: { seed }, previousMasks: [{ seed }] }));
       const reader = codec.migration({ original: true, plain: true });
       assert.equal(reader.decode(slug), currentUuid);
       assert.deepEqual(reader.candidates(slug), [currentUuid, originalUuid, plainUuid]);
       assert.equal(reader.decode(slug, "original"), originalUuid);
       assert.equal(reader.decode(slug, "plain"), plainUuid);
       assert.deepEqual(reader.candidates(slug, "current"), [currentUuid]);
-      const custom = createUuidSlugCodec({
-        mask: { seed },
-        sentinels: [{ name: "reserved", uuid: currentUuid }],
-      });
+      const custom = unwrap(
+        createUuidSlugCodec({
+          mask: { seed },
+          sentinels: [{ name: "reserved", uuid: currentUuid }],
+        }),
+      );
       const sentinel = custom.sentinels[0];
       assert.ok(sentinel);
       assert.deepEqual(
@@ -127,7 +134,7 @@ export const legacyMaskCases = [
     name: "migration configuration is captured and old formats can be retired independently",
     run(this: void) {
       const { seed, slug, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
-      const codec = createUuidSlugCodec({ mask: { seed } });
+      const codec = unwrap(createUuidSlugCodec({ mask: { seed } }));
       const options = { original: true, plain: true };
       const reader = codec.migration(options);
       options.original = false;
@@ -154,15 +161,17 @@ export const legacyMaskCases = [
       if (schema instanceof Error) throw schema;
       let fail = false;
       const cause = new Error("custom mask failed");
-      const custom = createUuidSlugCodec({
-        mask: {
-          ...schema,
-          mix(input, output, forward) {
-            if (fail) throw cause;
-            schema.mix(input, output, forward);
+      const custom = unwrap(
+        createUuidSlugCodec({
+          mask: {
+            ...schema,
+            mix(input, output, forward) {
+              if (fail) throw cause;
+              schema.mix(input, output, forward);
+            },
           },
-        },
-      }).migration({ original: true, plain: true });
+        }),
+      ).migration({ original: true, plain: true });
       fail = true;
       for (const result of [custom.decode(slug), custom.candidates(slug)]) {
         assert.ok(result instanceof Error);
@@ -213,7 +222,7 @@ export const legacyMaskCases = [
     name: "one slug can carry three distinct UUID interpretations",
     run(this: void) {
       const { slug, seed, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
-      const codec = createUuidSlugCodec({ mask: { seed } });
+      const codec = unwrap(createUuidSlugCodec({ mask: { seed } }));
       assert.equal(codec.uuidV7ToMaskedSlug(currentUuid), slug);
       assert.equal(codec.maskedSlugToUuid(slug), currentUuid);
       const raw = parseUuidSlug(slug);

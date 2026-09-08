@@ -10,11 +10,12 @@ import {
   UuidSlugError,
 } from "../src/index";
 import type { MaskSchema } from "../src/index";
+import { unwrap } from "../dev/unwrap";
 
 const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
 function encoded(schema: MaskSchema | UuidSlugError): string {
   assert.ok(!(schema instanceof Error));
-  const result = createUuidSlugCodec({ mask: schema }).uuidV7ToMaskedSlug(uuid);
+  const result = unwrap(createUuidSlugCodec({ mask: schema })).uuidV7ToMaskedSlug(uuid);
   assert.equal(typeof result, "string");
   return result as string;
 }

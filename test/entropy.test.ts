@@ -15,6 +15,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { instrument } from "./instrument";
+import { unwrap } from "../dev/unwrap";
 
 import {
   attributedSourcesFor,
@@ -61,7 +62,7 @@ describe("entropy source", () => {
 describe("generated v7 values", () => {
   it("keep the v7 version and RFC variant", () => {
     for (let i = 0; i < 2_000; i += 1) {
-      const hex = codec.uuidV7().replaceAll("-", "");
+      const hex = unwrap(codec.uuidV7()).replaceAll("-", "");
       expect(hex[12]).toBe("7");
       expect("89ab").toContain(hex[16]);
     }

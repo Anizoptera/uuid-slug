@@ -5,6 +5,8 @@ import { strict as assert } from "node:assert";
 import { performance } from "node:perf_hooks";
 import { setImmediate as yieldToLoop } from "node:timers/promises";
 
+import { unwrap } from "../dev/unwrap";
+
 const api: typeof import("../src/index") = await import(
   process.env.UUID_SLUG_PROFILE_MODULE ?? "@anizoptera/uuid-slug"
 );
@@ -12,17 +14,15 @@ const ids = Array.from(
   { length: 256 },
   (_, i) => `0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f${i.toString(16).padStart(4, "0")}`,
 );
-function unwrap<T>(value: T | InstanceType<typeof api.UuidSlugError>): T {
-  if (value instanceof Error) throw value;
-  return value;
-}
 const slugs = ids.map((id) => unwrap(api.uuidToSlug(id)));
-const codec = api.createUuidSlugCodec({ mask: { seed: "profile-current-seed" } });
-const older = api.createUuidSlugCodec({ mask: { seed: "profile-previous-seed" } });
-const rotated = api.createUuidSlugCodec({
-  mask: { seed: "profile-current-seed" },
-  previousMasks: [{ seed: "profile-previous-seed" }],
-});
+const codec = unwrap(api.createUuidSlugCodec({ mask: { seed: "profile-current-seed" } }));
+const older = unwrap(api.createUuidSlugCodec({ mask: { seed: "profile-previous-seed" } }));
+const rotated = unwrap(
+  api.createUuidSlugCodec({
+    mask: { seed: "profile-current-seed" },
+    previousMasks: [{ seed: "profile-previous-seed" }],
+  }),
+);
 const masked = ids.map((id) => unwrap(codec.uuidV7ToMaskedSlug(id)));
 const old = ids
   .map((id) => unwrap(older.uuidV7ToMaskedSlug(id)))

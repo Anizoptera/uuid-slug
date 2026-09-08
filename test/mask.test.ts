@@ -12,6 +12,7 @@ import { createUuidSlugCodec } from "../src/codec";
 import { decodeMaskedSlug, uuidV7BytesToMaskedSlug } from "../src/mask";
 import { createMaskSchema } from "../src/schema";
 import { deterministicUuidV7Bytes } from "./deterministic-uuid";
+import { unwrap } from "../dev/unwrap";
 
 /** Pads to the 16-byte seed floor, so cases can keep naming their key after what it tests. */
 const schemaOrThrow = (seed: string) => {
@@ -26,7 +27,7 @@ const FIRST_REFUSED = "04000000-0000-7000-8000-000000000000";
 
 describe("the maskable range", () => {
   const schema = schemaOrThrow("range");
-  const codec = createUuidSlugCodec({ mask: schema, sentinels: [] });
+  const codec = unwrap(createUuidSlugCodec({ mask: schema, sentinels: [] }));
 
   it("masks the last instant before 2^42 ms and refuses the first one at or past it", () => {
     expect(codec.uuidV7ToMaskedSlug(LAST_MASKABLE)).toHaveLength(22);

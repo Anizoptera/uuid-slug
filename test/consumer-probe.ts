@@ -1,5 +1,6 @@
 import type * as Api from "../src/index";
 import fixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
+import { unwrap } from "../dev/unwrap";
 
 function equal(actual: unknown, expected: unknown, context: string): void {
   if (actual !== expected)
@@ -9,8 +10,8 @@ function equal(actual: unknown, expected: unknown, context: string): void {
 /** Exercise public calls through the module supplied by the consumer's own resolver. */
 export async function probeConsumer(api: typeof Api): Promise<void> {
   const uuid = "019ff19b-58b8-7000-9b1b-df713bd5562c";
-  equal(api.isUuidV7String(api.uuidV7()), true, "v7 generation");
-  equal(api.isUuidV4String(api.uuidV4()), true, "v4 generation");
+  equal(api.isUuidV7String(unwrap(api.uuidV7())), true, "v7 generation");
+  equal(api.isUuidV4String(unwrap(api.uuidV4())), true, "v4 generation");
   for (const alphabet of ["base64url", "base32hex"] as const) {
     const slug = api.uuidToSlug(uuid, alphabet);
     if (slug instanceof Error) throw slug;
@@ -21,10 +22,10 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
         b.fill(0x12);
       },
     });
-    const codec = api.createUuidSlugCodec({ generator, slugAlphabet: alphabet });
+    const codec = unwrap(api.createUuidSlugCodec({ generator, slugAlphabet: alphabet }));
     equal(codec.migration({ plain: true }).decode(slug, "plain"), uuid, `${alphabet} migration`);
     equal(
-      api.slugToUuid(codec.uuidV7Slug()),
+      api.slugToUuid(unwrap(codec.uuidV7Slug())),
       "011f71fb-0450-7121-8848-484a12121212",
       `${alphabet} custom generator`,
     );
@@ -35,8 +36,8 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   if (synchronous instanceof Error) throw synchronous;
   if (asynchronous instanceof Error) throw asynchronous;
   equal(
-    api.createUuidSlugCodec({ mask: asynchronous }).uuidV7ToMaskedSlug(uuid),
-    api.createUuidSlugCodec({ mask: synchronous }).uuidV7ToMaskedSlug(uuid),
+    unwrap(api.createUuidSlugCodec({ mask: asynchronous })).uuidV7ToMaskedSlug(uuid),
+    unwrap(api.createUuidSlugCodec({ mask: synchronous })).uuidV7ToMaskedSlug(uuid),
     "async schema wire identity",
   );
   // An independent host task must be able to cancel real derivation through the installed export.
@@ -69,7 +70,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   }
   const codec = api.createUuidSlugCodec();
   const { seed, slug: overlap, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
-  const migrating = api.createUuidSlugCodec({ mask: { seed } });
+  const migrating = unwrap(api.createUuidSlugCodec({ mask: { seed } }));
   const reader = migrating.migration({ original: true, plain: true });
   equal(reader.decode(overlap), currentUuid, "migration default");
   equal(reader.decode(overlap, "original"), originalUuid, "original migration");
@@ -86,7 +87,9 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   );
   equal(codec.uuidV7ToMaskedSlug(uuid), "uqgITQGagyxsoNARAd_pxu", "masked wire vector");
   equal(codec.maskedSlugToUuidV7("uqgITQGagyxsoNARAd_pxu"), uuid, "masked inverse");
-  const sentinelCodec = api.createUuidSlugCodec({ sentinels: [{ name: "reserved", uuid }] });
+  const sentinelCodec = unwrap(
+    api.createUuidSlugCodec({ sentinels: [{ name: "reserved", uuid }] }),
+  );
   const sentinel = api.uuidToSlug(uuid);
   equal(sentinelCodec.uuidV7ToMaskedSlug(uuid), sentinel, "custom sentinel encoding");
   equal(sentinelCodec.maskedSlugToUuidV7(String(sentinel)), uuid, "custom sentinel decoding");
