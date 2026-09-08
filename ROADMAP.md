@@ -89,21 +89,21 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 
 ### 4. Deliver masking and safe spelling — compatibility-critical, medium/high effort
 
-- [ ] Port HalfSipHash and deterministic key derivation. Accept when: shared reference vectors and
+- [x] Port HalfSipHash and deterministic key derivation. Evidence: shared reference vectors and
   UTF-8/byte seeds, UTF-16 replacement at JS bridges, little-endian hash words, big-endian block
   words, iteration bounds and wrapping arithmetic agree; chunk boundaries cannot change keys.
-- [ ] Implement cooperative cancelable derivation without imposing an application runtime.
-  Share hash primitives, retain the direct sync path; snapshot mutable inputs before returning
-  the future. Prove abort-before-poll, mid-work abort/drop, stable keys and unrelated host progress.
+- [x] Implement cooperative cancelable derivation without imposing an application runtime.
+  Direct and cooperative paths share hash primitives; native boundary tests verify captured seeds
+  and stable keys. Browser execution verifies abort-before-poll, mid-work abort/drop and host progress.
 - [x] Implement built-in masking and unmasking. Evidence: existing wire fixtures, timestamp overflow,
   checksum rejection and UUID identity preservation match TypeScript.
-- [ ] Implement custom schemas. Accept when: inverse-direction cases, callback errors and output
+- [x] Implement custom schemas. Evidence: inverse-direction cases, callback errors and output
   ownership cover reentrancy and retained buffers; immutable built-in codecs share safely, while
   custom callbacks need explicit thread-safety bounds. Finite inverse probes are not a proof.
 - [x] Implement sentinels and collision protection. Shared cases cover caller-defined, empty,
   duplicate and invalid definitions. The Rust collision test reaches both alphabet branches and
   fails when the collision guard is removed; owned callback arrays prevent retained aliases.
-- [ ] Implement explicit key rotation. Accept when: first-match order, all distinct candidates and
+- [x] Implement explicit key rotation. Evidence: first-match order, all distinct candidates and
   failure behavior match; normalize spelling once, not once per key; never append implicit schemas.
 - [x] Add the approved safe masked spelling in TypeScript and Rust together. Evidence: all 132 bits
   survive cross-language conversion, strict padding rejects aliases, and old outputs stay valid.
@@ -114,7 +114,7 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 
 - [x] Implement freshness validation. Evidence: ordinary and sentinel cases, finite windows, fractions, inclusive
   boundaries and codec-local masked validation match existing semantics.
-- [ ] Implement the opt-in original fixed-mask reader. Accept when: retained producer fixtures and
+- [x] Implement the opt-in original fixed-mask reader. Evidence: retained producer fixtures and
   accepted historical aliases match; the unsupported 0.2.0 scheme remains unsupported.
 - [x] Implement known-format and mixed-format migration reads. Evidence: priority, sentinel/plain
   collisions, non-v7 plain UUIDs and explicit candidate enumeration match shared cases.
@@ -122,7 +122,9 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   that path while preserving current formats and separately enabled compatibility.
 - [x] Implement arbitrary-byte base64url utilities, including allocation-free caller-buffer decoding.
   Shared cases cover empty/malformed text, UTF-16 error priority, exact result slices and offsets.
-- [ ] Implement guards matching conversion at version, variant, alphabet and padding boundaries.
+- [x] Implement guards matching conversion at version, variant, alphabet and padding boundaries.
+  Shared cases reject every nonzero plain padding spelling in both alphabets and exercise each
+  version nibble/variant prefix; explicit expected rejections prevent mutual false acceptance.
 - [x] Implement the v7 entropy predicate. Evidence: shared degenerate/random-field cases match;
   a passing predicate is not described as proof of randomness quality.
 - [ ] Reconcile every public capability with both implementations and its shared evidence.

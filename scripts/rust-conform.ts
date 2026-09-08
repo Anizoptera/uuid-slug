@@ -270,6 +270,26 @@ export async function contractRequests(): Promise<Request[]> {
       op: "base64Encode",
       bytes: Array.from({ length }, (_, i) => (i * 19 + length) & 255),
     });
+  // Plain UUID padding cannot carry data: every nonzero spelling must be rejected.
+  for (const alphabet of ["base64url", "base32hex"] as const) {
+    const symbols =
+      alphabet === "base64url"
+        ? "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+        : "0123456789abcdefghijklmnopqrstuv";
+    const canonical = ts.uuidToSlug(ordinary.uuid, alphabet);
+    if (canonical instanceof Error) throw canonical;
+    const last = symbols.indexOf(canonical.at(-1) as string);
+    for (let bits = 1; bits < (alphabet === "base64url" ? 16 : 4); bits++) {
+      const input = canonical.slice(0, -1) + symbols[last | bits];
+      const decode: Request = { op: "unplain", input };
+      const guards: Request = { op: "guards", input };
+      deepStrictEqual(evaluate(decode), {
+        error: alphabet === "base64url" ? "invalid_base64url" : "invalid_base32",
+      });
+      deepStrictEqual(evaluate(guards), { value: [false, false, false, false, false, false] });
+      requests.push(decode, guards);
+    }
+  }
   for (const input of ["", "A", "Zg", "Zh", "Zg=", "Zm9vYmFy", "Zm9v!mFy", "é"])
     for (const capacity of [0, 1, 6, 9])
       for (const offset of [0, 1, 9])
