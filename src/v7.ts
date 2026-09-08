@@ -162,12 +162,12 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
         const failed = reseed(now);
         if (failed) return failed;
       } else {
-        counterLo = (counterLo + 1) >>> 0;
-        if (counterLo === 0) counterHi += 1;
+        const nextLo = (counterLo + 1) >>> 0;
+        const nextHi = counterHi + (nextLo === 0 ? 1 : 0);
         // Past 42 bits the sequence no longer fits `rand_a` plus the borrowed `rand_b` bits.
         // Borrowing the next millisecond keeps ids ordered and unique rather than wrapping into
         // values this millisecond has already issued.
-        if (counterHi > 0x3ff) {
+        if (nextHi > 0x3ff) {
           // At the ceiling there is no next millisecond to borrow: `writeTimestamp` truncates to
           // six bytes, so `lastMs + 1` wraps to 0 and the generator restarts in 1970 — ordering
           // broken permanently, and silently, from that call onward. Unreachable on a real clock
@@ -183,6 +183,9 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
         } else {
           const failed = fillRandomBytes(fill, random);
           if (failed) return failed;
+          // Commit only after entropy succeeds; a failed draw must not consume sequence state.
+          counterLo = nextLo;
+          counterHi = nextHi;
         }
       }
       ms = lastMs;

@@ -243,6 +243,26 @@ describe("uuidv7 buffer handling", () => {
 });
 
 describe("uuidv7 entropy use", () => {
+  it.each([0x00, 0xff])("retries a failed draw without consuming sequence state (%d)", (byte) => {
+    let fail = false;
+    const generator = createUuidV7Generator({
+      clock: fixedClock(10),
+      fillRandom: (bytes) => {
+        if (fail) throw new Error("entropy unavailable");
+        bytes.fill(byte);
+      },
+    });
+    const control = createUuidV7Generator({
+      clock: fixedClock(10),
+      fillRandom: constantFill(byte),
+    });
+    expect(bytesOf(generator)).toEqual(bytesOf(control));
+    fail = true;
+    expect(generator.uuidV7Bytes()).toBeInstanceOf(Error);
+    fail = false;
+    expect(bytesOf(generator)).toEqual(bytesOf(control));
+  });
+
   it("draws fresh randomness for every value inside one millisecond", () => {
     // The counter guarantees order; the trailing bytes are what make a value unguessable.
     // Reusing the same draw for a whole millisecond would make consecutive values differ only
