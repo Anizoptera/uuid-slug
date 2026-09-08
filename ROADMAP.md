@@ -55,7 +55,9 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [ ] Parameterize reusable behavioral cases over implementation adapters. Accept when: the first Rust
   increment runs shared cases; extract existing `test/*-probe.ts` closures without changing their
   expectations. Report missing cases per adapter; aggregate success cannot hide an empty adapter.
-- [ ] Define owned/borrowed results and errors that retain causes, without panic or partial success.
+- [x] Define owned/borrowed results and errors that retain causes, without panic or partial success.
+  Fixed-size outputs commit only on success; candidates expose no partial result on callback failure. Native tests
+  verify preserved causes, buffer bounds and retry state; ordinary input failures return `Result`.
 - [x] Inherit workspace lints in every member: deny correctness/suspicious/perf, document public
   APIs, forbid unsafe in the core; isolate necessary FFI exceptions in bridge crates only.
 - [x] Run default Rust formatting once in `check:rust`; keep `format:check` for JavaScript files.
@@ -65,14 +67,14 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   known interacting combinations. All-features alone hides missing feature dependencies.
 - [ ] Run shared parity on native GitHub OS/CPU runners from the first Rust increment; fail missing
   observations. Keep runner selection in the CI matrix, not a second target list in prose.
-- [ ] Connect the first Rust capability to Node through N-API. Accept when: the same shared case reaches
-  Rust, preserves error/ownership semantics, and fails when the Rust result is deliberately wrong.
-- [ ] Connect that capability to Bun through FFI. Accept when: the same case reaches Rust; explicit
+- [x] Connect the first Rust capability to Node through N-API. Both native comparisons reject
+  deliberately corrupted Rust parse output; the restored build passes the shared contracts.
+- [x] Connect that capability to Bun through FFI. Evidence: the same case reaches Rust; explicit
   lengths, owned handles and matched release functions cover cleanup, bad input and repeated calls.
 
 ### 3. Deliver plain identifiers and generation — primary consumer value, medium effort
 
-- [ ] Implement UUID parsing, formatting and byte conversion. Accept when: shared input-boundary cases
+- [x] Implement UUID parsing, formatting and byte conversion. Evidence: shared input-boundary cases
   cover strict text, slices/offsets and unchanged buffers on error; private validated fields prevent
   bypass through constructors or deserialization. Generic UUIDs still accept all version nibbles.
 - [x] Implement both plain alphabets; pass padding, length, byte-order and non-v7 contract cases.
