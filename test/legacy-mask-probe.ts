@@ -88,6 +88,25 @@ export const legacyMaskCases = [
       const noMatch = "A".repeat(22);
       assert.deepEqual(codec.migration().candidates(noMatch), []);
       assert.ok(codec.migration().decode(noMatch) instanceof Error);
+      const schema = createMaskSchema({ seed });
+      if (schema instanceof Error) throw schema;
+      let fail = false;
+      const cause = new Error("custom mask failed");
+      const custom = createUuidSlugCodec({
+        mask: {
+          ...schema,
+          mix(input, output, forward) {
+            if (fail) throw cause;
+            schema.mix(input, output, forward);
+          },
+        },
+      }).migration({ original: true, plain: true });
+      fail = true;
+      for (const result of [custom.decode(slug), custom.candidates(slug)]) {
+        assert.ok(result instanceof Error);
+        assert.equal(result.cause, cause);
+      }
+      assert.equal(custom.decode(slug, "plain"), plainUuid);
     },
   },
   {

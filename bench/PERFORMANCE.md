@@ -90,6 +90,29 @@ For a 19-byte seed at 65,536 iterations, real independent task gaps peaked at ap
 
 Cancellation retention probes discarded 16 one-MiB jobs per epoch and collected between epochs. Node's eight epochs ended around 5.22 MB heap used. Bun's extended 32-epoch probe rose transiently to 3.79 MB, then settled near 1.72 MB rather than retaining every cancelled seed. This falsifies linear retention of all those inputs in that probe; it does not prove every application is leak-free.
 
+## Migration decoding
+
+Migration parses each input once and stops at the first match for `decode`; `candidates` tries
+all enabled formats. Resource checks cover both paths on Node and Bun, including zero discarded
+errors and no entropy draws. Ordinary codec calls do not enter the migration reader.
+
+A local probe on Node 26.8.1 and Bun 1.4.2 used the three-format overlap in
+`test/fixtures-original-slugs.json`: 5,000 warm-up calls, then seven batches of 10,000 calls per
+method. Median nanoseconds per call were:
+
+| Call | Node | Bun |
+| --- | ---: | ---: |
+| Ordinary current decode | 274 | 189 |
+| Migration default | 439 | 271 |
+| All candidates | 766 | 585 |
+| Known original format | 328 | 259 |
+| Known plain format | 273 | 157 |
+
+These are single-process, single-input measurements, not hardware-independent limits or a
+before/after speedup. The extra candidate work is requested work; use a known format when the
+application has that information. Allocation counters miss engine-internal allocations and do
+not establish a retained-memory bound.
+
 ## Regression protection and limits
 
 `bun run perf:check` protects JavaScript-visible allocation, decoding, encoding and entropy work, plus coarse relative pipeline timings on both runtimes. Its injected result-preserving regressions must fail. Shared functional cases protect wire identity, ownership, invalid input and optional native branches. Async cases protect snapshots, UTF-8 chunk boundaries, cancellation and independent concurrent constructions; changing host yields to microtasks makes cancellation fail.

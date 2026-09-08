@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { BASE64URL, decodeInto } from "./alphabet";
+import { BASE32HEX, BASE64URL, decodeInto, encode } from "./alphabet";
 import { UuidSlugError } from "./errors";
 import { decodeOriginalMask } from "./legacy-mask";
 import { decodeMaskedCandidates } from "./mask";
@@ -12,7 +12,7 @@ import type {
   UuidString,
   UuidV7String,
 } from "./types";
-import { formatUuid, formatUuidSlug, parseUuidSlug } from "./uuid";
+import { formatUuid } from "./uuid";
 
 /** Read old IDs with the codec's keys and sentinels; never change how new IDs are written. */
 export function createMigration(
@@ -44,15 +44,11 @@ export function createMigration(
     const usePlain = plain && (format === undefined || format === "plain");
     const bytes = new Uint8Array(16);
     // Original readers ignored the four trailing bits. Keep those aliases confined to migration.
-    const tail =
-      slug.length === 26 && usePlain
-        ? parseUuidSlug(slug, bytes)
-        : decodeInto(slug, BASE64URL, bytes, 0, 16, 4);
+    const base32 = slug.length === 26 && usePlain;
+    const tail = decodeInto(slug, base32 ? BASE32HEX : BASE64URL, bytes, 0, 16, base32 ? 0 : 4);
     if (tail instanceof Error) return tail;
     if (useOriginal || usePlain) {
-      const canonical = formatUuidSlug(bytes);
-      if (canonical instanceof Error) return canonical;
-      const reserved = sentinels.get(canonical);
+      const reserved = sentinels.get(encode(bytes, BASE64URL));
       if (reserved) return [reserved.uuid];
     }
     const candidates: UuidString[] = [];
@@ -62,7 +58,7 @@ export function createMigration(
       if (!candidates.includes(uuid)) candidates.push(uuid);
       return undefined;
     }
-    if (useCurrent && slug.length === 22 && typeof tail === "number") {
+    if (useCurrent && !base32) {
       const matches = decodeMaskedCandidates(bytes, tail, schemas, firstOnly);
       if (matches instanceof Error) return matches;
       for (const match of matches) {
