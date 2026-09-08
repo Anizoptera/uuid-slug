@@ -2,11 +2,28 @@
 
 import assert from "node:assert/strict";
 import { BASE64URL, decodeInto } from "../src/alphabet";
+import { createUuidSlugCodec } from "../src/codec";
 import { decodeOriginalMask, parseOriginalSlug } from "../src/legacy-mask";
 import { formatUuid, parseUuidSlug } from "../src/uuid";
 import fixtures from "./fixtures-original-slugs.json";
 
 export const legacyMaskCases = [
+  {
+    name: "one slug can carry three distinct UUID interpretations",
+    run(this: void) {
+      const { slug, seed, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
+      const codec = createUuidSlugCodec({ mask: { seed } });
+      assert.equal(codec.uuidV7ToMaskedSlug(currentUuid), slug);
+      assert.equal(codec.maskedSlugToUuid(slug), currentUuid);
+      const raw = parseOriginalSlug(slug);
+      if (raw instanceof Error) throw raw;
+      assert.equal(formatUuid(raw), plainUuid);
+      const original = decodeOriginalMask(raw);
+      if (original instanceof Error) throw original;
+      assert.equal(formatUuid(original), originalUuid);
+      assert.equal(new Set([currentUuid, originalUuid, plainUuid]).size, 3);
+    },
+  },
   {
     name: "preserve original raw UUIDs and their stored tail aliases without relaxing current decoding",
     run(this: void) {
