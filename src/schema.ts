@@ -25,7 +25,7 @@ const CHAIN_B_KEY1 = 0x42676c73;
 const CHAIN_KEY0 = 0x64697575;
 
 function seedBytes(seed: string | Uint8Array) {
-  if (typeof seed !== "string") return seed;
+  if (typeof seed !== "string") return new Uint8Array(seed);
   return new TextEncoder().encode(seed);
 }
 
@@ -69,9 +69,10 @@ function chain(key0: number, key1: number, words: Int32Array, length: number, it
  * state is 128 bits; that representation does not establish 128-bit security. Chain constants,
  * word indices and byte order are frozen by the issued wire format.
  */
-function derivedKeys(words: Int32Array, length: number, iterations: number) {
-  const chainA = chain(CHAIN_KEY0, CHAIN_A_KEY1, words, length, iterations);
-  const chainB = chain(CHAIN_KEY0, CHAIN_B_KEY1, words, length, iterations);
+function derivedKeys(seed: Uint8Array, iterations: number) {
+  const words = seedWords(seed);
+  const chainA = chain(CHAIN_KEY0, CHAIN_A_KEY1, words, seed.length, iterations);
+  const chainB = chain(CHAIN_KEY0, CHAIN_B_KEY1, words, seed.length, iterations);
   return roundKeys(chainA, chainB);
 }
 
@@ -92,7 +93,7 @@ function roundKeys(chainA: Int32Array, chainB: Int32Array) {
 }
 
 function feistelSchema(id: string, seed: Uint8Array, iterations: number): MaskSchema {
-  return schemaFromKeys(id, derivedKeys(seedWords(seed), seed.length, iterations));
+  return schemaFromKeys(id, derivedKeys(seed, iterations));
 }
 
 function schemaFromKeys(id: string, keys: Int32Array): MaskSchema {
@@ -108,14 +109,10 @@ export function createMaskSchema(options: MaskSchemaOptions): UuidSlugError | Ma
   const seed = seedBytes(options.seed);
   const short = invalidSeedLength(seed.length);
   if (short) return short;
-  // Capture bytes in their final private representation before option getters can mutate them.
-  // A separate byte snapshot would duplicate this storage and copy without protecting more data.
-  const length = seed.length;
-  const words = seedWords(seed);
   const iterations = options.keyIterations ?? 1;
   const invalid = invalidIterations(iterations);
   if (invalid) return invalid;
-  return schemaFromKeys(options.id ?? "seeded", derivedKeys(words, length, iterations));
+  return feistelSchema(options.id ?? "seeded", seed, iterations);
 }
 
 function invalidSeedLength(length: number): UuidSlugError | undefined {

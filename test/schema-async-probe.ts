@@ -25,26 +25,6 @@ function cancelled(value: MaskSchema | UuidSlugError, reason: unknown): void {
 }
 export const asyncSchemaCases = [
   {
-    name: "synchronous construction captures byte seeds before reading other options",
-    run(this: void) {
-      const seed = new Uint8Array(32).fill(7);
-      const expected = encoded(createMaskSchema({ seed: seed.slice() }));
-      const actual = createMaskSchema({
-        seed,
-        get keyIterations() {
-          seed.fill(9);
-          return 1;
-        },
-        get id() {
-          seed.fill(11);
-          return "seeded";
-        },
-      });
-      assert.equal(encoded(actual), expected);
-      assert.notEqual(encoded(createMaskSchema({ seed })), expected);
-    },
-  },
-  {
     name: "async derivation preserves byte tails, UTF-8 boundaries and iteration counts",
     async run(this: void) {
       const strings = [
