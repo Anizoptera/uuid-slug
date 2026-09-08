@@ -3,6 +3,7 @@ import { deepStrictEqual } from "node:assert";
 import { readFile } from "node:fs/promises";
 import * as ts from "../src/index";
 import type { MaskSchema, MaskSchemaOptions, MigrationFormat, SlugAlphabet } from "../src/index";
+import { bytePatterns } from "../test/byte-patterns";
 import { loadRustBridge } from "./rust-bridge";
 
 type Request = Record<string, unknown> & { op: string; input?: string };
@@ -311,6 +312,14 @@ export async function contractRequests(): Promise<Request[]> {
       op: "base64Encode",
       bytes: Array.from({ length }, (_, i) => (i * 19 + length) & 255),
     });
+  // Reuse the runtime probe's byte patterns; the platform encoder supplies an independent oracle.
+  for (const { bytes } of bytePatterns(new ArrayBuffer(80)))
+    for (let length = 0; length <= 64; length++) {
+      const view = bytes.subarray(4, 4 + length);
+      const request: Request = { op: "base64Encode", bytes: Array.from(view) };
+      deepStrictEqual(evaluate(request), { value: Buffer.from(view).toString("base64url") });
+      requests.push(request);
+    }
   // Plain UUID padding cannot carry data: every nonzero spelling must be rejected.
   for (const alphabet of ["base64url", "base32hex"] as const) {
     const symbols =

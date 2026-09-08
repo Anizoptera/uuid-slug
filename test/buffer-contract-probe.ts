@@ -28,6 +28,7 @@ import {
   parseUuid,
   parseUuidSlug,
 } from "../src/index";
+import { bytePatterns } from "./byte-patterns";
 
 const codec = createUuidSlugCodec();
 
@@ -89,9 +90,7 @@ export const cases: readonly ProbeCase[] = [
     name: "encoders preserve all byte values, lengths and shared-buffer slices",
     run: () => {
       for (const backing of [new ArrayBuffer(80), new SharedArrayBuffer(80)]) {
-        const bytes = new Uint8Array(backing);
-        for (let shift = 0; shift < 256; shift += 16) {
-          for (let i = 0; i < bytes.length; i += 1) bytes[i] = (i + shift) & 255;
+        for (const { bytes, shift } of bytePatterns(backing)) {
           for (let length = 0; length <= 64; length += 1) {
             const view = bytes.subarray(4, 4 + length);
             if (encodeBase64Url(view) !== Buffer.from(view).toString("base64url"))

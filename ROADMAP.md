@@ -70,6 +70,9 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [ ] Parameterize reusable behavioral cases over implementation adapters. Accept when: the first Rust
   increment runs shared cases; extract existing `test/*-probe.ts` closures without changing their
   expectations. Report missing cases per adapter; aggregate success cannot hide an empty adapter.
+  - [x] Extract the buffer probe's byte patterns and reuse them for native and browser encoding
+    comparisons. Preserve ArrayBuffer/SharedArrayBuffer and offset checks in the runtime probe;
+    check platform-encoded expected strings before comparing the Rust results.
 - [x] Define owned/borrowed results and errors that retain causes, without panic or partial success.
   Fixed-size outputs commit only on success; candidates expose no partial result on callback failure. Native tests
   verify preserved causes, buffer bounds and retry state; ordinary input failures return `Result`.
