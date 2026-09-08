@@ -176,8 +176,10 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 
 ### 6. Performance and bridge completion — measured cost reduction, medium effort
 
-- [ ] Reconcile Node and Bun bridge coverage against the public capability mapping. Accept when: every
-  shared case reaches Rust; native callback/cancellation checks cover what adapters cannot express.
+- [x] Reconcile Node and Bun bridge coverage against the public capability mapping. Every shared
+  operation has populated cases and a Rust dispatch path; both native transports pass the complete
+  batch. Rust tests cover callback failure, atomic candidates, captured seeds and mid-work cancellation.
+  Caller-buffer parsing failure remains the separate unresolved parity task above.
 - [x] Audit the development bridge lifecycle. Valid-pointer bounds and released handles pass
   Miri; native hosts copy owned results and release in `finally`. Browser checks cover abort/drop
   and cleanup. One C panic boundary covers dispatch and ownership; invalid pointers and process
