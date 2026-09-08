@@ -45,9 +45,8 @@ Native CI execution requires a maintainer-triggered run; the earlier push/draft-
 withdrawn. Release version selection remains unapproved and does not block local implementation.
 Remote writes, including publication, are forbidden by the ruling above; local validation cannot
 substitute for native CI evidence.
-The native reference is marked `UNLICENSED` and unpublished. Before raising a permission question,
-identify actual copied source and reconcile its provenance with Art's existing reuse instruction.
-The earlier blanket permission question is withdrawn; this does not authorize publication.
+The native source review is complete under Art's explicit instruction to reuse it for public use.
+Its unpublished/private license marker does not replace that instruction or authorize publication.
 
 ## Execution order
 
@@ -73,11 +72,14 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 
 ### 2. Establish the crate and shared evidence — high risk reduction, medium effort
 
-- [ ] Inspect the native source and its consumers before copying; preserve reusable behavior,
+- [x] Inspect the native source and its consumers before copying; preserve reusable behavior,
   verify licensing, omit private project identifiers. Accept when: reviewed source delta and provenance.
   - [x] Inspect the reference implementation, manifest and native generation/parse consumers.
     Its compact-text acceptance and infallible generation differ from this package's contracts;
-    consumer adoption stays separate. Reconcile actual source provenance as described above.
+    consumer adoption stays separate. The initial public implementation in `2af1b76` uses owned
+    generic UUID bytes, strict parsing and separate fallible generation; the reference's v7-only
+    wrapper, compact-text parser, infallible generator and serialization layer were not carried over.
+    Reuse of native source material is explicitly authorized by the HLD; publication is not.
 - [x] Compare UUID/entropy/encoding/hash/error/serde dependencies for contract fit and measured
   cost; retain reasons, not sibling version pins. Keep default features explicit and audit the lock graph.
   - [x] Compare UUID-sized base64 caller-buffer encoding/decoding and owned strings in alternating
