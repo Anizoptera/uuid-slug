@@ -233,6 +233,9 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [x] Apply measured optimizations without changing contracts. Caller-buffer decoding and
   first-result migration each avoid one allocation per call in paired native traces, in both
   orders. Callers still choose owned results or complete candidate enumeration when needed.
+  - [x] Pack synchronous byte seeds directly into private hash storage before reading other options.
+    Node/Bun comparisons preserve outputs, errors and getter-mutation capture; early packing avoids
+    the intermediate byte copy. Bulk copying lost on ordinary small seeds despite larger-input gains.
 
 ### 7. Distribution and release — public maintenance, medium effort
 
