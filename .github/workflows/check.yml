@@ -33,7 +33,10 @@ jobs:
         with:
           node-version-file: .tool-versions
           package-manager-cache: false
-      - run: bun run check
+      - run: bun run check:js
+
+  rust:
+    uses: ./.github/workflows/rust.yml
 
   # Exercise the declared floor and newer native capabilities without asserting ordering.
   runtimes:
