@@ -4,8 +4,7 @@ Build a public Rust crate with TypeScript semantic parity, prioritizing filesyst
 
 ## HLD — maintainer rulings
 
-- Deliver full Rust functionality; maintain parity from the first Rust increment under
-  [the cross-language contract](docs/cross-language.md).
+- Deliver full Rust functionality with [parity from the first increment](docs/cross-language.md).
 - Provide filesystem-safe plain and masked forms in both languages; preserve issued formats.
 - Keep the ordinary decode result one UUID; candidate enumeration stays explicit.
 - Keep API verbs recognizable, with language-appropriate types and error handling.
@@ -15,32 +14,29 @@ Build a public Rust crate with TypeScript semantic parity, prioritizing filesyst
 - Reuse contract cases and extend benchmarks, profiling and resource measurements to Rust.
 - Consumer application adoption and stored-filename migration are separate work.
 
-This roadmap owns unfinished tasks. Durable contracts belong in README and `docs/`; do not link
-production code or permanent design rules back to task IDs. No crate or new encoding is shipped
-by this document. Registry publication is a later action, after the concrete release is reviewed.
+Art owns the HLD above; tasks below are engineering proposals, not approved public decisions.
+Implementation is not ready for approval while the numbered public decisions below remain open.
 
 ## Execution order
 
-Tasks are dependency-constrained WSJF order: prevent identity loss and contract drift first,
-then complete capabilities, measure costs, and prepare distribution. Effort is relative, not a
-time estimate. Within a phase, follow listed order unless independent work can run without
-contention. Each checkbox is its own task and names its completion evidence. Do not collapse or
-discard unfinished entries. Update status only after inspecting that evidence.
+Build the shared runner first; then develop plain conversion and hashing independently.
+Join them at codec integration. Reuse builds across concurrent checks; isolate benchmarks.
+Commit verified parts under AGENTS.md; keep evidence tied to the changed artifact.
 
 ### 1. Settle public contracts — high risk reduction, small effort
 
-- [ ] Specify encoding selection and defaults for both languages; resolve any changed public
-  behavior with the maintainer before implementation. Done: approved caller examples.
-- [ ] Specify safe masked sentinel spelling, collision rejection, format inference and migration
-  routing. Done: unambiguous examples covering ordinary IDs, reserved IDs and overlapping forms.
-- [ ] Decide whether Node N-API and Bun FFI are development bridges or separately supported
-  products. Done: approved distribution boundary; npm remains native-free either way.
-- [ ] Settle crate name, initial version, release/tag policy and ownership. Done: maintainer ruling
-  plus current registry availability and licensing checks; availability is not a reservation.
-- [ ] Define supported Rust targets, MSRV and optional features from actual consumer needs.
-  Done: a bounded support matrix and examples that compile on its minimum toolchain.
-- [ ] Compare public call sites for all existing exports and codec methods. Done: a capability
-  mapping with input, result and failure semantics; missing features remain individually tracked.
+- [ ] Preserve base64url defaults in both languages: Art's parity and compatibility requirements
+  already decide this. Keep plain `slugAlphabet` semantics; select masked output independently.
+- [ ] R2 — Obtain Art's sentinel-spelling ruling: safe masked output uses a lossless 27-character
+  spelling of the existing sentinel, or the plain 26-character spelling with separate routing.
+- [ ] R3 — Obtain Art's binding-support ruling: development-only Node/Bun bridges, or separately
+  released bindings with an additional ABI/support commitment. Recommend development-only.
+- [ ] R4 — Obtain Art's crate-name ruling; recommend `uuid-slug` to match the repository.
+- [ ] R5 — Obtain Art's version-policy ruling; recommend independent Rust versions/tags so an
+  npm-only packaging fix does not force a Rust release. Verify registry ownership before publication.
+- [ ] R6 — Obtain Art's support ruling: name OS/architecture targets and required optional
+  integrations; test the lowest working toolchain instead of choosing an arbitrary MSRV.
+- [ ] Map every public export and codec method to Rust input, result and failure semantics.
 
 ### 2. Establish the crate and shared evidence — high risk reduction, medium effort
 
@@ -49,22 +45,26 @@ discard unfinished entries. Update status only after inspecting that evidence.
 - [ ] Compare dependency candidates by responsibility: UUID representation/generation, entropy,
   encoding, hashing, errors and serialization. Done: contract eliminations and measurements of
   live alternatives, with reasons retained beside the chosen implementation.
-- [ ] Create the Rust workspace and library with a small public surface and safe core.
-  Done: ordinary external consumer builds; development bridges are separate from the crate.
+- [ ] Create a safe-core Rust library, with separate bridge crates; verify an external consumer build.
 - [ ] Share existing wire, hash and original-producer fixtures across TypeScript and Rust.
   Done: both consume the same expected data without treating either implementation as the oracle.
 - [ ] Parameterize reusable behavioral cases over implementation adapters. Done: the first Rust
-  capability runs shared cases immediately; unsupported capabilities remain explicit failures or
-  tracked omissions, never a green full-parity claim.
+  increment runs shared cases; extract existing `test/*-probe.ts` closures without changing their
+  expectations. Report missing cases per adapter; aggregate success cannot hide an empty adapter.
 - [ ] Define Rust errors and owned/borrowed result types. Done: malformed inputs, entropy failure
   and custom-schema failure retain their causes without panic or partially successful output.
 - [ ] Gate each Rust increment in ordinary CI alongside TypeScript. Done: the shared cases for
   implemented capabilities run from the first increment; add each new capability to that lane.
+- [ ] Connect the first Rust capability to Node through N-API. Done: the same shared case reaches
+  Rust, preserves error/ownership semantics, and fails when the Rust result is deliberately wrong.
+- [ ] Connect that capability to Bun through FFI. Done: the same case reaches Rust; explicit
+  lengths, owned handles and matched release functions cover cleanup, bad input and repeated calls.
 
 ### 3. Deliver plain identifiers and generation — primary consumer value, medium effort
 
 - [ ] Implement UUID parsing, formatting and byte conversion. Done: shared input-boundary cases
-  and round trips; every checked construction path validates its promised version and variant.
+  cover strict text, slices/offsets and unchanged buffers on error; private validated fields prevent
+  bypass through constructors or deserialization. Generic UUIDs still accept all version nibbles.
 - [ ] Implement plain base64url and base32hex conversion. Done: shared canonical-padding,
   alphabet, length and byte-order cases, including non-v7 UUIDs.
 - [ ] Implement UUIDv4 generation. Done: actual entropy-path and bit-layout evidence, including
@@ -72,21 +72,24 @@ discard unfinished entries. Update status only after inspecting that evidence.
 - [ ] Implement UUIDv7 generation, timestamp extraction and explicit-timestamp operations.
   Done: shared timestamp boundaries and generation guarantees, without stronger ordering promises.
 - [ ] Implement the explicit stateful v7 generator. Done: state transitions and independent
-  generator ownership are exercised through its public interface.
+  ownership cover clock rollback, fractional clocks versus explicit instants, counter exhaustion,
+  entropy failure/retry and explicit-time calls that leave the current sequence untouched.
 - [ ] Verify filesystem-safe plain output through real filesystem round trips on supported
   systems. Done: exact spelling/identity retention and timestamp ordering within promised bounds.
 
 ### 4. Deliver masking and safe spelling — compatibility-critical, medium/high effort
 
 - [ ] Port HalfSipHash and deterministic key derivation. Done: shared reference vectors and
-  string/byte seed cases, including byte order and iteration settings.
+  UTF-8/byte seeds, UTF-16 replacement at JS bridges, little-endian hash words, big-endian block
+  words and wrapping arithmetic agree; chunk boundaries cannot change derived keys.
 - [ ] Implement cooperative cancelable derivation without imposing an application runtime.
-  Done: cancellation and host progress observed through real completion signals; synchronous
-  small work retains a direct path and derived keys match.
+  Use one resumable hash state for sync driving and bounded async polling; adapters yield to host
+  tasks. Done: cancel/drop frees state, no lost wakeups, unrelated tasks progress during large seeds.
 - [ ] Implement built-in masking and unmasking. Done: existing wire fixtures, timestamp overflow,
   checksum rejection and UUID identity preservation match TypeScript.
 - [ ] Implement custom schemas. Done: inverse-direction cases, callback errors and output
-  ownership exercise the real public interface without hiding invalid custom behavior.
+  ownership cover reentrancy and retained buffers; immutable built-in codecs share safely, while
+  custom callbacks need explicit thread-safety bounds. Finite inverse probes are not a proof.
 - [ ] Implement sentinels and collision protection. Done: sentinel priority, encode collisions
   and retained callback outputs preserve identity under the shared cases.
 - [ ] Implement explicit key rotation. Done: first-match order, all distinct candidates and
@@ -112,18 +115,16 @@ discard unfinished entries. Update status only after inspecting that evidence.
   matches conversion semantics without imposing stronger guarantees.
 - [ ] Implement the v7 entropy predicate. Done: shared degenerate/random-field cases match;
   a passing predicate is not described as proof of randomness quality.
-- [ ] Reconcile the phase-1 public capability mapping. Done: every exported capability has an
-  implementation and relevant evidence; add a separate task for each discovered omission.
+- [ ] Reconcile every public capability with both implementations and its shared evidence.
 - [ ] Verify consumer-shaped Rust examples for generation, filenames, rotation and migration.
   Done: examples compile and run against the public crate without changing another application.
 
-### 6. Native bridges and performance — measured cost reduction, medium effort
+### 6. Performance and bridge completion — measured cost reduction, medium effort
 
-- [ ] Connect shared Node cases through N-API under the approved distribution boundary.
-  Done: public Rust calls execute with correct ownership, errors and cleanup in Node.
-- [ ] Connect shared Bun cases through FFI under the approved distribution boundary.
-  Done: real calls cover lengths, lifetimes, errors and cleanup; unsafe code stays isolated and
-  justified at the ABI. Generated declarations and loaded binaries agree.
+- [ ] Reconcile Node and Bun bridge coverage against the public capability mapping. Done: every
+  shared case reaches Rust; native callback/cancellation checks cover what adapters cannot express.
+- [ ] Audit the FFI lifecycle. Done: targeted unsafe checks exercise bounds, use-after-release,
+  cancellation and teardown; panic never unwinds across C and no failed call leaks owned storage.
 - [ ] Benchmark direct Rust calls separately from Node/Bun crossings and batched calls.
   Done: varied equivalent workloads, optimized artifacts, consumed outputs and repeated paired
   runs distinguish core work from transport and setup; include cheap ordinary single-ID calls.
@@ -141,19 +142,17 @@ discard unfinished entries. Update status only after inspecting that evidence.
 - [ ] Complete distribution checks in the existing parity lane. Done: relevant Node/Bun/Rust
   paths run, failures propagate, required fixtures ship, and npm contains no native code.
 - [ ] Measure complete feedback lanes and remove redundant evidence. Done: routine complete
-  lanes stay below five minutes with 4–8× headroom; fast lanes and hooks meet their stated budgets.
+  lanes, including setup, stay below five minutes with 4–8× headroom; cache by lockfile/toolchain/
+  target/profile. Run OS lanes independently; report cold builds separately without exempting them.
 - [ ] Validate Git installation and the actual Cargo package from isolated consumer projects.
   Done: published-file selection, optional features, MSRV, license and docs work outside the tree.
 - [ ] Prepare Rust registry authentication and artifact provenance separately from npm release.
   Done: current provider requirements verified, credential-free verification precedes publish,
   and attestations identify the actual crate bytes rather than only the source commit.
-- [ ] Update consumer docs and durable design explanations as capabilities become available.
-  Done: examples use real public names, migration retirement/rollback consequences remain clear,
-  and planned behavior is never presented as released.
-- [ ] Audit the total implementation diff against all public promises and this task list.
-  Done: inspect every changed line, resolve material defects, independently check review claims,
-  and report unexercised targets/states instead of treating passing tests as complete proof.
-- [ ] Prepare release notes and the concrete Rust release for maintainer review. Done: version,
-  tag, artifact, support limits, provenance path and rollback limits are reviewable before publish.
+- [ ] Update consumer docs alongside each capability: executable public examples, retained
+  migration retirement/rollback consequences, and explicit availability.
+- [ ] Audit every changed line against public promises and tasks; reproduce material review
+  claims, fix defects and declare unexercised targets/states. Passing tests alone cannot close this.
+- [ ] Present release notes, version/tag, artifact, support/provenance and rollback limits before publish.
 - [ ] Publish the approved release and verify registry bytes and Git installation. Done: downloaded
   package matches the reviewed artifact; both implementations retain their parity checks.

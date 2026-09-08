@@ -25,9 +25,9 @@ errors and `Result` instead of JavaScript conventions. Such differences must not
 the accepted domain or result semantics. In particular, a lazy result must not expose partial
 candidates where the existing operation reports an error for the whole call.
 
-Reuse language-neutral fixtures and contract cases. Keep language-specific checks where needed:
-JavaScript UTF-16 strings and typed-array ownership cannot be exercised faithfully by substituting
-Rust strings and slices. Explain the mapping at the adapter, and declare any untested surface.
+Run shared cases through each implementation from its first increment; check nonzero execution
+per adapter, because an aggregate pass can hide one that ran nothing. Keep native ownership and
+callback checks; map JS UTF-16 explicitly rather than pretending Rust strings cover its full domain.
 
 ## Filesystem-safe output
 
@@ -53,6 +53,6 @@ Rust may use a small set of justified dependencies. Compare contract fit, failur
 supported targets, measured resource costs, build costs, licensing and maintenance before selecting
 one; implementation convenience alone does not justify it.
 
-Keep shared expectations authoritative without forcing a common implementation or a new runtime
-on Rust consumers. Native test bridges must not become npm runtime dependencies. Publishing
-bindings as additional supported products requires a separate decision.
+Keep one resumable derivation state for synchronous and cooperative drivers; a Future alone does
+not yield to host tasks. Keep native test bridges outside npm runtime dependencies. Publishing
+bindings as supported products requires a separate decision; test adapters do not imply ABI support.
