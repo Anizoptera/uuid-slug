@@ -57,11 +57,8 @@ export function createMigration(
       return undefined;
     }
     if (useCurrent && !base32) {
-      const matches = decodeMaskedCandidates(bytes, tail, schemas, firstOnly);
+      const matches = decodeMaskedCandidates(bytes, tail, schemas, firstOnly, candidates);
       if (matches instanceof Error) return matches;
-      for (const match of matches) {
-        if (!candidates.includes(match)) candidates.push(match);
-      }
       if (firstOnly && candidates.length) return candidates;
     }
     // Legacy aliases reserve the raw identity, but their check bits can also encode a current ID.

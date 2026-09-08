@@ -117,14 +117,14 @@ export function decodeMaskedSlug(
   );
 }
 
-/** Capture matching UUIDs before another callback can mutate retained output bytes. */
+/** Append distinct UUIDs directly to the result, before another callback can mutate their bytes. */
 export function decodeMaskedCandidates(
   mixed: Uint8Array,
   outerTag: number,
   schemas: readonly MaskSchema[],
   firstOnly = false,
+  candidates: UuidString[] = [],
 ): UuidSlugError | UuidString[] {
-  const candidates: UuidString[] = [];
   for (const schema of schemas) {
     // Custom callbacks may mutate their input; no key may alter what the next one sees.
     const decoded = unmix(mixed.slice(), outerTag, schema);
@@ -133,7 +133,7 @@ export function decodeMaskedCandidates(
     if (decoded) {
       const uuid = formatUuid(decoded);
       if (uuid instanceof Error) return uuid;
-      candidates.push(uuid);
+      if (!candidates.includes(uuid)) candidates.push(uuid);
       if (firstOnly) break;
     }
   }
