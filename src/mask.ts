@@ -3,7 +3,7 @@
 import { BASE64URL, decodeInto, encode, spareBits } from "./alphabet";
 import { UuidSlugError } from "./errors";
 import { mix32, read32 } from "./feistel";
-import { formatUuid, isRfcVariant, parseUuid, uuidVersion } from "./uuid";
+import { formatUuid } from "./uuid";
 import type { MaskSchema, MaskedUuidV7Slug, UuidString } from "./types";
 
 /** Custom callbacks can fail after construction; preserve their cause in the public error contract. */
@@ -63,17 +63,6 @@ function restoreV7(bytes: Uint8Array) {
   bytes[0] = (bytes[0] ?? 0) & 0x03;
 }
 
-export function uuidToMaskedSlugWithSchema(
-  uuid: string,
-  schema: MaskSchema,
-): UuidSlugError | MaskedUuidV7Slug {
-  const raw = parseUuid(uuid);
-  if (raw instanceof Error) return raw;
-  if (uuidVersion(raw) !== 7 || !isRfcVariant(raw))
-    return new UuidSlugError("invalid_uuid_version", "Masked UUID slugs currently require UUIDv7.");
-  return uuidV7BytesToMaskedSlug(raw, schema);
-}
-
 /** The 12 check bits that fit inside the block; the rest ride in the encoding's spare bits. */
 const INNER_TAG_BITS = 12;
 
@@ -128,21 +117,23 @@ export function decodeMaskedSlug(
   );
 }
 
-/** Decode every requested key without treating a checksum match as proof of identity. */
+/** Capture matching UUIDs before another callback can mutate retained output bytes. */
 export function decodeMaskedCandidates(
   mixed: Uint8Array,
   outerTag: number,
   schemas: readonly MaskSchema[],
   firstOnly = false,
-): UuidSlugError | Uint8Array[] {
-  const candidates: Uint8Array[] = [];
+): UuidSlugError | UuidString[] {
+  const candidates: UuidString[] = [];
   for (const schema of schemas) {
     // Custom callbacks may mutate their input; no key may alter what the next one sees.
     const decoded = unmix(mixed.slice(), outerTag, schema);
     // A failed callback means the candidate list is incomplete, not that its key mismatched.
     if (decoded instanceof Error) return decoded;
     if (decoded) {
-      candidates.push(decoded);
+      const uuid = formatUuid(decoded);
+      if (uuid instanceof Error) return uuid;
+      candidates.push(uuid);
       if (firstOnly) break;
     }
   }
@@ -163,13 +154,4 @@ function unmix(
   restoreV7(unmixed);
   if (tagFor(unmixed, TAG_BITS) !== foundTag) return undefined;
   return unmixed;
-}
-
-/** String conversion for callers that need a canonical UUID rather than decoded bytes. */
-export function maskedSlugToUuidWithSchema(
-  slug: string,
-  schema: MaskSchema,
-): UuidSlugError | UuidString {
-  const bytes = decodeMaskedSlug(slug, schema);
-  return bytes instanceof Error ? bytes : formatUuid(bytes);
 }

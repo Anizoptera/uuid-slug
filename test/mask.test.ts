@@ -8,13 +8,9 @@
  * case that counts wrong answers, or one that reaches past the boundary on purpose, can see them.
  */
 import { describe, expect, it } from "vitest";
-import {
-  maskedSlugToUuidWithSchema,
-  uuidToMaskedSlugWithSchema,
-  uuidV7BytesToMaskedSlug,
-} from "../src/mask";
+import { createUuidSlugCodec } from "../src/codec";
+import { decodeMaskedSlug, uuidV7BytesToMaskedSlug } from "../src/mask";
 import { createMaskSchema } from "../src/schema";
-import { parseUuid } from "../src/uuid";
 import { deterministicUuidV7Bytes } from "./deterministic-uuid";
 
 /** Pads to the 16-byte seed floor, so cases can keep naming their key after what it tests. */
@@ -30,13 +26,14 @@ const FIRST_REFUSED = "04000000-0000-7000-8000-000000000000";
 
 describe("the maskable range", () => {
   const schema = schemaOrThrow("range");
+  const codec = createUuidSlugCodec({ mask: schema, sentinels: [] });
 
   it("masks the last instant before 2^42 ms and refuses the first one at or past it", () => {
-    expect(uuidToMaskedSlugWithSchema(LAST_MASKABLE, schema)).toHaveLength(22);
+    expect(codec.uuidV7ToMaskedSlug(LAST_MASKABLE)).toHaveLength(22);
     // Version 7 and the RFC variant are both set here on purpose. Those are checked FIRST, so an
     // input built to reach the timestamp guard has to satisfy them or the earlier guard answers
     // and this case silently stops testing the boundary it names.
-    const refused = uuidToMaskedSlugWithSchema(FIRST_REFUSED, schema);
+    const refused = codec.uuidV7ToMaskedSlug(FIRST_REFUSED);
     expect(refused).toBeInstanceOf(Error);
     expect((refused as { code?: string }).code).toBe("invalid_timestamp");
   });
@@ -49,12 +46,8 @@ describe("the maskable range", () => {
     //
     // Two cases because the guard has two arms and either alone leaves the other unprobed: a v4
     // carrying a perfectly correct variant, and a v7 whose variant the RFC does not define.
-    expect(
-      uuidToMaskedSlugWithSchema("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5", schema),
-    ).toBeInstanceOf(Error);
-    expect(
-      uuidToMaskedSlugWithSchema("03ffffff-ffff-7fff-0fff-ffffffffffff", schema),
-    ).toBeInstanceOf(Error);
+    expect(codec.uuidV7ToMaskedSlug("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5")).toBeInstanceOf(Error);
+    expect(codec.uuidV7ToMaskedSlug("03ffffff-ffff-7fff-0fff-ffffffffffff")).toBeInstanceOf(Error);
   });
 
   it("round-trips under the RIGHT key at both ends of the range", () => {
@@ -63,12 +56,10 @@ describe("the maskable range", () => {
     // ends because byte 0 is the byte the tag borrows: all-ones there is the case a sloppy
     // mask-and-restore corrupts, and all-zero is the case that hides it.
     for (const uuid of [LAST_MASKABLE, "00000000-0000-7000-8000-000000000000"]) {
-      const raw = parseUuid(uuid);
-      if (raw instanceof Error) throw raw;
-      const slug = uuidV7BytesToMaskedSlug(raw, schema);
+      const slug = codec.uuidV7ToMaskedSlug(uuid);
       if (slug instanceof Error) throw slug;
       expect(slug).toHaveLength(22);
-      expect(maskedSlugToUuidWithSchema(String(slug), schema)).toBe(uuid);
+      expect(codec.maskedSlugToUuid(slug)).toBe(uuid);
     }
   });
 });
@@ -91,7 +82,7 @@ describe("the wrong-key check", () => {
       // Asserted here rather than through `expect`, which at this sample size costs more than the
       // masking it is checking. A length change is a format change, so throwing is the right loud.
       if (slug.length !== 22) throw new Error(`masking produced ${slug.length} chars`);
-      if (!(maskedSlugToUuidWithSchema(String(slug), theirs) instanceof Error)) accepted += 1;
+      if (!(decodeMaskedSlug(slug, theirs) instanceof Error)) accepted += 1;
     }
     expect(accepted).toBeLessThanOrEqual(8);
   });

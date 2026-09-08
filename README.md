@@ -345,6 +345,8 @@ const record = matches[0];
 returns distinct UUIDs in decoding order, or an empty array if none match. Malformed input and
 failed mask callbacks return an error. Callback errors keep their cause; they never produce a
 successful but incomplete list.
+An old sentinel alias can also be a current masked ID. `candidates` retains both UUIDs;
+`decode` keeps sentinel priority.
 
 Keep this reader while old inputs must work. Replace it with `ids.migration({ plain: true })`
 to stop trying the original mask, or `ids.migration({ original: true })` to stop plain decoding.

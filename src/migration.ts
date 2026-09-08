@@ -47,11 +47,9 @@ export function createMigration(
     const base32 = slug.length === 26 && usePlain;
     const tail = decodeInto(slug, base32 ? BASE32HEX : BASE64URL, bytes, 0, 16, base32 ? 0 : 4);
     if (tail instanceof Error) return tail;
-    if (useOriginal || usePlain) {
-      const reserved = sentinels.get(encode(bytes, BASE64URL));
-      if (reserved) return [reserved.uuid];
-    }
-    const candidates: UuidString[] = [];
+    const reserved = (useOriginal || usePlain) && sentinels.get(encode(bytes, BASE64URL));
+    if (reserved && firstOnly) return [reserved.uuid];
+    const candidates: UuidString[] = reserved ? [reserved.uuid] : [];
     function add(value: Uint8Array) {
       const uuid = formatUuid(value);
       if (uuid instanceof Error) return uuid;
@@ -62,11 +60,12 @@ export function createMigration(
       const matches = decodeMaskedCandidates(bytes, tail, schemas, firstOnly);
       if (matches instanceof Error) return matches;
       for (const match of matches) {
-        const failed = add(match);
-        if (failed) return failed;
+        if (!candidates.includes(match)) candidates.push(match);
       }
       if (firstOnly && candidates.length) return candidates;
     }
+    // Legacy aliases reserve the raw identity, but their check bits can also encode a current ID.
+    if (reserved) return candidates;
     if (useOriginal && slug.length === 22) {
       const match = decodeOriginalMask(bytes);
       if (match instanceof Error) return match;
