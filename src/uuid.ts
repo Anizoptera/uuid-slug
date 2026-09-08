@@ -35,8 +35,8 @@ const UUID_BYTE_OFFSETS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32
  * strings. Only the lowercase spelling decodes — the table is built from `chars` — so slugs have
  * no second spelling, as everywhere else in this format.
  *
- * MASKED slugs are always base64url (Art's ruling, 2026-08-12). Sort order there would be order of
- * ciphertext, which carries nothing, so the extra characters would buy only the case-insensitivity.
+ * Masked output selects its alphabet independently: base32hex preserves case-insensitive filenames,
+ * but sorting masked ciphertext does not recover chronological order.
  */
 const SLUG_ALPHABETS: { base32hex: Alphabet; base64url: Alphabet } = {
   base32hex: BASE32HEX,
