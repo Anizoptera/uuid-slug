@@ -39,14 +39,7 @@ function writeCounter(bytes: Uint8Array, hi: number, lo: number, offset: number)
 /** The 48 bits RFC 9562 gives the timestamp; beyond it the value cannot be represented. */
 const MAX_TIMESTAMP = 0xffff_ffff_ffff;
 
-/**
- * `Number.isInteger` rather than `isFinite`, because the error message promises a WHOLE number of
- * milliseconds and `Math.trunc` on the write path would otherwise honour that promise silently:
- * 1.5 became 1 with nothing reported. It also rejects NaN and Infinity, which matters because a
- * native generator need not — measured 2026-08-12, `Bun.randomUUIDv7("hex", NaN)` and the same
- * call at 2^48 both return the 1970 prefix `000000000000` without throwing, while -1 and 1.5 do
- * throw. Validating here rather than trusting the platform is what makes the two agree.
- */
+/** Reject fractions and out-of-range values before runtime-specific generators can coerce them. */
 const isValidUuidV7Timestamp = (ms: number): boolean =>
   Number.isInteger(ms) && ms >= 0 && ms <= MAX_TIMESTAMP;
 
@@ -247,12 +240,7 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
         });
       }
     },
-    // Both timestamped paths reject the instant BEFORE reaching the platform, because a native
-    // generator that accepts it may answer wrongly instead of failing: measured 2026-08-12,
-    // `Bun.randomUUIDv7("hex", NaN)` and the same call at 2^48 both return the 1970 prefix
-    // `000000000000` silently, while -1 and 1.5 throw. Each then mirrors its untimestamped
-    // sibling on a platform failure — fall back for the string form, report for the byte form —
-    // so the four entry points behave predictably in pairs.
+    // Validate before delegation because native generators may coerce invalid timestamps.
     uuidV7At(timestamp: number) {
       if (!runtime.uuidV7At) return fallback.uuidV7At(timestamp);
       const invalid = rejectInstant(timestamp);

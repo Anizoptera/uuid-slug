@@ -1,22 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-/**
- * The operations that need no key, built WITHOUT a codec.
- *
- * Generating an id and re-encoding one are keyless: the result is the same value whoever asks, so
- * a bare function is an honest shape for them. Reaching them through a codec is what made them
- * expensive — a codec carries a mask schema, a cipher and a sentinel table, none of which a caller
- * who never masks will ever execute, and all of which a bundler must keep once the graph reaches
- * them. Measured 2026-08-12 on the built package: an entry importing only `uuidV7Slug` minified to
- * 12,735 bytes through the codec and 4,559 from a bare generator; `uuidToSlug` alone, 12,725
- * against 2,188. `defaultCodec` still exists and still works — it is simply no longer on the path
- * every consumer walks.
- *
- * NOTHING KEYED MAY BE ADDED HERE (Art's ruling, 2026-08-12). The only key a bare function could
- * carry is `DEFAULT_MASK_SCHEMA`'s, whose seed is a string literal in this published package, so a
- * masked operation exported this way would be the shortest spelling of the headline feature and
- * the one that obfuscates nothing. Masking is reached through a codec built with your own seed.
- */
+/** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
 import {
   checkRange,
@@ -30,16 +14,7 @@ import { formatUuid, formatUuidSlug } from "./uuid";
 import type { SlugAlphabet } from "./uuid";
 import { createRuntimeGenerator } from "./v7";
 
-/**
- * Built on first use, and the laziness is what the measurement above depends on: a module-scope
- * CONSTRUCTION call is a side effect a bundler may not remove, so an eager one would pin the
- * generator, the runtime adapter and the entropy pool into a bundle that only ever re-encodes a
- * UUID. Measured the same day, the eager spelling cost 5,130 bytes for `uuidToSlug` alone against
- * 2,188 here.
- *
- * It also keeps import-time work at zero, which `test/entropy.test.ts` gates for a different
- * reason — a heap snapshot taken at module load must capture no drawn randomness.
- */
+/** Delay generator setup so conversion-only imports draw no entropy and bundle no generator. */
 let generator: UuidV7Generator | undefined;
 const v7 = () => (generator ??= createRuntimeGenerator(runtime));
 

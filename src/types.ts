@@ -5,19 +5,7 @@ import type { SlugAlphabet } from "./uuid";
 
 declare const brand: unique symbol;
 
-/**
- * Nominal marker. The names ACCUMULATE as a key set rather than replacing one another, which is
- * what makes nesting work: `Brand<Brand<string, "A">, "B">` carries both keys, so it is assignable
- * to the "A" brand but not the reverse and not to a sibling "C".
- *
- * Writing the name as the property's TYPE instead — `{ [brand]?: Name }` — intersects to
- * `"A" & "B"`, i.e. `never`, on the second level. Every nested brand then has the same `never`
- * marker and they are all mutually assignable: measured 2026-08-12, `UuidV4Slug` and `UuidV7Slug`
- * were interchangeable, as were a plain slug and a masked one, for the entire life of the type.
- *
- * The property stays OPTIONAL so a string literal is still accepted wherever a brand is asked for.
- * These types separate values the package produces; they are not a parsing obligation on callers.
- */
+/** Accumulate nested brand names while still accepting caller string literals. */
 export type Brand<T, Name extends string> = T & { readonly [brand]?: { [K in Name]: true } };
 
 export type Base64UrlString = Brand<string, "Base64UrlString">;
@@ -68,7 +56,7 @@ export interface UuidV7Generator {
  * exposing a permutation and an XOR table is what lets the masking code stay ignorant of which
  * scheme it is running: adding one is a new constructor in `schema.ts` and no branch anywhere.
  *
- * It is also the ONLY extension point, and deliberately so. This interface is public, so a caller
+ * It is also the only extension point. This interface is public, so a caller
  * with a scheme of their own supplies it directly; the package ships no table-shaped constructor
  * beside it, because one would privilege a single foreign layout while being strictly less
  * capable than the function it wraps. `createUuidSlugCodec` smoke-tests supplied schemas; callers remain responsible for
@@ -85,11 +73,8 @@ export interface MaskSchema {
 }
 
 /**
- * There is no scheme to choose. The check's width is fixed by arithmetic — a UUIDv7 carries 116
- * bits of content, so the encoding's remainder is the check — and the mixing step is the Feistel,
- * because the only alternative this package ever shipped left the timestamp legible: one output
- * byte per input byte meant 4 of 16 bytes held constant across a second, defeating the entire
- * point of masking. A caller who genuinely needs a different cipher passes a `MaskSchema`.
+ * UUIDv7 content leaves 16 bits for the check. The default Feistel mix spreads timestamp changes
+ * across the block; callers that need another reversible transform can pass a `MaskSchema`.
  */
 export interface MaskSchemaOptions {
   readonly id?: string;
@@ -212,10 +197,7 @@ export interface UuidSlugCodecOptions {
  * Only what depends on the codec's own state: the generator it draws from, and the mask schema
  * plus sentinels it was built with.
  *
- * The plain conversions (`uuidToSlug`, `parseUuid`, `formatUuidSlug`, …) are module-level
- * functions and deliberately absent here. They are pure — the same input gives the same output
- * whatever seed the codec holds — so carrying them as methods implied a dependency on the seed
- * that does not exist, and was the single most misleading thing about the previous shape.
+ * Plain conversions are module-level functions because their result does not depend on codec state.
  *
  * Extending `UuidV7Generator` makes the compiler require forwarding every generator method.
  */
@@ -254,12 +236,8 @@ export interface UuidSlugCodec extends UuidV7Generator {
   /**
    * `maskedSlugToUuidV7` plus the freshness rules of `validateUuidV7Fresh`, returning the slug.
    *
-   * Lives on the codec because unmasking needs the codec's key. Its module-level predecessor
-   * `validateMaskedUuidV7SlugFresh` did not: it reached for `defaultCodec`, whose seed is
-   * published in this package's source, so it answered under the wrong key for every caller who
-   * supplied their own and returned a confident Error for valid slugs. There is no keyless
-   * counterpart to this for the same reason; `validateUuidV7SlugFresh` stays module-level because
-   * a PLAIN slug decodes without one.
+   * Lives on the codec because unmasking requires that codec's key. Plain-slug freshness remains
+   * module-level because it needs no key.
    *
    * Preserve the input type: with `acceptUnmaskedSlugs`, a plain slug can pass too. Returning a
    * masked brand would mislabel that identity; narrowing the fallback would break migration.

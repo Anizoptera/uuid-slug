@@ -259,14 +259,7 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
  * Uses the published default seed, so anyone can decode its masked slugs.
  * Use `createUuidSlugCodec({ mask: { seed } })` with your own seed to hide identifiers.
  */
-// Annotated PURE so a bundle that never names it can drop it: a module-scope CONSTRUCTION call is
-// otherwise a side effect no bundler may remove, and this one reaches the cipher, the mask schema
-// and the sentinel table. Sound because `createUuidSlugCodec()` with no options cannot fail — the
-// only throwing paths are caller-supplied sentinels and a caller-supplied mix — and nothing else
-// observes the construction. The annotation is worth nothing on its own: it was measured saving
-// ZERO bytes while `index.ts` bound its shortcuts as PROPERTY READS of this value, since a read at
-// module scope forces the evaluation the annotation permits skipping. Keep the shortcuts keyless
-// (see `keyless.ts`) or this goes dead again.
+// Safe to drop when unused: default construction has no caller input or observable side effect.
 export const defaultCodec: UuidSlugCodec = /*#__PURE__*/ createUuidSlugCodec();
 
 export function validateUuidV7Fresh(

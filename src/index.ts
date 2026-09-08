@@ -61,33 +61,12 @@ export {
   uuidToSlug,
 } from "./uuid";
 export type { SlugAlphabet } from "./uuid";
-/**
- * `createRuntimeGenerator` is NOT exported (Art's ruling, 2026-08-12), pending the whole-API-shape
- * review. It takes a `Runtime`, which is not exported either, so no consumer could construct an
- * argument for it — a public function nobody could call. The capability it provides is already
- * applied: every codec built without an explicit `generator` gets one.
- */
+/** Runtime selection is internal; codecs create the matching generator when none is supplied. */
 export { createUuidV7Generator } from "./v7";
 export type { UuidV7GeneratorOptions } from "./v7";
 
-/*
- * The keyless shortcuts. They come from `keyless.ts`, which builds them from a bare generator and
- * never touches a codec — see that file for the measured cost of the alternative. They were once
- * bound here as `export const uuidV7 = defaultCodec.uuidV7`, and that spelling is the defect: a
- * property read at module scope evaluates the singleton, so every consumer of ANY export in this
- * barrel carried the cipher, the mask schema and the sentinel table whether or not it masked.
- *
- * The MASKED methods are deliberately absent, and must stay absent (Art's ruling, 2026-08-12).
- * Everything below is keyless — the same value whoever calls it — so a bare function is an honest
- * shape for it. Masking is keyed, and the only key a bare function could carry is `defaultCodec`'s,
- * which is derived from a seed published in this package's source. Exported that way, the
- * easiest-to-reach spelling of the headline feature was the one that obfuscates nothing, and a
- * README paragraph was the only thing standing between a caller and it.
- *
- * Reach masking through a codec you built with your own seed: `createUuidSlugCodec({ mask: {
- * seed } })`. Sentinels went with them for the same reason — a sentinel exists to be matched
- * against masked input, so a sentinel list has no meaning apart from the codec that masks.
- */
+/* Keyless operations stay module-level and avoid codec setup. Masking and sentinels stay on the
+ * codec because their meaning depends on its seed and sentinel table. */
 export {
   uuidV4,
   uuidV4Bytes,

@@ -3,49 +3,14 @@
 import { halfSipHash } from "./siphash";
 
 /**
- * A 4-round Feistel network over the 16 UUID bytes, used as the mask's mixing step.
- *
- * Why a Feistel rather than the byte permutation plus XOR it replaces: that construction is a
- * monoalphabetic substitution — one output byte per input byte — so bytes the inputs share, the
- * outputs share too. Measured over 3000 ids, masked slugs of UUIDv7s created in the same second
- * held 4 of 16 bytes constant, the same hour 3, the same day 2. The timestamp the mask exists to
- * hide was still legible in the output. A Feistel diffuses every input bit across the whole
- * block, so no output byte is a function of one input byte: the same measurement yields 0 of 16.
- *
- * The bijection is the property being bought, and it holds whatever the round function does: 16
- * bytes map to 16 bytes and the inverse is the same routine with the round keys reversed, so
- * `mask` and `unmask` cannot drift apart.
- *
- * The round function is HalfSipHash-2-4 keyed per round. What that fixes: the previous round
- * function was `mix32(word ^ roundKey)` — a FIXED, PUBLIC, UNKEYED bijection with the key merely
- * XORed in front, so an attacker inverts it and reads `word ^ roundKey` directly. Luby-Rackoff
- * makes a four-round Feistel a strong pseudorandom permutation only when the round functions are
- * pseudorandom functions, which `mix32` is not, so the theorem said nothing about what shipped and
- * an earlier version of this comment cited it wrongly. A keyed PRF meets that hypothesis in kind,
- * which is what makes ROUNDS = 4 a justified number rather than an unexamined margin. It is still
- * NOT a proof about what ships: the theorem wants four INDEPENDENTLY sampled round functions, and
- * `schema.ts` derives all four key pairs from one 128-bit key. Read it as the design rationale it
- * is, and see `docs/design.md` for what masking does and does not promise.
- *
- * Measured 2026-08-12 on Bun, both directions, medians of 9: the swap costs 2.5x on the mixing step
- * alone (30.85M -> 12.43M mixes/s) and about a quarter of end-to-end masking throughput, because
- * mixing is roughly a fifth of a mask. HalfSipHash is FASTER per round than `mix32` — pure
- * add/xor/rotate against two `Math.imul` calls — and loses only by doing 14 rounds where the old
- * function did the equivalent of 4.
- *
- * Nor does any measurement in this repository grade the round count or the round function. Strict
- * avalanche across all input/output bit pairs, a same-millisecond burst where only a 12-bit counter
- * varies, and a single-difference differential all PASS a TWO-round network, so none of them can
- * separate a weak setting from a strong one. Their agreement is evidence about the instruments.
- * `test/siphash.test.ts` is the exception and the reason a published primitive was worth taking:
- * it checks the round function against 64 vectors somebody else computed, and that CAN fail.
+ * A four-round Feistel network gives masking an exact inverse while spreading each UUID change
+ * across the block. HalfSipHash-2-4 supplies the keyed round function. This is reversible
+ * obfuscation, not authenticated encryption; `docs/design.md` defines the security boundary.
  */
 
 /**
  * Round count. Wire-format-bearing: changing it changes every masked slug this package has ever
- * issued, so it moves only alongside a deliberate format change. Four is Luby-Rackoff's number,
- * which the round function now makes relevant — see the note above for why that is a rationale
- * rather than a proof.
+ * issued, so it moves only alongside a deliberate format change.
  */
 const ROUNDS = 4;
 
