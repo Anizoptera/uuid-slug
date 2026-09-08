@@ -2,7 +2,7 @@
 
 Convert UUIDs to compact slugs, with optional reversible UUIDv7 masking and lowercase filenames.
 
-The crate is under implementation; publication and full cross-runtime verification are not complete.
+Install the crate from crates.io or this repository.
 
 ```rust
 use uuid_slug::{Alphabet, Codec, CodecOptions, Uuid, create_mask_schema};

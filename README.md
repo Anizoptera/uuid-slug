@@ -28,8 +28,8 @@ pnpm add @anizoptera/uuid-slug
 Requires TypeScript 5.7 or newer for `Uint8Array<ArrayBuffer>` declarations.
 Custom `fillRandom` callbacks receive an ordinary `ArrayBuffer` view, which Web Crypto accepts.
 
-A native Rust crate is being implemented under the [cross-language contract](docs/cross-language.md).
-It is not available yet. The npm package will remain TypeScript/JavaScript-only.
+The native Rust crate implements the same wire contract and lives in [`rust/uuid-slug`](rust/uuid-slug).
+The npm package remains TypeScript/JavaScript-only.
 
 ## Quick start
 
@@ -64,14 +64,14 @@ but does not turn a human-chosen seed into a suitable secret.
 when you only want the identifier shorter.
 
 Pass `"base32hex"` to get 26 characters instead, and gain one thing: **base32hex slugs of UUIDv7s
-sort by creation time as plain strings.** A v7 starts with its timestamp, and base32hex writes
+sort by millisecond timestamp as plain strings.** A v7 starts with its timestamp, and base32hex writes
 its digits in the same order as their values, so comparing two slugs compares two instants. That
 makes them usable directly as an ordered database key. base64url cannot do it — its alphabet runs
 `A-Za-z0-9-_`, so `0` stands for a larger value than `A` but sorts before it.
 
 base32hex is also the safer of the two for a **filename**: it is lowercase throughout, so it
-survives a case-insensitive filesystem unchanged, and a directory listing comes back in creation
-order for free. `uuidV7Slug("base32hex")` generates one directly; the alphabet is an argument on
+survives a case-insensitive filesystem unchanged, and a directory listing comes back in timestamp
+order across different milliseconds. `uuidV7Slug("base32hex")` generates one directly; the alphabet is an argument on
 every keyless entry point that produces a slug, so nothing about choosing it requires a codec.
 
 You never say which alphabet you are reading. The two lengths are different, 22 and 26, so
