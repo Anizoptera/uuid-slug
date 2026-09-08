@@ -28,6 +28,9 @@ unchanged. The cross-language document promises unchanged storage. Art's decisio
 requiring unchanged output or retaining partial writes; do not change either public behavior yet.
 TypeScript also checks destination bounds before character validity when input length is valid.
 
+Native CI awaits permission to push a review branch and open a draft PR. Release version selection
+and publication remain unapproved; neither local validation nor a continuation grants those actions.
+
 ## Execution order
 
 Build the shared runner first; then develop plain conversion and hashing independently.
@@ -210,8 +213,10 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [ ] Measure complete feedback lanes and remove redundant evidence. Accept when: routine complete
   lanes, including setup, stay below five minutes with 4–8× headroom; cache by lockfile/toolchain/
   target/profile. Run OS lanes independently; report cold builds separately without exempting them.
-- [ ] Validate Git and packaged Cargo consumers outside the workspace; check default/optional
-  features, MSRV, license and docs so workspace feature unification cannot hide missing dependencies.
+- [x] Validate packaged-source and local Git consumers outside the workspace on the declared
+  minimum Rust version, with entropy enabled and disabled. External Wasm feature combinations
+  compile; the extracted package's tests/docs pass and its bundled license matches the root.
+  Remote Git installation and registry bytes remain publication checks below.
   - [x] Run packaged-source and local Git consumers on the declared Rust minimum, with platform
     entropy enabled and disabled; exercise generation, rotation, migration and safe spellings.
 - [ ] Prepare Rust registry authentication and artifact provenance separately from npm release.
