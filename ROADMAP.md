@@ -32,14 +32,17 @@ TypeScript also checks destination bounds before character validity when input l
 
 Async byte-seed capture exceeds the responsiveness target for large inputs: local public-call
 probes crossed it at 64 MiB on Node/Bun and crossed the warning threshold at 256 MiB on Bun.
-Art's decision is pending on retaining the initial-copy exception versus changing input ownership.
-Do not weaken call-time capture or impose a seed-size limit without that ruling.
+The earlier ownership question is withdrawn: no concrete alternative was evaluated against the
+capture guarantee. Existing docs disclose the copy limit; that text is not itself a maintainer ruling.
+Preserve current capture behavior while evaluating any proposed change; no new input limit is approved.
 
 Native CI execution requires a maintainer-triggered run; the earlier push/draft-PR request is
-withdrawn. Release version selection remains unapproved. Remote writes, including publication,
-are forbidden by the ruling above; local validation cannot substitute for native CI evidence.
-The native reference is marked `UNLICENSED` and unpublished. Permission to incorporate copied
-source under this crate's Apache-2.0 license is pending; behavioral study does not settle that right.
+withdrawn. Release version selection remains unapproved and does not block local implementation.
+Remote writes, including publication, are forbidden by the ruling above; local validation cannot
+substitute for native CI evidence.
+The native reference is marked `UNLICENSED` and unpublished. Before raising a permission question,
+identify actual copied source and reconcile its provenance with Art's existing reuse instruction.
+The earlier blanket permission question is withdrawn; this does not authorize publication.
 
 ## Execution order
 
@@ -69,7 +72,7 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   verify licensing, omit private project identifiers. Accept when: reviewed source delta and provenance.
   - [x] Inspect the reference implementation, manifest and native generation/parse consumers.
     Its compact-text acceptance and infallible generation differ from this package's contracts;
-    consumer adoption stays separate. Publication rights remain held by the decision above.
+    consumer adoption stays separate. Reconcile actual source provenance as described above.
 - [x] Compare UUID/entropy/encoding/hash/error/serde dependencies for contract fit and measured
   cost; retain reasons, not sibling version pins. Keep default features explicit and audit the lock graph.
   - [x] Compare UUID-sized base64 caller-buffer encoding/decoding and owned strings in alternating
