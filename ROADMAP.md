@@ -98,8 +98,9 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [ ] Implement custom schemas. Done: inverse-direction cases, callback errors and output
   ownership cover reentrancy and retained buffers; immutable built-in codecs share safely, while
   custom callbacks need explicit thread-safety bounds. Finite inverse probes are not a proof.
-- [ ] Implement sentinels and collision protection. Done: sentinel priority, encode collisions
-  and retained callback outputs preserve identity under the shared cases.
+- [x] Implement sentinels and collision protection. Shared cases cover caller-defined, empty,
+  duplicate and invalid definitions. The Rust collision test reaches both alphabet branches and
+  fails when the collision guard is removed; owned callback arrays prevent retained aliases.
 - [ ] Implement explicit key rotation. Done: first-match order, all distinct candidates and
   failure behavior match; normalize spelling once, not once per key; never append implicit schemas.
 - [x] Add the approved safe masked spelling in TypeScript and Rust together. Evidence: all 132 bits
@@ -123,7 +124,9 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [x] Implement the v7 entropy predicate. Evidence: shared degenerate/random-field cases match;
   a passing predicate is not described as proof of randomness quality.
 - [ ] Reconcile every public capability with both implementations and its shared evidence.
-- [ ] Run external Rust examples for generation, filenames, rotation and migration against the crate.
+- [x] Run external Rust examples for generation, filenames, rotation and migration against the crate.
+  Packaged-source and local Git consumers pass outside the workspace with entropy enabled and
+  disabled; the filesystem example preserves exact names and identities on the local filesystem.
 
 ### 6. Performance and bridge completion — measured cost reduction, medium effort
 
@@ -137,6 +140,9 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [ ] Profile CPU, allocations, retained memory, entropy calls, construction cost and contention.
   Done: measurements name reached paths, positive controls, machine/toolchain and limitations;
   throughput alone cannot justify a change.
+  - [x] Record optimized direct-call and separate native-bridge timings, CPU time, peak RSS and
+    context switches through `bun bench/rust.ts`; validate every process's complete output.
+    Peak RSS does not establish allocation volume or leak freedom.
 - [ ] Measure cancellation latency and event-loop blocking through real host execution.
   Done: operations exceeding the 4 ms target are bounded/cooperative or off-loop, with 8 ms
   warnings and 32 ms errors; delays never substitute for completion signals.
@@ -154,6 +160,8 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [ ] Prepare Rust registry authentication and artifact provenance separately from npm release.
   Done: current provider requirements verified, credential-free verification precedes publish,
   and attestations identify the actual crate bytes rather than only the source commit.
+  - [x] Implement reviewed-crate packaging and checksum preflight; run both locally against
+    committed source. Publication and registry attestations remain separate remote actions.
 - [ ] Update consumer docs alongside each capability: executable public examples, retained
   migration retirement/rollback consequences, and explicit availability.
 - [ ] Audit every changed line against public promises and tasks; reproduce material review

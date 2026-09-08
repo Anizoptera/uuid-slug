@@ -22,6 +22,42 @@ mod tests {
     };
 
     #[test]
+    fn ciphertext_cannot_alias_a_reserved_identity() -> Result<(), Error> {
+        let uuid = Uuid::parse("019ff19b-58b8-7000-9b1b-df713bd55607")?;
+        let reserved = Uuid::parse("00000000-0000-7000-8000-000000000000")?;
+        let identity = MaskSchema::custom("identity", |input, _| Ok(input))?;
+        let (tagged, tail) = crate::mask::mask_bytes(uuid.as_bytes(), &identity)?;
+        assert_eq!(
+            tail, 0,
+            "The collision must pass the earlier padding condition"
+        );
+        let delta: [u8; 16] = std::array::from_fn(|i| tagged[i] ^ reserved.as_bytes()[i]);
+        let collision = MaskSchema::custom("collision", move |input, _| {
+            Ok(std::array::from_fn(|i| input[i] ^ delta[i]))
+        })?;
+        assert_eq!(
+            crate::mask::mask_bytes(uuid.as_bytes(), &collision)?,
+            (*reserved.as_bytes(), 0)
+        );
+        for alphabet in [Alphabet::Base64Url, Alphabet::Base32Hex] {
+            let codec = Codec::new(CodecOptions {
+                mask: collision.clone(),
+                masked_slug_alphabet: alphabet,
+                ..Default::default()
+            })?;
+            assert_eq!(
+                codec.uuid_v7_to_masked_slug(uuid).unwrap_err().code(),
+                "invalid_mask_schema"
+            );
+            assert_eq!(
+                codec.masked_slug_to_uuid(&reserved.slug(alphabet))?,
+                reserved
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn callback_failure_respects_first_result_and_atomic_candidates() -> Result<(), Error> {
         assert!(MaskSchema::custom("not-an-inverse", |_, _| Ok([1; 16])).is_err());
         assert!(MaskSchema::custom("failed", |_, _| Err(Error::InvalidBuffer)).is_err());

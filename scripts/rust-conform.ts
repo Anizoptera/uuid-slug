@@ -186,6 +186,25 @@ export async function contractRequests(): Promise<Request[]> {
   const ordinary = wire[3];
   if (!first || !ordinary)
     throw new Error("Wire fixtures must include sentinel and ordinary UUIDs");
+  for (const sentinels of [
+    [],
+    [{ name: "reserved", uuid: ordinary.uuid }],
+    [{ name: "reserved", uuid: "ffffffff-ffff-7fff-bfff-ffffffffffff" }],
+    [{ name: "wrong-version", uuid: "00000000-0000-4000-8000-000000000000" }],
+    [{ name: "malformed", uuid: "invalid" }],
+    [
+      { name: "first", uuid: first.uuid },
+      { name: "duplicate", uuid: first.uuid },
+    ],
+  ])
+    for (const maskedAlphabet of ["base64url", "base32hex"])
+      for (const op of ["sentinels", "mask", "unmask", "migration", "candidates"])
+        requests.push({
+          op,
+          sentinels,
+          maskedAlphabet,
+          input: op === "mask" ? ordinary.uuid : ordinary.direct,
+        });
   for (const vector of wire) {
     const key =
       vector.schema === "custom-mix"
