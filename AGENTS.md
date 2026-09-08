@@ -4,6 +4,13 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Contract owners
 
+- The externally visible API is reserved. Add or change no public export, option, behavior, or
+  feature unless Art requested that exact change and separately approved the proposed surface and
+  consumer consequences.
+- `ROADMAP.md` is transient and never owns a contract, decision, or lasting conclusion. Put
+  consumer contracts in README, wire design in `docs/design.md`, security boundaries in
+  `docs/security.md`, cross-language and distribution decisions in `docs/cross-language.md`, and
+  measured conclusions in `bench/PERFORMANCE.md`.
 - Read README §Guarantees before changing generation or tests; it owns the consumer guarantees.
   New guarantees require Art's ruling before code or tests impose them. Intra-millisecond ordering
   is explicitly not guaranteed: do not gate it or reject a native generator for lacking it.
@@ -61,6 +68,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Release
 
+- Remote writes are forbidden unless Art explicitly authorizes the exact operation. Do not push,
+  open a pull request, upload a tag, create a release, publish a package, or change remote settings.
 - Publish through `publish-clean`; validate the final cleaned archive and use `--access public
   --provenance`. Derive the dist-tag from the git tag: prereleases use `next`, releases `latest`.
 - Keep `@anizoptera/publish-clean` a normal registry dependency, never a Git SHA or tarball URL.
