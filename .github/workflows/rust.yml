@@ -50,6 +50,17 @@ jobs:
           restore-keys: rust-${{ matrix.runner }}-${{ hashFiles('.tool-versions', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-
       - run: bun install --frozen-lockfile
       - run: bun run check:rust
+      # The product also builds for 32-bit native CPUs; the development JS bridges do not run here.
+      - name: Check 32-bit Rust builds (not native execution)
+        if: matrix.runner == 'ubuntu-24.04'
+        shell: bash
+        run: |
+          targets=(i686-unknown-linux-gnu armv7-unknown-linux-gnueabihf)
+          rustup target add "${targets[@]}"
+          for target in "${targets[@]}"; do
+            cargo check --manifest-path rust/Cargo.toml -p uuid-slug --locked --target "$target" --all-features
+            cargo check --manifest-path rust/Cargo.toml -p uuid-slug --locked --target "$target" --no-default-features
+          done
 
   browser:
     runs-on: ubuntu-24.04

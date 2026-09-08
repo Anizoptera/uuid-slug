@@ -65,6 +65,9 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   and tag disagreement. The version-hook test runs in `check:rust`, without adding Cargo to `check:js`.
 - [ ] Derive the common-architecture target matrix from supported Rust targets and consumer needs;
   distinguish native execution from cross-compilation. Keep CPU-specific tuning optional.
+  - [x] Check the standalone crate on 32-bit x86 and ARMv7 Linux with entropy enabled and disabled;
+    add these cross-builds to the Linux CI lane. Local checks pass; native runtime execution and
+    the full common-architecture support boundary remain unverified.
 - [x] Build and execute WebAssembly in a browser: verify host entropy, errors, cancellation and
   shared wire cases; deterministic conversion/masking must not require JavaScript host services.
 - [x] Map public capabilities to Rust call sites in `docs/cross-language.md`; keep generator state
