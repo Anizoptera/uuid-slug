@@ -14,7 +14,7 @@
  */
 import { expect, test } from "vitest";
 
-import vectors from "./fixtures-halfsiphash.json" with { type: "json" };
+import vectors from "../rust/uuid-slug/tests/fixtures/fixtures-halfsiphash.json" with { type: "json" };
 import { halfSipHash } from "../src/siphash";
 
 test("HalfSipHash-2-4 matches all 64 published reference vectors", () => {

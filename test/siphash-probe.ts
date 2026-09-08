@@ -4,7 +4,7 @@
 import { strict as assert } from "node:assert";
 import { halfSipHash } from "../src/siphash";
 import type { HashContinuation } from "../src/siphash";
-import vectors from "./fixtures-halfsiphash.json";
+import vectors from "../rust/uuid-slug/tests/fixtures/fixtures-halfsiphash.json";
 
 export function verifyHashContinuations(): void {
   for (const blockLimit of [1, 2, 3, 7, 16, Infinity]) {

@@ -3,7 +3,7 @@
 // Profile the public package with varying inputs; keep setup, GC and reporting outside timed batches.
 import { performance } from "node:perf_hooks";
 import { setImmediate as yieldToLoop } from "node:timers/promises";
-import originalFixtures from "../test/fixtures-original-slugs.json";
+import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
 
 const beforeImport = performance.now();
 const api: typeof import("../src/index") = await import(

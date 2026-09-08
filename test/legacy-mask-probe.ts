@@ -7,7 +7,7 @@ import { decodeOriginalMask } from "../src/legacy-mask";
 import { decodeMaskedCandidates } from "../src/mask";
 import { createMaskSchema } from "../src/schema";
 import { formatUuid, parseUuidSlug, uuidToSlug } from "../src/uuid";
-import fixtures from "./fixtures-original-slugs.json";
+import fixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
 
 export const legacyMaskCases = [
   {

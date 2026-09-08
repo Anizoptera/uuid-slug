@@ -1,5 +1,5 @@
 import type * as Api from "../src/index";
-import fixtures from "./fixtures-original-slugs.json";
+import fixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
 
 function equal(actual: unknown, expected: unknown, context: string): void {
   if (actual !== expected)

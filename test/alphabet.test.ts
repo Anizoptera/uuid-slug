@@ -5,7 +5,7 @@ import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "../src/alph
 import { decodeBase64Url, encodeBase64Url, isBase64Url } from "../src/base64url";
 import { uuidToSlug } from "../src/index";
 import { WIRE_FORMAT_CODECS as codecs } from "./wire-format-codecs";
-import golden from "./fixtures-wire-format.json";
+import golden from "../rust/uuid-slug/tests/fixtures/fixtures-wire-format.json";
 
 const randomBytes = (length: number) => {
   const bytes = new Uint8Array(length);

@@ -1,0 +1,33 @@
+[package]
+name = "uuid-slug"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Compact UUIDs with reversible UUIDv7 masking and filesystem-safe representations"
+keywords = ["uuid", "slug", "base64url", "base32", "identifier"]
+categories = ["encoding"]
+
+[features]
+default = ["os-rng"]
+os-rng = ["dep:getrandom"]
+wasm-js = ["os-rng", "getrandom/wasm_js", "dep:js-sys"]
+
+[dependencies]
+uuid = { version = "1.26", default-features = false }
+data-encoding = "2.11"
+getrandom = { version = "0.4", optional = true }
+
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+js-sys = { version = "0.3", optional = true }
+
+[dev-dependencies]
+serde_json = "1"
+
+[lints]
+workspace = true
+
+[[bench]]
+name = "codec"
+harness = false
