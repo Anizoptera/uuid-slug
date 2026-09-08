@@ -11,6 +11,7 @@ Build a public Rust crate with TypeScript semantic parity, prioritizing filesyst
 - Reuse the existing native implementation as source material, then refine it for public use.
 - Allow small, evidence-justified Rust dependencies; keep npm native-free and dependency-free.
 - Support Git installation and crates.io publication with maintained releases and provenance.
+- Keep Rust and TypeScript versions equal; support common CPU architectures from the first release.
 - Reuse contract cases and extend benchmarks, profiling and resource measurements to Rust.
 - Consumer application adoption and stored-filename migration are separate work.
 
@@ -32,10 +33,10 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [ ] R3 — Obtain Art's binding-support ruling: development-only Node/Bun bridges, or separately
   released bindings with an additional ABI/support commitment. Recommend development-only.
 - [ ] R4 — Obtain Art's crate-name ruling; recommend `uuid-slug` to match the repository.
-- [ ] R5 — Obtain Art's version-policy ruling; recommend independent Rust versions/tags so an
-  npm-only packaging fix does not force a Rust release. Decide the initial version separately.
-- [ ] R6 — Obtain Art's support ruling: name OS/architecture targets and required optional
-  integrations; test the lowest working toolchain instead of choosing an arbitrary MSRV.
+- [ ] Wire one release version into npm and Cargo manifests; reject mismatched package/tag versions.
+- [ ] Derive the common-architecture target matrix from supported Rust targets and consumer needs;
+  distinguish native execution from cross-compilation. Keep CPU-specific tuning optional.
+- [ ] R6 — Resolve the submitted browser WebAssembly question; CPU support does not decide host APIs.
 - [ ] Map every public export and codec method to Rust input, result and failure semantics.
 
 ### 2. Establish the crate and shared evidence — high risk reduction, medium effort
