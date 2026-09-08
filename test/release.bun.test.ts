@@ -7,6 +7,17 @@ import { rejects } from "node:assert/strict";
 import { releaseNotes } from "../scripts/release-notes";
 import { registryIntegrity, verifyIntegrity } from "../scripts/registry-integrity";
 
+async function rustReleaseFixture(root: string, version: string): Promise<void> {
+  await Bun.write(
+    join(root, "rust/Cargo.toml"),
+    `[workspace]\nmembers = ["uuid-slug", "bridge"]\n[workspace.package]\nversion = "${version}"\n`,
+  );
+  await Bun.write(
+    join(root, "rust/Cargo.lock"),
+    `version = 4\n[[package]]\nname = "uuid-slug"\nversion = "${version}"\n[[package]]\nname = "uuid-slug-bridge"\nversion = "${version}"\n`,
+  );
+}
+
 const body = "\r\n\r\n- Keep bytes.\r\n\r\n```md\r\n## [9.0.0]\r\n```\r\n\r\n";
 test("preserves body bytes and ignores headings inside fences", () => {
   expect(
@@ -28,6 +39,7 @@ test("local and CI preflight process reject a missing section or mismatched tag"
   try {
     await Bun.write(join(root, "package.json"), JSON.stringify({ name: "test", version: "1.2.3" }));
     await Bun.write(join(root, "CHANGELOG.md"), "## [1.2.3]\n- Change.\n");
+    await rustReleaseFixture(root, "1.2.3");
     const run = async (tag: string) => {
       const child = Bun.spawn(["bun", join(import.meta.dir, "../scripts/release-notes.ts"), tag], {
         cwd: root,
@@ -45,6 +57,11 @@ test("local and CI preflight process reject a missing section or mismatched tag"
     const mismatch = await run("v1.2.4");
     expect(mismatch.status).toBe(1);
     expect(mismatch.stderr).toContain("does not match");
+    await rustReleaseFixture(root, "1.2.2");
+    expect((await run("v1.2.3")).stderr).toContain("Rust version");
+    await rustReleaseFixture(root, "1.2.3");
+    await Bun.write(join(root, "rust/Cargo.lock"), "version = 4\npackage = []\n");
+    expect((await run("v1.2.3")).stderr).toContain("Cargo.lock");
     await Bun.write(join(root, "CHANGELOG.md"), "## [1.2.2]\n- Old.\n");
     expect((await run("v1.2.3")).status).toBe(1);
   } finally {
@@ -109,6 +126,7 @@ test("release process refuses invalid notes and mismatched archives before expos
       JSON.stringify({ name: "test", version: "1.2.3-rc.1" }),
     );
     await Bun.write(join(root, "CHANGELOG.md"), "## [1.2.3-rc.1]\n- Change.\n");
+    await rustReleaseFixture(root, "1.2.3-rc.1");
     await Bun.write(
       join(root, "node_modules/.bin/publish-clean"),
       `

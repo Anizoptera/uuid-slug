@@ -1,4 +1,5 @@
 import { fromMarkdown } from "mdast-util-from-markdown";
+import { checkReleaseVersion, syncReleaseVersion } from "./release-version";
 
 interface TextNode {
   type: string;
@@ -45,21 +46,29 @@ export function releaseNotes(markdown: string, version: string): string {
 export async function preflightRelease(
   cwd: string,
   tag?: string,
+  synchronize = false,
 ): Promise<{ name: string; version: string; notes: string }> {
   const manifest = await Bun.file(`${cwd}/package.json`).json();
   if (typeof manifest.version !== "string" || typeof manifest.name !== "string")
     throw new Error("Manifest must name a package and version.");
   if (tag !== undefined && tag !== `v${manifest.version}`)
     throw new Error(`Tag ${tag} does not match package.json ${manifest.version}.`);
+  const notes = releaseNotes(await Bun.file(`${cwd}/CHANGELOG.md`).text(), manifest.version);
+  if (synchronize) await syncReleaseVersion(cwd, manifest.version);
+  else await checkReleaseVersion(cwd, manifest.version);
   return {
     name: manifest.name,
     version: manifest.version,
-    notes: releaseNotes(await Bun.file(`${cwd}/CHANGELOG.md`).text(), manifest.version),
+    notes,
   };
 }
 
 if (import.meta.main)
-  preflightRelease(process.cwd(), process.argv[2])
+  preflightRelease(
+    process.cwd(),
+    process.argv[2] === "--sync" ? undefined : process.argv[2],
+    process.argv[2] === "--sync",
+  )
     .then(({ notes }) => process.stdout.write(notes))
     .catch((error: unknown) => {
       console.error(error);

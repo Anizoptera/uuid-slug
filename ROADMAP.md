@@ -33,7 +33,8 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [x] Encode safe sentinels as raw 26-character base32hex UUIDs; retain existing 22-character
   reads. Their length separates them from 27-character masked payloads without adding tag bits.
 - [x] Keep Node/Bun bridge crates unpublished and outside npm; expose Rust directly as `uuid-slug`.
-- [ ] Wire one release version into npm and Cargo manifests; reject mismatched package/tag versions.
+- [x] Synchronize Cargo from the selected npm version before tagging; reject manifest, lockfile
+  and tag disagreement. The version-hook test runs in `check:rust`, without adding Cargo to `check:js`.
 - [ ] Derive the common-architecture target matrix from supported Rust targets and consumer needs;
   distinguish native execution from cross-compilation. Keep CPU-specific tuning optional.
 - [x] Build and execute WebAssembly in a browser: verify host entropy, errors, cancellation and

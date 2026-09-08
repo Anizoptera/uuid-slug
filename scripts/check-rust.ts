@@ -1,7 +1,10 @@
 // Check the Rust feature boundaries and run shared contracts through both native hosts.
 import { buildRustBridge } from "./rust-bridge";
+import { checkReleaseVersion } from "./release-version";
 
 const manifest = "rust/Cargo.toml";
+const { version } = await Bun.file("package.json").json();
+await checkReleaseVersion(process.cwd(), version);
 
 async function run(command: string[], capture = false): Promise<string> {
   console.log(`> ${command.join(" ")}`);
@@ -48,9 +51,11 @@ const metadata = JSON.parse(
     ],
     true,
   ),
-) as { packages: { name: string; features: Record<string, string[]> }[] };
+) as { packages: { name: string; version: string; features: Record<string, string[]> }[] };
 const product = metadata.packages.find((entry) => entry.name === "uuid-slug");
 if (!product) throw new Error("Cargo metadata has no uuid-slug product");
+if (product.version !== version)
+  throw new Error(`Rust product version ${product.version} does not match package.json ${version}`);
 const features = product.features;
 
 // Feature unification in workspace tests can hide a product's missing optional dependency.
@@ -119,6 +124,17 @@ await run([
 ]);
 await buildRustBridge();
 await run([
+  "cargo",
+  "run",
+  "--manifest-path",
+  manifest,
+  "-p",
+  "uuid-slug",
+  "--example",
+  "filesystem",
+  "--locked",
+]);
+await run([
   "bun",
   "build",
   "scripts/rust-conform.ts",
@@ -128,6 +144,7 @@ await run([
 ]);
 // Each adapter checks nonzero execution and exact result counts before it can exit successfully.
 const contracts = await Promise.allSettled([
+  run(["bun", "test", "scripts/release-version.test.ts"]),
   run(["bun", "scripts/rust-conform.ts"]),
   run(["node", "rust/target/conform.mjs"]),
 ]);

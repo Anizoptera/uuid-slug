@@ -84,7 +84,7 @@
     "release": "pnpm version",
     "test": "vitest run && bun test test/*.bun.test.ts",
     "typecheck": "bun node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
-    "version": "bun scripts/release-notes.ts > /dev/null",
+    "version": "bun scripts/release-notes.ts --sync > /dev/null && git add rust/Cargo.toml rust/Cargo.lock",
     "bench:matrix": "bun bench/matrix.ts",
     "lint": "oxlint --type-aware",
     "lint:fix": "oxlint --type-aware --fix",
