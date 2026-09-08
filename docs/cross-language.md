@@ -81,6 +81,9 @@ Keep the public npm package TypeScript/JavaScript-only, with no runtime dependen
 payloads. Publish `uuid-slug` as a Rust crate, installable from this Git repository and crates.io.
 Art requires matching Rust/TypeScript versions and common CPU architecture support from the first
 Rust release, including WebAssembly. Preserve portable behavior under architecture-specific tuning.
+Support x86-64 and Arm64 on Linux, macOS and Windows with native execution; compile-check i686 and
+ARMv7 Linux, and execute `wasm32-unknown-unknown` in a browser. The Rust workflow owns the concrete
+runner labels and target triples so routine CI changes cannot make this contract stale.
 Build and test natively in GitHub CI from the first Rust increment; cross-compilation alone does
 not validate runtime behavior. Report any target lacking native execution rather than implying it ran.
 Rust may use a small set of justified dependencies. Compare contract fit, failure behavior,

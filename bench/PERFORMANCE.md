@@ -63,6 +63,11 @@ Build both revisions separately and select the baseline with `UUID_SLUG_PROFILE_
 - Rotation decodes text once and constructs a mismatch error only after all explicit keys fail. Custom callbacks still receive owned bytes. Removing those copies would alter ownership semantics.
 - Freshness consumes decoded bytes directly. Formatting remains at string-returning boundaries; it is not part of validation.
 - Async and synchronous construction share hash arithmetic and final key expansion. The initial continuation rewrite regressed masking; a single state branch replaced repeated optional-state lookups. Native generators remain delegated without introducing an ordering requirement.
+- Portable v7 continuation keeps the same 16-byte entropy callback contract as initial generation.
+  Requesting only the four bytes consumed by same-millisecond continuations reduced pool demand but
+  measured about 2% slower on Bun's `v7.bytes` path, so it added a branch without a demonstrated
+  consumer-path gain. Revisit only with a measured end-to-end improvement that preserves custom
+  callback behavior.
 - Node's mixed-workload parser row regresses while isolated parsing improves. Restoring the exact baseline parser inside the current package measured about 93 ns for parsing and 74 ns for caller-owned parsing, versus 82/62 ns with the final parser. Direct lookup inlining and a combined sign check did not improve the mixed result and were discarded. This rules out restoring the old parser as a remedy; it does not identify the remaining JIT/workload cause. The mixed result remains disclosed, not relabelled as a speedup.
 
 ## Allocation and key rotation
@@ -87,6 +92,12 @@ Node/Bun CPU profiles and retained-heap profiles were also captured with the com
 The async constructor snapshots byte inputs before suspension, splits encoding/packing/hashing into checkpoints, and yields through ordinary host tasks. It preserves synchronous key material. A prioritized browser continuation failed to let an independently queued cancellation message run; ordinary message tasks passed the same installed-export test. Node/Bun use `setImmediate`.
 
 For a 19-byte seed at 65,536 iterations, real independent task gaps peaked at approximately 2.20 ms on Node and 2.25 ms on Bun, with total construction about 7.5/6.9 ms. A one-iteration 1 MiB byte seed measured about 5.5/18.4 ms total and 2.18/2.13 ms maximum observed task gaps. These are individual process observations, not maximum guarantees. Initial snapshots, allocation, GC and host scheduling are outside the slice target.
+
+Direct constructor probes measured synchronous byte-seed capture at 2.305/2.365 ms for 1 MiB,
+3.527/3.472 ms for 16 MiB and 9.051/7.969 ms for 64 MiB on Bun/Node. The copy preserves the bytes
+present when the call begins; an input cap or deferred copy would change that public behavior.
+Keep the snapshot and treat its cost as an explicit responsiveness limit until a replacement
+preserves call-time ownership without blocking the caller.
 
 Cancellation retention probes discarded 16 one-MiB jobs per epoch and collected between epochs. Node's eight epochs ended around 5.22 MB heap used. Bun's extended 32-epoch probe rose transiently to 3.79 MB, then settled near 1.72 MB rather than retaining every cancelled seed. This falsifies linear retention of all those inputs in that probe; it does not prove every application is leak-free.
 

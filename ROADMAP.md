@@ -63,11 +63,12 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [x] Keep Node/Bun bridge crates unpublished and outside npm; expose Rust directly as `uuid-slug`.
 - [x] Synchronize Cargo from the selected npm version before tagging; reject manifest, lockfile
   and tag disagreement. The version-hook test runs in `check:rust`, without adding Cargo to `check:js`.
-- [ ] Derive the common-architecture target matrix from supported Rust targets and consumer needs;
-  distinguish native execution from cross-compilation. Keep CPU-specific tuning optional.
+- [x] Derive the common-architecture target matrix from supported Rust targets and consumer needs;
+  distinguish native execution from cross-compilation. Keep CPU-specific tuning optional. The
+  durable support boundary is in `docs/cross-language.md`; the workflow owns runner details.
   - [x] Check the standalone crate on 32-bit x86 and ARMv7 Linux with entropy enabled and disabled;
-    add these cross-builds to the Linux CI lane. Local checks pass; native runtime execution and
-    the full common-architecture support boundary remain unverified.
+    add these cross-builds to the Linux CI lane. Local checks pass; these targets are not claimed
+    as natively executed.
 - [x] Build and execute WebAssembly in a browser: verify host entropy, errors, cancellation and
   shared wire cases; deterministic conversion/masking must not require JavaScript host services.
 - [x] Map public capabilities to Rust call sites in `docs/cross-language.md`; keep generator state
