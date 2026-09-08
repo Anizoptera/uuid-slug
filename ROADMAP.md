@@ -28,15 +28,15 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 
 ### 1. Settle public contracts — high risk reduction, small effort
 
-- [ ] Preserve base64url defaults in both languages: Art's parity and compatibility requirements
+- [x] Preserve base64url defaults in both languages: Art's parity and compatibility requirements
   already decide this. Keep plain `slugAlphabet` semantics; select masked output independently.
-- [ ] Encode safe sentinels as raw 26-character base32hex UUIDs; retain existing 22-character
+- [x] Encode safe sentinels as raw 26-character base32hex UUIDs; retain existing 22-character
   reads. Their length separates them from 27-character masked payloads without adding tag bits.
-- [ ] Keep Node/Bun bridge crates unpublished and outside npm; expose Rust directly as `uuid-slug`.
+- [x] Keep Node/Bun bridge crates unpublished and outside npm; expose Rust directly as `uuid-slug`.
 - [ ] Wire one release version into npm and Cargo manifests; reject mismatched package/tag versions.
 - [ ] Derive the common-architecture target matrix from supported Rust targets and consumer needs;
   distinguish native execution from cross-compilation. Keep CPU-specific tuning optional.
-- [ ] Build and execute WebAssembly in a browser: verify host entropy, errors, cancellation and
+- [x] Build and execute WebAssembly in a browser: verify host entropy, errors, cancellation and
   shared wire cases; deterministic conversion/masking must not require JavaScript host services.
 - [ ] Map every public export and codec method to Rust input, result and failure semantics.
 
@@ -46,20 +46,20 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   verify licensing, omit private project identifiers. Done: reviewed source delta and provenance.
 - [ ] Compare UUID/entropy/encoding/hash/error/serde dependencies for contract fit and measured
   cost; retain reasons, not sibling version pins. Keep default features explicit and audit the lock graph.
-- [ ] Create `rust/Cargo.toml` with the product and unpublished bridge members; external consumers
+- [x] Create `rust/Cargo.toml` with the product and unpublished bridge members; external consumers
   link the product alone. Keep OS entropy and bindings outside pure encoding/masking modules.
-- [ ] Share wire/hash/original fixtures as data; use one comparator with independent producers.
+- [x] Share wire/hash/original fixtures as data; use one comparator with independent producers.
   A sampled diagnostic may limit printed failures, never which observations determine the result.
 - [ ] Parameterize reusable behavioral cases over implementation adapters. Done: the first Rust
   increment runs shared cases; extract existing `test/*-probe.ts` closures without changing their
   expectations. Report missing cases per adapter; aggregate success cannot hide an empty adapter.
 - [ ] Define owned/borrowed results and errors that retain causes, without panic or partial success.
-- [ ] Inherit workspace lints in every member: deny correctness/suspicious/perf, document public
+- [x] Inherit workspace lints in every member: deny correctness/suspicious/perf, document public
   APIs, forbid unsafe in the core; isolate necessary FFI exceptions in bridge crates only.
-- [ ] Add `cargo fmt --all --manifest-path rust/Cargo.toml --check` to `format:check`; use defaults.
-- [ ] Add one `rust:check` to the root check: workspace/all-target/all-feature Clippy with warnings
+- [x] Run default Rust formatting once in `check:rust`; keep `format:check` for JavaScript files.
+- [x] Add one `check:rust` to the root check: workspace/all-target/all-feature Clippy with warnings
   denied, then workspace tests including doctests. Run Cargo serially; run JS checks alongside it.
-- [ ] Check default, empty and each optional feature independently from Cargo metadata; include
+- [x] Check default, empty and each optional feature independently from Cargo metadata; include
   known interacting combinations. All-features alone hides missing feature dependencies.
 - [ ] Run shared parity on native GitHub OS/CPU runners from the first Rust increment; fail missing
   observations. Keep runner selection in the CI matrix, not a second target list in prose.
@@ -73,7 +73,7 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [ ] Implement UUID parsing, formatting and byte conversion. Done: shared input-boundary cases
   cover strict text, slices/offsets and unchanged buffers on error; private validated fields prevent
   bypass through constructors or deserialization. Generic UUIDs still accept all version nibbles.
-- [ ] Implement both plain alphabets; pass padding, length, byte-order and non-v7 contract cases.
+- [x] Implement both plain alphabets; pass padding, length, byte-order and non-v7 contract cases.
 - [ ] Implement UUIDv4 generation. Done: actual entropy-path and bit-layout evidence, including
   failure behavior, without assuming a platform hook exercises the portable implementation.
 - [ ] Implement v7 generation/extraction/explicit timestamps; pass bounds without promising strict order.
@@ -91,7 +91,7 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [ ] Implement cooperative cancelable derivation without imposing an application runtime.
   Share hash primitives, retain the direct sync path; snapshot mutable inputs before returning
   the future. Prove abort-before-poll, mid-work abort/drop, stable keys and unrelated host progress.
-- [ ] Implement built-in masking and unmasking. Done: existing wire fixtures, timestamp overflow,
+- [x] Implement built-in masking and unmasking. Evidence: existing wire fixtures, timestamp overflow,
   checksum rejection and UUID identity preservation match TypeScript.
 - [ ] Implement custom schemas. Done: inverse-direction cases, callback errors and output
   ownership cover reentrancy and retained buffers; immutable built-in codecs share safely, while
@@ -100,7 +100,7 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   and retained callback outputs preserve identity under the shared cases.
 - [ ] Implement explicit key rotation. Done: first-match order, all distinct candidates and
   failure behavior match; normalize spelling once, not once per key; never append implicit schemas.
-- [ ] Add the approved safe masked spelling in TypeScript and Rust together. Done: all 132 bits
+- [x] Add the approved safe masked spelling in TypeScript and Rust together. Evidence: all 132 bits
   survive cross-language conversion, strict padding rejects aliases, and old outputs stay valid.
 - [ ] Verify safe masked filenames on supported filesystems. Done: exact round trips for normal
   and sentinel values; no chronological-order claim for masked output.
@@ -159,3 +159,19 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [ ] Present release notes, version/tag, artifact, support/provenance and rollback limits before publish.
 - [ ] Publish the approved release and verify registry bytes and Git installation. Done: downloaded
   package matches the reviewed artifact; both implementations retain their parity checks.
+
+### 8. Security and safety audit — required before publication
+
+- [ ] Deeply audit Rust and TypeScript security and safety, prioritizing randomness correctness.
+  Trace every native, portable and WebAssembly generation path to its actual entropy source;
+  verify secure defaults, failure propagation, bit preservation, state isolation and concurrency.
+  Review seed handling, masking limits, parser/buffer safety and bridge ownership. Use statistical
+  probes to detect defects, never as proof of cryptographic security. Fix material findings and
+  document evidence and limits before publication; release depends on this audit.
+  - [x] Reject partial TypeScript entropy refills without consuming them; verify repeated failure,
+    retry, erased consumed bytes and unchanged caller output in Node and Bun. Moving the cursor
+    before the source call must make the shared regression fail.
+  - [x] Exercise Rust browser v4/v7 generation against real Web Crypto and failing host draws;
+    deterministic contracts must make no entropy calls. Keep source-quality limits in security docs.
+  - [x] Verify Rust v4/v7 and portable TypeScript v7 entropy-bit preservation with one-hot inputs;
+    failed Rust prefixes preserve output and retry state across initialization, rollback and overflow.
