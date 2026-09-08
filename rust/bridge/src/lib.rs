@@ -105,9 +105,8 @@ mod ffi {
             let Ok(input) = std::str::from_utf8(bytes) else {
                 return 0;
             };
-            let Ok(output) = super::evaluate_caught(input) else {
-                return 0;
-            };
+            // This export's outer catch also covers dispatch and output ownership.
+            let output = super::dispatch::evaluate(input);
             let Ok(mut outputs) = OUTPUTS.lock() else {
                 return 0;
             };
