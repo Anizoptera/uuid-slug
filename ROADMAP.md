@@ -134,6 +134,8 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   shared case reaches Rust; native callback/cancellation checks cover what adapters cannot express.
 - [ ] Audit the FFI lifecycle. Done: targeted unsafe checks exercise bounds, use-after-release,
   cancellation and teardown; panic never unwinds across C and no failed call leaks owned storage.
+  - [x] Run the existing pointer-copy/handle-release regression under Miri; retain native Node/Bun
+    checks because Miri does not execute either host's ABI binding.
 - [ ] Benchmark direct Rust calls separately from Node/Bun crossings and batched calls.
   Done: varied equivalent workloads, optimized artifacts, consumed outputs and repeated paired
   runs distinguish core work from transport and setup; include cheap ordinary single-ID calls.
@@ -143,6 +145,14 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   - [x] Record optimized direct-call and separate native-bridge timings, CPU time, peak RSS and
     context switches through `bun bench/rust.ts`; validate every process's complete output.
     Peak RSS does not establish allocation volume or leak freedom.
+  - [x] Compare owned and caller-buffer decoding under native allocation tracing in both orders;
+    validate that each trace executed the selected workload. Owned decoding is the positive
+    control; attribute the allocation difference separately from setup and retained memory.
+  - [x] Trace first-result migration against candidate enumeration with the same single-key input;
+    both execution orders show one fewer allocation per first-result call, including warm-up.
+  - [x] Measure real platform entropy calls/bytes and independent generators under thread
+    contention. Include thread startup/join cost and keep kernel-call and entropy-quality claims
+    outside what these counters can establish.
 - [ ] Measure cancellation latency and event-loop blocking through real host execution.
   Done: operations exceeding the 4 ms target are bounded/cooperative or off-loop, with 8 ms
   warnings and 32 ms errors; delays never substitute for completion signals.

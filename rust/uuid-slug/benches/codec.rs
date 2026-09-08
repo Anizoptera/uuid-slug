@@ -3,6 +3,12 @@ use std::{hint::black_box, time::Instant};
 use uuid_slug::{Alphabet, Codec, CodecOptions, Error, Uuid, create_mask_schema};
 
 fn sample<T>(name: &str, inputs: &[Uuid], mut operation: impl FnMut(Uuid) -> T) {
+    // Isolate one operation for allocation attribution without changing its workload.
+    static FILTER: std::sync::LazyLock<Option<String>> =
+        std::sync::LazyLock::new(|| std::env::var("UUID_SLUG_PROFILE_FILTER").ok());
+    if FILTER.as_ref().is_some_and(|filter| !name.contains(filter)) {
+        return;
+    }
     let iterations = 100_000;
     for id in inputs {
         black_box(operation(*id));
@@ -20,6 +26,68 @@ fn sample<T>(name: &str, inputs: &[Uuid], mut operation: impl FnMut(Uuid) -> T) 
             })
         );
     }
+}
+
+#[cfg(feature = "os-rng")]
+fn entropy_resources() -> Result<(), Error> {
+    use uuid_slug::generation::{UuidV7Generator, fill_os_random, uuid_v4_with};
+    // Count calls reaching the real platform source, not the OS's internal refills or syscalls.
+    for version in [4, 7] {
+        let mut generator = UuidV7Generator::new();
+        let (mut draws, mut bytes) = (0, 0);
+        let calls = 10_000;
+        let started = Instant::now();
+        for _ in 0..calls {
+            let fill = |out: &mut [u8]| {
+                draws += 1;
+                bytes += out.len();
+                fill_os_random(out)
+            };
+            black_box(if version == 4 {
+                uuid_v4_with(fill)?
+            } else {
+                generator.generate_with(1000.0, fill)?
+            });
+        }
+        println!(
+            "{}",
+            serde_json::json!({
+                "operation": "generation/platform-source", "version": version,
+                "calls": calls, "nsPerCall": started.elapsed().as_nanos() as f64 / calls as f64,
+                "draws": draws, "requestedBytes": bytes
+            })
+        );
+    }
+    // Include thread startup/join cost; each worker owns its sequence and uses real entropy.
+    for threads in [1, 4] {
+        let calls = 10_000;
+        let started = Instant::now();
+        std::thread::scope(|scope| {
+            let workers: Vec<_> = (0..threads)
+                .map(|_| {
+                    scope.spawn(|| -> Result<(), Error> {
+                        let mut generator = UuidV7Generator::new();
+                        for _ in 0..calls / threads {
+                            black_box(generator.generate_with(1000.0, fill_os_random)?);
+                        }
+                        Ok(())
+                    })
+                })
+                .collect();
+            for worker in workers {
+                worker.join().expect("benchmark worker panicked")?;
+            }
+            Ok::<_, Error>(())
+        })?;
+        println!(
+            "{}",
+            serde_json::json!({
+                "operation": "generation/parallel-platform-source", "threads": threads,
+                "calls": calls, "nsPerCall": started.elapsed().as_nanos() as f64 / calls as f64
+            })
+        );
+    }
+    Ok(())
 }
 
 fn main() -> Result<(), Error> {
@@ -86,6 +154,14 @@ fn main() -> Result<(), Error> {
         cursor = (cursor + 1) % encoded.len();
         migration.decode(&encoded[cursor], None).unwrap()
     });
+    sample("migration/candidates", &ids, |_| {
+        cursor = (cursor + 1) % encoded.len();
+        migration.candidates(&encoded[cursor], None).unwrap()
+    });
+    #[cfg(feature = "os-rng")]
+    if std::env::var_os("UUID_SLUG_PROFILE_FILTER").is_none() {
+        entropy_resources()?;
+    }
     println!("{{\"complete\":true}}");
     Ok(())
 }

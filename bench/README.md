@@ -49,9 +49,17 @@ The current-runtime CI lane also runs it with the newest Node and Bun.
 Run `bun bench/rust.ts` for optimized Rust calls and separate Node N-API/Bun FFI measurements.
 It builds once, then rotates fresh processes and records all samples, CPU time, peak RSS and
 context switches. Bridge rows include JSON dispatch and transport; they are not core-only timings.
+Generation rows count real platform-source calls and requested bytes, not kernel syscalls or
+entropy quality. Parallel rows use independent generators at a fixed clock and include thread
+startup/join cost; they measure generation with contention, not system-clock reads.
 Caller-buffer and owned decoding use the same inputs. Process RSS includes runtime startup and
 does not measure allocation volume or prove leak freedom. Run revision comparisons sequentially
 with alternating revision order; do not infer cross-platform performance from one host.
+Set `UUID_SLUG_PROFILE_FILTER=decode/owned` or `decode/caller-buffer` when launching the Rust
+benchmark executable to isolate allocation cost with identical inputs and iteration counts.
+On macOS, Instruments' Allocations template can record a separately signed debugging copy;
+never add debugging entitlements to a distributed artifact. Export its Statistics detail and
+compare both execution orders. Include setup and warm-up when interpreting process totals.
 
 Build before Node measurements; its package export resolves to emitted JavaScript, while Bun uses
 TypeScript. Build the driver without bundling the measured package:

@@ -42,6 +42,10 @@ Development bridges are unpublished. Their C boundary requires valid caller poin
 outputs under a lock and releases owned handles once. Panic handling cannot contain invalid-pointer
 access, allocation aborts or WebAssembly traps. Do not expose the development bridge to callers
 who can supply arbitrary pointers.
+Run `cargo +nightly miri test --manifest-path rust/Cargo.toml -p uuid-slug-bridge --lib ffi::`
+after changing handle ownership or pointer copies. This exercises the Rust boundary with valid
+caller storage, short buffers and released handles; it does not validate the JavaScript FFI ABI
+or make arbitrary pointers safe. Keep the real Node/Bun transport checks alongside it.
 
 No secure-erasure guarantee is provided. Do not clone a live generator or buffered entropy state
 through process-memory snapshots and then issue identifiers independently from both copies.
