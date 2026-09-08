@@ -8,6 +8,7 @@ import { errorOrThrow, readClock, UuidSlugError } from "./errors";
 // path and undo the whole saving that split exists for.
 import { uuidV4Bytes as generateUuidV4Bytes, uuidV4 as generateUuidV4 } from "./keyless";
 import { uuidV7BytesToMaskedSlug, decodeMaskedSlug } from "./mask";
+import { createMigration } from "./migration";
 import { createMaskSchema, DEFAULT_MASK_SCHEMA, verifyInvertible } from "./schema";
 import type {
   MaskSchema,
@@ -191,6 +192,9 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions = {}): UuidSlu
 
   return {
     sentinels: sentinelState.sentinels,
+    migration(migrationOptions) {
+      return createMigration([schema, ...previousMasks], sentinelState.bySlug, migrationOptions);
+    },
     uuidV4: generateUuidV4,
     uuidV7() {
       return generator.uuidV7();

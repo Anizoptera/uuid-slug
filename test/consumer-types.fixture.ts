@@ -7,11 +7,20 @@ import type {
   PublicUuidV7Slug,
   UuidV4Slug,
   UuidV7Slug,
+  UuidString,
+  UuidSlugMigration,
 } from "@anizoptera/uuid-slug";
 
 // The emitted declarations must preserve produced brands without requiring branded inputs.
 const plain: UuidV7Slug = uuidV7Slug();
 const codec = createUuidSlugCodec();
+const migration: UuidSlugMigration = codec.migration({ original: true, plain: true });
+const migrated: UuidString | UuidSlugError = migration.decode("AAAAAAABcACAAAAAAAAAAA");
+const candidates: UuidString[] | UuidSlugError = migration.candidates(
+  "AAAAAAABcACAAAAAAAAAAA",
+  "original",
+);
+void [migrated, candidates];
 const publicSlug: PublicUuidV7Slug = codec.uuidV7MaskedSlug();
 codec.uuidV7ToMaskedSlug("019ff19b-58b8-7000-9b1b-df713bd5562c");
 // @ts-expect-error A plain slug does not carry the masked brand.

@@ -58,6 +58,7 @@ try {
   const codec = api.createUuidSlugCodec({ mask: primary });
   const rotated = api.createUuidSlugCodec({ mask: primary, previousMasks: [previous] });
   const older = api.createUuidSlugCodec({ mask: previous });
+  const migration = rotated.migration({ original: true, plain: true });
   const masked = codec.uuidV7ToMaskedSlug(id);
   const old = older.uuidV7ToMaskedSlug(id);
   assert.equal(typeof masked, "string");
@@ -141,6 +142,16 @@ try {
     errors: 0,
     hex: 0,
     chars: 22,
+  });
+  check("migration first match", () => migration.decode(old as string), {
+    errors: 0,
+    chars: 22,
+    draws: 0,
+  });
+  check("migration candidates", () => migration.candidates(old as string), {
+    errors: 0,
+    chars: 22,
+    draws: 0,
   });
   check(
     "masked freshness",

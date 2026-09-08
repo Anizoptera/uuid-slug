@@ -1,4 +1,5 @@
 import type * as Api from "../src/index";
+import fixtures from "./fixtures-original-slugs.json";
 
 function equal(actual: unknown, expected: unknown, context: string): void {
   if (actual !== expected)
@@ -66,6 +67,22 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     channel.port2.close();
   }
   const codec = api.createUuidSlugCodec();
+  const { seed, slug: overlap, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
+  const migrating = api.createUuidSlugCodec({ mask: { seed } });
+  const reader = migrating.migration({ original: true, plain: true });
+  equal(reader.decode(overlap), currentUuid, "migration default");
+  equal(reader.decode(overlap, "original"), originalUuid, "original migration");
+  equal(reader.decode(overlap, "plain"), plainUuid, "plain migration");
+  equal(
+    JSON.stringify(reader.candidates(overlap)),
+    JSON.stringify([currentUuid, originalUuid, plainUuid]),
+    "migration candidates",
+  );
+  equal(
+    JSON.stringify(migrating.migration().candidates(overlap)),
+    JSON.stringify([currentUuid]),
+    "migration retirement",
+  );
   equal(codec.uuidV7ToMaskedSlug(uuid), "uqgITQGagyxsoNARAd_pxu", "masked wire vector");
   equal(codec.maskedSlugToUuidV7("uqgITQGagyxsoNARAd_pxu"), uuid, "masked inverse");
   const sentinelCodec = api.createUuidSlugCodec({ sentinels: [{ name: "reserved", uuid }] });

@@ -17,8 +17,8 @@ const XOR = [
   0xa2, 0x70, 0x32, 0x7f, 0x98, 0xb8, 0x9b, 0x5e, 0x1b, 0x26, 0xb6, 0x16, 0x96, 0xf9, 0xea, 0x3e,
 ] as const;
 
-/** Recover an original masked candidate; callers must resolve sentinels before calling. */
-export function decodeOriginalMask(mixed: Uint8Array): Uint8Array | UuidSlugError {
+/** Return a matching candidate or undefined; callers resolve sentinels before trying masks. */
+export function decodeOriginalMask(mixed: Uint8Array): Uint8Array | UuidSlugError | undefined {
   if (mixed.length !== 16)
     return new UuidSlugError("invalid_buffer", "Original masked slugs require 16 decoded bytes.");
   const bytes = new Uint8Array(16);
@@ -28,7 +28,6 @@ export function decodeOriginalMask(mixed: Uint8Array): Uint8Array | UuidSlugErro
   bytes[6] = ((bytes[6] as number) & 15) | 0x70;
   let checksum = 0;
   for (const byte of bytes) checksum ^= byte;
-  return ((checksum >>> 4) ^ (checksum & 15)) === found
-    ? bytes
-    : new UuidSlugError("invalid_uuid_slug", "Slug does not match the original mask.");
+  // A mismatch is expected while trying formats; allocate diagnostics only if the reader fails.
+  return ((checksum >>> 4) ^ (checksum & 15)) === found ? bytes : undefined;
 }

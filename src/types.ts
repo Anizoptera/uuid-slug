@@ -128,6 +128,22 @@ export interface UuidV7Sentinel {
   readonly uuid: UuidV7String;
 }
 
+/** Select a known encoding instead of guessing from overlapping slug text. */
+export type MigrationFormat = "current" | "original" | "plain";
+
+/** Enable only formats your application has issued; writers keep using the codec. */
+export interface UuidSlugMigrationOptions {
+  readonly original?: boolean;
+  readonly plain?: boolean;
+}
+
+export interface UuidSlugMigration {
+  /** Return the first candidate: sentinel, current keys, original mask, then plain UUID. */
+  decode(this: void, slug: string, format?: MigrationFormat): UuidSlugError | UuidString;
+  /** Return distinct candidates for one application lookup; an empty array means no match. */
+  candidates(this: void, slug: string, format?: MigrationFormat): UuidSlugError | UuidString[];
+}
+
 export interface UuidSlugCodecOptions {
   readonly generator?: UuidV7Generator;
   /**
@@ -204,6 +220,8 @@ export interface UuidSlugCodecOptions {
  */
 export interface UuidSlugCodec extends UuidV7Generator {
   readonly sentinels: readonly UuidV7Sentinel[];
+  /** Create an opt-in reader without changing generation or ordinary codec decoding. */
+  migration(this: void, options?: UuidSlugMigrationOptions): UuidSlugMigration;
   /**
    * Every method declares `this: void`, which is load-bearing rather than decoration: the
    * top-level shortcuts are plain references (`export const uuidV7 = defaultCodec.uuidV7`), so a

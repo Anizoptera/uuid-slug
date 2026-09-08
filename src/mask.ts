@@ -133,6 +133,7 @@ export function decodeMaskedCandidates(
   mixed: Uint8Array,
   outerTag: number,
   schemas: readonly MaskSchema[],
+  firstOnly = false,
 ): UuidSlugError | Uint8Array[] {
   const candidates: Uint8Array[] = [];
   for (const schema of schemas) {
@@ -140,7 +141,10 @@ export function decodeMaskedCandidates(
     const decoded = unmix(mixed.slice(), outerTag, schema);
     // A failed callback means the candidate list is incomplete, not that its key mismatched.
     if (decoded instanceof Error) return decoded;
-    if (decoded) candidates.push(decoded);
+    if (decoded) {
+      candidates.push(decoded);
+      if (firstOnly) break;
+    }
   }
   return candidates;
 }
