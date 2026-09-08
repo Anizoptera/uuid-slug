@@ -42,19 +42,24 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 
 - [ ] Inspect the native source and its consumers before copying; preserve reusable behavior,
   verify licensing, omit private project identifiers. Done: reviewed source delta and provenance.
-- [ ] Compare dependency candidates by responsibility: UUID representation/generation, entropy,
-  encoding, hashing, errors and serialization. Done: contract eliminations and measurements of
-  live alternatives, with reasons retained beside the chosen implementation.
-- [ ] Create a safe-core Rust library, with separate bridge crates; verify an external consumer build.
-- [ ] Share existing wire, hash and original-producer fixtures across TypeScript and Rust.
-  Done: both consume the same expected data without treating either implementation as the oracle.
+- [ ] Compare UUID/entropy/encoding/hash/error/serde dependencies for contract fit and measured
+  cost; retain reasons, not sibling version pins. Keep default features explicit and audit the lock graph.
+- [ ] Create `rust/Cargo.toml` with the product and unpublished bridge members; external consumers
+  link the product alone. Keep OS entropy and bindings outside pure encoding/masking modules.
+- [ ] Share wire/hash/original fixtures as data; use one comparator with independent producers.
+  A sampled diagnostic may limit printed failures, never which observations determine the result.
 - [ ] Parameterize reusable behavioral cases over implementation adapters. Done: the first Rust
   increment runs shared cases; extract existing `test/*-probe.ts` closures without changing their
   expectations. Report missing cases per adapter; aggregate success cannot hide an empty adapter.
-- [ ] Define Rust errors and owned/borrowed result types. Done: malformed inputs, entropy failure
-  and custom-schema failure retain their causes without panic or partially successful output.
-- [ ] Gate each Rust increment in ordinary CI alongside TypeScript. Done: the shared cases for
-  implemented capabilities run from the first increment; add each new capability to that lane.
+- [ ] Define owned/borrowed results and errors that retain causes, without panic or partial success.
+- [ ] Inherit workspace lints in every member: deny correctness/suspicious/perf, document public
+  APIs, forbid unsafe in the core; isolate necessary FFI exceptions in bridge crates only.
+- [ ] Add `cargo fmt --all --manifest-path rust/Cargo.toml --check` to `format:check`; use defaults.
+- [ ] Add one `rust:check` to the root check: workspace/all-target/all-feature Clippy with warnings
+  denied, then workspace tests including doctests. Run Cargo serially; run JS checks alongside it.
+- [ ] Check default, empty and each optional feature independently from Cargo metadata; include
+  known interacting combinations. All-features alone hides missing feature dependencies.
+- [ ] Gate shared parity from the first Rust increment; fail missing observations per capability.
 - [ ] Connect the first Rust capability to Node through N-API. Done: the same shared case reaches
   Rust, preserves error/ownership semantics, and fails when the Rust result is deliberately wrong.
 - [ ] Connect that capability to Bun through FFI. Done: the same case reaches Rust; explicit
@@ -65,12 +70,10 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 - [ ] Implement UUID parsing, formatting and byte conversion. Done: shared input-boundary cases
   cover strict text, slices/offsets and unchanged buffers on error; private validated fields prevent
   bypass through constructors or deserialization. Generic UUIDs still accept all version nibbles.
-- [ ] Implement plain base64url and base32hex conversion. Done: shared canonical-padding,
-  alphabet, length and byte-order cases, including non-v7 UUIDs.
+- [ ] Implement both plain alphabets; pass padding, length, byte-order and non-v7 contract cases.
 - [ ] Implement UUIDv4 generation. Done: actual entropy-path and bit-layout evidence, including
   failure behavior, without assuming a platform hook exercises the portable implementation.
-- [ ] Implement UUIDv7 generation, timestamp extraction and explicit-timestamp operations.
-  Done: shared timestamp boundaries and generation guarantees, without stronger ordering promises.
+- [ ] Implement v7 generation/extraction/explicit timestamps; pass bounds without promising strict order.
 - [ ] Implement the explicit stateful v7 generator. Done: state transitions and independent
   ownership cover clock rollback, fractional clocks versus explicit instants, counter exhaustion,
   entropy failure/retry and explicit-time calls that leave the current sequence untouched.
@@ -111,13 +114,11 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
   that path while preserving current formats and separately enabled compatibility.
 - [ ] Implement arbitrary-byte base64url utilities. Done: empty input, malformed input and
   canonical encoding match the existing public utilities, not only UUID-sized inputs.
-- [ ] Implement UUID and slug guards. Done: each version, variant, alphabet and padding boundary
-  matches conversion semantics without imposing stronger guarantees.
+- [ ] Implement guards matching conversion at version, variant, alphabet and padding boundaries.
 - [ ] Implement the v7 entropy predicate. Done: shared degenerate/random-field cases match;
   a passing predicate is not described as proof of randomness quality.
 - [ ] Reconcile every public capability with both implementations and its shared evidence.
-- [ ] Verify consumer-shaped Rust examples for generation, filenames, rotation and migration.
-  Done: examples compile and run against the public crate without changing another application.
+- [ ] Run external Rust examples for generation, filenames, rotation and migration against the crate.
 
 ### 6. Performance and bridge completion — measured cost reduction, medium effort
 
@@ -139,13 +140,12 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 
 ### 7. Distribution and release — public maintenance, medium effort
 
-- [ ] Complete distribution checks in the existing parity lane. Done: relevant Node/Bun/Rust
-  paths run, failures propagate, required fixtures ship, and npm contains no native code.
+- [ ] Gate Node/Bun/Rust artifacts: failures propagate, required fixtures ship, npm stays native-free.
 - [ ] Measure complete feedback lanes and remove redundant evidence. Done: routine complete
   lanes, including setup, stay below five minutes with 4–8× headroom; cache by lockfile/toolchain/
   target/profile. Run OS lanes independently; report cold builds separately without exempting them.
-- [ ] Validate Git installation and the actual Cargo package from isolated consumer projects.
-  Done: published-file selection, optional features, MSRV, license and docs work outside the tree.
+- [ ] Validate Git and packaged Cargo consumers outside the workspace; check default/optional
+  features, MSRV, license and docs so workspace feature unification cannot hide missing dependencies.
 - [ ] Prepare Rust registry authentication and artifact provenance separately from npm release.
   Done: current provider requirements verified, credential-free verification precedes publish,
   and attestations identify the actual crate bytes rather than only the source commit.
