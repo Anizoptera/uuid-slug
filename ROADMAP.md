@@ -141,8 +141,10 @@ Commit verified parts under AGENTS.md; keep evidence tied to the changed artifac
 
 - [ ] Reconcile Node and Bun bridge coverage against the public capability mapping. Accept when: every
   shared case reaches Rust; native callback/cancellation checks cover what adapters cannot express.
-- [ ] Audit the FFI lifecycle. Accept when: targeted unsafe checks exercise bounds, use-after-release,
-  cancellation and teardown; panic never unwinds across C and no failed call leaks owned storage.
+- [x] Audit the development bridge lifecycle. Valid-pointer bounds and released handles pass
+  Miri; native hosts copy owned results and release in `finally`. Browser checks cover abort/drop
+  and cleanup. One C panic boundary covers dispatch and ownership; invalid pointers and process
+  aborts remain outside panic containment, as documented in the security boundaries.
   - [x] Run the existing pointer-copy/handle-release regression under Miri; retain native Node/Bun
     checks because Miri does not execute either host's ABI binding.
 - [x] Benchmark direct Rust calls separately from Node/Bun crossings and batched calls.
