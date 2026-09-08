@@ -29,7 +29,7 @@ Public choices are recorded above; verify the engineering tasks below before cla
 - Preserve call-time byte-seed capture. Large snapshots can block the caller, but no input limit or
   ownership change is approved. `bench/PERFORMANCE.md` owns the measurements and limits.
 - Native CI evidence requires Art to authorize its remote execution. Local checks cannot replace it.
-- Release version selection and every remote release operation require separate approval.
+- The release version is 0.4.0. Every remote release operation requires separate approval.
 
 ## Execution order
 
