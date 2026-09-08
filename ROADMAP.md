@@ -35,7 +35,7 @@ Public choices are recorded above; verify the engineering tasks below before cla
 
 ### 1. Close supported-platform evidence
 
-- [ ] Run `.github/workflows/rust.yml` on every native runner. Require nonzero shared-parity
+- [ ] Run `.github/workflows/check.yml` on every native runner. Require nonzero shared-parity
   observations per adapter and real filesystem round trips for plain, masked, and sentinel names.
   Preserve exact spelling and UUID identity, include base32 timestamp boundaries, and make no masked
   ordering claim. Record cold setup and execution separately; each lane must keep 4–8× headroom

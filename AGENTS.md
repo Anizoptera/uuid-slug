@@ -48,6 +48,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Runtime boundaries and evidence
 
+- Keep routine verification in `.github/workflows/check.yml`. Add another workflow only when it
+  needs a different trigger or permission boundary.
 - Gate every runtime-dependent change in both Node Vitest and Bun tests, including branches
   outside `src/runtime/` that use optional capabilities. Neither runner covers the other's
   adapter. Share entropy cases in `test/entropy-probe.ts`.
