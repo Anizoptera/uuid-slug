@@ -3,14 +3,8 @@
 /**
  * Draws cryptographic randomness a page at a time instead of per id.
  *
- * The underlying primitives cost far more per call than per byte, and a v7 id needs only 16
- * bytes, so per-id draws spend nearly all of their time on call overhead. Measured 2026-08-11
- * filling 16 bytes: 1.94M/s (Node 24) and 4.85M/s (Bun) drawing directly, against 38.9M/s and
- * 77.9M/s from an 8 KiB pool — 20x and 16x. Node's own `randomUUID` batches for the same reason,
- * which is why `crypto.randomUUID` measures 8.9M/s against 1.5M/s with its cache disabled.
- *
- * 8 KiB is the knee: 64 KiB gains nothing further on Node and measured slightly worse on Bun,
- * while holding eight times as much unissued material in memory.
+ * Randomness calls cost more than copying the 16 bytes an identifier needs. The bounded pool
+ * amortizes that call without retaining more unissued material than needed.
  *
  * The source is unchanged — this batches the same CSPRNG, it does not replace or stretch it.
  */

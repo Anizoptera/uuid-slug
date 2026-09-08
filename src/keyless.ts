@@ -97,12 +97,7 @@ export function uuidV7Slug(alphabet: SlugAlphabet = "base64url"): UuidV7Slug {
   // Probed per call rather than resolved once: resolving at module scope would reintroduce the
   // eager work the lazy cell above exists to avoid.
   //
-  // The gate is also where the two alphabets stop costing the same, which is worth knowing before
-  // standardising on the sortable one: measured on Bun 2026-08-12, base64url runs 17.0M/s and
-  // base32hex 4.2M/s. Not an encoder deficiency -- base64url is handed straight to the engine's
-  // own slug generator here, while base32hex must draw bytes and encode them in JavaScript. 4M
-  // ids/sec is ample for identifier issuance; the number is recorded so the 4x is not rediscovered
-  // as a mystery.
+  // Only base64url can use the native slug path; base32hex needs bytes for package encoding.
   const native = alphabet === "base64url" ? runtime.uuidV7Slug : undefined;
   if (native) return native();
   // Asserted for the same reason `uuidV4Slug` asserts: the bytes come from a v7 generator and the

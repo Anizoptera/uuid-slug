@@ -1,6 +1,4 @@
 //! Development transports run the same dispatcher without publishing a native ABI.
-// Generated exports and the C pointer boundary require unsafe; the product crate forbids it.
-#![allow(unsafe_code)]
 #![deny(unsafe_op_in_unsafe_fn)]
 
 mod dispatch;
@@ -11,6 +9,7 @@ fn evaluate_caught(input: &str) -> Result<String, &'static str> {
 
 /// Evaluate a development batch; panics become host errors rather than unwinding across Node.
 #[cfg(not(target_arch = "wasm32"))]
+#[allow(unsafe_code)]
 #[napi_derive::napi]
 pub fn evaluate(input: String) -> napi::Result<String> {
     evaluate_caught(&input).map_err(napi::Error::from_reason)
@@ -18,6 +17,7 @@ pub fn evaluate(input: String) -> napi::Result<String> {
 
 /// Evaluate the same batch in a browser without a Node dependency.
 #[cfg(target_arch = "wasm32")]
+#[allow(unsafe_code)]
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub fn evaluate(input: &str) -> Result<String, wasm_bindgen::JsValue> {
     evaluate_caught(input).map_err(wasm_bindgen::JsValue::from_str)
@@ -25,6 +25,7 @@ pub fn evaluate(input: &str) -> Result<String, wasm_bindgen::JsValue> {
 
 /// Development browser driver polls bounded work between real host tasks.
 #[cfg(target_arch = "wasm32")]
+#[allow(unsafe_code)]
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub struct Derivation {
     future: std::pin::Pin<Box<uuid_slug::schema::SchemaDerivation>>,
@@ -33,11 +34,16 @@ pub struct Derivation {
 }
 
 #[cfg(target_arch = "wasm32")]
+#[allow(unsafe_code)]
 #[wasm_bindgen::prelude::wasm_bindgen]
 impl Derivation {
     /// Copy the seed before host code can mutate its buffer.
     #[wasm_bindgen::prelude::wasm_bindgen(constructor)]
     pub fn new(seed: &[u8], iterations: u32, uuid: &str) -> Result<Self, wasm_bindgen::JsValue> {
+        let uuid = uuid_slug::Uuid::parse(uuid)
+            .map_err(|error| wasm_bindgen::JsValue::from_str(error.code()))?;
+        uuid.timestamp()
+            .map_err(|error| wasm_bindgen::JsValue::from_str(error.code()))?;
         let cancellation = uuid_slug::schema::Cancellation::default();
         Ok(Self {
             future: Box::pin(uuid_slug::create_mask_schema_async(
@@ -47,8 +53,7 @@ impl Derivation {
                 cancellation.clone(),
             )),
             cancellation,
-            uuid: uuid_slug::Uuid::parse(uuid)
-                .map_err(|error| wasm_bindgen::JsValue::from_str(error.code()))?,
+            uuid,
         })
     }
 
@@ -78,6 +83,7 @@ impl Derivation {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+#[allow(unsafe_code)]
 mod ffi {
     use std::collections::HashMap;
     use std::sync::{LazyLock, Mutex};
