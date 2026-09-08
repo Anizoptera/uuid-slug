@@ -1,0 +1,148 @@
+{
+  "issued": [
+    {
+      "uuid": "00000000-0000-7000-8000-000000000000",
+      "slug": "AAAAAAAAcACAAAAAAAAAAA",
+      "raw": "AAAAAAAAcACAAAAAAAAAAA"
+    },
+    {
+      "uuid": "00000000-0001-7000-8000-000000000000",
+      "slug": "AAAAAAABcACAAAAAAAAAAA",
+      "raw": "AAAAAAABcACAAAAAAAAAAA"
+    },
+    {
+      "uuid": "00000000-0002-7000-8000-000000000000",
+      "slug": "AAAAAAACcACAAAAAAAAAAA",
+      "raw": "AAAAAAACcACAAAAAAAAAAA"
+    },
+    {
+      "uuid": "0198abcd-1234-7abc-9def-0123456789ab",
+      "slug": "TRf_4hG5uOKhvh0EPc3rew",
+      "raw": "AZirzRI0eryd7wEjRWeJqw"
+    },
+    {
+      "uuid": "03ffffff-ffff-7fff-bfff-ffffffffffff",
+      "slug": "XY_NwGe7ZKHk2UnpaQYVwQ",
+      "raw": "A_______f_-__________w"
+    },
+    {
+      "uuid": "04000000-0000-7000-8000-000000000000",
+      "slug": "onAy_5i8m16rJrYWlvnqPg",
+      "raw": "BAAAAAAAcACAAAAAAAAAAA"
+    },
+    {
+      "uuid": "ffffffff-ffff-7fff-bfff-ffffffffffff",
+      "slug": "XY_NwGdHZKHU2UnpaQYVwQ",
+      "raw": "________f_-__________w"
+    },
+    {
+      "uuid": "00000000-0003-7000-8000-000000000000",
+      "slug": "AAAAAAADcACAAAAAAAAAAA",
+      "raw": "AAAAAAADcACAAAAAAAAAAA"
+    },
+    {
+      "uuid": "00000000-0003-7abc-9def-0123456789ab",
+      "slug": "AAAAAAADeryd7wEjRWeJqw",
+      "raw": "AAAAAAADeryd7wEjRWeJqw"
+    },
+    {
+      "uuid": "00000000-0003-7fff-bfff-ffffffffffff",
+      "slug": "AAAAAAADf_-__________w",
+      "raw": "AAAAAAADf_-__________w"
+    },
+    {
+      "uuid": "00000000-0004-7000-8000-000000000000",
+      "slug": "AAAAAAAEcACAAAAAAAAAAA",
+      "raw": "AAAAAAAEcACAAAAAAAAAAA"
+    },
+    {
+      "uuid": "00000000-0004-7abc-9def-0123456789ab",
+      "slug": "AAAAAAAEeryd7wEjRWeJqw",
+      "raw": "AAAAAAAEeryd7wEjRWeJqw"
+    },
+    {
+      "uuid": "00000000-0004-7fff-bfff-ffffffffffff",
+      "slug": "AAAAAAAEf_-__________w",
+      "raw": "AAAAAAAEf_-__________w"
+    },
+    {
+      "uuid": "00000000-000f-7000-8000-000000000000",
+      "slug": "AAAAAAAPcACAAAAAAAAAAA",
+      "raw": "AAAAAAAPcACAAAAAAAAAAA"
+    },
+    {
+      "uuid": "00000000-000f-7abc-9def-0123456789ab",
+      "slug": "AAAAAAAPeryd7wEjRWeJqw",
+      "raw": "AAAAAAAPeryd7wEjRWeJqw"
+    },
+    {
+      "uuid": "00000000-000f-7fff-bfff-ffffffffffff",
+      "slug": "AAAAAAAPf_-__________w",
+      "raw": "AAAAAAAPf_-__________w"
+    },
+    {
+      "uuid": "00000000-0010-7000-8000-000000000000",
+      "slug": "onAy_5i4m177JrYWlunqPg",
+      "raw": "AAAAAAAQcACAAAAAAAAAAA"
+    },
+    {
+      "uuid": "00000000-0010-7abc-9def-0123456789ab",
+      "slug": "TRcy4hG4uOLxJh0Wlunrew",
+      "raw": "AAAAAAAQeryd7wEjRWeJqw"
+    },
+    {
+      "uuid": "00000000-0010-7fff-bfff-ffffffffffff",
+      "slug": "XY8ywGe4ZKHEJkkWlukVwQ",
+      "raw": "AAAAAAAQf_-__________w"
+    },
+    {
+      "uuid": "00000000-0fff-7000-8000-000000000000",
+      "slug": "onAy_5i4m14bJrYZlgbqPg",
+      "raw": "AAAAAA__cACAAAAAAAAAAA"
+    },
+    {
+      "uuid": "00000000-0fff-7abc-9def-0123456789ab",
+      "slug": "TRcy4hG4uOIRJh0Zlgbrew",
+      "raw": "AAAAAA__eryd7wEjRWeJqw"
+    },
+    {
+      "uuid": "00000000-0fff-7fff-bfff-ffffffffffff",
+      "slug": "XY8ywGe4ZKEkJkkZlgYVwQ",
+      "raw": "AAAAAA__f_-__________w"
+    },
+    {
+      "uuid": "00000000-1000-7000-8000-000000000000",
+      "slug": "onAy_5i4m177JrYGlvnqPg",
+      "raw": "AAAAABAAcACAAAAAAAAAAA"
+    },
+    {
+      "uuid": "00000000-1000-7abc-9def-0123456789ab",
+      "slug": "TRcy4hG4uOLxJh0Glvnrew",
+      "raw": "AAAAABAAeryd7wEjRWeJqw"
+    },
+    {
+      "uuid": "00000000-1000-7fff-bfff-ffffffffffff",
+      "slug": "XY8ywGe4ZKHEJkkGlvkVwQ",
+      "raw": "AAAAABAAf_-__________w"
+    },
+    {
+      "uuid": "00000000-0004-7abc-9def-000000000005",
+      "slug": "AAAAAAAEeryd7wAAAAAABQ",
+      "raw": "AAAAAAAEeryd7wAAAAAABQ"
+    }
+  ],
+  "plain": [
+    {
+      "uuid": "550e8400-e29b-41d4-a716-446655440000",
+      "slug": "VQ6EAOKbQdSnFkRmVUQAAA"
+    },
+    {
+      "uuid": "00000000-0000-0000-0000-000000000000",
+      "slug": "AAAAAAAAAAAAAAAAAAAAAA"
+    },
+    {
+      "uuid": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+      "slug": "_____________________w"
+    }
+  ]
+}
