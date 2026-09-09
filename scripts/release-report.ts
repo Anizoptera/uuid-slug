@@ -156,6 +156,23 @@ export function minimumRelease(
   return version.startsWith("0.") && strongest === "major" ? "minor" : strongest;
 }
 
+export function satisfiesMinimum(
+  previous: string,
+  current: string,
+  minimum: ReleaseLevel,
+): boolean {
+  if (minimum === "prerelease" || previous.includes("-")) return true;
+  const oldMajor = Number(previous.split(".", 1)[0]);
+  const oldMinor = Number(previous.split(".", 2)[1]);
+  const newMajor = Number(current.split(".", 1)[0]);
+  const newMinor = Number(current.split(".", 2)[1]);
+  if (![oldMajor, oldMinor, newMajor, newMinor].every(Number.isInteger)) return false;
+  if (minimum === "major") return newMajor > oldMajor;
+  if (minimum === "minor")
+    return newMajor > oldMajor || (newMajor === oldMajor && newMinor > oldMinor);
+  return Bun.semver.order(current, previous) > 0;
+}
+
 export function sizeDelta(current: number | undefined, previous: number | undefined): string {
   if (current === undefined || previous === undefined) return "unavailable";
   const absolute = current - previous;
@@ -236,6 +253,10 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
           notes,
           [typescript?.level, rust?.level].filter((level): level is ReleaseLevel => !!level),
         );
+        if (!satisfiesMinimum(comparison.tag.slice(1), inputs.version, minimum))
+          throw new Error(
+            `${inputs.version} is below the ${minimum} release required from ${comparison.tag}.`,
+          );
         const api = [
           `#### TypeScript\n\n${typescript?.report ?? "Unavailable because npm has no release history."}`,
           `#### Rust\n\n${rust?.report ?? "Unavailable because crates.io has no release history."}`,
