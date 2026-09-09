@@ -218,7 +218,7 @@ Work one area at a time, ordered by failure consequences; add discovered defects
   - [x] Evaluate direct Bun replacement on the same ordinary suite: four cases need unsupported Vitest lifecycle APIs. Retain Vitest and run the unchanged suite in actual Bun/Deno workers with matching adapters; direct runner replacement is not cleared.
   - [x] Wire every `scripts/*.test.ts` regression into routine verification and remove the duplicate version-test invocation; complete `bun run check` executes them and passes.
 - [x] Documentation and consumer experience: README, design, security, cross-language, release, benchmark, changelog, licenses, examples, and project guidance are reconciled against the approved surface and packed behavior; stale removed-helper references and private/transient names are absent.
-- [ ] Final reconciliation: inspect the total repaired diff, run applicable complete checks and real artifact consumers, record remaining unverified boundaries, and commit all verified local changes.
+- [x] Final reconciliation: the repaired total diff passes `bun run check`, both workflow files pass `actionlint`, packed Node/Bun/Deno/Chromium consumers pass `artifact:web`, and `git diff --check` is clean. Hosted CI, remote publication/finalization, and the unresolved stable-after-prerelease HLD choice are explicitly unverified; all verified local repairs are committed.
 
 ### Remote-write hold
 
