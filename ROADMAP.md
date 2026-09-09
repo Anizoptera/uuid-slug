@@ -169,6 +169,27 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 - [x] Commit each verified code or durable-document change with explicit paths. Remote writes are
   held inventory, not executable roadmap work, unless Art explicitly requests the exact operation.
 
+### Adversarial audit of completed local work
+
+Audit the final change from `b5f72bb` (published 0.3.0) through `905b918`, then verify each repair against the same consumer contracts. Earlier completion marks are claims to inspect, not acceptance evidence. Art requires local repairs, no subagents, and no remote writes.
+
+Work one area at a time, ordered by failure consequences; add discovered defects under their owning item before fixing them. Close items only with concrete source and execution evidence. Keep remote holds and the separate dependency follow-up intact.
+
+- [ ] Authority and scope: reconcile the complete changed-file inventory, approved public changes, retained contracts, prior roadmap tasks, and unfinished work.
+- [ ] Release integrity: trace credential separation, tag/version/changelog binding, archive identity, publication recovery, notes/assets, and finalization; exercise failures without remote writes.
+- [ ] Version compatibility: challenge Git predecessor selection, SemVer ordering, prereleases/build metadata, collision collapse, missing registry history, and minimum-version enforcement.
+- [ ] API evidence: inspect packed TypeScript/Rust extraction, reachable types, features/targets, baseline comparison, mutation coverage, and bypass behavior.
+- [ ] Distribution: verify export order and unnecessary keys, default/runtime adapters, source/declaration resolution, maps, cleaned archives, dependency and native-code exclusions.
+- [ ] UUID and alphabet contracts: inspect every changed parsing/conversion/generation path, lengths, canonical bits, timestamp bounds, byte ownership, buffer ranges, and atomic writes.
+- [ ] Masking and migration: verify frozen wire constants, seed capture, sync/async parity, cancellation, sentinels, key order, collisions, retained aliases, and encoder/decoder acceptance.
+- [ ] Runtime capabilities: exercise portable/native entropy failures and optional APIs in Node/Bun/browser/Deno; check capability probes, causes, fallback cost, and runtime floors.
+- [ ] Rust implementation: inspect all added library code, public paths/errors, feature combinations, native/WASM/32-bit boundaries, dependency choices, and caller examples.
+- [ ] Cross-language verification: inspect bridge ownership/panics, WASM memory/ranges, fixture independence, parity diagnostics, and whether probes reach the actual packaged implementations.
+- [ ] Performance and resources: inspect benchmark methodology, linked-size comparisons, startup/tree-shaking, cancellation responsiveness, bounded resources, repeated work, and gate headroom.
+- [ ] Developer feedback: inspect tests, lint/type checks, hooks, CI wiring, cleanup, failure diagnostics, redundant evidence, and false-green routes; retain minimal defect-catching checks.
+- [ ] Documentation and consumer experience: reconcile README, design/security/distribution/release owners, examples, upgrade guidance, changelog, licenses, and agent instructions against actual behavior.
+- [ ] Final reconciliation: inspect the total repaired diff, run applicable complete checks and real artifact consumers, record remaining unverified boundaries, and commit all verified local changes.
+
 ### Remote-write hold
 
 These entries are inventory, not executable tasks. No agent may prepare, propose, ask about, or
