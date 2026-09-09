@@ -1,6 +1,8 @@
 bench/reports/
 dist/
 node_modules/
+release-artifacts/
+.vitest-attachments/
 *.tgz
 .DS_Store
 rust/target/

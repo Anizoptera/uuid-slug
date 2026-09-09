@@ -110,54 +110,59 @@ function normalizeDeclarations(source: string): { declarations: string; deprecat
 
 await rm(work, { recursive: true, force: true });
 await mkdir(work, { recursive: true });
-await checkApiExtractorVersion();
-await checkCargoPublicApiVersion();
-if (!useExistingBuild) await command("bun", ["run", "build"], root);
-await command("api-extractor", ["run", "--local", "--config", "api-extractor.json"], root);
-
-const packageManifest = (await Bun.file(join(root, "package.json")).json()) as Record<
-  string,
-  unknown
->;
-const declarationRollup = normalizeDeclarations(
-  await readFile(join(work, "typescript.d.ts"), "utf8"),
-);
-const typescript = report("TypeScript", typescriptManifest(packageManifest), [
-  `## Reachable declarations\n\n\`\`\`ts\n${declarationRollup.declarations}\n\`\`\``,
-  `## Deprecations\n\n${declarationRollup.deprecations}`,
-]);
-
-const rustArgs = [
-  "public-api",
-  "--manifest-path",
-  "rust/uuid-slug/Cargo.toml",
-  "--color=never",
-  "--simplified",
-  "--include",
-  "function-parameter-names",
-];
-// cargo-public-api owns one rustdoc JSON path, so feature selections must not write it concurrently.
-const rustDefault = await command("cargo", [...rustArgs, "--all-features"], root);
-const rustMinimal = await command("cargo", [...rustArgs, "--no-default-features"], root);
-const rustMetadata = await rustManifest(root, "rust/Cargo.toml");
-const rust = report("Rust", rustMetadata, [
-  `## All features\n\n\`\`\`text\n${rustDefault.trim()}\n\`\`\``,
-  `## No default features\n\n\`\`\`text\n${rustMinimal.trim()}\n\`\`\``,
-]);
-
-await mkdir(apiDirectory, { recursive: true });
-const outputs = [
-  { label: "TypeScript API", path: join(apiDirectory, "typescript.api.md"), content: typescript },
-  { label: "Rust API", path: join(apiDirectory, "rust.api.md"), content: rust },
-] as const;
 let changed = false;
-for (const output of outputs) {
-  const baseline = (await Bun.file(output.path).exists()) ? await Bun.file(output.path).text() : "";
-  const differs = await diff(output.label, baseline, output.content);
-  changed ||= differs;
-  if (mode === "update" && differs) await Bun.write(output.path, output.content);
+try {
+  await checkApiExtractorVersion();
+  await checkCargoPublicApiVersion();
+  if (!useExistingBuild) await command("bun", ["run", "build"], root);
+  await command("api-extractor", ["run", "--local", "--config", "api-extractor.json"], root);
+
+  const packageManifest = (await Bun.file(join(root, "package.json")).json()) as Record<
+    string,
+    unknown
+  >;
+  const declarationRollup = normalizeDeclarations(
+    await readFile(join(work, "typescript.d.ts"), "utf8"),
+  );
+  const typescript = report("TypeScript", typescriptManifest(packageManifest), [
+    `## Reachable declarations\n\n\`\`\`ts\n${declarationRollup.declarations}\n\`\`\``,
+    `## Deprecations\n\n${declarationRollup.deprecations}`,
+  ]);
+
+  const rustArgs = [
+    "public-api",
+    "--manifest-path",
+    "rust/uuid-slug/Cargo.toml",
+    "--color=never",
+    "--simplified",
+    "--include",
+    "function-parameter-names",
+  ];
+  // cargo-public-api owns one rustdoc JSON path, so feature selections must not write it concurrently.
+  const rustDefault = await command("cargo", [...rustArgs, "--all-features"], root);
+  const rustMinimal = await command("cargo", [...rustArgs, "--no-default-features"], root);
+  const rustMetadata = await rustManifest(root, "rust/Cargo.toml");
+  const rust = report("Rust", rustMetadata, [
+    `## All features\n\n\`\`\`text\n${rustDefault.trim()}\n\`\`\``,
+    `## No default features\n\n\`\`\`text\n${rustMinimal.trim()}\n\`\`\``,
+  ]);
+
+  await mkdir(apiDirectory, { recursive: true });
+  const outputs = [
+    { label: "TypeScript API", path: join(apiDirectory, "typescript.api.md"), content: typescript },
+    { label: "Rust API", path: join(apiDirectory, "rust.api.md"), content: rust },
+  ] as const;
+  for (const output of outputs) {
+    const baseline = (await Bun.file(output.path).exists())
+      ? await Bun.file(output.path).text()
+      : "";
+    const differs = await diff(output.label, baseline, output.content);
+    changed ||= differs;
+    if (mode === "update" && differs) await Bun.write(output.path, output.content);
+  }
+} finally {
+  await rm(work, { recursive: true, force: true });
 }
-await rm(work, { recursive: true, force: true });
 
 if (mode === "check" && changed)
   throw new Error("Packaged API changed. Obtain approval, then run bun run api:update.");

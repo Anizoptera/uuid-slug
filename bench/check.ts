@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Run resource and timing gates without competing benchmark processes, then remove their bundles.
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, rmdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { command } from "../scripts/command";
 
@@ -26,4 +26,7 @@ try {
   }
 } finally {
   await rm(directory, { recursive: true, force: true });
+  await rmdir(reports).catch((error: NodeJS.ErrnoException) => {
+    if (error.code !== "ENOENT" && error.code !== "ENOTEMPTY") throw error;
+  });
 }
