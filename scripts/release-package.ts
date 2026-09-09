@@ -58,13 +58,14 @@ export async function releasePackage(
     return;
   }
   const reviewed = await archive(join(cwd, reviewedDirectory));
+  const reviewedBytes = await Bun.file(reviewed).bytes();
   const existing = await registryIntegrity(url);
-  if (existing) verifyIntegrity(await Bun.file(reviewed).bytes(), existing);
+  if (existing) verifyIntegrity(reviewedBytes, existing);
   else await pack(cwd, join(cwd, "release-artifacts/published-npm"), version, false, reviewed);
   const published = existing ?? (await registryIntegrity(url));
   if (!published)
     throw new Error("npm upload is not observable yet; retry when the registry exposes it.");
-  verifyIntegrity(await Bun.file(reviewed).bytes(), published);
+  verifyIntegrity(reviewedBytes, published);
 }
 
 if (import.meta.main) {
