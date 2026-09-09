@@ -11,6 +11,11 @@ interface CargoTarget {
   readonly crate_types: readonly string[];
 }
 
+function sorted(values: readonly string[]): string[] {
+  // oxlint-disable-next-line unicorn/no-array-sort
+  return [...values].sort();
+}
+
 export function npmReleaseSurface(manifest: Record<string, unknown>): string {
   return JSON.stringify({
     engines: manifest.engines,
@@ -26,7 +31,11 @@ export function npmReleaseSurface(manifest: Record<string, unknown>): string {
 export function cargoProductSurface(product: CargoProduct): string {
   const targets = product.targets
     .filter(({ kind }) => kind.includes("lib"))
-    .map(({ name, kind, crate_types }) => ({ name, kind, crateTypes: crate_types }));
+    .map(({ name, kind, crate_types }) => ({
+      name,
+      kind: sorted(kind),
+      crateTypes: sorted(crate_types),
+    }));
   // Cargo targets and their classifications are sets; source ordering is not compatibility.
   // oxlint-disable-next-line unicorn/no-array-sort
   targets.sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));

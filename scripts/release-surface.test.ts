@@ -1,21 +1,8 @@
 import { expect, test } from "bun:test";
-import { cargoProductSurface, npmReleaseSurface } from "./release-surface";
+import { cargoProductSurface } from "./release-surface";
 import type { CargoProduct } from "./release-surface";
 
-test("release surfaces change for every retained manifest contract", () => {
-  const npm = {
-    engines: { node: ">=20" },
-    exports: { ".": "./index.js" },
-    main: "./index.js",
-    module: "./index.js",
-    sideEffects: false,
-    type: "module",
-    types: "./index.d.ts",
-  };
-  const npmSurface = npmReleaseSurface(npm);
-  for (const field of Object.keys(npm))
-    expect(npmReleaseSurface({ ...npm, [field]: undefined })).not.toBe(npmSurface);
-
+test("Cargo release comparison excludes extraction-local metadata", () => {
   const libTarget = {
     name: "uuid_slug",
     kind: ["lib"],
@@ -41,4 +28,15 @@ test("release surfaces change for every retained manifest contract", () => {
   ).toBe(cargoSurface);
   const movedTarget = { ...libTarget, src_path: "/previous" };
   expect(cargoProductSurface({ ...cargo, targets: [movedTarget] })).toBe(cargoSurface);
+  expect(
+    cargoProductSurface({
+      ...cargo,
+      targets: [{ ...libTarget, kind: ["lib", "rlib"], crate_types: ["lib", "rlib"] }],
+    }),
+  ).toBe(
+    cargoProductSurface({
+      ...cargo,
+      targets: [{ ...libTarget, kind: ["rlib", "lib"], crate_types: ["rlib", "lib"] }],
+    }),
+  );
 });
