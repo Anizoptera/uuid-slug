@@ -1,6 +1,11 @@
 import { expect, test } from "bun:test";
-import { cargoProductSurface } from "./release-surface";
-import type { CargoProduct } from "./release-surface";
+import {
+  cargoProductSurface,
+  cargoSurfaceDifference,
+  npmReleaseSurface,
+  npmSurfaceDifference,
+} from "./release-surface";
+import type { CargoReleaseSurface } from "./release-surface";
 
 test("Cargo release comparison excludes extraction-local metadata", () => {
   const libTarget = {
@@ -9,7 +14,7 @@ test("Cargo release comparison excludes extraction-local metadata", () => {
     crate_types: ["lib"],
     src_path: "/current",
   } as const;
-  const cargo: CargoProduct = {
+  const cargo: CargoReleaseSurface = {
     rust_version: "1.97",
     targets: [libTarget],
   };
@@ -25,18 +30,71 @@ test("Cargo release comparison excludes extraction-local metadata", () => {
       ...cargo,
       targets: [{ name: "example", kind: ["example"], crate_types: ["bin"] }, ...cargo.targets],
     }),
-  ).toBe(cargoSurface);
+  ).toEqual(cargoSurface);
   const movedTarget = { ...libTarget, src_path: "/previous" };
-  expect(cargoProductSurface({ ...cargo, targets: [movedTarget] })).toBe(cargoSurface);
+  expect(cargoProductSurface({ ...cargo, targets: [movedTarget] })).toEqual(cargoSurface);
   expect(
     cargoProductSurface({
       ...cargo,
       targets: [{ ...libTarget, kind: ["lib", "rlib"], crate_types: ["lib", "rlib"] }],
     }),
-  ).toBe(
+  ).toEqual(
     cargoProductSurface({
       ...cargo,
       targets: [{ ...libTarget, kind: ["rlib", "lib"], crate_types: ["rlib", "lib"] }],
     }),
   );
+});
+
+test("runtime floors distinguish lost support from wider support", () => {
+  const npm = npmReleaseSurface({ engines: { node: ">=20" } });
+  expect(npmSurfaceDifference(npm, npmReleaseSurface({ engines: { node: ">=22" } })).level).toBe(
+    "major",
+  );
+  expect(npmSurfaceDifference(npm, npmReleaseSurface({ engines: { node: ">=18" } })).level).toBe(
+    "patch",
+  );
+
+  const cargo = { rust_version: "1.97", targets: [] };
+  expect(cargoSurfaceDifference(cargo, { ...cargo, rust_version: "1.98" }).level).toBe("major");
+  expect(cargoSurfaceDifference(cargo, { ...cargo, rust_version: "1.96" }).level).toBe("patch");
+});
+
+test("unrelated engine metadata does not masquerade as Node support", () => {
+  const before = npmReleaseSurface({ engines: { node: ">=20", editor: ">=1" } });
+  const after = npmReleaseSurface({ engines: { node: ">=20", editor: ">=2" } });
+  expect(npmSurfaceDifference(before, after)).toEqual({
+    report: "No npm package metadata changes.",
+    level: "patch",
+  });
+});
+
+test("runtime floors remain exact beyond safe integers", () => {
+  const before = npmReleaseSurface({ engines: { node: ">=9007199254740992" } });
+  const after = npmReleaseSurface({ engines: { node: ">=9007199254740993" } });
+  expect(npmSurfaceDifference(before, after).level).toBe("major");
+});
+
+test("entrypoint and library target changes require compatible versions", () => {
+  const npm = npmReleaseSurface({ main: "./index.js" });
+  expect(npmSurfaceDifference(npm, npmReleaseSurface({ main: "./dist/index.js" })).level).toBe(
+    "major",
+  );
+
+  const target = { name: "uuid_slug", kind: ["lib"], crate_types: ["lib"] };
+  const cargo = { rust_version: "1.97", targets: [target] };
+  expect(cargoSurfaceDifference(cargo, { ...cargo, targets: [] }).level).toBe("major");
+});
+
+test("a new npm subpath is additive but a changed target is breaking", () => {
+  const before = npmReleaseSurface({ exports: { ".": "./index.js" } });
+  expect(
+    npmSurfaceDifference(
+      before,
+      npmReleaseSurface({ exports: { ".": "./index.js", "./extra": "./extra.js" } }),
+    ).level,
+  ).toBe("minor");
+  expect(
+    npmSurfaceDifference(before, npmReleaseSurface({ exports: { ".": "./other.js" } })).level,
+  ).toBe("major");
 });

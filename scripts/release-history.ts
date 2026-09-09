@@ -26,6 +26,20 @@ function descending(left: Version, right: Version): number {
   return -Bun.semver.order(left.value, right.value);
 }
 
+export function latestRelease(tags: readonly string[], excluded?: string): string | undefined {
+  const versions = tags.filter((tag) => tag !== excluded).map(parseTag);
+  if (
+    versions.some((version, index) =>
+      versions.slice(index + 1).some((other) => Bun.semver.order(version.value, other.value) === 0),
+    )
+  )
+    throw new Error("Release tags contain versions with duplicate SemVer precedence.");
+  // The filtered array is fresh; mutating sort keeps the release tool on the package's ES2022 floor.
+  // oxlint-disable-next-line unicorn/no-array-sort
+  versions.sort(descending);
+  return versions[0]?.tag;
+}
+
 /** Select distinct historical releases; registries verify these choices but never replace them. */
 export function selectReleaseComparisons(
   candidateTag: string,

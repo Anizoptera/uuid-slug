@@ -41,20 +41,30 @@ size differences against each selected comparison. Report npm and crate compress
 from matched linked native and WebAssembly caller probes. State absolute changes; state percentages
 only for nonzero denominators. Generated tables do not belong in the changelog.
 
-For stable releases, require the strongest bump identified by the TypeScript surface, Rust surface,
-or changelog classification. A pre-1.0 breaking change requires a minor; a prerelease carries no
-stable compatibility guarantee and is reported as a prerelease rather than a patch, minor, or major.
+Version the full consumer effect. A fix with no new public behavior is patch. Backward-compatible
+public behavior is minor. Incompatible behavior is major, or minor before 1.0. Structural API checks
+provide a lower bound; the committer must classify behavior that declarations cannot expose.
 
-The reviewed Git baseline and the latest released surface answer different questions. The commit
-hook compares generated declarations with the reviewed baseline so an unapproved public change is
-visible. Routine CI must also compare with the latest release: a public item must be deprecated in a
-release before removal, and removal is allowed only in the next major release, or the next minor
-release while the major version is zero. Updating the reviewed baseline never erases that history.
+After a release, npm and Cargo move to the next patch with a `-dev` suffix. Raise that target when a
+change requires a minor or major. Every pull request includes the matching npm manifest, Cargo
+manifest, and lockfile versions. A release tag and both published manifests use the same stable
+version without `-dev`.
 
-Package manifests remain the only owners of package metadata. Validate the exact cleaned npm
-tarball through `publish-clean` and validate the exact Cargo archive after `cargo package`. Compare
-compatibility-relevant metadata directly from retained manifests between releases; never copy it
-into declaration baselines.
+The commit hook checks two independent rules. Generated declarations must match the reviewed
+baseline and remain compatible with the latest release. Updating the reviewed baseline cannot
+erase release history.
+
+On the tagged commit, the tag is the current release, so the check compares it with the prior
+release and enforces the structural minimum version.
+
+Use v0.4.0 as the first release-history baseline because older tags do not contain compiler-derived
+API reports. An API must be deprecated in one published release before removal. Remove it only in a
+later major release, or a later minor release while the major version is zero.
+
+Package manifests are the only owners of package metadata. Routine checks compare their public
+settings with the latest release. `publish-clean` validates the exact npm tarball. The Cargo release
+path validates the exact `.crate` after `cargo package`. Declaration reports contain no manifest
+copy.
 
 ## Publication and recovery
 
@@ -68,4 +78,4 @@ notes are verified. Verify each attachment by GitHub's SHA-256 digest, and creat
 making the draft public. A rerun repairs only missing publication, attachment, or note work. Finalize
 the release once every required result is observable and matches the retained release inputs.
 
-Remote writes remain forbidden without Art's explicit authorization for the exact operation.
+Remote writes remain forbidden without explicit maintainer authorization for the exact operation.

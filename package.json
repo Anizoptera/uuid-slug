@@ -1,6 +1,6 @@
 {
   "name": "@anizoptera/uuid-slug",
-  "version": "0.4.0",
+  "version": "0.4.1-dev",
   "description": "Short URL-safe UUIDs: 22-character base64url slugs, plus reversible masking that hides the UUIDv7 timestamp. Zero dependencies.",
   "keywords": [
     "base64url",
@@ -72,9 +72,12 @@
     "bench:smoke": "bun bench/run.ts --smoke",
     "build": "tsdown",
     "changelog": "git-cliff --unreleased --prepend CHANGELOG.md --tag",
-    "check": "bun run --parallel check:js check:rust && bun scripts/api.ts check --built && bun run perf:check",
-    "check:js": "bun run build && bun run --parallel format:check lint claude-link:check typecheck test bench:smoke artifact:check",
+    "check": "bun run api:check && bun run --parallel check:js:built check:rust && bun run perf:check",
+    "check:fast": "bun run api:check && bun run --parallel check:js:built check:rust:fast && bun run perf:check",
+    "check:js": "bun run build && bun run check:js:built",
+    "check:js:built": "bun run --parallel format:check lint claude-link:check typecheck test bench:smoke artifact:check",
     "check:rust": "bun scripts/check-rust.ts",
+    "check:rust:fast": "bun scripts/check-rust.ts --fast",
     "claude-link:check": "test -L CLAUDE.md && test \"$(readlink CLAUDE.md)\" = AGENTS.md",
     "clean": "rm -rf dist bench/reports",
     "format": "oxfmt .",

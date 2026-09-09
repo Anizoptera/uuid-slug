@@ -2,8 +2,10 @@
 
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import ts from "typescript-floor";
+import { checkReleasedApi, typescriptDeclarations } from "./api-evolution";
 import { command } from "./command";
+import { annotateRustApi, rustDeprecations } from "./rust-deprecations";
+import type { Rustdoc } from "./rust-deprecations";
 
 const root = resolve(import.meta.dir, "..");
 const work = join(root, ".api-work");
@@ -83,24 +85,9 @@ function report(language: string, contentSections: string[]): string {
   return `# ${language} packaged API\n\nThis generated baseline records consumer-visible declarations.\n\n${contentSections.join("\n\n")}\n`;
 }
 
-function normalizeDeclarations(source: string): { declarations: string; deprecations: string } {
-  const file = ts.createSourceFile("typescript.d.ts", source, ts.ScriptTarget.Latest, true);
-  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed, removeComments: true });
-  const deprecated: string[] = [];
-  function visit(node: ts.Node): void {
-    const tag = ts.getJSDocTags(node).find(({ tagName }) => tagName.text === "deprecated");
-    if (tag) {
-      const declaration = printer.printNode(ts.EmitHint.Unspecified, node, file).trim();
-      const reason = typeof tag.comment === "string" ? ` — ${tag.comment.trim()}` : "";
-      deprecated.push(`${declaration}${reason}`);
-    }
-    ts.forEachChild(node, visit);
-  }
-  visit(file);
-  return {
-    declarations: printer.printFile(file).trim(),
-    deprecations: deprecated.length === 0 ? "(none)" : deprecated.join("\n\n"),
-  };
+async function readRustDeprecations(target: string): Promise<string[]> {
+  const rustdoc = (await Bun.file(join(target, "doc/uuid_slug.json")).json()) as Rustdoc;
+  return rustDeprecations(rustdoc);
 }
 
 await rm(work, { recursive: true, force: true });
@@ -112,12 +99,11 @@ try {
   if (!useExistingBuild) await command("bun", ["run", "build"], root);
   await command("api-extractor", ["run", "--local", "--config", "api-extractor.json"], root);
 
-  const declarationRollup = normalizeDeclarations(
+  const declarationRollup = typescriptDeclarations(
     await readFile(join(work, "typescript.d.ts"), "utf8"),
   );
   const typescript = report("TypeScript", [
-    `## Reachable declarations\n\n\`\`\`ts\n${declarationRollup.declarations}\n\`\`\``,
-    `## Deprecations\n\n${declarationRollup.deprecations}`,
+    `## Public declarations\n\n\`\`\`ts\n${declarationRollup}\n\`\`\``,
   ]);
 
   const rustArgs = [
@@ -129,12 +115,31 @@ try {
     "--include",
     "function-parameter-names",
   ];
+  const rustTarget = (
+    JSON.parse(
+      await command(
+        "cargo",
+        [
+          "metadata",
+          "--manifest-path",
+          "rust/Cargo.toml",
+          "--no-deps",
+          "--format-version",
+          "1",
+          "--locked",
+        ],
+        root,
+      ),
+    ) as { target_directory: string }
+  ).target_directory;
   // cargo-public-api owns one rustdoc JSON path, so feature selections must not write it concurrently.
   const rustDefault = await command("cargo", [...rustArgs, "--all-features"], root);
+  const deprecated = new Set(await readRustDeprecations(rustTarget));
   const rustMinimal = await command("cargo", [...rustArgs, "--no-default-features"], root);
+  for (const item of await readRustDeprecations(rustTarget)) deprecated.add(item);
   const rust = report("Rust", [
-    `## All features\n\n\`\`\`text\n${rustDefault.trim()}\n\`\`\``,
-    `## No default features\n\n\`\`\`text\n${rustMinimal.trim()}\n\`\`\``,
+    `## All features\n\n\`\`\`rust\n${annotateRustApi(rustDefault, deprecated)}\n\`\`\``,
+    `## No default features\n\n\`\`\`rust\n${annotateRustApi(rustMinimal, deprecated)}\n\`\`\``,
   ]);
 
   await mkdir(apiDirectory, { recursive: true });
@@ -150,9 +155,12 @@ try {
     changed ||= differs;
     if (mode === "update" && differs) await Bun.write(output.path, output.content);
   }
+  await checkReleasedApi(root, { typescript, rust });
 } finally {
   await rm(work, { recursive: true, force: true });
 }
 
 if (mode === "check" && changed)
-  throw new Error("Packaged API changed. Obtain approval, then run bun run api:update.");
+  throw new Error(
+    "Public API differs from the reviewed baseline. If intentional, run bun run api:update and include the generated diff in the pull request.",
+  );

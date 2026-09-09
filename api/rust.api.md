@@ -4,7 +4,7 @@ This generated baseline records consumer-visible declarations.
 
 ## All features
 
-```text
+```rust
 pub mod uuid_slug
 pub mod uuid_slug::alphabet
 pub enum uuid_slug::alphabet::Alphabet
@@ -522,7 +522,7 @@ pub fn uuid_slug::create_mask_schema_async(seed: &[u8], iterations: u32, id: &st
 
 ## No default features
 
-```text
+```rust
 pub mod uuid_slug
 pub mod uuid_slug::alphabet
 pub enum uuid_slug::alphabet::Alphabet

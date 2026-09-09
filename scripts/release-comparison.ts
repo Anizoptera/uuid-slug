@@ -7,13 +7,82 @@ export interface ApiDifference {
   readonly level: ReleaseLevel;
 }
 
+type DeclarationContainer =
+  | ts.ClassDeclaration
+  | ts.EnumDeclaration
+  | ts.InterfaceDeclaration
+  | ts.ModuleDeclaration;
+
+function isDeclarationContainer(node: ts.Node): node is DeclarationContainer {
+  return (
+    ts.isClassDeclaration(node) ||
+    ts.isEnumDeclaration(node) ||
+    ts.isInterfaceDeclaration(node) ||
+    ts.isModuleDeclaration(node)
+  );
+}
+
+export function combineDifferences(...differences: readonly ApiDifference[]): ApiDifference {
+  const levels = new Set(differences.map(({ level }) => level));
+  return {
+    report: differences.map(({ report }) => report).join("\n\n"),
+    level: levels.has("major") ? "major" : levels.has("minor") ? "minor" : "patch",
+  };
+}
+
 export function normalizeDeclarations(source: string): string {
   const file = ts.createSourceFile("public.d.ts", source, ts.ScriptTarget.Latest, true);
   const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed, removeComments: true });
-  // One record per complete declaration keeps members attached to their owner and overloads ordered.
-  return file.statements
-    .map((node) => JSON.stringify(printer.printNode(ts.EmitHint.Unspecified, node, file).trim()))
-    .join("\n");
+  const entries: string[] = [];
+  const print = (node: ts.Node): string =>
+    printer.printNode(ts.EmitHint.Unspecified, node, file).trim();
+  const visit = (node: ts.Node, owners: readonly string[]): void => {
+    const name =
+      (ts.isClassDeclaration(node) ||
+        ts.isEnumDeclaration(node) ||
+        ts.isInterfaceDeclaration(node) ||
+        ts.isModuleDeclaration(node)) &&
+      node.name
+        ? node.name.getText(file)
+        : undefined;
+    if (name && isDeclarationContainer(node)) {
+      const path = [...owners, name];
+      const shell = ts.isClassDeclaration(node)
+        ? ts.factory.updateClassDeclaration(
+            node,
+            node.modifiers,
+            node.name,
+            node.typeParameters,
+            node.heritageClauses,
+            [],
+          )
+        : ts.isInterfaceDeclaration(node)
+          ? ts.factory.updateInterfaceDeclaration(
+              node,
+              node.modifiers,
+              node.name,
+              node.typeParameters,
+              node.heritageClauses,
+              [],
+            )
+          : ts.isEnumDeclaration(node)
+            ? ts.factory.updateEnumDeclaration(node, node.modifiers, node.name, [])
+            : ts.factory.updateModuleDeclaration(node, node.modifiers, node.name, undefined);
+      entries.push(`${path.join(".")}: ${print(shell)}`);
+      if (ts.isModuleDeclaration(node)) {
+        if (node.body && ts.isModuleDeclaration(node.body)) visit(node.body, path);
+        else if (node.body && ts.isModuleBlock(node.body))
+          for (const statement of node.body.statements) visit(statement, path);
+      } else {
+        for (const member of node.members) entries.push(`${path.join(".")}: ${print(member)}`);
+      }
+      return;
+    }
+    entries.push(owners.length ? `${owners.join(".")}: ${print(node)}` : print(node));
+  };
+  for (const statement of file.statements) visit(statement, []);
+  // One record per owned declaration preserves overload order while making additive members additive.
+  return entries.map((entry) => JSON.stringify(entry)).join("\n");
 }
 
 function displayDeclaration(line: string): string {

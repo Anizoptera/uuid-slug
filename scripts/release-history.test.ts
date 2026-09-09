@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { selectReleaseComparisons } from "./release-history";
+import { latestRelease, selectReleaseComparisons } from "./release-history";
 
 describe("release comparison selection", () => {
+  test("selects the latest release and can exclude the tag at HEAD", () => {
+    const tags = ["v0.4.0", "v0.5.0-rc.1", "v0.5.0"];
+    expect(latestRelease(tags)).toBe("v0.5.0");
+    expect(latestRelease(tags, "v0.5.0")).toBe("v0.5.0-rc.1");
+  });
+
   test.each([
     ["v0.4.1", ["v0.2.0", "v0.3.0", "v0.4.0"], { immediate: "v0.4.0", releaseLine: "v0.3.0" }],
     ["v0.4.0", ["v0.2.0", "v0.3.0", "v0.4.0"], { immediate: "v0.3.0", releaseLine: "v0.2.0" }],

@@ -2,7 +2,7 @@
 
 This generated baseline records consumer-visible declarations.
 
-## Reachable declarations
+## Public declarations
 
 ```ts
 declare interface Alphabet {
@@ -159,7 +159,3 @@ export declare function validateUuidV7Fresh(uuid: string, options?: FreshValidat
 export declare function validateUuidV7SlugFresh(slug: string, options?: FreshValidationOptions): UuidSlugError | UuidV7Slug;
 export {};
 ```
-
-## Deprecations
-
-(none)

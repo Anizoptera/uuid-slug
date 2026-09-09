@@ -4,15 +4,15 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Contract owners
 
-- The externally visible API is reserved. Add or change no public export, option, behavior, or
-  feature unless Art requested that exact change and separately approved the proposed surface and
-  consumer consequences.
+- The externally visible API is reserved. Put any proposed public export, option, behavior, or
+  feature change and its consumer consequences in the same pull request. Merging is the maintainer
+  decision; no separate acceptance step exists.
 - `ROADMAP.md` is transient and never owns a contract, decision, or lasting conclusion. Put
   consumer contracts in README, wire design in `docs/design.md`, security boundaries in
   `docs/security.md`, cross-language and distribution decisions in `docs/cross-language.md`, and
   measured conclusions in `bench/PERFORMANCE.md`.
 - Read README §Guarantees before changing generation or tests; it owns the consumer guarantees.
-  New guarantees require Art's ruling before code or tests impose them. Intra-millisecond ordering
+  New guarantees require a maintainer ruling before code or tests impose them. Intra-millisecond ordering
   is explicitly not guaranteed: do not gate it or reject a native generator for lacking it.
   Measure implementation differences in `bench/`, where results inform rather than gate.
 - Read `docs/design.md` before changing masking, schemas, or sentinels. Preserve its wire layout:
@@ -30,13 +30,13 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Every decoder must accept every value that a supported matching encoder can produce. Options
   may add accepted forms; they must not remove existing ones. Reject forms no encoder produces.
 - Keyed operations belong only on the codec holding the key, including masked freshness
-  validation. Do not add top-level masked shortcuts. Art explicitly retains `defaultCodec` and
+  validation. Do not add top-level masked shortcuts. Maintainer policy retains `defaultCodec` and
   the public `DEFAULT_MASK_SCHEMA`; warn callers to supply their own seed for real masking.
 - Preserve the frozen round count, derivation constants, seed interpretation, alphabets, tag
   widths, and `keyIterations`: changing them changes previously issued identifiers. Comments
   must explain this wire-format obligation, not historical reasons for choosing the constants.
 - Do not add old API aliases, compatibility subpaths, or a compatibility decoder for 0.2.0.
-  Art ruled that release had no consumers; that exception does not justify breaking other formats.
+  The maintainer ruled that release had no consumers; that exception does not justify breaking other formats.
 - Original fixed-mask compatibility is opt-in through `codec.migration`; read README's migration
   sections before changing it. Preserve sentinel priority and stored trailing-bit aliases without
   weakening ordinary strict decoding. Writers and accepted old formats remain independent.
@@ -72,13 +72,13 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   may already declare the method required.
 - Runtime values must carry the exact brand the codec returns. Bare strings silently widen
   optional brands. Preserve brand optionality: it separates produced values while accepting
-  caller string literals; changing it requires Art's ruling.
+  caller string literals; changing it requires a maintainer ruling.
 - Owned byte outputs must be plain `Uint8Array`, not native `Buffer` subclasses. Adapt at the
   runtime boundary and verify constructors in both runners; preserve caller-supplied buffers.
 
 ## Release
 
-- Remote writes are forbidden unless Art explicitly authorizes the exact operation. Do not push,
+- Remote writes are forbidden unless a maintainer explicitly authorizes the exact operation. Do not push,
   open a pull request, upload a tag, create a release, publish a package, or change remote settings.
 - Publish through `publish-clean`; validate the final cleaned archive and use `--access public
   --provenance`. Derive the dist-tag from the git tag: prereleases use `next`, releases `latest`.
@@ -97,7 +97,15 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Choose versions explicitly: 1.0.0 is a decision, not an automatic bump; a pre-1.0 breaking
   change is a minor. New tags use annotated tags through `bun run release`; historical selection
   must retain the existing lightweight release tags.
+- Classify the full consumer effect before committing: fixes with no new public behavior are patch;
+  backward-compatible public behavior is minor; incompatible behavior is major, or minor before
+  1.0. Structural checks provide a lower bound; they cannot classify semantic behavior or approve
+  a public change.
+- Between releases, keep npm and Cargo on the same `X.Y.Z-dev` target. Start with the next patch,
+  then raise it when the change requires a minor or major. Every pull request includes that version
+  in both manifests and the lockfile. Release tags and published manifests use the same stable
+  version without `-dev`.
 - Obtain retained archives through `--tarball-out DIR` in a caller-owned directory and clean it
   up. Never parse archive paths from human-facing stdout.
-- Run `bun run check` before committing unless Art explicitly selects narrower intermediate
+- Run `bun run check` before committing unless a maintainer explicitly selects narrower intermediate
   checks for the current work; the complete check still gates final delivery.

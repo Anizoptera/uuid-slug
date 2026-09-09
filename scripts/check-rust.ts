@@ -5,6 +5,8 @@ import { checkReleaseVersion } from "./release-version";
 const manifest = "rust/Cargo.toml";
 const { version } = await Bun.file("package.json").json();
 await checkReleaseVersion(process.cwd(), version);
+const fast = process.argv[2] === "--fast";
+if (process.argv.length > (fast ? 3 : 2)) throw new Error("Usage: check-rust.ts [--fast]");
 
 async function run(command: string[], capture = false, env = process.env): Promise<string> {
   console.log(`> ${command.join(" ")}`);
@@ -83,14 +85,14 @@ const selections = [
     })),
 ];
 const checked = new Set<string>();
-for (const selection of selections) {
+for (const selection of fast ? selections.slice(0, 1) : selections) {
   const enabled = enabledFeatures(selection.names);
   const key = Object.keys(features)
     .filter((name) => name !== "default" && enabled.has(name))
     .join(",");
   if (checked.has(key)) continue;
   checked.add(key);
-  for (const profile of [[], ["--release"]]) {
+  for (const profile of fast ? [[]] : [[], ["--release"]]) {
     // Benchmark targets are compiled, not timed, in the routine correctness lane.
     await run([
       "cargo",
@@ -130,15 +132,16 @@ await run([
   "-D",
   "warnings",
 ]);
-await run([
-  "bun",
-  "build",
-  "scripts/rust-conform.ts",
-  "--target=node",
-  "--outfile=rust/target/conform.mjs",
-  "--external=bun:ffi",
-]);
-for (const profile of ["debug", "release"] as const) {
+if (!fast)
+  await run([
+    "bun",
+    "build",
+    "scripts/rust-conform.ts",
+    "--target=node",
+    "--outfile=rust/target/conform.mjs",
+    "--external=bun:ffi",
+  ]);
+for (const profile of fast ? [] : (["debug", "release"] as const)) {
   const profileArgs = profile === "release" ? ["--release"] : [];
   await run([
     "cargo",

@@ -4,6 +4,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { command } from "./command";
 import {
   apiDifference,
+  combineDifferences,
   minimumRelease,
   normalizeDeclarations,
   satisfiesMinimum,
@@ -13,7 +14,13 @@ import type { ApiDifference, ReleaseLevel } from "./release-comparison";
 import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
 import { readRetainedArchive } from "./release-inputs";
 import { preflightRelease } from "./release-notes";
-import { npmReleaseSurface, rustReleaseSurface } from "./release-surface";
+import {
+  cargoSurfaceDifference,
+  npmReleaseSurface,
+  npmSurfaceDifference,
+  rustReleaseSurface,
+} from "./release-surface";
+import type { CargoReleaseSurface, NpmReleaseSurface } from "./release-surface";
 
 interface Sizes {
   readonly npm?: number;
@@ -123,7 +130,7 @@ async function declaration(
   label: string,
   name: string,
   version: string,
-): Promise<string> {
+): Promise<{ declarations: string; package: NpmReleaseSurface }> {
   const extracted = join(work, `npm-${label}`);
   const rollup = join(extracted, "public.d.ts");
   const packageRoot = join(extracted, "package");
@@ -145,23 +152,32 @@ async function declaration(
     }),
   );
   await command("api-extractor", ["run", "--local", "--config", config], root);
-  return `${npmReleaseSurface(metadata)}\n${normalizeDeclarations(await Bun.file(rollup).text())}`;
+  return {
+    declarations: normalizeDeclarations(await Bun.file(rollup).text()),
+    package: npmReleaseSurface(metadata),
+  };
 }
 
-async function rustApi(cwd: string, manifest: string): Promise<string> {
+async function rustApi(
+  cwd: string,
+  manifest: string,
+): Promise<{ declarations: string; package: CargoReleaseSurface }> {
   const base = ["public-api", "--manifest-path", manifest, "--color=never", "--simplified"];
   const all = await command("cargo", [...base, "--all-features"], cwd);
   const minimal = await command("cargo", [...base, "--no-default-features"], cwd);
   const manifestSurface = await rustReleaseSurface(cwd, manifest);
-  return `${manifestSurface}\n${all
-    .trim()
-    .split("\n")
-    .map((line) => `all: ${line}`)
-    .join("\n")}\n${minimal
-    .trim()
-    .split("\n")
-    .map((line) => `minimal: ${line}`)
-    .join("\n")}\n`;
+  return {
+    package: manifestSurface,
+    declarations: `${all
+      .trim()
+      .split("\n")
+      .map((line) => `all: ${line}`)
+      .join("\n")}\n${minimal
+      .trim()
+      .split("\n")
+      .map((line) => `minimal: ${line}`)
+      .join("\n")}\n`,
+  };
 }
 
 async function runSemver(args: string[], cwd: string, target: string): Promise<CommandResult> {
@@ -290,26 +306,41 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
     const sections = await Promise.all(
       inputs.comparisons.map(async (comparison) => {
         const previous = await historicalEvidence(root, work, comparison);
-        const typescript = comparison.npm
-          ? apiDifference(
-              await declaration(
+        const npmArchive = comparison.npm;
+        const previousCrateRoot = previous.crateRoot;
+        const typescript = npmArchive
+          ? await (async () => {
+              const previousTypeScript = await declaration(
                 root,
-                comparison.npm,
+                npmArchive,
                 work,
                 comparison.tag,
                 inputs.name,
                 comparison.tag.slice(1),
-              ),
-              currentDeclaration,
-              "TypeScript package surface",
-            )
+              );
+              const declarations = apiDifference(
+                previousTypeScript.declarations,
+                currentDeclaration.declarations,
+                "TypeScript declaration",
+              );
+              const metadata = npmSurfaceDifference(
+                previousTypeScript.package,
+                currentDeclaration.package,
+              );
+              return combineDifferences(declarations, metadata);
+            })()
           : undefined;
-        const rust = previous.crateRoot
-          ? apiDifference(
-              await rustApi(root, join(previous.crateRoot, "Cargo.toml")),
-              currentRust,
-              "Rust crate surface",
-            )
+        const rust = previousCrateRoot
+          ? await (async () => {
+              const previousRust = await rustApi(root, join(previousCrateRoot, "Cargo.toml"));
+              const declarations = apiDifference(
+                previousRust.declarations,
+                currentRust.declarations,
+                "Rust declaration",
+              );
+              const metadata = cargoSurfaceDifference(previousRust.package, currentRust.package);
+              return combineDifferences(declarations, metadata);
+            })()
           : undefined;
         const rustSemver = previous.crateRoot
           ? await rustSemverDifference(

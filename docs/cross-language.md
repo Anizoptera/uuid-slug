@@ -106,7 +106,7 @@ primitive has no consumer-path advantage.
 
 Keep the public npm package TypeScript/JavaScript-only, with no runtime dependencies or native
 payloads. Keep the Rust crate installable from this Git repository and crates.io.
-Art requires matching Rust/TypeScript versions and common CPU architecture support from the first
+Maintainer policy requires matching Rust/TypeScript versions and common CPU architecture support from the first
 Rust release, including WebAssembly. Preserve portable behavior under architecture-specific tuning.
 Support x86-64 and Arm64 on Linux, macOS and Windows with native execution; compile-check i686 and
 ARMv7 Linux, and execute `wasm32-unknown-unknown` in a browser. The check workflow owns the concrete

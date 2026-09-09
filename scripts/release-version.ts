@@ -9,7 +9,7 @@ export async function checkReleaseVersion(cwd: string, version: string): Promise
   const manifest = Bun.TOML.parse(await Bun.file(`${cwd}/rust/Cargo.toml`).text()) as Workspace;
   if (manifest.workspace.package.version !== version)
     throw new Error(
-      `Rust version ${manifest.workspace.package.version} does not match package.json ${version}. Run the version hook before tagging.`,
+      `Rust version ${manifest.workspace.package.version} does not match package.json ${version}. Synchronize the npm manifest, Cargo manifest, and lockfile.`,
     );
   const lock = Bun.TOML.parse(await Bun.file(`${cwd}/rust/Cargo.lock`).text()) as {
     package: { name: string; version: string; source?: string }[];
@@ -18,7 +18,7 @@ export async function checkReleaseVersion(cwd: string, version: string): Promise
     const entries = lock.package.filter((entry) => entry.name === name && !entry.source);
     if (entries.length !== 1 || entries[0]?.version !== version)
       throw new Error(
-        `Cargo.lock ${name} does not match package.json ${version}. Run the version hook before tagging.`,
+        `Cargo.lock ${name} does not match package.json ${version}. Synchronize the npm manifest, Cargo manifest, and lockfile.`,
       );
   }
 }
