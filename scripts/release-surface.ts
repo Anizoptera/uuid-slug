@@ -19,6 +19,7 @@ interface CargoDependency {
 }
 
 interface CargoTarget {
+  readonly name: string;
   readonly kind: readonly string[];
   readonly crate_types: readonly string[];
 }
@@ -58,8 +59,19 @@ export function cargoProductSurface(product: CargoProduct): string {
       edition: product.edition,
       rustVersion: product.rust_version,
       features: product.features,
-      dependencies: product.dependencies.filter(({ kind }) => kind === null),
-      targets: product.targets.filter(({ kind }) => kind.includes("lib")),
+      dependencies: product.dependencies
+        .filter(({ kind }) => kind === null)
+        .map(({ name, req, optional, uses_default_features, features, target }) => ({
+          name,
+          req,
+          optional,
+          usesDefaultFeatures: uses_default_features,
+          features,
+          target,
+        })),
+      targets: product.targets
+        .filter(({ kind }) => kind.includes("lib"))
+        .map(({ name, kind, crate_types }) => ({ name, kind, crateTypes: crate_types })),
     }),
   );
 }

@@ -26,13 +26,20 @@ test("release surfaces change for every retained manifest contract", () => {
     uses_default_features: false,
     features: [],
     target: null,
+    source: "registry",
+  } as const;
+  const libTarget = {
+    name: "uuid_slug",
+    kind: ["lib"],
+    crate_types: ["lib"],
+    src_path: "/current",
   } as const;
   const cargo: CargoProduct = {
     edition: "2024",
     rust_version: "1.97",
     features: { default: ["os-rng"] },
     dependencies: [dependency],
-    targets: [{ kind: ["lib"], crate_types: ["lib"] }],
+    targets: [libTarget],
   };
   const cargoSurface = cargoProductSurface(cargo);
   for (const changed of [
@@ -48,7 +55,7 @@ test("release surfaces change for every retained manifest contract", () => {
     cargoProductSurface({
       ...cargo,
       dependencies: [{ ...dependency, kind: "dev" }, ...cargo.dependencies],
-      targets: [{ kind: ["example"], crate_types: ["bin"] }, ...cargo.targets],
+      targets: [{ name: "example", kind: ["example"], crate_types: ["bin"] }, ...cargo.targets],
     }),
   ).toBe(cargoSurface);
   expect(
@@ -62,4 +69,9 @@ test("release surfaces change for every retained manifest contract", () => {
       features: { default: ["first", "second"] },
     }),
   );
+  const movedDependency = { ...dependency, source: "mirror" };
+  const movedTarget = { ...libTarget, src_path: "/previous" };
+  expect(
+    cargoProductSurface({ ...cargo, dependencies: [movedDependency], targets: [movedTarget] }),
+  ).toBe(cargoSurface);
 });
