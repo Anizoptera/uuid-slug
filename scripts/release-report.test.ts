@@ -16,6 +16,21 @@ test("stable version distance must satisfy the derived release level", () => {
   expect(satisfiesMinimum("1.3.0", "2.0.0-beta.1", "prerelease")).toBe(true);
 });
 
+test("API comparison detects moved members and changed overload priority", () => {
+  const before = "export interface A {\n x: string;\n}\nexport interface B {\n y: number;\n}";
+  const after = "export interface A {\n y: number;\n}\nexport interface B {\n x: string;\n}";
+  expect(apiDiff(before, after)).not.toContain("No packaged");
+  const narrow = "export declare function f(x: string): 1;";
+  const broad = "export declare function f(x: unknown): 2;";
+  expect(apiDiff(`${narrow}\n${broad}`, `${broad}\n${narrow}`)).not.toContain("No packaged");
+  expect(apiDiff(`${narrow}\n${narrow}`, narrow)).not.toContain("No packaged");
+});
+
+test("hyphens in build metadata do not waive stable compatibility", () => {
+  expect(minimumRelease("1.4.1+build-fix", "### Breaking changes\n", [])).toBe("major");
+  expect(satisfiesMinimum("1.4.0+build-old", "1.4.1", "major")).toBe(false);
+});
+
 test("release size deltas never invent a percentage for zero or missing denominators", () => {
   expect(sizeDelta(12, 0)).toBe("12 B (+12 B)");
   expect(sizeDelta(12, undefined)).toBe("unavailable");

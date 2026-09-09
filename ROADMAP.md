@@ -177,18 +177,31 @@ Work one area at a time, ordered by failure consequences; add discovered defects
 
 - [ ] Authority and scope: reconcile the complete changed-file inventory, approved public changes, retained contracts, prior roadmap tasks, and unfinished work.
 - [ ] Release integrity: trace credential separation, tag/version/changelog binding, archive identity, publication recovery, notes/assets, and finalization; exercise failures without remote writes.
+  - [ ] Verify annotated candidate tags point at the checked commit; current preflight compares only version strings.
+  - [ ] Verify reports read the retained candidate crate and bind archive versions/commits to selected tags; current report measures the source checkout for Rust.
+  - [ ] Verify full retry behavior preserves inputs across preparation reruns and confirms final GitHub state rather than accepting a successful HTTP response alone.
 - [ ] Version compatibility: challenge Git predecessor selection, SemVer ordering, prereleases/build metadata, collision collapse, missing registry history, and minimum-version enforcement.
   - [x] Correct collision fallback to skip the entire previous release line; three cases failed before the fix and pass in `scripts/release-history.test.ts`; complete `bun run check` passes.
-  - [ ] Verify API comparison preserves declaration ownership and multiplicity; inspect stable-release checks when prereleases intervene.
+  - [x] Preserve complete TypeScript declarations, overload order and multiplicity, and Rust feature-selection ownership in API comparisons; regression cases and complete `bun run check` pass.
+  - [x] Prevent hyphens in build metadata from bypassing stable compatibility; both affected checks have passing regressions and complete `bun run check` passes.
+  - [ ] Inspect stable-release checks when prereleases intervene and breaking Rust additions such as required fields, trait methods, and enum variants.
 - [ ] API evidence: inspect packed TypeScript/Rust extraction, reachable types, features/targets, baseline comparison, mutation coverage, and bypass behavior.
 - [ ] Distribution: verify export order and unnecessary keys, default/runtime adapters, source/declaration resolution, maps, cleaned archives, dependency and native-code exclusions.
 - [ ] UUID and alphabet contracts: inspect every changed parsing/conversion/generation path, lengths, canonical bits, timestamp bounds, byte ownership, buffer ranges, and atomic writes.
+  - [ ] Exercise `isUuidSlugError` with revoked proxies and throwing prototype traps; its initial `instanceof` currently executes outside the catch boundary.
 - [ ] Masking and migration: verify frozen wire constants, seed capture, sync/async parity, cancellation, sentinels, key order, collisions, retained aliases, and encoder/decoder acceptance.
 - [ ] Runtime capabilities: exercise portable/native entropy failures and optional APIs in Node/Bun/browser/Deno; check capability probes, causes, fallback cost, and runtime floors.
+  - [ ] Apply Art's runtime coverage requirement: run TypeScript functionality across supported Node versions and latest Bun/Deno; verify CI selections and distinguish locally exercised runtimes from CI-only coverage.
 - [ ] Rust implementation: inspect all added library code, public paths/errors, feature combinations, native/WASM/32-bit boundaries, dependency choices, and caller examples.
+  - [ ] Apply Art's clarified build coverage requirement: enumerate every build type and supported target, cover their combinations in CI, and execute every locally runnable combination; declare compile-only and unexecuted combinations individually.
+    - [ ] Cover debug and release profiles, product libraries, development `rlib`/`cdylib` bridges, examples, tests, doctests, and benchmark compilation; derive target kinds and features from Cargo metadata.
+    - [ ] Exercise every distinct supported feature selection on each supported target, without allowing workspace feature unification to hide product failures.
+    - [ ] Cover Linux/macOS/Windows x86-64 and Arm64, Linux i686/ARMv7, and browser WASM; retain the distinction between native execution and the documented compile-only targets.
+    - [ ] Record the local host/toolchain and per-combination outcomes; configuration alone cannot establish that CI executed any combination.
 - [ ] Cross-language verification: inspect bridge ownership/panics, WASM memory/ranges, fixture independence, parity diagnostics, and whether probes reach the actual packaged implementations.
 - [ ] Performance and resources: inspect benchmark methodology, linked-size comparisons, startup/tree-shaking, cancellation responsiveness, bounded resources, repeated work, and gate headroom.
 - [ ] Developer feedback: inspect tests, lint/type checks, hooks, CI wiring, cleanup, failure diagnostics, redundant evidence, and false-green routes; retain minimal defect-catching checks.
+  - [ ] Evaluate Art's proposed Bun replacement for ordinary Vitest cases: measure matched suites, verify assertion/lifecycle behavior and defect detection, and preserve actual Node/browser adapter execution before changing runners.
   - [x] Wire every `scripts/*.test.ts` regression into routine verification and remove the duplicate version-test invocation; complete `bun run check` executes them and passes.
 - [ ] Documentation and consumer experience: reconcile README, design/security/distribution/release owners, examples, upgrade guidance, changelog, licenses, and agent instructions against actual behavior.
 - [ ] Final reconciliation: inspect the total repaired diff, run applicable complete checks and real artifact consumers, record remaining unverified boundaries, and commit all verified local changes.

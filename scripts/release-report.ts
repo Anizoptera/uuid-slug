@@ -23,10 +23,11 @@ interface ApiDifference {
 
 function normalizeDeclarations(source: string): string {
   const file = ts.createSourceFile("public.d.ts", source, ts.ScriptTarget.Latest, true);
-  return ts
-    .createPrinter({ newLine: ts.NewLineKind.LineFeed, removeComments: true })
-    .printFile(file)
-    .trim();
+  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed, removeComments: true });
+  // One record per complete declaration keeps members attached to their owner and overloads ordered.
+  return file.statements
+    .map((node) => JSON.stringify(printer.printNode(ts.EmitHint.Unspecified, node, file).trim()))
+    .join("\n");
 }
 
 export async function measureLinkedSizes(
@@ -96,7 +97,7 @@ async function declaration(
     }),
   );
   await command("api-extractor", ["run", "--local", "--config", config], root);
-  return `${JSON.stringify(typescriptManifest(await manifest.json()), null, 2)}\n${normalizeDeclarations(await Bun.file(rollup).text())}`;
+  return `${JSON.stringify(typescriptManifest(await manifest.json()))}\n${normalizeDeclarations(await Bun.file(rollup).text())}`;
 }
 
 async function rustApi(cwd: string, manifest: string): Promise<string> {
@@ -104,10 +105,23 @@ async function rustApi(cwd: string, manifest: string): Promise<string> {
   const all = await command("cargo", [...base, "--all-features"], cwd);
   const minimal = await command("cargo", [...base, "--no-default-features"], cwd);
   const metadata = await rustManifest(cwd, manifest);
-  return `${JSON.stringify(metadata, null, 2)}\n${all.trim()}\n${minimal.trim()}\n`;
+  return `${JSON.stringify(metadata)}\n${all
+    .trim()
+    .split("\n")
+    .map((line) => `all: ${line}`)
+    .join("\n")}\n${minimal
+    .trim()
+    .split("\n")
+    .map((line) => `minimal: ${line}`)
+    .join("\n")}\n`;
+}
+
+function displayDeclaration(line: string): string {
+  return (line.startsWith('"') ? (JSON.parse(line) as string) : line).replaceAll("`", "\\`");
 }
 
 function apiDifference(before: string, after: string, language: string): ApiDifference {
+  if (before === after) return { report: `No packaged ${language} changes.`, level: "patch" };
   const oldLines = new Set(
     before
       .split("\n")
@@ -122,26 +136,37 @@ function apiDifference(before: string, after: string, language: string): ApiDiff
   );
   const removed = [...oldLines].filter((line) => !newLines.has(line));
   const added = [...newLines].filter((line) => !oldLines.has(line));
+  const previous = before.split("\n").filter(Boolean);
+  let retained = 0;
+  for (const line of after.split("\n")) if (line === previous[retained]) retained++;
+  // Sets cannot detect moved members, repeated declarations, or overload precedence.
   if (!removed.length && !added.length)
-    return { report: `No packaged ${language} changes.`, level: "patch" };
+    return {
+      report: `Declaration order or ownership changed.\n\nBefore:\n\n\`\`\`text\n${before}\n\`\`\`\n\nAfter:\n\n\`\`\`text\n${after}\n\`\`\``,
+      level: "major",
+    };
   return {
     report: [
-      ...removed.map((line) => `- \`${line.replaceAll("`", "\\`")}\``),
-      ...added.map((line) => `- \`${line.replaceAll("`", "\\`")}\` (added)`),
+      ...removed.map((line) => `- \`${displayDeclaration(line)}\``),
+      ...added.map((line) => `- \`${displayDeclaration(line)}\` (added)`),
     ].join("\n"),
-    level: removed.length ? "major" : "minor",
+    level: removed.length || retained !== previous.length ? "major" : "minor",
   };
 }
 
 export const apiDiff = (before: string, after: string): string =>
-  apiDifference(before, after, "TypeScript declaration").report;
+  apiDifference(
+    normalizeDeclarations(before),
+    normalizeDeclarations(after),
+    "TypeScript declaration",
+  ).report;
 
 export function minimumRelease(
   version: string,
   notes: string,
   languages: readonly ReleaseLevel[],
 ): ReleaseLevel {
-  if (version.includes("-")) return "prerelease";
+  if (version.split("+", 1)[0]?.includes("-")) return "prerelease";
   const declared = notes.includes("### Breaking changes")
     ? "major"
     : notes.includes("### Added")
@@ -161,7 +186,7 @@ export function satisfiesMinimum(
   current: string,
   minimum: ReleaseLevel,
 ): boolean {
-  if (minimum === "prerelease" || previous.includes("-")) return true;
+  if (minimum === "prerelease" || previous.split("+", 1)[0]?.includes("-")) return true;
   const oldMajor = Number(previous.split(".", 1)[0]);
   const oldMinor = Number(previous.split(".", 2)[1]);
   const newMajor = Number(current.split(".", 1)[0]);
