@@ -292,11 +292,20 @@ export function satisfiesMinimum(
   minimum: ReleaseLevel,
 ): boolean {
   if (minimum === "prerelease" || previous.split("+", 1)[0]?.includes("-")) return true;
-  const oldMajor = Number(previous.split(".", 1)[0]);
-  const oldMinor = Number(previous.split(".", 2)[1]);
-  const newMajor = Number(current.split(".", 1)[0]);
-  const newMinor = Number(current.split(".", 2)[1]);
-  if (![oldMajor, oldMinor, newMajor, newMinor].every(Number.isInteger)) return false;
+  const [oldMajorText, oldMinorText] = previous.split(".");
+  const [newMajorText, newMinorText] = current.split(".");
+  if (
+    !oldMajorText ||
+    !oldMinorText ||
+    !newMajorText ||
+    !newMinorText ||
+    ![oldMajorText, oldMinorText, newMajorText, newMinorText].every((part) => /^\d+$/.test(part))
+  )
+    return false;
+  const oldMajor = BigInt(oldMajorText);
+  const oldMinor = BigInt(oldMinorText);
+  const newMajor = BigInt(newMajorText);
+  const newMinor = BigInt(newMinorText);
   if (minimum === "major") return newMajor > oldMajor;
   if (minimum === "minor")
     return newMajor > oldMajor || (newMajor === oldMajor && newMinor > oldMinor);

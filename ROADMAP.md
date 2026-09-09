@@ -191,6 +191,7 @@ Work one area at a time, ordered by failure consequences; add discovered defects
   - [x] Correct collision fallback to skip the entire previous release line; three cases failed before the fix and pass in `scripts/release-history.test.ts`; complete `bun run check` passes.
   - [x] Preserve complete TypeScript declarations, overload order and multiplicity, and Rust feature-selection ownership in API comparisons; regression cases and complete `bun run check` pass.
   - [x] Prevent hyphens in build metadata from bypassing stable compatibility; both affected checks have passing regressions and complete `bun run check` passes.
+  - [x] Keep SemVer core comparisons exact beyond JavaScript's safe-integer range. Adjacent large majors failed both predecessor selection and minimum-bump regressions before the repair; release tooling now uses `bigint` for those comparisons.
   - [ ] Inspect stable-release checks when prereleases intervene and breaking Rust additions.
     - [x] Run pinned `cargo-semver-checks` against both retained crate feature surfaces. Required public fields, required trait methods, and exhaustive enum variants fail the fixture before release-level calculation; unchanged APIs pass. The readable `cargo-public-api` diff remains separate.
     - [ ] Resolve which existing comparison gives way when a stable release follows a prerelease: the approved two comparisons cannot cover the immediate prerelease, the previous stable release in the same line, and the previous release line simultaneously.

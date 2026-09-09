@@ -33,6 +33,18 @@ describe("release comparison selection", () => {
     });
   });
 
+  test("keeps release lines distinct beyond JavaScript's safe integer range", () => {
+    expect(
+      selectReleaseComparisons("v9007199254740993.2.0", [
+        "v9007199254740992.9.0",
+        "v9007199254740993.1.0",
+      ]),
+    ).toEqual({
+      immediate: "v9007199254740993.1.0",
+      releaseLine: "v9007199254740992.9.0",
+    });
+  });
+
   test.each(["v1", "v1.0", "v01.0.0", "v1.0.0.0", "v1.0.0-01", "v1.0.0+"])(
     "rejects malformed release tag %s",
     (tag) => {

@@ -22,6 +22,7 @@ test("stable version distance must satisfy the derived release level", () => {
   expect(satisfiesMinimum("1.3.0", "2.0.0", "major")).toBe(true);
   expect(satisfiesMinimum("2.0.0-beta.1", "2.0.0", "major")).toBe(true);
   expect(satisfiesMinimum("1.3.0", "2.0.0-beta.1", "prerelease")).toBe(true);
+  expect(satisfiesMinimum("9007199254740992.0.0", "9007199254740993.0.0", "major")).toBe(true);
 });
 
 test("API comparison detects moved members and changed overload priority", () => {
