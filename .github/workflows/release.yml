@@ -22,7 +22,8 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}
+    permissions:
+      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -31,22 +32,42 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
+      - id: evidence
+        run: bun scripts/release-evidence.ts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - if: steps.evidence.outputs.found == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-evidence
+          path: .
+          github-token: ${{ github.token }}
+          run-id: ${{ github.run_id }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.evidence.outputs.found != 'true'
         with:
           node-version-file: .tool-versions
           package-manager-cache: false
-      - run: bun install --frozen-lockfile
+      - if: steps.evidence.outputs.found != 'true'
+        run: bun install --frozen-lockfile
       - name: Install the repository Rust toolchain
+        if: steps.evidence.outputs.found != 'true'
         run: |
           version=$(awk '$1 == "rust" { print $2 }' .tool-versions)
           test -n "$version" && rustup toolchain install "$version" --profile minimal --target wasm32-unknown-unknown
           rustup override set "$version"
-      - run: cargo install cargo-public-api --version 0.52.0 --locked
-      - run: cargo install cargo-semver-checks --version 0.50.0 --locked
-      - run: bun run build
-      - run: bun scripts/release-package.ts prepare
-      - run: bun scripts/release-crate.ts prepare
+      - if: steps.evidence.outputs.found != 'true'
+        run: cargo install cargo-public-api --version 0.52.0 --locked
+      - if: steps.evidence.outputs.found != 'true'
+        run: cargo install cargo-semver-checks --version 0.50.0 --locked
+      - if: steps.evidence.outputs.found != 'true'
+        run: bun run build
+      - if: steps.evidence.outputs.found != 'true'
+        run: bun scripts/release-package.ts prepare
+      - if: steps.evidence.outputs.found != 'true'
+        run: bun scripts/release-crate.ts prepare
       - name: Bind Git history to reviewed registry archives
+        if: steps.evidence.outputs.found != 'true'
         run: |
           npm_archive=(release-artifacts/reviewed-npm/*.tgz)
           crate_archive=(rust/target/reviewed-crate/*.crate)
@@ -54,6 +75,7 @@ jobs:
           bun scripts/release-inputs.ts "$GITHUB_REF_NAME" release-artifacts/history "${npm_archive[0]}" "${crate_archive[0]}"
           bun scripts/release-report.ts
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: steps.evidence.outputs.found != 'true'
         with:
           name: release-evidence
           path: |
