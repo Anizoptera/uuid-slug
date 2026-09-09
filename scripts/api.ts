@@ -133,13 +133,17 @@ try {
     ) as { target_directory: string }
   ).target_directory;
   // cargo-public-api owns one rustdoc JSON path, so feature selections must not write it concurrently.
-  const rustDefault = await command("cargo", [...rustArgs, "--all-features"], root);
-  const deprecated = new Set(await readRustDeprecations(rustTarget));
-  const rustMinimal = await command("cargo", [...rustArgs, "--no-default-features"], root);
-  for (const item of await readRustDeprecations(rustTarget)) deprecated.add(item);
+  const rustDefault = annotateRustApi(
+    await command("cargo", [...rustArgs, "--all-features"], root),
+    new Set(await readRustDeprecations(rustTarget)),
+  );
+  const rustMinimal = annotateRustApi(
+    await command("cargo", [...rustArgs, "--no-default-features"], root),
+    new Set(await readRustDeprecations(rustTarget)),
+  );
   const rust = report("Rust", [
-    `## All features\n\n\`\`\`rust\n${annotateRustApi(rustDefault, deprecated)}\n\`\`\``,
-    `## No default features\n\n\`\`\`rust\n${annotateRustApi(rustMinimal, deprecated)}\n\`\`\``,
+    `## All features\n\n\`\`\`rust\n${rustDefault}\n\`\`\``,
+    `## No default features\n\n\`\`\`rust\n${rustMinimal}\n\`\`\``,
   ]);
 
   await mkdir(apiDirectory, { recursive: true });

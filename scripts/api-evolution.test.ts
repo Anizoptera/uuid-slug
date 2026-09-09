@@ -83,7 +83,7 @@ test("deprecating a TypeScript container covers its owned members", () => {
 });
 
 test("Rust removal requires the exact released item to be deprecated", () => {
-  const before = reports("", "pub fn uuid_slug::old()", "(none)", "uuid_slug::other");
+  const before = reports("", "pub fn uuid_slug::old()\n#[deprecated] pub fn uuid_slug::other()");
   const after = reports("", "");
   expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).toThrow(
     "Rust removes API that was not deprecated",
@@ -94,6 +94,20 @@ test("inline Rust deprecation authorizes only a later removal", () => {
   const before = reports("", "#[deprecated] pub fn uuid_slug::old()");
   const after = reports("", "");
   expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).not.toThrow();
+});
+
+test("inline Rust deprecation authorizes only its feature surface and declaration", () => {
+  const before = reports(
+    "",
+    "#[deprecated] pub type uuid_slug::Same = u8\npub fn uuid_slug::Same()",
+    "(none)",
+    "(none)",
+    "pub fn uuid_slug::Same()",
+  );
+  const after = reports("", "#[deprecated] pub type uuid_slug::Same = u8");
+  expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).toThrow(
+    "Rust removes API that was not deprecated",
+  );
 });
 
 test("Rust feature-surface removal remains visible", () => {

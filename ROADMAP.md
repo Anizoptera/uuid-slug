@@ -187,6 +187,9 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 - [x] Record deprecation state in both language reports using compiler-derived structure. Reject
   removal unless the item was deprecated in a published release and the current version advances to
   the next major, or the next minor while the major is zero.
+  - [x] Keep each Rust feature surface's deprecations attached to that surface and distinguish items
+    that share a path across Rust namespaces. Targeted regressions vary both the feature/deprecation
+    pairing and the declaration kind.
 - [x] Reuse one compatibility engine in routine CI and release reporting. Keep reviewed-baseline
   equality, predecessor compatibility, changelog classification, and the merge decision as distinct
   evidence; none substitutes for another.

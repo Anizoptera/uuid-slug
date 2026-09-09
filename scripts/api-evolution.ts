@@ -10,7 +10,6 @@ import type { ReleaseLevel } from "./release-comparison";
 import { latestRelease } from "./release-history";
 import { checkReleaseVersion } from "./release-version";
 import { cargoSurfaceDifference, npmReleaseSurface, npmSurfaceDifference } from "./release-surface";
-import { rustPath } from "./rust-deprecations";
 
 interface ApiReports {
   readonly typescript: string;
@@ -153,11 +152,11 @@ function rustEntries(report: ReadonlyMap<string, string>): ReadonlySet<string> {
 }
 
 function rustDeprecations(report: ReadonlyMap<string, string>): ReadonlySet<string> {
-  const deprecated = new Set(code(report.get("Deprecations")).split("\n"));
+  const deprecated = new Set<string>();
   for (const name of ["All features", "No default features"]) {
     for (const line of code(report.get(name)).split("\n")) {
-      const path = line.startsWith("#[deprecated] ") ? rustPath(line) : undefined;
-      if (path) deprecated.add(path);
+      if (line.startsWith("#[deprecated] "))
+        deprecated.add(`${name}: ${line.slice("#[deprecated] ".length)}`);
     }
   }
   return deprecated;
@@ -266,10 +265,7 @@ export function verifyEvolution(
   const deprecatedTypeScript = typescriptDeprecations(oldTsSource, oldTs.get("Deprecations"));
   const deprecatedRust = rustDeprecations(oldRust);
   removals("TypeScript", oldTsEntries, newTsEntries, (entry) => deprecatedTypeScript.has(entry));
-  removals("Rust", oldRustEntries, newRustEntries, (entry) => {
-    const path = rustPath(entry);
-    return path !== undefined && deprecatedRust.has(path);
-  });
+  removals("Rust", oldRustEntries, newRustEntries, (entry) => deprecatedRust.has(entry));
   const changed =
     packageLevels.some((level) => level !== "patch") ||
     oldTsNormalized !== newTsNormalized ||
