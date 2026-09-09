@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { mkdir } from "node:fs/promises";
-import { join } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { command } from "./command";
 import { releaseComparisons } from "./release-history";
 import { preflightRelease } from "./release-notes";
@@ -39,6 +39,10 @@ export interface ReleaseInputs {
   readonly version: string;
   readonly tag: string;
   readonly commit: string;
+  readonly candidate: {
+    readonly npm: RetainedArchive;
+    readonly crate: RetainedArchive;
+  };
   readonly comparisons: readonly ComparisonInput[];
 }
 
@@ -118,16 +122,24 @@ export function registryVersion<T>(
   return release;
 }
 
-async function retainNpm(release: NpmVersion, file: string): Promise<RetainedArchive> {
+async function retainNpm(
+  release: NpmVersion,
+  file: string,
+  recordedFile: string,
+): Promise<RetainedArchive> {
   const response = await fetch(release.tarball, { signal: AbortSignal.timeout(20_000) });
   if (!response.ok) throw new Error(`npm archive failed: HTTP ${response.status}.`);
   const bytes = new Uint8Array(await response.arrayBuffer());
   verifyIntegrity(bytes, release.integrity);
   await Bun.write(file, bytes);
-  return { file, integrity: release.integrity };
+  return { file: recordedFile, integrity: release.integrity };
 }
 
-async function retainCrate(release: CrateVersion, file: string): Promise<RetainedArchive> {
+async function retainCrate(
+  release: CrateVersion,
+  file: string,
+  recordedFile: string,
+): Promise<RetainedArchive> {
   const response = await fetch(release.download, {
     headers: { "User-Agent": cratesUserAgent },
     signal: AbortSignal.timeout(20_000),
@@ -137,7 +149,19 @@ async function retainCrate(release: CrateVersion, file: string): Promise<Retaine
   const actual = createHash("sha256").update(bytes).digest("hex");
   if (actual !== release.checksum) throw new Error("Crate archive differs from registry checksum.");
   await Bun.write(file, bytes);
-  return { file, integrity: `sha256-${release.checksum}` };
+  return { file: recordedFile, integrity: `sha256-${release.checksum}` };
+}
+
+async function candidateArchive(
+  cwd: string,
+  file: string,
+  algorithm: "sha256" | "sha512",
+): Promise<RetainedArchive> {
+  const bytes = await Bun.file(file).bytes();
+  const digest = createHash(algorithm)
+    .update(bytes)
+    .digest(algorithm === "sha512" ? "base64" : "hex");
+  return { file: relative(cwd, file), integrity: `${algorithm}-${digest}` };
 }
 
 /** Bind Git-selected history to verified registry bytes and retain one deterministic comparison record. */
@@ -147,6 +171,7 @@ export async function collectReleaseInputs(
   output: string,
   npmRegistry = "https://registry.npmjs.org",
   cratesRegistry = "https://crates.io",
+  candidateFiles?: { readonly npm: string; readonly crate: string },
 ): Promise<ReleaseInputs> {
   const { name, version } = await preflightRelease(cwd, tag);
   const [choices, npm, crate, commit] = await Promise.all([
@@ -154,6 +179,11 @@ export async function collectReleaseInputs(
     npmHistory(npmRegistry, name),
     crateHistory(cratesRegistry, "uuid-slug"),
     command("git", ["rev-list", "-n", "1", tag], cwd).then((value) => value.trim()),
+  ]);
+  if (!candidateFiles) throw new Error("Candidate npm and crate archives are required.");
+  const candidate = await Promise.all([
+    candidateArchive(cwd, candidateFiles.npm, "sha512"),
+    candidateArchive(cwd, candidateFiles.crate, "sha256"),
   ]);
   await mkdir(output, { recursive: true });
   const entries = Object.entries(choices) as Array<
@@ -169,10 +199,18 @@ export async function collectReleaseInputs(
         const [selectedCommit, npmArchive, crateArchive] = await Promise.all([
           command("git", ["rev-list", "-n", "1", selectedTag], cwd).then((value) => value.trim()),
           npmRelease
-            ? retainNpm(npmRelease, join(output, `npm-${selectedVersion}.tgz`))
+            ? retainNpm(
+                npmRelease,
+                join(output, `npm-${selectedVersion}.tgz`),
+                relative(cwd, join(output, `npm-${selectedVersion}.tgz`)),
+              )
             : undefined,
           crateRelease
-            ? retainCrate(crateRelease, join(output, `crate-${selectedVersion}.crate`))
+            ? retainCrate(
+                crateRelease,
+                join(output, `crate-${selectedVersion}.crate`),
+                relative(cwd, join(output, `crate-${selectedVersion}.crate`)),
+              )
             : undefined,
         ]);
         return Object.assign(
@@ -186,7 +224,13 @@ export async function collectReleaseInputs(
         );
       }),
   );
-  const inputs = { version, tag, commit, comparisons } satisfies ReleaseInputs;
+  const inputs = {
+    version,
+    tag,
+    commit,
+    candidate: { npm: candidate[0], crate: candidate[1] },
+    comparisons,
+  } satisfies ReleaseInputs;
   await Bun.write(join(output, "release-inputs.json"), `${JSON.stringify(inputs, null, 2)}\n`);
   return inputs;
 }
@@ -194,8 +238,14 @@ export async function collectReleaseInputs(
 if (import.meta.main) {
   const tag = process.argv[2] ?? process.env.GITHUB_REF_NAME;
   const output = process.argv[3] ?? "release-inputs";
-  if (!tag) throw new Error("Usage: release-inputs.ts vVERSION [output-directory]");
-  collectReleaseInputs(process.cwd(), tag, output).catch((error: unknown) => {
+  const npm = process.argv[4];
+  const crate = process.argv[5];
+  if (!tag || !npm || !crate)
+    throw new Error("Usage: release-inputs.ts vVERSION output-directory npm-archive crate-archive");
+  collectReleaseInputs(process.cwd(), tag, resolve(output), undefined, undefined, {
+    npm: resolve(npm),
+    crate: resolve(crate),
+  }).catch((error: unknown) => {
     console.error(error);
     process.exitCode = 1;
   });
