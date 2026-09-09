@@ -13,6 +13,7 @@ import type { ApiDifference, ReleaseLevel } from "./release-comparison";
 import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
 import { readRetainedArchive } from "./release-inputs";
 import { preflightRelease } from "./release-notes";
+import { npmReleaseSurface, rustReleaseSurface } from "./release-surface";
 
 interface Sizes {
   readonly npm?: number;
@@ -27,18 +28,6 @@ interface CommandResult {
 }
 
 type ArchiveFiles = ReadonlyMap<string, Blob>;
-
-function npmInterface(manifest: Record<string, unknown>): string {
-  return JSON.stringify({
-    engines: manifest.engines,
-    exports: manifest.exports,
-    main: manifest.main,
-    module: manifest.module,
-    sideEffects: manifest.sideEffects,
-    type: manifest.type,
-    types: manifest.types,
-  });
-}
 
 function verifyArchiveRoot(files: ArchiveFiles, prefix: string): void {
   for (const name of files.keys()) {
@@ -156,14 +145,15 @@ async function declaration(
     }),
   );
   await command("api-extractor", ["run", "--local", "--config", config], root);
-  return `${npmInterface(metadata)}\n${normalizeDeclarations(await Bun.file(rollup).text())}`;
+  return `${npmReleaseSurface(metadata)}\n${normalizeDeclarations(await Bun.file(rollup).text())}`;
 }
 
 async function rustApi(cwd: string, manifest: string): Promise<string> {
   const base = ["public-api", "--manifest-path", manifest, "--color=never", "--simplified"];
   const all = await command("cargo", [...base, "--all-features"], cwd);
   const minimal = await command("cargo", [...base, "--no-default-features"], cwd);
-  return `${all
+  const manifestSurface = await rustReleaseSurface(cwd, manifest);
+  return `${manifestSurface}\n${all
     .trim()
     .split("\n")
     .map((line) => `all: ${line}`)
@@ -311,14 +301,14 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
                 comparison.tag.slice(1),
               ),
               currentDeclaration,
-              "TypeScript declaration",
+              "TypeScript package surface",
             )
           : undefined;
         const rust = previous.crateRoot
           ? apiDifference(
               await rustApi(root, join(previous.crateRoot, "Cargo.toml")),
               currentRust,
-              "Rust public signature",
+              "Rust crate surface",
             )
           : undefined;
         const rustSemver = previous.crateRoot
