@@ -144,7 +144,6 @@ await run([
 ]);
 // Each adapter checks nonzero execution and exact result counts before it can exit successfully.
 const contracts = await Promise.allSettled([
-  run(["bun", "test", "scripts/release-version.test.ts"]),
   run(["bun", "scripts/rust-conform.ts"]),
   run(["node", "rust/target/conform.mjs"]),
 ]);

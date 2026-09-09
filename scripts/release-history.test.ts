@@ -9,6 +9,9 @@ describe("release comparison selection", () => {
     ["v1.2.0", ["v0.8.0", "v1.0.0", "v1.1.0"], { immediate: "v1.1.0", releaseLine: "v0.8.0" }],
     ["v0.1.0", [], {}],
     ["v0.2.0", ["v0.1.0"], { immediate: "v0.1.0" }],
+    ["v0.4.0", ["v0.3.2", "v0.3.1", "v0.2.9"], { immediate: "v0.3.2", releaseLine: "v0.2.9" }],
+    ["v2.0.0", ["v1.8.0", "v1.7.0", "v0.9.0"], { immediate: "v1.8.0", releaseLine: "v0.9.0" }],
+    ["v0.4.0", ["v0.3.2", "v0.3.1"], { immediate: "v0.3.2" }],
   ] as const)("selects distinct history for %s", (candidate, tags, expected) => {
     expect(selectReleaseComparisons(candidate, tags)).toEqual(expected);
   });

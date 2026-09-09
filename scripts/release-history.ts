@@ -50,7 +50,15 @@ export function selectReleaseComparisons(
       ? version.major === 0 && version.minor < candidate.minor
       : version.major < candidate.major,
   );
-  const releaseLine = line?.value === immediate.value ? previous[1] : line;
+  // A second patch/minor in the same line adds no older-line comparison.
+  const releaseLine =
+    line?.value === immediate.value
+      ? previous.find((version) =>
+          candidate.major === 0
+            ? version.major === 0 && version.minor < immediate.minor
+            : version.major < immediate.major,
+        )
+      : line;
   return { immediate: immediate.tag, ...(releaseLine ? { releaseLine: releaseLine.tag } : {}) };
 }
 

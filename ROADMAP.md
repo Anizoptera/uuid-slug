@@ -178,6 +178,8 @@ Work one area at a time, ordered by failure consequences; add discovered defects
 - [ ] Authority and scope: reconcile the complete changed-file inventory, approved public changes, retained contracts, prior roadmap tasks, and unfinished work.
 - [ ] Release integrity: trace credential separation, tag/version/changelog binding, archive identity, publication recovery, notes/assets, and finalization; exercise failures without remote writes.
 - [ ] Version compatibility: challenge Git predecessor selection, SemVer ordering, prereleases/build metadata, collision collapse, missing registry history, and minimum-version enforcement.
+  - [x] Correct collision fallback to skip the entire previous release line; three cases failed before the fix and pass in `scripts/release-history.test.ts`; complete `bun run check` passes.
+  - [ ] Verify API comparison preserves declaration ownership and multiplicity; inspect stable-release checks when prereleases intervene.
 - [ ] API evidence: inspect packed TypeScript/Rust extraction, reachable types, features/targets, baseline comparison, mutation coverage, and bypass behavior.
 - [ ] Distribution: verify export order and unnecessary keys, default/runtime adapters, source/declaration resolution, maps, cleaned archives, dependency and native-code exclusions.
 - [ ] UUID and alphabet contracts: inspect every changed parsing/conversion/generation path, lengths, canonical bits, timestamp bounds, byte ownership, buffer ranges, and atomic writes.
@@ -187,6 +189,7 @@ Work one area at a time, ordered by failure consequences; add discovered defects
 - [ ] Cross-language verification: inspect bridge ownership/panics, WASM memory/ranges, fixture independence, parity diagnostics, and whether probes reach the actual packaged implementations.
 - [ ] Performance and resources: inspect benchmark methodology, linked-size comparisons, startup/tree-shaking, cancellation responsiveness, bounded resources, repeated work, and gate headroom.
 - [ ] Developer feedback: inspect tests, lint/type checks, hooks, CI wiring, cleanup, failure diagnostics, redundant evidence, and false-green routes; retain minimal defect-catching checks.
+  - [x] Wire every `scripts/*.test.ts` regression into routine verification and remove the duplicate version-test invocation; complete `bun run check` executes them and passes.
 - [ ] Documentation and consumer experience: reconcile README, design/security/distribution/release owners, examples, upgrade guidance, changelog, licenses, and agent instructions against actual behavior.
 - [ ] Final reconciliation: inspect the total repaired diff, run applicable complete checks and real artifact consumers, record remaining unverified boundaries, and commit all verified local changes.
 
