@@ -47,6 +47,19 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
     const keys = new Set(Object.keys(manifest.exports ?? {}));
     if (keys.size !== 2 || !keys.has(".") || !keys.has("./package.json"))
       throw new Error('Packed exports must expose only "." and "./package.json".');
+    const expectedRootExport = [
+      ["types", "./dist/index.d.ts"],
+      ["bun", "./src/index.ts"],
+      ["development", "./src/index.ts"],
+      ["browser", "./dist/index.js"],
+      ["node", "./dist/node/index.js"],
+      ["default", "./dist/index.js"],
+    ];
+    if (
+      JSON.stringify(Object.entries(manifest.exports["."] ?? {})) !==
+      JSON.stringify(expectedRootExport)
+    )
+      throw new Error("Packed root export conditions or their priority are invalid.");
     if (manifest.name !== "@anizoptera/uuid-slug") throw new Error("Unexpected package name.");
     await Bun.write(
       path.join(root, "package.json"),

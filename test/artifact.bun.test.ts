@@ -20,7 +20,17 @@ const manifest = {
   name: "@anizoptera/uuid-slug",
   version: "0.0.0",
   type: "module",
-  exports: { ".": "./dist/index.js", "./package.json": "./package.json" },
+  exports: {
+    ".": {
+      types: "./dist/index.d.ts",
+      bun: "./src/index.ts",
+      development: "./src/index.ts",
+      browser: "./dist/index.js",
+      node: "./dist/node/index.js",
+      default: "./dist/index.js",
+    },
+    "./package.json": "./package.json",
+  },
 };
 const base = {
   "package/package.json": JSON.stringify(manifest),
@@ -58,6 +68,27 @@ test("refuses a wildcard export", () =>
       }),
     },
     "Packed exports",
+  ));
+test("refuses runtime conditions before source conditions", () =>
+  rejected(
+    {
+      ...base,
+      "package/package.json": JSON.stringify({
+        ...manifest,
+        exports: {
+          ...manifest.exports,
+          ".": {
+            browser: "./dist/index.js",
+            types: "./dist/index.d.ts",
+            bun: "./src/index.ts",
+            development: "./src/index.ts",
+            node: "./dist/node/index.js",
+            default: "./dist/index.js",
+          },
+        },
+      }),
+    },
+    "conditions or their priority",
   ));
 test("finds machine paths in extensionless files", () =>
   rejected({ ...base, "package/leak": "/Users/builder/private" }, "Build-machine path"));

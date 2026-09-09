@@ -93,8 +93,9 @@ Masking has no chronological ordering. These extensions are implemented, not yet
 
 Publish one npm package and one Rust crate. Keep JavaScript chunks internal and Rust targets under
 one release identity. Add prebuilt Rust artifacts only when a measured consumer need justifies them.
-Keep Aponte consuming this repository's TypeScript source through its own repository wiring. Every
-published npm entry must resolve to built code, and the npm archive must exclude `src`.
+Publish the TypeScript source for Bun and the opt-in `development` condition. Browsers use the
+optimized default build, while Node uses its native-runtime build. Ship self-contained source maps
+for usable diagnostics.
 
 Keep the public npm package TypeScript/JavaScript-only, with no runtime dependencies or native
 payloads. Keep the Rust crate installable from this Git repository and crates.io.

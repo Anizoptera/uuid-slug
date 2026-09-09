@@ -53,9 +53,9 @@ const common = {
   format: ["esm"],
   outExtensions: () => ({ js: ".js" }),
   banner,
-  // Separate modules let consumer bundlers drop masking from keyless imports. This also requires
-  // direct keyless exports: property reads from defaultCodec retain its construction and cipher.
-  // test/tree-shaking.bun.test.ts checks the emitted modules, not just source imports.
+  minify: true,
+  sourcemap: true,
+  // Preserve module seams so downstream bundlers can exclude masking from keyless imports.
   unbundle: true,
 } satisfies UserConfig;
 

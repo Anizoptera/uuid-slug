@@ -53,7 +53,7 @@
     ".": {
       "types": "./dist/index.d.ts",
       "bun": "./src/index.ts",
-      "deno": "./dist/index.js",
+      "development": "./src/index.ts",
       "browser": "./dist/index.js",
       "node": "./dist/node/index.js",
       "default": "./dist/index.js"

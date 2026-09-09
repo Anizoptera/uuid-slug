@@ -14,7 +14,7 @@ This generated baseline records the consumer-visible declarations and manifest c
       "browser": "./dist/index.js",
       "bun": "./src/index.ts",
       "default": "./dist/index.js",
-      "deno": "./dist/index.js",
+      "development": "./src/index.ts",
       "node": "./dist/node/index.js",
       "types": "./dist/index.d.ts"
     },

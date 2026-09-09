@@ -13,6 +13,7 @@ notes: the section for a version is published verbatim when its tag is pushed.
 ### Added
 
 - Classify TypeScript errors across realms and duplicate package copies with `isUuidSlugError`; Rust schema derivation now returns an opaque future so callers do not depend on scheduler state.
+- Publish TypeScript source for Bun and opt-in development tooling; other runtimes receive minified JavaScript with self-contained source maps.
 - Use the Rust `uuid-slug` crate for UUID generation, plain encoding, keyed masking, sentinels, key rotation, migration and freshness checks. Browser generation uses the optional `wasm-js` feature; pure conversion and masking can run without platform entropy.
 - Select `maskedSlugAlphabet: "base32hex"` for lowercase masked filenames: 27 characters for masked values and 26 for raw sentinels. Decoding retains existing base64url spellings and key material. Masked output has no chronological ordering guarantee.
 - Rust callers can decode base64url into caller-owned storage and use first-result migration without allocating a candidate list.

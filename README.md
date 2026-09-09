@@ -437,10 +437,11 @@ See [security boundaries](docs/security.md) for entropy failures, custom sources
 
 No runtime dependencies, on any platform.
 
-- **Bun** uses `Bun.randomUUIDv7`.
+- **Bun** loads the published TypeScript source and uses `Bun.randomUUIDv7`. Tooling that opts into
+  the `development` condition loads the same source.
 - **Node** uses native `crypto.randomUUID`, and native `crypto.randomUUIDv7` where the
   version provides it, otherwise the bundled v7 generator.
-- **Browsers and Deno** use Web Crypto for randomness plus the bundled v7 generator.
+- **Browsers and Deno** use optimized browser-safe JavaScript and Web Crypto.
 
 ## License
 
