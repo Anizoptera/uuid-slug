@@ -175,11 +175,11 @@ async function candidateArchive(
   file: string,
   algorithm: "sha256" | "sha512",
 ): Promise<RetainedArchive> {
-  const bytes = await Bun.file(file).bytes();
+  const bytes = await Bun.file(resolve(cwd, file)).bytes();
   const digest = createHash(algorithm)
     .update(bytes)
     .digest(algorithm === "sha512" ? "base64" : "hex");
-  return { file: relative(cwd, file), integrity: `${algorithm}-${digest}` };
+  return { file: relative(cwd, resolve(cwd, file)), integrity: `${algorithm}-${digest}` };
 }
 
 /** Bind Git-selected history to verified registry bytes and retain one deterministic comparison record. */
@@ -191,14 +191,45 @@ export async function collectReleaseInputs(
   cratesRegistry = "https://crates.io",
   candidateFiles?: { readonly npm: string; readonly crate: string },
 ): Promise<ReleaseInputs> {
-  const { name, version } = await preflightRelease(cwd, tag);
-  const [choices, npm, crate, commit] = await Promise.all([
+  if (!candidateFiles) throw new Error("Candidate npm and crate archives are required.");
+  const { name, version, commit } = await preflightRelease(cwd, tag);
+  if (!commit) throw new Error("Release preflight did not resolve a candidate commit.");
+  const retained = Bun.file(join(output, "release-inputs.json"));
+  if (await retained.exists()) {
+    const inputs = (await retained.json()) as ReleaseInputs;
+    if (
+      inputs.name !== name ||
+      inputs.version !== version ||
+      inputs.tag !== tag ||
+      inputs.commit !== commit
+    )
+      throw new Error(
+        "Retained release inputs identify a different package, version, tag, or commit.",
+      );
+    await Promise.all([
+      ...(resolve(cwd, candidateFiles.npm) === resolve(cwd, inputs.candidate.npm.file)
+        ? []
+        : [readRetainedArchive(cwd, { ...inputs.candidate.npm, file: candidateFiles.npm })]),
+      ...(resolve(cwd, candidateFiles.crate) === resolve(cwd, inputs.candidate.crate.file)
+        ? []
+        : [readRetainedArchive(cwd, { ...inputs.candidate.crate, file: candidateFiles.crate })]),
+      ...[inputs.candidate, ...inputs.comparisons].flatMap((entry) =>
+        [entry.npm, entry.crate].flatMap((archive) =>
+          archive ? [readRetainedArchive(cwd, archive)] : [],
+        ),
+      ),
+    ]);
+    return inputs;
+  }
+  const [choices, npm, crate] = await Promise.all([
     releaseComparisons(cwd, tag),
     npmHistory(npmRegistry, name),
     crateHistory(cratesRegistry, "uuid-slug"),
-    command("git", ["rev-list", "-n", "1", tag], cwd).then((value) => value.trim()),
   ]);
-  if (!candidateFiles) throw new Error("Candidate npm and crate archives are required.");
+  if (npm.versions.has(version) || crate.versions.has(version))
+    throw new Error(
+      "A published candidate has no retained release inputs; restore its original release evidence before retrying.",
+    );
   const candidate = await Promise.all([
     candidateArchive(cwd, candidateFiles.npm, "sha512"),
     candidateArchive(cwd, candidateFiles.crate, "sha256"),

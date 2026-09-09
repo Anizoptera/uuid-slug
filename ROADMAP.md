@@ -181,6 +181,9 @@ Work one area at a time, ordered by failure consequences; add discovered defects
   - [x] Read candidate and comparison APIs from hash-verified retained archives; measure linked Rust from the retained crate using the repository toolchain. A real report succeeds with unusable checkout Rust; restoring the checkout read fails on that exact manifest. Shared integrity regressions cover modified bytes and unsupported digests.
   - [ ] Bind archive versions and source commits to the selected tags, including retained-input identity on retries.
   - [ ] Verify full retry behavior preserves inputs across preparation reruns.
+    - [x] Reuse retained local inputs without re-querying registries; reject changed package/commit identity and candidate or historical bytes. A real-Git/local-registry regression exposed repeated reads before the repair; retained-input and process checks pass afterward.
+    - [x] Refuse to regenerate lost comparison inputs after either registry contains the candidate; the retry regression covers this first-publication transition.
+    - [ ] Restore retained evidence on fresh CI preparation attempts; the current workflow starts from an empty runner and would otherwise recalculate comparisons.
   - [x] Read back final GitHub state instead of trusting the mutation response. Local transport cases expose retained draft state, lost notes, and a missing archive after a successful acknowledgement; the repaired finalizer rejects them. Complete `bun run check` passes; no remote finalization was attempted.
 - [ ] Version compatibility: challenge Git predecessor selection, SemVer ordering, prereleases/build metadata, collision collapse, missing registry history, and minimum-version enforcement.
   - [x] Correct collision fallback to skip the entire previous release line; three cases failed before the fix and pass in `scripts/release-history.test.ts`; complete `bun run check` passes.

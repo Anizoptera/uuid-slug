@@ -249,7 +249,9 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
   const inputs = (await Bun.file(
     join(directory, "history/release-inputs.json"),
   ).json()) as ReleaseInputs;
-  const { notes } = await preflightRelease(root, inputs.tag);
+  const { notes, name, version, commit } = await preflightRelease(root, inputs.tag);
+  if (inputs.name !== name || inputs.version !== version || inputs.commit !== commit)
+    throw new Error("Retained release inputs do not identify the checked package and commit.");
   const npm = resolve(root, inputs.candidate.npm.file);
   const crate = resolve(root, inputs.candidate.crate.file);
   const work = await mkdtemp(join(tmpdir(), "uuid-slug-release-report-"));

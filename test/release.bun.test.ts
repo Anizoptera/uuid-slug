@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { expect, test } from "bun:test";
 import { rejects } from "node:assert/strict";
 import { inspectArtifact } from "../scripts/check-artifact";
-import { command } from "../scripts/command";
+import { tagReleaseFixture } from "./release-fixture";
 import { releaseNotes } from "../scripts/release-notes";
 import { registryIntegrity, verifyIntegrity } from "../scripts/registry-integrity";
 
@@ -18,16 +18,6 @@ async function rustReleaseFixture(root: string, version: string): Promise<void> 
     join(root, "rust/Cargo.lock"),
     `version = 4\n[[package]]\nname = "uuid-slug"\nversion = "${version}"\n[[package]]\nname = "uuid-slug-bridge"\nversion = "${version}"\n`,
   );
-}
-
-async function tagReleaseFixture(root: string, version: string): Promise<void> {
-  const git = (args: string[]) => command("git", args, root);
-  await git(["init"]);
-  await git(["config", "user.name", "Release test"]);
-  await git(["config", "user.email", "test@example.invalid"]);
-  await git(["add", "."]);
-  await git(["-c", "commit.gpgsign=false", "commit", "-m", "Release fixture"]);
-  await git(["-c", "tag.gpgsign=false", "tag", "-a", `v${version}`, "-m", "Release fixture"]);
 }
 
 const body = "\r\n\r\n- Keep bytes.\r\n\r\n```md\r\n## [9.0.0]\r\n```\r\n\r\n";

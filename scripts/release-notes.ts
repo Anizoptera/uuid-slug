@@ -48,12 +48,13 @@ export async function preflightRelease(
   cwd: string,
   tag?: string,
   synchronize = false,
-): Promise<{ name: string; version: string; notes: string }> {
+): Promise<{ name: string; version: string; notes: string; commit: string | undefined }> {
   const manifest = await Bun.file(`${cwd}/package.json`).json();
   if (typeof manifest.version !== "string" || typeof manifest.name !== "string")
     throw new Error("Manifest must name a package and version.");
   if (tag !== undefined && tag !== `v${manifest.version}`)
     throw new Error(`Tag ${tag} does not match package.json ${manifest.version}.`);
+  let commit: string | undefined;
   if (tag !== undefined) {
     // Version text alone cannot bind publication to the commit that passed verification.
     const ref = `refs/tags/${tag}`;
@@ -66,6 +67,7 @@ export async function preflightRelease(
     const [head, tagged] = commits.trim().split("\n");
     if (!head || head !== tagged)
       throw new Error(`Release ${tag} does not point to HEAD; check out the tagged commit.`);
+    commit = tagged;
   }
   const notes = releaseNotes(await Bun.file(`${cwd}/CHANGELOG.md`).text(), manifest.version);
   if (synchronize) await syncReleaseVersion(cwd, manifest.version);
@@ -74,6 +76,7 @@ export async function preflightRelease(
     name: manifest.name,
     version: manifest.version,
     notes,
+    commit,
   };
 }
 

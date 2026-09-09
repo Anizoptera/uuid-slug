@@ -4,6 +4,8 @@ import { createHash } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { tagReleaseFixture } from "../test/release-fixture";
+import { collectReleaseInputs } from "./release-inputs";
 import { crateHistory, npmHistory, readRetainedArchive, registryVersion } from "./release-inputs";
 
 test("retained archive consumers reject changed bytes and unsupported digests", async () => {
@@ -32,6 +34,73 @@ test("retained archive consumers reject changed bytes and unsupported digests", 
       /unsupported/,
     );
   } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("input retries preserve their comparison basis and reject changed candidate bytes", async () => {
+  const root = await mkdtemp(join(tmpdir(), "uuid-slug-input-retry-"));
+  let reads = 0;
+  let published = false;
+  const server = Bun.serve({
+    port: 0,
+    fetch(request) {
+      reads++;
+      if (published && new URL(request.url).pathname.startsWith("/npm/"))
+        return Response.json({
+          versions: {
+            "1.2.3": {
+              dist: { integrity: "sha512-value", tarball: "https://example.invalid/archive" },
+            },
+          },
+        });
+      return Response.json({
+        versions: new URL(request.url).pathname.startsWith("/npm/") ? {} : [],
+      });
+    },
+  });
+  try {
+    await Promise.all([
+      Bun.write(join(root, "package.json"), JSON.stringify({ name: "test", version: "1.2.3" })),
+      Bun.write(join(root, "CHANGELOG.md"), "## [1.2.3]\n- Change.\n"),
+      Bun.write(join(root, "rust/Cargo.toml"), '[workspace.package]\nversion = "1.2.3"\n'),
+      Bun.write(
+        join(root, "rust/Cargo.lock"),
+        'version = 4\n[[package]]\nname = "uuid-slug"\nversion = "1.2.3"\n[[package]]\nname = "uuid-slug-bridge"\nversion = "1.2.3"\n',
+      ),
+    ]);
+    await tagReleaseFixture(root, "1.2.3");
+    const candidate = { npm: "candidate.tgz", crate: "candidate.crate" };
+    await Promise.all([
+      Bun.write(join(root, candidate.npm), "npm bytes"),
+      Bun.write(join(root, candidate.crate), "crate bytes"),
+    ]);
+    const collect = () =>
+      collectReleaseInputs(
+        root,
+        "v1.2.3",
+        join(root, "history"),
+        `${server.url}npm`,
+        server.url.origin,
+        candidate,
+      );
+    const initial = await collect();
+    const initialReads = reads;
+    published = true;
+    expect(initialReads).toBeGreaterThan(0);
+    expect(await collect()).toEqual(initial);
+    expect(reads).toBe(initialReads);
+    const record = join(root, "history/release-inputs.json");
+    await Bun.write(record, JSON.stringify({ ...initial, commit: "different commit" }));
+    await rejects(collect(), /different package, version, tag, or commit/);
+    await Bun.write(record, JSON.stringify(initial));
+    await Bun.write(join(root, candidate.npm), "different npm bytes");
+    await rejects(collect(), /differs from release inputs/);
+    expect(reads).toBe(initialReads);
+    await rm(record);
+    await rejects(collect(), /published candidate has no retained release inputs/);
+  } finally {
+    await server.stop(true);
     await rm(root, { recursive: true, force: true });
   }
 });

@@ -21,6 +21,10 @@ the tag and published artifact makes the comparison unavailable and stops public
 selected versions and registry integrity in the release inputs so a retry cannot silently change its
 comparison basis.
 
+On retry, verify and reuse the retained inputs without selecting history again. If either registry
+already contains the candidate but those inputs are missing, restore the original evidence before
+proceeding; the first publication must not become its own new history.
+
 ## Evidence and notes
 
 Prepare both archives without publishing credentials. Verify version and tag agreement, packaged
