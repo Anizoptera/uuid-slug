@@ -3,7 +3,6 @@
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import ts from "typescript-floor";
-import { rustManifest, typescriptManifest } from "./api-manifest";
 import { command } from "./command";
 
 const root = resolve(import.meta.dir, "..");
@@ -80,12 +79,8 @@ async function diff(label: string, baseline: string, current: string): Promise<b
   return true;
 }
 
-function report(
-  language: string,
-  manifest: Record<string, unknown>,
-  contentSections: string[],
-): string {
-  return `# ${language} packaged API\n\nThis generated baseline records the consumer-visible declarations and manifest conditions.\n\n## Manifest\n\n\`\`\`json\n${JSON.stringify(manifest, null, 2)}\n\`\`\`\n\n${contentSections.join("\n\n")}\n`;
+function report(language: string, contentSections: string[]): string {
+  return `# ${language} packaged API\n\nThis generated baseline records consumer-visible declarations.\n\n${contentSections.join("\n\n")}\n`;
 }
 
 function normalizeDeclarations(source: string): { declarations: string; deprecations: string } {
@@ -117,14 +112,10 @@ try {
   if (!useExistingBuild) await command("bun", ["run", "build"], root);
   await command("api-extractor", ["run", "--local", "--config", "api-extractor.json"], root);
 
-  const packageManifest = (await Bun.file(join(root, "package.json")).json()) as Record<
-    string,
-    unknown
-  >;
   const declarationRollup = normalizeDeclarations(
     await readFile(join(work, "typescript.d.ts"), "utf8"),
   );
-  const typescript = report("TypeScript", typescriptManifest(packageManifest), [
+  const typescript = report("TypeScript", [
     `## Reachable declarations\n\n\`\`\`ts\n${declarationRollup.declarations}\n\`\`\``,
     `## Deprecations\n\n${declarationRollup.deprecations}`,
   ]);
@@ -141,8 +132,7 @@ try {
   // cargo-public-api owns one rustdoc JSON path, so feature selections must not write it concurrently.
   const rustDefault = await command("cargo", [...rustArgs, "--all-features"], root);
   const rustMinimal = await command("cargo", [...rustArgs, "--no-default-features"], root);
-  const rustMetadata = await rustManifest(root, "rust/Cargo.toml");
-  const rust = report("Rust", rustMetadata, [
+  const rust = report("Rust", [
     `## All features\n\n\`\`\`text\n${rustDefault.trim()}\n\`\`\``,
     `## No default features\n\n\`\`\`text\n${rustMinimal.trim()}\n\`\`\``,
   ]);

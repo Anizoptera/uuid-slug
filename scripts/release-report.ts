@@ -1,7 +1,6 @@
 import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
-import { rustManifest, typescriptManifest } from "./api-manifest";
 import { command } from "./command";
 import {
   apiDifference,
@@ -28,6 +27,18 @@ interface CommandResult {
 }
 
 type ArchiveFiles = ReadonlyMap<string, Blob>;
+
+function npmInterface(manifest: Record<string, unknown>): string {
+  return JSON.stringify({
+    engines: manifest.engines,
+    exports: manifest.exports,
+    main: manifest.main,
+    module: manifest.module,
+    sideEffects: manifest.sideEffects,
+    type: manifest.type,
+    types: manifest.types,
+  });
+}
 
 function verifyArchiveRoot(files: ArchiveFiles, prefix: string): void {
   for (const name of files.keys()) {
@@ -145,15 +156,14 @@ async function declaration(
     }),
   );
   await command("api-extractor", ["run", "--local", "--config", config], root);
-  return `${JSON.stringify(typescriptManifest(metadata))}\n${normalizeDeclarations(await Bun.file(rollup).text())}`;
+  return `${npmInterface(metadata)}\n${normalizeDeclarations(await Bun.file(rollup).text())}`;
 }
 
 async function rustApi(cwd: string, manifest: string): Promise<string> {
   const base = ["public-api", "--manifest-path", manifest, "--color=never", "--simplified"];
   const all = await command("cargo", [...base, "--all-features"], cwd);
   const minimal = await command("cargo", [...base, "--no-default-features"], cwd);
-  const metadata = await rustManifest(cwd, manifest);
-  return `${JSON.stringify(metadata)}\n${all
+  return `${all
     .trim()
     .split("\n")
     .map((line) => `all: ${line}`)

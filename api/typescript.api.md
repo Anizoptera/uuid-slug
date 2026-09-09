@@ -1,47 +1,6 @@
 # TypeScript packaged API
 
-This generated baseline records the consumer-visible declarations and manifest conditions.
-
-## Manifest
-
-```json
-{
-  "engines": {
-    "node": ">=20"
-  },
-  "exports": {
-    ".": {
-      "bun": "./src/index.ts",
-      "default": "./dist/index.js",
-      "development": "./src/index.ts",
-      "node": "./dist/node/index.js",
-      "types": "./dist/index.d.ts"
-    },
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "dist",
-    "src",
-    "README.md",
-    "LICENSE"
-  ],
-  "imports": {
-    "#runtime": {
-      "browser": "./src/runtime/web.ts",
-      "bun": "./src/runtime/bun.ts",
-      "default": "./src/runtime/web.ts",
-      "deno": "./src/runtime/web.ts",
-      "node": "./src/runtime/node.ts"
-    }
-  },
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "name": "@anizoptera/uuid-slug",
-  "sideEffects": false,
-  "type": "module",
-  "types": "./dist/index.d.ts"
-}
-```
+This generated baseline records consumer-visible declarations.
 
 ## Reachable declarations
 
