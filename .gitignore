@@ -7,5 +7,3 @@ release-artifacts/
 .DS_Store
 rust/target/
 .api-work/
-/api/temp/
-/screenshots/
