@@ -51,7 +51,6 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       ["types", "./dist/index.d.ts"],
       ["bun", "./src/index.ts"],
       ["development", "./src/index.ts"],
-      ["browser", "./dist/index.js"],
       ["node", "./dist/node/index.js"],
       ["default", "./dist/index.js"],
     ];
@@ -123,6 +122,31 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       naming: "probe.mjs",
     });
     if (!probe.success) throw new AggregateError(probe.logs, "Consumer probe compilation failed.");
+    const developmentEntry = path.join(root, "development.ts");
+    await Bun.write(developmentEntry, `import "${manifest.name}";\n`);
+    let loadedDevelopmentSource = false;
+    const development = await Bun.build({
+      entrypoints: [developmentEntry],
+      target: "browser",
+      conditions: ["development"],
+      plugins: [
+        {
+          name: "observe-development-source",
+          setup(builder) {
+            builder.onLoad({ filter: /src\/index\.ts$/ }, () => {
+              loadedDevelopmentSource = true;
+              return undefined;
+            });
+          },
+        },
+      ],
+    });
+    if (!development.success)
+      throw new AggregateError(development.logs, "Development-source consumer failed.");
+    if (!loadedDevelopmentSource)
+      throw new Error(
+        'The "development" condition did not resolve the published TypeScript entry.',
+      );
     await Bun.write(
       path.join(root, "consumer.ts"),
       Bun.file(path.join(project, "test/consumer-types.fixture.ts")),

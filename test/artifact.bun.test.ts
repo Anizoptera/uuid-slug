@@ -25,7 +25,6 @@ const manifest = {
       types: "./dist/index.d.ts",
       bun: "./src/index.ts",
       development: "./src/index.ts",
-      browser: "./dist/index.js",
       node: "./dist/node/index.js",
       default: "./dist/index.js",
     },
@@ -78,11 +77,10 @@ test("refuses runtime conditions before source conditions", () =>
         exports: {
           ...manifest.exports,
           ".": {
-            browser: "./dist/index.js",
+            node: "./dist/node/index.js",
             types: "./dist/index.d.ts",
             bun: "./src/index.ts",
             development: "./src/index.ts",
-            node: "./dist/node/index.js",
             default: "./dist/index.js",
           },
         },

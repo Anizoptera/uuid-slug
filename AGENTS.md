@@ -42,7 +42,7 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   weakening ordinary strict decoding. Writers and accepted old formats remain independent.
 - npm runtime dependencies are forbidden. Rust dependencies require the evidence described in
   `docs/cross-language.md`. Benchmark dependencies stay dev-only and outside published artifacts.
-- Order root export conditions as `types`, `bun`, `development`, `browser`, `node`, then `default`.
+- Order root export conditions as `types`, `bun`, `development`, `node`, then `default`.
   Bun and development load published TypeScript; Node keeps its native-runtime build.
 - Public docs use caller-facing tokens such as `"base32hex"`, not internal symbol names.
   Documentation-alignment gates are ruled out; test the API behavior instead.
