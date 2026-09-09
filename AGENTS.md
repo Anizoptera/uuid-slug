@@ -55,6 +55,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Gate every runtime-dependent change in both Node Vitest and Bun tests, including branches
   outside `src/runtime/` that use optional capabilities. Neither runner covers the other's
   adapter. Share entropy cases in `test/entropy-probe.ts`.
+- A runtime/compiler floor forbids unguarded newer APIs, not useful newer APIs. Use a newer
+  JavaScript capability only for measured runtime or resource value, probe it once, retain a
+  compatible fallback, and exercise both paths in their owning runtime lanes.
 - Prove a test reaches its target. Inputs for a later rejection must pass earlier guards;
   removing the intended guard must fail its regression. Isolate a component before attributing
   an aggregate result to it, especially when decoding tries multiple schemas.

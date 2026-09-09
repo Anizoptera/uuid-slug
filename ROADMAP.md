@@ -5,6 +5,9 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 ## Goals and approval boundaries
 
 - Art's goals: simpler calls, useful expert controls, efficient runtime paths, and better tree-shaking. Allow shared code; do not optimize export, file, or byte counts alone.
+- Runtime floors define unguarded compatibility, not a lowest-common-denominator implementation.
+  Use newer standard or host capabilities only for measured runtime/resource value, with one probe,
+  a compatible fallback, and real-runtime coverage of both paths.
 - Art's written HLD rulings authorize consumer changes. Contract owners: README guarantees,
   `docs/design.md` wire rules, `docs/security.md` limits, `docs/cross-language.md` parity/distribution,
   and `docs/release.md` release integrity and recovery. Read the owner before changing its contract;

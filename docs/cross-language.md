@@ -98,6 +98,12 @@ runtime adapters keep one public source entry while using each host's capabiliti
 default build is browser-safe and Node-compatible; Node uses its native-runtime build when its
 condition is available. Ship self-contained source maps for usable diagnostics.
 
+The JavaScript target floor defines the unguarded baseline, not a ban on newer platform APIs. A
+newer standard or host capability may be selected when it measurably reduces runtime or resource
+work, provided module-load detection chooses it once, an older-runtime fallback preserves behavior,
+and both branches run in their actual runtime lanes. Do not add a conditional branch when the newer
+primitive has no consumer-path advantage.
+
 Keep the public npm package TypeScript/JavaScript-only, with no runtime dependencies or native
 payloads. Keep the Rust crate installable from this Git repository and crates.io.
 Art requires matching Rust/TypeScript versions and common CPU architecture support from the first
