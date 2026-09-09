@@ -437,7 +437,9 @@ See [security boundaries](docs/security.md) for entropy failures, custom sources
 
 No runtime dependencies, on any platform.
 
-- **Bun** loads the published TypeScript source and uses `Bun.randomUUIDv7`. Tooling that opts into
+- **Bun** loads the published TypeScript source and uses `Bun.randomUUIDv7` for current-time
+  generation. Explicit timestamps use the portable generator to preserve the requested instant.
+  Tooling that opts into
   the `development` condition loads the same source.
 - **Node** uses native `crypto.randomUUID`, and native `crypto.randomUUIDv7` where the
   version provides it, otherwise the bundled v7 generator.

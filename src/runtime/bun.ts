@@ -4,14 +4,11 @@ import { runtime as webRuntime } from "./web";
 import type { Runtime } from "./types";
 import type { UuidV7String, UuidV7Slug } from "../types";
 
-/**
- * `Bun.randomUUIDv7(encoding, timestamp)` honours the timestamp for every encoding, which is why
- * this runtime can supply `uuidV7At` and Node cannot.
- */
+/** Only untimestamped native generation satisfies this adapter's contract. */
 interface BunUuid {
-  (format: "hex", timestamp?: number): UuidV7String;
-  (format: "base64url", timestamp?: number): UuidV7Slug;
-  (format: "buffer", timestamp?: number): Uint8Array;
+  (format: "hex"): UuidV7String;
+  (format: "base64url"): UuidV7Slug;
+  (format: "buffer"): Uint8Array;
 }
 
 /**
@@ -29,7 +26,7 @@ const bunRuntime: Runtime = { fillRandom: webRuntime.fillRandom };
 
 if (webRuntime.uuidV4) bunRuntime.uuidV4 = webRuntime.uuidV4;
 
-/** Shared by the timestamped and untimestamped byte paths; see the copy note inside. */
+/** Normalize native ownership without replacing caller storage. */
 const toOwnBytes = (bytes: Uint8Array, out?: Uint8Array, offset = 0) => {
   // Bun hands back a node `Buffer`, which IS a Uint8Array and so satisfies the declared return
   // type while behaving differently in ways nothing catches: `Buffer.toString("hex")` yields hex,
@@ -46,9 +43,8 @@ const toOwnBytes = (bytes: Uint8Array, out?: Uint8Array, offset = 0) => {
 if (nativeUuidV7) {
   bunRuntime.uuidV7 = () => nativeUuidV7("hex");
   bunRuntime.uuidV7Slug = () => nativeUuidV7("base64url");
-  bunRuntime.uuidV7At = (timestamp: number) => nativeUuidV7("hex", timestamp);
-  bunRuntime.uuidV7BytesAt = (timestamp: number, out?: Uint8Array, offset = 0) =>
-    toOwnBytes(nativeUuidV7("buffer", timestamp), out, offset);
+  // Native counter exhaustion advances even an explicit timestamp. Leave the At hooks absent
+  // so the shared portable generator writes the requested instant without native counter state.
   bunRuntime.uuidV7Bytes = (out?: Uint8Array, offset = 0) => {
     const bytes = nativeUuidV7("buffer");
     return toOwnBytes(bytes, out, offset);

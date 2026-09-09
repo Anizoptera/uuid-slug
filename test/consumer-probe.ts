@@ -9,6 +9,29 @@ function equal(actual: unknown, expected: unknown, context: string): void {
 
 /** Exercise public calls through the module supplied by the consumer's own resolver. */
 export async function probeConsumer(api: typeof Api): Promise<void> {
+  const backfill = api.createUuidSlugCodec();
+  const destination = new Uint8Array(20).fill(0x55);
+  const generators = [
+    (ms: number) => api.uuidV7At(ms),
+    (ms: number) => backfill.uuidV7At(ms),
+    (ms: number) => api.uuidV7BytesAt(ms),
+    (ms: number) => backfill.uuidV7BytesAt(ms),
+    (ms: number) => api.uuidV7BytesAt(ms, destination, 2),
+    (ms: number) => backfill.uuidV7BytesAt(ms, destination, 2),
+  ];
+  for (const generate of generators) {
+    // Cross a native 12-bit counter's capacity; backfilling must not borrow a later instant.
+    for (let i = 0; i <= 4096; i++) {
+      const result = unwrap(generate(1700000000000));
+      const uuid =
+        typeof result === "string"
+          ? result
+          : unwrap(api.formatUuid(result === destination ? result.subarray(2, 18) : result));
+      equal(uuid.slice(0, 13), "018bcfe5-6800", "repeated backfill timestamp");
+    }
+  }
+  equal(destination[0], 0x55, "backfill caller prefix");
+  equal(destination[19], 0x55, "backfill caller suffix");
   const revoked = Proxy.revocable({}, {});
   revoked.revoke();
   equal(api.isUuidSlugError(revoked.proxy), false, "revoked error candidate");
