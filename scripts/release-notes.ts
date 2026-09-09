@@ -1,4 +1,5 @@
 import { fromMarkdown } from "mdast-util-from-markdown";
+import { command } from "./command";
 import { checkReleaseVersion, syncReleaseVersion } from "./release-version";
 
 interface TextNode {
@@ -53,6 +54,19 @@ export async function preflightRelease(
     throw new Error("Manifest must name a package and version.");
   if (tag !== undefined && tag !== `v${manifest.version}`)
     throw new Error(`Tag ${tag} does not match package.json ${manifest.version}.`);
+  if (tag !== undefined) {
+    // Version text alone cannot bind publication to the commit that passed verification.
+    const ref = `refs/tags/${tag}`;
+    const [kind, commits] = await Promise.all([
+      command("git", ["cat-file", "-t", ref], cwd),
+      command("git", ["rev-parse", "HEAD", `${ref}^{commit}`], cwd),
+    ]);
+    if (kind.trim() !== "tag")
+      throw new Error(`Release ${tag} must be an annotated tag created by the release command.`);
+    const [head, tagged] = commits.trim().split("\n");
+    if (!head || head !== tagged)
+      throw new Error(`Release ${tag} does not point to HEAD; check out the tagged commit.`);
+  }
   const notes = releaseNotes(await Bun.file(`${cwd}/CHANGELOG.md`).text(), manifest.version);
   if (synchronize) await syncReleaseVersion(cwd, manifest.version);
   else await checkReleaseVersion(cwd, manifest.version);

@@ -28,6 +28,10 @@ APIs, shared behavior, language parity, minimum compatible version, archive inte
 before any publication step. Publication must reuse the verified archives; if a registry client must
 repack, require byte identity with the verified artifact.
 
+Require the candidate's annotated tag to resolve to the checked-out commit before preparation or
+publication. Preserve tag objects in release checkouts; a matching version string cannot identify
+the source that verification exercised. This does not change historical lightweight-tag selection.
+
 Release notes contain the committed `CHANGELOG.md` section verbatim, followed by generated API and
 size differences against each selected comparison. Report npm and crate compressed bytes separately
 from matched linked native and WebAssembly caller probes. State absolute changes; state percentages

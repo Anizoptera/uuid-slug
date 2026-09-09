@@ -1,9 +1,10 @@
-// Verify that versioning updates Cargo files before a release can be tagged.
+// Reject release candidates whose versions, notes, or Git tags do not identify the checked commit.
 import { rejects } from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
+import { command } from "./command";
 import { preflightRelease } from "./release-notes";
 import { checkReleaseVersion } from "./release-version";
 
@@ -33,6 +34,30 @@ test("the version hook synchronizes Cargo and rejects missing notes before mutat
     await Bun.write(join(root, "rust/Cargo.lock"), "version = 4\npackage = []\n");
     await preflightRelease(root, undefined, true);
     await checkReleaseVersion(root, "1.2.3");
+    const git = (args: string[]) =>
+      command(
+        "git",
+        [
+          "-c",
+          "user.name=Release test",
+          "-c",
+          "user.email=test@example.invalid",
+          "-c",
+          "tag.gpgsign=false",
+          ...args,
+        ],
+        root,
+      );
+    await git(["init"]);
+    await git(["add", "."]);
+    await git(["-c", "commit.gpgsign=false", "commit", "-m", "Release fixture"]);
+    await git(["tag", "v1.2.3"]);
+    await rejects(preflightRelease(root, "v1.2.3"), /annotated/);
+    await git(["tag", "-d", "v1.2.3"]);
+    await git(["tag", "-a", "v1.2.3", "-m", "Release fixture"]);
+    expect((await preflightRelease(root, "v1.2.3")).version).toBe("1.2.3");
+    await git(["-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", "Different commit"]);
+    await rejects(preflightRelease(root, "v1.2.3"), /HEAD/);
     await Bun.write(join(root, "package.json"), JSON.stringify({ name: "test", version: "1.2.4" }));
     await rejects(preflightRelease(root, undefined, true), /exactly one/);
     await checkReleaseVersion(root, "1.2.3");

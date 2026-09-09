@@ -177,7 +177,7 @@ Work one area at a time, ordered by failure consequences; add discovered defects
 
 - [ ] Authority and scope: reconcile the complete changed-file inventory, approved public changes, retained contracts, prior roadmap tasks, and unfinished work.
 - [ ] Release integrity: trace credential separation, tag/version/changelog binding, archive identity, publication recovery, notes/assets, and finalization; exercise failures without remote writes.
-  - [ ] Verify annotated candidate tags point at the checked commit; current preflight compares only version strings.
+  - [x] Bind candidate tags to HEAD and require annotation in shared preflight. The lightweight-tag regression failed before the repair; lightweight and wrong-commit rejection, valid annotated tags, and existing process fixtures pass after it. Complete `bun run check` passes; release CI remains unexecuted.
   - [ ] Verify reports read the retained candidate crate and bind archive versions/commits to selected tags; current report measures the source checkout for Rust.
   - [ ] Verify full retry behavior preserves inputs across preparation reruns and confirms final GitHub state rather than accepting a successful HTTP response alone.
 - [ ] Version compatibility: challenge Git predecessor selection, SemVer ordering, prereleases/build metadata, collision collapse, missing registry history, and minimum-version enforcement.
