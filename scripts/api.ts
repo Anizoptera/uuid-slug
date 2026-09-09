@@ -50,10 +50,12 @@ async function checkApiExtractorVersion(): Promise<void> {
 
 function reportSections(source: string): Map<string, string> {
   const result = new Map<string, string>();
-  for (const match of source.matchAll(/^## (.+)\n\n([\s\S]*?)(?=^## |\s*$)/gm)) {
+  const headings = [...source.matchAll(/^## (.+)$/gm)];
+  for (const [index, match] of headings.entries()) {
     const heading = match[1];
-    const body = match[2];
-    if (heading !== undefined && body !== undefined) result.set(heading, body.trim());
+    const start = (match.index ?? 0) + match[0].length;
+    const end = headings[index + 1]?.index ?? source.length;
+    if (heading !== undefined) result.set(heading, source.slice(start, end).trim());
   }
   return result;
 }
