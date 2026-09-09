@@ -43,6 +43,9 @@ test("finalization repairs only missing release state and refuses different reta
   let releaseExists = false;
   let draft = true;
   let body: string | null = null;
+  let npmPublished = false;
+  let cratePublished = false;
+  let retainNotes = true;
   const assets = new Map<string, string>();
   const mutations: string[] = [];
   const server: Bun.Server<undefined> = Bun.serve({
@@ -50,9 +53,13 @@ test("finalization repairs only missing release state and refuses different reta
     async fetch(request): Promise<Response> {
       const url = new URL(request.url);
       if (url.pathname === "/npm/%40anizoptera%2Fuuid-slug/0.4.0")
-        return Response.json({ dist: { integrity: `sha512-${sha512(npmBytes)}` } });
+        return npmPublished
+          ? Response.json({ dist: { integrity: `sha512-${sha512(npmBytes)}` } })
+          : new Response(null, { status: 404 });
       if (url.pathname === "/api/v1/crates/uuid-slug/0.4.0")
-        return Response.json({ version: { checksum: sha256(crateBytes) } });
+        return cratePublished
+          ? Response.json({ version: { checksum: sha256(crateBytes) } })
+          : new Response(null, { status: 404 });
       if (url.pathname === "/repos/owner/repo/releases/tags/v0.4.0") {
         if (!releaseExists) return new Response(null, { status: 404 });
         return Response.json({
@@ -69,7 +76,7 @@ test("finalization repairs only missing release state and refuses different reta
         mutations.push("create");
       } else if (url.pathname === "/repos/owner/repo/releases/1" && request.method === "PATCH") {
         const patch = (await request.json()) as { body?: string; draft?: boolean };
-        if (patch.body !== undefined) body = patch.body;
+        if (patch.body !== undefined && retainNotes) body = patch.body;
         if (patch.draft !== undefined) draft = patch.draft;
         mutations.push(patch.draft === false ? "finalize" : "repair-notes");
       } else if (url.pathname === "/uploads/1" && request.method === "POST") {
@@ -96,6 +103,12 @@ test("finalization repairs only missing release state and refuses different reta
     cratesRegistry: server.url.href.slice(0, -1),
   };
   try {
+    await rejects(finalizeRelease(root, options), /Both registries/);
+    npmPublished = true;
+    await rejects(finalizeRelease(root, options), /Both registries/);
+    expect(mutations).toEqual([]);
+
+    cratePublished = true;
     await finalizeRelease(root, options);
     expect(mutations).toEqual(["create", "upload:package.tgz", "upload:package.crate", "finalize"]);
     expect(draft).toBe(false);
@@ -105,6 +118,15 @@ test("finalization repairs only missing release state and refuses different reta
     expect(mutations).toEqual([]);
 
     draft = true;
+    body = "stale notes";
+    retainNotes = false;
+    await rejects(finalizeRelease(root, options), /did not retain the generated notes/);
+    expect(mutations).toEqual(["repair-notes"]);
+
+    mutations.length = 0;
+    retainNotes = true;
+    draft = true;
+    body = "Release notes\n";
     assets.set("package.tgz", `sha256:${"0".repeat(64)}`);
     await rejects(finalizeRelease(root, options), /differs from retained bytes/);
     expect(mutations).toEqual([]);
