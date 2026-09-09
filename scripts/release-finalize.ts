@@ -99,7 +99,8 @@ export async function finalizeRelease(cwd: string, options: FinalizeOptions): Pr
     inputs.commit !== checked.commit
   )
     throw new Error("Retained release inputs do not identify the checked package and commit.");
-  if (notes !== checked.notes) throw new Error("Retained release notes differ from the changelog.");
+  if (!notes.startsWith(checked.notes))
+    throw new Error("Retained release notes differ from the changelog.");
   const npmArchive = { ...inputs.candidate.npm, file: resolve(root, inputs.candidate.npm.file) };
   const crateArchive = {
     ...inputs.candidate.crate,

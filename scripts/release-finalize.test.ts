@@ -23,6 +23,7 @@ test("finalization repairs only missing release state and refuses different reta
   const crateBytes = new TextEncoder().encode("crate archive");
   const npmFile = "release-artifacts/reviewed-npm/package.tgz";
   const crateFile = "rust/target/reviewed-crate/package.crate";
+  const notes = "\n\nRelease notes\n\n## Previous release: v0.3.0\n";
   await Promise.all([
     Bun.write(
       join(root, "package.json"),
@@ -51,7 +52,7 @@ test("finalization repairs only missing release state and refuses different reta
     Bun.write(join(root, npmFile), npmBytes),
     Bun.write(join(root, crateFile), crateBytes),
     Bun.write(join(root, "release-artifacts/history/release-inputs.json"), JSON.stringify(inputs)),
-    Bun.write(join(root, "release-artifacts/notes.md"), "\n\nRelease notes\n"),
+    Bun.write(join(root, "release-artifacts/notes.md"), notes),
   ]);
 
   let releaseExists = false;
@@ -135,6 +136,9 @@ test("finalization repairs only missing release state and refuses different reta
       join(root, "release-artifacts/history/release-inputs.json"),
       JSON.stringify(inputs),
     );
+    await Bun.write(join(root, "release-artifacts/notes.md"), notes.replace("Release", "Changed"));
+    await rejects(finalizeRelease(root, options), /notes differ from the changelog/);
+    await Bun.write(join(root, "release-artifacts/notes.md"), notes);
     await rejects(finalizeRelease(root, options), /Both registries/);
     npmPublished = true;
     await rejects(finalizeRelease(root, options), /Both registries/);
@@ -151,7 +155,7 @@ test("finalization repairs only missing release state and refuses different reta
 
     for (const corruption of ["draft", "notes", "asset"] as const) {
       draft = true;
-      body = "\n\nRelease notes\n";
+      body = notes;
       assets.set("package.tgz", `sha256:${sha256(npmBytes)}`);
       corruptFinal = corruption;
       await rejects(finalizeRelease(root, options), /Final release/);
@@ -168,7 +172,7 @@ test("finalization repairs only missing release state and refuses different reta
     mutations.length = 0;
     retainNotes = true;
     draft = true;
-    body = "\n\nRelease notes\n";
+    body = notes;
     assets.set("package.tgz", `sha256:${"0".repeat(64)}`);
     await rejects(finalizeRelease(root, options), /differs from retained bytes/);
     expect(mutations).toEqual([]);

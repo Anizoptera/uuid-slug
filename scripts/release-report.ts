@@ -383,7 +383,7 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
       Bun.write(join(directory, "release-report.json"), `${JSON.stringify(report, null, 2)}\n`),
       Bun.write(
         join(directory, "notes.md"),
-        `${notes.trimEnd()}\n\n${sections.map(({ text }) => text).join("\n\n")}\n`,
+        `${notes}${sections.map(({ text }) => text).join("\n\n")}\n`,
       ),
     ]);
   } finally {
