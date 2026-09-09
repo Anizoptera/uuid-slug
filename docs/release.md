@@ -14,10 +14,12 @@ The comparisons must be distinct. If both rules select the same version, walk ba
 release line. If none exists, report one comparison instead of repeating it. A first publication has
 no predecessor.
 
-npm and crates.io provide the selected release bytes; they do not select history. A missing selected
-version, an outage, unreadable metadata, or disagreement between the tag and published artifact makes
-the comparison unavailable and stops publication. Retain selected versions and registry integrity in
-the release inputs so a retry cannot silently change its comparison basis.
+npm and crates.io provide the selected release bytes; they do not select history. A registry with no
+package history is a first publication and has no predecessor comparison. Once that registry has a
+published version, a missing selected version, outage, unreadable metadata, or disagreement between
+the tag and published artifact makes the comparison unavailable and stops publication. Retain
+selected versions and registry integrity in the release inputs so a retry cannot silently change its
+comparison basis.
 
 ## Evidence and notes
 

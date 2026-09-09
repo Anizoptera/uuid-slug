@@ -141,7 +141,9 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
   - [x] Select strict SemVer history from Git, including prereleases and build metadata; reject
     ambiguous precedence; keep comparisons distinct; accept existing lightweight release tags.
   - [ ] Bind each selected tag to its npm and crates.io archive, or stop with a precise unavailable
-    reason instead of substituting a registry-selected version.
+    reason instead of substituting a registry-selected version. Treat a registry with no package
+    history as a first publication with no predecessor; once history exists, missing selected bytes
+    are a disagreement and stop release.
 - [ ] Retain selected versions and registry integrity with release inputs so retries use the same comparison basis. Extract older APIs from published packages; distinguish absence from outage or unreadable content and report missing comparisons as unavailable.
 - [ ] Derive the minimum version from structural diffs and Art's classification of semantic changes; the stronger language result wins, and pre-1.0 breaks require a minor. Check closed unions, enums, exhaustive matches, defaults, errors, and features even when signatures look additive or unchanged.
 - [ ] Report parity failures by caller capability, both signatures, semantic difference, and required fix. Reuse shared contract cases and the approved capability mapping; add a names-based check only if it catches a distinct real mismatch without enforcing textual symmetry.
