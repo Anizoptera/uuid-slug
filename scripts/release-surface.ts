@@ -24,7 +24,12 @@ interface CargoTarget {
 }
 
 function stable(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(stable);
+  if (Array.isArray(value)) {
+    const entries = value.map(stable);
+    // Cargo metadata arrays are sets; source ordering is not a compatibility change.
+    // oxlint-disable-next-line unicorn/no-array-sort
+    return entries.sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+  }
   if (!value || typeof value !== "object") return value;
   // oxlint-disable-next-line unicorn/no-array-sort
   const entries = Object.entries(value as Record<string, unknown>).sort(([left], [right]) =>
@@ -63,7 +68,7 @@ export async function rustReleaseSurface(cwd: string, manifest: string): Promise
   const metadata = JSON.parse(
     await command(
       "cargo",
-      ["metadata", "--manifest-path", manifest, "--format-version", "1", "--locked"],
+      ["metadata", "--manifest-path", manifest, "--no-deps", "--format-version", "1", "--locked"],
       cwd,
     ),
   ) as { packages: Array<CargoProduct & { name: string }> };

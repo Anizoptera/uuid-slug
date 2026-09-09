@@ -51,4 +51,15 @@ test("release surfaces change for every retained manifest contract", () => {
       targets: [{ kind: ["example"], crate_types: ["bin"] }, ...cargo.targets],
     }),
   ).toBe(cargoSurface);
+  expect(
+    cargoProductSurface({
+      ...cargo,
+      features: { default: ["second", "first"] },
+    }),
+  ).toBe(
+    cargoProductSurface({
+      ...cargo,
+      features: { default: ["first", "second"] },
+    }),
+  );
 });
