@@ -27,6 +27,23 @@ export interface RetainedArchive {
   readonly integrity: string;
 }
 
+/** Refuse changed retained bytes before a report or publisher consumes them. */
+export async function readRetainedArchive(
+  cwd: string,
+  archive: RetainedArchive,
+): Promise<Uint8Array> {
+  const bytes = await Bun.file(resolve(cwd, archive.file)).bytes();
+  const algorithm = archive.integrity.split("-", 1)[0];
+  if (algorithm !== "sha256" && algorithm !== "sha512")
+    throw new Error(`${archive.file} uses unsupported integrity ${algorithm}.`);
+  const actual = createHash(algorithm)
+    .update(bytes)
+    .digest(algorithm === "sha512" ? "base64" : "hex");
+  if (archive.integrity !== `${algorithm}-${actual}`)
+    throw new Error(`${archive.file} differs from release inputs.`);
+  return bytes;
+}
+
 export interface ComparisonInput {
   readonly role: "immediate" | "releaseLine";
   readonly tag: string;

@@ -5,6 +5,7 @@ import ts from "typescript-floor";
 import { rustManifest, typescriptManifest } from "./api-manifest";
 import { command } from "./command";
 import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
+import { readRetainedArchive } from "./release-inputs";
 import { preflightRelease } from "./release-notes";
 
 interface Sizes {
@@ -61,18 +62,22 @@ export async function measureLinkedSizes(
   };
 }
 
-async function extractArchive(archive: string, destination: string): Promise<string> {
-  const contents = new Bun.Archive(await Bun.file(archive).bytes());
+async function extractArchive(
+  root: string,
+  archive: RetainedArchive,
+  destination: string,
+): Promise<string> {
+  const contents = new Bun.Archive(await readRetainedArchive(root, archive));
   const files = await contents.files();
   await contents.extract(destination);
   const manifest = [...files.keys()].find((name) => /^[^/]+\/Cargo\.toml$/.test(name));
-  if (!manifest) throw new Error(`${basename(archive)} has no crate manifest.`);
+  if (!manifest) throw new Error(`${basename(archive.file)} has no crate manifest.`);
   return dirname(join(destination, manifest));
 }
 
 async function declaration(
   root: string,
-  archive: string,
+  archive: RetainedArchive,
   work: string,
   label: string,
 ): Promise<string> {
@@ -80,11 +85,11 @@ async function declaration(
   const rollup = join(extracted, "public.d.ts");
   const packageRoot = join(extracted, "package");
   const config = join(packageRoot, "api-extractor.json");
-  const contents = new Bun.Archive(await Bun.file(archive).bytes());
+  const contents = new Bun.Archive(await readRetainedArchive(root, archive));
   const files = await contents.files();
   const manifest = files.get("package/package.json");
   if (!files.has("package/dist/index.d.ts") || !manifest)
-    throw new Error(`${basename(archive)} has no packaged TypeScript declarations.`);
+    throw new Error(`${basename(archive.file)} has no packaged TypeScript declarations.`);
   await contents.extract(extracted);
   await Bun.write(
     config,
@@ -226,13 +231,13 @@ async function historicalEvidence(
   if (!crate)
     return { sizes: { ...(npm ? { npm: (await stat(resolve(root, npm.file))).size } : {}) } };
   const extracted = join(work, basename(crate.file, ".crate"));
-  const crateRoot = await extractArchive(resolve(root, crate.file), extracted);
+  const crateRoot = await extractArchive(root, crate, extracted);
   return {
     crateRoot,
     sizes: {
       ...(npm ? { npm: (await stat(resolve(root, npm.file))).size } : {}),
       crate: (await stat(resolve(root, crate.file))).size,
-      ...(await measureLinkedSizes(extracted, crateRoot, work, basename(crate.file, ".crate"))),
+      ...(await measureLinkedSizes(root, crateRoot, work, basename(crate.file, ".crate"))),
     },
   };
 }
@@ -249,26 +254,31 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
   const crate = resolve(root, inputs.candidate.crate.file);
   const work = await mkdtemp(join(tmpdir(), "uuid-slug-release-report-"));
   try {
-    const currentDeclaration = await declaration(root, npm, work, "current");
-    const currentRust = await rustApi(root, join(root, "rust/uuid-slug/Cargo.toml"));
+    const crateRoot = await extractArchive(
+      root,
+      inputs.candidate.crate,
+      join(work, "current-crate"),
+    );
+    const currentDeclaration = await declaration(root, inputs.candidate.npm, work, "current");
+    const currentRust = await rustApi(root, join(crateRoot, "Cargo.toml"));
     const current: Sizes = {
       npm: (await stat(npm)).size,
       crate: (await stat(crate)).size,
-      ...(await measureLinkedSizes(root, join(root, "rust/uuid-slug"), work, "current")),
+      ...(await measureLinkedSizes(root, crateRoot, work, "current")),
     };
     const sections = await Promise.all(
       inputs.comparisons.map(async (comparison) => {
         const previous = await historicalEvidence(root, work, comparison.npm, comparison.crate);
         const typescript = comparison.npm
           ? apiDifference(
-              await declaration(root, resolve(root, comparison.npm.file), work, comparison.tag),
+              await declaration(root, comparison.npm, work, comparison.tag),
               currentDeclaration,
               "TypeScript declaration",
             )
           : undefined;
         const rust = previous.crateRoot
           ? apiDifference(
-              await rustApi(previous.crateRoot, join(previous.crateRoot, "Cargo.toml")),
+              await rustApi(root, join(previous.crateRoot, "Cargo.toml")),
               currentRust,
               "Rust public signature",
             )

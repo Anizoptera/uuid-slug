@@ -1,6 +1,40 @@
 import { describe, expect, test } from "bun:test";
 import { rejects } from "node:assert/strict";
-import { crateHistory, npmHistory, registryVersion } from "./release-inputs";
+import { createHash } from "node:crypto";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { crateHistory, npmHistory, readRetainedArchive, registryVersion } from "./release-inputs";
+
+test("retained archive consumers reject changed bytes and unsupported digests", async () => {
+  const root = await mkdtemp(join(tmpdir(), "uuid-slug-retained-"));
+  try {
+    for (const algorithm of ["sha256", "sha512"] as const) {
+      await Bun.write(join(root, "archive"), "reviewed bytes");
+      const archive = {
+        file: "archive",
+        integrity: `${algorithm}-${createHash(algorithm)
+          .update("reviewed bytes")
+          .digest(algorithm === "sha512" ? "base64" : "hex")}`,
+      };
+      expect(new TextDecoder().decode(await readRetainedArchive(root, archive))).toBe(
+        "reviewed bytes",
+      );
+      await rejects(
+        readRetainedArchive(root, { ...archive, integrity: `${archive.integrity}-extra` }),
+        /differs from release inputs/,
+      );
+      await Bun.write(join(root, "archive"), "changed bytes");
+      await rejects(readRetainedArchive(root, archive), /differs from release inputs/);
+    }
+    await rejects(
+      readRetainedArchive(root, { file: "archive", integrity: "sha1-value" }),
+      /unsupported/,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 describe("release registry history", () => {
   test("distinguishes first publication from missing selected history", () => {

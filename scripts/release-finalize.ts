@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { basename, join, resolve } from "node:path";
 import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
+import { readRetainedArchive } from "./release-inputs";
 import { crateChecksum, verifyCrateChecksum } from "./release-crate";
 import { registryIntegrity, verifyIntegrity } from "./registry-integrity";
 
@@ -60,16 +61,8 @@ function release(value: unknown): Release {
 }
 
 async function digest(archive: RetainedArchive): Promise<{ bytes: Uint8Array; sha256: string }> {
-  const bytes = await Bun.file(archive.file).bytes();
+  const bytes = await readRetainedArchive(process.cwd(), archive);
   const sha256 = createHash("sha256").update(bytes).digest("hex");
-  const [algorithm, expected] = archive.integrity.split("-", 2);
-  if (algorithm !== "sha256" && algorithm !== "sha512")
-    throw new Error(`${archive.file} uses unsupported integrity ${algorithm}.`);
-  const actual = createHash(algorithm)
-    .update(bytes)
-    .digest(algorithm === "sha512" ? "base64" : "hex");
-  if (!expected || actual !== expected)
-    throw new Error(`${archive.file} differs from release inputs.`);
   return { bytes, sha256 };
 }
 
