@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import ts from "typescript-floor";
+import { rustManifest, typescriptManifest } from "./api-manifest";
 import { command } from "./command";
 import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
 import { preflightRelease } from "./release-notes";
@@ -76,29 +77,34 @@ async function declaration(
 ): Promise<string> {
   const extracted = join(work, `npm-${label}`);
   const rollup = join(extracted, "public.d.ts");
-  const config = join(extracted, "api-extractor.json");
+  const packageRoot = join(extracted, "package");
+  const config = join(packageRoot, "api-extractor.json");
   const contents = new Bun.Archive(await Bun.file(archive).bytes());
   const files = await contents.files();
-  if (!files.has("package/dist/index.d.ts"))
+  const manifest = files.get("package/package.json");
+  if (!files.has("package/dist/index.d.ts") || !manifest)
     throw new Error(`${basename(archive)} has no packaged TypeScript declarations.`);
   await contents.extract(extracted);
   await Bun.write(
     config,
     JSON.stringify({
       extends: join(root, "api-extractor.json"),
-      mainEntryPointFilePath: join(extracted, "package/dist/index.d.ts"),
+      projectFolder: packageRoot,
+      mainEntryPointFilePath: join(packageRoot, "dist/index.d.ts"),
+      compiler: { tsconfigFilePath: join(root, "tsconfig.json") },
       dtsRollup: { enabled: true, untrimmedFilePath: rollup },
     }),
   );
   await command("api-extractor", ["run", "--local", "--config", config], root);
-  return normalizeDeclarations(await Bun.file(rollup).text());
+  return `${JSON.stringify(typescriptManifest(await manifest.json()), null, 2)}\n${normalizeDeclarations(await Bun.file(rollup).text())}`;
 }
 
 async function rustApi(cwd: string, manifest: string): Promise<string> {
   const base = ["public-api", "--manifest-path", manifest, "--color=never", "--simplified"];
   const all = await command("cargo", [...base, "--all-features"], cwd);
   const minimal = await command("cargo", [...base, "--no-default-features"], cwd);
-  return `${all.trim()}\n${minimal.trim()}\n`;
+  const metadata = await rustManifest(cwd, manifest);
+  return `${JSON.stringify(metadata, null, 2)}\n${all.trim()}\n${minimal.trim()}\n`;
 }
 
 function apiDifference(before: string, after: string, language: string): ApiDifference {

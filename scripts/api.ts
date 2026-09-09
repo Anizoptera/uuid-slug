@@ -3,6 +3,7 @@
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import ts from "typescript-floor";
+import { rustManifest, typescriptManifest } from "./api-manifest";
 import { command } from "./command";
 
 const root = resolve(import.meta.dir, "..");
@@ -13,18 +14,6 @@ const useExistingBuild = process.argv[3] === "--built" && process.argv.length ==
 
 if ((mode !== "check" && mode !== "update") || (process.argv.length > 3 && !useExistingBuild)) {
   throw new Error("Usage: bun scripts/api.ts <check|update> [--built]");
-}
-
-function stable(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(stable);
-  if (value && typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>);
-    // Sorting this new array makes manifest output independent of producer key order.
-    // oxlint-disable-next-line unicorn/no-array-sort
-    entries.sort(([left], [right]) => left.localeCompare(right));
-    return Object.fromEntries(entries.map(([key, entry]) => [key, stable(entry)]));
-  }
-  return value;
 }
 
 async function checkCargoPublicApiVersion(): Promise<void> {
@@ -91,66 +80,6 @@ async function diff(label: string, baseline: string, current: string): Promise<b
   return true;
 }
 
-function typescriptManifest(manifest: Record<string, unknown>): Record<string, unknown> {
-  return stable({
-    engines: manifest.engines,
-    exports: manifest.exports,
-    files: manifest.files,
-    imports: manifest.imports,
-    main: manifest.main,
-    module: manifest.module,
-    name: manifest.name,
-    sideEffects: manifest.sideEffects,
-    type: manifest.type,
-    types: manifest.types,
-  }) as Record<string, unknown>;
-}
-
-async function rustManifest(): Promise<Record<string, unknown>> {
-  const metadata = JSON.parse(
-    await command(
-      "cargo",
-      ["metadata", "--manifest-path", "rust/Cargo.toml", "--format-version", "1", "--locked"],
-      root,
-    ),
-  ) as {
-    packages: Array<{
-      name: string;
-      edition: string;
-      rust_version: string | null;
-      features: Record<string, string[]>;
-      dependencies: Array<{
-        name: string;
-        req: string;
-        kind: string | null;
-        optional: boolean;
-        uses_default_features: boolean;
-        features: string[];
-        target: string | null;
-      }>;
-      targets: Array<{ kind: string[]; crate_types: string[] }>;
-    }>;
-  };
-  const product = metadata.packages.find((entry) => entry.name === "uuid-slug");
-  if (!product) throw new Error("Cargo metadata has no uuid-slug product.");
-  return stable({
-    name: product.name,
-    edition: product.edition,
-    rustVersion: product.rust_version,
-    features: product.features,
-    dependencies: product.dependencies.map((dependency) => ({
-      name: dependency.name,
-      requirement: dependency.req,
-      kind: dependency.kind,
-      optional: dependency.optional,
-      defaultFeatures: dependency.uses_default_features,
-      features: dependency.features,
-      target: dependency.target,
-    })),
-    targets: product.targets.map(({ kind, crate_types: crateTypes }) => ({ kind, crateTypes })),
-  }) as Record<string, unknown>;
-}
-
 function report(
   language: string,
   manifest: Record<string, unknown>,
@@ -210,7 +139,7 @@ const rustArgs = [
 // cargo-public-api owns one rustdoc JSON path, so feature selections must not write it concurrently.
 const rustDefault = await command("cargo", [...rustArgs, "--all-features"], root);
 const rustMinimal = await command("cargo", [...rustArgs, "--no-default-features"], root);
-const rustMetadata = await rustManifest();
+const rustMetadata = await rustManifest(root, "rust/Cargo.toml");
 const rust = report("Rust", rustMetadata, [
   `## All features\n\n\`\`\`text\n${rustDefault.trim()}\n\`\`\``,
   `## No default features\n\n\`\`\`text\n${rustMinimal.trim()}\n\`\`\``,
