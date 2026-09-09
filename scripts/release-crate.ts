@@ -2,6 +2,7 @@
 import { createHash } from "node:crypto";
 import { appendFile, copyFile, mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
+import { inspectCrate } from "./check-crate";
 import { preflightRelease } from "./release-notes";
 
 const reviewedDirectory = "rust/target/reviewed-crate";
@@ -54,6 +55,7 @@ export async function releaseCrate(mode: string): Promise<void> {
     if ((await readdir(reviewedDirectory)).length)
       throw new Error("Reviewed crate directory must be empty before packaging.");
     await cargo(["package"]);
+    await inspectCrate(packaged, version);
     // Package verification only compiles the library; run fixtures and docs from extracted bytes.
     await cargo(
       ["test", "--all-features"],
