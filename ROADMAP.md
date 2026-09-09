@@ -1,10 +1,11 @@
 # Roadmap
 
-Reduce the TypeScript and Rust APIs because they expose internals. Ship smaller artifacts without changing behavior or stored identifiers.
+Make UUID generation, conversion, masking, and migration easy to use in TypeScript and Rust, with less unnecessary code and work.
 
-## Release-blocking contracts
+## Goals and approval boundaries
 
-- `README.md` owns guarantees, `docs/design.md` wire formats, and `docs/cross-language.md` parity and distribution. Art rules final public names and semantics.
+- Art's goals: simpler calls, useful expert controls, efficient runtime paths, and better tree-shaking. Allow shared code; do not optimize export, file, or byte counts alone.
+- Art's written HLD rulings authorize consumer changes. Contract owners: README guarantees, `docs/design.md` wire rules, `docs/security.md` limits, and `docs/cross-language.md` parity/distribution. Read the owner before changing its contract; this SOP grants no approval.
 - Preserve masked bytes, the 2^42 masking bound, 2^48 UUIDv7 bound, 16-bit check, raw sentinels,
   caller-ordered first-match keys, call-time byte-seed capture, and opt-in original migration.
   Keep base64url defaults, independent plain/masked alphabets, and length-based plain decoding.
@@ -14,7 +15,7 @@ Reduce the TypeScript and Rust APIs because they expose internals. Ship smaller 
 - Each decoder accepts every matching encoder output across lengths, alphabets, schemas, sentinels,
   keys, and enabled migration. Ordinary decode returns one UUID; candidates stay explicit. Invalid
   inputs return typed errors. Freshness stays finite, nonnegative, fractional, inclusive, and symmetric.
-- Treat API design as greenfield: propose the best names, signatures, paths, types, and features without aliases. Preserve behavior and stored identifiers. Art rules the final surface.
+- Challenge existing APIs through caller jobs. Show gains, losses, upgrade steps, and limits; preserve contracts until Art rules otherwise.
 - Publish one dependency-free, native-free npm package and one `uuid-slug` crate with equal versions,
   Git/crates.io provenance, common native targets, and WASM. Rust dependencies need evidence;
   Node/Bun native bindings stay development-only.
@@ -23,36 +24,34 @@ Reduce the TypeScript and Rust APIs because they expose internals. Ship smaller 
   size changes against the immediate prior release and prior release line. Generated tables stay out of the changelog.
 - Do not version, tag, push, publish, release, or change remote state without Art's separate approval.
 
-### Phase 1: Define the minimal public contracts
+### Phase 1: Establish the packaged API boundary
 
-- [ ] Inventory the current surface: TypeScript exports from `src/index.ts`; Rust exposes modules
-  plus root re-exports from `rust/uuid-slug/src/lib.rs`. Record every exact
-  signature, feature, package path, and real caller; classify each by the caller job it serves.
-- [ ] Design the full TypeScript and Rust signatures from caller jobs. Use explicit allowlists; hide
-  internals and pair equivalent capabilities without forcing identical language syntax.
-- [ ] Challenge every exported verb, noun, and entry point with diverse live names and shapes.
-  Judge cold call sites, ambiguity, misuse, composition, tree-shaking, errors, and future extension.
-- [ ] Challenge that design as a separate task: try deleting every item; test misuse, upgrades,
-  stored-format migration, extension, allocation, and error paths; compare viable surfaces; list every removal,
-  rename, move, type change, and language-only difference. Stop for Art's ruling before implementation.
+- [ ] Reconcile tasks with current code. Extend `scripts/check-artifact.ts`, `scripts/check-rust.ts`, shared cases, and `bench/check.ts` only where they lack required evidence.
+- [ ] Extract from packed declarations, Rust sources, and manifests, including reachable types, paths, and features. Reuse reports for caller review and baselines; keep no duplicate signature registry.
+- [ ] Test [API Extractor](https://api-extractor.com/), [cargo-public-api](https://github.com/cargo-public-api/cargo-public-api), and [cargo-semver-checks](https://github.com/obi1kenobi/cargo-semver-checks) on this package before choosing tools. Check compiler compatibility, multiple entry points, conditional items, deterministic output, and cold/warm cost.
+- [ ] Select tools by required structural coverage and upkeep cost. Pin compatible extractors/compilers, including rustdoc JSON tooling; compare omitted manifest fields separately.
+- [ ] Generate one readable baseline per language from packed content. Include TypeScript signatures, brands, overloads, deprecations, export conditions, type paths, runtime/compiler floors, and `sideEffects`.
+- [ ] Include Rust public paths, fields, variants, generics, bounds, lifetimes, methods, traits, constants, features, defaults, MSRV, and target conditions. Reuse the feature checks; add selections only for uncovered items or interactions, not the feature power set.
+- [ ] Mutation-test exports, overloads, brands, Rust visibility, lifetimes, auto-traits, and features. Record blind spots; contract tests cover semantics, while Art's review grants approval.
+- [ ] Commit current baselines before public changes. Add read-only `api:check` with exact diffs, and `api:update` to regenerate both reports after approval, writing only changed files.
+- [ ] Make `api:update` build and extract without recursively comparing the old baseline. Show the change class and both diffs; one unchanged language needs no artificial edit.
+- [ ] Wire `api:check` into the version-controlled commit gate and `check.yml`. Test fresh-clone setup and CI detection after a local bypass; local hooks detect mistakes but do not enforce approval.
+- [ ] Keep routine comparison offline after setup. Cache builds/extraction by inputs, toolchain, targets, and features; compare cold/warm cost with the existing commit checks.
+- [ ] Review both languages against Art's HLD ruling. Baseline equality, a version bump, or an agent's HLD edit cannot approve consumer changes or semantic exceptions.
+
+### Phase 2: Design the public API and artifact layout
+
+- [ ] Map packaged APIs to caller jobs: generation, conversion, masked lookup, key rotation, and old-format reads. Identify normal/expert calls; missing local callers do not prove an API is unused.
+- [ ] Compare signatures and entry points through first-use and repeated-use examples in both languages. Favor clear defaults, composition, and actionable errors; retain expert storage, entropy, and schema controls.
+- [ ] Review API and layout together. For each removal, rename, move, or type/behavior change, show caller gain, upgrade cost, strongest alternative, and rejection case.
 - [ ] For base64url helpers, inspect callers and compare removal with exact UUID-specific names.
-  Make `UuidBytes` enforce width/version or remove it; make `isUuidV7Bytes` a type predicate only
-  if the matching type survives.
-- [ ] Use strict domain types and typed error returns. Expose `any` or `unknown` only for a proven
-  unbounded external input. Custom entropy and `MaskSchema.mix` return typed failures; catch and
-  retain causes only at callback boundaries that can still throw.
-- [ ] Design error discrimination that works across realms and copies without `instanceof`.
-  Fallible operations return declared typed errors; boolean predicates return `false`.
-- [ ] Design synchronous and asynchronous schema creation together. Preserve identical keys,
-  bounded cooperative work, prompt cancellation with its cause, captured inputs, and no readiness delays.
-- [ ] Trace and measure duplicate generation paths. Keep only paths required by distinct codec state
-  or measured zero-cost use.
-- [ ] Compare root and advanced entry points with real imports. Propose the smallest placement that
-  keeps caller-buffer, offset, custom entropy, and custom schema concerns out of common calls.
-- [ ] Compile real caller cases against optional and strict brands. Report prevented misuse and lost
-  literal convenience; choose the strictest shape that accepts every required input.
-- [ ] Propose consistent codec construction and generation errors without adding success-path
-  wrappers or allocations that provide no caller value.
+  Keep a byte type only for a useful, enforceable contract; distinguish 16-byte payloads from version-checked UUIDs and caller buffers. A type predicate must match its runtime validation.
+- [ ] Propose typed entropy/mixing failures and retain thrown causes at external boundaries. Use unbounded types only for unbounded inputs or causes; casts must not hide an unhandled domain.
+- [ ] Propose consistent construction/generation errors and discrimination across realms and package copies. Test direct typed-error handling and predicates returning `false` for invalid input; preserve causes and explain recovery without needless success-path wrappers.
+- [ ] Preserve identical sync/async keys, call-time input capture, and cooperative cancellation through shared primitives. Test queued host work; disclose initial copy/allocation costs instead of seed caps or absolute latency promises.
+- [ ] Compare generation paths by state, entropy, caller storage, and measured cost. Share code where useful; preserve native paths and independent state when merging adds work or locks.
+- [ ] Compare root and advanced entry points with real imports. Keep common calls simple and expert caller-buffer, offset, entropy, and schema controls accessible; fewer entry points alone is not a benefit.
+- [ ] Compile caller cases against optional and strict brands. Recommend the shape with the best balance of misuse prevention and accepted inputs; show literal convenience and upgrade costs for Art's ruling.
 - [ ] Trace `maskedSlugToUuid` and `maskedSlugToUuidV7` through plain migration and version checks.
   Propose both only if callers need their distinct result contracts.
 - [ ] Trace migration `decode` and `candidates` through parsing and lookup. Preserve the ruled
@@ -61,198 +60,91 @@ Reduce the TypeScript and Rust APIs because they expose internals. Ship smaller 
   types that prevent a distinct mistake.
 - [ ] Challenge the names, placement, and warning for `defaultCodec` and `DEFAULT_MASK_SCHEMA` while
   preserving both ruled capabilities. Any removal needs a new ruling from Art.
-- [ ] Propose removing Rust's duplicate module and root paths. Choose one canonical public path for every
-  retained item and hide implementation modules.
-- [ ] Propose removing Rust items exposed only through public implementation modules, including
-  feature-gated cancellation and future internals not intended as library contracts.
-- [ ] Propose the fewest Rust `_with` and `_into_with` variants that still support
-  fallible entropy injection and caller-owned storage without hidden global synchronization.
+- [ ] Propose canonical Rust paths. Trace parameters, returns, traits, and features before hiding modules; callers must retain access to required types.
+- [ ] Compare named and opaque Rust futures. Propose cancellation signaling and cause semantics explicitly; required cancellation types are public contracts, not disposable internals.
+- [ ] Compare Rust `_with` and `_into_with` calls with simpler compositions. Preserve fallible entropy and caller storage without hidden global locks; fewer variants must not mean more caller work or allocation.
 - [ ] Align Rust and TypeScript names around consumer concepts while keeping idiomatic language
   shapes; symmetry means matching capability and semantics, not forced textual identity.
 - [ ] Define each decoder's full acceptance matrix: every retained encoder output across plain
   base64url, plain base32hex, masked base64url, masked base32hex, sentinels, current keys, previous
   keys, original masks, stored aliases, and enabled plain migration. Reject unsupported lengths and
   malformed payloads with typed errors; never decode arbitrary byte lengths.
-- [ ] Present every proposed TypeScript and Rust signature, name, path, semantic, removal, and language difference to Art. Record his ruling before changing any public surface.
+- [ ] Extend shared decoder cases from independent wire vectors and retained producer fixtures across both alphabets, key order, sentinels, migration, invalid inputs, and timestamp/storage boundaries. Agreement between implementations alone is not an oracle.
 
-### Phase 2: Design the artifact layout
+#### Artifact layout and consumer checks
 
-- [ ] Start from Art's approved surface. Keep one npm package and one Rust crate; Aponte gets TypeScript source and all other consumers get optimized built code.
-- [ ] Measure the current unbundled and single-file builds. The current build packages internal file
-  topology; the single-file probe pulled masking into keyless imports. Compare a small responsibility
-  chunk graph with both before choosing the layout. Aponte alone keeps source.
-- [ ] Challenge that layout with installed Node, Bun, Deno, and browser consumers plus Bun and
-  Rolldown bundles. Compare resolution, startup, size, masking, declarations, maps, archive contents,
-  and runtime behavior; reject leaked internals, duplicate code, and dead files.
-- [ ] Keep Aponte's repository-source route outside the published export map. Verify that route
-  without changing Aponte; every published Bun import must use built code.
-- [ ] Route Bun, Node, Deno, browsers, and generic package consumers outside Aponte to built,
-  minified, tree-shaken output selected by package export conditions.
-- [ ] Remove `src` from the published package. The Aponte exception must not expose source to other
-  consumers or make published output depend on repository layout.
-- [ ] Share browser and Node code except their runtime adapters; package conditions must select the
-  correct adapter without duplicating the common graph.
-- [ ] Bundle declarations into the smallest stable type artifact graph. Internal declaration files
-  must not expose or preserve internal module boundaries without a consumer need.
-- [ ] Keep sourcemaps only when they provide useful consumer diagnostics; if retained, verify their
-  sources and paths against the final archive.
-- [ ] Minify and optimize every JavaScript artifact; keep enough module structure for bundlers to
-  remove every unused capability.
+- [ ] Compare unbundled output, one bundle, and shared chunks on matched imports. Measure archive/bundle size, native startup, runtime cost, and declaration use; choose by overall consumer benefit and upkeep.
+- [ ] Exercise installed Node, Bun, Deno, and browser consumers plus Bun/Rolldown bundles. Check export conditions, behavior, declarations, and archive contents; source imports do not verify distribution.
+- [ ] Keep the private repository-source route outside published exports and verify it read-only. Route published Bun imports to built code and remove `src` from the archive without making it depend on repository layout.
+- [ ] Prefer shared common code with condition-selected runtime adapters. Permit measured duplication when it improves consumer loading or compatibility enough to justify its maintenance cost.
+- [ ] Bundle declarations around public entries while preserving reachable types and compiler resolution. Allow required internal type files.
+- [ ] Compare diagnostics with/without source maps and propose their source-content policy. Removing `src` does not remove embedded sources; verify retained paths and references.
+- [ ] Minify built JavaScript and preserve useful tree-shaking boundaries. Judge unnecessary retained code by representative consumer bundles, not an absolute promise to remove every unused byte.
 - [ ] Publish one npm package and one Rust crate. Keep JavaScript chunks internal and Rust targets
   under one release identity. Compare source-only Rust publication with prebuilt delivery; add
   prebuilt artifacts only when a measured consumer need outweighs their release and trust cost.
-- [ ] Prove release linking removes unused Rust capabilities for native and WASM consumers. Add a
-  feature only when it removes a measured cost that normal compilation cannot remove; keep platform
-  dependencies behind the narrow feature that needs them.
+- [ ] Measure Rust release linking on native and WASM caller probes. Use feature gates for required platform boundaries or costs normal linking retains; avoid multiplying features just to reduce a size number.
 - [ ] Track the compressed npm archive and `.crate` archive. For native and WASM code size, design
   one reproducible linked probe for the selected target/feature basis; compiler intermediates are invalid.
-- [ ] Preserve the keyless boundary: importing `uuidToSlug`, `uuidV4`, or `uuidV7Slug` must not load
-  mask derivation, sentinel tables, migration code, or the public default seed.
-- [ ] Preserve the masking boundary: codec imports must include every required schema, sentinel,
-  migration, and runtime dependency with no dynamic imports or hidden installation work.
-- [ ] Present the proposed runtime conditions, built artifact layout, Rust publication form, and any
-  prebuilt Rust delivery to Art. Record his ruling before implementing these public choices.
+- [ ] Minimize unnecessary loading for `uuidToSlug`, `uuidV4`, and `uuidV7Slug`, allowing shared helpers. Measure bundle retention and native startup separately; explain caller costs of entry-point changes.
+- [ ] Keep synchronous codecs ready after import, with schema, sentinel, migration, and runtime code available locally. Splitting must not add installation or asynchronous setup.
+- [ ] R1 — Submit the exact TypeScript/Rust API proposal: paths, brands, errors, cancellation, removals, language differences, and upgrade examples. Show the preferred choice and strongest alternative; obtain Art's written ruling before public code changes.
+- [ ] R2 — Submit runtime conditions, source-map content, and Rust delivery choices with their loading, diagnostic, and trust costs. Obtain Art's ruling before changing published artifacts.
+- [ ] R3 — Submit predecessor/channel selection and combined-release completion rules, including the proposed draft-until-both-published behavior. Obtain Art's ruling before enforcing release policy; remote operations need separate authorization.
+- [ ] Record Art's exact rulings in the HLD; reflect the approved contracts in their durable owners with reasons and limits, and internal derivations beside their code. No durable source may depend on this temporary SOP.
 
-### Phase 3: Design the API baseline gate
+### Phase 3: Implement and verify approved changes
 
-- [ ] Design a gate like Kotlin's
-  <https://github.com/Kotlin/binary-compatibility-validator>, tuned for this package: checked-in
-  readable API baselines, pure comparison in normal checks, and an explicit reviewed update command.
-- [ ] Test [API Extractor](https://api-extractor.com/) for TypeScript and
-  [`cargo-semver-checks`](https://github.com/obi1kenobi/cargo-semver-checks) plus
-  [`cargo-public-api`](https://github.com/cargo-public-api/cargo-public-api) for Rust against the
-  mutation set. Own only policy or glue these tools cannot enforce.
-- [ ] Challenge the baseline design separately: mutate every API dimension, test tool blind spots,
-  remove redundant machinery, and reject any path that can hide or casually accept API drift.
-- [ ] Define one deterministic, readable baseline per language. Each baseline must contain every
-  public signature and be the only stored API registry for that language.
-- [ ] Define TypeScript extraction from packed declarations and manifest contracts: names, kinds,
-  generics, parameters, returns, overloads, properties, unions, literals, optionality, deprecations,
-  export conditions, type entry points, runtime floor, and `sideEffects`.
-- [ ] Define Rust extraction from the packed crate: public paths, fields, variants, generics, bounds,
-  lifetimes, methods, traits, constants, Cargo features, defaults, MSRV, and target gates.
-- [ ] Choose the smallest Rust feature/target basis that exposes every conditional public item and
-  interaction. Mutation-test its reach; never build the feature power set.
-- [ ] Make an intentional API change difficult to land accidentally: require Art's approved HLD
-  change, an explicit baseline update, both baseline diffs, semver evidence, and installed-package evidence.
-- [ ] Design one approval path for API changes. The approved HLD text is the local authority;
-  ordinary checks and `api:update` cannot grant approval, and hosted protection requires Art's review.
-- [ ] Define how the fast baseline comparison enters a version-controlled commit gate and `check.yml`.
-  Fresh-clone setup must enable it; bypassed local checks must still fail before merge. Only the
-  explicit reviewed update path may change a baseline.
-- [ ] Reject one-language baseline updates unless an explicit exception names Art's ruling and the
-  semantic reason. The exception stays beside the parity rule and never skips either baseline check.
-- [ ] Block additions, removals, renames, tighter parameters, wider returns, weaker brands, lost
-  features, moved paths, and new throws without Art's exact HLD ruling, even when semver permits them.
-- [ ] Keep the API gate within the normal feedback budget. Cache or parallelize independent
-  extraction, parity, consumer, and version checks without weakening their evidence.
-
-### Phase 4: Design release compatibility checks
-
-- [ ] Design exact npm and Rust predecessor selection for patch, minor, major, prerelease,
-  unpublished, missing, and ambiguous cases before wiring the release gate.
-- [ ] Extract predecessor APIs from their published packages when they predate checked-in baselines.
-  Distinguish an absent release from registry failure or an unreadable artifact; none may pass as unchanged.
-- [ ] Challenge the release design separately: test wrong versions, wrong predecessors, registry/tag
-  disagreement, feature-only breaks, package/source drift, and deliberate bypass attempts.
-- [ ] Derive the minimum version from structural API diffs and the approved classification of
-  semantic changes that signatures cannot expose. The strongest TypeScript or Rust result wins;
-  before 1.0, a break requires a minor. Semver evidence cannot approve HLD.
-- [ ] Treat additions to closed unions, enums, exhaustive matches, defaults, errors, and feature
-  behavior as possible breaks even when a tool reports an additive or unchanged signature.
-- [ ] Compare sizes with the immediate prior release and the latest release from the previous release
-  line: previous minor before 1.0, previous major from 1.0 onward. Report a missing comparison as
-  unavailable, never as zero change.
-- [ ] Prototype names-only and capability-mapped cross-language checks. Measure which real mismatches
-  each detects and its upkeep cost. This is secondary to per-language compatibility; reject a check
-  that adds no reliable evidence.
-- [ ] Define parity failures in caller terms: capability, TypeScript signature, Rust signature,
-  semantic difference, required fix, and the explicit override path.
-
-### Phase 5: Design final verification
-
-- [ ] Design final verification from the claims the release will make. Map each claim to one check
-  that can falsify it and remove checks that add no new evidence.
-- [ ] Challenge the verification design separately: inject failures, check blind spots and runtimes,
-  wait for completion signals, and remove slow, flaky, duplicate, implementation-restating, timeout-based, or false-green checks.
-
-### Phase 6: Install API and release gates
-
-- [ ] Extract and commit TypeScript and Rust API baselines from the current packed public artifacts.
-  These files are the only stored API registries and establish the boundary before public changes.
-- [ ] Add `api:check`: compare both built APIs with both baselines and require symmetric review when
-  either changes. Fail with the exact diff, reason, required review, and update command.
-- [ ] Add `api:update`: require the intended change class, run the fast lane, regenerate both
-  baselines, write only changed files, and show both diffs. Normal checks never rewrite baselines.
-- [ ] Mutation-test the API gate against added and hidden exports, overload changes, Rust visibility
-  and feature changes, weaker errors, and one-sided parity drift. Keep only tests with unique detection.
-- [ ] Add the credential-free release gate. Compare packaged APIs with checked-in baselines and selected
-  releases; verify package/source identity, parity, version, tag, and semver before publication.
-- [ ] Wire `api:check` into the version-controlled commit gate and `check.yml`; verify a fresh clone
-  enables the local gate and a bypassed local check still fails before merge.
-
-### Phase 7: Implement and document
-
-- [ ] Design each required internal refactor before editing: name the resisting seam, the smaller
-  target shape, preserved behavior, and why the refactor costs less than changing in place.
-- [ ] Challenge each refactor design separately: seek a smaller cut, check coupling and ownership,
-  and reject abstractions that serve fewer than three real uses.
-- [ ] Reshape internals under behavior-preserving commits where current seams resist the approved
-  API. Keep refactors separate from public behavior changes and stop when the surface needs no more.
-- [ ] Implement the approved TypeScript surface and update this repository's callers and examples.
-  Do not publish an Aponte-only source entry; its repository-source route stays external.
+- [ ] Implement approved caller capabilities across both languages with tests, baselines, and docs in each verified change. Map behavior to checks before editing; extend existing cases.
+- [ ] Show each new regression reaches its branch and detects broken behavior. Use completion signals with hang timeouts; retain required evidence when replacing flaky or duplicate checks.
+- [ ] Refactor in a separate commit only where changing in place is harder. Name the resisting boundary and preserved behavior; justify abstractions by ownership, failure isolation, or reuse, not caller counts.
+- [ ] Implement the approved TypeScript surface and update repository callers and examples. Keep the private source route external; published entries resolve built code.
 - [ ] Implement the approved Rust surface and canonical paths. Verify the selected feature/target
   basis and required interactions without compatibility aliases or a feature power set.
-- [ ] Implement the approved minimal chunk graph and export map. Installed-package tests must prove
-  every condition resolves the intended built artifact.
-- [ ] Move required Rust checks into the owning check, benchmark, and release workflows, then remove
-  `.github/workflows/rust.yml`. Each check must run once at the earliest gate that uses its evidence.
+- [ ] Implement the approved artifact graph and export map; run installed consumers through each supported condition. Keep internal chunks that consumers need, even when they are not public entry points.
+- [ ] Keep Rust native, cross-target, WASM, and JavaScript runtime checks in their owning check, benchmark, and release workflows. Reuse unchanged results for the same inputs; retain separate runtime lanes and the unpinned newest-Node lane.
 - [ ] Run `api:update` after implementing the TypeScript and Rust surfaces that Art approved. Review
   both baseline diffs and reject any public item outside the ruling before committing either baseline.
-- [ ] Generate compact TypeScript and Rust API diffs in GitHub release notes from packaged baselines.
-  Wire generation into `.github/workflows/release.yml`, start with the approved `CHANGELOG.md`
-  section verbatim, and keep generated tables out of the changelog. Retries must reproduce the same notes.
-- [ ] Add npm archive and verified Rust native/WASM sizes to the release notes generated by
-  `.github/workflows/release.yml`. Reuse release artifacts and show absolute and percentage changes
-  against both selected comparison releases.
-- [ ] After Art permits remote settings, require the API check and Art's approval for protected
-  branch changes to either baseline. Keep release credentials outside this gate.
-- [ ] Update the artifact checker to inspect the final cleaned archive and reject source leaks,
-  unexported implementation files, wrong runtime targets, duplicate code, and missing declarations.
-- [ ] Update README examples, API reference, and `docs/security.md` for retained calls, types, errors,
-  entropy, masking limits, and cancellation.
+- [ ] Extend final cleaned-archive inspection for the approved graph: reject forbidden source content, unreachable code, wrong adapters, and missing declarations. Validate the runtime and declaration dependency graphs, not a fixed file count or ban on private chunks.
+- [ ] Run encoder-to-decoder cases in both languages for supported spellings, schemas, key order, sentinels, migration aliases, boundary timestamps, invalid payloads, and caller-buffer ranges. Preserve atomic writes and test later guards with inputs that pass earlier guards.
+- [ ] Compile misuse cases for the approved exports, brands, callbacks, Rust paths, features, and error handling. Each negative case must fail for its intended reason; do not impose rejected API proposals through tests.
+- [ ] Test typed-error returns directly and native/portable entropy in Node, Bun, browsers, Rust native, and WASM: failed partial writes, transactional identifier output/state, retry, owned plain `Uint8Array`, preserved caller buffers, and runtime-specific causes.
+- [ ] Verify callback invocation and ranges; successful complete entropy fills remain the callback author's responsibility because output bytes cannot prove they were written. Reuse `test/entropy-probe.ts` across Node and Bun.
+- [ ] Measure common and expert imports with matched runtimes, toolchains, inputs, and drivers. Reuse resource/performance probes, run competing timings sequentially, and disclose variance and scope; gate meaningful regressions rather than fixed byte ceilings or zero shared code.
+- [ ] Update README's API reference and before/after upgrade examples for approved calls, imports, types, and errors. Keep stored-ID migration separate; update `docs/security.md` for entropy, masking, and cancellation limits.
+- [ ] Align README's tree-shaking guarantee and its tests with Art's goal of reducing unnecessary code while allowing shared helpers; document the measured bundle boundary separately from native loading.
 - [ ] Update `docs/cross-language.md` with the final capability mapping, allowed language-specific
   differences, artifact boundaries, and API-change gate after Art approves the final surface.
 - [ ] Update `docs/design.md` only where final API placement changes how consumers select codecs,
   schemas, formats, or sentinels; keep wire-format ownership unchanged.
 - [ ] Update project `AGENTS.md` only for short durable rules that future API or packaging work must
   load before acting. Do not copy the implementation checklist into permanent guidance.
-- [ ] Remove stale names, signatures, import paths, artifact counts, source-path claims, and
+- [ ] Remove private project names, stale signatures, import paths, artifact counts, source-path claims, and
   superseded rationale from public docs, code comments, examples, changelog drafts, and scripts.
-- [ ] Keep final API decisions and reasons in durable owners. Do not retain transient command logs.
 
-### Phase 8: Verify and close
+### Phase 4: Complete release compatibility and recovery
 
-- [ ] Run real encoder-to-decoder matrices in TypeScript and Rust for every supported spelling,
-  schema version, key order, sentinel, migration format, boundary timestamp, invalid payload, and
-  caller-buffer range. Invalid payloads must return typed errors without partial writes.
-- [ ] Run compile-time misuse cases for removed exports, strict brands, callback failures, canonical
-  Rust paths, feature gates, and public error handling. Each case must fail for its intended reason.
-- [ ] Call typed-error APIs directly in failure tests. Do not pass returned errors through success
-  helpers that throw; removing a typed return must make the regression fail.
-- [ ] Verify native and portable entropy paths in Node, Bun, browsers, Rust native, and WASM. Prove
-  full callback writes, transactional output, owned `Uint8Array` results, and typed retained causes.
-- [ ] Measure common and advanced imports with Bun and the supported browser bundler; verify Node and
-  Deno resolution separately. Reject masking in keyless bundles and avoid fixed-byte budgets.
-- [ ] Run the complete local check, web/browser artifact consumers, the selected Rust feature/target
+- [ ] Implement Art's approved predecessor/channel policy for npm and Rust: patch, minor, major, prerelease, first publication, missing and ambiguous cases. Select published artifacts and exclude the candidate itself on retries.
+- [ ] Retain selected versions and registry integrity with release inputs so retries use the same comparison basis. Extract older APIs from published packages; distinguish absence from outage or unreadable content and report missing comparisons as unavailable.
+- [ ] Derive the minimum version from structural diffs and Art's classification of semantic changes; the stronger language result wins, and pre-1.0 breaks require a minor. Check closed unions, enums, exhaustive matches, defaults, errors, and features even when signatures look additive or unchanged.
+- [ ] Report parity failures by caller capability, both signatures, semantic difference, and required fix. Reuse shared contract cases and the approved capability mapping; add a names-based check only if it catches a distinct real mismatch without enforcing textual symmetry.
+- [ ] Compare size against the immediate prior release and the previous release line: previous minor before 1.0, previous major thereafter. Report published archive bytes separately from linked native/WASM probes rebuilt with matched compiler, target, features, profile, and driver; report zero/missing denominators without invented percentages.
+- [ ] Test predecessor choice, wrong versions, registry/tag disagreement, feature-only breaks, source/package drift, and bypass attempts at their owning gate. Reuse existing release tests and extend only the uncovered cases.
+- [ ] Prepare npm and crate archives without publishing credentials; check packaged APIs, contracts, parity, version/tag, semver, and integrity. Reuse these artifacts for publication, or require byte identity if a publisher must repack.
+- [ ] Generate release notes in `release.yml` from retained inputs: the changelog section verbatim, then API diffs and absolute/percentage npm, crate, native, and WASM size changes against both predecessors. Keep generated tables out of the changelog and reproduce notes on retry.
+- [ ] Test release recovery when neither registry, npm only, or both registries contain the version, and when notes/assets fail. Resume missing actions against verified bytes; never replace a published version with different content.
+- [ ] Implement Art's approved combined-release completion behavior. The draft-until-both-published proposal requires registry and asset verification before finalization; validation jobs keep no publishing credentials.
+- [ ] After Art authorizes remote settings, require his review and the API check for baseline changes and protect their gate, workflow, and HLD owners too. Verify enforcement with remote readback; until then report protection as pending, not installed.
+
+### Phase 5: Verify and close
+
+- [ ] Run `bun run check` under the repository's pinned toolchain, web/browser artifact consumers, the selected Rust feature/target
   basis and required interactions, public API snapshot gate, predecessor semver comparison,
   final-archive inspection, and license verification.
-- [ ] Adversarially review the total final diff against every task in this section and every retained
-  HLD contract. Remove redundant tests, snapshots, scripts, exports, chunks, comments, and docs.
+- [ ] Review the total diff against every SOP task and approved HLD change. Check that each retained part serves a caller or verification need and each removed part has a replacement or approved removal; do not delete useful shared code to satisfy a count.
 - [ ] Commit each verified code or durable-document change with explicit paths. Leave remote checks,
   versioning, tags, pushes, and publication held until Art authorizes remote writes again.
 
-### Later dependency update
+### Separate dependency follow-up
 
-- [ ] Update git-cliff in this package and publish-clean when npm ships the required newer release;
-  keep the current registry version until then and do not add another installer.
+- [ ] Update this package's git-cliff to registry version 2.14.1 or later when available; verify changelog generation and retain the registry installer. This does not block the API work. The corresponding publish-clean update needs separate repository authorization.
