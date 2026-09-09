@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import {
   cargoProductSurface,
+  cargoManifestSurface,
   cargoSurfaceDifference,
   npmReleaseSurface,
   npmSurfaceDifference,
@@ -52,6 +53,28 @@ test("runtime floors distinguish lost support from wider support", () => {
   const cargo = { rust_version: "1.97", targets: [] };
   expect(cargoSurfaceDifference(cargo, { ...cargo, rust_version: "1.98" }).level).toBe("major");
   expect(cargoSurfaceDifference(cargo, { ...cargo, rust_version: "1.96" }).level).toBe("patch");
+});
+
+test("Cargo manifests expose default and explicit library targets", () => {
+  const workspace = '[workspace.package]\nrust-version = "1.97"';
+  expect(
+    cargoManifestSurface(workspace, '[package]\nname = "uuid-slug"\nrust-version.workspace = true'),
+  ).toEqual({
+    rust_version: "1.97",
+    targets: [{ name: "uuid_slug", kind: ["lib"], crate_types: ["lib"] }],
+  });
+  expect(
+    cargoManifestSurface(
+      workspace,
+      '[package]\nname = "uuid-slug"\nautolib = false\n\n[lib]\nname = "slug"\ncrate-type = ["rlib", "cdylib"]',
+    ),
+  ).toEqual({
+    rust_version: "1.97",
+    targets: [{ name: "slug", kind: ["lib"], crate_types: ["cdylib", "rlib"] }],
+  });
+  expect(cargoManifestSurface(workspace, '[package]\nname = "uuid-slug"\nautolib = false')).toEqual(
+    { rust_version: "1.97", targets: [] },
+  );
 });
 
 test("unrelated engine metadata does not masquerade as Node support", () => {

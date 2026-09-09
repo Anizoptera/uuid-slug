@@ -53,6 +53,39 @@ export function cargoProductSurface(product: CargoReleaseSurface): CargoReleaseS
   return { rust_version: product.rust_version, targets };
 }
 
+export function cargoManifestSurface(
+  workspaceSource: string,
+  packageSource: string,
+): CargoReleaseSurface {
+  const workspace = Bun.TOML.parse(workspaceSource) as {
+    workspace?: { package?: { "rust-version"?: string } };
+  };
+  const manifest = Bun.TOML.parse(packageSource) as {
+    package?: { name?: string; autolib?: boolean; "rust-version"?: unknown };
+    lib?: { name?: string; "crate-type"?: string[] };
+  };
+  const packageName = manifest.package?.name;
+  if (!packageName) throw new Error("Cargo package manifest has no package name.");
+  const packageRustVersion = manifest.package?.["rust-version"];
+  const targets =
+    manifest.package?.autolib === false && !manifest.lib
+      ? []
+      : [
+          {
+            name: manifest.lib?.name ?? packageName.replaceAll("-", "_"),
+            kind: ["lib"],
+            crate_types: manifest.lib?.["crate-type"] ?? ["lib"],
+          },
+        ];
+  return cargoProductSurface({
+    rust_version:
+      typeof packageRustVersion === "string"
+        ? packageRustVersion
+        : (workspace.workspace?.package?.["rust-version"] ?? null),
+    targets,
+  });
+}
+
 export async function rustReleaseSurface(
   cwd: string,
   manifest: string,

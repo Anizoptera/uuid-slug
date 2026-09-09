@@ -9,7 +9,12 @@ import {
 import type { ReleaseLevel } from "./release-comparison";
 import { latestRelease } from "./release-history";
 import { checkReleaseVersion } from "./release-version";
-import { cargoSurfaceDifference, npmReleaseSurface, npmSurfaceDifference } from "./release-surface";
+import {
+  cargoManifestSurface,
+  cargoSurfaceDifference,
+  npmReleaseSurface,
+  npmSurfaceDifference,
+} from "./release-surface";
 
 interface ApiReports {
   readonly typescript: string;
@@ -213,13 +218,6 @@ function typescriptDeprecations(
   return deprecated;
 }
 
-function cargoFloor(source: string): string | null {
-  const cargo = Bun.TOML.parse(source) as {
-    workspace?: { package?: { "rust-version"?: string } };
-  };
-  return cargo.workspace?.package?.["rust-version"] ?? null;
-}
-
 export function validateVersion(version: string, tag?: string): void {
   const core = String.raw`(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)`;
   if (tag) {
@@ -300,10 +298,11 @@ export async function checkReleasedApi(root: string, current: ApiReports): Promi
   const manifest = (await Bun.file(`${root}/package.json`).json()) as Record<string, unknown> & {
     version: string;
   };
-  const [tags, currentTags, currentCargoText] = await Promise.all([
+  const [tags, currentTags, currentCargoText, currentCargoPackageText] = await Promise.all([
     command("git", ["tag", "--list", "v*"], root),
     command("git", ["tag", "--points-at", "HEAD", "--list", "v*"], root),
     Bun.file(`${root}/rust/Cargo.toml`).text(),
+    Bun.file(`${root}/rust/uuid-slug/Cargo.toml`).text(),
   ]);
   const tagsAtHead = currentTags.trim().split("\n").filter(Boolean);
   if (tagsAtHead.length > 1) throw new Error("HEAD has multiple release tags.");
@@ -319,16 +318,17 @@ export async function checkReleasedApi(root: string, current: ApiReports): Promi
     command("git", ["show", `${tag}:api/typescript.api.md`], root),
     command("git", ["show", `${tag}:api/rust.api.md`], root),
   ]);
-  const [oldNpmText, oldCargoText] = await Promise.all([
+  const [oldNpmText, oldCargoText, oldCargoPackageText] = await Promise.all([
     command("git", ["show", `${tag}:package.json`], root),
     command("git", ["show", `${tag}:rust/Cargo.toml`], root),
+    command("git", ["show", `${tag}:rust/uuid-slug/Cargo.toml`], root),
   ]);
   const oldNpm = JSON.parse(oldNpmText) as Record<string, unknown>;
   const packageLevels = [
     npmSurfaceDifference(npmReleaseSurface(oldNpm), npmReleaseSurface(manifest)).level,
     cargoSurfaceDifference(
-      { rust_version: cargoFloor(oldCargoText), targets: [] },
-      { rust_version: cargoFloor(currentCargoText), targets: [] },
+      cargoManifestSurface(oldCargoText, oldCargoPackageText),
+      cargoManifestSurface(currentCargoText, currentCargoPackageText),
     ).level,
   ];
   verifyEvolution(
