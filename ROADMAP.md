@@ -149,12 +149,12 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
     are a disagreement and stop release.
 - [x] Retain selected versions and registry integrity with release inputs so retries use the same comparison basis. Extract older APIs from published packages; distinguish absence from outage or unreadable content and report missing comparisons as unavailable.
 - [x] Derive the minimum version from structural diffs and Art's classification of semantic changes; the stronger language result wins, and pre-1.0 breaks require a minor. Check closed unions, enums, exhaustive matches, defaults, errors, and features even when signatures look additive or unchanged.
-- [ ] Report parity failures by caller capability, both signatures, semantic difference, and required fix. Reuse shared contract cases and the approved capability mapping; add a names-based check only if it catches a distinct real mismatch without enforcing textual symmetry.
+- [x] Report parity failures by caller capability, both signatures, semantic difference, and required fix. Reuse shared contract cases and the approved capability mapping; add a names-based check only if it catches a distinct real mismatch without enforcing textual symmetry.
 - [x] Compare size against the immediate prior release and the previous release line: previous minor before 1.0, previous major thereafter. Report published archive bytes separately from linked native/WASM probes rebuilt with matched compiler, target, features, profile, and driver; report zero/missing denominators without invented percentages.
-- [ ] Test predecessor choice, wrong versions, registry/tag disagreement, feature-only breaks, source/package drift, and bypass attempts at their owning gate. Reuse existing release tests and extend only the uncovered cases.
+- [x] Test predecessor choice, wrong versions, registry/tag disagreement, feature-only breaks, source/package drift, and bypass attempts at their owning gate. Reuse existing release tests and extend only the uncovered cases.
 - [x] Prepare npm and crate archives without publishing credentials; check packaged APIs, contracts, parity, version/tag, semver, and integrity. Reuse these artifacts for publication, or require byte identity if a publisher must repack.
 - [x] Generate release notes in `release.yml` from retained inputs: the changelog section verbatim, then API diffs and absolute/percentage npm, crate, native, and WASM size changes against both predecessors. Keep generated tables out of the changelog and reproduce notes on retry.
-- [ ] Test release recovery when neither registry, npm only, or both registries contain the version, and when notes/assets fail. Resume missing actions against verified bytes; never replace a published version with different content.
+- [x] Test release recovery when neither registry, npm only, or both registries contain the version, and when notes/assets fail. Resume missing actions against verified bytes; never replace a published version with different content.
 - [x] Implement Art's approved combined-release completion behavior: registry, archive, asset, and
   notes verification precede finalization; reruns repair only missing work; validation jobs keep no
   publishing credentials.
@@ -162,11 +162,11 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 
 ### Phase 5: Verify and close
 
-- [ ] Run `bun run check` under the repository's pinned toolchain, web/browser artifact consumers, the selected Rust feature/target
+- [x] Run `bun run check` under the repository's pinned toolchain, web/browser artifact consumers, the selected Rust feature/target
   basis and required interactions, public API snapshot gate, predecessor semver comparison,
   final-archive inspection, and license verification.
-- [ ] Review the total diff against every SOP task and approved HLD change. Check that each retained part serves a caller or verification need and each removed part has a replacement or approved removal; do not delete useful shared code to satisfy a count.
-- [ ] Commit each verified code or durable-document change with explicit paths. Leave remote checks,
+- [x] Review the total diff against every SOP task and approved HLD change. Check that each retained part serves a caller or verification need and each removed part has a replacement or approved removal; do not delete useful shared code to satisfy a count.
+- [x] Commit each verified code or durable-document change with explicit paths. Leave remote checks,
   versioning, tags, pushes, and publication held until Art authorizes remote writes again.
 
 ### Separate dependency follow-up
