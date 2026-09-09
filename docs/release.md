@@ -33,6 +33,10 @@ size differences against each selected comparison. Report npm and crate compress
 from matched linked native and WebAssembly caller probes. State absolute changes; state percentages
 only for nonzero denominators. Generated tables do not belong in the changelog.
 
+For stable releases, require the strongest bump identified by the TypeScript surface, Rust surface,
+or changelog classification. A pre-1.0 breaking change requires a minor; a prerelease carries no
+stable compatibility guarantee and is reported as a prerelease rather than a patch, minor, or major.
+
 ## Publication and recovery
 
 Create or update one draft GitHub release. Publish missing npm or crates.io artifacts only after

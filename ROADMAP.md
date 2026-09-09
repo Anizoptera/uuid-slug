@@ -138,22 +138,22 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 
 ### Phase 4: Complete release compatibility and recovery
 
-- [ ] Implement Art's approved Git-tag predecessor policy for npm and Rust: patch, minor, major,
+- [x] Implement Art's approved Git-tag predecessor policy for npm and Rust: patch, minor, major,
   prerelease, first publication, missing and ambiguous cases. Exclude the candidate itself on retries;
   require registries to provide the selected versions rather than selecting from registry history.
   - [x] Select strict SemVer history from Git, including prereleases and build metadata; reject
     ambiguous precedence; keep comparisons distinct; accept existing lightweight release tags.
-  - [ ] Bind each selected tag to its npm and crates.io archive, or stop with a precise unavailable
+  - [x] Bind each selected tag to its npm and crates.io archive, or stop with a precise unavailable
     reason instead of substituting a registry-selected version. Treat a registry with no package
     history as a first publication with no predecessor; once history exists, missing selected bytes
     are a disagreement and stop release.
-- [ ] Retain selected versions and registry integrity with release inputs so retries use the same comparison basis. Extract older APIs from published packages; distinguish absence from outage or unreadable content and report missing comparisons as unavailable.
-- [ ] Derive the minimum version from structural diffs and Art's classification of semantic changes; the stronger language result wins, and pre-1.0 breaks require a minor. Check closed unions, enums, exhaustive matches, defaults, errors, and features even when signatures look additive or unchanged.
+- [x] Retain selected versions and registry integrity with release inputs so retries use the same comparison basis. Extract older APIs from published packages; distinguish absence from outage or unreadable content and report missing comparisons as unavailable.
+- [x] Derive the minimum version from structural diffs and Art's classification of semantic changes; the stronger language result wins, and pre-1.0 breaks require a minor. Check closed unions, enums, exhaustive matches, defaults, errors, and features even when signatures look additive or unchanged.
 - [ ] Report parity failures by caller capability, both signatures, semantic difference, and required fix. Reuse shared contract cases and the approved capability mapping; add a names-based check only if it catches a distinct real mismatch without enforcing textual symmetry.
 - [x] Compare size against the immediate prior release and the previous release line: previous minor before 1.0, previous major thereafter. Report published archive bytes separately from linked native/WASM probes rebuilt with matched compiler, target, features, profile, and driver; report zero/missing denominators without invented percentages.
 - [ ] Test predecessor choice, wrong versions, registry/tag disagreement, feature-only breaks, source/package drift, and bypass attempts at their owning gate. Reuse existing release tests and extend only the uncovered cases.
-- [ ] Prepare npm and crate archives without publishing credentials; check packaged APIs, contracts, parity, version/tag, semver, and integrity. Reuse these artifacts for publication, or require byte identity if a publisher must repack.
-- [ ] Generate release notes in `release.yml` from retained inputs: the changelog section verbatim, then API diffs and absolute/percentage npm, crate, native, and WASM size changes against both predecessors. Keep generated tables out of the changelog and reproduce notes on retry.
+- [x] Prepare npm and crate archives without publishing credentials; check packaged APIs, contracts, parity, version/tag, semver, and integrity. Reuse these artifacts for publication, or require byte identity if a publisher must repack.
+- [x] Generate release notes in `release.yml` from retained inputs: the changelog section verbatim, then API diffs and absolute/percentage npm, crate, native, and WASM size changes against both predecessors. Keep generated tables out of the changelog and reproduce notes on retry.
 - [ ] Test release recovery when neither registry, npm only, or both registries contain the version, and when notes/assets fail. Resume missing actions against verified bytes; never replace a published version with different content.
 - [x] Implement Art's approved combined-release completion behavior: registry, archive, asset, and
   notes verification precede finalization; reruns repair only missing work; validation jobs keep no
