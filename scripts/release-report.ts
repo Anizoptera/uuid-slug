@@ -22,6 +22,11 @@ interface ApiDifference {
   readonly level: ReleaseLevel;
 }
 
+interface CommandResult {
+  readonly output: string;
+  readonly status: number;
+}
+
 function normalizeDeclarations(source: string): string {
   const file = ts.createSourceFile("public.d.ts", source, ts.ScriptTarget.Latest, true);
   const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed, removeComments: true });
@@ -119,6 +124,54 @@ async function rustApi(cwd: string, manifest: string): Promise<string> {
     .split("\n")
     .map((line) => `minimal: ${line}`)
     .join("\n")}\n`;
+}
+
+async function runSemver(args: string[], cwd: string, target: string): Promise<CommandResult> {
+  const child = Bun.spawn(["cargo", "semver-checks", ...args], {
+    cwd,
+    env: { ...process.env, CARGO_TARGET_DIR: target },
+    signal: AbortSignal.timeout(30_000),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [stdout, stderr, status] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ]);
+  return { output: `${stdout}${stderr}`.trim(), status };
+}
+
+export async function rustSemverDifference(
+  cwd: string,
+  current: string,
+  baseline: string,
+  work: string,
+): Promise<ApiDifference> {
+  const failures: string[] = [];
+  for (const feature of ["--all-features", "--only-explicit-features"] as const) {
+    const result = await runSemver(
+      [
+        "--manifest-path",
+        join(current, "Cargo.toml"),
+        "--baseline-root",
+        baseline,
+        "--release-type",
+        "minor",
+        feature,
+        "--color",
+        "never",
+      ],
+      cwd,
+      join(work, feature.slice(2)),
+    );
+    if (result.status === 100) failures.push(result.output);
+    else if (result.status !== 0)
+      throw new Error(`cargo-semver-checks failed (${result.status}): ${result.output}`);
+  }
+  return failures.length
+    ? { report: failures.join("\n\n"), level: "major" }
+    : { report: "No Rust semantic compatibility violations.", level: "patch" };
 }
 
 function displayDeclaration(line: string): string {
@@ -246,6 +299,9 @@ async function historicalEvidence(
 export async function releaseReport(cwd: string, artifacts = "release-artifacts"): Promise<void> {
   const root = resolve(cwd);
   const directory = resolve(root, artifacts);
+  const semverVersion = (await command("cargo", ["semver-checks", "--version"], root)).trim();
+  if (semverVersion !== "cargo-semver-checks 0.50.0")
+    throw new Error(`cargo-semver-checks 0.50.0 is required; found ${semverVersion}.`);
   const inputs = (await Bun.file(
     join(directory, "history/release-inputs.json"),
   ).json()) as ReleaseInputs;
@@ -285,10 +341,20 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
               "Rust public signature",
             )
           : undefined;
+        const rustSemver = previous.crateRoot
+          ? await rustSemverDifference(
+              root,
+              crateRoot,
+              previous.crateRoot,
+              join(work, `semver-${comparison.tag}`),
+            )
+          : undefined;
         const minimum = minimumRelease(
           inputs.version,
           notes,
-          [typescript?.level, rust?.level].filter((level): level is ReleaseLevel => !!level),
+          [typescript?.level, rust?.level, rustSemver?.level].filter(
+            (level): level is ReleaseLevel => !!level,
+          ),
         );
         if (!satisfiesMinimum(comparison.tag.slice(1), inputs.version, minimum))
           throw new Error(
@@ -296,7 +362,7 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
           );
         const api = [
           `#### TypeScript\n\n${typescript?.report ?? "Unavailable because npm has no release history."}`,
-          `#### Rust\n\n${rust?.report ?? "Unavailable because crates.io has no release history."}`,
+          `#### Rust\n\n${rust?.report ?? "Unavailable because crates.io has no release history."}${rustSemver ? `\n\n${rustSemver.report}` : ""}`,
         ].join("\n\n");
         return {
           minimum,
