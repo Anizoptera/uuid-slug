@@ -3,6 +3,7 @@ import { basename, join, resolve } from "node:path";
 import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
 import { readRetainedArchive } from "./release-inputs";
 import { crateChecksum, verifyCrateChecksum } from "./release-crate";
+import { preflightRelease } from "./release-notes";
 import { registryIntegrity, verifyIntegrity } from "./registry-integrity";
 
 interface Asset {
@@ -91,7 +92,14 @@ export async function finalizeRelease(cwd: string, options: FinalizeOptions): Pr
     join(artifacts, "history/release-inputs.json"),
   ).json()) as ReleaseInputs;
   const notes = await Bun.file(join(artifacts, "notes.md")).text();
-  if (!notes.trim()) throw new Error("Generated release notes are empty.");
+  const checked = await preflightRelease(root, inputs.tag);
+  if (
+    inputs.name !== checked.name ||
+    inputs.version !== checked.version ||
+    inputs.commit !== checked.commit
+  )
+    throw new Error("Retained release inputs do not identify the checked package and commit.");
+  if (notes !== checked.notes) throw new Error("Retained release notes differ from the changelog.");
   const npmArchive = { ...inputs.candidate.npm, file: resolve(root, inputs.candidate.npm.file) };
   const crateArchive = {
     ...inputs.candidate.crate,

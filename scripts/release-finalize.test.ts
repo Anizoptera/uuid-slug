@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { rejects } from "node:assert/strict";
 import type { ReleaseInputs } from "./release-inputs";
 import { finalizeRelease } from "./release-finalize";
+import { tagReleaseFixture } from "../test/release-fixture";
 
 const directories: string[] = [];
 const sha256 = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
@@ -22,11 +23,24 @@ test("finalization repairs only missing release state and refuses different reta
   const crateBytes = new TextEncoder().encode("crate archive");
   const npmFile = "release-artifacts/reviewed-npm/package.tgz";
   const crateFile = "rust/target/reviewed-crate/package.crate";
+  await Promise.all([
+    Bun.write(
+      join(root, "package.json"),
+      JSON.stringify({ name: "@anizoptera/uuid-slug", version: "0.4.0" }),
+    ),
+    Bun.write(join(root, "CHANGELOG.md"), "## [0.4.0]\n\nRelease notes\n"),
+    Bun.write(join(root, "rust/Cargo.toml"), '[workspace.package]\nversion = "0.4.0"\n'),
+    Bun.write(
+      join(root, "rust/Cargo.lock"),
+      'version = 4\n[[package]]\nname = "uuid-slug"\nversion = "0.4.0"\n[[package]]\nname = "uuid-slug-bridge"\nversion = "0.4.0"\n',
+    ),
+  ]);
+  const commit = await tagReleaseFixture(root, "0.4.0");
   const inputs: ReleaseInputs = {
     name: "@anizoptera/uuid-slug",
     version: "0.4.0",
     tag: "v0.4.0",
-    commit: "candidate",
+    commit,
     candidate: {
       npm: { file: npmFile, integrity: `sha512-${sha512(npmBytes)}` },
       crate: { file: crateFile, integrity: `sha256-${sha256(crateBytes)}` },
@@ -37,7 +51,7 @@ test("finalization repairs only missing release state and refuses different reta
     Bun.write(join(root, npmFile), npmBytes),
     Bun.write(join(root, crateFile), crateBytes),
     Bun.write(join(root, "release-artifacts/history/release-inputs.json"), JSON.stringify(inputs)),
-    Bun.write(join(root, "release-artifacts/notes.md"), "Release notes\n"),
+    Bun.write(join(root, "release-artifacts/notes.md"), "\n\nRelease notes\n"),
   ]);
 
   let releaseExists = false;
@@ -112,6 +126,15 @@ test("finalization repairs only missing release state and refuses different reta
     cratesRegistry: server.url.href.slice(0, -1),
   };
   try {
+    await Bun.write(
+      join(root, "release-artifacts/history/release-inputs.json"),
+      JSON.stringify({ ...inputs, commit: "different commit" }),
+    );
+    await rejects(finalizeRelease(root, options), /checked package and commit/);
+    await Bun.write(
+      join(root, "release-artifacts/history/release-inputs.json"),
+      JSON.stringify(inputs),
+    );
     await rejects(finalizeRelease(root, options), /Both registries/);
     npmPublished = true;
     await rejects(finalizeRelease(root, options), /Both registries/);
@@ -128,7 +151,7 @@ test("finalization repairs only missing release state and refuses different reta
 
     for (const corruption of ["draft", "notes", "asset"] as const) {
       draft = true;
-      body = "Release notes\n";
+      body = "\n\nRelease notes\n";
       assets.set("package.tgz", `sha256:${sha256(npmBytes)}`);
       corruptFinal = corruption;
       await rejects(finalizeRelease(root, options), /Final release/);
@@ -145,7 +168,7 @@ test("finalization repairs only missing release state and refuses different reta
     mutations.length = 0;
     retainNotes = true;
     draft = true;
-    body = "Release notes\n";
+    body = "\n\nRelease notes\n";
     assets.set("package.tgz", `sha256:${"0".repeat(64)}`);
     await rejects(finalizeRelease(root, options), /differs from retained bytes/);
     expect(mutations).toEqual([]);
