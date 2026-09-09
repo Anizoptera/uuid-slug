@@ -473,9 +473,22 @@ export async function contractRequests(): Promise<Request[]> {
 export function compare(requests: Request[], actual: unknown): void {
   if (!Array.isArray(actual) || !requests.length || actual.length !== requests.length)
     throw new Error("Native adapter returned an incomplete observation set");
-  requests.forEach((request, index) =>
-    deepStrictEqual(actual[index], evaluate(request), JSON.stringify(request)),
-  );
+  requests.forEach((request, index) => {
+    const expected = evaluate(request);
+    try {
+      deepStrictEqual(actual[index], expected);
+    } catch {
+      throw new Error(
+        [
+          `Parity failure in ${request.op}.`,
+          `TypeScript: ${JSON.stringify(expected)}`,
+          `Rust: ${JSON.stringify(actual[index])}`,
+          `Input: ${JSON.stringify(request)}`,
+          "Required fix: make both implementations satisfy the shared consumer contract.",
+        ].join("\n"),
+      );
+    }
+  });
 }
 
 if (import.meta.main) {
