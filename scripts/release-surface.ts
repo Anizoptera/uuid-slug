@@ -1,21 +1,8 @@
 import { command } from "./command";
 
 export interface CargoProduct {
-  readonly edition: string;
   readonly rust_version: string | null;
-  readonly features: Record<string, string[]>;
-  readonly dependencies: readonly CargoDependency[];
   readonly targets: readonly CargoTarget[];
-}
-
-interface CargoDependency {
-  readonly name: string;
-  readonly req: string;
-  readonly kind: string | null;
-  readonly optional: boolean;
-  readonly uses_default_features: boolean;
-  readonly features: readonly string[];
-  readonly target: string | null;
 }
 
 interface CargoTarget {
@@ -24,27 +11,10 @@ interface CargoTarget {
   readonly crate_types: readonly string[];
 }
 
-function stable(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    const entries = value.map(stable);
-    // Cargo metadata arrays are sets; source ordering is not a compatibility change.
-    // oxlint-disable-next-line unicorn/no-array-sort
-    return entries.sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
-  }
-  if (!value || typeof value !== "object") return value;
-  // oxlint-disable-next-line unicorn/no-array-sort
-  const entries = Object.entries(value as Record<string, unknown>).sort(([left], [right]) =>
-    left.localeCompare(right),
-  );
-  return Object.fromEntries(entries.map(([key, entry]) => [key, stable(entry)]));
-}
-
 export function npmReleaseSurface(manifest: Record<string, unknown>): string {
   return JSON.stringify({
     engines: manifest.engines,
     exports: manifest.exports,
-    files: manifest.files,
-    imports: manifest.imports,
     main: manifest.main,
     module: manifest.module,
     sideEffects: manifest.sideEffects,
@@ -54,26 +24,13 @@ export function npmReleaseSurface(manifest: Record<string, unknown>): string {
 }
 
 export function cargoProductSurface(product: CargoProduct): string {
-  return JSON.stringify(
-    stable({
-      edition: product.edition,
-      rustVersion: product.rust_version,
-      features: product.features,
-      dependencies: product.dependencies
-        .filter(({ kind }) => kind === null)
-        .map(({ name, req, optional, uses_default_features, features, target }) => ({
-          name,
-          req,
-          optional,
-          usesDefaultFeatures: uses_default_features,
-          features,
-          target,
-        })),
-      targets: product.targets
-        .filter(({ kind }) => kind.includes("lib"))
-        .map(({ name, kind, crate_types }) => ({ name, kind, crateTypes: crate_types })),
-    }),
-  );
+  const targets = product.targets
+    .filter(({ kind }) => kind.includes("lib"))
+    .map(({ name, kind, crate_types }) => ({ name, kind, crateTypes: crate_types }));
+  // Cargo targets and their classifications are sets; source ordering is not compatibility.
+  // oxlint-disable-next-line unicorn/no-array-sort
+  targets.sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+  return JSON.stringify({ rustVersion: product.rust_version, targets });
 }
 
 export async function rustReleaseSurface(cwd: string, manifest: string): Promise<string> {
