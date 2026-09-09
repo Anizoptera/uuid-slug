@@ -117,6 +117,19 @@ Rust may use a small set of justified dependencies. Compare contract fit, failur
 supported targets, measured resource costs, build costs, licensing and maintenance before selecting
 one; implementation convenience alone does not justify it.
 
+Verify every supported build type and target, not just the default release configuration.
+Cover debug and release profiles, product libraries, development bridges, examples, unit tests,
+doctests, and benchmark compilation with each distinct supported feature selection. Run every
+locally executable combination and retain the full supported target matrix in CI. Report
+compile-only and unexecuted combinations explicitly; a configured CI job is not execution evidence.
+Use `bun run check:rust` for native profiles. Run `scripts/rust-wasm.ts` with
+`UUID_SLUG_RUST_PROFILE=debug` and `UUID_SLUG_RUST_PROFILE=release` for browser profiles.
+
+Verify TypeScript functionality on every supported Node major and on the latest Bun and Deno.
+Preserve real runtime adapter coverage when changing test runners; a faster Bun suite cannot
+establish Node or browser behavior. Replace a runner only after matched defect-detection and
+performance measurements, retaining the same consumer contracts.
+
 Keep each dependency behind the contract it actually satisfies:
 
 | Concern | Choice and reason | Alternative and what would justify it |

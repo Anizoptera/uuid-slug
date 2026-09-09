@@ -198,6 +198,7 @@ Work one area at a time, ordered by failure consequences; add discovered defects
     - [ ] Exercise every distinct supported feature selection on each supported target, without allowing workspace feature unification to hide product failures.
     - [ ] Cover Linux/macOS/Windows x86-64 and Arm64, Linux i686/ARMv7, and browser WASM; retain the distinction between native execution and the documented compile-only targets.
     - [ ] Record the local host/toolchain and per-combination outcomes; configuration alone cannot establish that CI executed any combination.
+    - [x] Execute product tests/doctests and compile benchmarks for each distinct feature selection in debug/release on macOS Arm64; native Bun FFI and Node N-API each pass 28,426 shared observations per profile. Both browser WASM profiles pass secure/failed entropy and cancellation cases. The workflow's i686/ARMv7 all-target checks pass locally for both profiles and default/minimal/all features; those are compile-only results.
 - [ ] Cross-language verification: inspect bridge ownership/panics, WASM memory/ranges, fixture independence, parity diagnostics, and whether probes reach the actual packaged implementations.
 - [ ] Performance and resources: inspect benchmark methodology, linked-size comparisons, startup/tree-shaking, cancellation responsiveness, bounded resources, repeated work, and gate headroom.
 - [ ] Developer feedback: inspect tests, lint/type checks, hooks, CI wiring, cleanup, failure diagnostics, redundant evidence, and false-green routes; retain minimal defect-catching checks.

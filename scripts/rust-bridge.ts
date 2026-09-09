@@ -7,15 +7,19 @@ import { spawn } from "node:child_process";
 // The lane runs from the checkout root; bundled scripts must not resolve relative to their bundle.
 const root = process.cwd();
 const target = resolve(root, "rust/target");
-const library = resolve(
-  target,
-  "release",
-  `${process.platform === "win32" ? "" : "lib"}uuid_slug_bridge.${process.platform === "darwin" ? "dylib" : process.platform === "win32" ? "dll" : "so"}`,
-);
-const addon = resolve(target, "release/uuid_slug_bridge.node");
+function bridgeFiles(profile: "debug" | "release") {
+  return {
+    library: resolve(
+      target,
+      profile,
+      `${process.platform === "win32" ? "" : "lib"}uuid_slug_bridge.${process.platform === "darwin" ? "dylib" : process.platform === "win32" ? "dll" : "so"}`,
+    ),
+    addon: resolve(target, profile, "uuid_slug_bridge.node"),
+  };
+}
 
 /** Build explicitly once per lane; loading never launches an implicit Cargo process. */
-export async function buildRustBridge(): Promise<void> {
+export async function buildRustBridge(profile: "debug" | "release" = "release"): Promise<void> {
   await new Promise<void>((done, reject) => {
     const child = spawn(
       "cargo",
@@ -25,7 +29,7 @@ export async function buildRustBridge(): Promise<void> {
         "rust/Cargo.toml",
         "-p",
         "uuid-slug-bridge",
-        "--release",
+        ...(profile === "release" ? ["--release"] : []),
         "--locked",
       ],
       {
@@ -39,6 +43,7 @@ export async function buildRustBridge(): Promise<void> {
       code === 0 ? done() : reject(new Error(`Rust bridge build failed: ${signal ?? code}`)),
     );
   });
+  const { library, addon } = bridgeFiles(profile);
   await copyFile(library, addon);
 }
 
@@ -49,6 +54,10 @@ export interface RustBridge {
 
 /** These synchronous calls belong in conformance/benchmark workers, not product event loops. */
 export async function loadRustBridge(): Promise<RustBridge> {
+  const profile = process.env.UUID_SLUG_RUST_PROFILE ?? "release";
+  if (profile !== "debug" && profile !== "release")
+    throw new Error(`UUID_SLUG_RUST_PROFILE must be debug or release; received ${profile}`);
+  const { library, addon } = bridgeFiles(profile);
   if (typeof Bun === "undefined") {
     const native: { evaluate(input: string): string } = createRequire(import.meta.url)(addon);
     let closed = false;

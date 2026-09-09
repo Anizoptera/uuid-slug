@@ -91,8 +91,11 @@ jobs:
           targets=(i686-unknown-linux-gnu armv7-unknown-linux-gnueabihf)
           rustup target add "${targets[@]}"
           for target in "${targets[@]}"; do
-            cargo check --manifest-path rust/Cargo.toml -p uuid-slug --locked --target "$target" --all-features
-            cargo check --manifest-path rust/Cargo.toml -p uuid-slug --locked --target "$target" --no-default-features
+            for profile in dev release; do
+              for features in --all-features --no-default-features ''; do
+                cargo check --manifest-path rust/Cargo.toml -p uuid-slug --locked --all-targets --target "$target" --profile "$profile" ${features:+"$features"} || exit
+              done
+            done
           done
 
   # Exercise the declared floor and newer native capabilities without asserting ordering.
@@ -133,6 +136,12 @@ jobs:
   browser:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [debug, release]
+    env:
+      UUID_SLUG_RUST_PROFILE: ${{ matrix.profile }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -151,8 +160,8 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             rust/target
-          key: rust-browser-${{ hashFiles('.tool-versions', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-${{ github.sha }}
-          restore-keys: rust-browser-${{ hashFiles('.tool-versions', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-
+          key: rust-browser-${{ matrix.profile }}-${{ hashFiles('.tool-versions', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-${{ github.sha }}
+          restore-keys: rust-browser-${{ matrix.profile }}-${{ hashFiles('.tool-versions', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-
       - run: bun install --frozen-lockfile
       - run: bun run build
       - run: bunx playwright install --with-deps chromium
@@ -173,5 +182,6 @@ jobs:
         with:
           node-version-file: .tool-versions
           package-manager-cache: false
-      - run: bun run artifact:web
+      - if: matrix.profile == 'release'
+        run: bun run artifact:web
       - run: bun scripts/rust-wasm.ts

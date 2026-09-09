@@ -5,6 +5,11 @@ import { join } from "node:path";
 import { chromium } from "playwright";
 import { compare, contractRequests, evaluate } from "./rust-conform";
 
+const profile = process.env.UUID_SLUG_RUST_PROFILE ?? "release";
+if (profile !== "debug" && profile !== "release")
+  throw new Error(`UUID_SLUG_RUST_PROFILE must be debug or release; received ${profile}`);
+const profileArgs = profile === "release" ? ["--release"] : [];
+
 async function run(command: string[]): Promise<void> {
   const child = Bun.spawn(command, { stdout: "inherit", stderr: "inherit", timeout: 300_000 });
   if ((await child.exited) !== 0) throw new Error(`Command failed: ${command.join(" ")}`);
@@ -39,19 +44,23 @@ const reported = (await new Response(tool.stdout).text()).trim();
 if ((await tool.exited) !== 0 || reported !== `wasm-bindgen ${version}`)
   throw new Error(`Cargo.lock requires wasm-bindgen ${version}; found ${reported}`);
 
-// The empty-feature build establishes that conversion and masking need no JavaScript services.
-await run([
-  "cargo",
-  "check",
-  "--manifest-path",
-  "rust/Cargo.toml",
-  "-p",
-  "uuid-slug",
-  "--no-default-features",
-  "--target",
-  "wasm32-unknown-unknown",
-  "--locked",
-]);
+// Browser entropy requires wasm-js; the empty selection must remain independent of JS services.
+for (const features of ["--no-default-features", "--all-features"]) {
+  await run([
+    "cargo",
+    "check",
+    "--manifest-path",
+    "rust/Cargo.toml",
+    "-p",
+    "uuid-slug",
+    "--all-targets",
+    features,
+    "--target",
+    "wasm32-unknown-unknown",
+    "--locked",
+    ...profileArgs,
+  ]);
+}
 await run([
   "cargo",
   "build",
@@ -61,14 +70,14 @@ await run([
   "uuid-slug-bridge",
   "--target",
   "wasm32-unknown-unknown",
-  "--release",
+  ...profileArgs,
   "--locked",
 ]);
 const directory = await mkdtemp(join(process.cwd(), "rust/target/browser-"));
 try {
   await run([
     cli,
-    "rust/target/wasm32-unknown-unknown/release/uuid_slug_bridge.wasm",
+    `rust/target/wasm32-unknown-unknown/${profile}/uuid_slug_bridge.wasm`,
     "--target",
     "web",
     "--out-dir",
@@ -259,6 +268,7 @@ try {
           console.log(
             JSON.stringify({
               adapter: "browser Wasm",
+              profile,
               entropyFailure: failEntropy,
               contracts: requests.length,
               draws: observation.draws,

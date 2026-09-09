@@ -6,9 +6,10 @@ const manifest = "rust/Cargo.toml";
 const { version } = await Bun.file("package.json").json();
 await checkReleaseVersion(process.cwd(), version);
 
-async function run(command: string[], capture = false): Promise<string> {
+async function run(command: string[], capture = false, env = process.env): Promise<string> {
   console.log(`> ${command.join(" ")}`);
   const child = Bun.spawn(command, {
+    env,
     stdout: capture ? "pipe" : "inherit",
     stderr: "inherit",
   });
@@ -89,16 +90,32 @@ for (const selection of selections) {
     .join(",");
   if (checked.has(key)) continue;
   checked.add(key);
-  await run([
-    "cargo",
-    "check",
-    "--manifest-path",
-    manifest,
-    "-p",
-    "uuid-slug",
-    "--locked",
-    ...selection.args,
-  ]);
+  for (const profile of [[], ["--release"]]) {
+    // Benchmark targets are compiled, not timed, in the routine correctness lane.
+    await run([
+      "cargo",
+      "check",
+      "--manifest-path",
+      manifest,
+      "-p",
+      "uuid-slug",
+      "--benches",
+      "--locked",
+      ...selection.args,
+      ...profile,
+    ]);
+    await run([
+      "cargo",
+      "test",
+      "--manifest-path",
+      manifest,
+      "-p",
+      "uuid-slug",
+      "--locked",
+      ...selection.args,
+      ...profile,
+    ]);
+  }
 }
 await run([
   "cargo",
@@ -114,27 +131,6 @@ await run([
   "warnings",
 ]);
 await run([
-  "cargo",
-  "test",
-  "--manifest-path",
-  manifest,
-  "--workspace",
-  "--all-features",
-  "--locked",
-]);
-await buildRustBridge();
-await run([
-  "cargo",
-  "run",
-  "--manifest-path",
-  manifest,
-  "-p",
-  "uuid-slug",
-  "--example",
-  "filesystem",
-  "--locked",
-]);
-await run([
   "bun",
   "build",
   "scripts/rust-conform.ts",
@@ -142,14 +138,42 @@ await run([
   "--outfile=rust/target/conform.mjs",
   "--external=bun:ffi",
 ]);
-// Each adapter checks nonzero execution and exact result counts before it can exit successfully.
-const contracts = await Promise.allSettled([
-  run(["bun", "scripts/rust-conform.ts"]),
-  run(["node", "rust/target/conform.mjs"]),
-]);
-const failures = contracts.filter((result) => result.status === "rejected");
-if (failures.length)
-  throw new AggregateError(
-    failures.map((result) => result.reason),
-    "Native contract verification failed",
-  );
+for (const profile of ["debug", "release"] as const) {
+  const profileArgs = profile === "release" ? ["--release"] : [];
+  await run([
+    "cargo",
+    "test",
+    "--manifest-path",
+    manifest,
+    "-p",
+    "uuid-slug-bridge",
+    "--all-features",
+    "--locked",
+    ...profileArgs,
+  ]);
+  await buildRustBridge(profile);
+  await run([
+    "cargo",
+    "run",
+    "--manifest-path",
+    manifest,
+    "-p",
+    "uuid-slug",
+    "--example",
+    "filesystem",
+    "--locked",
+    ...profileArgs,
+  ]);
+  // A fresh host process loads the exact profile; native modules cannot be swapped in-process.
+  const env = { ...process.env, UUID_SLUG_RUST_PROFILE: profile };
+  const contracts = await Promise.allSettled([
+    run(["bun", "scripts/rust-conform.ts"], false, env),
+    run(["node", "rust/target/conform.mjs"], false, env),
+  ]);
+  const failures = contracts.filter((result) => result.status === "rejected");
+  if (failures.length)
+    throw new AggregateError(
+      failures.map((result) => result.reason),
+      `Native ${profile} contract verification failed`,
+    );
+}
