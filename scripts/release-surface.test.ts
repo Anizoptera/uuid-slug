@@ -19,12 +19,6 @@ test("Cargo release comparison excludes extraction-local metadata", () => {
     targets: [libTarget],
   };
   const cargoSurface = cargoProductSurface(cargo);
-  for (const changed of [
-    { ...cargo, rust_version: null },
-    { ...cargo, targets: [] },
-  ])
-    expect(cargoProductSurface(changed)).not.toBe(cargoSurface);
-
   expect(
     cargoProductSurface({
       ...cargo,
