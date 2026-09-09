@@ -41,7 +41,8 @@ never overwrite or attest different content. Attach only registry-matching archi
 notes.
 
 Keep the GitHub release as a draft until npm, crates.io, both attached archives, and the generated
-notes are verified. A rerun repairs only missing publication, attachment, or note work. Finalize the
-release once every required result is observable and matches the retained release inputs.
+notes are verified. Verify each attachment by GitHub's SHA-256 digest, and create provenance before
+making the draft public. A rerun repairs only missing publication, attachment, or note work. Finalize
+the release once every required result is observable and matches the retained release inputs.
 
 Remote writes remain forbidden without Art's explicit authorization for the exact operation.

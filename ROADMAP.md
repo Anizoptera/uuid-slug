@@ -96,8 +96,8 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 - [ ] Publish one npm package and one Rust crate. Keep JavaScript chunks internal and Rust targets
   under one release identity. Compare source-only Rust publication with prebuilt delivery; add
   prebuilt artifacts only when a measured consumer need outweighs their release and trust cost.
-- [ ] Measure Rust release linking on native and WASM caller probes. Use feature gates for required platform boundaries or costs normal linking retains; avoid multiplying features just to reduce a size number.
-- [ ] Track the compressed npm archive and `.crate` archive. For native and WASM code size, design
+- [x] Measure Rust release linking on native and WASM caller probes. Use feature gates for required platform boundaries or costs normal linking retains; avoid multiplying features just to reduce a size number.
+- [x] Track the compressed npm archive and `.crate` archive. For native and WASM code size, design
   one reproducible linked probe for the selected target/feature basis; compiler intermediates are invalid.
 - [x] Minimize unnecessary loading for `uuidToSlug`, `uuidV4`, and `uuidV7Slug`, allowing shared helpers. Measure bundle retention and native startup separately; explain caller costs of entry-point changes.
 - [x] Keep synchronous codecs ready after import, with schema, sentinel, migration, and runtime code available locally. Splitting must not add installation or asynchronous setup.
@@ -150,12 +150,12 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 - [ ] Retain selected versions and registry integrity with release inputs so retries use the same comparison basis. Extract older APIs from published packages; distinguish absence from outage or unreadable content and report missing comparisons as unavailable.
 - [ ] Derive the minimum version from structural diffs and Art's classification of semantic changes; the stronger language result wins, and pre-1.0 breaks require a minor. Check closed unions, enums, exhaustive matches, defaults, errors, and features even when signatures look additive or unchanged.
 - [ ] Report parity failures by caller capability, both signatures, semantic difference, and required fix. Reuse shared contract cases and the approved capability mapping; add a names-based check only if it catches a distinct real mismatch without enforcing textual symmetry.
-- [ ] Compare size against the immediate prior release and the previous release line: previous minor before 1.0, previous major thereafter. Report published archive bytes separately from linked native/WASM probes rebuilt with matched compiler, target, features, profile, and driver; report zero/missing denominators without invented percentages.
+- [x] Compare size against the immediate prior release and the previous release line: previous minor before 1.0, previous major thereafter. Report published archive bytes separately from linked native/WASM probes rebuilt with matched compiler, target, features, profile, and driver; report zero/missing denominators without invented percentages.
 - [ ] Test predecessor choice, wrong versions, registry/tag disagreement, feature-only breaks, source/package drift, and bypass attempts at their owning gate. Reuse existing release tests and extend only the uncovered cases.
 - [ ] Prepare npm and crate archives without publishing credentials; check packaged APIs, contracts, parity, version/tag, semver, and integrity. Reuse these artifacts for publication, or require byte identity if a publisher must repack.
 - [ ] Generate release notes in `release.yml` from retained inputs: the changelog section verbatim, then API diffs and absolute/percentage npm, crate, native, and WASM size changes against both predecessors. Keep generated tables out of the changelog and reproduce notes on retry.
 - [ ] Test release recovery when neither registry, npm only, or both registries contain the version, and when notes/assets fail. Resume missing actions against verified bytes; never replace a published version with different content.
-- [ ] Implement Art's approved combined-release completion behavior: registry, archive, asset, and
+- [x] Implement Art's approved combined-release completion behavior: registry, archive, asset, and
   notes verification precede finalization; reruns repair only missing work; validation jobs keep no
   publishing credentials.
 - [ ] After Art authorizes remote settings, require his review and the API check for baseline changes and protect their gate, workflow, and HLD owners too. Verify enforcement with remote readback; until then report protection as pending, not installed.
