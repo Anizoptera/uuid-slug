@@ -40,9 +40,10 @@ export class UuidRuntimeError extends UuidSlugError {
 
 /** Recognize package errors across realms and duplicate package copies without trusting them. */
 export function isUuidSlugError(value: unknown): value is UuidSlugError {
-  if (value instanceof UuidSlugError) return true;
   if (typeof value !== "object" || value === null) return false;
   try {
+    // instanceof can invoke a proxy's prototype trap, just like the property reads below.
+    if (value instanceof UuidSlugError) return true;
     return (
       Object.prototype.toString.call(value) === "[object Error]" &&
       (Reflect.get(value, "name") === "UuidSlugError" ||

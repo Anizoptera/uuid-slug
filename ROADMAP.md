@@ -188,7 +188,7 @@ Work one area at a time, ordered by failure consequences; add discovered defects
 - [ ] API evidence: inspect packed TypeScript/Rust extraction, reachable types, features/targets, baseline comparison, mutation coverage, and bypass behavior.
 - [ ] Distribution: verify export order and unnecessary keys, default/runtime adapters, source/declaration resolution, maps, cleaned archives, dependency and native-code exclusions.
 - [ ] UUID and alphabet contracts: inspect every changed parsing/conversion/generation path, lengths, canonical bits, timestamp bounds, byte ownership, buffer ranges, and atomic writes.
-  - [ ] Exercise `isUuidSlugError` with revoked proxies and throwing prototype traps; its initial `instanceof` currently executes outside the catch boundary.
+  - [x] Move `isUuidSlugError` prototype inspection inside its catch boundary; revoked-proxy and throwing-prototype probes both failed before the fix. Their shared packed-consumer regressions pass in `bun run check` and `bun run artifact:web` (Node, Bun, Deno, Chromium).
 - [ ] Masking and migration: verify frozen wire constants, seed capture, sync/async parity, cancellation, sentinels, key order, collisions, retained aliases, and encoder/decoder acceptance.
 - [ ] Runtime capabilities: exercise portable/native entropy failures and optional APIs in Node/Bun/browser/Deno; check capability probes, causes, fallback cost, and runtime floors.
   - [ ] Apply Art's runtime coverage requirement: run TypeScript functionality across supported Node versions and latest Bun/Deno; verify CI selections and distinguish locally exercised runtimes from CI-only coverage.

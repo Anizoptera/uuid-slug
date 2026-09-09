@@ -9,6 +9,18 @@ function equal(actual: unknown, expected: unknown, context: string): void {
 
 /** Exercise public calls through the module supplied by the consumer's own resolver. */
 export async function probeConsumer(api: typeof Api): Promise<void> {
+  const revoked = Proxy.revocable({}, {});
+  revoked.revoke();
+  equal(api.isUuidSlugError(revoked.proxy), false, "revoked error candidate");
+  const inaccessible = new Proxy(
+    {},
+    {
+      getPrototypeOf() {
+        throw new Error("inaccessible prototype");
+      },
+    },
+  );
+  equal(api.isUuidSlugError(inaccessible), false, "inaccessible error candidate prototype");
   const uuid = "019ff19b-58b8-7000-9b1b-df713bd5562c";
   equal(api.isUuidV7String(unwrap(api.uuidV7())), true, "v7 generation");
   equal(api.isUuidV4String(unwrap(api.uuidV4())), true, "v4 generation");
