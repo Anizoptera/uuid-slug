@@ -69,7 +69,6 @@ impl Derivation {
 
     /// Return no value while pending, or a masked UUID when derivation finishes.
     pub fn poll(&mut self) -> Result<Option<String>, wasm_bindgen::JsValue> {
-        use std::future::Future;
         let mut context = std::task::Context::from_waker(std::task::Waker::noop());
         match self.future.as_mut().poll(&mut context) {
             std::task::Poll::Pending => Ok(None),
