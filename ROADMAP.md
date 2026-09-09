@@ -22,7 +22,7 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
   keys, and enabled migration. Ordinary decode returns one UUID; candidates stay explicit. Invalid
   inputs return typed errors. Freshness stays finite, nonnegative, fractional, inclusive, and symmetric.
 - Challenge existing APIs through caller jobs. Show gains, losses, upgrade steps, and limits; preserve contracts until Art rules otherwise.
-- Publish one dependency-free, native-free npm package and one `uuid-slug` crate with equal versions,
+- Prepare one dependency-free, native-free npm package and one `uuid-slug` crate with equal versions,
   Git/crates.io provenance, common native targets, and WASM. Rust dependencies need evidence;
   Node/Bun native bindings stay development-only.
 - Native CI must run Rust from the first increment. Timeouts bound hangs; signals establish readiness.
@@ -35,7 +35,9 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
   the next older release line; if none exists, report one comparison rather than duplicate it.
 - Keep the GitHub release draft until npm, crates.io, both exact archives, assets, and notes verify.
   Reruns repair only missing work and refuse to replace published or attached bytes that differ.
-- Do not version, tag, push, publish, release, or change remote state without Art's separate approval.
+- Remote reads are allowed. Remote writes remain listed only as held inventory and are outside this
+  roadmap's executable scope. Do not start, propose, or ask about versioning, tags, pushes,
+  publication, releases, or remote settings unless Art explicitly requests the exact operation.
 
 ### Phase 1: Establish the packaged API boundary
 
@@ -93,9 +95,9 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 - [x] Bundle declarations around public entries while preserving reachable types and compiler resolution. Allow required internal type files.
 - [x] Ship self-contained source maps with the approved published TypeScript source; verify retained paths and references.
 - [x] Minify built JavaScript and preserve useful tree-shaking boundaries. Judge unnecessary retained code by representative consumer bundles, not an absolute promise to remove every unused byte.
-- [ ] Publish one npm package and one Rust crate. Keep JavaScript chunks internal and Rust targets
-  under one release identity. Compare source-only Rust publication with prebuilt delivery; add
-  prebuilt artifacts only when a measured consumer need outweighs their release and trust cost.
+- [x] Prepare one npm package and one Rust crate for a shared release identity. Keep JavaScript
+  chunks internal. Prefer source-only Rust publication; add prebuilt artifacts only when a measured
+  consumer need outweighs their release and trust cost.
 - [x] Measure Rust release linking on native and WASM caller probes. Use feature gates for required platform boundaries or costs normal linking retains; avoid multiplying features just to reduce a size number.
 - [x] Track the compressed npm archive and `.crate` archive. For native and WASM code size, design
   one reproducible linked probe for the selected target/feature basis; compiler intermediates are invalid.
@@ -158,16 +160,29 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 - [x] Implement Art's approved combined-release completion behavior: registry, archive, asset, and
   notes verification precede finalization; reruns repair only missing work; validation jobs keep no
   publishing credentials.
-- [ ] After Art authorizes remote settings, require his review and the API check for baseline changes and protect their gate, workflow, and HLD owners too. Verify enforcement with remote readback; until then report protection as pending, not installed.
-
 ### Phase 5: Verify and close
 
 - [x] Run `bun run check` under the repository's pinned toolchain, web/browser artifact consumers, the selected Rust feature/target
   basis and required interactions, public API snapshot gate, predecessor semver comparison,
   final-archive inspection, and license verification.
 - [x] Review the total diff against every SOP task and approved HLD change. Check that each retained part serves a caller or verification need and each removed part has a replacement or approved removal; do not delete useful shared code to satisfy a count.
-- [x] Commit each verified code or durable-document change with explicit paths. Leave remote checks,
-  versioning, tags, pushes, and publication held until Art authorizes remote writes again.
+- [x] Commit each verified code or durable-document change with explicit paths. Remote writes are
+  held inventory, not executable roadmap work, unless Art explicitly requests the exact operation.
+
+### Remote-write hold
+
+These entries are inventory, not executable tasks. No agent may prepare, propose, ask about, or
+start one unless Art explicitly requests that exact operation. Remote reads remain allowed.
+
+- [ ] **HOLD:** Push local commits to the remote repository.
+- [ ] **HOLD:** Push the release tag to the remote repository.
+- [ ] **HOLD:** Publish the npm package.
+- [ ] **HOLD:** Publish the Rust crate.
+- [ ] **HOLD:** Create the draft GitHub release.
+- [ ] **HOLD:** Update GitHub release notes or assets.
+- [ ] **HOLD:** Finalize the GitHub release.
+- [ ] **HOLD:** Change branch protection.
+- [ ] **HOLD:** Change any other remote repository setting.
 
 ### Separate dependency follow-up
 
