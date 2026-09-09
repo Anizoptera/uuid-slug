@@ -25,7 +25,8 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 - Native CI must run Rust from the first increment. Timeouts bound hangs; signals establish readiness.
 - GitHub release notes start with the `CHANGELOG.md` section, then show generated packaged API and
   size changes against the immediate prior release and prior release line. Generated tables stay out of the changelog.
-- Annotated Git tags select both comparison releases, excluding the candidate on retries. Registries
+- Git release tags select both comparison releases, excluding the candidate on retries. Existing
+  lightweight tags remain valid history; new releases use annotated tags. Registries
   retrieve and verify the selected bytes but never redefine history. Compare the nearest lower version
   and the newest lower minor before 1.0 or newest lower major thereafter. If those are identical, use
   the next older release line; if none exists, report one comparison rather than duplicate it.
@@ -137,6 +138,10 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 - [ ] Implement Art's approved Git-tag predecessor policy for npm and Rust: patch, minor, major,
   prerelease, first publication, missing and ambiguous cases. Exclude the candidate itself on retries;
   require registries to provide the selected versions rather than selecting from registry history.
+  - [x] Select strict SemVer history from Git, including prereleases and build metadata; reject
+    ambiguous precedence; keep comparisons distinct; accept existing lightweight release tags.
+  - [ ] Bind each selected tag to its npm and crates.io archive, or stop with a precise unavailable
+    reason instead of substituting a registry-selected version.
 - [ ] Retain selected versions and registry integrity with release inputs so retries use the same comparison basis. Extract older APIs from published packages; distinguish absence from outage or unreadable content and report missing comparisons as unavailable.
 - [ ] Derive the minimum version from structural diffs and Art's classification of semantic changes; the stronger language result wins, and pre-1.0 breaks require a minor. Check closed unions, enums, exhaustive matches, defaults, errors, and features even when signatures look additive or unchanged.
 - [ ] Report parity failures by caller capability, both signatures, semantic difference, and required fix. Reuse shared contract cases and the approved capability mapping; add a names-based check only if it catches a distinct real mismatch without enforcing textual symmetry.

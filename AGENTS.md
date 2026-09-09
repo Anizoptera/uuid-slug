@@ -92,7 +92,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Refuse publication unless the tag matches the manifest and its changelog section is nonempty.
   Publish that section verbatim. Refuse local versioning without the new version's section.
 - Choose versions explicitly: 1.0.0 is a decision, not an automatic bump; a pre-1.0 breaking
-  change is a minor. Use annotated tags through `bun run release`.
+  change is a minor. New tags use annotated tags through `bun run release`; historical selection
+  must retain the existing lightweight release tags.
 - Obtain retained archives through `--tarball-out DIR` in a caller-owned directory and clean it
   up. Never parse archive paths from human-facing stdout.
 - Run `bun run check` before committing unless Art explicitly selects narrower intermediate

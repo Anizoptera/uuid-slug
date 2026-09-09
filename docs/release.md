@@ -4,7 +4,8 @@ A release uses Git tags to select history, publishes one verified npm archive an
 
 ## Comparison releases
 
-Annotated Git tags are the history authority. Exclude the candidate tag on retries, then select:
+Git release tags are the history authority. Existing lightweight tags remain valid history; new
+releases use annotated tags. Exclude the candidate tag on retries, then select:
 
 1. the highest version below the candidate; and
 2. the newest lower minor line while the major is zero, or the newest lower major line after 1.0.
