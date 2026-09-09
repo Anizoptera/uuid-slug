@@ -5,7 +5,10 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 ## Goals and approval boundaries
 
 - Art's goals: simpler calls, useful expert controls, efficient runtime paths, and better tree-shaking. Allow shared code; do not optimize export, file, or byte counts alone.
-- Art's written HLD rulings authorize consumer changes. Contract owners: README guarantees, `docs/design.md` wire rules, `docs/security.md` limits, and `docs/cross-language.md` parity/distribution. Read the owner before changing its contract; this SOP grants no approval.
+- Art's written HLD rulings authorize consumer changes. Contract owners: README guarantees,
+  `docs/design.md` wire rules, `docs/security.md` limits, `docs/cross-language.md` parity/distribution,
+  and `docs/release.md` release integrity and recovery. Read the owner before changing its contract;
+  this SOP grants no approval.
 - Preserve masked bytes, the 2^42 masking bound, 2^48 UUIDv7 bound, 16-bit check, raw sentinels,
   caller-ordered first-match keys, call-time byte-seed capture, and opt-in original migration.
   Keep base64url defaults, independent plain/masked alphabets, and length-based plain decoding.
@@ -22,6 +25,12 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 - Native CI must run Rust from the first increment. Timeouts bound hangs; signals establish readiness.
 - GitHub release notes start with the `CHANGELOG.md` section, then show generated packaged API and
   size changes against the immediate prior release and prior release line. Generated tables stay out of the changelog.
+- Annotated Git tags select both comparison releases, excluding the candidate on retries. Registries
+  retrieve and verify the selected bytes but never redefine history. Compare the nearest lower version
+  and the newest lower minor before 1.0 or newest lower major thereafter. If those are identical, use
+  the next older release line; if none exists, report one comparison rather than duplicate it.
+- Keep the GitHub release draft until npm, crates.io, both exact archives, assets, and notes verify.
+  Reruns repair only missing work and refuse to replace published or attached bytes that differ.
 - Do not version, tag, push, publish, release, or change remote state without Art's separate approval.
 
 ### Phase 1: Establish the packaged API boundary
@@ -90,8 +99,10 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 - [x] Keep synchronous codecs ready after import, with schema, sentinel, migration, and runtime code available locally. Splitting must not add installation or asynchronous setup.
 - [x] R1 — Submit the exact TypeScript/Rust API proposal: paths, brands, errors, cancellation, removals, language differences, and upgrade examples. Show the preferred choice and strongest alternative; obtain Art's written ruling before public code changes.
 - [x] R2 — Submit runtime conditions, source-map content, and Rust delivery choices with their loading, diagnostic, and trust costs. Obtain Art's ruling before changing published artifacts.
-- [ ] R3 — Submit predecessor/channel selection and combined-release completion rules, including the proposed draft-until-both-published behavior. Obtain Art's ruling before enforcing release policy; remote operations need separate authorization.
-- [x] Record Art's exact API and artifact rulings in their durable owners with reasons and limits; release policy remains held at R3. No durable source may depend on this temporary SOP.
+- [x] R3 — Art selected Git tags as comparison history and ruled that the GitHub release stays draft
+  until both registries and exact artifacts verify; retries repair only missing work. Comparisons must
+  be distinct: on collision, use the next older release line or emit only the one available version.
+- [x] Record Art's exact API, artifact, and release rulings in their durable owners with reasons and limits. No durable source may depend on this temporary SOP.
 
 ### Phase 3: Implement and verify approved changes
 
@@ -123,7 +134,9 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 
 ### Phase 4: Complete release compatibility and recovery
 
-- [ ] Implement Art's approved predecessor/channel policy for npm and Rust: patch, minor, major, prerelease, first publication, missing and ambiguous cases. Select published artifacts and exclude the candidate itself on retries.
+- [ ] Implement Art's approved Git-tag predecessor policy for npm and Rust: patch, minor, major,
+  prerelease, first publication, missing and ambiguous cases. Exclude the candidate itself on retries;
+  require registries to provide the selected versions rather than selecting from registry history.
 - [ ] Retain selected versions and registry integrity with release inputs so retries use the same comparison basis. Extract older APIs from published packages; distinguish absence from outage or unreadable content and report missing comparisons as unavailable.
 - [ ] Derive the minimum version from structural diffs and Art's classification of semantic changes; the stronger language result wins, and pre-1.0 breaks require a minor. Check closed unions, enums, exhaustive matches, defaults, errors, and features even when signatures look additive or unchanged.
 - [ ] Report parity failures by caller capability, both signatures, semantic difference, and required fix. Reuse shared contract cases and the approved capability mapping; add a names-based check only if it catches a distinct real mismatch without enforcing textual symmetry.
@@ -132,7 +145,9 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 - [ ] Prepare npm and crate archives without publishing credentials; check packaged APIs, contracts, parity, version/tag, semver, and integrity. Reuse these artifacts for publication, or require byte identity if a publisher must repack.
 - [ ] Generate release notes in `release.yml` from retained inputs: the changelog section verbatim, then API diffs and absolute/percentage npm, crate, native, and WASM size changes against both predecessors. Keep generated tables out of the changelog and reproduce notes on retry.
 - [ ] Test release recovery when neither registry, npm only, or both registries contain the version, and when notes/assets fail. Resume missing actions against verified bytes; never replace a published version with different content.
-- [ ] Implement Art's approved combined-release completion behavior. The draft-until-both-published proposal requires registry and asset verification before finalization; validation jobs keep no publishing credentials.
+- [ ] Implement Art's approved combined-release completion behavior: registry, archive, asset, and
+  notes verification precede finalization; reruns repair only missing work; validation jobs keep no
+  publishing credentials.
 - [ ] After Art authorizes remote settings, require his review and the API check for baseline changes and protect their gate, workflow, and HLD owners too. Verify enforcement with remote readback; until then report protection as pending, not installed.
 
 ### Phase 5: Verify and close

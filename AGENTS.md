@@ -81,6 +81,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   --provenance`. Derive the dist-tag from the git tag: prereleases use `next`, releases `latest`.
 - Keep `@anizoptera/publish-clean` a normal registry dependency, never a Git SHA or tarball URL.
 - Keep publication in `.github/workflows/release.yml`; trusted publishing binds its filename.
+- Read `docs/release.md` before changing predecessor selection, release evidence, publication,
+  recovery, assets, notes, or finalization.
 - Run verification on the tagged commit without publishing credentials, then make publication
   depend on it. Keep verification and credential-bearing publication in separate jobs; local
   `preversion` is feedback, not the release gate.
