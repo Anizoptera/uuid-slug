@@ -45,6 +45,17 @@ For stable releases, require the strongest bump identified by the TypeScript sur
 or changelog classification. A pre-1.0 breaking change requires a minor; a prerelease carries no
 stable compatibility guarantee and is reported as a prerelease rather than a patch, minor, or major.
 
+The reviewed Git baseline and the latest released surface answer different questions. The commit
+hook compares generated declarations with the reviewed baseline so an unapproved public change is
+visible. Routine CI must also compare with the latest release: a public item must be deprecated in a
+release before removal, and removal is allowed only in the next major release, or the next minor
+release while the major version is zero. Updating the reviewed baseline never erases that history.
+
+Package manifests remain the only owners of package metadata. Validate the exact cleaned npm
+tarball through `publish-clean` and validate the exact Cargo archive after `cargo package`. Compare
+compatibility-relevant metadata directly from retained manifests between releases; never copy it
+into declaration baselines.
+
 ## Publication and recovery
 
 Create or update one draft GitHub release. Publish missing npm or crates.io artifacts only after

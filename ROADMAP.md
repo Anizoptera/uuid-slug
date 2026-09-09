@@ -46,7 +46,7 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 - [x] Test [API Extractor](https://api-extractor.com/), [cargo-public-api](https://github.com/cargo-public-api/cargo-public-api), and [cargo-semver-checks](https://github.com/obi1kenobi/cargo-semver-checks) on this package before choosing tools. Check compiler compatibility, multiple entry points, conditional items, deterministic output, and cold/warm cost.
 - [x] Select tools by required structural coverage and upkeep cost. Pin compatible extractors and compilers, including rustdoc JSON tooling; verify non-declaration contracts at their owning artifact or release boundary.
 - [x] Generate one readable declaration baseline per language. Keep export conditions, runtime/compiler floors, and package metadata in their canonical manifests rather than duplicating them in snapshots.
-- [x] Include Rust public paths, fields, variants, generics, bounds, lifetimes, methods, traits, constants, features, defaults, MSRV, and target conditions. Reuse the feature checks; add selections only for uncovered items or interactions, not the feature power set.
+- [x] Include Rust public paths, fields, variants, generics, bounds, lifetimes, methods, traits, and constants in the baseline. Verify features, defaults, MSRV, and target conditions through Cargo and the supported build matrix.
 - [x] Mutation-test exports, overloads, brands, Rust visibility, lifetimes, auto-traits, and features. Record blind spots; contract tests cover semantics, while Art's review grants approval.
 - [x] Commit current baselines before public changes. Add read-only `api:check` with exact diffs, and `api:update` to regenerate both reports after approval, writing only changed files.
 - [x] Make `api:update` build and extract without recursively comparing the old baseline. Show the change class and both diffs; one unchanged language needs no artificial edit.
@@ -168,6 +168,37 @@ Make UUID generation, conversion, masking, and migration easy to use in TypeScri
 - [x] Review the total diff against every SOP task and approved HLD change. Check that each retained part serves a caller or verification need and each removed part has a replacement or approved removal; do not delete useful shared code to satisfy a count.
 - [x] Commit each verified code or durable-document change with explicit paths. Remote writes are
   held inventory, not executable roadmap work, unless Art explicitly requests the exact operation.
+
+### Phase 6: Enforce API evolution and exact archive policy
+
+- [ ] Keep two independent API checks: generated declarations must equal the reviewed Git baseline,
+  while the current surface must remain legal relative to the latest released surface. Updating the
+  review baseline must never erase release history.
+- [ ] Read the latest released TypeScript and Rust surfaces from the release selected by Git tags;
+  obtain missing historical surfaces from verified registry archives rather than minting another
+  maintained snapshot. Keep routine checks usable before a candidate tag exists.
+- [ ] Record deprecation state in both language reports using compiler-derived structure. Reject
+  removal unless the item was deprecated in a published release and the current version advances to
+  the next major, or the next minor while the major is zero.
+- [ ] Reuse one compatibility engine in routine CI and release reporting. Keep reviewed-baseline
+  equality, predecessor compatibility, changelog classification, and Art's approval as distinct
+  evidence; none substitutes for another.
+- [ ] Keep package metadata in `package.json` and Cargo manifests. Validate the exact cleaned npm
+  archive through `publish-clean.validateArtifact`; compare retained package surfaces between
+  releases without copying manifest values into API Markdown.
+- [ ] Validate the exact `.crate` produced by `cargo package`: one canonical root, correct identity,
+  intended library targets, required license/readme/source metadata, no foreign or compiled payloads,
+  and no build-machine paths. Then execute tests and docs from the extracted archive.
+- [ ] Mutation-test the owning failures: unapproved additions, non-deprecated removal, same-cycle
+  deprecate-and-remove, legal later removal, raised runtime/compiler floor, changed entrypoint,
+  malformed archive root, build script/binary payload, and machine-path leak. Retain only cases that
+  fail when their intended guard is removed.
+- [ ] Wire the fast reviewed-baseline and released-surface checks into the commit hook and routine CI.
+  Keep exact archive execution in artifact preparation, and keep every routine lane inside its
+  existing latency ceiling.
+- [ ] Re-run the complete local gate and inspect both produced archives directly. Reconcile the final
+  diff against README guarantees, `docs/cross-language.md`, this release policy, and every remaining
+  roadmap item before closure.
 
 ### Adversarial audit of completed local work
 
