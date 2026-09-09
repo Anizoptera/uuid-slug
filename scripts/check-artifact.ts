@@ -11,6 +11,18 @@ const project = path.resolve(import.meta.dir, "..");
 
 /** Validate the archive itself; callers supplying a tarball never invoke the packer. */
 export async function inspectArtifact(tarball: string, web = false): Promise<void> {
+  const expected = process.env.UUID_SLUG_EXPECTED_ARCHIVE;
+  if (expected) {
+    const [actualBytes, expectedBytes] = await Promise.all([
+      Bun.file(tarball).bytes(),
+      Bun.file(expected).bytes(),
+    ]);
+    if (
+      actualBytes.length !== expectedBytes.length ||
+      actualBytes.some((byte, index) => byte !== expectedBytes[index])
+    )
+      throw new Error("Final npm archive differs from the credentials-free reviewed archive.");
+  }
   const root = await mkdtemp(path.join(tmpdir(), "uuid-slug-consumer-"));
   try {
     // Version managers resolve from cwd; temporary consumers must use the project's toolchain.

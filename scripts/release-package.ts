@@ -1,30 +1,36 @@
 import { mkdir, readdir } from "node:fs/promises";
-import path from "node:path";
+import { join } from "node:path";
 import { command } from "./command";
 import { preflightRelease } from "./release-notes";
 import { registryIntegrity, verifyIntegrity } from "./registry-integrity";
 
-/** Retain only bytes matching the published version before CI can attest or attach them. */
-export async function publishRelease(
+const reviewedDirectory = "release-artifacts/reviewed-npm";
+
+async function archive(directory: string): Promise<string> {
+  const files = (await readdir(directory)).filter((file) => file.endsWith(".tgz"));
+  if (files.length !== 1 || !files[0])
+    throw new Error(`Expected one retained npm archive, found ${files.length}.`);
+  return join(directory, files[0]);
+}
+
+async function pack(
   cwd: string,
-  tag: string,
-  registry = "https://registry.npmjs.org",
-): Promise<void> {
-  const { name, version, notes } = await preflightRelease(cwd, tag);
-  const url = `${registry}/${encodeURIComponent(name)}/${encodeURIComponent(version)}`;
-  const existing = await registryIntegrity(url);
-  const output = path.join(cwd, "release-artifacts");
-  await mkdir(output, { recursive: true });
-  if ((await readdir(output)).length)
-    throw new Error("release-artifacts must be empty before packing.");
+  directory: string,
+  version: string,
+  dryRun: boolean,
+  expected?: string,
+): Promise<string> {
+  await mkdir(directory, { recursive: true });
+  if ((await readdir(directory)).length)
+    throw new Error(`${directory} must be empty before packing.`);
   const distTag = version.split("+", 1)[0]?.includes("-") ? "next" : "latest";
   await command(
     "bun",
     [
-      path.join(cwd, "node_modules/.bin/publish-clean"),
-      ...(existing ? ["--dry-run"] : []),
+      join(cwd, "node_modules/.bin/publish-clean"),
+      ...(dryRun ? ["--dry-run"] : []),
       "--tarball-out",
-      output,
+      directory,
       "--",
       "--access",
       "public",
@@ -33,23 +39,40 @@ export async function publishRelease(
       "--provenance",
     ],
     cwd,
+    expected ? { UUID_SLUG_EXPECTED_ARCHIVE: expected } : undefined,
   );
-  const files = (await readdir(output)).filter((file) => file.endsWith(".tgz"));
-  if (files.length !== 1 || !files[0])
-    throw new Error(`Expected one retained archive, found ${files.length}.`);
+  return archive(directory);
+}
+
+/** Prepare without credentials, or publish only bytes identical to that reviewed archive. */
+export async function releasePackage(
+  cwd: string,
+  tag: string,
+  mode: "prepare" | "publish",
+  registry = "https://registry.npmjs.org",
+): Promise<void> {
+  const { name, version } = await preflightRelease(cwd, tag);
+  const url = `${registry}/${encodeURIComponent(name)}/${encodeURIComponent(version)}`;
+  if (mode === "prepare") {
+    await pack(cwd, join(cwd, reviewedDirectory), version, true);
+    return;
+  }
+  const reviewed = await archive(join(cwd, reviewedDirectory));
+  const existing = await registryIntegrity(url);
+  if (existing) verifyIntegrity(await Bun.file(reviewed).bytes(), existing);
+  else await pack(cwd, join(cwd, "release-artifacts/published-npm"), version, false, reviewed);
   const published = existing ?? (await registryIntegrity(url));
   if (!published)
-    throw new Error(
-      "Registry does not yet expose the uploaded version; retry after it becomes observable.",
-    );
-  verifyIntegrity(await Bun.file(path.join(output, files[0])).bytes(), published);
-  await Bun.write(path.join(output, "notes.md"), notes);
+    throw new Error("npm upload is not observable yet; retry when the registry exposes it.");
+  verifyIntegrity(await Bun.file(reviewed).bytes(), published);
 }
 
 if (import.meta.main) {
+  const mode = process.argv[2];
   const tag = process.env.GITHUB_REF_NAME;
-  if (!tag) throw new Error("GITHUB_REF_NAME must identify the release tag.");
-  publishRelease(process.cwd(), tag).catch((error: unknown) => {
+  if (!tag || (mode !== "prepare" && mode !== "publish"))
+    throw new Error("Usage: release-package.ts prepare|publish (with GITHUB_REF_NAME)");
+  releasePackage(process.cwd(), tag, mode).catch((error: unknown) => {
     console.error(error);
     process.exitCode = 1;
   });
