@@ -1,9 +1,6 @@
 name: Release
 
-# A release is a pushed tag, and nothing else is. `bun run release <patch|minor|major>` bumps
-# the manifest, commits and tags in one step, so the tag and the published version cannot
-# disagree; `git push --follow-tags` starts this workflow. Dispatch is the repair path —
-# select the tag ref and every step below re-runs against it.
+# Tags select immutable release history. Dispatch repairs the selected tag without changing inputs.
 on:
   workflow_dispatch:
   push:
@@ -17,15 +14,83 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Run the same runtime and packed-browser checks on the tagged revision without credentials.
   verify:
     permissions: {}
     uses: ./.github/workflows/check.yml
 
-  crate:
+  prepare:
+    needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .tool-versions
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .tool-versions
+          package-manager-cache: false
+      - run: bun install --frozen-lockfile
+      - name: Install the repository Rust toolchain
+        run: |
+          version=$(awk '$1 == "rust" { print $2 }' .tool-versions)
+          test -n "$version" && rustup toolchain install "$version" --profile minimal --target wasm32-unknown-unknown
+          rustup override set "$version"
+      - run: bun run build
+      - run: bun scripts/release-package.ts prepare
+      - run: bun scripts/release-crate.ts prepare
+      - name: Bind Git history to reviewed registry archives
+        run: |
+          npm_archive=(release-artifacts/reviewed-npm/*.tgz)
+          crate_archive=(rust/target/reviewed-crate/*.crate)
+          test "${#npm_archive[@]}" -eq 1 && test "${#crate_archive[@]}" -eq 1
+          bun scripts/release-inputs.ts "$GITHUB_REF_NAME" release-artifacts/history "${npm_archive[0]}" "${crate_archive[0]}"
+          bun scripts/release-report.ts
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-evidence
+          path: |
+            release-artifacts
+            rust/target/reviewed-crate
+          if-no-files-found: error
+
+  publish-npm:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .tool-versions
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .tool-versions
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-evidence
+          path: .
+      - run: bun run build
+      - run: bun scripts/release-package.ts publish
+
+  publish-crate:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -37,66 +102,27 @@ jobs:
       - name: Install the repository Rust toolchain
         run: |
           version=$(awk '$1 == "rust" { print $2 }' .tool-versions)
-          test -n "$version" && rustup toolchain install "$version" --profile minimal && rustup override set "$version"
-      - run: bun scripts/release-crate.ts prepare
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+          test -n "$version" && rustup toolchain install "$version" --profile minimal
+          rustup override set "$version"
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: reviewed-crate
-          path: rust/target/reviewed-crate/*.crate
-          if-no-files-found: error
-
-  publish:
-    needs: [verify, crate]
-    runs-on: ubuntu-latest
-    # Bounded because the runner default is six hours and this workflow serialises on a
-    # concurrency group that never cancels: one wedged run blocks every later release until
-    # a human notices. This job also holds a live OIDC identity, which must not stay alive
-    # any longer than the upload needs.
-    timeout-minutes: 5
-    permissions:
-      contents: write # attach the published tarball to the GitHub Release
-      id-token: write # OIDC: npm provenance and build-provenance attestation
-      attestations: write # GitHub's own attestation store
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      # Both versions come from `.tool-versions`, the single toolchain declaration asdf also
-      # reads. Bun builds `dist` and runs publish-clean, which packs; Node is still required
-      # because `npm` is a Node script and it is npm that uploads and signs. Drift in either
-      # version is drift in the artifact, which is why neither comes from runner defaults.
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version-file: .tool-versions
-      - run: bun install --frozen-lockfile
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .tool-versions
-          registry-url: https://registry.npmjs.org
-          package-manager-cache: false
-
-      - run: bun run build
-
-      # A retry must match registry integrity before attestation or replacing release assets.
-      - run: bun scripts/release-package.ts
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: release-artifacts/*.tgz
-
-      # The preflight preserved the tagged changelog body; repair existing release notes too.
-      - name: Publish the GitHub Release and attach the tarball
-        run: |
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release edit "$GITHUB_REF_NAME" --notes-file release-artifacts/notes.md
-          else
-            gh release create "$GITHUB_REF_NAME" --verify-tag --notes-file release-artifacts/notes.md
-          fi
-          gh release upload "$GITHUB_REF_NAME" release-artifacts/*.tgz --clobber
+          name: release-evidence
+          path: .
+      - id: preflight
+        run: bun scripts/release-crate.ts check
+      - id: bootstrap
         env:
-          GH_TOKEN: ${{ github.token }}
+          BOOTSTRAP_TOKEN: ${{ secrets.CRATES_IO_BOOTSTRAP_TOKEN }}
+        run: test -z "$BOOTSTRAP_TOKEN" || echo "available=true" >> "$GITHUB_OUTPUT"
+      - id: auth
+        if: steps.preflight.outputs.published != 'true' && steps.bootstrap.outputs.available != 'true'
+        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
+      - run: bun scripts/release-crate.ts publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token || secrets.CRATES_IO_BOOTSTRAP_TOKEN }}
 
-  publish-crate:
-    needs: [verify, crate, publish]
+  finalize:
+    needs: [publish-npm, publish-crate]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -110,36 +136,15 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
-      - run: bun install --frozen-lockfile
-      - name: Install the repository Rust toolchain
-        run: |
-          version=$(awk '$1 == "rust" { print $2 }' .tool-versions)
-          test -n "$version" && rustup toolchain install "$version" --profile minimal && rustup override set "$version"
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: reviewed-crate
-          path: rust/target/reviewed-crate
-      - id: preflight
-        run: bun scripts/release-crate.ts check
-      # The initial crates.io publication requires an API token; remove this secret
-      # after configuring Anizoptera/uuid-slug + release.yml as a trusted publisher.
-      - id: bootstrap
-        env:
-          BOOTSTRAP_TOKEN: ${{ secrets.CRATES_IO_BOOTSTRAP_TOKEN }}
-        run: |
-          if test -n "$BOOTSTRAP_TOKEN"; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-          fi
-      - id: auth
-        if: steps.preflight.outputs.published != 'true' && steps.bootstrap.outputs.available != 'true'
-        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
-      - run: bun scripts/release-crate.ts publish
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token || secrets.CRATES_IO_BOOTSTRAP_TOKEN }}
+          name: release-evidence
+          path: .
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: rust/target/reviewed-crate/*.crate
-      - name: Attach the registry-matching crate
-        run: gh release upload "$GITHUB_REF_NAME" rust/target/reviewed-crate/*.crate --clobber
+          subject-path: |
+            release-artifacts/reviewed-npm/*.tgz
+            rust/target/reviewed-crate/*.crate
+      - run: bun scripts/release-finalize.ts
         env:
           GH_TOKEN: ${{ github.token }}

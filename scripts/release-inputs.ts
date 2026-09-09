@@ -36,6 +36,7 @@ export interface ComparisonInput {
 }
 
 export interface ReleaseInputs {
+  readonly name: string;
   readonly version: string;
   readonly tag: string;
   readonly commit: string;
@@ -225,6 +226,7 @@ export async function collectReleaseInputs(
       }),
   );
   const inputs = {
+    name,
     version,
     tag,
     commit,

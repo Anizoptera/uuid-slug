@@ -14,8 +14,11 @@ export function verifyCrateChecksum(bytes: Uint8Array, checksum: string): void {
 }
 
 /** Only the registry's explicit not-found response permits a new publication. */
-export async function crateChecksum(version: string): Promise<string | undefined> {
-  const response = await fetch(`https://crates.io/api/v1/crates/uuid-slug/${version}`, {
+export async function crateChecksum(
+  version: string,
+  registry = "https://crates.io",
+): Promise<string | undefined> {
+  const response = await fetch(`${registry}/api/v1/crates/uuid-slug/${version}`, {
     headers: { "User-Agent": userAgent },
     signal: AbortSignal.timeout(20_000),
   });
