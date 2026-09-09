@@ -78,6 +78,12 @@ jobs:
           restore-keys: rust-${{ matrix.runner }}-${{ hashFiles('.tool-versions', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-
       - run: bun install --frozen-lockfile
       - run: bun run check:rust
+      - name: Install the packaged API extractor
+        if: matrix.runner == 'ubuntu-24.04'
+        run: cargo install cargo-public-api --version 0.52.0 --locked
+      - name: Check the packaged API baseline
+        if: matrix.runner == 'ubuntu-24.04'
+        run: bun run api:check
       - name: Check 32-bit Rust builds
         if: matrix.runner == 'ubuntu-24.04'
         shell: bash
