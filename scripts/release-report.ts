@@ -12,6 +12,13 @@ interface Sizes {
   readonly wasm?: number;
 }
 
+type ReleaseLevel = "prerelease" | "patch" | "minor" | "major";
+
+interface ApiDifference {
+  readonly report: string;
+  readonly level: ReleaseLevel;
+}
+
 export async function measureLinkedSizes(
   cwd: string,
   crate: string,
@@ -59,7 +66,14 @@ async function declaration(archive: string): Promise<string> {
   return entry.text();
 }
 
-export function apiDiff(before: string, after: string): string {
+async function rustApi(cwd: string, manifest: string): Promise<string> {
+  const base = ["public-api", "--manifest-path", manifest, "--color=never", "--simplified"];
+  const all = await command("cargo", [...base, "--all-features"], cwd);
+  const minimal = await command("cargo", [...base, "--no-default-features"], cwd);
+  return `${all.trim()}\n${minimal.trim()}\n`;
+}
+
+function apiDifference(before: string, after: string, language: string): ApiDifference {
   const oldLines = new Set(
     before
       .split("\n")
@@ -74,11 +88,38 @@ export function apiDiff(before: string, after: string): string {
   );
   const removed = [...oldLines].filter((line) => !newLines.has(line));
   const added = [...newLines].filter((line) => !oldLines.has(line));
-  if (!removed.length && !added.length) return "No packaged TypeScript declaration changes.";
-  return [
-    ...removed.map((line) => `- \`${line.replaceAll("`", "\\`")}\``),
-    ...added.map((line) => `- \`${line.replaceAll("`", "\\`")}\` (added)`),
-  ].join("\n");
+  if (!removed.length && !added.length)
+    return { report: `No packaged ${language} changes.`, level: "patch" };
+  return {
+    report: [
+      ...removed.map((line) => `- \`${line.replaceAll("`", "\\`")}\``),
+      ...added.map((line) => `- \`${line.replaceAll("`", "\\`")}\` (added)`),
+    ].join("\n"),
+    level: removed.length ? "major" : "minor",
+  };
+}
+
+export const apiDiff = (before: string, after: string): string =>
+  apiDifference(before, after, "TypeScript declaration").report;
+
+export function minimumRelease(
+  version: string,
+  notes: string,
+  languages: readonly ReleaseLevel[],
+): ReleaseLevel {
+  if (version.includes("-")) return "prerelease";
+  const declared = notes.includes("### Breaking changes")
+    ? "major"
+    : notes.includes("### Added")
+      ? "minor"
+      : "patch";
+  const strongest =
+    declared === "major" || languages.includes("major")
+      ? "major"
+      : declared === "minor" || languages.includes("minor")
+        ? "minor"
+        : "patch";
+  return version.startsWith("0.") && strongest === "major" ? "minor" : strongest;
 }
 
 export function sizeDelta(current: number | undefined, previous: number | undefined): string {
@@ -100,19 +141,23 @@ function sizeTable(current: Sizes, previous: Sizes): string {
   ].join("\n");
 }
 
-async function historicalSizes(
+async function historicalEvidence(
   root: string,
   work: string,
   npm: RetainedArchive | undefined,
   crate: RetainedArchive | undefined,
-): Promise<Sizes> {
-  if (!crate) return { ...(npm ? { npm: (await stat(resolve(root, npm.file))).size } : {}) };
+): Promise<{ sizes: Sizes; crateRoot?: string }> {
+  if (!crate)
+    return { sizes: { ...(npm ? { npm: (await stat(resolve(root, npm.file))).size } : {}) } };
   const extracted = join(work, basename(crate.file, ".crate"));
   const crateRoot = await extractArchive(resolve(root, crate.file), extracted);
   return {
-    ...(npm ? { npm: (await stat(resolve(root, npm.file))).size } : {}),
-    crate: (await stat(resolve(root, crate.file))).size,
-    ...(await measureLinkedSizes(extracted, crateRoot, work, basename(crate.file, ".crate"))),
+    crateRoot,
+    sizes: {
+      ...(npm ? { npm: (await stat(resolve(root, npm.file))).size } : {}),
+      crate: (await stat(resolve(root, crate.file))).size,
+      ...(await measureLinkedSizes(extracted, crateRoot, work, basename(crate.file, ".crate"))),
+    },
   };
 }
 
@@ -129,6 +174,7 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
   const work = await mkdtemp(join(tmpdir(), "uuid-slug-release-report-"));
   try {
     const currentDeclaration = await declaration(npm);
+    const currentRust = await rustApi(root, join(root, "rust/uuid-slug/Cargo.toml"));
     const current: Sizes = {
       npm: (await stat(npm)).size,
       crate: (await stat(crate)).size,
@@ -136,20 +182,50 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
     };
     const sections = await Promise.all(
       inputs.comparisons.map(async (comparison) => {
-        const previous = await historicalSizes(root, work, comparison.npm, comparison.crate);
-        const changes = comparison.npm
-          ? apiDiff(await declaration(resolve(root, comparison.npm.file)), currentDeclaration)
-          : "TypeScript comparison unavailable because npm has no release history.";
-        return `## ${comparison.role === "immediate" ? "Previous release" : "Previous release line"}: ${comparison.tag}\n\n### Packaged API\n\n${changes}\n\n### Size\n\n${sizeTable(current, previous)}`;
+        const previous = await historicalEvidence(root, work, comparison.npm, comparison.crate);
+        const typescript = comparison.npm
+          ? apiDifference(
+              await declaration(resolve(root, comparison.npm.file)),
+              currentDeclaration,
+              "TypeScript declaration",
+            )
+          : undefined;
+        const rust = previous.crateRoot
+          ? apiDifference(
+              await rustApi(previous.crateRoot, join(previous.crateRoot, "Cargo.toml")),
+              currentRust,
+              "Rust public signature",
+            )
+          : undefined;
+        const minimum = minimumRelease(
+          inputs.version,
+          notes,
+          [typescript?.level, rust?.level].filter((level): level is ReleaseLevel => !!level),
+        );
+        const api = [
+          `#### TypeScript\n\n${typescript?.report ?? "Unavailable because npm has no release history."}`,
+          `#### Rust\n\n${rust?.report ?? "Unavailable because crates.io has no release history."}`,
+        ].join("\n\n");
+        return {
+          minimum,
+          text: `## ${comparison.role === "immediate" ? "Previous release" : "Previous release line"}: ${comparison.tag}\n\n### Minimum compatible release\n\n${minimum}\n\n### Packaged API\n\n${api}\n\n### Size\n\n${sizeTable(current, previous.sizes)}`,
+        };
       }),
     );
     const report = {
       current,
-      comparisons: inputs.comparisons.map(({ role, tag }) => ({ role, tag })),
+      comparisons: inputs.comparisons.map(({ role, tag }, index) => ({
+        role,
+        tag,
+        minimum: sections[index]?.minimum,
+      })),
     };
     await Promise.all([
       Bun.write(join(directory, "release-report.json"), `${JSON.stringify(report, null, 2)}\n`),
-      Bun.write(join(directory, "notes.md"), `${notes.trimEnd()}\n\n${sections.join("\n\n")}\n`),
+      Bun.write(
+        join(directory, "notes.md"),
+        `${notes.trimEnd()}\n\n${sections.map(({ text }) => text).join("\n\n")}\n`,
+      ),
     ]);
   } finally {
     await rm(work, { recursive: true, force: true });

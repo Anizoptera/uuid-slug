@@ -41,6 +41,7 @@ jobs:
           version=$(awk '$1 == "rust" { print $2 }' .tool-versions)
           test -n "$version" && rustup toolchain install "$version" --profile minimal --target wasm32-unknown-unknown
           rustup override set "$version"
+      - run: cargo install cargo-public-api --version 0.52.0 --locked
       - run: bun run build
       - run: bun scripts/release-package.ts prepare
       - run: bun scripts/release-crate.ts prepare

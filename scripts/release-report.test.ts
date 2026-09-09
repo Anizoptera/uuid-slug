@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { apiDiff, sizeDelta } from "./release-report";
+import { apiDiff, minimumRelease, sizeDelta } from "./release-report";
 
 test("release API diff exposes removals and additions without restating unchanged lines", () => {
   expect(
@@ -12,4 +12,12 @@ test("release size deltas never invent a percentage for zero or missing denomina
   expect(sizeDelta(12, 0)).toBe("12 B (+12 B)");
   expect(sizeDelta(12, undefined)).toBe("unavailable");
   expect(sizeDelta(12, 8)).toBe("12 B (+4 B, +50.0%)");
+});
+
+test("the strongest structural or maintainer-classified change sets the minimum release", () => {
+  expect(minimumRelease("0.4.0", "### Breaking changes\n", ["patch"])).toBe("minor");
+  expect(minimumRelease("1.4.0", "### Fixed\n", ["major", "minor"])).toBe("major");
+  expect(minimumRelease("1.4.1", "### Added\n", ["patch"])).toBe("minor");
+  expect(minimumRelease("1.4.1", "### Fixed\n", ["patch"])).toBe("patch");
+  expect(minimumRelease("2.0.0-beta.2", "### Breaking changes\n", ["major"])).toBe("prerelease");
 });
