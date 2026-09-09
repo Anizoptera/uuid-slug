@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
+import ts from "typescript-floor";
 import { command } from "./command";
 import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
 import { preflightRelease } from "./release-notes";
@@ -17,6 +18,14 @@ type ReleaseLevel = "prerelease" | "patch" | "minor" | "major";
 interface ApiDifference {
   readonly report: string;
   readonly level: ReleaseLevel;
+}
+
+function normalizeDeclarations(source: string): string {
+  const file = ts.createSourceFile("public.d.ts", source, ts.ScriptTarget.Latest, true);
+  return ts
+    .createPrinter({ newLine: ts.NewLineKind.LineFeed, removeComments: true })
+    .printFile(file)
+    .trim();
 }
 
 export async function measureLinkedSizes(
@@ -59,11 +68,30 @@ async function extractArchive(archive: string, destination: string): Promise<str
   return dirname(join(destination, manifest));
 }
 
-async function declaration(archive: string): Promise<string> {
-  const files = await new Bun.Archive(await Bun.file(archive).bytes()).files();
-  const entry = files.get("package/dist/index.d.ts");
-  if (!entry) throw new Error(`${basename(archive)} has no packaged TypeScript declarations.`);
-  return entry.text();
+async function declaration(
+  root: string,
+  archive: string,
+  work: string,
+  label: string,
+): Promise<string> {
+  const extracted = join(work, `npm-${label}`);
+  const rollup = join(extracted, "public.d.ts");
+  const config = join(extracted, "api-extractor.json");
+  const contents = new Bun.Archive(await Bun.file(archive).bytes());
+  const files = await contents.files();
+  if (!files.has("package/dist/index.d.ts"))
+    throw new Error(`${basename(archive)} has no packaged TypeScript declarations.`);
+  await contents.extract(extracted);
+  await Bun.write(
+    config,
+    JSON.stringify({
+      extends: join(root, "api-extractor.json"),
+      mainEntryPointFilePath: join(extracted, "package/dist/index.d.ts"),
+      dtsRollup: { enabled: true, untrimmedFilePath: rollup },
+    }),
+  );
+  await command("api-extractor", ["run", "--local", "--config", config], root);
+  return normalizeDeclarations(await Bun.file(rollup).text());
 }
 
 async function rustApi(cwd: string, manifest: string): Promise<string> {
@@ -173,7 +201,7 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
   const crate = resolve(root, inputs.candidate.crate.file);
   const work = await mkdtemp(join(tmpdir(), "uuid-slug-release-report-"));
   try {
-    const currentDeclaration = await declaration(npm);
+    const currentDeclaration = await declaration(root, npm, work, "current");
     const currentRust = await rustApi(root, join(root, "rust/uuid-slug/Cargo.toml"));
     const current: Sizes = {
       npm: (await stat(npm)).size,
@@ -185,7 +213,7 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
         const previous = await historicalEvidence(root, work, comparison.npm, comparison.crate);
         const typescript = comparison.npm
           ? apiDifference(
-              await declaration(resolve(root, comparison.npm.file)),
+              await declaration(root, resolve(root, comparison.npm.file), work, comparison.tag),
               currentDeclaration,
               "TypeScript declaration",
             )
