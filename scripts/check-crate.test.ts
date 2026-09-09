@@ -43,8 +43,9 @@ async function rejected(extra: Record<string, string>, message: string): Promise
   }
 }
 
-test("crate validation rejects build output, machine paths, and build scripts", async () => {
-  await rejected({ [`${root}target/release/libuuid_slug.rlib`]: "" }, "Forbidden crate path");
+test("crate validation rejects foreign roots, compiled payloads, machine paths, and build scripts", async () => {
+  await rejected({ "other/Cargo.toml": "" }, "Forbidden crate path");
+  await rejected({ [`${root}src/libuuid_slug.so`]: "" }, "Compiled payload");
   await rejected({ [`${root}src/leak.rs`]: "/Users/builder/project" }, "Build-machine path");
   await rejected(
     { [`${root}Cargo.toml`]: manifest.replace("build = false", 'build = "build.rs"') },
