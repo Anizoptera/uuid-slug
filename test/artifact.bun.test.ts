@@ -86,7 +86,7 @@ test("refuses runtime conditions before source conditions", () =>
         },
       }),
     },
-    "conditions or their priority",
+    'must be ordered "types", "bun", "development", "node", then "default"',
   ));
 test("finds machine paths in extensionless files", () =>
   rejected({ ...base, "package/leak": "/Users/builder/private" }, "Build-machine path"));

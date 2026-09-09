@@ -36,12 +36,28 @@ test("one command updates every development version owner", async () => {
     expect((await Bun.file(join(root, "package.json")).json()).version).toBe("0.4.0-dev");
     await checkReleaseVersion(root, "0.4.0-dev");
 
+    for (const [path, error] of [
+      ["rust/Cargo.toml", /Rust version 0\.4\.1-dev does not match.*version:set/s],
+      ["rust/Cargo.lock", /Cargo\.lock uuid-slug does not match.*version:set/s],
+    ] as const) {
+      const source = await Bun.file(join(root, path)).text();
+      await Bun.write(
+        join(root, path),
+        source.replace('version = "0.4.0-dev"', 'version = "0.4.1-dev"'),
+      );
+      await rejects(checkReleaseVersion(root, "0.4.0-dev"), error);
+      await Bun.write(join(root, path), source);
+    }
+
     const before = await Promise.all(
       ["package.json", "rust/Cargo.toml", "rust/Cargo.lock"].map((path) =>
         Bun.file(join(root, path)).text(),
       ),
     );
-    await rejects(setDevelopmentVersion(root, "0.5.0"), /development version/);
+    await rejects(
+      setDevelopmentVersion(root, "0.5.0"),
+      /version:set accepts only.*version:set <X\.Y\.Z-dev>.*bun run release <X\.Y\.Z>/s,
+    );
     const after = await Promise.all(
       ["package.json", "rust/Cargo.toml", "rust/Cargo.lock"].map((path) =>
         Bun.file(join(root, path)).text(),

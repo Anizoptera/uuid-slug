@@ -48,10 +48,14 @@ provide a lower bound; the committer must classify behavior that declarations ca
 Choose the development target against the latest governed release. After a release, start with its
 next patch. Raise the target only when the changes since that release require a minor or major under
 the rule above. With no governed release, keep the planned first release unless the maintainer
-changes it. Changes to unreleased APIs do not justify a higher target. Use
-`bun run version:set <X.Y.Z-dev>` to update and verify `package.json`, `rust/Cargo.toml`, and
-`rust/Cargo.lock` together. A release tag and both published manifests use the same stable version
-without `-dev`.
+changes it. Changes to unreleased APIs do not justify a higher target.
+
+### Set the development version
+
+Run `bun run version:set <X.Y.Z-dev>` when the planned release version changes. The command updates
+`package.json`, `rust/Cargo.toml`, and `rust/Cargo.lock`, then checks that all three versions match.
+It restores all three files if the update fails. Use `bun run release <X.Y.Z>` for a stable version;
+release tags and published manifests never use the `-dev` suffix.
 
 The commit hook checks two independent rules. Generated declarations must match the reviewed
 baseline and remain compatible with the latest release. Updating the reviewed baseline cannot

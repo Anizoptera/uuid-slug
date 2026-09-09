@@ -21,7 +21,9 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       actualBytes.length !== expectedBytes.length ||
       actualBytes.some((byte, index) => byte !== expectedBytes[index])
     )
-      throw new Error("Final npm archive differs from the credentials-free reviewed archive.");
+      throw new Error(
+        "Final npm archive differs from the credentials-free reviewed archive. Publish the reviewed bytes, or return to development and verify the replacement archive before publishing.",
+      );
   }
   const root = await mkdtemp(path.join(tmpdir(), "uuid-slug-consumer-"));
   try {
@@ -70,7 +72,9 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       JSON.stringify(Object.entries(manifest.exports["."] ?? {})) !==
       JSON.stringify(expectedRootExport)
     )
-      throw new Error("Packed root export conditions or their priority are invalid.");
+      throw new Error(
+        'Packed root exports must be ordered "types", "bun", "development", "node", then "default" and use the repository targets declared in package.json.',
+      );
     if (manifest.name !== "@anizoptera/uuid-slug") throw new Error("Unexpected package name.");
     await Bun.write(
       path.join(root, "package.json"),

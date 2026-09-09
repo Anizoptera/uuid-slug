@@ -14,6 +14,7 @@ import type { ApiDifference, ReleaseLevel } from "./release-comparison";
 import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
 import { readRetainedArchive } from "./release-inputs";
 import { preflightRelease } from "./release-notes";
+import { taggedVersionGuidance } from "./release-version";
 import {
   cargoSurfaceDifference,
   npmReleaseSurface,
@@ -359,7 +360,7 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
         );
         if (!satisfiesMinimum(comparison.tag.slice(1), inputs.version, minimum))
           throw new Error(
-            `${inputs.version} is below the ${minimum} release required from ${comparison.tag}.`,
+            `${inputs.version} is below the ${minimum} release required from ${comparison.tag}. Option 1: return to development and remove the incompatible consumer changes while keeping the changelog accurate. Option 2: ${taggedVersionGuidance}`,
           );
         const api = [
           `#### TypeScript\n\n${typescript?.report ?? "Unavailable because npm has no release history."}`,

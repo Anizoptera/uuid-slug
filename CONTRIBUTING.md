@@ -15,7 +15,7 @@ diffs, and include them in the pull request. Merging is the maintainer decision;
 acceptance step exists.
 
 Use one version in `package.json`, `rust/Cargo.toml`, and `rust/Cargo.lock`. Between releases, use
-`X.Y.Z-dev`: start with the next patch and raise the target when required.
+`X.Y.Z-dev`. Run `bun run version:set <X.Y.Z-dev>` instead of editing version files separately.
 
 - Patch: a backward-compatible fix with no new public behavior.
 - Minor: new backward-compatible public behavior.

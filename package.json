@@ -78,7 +78,7 @@
     "check:js:built": "bun run --parallel format:check lint claude-link:check typecheck test bench:smoke artifact:check",
     "check:rust": "bun scripts/check-rust.ts",
     "check:rust:fast": "bun scripts/check-rust.ts --fast",
-    "claude-link:check": "test -L CLAUDE.md && test \"$(readlink CLAUDE.md)\" = AGENTS.md",
+    "claude-link:check": "bun scripts/check-claude-link.ts",
     "clean": "rm -rf dist bench/reports",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",

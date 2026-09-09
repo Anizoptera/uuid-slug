@@ -13,6 +13,10 @@ const apiDirectory = join(root, "api");
 const mode = process.argv[2];
 const useExistingBuild = process.argv[3] === "--built" && process.argv.length === 4;
 
+type PackageManifest = {
+  devDependencies?: Record<string, unknown>;
+};
+
 if ((mode !== "check" && mode !== "update") || (process.argv.length > 3 && !useExistingBuild)) {
   throw new Error("Usage: bun scripts/api.ts <check|update> [--built]");
 }
@@ -28,15 +32,38 @@ async function checkCargoPublicApiVersion(): Promise<void> {
     );
   }
   if (!actual.endsWith(expected))
-    throw new Error(`cargo-public-api ${expected} is required; found ${actual || "no version"}.`);
+    throw new Error(
+      `cargo-public-api ${expected} is required; found ${actual || "no version"}. Install it with: cargo install cargo-public-api --version ${expected} --locked`,
+    );
 }
 
-async function checkApiExtractorVersion(): Promise<void> {
-  const manifest = (await Bun.file(
-    join(root, "node_modules/@microsoft/api-extractor/package.json"),
-  ).json()) as { version?: string };
-  if (manifest.version !== "7.59.1")
-    throw new Error(`api-extractor 7.59.1 is required; found ${manifest.version ?? "no version"}.`);
+async function checkApiExtractorVersion(packageManifest: PackageManifest): Promise<void> {
+  const dependency = "@microsoft/api-extractor";
+  const expected = packageManifest.devDependencies?.[dependency];
+  if (typeof expected !== "string")
+    throw new Error(
+      `${dependency} must have an exact version in package.json. Restore package.json and bun.lock if it was removed accidentally, or choose the reviewed version with bun add --dev --exact ${dependency}@<version>.`,
+    );
+  let actual: unknown;
+  try {
+    const installedManifest = (await Bun.file(
+      join(root, "node_modules/@microsoft/api-extractor/package.json"),
+    ).json()) as { version?: unknown };
+    actual = installedManifest.version;
+  } catch (cause) {
+    throw new Error(
+      `Cannot read the installed ${dependency} manifest. Restore the locked development tools with: bun install --frozen-lockfile`,
+      { cause },
+    );
+  }
+  if (typeof actual !== "string")
+    throw new Error(
+      `The installed ${dependency} manifest has no string version. Restore the locked development tools with: bun install --frozen-lockfile`,
+    );
+  if (actual !== expected)
+    throw new Error(
+      `${dependency} must use the exact installed version in package.json; found ${expected} in package.json and ${actual} installed. Restore the locked development tools with bun install --frozen-lockfile, or pin the installed version with bun add --dev --exact ${dependency}@${actual} and review the regenerated API baseline.`,
+    );
 }
 
 function reportSections(source: string): Map<string, string> {
@@ -112,7 +139,8 @@ await rm(work, { recursive: true, force: true });
 await mkdir(work, { recursive: true });
 let changed = false;
 try {
-  await checkApiExtractorVersion();
+  const packageManifest = (await Bun.file(join(root, "package.json")).json()) as PackageManifest;
+  await checkApiExtractorVersion(packageManifest);
   await checkCargoPublicApiVersion();
   if (!useExistingBuild) await command("bun", ["run", "build"], root);
   await command("api-extractor", ["run", "--local", "--config", "api-extractor.json"], root);
@@ -192,5 +220,5 @@ try {
 
 if (mode === "check" && changed)
   throw new Error(
-    "Public API differs from the reviewed baseline. If intentional, run bun run api:update and include the generated diff in the pull request.",
+    "Public API differs from the reviewed baseline. Restore the source change if unintended. If intentional, run bun run api:update, review both generated diffs, and include them in the pull request; updating the baseline does not waive version or deprecation rules.",
   );

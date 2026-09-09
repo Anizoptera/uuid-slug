@@ -17,7 +17,7 @@ test("released API rejects removal without prior deprecation", () => {
   const before = reports("export declare function old(): void;", "pub fn uuid_slug::old()");
   const after = reports("", "");
   expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).toThrow(
-    "TypeScript removes API that was not deprecated",
+    /TypeScript removes API.*Restore the listed API/s,
   );
 });
 
@@ -37,7 +37,7 @@ test("same-cycle deprecation cannot authorize removal", () => {
   const before = reports("/** @deprecated */ export declare function old(): void;", "");
   const after = reports("", "");
   expect(() => verifyEvolution("0.4.0", "0.4.1", before, after)).toThrow(
-    "Deprecated API removal requires the next major release, or next minor in 0.x.",
+    /requires the next major release.*Option 1: keep the API.*Option 2:.*version:set.*recreate the release/s,
   );
   expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).not.toThrow();
 });
@@ -131,11 +131,11 @@ test("public additions require a minor version", () => {
   const before = reports("", "");
   const after = reports("export declare function added(): void;", "");
   expect(() => verifyEvolution("0.4.0", "0.4.1", before, after)).toThrow(
-    "does not satisfy the minor API change",
+    /does not satisfy the minor API change.*Option 1: restore the public surface.*Option 2:.*version:set.*recreate the release/s,
   );
   expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).not.toThrow();
   expect(() => verifyEvolution("0.4.0", "0.4.1-dev", before, after, [], false)).toThrow(
-    "minor API change",
+    /does not satisfy the minor API change.*Option 1: restore the public surface.*Option 2:.*bun run version:set/s,
   );
   expect(() => verifyEvolution("0.4.0", "0.5.0-dev", before, after, [], false)).not.toThrow();
 });
@@ -198,14 +198,18 @@ test("development and release versions use distinct forms", () => {
     "must use X.Y.Z-dev",
   );
   expect(() => verifyEvolution("0.4.0", "0.4.1-dev", unchanged, unchanged)).toThrow(
-    "must be stable",
+    /must use stable.*bun run release/s,
   );
 });
 
 test("a release tag must match the stable manifest version", () => {
   expect(() => validateVersion("0.5.0", "v0.5.0")).not.toThrow();
-  expect(() => validateVersion("0.5.0-dev", "v0.5.0-dev")).toThrow("must be stable");
-  expect(() => validateVersion("0.5.0", "v0.5.1")).toThrow("does not match");
+  expect(() => validateVersion("0.5.0-dev", "v0.5.0-dev")).toThrow(
+    /without -dev.*bun run release/s,
+  );
+  expect(() => validateVersion("0.5.0", "v0.5.1")).toThrow(
+    /does not match package\.json.*bun run release/s,
+  );
 });
 
 test("tagged verification compares the predecessor, not the candidate", () => {

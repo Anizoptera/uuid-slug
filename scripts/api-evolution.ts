@@ -8,7 +8,11 @@ import {
 } from "./release-comparison";
 import type { ReleaseLevel } from "./release-comparison";
 import { latestRelease } from "./release-history";
-import { checkReleaseVersion } from "./release-version";
+import {
+  checkReleaseVersion,
+  developmentVersionGuidance,
+  taggedVersionGuidance,
+} from "./release-version";
 import {
   cargoManifestSurface,
   cargoSurfaceDifference,
@@ -187,7 +191,7 @@ function removals(
   const illegal = [...before].filter((entry) => !after.has(entry) && !wasDeprecated(entry));
   if (illegal.length)
     throw new Error(
-      `${language} removes API that was not deprecated in the latest release:\n${illegal.join("\n")}`,
+      `${language} removes API that was not deprecated in the latest release:\n${illegal.join("\n")}\nRestore the listed API, or deprecate it and publish that deprecation before removing it.`,
     );
 }
 
@@ -227,9 +231,14 @@ function typescriptDeprecations(source: string): ReadonlySet<string> {
 export function validateVersion(version: string, tag?: string): void {
   const core = String.raw`(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)`;
   if (tag) {
-    if (tag !== `v${version}`) throw new Error(`Tag ${tag} does not match version ${version}.`);
+    if (tag !== `v${version}`)
+      throw new Error(
+        `Tag ${tag} does not match package.json ${version}. Return to development, choose the intended version, and recreate the release with bun run release <X.Y.Z>.`,
+      );
     if (!new RegExp(`^${core}$`).test(version))
-      throw new Error(`Release version ${version} must be stable.`);
+      throw new Error(
+        `Tagged release ${version} must use stable X.Y.Z without -dev. Return to development and recreate it with bun run release <X.Y.Z>.`,
+      );
   } else if (!new RegExp(`^${core}-dev$`).test(version)) {
     throw new Error(`Development version ${version} must use X.Y.Z-dev.`);
   }
@@ -262,6 +271,7 @@ export function verifyEvolution(
   const newTsEntries = typescriptEntries(newTsSource);
   const oldRustEntries = rustEntries(oldRust);
   const newRustEntries = rustEntries(newRust);
+  const versionGuidance = tagged ? taggedVersionGuidance : developmentVersionGuidance;
   const oldTsNormalized = normalizeDeclarations(oldTsSource);
   const newTsNormalized = normalizeDeclarations(newTsSource);
   const deprecatedTypeScript = typescriptDeprecations(oldTsSource);
@@ -280,7 +290,7 @@ export function verifyEvolution(
     [...oldRustEntries].some((entry) => !newRustEntries.has(entry));
   if (removed && !removalBoundary(previousVersion, currentVersion))
     throw new Error(
-      `Deprecated API removal requires the next major release, or next minor in 0.x.`,
+      `Deprecated API removal requires the next major release, or next minor in 0.x. Option 1: keep the API for this release. Option 2: ${versionGuidance}`,
     );
   const levels: ReleaseLevel[] = [
     ...packageLevels,
@@ -294,7 +304,7 @@ export function verifyEvolution(
   const minimum = minimumRelease(currentVersion.split("-", 1)[0] ?? currentVersion, "", levels);
   if (!satisfiesMinimum(previousVersion, currentVersion, minimum))
     throw new Error(
-      `${currentVersion} does not satisfy the ${minimum} API change from ${previousVersion}.`,
+      `${currentVersion} does not satisfy the ${minimum} API change from ${previousVersion}. Option 1: restore the public surface to keep this version. Option 2: ${versionGuidance}`,
     );
 }
 
@@ -309,7 +319,10 @@ export async function checkReleasedApi(root: string, current: ApiReports): Promi
     Bun.file(`${root}/rust/uuid-slug/Cargo.toml`).text(),
   ]);
   const tagsAtHead = currentTags.trim().split("\n").filter(Boolean);
-  if (tagsAtHead.length > 1) throw new Error("HEAD has multiple release tags.");
+  if (tagsAtHead.length > 1)
+    throw new Error(
+      `HEAD has multiple release tags (${tagsAtHead.join(", ")}); keep only the intended release tag before retrying.`,
+    );
   const tagged = tagsAtHead[0] ?? "";
   validateVersion(manifest.version, tagged || undefined);
   await checkReleaseVersion(root, manifest.version);

@@ -5,11 +5,15 @@ interface Workspace {
   workspace: { package: { version: string } };
 }
 
+export const developmentVersionGuidance =
+  "Classify the full consumer effect per CONTRIBUTING.md, then run bun run version:set <X.Y.Z-dev>; it updates package.json, rust/Cargo.toml, and rust/Cargo.lock together.";
+export const taggedVersionGuidance = `Return to development. ${developmentVersionGuidance} Then recreate the release with bun run release <X.Y.Z>.`;
+
 export async function checkReleaseVersion(cwd: string, version: string): Promise<void> {
   const manifest = Bun.TOML.parse(await Bun.file(`${cwd}/rust/Cargo.toml`).text()) as Workspace;
   if (manifest.workspace.package.version !== version)
     throw new Error(
-      `Rust version ${manifest.workspace.package.version} does not match package.json ${version}. Synchronize the npm manifest, Cargo manifest, and lockfile.`,
+      `Rust version ${manifest.workspace.package.version} does not match package.json ${version}. ${developmentVersionGuidance}`,
     );
   const lock = Bun.TOML.parse(await Bun.file(`${cwd}/rust/Cargo.lock`).text()) as {
     package: { name: string; version: string; source?: string }[];
@@ -18,7 +22,7 @@ export async function checkReleaseVersion(cwd: string, version: string): Promise
     const entries = lock.package.filter((entry) => entry.name === name && !entry.source);
     if (entries.length !== 1 || entries[0]?.version !== version)
       throw new Error(
-        `Cargo.lock ${name} does not match package.json ${version}. Synchronize the npm manifest, Cargo manifest, and lockfile.`,
+        `Cargo.lock ${name} does not match package.json ${version}. ${developmentVersionGuidance}`,
       );
   }
 }
@@ -53,7 +57,9 @@ export async function syncReleaseVersion(cwd: string, version: string): Promise<
 
 export async function setDevelopmentVersion(cwd: string, version: string): Promise<void> {
   if (!/^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-dev$/.test(version))
-    throw new Error("The development version must use X.Y.Z-dev.");
+    throw new Error(
+      "version:set accepts only X.Y.Z-dev. Set a development version with bun run version:set <X.Y.Z-dev>, or create a stable version with bun run release <X.Y.Z>.",
+    );
 
   const paths = ["package.json", "rust/Cargo.toml", "rust/Cargo.lock"] as const;
   const [packageSource, cargoSource, lockSource] = await Promise.all(
