@@ -126,6 +126,10 @@ Use `bun run check:rust` for native profiles. Run `scripts/rust-wasm.ts` with
 `UUID_SLUG_RUST_PROFILE=debug` and `UUID_SLUG_RUST_PROFILE=release` for browser profiles.
 
 Verify TypeScript functionality on every supported Node major and on the latest Bun and Deno.
+Derive Node majors from the published release index and the package's engine floor; include the
+exact floor and keep newest Node unpinned. Execute shared contracts and consumer calls without a
+test runner in the target engine, so the runner's narrower support range cannot remove package
+coverage. Also run the ordinary suite wherever its installed tooling supports the engine.
 Preserve real runtime adapter coverage when changing test runners; a faster Bun suite cannot
 establish Node or browser behavior. Replace a runner only after matched defect-detection and
 performance measurements, retaining the same consumer contracts.
