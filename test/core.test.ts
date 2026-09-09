@@ -1,15 +1,16 @@
 import { describe, expect, it } from "vitest";
+import { runInNewContext } from "node:vm";
 import {
   createMaskSchema,
   createUuidSlugCodec as createCodec,
-  decodeBase64Url,
-  encodeBase64Url,
   extractUuidV7Timestamp,
-  isBase64Url,
+  isUuidSlug,
+  isUuidSlugError,
   parseUuid,
   slugToUuid,
   uuidToSlug,
   uuidV7BytesAt,
+  UuidRuntimeError,
   UuidSlugError,
 } from "../src/index";
 import type { SlugAlphabet, UuidSlugCodecOptions } from "../src/index";
@@ -23,48 +24,30 @@ const SAMPLE_V4 = "b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5";
 const createUuidSlugCodec = (options?: UuidSlugCodecOptions) =>
   options === undefined ? createCodec() : unwrap(createCodec(options));
 
+describe("error classification", () => {
+  it("accepts package errors across realms without accepting lookalike data or throwing", () => {
+    const foreign: unknown[] = runInNewContext(
+      '["UuidSlugError", "UuidRuntimeError"].map(name => Object.assign(new Error("failure"), { name, code: "invalid_uuid" }))',
+    );
+    expect(isUuidSlugError(new UuidSlugError("invalid_uuid", "bad UUID"))).toBe(true);
+    expect(isUuidSlugError(new UuidRuntimeError("entropy failed"))).toBe(true);
+    expect(foreign.every(isUuidSlugError)).toBe(true);
+    expect(isUuidSlugError({ name: "UuidSlugError", code: "invalid_uuid" })).toBe(false);
+    expect(
+      isUuidSlugError(
+        new Proxy(new Error("hostile"), {
+          get() {
+            throw new Error("getter failed");
+          },
+        }),
+      ),
+    ).toBe(false);
+  });
+});
+
 /** Compared with `<` because that is what a database index or a sorted listing does to these. */
 const ascending = (slugs: readonly string[]) =>
   slugs.every((slug, i) => i === 0 || (slugs[i - 1] as string) < slug);
-
-describe("base64url", () => {
-  it("round-trips one UUID payload and rejects every other byte length", () => {
-    const bytes = Uint8Array.from({ length: 16 }, (_, index) => index * 13);
-    const encoded = encodeBase64Url(bytes);
-    if (encoded instanceof Error) throw encoded;
-    expect(decodeBase64Url(encoded)).toEqual(bytes);
-    expect(encodeBase64Url(new Uint8Array())).toBeInstanceOf(Error);
-    expect(encodeBase64Url(new Uint8Array(15))).toBeInstanceOf(Error);
-    expect(encodeBase64Url(new Uint8Array(17))).toBeInstanceOf(Error);
-    expect(decodeBase64Url(Buffer.alloc(15).toString("base64url"))).toBeInstanceOf(Error);
-    expect(decodeBase64Url(Buffer.alloc(17).toString("base64url"))).toBeInstanceOf(Error);
-    expect(decodeBase64Url(`${encoded}=`)).toBeInstanceOf(Error);
-    expect(decodeBase64Url("A")).toBeInstanceOf(Error);
-  });
-
-  it("preserves every 16-byte payload without imposing a UUID version or variant", () => {
-    for (const bytes of [new Uint8Array(16), new Uint8Array(16).fill(0xff)]) {
-      const encoded = encodeBase64Url(bytes);
-      if (encoded instanceof Error) throw encoded;
-      expect(decodeBase64Url(encoded)).toEqual(bytes);
-      expect(isBase64Url(encoded)).toBe(true);
-    }
-  });
-
-  it("returns exactly the bytes it decoded, whether or not a buffer was supplied", () => {
-    // The view identifies the written range without hiding the caller's buffer.
-    const bytes = Uint8Array.from({ length: 16 }, (_, index) => index * 13);
-    const encoded = encodeBase64Url(bytes);
-    if (encoded instanceof Error) throw encoded;
-    const buffer = new Uint8Array(32).fill(0xab);
-    const written = decodeBase64Url(encoded, buffer, 8);
-    if (written instanceof Error) throw written;
-    expect(written).toEqual(bytes);
-    expect(written.byteOffset).toBe(8);
-    expect(written.buffer).toBe(buffer.buffer);
-    expect([...buffer.slice(0, 8)]).toEqual(Array.from<number>({ length: 8 }).fill(0xab));
-  });
-});
 
 /** Zeroed but for the version and variant bytes, placed so a v7 appears to begin at `offset`. */
 const v7PatternAt = (length: number, offset: number) => {
@@ -363,9 +346,9 @@ describe("acceptUnmaskedSlugs", () => {
   });
 
   it("returns a base32hex slug it accepted as itself, not as a base64url one", () => {
-    // `validateMaskedSlugFresh` used to declare `MaskedUuidV7Slug` — `Base64UrlString & UuidSlug` —
+    // `validateMaskedSlugFresh` used to declare a masked v7 slug even though plain migration can
     // while this path hands back a 26-character base32hex string, so the declared type was false
-    // and `isBase64Url` on the result was `false`. The behaviour is correct and must stay: a codec
+    // and an exact base64url check on the result was `false`. The behaviour is correct:
     // whose own alphabet is base32hex has exactly these legacy ids, which is what the flag is for.
     // The signature is generic now, so the value is returned at the type it arrived as; `tsc` is
     // what checks that half. This pins the behaviour the type had to be made honest about.
@@ -376,7 +359,7 @@ describe("acceptUnmaskedSlugs", () => {
     // is about the returned VALUE rather than about the clock.
     const minted = extractUuidV7Timestamp(parseUuid(SAMPLE_V7_A) as Uint8Array) as number;
     expect(codec.validateMaskedSlugFresh(legacy, { now: () => minted })).toBe(legacy);
-    expect(isBase64Url(legacy)).toBe(false);
+    expect(legacy.length === 22 && isUuidSlug(legacy)).toBe(false);
   });
 });
 

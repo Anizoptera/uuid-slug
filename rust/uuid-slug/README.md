@@ -75,8 +75,9 @@ not a cross-language guarantee. IDs are not bearer secrets.
 
 Default feature `os-rng` provides platform entropy. Disable default features for pure conversion,
 masking, or caller-supplied entropy. Browser generation additionally requires `wasm-js`.
-`schema::create_mask_schema_async` returns a cancelable, bounded-work future without an executor
-dependency; its executor must schedule unrelated host tasks between polls.
+`schema::create_mask_schema_async` returns an opaque, cancelable, bounded-work future without an
+executor dependency; its executor must schedule unrelated host tasks between polls. The concrete
+derivation state is private so scheduling internals do not become caller obligations.
 
 `uuid` handles strict-guarded parsing and formatting; `data-encoding` handles both alphabets.
 `getrandom` remains the fallible entropy source because upstream UUID random constructors panic on

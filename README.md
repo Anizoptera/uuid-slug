@@ -145,19 +145,31 @@ Masked operations are codec methods; `defaultCodec` uses the same public seed.
 ## Handling errors
 
 Parsing, decoding, formatting, conversion, byte generation, and explicit-timestamp generation
-return `UuidSlugError | T`. Check `instanceof Error` before using the value. Configured codec
-construction returns the same union; `createUuidSlugCodec()` without options cannot fail.
+return `UuidSlugError | T`. Check `instanceof Error` within one realm, or use `isUuidSlugError`
+when values may cross realms or duplicate package copies. The structural guard recognizes the
+package's error name and code vocabulary; it classifies data and does not authenticate untrusted
+input. Configured codec construction returns the same union; `createUuidSlugCodec()` without
+options cannot fail.
 
 Use the error's `code` for handling and its `message` for diagnostics. `UuidSlugErrorCode` and
 `UUID_SLUG_ERROR_CODES` are the exported type and runtime list of codes. Errors wrapping failed
 entropy draws, clock readings, and custom `mix` calls preserve the original exception as `cause`.
+
+Replace the removed generic base64url helpers with the UUID operations that own the same exact
+16-byte contract:
+
+```ts
+formatUuidSlug(bytes); // replaces encodeBase64Url(bytes)
+parseUuidSlug(slug, output, offset); // replaces decodeBase64Url(slug, output, offset)
+slug.length === 22 && isUuidSlug(slug); // replaces isBase64Url(slug)
+```
 
 ## Types
 
 Branded types distinguish the values returned by this library. Their marker is optional:
 assigning a string does not validate it. Use guards to check format and your store to check issuance.
 
-- Strings: `UuidString`, `UuidV4String`, `UuidV7String`, `Base64UrlString`.
+- Strings: `UuidString`, `UuidV4String`, `UuidV7String`.
 - Slugs: `UuidSlug` (either alphabet), `UuidV4Slug`, `UuidV7Slug`; masked types cover both spellings
   — `MaskedUuidSlug`, `MaskedUuidV7Slug`, `SentinelUuidV7Slug`, and `PublicUuidV7Slug` for
   "masked or sentinel", which is what a masking call returns. `SlugAlphabet` names the two
@@ -216,11 +228,6 @@ Also exported, all module-level:
 
 - Type guards: `isUuidString`, `isUuidV4String`, `isUuidV7String`, `isUuidSlug`, `isUuidV4Slug`,
   `isUuidV7Slug`, and `isUuidV7Bytes` for 16 bytes you already hold.
-- base64url helpers: `encodeBase64Url`, `decodeBase64Url`, `isBase64Url`. They accept only one
-  UUID payload: exactly 16 bytes or its canonical 22-character unpadded spelling. Other lengths
-  and malformed encodings return an error. Decoding into `out` commits all 16 bytes only after
-  validation and returns a view of that range in the caller's buffer. They preserve all 16-byte
-  values; use UUID guards when the version or variant matters.
 - `extractUuidV7Timestamp` — the instant a v7 was minted at, and an error for anything that is
   not a v7, because a v4's first six bytes are random and would otherwise read back as a
   plausible date. `hasUuidV7Entropy` answers whether the 74 random bits are anything but
@@ -231,7 +238,8 @@ Also exported, all module-level:
 - `createUuidV7Generator(options)` builds a generator from your own `clock` and `fillRandom`, for
   a `generator:` codec option. Its options type is `UuidV7GeneratorOptions`.
 - `UuidSlugError` and its subclass `UuidRuntimeError`, returned when the runtime has no usable
-  randomness. `UuidSlugErrorCode` types the `code` property.
+  randomness. `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes either
+  class across JavaScript realms and duplicate package copies.
 
 ### Codec options
 

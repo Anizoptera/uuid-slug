@@ -165,7 +165,7 @@ impl Cancellation {
 
 /// Runtime-independent derivation with bounded absorption per poll and no background tasks.
 /// An executor must yield fairly between polls; browser adapters must schedule host tasks.
-pub struct SchemaDerivation {
+struct SchemaDerivation {
     seed: Vec<u8>,
     id: String,
     iterations: u32,
@@ -186,7 +186,7 @@ pub fn create_mask_schema_async(
     iterations: u32,
     id: &str,
     cancellation: Cancellation,
-) -> SchemaDerivation {
+) -> impl Future<Output = Result<MaskSchema, Error>> + Send + use<> {
     let failure = if cancellation.is_cancelled() {
         Some(Error::Aborted)
     } else {

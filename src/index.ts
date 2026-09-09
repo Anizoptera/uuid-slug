@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-export { decodeBase64Url, encodeBase64Url, isBase64Url } from "./base64url";
 export {
   UUID_V7_SENTINEL_DEFINITIONS,
   createUuidSlugCodec,
@@ -8,7 +7,7 @@ export {
   validateUuidV7Fresh,
   validateUuidV7SlugFresh,
 } from "./codec";
-export { UUID_SLUG_ERROR_CODES, UuidRuntimeError, UuidSlugError } from "./errors";
+export { UUID_SLUG_ERROR_CODES, UuidRuntimeError, UuidSlugError, isUuidSlugError } from "./errors";
 /**
  * Exported because `UuidSlugError.code` is public and the README tells consumers to branch on it.
  * The type was emitted into the declarations and left out of the export list, so the property had
@@ -19,7 +18,6 @@ export type { UuidSlugErrorCode } from "./errors";
 export { DEFAULT_MASK_SCHEMA, createMaskSchema, createMaskSchemaAsync } from "./schema";
 export type {
   AsyncMaskSchemaOptions,
-  Base64UrlString,
   FreshValidationOptions,
   MaskSchema,
   MaskSchemaOptions,

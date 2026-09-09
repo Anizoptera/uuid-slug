@@ -19,6 +19,8 @@ export const UUID_SLUG_ERROR_CODES: typeof ERROR_CODES = Object.freeze(ERROR_COD
 
 export type UuidSlugErrorCode = (typeof UUID_SLUG_ERROR_CODES)[number];
 
+const ERROR_CODE_SET: ReadonlySet<unknown> = new Set(ERROR_CODES);
+
 export class UuidSlugError extends Error {
   readonly code: UuidSlugErrorCode;
 
@@ -33,6 +35,22 @@ export class UuidRuntimeError extends UuidSlugError {
   constructor(message: string, options?: ErrorOptions) {
     super("rng_unavailable", message, options);
     this.name = "UuidRuntimeError";
+  }
+}
+
+/** Recognize package errors across realms and duplicate package copies without trusting them. */
+export function isUuidSlugError(value: unknown): value is UuidSlugError {
+  if (value instanceof UuidSlugError) return true;
+  if (typeof value !== "object" || value === null) return false;
+  try {
+    return (
+      Object.prototype.toString.call(value) === "[object Error]" &&
+      (Reflect.get(value, "name") === "UuidSlugError" ||
+        Reflect.get(value, "name") === "UuidRuntimeError") &&
+      ERROR_CODE_SET.has(Reflect.get(value, "code"))
+    );
+  } catch {
+    return false;
   }
 }
 

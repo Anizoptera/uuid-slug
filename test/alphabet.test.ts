@@ -2,8 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "../src/alphabet";
-import { decodeBase64Url, encodeBase64Url, isBase64Url } from "../src/base64url";
-import { uuidToSlug } from "../src/index";
+import { formatUuidSlug, isUuidSlug, parseUuidSlug, uuidToSlug } from "../src/index";
 import { WIRE_FORMAT_CODECS as codecs } from "./wire-format-codecs";
 import golden from "../rust/uuid-slug/tests/fixtures/fixtures-wire-format.json";
 
@@ -19,7 +18,7 @@ describe("bit-packing codec", () => {
   // separate implementation of the same RFC 4648 alphabet.
   it("encodes a UUID payload identically to node Buffer", () => {
     const bytes = randomBytes(16);
-    expect(encodeBase64Url(bytes)).toBe(Buffer.from(bytes).toString("base64url"));
+    expect(formatUuidSlug(bytes)).toBe(Buffer.from(bytes).toString("base64url"));
   });
 
   // No platform ships base32, so the independent channel is the definition itself: the bytes as
@@ -85,7 +84,7 @@ describe("bit-packing codec", () => {
     ["non-zero padding bits", "AAAAAAAAAAAAAAAAAAAAAB"],
     ["a non-ascii character", "AAÿA"],
   ])("rejects %s", (_what, value) => {
-    expect(decodeBase64Url(value)).toBeInstanceOf(Error);
+    expect(parseUuidSlug(value)).toBeInstanceOf(Error);
   });
 
   it.each([
@@ -94,8 +93,8 @@ describe("bit-packing codec", () => {
     [undefined, false],
     ["AAAA", false],
     ["AAAAAAAAcACAAAAAAAAAAA", true],
-  ])("isBase64Url(%o) is %s", (value, expected) => {
-    expect(isBase64Url(value)).toBe(expected);
+  ])("base64url UUID slug predicate rejects %o when expected=%s", (value, expected) => {
+    expect(typeof value === "string" && value.length === 22 && isUuidSlug(value)).toBe(expected);
   });
 });
 

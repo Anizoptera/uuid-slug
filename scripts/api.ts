@@ -9,9 +9,10 @@ const root = resolve(import.meta.dir, "..");
 const work = join(root, ".api-work");
 const apiDirectory = join(root, "api");
 const mode = process.argv[2];
+const useExistingBuild = process.argv[3] === "--built" && process.argv.length === 4;
 
-if (mode !== "check" && mode !== "update") {
-  throw new Error("Usage: bun scripts/api.ts <check|update>");
+if ((mode !== "check" && mode !== "update") || (process.argv.length > 3 && !useExistingBuild)) {
+  throw new Error("Usage: bun scripts/api.ts <check|update> [--built]");
 }
 
 function stable(value: unknown): unknown {
@@ -182,7 +183,7 @@ await rm(work, { recursive: true, force: true });
 await mkdir(work, { recursive: true });
 await checkApiExtractorVersion();
 await checkCargoPublicApiVersion();
-await command("bun", ["run", "build"], root);
+if (!useExistingBuild) await command("bun", ["run", "build"], root);
 await command("api-extractor", ["run", "--local", "--config", "api-extractor.json"], root);
 
 const packageManifest = (await Bun.file(join(root, "package.json")).json()) as Record<

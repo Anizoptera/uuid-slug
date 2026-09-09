@@ -28,7 +28,12 @@ pub fn evaluate(input: &str) -> Result<String, wasm_bindgen::JsValue> {
 #[allow(unsafe_code)]
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub struct Derivation {
-    future: std::pin::Pin<Box<uuid_slug::schema::SchemaDerivation>>,
+    future: std::pin::Pin<
+        Box<
+            dyn std::future::Future<Output = Result<uuid_slug::MaskSchema, uuid_slug::Error>>
+                + Send,
+        >,
+    >,
     cancellation: uuid_slug::schema::Cancellation,
     uuid: uuid_slug::Uuid,
 }

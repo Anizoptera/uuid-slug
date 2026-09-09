@@ -58,7 +58,6 @@ declare interface Alphabet {
 export declare interface AsyncMaskSchemaOptions extends MaskSchemaOptions {
     readonly signal?: AbortSignal;
 }
-export declare type Base64UrlString = Brand<string, "Base64UrlString">;
 declare type Brand<T, Name extends string> = T & {
     readonly [brand]?: {
         [K in Name]: true;
@@ -70,10 +69,8 @@ export declare function createMaskSchemaAsync(options: AsyncMaskSchemaOptions): 
 export declare function createUuidSlugCodec(): UuidSlugCodec;
 export declare function createUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugError | UuidSlugCodec;
 export declare function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator;
-export declare function decodeBase64Url(value: string, out?: Uint8Array, offset?: number): UuidSlugError | Uint8Array;
 export declare const DEFAULT_MASK_SCHEMA: MaskSchema;
 export declare const defaultCodec: UuidSlugCodec;
-export declare function encodeBase64Url(bytes: Uint8Array): Base64UrlString | UuidSlugError;
 declare const ERROR_CODES: readonly [
     "aborted",
     "invalid_base32",
@@ -95,8 +92,8 @@ export declare interface FreshValidationOptions {
     windowMs?: number;
 }
 export declare function hasUuidV7Entropy(bytes: Uint8Array, offset?: number): boolean;
-export declare function isBase64Url(value: null | string | undefined): value is Base64UrlString;
 export declare function isUuidSlug(slug: null | string | undefined): slug is UuidSlug;
+export declare function isUuidSlugError(value: unknown): value is UuidSlugError;
 export declare function isUuidString(uuid: null | string | undefined): uuid is UuidString;
 export declare function isUuidV4Slug(slug: null | string | undefined): slug is UuidV4Slug;
 export declare function isUuidV4String(uuid: null | string | undefined): uuid is UuidV4String;

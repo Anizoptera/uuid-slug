@@ -8,11 +8,10 @@ declare const brand: unique symbol;
 /** Accumulate nested brand names while still accepting caller string literals. */
 export type Brand<T, Name extends string> = T & { readonly [brand]?: { [K in Name]: true } };
 
-export type Base64UrlString = Brand<string, "Base64UrlString">;
 export type UuidString = Brand<string, "UuidString">;
 export type UuidV4String = Brand<UuidString, "UuidV4String">;
 export type UuidV7String = Brand<UuidString, "UuidV7String">;
-/** Either alphabet — 22 base64url characters or 26 base32hex — so NOT a `Base64UrlString`. */
+/** Either alphabet: 22 base64url characters or 26 base32hex characters. */
 export type UuidSlug = Brand<string, "UuidSlug">;
 export type UuidV4Slug = Brand<UuidSlug, "UuidV4Slug">;
 export type UuidV7Slug = Brand<UuidSlug, "UuidV7Slug">;

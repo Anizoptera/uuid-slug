@@ -53,6 +53,11 @@ Use validated `Uuid` values between operations; parse text once rather than at e
 | Masked freshness | `Codec::validate_masked_slug_fresh` |
 | Error classification and causes | `Error::code` and `std::error::Error::source` |
 
+TypeScript additionally exports `isUuidSlugError` because JavaScript values can cross realms or
+load from duplicate package copies; Rust's enum remains directly discriminable within its type
+system. The guard accepts the local class first and then the same stable error names and codes. It
+is a classifier, not an authenticity boundary for untrusted objects.
+
 Generators own mutable sequence state; codecs own immutable keys. Keeping them separate allows
 shared codecs without a hidden generator lock. Default generators use platform entropy; custom
 `_with` callbacks must fill the entire destination or fail. Pass `generation::fill_os_random` to
@@ -62,6 +67,10 @@ every 16-byte value. `decode` returns a 16-byte array or an error for non-canoni
 version and variant checks belong to UUID guards.
 `decode_to`, UUID text and slug parsing validate the complete identifier before writing; all
 fixed-size decoding, parsing and generation commit caller storage only on success.
+
+Async schema derivation returns an opaque `Send` future and a separate public `Cancellation`
+handle. Callers can schedule and cancel work without depending on the derivation state's fields,
+layout, or incidental auto-traits.
 
 ## Filesystem-safe output
 

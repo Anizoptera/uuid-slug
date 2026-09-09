@@ -339,19 +339,8 @@ impl core::marker::Unpin for uuid_slug::schema::MaskSchema
 impl core::marker::UnsafeUnpin for uuid_slug::schema::MaskSchema
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::schema::MaskSchema
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::schema::MaskSchema
-pub struct uuid_slug::schema::SchemaDerivation
-impl core::future::future::Future for uuid_slug::schema::SchemaDerivation
-pub type uuid_slug::schema::SchemaDerivation::Output = core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>
-pub fn uuid_slug::schema::SchemaDerivation::poll(self: core::pin::Pin<&mut Self>, cx: &mut core::task::wake::Context<'_>) -> core::task::poll::Poll<Self::Output>
-impl core::marker::Freeze for uuid_slug::schema::SchemaDerivation
-impl core::marker::Send for uuid_slug::schema::SchemaDerivation
-impl core::marker::Sync for uuid_slug::schema::SchemaDerivation
-impl core::marker::Unpin for uuid_slug::schema::SchemaDerivation
-impl core::marker::UnsafeUnpin for uuid_slug::schema::SchemaDerivation
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::schema::SchemaDerivation
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::schema::SchemaDerivation
 pub fn uuid_slug::schema::create_mask_schema(seed: &[u8], iterations: u32, id: &str) -> core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>
-pub fn uuid_slug::schema::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> uuid_slug::schema::SchemaDerivation
+pub fn uuid_slug::schema::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>> + core::marker::Send + use<>
 pub mod uuid_slug::uuid
 pub struct uuid_slug::uuid::Uuid(_)
 impl uuid_slug::uuid::Uuid
@@ -626,7 +615,7 @@ impl core::marker::UnsafeUnpin for uuid_slug::uuid::Uuid
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::uuid::Uuid
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::uuid::Uuid
 pub fn uuid_slug::create_mask_schema(seed: &[u8], iterations: u32, id: &str) -> core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>
-pub fn uuid_slug::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> uuid_slug::schema::SchemaDerivation
+pub fn uuid_slug::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>> + core::marker::Send + use<>
 ```
 
 ## No default features
@@ -864,19 +853,8 @@ impl core::marker::Unpin for uuid_slug::schema::MaskSchema
 impl core::marker::UnsafeUnpin for uuid_slug::schema::MaskSchema
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::schema::MaskSchema
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::schema::MaskSchema
-pub struct uuid_slug::schema::SchemaDerivation
-impl core::future::future::Future for uuid_slug::schema::SchemaDerivation
-pub type uuid_slug::schema::SchemaDerivation::Output = core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>
-pub fn uuid_slug::schema::SchemaDerivation::poll(self: core::pin::Pin<&mut Self>, cx: &mut core::task::wake::Context<'_>) -> core::task::poll::Poll<Self::Output>
-impl core::marker::Freeze for uuid_slug::schema::SchemaDerivation
-impl core::marker::Send for uuid_slug::schema::SchemaDerivation
-impl core::marker::Sync for uuid_slug::schema::SchemaDerivation
-impl core::marker::Unpin for uuid_slug::schema::SchemaDerivation
-impl core::marker::UnsafeUnpin for uuid_slug::schema::SchemaDerivation
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::schema::SchemaDerivation
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::schema::SchemaDerivation
 pub fn uuid_slug::schema::create_mask_schema(seed: &[u8], iterations: u32, id: &str) -> core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>
-pub fn uuid_slug::schema::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> uuid_slug::schema::SchemaDerivation
+pub fn uuid_slug::schema::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>> + core::marker::Send + use<>
 pub mod uuid_slug::uuid
 pub struct uuid_slug::uuid::Uuid(_)
 impl uuid_slug::uuid::Uuid
@@ -1151,5 +1129,5 @@ impl core::marker::UnsafeUnpin for uuid_slug::uuid::Uuid
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::uuid::Uuid
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::uuid::Uuid
 pub fn uuid_slug::create_mask_schema(seed: &[u8], iterations: u32, id: &str) -> core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>
-pub fn uuid_slug::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> uuid_slug::schema::SchemaDerivation
+pub fn uuid_slug::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>> + core::marker::Send + use<>
 ```

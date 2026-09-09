@@ -110,15 +110,35 @@ export function evaluate(request: Request): Outcome {
           ts.isUuidV4Slug(input),
           ts.isUuidV7Slug(input),
         ]);
-      case "base64Encode":
-        return result(ts.encodeBase64Url(Uint8Array.from(request.bytes as number[])));
+      case "base64Encode": {
+        const bytes = Uint8Array.from(request.bytes as number[]);
+        return result(
+          bytes.length === 16
+            ? ts.formatUuidSlug(bytes)
+            : new ts.UuidSlugError("invalid_buffer", "Expected one 16-byte UUID payload."),
+        );
+      }
       case "base64Decode":
-        return result(ts.decodeBase64Url(input));
+        return result(
+          input.length === 22
+            ? ts.parseUuidSlug(input)
+            : new ts.UuidSlugError(
+                "invalid_base64url",
+                "Expected a 22-character base64url UUID slug.",
+              ),
+        );
       case "base64Guard":
-        return result(ts.isBase64Url(input));
+        return result(input.length === 22 && ts.isUuidSlug(input));
       case "base64DecodeTo": {
         const out = new Uint8Array(request.capacity as number).fill(165);
-        const decoded = ts.decodeBase64Url(input, out, request.offset as number);
+        const offset = request.offset as number;
+        const decoded =
+          input.length === 22
+            ? ts.parseUuidSlug(input, out, offset)
+            : new ts.UuidSlugError(
+                "invalid_base64url",
+                "Expected a 22-character base64url UUID slug.",
+              );
         // Matching error codes cannot establish that a rejected range left caller storage intact.
         if (decoded instanceof ts.UuidSlugError && decoded.code === "invalid_buffer") {
           deepStrictEqual(out, new Uint8Array(out.length).fill(165));
@@ -126,7 +146,10 @@ export function evaluate(request: Request): Outcome {
         }
         return decoded instanceof Error
           ? result(decoded)
-          : result({ bytes: Array.from(decoded), storage: Array.from(out) });
+          : result({
+              bytes: Array.from(decoded.subarray(offset, offset + 16)),
+              storage: Array.from(out),
+            });
       }
       case "fresh":
       case "freshPlain":

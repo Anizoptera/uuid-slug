@@ -17,7 +17,6 @@
  * guard that errors after a partial write; an untouched buffer alone would pass a call that wrote
  * nothing and claimed success. Both together admit only "refused, and did nothing".
  */
-import { decodeBase64Url, encodeBase64Url } from "../src/base64url";
 import { UuidSlugError } from "../src/errors";
 import {
   createUuidSlugCodec,
@@ -53,14 +52,12 @@ export const HOSTILE_OFFSETS: readonly unknown[] = [-1, 0.5, NaN, Infinity, "4",
 const writers: readonly (readonly [string, (out: Uint8Array, offset: number) => unknown])[] = [
   ["parseUuid", (out, offset) => parseUuid(UUID, out, offset)],
   ["parseUuidSlug", (out, offset) => parseUuidSlug(SLUG, out, offset)],
-  ["decodeBase64Url", (out, offset) => decodeBase64Url(SLUG, out, offset)],
   ["uuidV4Bytes", (out, offset) => codec.uuidV4Bytes(out, offset)],
   ["uuidV7Bytes", (out, offset) => codec.uuidV7Bytes(out, offset)],
   ["uuidV7BytesAt", (out, offset) => codec.uuidV7BytesAt(INSTANT, out, offset)],
 ];
 
 const malformedWriters: readonly (readonly [string, (out: Uint8Array) => unknown])[] = [
-  ["decodeBase64Url invalid character", (out) => decodeBase64Url(SLUG.slice(0, -1) + "!", out)],
   ["parseUuid", (out) => parseUuid(UUID.slice(0, -1) + "x", out)],
   [
     "parseUuidSlug invalid base64url character",
@@ -114,7 +111,7 @@ export const cases: readonly ProbeCase[] = [
       for (const backing of [new ArrayBuffer(80), new SharedArrayBuffer(80)]) {
         for (const { bytes, shift } of bytePatterns(backing)) {
           const view = bytes.subarray(4, 20);
-          if (encodeBase64Url(view) !== Buffer.from(view).toString("base64url"))
+          if (formatUuidSlug(view) !== Buffer.from(view).toString("base64url"))
             return `base64url differs for shift ${shift}`;
           const hex = Buffer.from(bytes.subarray(4, 20)).toString("hex");
           const expected = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
