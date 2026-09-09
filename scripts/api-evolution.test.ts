@@ -6,15 +6,9 @@ import {
   verifyEvolution,
 } from "./api-evolution";
 
-function reports(
-  ts: string,
-  rust: string,
-  tsDeprecated = "(none)",
-  rustDeprecated = "(none)",
-  minimalRust = rust,
-) {
+function reports(ts: string, rust: string, rustDeprecated = "(none)", minimalRust = rust) {
   return {
-    typescript: `## Reachable declarations\n\n\`\`\`ts\n${ts}\n\`\`\`\n\n## Deprecations\n\n${tsDeprecated}\n`,
+    typescript: ts,
     rust: `## All features\n\n\`\`\`text\n${rust}\n\`\`\`\n\n## No default features\n\n\`\`\`text\n${minimalRust}\n\`\`\`\n\n## Deprecations\n\n${rustDeprecated}\n`,
   };
 }
@@ -27,9 +21,20 @@ test("released API rejects removal without prior deprecation", () => {
   );
 });
 
+test("released API reads TypeScript declaration files directly", () => {
+  const rust = reports("", "").rust;
+  expect(() =>
+    verifyEvolution(
+      "0.4.0",
+      "0.5.0",
+      { typescript: "export declare function old(): void;", rust },
+      { typescript: "", rust },
+    ),
+  ).toThrow("TypeScript removes API that was not deprecated");
+});
+
 test("same-cycle deprecation cannot authorize removal", () => {
-  const declaration = "export declare function old(): void;";
-  const before = reports(declaration, "", JSON.stringify(declaration));
+  const before = reports("/** @deprecated */ export declare function old(): void;", "");
   const after = reports("", "");
   expect(() => verifyEvolution("0.4.0", "0.4.1", before, after)).toThrow(
     "Deprecated API removal requires the next major release, or next minor in 0.x.",
@@ -38,7 +43,7 @@ test("same-cycle deprecation cannot authorize removal", () => {
 });
 
 test("TypeScript declarations retain only deprecation documentation", () => {
-  const source = `/** Useful prose. */\nexport declare function current(): void;\n/** @deprecated Use current. */\nexport declare function old(): void;`;
+  const source = `/** Useful prose. */\nexport declare function current(): void;\n/** @deprecated Use current. */\nexport declare function old(): void;\nexport {};`;
   expect(typescriptDeclarations(source)).toBe(
     `export declare function current(): void;\n/** @deprecated Use current. */\nexport declare function old(): void;`,
   );
@@ -48,12 +53,8 @@ test("inline TypeScript deprecation authorizes only a later removal", () => {
   const before = reports(
     "/** @deprecated Use current. */\nexport declare function old(): void;",
     "",
-  )
-    .typescript.replace("Reachable declarations", "Public declarations")
-    .replace(/\n\n## Deprecations[\s\S]*/, "\n");
-  const after = reports("", "")
-    .typescript.replace("Reachable declarations", "Public declarations")
-    .replace(/\n\n## Deprecations[\s\S]*/, "\n");
+  ).typescript;
+  const after = reports("", "").typescript;
   expect(() =>
     verifyEvolution(
       "0.4.0",
@@ -101,7 +102,6 @@ test("inline Rust deprecation authorizes only its feature surface and declaratio
     "",
     "#[deprecated] pub type uuid_slug::Same = u8\npub fn uuid_slug::Same()",
     "(none)",
-    "(none)",
     "pub fn uuid_slug::Same()",
   );
   const after = reports("", "#[deprecated] pub type uuid_slug::Same = u8");
@@ -112,16 +112,15 @@ test("inline Rust deprecation authorizes only its feature surface and declaratio
 
 test("Rust feature-surface removal remains visible", () => {
   const item = "pub fn uuid_slug::decode()";
-  const before = reports("", item, "(none)", "(none)", item);
-  const after = reports("", item, "(none)", "(none)", "");
+  const before = reports("", item, "(none)", item);
+  const after = reports("", item, "(none)", "");
   expect(() => verifyEvolution("0.4.0", "0.5.0", before, after)).toThrow(
     "Rust removes API that was not deprecated",
   );
 });
 
 test("removal boundaries stay exact beyond safe integers", () => {
-  const item = "export declare function old(): void;";
-  const before = reports(item, "", JSON.stringify(item));
+  const before = reports("/** @deprecated */ export declare function old(): void;", "");
   const after = reports("", "");
   expect(() =>
     verifyEvolution("9007199254740992.0.0", "9007199254740993.0.0", before, after),

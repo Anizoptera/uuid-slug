@@ -7,7 +7,7 @@ export {
   validateUuidV7Fresh,
   validateUuidV7SlugFresh,
 } from "./codec";
-export { UUID_SLUG_ERROR_CODES, UuidRuntimeError, UuidSlugError, isUuidSlugError } from "./errors";
+export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError } from "./errors";
 /**
  * Exported because `UuidSlugError.code` is public and the README tells consumers to branch on it.
  * The type was emitted into the declarations and left out of the export list, so the property had
@@ -22,7 +22,6 @@ export type {
   MaskSchema,
   MaskSchemaOptions,
   MigrationFormat,
-  MaskedUuidSlug,
   MaskedUuidV7Slug,
   PublicUuidV7Slug,
   SentinelUuidV7Slug,

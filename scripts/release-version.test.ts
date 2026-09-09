@@ -6,7 +6,61 @@ import { join } from "node:path";
 import { expect, test } from "bun:test";
 import { command } from "./command";
 import { preflightRelease } from "./release-notes";
-import { checkReleaseVersion } from "./release-version";
+import { checkReleaseVersion, setDevelopmentVersion } from "./release-version";
+
+test("one command updates every development version owner", async () => {
+  const root = await mkdtemp(join(tmpdir(), "uuid-slug-version-set-"));
+  const names = ["uuid-slug", "uuid-slug-bridge"];
+  try {
+    await Promise.all([
+      Bun.write(join(root, ".tool-versions"), Bun.file(join(import.meta.dir, "../.tool-versions"))),
+      Bun.write(join(root, "package.json"), '{\n  "name": "test",\n  "version": "0.4.1-dev"\n}\n'),
+      Bun.write(
+        join(root, "rust/Cargo.toml"),
+        `[workspace]\nmembers = ${JSON.stringify(names)}\n[workspace.package]\nversion = "0.4.1-dev"\n`,
+      ),
+      Bun.write(
+        join(root, "rust/Cargo.lock"),
+        'version = 4\n\n[[package]]\nname = "uuid-slug"\nversion = "0.4.1-dev"\n\n[[package]]\nname = "uuid-slug-bridge"\nversion = "0.4.1-dev"\n',
+      ),
+      ...names.flatMap((name) => [
+        Bun.write(
+          join(root, `rust/${name}/Cargo.toml`),
+          `[package]\nname = "${name}"\nversion.workspace = true\n`,
+        ),
+        Bun.write(join(root, `rust/${name}/src/lib.rs`), ""),
+      ]),
+    ]);
+
+    await setDevelopmentVersion(root, "0.4.0-dev");
+    expect((await Bun.file(join(root, "package.json")).json()).version).toBe("0.4.0-dev");
+    await checkReleaseVersion(root, "0.4.0-dev");
+
+    const before = await Promise.all(
+      ["package.json", "rust/Cargo.toml", "rust/Cargo.lock"].map((path) =>
+        Bun.file(join(root, path)).text(),
+      ),
+    );
+    await rejects(setDevelopmentVersion(root, "0.5.0"), /development version/);
+    const after = await Promise.all(
+      ["package.json", "rust/Cargo.toml", "rust/Cargo.lock"].map((path) =>
+        Bun.file(join(root, path)).text(),
+      ),
+    );
+    expect(after).toEqual(before);
+
+    await Bun.write(join(root, "rust/uuid-slug/Cargo.toml"), "invalid");
+    await rejects(setDevelopmentVersion(root, "0.4.2-dev"), /synchronize the release lockfile/);
+    const restored = await Promise.all(
+      ["package.json", "rust/Cargo.toml", "rust/Cargo.lock"].map((path) =>
+        Bun.file(join(root, path)).text(),
+      ),
+    );
+    expect(restored).toEqual(before);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 test("the version hook synchronizes Cargo and rejects missing notes before mutation", async () => {
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-version-"));

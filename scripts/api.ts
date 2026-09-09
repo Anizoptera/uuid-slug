@@ -51,16 +51,18 @@ function reportSections(source: string): Map<string, string> {
   return result;
 }
 
-async function diff(label: string, baseline: string, current: string): Promise<boolean> {
+async function diff(
+  label: string,
+  fileName: string,
+  baseline: string,
+  current: string,
+): Promise<boolean> {
   if (baseline === current) {
     console.log(`${label}: unchanged`);
     return false;
   }
-  const baselinePath = join(
-    apiDirectory,
-    label === "TypeScript API" ? "typescript.api.md" : "rust.api.md",
-  );
-  const currentPath = join(work, label === "TypeScript API" ? "typescript.api.md" : "rust.api.md");
+  const baselinePath = join(apiDirectory, fileName);
+  const currentPath = join(work, fileName);
   await Bun.write(currentPath, current);
   const child = Bun.spawn(
     ["git", "diff", "--no-index", "--no-ext-diff", "--", baselinePath, currentPath],
@@ -77,12 +79,28 @@ async function diff(label: string, baseline: string, current: string): Promise<b
   const changedSections = [...new Set([...before.keys(), ...after.keys()])].filter(
     (section) => before.get(section) !== after.get(section),
   );
-  console.log(`${label}: changed (${changedSections.join(", ")})\n${stdout.trimEnd()}`);
+  const sectionSummary = changedSections.length ? ` (${changedSections.join(", ")})` : "";
+  console.log(`${label}: changed${sectionSummary}\n${stdout.trimEnd()}`);
   return true;
 }
 
 function report(language: string, contentSections: string[]): string {
   return `# ${language} packaged API\n\nThis generated baseline records consumer-visible declarations.\n\n${contentSections.join("\n\n")}\n`;
+}
+
+async function formatTypeScriptReport(declarations: string): Promise<string> {
+  const source = `// Generated consumer-visible declarations; update with \`bun run api:update\` instead of editing.\n\n${declarations}\n`;
+  const child = Bun.spawn(
+    [join(root, "node_modules/.bin/oxfmt"), "--stdin-filepath=api/typescript.api.d.ts"],
+    { cwd: root, stdin: new TextEncoder().encode(source), stdout: "pipe", stderr: "pipe" },
+  );
+  const [stdout, stderr, status] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ]);
+  if (status !== 0) throw new Error(`oxfmt failed (${status}): ${stderr.trim()}`);
+  return stdout;
 }
 
 async function readRustDeprecations(target: string): Promise<string[]> {
@@ -102,9 +120,7 @@ try {
   const declarationRollup = typescriptDeclarations(
     await readFile(join(work, "typescript.d.ts"), "utf8"),
   );
-  const typescript = report("TypeScript", [
-    `## Public declarations\n\n\`\`\`ts\n${declarationRollup}\n\`\`\``,
-  ]);
+  const typescript = await formatTypeScriptReport(declarationRollup);
 
   const rustArgs = [
     "public-api",
@@ -148,14 +164,24 @@ try {
 
   await mkdir(apiDirectory, { recursive: true });
   const outputs = [
-    { label: "TypeScript API", path: join(apiDirectory, "typescript.api.md"), content: typescript },
-    { label: "Rust API", path: join(apiDirectory, "rust.api.md"), content: rust },
+    {
+      label: "TypeScript API",
+      fileName: "typescript.api.d.ts",
+      path: join(apiDirectory, "typescript.api.d.ts"),
+      content: typescript,
+    },
+    {
+      label: "Rust API",
+      fileName: "rust.api.md",
+      path: join(apiDirectory, "rust.api.md"),
+      content: rust,
+    },
   ] as const;
   for (const output of outputs) {
     const baseline = (await Bun.file(output.path).exists())
       ? await Bun.file(output.path).text()
       : "";
-    const differs = await diff(output.label, baseline, output.content);
+    const differs = await diff(output.label, output.fileName, baseline, output.content);
     changed ||= differs;
     if (mode === "update" && differs) await Bun.write(output.path, output.content);
   }

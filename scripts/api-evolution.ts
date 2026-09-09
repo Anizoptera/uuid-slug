@@ -141,7 +141,18 @@ export function typescriptDeclarations(source: string): string {
   }
   cleaned += source.slice(offset);
   const file = ts.createSourceFile("public.d.ts", cleaned, ts.ScriptTarget.Latest, true);
-  return ts.createPrinter({ newLine: ts.NewLineKind.LineFeed }).printFile(file).trim();
+  const statements = file.statements.filter(
+    (node) =>
+      !(
+        ts.isExportDeclaration(node) &&
+        !node.moduleSpecifier &&
+        node.exportClause &&
+        ts.isNamedExports(node.exportClause) &&
+        node.exportClause.elements.length === 0
+      ),
+  );
+  const normalized = ts.factory.updateSourceFile(file, statements);
+  return ts.createPrinter({ newLine: ts.NewLineKind.LineFeed }).printFile(normalized).trim();
 }
 
 function rustEntries(report: ReadonlyMap<string, string>): ReadonlySet<string> {
@@ -194,10 +205,7 @@ function removalBoundary(previous: string, current: string): boolean {
   return oldMajor === 0n ? newMajor > 0n || newMinor > oldMinor : newMajor > oldMajor;
 }
 
-function typescriptDeprecations(
-  source: string,
-  legacySection: string | undefined,
-): ReadonlySet<string> {
+function typescriptDeprecations(source: string): ReadonlySet<string> {
   const file = ts.createSourceFile("public.d.ts", source, ts.ScriptTarget.Latest, true);
   const deprecated = new Set<string>();
   function visit(node: ts.Node): void {
@@ -213,8 +221,6 @@ function typescriptDeprecations(
       ts.forEachChild(node, visit);
   }
   visit(file);
-  if (legacySection && legacySection !== "(none)")
-    for (const line of legacySection.split("\n")) deprecated.add(JSON.parse(line) as string);
   return deprecated;
 }
 
@@ -248,19 +254,17 @@ export function verifyEvolution(
   packageLevels: readonly ReleaseLevel[] = [],
   tagged = true,
 ): void {
-  const oldTs = sections(before.typescript);
-  const newTs = sections(after.typescript);
   const oldRust = sections(before.rust);
   const newRust = sections(after.rust);
-  const oldTsSource = code(oldTs.get("Public declarations") ?? oldTs.get("Reachable declarations"));
-  const newTsSource = code(newTs.get("Public declarations") ?? newTs.get("Reachable declarations"));
+  const oldTsSource = before.typescript;
+  const newTsSource = after.typescript;
   const oldTsEntries = typescriptEntries(oldTsSource);
   const newTsEntries = typescriptEntries(newTsSource);
   const oldRustEntries = rustEntries(oldRust);
   const newRustEntries = rustEntries(newRust);
   const oldTsNormalized = normalizeDeclarations(oldTsSource);
   const newTsNormalized = normalizeDeclarations(newTsSource);
-  const deprecatedTypeScript = typescriptDeprecations(oldTsSource, oldTs.get("Deprecations"));
+  const deprecatedTypeScript = typescriptDeprecations(oldTsSource);
   const deprecatedRust = rustDeprecations(oldRust);
   removals("TypeScript", oldTsEntries, newTsEntries, (entry) => deprecatedTypeScript.has(entry));
   removals("Rust", oldRustEntries, newRustEntries, (entry) => deprecatedRust.has(entry));
@@ -315,7 +319,7 @@ export async function checkReleasedApi(root: string, current: ApiReports): Promi
     return;
   }
   const [typescript, rust] = await Promise.all([
-    command("git", ["show", `${tag}:api/typescript.api.md`], root),
+    command("git", ["show", `${tag}:api/typescript.api.d.ts`], root),
     command("git", ["show", `${tag}:api/rust.api.md`], root),
   ]);
   const [oldNpmText, oldCargoText, oldCargoPackageText] = await Promise.all([

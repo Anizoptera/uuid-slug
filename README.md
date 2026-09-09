@@ -171,11 +171,11 @@ assigning a string does not validate it. Use guards to check format and your sto
 
 - Strings: `UuidString`, `UuidV4String`, `UuidV7String`.
 - Slugs: `UuidSlug` (either alphabet), `UuidV4Slug`, `UuidV7Slug`; masked types cover both spellings
-  — `MaskedUuidSlug`, `MaskedUuidV7Slug`, `SentinelUuidV7Slug`, and `PublicUuidV7Slug` for
+  — `MaskedUuidV7Slug`, `SentinelUuidV7Slug`, and `PublicUuidV7Slug` for
   "masked or sentinel", which is what a masking call returns. `SlugAlphabet` names the two
-  alphabets, and `UuidBytes` brands 16 raw bytes — for annotating storage of your own, which is why
-  it appears in no signature here: a byte writer returns the caller's output array, which can be
-  longer than the UUID range it writes.
+  alphabets. `UuidBytes` labels storage a consumer knows contains one 16-byte UUID payload; byte
+  writers return the caller's array without applying that label because it may contain more than
+  the UUID range they write.
 - Shapes: `UuidSlugCodec` and `UuidSlugCodecOptions`, `MaskSchema`, `MaskSchemaOptions` and `AsyncMaskSchemaOptions`,
   `UuidV7Sentinel` and `UuidV7SentinelDefinition`, `UuidV7Generator` and
   `UuidV7GeneratorOptions`, `FreshValidationOptions`, `UuidSlugErrorCode`.
@@ -237,9 +237,9 @@ Also exported, all module-level:
   than an omission. `UUID_V7_SENTINEL_DEFINITIONS` is the default sentinel list.
 - `createUuidV7Generator(options)` builds a generator from your own `clock` and `fillRandom`, for
   a `generator:` codec option. Its options type is `UuidV7GeneratorOptions`.
-- `UuidSlugError` and its subclass `UuidRuntimeError`, returned when the runtime has no usable
-  randomness. `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes either
-  class across JavaScript realms and duplicate package copies.
+- `UuidSlugError`, including code `rng_unavailable` when the runtime has no usable randomness.
+  `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes package errors across
+  JavaScript realms and duplicate package copies.
 
 ### Codec options
 

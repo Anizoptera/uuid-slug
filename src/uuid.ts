@@ -50,7 +50,7 @@ const SLUG_ALPHABETS: { base32hex: Alphabet; base64url: Alphabet } = {
  * package documents as its only one. A union of two names cannot be widened by a caller at all, so
  * there is nothing to validate.
  */
-export type SlugAlphabet = keyof typeof SLUG_ALPHABETS;
+export type SlugAlphabet = "base64url" | "base32hex";
 
 /** Reject values outside the public alphabet union when untyped JavaScript bypasses TypeScript. */
 export function resolveSlugAlphabet(alphabet: SlugAlphabet): Alphabet | UuidSlugError {

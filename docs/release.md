@@ -45,10 +45,13 @@ Version the full consumer effect. A fix with no new public behavior is patch. Ba
 public behavior is minor. Incompatible behavior is major, or minor before 1.0. Structural API checks
 provide a lower bound; the committer must classify behavior that declarations cannot expose.
 
-After a release, npm and Cargo move to the next patch with a `-dev` suffix. Raise that target when a
-change requires a minor or major. Every pull request includes the matching npm manifest, Cargo
-manifest, and lockfile versions. A release tag and both published manifests use the same stable
-version without `-dev`.
+Choose the development target against the latest governed release. After a release, start with its
+next patch. Raise the target only when the changes since that release require a minor or major under
+the rule above. With no governed release, keep the planned first release unless the maintainer
+changes it. Changes to unreleased APIs do not justify a higher target. Use
+`bun run version:set <X.Y.Z-dev>` to update and verify `package.json`, `rust/Cargo.toml`, and
+`rust/Cargo.lock` together. A release tag and both published manifests use the same stable version
+without `-dev`.
 
 The commit hook checks two independent rules. Generated declarations must match the reviewed
 baseline and remain compatible with the latest release. Updating the reviewed baseline cannot

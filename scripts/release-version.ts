@@ -1,4 +1,4 @@
-// Keep the Rust release version equal to the version chosen in package.json.
+// Keep the npm manifest, Cargo manifest, and lockfile on one version.
 import { isDeepStrictEqual } from "node:util";
 
 interface Workspace {
@@ -49,4 +49,45 @@ export async function syncReleaseVersion(cwd: string, version: string): Promise<
   if ((await child.exited) !== 0)
     throw new Error("Cargo could not synchronize the release lockfile; do not tag.");
   await checkReleaseVersion(cwd, version);
+}
+
+export async function setDevelopmentVersion(cwd: string, version: string): Promise<void> {
+  if (!/^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)-dev$/.test(version))
+    throw new Error("The development version must use X.Y.Z-dev.");
+
+  const paths = ["package.json", "rust/Cargo.toml", "rust/Cargo.lock"] as const;
+  const [packageSource, cargoSource, lockSource] = await Promise.all(
+    paths.map((path) => Bun.file(`${cwd}/${path}`).text()),
+  );
+  if (packageSource === undefined || cargoSource === undefined || lockSource === undefined)
+    throw new Error("Could not read every version file.");
+  const originals = {
+    "package.json": packageSource,
+    "rust/Cargo.toml": cargoSource,
+    "rust/Cargo.lock": lockSource,
+  };
+  const manifest = JSON.parse(packageSource) as Record<string, unknown> & { version?: unknown };
+  if (typeof manifest.version !== "string") throw new Error("package.json has no string version.");
+  const oldLiteral = `"version": ${JSON.stringify(manifest.version)}`;
+  if (packageSource.split(oldLiteral).length !== 2)
+    throw new Error("package.json must contain its top-level version once.");
+  const updatedPackage = packageSource.replace(oldLiteral, `"version": ${JSON.stringify(version)}`);
+  const expectedManifest = { ...manifest, version };
+  if (!isDeepStrictEqual(JSON.parse(updatedPackage), expectedManifest))
+    throw new Error("The version update changed another package.json field.");
+
+  try {
+    await Bun.write(`${cwd}/package.json`, updatedPackage);
+    await syncReleaseVersion(cwd, version);
+  } catch (error) {
+    await Promise.all(paths.map((path) => Bun.write(`${cwd}/${path}`, originals[path])));
+    throw error;
+  }
+}
+
+if (import.meta.main) {
+  const version = process.argv[2];
+  if (!version || process.argv.length !== 3)
+    throw new Error("Usage: bun run version:set <X.Y.Z-dev>");
+  await setDevelopmentVersion(process.cwd(), version);
 }

@@ -2,9 +2,10 @@ import { createMaskSchemaAsync, createUuidSlugCodec, uuidV7Slug } from "@anizopt
 import type {
   AsyncMaskSchemaOptions,
   MaskSchema,
-  UuidSlugError,
   MaskedUuidV7Slug,
   PublicUuidV7Slug,
+  UuidBytes,
+  UuidSlugError,
   UuidV4Slug,
   UuidV7Slug,
   UuidString,
@@ -15,6 +16,7 @@ import type {
 const plainResult = uuidV7Slug();
 if (plainResult instanceof Error) throw plainResult;
 const plain: UuidV7Slug = plainResult;
+const storedBytes: UuidBytes = new Uint8Array(16);
 const codec = createUuidSlugCodec();
 const migration: UuidSlugMigration = codec.migration({ original: true, plain: true });
 const migrated: UuidString | UuidSlugError = migration.decode("AAAAAAABcACAAAAAAAAAAA");
@@ -22,7 +24,7 @@ const candidates: UuidString[] | UuidSlugError = migration.candidates(
   "AAAAAAABcACAAAAAAAAAAA",
   "original",
 );
-void [migrated, candidates];
+void [storedBytes, migrated, candidates];
 const publicSlugResult = codec.uuidV7MaskedSlug();
 if (publicSlugResult instanceof Error) throw publicSlugResult;
 const publicSlug: PublicUuidV7Slug = publicSlugResult;
@@ -43,3 +45,8 @@ const pendingSchema: Promise<MaskSchema | UuidSlugError> = createMaskSchemaAsync
 // @ts-expect-error A pending schema cannot be used as a codec key before awaiting its result.
 createUuidSlugCodec({ mask: pendingSchema });
 void pendingSchema;
+
+// @ts-expect-error Consumers branch on UuidSlugErrorCode; the runtime-specific subclass is internal.
+type _RuntimeErrorIsInternal = import("@anizoptera/uuid-slug")["UuidRuntimeError"];
+// @ts-expect-error Masking produces UUIDv7 slugs, so no broader masked-slug type is public.
+type _GenericMaskedSlugIsInternal = import("@anizoptera/uuid-slug")["MaskedUuidSlug"];

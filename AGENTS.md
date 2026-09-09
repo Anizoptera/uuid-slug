@@ -7,6 +7,10 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - The externally visible API is reserved. Put any proposed public export, option, behavior, or
   feature change and its consumer consequences in the same pull request. Merging is the maintainer
   decision; no separate acceptance step exists.
+- Keep public types that name a documented value or distinction consumers use in storage,
+  parameters, return values, narrowing, or configuration. A package signature need not mention the
+  type. Remove it only when no documented value or operation needs its distinction. Apply this rule
+  separately to TypeScript and Rust, document the consumer effect, and verify each packaged surface.
 - `ROADMAP.md` is transient and never owns a contract, decision, or lasting conclusion. Put
   consumer contracts in README, wire design in `docs/design.md`, security boundaries in
   `docs/security.md`, cross-language and distribution decisions in `docs/cross-language.md`, and
@@ -101,10 +105,12 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   backward-compatible public behavior is minor; incompatible behavior is major, or minor before
   1.0. Structural checks provide a lower bound; they cannot classify semantic behavior or approve
   a public change.
-- Between releases, keep npm and Cargo on the same `X.Y.Z-dev` target. Start with the next patch,
-  then raise it when the change requires a minor or major. Every pull request includes that version
-  in both manifests and the lockfile. Release tags and published manifests use the same stable
-  version without `-dev`.
+- Choose the development target against the latest governed release. After a release, start with
+  its next patch. Raise the target only when the changes since that release require a minor or major
+  under the rule above. With no governed release, keep the planned first release unless the
+  maintainer changes it. Changes to unreleased APIs do not justify a higher target. Use
+  `bun run version:set <X.Y.Z-dev>` to update and verify both manifests and the lockfile together.
+  Release tags and published manifests use the same stable version without `-dev`.
 - Obtain retained archives through `--tarball-out DIR` in a caller-owned directory and clean it
   up. Never parse archive paths from human-facing stdout.
 - Run `bun run check` before committing unless a maintainer explicitly selects narrower intermediate

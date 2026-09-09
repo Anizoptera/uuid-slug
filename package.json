@@ -1,6 +1,6 @@
 {
   "name": "@anizoptera/uuid-slug",
-  "version": "0.4.1-dev",
+  "version": "0.4.0-dev",
   "description": "Short URL-safe UUIDs: 22-character base64url slugs, plus reversible masking that hides the UUIDv7 timestamp. Zero dependencies.",
   "keywords": [
     "base64url",
@@ -89,6 +89,7 @@
     "release": "pnpm version --allow-same-version",
     "test": "vitest run && bun test test/*.bun.test.ts scripts/*.test.ts",
     "typecheck": "bun node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+    "version:set": "bun scripts/release-version.ts",
     "version": "bun scripts/release-notes.ts --sync > /dev/null && git add rust/Cargo.toml rust/Cargo.lock",
     "bench:matrix": "bun bench/matrix.ts",
     "lint": "oxlint --type-aware",

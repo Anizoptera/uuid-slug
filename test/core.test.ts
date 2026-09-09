@@ -10,7 +10,6 @@ import {
   slugToUuid,
   uuidToSlug,
   uuidV7BytesAt,
-  UuidRuntimeError,
   UuidSlugError,
 } from "../src/index";
 import type { SlugAlphabet, UuidSlugCodecOptions } from "../src/index";
@@ -30,7 +29,6 @@ describe("error classification", () => {
       '["UuidSlugError", "UuidRuntimeError"].map(name => Object.assign(new Error("failure"), { name, code: "invalid_uuid" }))',
     );
     expect(isUuidSlugError(new UuidSlugError("invalid_uuid", "bad UUID"))).toBe(true);
-    expect(isUuidSlugError(new UuidRuntimeError("entropy failed"))).toBe(true);
     expect(foreign.every(isUuidSlugError)).toBe(true);
     expect(isUuidSlugError({ name: "UuidSlugError", code: "invalid_uuid" })).toBe(false);
     expect(
