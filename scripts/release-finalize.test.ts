@@ -46,6 +46,8 @@ test("finalization repairs only missing release state and refuses different reta
   let npmPublished = false;
   let cratePublished = false;
   let retainNotes = true;
+  let corruptFinal: "draft" | "notes" | "asset" | undefined;
+  let pendingFinal = false;
   const assets = new Map<string, string>();
   const mutations: string[] = [];
   const server: Bun.Server<undefined> = Bun.serve({
@@ -62,6 +64,12 @@ test("finalization repairs only missing release state and refuses different reta
           : new Response(null, { status: 404 });
       if (url.pathname === "/repos/owner/repo/releases/tags/v0.4.0") {
         if (!releaseExists) return new Response(null, { status: 404 });
+        if (pendingFinal) {
+          if (corruptFinal === "draft") draft = true;
+          if (corruptFinal === "notes") body = "lost notes";
+          if (corruptFinal === "asset") assets.delete("package.tgz");
+          pendingFinal = false;
+        }
         return Response.json({
           id: 1,
           draft,
@@ -78,6 +86,7 @@ test("finalization repairs only missing release state and refuses different reta
         const patch = (await request.json()) as { body?: string; draft?: boolean };
         if (patch.body !== undefined && retainNotes) body = patch.body;
         if (patch.draft !== undefined) draft = patch.draft;
+        pendingFinal = patch.draft === false;
         mutations.push(patch.draft === false ? "finalize" : "repair-notes");
       } else if (url.pathname === "/uploads/1" && request.method === "POST") {
         const name = url.searchParams.get("name");
@@ -117,6 +126,16 @@ test("finalization repairs only missing release state and refuses different reta
     await finalizeRelease(root, options);
     expect(mutations).toEqual([]);
 
+    for (const corruption of ["draft", "notes", "asset"] as const) {
+      draft = true;
+      body = "Release notes\n";
+      assets.set("package.tgz", `sha256:${sha256(npmBytes)}`);
+      corruptFinal = corruption;
+      await rejects(finalizeRelease(root, options), /Final release/);
+    }
+    corruptFinal = undefined;
+    assets.set("package.tgz", `sha256:${sha256(npmBytes)}`);
+    mutations.length = 0;
     draft = true;
     body = "stale notes";
     retainNotes = false;

@@ -179,7 +179,8 @@ Work one area at a time, ordered by failure consequences; add discovered defects
 - [ ] Release integrity: trace credential separation, tag/version/changelog binding, archive identity, publication recovery, notes/assets, and finalization; exercise failures without remote writes.
   - [x] Bind candidate tags to HEAD and require annotation in shared preflight. The lightweight-tag regression failed before the repair; lightweight and wrong-commit rejection, valid annotated tags, and existing process fixtures pass after it. Complete `bun run check` passes; release CI remains unexecuted.
   - [ ] Verify reports read the retained candidate crate and bind archive versions/commits to selected tags; current report measures the source checkout for Rust.
-  - [ ] Verify full retry behavior preserves inputs across preparation reruns and confirms final GitHub state rather than accepting a successful HTTP response alone.
+  - [ ] Verify full retry behavior preserves inputs across preparation reruns.
+  - [x] Read back final GitHub state instead of trusting the mutation response. Local transport cases expose retained draft state, lost notes, and a missing archive after a successful acknowledgement; the repaired finalizer rejects them. Complete `bun run check` passes; no remote finalization was attempted.
 - [ ] Version compatibility: challenge Git predecessor selection, SemVer ordering, prereleases/build metadata, collision collapse, missing registry history, and minimum-version enforcement.
   - [x] Correct collision fallback to skip the entire previous release line; three cases failed before the fix and pass in `scripts/release-history.test.ts`; complete `bun run check` passes.
   - [x] Preserve complete TypeScript declarations, overload order and multiplicity, and Rust feature-selection ownership in API comparisons; regression cases and complete `bun run check` pass.

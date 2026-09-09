@@ -180,6 +180,17 @@ export async function finalizeRelease(cwd: string, options: FinalizeOptions): Pr
     }),
     "Finalize release",
   );
+  // A successful mutation response does not prove the destination retained the final state.
+  const final = release(
+    await jsonResponse(await github(byTag, options.token), "Read final release"),
+  );
+  if (final.draft || final.body !== notes)
+    throw new Error("Final release did not retain its public state and generated notes.");
+  for (const item of archives) {
+    const asset = final.assets.find(({ name }) => name === basename(item.archive.file));
+    if (asset?.digest !== `sha256:${item.sha256}`)
+      throw new Error(`Final release did not retain ${basename(item.archive.file)} exactly.`);
+  }
 }
 
 if (import.meta.main) {
