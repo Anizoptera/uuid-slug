@@ -27,6 +27,50 @@ interface CommandResult {
   readonly status: number;
 }
 
+type ArchiveFiles = ReadonlyMap<string, Blob>;
+
+function verifyArchiveRoot(files: ArchiveFiles, prefix: string): void {
+  for (const name of files.keys()) {
+    const relative = name.startsWith(prefix) ? name.slice(prefix.length) : "";
+    if (
+      !relative ||
+      relative.includes("\\") ||
+      relative.split("/").some((part) => !part || part === "." || part === "..")
+    )
+      throw new Error(`Archive contains a path outside ${prefix}.`);
+  }
+}
+
+export async function verifyCrateIdentity(
+  files: ArchiveFiles,
+  version: string,
+  commit: string,
+): Promise<void> {
+  const prefix = `uuid-slug-${version}/`;
+  verifyArchiveRoot(files, prefix);
+  const cargo = files.get(`${prefix}Cargo.toml`);
+  const vcs = files.get(`${prefix}.cargo_vcs_info.json`);
+  if (!cargo || !vcs) throw new Error("Crate has no identity metadata.");
+  const manifest = Bun.TOML.parse(await cargo.text()) as { package?: { version?: unknown } };
+  const source = (await vcs.json()) as { git?: { sha1?: unknown } };
+  if (manifest.package?.version !== version || source.git?.sha1 !== commit)
+    throw new Error(`Crate does not identify ${version} at ${commit}.`);
+}
+
+export async function verifyNpmIdentity(
+  files: ArchiveFiles,
+  name: string,
+  version: string,
+): Promise<Record<string, unknown>> {
+  verifyArchiveRoot(files, "package/");
+  const manifest = files.get("package/package.json");
+  if (!manifest) throw new Error("npm archive has no package manifest.");
+  const metadata = (await manifest.json()) as Record<string, unknown>;
+  if (metadata.name !== name || metadata.version !== version)
+    throw new Error(`npm archive does not identify ${name}@${version}.`);
+  return metadata;
+}
+
 function normalizeDeclarations(source: string): string {
   const file = ts.createSourceFile("public.d.ts", source, ts.ScriptTarget.Latest, true);
   const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed, removeComments: true });
@@ -71,13 +115,14 @@ async function extractArchive(
   root: string,
   archive: RetainedArchive,
   destination: string,
+  version: string,
+  commit: string,
 ): Promise<string> {
   const contents = new Bun.Archive(await readRetainedArchive(root, archive));
   const files = await contents.files();
+  await verifyCrateIdentity(files, version, commit);
   await contents.extract(destination);
-  const manifest = [...files.keys()].find((name) => /^[^/]+\/Cargo\.toml$/.test(name));
-  if (!manifest) throw new Error(`${basename(archive.file)} has no crate manifest.`);
-  return dirname(join(destination, manifest));
+  return dirname(join(destination, `uuid-slug-${version}/Cargo.toml`));
 }
 
 async function declaration(
@@ -85,6 +130,8 @@ async function declaration(
   archive: RetainedArchive,
   work: string,
   label: string,
+  name: string,
+  version: string,
 ): Promise<string> {
   const extracted = join(work, `npm-${label}`);
   const rollup = join(extracted, "public.d.ts");
@@ -92,9 +139,9 @@ async function declaration(
   const config = join(packageRoot, "api-extractor.json");
   const contents = new Bun.Archive(await readRetainedArchive(root, archive));
   const files = await contents.files();
-  const manifest = files.get("package/package.json");
-  if (!files.has("package/dist/index.d.ts") || !manifest)
+  if (!files.has("package/dist/index.d.ts"))
     throw new Error(`${basename(archive.file)} has no packaged TypeScript declarations.`);
+  const metadata = await verifyNpmIdentity(files, name, version);
   await contents.extract(extracted);
   await Bun.write(
     config,
@@ -107,7 +154,7 @@ async function declaration(
     }),
   );
   await command("api-extractor", ["run", "--local", "--config", config], root);
-  return `${JSON.stringify(typescriptManifest(await manifest.json()))}\n${normalizeDeclarations(await Bun.file(rollup).text())}`;
+  return `${JSON.stringify(typescriptManifest(metadata))}\n${normalizeDeclarations(await Bun.file(rollup).text())}`;
 }
 
 async function rustApi(cwd: string, manifest: string): Promise<string> {
@@ -278,13 +325,19 @@ function sizeTable(current: Sizes, previous: Sizes): string {
 async function historicalEvidence(
   root: string,
   work: string,
-  npm: RetainedArchive | undefined,
-  crate: RetainedArchive | undefined,
+  comparison: ReleaseInputs["comparisons"][number],
 ): Promise<{ sizes: Sizes; crateRoot?: string }> {
+  const { npm, crate } = comparison;
   if (!crate)
     return { sizes: { ...(npm ? { npm: (await stat(resolve(root, npm.file))).size } : {}) } };
   const extracted = join(work, basename(crate.file, ".crate"));
-  const crateRoot = await extractArchive(root, crate, extracted);
+  const crateRoot = await extractArchive(
+    root,
+    crate,
+    extracted,
+    comparison.tag.slice(1),
+    comparison.commit,
+  );
   return {
     crateRoot,
     sizes: {
@@ -316,8 +369,17 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
       root,
       inputs.candidate.crate,
       join(work, "current-crate"),
+      inputs.version,
+      inputs.commit,
     );
-    const currentDeclaration = await declaration(root, inputs.candidate.npm, work, "current");
+    const currentDeclaration = await declaration(
+      root,
+      inputs.candidate.npm,
+      work,
+      "current",
+      inputs.name,
+      inputs.version,
+    );
     const currentRust = await rustApi(root, join(crateRoot, "Cargo.toml"));
     const current: Sizes = {
       npm: (await stat(npm)).size,
@@ -326,10 +388,17 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
     };
     const sections = await Promise.all(
       inputs.comparisons.map(async (comparison) => {
-        const previous = await historicalEvidence(root, work, comparison.npm, comparison.crate);
+        const previous = await historicalEvidence(root, work, comparison);
         const typescript = comparison.npm
           ? apiDifference(
-              await declaration(root, comparison.npm, work, comparison.tag),
+              await declaration(
+                root,
+                comparison.npm,
+                work,
+                comparison.tag,
+                inputs.name,
+                comparison.tag.slice(1),
+              ),
               currentDeclaration,
               "TypeScript declaration",
             )
