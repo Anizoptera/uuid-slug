@@ -92,8 +92,12 @@ const seedLo = (bytes: Uint8Array) =>
   0;
 
 export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator {
+  if (typeof options !== "object" || options === null || Array.isArray(options))
+    throw new TypeError("Generator options must be an object.");
   const clock = options.clock ?? Date.now;
   const fill = options.fillRandom;
+  if (typeof clock !== "function") throw new TypeError("Generator clock must be a function.");
+  if (typeof fill !== "function") throw new TypeError("Generator fillRandom must be a function.");
   const random = new Uint8Array(16);
   /**
    * Below every timestamp the clock check admits, which is what makes it the uninitialised

@@ -327,6 +327,30 @@ export const runtimeBoundaryCases = [
     },
   },
   {
+    name: "rejects malformed portable generator configuration",
+    run(this: void) {
+      for (const options of [null, 1, "generator", [], {}, { fillRandom: 1 }]) {
+        assert.throws(() => Reflect.apply(createUuidV7Generator, undefined, [options]), TypeError);
+      }
+      for (const property of ["clock", "fillRandom"] as const) {
+        const cause = new Error(`${property} getter failed`);
+        const options = Object.defineProperty(
+          { fillRandom: (bytes: Uint8Array) => bytes.fill(0) },
+          property,
+          {
+            get() {
+              throw cause;
+            },
+          },
+        );
+        assert.throws(
+          () => Reflect.apply(createUuidV7Generator, undefined, [options]),
+          (error: unknown) => error === cause,
+        );
+      }
+    },
+  },
+  {
     name: "refuses nonfinite and negative freshness configuration",
     run(this: void) {
       for (const options of [null, 1, "one day", []]) {
