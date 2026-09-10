@@ -171,8 +171,9 @@ arrays are not assignable to them; pass raw input directly to package operations
 you need to retain the narrowed type. A brand proves format, not issuance: check your store for that.
 
 - Strings: `UuidString`, `UuidV4String`, `UuidV7String`.
-- Slugs: `UuidSlug` (either alphabet), `UuidV4Slug`, `UuidV7Slug`; masked types cover both spellings
-  — `MaskedUuidV7Slug`, `SentinelUuidV7Slug`, and `PublicUuidV7Slug` for
+- Direct slugs: `UuidSlug` (either alphabet), `UuidV4Slug`, and `UuidV7Slug`. Masked types stay
+  separate because their check bits and lengths are not direct UUID encodings. They cover both
+  spellings — `MaskedUuidV7Slug`, `SentinelUuidV7Slug`, and `PublicUuidV7Slug` for
   "masked or sentinel", which is what a masking call returns. `SlugAlphabet` names the two
   alphabets. `UuidBytes` labels one validated 16-byte UUID payload; `UuidV4Bytes` and `UuidV7Bytes`
   retain the generated version. Byte operations return those exact types when they allocate the

@@ -109,6 +109,8 @@ void [
 const publicSlugResult = codec.uuidV7MaskedSlug();
 if (publicSlugResult instanceof Error) throw publicSlugResult;
 const publicSlug: PublicUuidV7Slug = publicSlugResult;
+// @ts-expect-error A masked-or-sentinel result is not always a canonical direct UUID slug.
+const directPublicSlug: UuidSlug = publicSlug;
 const uncheckedPublicSlug: string = publicSlug;
 const checkedPublicSlugResult = codec.validateMaskedSlugFresh(uncheckedPublicSlug);
 if (checkedPublicSlugResult instanceof Error) throw checkedPublicSlugResult;
@@ -120,7 +122,7 @@ const masked: MaskedUuidV7Slug = plain;
 const v4: UuidV4Slug = plain;
 // @ts-expect-error A generated public slug may be a raw sentinel.
 const onlyMasked: MaskedUuidV7Slug = publicSlug;
-void [checkedPublicSlug, masked, v4, onlyMasked];
+void [checkedPublicSlug, directPublicSlug, masked, v4, onlyMasked];
 
 const freshness: FreshValidationOptions = {};
 // @ts-expect-error Validation options are captured input, not mutable package state.

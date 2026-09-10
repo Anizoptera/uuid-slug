@@ -72,7 +72,7 @@ export declare function isUuidV4String(uuid: unknown): uuid is UuidV4String;
 export declare function isUuidV7Bytes(bytes: unknown): bytes is UuidV7Bytes;
 export declare function isUuidV7Slug(slug: unknown): slug is UuidV7Slug;
 export declare function isUuidV7String(uuid: unknown): uuid is UuidV7String;
-declare type MaskedUuidSlug = Brand<UuidSlug, "MaskedUuidSlug">;
+declare type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 export declare type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
 export declare interface MaskSchema {
   readonly id: string;

@@ -17,7 +17,7 @@ export type UuidSlug = Brand<string, "UuidSlug">;
 export type UuidV4Slug = Brand<UuidSlug, "UuidV4Slug">;
 export type UuidV7Slug = Brand<UuidSlug, "UuidV7Slug">;
 /** A masked payload in either spelling; its check bits are not plain-encoding padding. */
-export type MaskedUuidSlug = Brand<UuidSlug, "MaskedUuidSlug">;
+export type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 export type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
 export type SentinelUuidV7Slug = Brand<UuidV7Slug, "SentinelUuidV7Slug">;
 export type PublicUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
