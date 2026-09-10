@@ -176,7 +176,7 @@ const pendingSchema: Promise<MaskSchema | UuidSlugError> = createMaskSchemaAsync
 createUuidSlugCodec({ mask: pendingSchema });
 void pendingSchema;
 
-// @ts-expect-error Consumers branch on UuidSlugErrorCode; the runtime-specific subclass is internal.
+// @ts-expect-error Consumers branch on UuidSlugErrorCode; no runtime-specific error class exists.
 type _RuntimeErrorIsInternal = import("@anizoptera/uuid-slug")["UuidRuntimeError"];
 // @ts-expect-error Masking produces UUIDv7 slugs, so no broader masked-slug type is public.
 type _GenericMaskedSlugIsInternal = import("@anizoptera/uuid-slug")["MaskedUuidSlug"];

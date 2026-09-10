@@ -59,8 +59,11 @@ and consequential trade-offs in its durable owner; keep exploration transient.
 
 - Return `UuidSlugError` for expected data, entropy, clock, configuration, and injected-callback
   failures. Reserve thrown exceptions for programmer errors that the declared interface excludes.
-- Keep error codes stable and actionable. Validate configuration at construction when possible;
-  preserve the original cause when an external capability fails.
+- Keep one error class with stable, actionable codes. Codes guide different recovery actions without
+  multiplying runtime types; do not publish subclasses or operation-specific error-code generics
+  when they add no data or behavior and would make a newly reachable code a source break. Validate
+  configuration at construction when possible; preserve the original cause when an external
+  capability fails.
 - Make validation and conversion deterministic and side-effect free. Generation may consume
   entropy and advance its owned sequence state; failed operations must not publish partial output
   or corrupt the next attempt.
