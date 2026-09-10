@@ -91,7 +91,7 @@ function createSentinels(
         `Sentinel "${definition.name}" repeats the UUID of an earlier sentinel.`,
       );
     // Sentinels remain raw UUIDs; only their writer follows the masked alphabet selection.
-    const slug = formatUuidSlug(bytes, 0, alphabet);
+    const slug = formatUuidSlug(bytes, alphabet);
     if (slug instanceof Error) return slug;
     const sentinel = Object.freeze({
       name: definition.name,
@@ -104,11 +104,7 @@ function createSentinels(
     byUuid.add(definition.uuid);
     encoded.push({ bytes, slug: sentinel.slug });
     bySlug.set(sentinel.slug, { uuid: sentinel.uuid, bytes });
-    const alternate = formatUuidSlug(
-      bytes,
-      0,
-      alphabet === "base64url" ? "base32hex" : "base64url",
-    );
+    const alternate = formatUuidSlug(bytes, alphabet === "base64url" ? "base32hex" : "base64url");
     if (alternate instanceof Error) return alternate;
     bySlug.set(alternate, { uuid: sentinel.uuid, bytes });
   }

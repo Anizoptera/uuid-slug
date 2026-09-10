@@ -53,7 +53,11 @@ export declare function extractUuidV7Timestamp(
 export declare function formatUuid(bytes: Uint8Array, offset?: number): UuidString | UuidSlugError;
 export declare function formatUuidSlug(
   bytes: Uint8Array,
-  offset?: number,
+  alphabet?: SlugAlphabet,
+): UuidSlug | UuidSlugError;
+export declare function formatUuidSlug(
+  bytes: Uint8Array,
+  offset: number,
   alphabet?: SlugAlphabet,
 ): UuidSlug | UuidSlugError;
 export declare interface FreshValidationOptions {

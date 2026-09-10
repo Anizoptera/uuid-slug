@@ -45,7 +45,8 @@ const BUFFER_BYTES = 32;
  * `0.5`, which defeats it by being an index no store ever lands on. `2 ** 53` is past the point
  * where adding 16 changes the value at all.
  */
-export const HOSTILE_OFFSETS: readonly unknown[] = [-1, 0.5, NaN, Infinity, "4", 2 ** 53, 17];
+const HOSTILE_NUMERIC_OFFSETS: readonly unknown[] = [-1, 0.5, NaN, Infinity, 2 ** 53, 17];
+export const HOSTILE_OFFSETS: readonly unknown[] = [...HOSTILE_NUMERIC_OFFSETS, "4"];
 
 /** Entry points that WRITE into the caller's buffer; the strictest form of the invariant. */
 const writers: readonly (readonly [string, (out: Uint8Array, offset: number) => unknown])[] = [
@@ -77,10 +78,18 @@ const malformedWriters: readonly (readonly [string, (out: Uint8Array) => unknown
 ];
 
 /** Entry points that only READ at the offset, so only the report half of the invariant applies. */
-const readers: readonly (readonly [string, (bytes: Uint8Array, offset: number) => unknown])[] = [
-  ["formatUuid", (bytes, offset) => formatUuid(bytes, offset)],
-  ["formatUuidSlug", (bytes, offset) => formatUuidSlug(bytes, offset)],
-  ["extractUuidV7Timestamp", (bytes, offset) => extractUuidV7Timestamp(bytes, offset)],
+const readers: readonly (readonly [
+  string,
+  (bytes: Uint8Array, offset: number) => unknown,
+  readonly unknown[],
+])[] = [
+  ["formatUuid", (bytes, offset) => formatUuid(bytes, offset), HOSTILE_OFFSETS],
+  ["formatUuidSlug", (bytes, offset) => formatUuidSlug(bytes, offset), HOSTILE_NUMERIC_OFFSETS],
+  [
+    "extractUuidV7Timestamp",
+    (bytes, offset) => extractUuidV7Timestamp(bytes, offset),
+    HOSTILE_OFFSETS,
+  ],
 ];
 
 export interface ProbeCase {
@@ -121,6 +130,20 @@ export const cases: readonly ProbeCase[] = [
       return undefined;
     },
   },
+  {
+    name: "formatUuidSlug selects a whole payload alphabet without a placeholder offset",
+    run: () => {
+      const payload = parseUuid(UUID);
+      if (payload instanceof Error) return "could not create the known UUID payload";
+      const container = new Uint8Array(24);
+      container.set(payload, 4);
+      if (formatUuidSlug(payload, "base32hex") !== BASE32_SLUG)
+        return "whole-payload base32hex output differs from the known spelling";
+      return formatUuidSlug(container, 4, "base32hex") === BASE32_SLUG
+        ? undefined
+        : "numeric-offset base32hex output differs from the known spelling";
+    },
+  },
   ...writers.flatMap(([name, call]) =>
     HOSTILE_OFFSETS.map((offset) => ({
       name: `${name} refuses offset ${String(offset)} and writes nothing`,
@@ -138,8 +161,8 @@ export const cases: readonly ProbeCase[] = [
       return result instanceof UuidSlugError ? untouched(buffer) : `returned ${String(result)}`;
     },
   })),
-  ...readers.flatMap(([name, call]) =>
-    HOSTILE_OFFSETS.map((offset) => ({
+  ...readers.flatMap(([name, call, offsets]) =>
+    offsets.map((offset) => ({
       name: `${name} refuses offset ${String(offset)}`,
       run: () => refusal(call(new Uint8Array(BUFFER_BYTES).fill(FILL), offset as number)),
     })),

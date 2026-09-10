@@ -189,14 +189,32 @@ export function isUuidV7Bytes(bytes: unknown): bytes is UuidV7Bytes {
 
 export function formatUuidSlug(
   bytes: Uint8Array,
-  offset = 0,
-  alphabet: SlugAlphabet = "base64url",
+  alphabet?: SlugAlphabet,
+): UuidSlug | UuidSlugError;
+export function formatUuidSlug(
+  bytes: Uint8Array,
+  offset: number,
+  alphabet?: SlugAlphabet,
+): UuidSlug | UuidSlugError;
+export function formatUuidSlug(
+  bytes: Uint8Array,
+  offsetOrAlphabet: number | SlugAlphabet = 0,
+  alphabet?: SlugAlphabet,
 ): UuidSlug | UuidSlugError {
+  const alphabetIsSecond = typeof offsetOrAlphabet !== "number";
+  const offset = alphabetIsSecond ? 0 : offsetOrAlphabet;
   const badRange = checkRange(bytes.length, offset, 16);
   if (badRange) return badRange;
+  if (alphabetIsSecond && alphabet !== undefined)
+    return new UuidSlugError(
+      "invalid_uuid_slug",
+      "Pass the alphabet once: second for a whole UUID, or third after a numeric offset.",
+    );
   // Unreachable from TypeScript, where the name is a two-member union. Reached from JavaScript,
   // which is why it answers rather than indexing into `undefined`.
-  const alpha = resolveSlugAlphabet(alphabet);
+  const alpha = resolveSlugAlphabet(
+    alphabetIsSecond ? offsetOrAlphabet : (alphabet ?? "base64url"),
+  );
   if (alpha instanceof Error) return alpha;
   return encode(
     bytes.length === 16 ? bytes : bytes.subarray(offset, offset + 16),
@@ -243,7 +261,7 @@ export function uuidToSlug(
 ): UuidSlug | UuidSlugError {
   const bytes = parseUuid(uuid);
   if (bytes instanceof Error) return bytes;
-  return formatUuidSlug(bytes, 0, alphabet);
+  return formatUuidSlug(bytes, alphabet);
 }
 
 export function slugToUuid(slug: string): UuidString | UuidSlugError {

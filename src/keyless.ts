@@ -66,7 +66,7 @@ export function uuidV4Slug(alphabet: SlugAlphabet = "base64url"): UuidV4Slug | U
   // cannot carry that through, which is what the assertion stands in for.
   const bytes = uuidV4Bytes();
   if (bytes instanceof Error) return bytes;
-  return formatUuidSlug(bytes, 0, alphabet) as UuidV4Slug | UuidSlugError;
+  return formatUuidSlug(bytes, alphabet) as UuidV4Slug | UuidSlugError;
 }
 
 /*
@@ -138,5 +138,5 @@ export function uuidV7Slug(alphabet: SlugAlphabet = "base64url"): UuidV7Slug | U
   // encoder sees only bytes, so it returns the version-agnostic brand.
   const bytes = v7().uuidV7Bytes();
   if (bytes instanceof Error) return bytes;
-  return formatUuidSlug(bytes, 0, alphabet) as UuidV7Slug | UuidSlugError;
+  return formatUuidSlug(bytes, alphabet) as UuidV7Slug | UuidSlugError;
 }

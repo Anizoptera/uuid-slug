@@ -1,6 +1,7 @@
 import {
   createMaskSchemaAsync,
   createUuidSlugCodec,
+  formatUuidSlug,
   isUuidV7String,
   parseUuid,
   parseUuidSlug,
@@ -16,6 +17,7 @@ import type {
   MaskedUuidV7Slug,
   PublicUuidV7Slug,
   UuidBytes,
+  UuidSlug,
   UuidSlugError,
   UuidV7BytesSource,
   UuidV4Slug,
@@ -38,6 +40,7 @@ const uncheckedUuid: UuidV7String = "019ff19b-58b8-7000-9b1b-df713bd5562c";
 const parsedBytes = parseUuid("019ff19b-58b8-7000-9b1b-df713bd5562c");
 if (parsedBytes instanceof Error) throw parsedBytes;
 const storedBytes: UuidBytes = parsedBytes;
+const directlySelectedAlphabet: UuidSlug | UuidSlugError = formatUuidSlug(parsedBytes, "base32hex");
 const externalUuid: unknown = "019ff19b-58b8-7000-9b1b-df713bd5562c";
 if (!isUuidV7String(externalUuid)) throw new Error("Expected a UUIDv7 string.");
 const checkedUuid: UuidV7String = externalUuid;
@@ -90,6 +93,7 @@ void [
   uncheckedBytes,
   uncheckedUuid,
   storedBytes,
+  directlySelectedAlphabet,
   checkedUuid,
   parsedInto,
   parsedSlugInto,

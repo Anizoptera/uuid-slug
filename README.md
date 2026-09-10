@@ -159,6 +159,7 @@ Replace the removed generic base64url helpers with the UUID operations that own 
 
 ```ts
 formatUuidSlug(bytes); // replaces encodeBase64Url(bytes)
+formatUuidSlug(bytes, "base32hex"); // select the filesystem-safe spelling directly
 parseUuidSlug(slug, output, offset); // replaces decodeBase64Url(slug, output, offset)
 slug.length === 22 && isUuidSlug(slug); // replaces isBase64Url(slug)
 ```

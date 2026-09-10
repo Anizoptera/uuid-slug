@@ -32,8 +32,14 @@ Make validated values hard to forge while keeping ordinary calls simple, preserv
       values are accepted when their timestamps are inside the caller's window.
     - [x] Remove the predicate from exports, parity transport, documentation, and interface baselines.
     - [x] Run the complete repository check before committing the entropy slice.
-  - [ ] Evaluate the positional `formatUuidSlug(bytes, offset, alphabet)` interface against overload,
-    options-object, named-operation, and removal families without slowing the hot path.
+  - [x] Let whole-UUID formatting take the alphabet directly while preserving zero-copy slice formatting.
+    - [x] Compare compatibility-preserving overloads with parameter reordering, an options object,
+      caller-created subarrays, alphabet-specific functions, a named slice operation, and removal.
+    - [x] Select `formatUuidSlug(bytes, alphabet?)` plus the existing numeric-offset form so the
+      common call is obvious and existing callers keep their behavior.
+    - [x] Prove both overloads through runtime and packed-declaration seams.
+    - [x] Remove placeholder offsets from internal whole-UUID calls without adding allocations.
+    - [x] Regenerate the TypeScript interface baseline and run the complete repository check.
   - [ ] Recheck generator injection, freshness, schema construction, codec naming, sentinels, errors,
     defaults, exports, and tree-shaken keyless paths against documented consumer jobs.
   - [ ] Update npm, Cargo, and lockfile development versions together if the final consumer effect
