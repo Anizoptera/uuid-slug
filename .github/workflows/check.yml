@@ -85,6 +85,23 @@ jobs:
           restore-keys: rust-${{ matrix.runner }}-${{ hashFiles('.tool-versions', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-
       - run: bun install --frozen-lockfile
       - run: bun run check:rust
+      - name: Select the newest native-research hosts
+        if: matrix.runner == 'ubuntu-24.04'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: current
+          package-manager-cache: false
+      - if: matrix.runner == 'ubuntu-24.04'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+      - if: matrix.runner == 'ubuntu-24.04'
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: latest
+      - name: Exercise the current native research matrix
+        if: matrix.runner == 'ubuntu-24.04'
+        run: bun scripts/rust-conform-matrix.ts
       - name: Install the packaged API extractor
         if: matrix.runner == 'ubuntu-24.04'
         run: cargo install cargo-public-api --version 0.52.0 --locked
