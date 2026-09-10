@@ -9,6 +9,15 @@ function equal(actual: unknown, expected: unknown, context: string): void {
 
 /** Exercise public calls through the module supplied by the consumer's own resolver. */
 export async function probeConsumer(api: typeof Api): Promise<void> {
+  equal(api.unwrapUuidSlug(api.uuidV7()).length, 36, "public success-value helper");
+  const invalidUuid = api.parseUuid("not a UUID");
+  let thrown: unknown;
+  try {
+    api.unwrapUuidSlug(invalidUuid);
+  } catch (error) {
+    thrown = error;
+  }
+  equal(thrown, invalidUuid, "public success-value helper failure identity");
   const backfill = api.createUuidV7Generator({
     fillRandom(bytes) {
       bytes.fill(0x5a);

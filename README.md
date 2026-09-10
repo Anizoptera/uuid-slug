@@ -34,19 +34,16 @@ The npm package remains TypeScript/JavaScript-only.
 ## Quick start
 
 ```ts
-import { createUuidSlugCodec } from "@anizoptera/uuid-slug";
+import { createUuidSlugCodec, unwrapUuidSlug } from "@anizoptera/uuid-slug";
 
 const seed = process.env.ID_MASK_SEED;
 if (!seed) throw new Error("Set ID_MASK_SEED to a stable, randomly generated secret.");
 
 // Reuse the codec: the seed is expanded once, at construction.
-const ids = createUuidSlugCodec({ mask: { seed } });
-if (ids instanceof Error) throw ids;
+const ids = unwrapUuidSlug(createUuidSlugCodec({ mask: { seed } }));
 
-const publicId = ids.uuidV7MaskedSlug();
-if (publicId instanceof Error) throw publicId;
-const uuid = ids.maskedSlugToUuidV7(publicId);
-if (uuid instanceof Error) throw uuid;
+const publicId = unwrapUuidSlug(ids.uuidV7MaskedSlug());
+const uuid = unwrapUuidSlug(ids.maskedSlugToUuidV7(publicId));
 // Look up uuid in your store and apply the caller's authorization policy.
 ```
 
@@ -150,6 +147,11 @@ when values may cross realms or duplicate package copies. The structural guard r
 package's error name and code vocabulary; it classifies data and does not authenticate untrusted
 input. Codec construction returns the same union and requires an explicit mask.
 
+Use `unwrapUuidSlug(result)` when failure ends the current operation. It returns the exact success
+type and throws a local or cross-realm `UuidSlugError` unchanged, so the original code, message,
+stack, and cause remain available to an outer error boundary. Callers that can recover should keep
+the returned union and branch on its error instead.
+
 Use the error's `code` for handling and its `message` for diagnostics. `UuidSlugErrorCode` and
 `UUID_SLUG_ERROR_CODES` are the exported type and runtime list of codes. Errors wrapping failed
 entropy draws, clock readings, and custom transform calls preserve the original exception as `cause`.
@@ -247,7 +249,8 @@ Also exported, all module-level:
   cannot emit duplicate identifiers.
 - `UuidSlugError`, including code `rng_unavailable` when the runtime has no usable randomness.
   `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes package errors across
-  JavaScript realms and duplicate package copies.
+  JavaScript realms and duplicate package copies. `unwrapUuidSlug` opts a success-path call into
+  throwing that same error unchanged.
 
 ### Codec options
 

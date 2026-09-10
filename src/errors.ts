@@ -53,6 +53,12 @@ export function isUuidSlugError(value: unknown): value is UuidSlugError {
   }
 }
 
+/** Return a successful package result or throw its actionable error unchanged. */
+export function unwrapUuidSlug<Value>(value: Value): Exclude<Value, UuidSlugError> {
+  if (isUuidSlugError(value)) throw value;
+  return value as Exclude<Value, UuidSlugError>;
+}
+
 /** Use fast local identity, then an unspoofable intrinsic brand for cross-realm Uint8Array values. */
 export function isUint8Array(value: unknown): value is Uint8Array {
   return (

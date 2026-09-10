@@ -8,6 +8,7 @@ import {
   parseUuidSlug,
   PUBLIC_MASK_SCHEMA,
   slugToUuid,
+  unwrapUuidSlug,
   uuidToSlug,
   uuidV4Bytes,
   uuidV7Bytes,
@@ -36,6 +37,7 @@ import type {
 
 // The emitted declarations must infer strict brands without requiring branded inputs.
 const plainResult = uuidV7Slug();
+const unwrappedPlain: UuidV7Slug = unwrapUuidSlug(plainResult);
 if (plainResult instanceof Error) throw plainResult;
 const plain: UuidV7Slug = plainResult;
 // @ts-expect-error Unchecked bytes are not a validated UUID payload.
@@ -144,6 +146,7 @@ void [
   migrated,
   candidates,
   widenedMigration,
+  unwrappedPlain,
 ];
 const publicSlugResult = codec.uuidV7MaskedSlug();
 if (publicSlugResult instanceof Error) throw publicSlugResult;

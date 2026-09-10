@@ -10,6 +10,7 @@ import {
   parseUuid,
   PUBLIC_MASK_SCHEMA,
   slugToUuid,
+  unwrapUuidSlug,
   uuidToSlug,
   uuidV4Bytes,
   uuidV4Slug,
@@ -45,6 +46,19 @@ describe("error classification", () => {
         }),
       ),
     ).toBe(false);
+  });
+
+  it("unwraps success values and throws package errors from any realm", () => {
+    const success = new Uint8Array([1, 2, 3]);
+    const foreign = runInNewContext(
+      'Object.assign(new Error("failure"), { name: "UuidSlugError", code: "invalid_uuid" })',
+    ) as UuidSlugError;
+
+    expect(unwrapUuidSlug(success)).toBe(success);
+    expect(() => unwrapUuidSlug(new UuidSlugError("invalid_uuid", "failure"))).toThrow(
+      UuidSlugError,
+    );
+    expect(() => unwrapUuidSlug(foreign)).toThrow(foreign);
   });
 });
 

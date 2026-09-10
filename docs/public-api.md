@@ -64,6 +64,9 @@ and consequential trade-offs in its durable owner; keep exploration transient.
   when they add no data or behavior and would make a newly reachable code a source break. Validate
   configuration at construction when possible; preserve the original cause when an external
   capability fails.
+- Provide one opt-in helper that returns the exact success type and throws a recognized package
+  error unchanged. Keep the underlying operations as errors-as-values so recoverable callers retain
+  explicit control; do not duplicate every operation into a throwing interface.
 - Make validation and conversion deterministic and side-effect free. Generation may consume
   entropy and advance its owned sequence state; failed operations must not publish partial output
   or corrupt the next attempt.

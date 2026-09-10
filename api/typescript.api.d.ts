@@ -113,6 +113,7 @@ export declare type SlugAlphabet = "base64url" | "base32hex";
 export declare function slugToUuid<Input extends string>(
   slug: Input,
 ): PreserveUuidVersion<Input, UuidString, UuidV4String, UuidV7String> | UuidSlugError;
+export declare function unwrapUuidSlug<Value>(value: Value): Exclude<Value, UuidSlugError>;
 export declare const UUID_SLUG_ERROR_CODES: typeof ERROR_CODES;
 export declare const UUID_V7_SENTINEL_DEFINITIONS: readonly UuidV7SentinelDefinition[];
 export declare type UuidBytes = Brand<Uint8Array, "UuidBytes">;
