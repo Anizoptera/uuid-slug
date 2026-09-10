@@ -230,17 +230,20 @@ using the platform adapter and is not equivalent to that custom generator.
   implementation seam.
 - [ ] Give forward and reverse transforms separate required callbacks instead of a boolean direction
   flag. Each callback receives distinct 16-byte input and output arrays, may throw, and must write
-  the complete output without retaining either array; the package adapts both callbacks to its
-  internal mixing representation without adding per-identifier allocation.
+  the complete output. Preserve the existing ability to mutate the input array: the package must
+  isolate each schema attempt so one transform cannot alter another schema's input or the caller's
+  bytes. Callbacks must not retain either array. Adapt both callbacks to the internal mixing
+  representation without adding per-identifier allocation.
 - [ ] Preserve the full existing custom-transform value: custom current writers, ordered custom
   previous schemas, sentinels, both masked alphabets, current masked decoding, freshness,
   migration candidates, thrown-cause retention, detached codec methods, and TypeScript/Rust wire
   parity must work exactly as they do for package-derived schemas.
 - [ ] Validate custom schemas once when the factory creates the handle rather than every time a
   codec consumes an already validated handle. Construction must detect thrown callbacks, incomplete
-  writes where that can be observed, input mutation, output dependence on stale destination bytes,
-  failure to reverse representative blocks, and alias assumptions; finite probes remain smoke
-  tests and documentation must state that callers own invertibility over all 128-bit inputs.
+  writes where that can be observed, output dependence on stale destination bytes, failure to
+  reverse representative blocks, and alias assumptions without rejecting supported input mutation;
+  finite probes remain smoke tests and documentation must state that callers own invertibility over
+  all 128-bit inputs.
 - [ ] Keep the transform callbacks and raw mutation contract out of `MaskSchema` declarations and
   codec options. Callers that only store, rotate, or consume a schema handle should not inherit the
   advanced constructor's implementation obligations.
