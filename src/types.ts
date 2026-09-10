@@ -6,8 +6,8 @@ import type { SlugAlphabet } from "./uuid";
 declare const brand: unique symbol;
 declare const maskSchemaBrand: unique symbol;
 
-/** Accumulate nested brand names while still accepting caller string literals. */
-export type Brand<T, Name extends string> = T & { readonly [brand]?: { [K in Name]: true } };
+/** Accumulate validated value kinds without changing their runtime representation. */
+export type Brand<T, Name extends string> = T & { readonly [brand]: { [K in Name]: true } };
 
 export type UuidString = Brand<string, "UuidString">;
 export type UuidV4String = Brand<UuidString, "UuidV4String">;
@@ -22,6 +22,8 @@ export type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
 export type SentinelUuidV7Slug = Brand<UuidV7Slug, "SentinelUuidV7Slug">;
 export type PublicUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 export type UuidBytes = Brand<Uint8Array, "UuidBytes">;
+export type UuidV4Bytes = Brand<UuidBytes, "UuidV4Bytes">;
+export type UuidV7Bytes = Brand<UuidBytes, "UuidV7Bytes">;
 
 export interface FreshValidationOptions {
   /** Finite Unix milliseconds; read once per validation. */
@@ -36,7 +38,8 @@ export interface UuidV7BytesSource {
 
 export interface UuidV7Generator extends UuidV7BytesSource {
   uuidV7(this: void): UuidV7String | UuidSlugError;
-  uuidV7Bytes(this: void, out?: Uint8Array, offset?: number): Uint8Array | UuidSlugError;
+  uuidV7Bytes(this: void): UuidV7Bytes | UuidSlugError;
+  uuidV7Bytes<T extends Uint8Array>(this: void, out: T, offset?: number): T | UuidSlugError;
   /**
    * Generate at a caller-supplied millisecond. A SEPARATE entry point rather than an optional
    * trailing parameter on the pair above, because an optional positional timestamp is silently
@@ -47,12 +50,13 @@ export interface UuidV7Generator extends UuidV7BytesSource {
    * is ordinary input validation, not an exceptional condition.
    */
   uuidV7At(this: void, timestamp: number): UuidV7String | UuidSlugError;
-  uuidV7BytesAt(
+  uuidV7BytesAt(this: void, timestamp: number): UuidV7Bytes | UuidSlugError;
+  uuidV7BytesAt<T extends Uint8Array>(
     this: void,
     timestamp: number,
-    out?: Uint8Array,
+    out: T,
     offset?: number,
-  ): Uint8Array | UuidSlugError;
+  ): T | UuidSlugError;
 }
 
 /** A frozen package-produced masking handle whose transform and key material stay private. */
@@ -100,7 +104,7 @@ export interface AsyncMaskSchemaOptions extends MaskSchemaOptions {
 
 export interface UuidV7SentinelDefinition {
   readonly name: string;
-  readonly uuid: UuidV7String;
+  readonly uuid: string;
 }
 
 export interface UuidV7Sentinel {

@@ -71,18 +71,15 @@ function createSentinels(
   const encoded: { bytes: Uint8Array; slug: SentinelUuidV7Slug }[] = [];
   const bySlug = new Map<string, { uuid: UuidV7String; bytes: Uint8Array }>();
   for (const definition of definitions) {
-    // `uuid` is typed `UuidV7String`, and that types NOTHING: `Brand`'s marker is optional by
-    // design, so every string satisfies every brand and a v4 passed the declaration untouched.
-    // It then constructed fine, masked fine, and failed on EVERY decode forever after — a
-    // permanent, per-call error configured once at construction. Checked here for the same reason
-    // the invertibility smoke test is checked here: this is the last point at which a bad definition is
-    // still a caller's argument rather than a codec that cannot work.
+    // Sentinel configuration accepts raw strings so callers do not need casts before reaching the
+    // validating seam. Check each value here, while a bad definition is still a constructor error
+    // rather than a codec that fails on every later decode.
     const bytes = parseUuid(definition.uuid);
     if (bytes instanceof Error) return bytes;
     if (!isUuidV7Bytes(bytes))
       return new UuidSlugError(
         "invalid_uuid_version",
-        `Sentinel "${definition.name}" must be a UUIDv7, got ${String(definition.uuid)}.`,
+        `Sentinel "${definition.name}" must be a UUIDv7, got ${definition.uuid}.`,
       );
     // A duplicate collapses SILENTLY: both entries stay in `codec.sentinels`, while the lookup maps
     // keep only the last, so the codec reports a sentinel it will never match.
@@ -99,19 +96,19 @@ function createSentinels(
       // `formatUuidSlug` returns the version-agnostic brand; the v7-ness comes
       // from the check above.
       slug: slug as SentinelUuidV7Slug,
-      uuid: definition.uuid,
+      uuid: definition.uuid as UuidV7String,
     });
     sentinels.push(sentinel);
     byUuid.add(definition.uuid);
     encoded.push({ bytes, slug: sentinel.slug });
-    bySlug.set(sentinel.slug, { uuid: definition.uuid, bytes });
+    bySlug.set(sentinel.slug, { uuid: sentinel.uuid, bytes });
     const alternate = formatUuidSlug(
       bytes,
       0,
       alphabet === "base64url" ? "base32hex" : "base64url",
     );
     if (alternate instanceof Error) return alternate;
-    bySlug.set(alternate, { uuid: definition.uuid, bytes });
+    bySlug.set(alternate, { uuid: sentinel.uuid, bytes });
   }
   return { bySlug, encoded, sentinels: Object.freeze(sentinels) };
 }
@@ -218,7 +215,7 @@ export function validateUuidV7Fresh(
   if (bytes instanceof Error)
     return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
   const valid = validateFreshBytes(bytes, options);
-  return valid instanceof Error ? valid : uuid;
+  return valid instanceof Error ? valid : (uuid as UuidV7String);
 }
 
 /** Capture decoded fields before calling an external clock, which can reenter a custom schema. */
@@ -257,5 +254,5 @@ export function validateUuidV7SlugFresh(
   const bytes = parseUuidSlug(slug);
   if (bytes instanceof Error) return bytes;
   const valid = validateFreshBytes(bytes, options);
-  return valid instanceof Error ? valid : slug;
+  return valid instanceof Error ? valid : (slug as UuidV7Slug);
 }

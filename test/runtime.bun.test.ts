@@ -51,7 +51,7 @@ describe("bun runtime", () => {
     // would ignore the requested alphabet here while every Node case stayed green.
     const sortable = unwrap(uuidV7Slug("base32hex"));
     expect(sortable).toHaveLength(26);
-    expect(sortable).toBe(sortable.toLowerCase());
+    expect<string>(sortable).toBe(sortable.toLowerCase());
     expect(isUuidV7String(slugToUuid(sortable) as string)).toBe(true);
     // The default must still take the native path and still round-trip; a fix that gated the
     // branch away entirely would pass the assertions above.

@@ -80,9 +80,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   method that throws for an absent capability creates exception-driven fallback on every call.
 - Cast probes to narrow optional capability shapes, not intersections with ambient types that
   may already declare the method required.
-- Runtime values must carry the exact brand the codec returns. Bare strings silently widen
-  optional brands. Preserve brand optionality: it separates produced values while accepting
-  caller string literals; changing it requires a maintainer ruling.
+- Runtime values must carry strict brands that reject unchecked strings and bytes. Keep raw
+  function and configuration inputs ergonomic, validate them at the package seam, and infer brands
+  from successful generation, parsing, conversion, and guards without caller casts.
 - Owned byte outputs must be plain `Uint8Array`, not native `Buffer` subclasses. Adapt at the
   runtime boundary and verify constructors in both runners; preserve caller-supplied buffers.
 

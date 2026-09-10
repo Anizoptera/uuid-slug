@@ -1,7 +1,13 @@
 import {
   createMaskSchemaAsync,
   createUuidSlugCodec,
+  isUuidV7String,
+  parseUuid,
+  parseUuidSlug,
   PUBLIC_MASK_SCHEMA,
+  uuidV4Bytes,
+  uuidV7Bytes,
+  uuidV7BytesAt,
   uuidV7Slug,
 } from "@anizoptera/uuid-slug";
 import type {
@@ -13,16 +19,43 @@ import type {
   UuidSlugError,
   UuidV7BytesSource,
   UuidV4Slug,
+  UuidV4Bytes,
   UuidV7Slug,
+  UuidV7Bytes,
+  UuidV7String,
   UuidString,
   UuidSlugMigration,
 } from "@anizoptera/uuid-slug";
 
-// The emitted declarations must preserve produced brands without requiring branded inputs.
+// The emitted declarations must infer strict brands without requiring branded inputs.
 const plainResult = uuidV7Slug();
 if (plainResult instanceof Error) throw plainResult;
 const plain: UuidV7Slug = plainResult;
-const storedBytes: UuidBytes = new Uint8Array(16);
+// @ts-expect-error Unchecked bytes are not a validated UUID payload.
+const uncheckedBytes: UuidBytes = new Uint8Array(16);
+// @ts-expect-error Unchecked text is not a validated UUIDv7 string.
+const uncheckedUuid: UuidV7String = "019ff19b-58b8-7000-9b1b-df713bd5562c";
+const parsedBytes = parseUuid("019ff19b-58b8-7000-9b1b-df713bd5562c");
+if (parsedBytes instanceof Error) throw parsedBytes;
+const storedBytes: UuidBytes = parsedBytes;
+const externalUuid: unknown = "019ff19b-58b8-7000-9b1b-df713bd5562c";
+if (!isUuidV7String(externalUuid)) throw new Error("Expected a UUIDv7 string.");
+const checkedUuid: UuidV7String = externalUuid;
+class ConsumerBuffer extends Uint8Array {}
+const destination = new ConsumerBuffer(32);
+const parsedInto: ConsumerBuffer | UuidSlugError = parseUuid(checkedUuid, destination, 8);
+const parsedSlugInto: ConsumerBuffer | UuidSlugError = parseUuidSlug(plain, destination, 8);
+const v4Into: ConsumerBuffer | UuidSlugError = uuidV4Bytes(destination, 8);
+const v7Into: ConsumerBuffer | UuidSlugError = uuidV7Bytes(destination, 8);
+const v7AtInto: ConsumerBuffer | UuidSlugError = uuidV7BytesAt(0, destination, 8);
+const ownedV4: UuidV4Bytes | UuidSlugError = uuidV4Bytes();
+const ownedV7: UuidV7Bytes | UuidSlugError = uuidV7Bytes();
+// @ts-expect-error An offset has no meaning without a destination buffer.
+uuidV4Bytes(undefined, 8);
+// @ts-expect-error An offset has no meaning without a destination buffer.
+uuidV7Bytes(undefined, 8);
+// @ts-expect-error An offset has no meaning without a destination buffer.
+uuidV7BytesAt(0, undefined, 8);
 const codecResult = createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA });
 if (codecResult instanceof Error) throw codecResult;
 const codec = codecResult;
@@ -41,7 +74,21 @@ const candidates: UuidString[] | UuidSlugError = migration.candidates(
   "AAAAAAABcACAAAAAAAAAAA",
   "original",
 );
-void [storedBytes, migrated, candidates];
+void [
+  uncheckedBytes,
+  uncheckedUuid,
+  storedBytes,
+  checkedUuid,
+  parsedInto,
+  parsedSlugInto,
+  v4Into,
+  v7Into,
+  v7AtInto,
+  ownedV4,
+  ownedV7,
+  migrated,
+  candidates,
+];
 const publicSlugResult = codec.uuidV7MaskedSlug();
 if (publicSlugResult instanceof Error) throw publicSlugResult;
 const publicSlug: PublicUuidV7Slug = publicSlugResult;

@@ -15,6 +15,9 @@ notes: the section for a version is published verbatim when its tag is pushed.
   `codec.migration({ plain: true })` to read old plain slugs.
 - Codec generator injection now accepts the byte-generation capability it uses. Keep a full
   generator separately when calling its string or explicit-timestamp methods.
+- UUID and slug brands now reject unchecked strings and bytes. Guards accept unknown input, owned
+  byte operations return version-specific types, and caller-buffer operations preserve the exact
+  supplied array subtype while rejecting offsets without a destination.
 - UUID generators and configured codec construction return `UuidSlugError | T` instead of throwing. Rust alphabet helpers accept and return fixed 16-byte arrays for UUID payloads.
 - Remove the generic base64url helpers and `Base64UrlString`; use `formatUuidSlug`, `parseUuidSlug`, and the exact 22-character `isUuidSlug` case instead.
 

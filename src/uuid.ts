@@ -5,6 +5,7 @@ import type { Alphabet } from "./alphabet";
 import { checkRange, UuidSlugError } from "./errors";
 import type {
   UuidSlug,
+  UuidBytes,
   UuidString,
   UuidV4Slug,
   UuidV4String,
@@ -87,6 +88,12 @@ function hexValue(code: number) {
 }
 
 /** Parse one canonical UUID; a failure leaves caller-supplied storage unchanged. */
+export function parseUuid(uuid: string): UuidBytes | UuidSlugError;
+export function parseUuid<T extends Uint8Array>(
+  uuid: string,
+  out: T,
+  offset?: number,
+): T | UuidSlugError;
 export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
   if (uuid.length !== UUID_LENGTH)
     return new UuidSlugError("invalid_uuid", "UUID must be 36 characters.");
@@ -116,7 +123,7 @@ export function formatUuid(bytes: Uint8Array, offset = 0): UuidString | UuidSlug
   if (badRange) return badRange;
   if (nativeToHex) {
     const hex = nativeToHex.call(bytes.length === 16 ? bytes : bytes.subarray(offset, offset + 16));
-    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}` as UuidString;
   }
   let out = "";
   for (let i = 0; i < 16; i += 1) {
@@ -124,7 +131,7 @@ export function formatUuid(bytes: Uint8Array, offset = 0): UuidString | UuidSlug
     const byte = bytes[offset + i] ?? 0;
     out += HEX_BYTES[byte];
   }
-  return out;
+  return out as UuidString;
 }
 
 export function uuidVersion(bytes: Uint8Array, offset = 0): number {
@@ -136,8 +143,8 @@ export function isRfcVariant(bytes: Uint8Array, offset = 0): boolean {
 }
 
 // Predicates inspect the same hex table as parsing without allocating output bytes or Errors.
-export function isUuidString(uuid: null | string | undefined): uuid is UuidString {
-  if (!uuid || uuid.length !== UUID_LENGTH) return false;
+export function isUuidString(uuid: unknown): uuid is UuidString {
+  if (typeof uuid !== "string" || uuid.length !== UUID_LENGTH) return false;
   if (uuid[8] !== "-" || uuid[13] !== "-" || uuid[18] !== "-" || uuid[23] !== "-") return false;
   for (let i = 0; i < UUID_BYTE_OFFSETS.length; i += 1) {
     const offset = UUID_BYTE_OFFSETS[i] as number;
@@ -152,11 +159,11 @@ function stringHasRfcVariant(uuid: string): boolean {
   return (HEX_DECODE[uuid.charCodeAt(19)] as number) >>> 2 === 2;
 }
 
-export function isUuidV4String(uuid: null | string | undefined): uuid is UuidV4String {
+export function isUuidV4String(uuid: unknown): uuid is UuidV4String {
   return isUuidString(uuid) && uuid[14] === "4" && stringHasRfcVariant(uuid);
 }
 
-export function isUuidV7String(uuid: null | string | undefined): uuid is UuidV7String {
+export function isUuidV7String(uuid: unknown): uuid is UuidV7String {
   return isUuidString(uuid) && uuid[14] === "7" && stringHasRfcVariant(uuid);
 }
 
@@ -181,10 +188,19 @@ export function formatUuidSlug(
   // which is why it answers rather than indexing into `undefined`.
   const alpha = resolveSlugAlphabet(alphabet);
   if (alpha instanceof Error) return alpha;
-  return encode(bytes.length === 16 ? bytes : bytes.subarray(offset, offset + 16), alpha);
+  return encode(
+    bytes.length === 16 ? bytes : bytes.subarray(offset, offset + 16),
+    alpha,
+  ) as UuidSlug;
 }
 
 /** Accept either slug alphabet and leave caller-supplied storage unchanged on failure. */
+export function parseUuidSlug(slug: string): UuidBytes | UuidSlugError;
+export function parseUuidSlug<T extends Uint8Array>(
+  slug: string,
+  out: T,
+  offset?: number,
+): T | UuidSlugError;
 export function parseUuidSlug(
   slug: string,
   out?: Uint8Array,
@@ -226,8 +242,8 @@ export function slugToUuid(slug: string): UuidString | UuidSlugError {
   return formatUuid(bytes);
 }
 
-export function isUuidSlug(slug: null | string | undefined): slug is UuidSlug {
-  if (!slug) return false;
+export function isUuidSlug(slug: unknown): slug is UuidSlug {
+  if (typeof slug !== "string" || !slug) return false;
   const alpha = SLUG_ALPHABET_BY_LENGTH[slug.length];
   return alpha !== undefined && isEncoded(slug, alpha, 16);
 }
@@ -242,17 +258,17 @@ function slugByte(slug: string, alpha: Alphabet, offset: number): number {
   return (value >>> ((end + 1) * alpha.bitsPerChar - (offset + 1) * 8)) & 255;
 }
 
-function isVersionedSlug(slug: null | string | undefined, version: number): boolean {
+function isVersionedSlug(slug: unknown, version: number): slug is UuidSlug {
   if (!isUuidSlug(slug)) return false;
   const alpha = SLUG_ALPHABET_BY_LENGTH[slug.length] as Alphabet;
   return slugByte(slug, alpha, 6) >>> 4 === version && slugByte(slug, alpha, 8) >>> 6 === 2;
 }
 
-export function isUuidV4Slug(slug: null | string | undefined): slug is UuidV4Slug {
+export function isUuidV4Slug(slug: unknown): slug is UuidV4Slug {
   return isVersionedSlug(slug, 4);
 }
 
-export function isUuidV7Slug(slug: null | string | undefined): slug is UuidV7Slug {
+export function isUuidV7Slug(slug: unknown): slug is UuidV7Slug {
   return isVersionedSlug(slug, 7);
 }
 

@@ -196,10 +196,19 @@ export const runtimeBoundaryCases = [
   {
     name: "rejects omitted-buffer offsets in both runtime byte methods",
     run(this: void) {
+      const callUuidV7Bytes = uuidV7Bytes as (
+        out?: Uint8Array,
+        offset?: number,
+      ) => Uint8Array | UuidSlugError;
+      const callUuidV7BytesAt = uuidV7BytesAt as (
+        timestamp: number,
+        out?: Uint8Array,
+        offset?: number,
+      ) => Uint8Array | UuidSlugError;
       for (const offset of [-1, 1, 0.5, NaN, Infinity]) {
         for (const value of [
-          uuidV7Bytes(undefined, offset),
-          uuidV7BytesAt(timestamp, undefined, offset),
+          callUuidV7Bytes(undefined, offset),
+          callUuidV7BytesAt(timestamp, undefined, offset),
         ]) {
           assert.ok(value instanceof UuidSlugError);
           assert.equal(value.code, "invalid_buffer");

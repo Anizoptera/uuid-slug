@@ -165,16 +165,17 @@ slug.length === 22 && isUuidSlug(slug); // replaces isBase64Url(slug)
 
 ## Types
 
-Branded types distinguish the values returned by this library. Their marker is optional:
-assigning a string does not validate it. Use guards to check format and your store to check issuance.
+Branded types distinguish values this library has validated or produced. Plain strings and byte
+arrays are not assignable to them; pass raw input directly to package operations or use a guard when
+you need to retain the narrowed type. A brand proves format, not issuance: check your store for that.
 
 - Strings: `UuidString`, `UuidV4String`, `UuidV7String`.
 - Slugs: `UuidSlug` (either alphabet), `UuidV4Slug`, `UuidV7Slug`; masked types cover both spellings
   — `MaskedUuidV7Slug`, `SentinelUuidV7Slug`, and `PublicUuidV7Slug` for
   "masked or sentinel", which is what a masking call returns. `SlugAlphabet` names the two
-  alphabets. `UuidBytes` labels storage a consumer knows contains one 16-byte UUID payload; byte
-  writers return the caller's array without applying that label because it may contain more than
-  the UUID range they write.
+  alphabets. `UuidBytes` labels one validated 16-byte UUID payload; `UuidV4Bytes` and `UuidV7Bytes`
+  retain the generated version. Byte operations return those exact types when they allocate the
+  payload, or preserve the caller's exact array subtype when writing into supplied storage.
 - Shapes: `UuidSlugCodec` and `UuidSlugCodecOptions`, `MaskSchema`, `MaskSchemaOptions`,
   `AsyncMaskSchemaOptions`, and `CustomMaskSchemaOptions`,
   `UuidV7Sentinel` and `UuidV7SentinelDefinition`, `UuidV7BytesSource`,
@@ -195,8 +196,9 @@ The **Where** column tells you whether to import a function or call a codec meth
 | Method                                                  | Where             | Returns                       | What it does                             |
 | ------------------------------------------------------- | ----------------- | ----------------------------- | ---------------------------------------- |
 | `uuidV4()` / `uuidV7()`                                 | module only       | `UuidSlugError` or UUID string | Generate.                                |
-| `uuidV4Bytes(out?, offset?)` / `uuidV7Bytes(...)`       | module only       | `UuidSlugError \| Uint8Array` | Generate into a buffer you own.          |
-| `uuidV7At(ms)` / `uuidV7BytesAt(ms, out?, offset?)`     | module only       | `UuidSlugError \| ...`        | Generate at an instant you name.         |
+| `uuidV4Bytes()` / `uuidV7Bytes()`                       | module only       | `UuidSlugError` or typed 16 bytes | Generate owned UUID bytes.            |
+| `uuidV4Bytes(out, offset?)` / `uuidV7Bytes(...)`        | module only       | `UuidSlugError` or the exact `out` type | Generate into storage you own.   |
+| `uuidV7At(ms)` / `uuidV7BytesAt(ms)` / `uuidV7BytesAt(ms, out, offset?)` | module only | `UuidSlugError \| ...` | Generate at an instant you name. |
 | `uuidV4Slug(alphabet?)` / `uuidV7Slug(alphabet?)`       | module only       | `UuidSlugError` or direct slug | Generate and encode in one step.         |
 | `uuidV7MaskedSlug()`                                    | codec only        | `UuidSlugError` or `PublicUuidV7Slug` | Generate a masked or sentinel slug. |
 | `uuidV7ToMaskedSlug(uuid)` / `maskedSlugToUuidV7(slug)` | codec only        | `UuidSlugError \| ...`        | Masked slug, both ways; v7 only.         |

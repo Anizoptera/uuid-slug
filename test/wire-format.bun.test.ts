@@ -22,9 +22,9 @@ describe("wire format is identical across runtimes", () => {
   for (const vector of golden) {
     test(`${vector.schema} ${vector.uuid}`, () => {
       const codec = codecs[vector.schema as keyof typeof codecs];
-      expect(uuidToSlug(vector.uuid)).toBe(vector.direct);
-      expect(codec.uuidV7ToMaskedSlug(vector.uuid)).toBe(vector.masked);
-      expect(codec.maskedSlugToUuidV7(vector.masked)).toBe(vector.uuid);
+      expect(String(uuidToSlug(vector.uuid))).toBe(vector.direct);
+      expect(String(codec.uuidV7ToMaskedSlug(vector.uuid))).toBe(vector.masked);
+      expect(String(codec.maskedSlugToUuidV7(vector.masked))).toBe(vector.uuid);
       expect(vector.masked).toHaveLength(22);
     });
   }

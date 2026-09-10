@@ -112,9 +112,11 @@ export function uuidV7BytesToMaskedSlug(
       "invalid_mask_schema",
       "Masked output collides with a reserved sentinel. Configure a different mask or sentinel set.",
     );
-  return canonical !== undefined && alphabet === "base64url"
-    ? canonical
-    : encode(mixed, BASE32HEX, tail, OUTER_TAG_BITS);
+  return (
+    canonical !== undefined && alphabet === "base64url"
+      ? canonical
+      : encode(mixed, BASE32HEX, tail, OUTER_TAG_BITS)
+  ) as MaskedUuidV7Slug;
 }
 
 export function decodeMaskedSlug(

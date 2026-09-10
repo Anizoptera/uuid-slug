@@ -143,7 +143,12 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   equal(api.uuidV7BytesAt(1234567890000, out, 2), out, "caller buffer identity");
   equal(out[0], 0x55, "caller prefix");
   equal(out[19], 0x55, "caller suffix");
-  const invalid = api.uuidV7BytesAt(0, undefined, 1);
+  const callUuidV7BytesAt = api.uuidV7BytesAt as (
+    timestamp: number,
+    out?: Uint8Array,
+    offset?: number,
+  ) => Uint8Array | InstanceType<typeof api.UuidSlugError>;
+  const invalid = callUuidV7BytesAt(0, undefined, 1);
   equal(invalid instanceof api.UuidSlugError && invalid.code, "invalid_buffer", "offset error");
   equal("uuidV7MaskedSlug" in api, false, "keyed top-level export");
 }

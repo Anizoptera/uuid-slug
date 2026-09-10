@@ -19,7 +19,7 @@ interface BunUuid {
  * absence is representable — a method that exists but throws makes the caller catch and fall
  * back on every single call instead.
  */
-const bun = (globalThis as { Bun?: { randomUUIDv7?: BunUuid } }).Bun;
+const bun = (globalThis as unknown as { Bun?: { randomUUIDv7?: BunUuid } }).Bun;
 const nativeUuidV7 = bun?.randomUUIDv7?.bind(bun);
 
 const bunRuntime: Runtime = { fillRandom: webRuntime.fillRandom };

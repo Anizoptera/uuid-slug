@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { checkRange, fillRandomBytes, readClock, UuidSlugError } from "./errors";
-import type { UuidV7Generator, UuidV7String } from "./types";
+import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types";
 import { formatUuid } from "./uuid";
 import type { Runtime } from "./runtime/types";
 
@@ -203,69 +203,118 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
     return target;
   }
 
+  function uuidV7Bytes(): UuidV7Bytes | UuidSlugError;
+  function uuidV7Bytes<T extends Uint8Array>(out: T, offset?: number): T | UuidSlugError;
+  function uuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Array | UuidSlugError {
+    return bytes(out, offset);
+  }
+
+  function uuidV7BytesAt(timestamp: number): UuidV7Bytes | UuidSlugError;
+  function uuidV7BytesAt<T extends Uint8Array>(
+    timestamp: number,
+    out: T,
+    offset?: number,
+  ): T | UuidSlugError;
+  function uuidV7BytesAt(
+    timestamp: number,
+    out?: Uint8Array,
+    offset?: number,
+  ): Uint8Array | UuidSlugError {
+    return bytes(out, offset, timestamp, true);
+  }
+
   return {
     uuidV7: () => formatUuidV7(bytes()),
     uuidV7At: (timestamp) => formatUuidV7(bytes(undefined, 0, timestamp, true)),
-    uuidV7Bytes: (out, offset) => bytes(out, offset),
-    uuidV7BytesAt: (timestamp, out, offset) => bytes(out, offset, timestamp, true),
+    uuidV7Bytes,
+    uuidV7BytesAt,
   };
 }
 
 export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
   const fallback = createUuidV7Generator({ fillRandom: runtime.fillRandom });
-  return {
-    uuidV7() {
-      if (!runtime.uuidV7) return fallback.uuidV7();
-      try {
-        return runtime.uuidV7();
-      } catch (cause) {
-        const result = fallback.uuidV7();
-        return result instanceof Error ? failedFallback(cause, result) : result;
-      }
-    },
+  const fallbackUuidV7Bytes = fallback.uuidV7Bytes as (
+    out?: Uint8Array,
+    offset?: number,
+  ) => Uint8Array | UuidSlugError;
+  const fallbackUuidV7BytesAt = fallback.uuidV7BytesAt as (
+    timestamp: number,
+    out?: Uint8Array,
+    offset?: number,
+  ) => Uint8Array | UuidSlugError;
+  function uuidV7() {
+    if (!runtime.uuidV7) return fallback.uuidV7();
+    try {
+      return runtime.uuidV7();
+    } catch (cause) {
+      const result = fallback.uuidV7();
+      return result instanceof Error ? failedFallback(cause, result) : result;
+    }
+  }
+
+  function uuidV7Bytes(): UuidV7Bytes | UuidSlugError;
+  function uuidV7Bytes<T extends Uint8Array>(out: T, offset?: number): T | UuidSlugError;
+  function uuidV7Bytes(out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
     // The range is checked BEFORE delegating for the same reason the instant is: a native writer
     // is handed the caller's buffer and offset directly, and answers differently from the portable
     // path. Measured on Bun 1.3.14, `out.set(bytes, offset)` coerces a NaN offset to 0 and writes
     // at the wrong place reporting success, while a fractional one throws a RangeError that the
     // catch below would relabel `rng_unavailable` — blaming the entropy source for a caller's
     // argument. Checking here is what makes every runtime give the one answer.
-    uuidV7Bytes(out?: Uint8Array, offset = 0) {
-      // Guarded only on the branch that leaves this package: the fallback checks the same range
-      // itself, so checking before the branch would pay for it twice on every Node call.
-      if (!runtime.uuidV7Bytes) return fallback.uuidV7Bytes(out, offset);
-      const badRange = checkRange(out?.length ?? 16, offset, 16);
-      if (badRange) return badRange;
-      try {
-        return runtime.uuidV7Bytes(out, offset);
-      } catch (cause) {
-        const result = fallback.uuidV7Bytes(out, offset);
-        return result instanceof Error ? failedFallback(cause, result) : result;
-      }
-    },
+    // Guarded only on the branch that leaves this package: the fallback checks the same range
+    // itself, so checking before the branch would pay for it twice on every Node call.
+    if (!runtime.uuidV7Bytes) return fallbackUuidV7Bytes(out, offset);
+    const badRange = checkRange(out?.length ?? 16, offset, 16);
+    if (badRange) return badRange;
+    try {
+      return runtime.uuidV7Bytes(out, offset);
+    } catch (cause) {
+      const result = fallbackUuidV7Bytes(out, offset);
+      return result instanceof Error ? failedFallback(cause, result) : result;
+    }
+  }
+
+  function uuidV7At(timestamp: number) {
     // Validate before delegation because native generators may coerce invalid timestamps.
-    uuidV7At(timestamp: number) {
-      if (!runtime.uuidV7At) return fallback.uuidV7At(timestamp);
-      const invalid = rejectInstant(timestamp);
-      if (invalid) return invalid;
-      try {
-        return runtime.uuidV7At(timestamp);
-      } catch (cause) {
-        const result = fallback.uuidV7At(timestamp);
-        return result instanceof Error ? failedFallback(cause, result) : result;
-      }
-    },
-    uuidV7BytesAt(timestamp: number, out?: Uint8Array, offset = 0) {
-      if (!runtime.uuidV7BytesAt) return fallback.uuidV7BytesAt(timestamp, out, offset);
-      const invalid = rejectInstant(timestamp);
-      if (invalid) return invalid;
-      const badRange = checkRange(out?.length ?? 16, offset, 16);
-      if (badRange) return badRange;
-      try {
-        return runtime.uuidV7BytesAt(timestamp, out, offset);
-      } catch (cause) {
-        const result = fallback.uuidV7BytesAt(timestamp, out, offset);
-        return result instanceof Error ? failedFallback(cause, result) : result;
-      }
-    },
+    if (!runtime.uuidV7At) return fallback.uuidV7At(timestamp);
+    const invalid = rejectInstant(timestamp);
+    if (invalid) return invalid;
+    try {
+      return runtime.uuidV7At(timestamp);
+    } catch (cause) {
+      const result = fallback.uuidV7At(timestamp);
+      return result instanceof Error ? failedFallback(cause, result) : result;
+    }
+  }
+
+  function uuidV7BytesAt(timestamp: number): UuidV7Bytes | UuidSlugError;
+  function uuidV7BytesAt<T extends Uint8Array>(
+    timestamp: number,
+    out: T,
+    offset?: number,
+  ): T | UuidSlugError;
+  function uuidV7BytesAt(
+    timestamp: number,
+    out?: Uint8Array,
+    offset = 0,
+  ): Uint8Array | UuidSlugError {
+    if (!runtime.uuidV7BytesAt) return fallbackUuidV7BytesAt(timestamp, out, offset);
+    const invalid = rejectInstant(timestamp);
+    if (invalid) return invalid;
+    const badRange = checkRange(out?.length ?? 16, offset, 16);
+    if (badRange) return badRange;
+    try {
+      return runtime.uuidV7BytesAt(timestamp, out, offset);
+    } catch (cause) {
+      const result = fallbackUuidV7BytesAt(timestamp, out, offset);
+      return result instanceof Error ? failedFallback(cause, result) : result;
+    }
+  }
+
+  return {
+    uuidV7,
+    uuidV7Bytes,
+    uuidV7At,
+    uuidV7BytesAt,
   };
 }
