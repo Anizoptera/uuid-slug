@@ -1,11 +1,14 @@
 import {
   createMaskSchemaAsync,
   createUuidSlugCodec,
+  formatUuid,
   formatUuidSlug,
   isUuidV7String,
   parseUuid,
   parseUuidSlug,
   PUBLIC_MASK_SCHEMA,
+  slugToUuid,
+  uuidToSlug,
   uuidV4Bytes,
   uuidV7Bytes,
   uuidV7BytesAt,
@@ -23,6 +26,7 @@ import type {
   UuidV7BytesSource,
   UuidV4Slug,
   UuidV4Bytes,
+  UuidV4String,
   UuidV7Slug,
   UuidV7Bytes,
   UuidV7String,
@@ -45,6 +49,24 @@ const directlySelectedAlphabet: UuidSlug | UuidSlugError = formatUuidSlug(parsed
 const externalUuid: unknown = "019ff19b-58b8-7000-9b1b-df713bd5562c";
 if (!isUuidV7String(externalUuid)) throw new Error("Expected a UUIDv7 string.");
 const checkedUuid: UuidV7String = externalUuid;
+const checkedUuidBytes = parseUuid(checkedUuid);
+if (checkedUuidBytes instanceof Error) throw checkedUuidBytes;
+const versionedBytes: UuidV7Bytes = checkedUuidBytes;
+const formattedUuid = formatUuid(versionedBytes);
+if (formattedUuid instanceof Error) throw formattedUuid;
+const versionedUuid: UuidV7String = formattedUuid;
+const convertedSlug = uuidToSlug(checkedUuid);
+if (convertedSlug instanceof Error) throw convertedSlug;
+const versionedSlug: UuidV7Slug = convertedSlug;
+const convertedUuid = slugToUuid(versionedSlug);
+if (convertedUuid instanceof Error) throw convertedUuid;
+const roundTripUuid: UuidV7String = convertedUuid;
+const parsedSlugBytes = parseUuidSlug(versionedSlug);
+if (parsedSlugBytes instanceof Error) throw parsedSlugBytes;
+const versionedSlugBytes: UuidV7Bytes = parsedSlugBytes;
+const formattedSlug = formatUuidSlug(versionedSlugBytes);
+if (formattedSlug instanceof Error) throw formattedSlug;
+const roundTripSlug: UuidV7Slug = formattedSlug;
 class ConsumerBuffer extends Uint8Array {}
 const destination = new ConsumerBuffer(32);
 const parsedInto: ConsumerBuffer | UuidSlugError = parseUuid(checkedUuid, destination, 8);
@@ -54,6 +76,10 @@ const v7Into: ConsumerBuffer | UuidSlugError = uuidV7Bytes(destination, 8);
 const v7AtInto: ConsumerBuffer | UuidSlugError = uuidV7BytesAt(0, destination, 8);
 const ownedV4: UuidV4Bytes | UuidSlugError = uuidV4Bytes();
 const ownedV7: UuidV7Bytes | UuidSlugError = uuidV7Bytes();
+if (ownedV4 instanceof Error) throw ownedV4;
+const formattedV4 = formatUuid(ownedV4);
+if (formattedV4 instanceof Error) throw formattedV4;
+const versionedV4: UuidV4String = formattedV4;
 // @ts-expect-error An offset has no meaning without a destination buffer.
 uuidV4Bytes(undefined, 8);
 // @ts-expect-error An offset has no meaning without a destination buffer.
@@ -96,6 +122,12 @@ void [
   storedBytes,
   directlySelectedAlphabet,
   checkedUuid,
+  versionedBytes,
+  versionedUuid,
+  versionedSlug,
+  roundTripUuid,
+  versionedSlugBytes,
+  roundTripSlug,
   parsedInto,
   parsedSlugInto,
   v4Into,
@@ -103,6 +135,7 @@ void [
   v7AtInto,
   ownedV4,
   ownedV7,
+  versionedV4,
   migrated,
   candidates,
 ];

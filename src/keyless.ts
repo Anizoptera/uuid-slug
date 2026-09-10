@@ -52,7 +52,7 @@ export function uuidV4(): UuidV4String | UuidSlugError {
   }
   const bytes = uuidV4Bytes();
   if (bytes instanceof Error) return bytes;
-  return formatUuid(bytes) as UuidV4String | UuidSlugError;
+  return formatUuid(bytes);
 }
 
 /**
@@ -62,11 +62,9 @@ export function uuidV4(): UuidV4String | UuidSlugError {
  * would be an asymmetry with nothing behind it.
  */
 export function uuidV4Slug(alphabet: SlugAlphabet = "base64url"): UuidV4Slug | UuidSlugError {
-  // The bytes came from `uuidV4Bytes`, which stamps version 4; the encoder sees only bytes and
-  // cannot carry that through, which is what the assertion stands in for.
   const bytes = uuidV4Bytes();
   if (bytes instanceof Error) return bytes;
-  return formatUuidSlug(bytes, alphabet) as UuidV4Slug | UuidSlugError;
+  return formatUuidSlug(bytes, alphabet);
 }
 
 /*
@@ -134,9 +132,7 @@ export function uuidV7Slug(alphabet: SlugAlphabet = "base64url"): UuidV7Slug | U
       });
     }
   }
-  // Asserted for the same reason `uuidV4Slug` asserts: the bytes come from a v7 generator and the
-  // encoder sees only bytes, so it returns the version-agnostic brand.
   const bytes = v7().uuidV7Bytes();
   if (bytes instanceof Error) return bytes;
-  return formatUuidSlug(bytes, alphabet) as UuidV7Slug | UuidSlugError;
+  return formatUuidSlug(bytes, alphabet);
 }
