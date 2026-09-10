@@ -74,11 +74,8 @@ impl Derivation {
             std::task::Poll::Pending => Ok(None),
             std::task::Poll::Ready(result) => result
                 .and_then(|mask| {
-                    uuid_slug::Codec::new(uuid_slug::CodecOptions {
-                        mask,
-                        ..Default::default()
-                    })?
-                    .uuid_v7_to_masked_slug(self.uuid)
+                    uuid_slug::Codec::new(uuid_slug::CodecOptions::new(mask))?
+                        .uuid_v7_to_masked_slug(self.uuid)
                 })
                 .map(Some)
                 .map_err(|error| wasm_bindgen::JsValue::from_str(error.code())),

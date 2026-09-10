@@ -84,9 +84,11 @@ The HalfSipHash reference-vector tests constrain the round function's implementa
 not establish the security of this key schedule or four-round network. Masking is an
 obfuscation feature, not an authenticated encryption interface.
 
-A custom `MaskSchema.mix` receives the same block layout and must supply its exact inverse for
-`forward: false`. Codec construction smoke-tests round trips; finite probes cannot establish
-invertibility across the full domain. The caller remains responsible for that property.
+`createCustomMaskSchema` adapts separate forward and reverse callbacks to the same block layout.
+It supplies distinct arrays, permits input mutation, and checks complete writes and representative
+round trips once before returning an opaque handle. Finite probes cannot establish invertibility
+across the full domain; the caller remains responsible for that property and must not retain the
+callback arrays.
 
 ## Encoding and decoding
 
@@ -116,9 +118,9 @@ of their individual rates. The codec must not append schemas on the caller's beh
 Masked decoding always accepts both alphabets, sentinels, and current or previous schema outputs.
 Migration adds only the old formats the caller enables. Other forms are invalid.
 
-With `acceptUnmaskedSlugs`, only failure of every schema enables direct-slug decoding. A direct
-slug may accidentally pass an earlier mask check and return a different candidate; the flag does
-not make the two representations distinguishable. Confirm candidates against the issuing store.
+Only `codec.migration({ plain: true })` enables direct-slug decoding. A direct slug may
+accidentally pass an earlier mask check and return a different candidate; migration cannot make
+the two representations distinguishable. Confirm candidates against the issuing store.
 
 Sentinels bypass masking and use precomputed direct slugs in the masked output alphabet.
 Decode checks both raw spellings first: 22 base64url or 26 base32hex characters.

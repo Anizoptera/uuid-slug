@@ -84,7 +84,7 @@ mod tests {
         })
         .unwrap();
         let seeded = create_mask_schema(b"golden-vector-seed-v3", 1, "seeded-v2").unwrap();
-        let default = MaskSchema::default();
+        let default = crate::public_mask_schema();
         for case in fixture.as_array().unwrap() {
             // Codec-level sentinel bypass is deliberately not exercised by this block-level test.
             if case["uuid"] == "00000000-0000-7000-8000-000000000000" {

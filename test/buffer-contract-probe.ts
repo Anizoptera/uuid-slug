@@ -19,17 +19,17 @@
  */
 import { UuidSlugError } from "../src/errors";
 import {
-  createUuidSlugCodec,
   extractUuidV7Timestamp,
   formatUuid,
   formatUuidSlug,
   hasUuidV7Entropy,
   parseUuid,
   parseUuidSlug,
+  uuidV4Bytes,
+  uuidV7Bytes,
+  uuidV7BytesAt,
 } from "../src/index";
 import { bytePatterns } from "./byte-patterns";
-
-const codec = createUuidSlugCodec();
 
 const UUID = "018f4f2e-4c3d-7000-8000-0123456789ab";
 const SLUG = "AY9PLkw9cACAAAEjRWeJqw";
@@ -52,9 +52,9 @@ export const HOSTILE_OFFSETS: readonly unknown[] = [-1, 0.5, NaN, Infinity, "4",
 const writers: readonly (readonly [string, (out: Uint8Array, offset: number) => unknown])[] = [
   ["parseUuid", (out, offset) => parseUuid(UUID, out, offset)],
   ["parseUuidSlug", (out, offset) => parseUuidSlug(SLUG, out, offset)],
-  ["uuidV4Bytes", (out, offset) => codec.uuidV4Bytes(out, offset)],
-  ["uuidV7Bytes", (out, offset) => codec.uuidV7Bytes(out, offset)],
-  ["uuidV7BytesAt", (out, offset) => codec.uuidV7BytesAt(INSTANT, out, offset)],
+  ["uuidV4Bytes", (out, offset) => uuidV4Bytes(out, offset)],
+  ["uuidV7Bytes", (out, offset) => uuidV7Bytes(out, offset)],
+  ["uuidV7BytesAt", (out, offset) => uuidV7BytesAt(INSTANT, out, offset)],
 ];
 
 const malformedWriters: readonly (readonly [string, (out: Uint8Array) => unknown])[] = [

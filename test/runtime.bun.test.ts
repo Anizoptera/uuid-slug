@@ -14,7 +14,6 @@ import { describe, expect, test } from "bun:test";
 import {
   attributedSourcesFor,
   byteGenerators,
-  codec,
   constantBitCount,
   distinctValuesFrom,
   generators,
@@ -23,10 +22,11 @@ import {
 } from "./entropy-probe";
 import { cases as bufferContractCases } from "./buffer-contract-probe";
 import {
-  createUuidSlugCodec,
   isUuidV7String,
   slugToUuid,
   uuidV4Slug,
+  uuidV4Bytes,
+  uuidV7,
   uuidV7Slug,
 } from "../src/index";
 import { unwrap } from "../dev/unwrap";
@@ -43,36 +43,12 @@ describe("bun runtime", () => {
   }
 
   test("imports the source condition and generates UUIDv7", () => {
-    const local = createUuidSlugCodec();
-    expect(isUuidV7String(unwrap(local.uuidV7()))).toBe(true);
-    // DECODED, not just measured. Bun is the only runtime that defines `runtime.uuidV7Slug`, so
-    // this is the default path for most consumers of this package and the only lane that reaches
-    // it -- and a length assertion is nearly free here: unpadded base64url of 16 bytes is ALWAYS
-    // 22 characters, so `toHaveLength(22)` alone passed for any 22-character string whatsoever.
-    // The base32hex case below always decoded; the native default did not.
-    const slug = unwrap(local.uuidV7Slug());
-    expect(slug).toHaveLength(22);
-    expect(isUuidV7String(slugToUuid(slug) as string)).toBe(true);
+    expect(isUuidV7String(unwrap(uuidV7()))).toBe(true);
   });
 
-  test("honours a base32hex slugAlphabet instead of the native base64url generator", () => {
-    // Bun is the ONLY runtime that defines `runtime.uuidV7Slug`, and it emits base64url. A codec
-    // configured for another alphabet must therefore stop using it. Vitest runs on Node, where
-    // that method does not exist, so this hazard is invisible there — the same asymmetry recorded
-    // for the entropy cases above, and the reason this assertion lives here rather than only in
-    // the shared suite.
-    const local = unwrap(createUuidSlugCodec({ slugAlphabet: "base32hex" }));
-    const slug = unwrap(local.uuidV7Slug());
-    expect(slug).toHaveLength(26);
-    expect(isUuidV7String(slugToUuid(slug) as string)).toBe(true);
-  });
-
-  test("the KEYLESS uuidV7Slug honours its alphabet argument, not the native generator", () => {
-    // The same hazard as the codec case above, on the bare function, and it needs its own case:
-    // the two resolve the native hook by different code. `uuidV7Slug` reads `runtime.uuidV7Slug`
-    // per call, so a branch gated on the hook's PRESENCE rather than on the requested alphabet
-    // returns a 22-character base64url string here and nowhere else -- Node has no such hook, so
-    // vitest cannot reach the branch and every case there passes either way.
+  test("the keyless uuidV7Slug honours its alphabet argument, not the native generator", () => {
+    // Bun alone provides the native base64url hook. A branch gated only on that hook's presence
+    // would ignore the requested alphabet here while every Node case stayed green.
     const sortable = unwrap(uuidV7Slug("base32hex"));
     expect(sortable).toHaveLength(26);
     expect(sortable).toBe(sortable.toLowerCase());
@@ -107,11 +83,11 @@ describe("bun runtime", () => {
   test("leaves every v4 bit random except the six the RFC fixes", () => {
     // Bun draws `fillRandom` from `runtime/web.ts`, which vitest never loads, so a bit pinned
     // there is invisible on the Node lane — the same asymmetry as the cases above.
-    expect(constantBitCount(() => codec.uuidV4Bytes())).toBe(6);
+    expect(constantBitCount(uuidV4Bytes)).toBe(6);
   });
 
   test("draws its own randomness from a source that can be shown to be cryptographic", () => {
-    const used = attributedSourcesFor(() => codec.uuidV4Bytes());
+    const used = attributedSourcesFor(uuidV4Bytes);
     expect(used).not.toEqual([]);
     expect(insecureAmong(used)).toEqual([]);
   });

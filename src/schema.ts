@@ -2,6 +2,7 @@
 
 import { UuidSlugError } from "./errors";
 import { FEISTEL_KEY_WORDS, feistel16 } from "./feistel";
+import { createSchemaHandle } from "./schema-handle";
 import { halfSipHash } from "./siphash";
 import type { HashContinuation } from "./siphash";
 import { yieldToHost } from "./yield";
@@ -97,11 +98,8 @@ function feistelSchema(id: string, seed: Uint8Array, iterations: number): MaskSc
 }
 
 function schemaFromKeys(id: string, keys: Int32Array): MaskSchema {
-  return Object.freeze<MaskSchema>({
-    id,
-    mix(input, output, forward) {
-      feistel16(input, 0, keys, forward, output, 0);
-    },
+  return createSchemaHandle(id, (input, output, forward) => {
+    feistel16(input, 0, keys, forward, output, 0);
   });
 }
 
@@ -252,49 +250,17 @@ export async function createMaskSchemaAsync(
 }
 
 /**
- * Refuse schemas that cannot undo these representative blocks. The reverse call must invert
- * the forward call; the same function need not be an involution. Finite probes are not a proof
- * over the full domain. Preserve each original input separately so a mutating callback cannot
- * rewrite the witness and make a destructive transformation appear reversible.
- */
-export function verifyInvertible(schema: MaskSchema): UuidSlugError | MaskSchema {
-  const mixed = new Uint8Array(16);
-  const restored = new Uint8Array(16);
-  for (const probe of [new Uint8Array(16), Uint8Array.from({ length: 16 }, (_, i) => i * 17)]) {
-    try {
-      schema.mix(probe.slice(), mixed, true);
-      schema.mix(mixed, restored, false);
-    } catch (cause) {
-      return new UuidSlugError(
-        "invalid_mask_schema",
-        `Mask schema "${schema.id}" failed its invertibility check.`,
-        { cause },
-      );
-    }
-    if (restored.some((byte, i) => byte !== probe[i]))
-      return new UuidSlugError(
-        "invalid_mask_schema",
-        `Mask schema "${schema.id}" does not reverse its own mixing step.`,
-      );
-  }
-  return schema;
-}
-
-/**
  * A PUBLIC key. It ships in the tarball, so every masked slug produced under it is decodable by
  * anyone who installed this package, and it therefore provides none of the obscurity masking
  * exists for.
  *
- * It is exported rather than hidden so that choosing it can be DELIBERATE: a test or demo wanting
- * byte-identical output across machines writes `mask: DEFAULT_MASK_SCHEMA` and says so at the call
- * site. The hazard is the SILENT path — `createUuidSlugCodec()` with no `mask` lands here without
- * the caller writing anything — which is why that fallback and `defaultCodec` both carry the same
- * warning, and why the masked methods are not exported as bare functions.
+ * It is exported so a deterministic test or example can opt in visibly with
+ * `mask: PUBLIC_MASK_SCHEMA`; codec construction never selects it by omission.
  */
 const DEFAULT_SEED = "anizoptera.uuid-slug.default-mask.v1";
 
 // Built from `feistelSchema` rather than through `createMaskSchema`, whose failures are a short seed and a
 // bad iteration count — checks on CALLER input that the literals here cannot fail. Routing through it would return
 // `UuidSlugError | MaskSchema` and force a cast that, at module scope, could only ever hide a real Error
-// behind a `MaskSchema` type for every default codec in the process.
-export const DEFAULT_MASK_SCHEMA: MaskSchema = feistelSchema("default", seedBytes(DEFAULT_SEED), 1);
+// behind a `MaskSchema` type at module scope.
+export const PUBLIC_MASK_SCHEMA: MaskSchema = feistelSchema("default", seedBytes(DEFAULT_SEED), 1);

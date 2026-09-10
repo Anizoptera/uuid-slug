@@ -1,4 +1,4 @@
-import type * as Api from "../src/index";
+import type * as Api from "@anizoptera/uuid-slug";
 import fixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
 import { unwrap } from "../dev/unwrap";
 
@@ -9,7 +9,11 @@ function equal(actual: unknown, expected: unknown, context: string): void {
 
 /** Exercise public calls through the module supplied by the consumer's own resolver. */
 export async function probeConsumer(api: typeof Api): Promise<void> {
-  const backfill = api.createUuidSlugCodec();
+  const backfill = api.createUuidV7Generator({
+    fillRandom(bytes) {
+      bytes.fill(0x5a);
+    },
+  });
   const destination = new Uint8Array(20).fill(0x55);
   const generators = [
     (ms: number) => api.uuidV7At(ms),
@@ -57,10 +61,11 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
         b.fill(0x12);
       },
     });
-    const codec = unwrap(api.createUuidSlugCodec({ generator, slugAlphabet: alphabet }));
+    const codec = unwrap(api.createUuidSlugCodec({ mask: api.PUBLIC_MASK_SCHEMA, generator }));
     equal(codec.migration({ plain: true }).decode(slug, "plain"), uuid, `${alphabet} migration`);
+    const generated = unwrap(generator.uuidV7());
     equal(
-      api.slugToUuid(unwrap(codec.uuidV7Slug())),
+      api.slugToUuid(unwrap(api.uuidToSlug(generated, alphabet))),
       "011f71fb-0450-7121-8848-484a12121212",
       `${alphabet} custom generator`,
     );
@@ -103,7 +108,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     channel.port1.close();
     channel.port2.close();
   }
-  const codec = api.createUuidSlugCodec();
+  const codec = unwrap(api.createUuidSlugCodec({ mask: api.PUBLIC_MASK_SCHEMA }));
   const { seed, slug: overlap, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
   const migrating = unwrap(api.createUuidSlugCodec({ mask: { seed } }));
   const reader = migrating.migration({ original: true, plain: true });
@@ -123,19 +128,22 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   equal(codec.uuidV7ToMaskedSlug(uuid), "uqgITQGagyxsoNARAd_pxu", "masked wire vector");
   equal(codec.maskedSlugToUuidV7("uqgITQGagyxsoNARAd_pxu"), uuid, "masked inverse");
   const sentinelCodec = unwrap(
-    api.createUuidSlugCodec({ sentinels: [{ name: "reserved", uuid }] }),
+    api.createUuidSlugCodec({
+      mask: api.PUBLIC_MASK_SCHEMA,
+      sentinels: [{ name: "reserved", uuid }],
+    }),
   );
   const sentinel = api.uuidToSlug(uuid);
   equal(sentinelCodec.uuidV7ToMaskedSlug(uuid), sentinel, "custom sentinel encoding");
   equal(sentinelCodec.maskedSlugToUuidV7(String(sentinel)), uuid, "custom sentinel decoding");
-  const bytes = codec.uuidV7BytesAt(1234567890000);
+  const bytes = api.uuidV7BytesAt(1234567890000);
   if (bytes instanceof Error) throw bytes;
   equal(bytes.constructor, Uint8Array, "owned byte constructor");
   const out = new Uint8Array(20).fill(0x55);
-  equal(codec.uuidV7BytesAt(1234567890000, out, 2), out, "caller buffer identity");
+  equal(api.uuidV7BytesAt(1234567890000, out, 2), out, "caller buffer identity");
   equal(out[0], 0x55, "caller prefix");
   equal(out[19], 0x55, "caller suffix");
-  const invalid = codec.uuidV7BytesAt(0, undefined, 1);
+  const invalid = api.uuidV7BytesAt(0, undefined, 1);
   equal(invalid instanceof api.UuidSlugError && invalid.code, "invalid_buffer", "offset error");
   equal("uuidV7MaskedSlug" in api, false, "keyed top-level export");
 }

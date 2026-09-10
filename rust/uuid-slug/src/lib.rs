@@ -1,7 +1,7 @@
 //! Compact UUIDs preserve their bytes across plain and reversible masked representations.
 //!
 //! Masking hides structure; its 16-bit check is not authentication. Match decoded candidates
-//! against your own store. Use your own seed: the default seed is public.
+//! against your own store. Select private key material explicitly for real identifiers.
 
 #![forbid(unsafe_code)]
 #![doc = include_str!("../README.md")]
@@ -20,5 +20,5 @@ pub use codec::{
     Codec, CodecOptions, Freshness, Migration, MigrationFormat, MigrationOptions, Sentinel,
 };
 pub use error::Error;
-pub use schema::{MaskSchema, create_mask_schema, create_mask_schema_async};
+pub use schema::{MaskSchema, create_mask_schema, create_mask_schema_async, public_mask_schema};
 pub use uuid::Uuid;

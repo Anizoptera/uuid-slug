@@ -3,6 +3,7 @@
 import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "./alphabet";
 import { UuidSlugError } from "./errors";
 import { mix32, read32 } from "./feistel";
+import { applyMaskSchema } from "./schema-handle";
 import { formatUuid } from "./uuid";
 import type { MaskSchema, MaskedUuidV7Slug, UuidString } from "./types";
 import type { SlugAlphabet } from "./uuid";
@@ -15,7 +16,7 @@ function applyMix(
   forward: boolean,
 ): UuidSlugError | undefined {
   try {
-    schema.mix(input, output, forward);
+    applyMaskSchema(schema, input, output, forward);
     return undefined;
   } catch (cause) {
     return new UuidSlugError(

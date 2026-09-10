@@ -56,12 +56,10 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationForm
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationFormat
 pub struct uuid_slug::codec::Codec
 impl uuid_slug::codec::Codec
-pub fn uuid_slug::codec::Codec::masked_slug_to_uuid(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::masked_slug_to_uuid_v7(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::migration(&self, options: uuid_slug::codec::MigrationOptions) -> uuid_slug::codec::Migration<'_>
 pub fn uuid_slug::codec::Codec::new(options: uuid_slug::codec::CodecOptions) -> core::result::Result<Self, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::sentinels(&self) -> &[uuid_slug::codec::Sentinel]
-pub fn uuid_slug::codec::Codec::uuid_to_slug(&self, uuid: uuid_slug::uuid::Uuid) -> alloc::string::String
 pub fn uuid_slug::codec::Codec::uuid_v7_to_masked_slug(&self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<alloc::string::String, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::validate_masked_slug_fresh<'a>(&self, slug: &'a str, freshness: uuid_slug::codec::Freshness) -> core::result::Result<&'a str, uuid_slug::error::Error>
 impl core::marker::Freeze for uuid_slug::codec::Codec
@@ -72,14 +70,12 @@ impl core::marker::UnsafeUnpin for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Codec
 pub struct uuid_slug::codec::CodecOptions
-pub uuid_slug::codec::CodecOptions::accept_unmasked_slugs: bool
 pub uuid_slug::codec::CodecOptions::mask: uuid_slug::schema::MaskSchema
 pub uuid_slug::codec::CodecOptions::masked_slug_alphabet: uuid_slug::alphabet::Alphabet
 pub uuid_slug::codec::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::schema::MaskSchema>
 pub uuid_slug::codec::CodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
-pub uuid_slug::codec::CodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
-impl core::default::Default for uuid_slug::codec::CodecOptions
-pub fn uuid_slug::codec::CodecOptions::default() -> Self
+impl uuid_slug::codec::CodecOptions
+pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::schema::MaskSchema) -> Self
 impl core::marker::Freeze for uuid_slug::codec::CodecOptions
 impl core::marker::Send for uuid_slug::codec::CodecOptions
 impl core::marker::Sync for uuid_slug::codec::CodecOptions
@@ -230,8 +226,6 @@ pub fn uuid_slug::schema::MaskSchema::id(&self) -> &str
 pub fn uuid_slug::schema::MaskSchema::mix(&self, input: [u8; 16], forward: bool) -> core::result::Result<[u8; 16], uuid_slug::error::Error>
 impl core::clone::Clone for uuid_slug::schema::MaskSchema
 pub fn uuid_slug::schema::MaskSchema::clone(&self) -> uuid_slug::schema::MaskSchema
-impl core::default::Default for uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::default() -> Self
 impl core::fmt::Debug for uuid_slug::schema::MaskSchema
 pub fn uuid_slug::schema::MaskSchema::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::schema::MaskSchema
@@ -243,6 +237,7 @@ impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::schema::MaskSchema
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::schema::MaskSchema
 pub fn uuid_slug::schema::create_mask_schema(seed: &[u8], iterations: u32, id: &str) -> core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>
 pub fn uuid_slug::schema::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>> + core::marker::Send + use<>
+pub fn uuid_slug::schema::public_mask_schema() -> uuid_slug::schema::MaskSchema
 pub mod uuid_slug::uuid
 pub struct uuid_slug::uuid::Uuid(_)
 impl uuid_slug::uuid::Uuid
@@ -365,12 +360,10 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationForm
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationFormat
 pub struct uuid_slug::Codec
 impl uuid_slug::codec::Codec
-pub fn uuid_slug::codec::Codec::masked_slug_to_uuid(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::masked_slug_to_uuid_v7(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::migration(&self, options: uuid_slug::codec::MigrationOptions) -> uuid_slug::codec::Migration<'_>
 pub fn uuid_slug::codec::Codec::new(options: uuid_slug::codec::CodecOptions) -> core::result::Result<Self, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::sentinels(&self) -> &[uuid_slug::codec::Sentinel]
-pub fn uuid_slug::codec::Codec::uuid_to_slug(&self, uuid: uuid_slug::uuid::Uuid) -> alloc::string::String
 pub fn uuid_slug::codec::Codec::uuid_v7_to_masked_slug(&self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<alloc::string::String, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::validate_masked_slug_fresh<'a>(&self, slug: &'a str, freshness: uuid_slug::codec::Freshness) -> core::result::Result<&'a str, uuid_slug::error::Error>
 impl core::marker::Freeze for uuid_slug::codec::Codec
@@ -381,14 +374,12 @@ impl core::marker::UnsafeUnpin for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Codec
 pub struct uuid_slug::CodecOptions
-pub uuid_slug::CodecOptions::accept_unmasked_slugs: bool
 pub uuid_slug::CodecOptions::mask: uuid_slug::schema::MaskSchema
 pub uuid_slug::CodecOptions::masked_slug_alphabet: uuid_slug::alphabet::Alphabet
 pub uuid_slug::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::schema::MaskSchema>
 pub uuid_slug::CodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
-pub uuid_slug::CodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
-impl core::default::Default for uuid_slug::codec::CodecOptions
-pub fn uuid_slug::codec::CodecOptions::default() -> Self
+impl uuid_slug::codec::CodecOptions
+pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::schema::MaskSchema) -> Self
 impl core::marker::Freeze for uuid_slug::codec::CodecOptions
 impl core::marker::Send for uuid_slug::codec::CodecOptions
 impl core::marker::Sync for uuid_slug::codec::CodecOptions
@@ -420,8 +411,6 @@ pub fn uuid_slug::schema::MaskSchema::id(&self) -> &str
 pub fn uuid_slug::schema::MaskSchema::mix(&self, input: [u8; 16], forward: bool) -> core::result::Result<[u8; 16], uuid_slug::error::Error>
 impl core::clone::Clone for uuid_slug::schema::MaskSchema
 pub fn uuid_slug::schema::MaskSchema::clone(&self) -> uuid_slug::schema::MaskSchema
-impl core::default::Default for uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::default() -> Self
 impl core::fmt::Debug for uuid_slug::schema::MaskSchema
 pub fn uuid_slug::schema::MaskSchema::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::schema::MaskSchema
@@ -518,6 +507,7 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::uuid::Uuid
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::uuid::Uuid
 pub fn uuid_slug::create_mask_schema(seed: &[u8], iterations: u32, id: &str) -> core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>
 pub fn uuid_slug::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>> + core::marker::Send + use<>
+pub fn uuid_slug::public_mask_schema() -> uuid_slug::schema::MaskSchema
 ```
 
 ## No default features
@@ -574,12 +564,10 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationForm
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationFormat
 pub struct uuid_slug::codec::Codec
 impl uuid_slug::codec::Codec
-pub fn uuid_slug::codec::Codec::masked_slug_to_uuid(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::masked_slug_to_uuid_v7(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::migration(&self, options: uuid_slug::codec::MigrationOptions) -> uuid_slug::codec::Migration<'_>
 pub fn uuid_slug::codec::Codec::new(options: uuid_slug::codec::CodecOptions) -> core::result::Result<Self, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::sentinels(&self) -> &[uuid_slug::codec::Sentinel]
-pub fn uuid_slug::codec::Codec::uuid_to_slug(&self, uuid: uuid_slug::uuid::Uuid) -> alloc::string::String
 pub fn uuid_slug::codec::Codec::uuid_v7_to_masked_slug(&self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<alloc::string::String, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::validate_masked_slug_fresh<'a>(&self, slug: &'a str, freshness: uuid_slug::codec::Freshness) -> core::result::Result<&'a str, uuid_slug::error::Error>
 impl core::marker::Freeze for uuid_slug::codec::Codec
@@ -590,14 +578,12 @@ impl core::marker::UnsafeUnpin for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Codec
 pub struct uuid_slug::codec::CodecOptions
-pub uuid_slug::codec::CodecOptions::accept_unmasked_slugs: bool
 pub uuid_slug::codec::CodecOptions::mask: uuid_slug::schema::MaskSchema
 pub uuid_slug::codec::CodecOptions::masked_slug_alphabet: uuid_slug::alphabet::Alphabet
 pub uuid_slug::codec::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::schema::MaskSchema>
 pub uuid_slug::codec::CodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
-pub uuid_slug::codec::CodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
-impl core::default::Default for uuid_slug::codec::CodecOptions
-pub fn uuid_slug::codec::CodecOptions::default() -> Self
+impl uuid_slug::codec::CodecOptions
+pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::schema::MaskSchema) -> Self
 impl core::marker::Freeze for uuid_slug::codec::CodecOptions
 impl core::marker::Send for uuid_slug::codec::CodecOptions
 impl core::marker::Sync for uuid_slug::codec::CodecOptions
@@ -744,8 +730,6 @@ pub fn uuid_slug::schema::MaskSchema::id(&self) -> &str
 pub fn uuid_slug::schema::MaskSchema::mix(&self, input: [u8; 16], forward: bool) -> core::result::Result<[u8; 16], uuid_slug::error::Error>
 impl core::clone::Clone for uuid_slug::schema::MaskSchema
 pub fn uuid_slug::schema::MaskSchema::clone(&self) -> uuid_slug::schema::MaskSchema
-impl core::default::Default for uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::default() -> Self
 impl core::fmt::Debug for uuid_slug::schema::MaskSchema
 pub fn uuid_slug::schema::MaskSchema::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::schema::MaskSchema
@@ -757,6 +741,7 @@ impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::schema::MaskSchema
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::schema::MaskSchema
 pub fn uuid_slug::schema::create_mask_schema(seed: &[u8], iterations: u32, id: &str) -> core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>
 pub fn uuid_slug::schema::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>> + core::marker::Send + use<>
+pub fn uuid_slug::schema::public_mask_schema() -> uuid_slug::schema::MaskSchema
 pub mod uuid_slug::uuid
 pub struct uuid_slug::uuid::Uuid(_)
 impl uuid_slug::uuid::Uuid
@@ -879,12 +864,10 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationForm
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationFormat
 pub struct uuid_slug::Codec
 impl uuid_slug::codec::Codec
-pub fn uuid_slug::codec::Codec::masked_slug_to_uuid(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::masked_slug_to_uuid_v7(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::migration(&self, options: uuid_slug::codec::MigrationOptions) -> uuid_slug::codec::Migration<'_>
 pub fn uuid_slug::codec::Codec::new(options: uuid_slug::codec::CodecOptions) -> core::result::Result<Self, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::sentinels(&self) -> &[uuid_slug::codec::Sentinel]
-pub fn uuid_slug::codec::Codec::uuid_to_slug(&self, uuid: uuid_slug::uuid::Uuid) -> alloc::string::String
 pub fn uuid_slug::codec::Codec::uuid_v7_to_masked_slug(&self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<alloc::string::String, uuid_slug::error::Error>
 pub fn uuid_slug::codec::Codec::validate_masked_slug_fresh<'a>(&self, slug: &'a str, freshness: uuid_slug::codec::Freshness) -> core::result::Result<&'a str, uuid_slug::error::Error>
 impl core::marker::Freeze for uuid_slug::codec::Codec
@@ -895,14 +878,12 @@ impl core::marker::UnsafeUnpin for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Codec
 pub struct uuid_slug::CodecOptions
-pub uuid_slug::CodecOptions::accept_unmasked_slugs: bool
 pub uuid_slug::CodecOptions::mask: uuid_slug::schema::MaskSchema
 pub uuid_slug::CodecOptions::masked_slug_alphabet: uuid_slug::alphabet::Alphabet
 pub uuid_slug::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::schema::MaskSchema>
 pub uuid_slug::CodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
-pub uuid_slug::CodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
-impl core::default::Default for uuid_slug::codec::CodecOptions
-pub fn uuid_slug::codec::CodecOptions::default() -> Self
+impl uuid_slug::codec::CodecOptions
+pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::schema::MaskSchema) -> Self
 impl core::marker::Freeze for uuid_slug::codec::CodecOptions
 impl core::marker::Send for uuid_slug::codec::CodecOptions
 impl core::marker::Sync for uuid_slug::codec::CodecOptions
@@ -934,8 +915,6 @@ pub fn uuid_slug::schema::MaskSchema::id(&self) -> &str
 pub fn uuid_slug::schema::MaskSchema::mix(&self, input: [u8; 16], forward: bool) -> core::result::Result<[u8; 16], uuid_slug::error::Error>
 impl core::clone::Clone for uuid_slug::schema::MaskSchema
 pub fn uuid_slug::schema::MaskSchema::clone(&self) -> uuid_slug::schema::MaskSchema
-impl core::default::Default for uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::default() -> Self
 impl core::fmt::Debug for uuid_slug::schema::MaskSchema
 pub fn uuid_slug::schema::MaskSchema::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::schema::MaskSchema
@@ -1032,4 +1011,5 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::uuid::Uuid
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::uuid::Uuid
 pub fn uuid_slug::create_mask_schema(seed: &[u8], iterations: u32, id: &str) -> core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>
 pub fn uuid_slug::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>> + core::marker::Send + use<>
+pub fn uuid_slug::public_mask_schema() -> uuid_slug::schema::MaskSchema
 ```

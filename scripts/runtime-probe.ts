@@ -1,7 +1,7 @@
 // Compare shared TypeScript contracts across engines without loading a test runner in the target.
 import { readFile } from "node:fs/promises";
 import { deepStrictEqual } from "node:assert";
-import * as api from "../src/index";
+import * as api from "@anizoptera/uuid-slug";
 import { probeConsumer } from "../test/consumer-probe";
 import { contractRequests, evaluate } from "./rust-conform";
 

@@ -3,8 +3,8 @@
 /**
  * A consumer who never masks must not carry the masking machinery.
  *
- * This is gated because it is invisible everywhere else: re-binding one shortcut as
- * `export const uuidV7 = defaultCodec.uuidV7` restores the old cost in full, and every other test
+ * This is gated because it is invisible everywhere else: routing one shortcut through an eager
+ * masked codec restores the old cost in full, and every other test
  * in this suite, every type, and every lint rule stays green — the values are identical, only the
  * bundle changes. Measured 2026-08-12, that spelling cost 13,082 bytes to import `uuidToSlug`
  * alone against 2,229 after; the same regression is one plausible refactor away at any time.
@@ -25,7 +25,7 @@ import path from "node:path";
 import { expect, test } from "bun:test";
 
 /**
- * The seed `DEFAULT_MASK_SCHEMA` derives its key from. Frozen by the wire format — changing it
+ * The seed `PUBLIC_MASK_SCHEMA` derives its key from. Frozen by the wire format — changing it
  * orphans every masked slug ever issued — which is what makes it a stable witness rather than a
  * string that drifts. Its presence in a keyless bundle means the cipher, the schema and the
  * sentinel table came with it.
@@ -71,7 +71,7 @@ test.each([
     throw new Error(
       `Importing "${name}" alone now pulls in the masking machinery (${code.length} bytes).\n` +
         `Cause: something on its path evaluates a codec at MODULE SCOPE -- a construction call, or\n` +
-        `a property read of one such as "export const x = defaultCodec.y". Keep the keyless exports\n` +
+        `a property read from one. Keep the keyless exports\n` +
         `sourced from src/keyless.ts, which builds them from a bare generator. See that file.`,
     );
   expect(code.length).toBeLessThan(ceiling);

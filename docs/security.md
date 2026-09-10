@@ -24,8 +24,9 @@ within the same millisecond. A cryptographic input source does not make these ou
 secrets. Keep uniqueness constraints where collisions matter. A duplicate-free sample or a
 passing entropy predicate cannot establish cryptographic security.
 
-Masking is reversible obfuscation, not authenticated encryption. Use a private random seed;
-the default seed is published. Retain its exact bytes and iteration count to read issued values.
+Masking is reversible obfuscation, not authenticated encryption. Use a private random seed and
+retain its exact bytes and iteration count to read issued values. The exported public schema is
+for explicit tests and examples; codec construction never selects it by omission.
 The 16-bit check filters candidates; look up the intended record and check authorization separately.
 More read keys add possible candidates. Base32 changes the spelling, not the masking strength.
 

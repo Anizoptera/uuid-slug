@@ -2,6 +2,7 @@
 use std::{fs, io};
 use uuid_slug::{
     Alphabet, Codec, CodecOptions, MigrationFormat, MigrationOptions, Uuid, generation,
+    public_mask_schema,
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -17,21 +18,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn exercise(directory: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
     let codec = Codec::new(CodecOptions {
-        slug_alphabet: Alphabet::Base32Hex,
         masked_slug_alphabet: Alphabet::Base32Hex,
-        ..CodecOptions::default()
+        ..CodecOptions::new(public_mask_schema())
     })?;
     let mut generator = generation::UuidV7Generator::new();
     let uuid = generator.generate()?;
     let mut cases = vec![
-        (codec.uuid_to_slug(uuid), uuid),
+        (uuid.slug(Alphabet::Base32Hex), uuid),
         (codec.uuid_v7_to_masked_slug(uuid)?, uuid),
     ];
     // Cross digit boundaries; never infer chronology from directory enumeration order.
     let mut chronological = Vec::new();
     for timestamp in [31.0, 32.0, 1023.0, 1024.0, ((1_u64 << 42) - 1) as f64] {
         let id = generator.at(timestamp)?;
-        let name = codec.uuid_to_slug(id);
+        let name = id.slug(Alphabet::Base32Hex);
         chronological.push(name.clone());
         cases.push((name, id));
     }

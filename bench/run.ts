@@ -9,8 +9,16 @@
 import { performance } from "node:perf_hooks";
 
 import { unwrap } from "../dev/unwrap";
-import { candidates, codec, nativeVariants, runtimeName } from "./candidates";
-import { createUuidSlugCodec, slugToUuid, uuidToSlug, validateUuidV7Fresh } from "../src/index";
+import { candidates, nativeVariants, runtimeName } from "./candidates";
+import {
+  createUuidSlugCodec,
+  PUBLIC_MASK_SCHEMA,
+  slugToUuid,
+  uuidToSlug,
+  uuidV7Bytes,
+  uuidV7Slug,
+  validateUuidV7Fresh,
+} from "../src/index";
 
 const smoke = process.argv.includes("--smoke");
 const iterations = Number(process.env.UUID_SLUG_BENCH_ITERATIONS ?? (smoke ? 10_000 : 1_000_000));
@@ -58,8 +66,9 @@ for (const candidate of candidates) {
   if (candidate.uuidV7) measure(`${candidate.name}.v7.string`, candidate.uuidV7);
 }
 
-measure("package.v7.slug", () => unwrap(codec.uuidV7Slug()));
-measure("package.v7.maskedSlug", () => unwrap(codec.uuidV7MaskedSlug()));
+const publicCodec = unwrap(createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA }));
+measure("package.v7.slug", () => unwrap(uuidV7Slug()));
+measure("package.v7.maskedSlug", () => unwrap(publicCodec.uuidV7MaskedSlug()));
 
 // Fixed inputs exclude generation and key derivation from conversion costs. Error discrimination
 // stays inside the timed call because callers of these APIs must handle the returned error.
@@ -104,7 +113,7 @@ measure("package.masked.invalid", () => {
 measureBytes(
   "package.v7.bytes",
   () => {
-    const bytes = codec.uuidV7Bytes();
+    const bytes = uuidV7Bytes();
     if (bytes instanceof Error) throw bytes;
     return bytes;
   },

@@ -3,7 +3,7 @@
 use serde_json::{Value, json};
 use uuid_slug::{
     Alphabet, Codec, CodecOptions, Error, Freshness, MaskSchema, MigrationFormat, MigrationOptions,
-    Uuid, create_mask_schema,
+    Uuid, create_mask_schema, public_mask_schema,
 };
 
 fn text<'a>(value: &'a Value, key: &str) -> Result<&'a str, Error> {
@@ -29,7 +29,7 @@ fn number(value: &Value) -> f64 {
 
 fn schema(value: &Value) -> Result<MaskSchema, Error> {
     if value.is_null() {
-        return Ok(MaskSchema::default());
+        return Ok(public_mask_schema());
     }
     if value == "custom-mix" {
         return MaskSchema::custom("custom-mix", |input, forward| {
@@ -84,11 +84,8 @@ fn schema(value: &Value) -> Result<MaskSchema, Error> {
 
 fn codec(request: &Value) -> Result<Codec, Error> {
     let mut options = CodecOptions {
-        mask: schema(&request["mask"])?,
         masked_slug_alphabet: alphabet(&request["maskedAlphabet"])?,
-        slug_alphabet: alphabet(&request["alphabet"])?,
-        accept_unmasked_slugs: request["acceptPlain"] == true,
-        ..CodecOptions::default()
+        ..CodecOptions::new(schema(&request["mask"])?)
     };
     if let Some(previous) = request["previous"].as_array() {
         options.previous_masks = previous.iter().map(schema).collect::<Result<_, _>>()?;
@@ -239,9 +236,20 @@ fn run(request: &Value) -> Result<Value, Error> {
         "mask" => Ok(json!(
             codec(request)?.uuid_v7_to_masked_slug(Uuid::parse(input)?)?
         )),
-        "unmask" => Ok(json!(
-            codec(request)?.masked_slug_to_uuid(input)?.to_string()
-        )),
+        "unmask" => {
+            let codec = codec(request)?;
+            let uuid = if request["acceptPlain"] == true {
+                codec
+                    .migration(MigrationOptions {
+                        original: false,
+                        plain: true,
+                    })
+                    .decode(input, None)?
+            } else {
+                codec.masked_slug_to_uuid_v7(input)?
+            };
+            Ok(json!(uuid.to_string()))
+        }
         "unmaskV7" => Ok(json!(
             codec(request)?.masked_slug_to_uuid_v7(input)?.to_string()
         )),

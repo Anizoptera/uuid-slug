@@ -11,16 +11,23 @@ import { loadRustBridge } from "./rust-bridge";
 
 type Request = Record<string, unknown> & { op: string; input?: string };
 type Outcome = { value: unknown } | { error: string };
-const custom: MaskSchema = {
-  id: "custom-mix",
-  mix(input, output, forward) {
-    for (let index = 0; index < 16; index++) {
-      const target = (index * 5 + 3) % 16;
-      if (forward) output[index] = (input[target] as number) ^ (index * 17);
-      else output[target] = (input[index] as number) ^ (index * 17);
-    }
-  },
-};
+const custom = unwrap(
+  ts.createCustomMaskSchema({
+    id: "custom-mix",
+    forward(input, output) {
+      for (let index = 0; index < 16; index++) {
+        const target = (index * 5 + 3) % 16;
+        output[index] = (input[target] as number) ^ (index * 17);
+      }
+    },
+    reverse(input, output) {
+      for (let index = 0; index < 16; index++) {
+        const target = (index * 5 + 3) % 16;
+        output[target] = (input[index] as number) ^ (index * 17);
+      }
+    },
+  }),
+);
 
 function mask(value: unknown): MaskSchema | MaskSchemaOptions | undefined {
   if (value === undefined || value === null) return undefined;
@@ -163,7 +170,7 @@ export function evaluate(request: Request): Outcome {
     const selectedMask = mask(request.mask);
     const codec = unwrap(
       ts.createUuidSlugCodec({
-        ...(selectedMask === undefined ? {} : { mask: selectedMask }),
+        mask: selectedMask ?? ts.PUBLIC_MASK_SCHEMA,
         ...(request.previous === undefined
           ? {}
           : {
@@ -171,13 +178,9 @@ export function evaluate(request: Request): Outcome {
                 (value) => mask(value) as MaskSchemaOptions,
               ),
             }),
-        ...(request.alphabet === undefined
-          ? {}
-          : { slugAlphabet: request.alphabet as SlugAlphabet }),
         ...(request.maskedAlphabet === undefined
           ? {}
           : { maskedSlugAlphabet: request.maskedAlphabet as SlugAlphabet }),
-        acceptUnmaskedSlugs: request.acceptPlain === true,
         ...(request.sentinels === undefined
           ? {}
           : { sentinels: request.sentinels as ts.UuidV7SentinelDefinition[] }),
@@ -187,7 +190,11 @@ export function evaluate(request: Request): Outcome {
       case "mask":
         return result(codec.uuidV7ToMaskedSlug(input));
       case "unmask":
-        return result(codec.maskedSlugToUuid(input));
+        return result(
+          request.acceptPlain === true
+            ? codec.migration({ plain: true }).decode(input)
+            : codec.maskedSlugToUuidV7(input),
+        );
       case "unmaskV7":
         return result(codec.maskedSlugToUuidV7(input));
       case "sentinels":

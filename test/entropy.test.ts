@@ -20,13 +20,13 @@ import { unwrap } from "../dev/unwrap";
 import {
   attributedSourcesFor,
   byteGenerators,
-  codec,
   constantBitCount,
   distinctValuesFrom,
   generators,
   insecureAmong,
   sourcesUsedBy,
 } from "./entropy-probe";
+import { uuidV4Bytes, uuidV7 } from "../src/index";
 
 describe("entropy source", () => {
   it.each(generators)("never reaches for Math.random in %s", (_name, generate) => {
@@ -45,7 +45,7 @@ describe("entropy source", () => {
   it("leaves every v4 bit random except the six the RFC fixes", () => {
     // A pinned bit narrows the id space despite distinct outputs. This detects stuck bits,
     // not bias, correlations, or predictability in a source whose bits all vary.
-    expect(constantBitCount(() => codec.uuidV4Bytes())).toBe(6);
+    expect(constantBitCount(uuidV4Bytes)).toBe(6);
   });
 
   it("draws its own randomness from a source that can be shown to be cryptographic", () => {
@@ -53,7 +53,7 @@ describe("entropy source", () => {
     // real finding: our own entropy could not be attributed. The delegating paths cannot make
     // that claim — a native generator draws inside the engine, below any JavaScript patch —
     // so they only assert the negative.
-    const used = attributedSourcesFor(() => codec.uuidV4Bytes());
+    const used = attributedSourcesFor(uuidV4Bytes);
     expect(used).not.toEqual([]);
     expect(insecureAmong(used)).toEqual([]);
   });
@@ -62,7 +62,7 @@ describe("entropy source", () => {
 describe("generated v7 values", () => {
   it("keep the v7 version and RFC variant", () => {
     for (let i = 0; i < 2_000; i += 1) {
-      const hex = unwrap(codec.uuidV7()).replaceAll("-", "");
+      const hex = unwrap(uuidV7()).replaceAll("-", "");
       expect(hex[12]).toBe("7");
       expect("89ab").toContain(hex[16]);
     }

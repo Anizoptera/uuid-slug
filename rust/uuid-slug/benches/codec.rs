@@ -102,13 +102,11 @@ fn main() -> Result<(), Error> {
         .collect();
     let schema = create_mask_schema(b"benchmark-seed-not-for-production", 1, "bench")?;
     let compact = Codec::new(CodecOptions {
-        mask: schema.clone(),
-        ..Default::default()
+        ..CodecOptions::new(schema.clone())
     })?;
     let safe = Codec::new(CodecOptions {
-        mask: schema,
         masked_slug_alphabet: Alphabet::Base32Hex,
-        ..Default::default()
+        ..CodecOptions::new(schema)
     })?;
     sample("plain/base64", &ids, |id| id.slug(Alphabet::Base64Url));
     sample("plain/base32", &ids, |id| id.slug(Alphabet::Base32Hex));
@@ -130,10 +128,10 @@ fn main() -> Result<(), Error> {
     });
     sample("unmask/base64", &ids, |_| {
         cursor = (cursor + 1) % encoded.len();
-        compact.masked_slug_to_uuid(&encoded[cursor]).unwrap()
+        compact.masked_slug_to_uuid_v7(&encoded[cursor]).unwrap()
     });
     sample("construct/default", &ids, |_| {
-        Codec::new(CodecOptions::default()).unwrap()
+        Codec::new(CodecOptions::new(uuid_slug::public_mask_schema())).unwrap()
     });
     let plain: Vec<String> = ids.iter().map(|id| id.slug(Alphabet::Base64Url)).collect();
     let mut out = [0; 16];

@@ -5,11 +5,15 @@ import { pooledFill } from "../src/runtime/pool";
 import { unwrap } from "../dev/unwrap";
 import {
   createUuidSlugCodec,
+  createCustomMaskSchema,
   createUuidV7Generator,
   parseUuid,
   slugToUuid,
   UuidSlugError,
+  uuidToSlug,
   validateUuidV7Fresh,
+  uuidV7Bytes,
+  uuidV7BytesAt,
 } from "../src/index";
 
 const timestamp = 1_234_567_890_000;
@@ -84,24 +88,17 @@ export const runtimeBoundaryCases = [
   ...(["base64url", "base32hex"] as const).map((slugAlphabet) => ({
     name: `uses the supplied generator for ${slugAlphabet}`,
     run(this: void) {
-      assert.equal(
-        slugToUuid(
-          unwrap(
-            unwrap(createUuidSlugCodec({ generator: makeGenerator(), slugAlphabet })).uuidV7Slug(),
-          ),
-        ),
-        uuid,
-      );
+      const generated = unwrap(makeGenerator().uuidV7());
+      assert.equal(slugToUuid(unwrap(uuidToSlug(generated, slugAlphabet))), uuid);
     },
   })),
   {
     name: "rejects omitted-buffer offsets in both runtime byte methods",
     run(this: void) {
-      const codec = createUuidSlugCodec();
       for (const offset of [-1, 1, 0.5, NaN, Infinity]) {
         for (const value of [
-          codec.uuidV7Bytes(undefined, offset),
-          codec.uuidV7BytesAt(timestamp, undefined, offset),
+          uuidV7Bytes(undefined, offset),
+          uuidV7BytesAt(timestamp, undefined, offset),
         ]) {
           assert.ok(value instanceof UuidSlugError);
           assert.equal(value.code, "invalid_buffer");
@@ -112,15 +109,14 @@ export const runtimeBoundaryCases = [
   {
     name: "never treats an explicit invalid instant as a clock request",
     run(this: void) {
-      for (const generator of [makeGenerator(), createUuidSlugCodec()]) {
-        for (const instant of [undefined, NaN, Infinity, -1, 0.5]) {
-          for (const value of [
-            generator.uuidV7At(instant as number),
-            generator.uuidV7BytesAt(instant as number),
-          ]) {
-            assert.ok(value instanceof UuidSlugError);
-            assert.equal(value.code, "invalid_timestamp");
-          }
+      const generator = makeGenerator();
+      for (const instant of [undefined, NaN, Infinity, -1, 0.5]) {
+        for (const value of [
+          generator.uuidV7At(instant as number),
+          generator.uuidV7BytesAt(instant as number),
+        ]) {
+          assert.ok(value instanceof UuidSlugError);
+          assert.equal(value.code, "invalid_timestamp");
         }
       }
     },
@@ -231,15 +227,21 @@ export const runtimeBoundaryCases = [
       const bytes = parseUuid("019ff19b-58b8-7000-9b1b-df713bd55607");
       assert.ok(!(bytes instanceof Error));
       const xor = Uint8Array.from(Buffer.from("c99ff19b58b890005b1bdf713bd55607", "hex"));
+      const mask = unwrap(
+        createCustomMaskSchema({
+          id: "collision",
+          forward(input, output) {
+            for (let i = 0; i < 16; i += 1) output[i] = (input[i] as number) ^ (xor[i] as number);
+          },
+          reverse(input, output) {
+            for (let i = 0; i < 16; i += 1) output[i] = (input[i] as number) ^ (xor[i] as number);
+          },
+        }),
+      );
       const codec = unwrap(
         createUuidSlugCodec({
           generator: { ...makeGenerator(), uuidV7Bytes: () => bytes },
-          mask: {
-            id: "collision",
-            mix(input, output) {
-              for (let i = 0; i < 16; i += 1) output[i] = (input[i] as number) ^ (xor[i] as number);
-            },
-          },
+          mask,
         }),
       );
       const failure = codec.uuidV7MaskedSlug();

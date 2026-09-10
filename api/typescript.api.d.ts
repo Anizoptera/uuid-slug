@@ -9,17 +9,22 @@ declare type Brand<T, Name extends string> = T & {
   };
 };
 declare const brand: unique symbol;
+export declare function createCustomMaskSchema(
+  options: CustomMaskSchemaOptions,
+): UuidSlugError | MaskSchema;
 export declare function createMaskSchema(options: MaskSchemaOptions): UuidSlugError | MaskSchema;
 export declare function createMaskSchemaAsync(
   options: AsyncMaskSchemaOptions,
 ): Promise<MaskSchema | UuidSlugError>;
-export declare function createUuidSlugCodec(): UuidSlugCodec;
 export declare function createUuidSlugCodec(
   options: UuidSlugCodecOptions,
 ): UuidSlugError | UuidSlugCodec;
 export declare function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator;
-export declare const DEFAULT_MASK_SCHEMA: MaskSchema;
-export declare const defaultCodec: UuidSlugCodec;
+export declare interface CustomMaskSchemaOptions {
+  readonly id: string;
+  readonly forward: (input: Uint8Array, output: Uint8Array) => void;
+  readonly reverse: (input: Uint8Array, output: Uint8Array) => void;
+}
 declare const ERROR_CODES: readonly [
   "aborted",
   "invalid_base32",
@@ -60,8 +65,9 @@ declare type MaskedUuidSlug = Brand<UuidSlug, "MaskedUuidSlug">;
 export declare type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
 export declare interface MaskSchema {
   readonly id: string;
-  mix(input: Uint8Array, output: Uint8Array, forward: boolean): void;
+  readonly [maskSchemaBrand]: true;
 }
+declare const maskSchemaBrand: unique symbol;
 export declare interface MaskSchemaOptions {
   readonly id?: string;
   readonly seed: string | Uint8Array;
@@ -78,6 +84,7 @@ export declare function parseUuidSlug(
   out?: Uint8Array,
   offset?: number,
 ): UuidSlugError | Uint8Array;
+export declare const PUBLIC_MASK_SCHEMA: MaskSchema;
 export declare type PublicUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 export declare type SentinelUuidV7Slug = Brand<UuidV7Slug, "SentinelUuidV7Slug">;
 export declare type SlugAlphabet = "base64url" | "base32hex";
@@ -86,17 +93,12 @@ export declare const UUID_SLUG_ERROR_CODES: typeof ERROR_CODES;
 export declare const UUID_V7_SENTINEL_DEFINITIONS: readonly UuidV7SentinelDefinition[];
 export declare type UuidBytes = Brand<Uint8Array, "UuidBytes">;
 export declare type UuidSlug = Brand<string, "UuidSlug">;
-export declare interface UuidSlugCodec extends UuidV7Generator {
+export declare interface UuidSlugCodec {
   readonly sentinels: readonly UuidV7Sentinel[];
   migration(this: void, options?: UuidSlugMigrationOptions): UuidSlugMigration;
-  uuidV4(this: void): UuidSlugError | UuidV4String;
-  uuidV4Bytes(this: void, out?: Uint8Array, offset?: number): UuidSlugError | Uint8Array;
-  uuidV4Slug(this: void): UuidSlugError | UuidV4Slug;
-  uuidV7Slug(this: void): UuidSlugError | UuidV7Slug;
   uuidV7MaskedSlug(this: void): UuidSlugError | PublicUuidV7Slug;
   uuidV7ToMaskedSlug(this: void, uuid: string): UuidSlugError | PublicUuidV7Slug;
   maskedSlugToUuidV7(this: void, slug: string): UuidSlugError | UuidV7String;
-  maskedSlugToUuid(this: void, slug: string): UuidSlugError | UuidString;
   validateMaskedSlugFresh<S extends string>(
     this: void,
     slug: S,
@@ -105,11 +107,9 @@ export declare interface UuidSlugCodec extends UuidV7Generator {
 }
 export declare interface UuidSlugCodecOptions {
   readonly generator?: UuidV7Generator;
-  readonly acceptUnmaskedSlugs?: boolean;
   readonly previousMasks?: readonly (MaskSchema | MaskSchemaOptions)[];
-  readonly mask?: MaskSchema | MaskSchemaOptions;
+  readonly mask: MaskSchema | MaskSchemaOptions;
   readonly sentinels?: readonly UuidV7SentinelDefinition[];
-  readonly slugAlphabet?: SlugAlphabet;
   readonly maskedSlugAlphabet?: SlugAlphabet;
 }
 export declare class UuidSlugError extends Error {

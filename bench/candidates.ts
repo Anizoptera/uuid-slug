@@ -19,8 +19,8 @@ import { uuidv7 as uuidv7Js } from "uuidv7-js";
 import { uuidv7 as uuidv7Package } from "uuidv7";
 import nodeCrypto from "node:crypto";
 
+import { uuidV4 as packageUuidV4, uuidV7 as packageUuidV7 } from "../src/index";
 import { unwrap } from "../dev/unwrap";
-import { createUuidSlugCodec } from "../src/index";
 
 export interface BenchCandidate {
   readonly name: string;
@@ -74,10 +74,12 @@ const nodeUuidV7 = (nodeCrypto as NodeCryptoWithV7).randomUUIDv7;
 
 export const runtimeName = bun ? `bun ${bun.version}` : `node ${process.version}`;
 
-export const codec = createUuidSlugCodec();
-
 export const candidates: readonly BenchCandidate[] = [
-  { name: "package", uuidV4: () => unwrap(codec.uuidV4()), uuidV7: () => unwrap(codec.uuidV7()) },
+  {
+    name: "package",
+    uuidV4: () => unwrap(packageUuidV4()),
+    uuidV7: () => unwrap(packageUuidV7()),
+  },
   { name: "uuid", uuidV4, uuidV7 },
   { name: "uuidv7", uuidV7: uuidv7Package },
   { name: "fastv7", uuidV7: fastUuidV7 },

@@ -18,7 +18,7 @@ use std::{
 // Changing these keys, four rounds, or word indices changes every issued identifier.
 const CHAIN_A: [u32; 2] = [0x6469_7575, 0x4167_6c73];
 const CHAIN_B: [u32; 2] = [0x6469_7575, 0x4267_6c73];
-const DEFAULT_SEED: &[u8] = b"anizoptera.uuid-slug.default-mask.v1";
+const PUBLIC_SEED: &[u8] = b"anizoptera.uuid-slug.default-mask.v1";
 type Mixer = dyn Fn([u8; 16], bool) -> Result<[u8; 16], Error> + Send + Sync;
 
 #[derive(Clone)]
@@ -79,12 +79,10 @@ impl MaskSchema {
     }
 }
 
-impl Default for MaskSchema {
-    /// The default seed is public and conceals nothing from other users of this crate.
-    fn default() -> Self {
-        static KEYS: LazyLock<[u32; 8]> = LazyLock::new(|| derive(DEFAULT_SEED, 1));
-        from_keys("default".into(), *KEYS)
-    }
+/// Return the published schema for examples and wire fixtures; it conceals nothing from users.
+pub fn public_mask_schema() -> MaskSchema {
+    static KEYS: LazyLock<[u32; 8]> = LazyLock::new(|| derive(PUBLIC_SEED, 1));
+    from_keys("default".into(), *KEYS)
 }
 
 fn validate(seed: &[u8], iterations: u32) -> Result<(), Error> {

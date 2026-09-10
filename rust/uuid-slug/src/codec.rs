@@ -41,16 +41,15 @@ mod tests {
         );
         for alphabet in [Alphabet::Base64Url, Alphabet::Base32Hex] {
             let codec = Codec::new(CodecOptions {
-                mask: collision.clone(),
                 masked_slug_alphabet: alphabet,
-                ..Default::default()
+                ..CodecOptions::new(collision.clone())
             })?;
             assert_eq!(
                 codec.uuid_v7_to_masked_slug(uuid).unwrap_err().code(),
                 "invalid_mask_schema"
             );
             assert_eq!(
-                codec.masked_slug_to_uuid(&reserved.slug(alphabet))?,
+                codec.masked_slug_to_uuid_v7(&reserved.slug(alphabet))?,
                 reserved
             );
         }
@@ -71,21 +70,19 @@ mod tests {
             }
         })?;
         let uuid = Uuid::parse("01234567-89ab-7cde-8fab-0123456789ab")?;
-        let good = MaskSchema::default();
-        let writer = Codec::new(CodecOptions::default())?;
+        let good = crate::public_mask_schema();
+        let writer = Codec::new(CodecOptions::new(crate::public_mask_schema()))?;
         let slug = writer.uuid_v7_to_masked_slug(uuid)?;
         let fallback = Codec::new(CodecOptions {
-            mask: custom.clone(),
             previous_masks: vec![good.clone()],
-            ..Default::default()
+            ..CodecOptions::new(custom.clone())
         })?;
         let first = Codec::new(CodecOptions {
-            mask: good,
             previous_masks: vec![custom],
-            ..Default::default()
+            ..CodecOptions::new(good)
         })?;
         failing.store(true, Ordering::Relaxed);
-        let error = fallback.masked_slug_to_uuid(&slug).unwrap_err();
+        let error = fallback.masked_slug_to_uuid_v7(&slug).unwrap_err();
         assert_eq!(error.code(), "invalid_mask_schema");
         assert!(std::error::Error::source(&error).is_some());
         let migration = first.migration(MigrationOptions::default());
@@ -109,18 +106,15 @@ pub struct CodecOptions {
     pub mask: MaskSchema,
     /// Older read keys, in caller-specified order. No keys are added implicitly.
     pub previous_masks: Vec<MaskSchema>,
-    /// Alphabet used by plain output.
-    pub slug_alphabet: Alphabet,
     /// Alphabet used by masked output and sentinel presentation.
     pub masked_slug_alphabet: Alphabet,
-    /// Permit strict plain decoding only after all masks fail.
-    pub accept_unmasked_slugs: bool,
     /// Reserved identities; an empty list disables sentinels.
     pub sentinels: Vec<(String, Uuid)>,
 }
 
-impl Default for CodecOptions {
-    fn default() -> Self {
+impl CodecOptions {
+    /// Start codec configuration from an explicitly selected current mask.
+    pub fn new(mask: MaskSchema) -> Self {
         let sentinels = [("nil", 0), ("anonymousUser", 1), ("unknownUser", 2)]
             .into_iter()
             .map(|(name, timestamp)| {
@@ -132,11 +126,9 @@ impl Default for CodecOptions {
             })
             .collect();
         Self {
-            mask: MaskSchema::default(),
+            mask,
             previous_masks: Vec::new(),
-            slug_alphabet: Alphabet::Base64Url,
             masked_slug_alphabet: Alphabet::Base64Url,
-            accept_unmasked_slugs: false,
             sentinels,
         }
     }
@@ -147,9 +139,7 @@ pub struct Codec {
     schemas: Vec<MaskSchema>,
     sentinels: Vec<Sentinel>,
     reserved: Vec<(String, Uuid)>,
-    plain: Alphabet,
     masked: Alphabet,
-    accept_plain: bool,
 }
 
 impl Codec {
@@ -173,9 +163,7 @@ impl Codec {
             schemas,
             sentinels,
             reserved,
-            plain: options.slug_alphabet,
             masked: options.masked_slug_alphabet,
-            accept_plain: options.accept_unmasked_slugs,
         })
     }
 
@@ -189,11 +177,6 @@ impl Codec {
             .iter()
             .find(|(text, _)| text == slug)
             .map(|(_, uuid)| *uuid)
-    }
-
-    /// Encode a plain UUID in the configured alphabet without touching mask keys.
-    pub fn uuid_to_slug(&self, uuid: Uuid) -> String {
-        uuid.slug(self.plain)
     }
 
     /// Encode a v7, preserving sentinel identities and rejecting ciphertext collisions.
@@ -216,24 +199,12 @@ impl Codec {
         self.masked.encode_tail(&bytes, tail, 4)
     }
 
-    /// Return the first candidate, not proof that this codec ever issued the ID.
-    pub fn masked_slug_to_uuid(&self, slug: &str) -> Result<Uuid, Error> {
+    /// Return the first current masked UUIDv7 candidate, not proof that this codec issued the ID.
+    pub fn masked_slug_to_uuid_v7(&self, slug: &str) -> Result<Uuid, Error> {
         if let Some(uuid) = self.sentinel(slug) {
             return Ok(uuid);
         }
-        let primary = self.decode_masked(slug);
-        if primary.is_err()
-            && self.accept_plain
-            && let Ok(uuid) = Uuid::parse_slug(slug)
-        {
-            return Ok(uuid);
-        }
-        primary
-    }
-
-    /// Decode and reject non-v7 IDs accepted through the optional plain fallback.
-    pub fn masked_slug_to_uuid_v7(&self, slug: &str) -> Result<Uuid, Error> {
-        let uuid = self.masked_slug_to_uuid(slug)?;
+        let uuid = self.decode_masked(slug)?;
         uuid.timestamp()?;
         Ok(uuid)
     }

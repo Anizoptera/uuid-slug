@@ -135,12 +135,12 @@ whole construction. See [the mechanism and its limits](docs/design.md).
 
 Masked slugs are not authentication tokens or capabilities. The check detects many incorrect
 decodes; it is not a message authentication code. Confirm decoded candidates against your store
-and enforce authorization separately. Supplying a custom `mix` still leaves the same short check
+and enforce authorization separately. Supplying a custom transform still leaves the same short check
 and does not turn the API into an authenticated-token system.
 
-**Supply your own secret seed for real identifiers.** Omitting `mask` uses the published default
-seed, so anyone can decode the result. Reserve that default for tests and demos.
-Masked operations are codec methods; `defaultCodec` uses the same public seed.
+**Supply your own secret seed for real identifiers.** Codec construction fails with
+`invalid_mask_schema` when `mask` is missing. For tests and demos that need stable public bytes,
+select `PUBLIC_MASK_SCHEMA` explicitly; anyone can decode identifiers produced with it.
 
 ## Handling errors
 
@@ -148,12 +148,11 @@ Parsing, decoding, formatting, conversion, byte generation, and explicit-timesta
 return `UuidSlugError | T`. Check `instanceof Error` within one realm, or use `isUuidSlugError`
 when values may cross realms or duplicate package copies. The structural guard recognizes the
 package's error name and code vocabulary; it classifies data and does not authenticate untrusted
-input. Configured codec construction returns the same union; `createUuidSlugCodec()` without
-options cannot fail.
+input. Codec construction returns the same union and requires an explicit mask.
 
 Use the error's `code` for handling and its `message` for diagnostics. `UuidSlugErrorCode` and
 `UUID_SLUG_ERROR_CODES` are the exported type and runtime list of codes. Errors wrapping failed
-entropy draws, clock readings, and custom `mix` calls preserve the original exception as `cause`.
+entropy draws, clock readings, and custom transform calls preserve the original exception as `cause`.
 
 Replace the removed generic base64url helpers with the UUID operations that own the same exact
 16-byte contract:
@@ -176,7 +175,8 @@ assigning a string does not validate it. Use guards to check format and your sto
   alphabets. `UuidBytes` labels storage a consumer knows contains one 16-byte UUID payload; byte
   writers return the caller's array without applying that label because it may contain more than
   the UUID range they write.
-- Shapes: `UuidSlugCodec` and `UuidSlugCodecOptions`, `MaskSchema`, `MaskSchemaOptions` and `AsyncMaskSchemaOptions`,
+- Shapes: `UuidSlugCodec` and `UuidSlugCodecOptions`, `MaskSchema`, `MaskSchemaOptions`,
+  `AsyncMaskSchemaOptions`, and `CustomMaskSchemaOptions`,
   `UuidV7Sentinel` and `UuidV7SentinelDefinition`, `UuidV7Generator` and
   `UuidV7GeneratorOptions`, `FreshValidationOptions`, `UuidSlugErrorCode`.
 
@@ -188,21 +188,17 @@ the matching API and look up the candidate; a brand or guard cannot establish is
 
 The **Where** column tells you whether to import a function or call a codec method.
 
-- **codec + top level.** Keyless generation is available directly, for example `import { uuidV7 }`.
-  A codec can use your supplied v7 generator; top-level generation uses the platform adapter.
 - **codec only.** Uses your configured keys or sentinels.
 - **module only.** Import these functions directly. Codec settings do not affect them.
 
 | Method                                                  | Where             | Returns                       | What it does                             |
 | ------------------------------------------------------- | ----------------- | ----------------------------- | ---------------------------------------- |
-| `uuidV4()` / `uuidV7()`                                 | codec + top level | UUID string                   | Generate.                                |
-| `uuidV4Bytes(out?, offset?)` / `uuidV7Bytes(...)`       | codec + top level | `UuidSlugError \| Uint8Array` | Generate into a buffer you own.          |
-| `uuidV7At(ms)` / `uuidV7BytesAt(ms, out?, offset?)`     | codec + top level | `UuidSlugError \| ...`        | Generate at an instant you name.         |
-| `uuidV4Slug(alphabet?)` / `uuidV7Slug(alphabet?)`       | top level         | direct slug                   | Generate and encode in one step.         |
-| `codec.uuidV4Slug()` / `codec.uuidV7Slug()`             | codec             | direct slug                   | Same, in the codec's `slugAlphabet`.     |
+| `uuidV4()` / `uuidV7()`                                 | module only       | UUID string                   | Generate.                                |
+| `uuidV4Bytes(out?, offset?)` / `uuidV7Bytes(...)`       | module only       | `UuidSlugError \| Uint8Array` | Generate into a buffer you own.          |
+| `uuidV7At(ms)` / `uuidV7BytesAt(ms, out?, offset?)`     | module only       | `UuidSlugError \| ...`        | Generate at an instant you name.         |
+| `uuidV4Slug(alphabet?)` / `uuidV7Slug(alphabet?)`       | module only       | direct slug                   | Generate and encode in one step.         |
 | `uuidV7MaskedSlug()`                                    | codec only        | `PublicUuidV7Slug`             | Generate a masked or sentinel slug.       |
 | `uuidV7ToMaskedSlug(uuid)` / `maskedSlugToUuidV7(slug)` | codec only        | `UuidSlugError \| ...`        | Masked slug, both ways; v7 only.         |
-| `maskedSlugToUuid(slug)`                                | codec only        | `UuidSlugError \| ...`        | Unmask, accepting any UUID version.      |
 | `validateMaskedSlugFresh(slug, opts?)`                  | codec only        | `UuidSlugError \| ...`        | Unmask, then check the freshness window. |
 | `sentinels`                                             | codec only        | array                         | The reserved values this codec knows.    |
 | `migration(options?)`                                 | codec only        | migration reader              | Read selected old formats without changing new output. |
@@ -232,9 +228,10 @@ Also exported, all module-level:
   not a v7, because a v4's first six bytes are random and would otherwise read back as a
   plausible date. `hasUuidV7Entropy` answers whether the 74 random bits are anything but
   all-zero or all-one. This rejects obvious degeneracy; it does not measure unpredictability.
-- `createMaskSchema` builds a schema from a seed; `createMaskSchemaAsync` adds cooperative cancellation; `DEFAULT_MASK_SCHEMA` is the one a codec uses
-  when you pass no `mask`, exported so `mask: DEFAULT_MASK_SCHEMA` can be a visible choice rather
-  than an omission. `UUID_V7_SENTINEL_DEFINITIONS` is the default sentinel list.
+- `createMaskSchema` builds a schema from a seed; `createMaskSchemaAsync` adds cooperative
+  cancellation; `createCustomMaskSchema` adapts separate forward and reverse callbacks.
+  `PUBLIC_MASK_SCHEMA` is the explicit, published-key choice for deterministic examples.
+  `UUID_V7_SENTINEL_DEFINITIONS` is the default sentinel list.
 - `createUuidV7Generator(options)` builds a generator from your own `clock` and `fillRandom`, for
   a `generator:` codec option. Its options type is `UuidV7GeneratorOptions`.
 - `UuidSlugError`, including code `rng_unavailable` when the runtime has no usable randomness.
@@ -245,11 +242,9 @@ Also exported, all module-level:
 
 ```ts
 createUuidSlugCodec({
-  mask: { seed: "…", keyIterations: 1 }, // or your own { id, mix } schema
+  mask: { seed: "…", keyIterations: 1 }, // required
   sentinels: [{ name: "nil", uuid: "…" }],
   previousMasks: [{ seed: "…previous seed…" }],
-  acceptUnmaskedSlugs: false,
-  slugAlphabet: "base32hex", // plain output
   maskedSlugAlphabet: "base32hex", // masked output and sentinel presentation
   generator: myUuidV7Generator,
 });
@@ -259,14 +254,31 @@ The masked payload is fixed at 132 bits, including a 16-bit check. Both alphabet
 to `"base64url"`. Readers accept either masked spelling without an alphabet argument. Safe
 sentinels use 26-character raw base32hex slugs; old 22-character sentinels remain readable.
 
-To supply a different mixing implementation, pass a `MaskSchema`: an `id` and
-`mix(input, output, forward)`, where `forward: false` must reverse `forward: true` for every
-16-byte input. Construction runs round-trip smoke tests and returns an error if they fail. Passing them
-is not a proof of invertibility; the caller remains responsible for the complete domain.
+To supply a different mixing implementation, call
+`createCustomMaskSchema({ id, forward, reverse })`. Each callback receives distinct 16-byte input
+and output arrays and must write the complete output; `reverse` must invert `forward` for every
+input. The factory isolates input mutation, captures the callbacks in an opaque frozen handle, and
+rejects throwing, partial-write, destination-dependent, and failed round-trip probes. Finite probes
+cannot prove invertibility, so the caller remains responsible for the complete domain and must not
+retain callback buffers.
+
+```ts
+const custom = createCustomMaskSchema({
+  id: "existing-scheme",
+  forward(input, output) {
+    oldSchema.mix(input, output, true);
+  },
+  reverse(input, output) {
+    oldSchema.mix(input, output, false);
+  },
+});
+if (custom instanceof Error) throw custom;
+const ids = createUuidSlugCodec({ mask: custom });
+```
 
 `createMaskSchema({ seed, keyIterations })` returns an error for invalid seed options.
-`createUuidSlugCodec(options)` returns an error for invalid options, including a supplied schema
-that fails its smoke tests.
+`createUuidSlugCodec(options)` returns an error for invalid options. Create custom handles before
+passing them; an arbitrary object is not a schema.
 
 For expensive derivation, await `createMaskSchemaAsync` and pass the completed schema to the codec:
 
@@ -432,6 +444,9 @@ See [security boundaries](docs/security.md) for entropy failures, custom sources
   between a UUID and a plain slug — reach no codec, so a bundle that imports only those carries
   none of the cipher, key derivation, or sentinel table. Use named imports with a tree-shaking
   bundler; loading the complete module namespace does not promise that removal.
+- **Masking is explicit.** A codec requires private mask options or a package-produced schema
+  handle. The published-key schema is available only as `PUBLIC_MASK_SCHEMA`; omission never
+  selects it.
 
 ## Runtime
 

@@ -11,8 +11,7 @@
  * The assertions stay in the suites: an assertion that drifts merely narrows coverage, and it is
  * visible on the page.
  */
-import { createUuidSlugCodec } from "../src/index";
-import type { MaskSchema } from "../src/index";
+import { createCustomMaskSchema, createUuidSlugCodec, PUBLIC_MASK_SCHEMA } from "../src/index";
 import { unwrap } from "../dev/unwrap";
 
 /**
@@ -33,18 +32,26 @@ const xor = Uint8Array.from({ length: 16 }, (_, i) => i * 0x11);
 const inverse = new Uint8Array(16);
 permute.forEach((target, i) => (inverse[target] = i));
 
-const customMix: MaskSchema = {
-  id: "custom-mix",
-  mix(input, output, forward) {
-    for (let i = 0; i < 16; i += 1) {
-      const source = forward ? (permute[i] as number) : (inverse[i] as number);
-      output[i] = (input[source] as number) ^ (xor[forward ? i : source] as number);
-    }
-  },
-};
+const customMix = unwrap(
+  createCustomMaskSchema({
+    id: "custom-mix",
+    forward(input, output) {
+      for (let i = 0; i < 16; i += 1) {
+        const source = permute[i] as number;
+        output[i] = (input[source] as number) ^ (xor[i] as number);
+      }
+    },
+    reverse(input, output) {
+      for (let i = 0; i < 16; i += 1) {
+        const source = inverse[i] as number;
+        output[i] = (input[source] as number) ^ (xor[source] as number);
+      }
+    },
+  }),
+);
 
 export const WIRE_FORMAT_CODECS = {
   "custom-mix": unwrap(createUuidSlugCodec({ mask: customMix })),
-  default: unwrap(createUuidSlugCodec({})),
+  default: unwrap(createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA })),
   "seeded-v2": unwrap(createUuidSlugCodec({ mask: { seed: "golden-vector-seed-v3" } })),
 };

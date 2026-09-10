@@ -4,6 +4,7 @@ import type { UuidSlugError } from "./errors";
 import type { SlugAlphabet } from "./uuid";
 
 declare const brand: unique symbol;
+declare const maskSchemaBrand: unique symbol;
 
 /** Accumulate nested brand names while still accepting caller string literals. */
 export type Brand<T, Name extends string> = T & { readonly [brand]?: { [K in Name]: true } };
@@ -50,25 +51,16 @@ export interface UuidV7Generator {
   ): UuidSlugError | Uint8Array;
 }
 
-/**
- * A schema is its mixing step, not the data behind one. Holding `mix` as a function rather than
- * exposing a permutation and an XOR table is what lets the masking code stay ignorant of which
- * scheme it is running: adding one is a new constructor in `schema.ts` and no branch anywhere.
- *
- * It is also the only extension point. This interface is public, so a caller
- * with a scheme of their own supplies it directly; the package ships no table-shaped constructor
- * beside it, because one would privilege a single foreign layout while being strictly less
- * capable than the function it wraps. `createUuidSlugCodec` smoke-tests supplied schemas; callers remain responsible for
- * invertibility across their full input domain.
- */
+/** A frozen package-produced masking handle whose transform and key material stay private. */
 export interface MaskSchema {
   readonly id: string;
-  /**
-   * Transforms 16 bytes; `forward: false` MUST be the exact inverse. `input` and `output` MUST
-   * NOT be the same array: a scheme that permutes reads source bytes it would already have
-   * overwritten, which corrupts silently rather than failing.
-   */
-  mix(input: Uint8Array, output: Uint8Array, forward: boolean): void;
+  readonly [maskSchemaBrand]: true;
+}
+
+export interface CustomMaskSchemaOptions {
+  readonly id: string;
+  readonly forward: (input: Uint8Array, output: Uint8Array) => void;
+  readonly reverse: (input: Uint8Array, output: Uint8Array) => void;
 }
 
 /**
@@ -131,16 +123,6 @@ export interface UuidSlugMigration {
 export interface UuidSlugCodecOptions {
   readonly generator?: UuidV7Generator;
   /**
-   * Also decode plain, unmasked slugs when no schema matches — the migration path for ids issued
-   * before masking existed. Its own option rather than a field beside the key list, because the
-   * two answer different questions and share only the accident of both concerning the past.
-   *
-   * Turn it off once the migration ends. It costs one wrong answer per 2^checkBits: a direct slug
-   * that happens to satisfy a mask's check decodes as that mask instead, and both are the same 22
-   * characters of the same alphabet, so nothing else can tell them apart.
-   */
-  readonly acceptUnmaskedSlugs?: boolean;
-  /**
    * Schemas to try after `mask`, in the order given — how a seed is rotated. Takes a seed exactly
    * as `mask` does: a rotated seed is the ordinary reason this list exists, and requiring a
    * pre-built schema for it cost the commonest case a constructor and an error branch that naming
@@ -158,31 +140,11 @@ export interface UuidSlugCodecOptions {
    * happens to be first, so appending a rotated seed leaves you still issuing ids under the old
    * one while believing you rotated. Nothing about that failure is visible.
    *
-   * OPTIONAL, and omitting it is the one choice here with a security consequence: the codec then
-   * masks under `DEFAULT_MASK_SCHEMA`, whose seed is a string literal in this published package,
-   * so its masked slugs are readable by anyone who installed it. Supply `{ seed }` — any stable
-   * string you keep out of the repository — for masking to obfuscate anything at all.
+   * Required because silently selecting published key material makes protected-looking slugs
+   * readable by anyone. Supply private seed options or explicitly select `PUBLIC_MASK_SCHEMA`.
    */
-  readonly mask?: MaskSchema | MaskSchemaOptions;
+  readonly mask: MaskSchema | MaskSchemaOptions;
   readonly sentinels?: readonly UuidV7SentinelDefinition[];
-  /**
-   * Alphabet for PLAIN slugs from `uuidV4Slug` and `uuidV7Slug`. `"base32hex"` costs four characters
-   * (26 rather than 22) and buys chronological sort order: its characters are in ASCII order and a
-   * UUIDv7's leading bytes are its timestamp, so base32hex slugs sort by creation time as plain
-   * strings. base64url's alphabet cannot — it runs `A-Za-z0-9-_`, so its character order and its
-   * value order disagree. Being alphanumeric also spares base32hex the `-` and `_` that make a
-   * base64url slug awkward to select by double-click.
-   *
-   * Codec-level rather than per call so a system cannot mint half its ids in each spelling.
-   * Decoding takes no such option: the two lengths are disjoint, so `slugToUuid` reads both and a
-   * change of alphabet leaves every previously issued slug working.
-   *
-   * It does not select masked slugs or sentinels; use `maskedSlugAlphabet` for those.
-   *
-   * Costs throughput when set: `uuidV7Slug` can no longer use a runtime's native base64url slug
-   * generator and falls back to generating bytes and encoding them.
-   */
-  readonly slugAlphabet?: SlugAlphabet;
   /**
    * Output spelling for masked IDs and sentinels; defaults to `"base64url"`.
    * `"base32hex"` preserves the full masked payload in 27 lowercase characters (26 for raw
@@ -193,24 +155,18 @@ export interface UuidSlugCodecOptions {
 }
 
 /**
- * Only what depends on the codec's own state: the generator it draws from, and the mask schema
- * plus sentinels it was built with.
+ * Only what depends on the codec's own state: the generator used for masked UUIDv7 output, the
+ * mask schemas, and the sentinels it was built with.
  *
  * Plain conversions are module-level functions because their result does not depend on codec state.
- *
- * Extending `UuidV7Generator` makes the compiler require forwarding every generator method.
  */
-export interface UuidSlugCodec extends UuidV7Generator {
+export interface UuidSlugCodec {
   readonly sentinels: readonly UuidV7Sentinel[];
   /** Create an opt-in reader without changing generation or ordinary codec decoding. */
   migration(this: void, options?: UuidSlugMigrationOptions): UuidSlugMigration;
   /**
    * `this: void` lets callers detach methods without `.bind`; implementations cannot rely on `this`.
    */
-  uuidV4(this: void): UuidSlugError | UuidV4String;
-  uuidV4Bytes(this: void, out?: Uint8Array, offset?: number): UuidSlugError | Uint8Array;
-  uuidV4Slug(this: void): UuidSlugError | UuidV4Slug;
-  uuidV7Slug(this: void): UuidSlugError | UuidV7Slug;
   uuidV7MaskedSlug(this: void): UuidSlugError | PublicUuidV7Slug;
   /**
    * Masking is UUIDv7-only, and the reason is that the whole format is spent. The check rides in
@@ -223,23 +179,13 @@ export interface UuidSlugCodec extends UuidV7Generator {
   uuidV7ToMaskedSlug(this: void, uuid: string): UuidSlugError | PublicUuidV7Slug;
   maskedSlugToUuidV7(this: void, slug: string): UuidSlugError | UuidV7String;
   /**
-   * Decodes to whatever version comes out, where `maskedSlugToUuidV7` insists on v7.
-   *
-   * NOT a redundant widening of that method, which is what it looks like: with
-   * `acceptUnmaskedSlugs` enabled a slug that matches no schema is tried as a plain unmasked
-   * slug, and a system migrating off unmasked ids may well have UUIDv4 ones. Those decode here
-   * and are rejected by the v7 form. Deleting this on the assumption it was a duplicate was
-   * measured to break exactly that migration path.
-   */
-  maskedSlugToUuid(this: void, slug: string): UuidSlugError | UuidString;
-  /**
    * `maskedSlugToUuidV7` plus the freshness rules of `validateUuidV7Fresh`, returning the slug.
    *
    * Lives on the codec because unmasking requires that codec's key. Plain-slug freshness remains
    * module-level because it needs no key.
    *
-   * Preserve the input type: with `acceptUnmaskedSlugs`, a plain slug can pass too. Returning a
-   * masked brand would mislabel that identity; narrowing the fallback would break migration.
+   * Preserve the input type because successful freshness validation returns the caller's exact
+   * spelling rather than relabeling it as a newly produced value.
    */
   validateMaskedSlugFresh<S extends string>(
     this: void,

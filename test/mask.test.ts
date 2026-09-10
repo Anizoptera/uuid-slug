@@ -55,7 +55,7 @@ describe("the maskable range", () => {
       const slug = codec.uuidV7ToMaskedSlug(uuid);
       if (slug instanceof Error) throw slug;
       expect(slug).toHaveLength(22);
-      expect(codec.maskedSlugToUuid(slug)).toBe(uuid);
+      expect(codec.maskedSlugToUuidV7(slug)).toBe(uuid);
     }
   });
 });

@@ -1,38 +1,31 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { runtime } from "#runtime";
-import { readClock, UuidRuntimeError, UuidSlugError } from "./errors";
-// A v4 has ONE implementation however it is reached. The keyless module owns it because that is
-// the module a consumer who never masks pulls in; importing it here costs a codec consumer nothing
-// it was not already paying, whereas the reverse direction would put the codec back on the keyless
-// path and undo the whole saving that split exists for.
-import {
-  uuidV4Bytes as generateUuidV4Bytes,
-  uuidV4Slug as generateUuidV4Slug,
-  uuidV4 as generateUuidV4,
-} from "./keyless";
+import { readClock, UuidSlugError } from "./errors";
 import { uuidV7BytesToMaskedSlug, decodeMaskedSlug } from "./mask";
 import { createMigration } from "./migration";
-import { createMaskSchema, DEFAULT_MASK_SCHEMA, verifyInvertible } from "./schema";
+import { isMaskSchema } from "./schema-handle";
+import { createMaskSchema } from "./schema";
 import type {
   MaskSchema,
+  MaskSchemaOptions,
   PublicUuidV7Slug,
   SentinelUuidV7Slug,
   UuidSlugCodec,
   UuidSlugCodecOptions,
+  UuidV7Slug,
   UuidV7Sentinel,
   UuidV7String,
-  UuidV7Slug,
 } from "./types";
 import { createRuntimeGenerator } from "./v7";
 import {
-  formatUuidSlug,
   hasUuidV7Entropy,
   isUuidV7Bytes,
   resolveSlugAlphabet,
   parseUuid,
-  formatUuid,
   parseUuidSlug,
+  formatUuid,
+  formatUuidSlug,
   extractUuidV7Timestamp,
 } from "./uuid";
 import type { FreshValidationOptions, UuidV7SentinelDefinition } from "./types";
@@ -53,23 +46,14 @@ export const UUID_V7_SENTINEL_DEFINITIONS: readonly UuidV7SentinelDefinition[] =
   }),
 ]);
 
-function schemaFromOption(mask: UuidSlugCodecOptions["mask"]): UuidSlugError | MaskSchema {
-  // Omitting `mask` yields a codec that masks under a seed published in this package's source, so
-  // its masked slugs are decodable by anyone. That is a real configuration — tests and demos want
-  // reproducible output — but it is never the one a caller protecting ids wants, and nothing about
-  // the resulting slug reveals which they got. See `defaultCodec` and `UuidSlugCodecOptions.mask`.
-  if (!mask) return DEFAULT_MASK_SCHEMA;
-  // A built schema carries its mixing step; an options object carries only a seed to derive one
-  // from. One discriminating property beats sniffing several, which silently stops discriminating
-  // when a scheme is added whose data fields differ.
-  //
-  // Every schema the codec will use passes through here, which is why the invertibility smoke test
-  // belongs here and nowhere else: a caller-supplied `mix` is the extension point now, and an
-  // unchecked one silently makes every id it encodes unreadable.
-  if (!("mix" in mask)) return createMaskSchema(mask);
-  const verified = verifyInvertible(mask);
-  if (verified instanceof Error) return verified;
-  return Object.freeze({ id: verified.id, mix: verified.mix.bind(verified) });
+function schemaFromOption(mask: MaskSchema | MaskSchemaOptions): UuidSlugError | MaskSchema {
+  if (isMaskSchema(mask)) return mask;
+  if (typeof mask !== "object" || mask === null)
+    return new UuidSlugError(
+      "invalid_mask_schema",
+      "Pass a mask schema handle or mask options containing a private seed.",
+    );
+  return createMaskSchema(mask);
 }
 
 function createSentinels(
@@ -132,11 +116,18 @@ function createSentinels(
   return { bySlug, encoded, sentinels: Object.freeze(sentinels) };
 }
 
-export function createUuidSlugCodec(): UuidSlugCodec;
-export function createUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugError | UuidSlugCodec;
-export function createUuidSlugCodec(
-  options: UuidSlugCodecOptions = {},
-): UuidSlugError | UuidSlugCodec {
+export function createUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugError | UuidSlugCodec {
+  if (
+    typeof options !== "object" ||
+    options === null ||
+    !("mask" in options) ||
+    options.mask === undefined ||
+    options.mask === null
+  )
+    return new UuidSlugError(
+      "invalid_mask_schema",
+      "Pass { mask: { seed } } for private masking or { mask: PUBLIC_MASK_SCHEMA } for public examples.",
+    );
   const schemaResult = schemaFromOption(options.mask);
   if (schemaResult instanceof UuidSlugError) return schemaResult;
   const schema = schemaResult;
@@ -149,42 +140,15 @@ export function createUuidSlugCodec(
     previousMasks.push(previous);
   }
   const generator = options.generator ?? createRuntimeGenerator(runtime);
-  const slugAlphabet = options.slugAlphabet ?? "base64url";
-  const slugAlphabetError = resolveSlugAlphabet(slugAlphabet);
-  if (slugAlphabetError instanceof Error) return slugAlphabetError;
   const maskedSlugAlphabet = options.maskedSlugAlphabet ?? "base64url";
   const maskedSlugAlphabetError = resolveSlugAlphabet(maskedSlugAlphabet);
   if (maskedSlugAlphabetError instanceof Error) return maskedSlugAlphabetError;
-  const acceptUnmaskedSlugs = options.acceptUnmaskedSlugs === true;
-  // The runtime's own slug generator emits base64url and nothing else, so it can only serve the
-  // default. Resolved once here rather than per call: the branch is on configuration, which cannot
-  // change after construction.
-  const nativeSlug =
-    options.generator === undefined && slugAlphabet === "base64url"
-      ? runtime.uuidV7Slug
-      : undefined;
   const sentinelState = createSentinels(
     options.sentinels ?? UUID_V7_SENTINEL_DEFINITIONS,
     maskedSlugAlphabet,
   );
   if (sentinelState instanceof UuidSlugError) return sentinelState;
   const sentinels = sentinelState;
-
-  function decodeMasked(slug: string): UuidSlugError | Uint8Array {
-    const primary = decodeMaskedSlug(slug, schema, previousMasks);
-    if (!(primary instanceof Error)) return primary;
-    if (acceptUnmaskedSlugs) {
-      const unmasked = parseUuidSlug(slug);
-      if (!(unmasked instanceof Error)) return unmasked;
-    }
-    // The fallback's error is DROPPED, deliberately, and this returns `primary` whether or not the
-    // fallback ran. It answers a different question — "is this a plain slug?" — and for the failure
-    // that actually brings people here, a wrong or rotated key, its answer is untrue: the input is
-    // perfectly good base64url whose trailing bits ARE the mask check, so it reported
-    // `invalid_base64url: non-canonical trailing bits` and sent operators hunting a typo.
-    // `primary` says the schema did not match, which is what happened.
-    return primary;
-  }
 
   function encodeMasked(bytes: Uint8Array): UuidSlugError | PublicUuidV7Slug {
     if (!isUuidV7Bytes(bytes))
@@ -208,45 +172,15 @@ export function createUuidSlugCodec(
   function maskedSlugToUuidV7(slug: string): UuidSlugError | UuidV7String {
     const sentinel = sentinels.bySlug.get(slug);
     if (sentinel) return sentinel.uuid;
-    const decoded = decodeMasked(slug);
+    const decoded = decodeMaskedSlug(slug, schema, previousMasks);
     if (decoded instanceof Error) return decoded;
-    // Mask decoding restores v7 constants; only the plain fallback can carry another version.
-    if (acceptUnmaskedSlugs && !isUuidV7Bytes(decoded))
-      return new UuidSlugError("invalid_uuid_version", "Decoded UUID is not UUIDv7.");
     return formatUuid(decoded) as UuidSlugError | UuidV7String;
   }
 
-  return {
+  const codec: UuidSlugCodec = {
     sentinels: sentinels.sentinels,
     migration(migrationOptions) {
       return createMigration([schema, ...previousMasks], sentinels.bySlug, migrationOptions);
-    },
-    uuidV4: generateUuidV4,
-    uuidV7() {
-      return generator.uuidV7();
-    },
-    uuidV4Bytes: generateUuidV4Bytes,
-    uuidV7Bytes: generator.uuidV7Bytes,
-    uuidV7At: generator.uuidV7At,
-    uuidV7BytesAt: generator.uuidV7BytesAt,
-    uuidV4Slug() {
-      return generateUuidV4Slug(slugAlphabet);
-    },
-    uuidV7Slug() {
-      if (nativeSlug) {
-        try {
-          return nativeSlug();
-        } catch (cause) {
-          return new UuidRuntimeError("Runtime UUIDv7 slug generation failed.", { cause });
-        }
-      }
-      // Same assertion `uuidV4Slug` makes for the same reason: the bytes come from a v7 generator,
-      // and the encoder sees only bytes so it cannot carry the version through. Until the runtime
-      // hooks were branded this cast was ABSENT and nothing complained — the native branch typed
-      // the union as bare `string`, which an optional brand accepts, so the promise went unchecked.
-      const bytes = generator.uuidV7Bytes();
-      if (bytes instanceof Error) return bytes;
-      return formatUuidSlug(bytes, 0, slugAlphabet) as UuidSlugError | UuidV7Slug;
     },
     uuidV7MaskedSlug() {
       const bytes = generator.uuidV7Bytes();
@@ -254,26 +188,17 @@ export function createUuidSlugCodec(
     },
     uuidV7ToMaskedSlug,
     maskedSlugToUuidV7,
-    maskedSlugToUuid(slug) {
-      const sentinel = sentinels.bySlug.get(slug);
-      if (sentinel) return sentinel.uuid;
-      const bytes = decodeMasked(slug);
-      return bytes instanceof Error ? bytes : formatUuid(bytes);
-    },
     /**
      * Unmask, then apply the same freshness rules as `validateUuidV7Fresh`, returning the slug.
      *
-     * A METHOD rather than the module-level function it replaced: unmasking needs this codec's
-     * key, and the old free function reached for `defaultCodec` — so it silently answered under
-     * the seed published in this package's source and was wrong for every caller who supplied
-     * their own. Nothing about that failure was visible at the call site; it returned a confident
-     * Error for perfectly good slugs.
+     * This stays on the codec because unmasking must use the codec's selected key.
      *
      * Decode directly to bytes instead of formatting and reparsing a UUID. The method does not
      * access `this`, so it also works when detached from the codec.
      */
     validateMaskedSlugFresh(slug, freshness) {
-      const bytes = sentinels.bySlug.get(slug)?.bytes ?? decodeMasked(slug);
+      const bytes =
+        sentinels.bySlug.get(slug)?.bytes ?? decodeMaskedSlug(slug, schema, previousMasks);
       if (bytes instanceof Error) return bytes;
       // The v7-specific decoder reports this before freshness validation does.
       if (!isUuidV7Bytes(bytes))
@@ -282,14 +207,8 @@ export function createUuidSlugCodec(
       return valid instanceof Error ? valid : slug;
     },
   };
+  return Object.freeze(codec);
 }
-
-/**
- * Uses the published default seed, so anyone can decode its masked slugs.
- * Use `createUuidSlugCodec({ mask: { seed } })` with your own seed to hide identifiers.
- */
-// Safe to drop when unused: default construction has no caller input or observable side effect.
-export const defaultCodec: UuidSlugCodec = /*#__PURE__*/ createUuidSlugCodec();
 
 export function validateUuidV7Fresh(
   uuid: string,

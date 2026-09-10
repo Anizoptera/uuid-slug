@@ -1,4 +1,9 @@
-import { createMaskSchemaAsync, createUuidSlugCodec, uuidV7Slug } from "@anizoptera/uuid-slug";
+import {
+  createMaskSchemaAsync,
+  createUuidSlugCodec,
+  PUBLIC_MASK_SCHEMA,
+  uuidV7Slug,
+} from "@anizoptera/uuid-slug";
 import type {
   AsyncMaskSchemaOptions,
   MaskSchema,
@@ -17,7 +22,9 @@ const plainResult = uuidV7Slug();
 if (plainResult instanceof Error) throw plainResult;
 const plain: UuidV7Slug = plainResult;
 const storedBytes: UuidBytes = new Uint8Array(16);
-const codec = createUuidSlugCodec();
+const codecResult = createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA });
+if (codecResult instanceof Error) throw codecResult;
+const codec = codecResult;
 const migration: UuidSlugMigration = codec.migration({ original: true, plain: true });
 const migrated: UuidString | UuidSlugError = migration.decode("AAAAAAABcACAAAAAAAAAAA");
 const candidates: UuidString[] | UuidSlugError = migration.candidates(

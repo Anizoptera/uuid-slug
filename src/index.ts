@@ -3,7 +3,6 @@
 export {
   UUID_V7_SENTINEL_DEFINITIONS,
   createUuidSlugCodec,
-  defaultCodec,
   validateUuidV7Fresh,
   validateUuidV7SlugFresh,
 } from "./codec";
@@ -15,9 +14,11 @@ export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError } from "./errors"
  * literals by hand, which is exactly the duplication `UUID_SLUG_ERROR_CODES` exists to prevent.
  */
 export type { UuidSlugErrorCode } from "./errors";
-export { DEFAULT_MASK_SCHEMA, createMaskSchema, createMaskSchemaAsync } from "./schema";
+export { PUBLIC_MASK_SCHEMA, createMaskSchema, createMaskSchemaAsync } from "./schema";
+export { createCustomMaskSchema } from "./schema-handle";
 export type {
   AsyncMaskSchemaOptions,
+  CustomMaskSchemaOptions,
   FreshValidationOptions,
   MaskSchema,
   MaskSchemaOptions,
