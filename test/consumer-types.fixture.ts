@@ -54,6 +54,7 @@ if (checkedUuidBytes instanceof Error) throw checkedUuidBytes;
 const versionedBytes: UuidV7Bytes = checkedUuidBytes;
 const formattedUuid = formatUuid(versionedBytes);
 if (formattedUuid instanceof Error) throw formattedUuid;
+// @ts-expect-error Mutable bytes may no longer contain the version their stale brand records.
 const versionedUuid: UuidV7String = formattedUuid;
 const convertedSlug = uuidToSlug(checkedUuid);
 if (convertedSlug instanceof Error) throw convertedSlug;
@@ -66,6 +67,7 @@ if (parsedSlugBytes instanceof Error) throw parsedSlugBytes;
 const versionedSlugBytes: UuidV7Bytes = parsedSlugBytes;
 const formattedSlug = formatUuidSlug(versionedSlugBytes);
 if (formattedSlug instanceof Error) throw formattedSlug;
+// @ts-expect-error Mutable bytes may no longer contain the version their stale brand records.
 const roundTripSlug: UuidV7Slug = formattedSlug;
 class ConsumerBuffer extends Uint8Array {}
 const destination = new ConsumerBuffer(32);
@@ -79,6 +81,7 @@ const ownedV7: UuidV7Bytes | UuidSlugError = uuidV7Bytes();
 if (ownedV4 instanceof Error) throw ownedV4;
 const formattedV4 = formatUuid(ownedV4);
 if (formattedV4 instanceof Error) throw formattedV4;
+// @ts-expect-error Mutable bytes may no longer contain the version their stale brand records.
 const versionedV4: UuidV4String = formattedV4;
 // @ts-expect-error An offset has no meaning without a destination buffer.
 uuidV4Bytes(undefined, 8);

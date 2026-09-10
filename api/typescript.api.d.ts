@@ -50,19 +50,16 @@ export declare function extractUuidV7Timestamp(
   bytes: Uint8Array,
   offset?: number,
 ): number | UuidSlugError;
-export declare function formatUuid<Input extends Uint8Array>(
-  bytes: Input,
-  offset?: number,
-): PreserveUuidVersion<Input, UuidString, UuidV4String, UuidV7String> | UuidSlugError;
-export declare function formatUuidSlug<Input extends Uint8Array>(
-  bytes: Input,
+export declare function formatUuid(bytes: Uint8Array, offset?: number): UuidString | UuidSlugError;
+export declare function formatUuidSlug(
+  bytes: Uint8Array,
   alphabet?: SlugAlphabet,
-): PreserveUuidVersion<Input, UuidSlug, UuidV4Slug, UuidV7Slug> | UuidSlugError;
-export declare function formatUuidSlug<Input extends Uint8Array>(
-  bytes: Input,
+): UuidSlug | UuidSlugError;
+export declare function formatUuidSlug(
+  bytes: Uint8Array,
   offset: number,
   alphabet?: SlugAlphabet,
-): PreserveUuidVersion<Input, UuidSlug, UuidV4Slug, UuidV7Slug> | UuidSlugError;
+): UuidSlug | UuidSlugError;
 export declare interface FreshValidationOptions {
   readonly now?: () => number;
   readonly windowMs?: number;
@@ -104,12 +101,9 @@ export declare function parseUuidSlug<T extends Uint8Array>(
   out: T,
   offset?: number,
 ): T | UuidSlugError;
-declare type PreserveUuidVersion<Input, General, V4, V7> = Input extends
-  | UuidV4String
-  | UuidV4Slug
-  | UuidV4Bytes
+declare type PreserveUuidVersion<Input, General, V4, V7> = Input extends UuidV4String | UuidV4Slug
   ? V4
-  : Input extends UuidV7String | UuidV7Slug | UuidV7Bytes
+  : Input extends UuidV7String | UuidV7Slug
     ? V7
     : General;
 export declare const PUBLIC_MASK_SCHEMA: MaskSchema;

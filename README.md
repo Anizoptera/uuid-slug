@@ -178,7 +178,8 @@ you need to retain the narrowed type. A brand proves format, not issuance: check
   alphabets. `UuidBytes` labels one validated 16-byte UUID payload; `UuidV4Bytes` and `UuidV7Bytes`
   retain the generated version. Byte operations return those exact types when they allocate the
   payload, or preserve the caller's exact array subtype when writing into supplied storage.
-  Lossless direct conversions preserve a known v4 or v7 brand across strings, slugs, and bytes.
+  Parsing and direct string/slug conversions preserve a known v4 or v7. Formatting mutable bytes
+  returns a version-agnostic value because their contents may have changed since validation.
 - Shapes: `UuidSlugCodec` and `UuidSlugCodecOptions`, `MaskSchema`, `MaskSchemaOptions`,
   `AsyncMaskSchemaOptions`, and `CustomMaskSchemaOptions`,
   `UuidV7Sentinel` and `UuidV7SentinelDefinition`, `UuidV7BytesSource`,

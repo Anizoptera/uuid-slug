@@ -52,7 +52,7 @@ export function uuidV4(): UuidV4String | UuidSlugError {
   }
   const bytes = uuidV4Bytes();
   if (bytes instanceof Error) return bytes;
-  return formatUuid(bytes);
+  return formatUuid(bytes) as UuidV4String | UuidSlugError;
 }
 
 /**
@@ -64,7 +64,7 @@ export function uuidV4(): UuidV4String | UuidSlugError {
 export function uuidV4Slug(alphabet: SlugAlphabet = "base64url"): UuidV4Slug | UuidSlugError {
   const bytes = uuidV4Bytes();
   if (bytes instanceof Error) return bytes;
-  return formatUuidSlug(bytes, alphabet);
+  return formatUuidSlug(bytes, alphabet) as UuidV4Slug | UuidSlugError;
 }
 
 /*
@@ -134,5 +134,5 @@ export function uuidV7Slug(alphabet: SlugAlphabet = "base64url"): UuidV7Slug | U
   }
   const bytes = v7().uuidV7Bytes();
   if (bytes instanceof Error) return bytes;
-  return formatUuidSlug(bytes, alphabet);
+  return formatUuidSlug(bytes, alphabet) as UuidV7Slug | UuidSlugError;
 }

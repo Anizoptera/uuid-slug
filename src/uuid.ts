@@ -16,12 +16,9 @@ import type {
 } from "./types";
 
 /** Carry a validated UUID version through lossless representation changes. */
-type PreserveUuidVersion<Input, General, V4, V7> = Input extends
-  | UuidV4String
-  | UuidV4Slug
-  | UuidV4Bytes
+type PreserveUuidVersion<Input, General, V4, V7> = Input extends UuidV4String | UuidV4Slug
   ? V4
-  : Input extends UuidV7String | UuidV7Slug | UuidV7Bytes
+  : Input extends UuidV7String | UuidV7Slug
     ? V7
     : General;
 
@@ -132,10 +129,6 @@ export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): Uint8Arra
   return target;
 }
 
-export function formatUuid<Input extends Uint8Array>(
-  bytes: Input,
-  offset?: number,
-): PreserveUuidVersion<Input, UuidString, UuidV4String, UuidV7String> | UuidSlugError;
 export function formatUuid(bytes: Uint8Array, offset = 0): UuidString | UuidSlugError {
   const badRange = checkByteRange(bytes, offset, 16);
   if (badRange) return badRange;
@@ -197,15 +190,15 @@ export function isUuidV7Bytes(bytes: unknown): bytes is UuidV7Bytes {
   );
 }
 
-export function formatUuidSlug<Input extends Uint8Array>(
-  bytes: Input,
+export function formatUuidSlug(
+  bytes: Uint8Array,
   alphabet?: SlugAlphabet,
-): PreserveUuidVersion<Input, UuidSlug, UuidV4Slug, UuidV7Slug> | UuidSlugError;
-export function formatUuidSlug<Input extends Uint8Array>(
-  bytes: Input,
+): UuidSlug | UuidSlugError;
+export function formatUuidSlug(
+  bytes: Uint8Array,
   offset: number,
   alphabet?: SlugAlphabet,
-): PreserveUuidVersion<Input, UuidSlug, UuidV4Slug, UuidV7Slug> | UuidSlugError;
+): UuidSlug | UuidSlugError;
 export function formatUuidSlug(
   bytes: Uint8Array,
   offsetOrAlphabet: number | SlugAlphabet = 0,
