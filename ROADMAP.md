@@ -2,55 +2,6 @@
 
 Keep only unfinished work here; durable contracts and decisions belong in their owning documentation.
 
-## TypeScript public interface audit
-
-Make validated values hard to forge while keeping ordinary calls simple, preserving every issued identifier, and charging no new runtime work to successful hot paths.
-
-- [x] Compare more than twenty live interface families before each selected change, including
-  alternatives across validation, ownership, injection, migration, configuration, and naming.
-- [x] Make UUID and slug brands strict while preserving inferred ordinary generation, parsing,
-  guarding, conversion, sentinel configuration, and caller-buffer use.
-- [x] Give owned UUID bytes their versioned brands, preserve supplied buffer subtypes, and reject an
-  offset without a destination at compile time.
-- [x] Let guards narrow unbounded external values and map malformed or throwing injected byte
-  sources into the documented error language in Node and Bun.
-- [x] Make migration reader selectors match the formats enabled by their construction options.
-  - [x] Keep the runtime migration engine broad so untyped calls still receive package errors.
-  - [x] Narrow literal codec options without adding runtime work or new public concepts.
-  - [x] Prove omitted, false, true, and dynamic boolean options through the packed declaration.
-  - [x] Regenerate and review the TypeScript interface baseline.
-  - [x] Make standalone typechecking refresh self-referenced declarations while built pipelines
-    reuse their existing build.
-  - [x] Run the complete repository check before committing the migration slice.
-- [ ] Audit the remaining interface families and change only candidates that reduce caller burden or
-  make a false promise impossible.
-  - [x] Remove the entropy predicate from both public interfaces and from freshness validation.
-    - [x] Verify that RFC 9562 assigns UUIDv7's trailing bits to random data, counters, or timestamp
-      fractions without reserving the all-zero or all-one field values.
-    - [x] Reject folding or renaming because one UUID value cannot reveal how its bits were produced.
-    - [x] Prove through TypeScript and Rust freshness interfaces that structurally valid endpoint
-      values are accepted when their timestamps are inside the caller's window.
-    - [x] Remove the predicate from exports, parity transport, documentation, and interface baselines.
-    - [x] Run the complete repository check before committing the entropy slice.
-  - [x] Let whole-UUID formatting take the alphabet directly while preserving zero-copy slice formatting.
-    - [x] Compare compatibility-preserving overloads with parameter reordering, an options object,
-      caller-created subarrays, alphabet-specific functions, a named slice operation, and removal.
-    - [x] Select `formatUuidSlug(bytes, alphabet?)` plus the existing numeric-offset form so the
-      common call is obvious and existing callers keep their behavior.
-    - [x] Prove both overloads through runtime and packed-declaration seams.
-    - [x] Remove placeholder offsets from internal whole-UUID calls without adding allocations.
-    - [x] Regenerate the TypeScript interface baseline and run the complete repository check.
-  - [ ] Recheck generator injection, freshness, schema construction, codec naming, sentinels, errors,
-    defaults, exports, and tree-shaken keyless paths against documented consumer jobs.
-  - [ ] Update npm, Cargo, and lockfile development versions together if the final consumer effect
-    requires a different pre-1.0 release target.
-- [ ] Close the audit with package-level evidence.
-  - [ ] Verify declarations and packed consumers with the TypeScript floor and current compiler.
-  - [ ] Run Node, Bun, Deno, browser, Rust-parity, artifact, and performance gates.
-  - [ ] Pair every retained public part with a documented consumer job and independent evidence.
-  - [ ] Adversarially audit the complete diff and all governing instructions.
-  - [ ] Remove this completed audit section, commit the closure, and leave the worktree clean.
-
 ## Remote-write hold
 
 These entries are inventory, not executable tasks. Do not start or ask about one unless a maintainer explicitly requests that exact operation.
