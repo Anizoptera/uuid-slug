@@ -358,36 +358,25 @@ describe("plain-slug migration", () => {
 });
 
 describe("sentinel definitions", () => {
-  // Everything else this constructor takes is proved at construction — `mix` invertibility, an
-  // empty seed. Sentinels were the gap, and the gap is invisible: `UuidV7SentinelDefinition.uuid`
-  // is typed `UuidV7String`, but `Brand`'s marker is OPTIONAL by design, so any string satisfies
-  // it and the compiler never looks. A v4 sentinel constructed fine, masked fine, and then failed
-  // on every single decode for the life of the codec.
   it("refuses a sentinel that is not a UUIDv7", () => {
-    // A v4 is passed with NO cast, and that is the demonstration: `uuid` is declared `UuidV7String`
-    // and the compiler raises nothing. Writing `SAMPLE_V4 as UuidV7String` here was reported by
-    // oxlint as an unnecessary assertion — the type system agreeing, in its own words, that it
-    // cannot tell these apart. Only a runtime check can.
-    expect(() =>
-      createUuidSlugCodec({
+    expect(
+      createCodec({
         mask: PUBLIC_MASK_SCHEMA,
         sentinels: [{ name: "v4-sentinel", uuid: SAMPLE_V4 }],
       }),
-    ).toThrow(UuidSlugError);
+    ).toMatchObject({ code: "invalid_uuid_version" });
   });
 
   it("refuses two sentinels sharing one UUID, which would collapse silently", () => {
-    // Both entries survive in `codec.sentinels` while the lookup maps keep only the last, so the
-    // codec reports a sentinel it can never match.
-    expect(() =>
-      createUuidSlugCodec({
+    expect(
+      createCodec({
         mask: PUBLIC_MASK_SCHEMA,
         sentinels: [
           { name: "first", uuid: SAMPLE_V7_A },
           { name: "second", uuid: SAMPLE_V7_A },
         ],
       }),
-    ).toThrow(UuidSlugError);
+    ).toMatchObject({ code: "invalid_uuid" });
   });
 });
 

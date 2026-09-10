@@ -8,7 +8,7 @@
  * What is asserted is the rule `AGENTS.md` states and `runtime/node.ts` already follows: a method
  * is defined only where the platform provides it, so ABSENCE IS REPRESENTABLE. A method that
  * exists and throws is not the same thing — it makes the caller catch and fall back on every call,
- * and `codec.ts` calls `runtime.uuidV4?.()` with no catch at all, so the throw reached consumers.
+ * and `keyless.ts` delegates to `runtime.uuidV4`, so a throwing adapter reaches consumers.
  *
  * The two capabilities are separable in real browsers, which is why this is not hypothetical:
  * `crypto.randomUUID` is restricted to secure contexts and `crypto.getRandomValues` is not, so an
