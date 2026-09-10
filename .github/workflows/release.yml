@@ -75,8 +75,8 @@ jobs:
           test "${#npm_archive[@]}" -eq 1 && test "${#crate_archive[@]}" -eq 1
           bun scripts/release-inputs.ts "$GITHUB_REF_NAME" release-artifacts/history "${npm_archive[0]}" "${crate_archive[0]}"
           bun scripts/release-report.ts
+      # Publish jobs read artifacts from this workflow run, so restored evidence must be handed on again.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: steps.evidence.outputs.found != 'true'
         with:
           name: release-evidence
           path: |
