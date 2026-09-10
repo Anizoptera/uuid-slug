@@ -21,6 +21,11 @@ export type UuidSlugErrorCode = (typeof UUID_SLUG_ERROR_CODES)[number];
 
 const ERROR_CODE_SET: ReadonlySet<unknown> = new Set(ERROR_CODES);
 
+const typedArrayTagDescriptor = Object.getOwnPropertyDescriptor(
+  Object.getPrototypeOf(Uint8Array.prototype) as object,
+  Symbol.toStringTag,
+);
+
 export class UuidSlugError extends Error {
   readonly code: UuidSlugErrorCode;
 
@@ -48,11 +53,11 @@ export function isUuidSlugError(value: unknown): value is UuidSlugError {
   }
 }
 
-/** Accept Uint8Array values across realms without admitting other views or coercible inputs. */
+/** Use fast local identity, then an unspoofable intrinsic brand for cross-realm Uint8Array values. */
 export function isUint8Array(value: unknown): value is Uint8Array {
   return (
     ArrayBuffer.isView(value) &&
-    (value instanceof Uint8Array || Object.prototype.toString.call(value) === "[object Uint8Array]")
+    (value instanceof Uint8Array || typedArrayTagDescriptor?.get?.call(value) === "Uint8Array")
   );
 }
 

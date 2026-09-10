@@ -57,7 +57,7 @@ export const runtimeBoundaryCases = [
         Array.from({ length: 16 }, () => 0),
         { length: 16 },
         new DataView(new ArrayBuffer(16)),
-        new Uint16Array(16),
+        Object.defineProperty(new Uint16Array(16), Symbol.toStringTag, { value: "Uint8Array" }),
       ]) {
         for (const call of calls) {
           const result = call(value);
