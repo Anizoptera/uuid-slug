@@ -22,12 +22,16 @@ export type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
 export type SentinelUuidV7Slug = Brand<UuidV7Slug, "SentinelUuidV7Slug">;
 export type PublicUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 
+type RejectKnownInput<Input, Invalid> = [Extract<Input, Invalid>] extends [never] ? Input : never;
+
 /** Reject a value already known to include a masked spelling from direct-slug operations. */
-export type DirectUuidSlugInput<Input extends string> = [Extract<Input, MaskedUuidSlug>] extends [
-  never,
-]
-  ? Input
-  : never;
+export type DirectUuidSlugInput<Input extends string> = RejectKnownInput<Input, MaskedUuidSlug>;
+export type UuidV7StringInput<Input extends string> = RejectKnownInput<Input, UuidV4String>;
+export type UuidV7SlugInput<Input extends string> = RejectKnownInput<
+  Input,
+  MaskedUuidSlug | UuidV4Slug
+>;
+export type UuidV7BytesInput<Input extends Uint8Array> = RejectKnownInput<Input, UuidV4Bytes>;
 export type UuidBytes = Brand<Uint8Array, "UuidBytes">;
 export type UuidV4Bytes = Brand<UuidBytes, "UuidV4Bytes">;
 export type UuidV7Bytes = Brand<UuidBytes, "UuidV7Bytes">;
@@ -206,7 +210,10 @@ export interface UuidSlugCodec {
    * bits in 22 characters already has a job. Supporting all versions would cost a 23rd character
    * on every masked slug forever, to hide a creation time only v7 discloses.
    */
-  uuidV7ToMaskedSlug(this: void, uuid: string): PublicUuidV7Slug | UuidSlugError;
+  uuidV7ToMaskedSlug<Input extends string>(
+    this: void,
+    uuid: UuidV7StringInput<Input>,
+  ): PublicUuidV7Slug | UuidSlugError;
   maskedSlugToUuidV7(this: void, slug: string): UuidV7String | UuidSlugError;
   /**
    * `maskedSlugToUuidV7` plus the freshness rules of `validateUuidV7Fresh`, returning the slug.

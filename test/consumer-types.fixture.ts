@@ -1,6 +1,7 @@
 import {
   createMaskSchemaAsync,
   createUuidSlugCodec,
+  extractUuidV7Timestamp,
   formatUuid,
   formatUuidSlug,
   isUuidV7String,
@@ -9,9 +10,12 @@ import {
   PUBLIC_MASK_SCHEMA,
   slugToUuid,
   unwrapUuidSlug,
+  uuidV4,
   validateUuidV7SlugFresh,
+  validateUuidV7Fresh,
   uuidToSlug,
   uuidV4Bytes,
+  uuidV4Slug,
   uuidV7Bytes,
   uuidV7BytesAt,
   uuidV7Slug,
@@ -82,6 +86,14 @@ const v7AtInto: ConsumerBuffer | UuidSlugError = uuidV7BytesAt(0, destination, 8
 const ownedV4: UuidV4Bytes | UuidSlugError = uuidV4Bytes();
 const ownedV7: UuidV7Bytes | UuidSlugError = uuidV7Bytes();
 if (ownedV4 instanceof Error) throw ownedV4;
+// @ts-expect-error A known UUIDv4 has no UUIDv7 timestamp.
+extractUuidV7Timestamp(ownedV4);
+const generatedV4 = unwrapUuidSlug(uuidV4());
+// @ts-expect-error UUIDv7 freshness is undefined for a known UUIDv4.
+validateUuidV7Fresh(generatedV4);
+const generatedV4Slug = unwrapUuidSlug(uuidV4Slug());
+// @ts-expect-error UUIDv7 freshness is undefined for a known UUIDv4 slug.
+validateUuidV7SlugFresh(generatedV4Slug);
 const formattedV4 = formatUuid(ownedV4);
 if (formattedV4 instanceof Error) throw formattedV4;
 // @ts-expect-error Mutable bytes may no longer contain the version their stale brand records.
@@ -95,6 +107,8 @@ uuidV7BytesAt(0, undefined, 8);
 const codecResult = createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA });
 if (codecResult instanceof Error) throw codecResult;
 const codec = codecResult;
+// @ts-expect-error UUIDv4 cannot enter UUIDv7-only masking.
+codec.uuidV7ToMaskedSlug(generatedV4);
 const knownSentinel = codec.sentinels[0]?.slug;
 if (knownSentinel) slugToUuid(knownSentinel);
 const bytesOnlyGenerator: UuidV7BytesSource = {

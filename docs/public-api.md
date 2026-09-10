@@ -47,6 +47,8 @@ and consequential trade-offs in its durable owner; keep exploration transient.
   cast or annotation. Do not move runtime-only uncertainty into elaborate caller-facing generics.
 - Reject a value already branded as masked from direct-slug operations. Continue accepting raw
   strings because overlapping wire spellings make their origin unknowable at runtime.
+- Reject values already branded as another UUID version from version-specific operations. Continue
+  accepting raw and version-unknown values so callers can validate external input at the seam.
 - Use `unknown` only for genuinely unbounded external input or caught values, then narrow it at the
   nearest seam. Do not use `any` in the public surface.
 - Preserve caller-owned byte-array subtypes and commit caller storage only after complete success.

@@ -184,6 +184,8 @@ you need to retain the narrowed type. A brand proves format, not issuance: check
   A value typed as masked, or as possibly masked, is rejected by direct-slug decoding and freshness
   operations; use the codec that owns its key. Raw strings remain accepted because direct and masked
   base64url spellings overlap, so only the application knows which protocol produced external text.
+  V7-only timestamp, freshness, and masking operations likewise reject values already typed as v4
+  while continuing to validate raw or version-unknown input at runtime.
   Parsing and direct string/slug conversions preserve a known v4 or v7. Formatting mutable bytes
   returns a version-agnostic value because their contents may have changed since validation.
 - Shapes: `UuidSlugCodec` and `UuidSlugCodecOptions`, `MaskSchema`, `MaskSchemaOptions`,

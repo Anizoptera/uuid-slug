@@ -14,6 +14,7 @@ import type {
   UuidV4String,
   UuidV7Slug,
   UuidV7String,
+  UuidV7BytesInput,
 } from "./types";
 
 /** Carry a validated UUID version through lossless representation changes. */
@@ -326,7 +327,10 @@ export function isUuidV7Slug(slug: unknown): slug is UuidV7Slug {
  * Short input is reported separately from wrong version, because `uuidVersion` reads a missing byte
  * as zero and would otherwise blame a truncated buffer for holding a v0.
  */
-export function extractUuidV7Timestamp(bytes: Uint8Array, offset = 0): number | UuidSlugError {
+export function extractUuidV7Timestamp<Input extends Uint8Array>(
+  bytes: UuidV7BytesInput<Input>,
+  offset = 0,
+): number | UuidSlugError {
   const badRange = checkByteRange(bytes, offset, 16);
   if (badRange) return badRange;
   if (uuidVersion(bytes, offset) !== 7 || !isRfcVariant(bytes, offset))

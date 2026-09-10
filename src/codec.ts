@@ -7,7 +7,6 @@ import { createMigration } from "./migration";
 import { isMaskSchema } from "./schema-handle";
 import { createMaskSchema } from "./schema";
 import type {
-  DirectUuidSlugInput,
   EnabledMigrationFormat,
   MaskSchema,
   MaskSchemaOptions,
@@ -19,8 +18,10 @@ import type {
   UuidSlugMigrationOptions,
   UuidV7BytesSource,
   UuidV7Slug,
+  UuidV7SlugInput,
   UuidV7Sentinel,
   UuidV7String,
+  UuidV7StringInput,
 } from "./types";
 import { createRuntimeGenerator } from "./v7";
 import {
@@ -183,7 +184,9 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
     return uuidV7BytesToMaskedSlug(bytes, schema, maskedSlugAlphabet, sentinels.bySlug);
   }
 
-  function uuidV7ToMaskedSlug(uuid: string): PublicUuidV7Slug | UuidSlugError {
+  function uuidV7ToMaskedSlug<Input extends string>(
+    uuid: UuidV7StringInput<Input>,
+  ): PublicUuidV7Slug | UuidSlugError {
     const bytes = parseUuid(uuid);
     return bytes instanceof Error ? bytes : encodeMasked(bytes);
   }
@@ -239,15 +242,16 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
   return Object.freeze(codec);
 }
 
-export function validateUuidV7Fresh(
-  uuid: string,
+export function validateUuidV7Fresh<Input extends string>(
+  uuid: UuidV7StringInput<Input>,
   options?: FreshValidationOptions,
 ): UuidV7String | UuidSlugError {
-  const bytes = parseUuid(uuid);
+  const uuidText: string = uuid;
+  const bytes = parseUuid(uuidText);
   if (bytes instanceof Error)
     return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
   const valid = validateFreshBytes(bytes, options);
-  return valid instanceof Error ? valid : (uuid as UuidV7String);
+  return valid instanceof Error ? valid : (uuidText as UuidV7String);
 }
 
 /** Capture decoded fields before calling an external clock, which can reenter a custom schema. */
@@ -296,7 +300,7 @@ function validateFreshBytes(
 }
 
 export function validateUuidV7SlugFresh<Input extends string>(
-  slug: DirectUuidSlugInput<Input>,
+  slug: UuidV7SlugInput<Input>,
   options?: FreshValidationOptions,
 ): UuidV7Slug | UuidSlugError {
   const directSlug: string = slug;

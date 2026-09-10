@@ -13,6 +13,7 @@ and add no work to callers that do not select it.
 - [ ] Replace the repository's private duplicate with the public operation and document both error policies.
 - [ ] Remove the unmeasured identity shortcut from cross-realm error recognition without weakening local, foreign, or hostile-value behavior.
 - [ ] Keep known masked outputs out of direct-slug decoders and freshness checks at compile time while accepting raw external strings.
+- [ ] Reject known UUIDv4 values from every v7-only public operation while preserving raw and version-unknown inputs.
 - [ ] Verify current and floor declaration inference, Node and Bun behavior, packed consumption, API classification, and the complete repository gate.
 - [ ] Adversarially audit the changed interface and remove this section only when every promise has evidence.
 
