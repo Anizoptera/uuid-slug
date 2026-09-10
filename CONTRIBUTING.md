@@ -9,6 +9,8 @@ Use the repository's pinned tools. Run `bun install`, install the `cargo-public-
 
 ## Changes
 
+Read `docs/public-api.md` before changing any public interface or observable behavior.
+
 Run `bun run check` before each commit. The hook runs every fast check and checks public API first.
 It reports how to update an intentional baseline change. Run `bun run api:update`, review both
 diffs, and include them in the pull request. Merging is the maintainer decision; no separate

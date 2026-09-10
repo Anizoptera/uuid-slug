@@ -4,6 +4,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Contract owners
 
+- Read `docs/public-api.md` before changing a public export, type, parameter, default, error,
+  runtime path, or performance characteristic; it owns how this project forms public interfaces.
 - The externally visible API is reserved. Put any proposed public export, option, behavior, or
   feature change and its consumer consequences in the same pull request. Merging is the maintainer
   decision; no separate acceptance step exists.
