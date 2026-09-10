@@ -1,5 +1,6 @@
-// Check the Rust feature boundaries and run shared contracts through both native hosts.
+// Check Rust feature boundaries and every native transport exposed by installed hosts.
 import { buildRustBridge } from "./rust-bridge";
+import { runNativeConformance } from "./rust-conform-matrix";
 import { checkReleaseVersion } from "./release-version";
 
 const manifest = "rust/Cargo.toml";
@@ -132,14 +133,6 @@ await run([
   "-D",
   "warnings",
 ]);
-if (!fast)
-  await run([
-    "bun",
-    "build",
-    "scripts/rust-conform.ts",
-    "--target=node",
-    "--outfile=rust/target/conform.mjs",
-  ]);
 for (const profile of fast ? [] : (["debug", "release"] as const)) {
   const profileArgs = profile === "release" ? ["--release"] : [];
   await run([
@@ -166,16 +159,6 @@ for (const profile of fast ? [] : (["debug", "release"] as const)) {
     "--locked",
     ...profileArgs,
   ]);
-  // A fresh host process loads the exact profile; native modules cannot be swapped in-process.
-  const env = { ...process.env, UUID_SLUG_RUST_PROFILE: profile };
-  const contracts = await Promise.allSettled([
-    run(["bun", "scripts/rust-conform.ts"], false, env),
-    run(["node", "rust/target/conform.mjs"], false, env),
-  ]);
-  const failures = contracts.filter((result) => result.status === "rejected");
-  if (failures.length)
-    throw new AggregateError(
-      failures.map((result) => result.reason),
-      `Native ${profile} contract verification failed`,
-    );
+  // Fresh processes load the exact profile and isolate host-specific native state.
+  await runNativeConformance(profile, false);
 }

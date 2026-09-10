@@ -504,9 +504,13 @@ export function compare(requests: Request[], actual: unknown): void {
 
 if (import.meta.main) {
   const requests = await contractRequests();
-  const bridge = loadRustBridge();
-  compare(requests, JSON.parse(bridge.evaluate(JSON.stringify(requests))));
-  console.log(
-    `${typeof Bun === "undefined" ? "Node" : "Bun"} N-API: ${requests.length} shared contract observations passed`,
-  );
+  const bridge = await loadRustBridge();
+  try {
+    compare(requests, JSON.parse(bridge.evaluate(JSON.stringify(requests))));
+    if (bridge.plain("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f0000") !== "AZChssPUfl-KmwwdLj8AAA")
+      throw new Error(`${bridge.transport} direct plain conversion diverged from its wire vector`);
+    console.log(`${bridge.transport}: ${requests.length} shared contract observations passed`);
+  } finally {
+    bridge.close();
+  }
 }
