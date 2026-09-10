@@ -415,7 +415,7 @@ The timestamp must be inside the inclusive interval `now() - windowMs` through
 `now() + windowMs`; the default radius is 24 hours. `windowMs` must be finite and nonnegative;
 zero and finite fractions are valid. `now` defaults to `Date.now`, must return finite Unix
 milliseconds, and is read once per validation. Invalid settings return an error instead of
-disabling the check. Degenerate all-zero or all-one random bits are also rejected.
+disabling the check.
 
 `validateUuidV7SlugFresh` starts from a plain slug; `codec.validateMaskedSlugFresh` starts from
 a slug decoded with that codec. This is a symmetric timestamp sanity check, not past-only expiry,
