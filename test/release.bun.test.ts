@@ -86,6 +86,8 @@ test("artifact validation rejects a credential-bearing repack before publication
     await Promise.all([Bun.write(expected, "reviewed"), Bun.write(actual, "different")]);
     process.env.UUID_SLUG_EXPECTED_ARCHIVE = expected;
     await rejects(inspectArtifact(actual), /credentials-free reviewed archive/);
+    await Bun.write(actual, "reviewed");
+    await inspectArtifact(actual);
   } finally {
     delete process.env.UUID_SLUG_EXPECTED_ARCHIVE;
     await rm(root, { recursive: true, force: true });
@@ -156,14 +158,14 @@ test("release process prepares without credentials and repairs only a missing np
     expect(await Bun.file(join(root, "invoked.json")).exists()).toBe(false);
     await releasePackage(root, "v1.2.3-rc.1", "prepare", server.url.origin);
     const args = await Bun.file(join(root, "invoked.json")).json();
-    expect(args).toContain("--dry-run");
+    expect(args).toContain("--guard-only");
     expect(args.slice(-5)).toEqual(["--access", "public", "--tag", "next", "--provenance"]);
     await releasePackage(root, "v1.2.3-rc.1", "publish", server.url.origin);
     await rm(join(root, "release-artifacts"), { recursive: true });
     await releasePackage(root, "v1.2.3-rc.1", "prepare", server.url.origin);
     unpublished = true;
     await releasePackage(root, "v1.2.3-rc.1", "publish", server.url.origin);
-    expect(await Bun.file(join(root, "invoked.json")).json()).not.toContain("--dry-run");
+    expect(await Bun.file(join(root, "invoked.json")).json()).not.toContain("--guard-only");
     await rm(join(root, "release-artifacts"), { recursive: true });
     await releasePackage(root, "v1.2.3-rc.1", "prepare", server.url.origin);
     integrity = "sha512-different";

@@ -17,7 +17,7 @@ async function pack(
   cwd: string,
   directory: string,
   version: string,
-  dryRun: boolean,
+  guardOnly: boolean,
   expected?: string,
 ): Promise<string> {
   await mkdir(directory, { recursive: true });
@@ -28,7 +28,7 @@ async function pack(
     "bun",
     [
       join(cwd, "node_modules/.bin/publish-clean"),
-      ...(dryRun ? ["--dry-run"] : []),
+      ...(guardOnly ? ["--guard-only"] : []),
       "--tarball-out",
       directory,
       "--",

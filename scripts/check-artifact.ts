@@ -24,6 +24,9 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       throw new Error(
         "Final npm archive differs from the credentials-free reviewed archive. Publish the reviewed bytes, or return to development and verify the replacement archive before publishing.",
       );
+    // Preparation already ran every artifact probe on these exact bytes. The credential-bearing
+    // repack needs only this identity check; repeating deterministic probes cannot add evidence.
+    return;
   }
   const root = await mkdtemp(path.join(tmpdir(), "uuid-slug-consumer-"));
   try {
