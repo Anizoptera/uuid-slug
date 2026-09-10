@@ -372,6 +372,8 @@ if (replacement instanceof Error) throw replacement;
 
 Enable an old format before selecting it. Recognized sentinels always return their reserved UUID,
 including old trailing-bit aliases when reading original or plain slugs.
+With literal options, TypeScript offers only `"current"` and the formats enabled with `true`;
+options whose values are dynamic remain selectable because they may be enabled at runtime.
 
 For unknown formats, use `candidates` to find the matching record without guessing:
 

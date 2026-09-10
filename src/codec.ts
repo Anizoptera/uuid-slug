@@ -7,12 +7,15 @@ import { createMigration } from "./migration";
 import { isMaskSchema } from "./schema-handle";
 import { createMaskSchema } from "./schema";
 import type {
+  EnabledMigrationFormat,
   MaskSchema,
   MaskSchemaOptions,
   PublicUuidV7Slug,
   SentinelUuidV7Slug,
   UuidSlugCodec,
   UuidSlugCodecOptions,
+  UuidSlugMigration,
+  UuidSlugMigrationOptions,
   UuidV7Slug,
   UuidV7Sentinel,
   UuidV7String,
@@ -183,11 +186,15 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCode
     }
   }
 
+  function migration<const Options extends UuidSlugMigrationOptions = {}>(
+    migrationOptions?: Options,
+  ): UuidSlugMigration<EnabledMigrationFormat<Options>> {
+    return createMigration([schema, ...previousMasks], sentinels.bySlug, migrationOptions);
+  }
+
   const codec: UuidSlugCodec = {
     sentinels: sentinels.sentinels,
-    migration(migrationOptions) {
-      return createMigration([schema, ...previousMasks], sentinels.bySlug, migrationOptions);
-    },
+    migration,
     uuidV7MaskedSlug: generateMaskedSlug,
     uuidV7ToMaskedSlug,
     maskedSlugToUuidV7,

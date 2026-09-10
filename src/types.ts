@@ -122,11 +122,22 @@ export interface UuidSlugMigrationOptions {
   readonly plain?: boolean;
 }
 
-export interface UuidSlugMigration {
+type EnabledMigrationOption<
+  Options,
+  Option extends keyof UuidSlugMigrationOptions,
+> = Option extends keyof Options ? (true extends Options[Option] ? Option : never) : never;
+
+/** Internal projection used to keep each migration reader's selector type honest. */
+export type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
+  | "current"
+  | EnabledMigrationOption<Options, "original">
+  | EnabledMigrationOption<Options, "plain">;
+
+export interface UuidSlugMigration<Format extends MigrationFormat = MigrationFormat> {
   /** Return the first candidate: sentinel, current keys, original mask, then plain UUID. */
-  decode(this: void, slug: string, format?: MigrationFormat): UuidString | UuidSlugError;
+  decode(this: void, slug: string, format?: Format): UuidString | UuidSlugError;
   /** Return distinct candidates for one application lookup; an empty array means no match. */
-  candidates(this: void, slug: string, format?: MigrationFormat): UuidString[] | UuidSlugError;
+  candidates(this: void, slug: string, format?: Format): UuidString[] | UuidSlugError;
 }
 
 export interface UuidSlugCodecOptions {
@@ -172,7 +183,10 @@ export interface UuidSlugCodecOptions {
 export interface UuidSlugCodec {
   readonly sentinels: readonly UuidV7Sentinel[];
   /** Create an opt-in reader without changing generation or ordinary codec decoding. */
-  migration(this: void, options?: UuidSlugMigrationOptions): UuidSlugMigration;
+  migration<const Options extends UuidSlugMigrationOptions = {}>(
+    this: void,
+    options?: Options,
+  ): UuidSlugMigration<EnabledMigrationFormat<Options>>;
   /**
    * `this: void` lets callers detach methods without `.bind`; implementations cannot rely on `this`.
    */

@@ -11,7 +11,7 @@ import { formatUuid, parseUuidSlug, uuidToSlug } from "../src/uuid";
 import fixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
 import { unwrap } from "../dev/unwrap";
 import { uuidTailAliases } from "./uuid-tail-aliases";
-import type { MaskSchema } from "../src/types";
+import type { MaskSchema, UuidSlugMigration } from "../src/types";
 
 function mix(schema: MaskSchema, input: Uint8Array, forward: boolean) {
   const output = new Uint8Array(16);
@@ -167,9 +167,10 @@ export const legacyMaskCases = [
         originalUuid,
       ]);
       assert.deepEqual(codec.migration({ plain: true }).candidates(slug), [currentUuid, plainUuid]);
-      assert.deepEqual(codec.migration().candidates(slug), [currentUuid]);
-      assert.ok(codec.migration().decode(slug, "original") instanceof Error);
-      assert.ok(codec.migration().decode(slug, "plain") instanceof Error);
+      const currentReader: UuidSlugMigration = codec.migration();
+      assert.deepEqual(currentReader.candidates(slug), [currentUuid]);
+      assert.ok(currentReader.decode(slug, "original") instanceof Error);
+      assert.ok(currentReader.decode(slug, "plain") instanceof Error);
       assert.equal(codec.uuidV7ToMaskedSlug(currentUuid), slug);
       assert.equal(codec.maskedSlugToUuidV7(slug), currentUuid);
       for (const invalid of ["", "!".repeat(22), "A".repeat(21), "A".repeat(23)]) {

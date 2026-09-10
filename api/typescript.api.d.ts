@@ -25,6 +25,14 @@ export declare interface CustomMaskSchemaOptions {
   readonly forward: (input: Uint8Array) => Uint8Array | UuidSlugError;
   readonly reverse: (input: Uint8Array) => Uint8Array | UuidSlugError;
 }
+declare type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
+  | "current"
+  | EnabledMigrationOption<Options, "original">
+  | EnabledMigrationOption<Options, "plain">;
+declare type EnabledMigrationOption<
+  Options,
+  Option extends keyof UuidSlugMigrationOptions,
+> = Option extends keyof Options ? (true extends Options[Option] ? Option : never) : never;
 declare const ERROR_CODES: readonly [
   "aborted",
   "invalid_base32",
@@ -97,7 +105,10 @@ export declare type UuidBytes = Brand<Uint8Array, "UuidBytes">;
 export declare type UuidSlug = Brand<string, "UuidSlug">;
 export declare interface UuidSlugCodec {
   readonly sentinels: readonly UuidV7Sentinel[];
-  migration(this: void, options?: UuidSlugMigrationOptions): UuidSlugMigration;
+  migration<const Options extends UuidSlugMigrationOptions = {}>(
+    this: void,
+    options?: Options,
+  ): UuidSlugMigration<EnabledMigrationFormat<Options>>;
   uuidV7MaskedSlug(this: void): PublicUuidV7Slug | UuidSlugError;
   uuidV7ToMaskedSlug(this: void, uuid: string): PublicUuidV7Slug | UuidSlugError;
   maskedSlugToUuidV7(this: void, slug: string): UuidV7String | UuidSlugError;
@@ -119,9 +130,9 @@ export declare class UuidSlugError extends Error {
   constructor(code: UuidSlugErrorCode, message: string, options?: ErrorOptions);
 }
 export declare type UuidSlugErrorCode = (typeof UUID_SLUG_ERROR_CODES)[number];
-export declare interface UuidSlugMigration {
-  decode(this: void, slug: string, format?: MigrationFormat): UuidString | UuidSlugError;
-  candidates(this: void, slug: string, format?: MigrationFormat): UuidString[] | UuidSlugError;
+export declare interface UuidSlugMigration<Format extends MigrationFormat = MigrationFormat> {
+  decode(this: void, slug: string, format?: Format): UuidString | UuidSlugError;
+  candidates(this: void, slug: string, format?: Format): UuidString[] | UuidSlugError;
 }
 export declare interface UuidSlugMigrationOptions {
   readonly original?: boolean;

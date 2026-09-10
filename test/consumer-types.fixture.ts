@@ -74,6 +74,18 @@ const candidates: UuidString[] | UuidSlugError = migration.candidates(
   "AAAAAAABcACAAAAAAAAAAA",
   "original",
 );
+const plainOnlyMigration = codec.migration({ plain: true });
+plainOnlyMigration.decode("AAAAAAAAcACAAAAAAAAAAA", "plain");
+// @ts-expect-error This reader was not configured to accept the original masked format.
+plainOnlyMigration.decode("AAAAAAAAcACAAAAAAAAAAA", "original");
+const currentOnlyMigration = codec.migration({ plain: false });
+// @ts-expect-error A false option does not enable the plain format.
+currentOnlyMigration.decode("AAAAAAAAcACAAAAAAAAAAA", "plain");
+const defaultMigration = codec.migration();
+// @ts-expect-error An omitted option does not enable the plain format.
+defaultMigration.decode("AAAAAAAAcACAAAAAAAAAAA", "plain");
+const dynamicMigration = codec.migration({ plain: Boolean(Date.now()) });
+dynamicMigration.decode("AAAAAAAAcACAAAAAAAAAAA", "plain");
 void [
   uncheckedBytes,
   uncheckedUuid,
@@ -114,3 +126,5 @@ void pendingSchema;
 type _RuntimeErrorIsInternal = import("@anizoptera/uuid-slug")["UuidRuntimeError"];
 // @ts-expect-error Masking produces UUIDv7 slugs, so no broader masked-slug type is public.
 type _GenericMaskedSlugIsInternal = import("@anizoptera/uuid-slug")["MaskedUuidSlug"];
+// @ts-expect-error Migration option projection is an implementation detail, not a consumer concept.
+type _MigrationProjectionIsInternal = import("@anizoptera/uuid-slug")["EnabledMigrationFormat"];
