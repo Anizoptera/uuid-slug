@@ -409,6 +409,32 @@ export const codecBoundaryCases = [
     },
   },
   {
+    name: "refuses generation reentered from its entropy callback",
+    run() {
+      let nested: unknown;
+      let reenter = true;
+      const generator = createUuidV7Generator({
+        clock: () => 10,
+        fillRandom(bytes) {
+          bytes.fill(0);
+          if (!reenter) return;
+          reenter = false;
+          nested = generator.uuidV7Bytes();
+        },
+      });
+
+      const first = generator.uuidV7Bytes();
+      assert.ok(!(first instanceof Error));
+      assert.ok(isUuidSlugError(nested));
+      assert.equal(nested.code, "rng_unavailable");
+      assert.equal(
+        nested.message,
+        "UUIDv7 generation cannot be reentered from its clock or entropy callback.",
+      );
+      assert.notDeepEqual(generator.uuidV7Bytes(), first);
+    },
+  },
+  {
     name: "generates a registered sentinel in its raw spelling",
     run() {
       const generator = createUuidV7Generator({

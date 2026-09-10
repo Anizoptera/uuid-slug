@@ -65,6 +65,12 @@ const rejectInstant = (ms: number): undefined | UuidSlugError =>
 const formatUuidV7 = (result: Uint8Array | UuidSlugError): UuidV7String | UuidSlugError =>
   result instanceof Error ? result : (formatUuid(result) as UuidV7String | UuidSlugError);
 
+const reenteredGeneration = () =>
+  new UuidSlugError(
+    "rng_unavailable",
+    "UUIDv7 generation cannot be reentered from its clock or entropy callback.",
+  );
+
 /** Keep both failed implementations inspectable when graceful fallback also fails. */
 function failedFallback(nativeCause: unknown, fallback: UuidSlugError): UuidSlugError {
   return new UuidSlugError(fallback.code, fallback.message, {
@@ -110,6 +116,7 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
   let lastMs = -1;
   let counterHi = 0;
   let counterLo = 0;
+  let generating = false;
 
   function reseed(ms: number) {
     const failed = fillRandomBytes(fill, random);
@@ -134,71 +141,83 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
   }
 
   function bytes(out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
-    const target = out ?? new Uint8Array(16);
-    const badRange =
-      out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
-    if (badRange) return badRange;
-    // Truncated THEN validated, in that order and not the other. A clock is allowed to be
-    // fractional — `performance.timeOrigin + performance.now()` is, and is a perfectly good one —
-    // so rejecting non-integers here would refuse a legitimate caller, unlike `rejectInstant`,
-    // where the fraction is in an argument the caller wrote out. What must not survive is a
-    // truncated value the format cannot carry: `writeTimestamp` keeps the low 48 bits of whatever
-    // it is handed, so NaN and 2**48 both silently produced the 1970 prefix and a negative
-    // millisecond produced the year 10889 by two's-complement wrap. All three now report.
-    // The raw reading is kept for the message rather than calling `clock()` again: a second call
-    // is a second reading, and the message would name a value other than the one refused.
-    const reading = readClock(clock);
-    if (reading instanceof Error) return reading;
-    const now = typeof reading === "number" ? Math.trunc(reading) : NaN;
-    if (typeof reading !== "number" || reading < 0 || !isValidUuidV7Timestamp(now))
-      return new UuidSlugError(
-        "invalid_timestamp",
-        `Clock returned ${String(reading)}, which is not a millisecond in 0..${MAX_TIMESTAMP}.`,
-      );
-    if (now > lastMs) {
-      const failed = reseed(now);
-      if (failed) return failed;
-    } else {
-      const nextLo = (counterLo + 1) >>> 0;
-      const nextHi = counterHi + (nextLo === 0 ? 1 : 0);
-      // Past 42 bits the sequence no longer fits `rand_a` plus the borrowed `rand_b` bits.
-      // Borrowing the next millisecond keeps ids ordered and unique rather than wrapping into
-      // values this millisecond has already issued.
-      if (nextHi > 0x3ff) {
-        // At the ceiling there is no next millisecond to borrow: `writeTimestamp` truncates to
-        // six bytes, so `lastMs + 1` wraps to 0 and the generator restarts in 1970 — ordering
-        // broken permanently, and silently, from that call onward. Unreachable on a real clock
-        // until the year 10889; reachable now from any clock that lands near the ceiling, which
-        // is why refusing is not theoretical.
-        if (lastMs >= MAX_TIMESTAMP)
-          return new UuidSlugError(
-            "invalid_timestamp",
-            `Sequence exhausted at the last representable millisecond (${MAX_TIMESTAMP}).`,
-          );
-        const failed = reseed(lastMs + 1);
+    if (generating) return reenteredGeneration();
+    generating = true;
+    try {
+      const target = out ?? new Uint8Array(16);
+      const badRange =
+        out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
+      if (badRange) return badRange;
+      // Truncated THEN validated, in that order and not the other. A clock is allowed to be
+      // fractional — `performance.timeOrigin + performance.now()` is, and is a perfectly good one —
+      // so rejecting non-integers here would refuse a legitimate caller, unlike `rejectInstant`,
+      // where the fraction is in an argument the caller wrote out. What must not survive is a
+      // truncated value the format cannot carry: `writeTimestamp` keeps the low 48 bits of whatever
+      // it is handed, so NaN and 2**48 both silently produced the 1970 prefix and a negative
+      // millisecond produced the year 10889 by two's-complement wrap. All three now report.
+      // The raw reading is kept for the message rather than calling `clock()` again: a second call
+      // is a second reading, and the message would name a value other than the one refused.
+      const reading = readClock(clock);
+      if (reading instanceof Error) return reading;
+      const now = typeof reading === "number" ? Math.trunc(reading) : NaN;
+      if (typeof reading !== "number" || reading < 0 || !isValidUuidV7Timestamp(now))
+        return new UuidSlugError(
+          "invalid_timestamp",
+          `Clock returned ${String(reading)}, which is not a millisecond in 0..${MAX_TIMESTAMP}.`,
+        );
+      if (now > lastMs) {
+        const failed = reseed(now);
         if (failed) return failed;
       } else {
-        const failed = fillRandomBytes(fill, random);
-        if (failed) return failed;
-        // Commit only after entropy succeeds; a failed draw must not consume sequence state.
-        counterLo = nextLo;
-        counterHi = nextHi;
+        const nextLo = (counterLo + 1) >>> 0;
+        const nextHi = counterHi + (nextLo === 0 ? 1 : 0);
+        // Past 42 bits the sequence no longer fits `rand_a` plus the borrowed `rand_b` bits.
+        // Borrowing the next millisecond keeps ids ordered and unique rather than wrapping into
+        // values this millisecond has already issued.
+        if (nextHi > 0x3ff) {
+          // At the ceiling there is no next millisecond to borrow: `writeTimestamp` truncates to
+          // six bytes, so `lastMs + 1` wraps to 0 and the generator restarts in 1970 — ordering
+          // broken permanently, and silently, from that call onward. Unreachable on a real clock
+          // until the year 10889; reachable now from any clock that lands near the ceiling, which
+          // is why refusing is not theoretical.
+          if (lastMs >= MAX_TIMESTAMP)
+            return new UuidSlugError(
+              "invalid_timestamp",
+              `Sequence exhausted at the last representable millisecond (${MAX_TIMESTAMP}).`,
+            );
+          const failed = reseed(lastMs + 1);
+          if (failed) return failed;
+        } else {
+          const failed = fillRandomBytes(fill, random);
+          if (failed) return failed;
+          // Commit only after entropy succeeds; a failed draw must not consume sequence state.
+          counterLo = nextLo;
+          counterHi = nextHi;
+        }
       }
+      return writeBytes(target, offset, lastMs, counterHi, counterLo);
+    } finally {
+      generating = false;
     }
-    return writeBytes(target, offset, lastMs, counterHi, counterLo);
   }
 
   function bytesAt(timestamp: number, out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
-    const target = out ?? new Uint8Array(16);
-    const badRange =
-      out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
-    if (badRange) return badRange;
-    const invalid = rejectInstant(timestamp);
-    if (invalid) return invalid;
-    const failed = fillRandomBytes(fill, random);
-    if (failed) return failed;
-    // A supplied instant takes a random sequence and leaves current-time state untouched.
-    return writeBytes(target, offset, timestamp, seedHi(random), seedLo(random));
+    if (generating) return reenteredGeneration();
+    generating = true;
+    try {
+      const target = out ?? new Uint8Array(16);
+      const badRange =
+        out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
+      if (badRange) return badRange;
+      const invalid = rejectInstant(timestamp);
+      if (invalid) return invalid;
+      const failed = fillRandomBytes(fill, random);
+      if (failed) return failed;
+      // A supplied instant takes a random sequence and leaves current-time state untouched.
+      return writeBytes(target, offset, timestamp, seedHi(random), seedLo(random));
+    } finally {
+      generating = false;
+    }
   }
 
   function uuidV7Bytes(): UuidV7Bytes | UuidSlugError;

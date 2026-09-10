@@ -242,7 +242,9 @@ Also exported, all module-level:
   A `generator:` codec option needs only its `uuidV7Bytes` method, so a bytes-only source also works.
   The full generator's options type is `UuidV7GeneratorOptions`. Construction throws `TypeError`
   when either configured callback is not a function; callback failures during generation return
-  `UuidSlugError` with the thrown value as `cause`.
+  `UuidSlugError` with the thrown value as `cause`. Do not call the same generator from either
+  callback: reentrant generation returns `rng_unavailable` so partially updated sequence state
+  cannot emit duplicate identifiers.
 - `UuidSlugError`, including code `rng_unavailable` when the runtime has no usable randomness.
   `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes package errors across
   JavaScript realms and duplicate package copies.
