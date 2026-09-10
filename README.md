@@ -181,7 +181,7 @@ you need to retain the narrowed type. A brand proves format, not issuance: check
   `AsyncMaskSchemaOptions`, and `CustomMaskSchemaOptions`,
   `UuidV7Sentinel` and `UuidV7SentinelDefinition`, `UuidV7BytesSource`,
   `UuidV7Generator` and `UuidV7GeneratorOptions`, `FreshValidationOptions`,
-  `UuidSlugErrorCode`.
+  `MigrationFormat`, `UuidSlugMigration`, `UuidSlugMigrationOptions`, and `UuidSlugErrorCode`.
 
 **Some masked slugs also pass direct-slug guards.** Canonical trailing bits, version, and variant
 can all match by chance. A guard answers "is this well formed", never "is this mine". Decode with
