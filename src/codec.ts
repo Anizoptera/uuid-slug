@@ -174,15 +174,21 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCode
     return formatUuid(decoded) as UuidV7String | UuidSlugError;
   }
 
+  function generateMaskedSlug(): PublicUuidV7Slug | UuidSlugError {
+    try {
+      const bytes = generator.uuidV7Bytes();
+      return isUuidSlugError(bytes) ? bytes : encodeMasked(bytes);
+    } catch (cause) {
+      return new UuidSlugError("rng_unavailable", "UUIDv7 byte generation failed.", { cause });
+    }
+  }
+
   const codec: UuidSlugCodec = {
     sentinels: sentinels.sentinels,
     migration(migrationOptions) {
       return createMigration([schema, ...previousMasks], sentinels.bySlug, migrationOptions);
     },
-    uuidV7MaskedSlug() {
-      const bytes = generator.uuidV7Bytes();
-      return isUuidSlugError(bytes) ? bytes : encodeMasked(bytes);
-    },
+    uuidV7MaskedSlug: generateMaskedSlug,
     uuidV7ToMaskedSlug,
     maskedSlugToUuidV7,
     /**

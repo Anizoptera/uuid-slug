@@ -6,6 +6,7 @@ import { checkRange, UuidSlugError } from "./errors";
 import type {
   UuidSlug,
   UuidBytes,
+  UuidV7Bytes,
   UuidString,
   UuidV4Slug,
   UuidV4String,
@@ -159,6 +160,13 @@ function stringHasRfcVariant(uuid: string): boolean {
   return (HEX_DECODE[uuid.charCodeAt(19)] as number) >>> 2 === 2;
 }
 
+function isUint8Array(value: unknown): value is Uint8Array {
+  return (
+    ArrayBuffer.isView(value) &&
+    (value instanceof Uint8Array || Object.prototype.toString.call(value) === "[object Uint8Array]")
+  );
+}
+
 export function isUuidV4String(uuid: unknown): uuid is UuidV4String {
   return isUuidString(uuid) && uuid[14] === "4" && stringHasRfcVariant(uuid);
 }
@@ -173,8 +181,10 @@ export function isUuidV7String(uuid: unknown): uuid is UuidV7String {
  * question. `isUuidV4Bytes` is absent because nothing needs it, not because it was overlooked —
  * add it when a caller appears, never for symmetry, since an export is permanent surface.
  */
-export function isUuidV7Bytes(bytes: Uint8Array): boolean {
-  return bytes.length === 16 && uuidVersion(bytes) === 7 && isRfcVariant(bytes);
+export function isUuidV7Bytes(bytes: unknown): bytes is UuidV7Bytes {
+  return (
+    isUint8Array(bytes) && bytes.length === 16 && uuidVersion(bytes) === 7 && isRfcVariant(bytes)
+  );
 }
 
 export function formatUuidSlug(

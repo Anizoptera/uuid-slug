@@ -58,7 +58,7 @@ export declare function isUuidSlugError(value: unknown): value is UuidSlugError;
 export declare function isUuidString(uuid: unknown): uuid is UuidString;
 export declare function isUuidV4Slug(slug: unknown): slug is UuidV4Slug;
 export declare function isUuidV4String(uuid: unknown): uuid is UuidV4String;
-export declare function isUuidV7Bytes(bytes: Uint8Array): boolean;
+export declare function isUuidV7Bytes(bytes: unknown): bytes is UuidV7Bytes;
 export declare function isUuidV7Slug(slug: unknown): slug is UuidV7Slug;
 export declare function isUuidV7String(uuid: unknown): uuid is UuidV7String;
 declare type MaskedUuidSlug = Brand<UuidSlug, "MaskedUuidSlug">;

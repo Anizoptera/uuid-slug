@@ -6,8 +6,10 @@ import {
   createUuidSlugCodec as createCodec,
   createUuidV7Generator,
   PUBLIC_MASK_SCHEMA,
+  isUuidSlugError,
   isUuidString,
   isUuidV4String,
+  isUuidV7Bytes,
   isUuidV7String,
   isUuidSlug,
   isUuidV4Slug,
@@ -151,6 +153,8 @@ export const codecBoundaryCases = [
   {
     name: "boolean guards reject noncanonical characters and preserve every version and variant",
     run() {
+      for (const value of [undefined, null, false, 0, "", {}, new DataView(new ArrayBuffer(16))])
+        assert.equal(isUuidV7Bytes(value), false);
       const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
       const hex = "0123456789abcdef";
       const separators = new Set([8, 13, 18, 23]);
@@ -318,6 +322,35 @@ export const codecBoundaryCases = [
       });
       const codec = createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA, generator });
       assert.equal(codec.uuidV7MaskedSlug(), "AAAAAAAAcACAAAAAAAAAAA");
+    },
+  },
+  {
+    name: "contains thrown and malformed injected generator results",
+    run() {
+      const cause = new Error("custom generator failed");
+      const throwing = createUuidSlugCodec({
+        mask: PUBLIC_MASK_SCHEMA,
+        generator: {
+          uuidV7Bytes() {
+            throw cause;
+          },
+        },
+      });
+      const thrown = throwing.uuidV7MaskedSlug();
+      assert.ok(isUuidSlugError(thrown));
+      assert.equal(thrown.code, "rng_unavailable");
+      assert.equal(thrown.cause, cause);
+
+      for (const value of [null, "not bytes", new Uint8Array(15)] as const) {
+        const malformed = createUuidSlugCodec({
+          mask: PUBLIC_MASK_SCHEMA,
+          generator: {
+            uuidV7Bytes: () => value as unknown as Uint8Array,
+          },
+        }).uuidV7MaskedSlug();
+        assert.ok(isUuidSlugError(malformed));
+        assert.equal(malformed.code, "invalid_uuid_version");
+      }
     },
   },
   {
