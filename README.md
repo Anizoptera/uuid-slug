@@ -193,11 +193,11 @@ The **Where** column tells you whether to import a function or call a codec meth
 
 | Method                                                  | Where             | Returns                       | What it does                             |
 | ------------------------------------------------------- | ----------------- | ----------------------------- | ---------------------------------------- |
-| `uuidV4()` / `uuidV7()`                                 | module only       | UUID string                   | Generate.                                |
+| `uuidV4()` / `uuidV7()`                                 | module only       | `UuidSlugError` or UUID string | Generate.                                |
 | `uuidV4Bytes(out?, offset?)` / `uuidV7Bytes(...)`       | module only       | `UuidSlugError \| Uint8Array` | Generate into a buffer you own.          |
 | `uuidV7At(ms)` / `uuidV7BytesAt(ms, out?, offset?)`     | module only       | `UuidSlugError \| ...`        | Generate at an instant you name.         |
-| `uuidV4Slug(alphabet?)` / `uuidV7Slug(alphabet?)`       | module only       | direct slug                   | Generate and encode in one step.         |
-| `uuidV7MaskedSlug()`                                    | codec only        | `PublicUuidV7Slug`             | Generate a masked or sentinel slug.       |
+| `uuidV4Slug(alphabet?)` / `uuidV7Slug(alphabet?)`       | module only       | `UuidSlugError` or direct slug | Generate and encode in one step.         |
+| `uuidV7MaskedSlug()`                                    | codec only        | `UuidSlugError` or `PublicUuidV7Slug` | Generate a masked or sentinel slug. |
 | `uuidV7ToMaskedSlug(uuid)` / `maskedSlugToUuidV7(slug)` | codec only        | `UuidSlugError \| ...`        | Masked slug, both ways; v7 only.         |
 | `validateMaskedSlugFresh(slug, opts?)`                  | codec only        | `UuidSlugError \| ...`        | Unmask, then check the freshness window. |
 | `sentinels`                                             | codec only        | array                         | The reserved values this codec knows.    |
