@@ -3,13 +3,13 @@
 import {
   checkByteRange,
   checkRange,
-  failedFallback,
   fillRandomBytes,
+  nativeOrFallback,
   readClock,
   UuidSlugError,
 } from "./errors";
 import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types";
-import { formatUuid } from "./uuid";
+import { formatUuid, isUuidV7Bytes, isUuidV7String } from "./uuid";
 import type { Runtime } from "./runtime/types";
 
 export interface UuidV7GeneratorOptions {
@@ -262,14 +262,13 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
   ) => Uint8Array | UuidSlugError;
   function uuidV7() {
     if (!runtime.uuidV7) return fallback.uuidV7();
-    try {
-      return runtime.uuidV7();
-    } catch (cause) {
-      const result = fallback.uuidV7();
-      return result instanceof Error
-        ? failedFallback(cause, result, "Native and portable UUIDv7 generation failed.")
-        : result;
-    }
+    return nativeOrFallback(
+      runtime.uuidV7,
+      isUuidV7String,
+      (value) => value,
+      fallback.uuidV7,
+      "UUIDv7 generation",
+    );
   }
 
   function uuidV7Bytes(): UuidV7Bytes | UuidSlugError;
@@ -281,17 +280,17 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
     const badRange =
       out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
     if (badRange) return badRange;
-    try {
-      const generated = runtime.uuidV7Bytes();
-      if (out === undefined) return ownNativeBytes(generated);
-      out.set(generated, offset);
-      return out;
-    } catch (cause) {
-      const result = fallbackUuidV7Bytes(out, offset);
-      return result instanceof Error
-        ? failedFallback(cause, result, "Native and portable UUIDv7 generation failed.")
-        : result;
-    }
+    return nativeOrFallback(
+      runtime.uuidV7Bytes,
+      isUuidV7Bytes,
+      (generated) => {
+        if (out === undefined) return ownNativeBytes(generated);
+        out.set(generated, offset);
+        return out;
+      },
+      () => fallbackUuidV7Bytes(out, offset),
+      "UUIDv7 generation",
+    );
   }
 
   function uuidV7At(timestamp: number) {
@@ -299,14 +298,13 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
     if (!runtime.uuidV7At) return fallback.uuidV7At(timestamp);
     const invalid = rejectInstant(timestamp);
     if (invalid) return invalid;
-    try {
-      return runtime.uuidV7At(timestamp);
-    } catch (cause) {
-      const result = fallback.uuidV7At(timestamp);
-      return result instanceof Error
-        ? failedFallback(cause, result, "Native and portable UUIDv7 generation failed.")
-        : result;
-    }
+    return nativeOrFallback(
+      () => runtime.uuidV7At?.(timestamp),
+      isUuidV7String,
+      (value) => value,
+      () => fallback.uuidV7At(timestamp),
+      "UUIDv7 generation",
+    );
   }
 
   function uuidV7BytesAt(timestamp: number): UuidV7Bytes | UuidSlugError;
@@ -326,17 +324,17 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
     const badRange =
       out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
     if (badRange) return badRange;
-    try {
-      const generated = runtime.uuidV7BytesAt(timestamp);
-      if (out === undefined) return ownNativeBytes(generated);
-      out.set(generated, offset);
-      return out;
-    } catch (cause) {
-      const result = fallbackUuidV7BytesAt(timestamp, out, offset);
-      return result instanceof Error
-        ? failedFallback(cause, result, "Native and portable UUIDv7 generation failed.")
-        : result;
-    }
+    return nativeOrFallback(
+      () => runtime.uuidV7BytesAt?.(timestamp),
+      isUuidV7Bytes,
+      (generated) => {
+        if (out === undefined) return ownNativeBytes(generated);
+        out.set(generated, offset);
+        return out;
+      },
+      () => fallbackUuidV7BytesAt(timestamp, out, offset),
+      "UUIDv7 generation",
+    );
   }
 
   return {

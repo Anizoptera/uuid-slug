@@ -3,7 +3,6 @@
 import { UuidSlugError } from "../errors";
 import { pooledFill } from "./pool";
 import type { Runtime } from "./types";
-import type { UuidV4String } from "../types";
 
 /**
  * Resolve Web Crypto per draw so instrumentation installed after import can observe the source.
@@ -44,6 +43,6 @@ const runtimeCapabilities: Runtime = {
  * secure context, the check describes every context.
  */
 if ((globalThis.crypto as Partial<Crypto> | undefined)?.randomUUID)
-  runtimeCapabilities.uuidV4 = () => cryptoObject().randomUUID() as UuidV4String;
+  runtimeCapabilities.uuidV4 = () => cryptoObject().randomUUID();
 
 export const runtime: Runtime = runtimeCapabilities;

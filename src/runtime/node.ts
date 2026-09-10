@@ -3,7 +3,6 @@
 import crypto from "node:crypto";
 import { pooledFill } from "./pool";
 import type { Runtime } from "./types";
-import type { UuidV4String, UuidV7String } from "../types";
 
 /**
  * Node grew `crypto.randomUUIDv7` in 26.6.0, so on every earlier release this is `undefined`
@@ -30,10 +29,10 @@ const nodeRuntime: Runtime = {
     crypto.randomFillSync(into);
   }),
   uuidV4() {
-    return crypto.randomUUID() as UuidV4String;
+    return crypto.randomUUID();
   },
 };
 
-if (nativeUuidV7) nodeRuntime.uuidV7 = () => nativeUuidV7.call(crypto) as UuidV7String;
+if (nativeUuidV7) nodeRuntime.uuidV7 = () => nativeUuidV7.call(crypto);
 
 export const runtime = nodeRuntime;

@@ -2,12 +2,11 @@
 
 import { runtime as webRuntime } from "./web";
 import type { Runtime } from "./types";
-import type { UuidV7String, UuidV7Slug } from "../types";
 
 /** Only untimestamped native generation satisfies this adapter's contract. */
 interface BunUuid {
-  (format: "hex"): UuidV7String;
-  (format: "base64url"): UuidV7Slug;
+  (format: "hex"): string;
+  (format: "base64url"): string;
   (format: "buffer"): Uint8Array;
 }
 

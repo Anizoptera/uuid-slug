@@ -5,8 +5,8 @@ import { runtime } from "#runtime";
 import {
   checkByteRange,
   checkRange,
-  failedFallback,
   fillRandomBytes,
+  nativeOrFallback,
   UuidSlugError,
 } from "./errors";
 import type {
@@ -18,7 +18,7 @@ import type {
   UuidV7Slug,
   UuidV7String,
 } from "./types";
-import { formatUuid, formatUuidSlug } from "./uuid";
+import { formatUuid, formatUuidSlug, isUuidV4String, isUuidV7Slug } from "./uuid";
 import type { SlugAlphabet } from "./uuid";
 import { createRuntimeGenerator } from "./v7";
 
@@ -55,16 +55,15 @@ function portableUuidV4(): UuidV4String | UuidSlugError {
 }
 
 export function uuidV4(): UuidV4String | UuidSlugError {
-  try {
-    const native = runtime.uuidV4?.();
-    if (native) return native;
-  } catch (cause) {
-    const fallback = portableUuidV4();
-    return fallback instanceof Error
-      ? failedFallback(cause, fallback, "Native and portable UUIDv4 generation failed.")
-      : fallback;
-  }
-  return portableUuidV4();
+  return runtime.uuidV4
+    ? nativeOrFallback(
+        runtime.uuidV4,
+        isUuidV4String,
+        (value) => value,
+        portableUuidV4,
+        "UUIDv4 generation",
+      )
+    : portableUuidV4();
 }
 
 /**
@@ -135,16 +134,14 @@ export function uuidV7Slug(alphabet: SlugAlphabet = "base64url"): UuidV7Slug | U
   //
   // Only base64url can use the native slug path; base32hex needs bytes for package encoding.
   const native = alphabet === "base64url" ? runtime.uuidV7Slug : undefined;
-  if (native) {
-    try {
-      return native();
-    } catch (cause) {
-      const fallback = portableUuidV7Slug(alphabet);
-      return fallback instanceof Error
-        ? failedFallback(cause, fallback, "Native and portable UUIDv7 slug generation failed.")
-        : fallback;
-    }
-  }
+  if (native)
+    return nativeOrFallback(
+      native,
+      isUuidV7Slug,
+      (value) => value,
+      () => portableUuidV7Slug(alphabet),
+      "UUIDv7 slug generation",
+    );
   return portableUuidV7Slug(alphabet);
 }
 

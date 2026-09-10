@@ -128,6 +128,28 @@ export function failedFallback(
   });
 }
 
+/** Publish a native result only after validating it, otherwise preserve portable fallback errors. */
+export function nativeOrFallback<Native, Result>(
+  native: () => unknown,
+  accepts: (value: unknown) => value is Native,
+  use: (value: Native) => Result,
+  fallback: () => Result | UuidSlugError,
+  operation: string,
+): Result | UuidSlugError {
+  let nativeCause: unknown;
+  try {
+    const value = native();
+    if (accepts(value)) return use(value);
+    nativeCause = new TypeError(`Native ${operation} returned an invalid value.`);
+  } catch (cause) {
+    nativeCause = cause;
+  }
+  const result = fallback();
+  return result instanceof Error
+    ? failedFallback(nativeCause, result, `Native and portable ${operation} failed.`)
+    : result;
+}
+
 /** Read once so a failing clock keeps its original cause and successful clocks have one observation. */
 export function readClock(clock: () => number): number | UuidSlugError {
   try {

@@ -12,6 +12,10 @@ import {
   extractUuidV7Timestamp,
   formatUuid,
   formatUuidSlug,
+  isUuidV4String,
+  isUuidV7Bytes,
+  isUuidV7Slug,
+  isUuidV7String,
   isUuidSlugError,
   parseUuid,
   parseUuidSlug,
@@ -54,6 +58,46 @@ export const runtimeBoundaryCases = [
         else delete runtime.uuidV4;
         if (originalV7Slug) runtime.uuidV7Slug = originalV7Slug;
         else delete runtime.uuidV7Slug;
+      }
+    },
+  },
+  {
+    name: "falls back when optional native generation returns malformed values",
+    run(this: void) {
+      const originalV4 = runtime.uuidV4;
+      const originalV7Slug = runtime.uuidV7Slug;
+      runtime.uuidV4 = () => "not-a-uuid";
+      runtime.uuidV7Slug = () => "not-a-slug";
+      try {
+        assert.equal(isUuidV4String(uuidV4()), true);
+        assert.equal(isUuidV7Slug(uuidV7Slug()), true);
+      } finally {
+        if (originalV4) runtime.uuidV4 = originalV4;
+        else delete runtime.uuidV4;
+        if (originalV7Slug) runtime.uuidV7Slug = originalV7Slug;
+        else delete runtime.uuidV7Slug;
+      }
+
+      const generator = createRuntimeGenerator({
+        fillRandom: (bytes) => bytes.fill(0x12),
+        uuidV7: () => "not-a-uuid",
+        uuidV7At: () => "not-a-uuid",
+        uuidV7Bytes: () => new Uint8Array(15),
+        uuidV7BytesAt: () => new Uint8Array(15),
+      });
+      assert.equal(isUuidV7String(generator.uuidV7()), true);
+      assert.equal(isUuidV7String(generator.uuidV7At(timestamp)), true);
+      assert.equal(isUuidV7Bytes(generator.uuidV7Bytes()), true);
+      assert.equal(isUuidV7Bytes(generator.uuidV7BytesAt(timestamp)), true);
+      for (const generate of [
+        (out: Uint8Array) => generator.uuidV7Bytes(out, 4),
+        (out: Uint8Array) => generator.uuidV7BytesAt(timestamp, out, 4),
+      ]) {
+        const out = new Uint8Array(24).fill(0x55);
+        assert.equal(generate(out), out);
+        assert.ok(out.subarray(0, 4).every((byte) => byte === 0x55));
+        assert.ok(isUuidV7Bytes(out.subarray(4, 20)));
+        assert.ok(out.subarray(20).every((byte) => byte === 0x55));
       }
     },
   },
