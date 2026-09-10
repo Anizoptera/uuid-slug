@@ -11,6 +11,7 @@ and add no work to callers that do not select it.
 
 - [ ] Add a public success-value helper through a failing consumer type and runtime case first.
 - [ ] Replace the repository's private duplicate with the public operation and document both error policies.
+- [ ] Remove the unmeasured identity shortcut from cross-realm error recognition without weakening local, foreign, or hostile-value behavior.
 - [ ] Keep known masked outputs out of direct-slug decoders and freshness checks at compile time while accepting raw external strings.
 - [ ] Verify current and floor declaration inference, Node and Bun behavior, packed consumption, API classification, and the complete repository gate.
 - [ ] Adversarially audit the changed interface and remove this section only when every promise has evidence.

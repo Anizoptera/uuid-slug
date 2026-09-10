@@ -40,8 +40,6 @@ export class UuidSlugError extends Error {
 export function isUuidSlugError(value: unknown): value is UuidSlugError {
   if (typeof value !== "object" || value === null) return false;
   try {
-    // instanceof can invoke a proxy's prototype trap, just like the property reads below.
-    if (value instanceof UuidSlugError) return ERROR_CODE_SET.has(Reflect.get(value, "code"));
     return (
       Object.prototype.toString.call(value) === "[object Error]" &&
       (Reflect.get(value, "name") === "UuidSlugError" ||
