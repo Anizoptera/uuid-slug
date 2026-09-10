@@ -10,6 +10,36 @@ Follow the package-import commands in [the benchmark guide](README.md#profiling)
 
 Build both revisions separately and select the baseline with `UUID_SLUG_PROFILE_MODULE` pointing to its absolute file URL: emitted `dist/node/index.js` on Node, `src/index.ts` on Bun. Keep the driver identical. A filter changes warm-up history, so an isolated measurement does not explain a mixed-workload result by itself.
 
+## Native development boundaries
+
+The development bridge matrix ran on the same Apple M4 Max through Node 22.23.2, Node 24.20.0,
+Node 26.8.2, Bun 1.4.2 and Deno 2.9.6. Node 26 supplied the experimental FFI boundary; Bun and
+Deno supplied both Node-API and FFI boundaries. Every lane passed the same 28,426 conformance
+observations before measurement.
+
+`bun bench/rust.ts` built the Rust benchmark and bridge once, then rotated five cold-start probes
+and three workload processes per lane. The table reports medians. Fixed dispatch evaluates an empty
+JSON request array; single and batch rows include JSON encoding, dispatch and decoding; direct plain
+calls cross the typed string boundary without JSON. Workload process totals include all warm-up and
+timed rounds. Peak RSS is a process high-water mark, not allocation volume.
+
+| Host boundary | Startup ms | Fixed ns/call | Single ns/id | Batch 64 ns/id | Direct ns/call | Workload CPU ms | Peak RSS MiB |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Node 22 Node-API | 28.54 | 148.66 | 618.53 | 351.78 | 138.78 | 156.98 | 51.25 |
+| Node 24 Node-API | 28.05 | 125.95 | 591.15 | 335.43 | 123.76 | 156.56 | 56.27 |
+| Node 26 Node-API | 30.42 | 133.67 | 602.77 | 339.88 | 125.69 | 162.02 | 64.88 |
+| Node 26 FFI | 29.53 | 495.39 | 960.44 | 342.86 | 463.57 | 397.32 | 66.75 |
+| Bun Node-API | 13.24 | 133.02 | 631.10 | 339.96 | 134.42 | 147.71 | 40.03 |
+| Bun FFI | 12.33 | 117.79 | 592.62 | 341.78 | 119.64 | 143.26 | 44.50 |
+| Deno Node-API | 23.43 | 131.95 | 604.49 | 342.86 | 134.55 | 156.81 | 54.88 |
+| Deno FFI | 24.77 | 398.70 | 894.67 | 353.29 | 398.08 | 384.70 | 57.58 |
+
+On this run, Node and Deno FFI added roughly 263–338 ns to the direct string call relative to their
+Node-API lanes, while Bun FFI and Node-API were close. Batch-64 rows converged within about 18 ns per
+identifier because shared Rust and JSON work dominated the per-call transport cost. These observations
+do not rank the adapters across other hardware, operating systems, host revisions, permissions or
+workloads, and they do not turn development bridges into npm distribution candidates.
+
 ## Measured calls
 
 | Call | Node before | Node after | Bun before | Bun after |

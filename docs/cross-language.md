@@ -160,5 +160,11 @@ Both rejected the tested padding aliases. Retain the shared encoder until a cons
 owning a second dependency while still keeping the first for base32.
 
 Share hash primitives without forcing continuation overhead onto synchronous calls; a Future alone
-does not yield to host tasks. Node/Bun native bridges serve development only, remain unpublished,
-and stay outside npm. They do not create a supported public ABI.
+does not yield to host tasks. Node, Bun and Deno native bridges serve development only, remain
+unpublished, and stay outside npm. They do not create a supported public ABI.
+
+Maintain native interop as one declarative research matrix that discovers supported installed Node,
+Bun and Deno hosts, then gives conformance and profiling the same lanes. Every lane must identify
+its actual Node-API or FFI transport and produce nonzero results from the common request corpus.
+Measurements describe that machine and revision; use them to improve each adapter and preserve the
+matrix unless the maintainer explicitly changes its research scope.
