@@ -36,6 +36,7 @@ export type {
   UuidV4Slug,
   UuidV4String,
   UuidV7Generator,
+  UuidV7BytesSource,
   UuidV7Sentinel,
   UuidV7SentinelDefinition,
   UuidV7Slug,

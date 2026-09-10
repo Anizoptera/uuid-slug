@@ -11,6 +11,7 @@ import type {
   PublicUuidV7Slug,
   UuidBytes,
   UuidSlugError,
+  UuidV7BytesSource,
   UuidV4Slug,
   UuidV7Slug,
   UuidString,
@@ -25,6 +26,15 @@ const storedBytes: UuidBytes = new Uint8Array(16);
 const codecResult = createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA });
 if (codecResult instanceof Error) throw codecResult;
 const codec = codecResult;
+const bytesOnlyGenerator: UuidV7BytesSource = {
+  uuidV7Bytes: () => new Uint8Array(16),
+};
+// @ts-expect-error A codec byte source does not promise caller-owned output storage.
+bytesOnlyGenerator.uuidV7Bytes(new Uint8Array(16));
+createUuidSlugCodec({
+  mask: PUBLIC_MASK_SCHEMA,
+  generator: bytesOnlyGenerator,
+});
 const migration: UuidSlugMigration = codec.migration({ original: true, plain: true });
 const migrated: UuidString | UuidSlugError = migration.decode("AAAAAAABcACAAAAAAAAAAA");
 const candidates: UuidString[] | UuidSlugError = migration.candidates(

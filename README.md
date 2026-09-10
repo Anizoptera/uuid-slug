@@ -177,8 +177,9 @@ assigning a string does not validate it. Use guards to check format and your sto
   the UUID range they write.
 - Shapes: `UuidSlugCodec` and `UuidSlugCodecOptions`, `MaskSchema`, `MaskSchemaOptions`,
   `AsyncMaskSchemaOptions`, and `CustomMaskSchemaOptions`,
-  `UuidV7Sentinel` and `UuidV7SentinelDefinition`, `UuidV7Generator` and
-  `UuidV7GeneratorOptions`, `FreshValidationOptions`, `UuidSlugErrorCode`.
+  `UuidV7Sentinel` and `UuidV7SentinelDefinition`, `UuidV7BytesSource`,
+  `UuidV7Generator` and `UuidV7GeneratorOptions`, `FreshValidationOptions`,
+  `UuidSlugErrorCode`.
 
 **Some masked slugs also pass direct-slug guards.** Canonical trailing bits, version, and variant
 can all match by chance. A guard answers "is this well formed", never "is this mine". Decode with
@@ -232,8 +233,9 @@ Also exported, all module-level:
   cancellation; `createCustomMaskSchema` adapts separate forward and reverse callbacks.
   `PUBLIC_MASK_SCHEMA` is the explicit, published-key choice for deterministic examples.
   `UUID_V7_SENTINEL_DEFINITIONS` is the default sentinel list.
-- `createUuidV7Generator(options)` builds a generator from your own `clock` and `fillRandom`, for
-  a `generator:` codec option. Its options type is `UuidV7GeneratorOptions`.
+- `createUuidV7Generator(options)` builds a full generator from your own `clock` and `fillRandom`.
+  A `generator:` codec option needs only its `uuidV7Bytes` method, so a bytes-only source also works.
+  The full generator's options type is `UuidV7GeneratorOptions`.
 - `UuidSlugError`, including code `rng_unavailable` when the runtime has no usable randomness.
   `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes package errors across
   JavaScript realms and duplicate package copies.
@@ -419,8 +421,8 @@ These are API contracts. Runtime measurements and their exercised conditions bel
 [`bench/README.md`](bench/README.md); a benchmark pass is not proof of every guarantee.
 See [security boundaries](docs/security.md) for entropy failures, custom sources and masking limits.
 
-- **Conformance.** Generated ids have RFC 9562 version and variant bits. A custom generator is
-  responsible for honoring its declared contract.
+- **Conformance.** Generated ids have RFC 9562 version and variant bits. A custom generator or
+  codec byte source is responsible for honoring its declared contract.
 - **Randomness.** Built-in portable generation draws from Web Crypto or `node:crypto`, never
   `Math.random`. Native generation delegates to the platform; a caller-supplied `fillRandom`
   controls its own entropy. Collisions are possible: enforce uniqueness in storage when required.

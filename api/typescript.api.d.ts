@@ -106,7 +106,7 @@ export declare interface UuidSlugCodec {
   ): S | UuidSlugError;
 }
 export declare interface UuidSlugCodecOptions {
-  readonly generator?: UuidV7Generator;
+  readonly generator?: UuidV7BytesSource;
   readonly previousMasks?: readonly (MaskSchema | MaskSchemaOptions)[];
   readonly mask: MaskSchema | MaskSchemaOptions;
   readonly sentinels?: readonly UuidV7SentinelDefinition[];
@@ -140,7 +140,10 @@ export declare const uuidV7BytesAt: (
   out?: Uint8Array,
   offset?: number,
 ) => Uint8Array | UuidSlugError;
-export declare interface UuidV7Generator {
+export declare interface UuidV7BytesSource {
+  uuidV7Bytes(this: void): Uint8Array | UuidSlugError;
+}
+export declare interface UuidV7Generator extends UuidV7BytesSource {
   uuidV7(this: void): UuidV7String | UuidSlugError;
   uuidV7Bytes(this: void, out?: Uint8Array, offset?: number): Uint8Array | UuidSlugError;
   uuidV7At(this: void, timestamp: number): UuidV7String | UuidSlugError;

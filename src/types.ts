@@ -30,7 +30,11 @@ export interface FreshValidationOptions {
   windowMs?: number;
 }
 
-export interface UuidV7Generator {
+export interface UuidV7BytesSource {
+  uuidV7Bytes(this: void): Uint8Array | UuidSlugError;
+}
+
+export interface UuidV7Generator extends UuidV7BytesSource {
   uuidV7(this: void): UuidV7String | UuidSlugError;
   uuidV7Bytes(this: void, out?: Uint8Array, offset?: number): Uint8Array | UuidSlugError;
   /**
@@ -122,7 +126,7 @@ export interface UuidSlugMigration {
 }
 
 export interface UuidSlugCodecOptions {
-  readonly generator?: UuidV7Generator;
+  readonly generator?: UuidV7BytesSource;
   /**
    * Schemas to try after `mask`, in the order given — how a seed is rotated. Takes a seed exactly
    * as `mask` does: a rotated seed is the ordinary reason this list exists, and requiring a
