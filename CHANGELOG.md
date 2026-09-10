@@ -19,8 +19,8 @@ notes: the section for a version is published verbatim when its tag is pushed.
 ### Added
 
 - `createCustomMaskSchema` adapts caller-defined reversible transforms into opaque TypeScript
-  schema handles. Rust callers select the deterministic published schema with
-  `public_mask_schema()`.
+  schema handles. Rust callers use separate forward and reverse callbacks with
+  `MaskSchema::custom`, or select the deterministic published schema with `public_mask_schema()`.
 - Classify TypeScript errors across realms and duplicate package copies with `isUuidSlugError`; Rust schema derivation now returns an opaque future so callers do not depend on scheduler state.
 - Publish TypeScript source for Bun and opt-in development tooling; other runtimes receive minified JavaScript with self-contained source maps.
 - Use the Rust `uuid-slug` crate for UUID generation, plain encoding, keyed masking, sentinels, key rotation, migration and freshness checks. Browser generation uses the optional `wasm-js` feature; pure conversion and masking can run without platform entropy.

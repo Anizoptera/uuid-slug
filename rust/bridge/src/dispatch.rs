@@ -29,23 +29,30 @@ fn number(value: &Value) -> f64 {
     }
 }
 
+fn custom_mix_forward(input: [u8; 16]) -> Result<[u8; 16], Error> {
+    let mut output = [0; 16];
+    for (index, byte) in output.iter_mut().enumerate() {
+        let target = (index * 5 + 3) % 16;
+        *byte = input[target] ^ (index * 17) as u8;
+    }
+    Ok(output)
+}
+
+fn custom_mix_reverse(input: [u8; 16]) -> Result<[u8; 16], Error> {
+    let mut output = [0; 16];
+    for (index, byte) in input.into_iter().enumerate() {
+        let target = (index * 5 + 3) % 16;
+        output[target] = byte ^ (index * 17) as u8;
+    }
+    Ok(output)
+}
+
 fn schema(value: &Value) -> Result<MaskSchema, Error> {
     if value.is_null() {
         return Ok(public_mask_schema());
     }
     if value == "custom-mix" {
-        return MaskSchema::custom("custom-mix", |input, forward| {
-            let mut output = [0; 16];
-            for index in 0..16 {
-                let target = (index * 5 + 3) % 16;
-                if forward {
-                    output[index] = input[target] ^ (index * 17) as u8;
-                } else {
-                    output[target] = input[index] ^ (index * 17) as u8;
-                }
-            }
-            Ok(output)
-        });
+        return MaskSchema::custom("custom-mix", custom_mix_forward, custom_mix_reverse);
     }
     let bytes = if let Some(units) = value["utf16"].as_array() {
         // JSON strings cannot preserve lone UTF-16 surrogates in serde_json; explicit units do.

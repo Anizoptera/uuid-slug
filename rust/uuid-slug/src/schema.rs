@@ -54,22 +54,36 @@ impl MaskSchema {
     /// The caller must supply an inverse for every block; finite probes cannot prove that property.
     pub fn custom(
         id: impl Into<String>,
-        mix: impl Fn([u8; 16], bool) -> Result<[u8; 16], Error> + Send + Sync + 'static,
+        forward: impl Fn([u8; 16]) -> Result<[u8; 16], Error> + Send + Sync + 'static,
+        reverse: impl Fn([u8; 16]) -> Result<[u8; 16], Error> + Send + Sync + 'static,
     ) -> Result<Self, Error> {
         let schema = Self {
             id: id.into(),
-            implementation: Implementation::Custom(Arc::new(mix)),
+            implementation: Implementation::Custom(Arc::new(move |input, direction| {
+                if direction {
+                    forward(input)
+                } else {
+                    reverse(input)
+                }
+            })),
         };
         for probe in [[0; 16], std::array::from_fn(|index| (index * 17) as u8)] {
-            if schema.mix(schema.mix(probe, true)?, false)? != probe {
+            if schema.mix_reverse(schema.mix_forward(probe)?)? != probe {
                 return Err(Error::new(ErrorCode::InvalidMaskSchema));
             }
         }
         Ok(schema)
     }
 
-    /// Transform one block; `forward = false` reverses the same keyed permutation.
-    pub fn mix(&self, input: [u8; 16], forward: bool) -> Result<[u8; 16], Error> {
+    pub(crate) fn mix_forward(&self, input: [u8; 16]) -> Result<[u8; 16], Error> {
+        self.mix(input, true)
+    }
+
+    pub(crate) fn mix_reverse(&self, input: [u8; 16]) -> Result<[u8; 16], Error> {
+        self.mix(input, false)
+    }
+
+    fn mix(&self, input: [u8; 16], forward: bool) -> Result<[u8; 16], Error> {
         match &self.implementation {
             Implementation::Feistel(keys) => Ok(feistel(input, keys, forward)),
             Implementation::Custom(mix) => mix(input, forward)
@@ -264,7 +278,7 @@ mod tests {
             let mut seed: Vec<u8> = (0..length).map(|index| index as u8).collect();
             let expected = create_mask_schema(&seed, iterations, "probe")
                 .unwrap()
-                .mix([19; 16], true)
+                .mix_forward([19; 16])
                 .unwrap();
             let mut future =
                 create_mask_schema_async(&seed, iterations, "probe", Cancellation::default());
@@ -275,7 +289,7 @@ mod tests {
                     break result.unwrap();
                 }
             };
-            assert_eq!(actual.mix([19; 16], true).unwrap(), expected);
+            assert_eq!(actual.mix_forward([19; 16]).unwrap(), expected);
         }
         let cancellation = Cancellation::default();
         let mut future = create_mask_schema_async(&[3; 32], 4096, "cancel", cancellation.clone());

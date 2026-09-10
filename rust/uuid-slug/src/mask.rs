@@ -31,7 +31,7 @@ pub(crate) fn mask_bytes(raw: &[u8; 16], schema: &MaskSchema) -> Result<([u8; 16
     tagged[6] = ((inner as u8 & 15) << 4) | (raw[6] & 15);
     tagged[8] = ((inner as u8 & 48) << 2) | (raw[8] & 63);
     tagged[0] = (((inner >> 6) as u8 & 63) << 2) | (raw[0] & 3);
-    Ok((schema.mix(tagged, true)?, (check & 15) as u8))
+    Ok((schema.mix_forward(tagged)?, (check & 15) as u8))
 }
 
 /// Parse text once before trying keys; canonical padding is checked in either alphabet.
@@ -53,7 +53,7 @@ pub(crate) fn candidate(
     outer: u8,
     schema: &MaskSchema,
 ) -> Result<Option<[u8; 16]>, Error> {
-    let mut raw = schema.mix(mixed, false)?;
+    let mut raw = schema.mix_reverse(mixed)?;
     let inner = (raw[6] >> 4) as u16 | ((raw[8] >> 6) as u16) << 4 | ((raw[0] >> 2) as u16) << 6;
     raw[6] = (raw[6] & 15) | 0x70;
     raw[8] = (raw[8] & 63) | 0x80;
@@ -70,18 +70,25 @@ mod tests {
         let fixture: serde_json::Value =
             serde_json::from_str(include_str!("../tests/fixtures/fixtures-wire-format.json"))
                 .unwrap();
-        let custom = MaskSchema::custom("custom-mix", |input, forward| {
-            let mut out = [0; 16];
-            for index in 0..16 {
-                let target = (index * 5 + 3) % 16;
-                if forward {
-                    out[index] = input[target] ^ (index * 17) as u8;
-                } else {
-                    out[target] = input[index] ^ (index * 17) as u8;
+        let custom = MaskSchema::custom(
+            "custom-mix",
+            |input| {
+                let mut out = [0; 16];
+                for (index, byte) in out.iter_mut().enumerate() {
+                    let target = (index * 5 + 3) % 16;
+                    *byte = input[target] ^ (index * 17) as u8;
                 }
-            }
-            Ok(out)
-        })
+                Ok(out)
+            },
+            |input| {
+                let mut out = [0; 16];
+                for (index, byte) in input.into_iter().enumerate() {
+                    let target = (index * 5 + 3) % 16;
+                    out[target] = byte ^ (index * 17) as u8;
+                }
+                Ok(out)
+            },
+        )
         .unwrap();
         let seeded = create_mask_schema(b"golden-vector-seed-v3", 1, "seeded-v2").unwrap();
         let default = crate::public_mask_schema();

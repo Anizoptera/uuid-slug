@@ -240,9 +240,8 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::schema::Cancellation
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::schema::Cancellation
 pub struct uuid_slug::schema::MaskSchema
 impl uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::custom(id: impl core::convert::Into<alloc::string::String>, mix: impl core::ops::function::Fn([u8; 16], bool) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
+pub fn uuid_slug::schema::MaskSchema::custom(id: impl core::convert::Into<alloc::string::String>, forward: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static, reverse: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
 pub fn uuid_slug::schema::MaskSchema::id(&self) -> &str
-pub fn uuid_slug::schema::MaskSchema::mix(&self, input: [u8; 16], forward: bool) -> core::result::Result<[u8; 16], uuid_slug::error::Error>
 impl core::clone::Clone for uuid_slug::schema::MaskSchema
 pub fn uuid_slug::schema::MaskSchema::clone(&self) -> uuid_slug::schema::MaskSchema
 impl core::fmt::Debug for uuid_slug::schema::MaskSchema
@@ -444,9 +443,8 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Freshness
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Freshness
 pub struct uuid_slug::MaskSchema
 impl uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::custom(id: impl core::convert::Into<alloc::string::String>, mix: impl core::ops::function::Fn([u8; 16], bool) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
+pub fn uuid_slug::schema::MaskSchema::custom(id: impl core::convert::Into<alloc::string::String>, forward: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static, reverse: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
 pub fn uuid_slug::schema::MaskSchema::id(&self) -> &str
-pub fn uuid_slug::schema::MaskSchema::mix(&self, input: [u8; 16], forward: bool) -> core::result::Result<[u8; 16], uuid_slug::error::Error>
 impl core::clone::Clone for uuid_slug::schema::MaskSchema
 pub fn uuid_slug::schema::MaskSchema::clone(&self) -> uuid_slug::schema::MaskSchema
 impl core::fmt::Debug for uuid_slug::schema::MaskSchema
@@ -782,9 +780,8 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::schema::Cancellation
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::schema::Cancellation
 pub struct uuid_slug::schema::MaskSchema
 impl uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::custom(id: impl core::convert::Into<alloc::string::String>, mix: impl core::ops::function::Fn([u8; 16], bool) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
+pub fn uuid_slug::schema::MaskSchema::custom(id: impl core::convert::Into<alloc::string::String>, forward: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static, reverse: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
 pub fn uuid_slug::schema::MaskSchema::id(&self) -> &str
-pub fn uuid_slug::schema::MaskSchema::mix(&self, input: [u8; 16], forward: bool) -> core::result::Result<[u8; 16], uuid_slug::error::Error>
 impl core::clone::Clone for uuid_slug::schema::MaskSchema
 pub fn uuid_slug::schema::MaskSchema::clone(&self) -> uuid_slug::schema::MaskSchema
 impl core::fmt::Debug for uuid_slug::schema::MaskSchema
@@ -986,9 +983,8 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Freshness
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Freshness
 pub struct uuid_slug::MaskSchema
 impl uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::custom(id: impl core::convert::Into<alloc::string::String>, mix: impl core::ops::function::Fn([u8; 16], bool) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
+pub fn uuid_slug::schema::MaskSchema::custom(id: impl core::convert::Into<alloc::string::String>, forward: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static, reverse: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
 pub fn uuid_slug::schema::MaskSchema::id(&self) -> &str
-pub fn uuid_slug::schema::MaskSchema::mix(&self, input: [u8; 16], forward: bool) -> core::result::Result<[u8; 16], uuid_slug::error::Error>
 impl core::clone::Clone for uuid_slug::schema::MaskSchema
 pub fn uuid_slug::schema::MaskSchema::clone(&self) -> uuid_slug::schema::MaskSchema
 impl core::fmt::Debug for uuid_slug::schema::MaskSchema

@@ -25,16 +25,15 @@ mod tests {
     fn ciphertext_cannot_alias_a_reserved_identity() -> Result<(), Error> {
         let uuid = Uuid::parse("019ff19b-58b8-7000-9b1b-df713bd55607")?;
         let reserved = Uuid::parse("00000000-0000-7000-8000-000000000000")?;
-        let identity = MaskSchema::custom("identity", |input, _| Ok(input))?;
+        let identity = MaskSchema::custom("identity", Ok, Ok)?;
         let (tagged, tail) = crate::mask::mask_bytes(uuid.as_bytes(), &identity)?;
         assert_eq!(
             tail, 0,
             "The collision must pass the earlier padding condition"
         );
         let delta: [u8; 16] = std::array::from_fn(|i| tagged[i] ^ reserved.as_bytes()[i]);
-        let collision = MaskSchema::custom("collision", move |input, _| {
-            Ok(std::array::from_fn(|i| input[i] ^ delta[i]))
-        })?;
+        let transform = move |input: [u8; 16]| Ok(std::array::from_fn(|i| input[i] ^ delta[i]));
+        let collision = MaskSchema::custom("collision", transform, transform)?;
         assert_eq!(
             crate::mask::mask_bytes(uuid.as_bytes(), &collision)?,
             (*reserved.as_bytes(), 0)
@@ -58,22 +57,21 @@ mod tests {
 
     #[test]
     fn callback_failure_respects_first_result_and_atomic_candidates() -> Result<(), Error> {
-        assert!(MaskSchema::custom("not-an-inverse", |_, _| Ok([1; 16])).is_err());
+        assert!(MaskSchema::custom("not-an-inverse", |_| Ok([1; 16]), |_| Ok([1; 16])).is_err());
         assert!(
-            MaskSchema::custom("failed", |_, _| {
-                Err(Error::new(ErrorCode::InvalidBuffer))
-            })
-            .is_err()
+            MaskSchema::custom("failed", |_| Err(Error::new(ErrorCode::InvalidBuffer)), Ok,)
+                .is_err()
         );
         let failing = Arc::new(AtomicBool::new(false));
         let flag = failing.clone();
-        let custom = MaskSchema::custom("fallible", move |input, _| {
+        let fallible = move |input| {
             if flag.load(Ordering::Relaxed) {
                 Err(Error::new(ErrorCode::InvalidBuffer))
             } else {
                 Ok(input)
             }
-        })?;
+        };
+        let custom = MaskSchema::custom("fallible", fallible.clone(), fallible)?;
         let uuid = Uuid::parse("01234567-89ab-7cde-8fab-0123456789ab")?;
         let good = crate::public_mask_schema();
         let writer = Codec::new(CodecOptions::new(crate::public_mask_schema()))?;
