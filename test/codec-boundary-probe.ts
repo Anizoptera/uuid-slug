@@ -82,6 +82,10 @@ export const codecBoundaryCases = [
         { mask: PUBLIC_MASK_SCHEMA, previousMasks: 1 },
         { mask: PUBLIC_MASK_SCHEMA, sentinels: 1 },
         { mask: PUBLIC_MASK_SCHEMA, sentinels: [null] },
+        { mask: PUBLIC_MASK_SCHEMA, generator: null },
+        { mask: PUBLIC_MASK_SCHEMA, generator: 1 },
+        { mask: PUBLIC_MASK_SCHEMA, generator: {} },
+        { mask: PUBLIC_MASK_SCHEMA, generator: { uuidV7Bytes: 1 } },
         {
           mask: PUBLIC_MASK_SCHEMA,
           sentinels: [{ name: 7, uuid: "00000000-0000-7000-8000-000000000000" }],

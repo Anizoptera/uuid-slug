@@ -16,6 +16,7 @@ import type {
   UuidSlugCodecOptions,
   UuidSlugMigration,
   UuidSlugMigrationOptions,
+  UuidV7BytesSource,
   UuidV7Slug,
   UuidV7Sentinel,
   UuidV7String,
@@ -147,7 +148,16 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
     if (previous instanceof UuidSlugError) return previous;
     previousMasks.push(previous);
   }
-  const generator = options.generator ?? createRuntimeGenerator(runtime);
+  const generatorOption: unknown = options.generator;
+  const generator =
+    generatorOption === undefined
+      ? createRuntimeGenerator(runtime)
+      : (generatorOption as UuidV7BytesSource);
+  if (typeof generator?.uuidV7Bytes !== "function")
+    return new UuidSlugError(
+      "invalid_mask_schema",
+      "generator must provide a uuidV7Bytes function.",
+    );
   const maskedSlugAlphabet = options.maskedSlugAlphabet ?? "base64url";
   const maskedSlugAlphabetError = resolveSlugAlphabet(maskedSlugAlphabet);
   if (maskedSlugAlphabetError instanceof Error) return maskedSlugAlphabetError;
