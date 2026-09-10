@@ -237,24 +237,20 @@ describe("masked UUID slugs", () => {
   });
 
   it("refuses a caller's schema that does not reverse its own mixing step", () => {
-    // A `mix` is the only extension point, and getting the inverse wrong is silent: encoding still
+    // A custom schema is the only extension point, and getting the inverse wrong is silent: encoding still
     // produces a slug, and every id issued under it is unreadable forever. So it must fail at
     // construction. Two distinct ways to get it wrong, because one probe cannot see both.
     const ignoresDirection = createCustomMaskSchema({
       id: "one-way",
-      forward: (input, output) => output.set(input.map((byte) => (byte + 1) & 0xff)),
-      reverse: (input, output) => output.set(input.map((byte) => (byte + 1) & 0xff)),
+      forward: (input) => input.map((byte) => (byte + 1) & 0xff),
+      reverse: (input) => input.map((byte) => (byte + 1) & 0xff),
     });
     // Reorders identically in both directions — the classic permutation-table mistake, and the
     // reason an all-zero probe alone is not enough: zeroes survive any reordering unchanged.
     const reordersBothWays = createCustomMaskSchema({
       id: "same-both-ways",
-      forward: (input, output) => {
-        for (let i = 0; i < 16; i += 1) output[i] = input[(i + 5) % 16] as number;
-      },
-      reverse: (input, output) => {
-        for (let i = 0; i < 16; i += 1) output[i] = input[(i + 5) % 16] as number;
-      },
+      forward: (input) => input.map((_, i) => input[(i + 5) % 16] as number),
+      reverse: (input) => input.map((_, i) => input[(i + 5) % 16] as number),
     });
     expect(ignoresDirection).toMatchObject({ code: "invalid_mask_schema" });
     expect(reordersBothWays).toMatchObject({ code: "invalid_mask_schema" });

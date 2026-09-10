@@ -331,11 +331,11 @@ export const runtimeBoundaryCases = [
       const mask = unwrap(
         createCustomMaskSchema({
           id: "collision",
-          forward(input, output) {
-            for (let i = 0; i < 16; i += 1) output[i] = (input[i] as number) ^ (xor[i] as number);
+          forward(input) {
+            return input.map((byte, i) => byte ^ (xor[i] as number));
           },
-          reverse(input, output) {
-            for (let i = 0; i < 16; i += 1) output[i] = (input[i] as number) ^ (xor[i] as number);
+          reverse(input) {
+            return input.map((byte, i) => byte ^ (xor[i] as number));
           },
         }),
       );

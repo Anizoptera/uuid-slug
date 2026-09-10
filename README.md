@@ -256,20 +256,24 @@ sentinels use 26-character raw base32hex slugs; old 22-character sentinels remai
 
 To supply a different mixing implementation, call
 `createCustomMaskSchema({ id, forward, reverse })`. Each callback receives distinct 16-byte input
-and output arrays and must write the complete output; `reverse` must invert `forward` for every
-input. The factory isolates input mutation, captures the callbacks in an opaque frozen handle, and
-rejects throwing, partial-write, destination-dependent, and failed round-trip probes. Finite probes
-cannot prove invertibility, so the caller remains responsible for the complete domain and must not
-retain callback buffers.
+bytes and returns either a 16-byte result or `UuidSlugError`; `reverse` must invert `forward` for
+every input. A callback may mutate and return its isolated input. The factory copies callback results
+into package storage, captures the callbacks in an opaque frozen handle, and rejects invalid results
+and failed round-trip probes. Unexpected throws become errors with the thrown value as their cause.
+Finite probes cannot prove invertibility, so the caller remains responsible for the complete domain.
 
 ```ts
 const custom = createCustomMaskSchema({
   id: "existing-scheme",
-  forward(input, output) {
+  forward(input) {
+    const output = new Uint8Array(16);
     oldSchema.mix(input, output, true);
+    return output;
   },
-  reverse(input, output) {
+  reverse(input) {
+    const output = new Uint8Array(16);
     oldSchema.mix(input, output, false);
+    return output;
   },
 });
 if (custom instanceof Error) throw custom;

@@ -35,17 +35,21 @@ permute.forEach((target, i) => (inverse[target] = i));
 const customMix = unwrap(
   createCustomMaskSchema({
     id: "custom-mix",
-    forward(input, output) {
+    forward(input) {
+      const output = new Uint8Array(16);
       for (let i = 0; i < 16; i += 1) {
         const source = permute[i] as number;
         output[i] = (input[source] as number) ^ (xor[i] as number);
       }
+      return output;
     },
-    reverse(input, output) {
+    reverse(input) {
+      const output = new Uint8Array(16);
       for (let i = 0; i < 16; i += 1) {
         const source = inverse[i] as number;
         output[i] = (input[source] as number) ^ (xor[source] as number);
       }
+      return output;
     },
   }),
 );

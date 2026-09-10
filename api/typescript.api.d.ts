@@ -22,8 +22,8 @@ export declare function createUuidSlugCodec(
 export declare function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator;
 export declare interface CustomMaskSchemaOptions {
   readonly id: string;
-  readonly forward: (input: Uint8Array, output: Uint8Array) => void;
-  readonly reverse: (input: Uint8Array, output: Uint8Array) => void;
+  readonly forward: (input: Uint8Array) => Uint8Array | UuidSlugError;
+  readonly reverse: (input: Uint8Array) => Uint8Array | UuidSlugError;
 }
 declare const ERROR_CODES: readonly [
   "aborted",

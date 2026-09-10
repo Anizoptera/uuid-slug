@@ -11,6 +11,12 @@ import { formatUuid, parseUuidSlug, uuidToSlug } from "../src/uuid";
 import fixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
 import { unwrap } from "../dev/unwrap";
 import { uuidTailAliases } from "./uuid-tail-aliases";
+import type { MaskSchema } from "../src/types";
+
+function mix(schema: MaskSchema, input: Uint8Array, forward: boolean) {
+  const output = new Uint8Array(16);
+  return applyMaskSchema(schema, input, output, forward) ?? output;
+}
 
 export const legacyMaskCases = [
   {
@@ -25,15 +31,19 @@ export const legacyMaskCases = [
         return unwrap(
           createCustomMaskSchema({
             id: schema.id,
-            forward(input, output) {
+            forward(input) {
               if (enabled) retained?.fill(0);
-              applyMaskSchema(schema, input, output, true);
+              const output = mix(schema, input, true);
+              if (output instanceof Error) return output;
               if (enabled) retained = output;
+              return output;
             },
-            reverse(input, output) {
+            reverse(input) {
               if (enabled) retained?.fill(0);
-              applyMaskSchema(schema, input, output, false);
+              const output = mix(schema, input, false);
+              if (output instanceof Error) return output;
               if (enabled) retained = output;
+              return output;
             },
           }),
         );
@@ -53,12 +63,12 @@ export const legacyMaskCases = [
       const identityMask = unwrap(
         createCustomMaskSchema({
           id: "identity",
-          forward(input, output) {
-            output.set(input);
+          forward(input) {
             tagged = input.slice();
+            return input;
           },
-          reverse(input, output) {
-            output.set(input);
+          reverse(input) {
+            return input;
           },
         }),
       );
@@ -72,11 +82,11 @@ export const legacyMaskCases = [
       const aliasMask = unwrap(
         createCustomMaskSchema({
           id: "sentinel-alias",
-          forward(input, output) {
-            for (let i = 0; i < 16; i++) output[i] = (input[i] as number) ^ (key[i] as number);
+          forward(input) {
+            return input.map((byte, i) => byte ^ (key[i] as number));
           },
-          reverse(input, output) {
-            for (let i = 0; i < 16; i++) output[i] = (input[i] as number) ^ (key[i] as number);
+          reverse(input) {
+            return input.map((byte, i) => byte ^ (key[i] as number));
           },
         }),
       );
@@ -176,13 +186,13 @@ export const legacyMaskCases = [
       const failingSchema = unwrap(
         createCustomMaskSchema({
           id: "failing-current",
-          forward(input, output) {
+          forward(input) {
             if (fail) throw cause;
-            applyMaskSchema(schema, input, output, true);
+            return mix(schema, input, true);
           },
-          reverse(input, output) {
+          reverse(input) {
             if (fail) throw cause;
-            applyMaskSchema(schema, input, output, false);
+            return mix(schema, input, false);
           },
         }),
       );
@@ -215,13 +225,11 @@ export const legacyMaskCases = [
         unwrap(
           createCustomMaskSchema({
             id: schema.id,
-            forward(input, output) {
-              applyMaskSchema(schema, input, output, true);
-              input.fill(0);
+            forward(input) {
+              return mix(schema, input, true);
             },
-            reverse(input, output) {
-              applyMaskSchema(schema, input, output, false);
-              input.fill(0);
+            reverse(input) {
+              return mix(schema, input, false);
             },
           }),
         ),
@@ -235,13 +243,13 @@ export const legacyMaskCases = [
       const unavailable = unwrap(
         createCustomMaskSchema({
           id: "unavailable",
-          forward(input, output) {
+          forward(input) {
             if (fail) throw cause;
-            output.set(input);
+            return input;
           },
-          reverse(input, output) {
+          reverse(input) {
             if (fail) throw cause;
-            output.set(input);
+            return input;
           },
         }),
       );

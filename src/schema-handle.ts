@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { UuidSlugError } from "./errors";
+import { isUuidSlugError, UuidSlugError } from "./errors";
 import type { CustomMaskSchemaOptions, MaskSchema } from "./types";
 
 const MASK_SCHEMA_PROTOCOL = Symbol.for("@anizoptera/uuid-slug/mask-schema/1");
 
 interface MaskSchemaProtocol {
   readonly version: 1;
-  readonly mix: (input: Uint8Array, output: Uint8Array, forward: boolean) => void;
+  readonly mix: (
+    input: Uint8Array,
+    output: Uint8Array,
+    forward: boolean,
+  ) => undefined | UuidSlugError;
 }
 
 type MaskSchemaHandle = MaskSchema & { readonly [MASK_SCHEMA_PROTOCOL]: MaskSchemaProtocol };
@@ -39,26 +43,30 @@ export function applyMaskSchema(
   input: Uint8Array,
   output: Uint8Array,
   forward: boolean,
-): void {
+): undefined | UuidSlugError {
   const protocol = schemaProtocol(schema);
   if (!protocol) throw new TypeError("Mask schema handle is invalid or incompatible.");
-  protocol.mix(input, output, forward);
+  return protocol.mix(input, output, forward);
 }
 
 function runCustom(
   transform: CustomMaskSchemaOptions["forward"],
   input: Uint8Array,
-  fill: number,
-): Uint8Array {
-  const output = new Uint8Array(16).fill(fill);
-  transform(input.slice(), output);
+): Uint8Array | UuidSlugError {
+  const output = transform(input.slice());
+  if (isUuidSlugError(output)) return output;
+  if (!(output instanceof Uint8Array) || output.length !== 16)
+    return new UuidSlugError(
+      "invalid_mask_schema",
+      "A custom mask transform must return exactly 16 bytes.",
+    );
   return output;
 }
 
 /**
- * Build an opaque handle for an arbitrary reversible 16-byte transform. Construction catches
- * common partial-write and inversion defects; callers still own invertibility over all inputs.
- * Every invocation receives distinct arrays, and the package retains neither callback buffer.
+ * Build an opaque handle for an arbitrary reversible 16-byte transform. Construction checks
+ * result size and representative inversions; callers still own invertibility over all inputs.
+ * Every invocation receives a distinct array, and callback results are copied into package storage.
  */
 export function createCustomMaskSchema(
   options: CustomMaskSchemaOptions,
@@ -74,27 +82,28 @@ export function createCustomMaskSchema(
       new Uint8Array(16),
       Uint8Array.from({ length: 16 }, (_, index) => index * 17),
     ]) {
-      const mixed = runCustom(forward, probe, 0x5a);
-      const repeated = runCustom(forward, probe, 0xa5);
-      if (mixed.some((byte, index) => byte !== repeated[index]))
-        return new UuidSlugError(
-          "invalid_mask_schema",
-          `Mask schema "${id}" does not write its complete output.`,
-        );
-      const restored = runCustom(reverse, mixed, 0x5a);
-      const restoredAgain = runCustom(reverse, mixed, 0xa5);
-      if (
-        restored.some((byte, index) => byte !== restoredAgain[index]) ||
-        restored.some((byte, index) => byte !== probe[index])
-      )
+      const mixed = runCustom(forward, probe);
+      if (isUuidSlugError(mixed))
+        return new UuidSlugError("invalid_mask_schema", "Custom mask schema construction failed.", {
+          cause: mixed,
+        });
+      const restored = runCustom(reverse, mixed);
+      if (isUuidSlugError(restored))
+        return new UuidSlugError("invalid_mask_schema", "Custom mask schema construction failed.", {
+          cause: restored,
+        });
+      if (restored.some((byte, index) => byte !== probe[index]))
         return new UuidSlugError(
           "invalid_mask_schema",
           `Mask schema "${id}" does not reverse its own forward transform.`,
         );
     }
-    return createSchemaHandle(id, (input, output, forwardDirection) =>
-      (forwardDirection ? forward : reverse)(input, output),
-    );
+    return createSchemaHandle(id, (input, output, forwardDirection) => {
+      const mixed = runCustom(forwardDirection ? forward : reverse, input);
+      if (isUuidSlugError(mixed)) return mixed;
+      output.set(mixed);
+      return undefined;
+    });
   } catch (cause) {
     return new UuidSlugError("invalid_mask_schema", "Custom mask schema construction failed.", {
       cause,

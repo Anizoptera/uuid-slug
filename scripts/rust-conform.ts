@@ -14,17 +14,21 @@ type Outcome = { value: unknown } | { error: string };
 const custom = unwrap(
   ts.createCustomMaskSchema({
     id: "custom-mix",
-    forward(input, output) {
+    forward(input) {
+      const output = new Uint8Array(16);
       for (let index = 0; index < 16; index++) {
         const target = (index * 5 + 3) % 16;
         output[index] = (input[target] as number) ^ (index * 17);
       }
+      return output;
     },
-    reverse(input, output) {
+    reverse(input) {
+      const output = new Uint8Array(16);
       for (let index = 0; index < 16; index++) {
         const target = (index * 5 + 3) % 16;
         output[target] = (input[index] as number) ^ (index * 17);
       }
+      return output;
     },
   }),
 );

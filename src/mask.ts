@@ -16,8 +16,14 @@ function applyMix(
   forward: boolean,
 ): undefined | UuidSlugError {
   try {
-    applyMaskSchema(schema, input, output, forward);
-    return undefined;
+    const cause = applyMaskSchema(schema, input, output, forward);
+    return cause
+      ? new UuidSlugError(
+          "invalid_mask_schema",
+          `Mask schema "${schema.id}" failed ${forward ? "encoding" : "decoding"}.`,
+          { cause },
+        )
+      : undefined;
   } catch (cause) {
     return new UuidSlugError(
       "invalid_mask_schema",

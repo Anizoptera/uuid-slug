@@ -59,8 +59,9 @@ export interface MaskSchema {
 
 export interface CustomMaskSchemaOptions {
   readonly id: string;
-  readonly forward: (input: Uint8Array, output: Uint8Array) => void;
-  readonly reverse: (input: Uint8Array, output: Uint8Array) => void;
+  /** Return the transformed 16-byte block or a package error; the input is isolated for this call. */
+  readonly forward: (input: Uint8Array) => Uint8Array | UuidSlugError;
+  readonly reverse: (input: Uint8Array) => Uint8Array | UuidSlugError;
 }
 
 /**

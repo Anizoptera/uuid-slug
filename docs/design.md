@@ -85,10 +85,10 @@ not establish the security of this key schedule or four-round network. Masking i
 obfuscation feature, not an authenticated encryption interface.
 
 `createCustomMaskSchema` adapts separate forward and reverse callbacks to the same block layout.
-It supplies distinct arrays, permits input mutation, and checks complete writes and representative
-round trips once before returning an opaque handle. Finite probes cannot establish invertibility
-across the full domain; the caller remains responsible for that property and must not retain the
-callback arrays.
+It supplies an isolated input, requires a 16-byte result or package error, and checks representative
+round trips once before returning an opaque handle. Callbacks may mutate and return their input;
+the package copies results into owned storage. Finite probes cannot establish invertibility across
+the full domain, so the caller remains responsible for that property.
 
 ## Encoding and decoding
 

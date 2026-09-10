@@ -65,16 +65,12 @@ export const codecBoundaryCases = [
       let fail = false;
       const schema = createCustomMaskSchema({
         id: "xor",
-        forward(input, output) {
+        forward(input) {
           if (fail) throw cause;
-          for (let index = 0; index < 16; index += 1)
-            output[index] = (input[index] as number) ^ 0xa5;
-          input.fill(0);
+          return input.map((byte) => byte ^ 0xa5);
         },
-        reverse(input, output) {
-          for (let index = 0; index < 16; index += 1)
-            output[index] = (input[index] as number) ^ 0xa5;
-          input.fill(0);
+        reverse(input) {
+          return input.map((byte) => byte ^ 0xa5);
         },
       });
       assert.ok(!(schema instanceof Error));
@@ -221,12 +217,12 @@ export const codecBoundaryCases = [
       const schema = unwrap(
         createCustomMaskSchema({
           id: "retaining",
-          forward(input, output) {
-            output.set(input);
+          forward(input) {
+            return input;
           },
-          reverse(input, output) {
-            output.set(input);
-            decoded = output;
+          reverse(input) {
+            decoded = input;
+            return input;
           },
         }),
       );
@@ -253,13 +249,11 @@ export const codecBoundaryCases = [
       const previous = unwrap(
         createCustomMaskSchema({
           id: "xor-previous",
-          forward(input, output) {
-            for (let index = 0; index < 16; index += 1)
-              output[index] = (input[index] as number) ^ 0xa5;
+          forward(input) {
+            return input.map((byte) => byte ^ 0xa5);
           },
-          reverse(input, output) {
-            for (let index = 0; index < 16; index += 1)
-              output[index] = (input[index] as number) ^ 0xa5;
+          reverse(input) {
+            return input.map((byte) => byte ^ 0xa5);
           },
         }),
       );
@@ -268,15 +262,13 @@ export const codecBoundaryCases = [
       const mutating = unwrap(
         createCustomMaskSchema({
           id: "mutating-primary",
-          forward(input, output) {
+          forward(input) {
             if (fail) throw cause;
-            output.set(input);
-            input.fill(0);
+            return input;
           },
-          reverse(input, output) {
+          reverse(input) {
             if (fail) throw cause;
-            output.set(input);
-            input.fill(0);
+            return input;
           },
         }),
       );
@@ -297,11 +289,11 @@ export const codecBoundaryCases = [
       const mask = unwrap(
         createCustomMaskSchema({
           id: "sentinel-collision",
-          forward(input, output) {
-            for (let i = 0; i < 16; i += 1) output[i] = (input[i] as number) ^ (xor[i] as number);
+          forward(input) {
+            return input.map((byte, i) => byte ^ (xor[i] as number));
           },
-          reverse(input, output) {
-            for (let i = 0; i < 16; i += 1) output[i] = (input[i] as number) ^ (xor[i] as number);
+          reverse(input) {
+            return input.map((byte, i) => byte ^ (xor[i] as number));
           },
         }),
       );
@@ -329,39 +321,51 @@ export const codecBoundaryCases = [
     },
   },
   {
-    name: "rejects a schema that overwrites the invertibility witness",
+    name: "rejects malformed results and transforms that are not inverses",
     run() {
-      const error = createCustomMaskSchema({
+      const malformed = createCustomMaskSchema({
+        id: "short",
+        forward: () => new Uint8Array(15),
+        reverse: (input) => input,
+      });
+      const notInverse = createCustomMaskSchema({
         id: "destructive",
-        forward(input, output) {
-          input.fill(0);
-          output.fill(0);
+        forward(input) {
+          return input.fill(0);
         },
-        reverse(input, output) {
-          input.fill(0);
-          output.fill(0);
+        reverse(input) {
+          return input.fill(0);
         },
       });
-      assert.ok(error instanceof UuidSlugError);
-      assert.equal(error.code, "invalid_mask_schema");
+      for (const error of [malformed, notInverse]) {
+        assert.ok(error instanceof UuidSlugError);
+        assert.equal(error.code, "invalid_mask_schema");
+      }
     },
   },
   {
-    name: "preserves a throwing schema's cause",
+    name: "classifies returned and thrown construction failures with their causes",
     run() {
-      const cause = new Error("mix failed");
-      const error = createCustomMaskSchema({
-        id: "throwing",
-        forward() {
-          throw cause;
-        },
-        reverse(input, output) {
-          output.set(input);
-        },
-      });
-      assert.ok(error instanceof UuidSlugError);
-      assert.equal(error.code, "invalid_mask_schema");
-      assert.equal(error.cause, cause);
+      const returned = new UuidSlugError("rng_unavailable", "key service unavailable");
+      const thrown = new Error("mix failed");
+      for (const [cause, forward] of [
+        [returned, () => returned],
+        [
+          thrown,
+          () => {
+            throw thrown;
+          },
+        ],
+      ] as const) {
+        const error = createCustomMaskSchema({
+          id: "failed",
+          forward,
+          reverse: (input) => input,
+        });
+        assert.ok(error instanceof UuidSlugError);
+        assert.equal(error.code, "invalid_mask_schema");
+        assert.equal(error.cause, cause);
+      }
     },
   },
   {
@@ -384,8 +388,8 @@ export const codecBoundaryCases = [
 
       const mutable = {
         id: "stable-schema-reference",
-        forward: (input: Uint8Array, output: Uint8Array) => output.set(input),
-        reverse: (input: Uint8Array, output: Uint8Array) => output.set(input),
+        forward: (input: Uint8Array) => input,
+        reverse: (input: Uint8Array) => input,
       };
       const built = createCustomMaskSchema(mutable);
       assert.ok(!(built instanceof Error));
@@ -393,25 +397,23 @@ export const codecBoundaryCases = [
       const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
       const slug = stable.uuidV7ToMaskedSlug(uuid);
       assert.equal(typeof slug, "string");
-      mutable.reverse = (_input, output) => output.fill(0);
+      mutable.reverse = (input) => input.fill(0);
       assert.equal(stable.maskedSlugToUuidV7(slug as string), uuid);
     },
   },
   {
     name: "returns schema failures after construction with their original cause",
     run() {
-      const cause = new Error("schema unavailable");
+      const cause = new UuidSlugError("invalid_mask_schema", "schema unavailable");
       let fail = false;
       const schema = unwrap(
         createCustomMaskSchema({
           id: "changes",
-          forward(input, output) {
-            if (fail) throw cause;
-            output.set(input);
+          forward(input) {
+            return fail ? cause : input;
           },
-          reverse(input, output) {
-            if (fail) throw cause;
-            output.set(input);
+          reverse(input) {
+            return fail ? cause : input;
           },
         }),
       );
