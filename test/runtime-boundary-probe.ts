@@ -39,6 +39,23 @@ export const runtimeBoundaryCases = [
     },
   },
   {
+    name: "accepts cross-realm Uint8Array custom transform results",
+    run(this: void) {
+      const copy = vm.runInNewContext("(input) => new Uint8Array(input)") as (
+        input: Uint8Array,
+      ) => Uint8Array;
+      const schema = createCustomMaskSchema({
+        id: "cross-realm-output",
+        forward: copy,
+        reverse: copy,
+      });
+      assert.ok(!(schema instanceof Error));
+      const codec = unwrap(createUuidSlugCodec({ mask: schema }));
+      const slug = unwrap(codec.uuidV7ToMaskedSlug(uuid));
+      assert.equal(codec.maskedSlugToUuidV7(slug), uuid);
+    },
+  },
+  {
     name: "byte interfaces reject non-Uint8Array inputs and outputs",
     run(this: void) {
       const slug = "AR9x-wRQcSGISEhKEhISEg";

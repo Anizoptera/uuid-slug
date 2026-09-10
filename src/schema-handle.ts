@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { isUuidSlugError, UuidSlugError } from "./errors";
+import { isUint8Array, isUuidSlugError, UuidSlugError } from "./errors";
 import type { CustomMaskSchemaOptions, MaskSchema } from "./types";
 
 const MASK_SCHEMA_PROTOCOL = Symbol.for("@anizoptera/uuid-slug/mask-schema/1");
@@ -55,7 +55,7 @@ function runCustom(
 ): Uint8Array | UuidSlugError {
   const output = transform(input.slice());
   if (isUuidSlugError(output)) return output;
-  if (!(output instanceof Uint8Array) || output.length !== 16)
+  if (!isUint8Array(output) || output.length !== 16)
     return new UuidSlugError(
       "invalid_mask_schema",
       "A custom mask transform must return exactly 16 bytes.",
