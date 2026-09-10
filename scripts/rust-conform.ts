@@ -504,13 +504,9 @@ export function compare(requests: Request[], actual: unknown): void {
 
 if (import.meta.main) {
   const requests = await contractRequests();
-  const bridge = await loadRustBridge();
-  try {
-    compare(requests, JSON.parse(bridge.evaluate(JSON.stringify(requests))));
-    console.log(
-      `${typeof Bun === "undefined" ? "Node N-API" : "Bun FFI"}: ${requests.length} shared contract observations passed`,
-    );
-  } finally {
-    bridge.close();
-  }
+  const bridge = loadRustBridge();
+  compare(requests, JSON.parse(bridge.evaluate(JSON.stringify(requests))));
+  console.log(
+    `${typeof Bun === "undefined" ? "Node" : "Bun"} N-API: ${requests.length} shared contract observations passed`,
+  );
 }

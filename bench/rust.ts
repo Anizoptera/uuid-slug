@@ -55,7 +55,6 @@ await run([
   "bench/rust-bridge.ts",
   "--target=node",
   "--outfile=rust/target/bench-bridge.mjs",
-  "--external=bun:ffi",
 ]);
 console.log(
   JSON.stringify({
@@ -69,7 +68,7 @@ console.log(
 const lanes = [
   { name: "Rust", command: [artifacts[0].executable] },
   { name: "Node N-API", command: ["node", "rust/target/bench-bridge.mjs"] },
-  { name: "Bun FFI", command: ["bun", "bench/rust-bridge.ts"] },
+  { name: "Bun N-API", command: ["bun", "bench/rust-bridge.ts"] },
 ];
 // Separate fresh processes expose startup/RSS cost; rotated order reduces fixed-order drift.
 for (let repetition = 0; repetition < 3; repetition++) {

@@ -139,7 +139,6 @@ if (!fast)
     "scripts/rust-conform.ts",
     "--target=node",
     "--outfile=rust/target/conform.mjs",
-    "--external=bun:ffi",
   ]);
 for (const profile of fast ? [] : (["debug", "release"] as const)) {
   const profileArgs = profile === "release" ? ["--release"] : [];

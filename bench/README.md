@@ -46,7 +46,7 @@ The current-runtime CI lane also runs it with the newest Node and Bun.
 
 ## Profiling
 
-Run `bun bench/rust.ts` for optimized Rust calls and separate Node N-API/Bun FFI measurements.
+Run `bun bench/rust.ts` for optimized Rust calls and separate Node/Bun N-API measurements.
 It builds once, then rotates fresh processes and records all samples, CPU time, peak RSS and
 context switches. Bridge rows include JSON dispatch and transport; they are not core-only timings.
 Generation rows count real platform-source calls and requested bytes, not kernel syscalls or

@@ -45,14 +45,10 @@ Consumed pool bytes are erased. Rust draws into private generator buffers before
 the low-level `fill_os_random` function itself does not promise an unchanged buffer on failure.
 
 The Rust product crate forbids owned unsafe code; its dependencies still contain unsafe code.
-Development bridges are unpublished. Their C boundary requires valid caller pointers, copies
-outputs under a lock and releases owned handles once. Panic handling cannot contain invalid-pointer
-access, allocation aborts or WebAssembly traps. Do not expose the development bridge to callers
-who can supply arbitrary pointers.
-Run `cargo +nightly miri test --manifest-path rust/Cargo.toml -p uuid-slug-bridge --lib ffi::`
-after changing handle ownership or pointer copies. This exercises the Rust boundary with valid
-caller storage, short buffers and released handles; it does not validate the JavaScript FFI ABI
-or make arbitrary pointers safe. Keep the real Node/Bun transport checks alongside it.
+Development bridges are unpublished. Node and Bun load the same generated N-API boundary, while
+the browser loads the generated wasm-bindgen boundary. Panic handling cannot contain allocation
+aborts or WebAssembly traps. Keep real Node, Bun and browser transport checks alongside shared
+dispatcher tests.
 
 No secure-erasure guarantee is provided. Do not clone a live generator or buffered entropy state
 through process-memory snapshots and then issue identifiers independently from both copies.
