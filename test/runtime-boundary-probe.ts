@@ -61,6 +61,31 @@ export const runtimeBoundaryCases = [
     },
   },
   {
+    name: "falls back from native byte generation without replacing the caller's buffer",
+    run(this: void) {
+      const nativeCause = new Error("native generator failed");
+      const generator = createRuntimeGenerator({
+        fillRandom: (bytes) => bytes.fill(0x12),
+        uuidV7Bytes() {
+          throw nativeCause;
+        },
+        uuidV7BytesAt() {
+          throw nativeCause;
+        },
+      });
+      for (const generate of [
+        (out: Uint8Array) => generator.uuidV7Bytes(out, 4),
+        (out: Uint8Array) => generator.uuidV7BytesAt(timestamp, out, 4),
+      ]) {
+        const out = new Uint8Array(24).fill(0x55);
+        assert.equal(generate(out), out);
+        assert.ok(out.subarray(0, 4).every((byte) => byte === 0x55));
+        assert.ok(out.subarray(4, 20).some((byte) => byte !== 0x55));
+        assert.ok(out.subarray(20).every((byte) => byte === 0x55));
+      }
+    },
+  },
+  {
     name: "retains native and portable causes when both generators fail",
     run(this: void) {
       const nativeCause = new Error("native generator failed");
@@ -75,8 +100,19 @@ export const runtimeBoundaryCases = [
         uuidV7At() {
           throw nativeCause;
         },
+        uuidV7Bytes() {
+          throw nativeCause;
+        },
+        uuidV7BytesAt() {
+          throw nativeCause;
+        },
       });
-      for (const result of [generator.uuidV7(), generator.uuidV7At(timestamp)]) {
+      for (const result of [
+        generator.uuidV7(),
+        generator.uuidV7At(timestamp),
+        generator.uuidV7Bytes(),
+        generator.uuidV7BytesAt(timestamp),
+      ]) {
         assert.ok(result instanceof UuidSlugError);
         assert.ok(result.cause instanceof AggregateError);
         assert.equal(result.cause.errors[0], nativeCause);

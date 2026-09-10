@@ -238,9 +238,8 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
       try {
         return runtime.uuidV7Bytes(out, offset);
       } catch (cause) {
-        return new UuidSlugError("rng_unavailable", "Runtime UUIDv7 byte generation failed.", {
-          cause,
-        });
+        const result = fallback.uuidV7Bytes(out, offset);
+        return result instanceof Error ? failedFallback(cause, result) : result;
       }
     },
     // Validate before delegation because native generators may coerce invalid timestamps.
@@ -264,9 +263,8 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
       try {
         return runtime.uuidV7BytesAt(timestamp, out, offset);
       } catch (cause) {
-        return new UuidSlugError("rng_unavailable", "Runtime UUIDv7 byte generation failed.", {
-          cause,
-        });
+        const result = fallback.uuidV7BytesAt(timestamp, out, offset);
+        return result instanceof Error ? failedFallback(cause, result) : result;
       }
     },
   };
