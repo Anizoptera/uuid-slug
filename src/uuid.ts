@@ -2,7 +2,7 @@
 
 import { BASE32HEX, BASE64URL, decodeInto, encode, isEncoded } from "./alphabet";
 import type { Alphabet } from "./alphabet";
-import { checkRange, isUint8Array, UuidSlugError } from "./errors";
+import { checkByteRange, checkRange, isUint8Array, UuidSlugError } from "./errors";
 import type {
   UuidSlug,
   UuidBytes,
@@ -96,14 +96,14 @@ export function parseUuid<T extends Uint8Array>(
   offset?: number,
 ): T | UuidSlugError;
 export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
-  if (uuid.length !== UUID_LENGTH)
+  if (typeof uuid !== "string" || uuid.length !== UUID_LENGTH)
     return new UuidSlugError("invalid_uuid", "UUID must be 36 characters.");
   if (uuid[8] !== "-" || uuid[13] !== "-" || uuid[18] !== "-" || uuid[23] !== "-") {
     return new UuidSlugError("invalid_uuid", "UUID hyphen positions are invalid.");
   }
 
   const target = out ?? new Uint8Array(16);
-  const badRange = checkRange(target.length, offset, 16);
+  const badRange = out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
   if (badRange) return badRange;
 
   for (const textOffset of UUID_BYTE_OFFSETS) {
@@ -120,7 +120,7 @@ export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): Uint8Arra
 }
 
 export function formatUuid(bytes: Uint8Array, offset = 0): UuidString | UuidSlugError {
-  const badRange = checkRange(bytes.length, offset, 16);
+  const badRange = checkByteRange(bytes, offset, 16);
   if (badRange) return badRange;
   if (nativeToHex) {
     const hex = nativeToHex.call(bytes.length === 16 ? bytes : bytes.subarray(offset, offset + 16));
@@ -196,7 +196,7 @@ export function formatUuidSlug(
 ): UuidSlug | UuidSlugError {
   const alphabetIsSecond = typeof offsetOrAlphabet !== "number";
   const offset = alphabetIsSecond ? 0 : offsetOrAlphabet;
-  const badRange = checkRange(bytes.length, offset, 16);
+  const badRange = checkByteRange(bytes, offset, 16);
   if (badRange) return badRange;
   if (alphabetIsSecond && alphabet !== undefined)
     return new UuidSlugError(
@@ -227,6 +227,8 @@ export function parseUuidSlug(
   out?: Uint8Array,
   offset = 0,
 ): Uint8Array | UuidSlugError {
+  if (typeof slug !== "string")
+    return new UuidSlugError("invalid_uuid_slug", `UUID slug must be ${SLUG_LENGTHS} characters.`);
   const alpha = SLUG_ALPHABET_BY_LENGTH[slug.length];
   if (!alpha)
     return new UuidSlugError(
@@ -234,7 +236,7 @@ export function parseUuidSlug(
       `UUID slug must be ${SLUG_LENGTHS} characters, got ${slug.length}.`,
     );
   const target = out ?? new Uint8Array(16);
-  const badRange = checkRange(target.length, offset, 16);
+  const badRange = out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
   if (badRange) return badRange;
   if (out && !isEncoded(slug, alpha, 16)) {
     for (let i = 0; i < slug.length; i += 1) {
@@ -305,7 +307,7 @@ export function isUuidV7Slug(slug: unknown): slug is UuidV7Slug {
  * as zero and would otherwise blame a truncated buffer for holding a v0.
  */
 export function extractUuidV7Timestamp(bytes: Uint8Array, offset = 0): number | UuidSlugError {
-  const badRange = checkRange(bytes.length, offset, 16);
+  const badRange = checkByteRange(bytes, offset, 16);
   if (badRange) return badRange;
   if (uuidVersion(bytes, offset) !== 7 || !isRfcVariant(bytes, offset))
     return new UuidSlugError("invalid_uuid_version", "Timestamp is only defined for UUIDv7.");

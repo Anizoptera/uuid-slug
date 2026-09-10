@@ -51,7 +51,8 @@ export function isUuidSlugError(value: unknown): value is UuidSlugError {
 /** Accept Uint8Array values across realms without admitting other views or coercible inputs. */
 export function isUint8Array(value: unknown): value is Uint8Array {
   return (
-    ArrayBuffer.isView(value) && Object.prototype.toString.call(value) === "[object Uint8Array]"
+    ArrayBuffer.isView(value) &&
+    (value instanceof Uint8Array || Object.prototype.toString.call(value) === "[object Uint8Array]")
   );
 }
 
@@ -85,6 +86,17 @@ export function checkRange(
       `Buffer needs ${need} bytes at offset ${offset}, but holds ${capacity}.`,
     );
   return undefined;
+}
+
+/** Reject alien views and objects before range checks can mistake them for byte storage. */
+export function checkByteRange(
+  bytes: unknown,
+  offset: number,
+  need: number,
+): undefined | UuidSlugError {
+  if (!isUint8Array(bytes))
+    return new UuidSlugError("invalid_buffer", "Buffer must be a Uint8Array.");
+  return checkRange(bytes.length, offset, need);
 }
 
 /** Preserve failures from an injected or platform entropy source without changing successful draws. */

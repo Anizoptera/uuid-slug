@@ -2,7 +2,7 @@
 
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
-import { checkRange, fillRandomBytes, UuidSlugError } from "./errors";
+import { checkByteRange, checkRange, fillRandomBytes, UuidSlugError } from "./errors";
 import type {
   UuidV4Bytes,
   UuidV4Slug,
@@ -33,7 +33,7 @@ export function uuidV4Bytes(): UuidV4Bytes | UuidSlugError;
 export function uuidV4Bytes<T extends Uint8Array>(out: T, offset?: number): T | UuidSlugError;
 export function uuidV4Bytes(out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
   const target = out ?? new Uint8Array(16);
-  const badRange = checkRange(target.length, offset, 16);
+  const badRange = out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
   if (badRange) return badRange;
   const failed = fillRandomBytes(runtime.fillRandom, v4Random);
   if (failed) return failed;

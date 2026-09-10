@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { checkRange, fillRandomBytes, readClock, UuidSlugError } from "./errors";
+import { checkByteRange, checkRange, fillRandomBytes, readClock, UuidSlugError } from "./errors";
 import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types";
 import { formatUuid } from "./uuid";
 import type { Runtime } from "./runtime/types";
@@ -123,7 +123,8 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
     explicit = false,
   ): Uint8Array | UuidSlugError {
     const target = out ?? new Uint8Array(16);
-    const badRange = checkRange(target.length, offset, 16);
+    const badRange =
+      out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
     if (badRange) return badRange;
     // The two modes differ only in where the millisecond and the 42-bit sequence come from, so
     // they share one write path. A caller-supplied instant takes a RANDOM sequence rather than
@@ -264,7 +265,8 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
     // Guarded only on the branch that leaves this package: the fallback checks the same range
     // itself, so checking before the branch would pay for it twice on every Node call.
     if (!runtime.uuidV7Bytes) return fallbackUuidV7Bytes(out, offset);
-    const badRange = checkRange(out?.length ?? 16, offset, 16);
+    const badRange =
+      out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
     if (badRange) return badRange;
     try {
       return runtime.uuidV7Bytes(out, offset);
@@ -301,7 +303,8 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
     if (!runtime.uuidV7BytesAt) return fallbackUuidV7BytesAt(timestamp, out, offset);
     const invalid = rejectInstant(timestamp);
     if (invalid) return invalid;
-    const badRange = checkRange(out?.length ?? 16, offset, 16);
+    const badRange =
+      out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
     if (badRange) return badRange;
     try {
       return runtime.uuidV7BytesAt(timestamp, out, offset);

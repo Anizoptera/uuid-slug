@@ -8,11 +8,16 @@ import {
   createUuidSlugCodec,
   createCustomMaskSchema,
   createUuidV7Generator,
+  extractUuidV7Timestamp,
+  formatUuid,
+  formatUuidSlug,
   isUuidSlugError,
   parseUuid,
+  parseUuidSlug,
   slugToUuid,
   UuidSlugError,
   uuidToSlug,
+  uuidV4Bytes,
   validateUuidV7Fresh,
   uuidV7Bytes,
   uuidV7BytesAt,
@@ -26,6 +31,42 @@ const makeGenerator = () =>
   createUuidV7Generator({ clock: () => timestamp, fillRandom: (bytes) => bytes.fill(0x12) });
 
 export const runtimeBoundaryCases = [
+  {
+    name: "accepts cross-realm Uint8Array inputs",
+    run(this: void) {
+      const bytes = vm.runInNewContext("new Uint8Array(16)") as Uint8Array;
+      assert.equal(formatUuid(bytes), "00000000-0000-0000-0000-000000000000");
+    },
+  },
+  {
+    name: "byte interfaces reject non-Uint8Array inputs and outputs",
+    run(this: void) {
+      const slug = "AR9x-wRQcSGISEhKEhISEg";
+      const generator = makeGenerator();
+      const calls = [
+        (value: unknown) => Reflect.apply(formatUuid, undefined, [value]),
+        (value: unknown) => Reflect.apply(formatUuidSlug, undefined, [value]),
+        (value: unknown) => Reflect.apply(extractUuidV7Timestamp, undefined, [value]),
+        (value: unknown) => Reflect.apply(parseUuid, undefined, [uuid, value]),
+        (value: unknown) => Reflect.apply(parseUuidSlug, undefined, [slug, value]),
+        (value: unknown) => Reflect.apply(uuidV4Bytes, undefined, [value]),
+        (value: unknown) => Reflect.apply(generator.uuidV7Bytes, undefined, [value]),
+        (value: unknown) => Reflect.apply(generator.uuidV7BytesAt, undefined, [timestamp, value]),
+      ];
+      for (const value of [
+        Array.from({ length: 16 }, () => 0),
+        { length: 16 },
+        new DataView(new ArrayBuffer(16)),
+        new Uint16Array(16),
+      ]) {
+        for (const call of calls) {
+          const result = call(value);
+          assert.ok(isUuidSlugError(result));
+          assert.equal(result.code, "invalid_buffer");
+        }
+      }
+    },
+  },
   {
     name: "classifies only local errors with a published code",
     run(this: void) {
