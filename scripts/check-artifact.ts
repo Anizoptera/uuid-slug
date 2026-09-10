@@ -199,6 +199,7 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
         [path.join(project, "node_modules/typescript-floor/bin/tsc"), "-p", root],
         project,
       ),
+      command("node", [path.join(project, "node_modules/typescript/bin/tsc"), "-p", root], project),
       command("node", [runner], root),
       command("bun", [runner], root),
       command(
