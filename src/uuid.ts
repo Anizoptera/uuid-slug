@@ -2,7 +2,7 @@
 
 import { BASE32HEX, BASE64URL, decodeInto, encode, isEncoded } from "./alphabet";
 import type { Alphabet } from "./alphabet";
-import { checkRange, UuidSlugError } from "./errors";
+import { checkRange, isUint8Array, UuidSlugError } from "./errors";
 import type {
   UuidSlug,
   UuidBytes,
@@ -158,13 +158,6 @@ export function isUuidString(uuid: unknown): uuid is UuidString {
 /** The string has already passed canonical validation, so the variant digit is a known hex value. */
 function stringHasRfcVariant(uuid: string): boolean {
   return (HEX_DECODE[uuid.charCodeAt(19)] as number) >>> 2 === 2;
-}
-
-function isUint8Array(value: unknown): value is Uint8Array {
-  return (
-    ArrayBuffer.isView(value) &&
-    (value instanceof Uint8Array || Object.prototype.toString.call(value) === "[object Uint8Array]")
-  );
 }
 
 export function isUuidV4String(uuid: unknown): uuid is UuidV4String {

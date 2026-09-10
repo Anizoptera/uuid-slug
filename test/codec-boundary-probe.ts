@@ -3,6 +3,8 @@
 import { strict as assert } from "node:assert";
 import {
   createCustomMaskSchema,
+  createMaskSchema,
+  createMaskSchemaAsync,
   createUuidSlugCodec as createCodec,
   createUuidV7Generator,
   PUBLIC_MASK_SCHEMA,
@@ -35,6 +37,44 @@ function bits(text: string, alphabet: string, width: number) {
 }
 
 export const codecBoundaryCases = [
+  {
+    name: "schema factories reject untyped coercions before deriving keys",
+    async run() {
+      let readsAfterInvalidSeed = 0;
+      const options = [
+        undefined,
+        null,
+        {},
+        { seed: Array.from({ length: 16 }, () => 1) },
+        { seed: new ArrayBuffer(16) },
+        { seed: "valid-schema-seed", id: 7 },
+        { seed: "valid-schema-seed", id: null },
+        { seed: "valid-schema-seed", keyIterations: null },
+        {
+          seed: [],
+          get id() {
+            readsAfterInvalidSeed += 1;
+            return "unread";
+          },
+          get keyIterations() {
+            readsAfterInvalidSeed += 1;
+            return 1;
+          },
+        },
+      ];
+      const results = await Promise.all(
+        options.flatMap((value) => [
+          Promise.resolve(Reflect.apply(createMaskSchema, undefined, [value])),
+          Reflect.apply(createMaskSchemaAsync, undefined, [value]),
+        ]),
+      );
+      for (const result of results) {
+        assert.ok(result instanceof UuidSlugError);
+        assert.equal(result.code, "invalid_mask_schema");
+      }
+      assert.equal(readsAfterInvalidSeed, 0);
+    },
+  },
   {
     name: "requires an explicit mask before reading any other codec option",
     run() {

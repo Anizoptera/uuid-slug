@@ -48,6 +48,13 @@ export function isUuidSlugError(value: unknown): value is UuidSlugError {
   }
 }
 
+/** Accept Uint8Array values across realms without admitting other views or coercible inputs. */
+export function isUint8Array(value: unknown): value is Uint8Array {
+  return (
+    ArrayBuffer.isView(value) && Object.prototype.toString.call(value) === "[object Uint8Array]"
+  );
+}
+
 /**
  * The one range check for every entry point that reads or writes a caller's buffer at an offset.
  *

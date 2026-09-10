@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { UuidSlugError } from "./errors";
+import { isUint8Array, UuidSlugError } from "./errors";
 import { FEISTEL_KEY_WORDS, feistel16 } from "./feistel";
 import { createSchemaHandle } from "./schema-handle";
 import { halfSipHash } from "./siphash";
@@ -28,6 +28,32 @@ const CHAIN_KEY0 = 0x64697575;
 function seedBytes(seed: string | Uint8Array) {
   if (typeof seed !== "string") return new Uint8Array(seed);
   return new TextEncoder().encode(seed);
+}
+
+/** Reject coercible JavaScript values before they can allocate storage or become key material. */
+function validateOptions(options: unknown) {
+  if (typeof options !== "object" || options === null)
+    return new UuidSlugError(
+      "invalid_mask_schema",
+      "Mask schema options must contain a string or Uint8Array seed.",
+    );
+  const input = options as {
+    readonly id?: unknown;
+    readonly keyIterations?: unknown;
+    readonly seed?: unknown;
+  };
+  const seed = input.seed;
+  if (typeof seed !== "string" && !isUint8Array(seed))
+    return new UuidSlugError("invalid_mask_schema", "Mask seed must be a string or Uint8Array.");
+  const givenId = input.id;
+  const id = givenId === undefined ? "seeded" : givenId;
+  if (typeof id !== "string")
+    return new UuidSlugError("invalid_mask_schema", "Mask schema id must be a string.");
+  const givenIterations = input.keyIterations;
+  const keyIterations = givenIterations === undefined ? 1 : givenIterations;
+  const iterations = validatedIterations(keyIterations);
+  if (typeof iterations !== "number") return iterations;
+  return { id, iterations, seed };
 }
 
 /** Repack bytes as the little-endian 32-bit words `halfSipHash` absorbs. */
@@ -104,13 +130,15 @@ function schemaFromKeys(id: string, keys: Int32Array): MaskSchema {
 }
 
 export function createMaskSchema(options: MaskSchemaOptions): MaskSchema | UuidSlugError {
-  const seed = seedBytes(options.seed);
-  const short = invalidSeedLength(seed.length);
-  if (short) return short;
-  const iterations = options.keyIterations ?? 1;
-  const invalid = invalidIterations(iterations);
-  if (invalid) return invalid;
-  return feistelSchema(options.id ?? "seeded", seed, iterations);
+  try {
+    const validated = validateOptions(options);
+    if (!("seed" in validated)) return validated;
+    const seed = seedBytes(validated.seed);
+    const short = invalidSeedLength(seed.length);
+    return short ?? feistelSchema(validated.id, seed, validated.iterations);
+  } catch (cause) {
+    return new UuidSlugError("invalid_mask_schema", "Mask schema construction failed.", { cause });
+  }
 }
 
 function invalidSeedLength(length: number): undefined | UuidSlugError {
@@ -122,13 +150,18 @@ function invalidSeedLength(length: number): undefined | UuidSlugError {
   return undefined;
 }
 
-function invalidIterations(iterations: number): undefined | UuidSlugError {
-  if (!Number.isInteger(iterations) || iterations < 1 || iterations > MAX_KEY_ITERATIONS)
+function validatedIterations(iterations: unknown): number | UuidSlugError {
+  if (
+    typeof iterations !== "number" ||
+    !Number.isInteger(iterations) ||
+    iterations < 1 ||
+    iterations > MAX_KEY_ITERATIONS
+  )
     return new UuidSlugError(
       "invalid_mask_schema",
       `Mask keyIterations must be a whole number in 1..${MAX_KEY_ITERATIONS}, got ${String(iterations)}.`,
     );
-  return undefined;
+  return iterations;
 }
 
 /** Bounded byte work between checkpoints, independent of total seed size or iteration count. */
@@ -217,17 +250,17 @@ export async function createMaskSchemaAsync(
   options: AsyncMaskSchemaOptions,
 ): Promise<MaskSchema | UuidSlugError> {
   try {
-    const { signal } = options;
+    const signal = options?.signal;
     const aborted = () =>
       new UuidSlugError("aborted", "Mask schema construction was aborted.", {
         cause: signal?.reason,
       });
     if (signal?.aborted) return aborted();
-    const { seed: input, keyIterations = 1, id = "seeded" } = options;
-    const invalid = invalidIterations(keyIterations);
-    if (invalid) return invalid;
-    const seed = typeof input === "string" ? input : new Uint8Array(input);
-    const steps = cooperativeKeys(seed, keyIterations);
+    const validated = validateOptions(options);
+    if (!("seed" in validated)) return validated;
+    const seed =
+      typeof validated.seed === "string" ? validated.seed : new Uint8Array(validated.seed);
+    const steps = cooperativeKeys(seed, validated.iterations);
     let deadline = performance.now() + 2;
     while (true) {
       if (signal?.aborted) {
@@ -237,7 +270,9 @@ export async function createMaskSchemaAsync(
       }
       const step = steps.next();
       if (step.done)
-        return step.value instanceof Error ? step.value : schemaFromKeys(id, step.value);
+        return ArrayBuffer.isView(step.value)
+          ? schemaFromKeys(validated.id, step.value)
+          : step.value;
       if (performance.now() >= deadline) {
         // eslint-disable-next-line no-await-in-loop -- each slice must yield before continuing the dependent derivation
         await yieldToHost();
