@@ -440,8 +440,8 @@ See [security boundaries](docs/security.md) for entropy failures, custom sources
   `Math.random`. Native generation delegates to the platform; a caller-supplied `fillRandom`
   controls its own entropy. Collisions are possible: enforce uniqueness in storage when required.
 - **Native generation degrades safely.** Optional native generation is a shortcut, not a second
-  behavior: if it throws, the matching portable generator is tried. If both fail, the returned
-  error retains both causes.
+  behavior: if it throws or returns a malformed UUID, slug, or byte array, the matching portable
+  generator is tried. If both fail, the returned error retains both causes.
 - **Time ordering, to the millisecond.** A v7 carries a 48-bit millisecond timestamp in its
   leading bits, so UUID strings sort by their encoded timestamps across different milliseconds.
   Backfilled timestamps or a clock adjustment need not reflect generation order.
