@@ -117,6 +117,17 @@ export function fillRandomBytes(
   }
 }
 
+/** Keep both failed implementations inspectable when an optional native shortcut also fails. */
+export function failedFallback(
+  nativeCause: unknown,
+  fallback: UuidSlugError,
+  message: string,
+): UuidSlugError {
+  return new UuidSlugError(fallback.code, fallback.message, {
+    cause: new AggregateError([nativeCause, fallback], message),
+  });
+}
+
 /** Read once so a failing clock keeps its original cause and successful clocks have one observation. */
 export function readClock(clock: () => number): number | UuidSlugError {
   try {

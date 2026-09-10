@@ -3,6 +3,7 @@
 import { strict as assert } from "node:assert";
 import vm from "node:vm";
 import { pooledFill } from "../src/runtime/pool";
+import { runtime } from "#runtime";
 import { unwrap } from "../dev/unwrap";
 import {
   createUuidSlugCodec,
@@ -17,10 +18,12 @@ import {
   slugToUuid,
   UuidSlugError,
   uuidToSlug,
+  uuidV4,
   uuidV4Bytes,
   validateUuidV7Fresh,
   uuidV7Bytes,
   uuidV7BytesAt,
+  uuidV7Slug,
 } from "../src/index";
 import type { UuidV7Generator } from "../src/types";
 import { createRuntimeGenerator } from "../src/v7";
@@ -31,6 +34,29 @@ const makeGenerator = () =>
   createUuidV7Generator({ clock: () => timestamp, fillRandom: (bytes) => bytes.fill(0x12) });
 
 export const runtimeBoundaryCases = [
+  {
+    name: "falls back when optional native string generation throws",
+    run(this: void) {
+      const nativeCause = new Error("native string generator failed");
+      const originalV4 = runtime.uuidV4;
+      const originalV7Slug = runtime.uuidV7Slug;
+      runtime.uuidV4 = () => {
+        throw nativeCause;
+      };
+      runtime.uuidV7Slug = () => {
+        throw nativeCause;
+      };
+      try {
+        assert.ok(!(uuidV4() instanceof Error));
+        assert.ok(!(uuidV7Slug() instanceof Error));
+      } finally {
+        if (originalV4) runtime.uuidV4 = originalV4;
+        else delete runtime.uuidV4;
+        if (originalV7Slug) runtime.uuidV7Slug = originalV7Slug;
+        else delete runtime.uuidV7Slug;
+      }
+    },
+  },
   {
     name: "accepts cross-realm Uint8Array inputs",
     run(this: void) {

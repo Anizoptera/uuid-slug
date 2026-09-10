@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { checkByteRange, checkRange, fillRandomBytes, readClock, UuidSlugError } from "./errors";
+import {
+  checkByteRange,
+  checkRange,
+  failedFallback,
+  fillRandomBytes,
+  readClock,
+  UuidSlugError,
+} from "./errors";
 import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types";
 import { formatUuid } from "./uuid";
 import type { Runtime } from "./runtime/types";
@@ -70,16 +77,6 @@ const reenteredGeneration = () =>
     "rng_unavailable",
     "UUIDv7 generation cannot be reentered from its clock or entropy callback.",
   );
-
-/** Keep both failed implementations inspectable when graceful fallback also fails. */
-function failedFallback(nativeCause: unknown, fallback: UuidSlugError): UuidSlugError {
-  return new UuidSlugError(fallback.code, fallback.message, {
-    cause: new AggregateError(
-      [nativeCause, fallback],
-      "Native and portable UUIDv7 generation failed.",
-    ),
-  });
-}
 
 /**
  * Seeds the sequence from the same six random bytes and the same bit positions as before, split
@@ -265,7 +262,9 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
       return runtime.uuidV7();
     } catch (cause) {
       const result = fallback.uuidV7();
-      return result instanceof Error ? failedFallback(cause, result) : result;
+      return result instanceof Error
+        ? failedFallback(cause, result, "Native and portable UUIDv7 generation failed.")
+        : result;
     }
   }
 
@@ -288,7 +287,9 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
       return runtime.uuidV7Bytes(out, offset);
     } catch (cause) {
       const result = fallbackUuidV7Bytes(out, offset);
-      return result instanceof Error ? failedFallback(cause, result) : result;
+      return result instanceof Error
+        ? failedFallback(cause, result, "Native and portable UUIDv7 generation failed.")
+        : result;
     }
   }
 
@@ -301,7 +302,9 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
       return runtime.uuidV7At(timestamp);
     } catch (cause) {
       const result = fallback.uuidV7At(timestamp);
-      return result instanceof Error ? failedFallback(cause, result) : result;
+      return result instanceof Error
+        ? failedFallback(cause, result, "Native and portable UUIDv7 generation failed.")
+        : result;
     }
   }
 
@@ -326,7 +329,9 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
       return runtime.uuidV7BytesAt(timestamp, out, offset);
     } catch (cause) {
       const result = fallbackUuidV7BytesAt(timestamp, out, offset);
-      return result instanceof Error ? failedFallback(cause, result) : result;
+      return result instanceof Error
+        ? failedFallback(cause, result, "Native and portable UUIDv7 generation failed.")
+        : result;
     }
   }
 

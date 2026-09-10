@@ -2,7 +2,13 @@
 
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
-import { checkByteRange, checkRange, fillRandomBytes, UuidSlugError } from "./errors";
+import {
+  checkByteRange,
+  checkRange,
+  failedFallback,
+  fillRandomBytes,
+  UuidSlugError,
+} from "./errors";
 import type {
   UuidV4Bytes,
   UuidV4Slug,
@@ -43,16 +49,22 @@ export function uuidV4Bytes(out?: Uint8Array, offset = 0): Uint8Array | UuidSlug
   return target;
 }
 
+function portableUuidV4(): UuidV4String | UuidSlugError {
+  const bytes = uuidV4Bytes();
+  return bytes instanceof Error ? bytes : (formatUuid(bytes) as UuidV4String | UuidSlugError);
+}
+
 export function uuidV4(): UuidV4String | UuidSlugError {
   try {
     const native = runtime.uuidV4?.();
     if (native) return native;
   } catch (cause) {
-    return new UuidSlugError("rng_unavailable", "Runtime UUIDv4 generation failed.", { cause });
+    const fallback = portableUuidV4();
+    return fallback instanceof Error
+      ? failedFallback(cause, fallback, "Native and portable UUIDv4 generation failed.")
+      : fallback;
   }
-  const bytes = uuidV4Bytes();
-  if (bytes instanceof Error) return bytes;
-  return formatUuid(bytes) as UuidV4String | UuidSlugError;
+  return portableUuidV4();
 }
 
 /**
@@ -127,11 +139,16 @@ export function uuidV7Slug(alphabet: SlugAlphabet = "base64url"): UuidV7Slug | U
     try {
       return native();
     } catch (cause) {
-      return new UuidSlugError("rng_unavailable", "Runtime UUIDv7 slug generation failed.", {
-        cause,
-      });
+      const fallback = portableUuidV7Slug(alphabet);
+      return fallback instanceof Error
+        ? failedFallback(cause, fallback, "Native and portable UUIDv7 slug generation failed.")
+        : fallback;
     }
   }
+  return portableUuidV7Slug(alphabet);
+}
+
+function portableUuidV7Slug(alphabet: SlugAlphabet): UuidV7Slug | UuidSlugError {
   const bytes = v7().uuidV7Bytes();
   if (bytes instanceof Error) return bytes;
   return formatUuidSlug(bytes, alphabet) as UuidV7Slug | UuidSlugError;
