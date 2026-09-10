@@ -418,7 +418,8 @@ milliseconds, and is read once per validation. Invalid settings return an error 
 disabling the check.
 
 `validateUuidV7SlugFresh` starts from a plain slug; `codec.validateMaskedSlugFresh` starts from
-a slug decoded with that codec. This is a symmetric timestamp sanity check, not past-only expiry,
+a slug decoded with that codec. Successful validation returns the same spelling with its validated
+plain or public masked-slug type. This is a symmetric timestamp sanity check, not past-only expiry,
 authentication, or replay prevention. Use ordinary decoding for permanent identifiers. For links
 with expiration or one-time use, check the stored expiry and consumption state as well.
 

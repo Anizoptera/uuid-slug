@@ -27,9 +27,9 @@ export type UuidV7Bytes = Brand<UuidBytes, "UuidV7Bytes">;
 
 export interface FreshValidationOptions {
   /** Finite Unix milliseconds; read once per validation. */
-  now?: () => number;
+  readonly now?: () => number;
   /** Finite, nonnegative radius around now, inclusive in both directions; default 24 hours. */
-  windowMs?: number;
+  readonly windowMs?: number;
 }
 
 export interface UuidV7BytesSource {
@@ -207,12 +207,12 @@ export interface UuidSlugCodec {
    * Lives on the codec because unmasking requires that codec's key. Plain-slug freshness remains
    * module-level because it needs no key.
    *
-   * Preserve the input type because successful freshness validation returns the caller's exact
-   * spelling rather than relabeling it as a newly produced value.
+   * Preserve the input type and add the property this operation establishes: the codec decoded
+   * this exact spelling as one of its masked values or sentinels.
    */
   validateMaskedSlugFresh<S extends string>(
     this: void,
     slug: S,
     freshness?: FreshValidationOptions,
-  ): S | UuidSlugError;
+  ): (S & PublicUuidV7Slug) | UuidSlugError;
 }

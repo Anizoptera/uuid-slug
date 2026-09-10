@@ -232,7 +232,7 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
       if (!isUuidV7Bytes(bytes))
         return new UuidSlugError("invalid_uuid_version", "Decoded UUID is not UUIDv7.");
       const valid = validateFreshBytes(bytes, freshness);
-      return valid instanceof Error ? valid : slug;
+      return valid instanceof Error ? valid : (slug as typeof slug & PublicUuidV7Slug);
     },
   };
   return Object.freeze(codec);

@@ -13,6 +13,7 @@ import {
 } from "@anizoptera/uuid-slug";
 import type {
   AsyncMaskSchemaOptions,
+  FreshValidationOptions,
   MaskSchema,
   MaskedUuidV7Slug,
   PublicUuidV7Slug,
@@ -108,6 +109,10 @@ void [
 const publicSlugResult = codec.uuidV7MaskedSlug();
 if (publicSlugResult instanceof Error) throw publicSlugResult;
 const publicSlug: PublicUuidV7Slug = publicSlugResult;
+const uncheckedPublicSlug: string = publicSlug;
+const checkedPublicSlugResult = codec.validateMaskedSlugFresh(uncheckedPublicSlug);
+if (checkedPublicSlugResult instanceof Error) throw checkedPublicSlugResult;
+const checkedPublicSlug: PublicUuidV7Slug = checkedPublicSlugResult;
 codec.uuidV7ToMaskedSlug("019ff19b-58b8-7000-9b1b-df713bd5562c");
 // @ts-expect-error A plain slug does not carry the masked brand.
 const masked: MaskedUuidV7Slug = plain;
@@ -115,7 +120,11 @@ const masked: MaskedUuidV7Slug = plain;
 const v4: UuidV4Slug = plain;
 // @ts-expect-error A generated public slug may be a raw sentinel.
 const onlyMasked: MaskedUuidV7Slug = publicSlug;
-void [masked, v4, onlyMasked];
+void [checkedPublicSlug, masked, v4, onlyMasked];
+
+const freshness: FreshValidationOptions = {};
+// @ts-expect-error Validation options are captured input, not mutable package state.
+freshness.windowMs = 1;
 
 const schemaOptions: AsyncMaskSchemaOptions = {
   seed: "consumer-schema-seed",

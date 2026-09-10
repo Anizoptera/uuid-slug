@@ -61,8 +61,8 @@ export declare function formatUuidSlug(
   alphabet?: SlugAlphabet,
 ): UuidSlug | UuidSlugError;
 export declare interface FreshValidationOptions {
-  now?: () => number;
-  windowMs?: number;
+  readonly now?: () => number;
+  readonly windowMs?: number;
 }
 export declare function isUuidSlug(slug: unknown): slug is UuidSlug;
 export declare function isUuidSlugError(value: unknown): value is UuidSlugError;
@@ -119,7 +119,7 @@ export declare interface UuidSlugCodec {
     this: void,
     slug: S,
     freshness?: FreshValidationOptions,
-  ): S | UuidSlugError;
+  ): (S & PublicUuidV7Slug) | UuidSlugError;
 }
 export declare interface UuidSlugCodecOptions {
   readonly generator?: UuidV7BytesSource;
