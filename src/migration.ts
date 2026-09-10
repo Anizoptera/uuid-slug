@@ -35,6 +35,8 @@ export function createMigration(
   const plain = plainOption === true;
 
   function read(slug: string, format: MigrationFormat | undefined, firstOnly: boolean) {
+    if (typeof slug !== "string")
+      return new UuidSlugError("invalid_uuid_slug", "Migration slug must be a string.");
     if (
       (format !== undefined &&
         format !== "current" &&

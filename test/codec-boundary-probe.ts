@@ -287,6 +287,25 @@ export const codecBoundaryCases = [
     },
   },
   {
+    name: "masked and migration decoders reject non-string JavaScript input",
+    run() {
+      const codec = createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA });
+      const migration = codec.migration({ original: true, plain: true });
+      for (const value of [null, 1, Symbol("slug"), { length: 22 }]) {
+        for (const decode of [
+          codec.maskedSlugToUuidV7,
+          codec.validateMaskedSlugFresh,
+          migration.decode,
+          migration.candidates,
+        ]) {
+          const result = Reflect.apply(decode, undefined, [value]);
+          assert.ok(result instanceof UuidSlugError);
+          assert.equal(result.code, "invalid_uuid_slug");
+        }
+      }
+    },
+  },
+  {
     name: "freshness captures the decoded payload before an external clock can mutate it",
     run() {
       let decoded: Uint8Array = new Uint8Array(0);

@@ -124,6 +124,8 @@ export function decodeMaskedSlug(
   schema: MaskSchema,
   previous: readonly MaskSchema[] = [],
 ): Uint8Array | UuidSlugError {
+  if (typeof slug !== "string")
+    return new UuidSlugError("invalid_uuid_slug", "Masked UUID slug must be a string.");
   const mixed = new Uint8Array(16);
   const outerTag = decodeInto(
     slug,
