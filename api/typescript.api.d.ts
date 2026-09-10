@@ -150,7 +150,7 @@ export declare class UuidSlugError extends Error {
   constructor(code: UuidSlugErrorCode, message: string, options?: ErrorOptions);
 }
 export declare type UuidSlugErrorCode = (typeof UUID_SLUG_ERROR_CODES)[number];
-export declare interface UuidSlugMigration<Format extends MigrationFormat = MigrationFormat> {
+export declare interface UuidSlugMigration<in Format extends MigrationFormat = MigrationFormat> {
   decode(this: void, slug: string, format?: Format): UuidString | UuidSlugError;
   candidates(this: void, slug: string, format?: Format): UuidString[] | UuidSlugError;
 }

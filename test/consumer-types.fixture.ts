@@ -114,6 +114,8 @@ currentOnlyMigration.decode("AAAAAAAAcACAAAAAAAAAAA", "plain");
 const defaultMigration = codec.migration();
 // @ts-expect-error An omitted option does not enable the plain format.
 defaultMigration.decode("AAAAAAAAcACAAAAAAAAAAA", "plain");
+// @ts-expect-error A current-only reader must not widen to a reader for formats it does not accept.
+const widenedMigration: UuidSlugMigration = defaultMigration;
 const dynamicMigration = codec.migration({ plain: Boolean(Date.now()) });
 dynamicMigration.decode("AAAAAAAAcACAAAAAAAAAAA", "plain");
 void [
@@ -138,6 +140,7 @@ void [
   versionedV4,
   migrated,
   candidates,
+  widenedMigration,
 ];
 const publicSlugResult = codec.uuidV7MaskedSlug();
 if (publicSlugResult instanceof Error) throw publicSlugResult;

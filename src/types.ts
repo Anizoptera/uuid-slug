@@ -133,7 +133,7 @@ export type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
   | EnabledMigrationOption<Options, "original">
   | EnabledMigrationOption<Options, "plain">;
 
-export interface UuidSlugMigration<Format extends MigrationFormat = MigrationFormat> {
+export interface UuidSlugMigration<in Format extends MigrationFormat = MigrationFormat> {
   /** Return the first candidate: sentinel, current keys, original mask, then plain UUID. */
   decode(this: void, slug: string, format?: Format): UuidString | UuidSlugError;
   /** Return distinct candidates for one application lookup; an empty array means no match. */
