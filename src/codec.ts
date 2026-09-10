@@ -73,6 +73,13 @@ function createSentinels(
   const encoded: { bytes: Uint8Array; slug: SentinelUuidV7Slug }[] = [];
   const bySlug = new Map<string, { uuid: UuidV7String; bytes: Uint8Array }>();
   for (const definition of definitions) {
+    if (
+      typeof definition !== "object" ||
+      definition === null ||
+      typeof definition.name !== "string" ||
+      typeof definition.uuid !== "string"
+    )
+      return new UuidSlugError("invalid_uuid", "Each sentinel must have a name and UUIDv7 string.");
     // Sentinel configuration accepts raw strings so callers do not need casts before reaching the
     // validating seam. Check each value here, while a bad definition is still a constructor error
     // rather than a codec that fails on every later decode.
@@ -112,25 +119,31 @@ function createSentinels(
 }
 
 export function createUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | UuidSlugError {
-  if (
-    typeof options !== "object" ||
-    options === null ||
-    !("mask" in options) ||
-    options.mask === undefined ||
-    options.mask === null
-  )
+  try {
+    return buildUuidSlugCodec(options);
+  } catch (cause) {
+    return new UuidSlugError("invalid_mask_schema", "Codec construction failed.", { cause });
+  }
+}
+
+function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | UuidSlugError {
+  const mask = typeof options === "object" && options !== null ? options.mask : undefined;
+  if (mask === undefined || mask === null)
     return new UuidSlugError(
       "invalid_mask_schema",
       "Pass { mask: { seed } } for private masking or { mask: PUBLIC_MASK_SCHEMA } for public examples.",
     );
-  const schemaResult = schemaFromOption(options.mask);
+  const schemaResult = schemaFromOption(mask);
   if (schemaResult instanceof UuidSlugError) return schemaResult;
   const schema = schemaResult;
   // Decode tries exactly the caller's schemas in order. Every added schema increases false
   // acceptance, and the first passing schema decides the result, so no fallback is added here.
   const previousMasks: MaskSchema[] = [];
-  for (const mask of options.previousMasks ?? []) {
-    const previous = schemaFromOption(mask);
+  const previousMaskOptions = options.previousMasks ?? [];
+  if (!Array.isArray(previousMaskOptions))
+    return new UuidSlugError("invalid_mask_schema", "previousMasks must be an array of schemas.");
+  for (const previousOption of previousMaskOptions) {
+    const previous = schemaFromOption(previousOption);
     if (previous instanceof UuidSlugError) return previous;
     previousMasks.push(previous);
   }
@@ -138,10 +151,10 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCode
   const maskedSlugAlphabet = options.maskedSlugAlphabet ?? "base64url";
   const maskedSlugAlphabetError = resolveSlugAlphabet(maskedSlugAlphabet);
   if (maskedSlugAlphabetError instanceof Error) return maskedSlugAlphabetError;
-  const sentinelState = createSentinels(
-    options.sentinels ?? UUID_V7_SENTINEL_DEFINITIONS,
-    maskedSlugAlphabet,
-  );
+  const sentinelDefinitions = options.sentinels ?? UUID_V7_SENTINEL_DEFINITIONS;
+  if (!Array.isArray(sentinelDefinitions))
+    return new UuidSlugError("invalid_uuid", "sentinels must be an array of named UUIDv7 values.");
+  const sentinelState = createSentinels(sentinelDefinitions, maskedSlugAlphabet);
   if (sentinelState instanceof UuidSlugError) return sentinelState;
   const sentinels = sentinelState;
 

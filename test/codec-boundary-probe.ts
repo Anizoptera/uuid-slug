@@ -76,6 +76,38 @@ export const codecBoundaryCases = [
     },
   },
   {
+    name: "codec construction returns package errors for malformed JavaScript options",
+    run() {
+      const cases = [
+        { mask: PUBLIC_MASK_SCHEMA, previousMasks: 1 },
+        { mask: PUBLIC_MASK_SCHEMA, sentinels: 1 },
+        { mask: PUBLIC_MASK_SCHEMA, sentinels: [null] },
+        {
+          mask: PUBLIC_MASK_SCHEMA,
+          sentinels: [{ name: 7, uuid: "00000000-0000-7000-8000-000000000000" }],
+        },
+        new Proxy(
+          {},
+          {
+            has() {
+              throw new Error("unreadable options");
+            },
+          },
+        ),
+        {
+          mask: PUBLIC_MASK_SCHEMA,
+          get generator() {
+            throw new Error("unreadable generator");
+          },
+        },
+      ];
+      for (const options of cases) {
+        const result = Reflect.apply(createCodec, undefined, [options]);
+        assert.ok(isUuidSlugError(result));
+      }
+    },
+  },
+  {
     name: "requires an explicit mask before reading any other codec option",
     run() {
       for (const value of [undefined, null, {}, { mask: undefined }]) {
