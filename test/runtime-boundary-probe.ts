@@ -329,6 +329,23 @@ export const runtimeBoundaryCases = [
   {
     name: "refuses nonfinite and negative freshness configuration",
     run(this: void) {
+      for (const options of [null, 1, "one day", []]) {
+        const result = Reflect.apply(validateUuidV7Fresh, undefined, [uuid, options]);
+        assert.ok(result instanceof UuidSlugError);
+        assert.equal(result.code, "invalid_timestamp");
+      }
+      for (const property of ["windowMs", "now"] as const) {
+        const cause = new Error(`${property} getter failed`);
+        const options = Object.defineProperty({}, property, {
+          get() {
+            throw cause;
+          },
+        });
+        const result = validateUuidV7Fresh(uuid, options);
+        assert.ok(result instanceof UuidSlugError);
+        assert.equal(result.code, "invalid_timestamp");
+        assert.equal(result.cause, cause);
+      }
       for (const windowMs of [NaN, Infinity, -Infinity, -1]) {
         const result = validateUuidV7Fresh(uuid, { windowMs, now: () => timestamp });
         assert.ok(result instanceof UuidSlugError);

@@ -230,7 +230,7 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
 
 export function validateUuidV7Fresh(
   uuid: string,
-  options: FreshValidationOptions = {},
+  options?: FreshValidationOptions,
 ): UuidV7String | UuidSlugError {
   const bytes = parseUuid(uuid);
   if (bytes instanceof Error)
@@ -242,26 +242,44 @@ export function validateUuidV7Fresh(
 /** Capture decoded fields before calling an external clock, which can reenter a custom schema. */
 function validateFreshBytes(
   bytes: Uint8Array,
-  options: FreshValidationOptions = {},
+  options?: FreshValidationOptions,
 ): undefined | UuidSlugError {
   if (!isUuidV7Bytes(bytes))
     return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
   const timestamp = extractUuidV7Timestamp(bytes);
   if (timestamp instanceof Error) return timestamp;
-  const windowMs = options.windowMs ?? 86_400_000;
+  let windowMs = 86_400_000;
+  let now = Date.now;
+  try {
+    if (
+      options !== undefined &&
+      (typeof options !== "object" || options === null || Array.isArray(options))
+    )
+      return new UuidSlugError("invalid_timestamp", "Freshness options must be an object.");
+    if (options !== undefined) {
+      windowMs = options.windowMs ?? windowMs;
+      now = options.now ?? now;
+    }
+  } catch (cause) {
+    return new UuidSlugError("invalid_timestamp", "Freshness options could not be read.", {
+      cause,
+    });
+  }
   if (!Number.isFinite(windowMs) || windowMs < 0)
     return new UuidSlugError(
       "invalid_timestamp",
       "windowMs must be a finite, nonnegative number of milliseconds.",
     );
-  const now = readClock(options.now ?? Date.now);
-  if (now instanceof Error) return now;
-  if (!Number.isFinite(now))
+  if (typeof now !== "function")
+    return new UuidSlugError("invalid_timestamp", "now must be a function.");
+  const reading = readClock(now);
+  if (reading instanceof Error) return reading;
+  if (!Number.isFinite(reading))
     return new UuidSlugError(
       "invalid_timestamp",
       "now must return a finite number of Unix milliseconds.",
     );
-  if (timestamp < now - windowMs || timestamp > now + windowMs)
+  if (timestamp < reading - windowMs || timestamp > reading + windowMs)
     return new UuidSlugError("stale_uuid", "UUIDv7 timestamp is outside the accepted window.");
   return undefined;
 }
