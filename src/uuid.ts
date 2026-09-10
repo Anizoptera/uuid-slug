@@ -10,6 +10,7 @@ import type {
   UuidV4Bytes,
   UuidV7Bytes,
   UuidString,
+  UuidStringInput,
   UuidV4Slug,
   UuidV4String,
   UuidV7Slug,
@@ -100,7 +101,7 @@ function hexValue(code: number) {
 
 /** Parse one canonical UUID; a failure leaves caller-supplied storage unchanged. */
 export function parseUuid<Input extends string>(
-  uuid: Input,
+  uuid: UuidStringInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
 export function parseUuid<T extends Uint8Array>(
   uuid: string,
@@ -265,7 +266,7 @@ export function parseUuidSlug(
 }
 
 export function uuidToSlug<Input extends string>(
-  uuid: Input,
+  uuid: UuidStringInput<Input>,
   alphabet?: SlugAlphabet,
 ): PreserveUuidVersion<Input, UuidSlug, UuidV4Slug, UuidV7Slug> | UuidSlugError;
 export function uuidToSlug(

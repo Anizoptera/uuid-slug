@@ -24,12 +24,22 @@ export type PublicUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 
 type RejectKnownInput<Input, Invalid> = [Extract<Input, Invalid>] extends [never] ? Input : never;
 
-/** Reject a value already known to include a masked spelling from direct-slug operations. */
-export type DirectUuidSlugInput<Input extends string> = RejectKnownInput<Input, MaskedUuidSlug>;
-export type UuidV7StringInput<Input extends string> = RejectKnownInput<Input, UuidV4String>;
+/** Reject values whose known representation or UUID version cannot satisfy the target operation. */
+export type UuidStringInput<Input extends string> = RejectKnownInput<
+  Input,
+  UuidSlug | MaskedUuidSlug
+>;
+export type DirectUuidSlugInput<Input extends string> = RejectKnownInput<
+  Input,
+  UuidString | MaskedUuidSlug
+>;
+export type UuidV7StringInput<Input extends string> = RejectKnownInput<
+  Input,
+  UuidSlug | MaskedUuidSlug | UuidV4String
+>;
 export type UuidV7SlugInput<Input extends string> = RejectKnownInput<
   Input,
-  MaskedUuidSlug | UuidV4Slug
+  UuidString | MaskedUuidSlug | UuidV4Slug
 >;
 export type UuidV7BytesInput<Input extends Uint8Array> = RejectKnownInput<Input, UuidV4Bytes>;
 export type UuidBytes = Brand<Uint8Array, "UuidBytes">;

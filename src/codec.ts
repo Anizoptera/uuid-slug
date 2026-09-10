@@ -187,7 +187,7 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
   function uuidV7ToMaskedSlug<Input extends string>(
     uuid: UuidV7StringInput<Input>,
   ): PublicUuidV7Slug | UuidSlugError {
-    const bytes = parseUuid(uuid);
+    const bytes = parseUuid(uuid as string);
     return bytes instanceof Error ? bytes : encodeMasked(bytes);
   }
 

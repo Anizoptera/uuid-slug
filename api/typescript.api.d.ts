@@ -25,7 +25,10 @@ export declare interface CustomMaskSchemaOptions {
   readonly forward: (input: Uint8Array) => Uint8Array | UuidSlugError;
   readonly reverse: (input: Uint8Array) => Uint8Array | UuidSlugError;
 }
-declare type DirectUuidSlugInput<Input extends string> = RejectKnownInput<Input, MaskedUuidSlug>;
+declare type DirectUuidSlugInput<Input extends string> = RejectKnownInput<
+  Input,
+  UuidString | MaskedUuidSlug
+>;
 declare type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
   | "current"
   | EnabledMigrationOption<Options, "original">
@@ -87,7 +90,7 @@ export declare interface MaskSchemaOptions {
 }
 export declare type MigrationFormat = "current" | "original" | "plain";
 export declare function parseUuid<Input extends string>(
-  uuid: Input,
+  uuid: UuidStringInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
 export declare function parseUuid<T extends Uint8Array>(
   uuid: string,
@@ -161,8 +164,12 @@ export declare interface UuidSlugMigrationOptions {
   readonly plain?: boolean;
 }
 export declare type UuidString = Brand<string, "UuidString">;
+declare type UuidStringInput<Input extends string> = RejectKnownInput<
+  Input,
+  UuidSlug | MaskedUuidSlug
+>;
 export declare function uuidToSlug<Input extends string>(
-  uuid: Input,
+  uuid: UuidStringInput<Input>,
   alphabet?: SlugAlphabet,
 ): PreserveUuidVersion<Input, UuidSlug, UuidV4Slug, UuidV7Slug> | UuidSlugError;
 export declare function uuidV4(): UuidV4String | UuidSlugError;
@@ -223,10 +230,13 @@ export declare type UuidV7Slug = Brand<UuidSlug, "UuidV7Slug">;
 export declare function uuidV7Slug(alphabet?: SlugAlphabet): UuidV7Slug | UuidSlugError;
 declare type UuidV7SlugInput<Input extends string> = RejectKnownInput<
   Input,
-  MaskedUuidSlug | UuidV4Slug
+  UuidString | MaskedUuidSlug | UuidV4Slug
 >;
 export declare type UuidV7String = Brand<UuidString, "UuidV7String">;
-declare type UuidV7StringInput<Input extends string> = RejectKnownInput<Input, UuidV4String>;
+declare type UuidV7StringInput<Input extends string> = RejectKnownInput<
+  Input,
+  UuidSlug | MaskedUuidSlug | UuidV4String
+>;
 export declare function validateUuidV7Fresh<Input extends string>(
   uuid: UuidV7StringInput<Input>,
   options?: FreshValidationOptions,

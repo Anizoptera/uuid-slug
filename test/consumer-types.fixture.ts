@@ -66,12 +66,20 @@ const versionedUuid: UuidV7String = formattedUuid;
 const convertedSlug = uuidToSlug(checkedUuid);
 if (convertedSlug instanceof Error) throw convertedSlug;
 const versionedSlug: UuidV7Slug = convertedSlug;
+// @ts-expect-error Known slug text cannot enter a UUID text operation.
+parseUuid(versionedSlug);
+// @ts-expect-error UUID freshness accepts UUID text, not known slug text.
+validateUuidV7Fresh(versionedSlug);
 const convertedUuid = slugToUuid(versionedSlug);
 if (convertedUuid instanceof Error) throw convertedUuid;
 const roundTripUuid: UuidV7String = convertedUuid;
 const parsedSlugBytes = parseUuidSlug(versionedSlug);
 if (parsedSlugBytes instanceof Error) throw parsedSlugBytes;
 const versionedSlugBytes: UuidV7Bytes = parsedSlugBytes;
+// @ts-expect-error Known UUID text cannot enter a slug text operation.
+parseUuidSlug(checkedUuid);
+// @ts-expect-error Slug freshness accepts slug text, not known UUID text.
+validateUuidV7SlugFresh(checkedUuid);
 const formattedSlug = formatUuidSlug(versionedSlugBytes);
 if (formattedSlug instanceof Error) throw formattedSlug;
 // @ts-expect-error Mutable bytes may no longer contain the version their stale brand records.
@@ -109,6 +117,8 @@ if (codecResult instanceof Error) throw codecResult;
 const codec = codecResult;
 // @ts-expect-error UUIDv4 cannot enter UUIDv7-only masking.
 codec.uuidV7ToMaskedSlug(generatedV4);
+// @ts-expect-error UUID text masking accepts UUID text, not known slug text.
+codec.uuidV7ToMaskedSlug(versionedSlug);
 const knownSentinel = codec.sentinels[0]?.slug;
 if (knownSentinel) slugToUuid(knownSentinel);
 const bytesOnlyGenerator: UuidV7BytesSource = {
@@ -187,6 +197,10 @@ const masked: MaskedUuidV7Slug = plain;
 const v4: UuidV4Slug = plain;
 // @ts-expect-error A generated public slug may be a raw sentinel.
 const onlyMasked: MaskedUuidV7Slug = publicSlug;
+// @ts-expect-error A known masked slug must be decoded by its codec.
+parseUuidSlug(onlyMasked);
+// @ts-expect-error A known masked slug requires codec-owned freshness validation.
+validateUuidV7SlugFresh(onlyMasked);
 void [checkedPublicSlug, directPublicSlug, masked, v4, onlyMasked];
 
 const freshness: FreshValidationOptions = {};
