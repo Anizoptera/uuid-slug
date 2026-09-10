@@ -45,6 +45,8 @@ and consequential trade-offs in its durable owner; keep exploration transient.
   and ownership distinctions when consumers use them.
 - Make invalid combinations unrepresentable when TypeScript can infer the distinction without a
   cast or annotation. Do not move runtime-only uncertainty into elaborate caller-facing generics.
+- Reject a value already branded as masked from direct-slug operations. Continue accepting raw
+  strings because overlapping wire spellings make their origin unknowable at runtime.
 - Use `unknown` only for genuinely unbounded external input or caught values, then narrow it at the
   nearest seam. Do not use `any` in the public surface.
 - Preserve caller-owned byte-array subtypes and commit caller storage only after complete success.

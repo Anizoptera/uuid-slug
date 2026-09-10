@@ -25,6 +25,11 @@ export declare interface CustomMaskSchemaOptions {
   readonly forward: (input: Uint8Array) => Uint8Array | UuidSlugError;
   readonly reverse: (input: Uint8Array) => Uint8Array | UuidSlugError;
 }
+declare type DirectUuidSlugInput<Input extends string> = [Extract<Input, MaskedUuidSlug>] extends [
+  never,
+]
+  ? Input
+  : never;
 declare type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
   | "current"
   | EnabledMigrationOption<Options, "original">
@@ -94,7 +99,7 @@ export declare function parseUuid<T extends Uint8Array>(
   offset?: number,
 ): T | UuidSlugError;
 export declare function parseUuidSlug<Input extends string>(
-  slug: Input,
+  slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
 export declare function parseUuidSlug<T extends Uint8Array>(
   slug: string,
@@ -111,7 +116,7 @@ export declare type PublicUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 export declare type SentinelUuidV7Slug = Brand<UuidV7Slug, "SentinelUuidV7Slug">;
 export declare type SlugAlphabet = "base64url" | "base32hex";
 export declare function slugToUuid<Input extends string>(
-  slug: Input,
+  slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidString, UuidV4String, UuidV7String> | UuidSlugError;
 export declare function unwrapUuidSlug<Value>(value: Value): Exclude<Value, UuidSlugError>;
 export declare const UUID_SLUG_ERROR_CODES: typeof ERROR_CODES;
@@ -218,7 +223,7 @@ export declare function validateUuidV7Fresh(
   uuid: string,
   options?: FreshValidationOptions,
 ): UuidV7String | UuidSlugError;
-export declare function validateUuidV7SlugFresh(
-  slug: string,
+export declare function validateUuidV7SlugFresh<Input extends string>(
+  slug: DirectUuidSlugInput<Input>,
   options?: FreshValidationOptions,
 ): UuidV7Slug | UuidSlugError;

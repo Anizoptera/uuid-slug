@@ -7,6 +7,7 @@ import { createMigration } from "./migration";
 import { isMaskSchema } from "./schema-handle";
 import { createMaskSchema } from "./schema";
 import type {
+  DirectUuidSlugInput,
   EnabledMigrationFormat,
   MaskSchema,
   MaskSchemaOptions,
@@ -294,12 +295,13 @@ function validateFreshBytes(
   return undefined;
 }
 
-export function validateUuidV7SlugFresh(
-  slug: string,
+export function validateUuidV7SlugFresh<Input extends string>(
+  slug: DirectUuidSlugInput<Input>,
   options?: FreshValidationOptions,
 ): UuidV7Slug | UuidSlugError {
-  const bytes = parseUuidSlug(slug);
+  const directSlug: string = slug;
+  const bytes = parseUuidSlug(directSlug);
   if (bytes instanceof Error) return bytes;
   const valid = validateFreshBytes(bytes, options);
-  return valid instanceof Error ? valid : (slug as UuidV7Slug);
+  return valid instanceof Error ? valid : (directSlug as UuidV7Slug);
 }

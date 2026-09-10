@@ -21,6 +21,13 @@ export type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 export type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
 export type SentinelUuidV7Slug = Brand<UuidV7Slug, "SentinelUuidV7Slug">;
 export type PublicUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
+
+/** Reject a value already known to include a masked spelling from direct-slug operations. */
+export type DirectUuidSlugInput<Input extends string> = [Extract<Input, MaskedUuidSlug>] extends [
+  never,
+]
+  ? Input
+  : never;
 export type UuidBytes = Brand<Uint8Array, "UuidBytes">;
 export type UuidV4Bytes = Brand<UuidBytes, "UuidV4Bytes">;
 export type UuidV7Bytes = Brand<UuidBytes, "UuidV7Bytes">;

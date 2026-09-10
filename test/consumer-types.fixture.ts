@@ -9,6 +9,7 @@ import {
   PUBLIC_MASK_SCHEMA,
   slugToUuid,
   unwrapUuidSlug,
+  validateUuidV7SlugFresh,
   uuidToSlug,
   uuidV4Bytes,
   uuidV7Bytes,
@@ -94,6 +95,8 @@ uuidV7BytesAt(0, undefined, 8);
 const codecResult = createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA });
 if (codecResult instanceof Error) throw codecResult;
 const codec = codecResult;
+const knownSentinel = codec.sentinels[0]?.slug;
+if (knownSentinel) slugToUuid(knownSentinel);
 const bytesOnlyGenerator: UuidV7BytesSource = {
   uuidV7Bytes: () => new Uint8Array(16),
 };
@@ -153,6 +156,12 @@ if (publicSlugResult instanceof Error) throw publicSlugResult;
 const publicSlug: PublicUuidV7Slug = publicSlugResult;
 // @ts-expect-error A masked-or-sentinel result is not always a canonical direct UUID slug.
 const directPublicSlug: UuidSlug = publicSlug;
+// @ts-expect-error A possibly masked slug must be decoded by the codec that owns its key.
+parseUuidSlug(publicSlug);
+// @ts-expect-error A possibly masked slug must be decoded by the codec that owns its key.
+slugToUuid(publicSlug);
+// @ts-expect-error Masked freshness requires the codec that owns the key.
+validateUuidV7SlugFresh(publicSlug);
 const uncheckedPublicSlug: string = publicSlug;
 const checkedPublicSlugResult = codec.validateMaskedSlugFresh(uncheckedPublicSlug);
 if (checkedPublicSlugResult instanceof Error) throw checkedPublicSlugResult;

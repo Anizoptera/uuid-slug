@@ -4,6 +4,7 @@ import { BASE32HEX, BASE64URL, decodeInto, encode, isEncoded } from "./alphabet"
 import type { Alphabet } from "./alphabet";
 import { checkByteRange, checkRange, isUint8Array, UuidSlugError } from "./errors";
 import type {
+  DirectUuidSlugInput,
   UuidSlug,
   UuidBytes,
   UuidV4Bytes,
@@ -227,7 +228,7 @@ export function formatUuidSlug(
 
 /** Accept either slug alphabet and leave caller-supplied storage unchanged on failure. */
 export function parseUuidSlug<Input extends string>(
-  slug: Input,
+  slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
 export function parseUuidSlug<T extends Uint8Array>(
   slug: string,
@@ -276,7 +277,7 @@ export function uuidToSlug(
 }
 
 export function slugToUuid<Input extends string>(
-  slug: Input,
+  slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidString, UuidV4String, UuidV7String> | UuidSlugError;
 export function slugToUuid(slug: string): UuidString | UuidSlugError {
   const bytes = parseUuidSlug(slug);
