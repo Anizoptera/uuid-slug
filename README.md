@@ -356,6 +356,7 @@ if (uuid instanceof Error) throw uuid;
 It does **not** accept the different masked format from package version 0.2.0.
 `plain` accepts direct UUID slugs of any version, including old base64url spellings whose
 last four bits were ignored. Ordinary `slugToUuid` remains strict about those trailing bits.
+Both options must be booleans; malformed reader configuration throws `TypeError` at construction.
 Neither option changes generation, ordinary codec methods, keys or sentinels.
 
 `decode` returns one UUID or `UuidSlugError`: sentinels first, then current keys, then enabled

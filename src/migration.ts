@@ -18,10 +18,21 @@ import { formatUuid } from "./uuid";
 export function createMigration(
   schemas: readonly MaskSchema[],
   sentinels: ReadonlyMap<string, { uuid: UuidV7String }>,
-  options: UuidSlugMigrationOptions = {},
+  options?: UuidSlugMigrationOptions,
 ): UuidSlugMigration {
-  const original = options.original === true;
-  const plain = options.plain === true;
+  if (
+    options !== undefined &&
+    (typeof options !== "object" || options === null || Array.isArray(options))
+  )
+    throw new TypeError("Migration options must be an object.");
+  const originalOption = options?.original;
+  const plainOption = options?.plain;
+  if (originalOption !== undefined && typeof originalOption !== "boolean")
+    throw new TypeError("Migration original option must be a boolean.");
+  if (plainOption !== undefined && typeof plainOption !== "boolean")
+    throw new TypeError("Migration plain option must be a boolean.");
+  const original = originalOption === true;
+  const plain = plainOption === true;
 
   function read(slug: string, format: MigrationFormat | undefined, firstOnly: boolean) {
     if (

@@ -210,6 +210,25 @@ export const legacyMaskCases = [
     },
   },
   {
+    name: "migration rejects malformed reader configuration",
+    run(this: void) {
+      const codec = unwrap(createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA }));
+      for (const options of [null, 1, "migration", [], { original: 1 }, { plain: "true" }]) {
+        assert.throws(() => Reflect.apply(codec.migration, undefined, [options]), TypeError);
+      }
+      const cause = new Error("migration option getter failed");
+      const options = Object.defineProperty({}, "plain", {
+        get() {
+          throw cause;
+        },
+      });
+      assert.throws(
+        () => Reflect.apply(codec.migration, undefined, [options]),
+        (error: unknown) => error === cause,
+      );
+    },
+  },
+  {
     name: "enumerate matching rotation keys without input mutation or partial results",
     run(this: void) {
       const { seeds, slug, uuids } = fixtures.keyOverlap;
