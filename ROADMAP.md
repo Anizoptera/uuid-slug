@@ -22,5 +22,4 @@ These entries are inventory, not executable tasks. Do not start or ask about one
 
 ## Unreleased API audit
 
-- [ ] Remove the benchmark-output compaction unless the audit establishes a consumer or verification requirement for it.
 - [ ] Finish the adversarial review of all changes since v0.3.0 and resolve every in-subject defect before delivery.

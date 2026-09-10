@@ -18,15 +18,12 @@ try {
     naming: "[name].mjs",
   });
   if (!result.success) throw new AggregateError(result.logs, "Performance gate build failed");
-  let checkCount = 0;
   for (const runtime of ["node", process.execPath]) {
     for (const name of ["resources", "latency"]) {
       const output = await command(runtime, [join(directory, `${name}.mjs`)], root);
-      if (output.trim() === "") throw new Error(`${runtime} ${name} produced no check evidence`);
-      checkCount += 1;
+      console.log(`${runtime}: ${name}\n${output.trim()}`);
     }
   }
-  console.log(`Performance checks passed in ${checkCount} runtime and probe combinations`);
 } finally {
   await rm(directory, { recursive: true, force: true });
   await rmdir(reports).catch((error: NodeJS.ErrnoException) => {

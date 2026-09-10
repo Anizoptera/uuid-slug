@@ -25,10 +25,7 @@ const iterations = Number(process.env.UUID_SLUG_BENCH_ITERATIONS ?? (smoke ? 10_
 if (!Number.isSafeInteger(iterations) || iterations <= 0)
   throw new Error("UUID_SLUG_BENCH_ITERATIONS must be a positive safe integer");
 
-let reportCount = 0;
-const report = (name: string, note: string, elapsed: number, blackhole: number) => {
-  reportCount += 1;
-  if (smoke) return;
+const report = (name: string, note: string, elapsed: number, blackhole: number) =>
   console.log(
     JSON.stringify({
       blackhole,
@@ -40,7 +37,6 @@ const report = (name: string, note: string, elapsed: number, blackhole: number) 
       runtime: runtimeName,
     }),
   );
-};
 
 function measure(name: string, fn: () => string, note = "") {
   // Warm up so the figure reflects optimised code rather than the climb to it.
@@ -128,4 +124,3 @@ for (const variant of nativeVariants) {
   if (variant.text) measure(`native.${variant.name}`, variant.text, variant.note);
   if (variant.bytes) measureBytes(`native.${variant.name}`, variant.bytes, variant.note);
 }
-if (smoke) console.log(`Benchmark smoke exercised ${reportCount} cases on ${runtimeName}`);
