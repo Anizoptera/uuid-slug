@@ -1,10 +1,10 @@
 //! Report failures with the same stable codes as the TypeScript package.
 use std::fmt;
 
-/// A rejected input or unavailable runtime capability.
-#[derive(Debug)]
+/// Stable machine-readable failure classification shared with TypeScript.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 #[non_exhaustive]
-pub enum Error {
+pub enum ErrorCode {
     /// Work was cancelled before completion.
     Aborted,
     /// Invalid lowercase base32hex text or nonzero padding.
@@ -27,17 +27,11 @@ pub enum Error {
     RngUnavailable,
     /// The UUID falls outside the accepted freshness window.
     StaleUuid,
-    /// Preserve a runtime failure without changing the public error code.
-    Caused {
-        /// Stable classification of the failed operation.
-        error: Box<Error>,
-        /// Original runtime or callback error.
-        source: Box<dyn std::error::Error + Send + Sync>,
-    },
 }
-impl Error {
-    /// Stable machine-readable code shared with TypeScript.
-    pub fn code(&self) -> &'static str {
+
+impl ErrorCode {
+    /// Return the cross-language spelling used by TypeScript and development bridges.
+    pub const fn as_str(self) -> &'static str {
         match self {
             Self::Aborted => "aborted",
             Self::InvalidBase32 => "invalid_base32",
@@ -50,20 +44,11 @@ impl Error {
             Self::InvalidUuidVersion => "invalid_uuid_version",
             Self::RngUnavailable => "rng_unavailable",
             Self::StaleUuid => "stale_uuid",
-            Self::Caused { error, .. } => error.code(),
         }
     }
-    /// Attach the original failure for diagnostics at runtime boundaries.
-    pub fn with_source(self, source: impl std::error::Error + Send + Sync + 'static) -> Self {
-        Self::Caused {
-            error: Box::new(self),
-            source: Box::new(source),
-        }
-    }
-}
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let message = match self {
+
+    const fn message(self) -> &'static str {
+        match self {
             Self::Aborted => "Operation aborted.",
             Self::InvalidBase32 => {
                 "Expected canonical lowercase base32hex with zero trailing bits."
@@ -79,16 +64,64 @@ impl fmt::Display for Error {
             Self::InvalidUuidVersion => "This operation requires an RFC-variant UUIDv7.",
             Self::RngUnavailable => "Secure random byte generation failed.",
             Self::StaleUuid => "UUID timestamp falls outside the freshness window.",
-            Self::Caused { error, .. } => return error.fmt(f),
-        };
-        f.write_str(message)
+        }
     }
 }
+
+/// A rejected input or unavailable capability with optional diagnostic provenance.
+#[derive(Debug)]
+pub struct Error {
+    code: ErrorCode,
+    source: Option<Box<dyn std::error::Error + Send + Sync>>,
+}
+
+impl Error {
+    /// Construct a failure from its stable classification.
+    pub const fn new(code: ErrorCode) -> Self {
+        Self { code, source: None }
+    }
+
+    /// Return the stable typed classification without inspecting its diagnostic source.
+    pub const fn code(&self) -> ErrorCode {
+        self.code
+    }
+
+    /// Attach the original failure without changing this error's classification.
+    pub fn with_source(mut self, source: impl std::error::Error + Send + Sync + 'static) -> Self {
+        self.source = Some(Box::new(source));
+        self
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.code.message())
+    }
+}
+
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Caused { source, .. } => Some(source.as_ref()),
-            _ => None,
-        }
+        self.source
+            .as_deref()
+            .map(|source| source as &(dyn std::error::Error + 'static))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Error, ErrorCode};
+    use std::error::Error as _;
+
+    #[test]
+    fn source_attachment_preserves_typed_classification() {
+        let error = Error::new(ErrorCode::RngUnavailable)
+            .with_source(std::io::Error::other("entropy offline"));
+
+        assert_eq!(error.code(), ErrorCode::RngUnavailable);
+        assert_eq!(error.code().as_str(), "rng_unavailable");
+        assert_eq!(
+            error.source().map(ToString::to_string).as_deref(),
+            Some("entropy offline")
+        );
     }
 }

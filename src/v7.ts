@@ -48,7 +48,7 @@ const isValidUuidV7Timestamp = (ms: number): boolean =>
  * the runtime-backed one call it, and the runtime-backed one calls it BEFORE delegating: a native
  * generator may accept what we reject and answer wrongly rather than fail.
  */
-const rejectInstant = (ms: number): UuidSlugError | undefined =>
+const rejectInstant = (ms: number): undefined | UuidSlugError =>
   isValidUuidV7Timestamp(ms)
     ? undefined
     : new UuidSlugError(
@@ -62,8 +62,18 @@ const rejectInstant = (ms: number): UuidSlugError | undefined =>
  * `formatUuid` is version-agnostic: the v7-ness is established by the caller having produced the
  * bytes, not by anything the formatter can check.
  */
-const formatUuidV7 = (result: UuidSlugError | Uint8Array): UuidSlugError | UuidV7String =>
-  result instanceof Error ? result : (formatUuid(result) as UuidSlugError | UuidV7String);
+const formatUuidV7 = (result: Uint8Array | UuidSlugError): UuidV7String | UuidSlugError =>
+  result instanceof Error ? result : (formatUuid(result) as UuidV7String | UuidSlugError);
+
+/** Keep both failed implementations inspectable when graceful fallback also fails. */
+function failedFallback(nativeCause: unknown, fallback: UuidSlugError): UuidSlugError {
+  return new UuidSlugError(fallback.code, fallback.message, {
+    cause: new AggregateError(
+      [nativeCause, fallback],
+      "Native and portable UUIDv7 generation failed.",
+    ),
+  });
+}
 
 /**
  * Seeds the sequence from the same six random bytes and the same bit positions as before, split
@@ -111,7 +121,7 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
     offset = 0,
     timestamp?: number,
     explicit = false,
-  ): UuidSlugError | Uint8Array {
+  ): Uint8Array | UuidSlugError {
     const target = out ?? new Uint8Array(16);
     const badRange = checkRange(target.length, offset, 16);
     if (badRange) return badRange;
@@ -208,8 +218,9 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
       if (!runtime.uuidV7) return fallback.uuidV7();
       try {
         return runtime.uuidV7();
-      } catch {
-        return fallback.uuidV7();
+      } catch (cause) {
+        const result = fallback.uuidV7();
+        return result instanceof Error ? failedFallback(cause, result) : result;
       }
     },
     // The range is checked BEFORE delegating for the same reason the instant is: a native writer
@@ -239,8 +250,9 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
       if (invalid) return invalid;
       try {
         return runtime.uuidV7At(timestamp);
-      } catch {
-        return fallback.uuidV7At(timestamp);
+      } catch (cause) {
+        const result = fallback.uuidV7At(timestamp);
+        return result instanceof Error ? failedFallback(cause, result) : result;
       }
     },
     uuidV7BytesAt(timestamp: number, out?: Uint8Array, offset = 0) {

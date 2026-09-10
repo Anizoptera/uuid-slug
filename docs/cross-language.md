@@ -52,12 +52,13 @@ Use validated `Uuid` values between operations; parse text once rather than at e
 | Known/mixed-format migration and candidates | `Codec::migration`, `Migration::decode`, `candidates`, `MigrationOptions` |
 | Plain freshness | Parse UUID or plain slug, then `Freshness::validate`; retain the original text if needed |
 | Masked freshness | `Codec::validate_masked_slug_fresh` |
-| Error classification and causes | `Error::code` and `std::error::Error::source` |
+| Error classification and causes | `Error::code`, `ErrorCode::as_str`, and `std::error::Error::source` |
 
 TypeScript additionally exports `isUuidSlugError` because JavaScript values can cross realms or
-load from duplicate package copies; Rust's enum remains directly discriminable within its type
-system. The guard accepts the local class first and then the same stable error names and codes. It
-is a classifier, not an authenticity boundary for untrusted objects.
+load from duplicate package copies. Rust exposes `ErrorCode` as the typed classification so adding
+a diagnostic source does not change how callers match a failure; bridges serialize
+`ErrorCode::as_str()`. The TypeScript guard accepts the local class first and then the same stable
+error names and codes. It is a classifier, not an authenticity boundary for untrusted objects.
 
 Generators own mutable sequence state; codecs own immutable keys. Both languages require callers
 to select private key material or the published schema explicitly. Keeping generation separate allows
@@ -144,7 +145,7 @@ Keep each dependency behind the contract it actually satisfies:
 | Entropy | Direct [`getrandom`](https://docs.rs/getrandom/latest/getrandom/) calls retain failure reporting and platform backend selection. | Another RNG layer must add a required capability; merely wrapping the same OS source adds no entropy assurance. |
 | Encoding | [`data-encoding`](https://docs.rs/data-encoding/latest/data_encoding/) handles both alphabets, caller storage and canonical trailing bits. Local code preserves the mask's external check bits. | [`base64`](https://docs.rs/base64/latest/base64/) also supports caller storage, but leaves base32 separate. A second encoder requires measured benefit on our identifier-sized calls, not bulk throughput alone. |
 | Hashing | The shared wire vectors constrain the owned HalfSipHash primitive and derivation. | A replacement must match its word order, rounds and output exactly; a different hash changes issued identifiers. |
-| Errors | The public enum supplies stable codes and retained causes through standard traits. | An error helper must remove more maintenance than its added dependency and must preserve those codes and causes. |
+| Errors | `ErrorCode` supplies typed stable classifications while `Error` retains optional causes through standard traits. | An error helper must remove more maintenance than its added dependency and must preserve those codes and causes. |
 | Serialization | JSON belongs to development bridges and test fixtures, not the product's runtime graph. | A public serialization feature needs its own consumer contract; deriving it onto private validated fields can bypass parsing. |
 
 Inspect the product's resolved normal dependencies separately from workspace development dependencies.

@@ -10,7 +10,7 @@ const XOR = [
 ] as const;
 
 /** Return a matching candidate or undefined; callers resolve sentinels before trying masks. */
-export function decodeOriginalMask(mixed: Uint8Array): Uint8Array | UuidSlugError | undefined {
+export function decodeOriginalMask(mixed: Uint8Array): Uint8Array | undefined | UuidSlugError {
   if (mixed.length !== 16)
     return new UuidSlugError("invalid_buffer", "Original masked slugs require 16 decoded bytes.");
   const bytes = new Uint8Array(16);

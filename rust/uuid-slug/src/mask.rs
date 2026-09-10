@@ -1,5 +1,5 @@
 //! Store a fixed 16-bit check beside UUIDv7 content without losing timestamp or random bits.
-use crate::{Error, alphabet::Alphabet, schema::MaskSchema, uuid::utf16_len};
+use crate::{Error, ErrorCode, alphabet::Alphabet, schema::MaskSchema, uuid::utf16_len};
 
 fn mix32(mut value: u32) -> u32 {
     value ^= value >> 16;
@@ -20,10 +20,10 @@ fn tag(bytes: &[u8; 16]) -> u16 {
 /// Mix once before formatting or checking reserved output spellings in either alphabet.
 pub(crate) fn mask_bytes(raw: &[u8; 16], schema: &MaskSchema) -> Result<([u8; 16], u8), Error> {
     if raw[6] >> 4 != 7 || raw[8] >> 6 != 2 {
-        return Err(Error::InvalidUuidVersion);
+        return Err(Error::new(ErrorCode::InvalidUuidVersion));
     }
     if raw[0] > 3 {
-        return Err(Error::InvalidTimestamp);
+        return Err(Error::new(ErrorCode::InvalidTimestamp));
     }
     let check = tag(raw);
     let inner = check >> 4;

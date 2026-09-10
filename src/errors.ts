@@ -31,19 +31,12 @@ export class UuidSlugError extends Error {
   }
 }
 
-export class UuidRuntimeError extends UuidSlugError {
-  constructor(message: string, options?: ErrorOptions) {
-    super("rng_unavailable", message, options);
-    this.name = "UuidRuntimeError";
-  }
-}
-
 /** Recognize package errors across realms and duplicate package copies without trusting them. */
 export function isUuidSlugError(value: unknown): value is UuidSlugError {
   if (typeof value !== "object" || value === null) return false;
   try {
     // instanceof can invoke a proxy's prototype trap, just like the property reads below.
-    if (value instanceof UuidSlugError) return true;
+    if (value instanceof UuidSlugError) return ERROR_CODE_SET.has(Reflect.get(value, "code"));
     return (
       Object.prototype.toString.call(value) === "[object Error]" &&
       (Reflect.get(value, "name") === "UuidSlugError" ||
@@ -91,12 +84,12 @@ export function checkRange(
 export function fillRandomBytes(
   fill: (bytes: Uint8Array<ArrayBuffer>) => void,
   bytes: Uint8Array<ArrayBuffer>,
-): UuidRuntimeError | undefined {
+): undefined | UuidSlugError {
   try {
     fill(bytes);
     return undefined;
   } catch (cause) {
-    return new UuidRuntimeError("Random byte generation failed.", { cause });
+    return new UuidSlugError("rng_unavailable", "Random byte generation failed.", { cause });
   }
 }
 

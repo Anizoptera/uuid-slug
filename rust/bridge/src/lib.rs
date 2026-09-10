@@ -46,9 +46,9 @@ impl Derivation {
     #[wasm_bindgen::prelude::wasm_bindgen(constructor)]
     pub fn new(seed: &[u8], iterations: u32, uuid: &str) -> Result<Self, wasm_bindgen::JsValue> {
         let uuid = uuid_slug::Uuid::parse(uuid)
-            .map_err(|error| wasm_bindgen::JsValue::from_str(error.code()))?;
+            .map_err(|error| wasm_bindgen::JsValue::from_str(error.code().as_str()))?;
         uuid.timestamp()
-            .map_err(|error| wasm_bindgen::JsValue::from_str(error.code()))?;
+            .map_err(|error| wasm_bindgen::JsValue::from_str(error.code().as_str()))?;
         let cancellation = uuid_slug::schema::Cancellation::default();
         Ok(Self {
             future: Box::pin(uuid_slug::create_mask_schema_async(
@@ -78,7 +78,7 @@ impl Derivation {
                         .uuid_v7_to_masked_slug(self.uuid)
                 })
                 .map(Some)
-                .map_err(|error| wasm_bindgen::JsValue::from_str(error.code())),
+                .map_err(|error| wasm_bindgen::JsValue::from_str(error.code().as_str())),
         }
     }
 }

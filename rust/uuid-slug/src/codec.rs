@@ -1,6 +1,6 @@
 //! A codec owns its keys and reserved identities so keyed operations cannot use another codec's key.
 
-use crate::{Alphabet, Error, MaskSchema, Uuid};
+use crate::{Alphabet, Error, ErrorCode, MaskSchema, Uuid};
 
 /// A named UUID emitted directly instead of through the mask.
 #[derive(Clone, Debug)]
@@ -46,7 +46,7 @@ mod tests {
             })?;
             assert_eq!(
                 codec.uuid_v7_to_masked_slug(uuid).unwrap_err().code(),
-                "invalid_mask_schema"
+                ErrorCode::InvalidMaskSchema
             );
             assert_eq!(
                 codec.masked_slug_to_uuid_v7(&reserved.slug(alphabet))?,
@@ -59,12 +59,17 @@ mod tests {
     #[test]
     fn callback_failure_respects_first_result_and_atomic_candidates() -> Result<(), Error> {
         assert!(MaskSchema::custom("not-an-inverse", |_, _| Ok([1; 16])).is_err());
-        assert!(MaskSchema::custom("failed", |_, _| Err(Error::InvalidBuffer)).is_err());
+        assert!(
+            MaskSchema::custom("failed", |_, _| {
+                Err(Error::new(ErrorCode::InvalidBuffer))
+            })
+            .is_err()
+        );
         let failing = Arc::new(AtomicBool::new(false));
         let flag = failing.clone();
         let custom = MaskSchema::custom("fallible", move |input, _| {
             if flag.load(Ordering::Relaxed) {
-                Err(Error::InvalidBuffer)
+                Err(Error::new(ErrorCode::InvalidBuffer))
             } else {
                 Ok(input)
             }
@@ -83,7 +88,7 @@ mod tests {
         })?;
         failing.store(true, Ordering::Relaxed);
         let error = fallback.masked_slug_to_uuid_v7(&slug).unwrap_err();
-        assert_eq!(error.code(), "invalid_mask_schema");
+        assert_eq!(error.code(), ErrorCode::InvalidMaskSchema);
         assert!(std::error::Error::source(&error).is_some());
         let migration = first.migration(MigrationOptions::default());
         assert_eq!(
@@ -94,7 +99,7 @@ mod tests {
         let error = migration
             .candidates(&slug, Some(MigrationFormat::Current))
             .unwrap_err();
-        assert_eq!(error.code(), "invalid_mask_schema");
+        assert_eq!(error.code(), ErrorCode::InvalidMaskSchema);
         assert!(std::error::Error::source(&error).is_some());
         Ok(())
     }
@@ -150,7 +155,7 @@ impl Codec {
         for (name, uuid) in options.sentinels {
             uuid.timestamp()?;
             if sentinels.iter().any(|entry| entry.uuid == uuid) {
-                return Err(Error::InvalidUuid);
+                return Err(Error::new(ErrorCode::InvalidUuid));
             }
             let slug = uuid.slug(options.masked_slug_alphabet);
             reserved.push((uuid.slug(Alphabet::Base64Url), uuid));
@@ -190,7 +195,7 @@ impl Codec {
         if self.masked == Alphabet::Base64Url || (tail == 0 && !self.reserved.is_empty()) {
             let base64 = Alphabet::Base64Url.encode_tail(&bytes, tail, 4)?;
             if self.sentinel(&base64).is_some() {
-                return Err(Error::InvalidMaskSchema);
+                return Err(Error::new(ErrorCode::InvalidMaskSchema));
             }
             if self.masked == Alphabet::Base64Url {
                 return Ok(base64);
@@ -218,7 +223,7 @@ impl Codec {
                 Err(error) => return Err(error),
             }
         }
-        Err(Error::InvalidUuidSlug)
+        Err(Error::new(ErrorCode::InvalidUuidSlug))
     }
 
     /// Create an opt-in reader without changing this codec's writer or ordinary decoder.
@@ -252,15 +257,17 @@ pub struct Freshness {
 impl Freshness {
     /// Reject invalid windows, stale timestamps and degenerate random fields, in that order.
     pub fn validate(self, uuid: Uuid) -> Result<Uuid, Error> {
-        let timestamp = uuid.timestamp().map_err(|_| Error::InvalidUuid)? as f64;
+        let timestamp = uuid
+            .timestamp()
+            .map_err(|_| Error::new(ErrorCode::InvalidUuid))? as f64;
         if !self.window_ms.is_finite() || self.window_ms < 0.0 || !self.now.is_finite() {
-            return Err(Error::InvalidTimestamp);
+            return Err(Error::new(ErrorCode::InvalidTimestamp));
         }
         if timestamp < self.now - self.window_ms || timestamp > self.now + self.window_ms {
-            return Err(Error::StaleUuid);
+            return Err(Error::new(ErrorCode::StaleUuid));
         }
         if !uuid.has_entropy() {
-            return Err(Error::InvalidUuid);
+            return Err(Error::new(ErrorCode::InvalidUuid));
         }
         Ok(uuid)
     }
@@ -300,7 +307,7 @@ impl Migration<'_> {
             result = Some(uuid);
             true
         })?;
-        result.ok_or(Error::InvalidUuidSlug)
+        result.ok_or_else(|| Error::new(ErrorCode::InvalidUuidSlug))
     }
 
     /// Collect distinct candidates atomically: a later callback error fails the whole call.
@@ -330,7 +337,7 @@ impl Migration<'_> {
         if (format == Some(Original) && !self.options.original)
             || (format == Some(Plain) && !self.options.plain)
         {
-            return Err(Error::InvalidUuidSlug);
+            return Err(Error::new(ErrorCode::InvalidUuidSlug));
         }
         if let Some(uuid) = self.codec.sentinel(slug) {
             stop(uuid);

@@ -1,7 +1,7 @@
 //! Derive immutable masking keys; issued identifiers fix the derivation constants and round count.
 
 use crate::{
-    Error,
+    Error, ErrorCode,
     siphash::{HashState, hash_bytes, hash_words, tail_word},
 };
 use std::{
@@ -62,7 +62,7 @@ impl MaskSchema {
         };
         for probe in [[0; 16], std::array::from_fn(|index| (index * 17) as u8)] {
             if schema.mix(schema.mix(probe, true)?, false)? != probe {
-                return Err(Error::InvalidMaskSchema);
+                return Err(Error::new(ErrorCode::InvalidMaskSchema));
             }
         }
         Ok(schema)
@@ -72,9 +72,8 @@ impl MaskSchema {
     pub fn mix(&self, input: [u8; 16], forward: bool) -> Result<[u8; 16], Error> {
         match &self.implementation {
             Implementation::Feistel(keys) => Ok(feistel(input, keys, forward)),
-            Implementation::Custom(mix) => {
-                mix(input, forward).map_err(|cause| Error::InvalidMaskSchema.with_source(cause))
-            }
+            Implementation::Custom(mix) => mix(input, forward)
+                .map_err(|cause| Error::new(ErrorCode::InvalidMaskSchema).with_source(cause)),
         }
     }
 }
@@ -87,7 +86,7 @@ pub fn public_mask_schema() -> MaskSchema {
 
 fn validate(seed: &[u8], iterations: u32) -> Result<(), Error> {
     if seed.len() < 16 || !(1..=1 << 24).contains(&iterations) {
-        return Err(Error::InvalidMaskSchema);
+        return Err(Error::new(ErrorCode::InvalidMaskSchema));
     }
     Ok(())
 }
@@ -186,7 +185,7 @@ pub fn create_mask_schema_async(
     cancellation: Cancellation,
 ) -> impl Future<Output = Result<MaskSchema, Error>> + Send + use<> {
     let failure = if cancellation.is_cancelled() {
-        Some(Error::Aborted)
+        Some(Error::new(ErrorCode::Aborted))
     } else {
         validate(seed, iterations).err()
     };
@@ -215,14 +214,14 @@ impl Future for SchemaDerivation {
         let this = self.get_mut();
         if this.cancellation.is_cancelled() {
             this.finished = true;
-            return Poll::Ready(Err(Error::Aborted));
+            return Poll::Ready(Err(Error::new(ErrorCode::Aborted)));
         }
         if let Some(failure) = this.failure.take() {
             this.finished = true;
             return Poll::Ready(Err(failure));
         }
         if this.finished {
-            return Poll::Ready(Err(Error::InvalidMaskSchema));
+            return Poll::Ready(Err(Error::new(ErrorCode::InvalidMaskSchema)));
         }
         // Budget includes finalization, so tiny seeds with many iterations cannot monopolize a poll.
         for _ in 0..256 {
@@ -285,7 +284,7 @@ mod tests {
         cancellation.cancel();
         assert!(matches!(
             Pin::new(&mut future).poll(&mut cx),
-            Poll::Ready(Err(Error::Aborted))
+            Poll::Ready(Err(error)) if error.code() == ErrorCode::Aborted
         ));
     }
 }

@@ -70,8 +70,9 @@ enables the unsupported 0.2.0 masked format.
 
 `generation::UuidV7Generator` owns its sequence. `generate()` uses secure platform entropy;
 `at()` takes an explicit timestamp without changing the sequence. `generation::uuid_v4()` generates
-v4 IDs. Failures return `Error`, retaining the underlying cause. Within-millisecond ordering is
-not a cross-language guarantee. IDs are not bearer secrets.
+v4 IDs. Failures return `Error`, retaining the underlying cause. Match `Error::code()` against
+`ErrorCode`; use `ErrorCode::as_str()` only when a text protocol needs the shared TypeScript
+spelling. Within-millisecond ordering is not a cross-language guarantee. IDs are not bearer secrets.
 
 Default feature `os-rng` provides platform entropy. Disable default features for pure conversion,
 masking, or caller-supplied entropy. Browser generation additionally requires `wasm-js`.

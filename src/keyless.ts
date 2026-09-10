@@ -2,7 +2,7 @@
 
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
-import { checkRange, fillRandomBytes, UuidRuntimeError, UuidSlugError } from "./errors";
+import { checkRange, fillRandomBytes, UuidSlugError } from "./errors";
 import type { UuidV4Slug, UuidV4String, UuidV7Generator, UuidV7Slug, UuidV7String } from "./types";
 import { formatUuid, formatUuidSlug } from "./uuid";
 import type { SlugAlphabet } from "./uuid";
@@ -21,7 +21,7 @@ const v7 = () => (generator ??= createRuntimeGenerator(runtime));
 const v4Random = new Uint8Array(16);
 
 /** Shared with `createUuidSlugCodec`, so a v4 has one implementation however it is reached. */
-export function uuidV4Bytes(out?: Uint8Array, offset = 0): UuidSlugError | Uint8Array {
+export function uuidV4Bytes(out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
   const target = out ?? new Uint8Array(16);
   const badRange = checkRange(target.length, offset, 16);
   if (badRange) return badRange;
@@ -33,16 +33,16 @@ export function uuidV4Bytes(out?: Uint8Array, offset = 0): UuidSlugError | Uint8
   return target;
 }
 
-export function uuidV4(): UuidSlugError | UuidV4String {
+export function uuidV4(): UuidV4String | UuidSlugError {
   try {
     const native = runtime.uuidV4?.();
     if (native) return native;
   } catch (cause) {
-    return new UuidRuntimeError("Runtime UUIDv4 generation failed.", { cause });
+    return new UuidSlugError("rng_unavailable", "Runtime UUIDv4 generation failed.", { cause });
   }
   const bytes = uuidV4Bytes();
   if (bytes instanceof Error) return bytes;
-  return formatUuid(bytes) as UuidSlugError | UuidV4String;
+  return formatUuid(bytes) as UuidV4String | UuidSlugError;
 }
 
 /**
@@ -51,12 +51,12 @@ export function uuidV4(): UuidSlugError | UuidV4String {
  * 26-character lowercase form for its public ids needs its v4 slugs in it too; the pair differing
  * would be an asymmetry with nothing behind it.
  */
-export function uuidV4Slug(alphabet: SlugAlphabet = "base64url"): UuidSlugError | UuidV4Slug {
+export function uuidV4Slug(alphabet: SlugAlphabet = "base64url"): UuidV4Slug | UuidSlugError {
   // The bytes came from `uuidV4Bytes`, which stamps version 4; the encoder sees only bytes and
   // cannot carry that through, which is what the assertion stands in for.
   const bytes = uuidV4Bytes();
   if (bytes instanceof Error) return bytes;
-  return formatUuidSlug(bytes, 0, alphabet) as UuidSlugError | UuidV4Slug;
+  return formatUuidSlug(bytes, 0, alphabet) as UuidV4Slug | UuidSlugError;
 }
 
 /*
@@ -66,19 +66,19 @@ export function uuidV4Slug(alphabet: SlugAlphabet = "base64url"): UuidSlugError 
  * collapses to `string` because `Brand`'s marker is optional, so a branded return was promised that
  * nothing checked. A declared type turns that into a compile error at the one site that is wrong.
  */
-export const uuidV7 = (): UuidSlugError | UuidV7String => v7().uuidV7();
+export const uuidV7 = (): UuidV7String | UuidSlugError => v7().uuidV7();
 
-export const uuidV7Bytes = (out?: Uint8Array, offset?: number): UuidSlugError | Uint8Array =>
+export const uuidV7Bytes = (out?: Uint8Array, offset?: number): Uint8Array | UuidSlugError =>
   v7().uuidV7Bytes(out, offset);
 
-export const uuidV7At = (timestamp: number): UuidSlugError | UuidV7String =>
+export const uuidV7At = (timestamp: number): UuidV7String | UuidSlugError =>
   v7().uuidV7At(timestamp);
 
 export const uuidV7BytesAt = (
   timestamp: number,
   out?: Uint8Array,
   offset?: number,
-): UuidSlugError | Uint8Array => v7().uuidV7BytesAt(timestamp, out, offset);
+): Uint8Array | UuidSlugError => v7().uuidV7BytesAt(timestamp, out, offset);
 
 /**
  * The alphabet is an argument here, exactly as it is on `uuidToSlug(uuid, alphabet)`, because
@@ -87,7 +87,7 @@ export const uuidV7BytesAt = (
  * Positional and last, matching `uuidToSlug`, so the two spellings of "encode in this alphabet"
  * do not diverge.
  */
-export function uuidV7Slug(alphabet: SlugAlphabet = "base64url"): UuidSlugError | UuidV7Slug {
+export function uuidV7Slug(alphabet: SlugAlphabet = "base64url"): UuidV7Slug | UuidSlugError {
   // Gated on the ALPHABET, not merely on the hook's presence. The runtime's slug generator emits
   // base64url and nothing else, so an ungated branch answers a base32hex request with a 22-char
   // base64url string — and only Bun defines the hook, so vitest on Node cannot reach the branch at
@@ -101,12 +101,14 @@ export function uuidV7Slug(alphabet: SlugAlphabet = "base64url"): UuidSlugError 
     try {
       return native();
     } catch (cause) {
-      return new UuidRuntimeError("Runtime UUIDv7 slug generation failed.", { cause });
+      return new UuidSlugError("rng_unavailable", "Runtime UUIDv7 slug generation failed.", {
+        cause,
+      });
     }
   }
   // Asserted for the same reason `uuidV4Slug` asserts: the bytes come from a v7 generator and the
   // encoder sees only bytes, so it returns the version-agnostic brand.
   const bytes = v7().uuidV7Bytes();
   if (bytes instanceof Error) return bytes;
-  return formatUuidSlug(bytes, 0, alphabet) as UuidSlugError | UuidV7Slug;
+  return formatUuidSlug(bytes, 0, alphabet) as UuidV7Slug | UuidSlugError;
 }

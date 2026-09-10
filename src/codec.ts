@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { runtime } from "#runtime";
-import { readClock, UuidSlugError } from "./errors";
+import { isUuidSlugError, readClock, UuidSlugError } from "./errors";
 import { uuidV7BytesToMaskedSlug, decodeMaskedSlug } from "./mask";
 import { createMigration } from "./migration";
 import { isMaskSchema } from "./schema-handle";
@@ -46,7 +46,7 @@ export const UUID_V7_SENTINEL_DEFINITIONS: readonly UuidV7SentinelDefinition[] =
   }),
 ]);
 
-function schemaFromOption(mask: MaskSchema | MaskSchemaOptions): UuidSlugError | MaskSchema {
+function schemaFromOption(mask: MaskSchema | MaskSchemaOptions): MaskSchema | UuidSlugError {
   if (isMaskSchema(mask)) return mask;
   if (typeof mask !== "object" || mask === null)
     return new UuidSlugError(
@@ -60,12 +60,12 @@ function createSentinels(
   definitions: readonly UuidV7SentinelDefinition[],
   alphabet: SlugAlphabet,
 ):
-  | UuidSlugError
   | {
       bySlug: Map<string, { uuid: UuidV7String; bytes: Uint8Array }>;
       encoded: { bytes: Uint8Array; slug: SentinelUuidV7Slug }[];
       sentinels: readonly UuidV7Sentinel[];
-    } {
+    }
+  | UuidSlugError {
   const sentinels: UuidV7Sentinel[] = [];
   const byUuid = new Set<string>();
   const encoded: { bytes: Uint8Array; slug: SentinelUuidV7Slug }[] = [];
@@ -116,7 +116,7 @@ function createSentinels(
   return { bySlug, encoded, sentinels: Object.freeze(sentinels) };
 }
 
-export function createUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugError | UuidSlugCodec {
+export function createUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | UuidSlugError {
   if (
     typeof options !== "object" ||
     options === null ||
@@ -150,7 +150,7 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugErro
   if (sentinelState instanceof UuidSlugError) return sentinelState;
   const sentinels = sentinelState;
 
-  function encodeMasked(bytes: Uint8Array): UuidSlugError | PublicUuidV7Slug {
+  function encodeMasked(bytes: Uint8Array): PublicUuidV7Slug | UuidSlugError {
     if (!isUuidV7Bytes(bytes))
       return new UuidSlugError(
         "invalid_uuid_version",
@@ -164,17 +164,17 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugErro
     return uuidV7BytesToMaskedSlug(bytes, schema, maskedSlugAlphabet, sentinels.bySlug);
   }
 
-  function uuidV7ToMaskedSlug(uuid: string): UuidSlugError | PublicUuidV7Slug {
+  function uuidV7ToMaskedSlug(uuid: string): PublicUuidV7Slug | UuidSlugError {
     const bytes = parseUuid(uuid);
     return bytes instanceof Error ? bytes : encodeMasked(bytes);
   }
 
-  function maskedSlugToUuidV7(slug: string): UuidSlugError | UuidV7String {
+  function maskedSlugToUuidV7(slug: string): UuidV7String | UuidSlugError {
     const sentinel = sentinels.bySlug.get(slug);
     if (sentinel) return sentinel.uuid;
     const decoded = decodeMaskedSlug(slug, schema, previousMasks);
     if (decoded instanceof Error) return decoded;
-    return formatUuid(decoded) as UuidSlugError | UuidV7String;
+    return formatUuid(decoded) as UuidV7String | UuidSlugError;
   }
 
   const codec: UuidSlugCodec = {
@@ -184,7 +184,7 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugErro
     },
     uuidV7MaskedSlug() {
       const bytes = generator.uuidV7Bytes();
-      return bytes instanceof Error ? bytes : encodeMasked(bytes);
+      return isUuidSlugError(bytes) ? bytes : encodeMasked(bytes);
     },
     uuidV7ToMaskedSlug,
     maskedSlugToUuidV7,
@@ -213,7 +213,7 @@ export function createUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugErro
 export function validateUuidV7Fresh(
   uuid: string,
   options: FreshValidationOptions = {},
-): UuidSlugError | UuidV7String {
+): UuidV7String | UuidSlugError {
   const bytes = parseUuid(uuid);
   if (bytes instanceof Error)
     return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
@@ -225,7 +225,7 @@ export function validateUuidV7Fresh(
 function validateFreshBytes(
   bytes: Uint8Array,
   options: FreshValidationOptions = {},
-): UuidSlugError | undefined {
+): undefined | UuidSlugError {
   if (!isUuidV7Bytes(bytes))
     return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
   const timestamp = extractUuidV7Timestamp(bytes);
@@ -253,7 +253,7 @@ function validateFreshBytes(
 export function validateUuidV7SlugFresh(
   slug: string,
   options?: FreshValidationOptions,
-): UuidSlugError | UuidV7Slug {
+): UuidV7Slug | UuidSlugError {
   const bytes = parseUuidSlug(slug);
   if (bytes instanceof Error) return bytes;
   const valid = validateFreshBytes(bytes, options);

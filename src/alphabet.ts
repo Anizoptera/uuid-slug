@@ -153,7 +153,7 @@ export function decodeInto(
   offset: number,
   byteLength: number,
   tailBits = 0,
-): UuidSlugError | number {
+): number | UuidSlugError {
   const { bitsPerChar, decode: table, code, name } = alpha;
   const expected = Math.ceil((byteLength * 8 + tailBits) / bitsPerChar);
   if (value.length !== expected)

@@ -2,7 +2,7 @@
 import { rejects } from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { expect, test } from "bun:test";
 import { command } from "./command";
 import { preflightRelease } from "./release-notes";
@@ -119,6 +119,9 @@ test("the version hook synchronizes Cargo and rejects missing notes before mutat
         root,
       );
     await git(["init"]);
+    expect(resolve(root, (await git(["rev-parse", "--git-path", "index"])).trim())).toBe(
+      join(root, ".git/index"),
+    );
     await git(["add", "."]);
     await git(["-c", "commit.gpgsign=false", "commit", "-m", "Release fixture"]);
     await git(["tag", "v1.2.3"]);

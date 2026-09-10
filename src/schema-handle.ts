@@ -62,7 +62,7 @@ function runCustom(
  */
 export function createCustomMaskSchema(
   options: CustomMaskSchemaOptions,
-): UuidSlugError | MaskSchema {
+): MaskSchema | UuidSlugError {
   try {
     const { id, forward, reverse } = options;
     if (typeof id !== "string" || typeof forward !== "function" || typeof reverse !== "function")

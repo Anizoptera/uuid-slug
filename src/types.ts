@@ -31,8 +31,8 @@ export interface FreshValidationOptions {
 }
 
 export interface UuidV7Generator {
-  uuidV7(this: void): UuidSlugError | UuidV7String;
-  uuidV7Bytes(this: void, out?: Uint8Array, offset?: number): UuidSlugError | Uint8Array;
+  uuidV7(this: void): UuidV7String | UuidSlugError;
+  uuidV7Bytes(this: void, out?: Uint8Array, offset?: number): Uint8Array | UuidSlugError;
   /**
    * Generate at a caller-supplied millisecond. A SEPARATE entry point rather than an optional
    * trailing parameter on the pair above, because an optional positional timestamp is silently
@@ -42,13 +42,13 @@ export interface UuidV7Generator {
    * Returns an Error rather than throwing on a bad instant: a caller-supplied value out of range
    * is ordinary input validation, not an exceptional condition.
    */
-  uuidV7At(this: void, timestamp: number): UuidSlugError | UuidV7String;
+  uuidV7At(this: void, timestamp: number): UuidV7String | UuidSlugError;
   uuidV7BytesAt(
     this: void,
     timestamp: number,
     out?: Uint8Array,
     offset?: number,
-  ): UuidSlugError | Uint8Array;
+  ): Uint8Array | UuidSlugError;
 }
 
 /** A frozen package-produced masking handle whose transform and key material stay private. */
@@ -115,9 +115,9 @@ export interface UuidSlugMigrationOptions {
 
 export interface UuidSlugMigration {
   /** Return the first candidate: sentinel, current keys, original mask, then plain UUID. */
-  decode(this: void, slug: string, format?: MigrationFormat): UuidSlugError | UuidString;
+  decode(this: void, slug: string, format?: MigrationFormat): UuidString | UuidSlugError;
   /** Return distinct candidates for one application lookup; an empty array means no match. */
-  candidates(this: void, slug: string, format?: MigrationFormat): UuidSlugError | UuidString[];
+  candidates(this: void, slug: string, format?: MigrationFormat): UuidString[] | UuidSlugError;
 }
 
 export interface UuidSlugCodecOptions {
@@ -167,7 +167,7 @@ export interface UuidSlugCodec {
   /**
    * `this: void` lets callers detach methods without `.bind`; implementations cannot rely on `this`.
    */
-  uuidV7MaskedSlug(this: void): UuidSlugError | PublicUuidV7Slug;
+  uuidV7MaskedSlug(this: void): PublicUuidV7Slug | UuidSlugError;
   /**
    * Masking is UUIDv7-only, and the reason is that the whole format is spent. The check rides in
    * bits a v7 provably wastes — its constant version and variant, and the timestamp's top six —
@@ -176,8 +176,8 @@ export interface UuidSlugCodec {
    * bits in 22 characters already has a job. Supporting all versions would cost a 23rd character
    * on every masked slug forever, to hide a creation time only v7 discloses.
    */
-  uuidV7ToMaskedSlug(this: void, uuid: string): UuidSlugError | PublicUuidV7Slug;
-  maskedSlugToUuidV7(this: void, slug: string): UuidSlugError | UuidV7String;
+  uuidV7ToMaskedSlug(this: void, uuid: string): PublicUuidV7Slug | UuidSlugError;
+  maskedSlugToUuidV7(this: void, slug: string): UuidV7String | UuidSlugError;
   /**
    * `maskedSlugToUuidV7` plus the freshness rules of `validateUuidV7Fresh`, returning the slug.
    *
@@ -191,5 +191,5 @@ export interface UuidSlugCodec {
     this: void,
     slug: S,
     freshness?: FreshValidationOptions,
-  ): UuidSlugError | S;
+  ): S | UuidSlugError;
 }

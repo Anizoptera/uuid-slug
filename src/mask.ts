@@ -14,7 +14,7 @@ function applyMix(
   input: Uint8Array,
   output: Uint8Array,
   forward: boolean,
-): UuidSlugError | undefined {
+): undefined | UuidSlugError {
   try {
     applyMaskSchema(schema, input, output, forward);
     return undefined;
@@ -80,7 +80,7 @@ export function uuidV7BytesToMaskedSlug(
   schema: MaskSchema,
   alphabet: SlugAlphabet = "base64url",
   reserved?: { readonly size: number; has(slug: string): boolean },
-): UuidSlugError | MaskedUuidV7Slug {
+): MaskedUuidV7Slug | UuidSlugError {
   // Truncating instead would make encoding non-injective — two UUIDs would share one slug, and no
   // decoder could ever tell which was meant. Refusing is the only recoverable answer.
   if ((raw[0] ?? 0) > 0x03)
@@ -115,7 +115,7 @@ export function decodeMaskedSlug(
   slug: string,
   schema: MaskSchema,
   previous: readonly MaskSchema[] = [],
-): UuidSlugError | Uint8Array {
+): Uint8Array | UuidSlugError {
   const mixed = new Uint8Array(16);
   const outerTag = decodeInto(
     slug,
@@ -146,7 +146,7 @@ export function decodeMaskedCandidates(
   schemas: readonly MaskSchema[],
   firstOnly = false,
   candidates: UuidString[] = [],
-): UuidSlugError | UuidString[] {
+): UuidString[] | UuidSlugError {
   for (const schema of schemas) {
     // Custom callbacks may mutate their input; no key may alter what the next one sees.
     const decoded = unmix(mixed.slice(), outerTag, schema);
@@ -166,7 +166,7 @@ function unmix(
   mixed: Uint8Array,
   outerTag: number,
   schema: MaskSchema,
-): UuidSlugError | Uint8Array | undefined {
+): Uint8Array | undefined | UuidSlugError {
   const unmixed = new Uint8Array(16);
   const failed = applyMix(schema, mixed, unmixed, false);
   if (failed) return failed;

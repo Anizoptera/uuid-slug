@@ -103,7 +103,7 @@ function schemaFromKeys(id: string, keys: Int32Array): MaskSchema {
   });
 }
 
-export function createMaskSchema(options: MaskSchemaOptions): UuidSlugError | MaskSchema {
+export function createMaskSchema(options: MaskSchemaOptions): MaskSchema | UuidSlugError {
   const seed = seedBytes(options.seed);
   const short = invalidSeedLength(seed.length);
   if (short) return short;
@@ -113,7 +113,7 @@ export function createMaskSchema(options: MaskSchemaOptions): UuidSlugError | Ma
   return feistelSchema(options.id ?? "seeded", seed, iterations);
 }
 
-function invalidSeedLength(length: number): UuidSlugError | undefined {
+function invalidSeedLength(length: number): undefined | UuidSlugError {
   if (length < SEED_MIN_BYTES)
     return new UuidSlugError(
       "invalid_mask_schema",
@@ -122,7 +122,7 @@ function invalidSeedLength(length: number): UuidSlugError | undefined {
   return undefined;
 }
 
-function invalidIterations(iterations: number): UuidSlugError | undefined {
+function invalidIterations(iterations: number): undefined | UuidSlugError {
   if (!Number.isInteger(iterations) || iterations < 1 || iterations > MAX_KEY_ITERATIONS)
     return new UuidSlugError(
       "invalid_mask_schema",
@@ -261,6 +261,6 @@ const DEFAULT_SEED = "anizoptera.uuid-slug.default-mask.v1";
 
 // Built from `feistelSchema` rather than through `createMaskSchema`, whose failures are a short seed and a
 // bad iteration count — checks on CALLER input that the literals here cannot fail. Routing through it would return
-// `UuidSlugError | MaskSchema` and force a cast that, at module scope, could only ever hide a real Error
+// `MaskSchema | UuidSlugError` and force a cast that, at module scope, could only ever hide a real Error
 // behind a `MaskSchema` type at module scope.
 export const PUBLIC_MASK_SCHEMA: MaskSchema = feistelSchema("default", seedBytes(DEFAULT_SEED), 1);

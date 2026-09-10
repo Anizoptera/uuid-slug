@@ -1,5 +1,5 @@
 //! Encode identifier bits without accepting alternate padding spellings.
-use crate::Error;
+use crate::{Error, ErrorCode};
 use data_encoding::{BASE64URL_NOPAD, Encoding, Specification};
 use std::sync::LazyLock;
 
@@ -36,8 +36,8 @@ impl Alphabet {
     }
     fn error(self) -> Error {
         match self {
-            Self::Base64Url => Error::InvalidBase64Url,
-            Self::Base32Hex => Error::InvalidBase32,
+            Self::Base64Url => Error::new(ErrorCode::InvalidBase64Url),
+            Self::Base32Hex => Error::new(ErrorCode::InvalidBase32),
         }
     }
     fn encode_raw(self, bytes: &[u8]) -> String {
@@ -123,8 +123,12 @@ impl Alphabet {
     ) -> Result<&'a mut [u8], Error> {
         let mut decoded = [0; 16];
         self.decode_into(text, &mut decoded, 0)?;
-        let end = offset.checked_add(16).ok_or(Error::InvalidBuffer)?;
-        let target = out.get_mut(offset..end).ok_or(Error::InvalidBuffer)?;
+        let end = offset
+            .checked_add(16)
+            .ok_or(Error::new(ErrorCode::InvalidBuffer))?;
+        let target = out
+            .get_mut(offset..end)
+            .ok_or(Error::new(ErrorCode::InvalidBuffer))?;
         target.copy_from_slice(&decoded);
         Ok(target)
     }
@@ -149,14 +153,14 @@ mod tests {
                         let last = symbols
                             .iter()
                             .position(|&c| c == alias[26])
-                            .ok_or(Error::InvalidUuidSlug)?;
+                            .ok_or(Error::new(ErrorCode::InvalidUuidSlug))?;
                         alias[26] = symbols[last | padding];
                         let mut untouched = [0xab; 16];
                         assert!(
                             alphabet
                                 .decode_into(
                                     std::str::from_utf8(&alias)
-                                        .map_err(|_| Error::InvalidUuidSlug)?,
+                                        .map_err(|_| Error::new(ErrorCode::InvalidUuidSlug))?,
                                     &mut untouched,
                                     4,
                                 )
@@ -183,7 +187,8 @@ mod tests {
             assert!(
                 alphabet
                     .decode_into(
-                        std::str::from_utf8(&alias).map_err(|_| Error::InvalidUuidSlug)?,
+                        std::str::from_utf8(&alias)
+                            .map_err(|_| Error::new(ErrorCode::InvalidUuidSlug))?,
                         &mut out,
                         0
                     )

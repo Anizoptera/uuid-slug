@@ -145,7 +145,7 @@ select `PUBLIC_MASK_SCHEMA` explicitly; anyone can decode identifiers produced w
 ## Handling errors
 
 Parsing, decoding, formatting, conversion, byte generation, and explicit-timestamp generation
-return `UuidSlugError | T`. Check `instanceof Error` within one realm, or use `isUuidSlugError`
+return `T | UuidSlugError`. Check `instanceof Error` within one realm, or use `isUuidSlugError`
 when values may cross realms or duplicate package copies. The structural guard recognizes the
 package's error name and code vocabulary; it classifies data and does not authenticate untrusted
 input. Codec construction returns the same union and requires an explicit mask.

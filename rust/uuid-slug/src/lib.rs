@@ -19,6 +19,6 @@ pub use alphabet::Alphabet;
 pub use codec::{
     Codec, CodecOptions, Freshness, Migration, MigrationFormat, MigrationOptions, Sentinel,
 };
-pub use error::Error;
+pub use error::{Error, ErrorCode};
 pub use schema::{MaskSchema, create_mask_schema, create_mask_schema_async, public_mask_schema};
 pub use uuid::Uuid;

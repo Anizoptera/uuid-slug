@@ -1,5 +1,5 @@
 //! Preserve every UUID bit while enforcing canonical text and slug spellings.
-use crate::{Alphabet, Error};
+use crate::{Alphabet, Error, ErrorCode};
 use std::{fmt, str::FromStr};
 
 pub(crate) fn utf16_len(text: &str) -> usize {
@@ -34,7 +34,7 @@ impl Uuid {
         let alphabet = match utf16_len(text) {
             22 => Alphabet::Base64Url,
             26 => Alphabet::Base32Hex,
-            _ => return Err(Error::InvalidUuidSlug),
+            _ => return Err(Error::new(ErrorCode::InvalidUuidSlug)),
         };
         let mut bytes = [0; 16];
         alphabet.decode_into(text, &mut bytes, 0)?;
@@ -69,7 +69,7 @@ impl Uuid {
     /// Read the 48-bit millisecond timestamp, refusing random bytes from other versions.
     pub fn timestamp(&self) -> Result<u64, Error> {
         if !self.is_v7() {
-            return Err(Error::InvalidUuidVersion);
+            return Err(Error::new(ErrorCode::InvalidUuidVersion));
         }
         Ok(self.0[..6]
             .iter()
@@ -87,7 +87,7 @@ pub(crate) fn range(capacity: usize, offset: usize) -> Result<std::ops::Range<us
     let end = offset
         .checked_add(16)
         .filter(|&end| end <= capacity)
-        .ok_or(Error::InvalidBuffer)?;
+        .ok_or(Error::new(ErrorCode::InvalidBuffer))?;
     Ok(offset..end)
 }
 impl FromStr for Uuid {
@@ -95,15 +95,15 @@ impl FromStr for Uuid {
     fn from_str(text: &str) -> Result<Self, Error> {
         let input = text.as_bytes();
         if input.len() != 36 || [8, 13, 18, 23].iter().any(|&i| input[i] != b'-') {
-            return Err(Error::InvalidUuid);
+            return Err(Error::new(ErrorCode::InvalidUuid));
         }
         // The dependency accepts uppercase and other UUID spellings; our input contract does not.
         if input.iter().any(u8::is_ascii_uppercase) {
-            return Err(Error::InvalidUuid);
+            return Err(Error::new(ErrorCode::InvalidUuid));
         }
         uuid::Uuid::parse_str(text)
             .map(|id| Self(*id.as_bytes()))
-            .map_err(|_| Error::InvalidUuid)
+            .map_err(|_| Error::new(ErrorCode::InvalidUuid))
     }
 }
 impl fmt::Display for Uuid {

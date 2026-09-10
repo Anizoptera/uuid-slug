@@ -2,19 +2,21 @@
 
 use serde_json::{Value, json};
 use uuid_slug::{
-    Alphabet, Codec, CodecOptions, Error, Freshness, MaskSchema, MigrationFormat, MigrationOptions,
-    Uuid, create_mask_schema, public_mask_schema,
+    Alphabet, Codec, CodecOptions, Error, ErrorCode, Freshness, MaskSchema, MigrationFormat,
+    MigrationOptions, Uuid, create_mask_schema, public_mask_schema,
 };
 
 fn text<'a>(value: &'a Value, key: &str) -> Result<&'a str, Error> {
-    value[key].as_str().ok_or(Error::InvalidUuid)
+    value[key]
+        .as_str()
+        .ok_or_else(|| Error::new(ErrorCode::InvalidUuid))
 }
 
 fn alphabet(value: &Value) -> Result<Alphabet, Error> {
     match value.as_str().unwrap_or("base64url") {
         "base64url" => Ok(Alphabet::Base64Url),
         "base32hex" => Ok(Alphabet::Base32Hex),
-        _ => Err(Error::InvalidUuidSlug),
+        _ => Err(Error::new(ErrorCode::InvalidUuidSlug)),
     }
 }
 
@@ -52,7 +54,7 @@ fn schema(value: &Value) -> Result<MaskSchema, Error> {
             .map(|v| {
                 v.as_u64()
                     .and_then(|n| u16::try_from(n).ok())
-                    .ok_or(Error::InvalidMaskSchema)
+                    .ok_or_else(|| Error::new(ErrorCode::InvalidMaskSchema))
             })
             .collect();
         String::from_utf16_lossy(&units?).into_bytes()
@@ -62,7 +64,7 @@ fn schema(value: &Value) -> Result<MaskSchema, Error> {
             .map(|v| {
                 v.as_u64()
                     .and_then(|n| u8::try_from(n).ok())
-                    .ok_or(Error::InvalidMaskSchema)
+                    .ok_or_else(|| Error::new(ErrorCode::InvalidMaskSchema))
             })
             .collect::<Result<Vec<_>, _>>()?
     } else {
@@ -77,7 +79,7 @@ fn schema(value: &Value) -> Result<MaskSchema, Error> {
         || iterations.fract() != 0.0
         || !(1.0..=16_777_216.0).contains(&iterations)
     {
-        return Err(Error::InvalidMaskSchema);
+        return Err(Error::new(ErrorCode::InvalidMaskSchema));
     }
     create_mask_schema(&bytes, iterations as u32, "seeded")
 }
@@ -109,14 +111,16 @@ fn run(request: &Value) -> Result<Value, Error> {
     match text(request, "op")? {
         "generateSequence" => {
             let mut generator = uuid_slug::generation::UuidV7Generator::new();
-            let steps = request["steps"].as_array().ok_or(Error::InvalidBuffer)?;
+            let steps = request["steps"]
+                .as_array()
+                .ok_or_else(|| Error::new(ErrorCode::InvalidBuffer))?;
             Ok(Value::Array(
                 steps
                     .iter()
                     .map(|step| {
                         let fill = |out: &mut [u8]| {
                             if step["fail"] == true {
-                                return Err(Error::RngUnavailable);
+                                return Err(Error::new(ErrorCode::RngUnavailable));
                             }
                             out.fill(step["byte"].as_u64().unwrap_or(0) as u8);
                             Ok(())
@@ -128,7 +132,7 @@ fn run(request: &Value) -> Result<Value, Error> {
                         };
                         match result {
                             Ok(uuid) => json!({"value":uuid.to_string()}),
-                            Err(error) => json!({"error":error.code()}),
+                            Err(error) => json!({"error":error.code().as_str()}),
                         }
                     })
                     .collect(),
@@ -145,17 +149,21 @@ fn run(request: &Value) -> Result<Value, Error> {
         "parse" => Ok(json!(Uuid::parse(input)?.as_bytes())),
         "byteOperations" => {
             let bytes: Vec<u8> = serde_json::from_value(request["bytes"].clone())
-                .map_err(|_| Error::InvalidBuffer)?;
+                .map_err(|_| Error::new(ErrorCode::InvalidBuffer))?;
             // An offset wider than this target still produces each operation's range error.
-            let id = usize::try_from(request["offset"].as_u64().ok_or(Error::InvalidBuffer)?)
-                .map_err(|_| Error::InvalidBuffer)
-                .and_then(|offset| Uuid::from_slice(&bytes, offset));
+            let id = usize::try_from(
+                request["offset"]
+                    .as_u64()
+                    .ok_or_else(|| Error::new(ErrorCode::InvalidBuffer))?,
+            )
+            .map_err(|_| Error::new(ErrorCode::InvalidBuffer))
+            .and_then(|offset| Uuid::from_slice(&bytes, offset));
             let field = |operation: fn(Uuid) -> Result<Value, Error>| match &id {
                 Ok(uuid) => match operation(*uuid) {
                     Ok(value) => json!({"value": value}),
-                    Err(error) => json!({"error": error.code()}),
+                    Err(error) => json!({"error": error.code().as_str()}),
                 },
-                Err(error) => json!({"error": error.code()}),
+                Err(error) => json!({"error": error.code().as_str()}),
             };
             Ok(json!({
                 "uuid": field(|u| Ok(json!(u.to_string()))),
@@ -188,17 +196,24 @@ fn run(request: &Value) -> Result<Value, Error> {
         "base64Guard" => Ok(json!(Alphabet::Base64Url.decode(input).is_ok())),
         "base64DecodeTo" => {
             // Wasm usize is 32-bit: casts would turn a rejected offset into an in-bounds write.
-            let capacity =
-                usize::try_from(request["capacity"].as_u64().ok_or(Error::InvalidBuffer)?)
-                    .map_err(|_| Error::InvalidBuffer)?;
+            let capacity = usize::try_from(
+                request["capacity"]
+                    .as_u64()
+                    .ok_or_else(|| Error::new(ErrorCode::InvalidBuffer))?,
+            )
+            .map_err(|_| Error::new(ErrorCode::InvalidBuffer))?;
             // Keep it out of bounds while letting the decoder preserve its text-error priority.
-            let offset = usize::try_from(request["offset"].as_u64().ok_or(Error::InvalidBuffer)?)
-                .unwrap_or(usize::MAX);
+            let offset = usize::try_from(
+                request["offset"]
+                    .as_u64()
+                    .ok_or_else(|| Error::new(ErrorCode::InvalidBuffer))?,
+            )
+            .unwrap_or(usize::MAX);
             let mut out = vec![165; capacity];
             // Expose rejected-range storage so the host can detect writes before an error.
             let decoded = match Alphabet::Base64Url.decode_to(input, &mut out, offset) {
                 Ok(decoded) => decoded,
-                Err(Error::InvalidBuffer) => {
+                Err(error) if error.code() == ErrorCode::InvalidBuffer => {
                     return Ok(json!({"error": "invalid_buffer", "storage": out}));
                 }
                 Err(error) => return Err(error),
@@ -209,15 +224,16 @@ fn run(request: &Value) -> Result<Value, Error> {
         "base64Encode" => {
             let bytes = request["bytes"]
                 .as_array()
-                .ok_or(Error::InvalidBuffer)?
+                .ok_or_else(|| Error::new(ErrorCode::InvalidBuffer))?
                 .iter()
                 .map(|v| {
                     v.as_u64()
                         .and_then(|n| u8::try_from(n).ok())
-                        .ok_or(Error::InvalidBuffer)
+                        .ok_or_else(|| Error::new(ErrorCode::InvalidBuffer))
                 })
                 .collect::<Result<Vec<_>, _>>()?;
-            let bytes = <[u8; 16]>::try_from(bytes).map_err(|_| Error::InvalidBuffer)?;
+            let bytes =
+                <[u8; 16]>::try_from(bytes).map_err(|_| Error::new(ErrorCode::InvalidBuffer))?;
             Ok(json!(Alphabet::Base64Url.encode(&bytes)))
         }
         "fresh" | "freshPlain" => {
@@ -278,7 +294,7 @@ fn run(request: &Value) -> Result<Value, Error> {
                 Some("current") => Some(MigrationFormat::Current),
                 Some("original") => Some(MigrationFormat::Original),
                 Some("plain") => Some(MigrationFormat::Plain),
-                _ => return Err(Error::InvalidUuidSlug),
+                _ => return Err(Error::new(ErrorCode::InvalidUuidSlug)),
             };
             if request["op"] == "migration" {
                 Ok(json!(migration.decode(input, format)?.to_string()))
@@ -292,7 +308,7 @@ fn run(request: &Value) -> Result<Value, Error> {
                 ))
             }
         }
-        _ => Err(Error::InvalidUuid),
+        _ => Err(Error::new(ErrorCode::InvalidUuid)),
     }
 }
 
@@ -307,7 +323,7 @@ pub fn evaluate(input: &str) -> String {
             .iter()
             .map(|request| match run(request) {
                 Ok(value) => json!({"value": value}),
-                Err(error) => json!({"error": error.code()}),
+                Err(error) => json!({"error": error.code().as_str()}),
             })
             .collect(),
     )

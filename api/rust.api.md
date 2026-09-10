@@ -144,23 +144,42 @@ impl core::marker::UnsafeUnpin for uuid_slug::codec::Sentinel
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Sentinel
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Sentinel
 pub mod uuid_slug::error
-#[non_exhaustive] pub enum uuid_slug::error::Error
-pub uuid_slug::error::Error::Aborted
-pub uuid_slug::error::Error::Caused
-pub uuid_slug::error::Error::Caused::error: alloc::boxed::Box<uuid_slug::error::Error>
-pub uuid_slug::error::Error::Caused::source: alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync)>
-pub uuid_slug::error::Error::InvalidBase32
-pub uuid_slug::error::Error::InvalidBase64Url
-pub uuid_slug::error::Error::InvalidBuffer
-pub uuid_slug::error::Error::InvalidMaskSchema
-pub uuid_slug::error::Error::InvalidTimestamp
-pub uuid_slug::error::Error::InvalidUuid
-pub uuid_slug::error::Error::InvalidUuidSlug
-pub uuid_slug::error::Error::InvalidUuidVersion
-pub uuid_slug::error::Error::RngUnavailable
-pub uuid_slug::error::Error::StaleUuid
+#[non_exhaustive] pub enum uuid_slug::error::ErrorCode
+pub uuid_slug::error::ErrorCode::Aborted
+pub uuid_slug::error::ErrorCode::InvalidBase32
+pub uuid_slug::error::ErrorCode::InvalidBase64Url
+pub uuid_slug::error::ErrorCode::InvalidBuffer
+pub uuid_slug::error::ErrorCode::InvalidMaskSchema
+pub uuid_slug::error::ErrorCode::InvalidTimestamp
+pub uuid_slug::error::ErrorCode::InvalidUuid
+pub uuid_slug::error::ErrorCode::InvalidUuidSlug
+pub uuid_slug::error::ErrorCode::InvalidUuidVersion
+pub uuid_slug::error::ErrorCode::RngUnavailable
+pub uuid_slug::error::ErrorCode::StaleUuid
+impl uuid_slug::error::ErrorCode
+pub const fn uuid_slug::error::ErrorCode::as_str(self) -> &'static str
+impl core::clone::Clone for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::clone(&self) -> uuid_slug::error::ErrorCode
+impl core::cmp::Eq for uuid_slug::error::ErrorCode
+impl core::cmp::PartialEq for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::eq(&self, other: &uuid_slug::error::ErrorCode) -> bool
+impl core::fmt::Debug for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::hash<__H: core::hash::Hasher>(&self, state: &mut __H)
+impl core::marker::Copy for uuid_slug::error::ErrorCode
+impl core::marker::StructuralPartialEq for uuid_slug::error::ErrorCode
+impl core::marker::Freeze for uuid_slug::error::ErrorCode
+impl core::marker::Send for uuid_slug::error::ErrorCode
+impl core::marker::Sync for uuid_slug::error::ErrorCode
+impl core::marker::Unpin for uuid_slug::error::ErrorCode
+impl core::marker::UnsafeUnpin for uuid_slug::error::ErrorCode
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::error::ErrorCode
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::error::ErrorCode
+pub struct uuid_slug::error::Error
 impl uuid_slug::error::Error
-pub fn uuid_slug::error::Error::code(&self) -> &'static str
+pub const fn uuid_slug::error::Error::code(&self) -> uuid_slug::error::ErrorCode
+pub const fn uuid_slug::error::Error::new(code: uuid_slug::error::ErrorCode) -> Self
 pub fn uuid_slug::error::Error::with_source(self, source: impl core::error::Error + core::marker::Send + core::marker::Sync + 'static) -> Self
 impl core::error::Error for uuid_slug::error::Error
 pub fn uuid_slug::error::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
@@ -307,37 +326,38 @@ impl core::marker::Unpin for uuid_slug::alphabet::Alphabet
 impl core::marker::UnsafeUnpin for uuid_slug::alphabet::Alphabet
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::alphabet::Alphabet
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::alphabet::Alphabet
-#[non_exhaustive] pub enum uuid_slug::Error
-pub uuid_slug::Error::Aborted
-pub uuid_slug::Error::Caused
-pub uuid_slug::Error::Caused::error: alloc::boxed::Box<uuid_slug::error::Error>
-pub uuid_slug::Error::Caused::source: alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync)>
-pub uuid_slug::Error::InvalidBase32
-pub uuid_slug::Error::InvalidBase64Url
-pub uuid_slug::Error::InvalidBuffer
-pub uuid_slug::Error::InvalidMaskSchema
-pub uuid_slug::Error::InvalidTimestamp
-pub uuid_slug::Error::InvalidUuid
-pub uuid_slug::Error::InvalidUuidSlug
-pub uuid_slug::Error::InvalidUuidVersion
-pub uuid_slug::Error::RngUnavailable
-pub uuid_slug::Error::StaleUuid
-impl uuid_slug::error::Error
-pub fn uuid_slug::error::Error::code(&self) -> &'static str
-pub fn uuid_slug::error::Error::with_source(self, source: impl core::error::Error + core::marker::Send + core::marker::Sync + 'static) -> Self
-impl core::error::Error for uuid_slug::error::Error
-pub fn uuid_slug::error::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
-impl core::fmt::Debug for uuid_slug::error::Error
-pub fn uuid_slug::error::Error::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::fmt::Display for uuid_slug::error::Error
-pub fn uuid_slug::error::Error::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Freeze for uuid_slug::error::Error
-impl core::marker::Send for uuid_slug::error::Error
-impl core::marker::Sync for uuid_slug::error::Error
-impl core::marker::Unpin for uuid_slug::error::Error
-impl core::marker::UnsafeUnpin for uuid_slug::error::Error
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::error::Error
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::error::Error
+#[non_exhaustive] pub enum uuid_slug::ErrorCode
+pub uuid_slug::ErrorCode::Aborted
+pub uuid_slug::ErrorCode::InvalidBase32
+pub uuid_slug::ErrorCode::InvalidBase64Url
+pub uuid_slug::ErrorCode::InvalidBuffer
+pub uuid_slug::ErrorCode::InvalidMaskSchema
+pub uuid_slug::ErrorCode::InvalidTimestamp
+pub uuid_slug::ErrorCode::InvalidUuid
+pub uuid_slug::ErrorCode::InvalidUuidSlug
+pub uuid_slug::ErrorCode::InvalidUuidVersion
+pub uuid_slug::ErrorCode::RngUnavailable
+pub uuid_slug::ErrorCode::StaleUuid
+impl uuid_slug::error::ErrorCode
+pub const fn uuid_slug::error::ErrorCode::as_str(self) -> &'static str
+impl core::clone::Clone for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::clone(&self) -> uuid_slug::error::ErrorCode
+impl core::cmp::Eq for uuid_slug::error::ErrorCode
+impl core::cmp::PartialEq for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::eq(&self, other: &uuid_slug::error::ErrorCode) -> bool
+impl core::fmt::Debug for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::hash<__H: core::hash::Hasher>(&self, state: &mut __H)
+impl core::marker::Copy for uuid_slug::error::ErrorCode
+impl core::marker::StructuralPartialEq for uuid_slug::error::ErrorCode
+impl core::marker::Freeze for uuid_slug::error::ErrorCode
+impl core::marker::Send for uuid_slug::error::ErrorCode
+impl core::marker::Sync for uuid_slug::error::ErrorCode
+impl core::marker::Unpin for uuid_slug::error::ErrorCode
+impl core::marker::UnsafeUnpin for uuid_slug::error::ErrorCode
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::error::ErrorCode
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::error::ErrorCode
 pub enum uuid_slug::MigrationFormat
 pub uuid_slug::MigrationFormat::Current
 pub uuid_slug::MigrationFormat::Original
@@ -387,6 +407,24 @@ impl core::marker::Unpin for uuid_slug::codec::CodecOptions
 impl core::marker::UnsafeUnpin for uuid_slug::codec::CodecOptions
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::CodecOptions
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::CodecOptions
+pub struct uuid_slug::Error
+impl uuid_slug::error::Error
+pub const fn uuid_slug::error::Error::code(&self) -> uuid_slug::error::ErrorCode
+pub const fn uuid_slug::error::Error::new(code: uuid_slug::error::ErrorCode) -> Self
+pub fn uuid_slug::error::Error::with_source(self, source: impl core::error::Error + core::marker::Send + core::marker::Sync + 'static) -> Self
+impl core::error::Error for uuid_slug::error::Error
+pub fn uuid_slug::error::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
+impl core::fmt::Debug for uuid_slug::error::Error
+pub fn uuid_slug::error::Error::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for uuid_slug::error::Error
+pub fn uuid_slug::error::Error::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for uuid_slug::error::Error
+impl core::marker::Send for uuid_slug::error::Error
+impl core::marker::Sync for uuid_slug::error::Error
+impl core::marker::Unpin for uuid_slug::error::Error
+impl core::marker::UnsafeUnpin for uuid_slug::error::Error
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::error::Error
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::error::Error
 pub struct uuid_slug::Freshness
 pub uuid_slug::Freshness::now: f64
 pub uuid_slug::Freshness::window_ms: f64
@@ -652,23 +690,42 @@ impl core::marker::UnsafeUnpin for uuid_slug::codec::Sentinel
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Sentinel
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Sentinel
 pub mod uuid_slug::error
-#[non_exhaustive] pub enum uuid_slug::error::Error
-pub uuid_slug::error::Error::Aborted
-pub uuid_slug::error::Error::Caused
-pub uuid_slug::error::Error::Caused::error: alloc::boxed::Box<uuid_slug::error::Error>
-pub uuid_slug::error::Error::Caused::source: alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync)>
-pub uuid_slug::error::Error::InvalidBase32
-pub uuid_slug::error::Error::InvalidBase64Url
-pub uuid_slug::error::Error::InvalidBuffer
-pub uuid_slug::error::Error::InvalidMaskSchema
-pub uuid_slug::error::Error::InvalidTimestamp
-pub uuid_slug::error::Error::InvalidUuid
-pub uuid_slug::error::Error::InvalidUuidSlug
-pub uuid_slug::error::Error::InvalidUuidVersion
-pub uuid_slug::error::Error::RngUnavailable
-pub uuid_slug::error::Error::StaleUuid
+#[non_exhaustive] pub enum uuid_slug::error::ErrorCode
+pub uuid_slug::error::ErrorCode::Aborted
+pub uuid_slug::error::ErrorCode::InvalidBase32
+pub uuid_slug::error::ErrorCode::InvalidBase64Url
+pub uuid_slug::error::ErrorCode::InvalidBuffer
+pub uuid_slug::error::ErrorCode::InvalidMaskSchema
+pub uuid_slug::error::ErrorCode::InvalidTimestamp
+pub uuid_slug::error::ErrorCode::InvalidUuid
+pub uuid_slug::error::ErrorCode::InvalidUuidSlug
+pub uuid_slug::error::ErrorCode::InvalidUuidVersion
+pub uuid_slug::error::ErrorCode::RngUnavailable
+pub uuid_slug::error::ErrorCode::StaleUuid
+impl uuid_slug::error::ErrorCode
+pub const fn uuid_slug::error::ErrorCode::as_str(self) -> &'static str
+impl core::clone::Clone for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::clone(&self) -> uuid_slug::error::ErrorCode
+impl core::cmp::Eq for uuid_slug::error::ErrorCode
+impl core::cmp::PartialEq for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::eq(&self, other: &uuid_slug::error::ErrorCode) -> bool
+impl core::fmt::Debug for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::hash<__H: core::hash::Hasher>(&self, state: &mut __H)
+impl core::marker::Copy for uuid_slug::error::ErrorCode
+impl core::marker::StructuralPartialEq for uuid_slug::error::ErrorCode
+impl core::marker::Freeze for uuid_slug::error::ErrorCode
+impl core::marker::Send for uuid_slug::error::ErrorCode
+impl core::marker::Sync for uuid_slug::error::ErrorCode
+impl core::marker::Unpin for uuid_slug::error::ErrorCode
+impl core::marker::UnsafeUnpin for uuid_slug::error::ErrorCode
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::error::ErrorCode
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::error::ErrorCode
+pub struct uuid_slug::error::Error
 impl uuid_slug::error::Error
-pub fn uuid_slug::error::Error::code(&self) -> &'static str
+pub const fn uuid_slug::error::Error::code(&self) -> uuid_slug::error::ErrorCode
+pub const fn uuid_slug::error::Error::new(code: uuid_slug::error::ErrorCode) -> Self
 pub fn uuid_slug::error::Error::with_source(self, source: impl core::error::Error + core::marker::Send + core::marker::Sync + 'static) -> Self
 impl core::error::Error for uuid_slug::error::Error
 pub fn uuid_slug::error::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
@@ -811,37 +868,38 @@ impl core::marker::Unpin for uuid_slug::alphabet::Alphabet
 impl core::marker::UnsafeUnpin for uuid_slug::alphabet::Alphabet
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::alphabet::Alphabet
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::alphabet::Alphabet
-#[non_exhaustive] pub enum uuid_slug::Error
-pub uuid_slug::Error::Aborted
-pub uuid_slug::Error::Caused
-pub uuid_slug::Error::Caused::error: alloc::boxed::Box<uuid_slug::error::Error>
-pub uuid_slug::Error::Caused::source: alloc::boxed::Box<(dyn core::error::Error + core::marker::Send + core::marker::Sync)>
-pub uuid_slug::Error::InvalidBase32
-pub uuid_slug::Error::InvalidBase64Url
-pub uuid_slug::Error::InvalidBuffer
-pub uuid_slug::Error::InvalidMaskSchema
-pub uuid_slug::Error::InvalidTimestamp
-pub uuid_slug::Error::InvalidUuid
-pub uuid_slug::Error::InvalidUuidSlug
-pub uuid_slug::Error::InvalidUuidVersion
-pub uuid_slug::Error::RngUnavailable
-pub uuid_slug::Error::StaleUuid
-impl uuid_slug::error::Error
-pub fn uuid_slug::error::Error::code(&self) -> &'static str
-pub fn uuid_slug::error::Error::with_source(self, source: impl core::error::Error + core::marker::Send + core::marker::Sync + 'static) -> Self
-impl core::error::Error for uuid_slug::error::Error
-pub fn uuid_slug::error::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
-impl core::fmt::Debug for uuid_slug::error::Error
-pub fn uuid_slug::error::Error::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::fmt::Display for uuid_slug::error::Error
-pub fn uuid_slug::error::Error::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Freeze for uuid_slug::error::Error
-impl core::marker::Send for uuid_slug::error::Error
-impl core::marker::Sync for uuid_slug::error::Error
-impl core::marker::Unpin for uuid_slug::error::Error
-impl core::marker::UnsafeUnpin for uuid_slug::error::Error
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::error::Error
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::error::Error
+#[non_exhaustive] pub enum uuid_slug::ErrorCode
+pub uuid_slug::ErrorCode::Aborted
+pub uuid_slug::ErrorCode::InvalidBase32
+pub uuid_slug::ErrorCode::InvalidBase64Url
+pub uuid_slug::ErrorCode::InvalidBuffer
+pub uuid_slug::ErrorCode::InvalidMaskSchema
+pub uuid_slug::ErrorCode::InvalidTimestamp
+pub uuid_slug::ErrorCode::InvalidUuid
+pub uuid_slug::ErrorCode::InvalidUuidSlug
+pub uuid_slug::ErrorCode::InvalidUuidVersion
+pub uuid_slug::ErrorCode::RngUnavailable
+pub uuid_slug::ErrorCode::StaleUuid
+impl uuid_slug::error::ErrorCode
+pub const fn uuid_slug::error::ErrorCode::as_str(self) -> &'static str
+impl core::clone::Clone for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::clone(&self) -> uuid_slug::error::ErrorCode
+impl core::cmp::Eq for uuid_slug::error::ErrorCode
+impl core::cmp::PartialEq for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::eq(&self, other: &uuid_slug::error::ErrorCode) -> bool
+impl core::fmt::Debug for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for uuid_slug::error::ErrorCode
+pub fn uuid_slug::error::ErrorCode::hash<__H: core::hash::Hasher>(&self, state: &mut __H)
+impl core::marker::Copy for uuid_slug::error::ErrorCode
+impl core::marker::StructuralPartialEq for uuid_slug::error::ErrorCode
+impl core::marker::Freeze for uuid_slug::error::ErrorCode
+impl core::marker::Send for uuid_slug::error::ErrorCode
+impl core::marker::Sync for uuid_slug::error::ErrorCode
+impl core::marker::Unpin for uuid_slug::error::ErrorCode
+impl core::marker::UnsafeUnpin for uuid_slug::error::ErrorCode
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::error::ErrorCode
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::error::ErrorCode
 pub enum uuid_slug::MigrationFormat
 pub uuid_slug::MigrationFormat::Current
 pub uuid_slug::MigrationFormat::Original
@@ -891,6 +949,24 @@ impl core::marker::Unpin for uuid_slug::codec::CodecOptions
 impl core::marker::UnsafeUnpin for uuid_slug::codec::CodecOptions
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::CodecOptions
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::CodecOptions
+pub struct uuid_slug::Error
+impl uuid_slug::error::Error
+pub const fn uuid_slug::error::Error::code(&self) -> uuid_slug::error::ErrorCode
+pub const fn uuid_slug::error::Error::new(code: uuid_slug::error::ErrorCode) -> Self
+pub fn uuid_slug::error::Error::with_source(self, source: impl core::error::Error + core::marker::Send + core::marker::Sync + 'static) -> Self
+impl core::error::Error for uuid_slug::error::Error
+pub fn uuid_slug::error::Error::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
+impl core::fmt::Debug for uuid_slug::error::Error
+pub fn uuid_slug::error::Error::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for uuid_slug::error::Error
+pub fn uuid_slug::error::Error::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for uuid_slug::error::Error
+impl core::marker::Send for uuid_slug::error::Error
+impl core::marker::Sync for uuid_slug::error::Error
+impl core::marker::Unpin for uuid_slug::error::Error
+impl core::marker::UnsafeUnpin for uuid_slug::error::Error
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::error::Error
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::error::Error
 pub struct uuid_slug::Freshness
 pub uuid_slug::Freshness::now: f64
 pub uuid_slug::Freshness::window_ms: f64

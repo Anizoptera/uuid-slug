@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { UuidRuntimeError } from "../errors";
+import { UuidSlugError } from "../errors";
 import { pooledFill } from "./pool";
 import type { Runtime } from "./types";
 
@@ -11,7 +11,7 @@ import type { Runtime } from "./types";
 function cryptoObject(): Crypto {
   const value = globalThis.crypto;
   if (!value?.getRandomValues)
-    throw new UuidRuntimeError("Web Crypto getRandomValues is unavailable.");
+    throw new UuidSlugError("rng_unavailable", "Web Crypto getRandomValues is unavailable.");
   return value;
 }
 

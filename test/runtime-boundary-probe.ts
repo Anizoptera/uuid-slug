@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { strict as assert } from "node:assert";
+import vm from "node:vm";
 import { pooledFill } from "../src/runtime/pool";
 import { unwrap } from "../dev/unwrap";
 import {
   createUuidSlugCodec,
   createCustomMaskSchema,
   createUuidV7Generator,
+  isUuidSlugError,
   parseUuid,
   slugToUuid,
   UuidSlugError,
@@ -15,6 +17,8 @@ import {
   uuidV7Bytes,
   uuidV7BytesAt,
 } from "../src/index";
+import type { UuidV7Generator } from "../src/types";
+import { createRuntimeGenerator } from "../src/v7";
 
 const timestamp = 1_234_567_890_000;
 const uuid = "011f71fb-0450-7121-8848-484a12121212";
@@ -22,6 +26,67 @@ const makeGenerator = () =>
   createUuidV7Generator({ clock: () => timestamp, fillRandom: (bytes) => bytes.fill(0x12) });
 
 export const runtimeBoundaryCases = [
+  {
+    name: "classifies only local errors with a published code",
+    run(this: void) {
+      const invalid = Reflect.construct(UuidSlugError, ["unknown_code", "invalid code"]);
+      assert.equal(isUuidSlugError(invalid), false);
+
+      const mutated = new UuidSlugError("invalid_uuid", "mutated code");
+      Reflect.set(mutated, "code", "unknown_code");
+      assert.equal(isUuidSlugError(mutated), false);
+    },
+  },
+  {
+    name: "preserves a generator error from another realm",
+    run(this: void) {
+      const foreignError = vm.runInNewContext(
+        `Object.assign(new Error("foreign generator failed"), {
+          name: "UuidSlugError",
+          code: "rng_unavailable",
+          cause: "foreign cause",
+        })`,
+      ) as UuidSlugError;
+      assert.equal(foreignError instanceof Error, false);
+      assert.equal(isUuidSlugError(foreignError), true);
+      const generator: UuidV7Generator = {
+        uuidV7: () => foreignError,
+        uuidV7At: () => foreignError,
+        uuidV7Bytes: () => foreignError,
+        uuidV7BytesAt: () => foreignError,
+      };
+      const codec = createUuidSlugCodec({ mask: { seed: "cross-realm-generator" }, generator });
+      assert.ok(!(codec instanceof Error));
+      assert.equal(codec.uuidV7MaskedSlug(), foreignError);
+    },
+  },
+  {
+    name: "retains native and portable causes when both generators fail",
+    run(this: void) {
+      const nativeCause = new Error("native generator failed");
+      const portableCause = new Error("portable generator failed");
+      const generator = createRuntimeGenerator({
+        fillRandom() {
+          throw portableCause;
+        },
+        uuidV7() {
+          throw nativeCause;
+        },
+        uuidV7At() {
+          throw nativeCause;
+        },
+      });
+      for (const result of [generator.uuidV7(), generator.uuidV7At(timestamp)]) {
+        assert.ok(result instanceof UuidSlugError);
+        assert.ok(result.cause instanceof AggregateError);
+        assert.equal(result.cause.errors[0], nativeCause);
+        const portableFailure = result.cause.errors[1];
+        assert.ok(portableFailure instanceof UuidSlugError);
+        assert.equal(portableFailure.code, "rng_unavailable");
+        assert.equal(portableFailure.cause, portableCause);
+      }
+    },
+  },
   {
     name: "preserves all portable v7 payload bits without merging input bits",
     run(this: void) {
