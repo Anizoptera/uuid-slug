@@ -302,34 +302,3 @@ export function extractUuidV7Timestamp(bytes: Uint8Array, offset = 0): number | 
   for (let i = 0; i < 6; i += 1) timestamp = timestamp * 256 + (bytes[offset + i] ?? 0);
   return timestamp;
 }
-
-/**
- * Whether a v7's 74 random bits are anything other than all-zero or all-one — the two patterns a
- * generator produces when its entropy source is absent rather than working.
- *
- * Out of range answers `false`, and the direction is the whole point. Without the check the reads
- * below fall through `?? 0`, so a missing byte is indistinguishable from a zero byte and only ever
- * in the reassuring direction: a short buffer reported entropy PRESENT, and an offset past the end
- * reported the degenerate case for data that was never examined. Both are answers about bytes the
- * caller does not have. `false` is the honest one — it means "cannot be shown to carry entropy",
- * which is what a caller acts on, and it is what a truly degenerate id gets too.
- *
- * Boolean rather than `boolean | UuidSlugError` because the sole use is a guard in a condition; an error
- * return would have every call site unwrap a value it is already treating as a yes/no.
- */
-export function hasUuidV7Entropy(bytes: Uint8Array, offset = 0): boolean {
-  if (checkRange(bytes.length, offset, 16)) return false;
-  const randA = (((bytes[offset + 6] ?? 0) & 0x0f) << 8) | (bytes[offset + 7] ?? 0);
-  const randBFirst = (bytes[offset + 8] ?? 0) & 0x3f;
-  let restZero = true;
-  let restMax = true;
-  for (let i = 9; i < 16; i += 1) {
-    const byte = bytes[offset + i] ?? 0;
-    if (byte !== 0x00) restZero = false;
-    if (byte !== 0xff) restMax = false;
-  }
-  return (
-    !(randA === 0 && randBFirst === 0 && restZero) &&
-    !(randA === 0x0fff && randBFirst === 0x3f && restMax)
-  );
-}

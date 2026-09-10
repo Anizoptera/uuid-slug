@@ -22,6 +22,22 @@ mod tests {
     };
 
     #[test]
+    fn freshness_accepts_structurally_valid_v7_endpoint_values() -> Result<(), Error> {
+        let freshness = Freshness {
+            now: 1_234_567_890_000.0,
+            window_ms: 0.0,
+        };
+        for text in [
+            "011f71fb-0450-7000-8000-000000000000",
+            "011f71fb-0450-7fff-bfff-ffffffffffff",
+        ] {
+            let uuid = Uuid::parse(text)?;
+            assert_eq!(freshness.validate(uuid)?, uuid);
+        }
+        Ok(())
+    }
+
+    #[test]
     fn ciphertext_cannot_alias_a_reserved_identity() -> Result<(), Error> {
         let uuid = Uuid::parse("019ff19b-58b8-7000-9b1b-df713bd55607")?;
         let reserved = Uuid::parse("00000000-0000-7000-8000-000000000000")?;
@@ -253,7 +269,7 @@ pub struct Freshness {
 }
 
 impl Freshness {
-    /// Reject invalid windows, stale timestamps and degenerate random fields, in that order.
+    /// Reject invalid windows and timestamps outside the caller's accepted range.
     pub fn validate(self, uuid: Uuid) -> Result<Uuid, Error> {
         let timestamp = uuid
             .timestamp()
@@ -263,9 +279,6 @@ impl Freshness {
         }
         if timestamp < self.now - self.window_ms || timestamp > self.now + self.window_ms {
             return Err(Error::new(ErrorCode::StaleUuid));
-        }
-        if !uuid.has_entropy() {
-            return Err(Error::new(ErrorCode::InvalidUuid));
         }
         Ok(uuid)
     }

@@ -262,7 +262,6 @@ impl uuid_slug::uuid::Uuid
 pub const fn uuid_slug::uuid::Uuid::as_bytes(&self) -> &[u8; 16]
 pub const fn uuid_slug::uuid::Uuid::from_bytes(bytes: [u8; 16]) -> Self
 pub fn uuid_slug::uuid::Uuid::from_slice(bytes: &[u8], offset: usize) -> core::result::Result<Self, uuid_slug::error::Error>
-pub fn uuid_slug::uuid::Uuid::has_entropy(&self) -> bool
 pub const fn uuid_slug::uuid::Uuid::is_rfc_variant(&self) -> bool
 pub const fn uuid_slug::uuid::Uuid::is_v4(&self) -> bool
 pub const fn uuid_slug::uuid::Uuid::is_v7(&self) -> bool
@@ -504,7 +503,6 @@ impl uuid_slug::uuid::Uuid
 pub const fn uuid_slug::uuid::Uuid::as_bytes(&self) -> &[u8; 16]
 pub const fn uuid_slug::uuid::Uuid::from_bytes(bytes: [u8; 16]) -> Self
 pub fn uuid_slug::uuid::Uuid::from_slice(bytes: &[u8], offset: usize) -> core::result::Result<Self, uuid_slug::error::Error>
-pub fn uuid_slug::uuid::Uuid::has_entropy(&self) -> bool
 pub const fn uuid_slug::uuid::Uuid::is_rfc_variant(&self) -> bool
 pub const fn uuid_slug::uuid::Uuid::is_v4(&self) -> bool
 pub const fn uuid_slug::uuid::Uuid::is_v7(&self) -> bool
@@ -802,7 +800,6 @@ impl uuid_slug::uuid::Uuid
 pub const fn uuid_slug::uuid::Uuid::as_bytes(&self) -> &[u8; 16]
 pub const fn uuid_slug::uuid::Uuid::from_bytes(bytes: [u8; 16]) -> Self
 pub fn uuid_slug::uuid::Uuid::from_slice(bytes: &[u8], offset: usize) -> core::result::Result<Self, uuid_slug::error::Error>
-pub fn uuid_slug::uuid::Uuid::has_entropy(&self) -> bool
 pub const fn uuid_slug::uuid::Uuid::is_rfc_variant(&self) -> bool
 pub const fn uuid_slug::uuid::Uuid::is_v4(&self) -> bool
 pub const fn uuid_slug::uuid::Uuid::is_v7(&self) -> bool
@@ -1044,7 +1041,6 @@ impl uuid_slug::uuid::Uuid
 pub const fn uuid_slug::uuid::Uuid::as_bytes(&self) -> &[u8; 16]
 pub const fn uuid_slug::uuid::Uuid::from_bytes(bytes: [u8; 16]) -> Self
 pub fn uuid_slug::uuid::Uuid::from_slice(bytes: &[u8], offset: usize) -> core::result::Result<Self, uuid_slug::error::Error>
-pub fn uuid_slug::uuid::Uuid::has_entropy(&self) -> bool
 pub const fn uuid_slug::uuid::Uuid::is_rfc_variant(&self) -> bool
 pub const fn uuid_slug::uuid::Uuid::is_v4(&self) -> bool
 pub const fn uuid_slug::uuid::Uuid::is_v7(&self) -> bool

@@ -22,7 +22,6 @@ import type {
 } from "./types";
 import { createRuntimeGenerator } from "./v7";
 import {
-  hasUuidV7Entropy,
   isUuidV7Bytes,
   resolveSlugAlphabet,
   parseUuid,
@@ -240,7 +239,6 @@ function validateFreshBytes(
     return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
   const timestamp = extractUuidV7Timestamp(bytes);
   if (timestamp instanceof Error) return timestamp;
-  const hasEntropy = hasUuidV7Entropy(bytes);
   const windowMs = options.windowMs ?? 86_400_000;
   if (!Number.isFinite(windowMs) || windowMs < 0)
     return new UuidSlugError(
@@ -256,7 +254,6 @@ function validateFreshBytes(
     );
   if (timestamp < now - windowMs || timestamp > now + windowMs)
     return new UuidSlugError("stale_uuid", "UUIDv7 timestamp is outside the accepted window.");
-  if (!hasEntropy) return new UuidSlugError("invalid_uuid", "UUIDv7 random payload is degenerate.");
   return undefined;
 }
 

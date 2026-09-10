@@ -22,7 +22,6 @@ import {
   extractUuidV7Timestamp,
   formatUuid,
   formatUuidSlug,
-  hasUuidV7Entropy,
   parseUuid,
   parseUuidSlug,
   uuidV4Bytes,
@@ -145,16 +144,4 @@ export const cases: readonly ProbeCase[] = [
       run: () => refusal(call(new Uint8Array(BUFFER_BYTES).fill(FILL), offset as number)),
     })),
   ),
-  {
-    // The one guard whose contract is a boolean, so it cannot report a code. `false` is required in
-    // BOTH directions: a short buffer used to read missing bytes as zeroes and answer `true`.
-    name: "hasUuidV7Entropy answers false for every offset it cannot read sixteen bytes at",
-    run: () => {
-      const bytes = new Uint8Array(BUFFER_BYTES).fill(FILL);
-      const wrong = HOSTILE_OFFSETS.filter((offset) => hasUuidV7Entropy(bytes, offset as number));
-      const short = hasUuidV7Entropy(new Uint8Array(8).fill(FILL));
-      if (short) return "answered true for an eight-byte buffer";
-      return wrong.length === 0 ? undefined : `answered true for ${wrong.map(String).join(", ")}`;
-    },
-  },
 ];

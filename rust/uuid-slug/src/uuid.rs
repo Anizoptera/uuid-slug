@@ -75,13 +75,6 @@ impl Uuid {
             .iter()
             .fold(0u64, |value, &byte| (value << 8) | u64::from(byte)))
     }
-    /// Detect all-zero/all-one random fields; this heuristic is not evidence of secure randomness.
-    pub fn has_entropy(&self) -> bool {
-        let a = (u16::from(self.0[6] & 15) << 8) | u16::from(self.0[7]);
-        let b = self.0[8] & 63;
-        !(a == 0 && b == 0 && self.0[9..].iter().all(|&v| v == 0)
-            || a == 4095 && b == 63 && self.0[9..].iter().all(|&v| v == 255))
-    }
 }
 pub(crate) fn range(capacity: usize, offset: usize) -> Result<std::ops::Range<usize>, Error> {
     let end = offset

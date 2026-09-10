@@ -332,6 +332,20 @@ export const runtimeBoundaryCases = [
     },
   },
   {
+    name: "accepts structurally valid fresh UUIDv7 endpoint values",
+    run(this: void) {
+      for (const endpoint of [
+        "011f71fb-0450-7000-8000-000000000000",
+        "011f71fb-0450-7fff-bfff-ffffffffffff",
+      ]) {
+        assert.equal(
+          validateUuidV7Fresh(endpoint, { windowMs: 0, now: () => timestamp }),
+          endpoint,
+        );
+      }
+    },
+  },
+  {
     name: "rejects collision on generated ciphertext as well as explicit conversion",
     run(this: void) {
       const bytes = parseUuid("019ff19b-58b8-7000-9b1b-df713bd55607");

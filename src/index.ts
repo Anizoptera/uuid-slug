@@ -48,7 +48,6 @@ export {
   extractUuidV7Timestamp,
   formatUuid,
   formatUuidSlug,
-  hasUuidV7Entropy,
   isUuidSlug,
   isUuidV4Slug,
   isUuidV4String,

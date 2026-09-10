@@ -229,8 +229,7 @@ Also exported, all module-level:
   `isUuidV7Slug`, and `isUuidV7Bytes` for 16 bytes you already hold.
 - `extractUuidV7Timestamp` — the instant a v7 was minted at, and an error for anything that is
   not a v7, because a v4's first six bytes are random and would otherwise read back as a
-  plausible date. `hasUuidV7Entropy` answers whether the 74 random bits are anything but
-  all-zero or all-one. This rejects obvious degeneracy; it does not measure unpredictability.
+  plausible date.
 - `createMaskSchema` builds a schema from a seed; `createMaskSchemaAsync` adds cooperative
   cancellation; `createCustomMaskSchema` adapts separate forward and reverse callbacks.
   `PUBLIC_MASK_SCHEMA` is the explicit, published-key choice for deterministic examples.

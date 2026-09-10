@@ -24,8 +24,14 @@ Make validated values hard to forge while keeping ordinary calls simple, preserv
   - [x] Run the complete repository check before committing the migration slice.
 - [ ] Audit the remaining interface families and change only candidates that reduce caller burden or
   make a false promise impossible.
-  - [ ] Decide whether the entropy predicate should be removed, folded into validation, or renamed to
-    describe only its all-zero and all-one random-bit rejection.
+  - [x] Remove the entropy predicate from both public interfaces and from freshness validation.
+    - [x] Verify that RFC 9562 assigns UUIDv7's trailing bits to random data, counters, or timestamp
+      fractions without reserving the all-zero or all-one field values.
+    - [x] Reject folding or renaming because one UUID value cannot reveal how its bits were produced.
+    - [x] Prove through TypeScript and Rust freshness interfaces that structurally valid endpoint
+      values are accepted when their timestamps are inside the caller's window.
+    - [x] Remove the predicate from exports, parity transport, documentation, and interface baselines.
+    - [x] Run the complete repository check before committing the entropy slice.
   - [ ] Evaluate the positional `formatUuidSlug(bytes, offset, alphabet)` interface against overload,
     options-object, named-operation, and removal families without slowing the hot path.
   - [ ] Recheck generator injection, freshness, schema construction, codec naming, sentinels, errors,

@@ -21,8 +21,8 @@ to meet a deadline. See [getrandom's early-boot limits](https://docs.rs/getrando
 
 Portable v7 generation seeds a 42-bit sequence and draws a fresh 32-bit tail on later values
 within the same millisecond. A cryptographic input source does not make these outputs independent
-secrets. Keep uniqueness constraints where collisions matter. A duplicate-free sample or a
-passing entropy predicate cannot establish cryptographic security.
+secrets. Keep uniqueness constraints where collisions matter. Neither a UUID's bit pattern nor a
+duplicate-free sample can establish that its generating process was cryptographically secure.
 
 Masking is reversible obfuscation, not authenticated encryption. Use a private random seed and
 retain its exact bytes and iteration count to read issued values. The exported public schema is

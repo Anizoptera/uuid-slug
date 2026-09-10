@@ -60,7 +60,6 @@ export declare interface FreshValidationOptions {
   now?: () => number;
   windowMs?: number;
 }
-export declare function hasUuidV7Entropy(bytes: Uint8Array, offset?: number): boolean;
 export declare function isUuidSlug(slug: unknown): slug is UuidSlug;
 export declare function isUuidSlugError(value: unknown): value is UuidSlugError;
 export declare function isUuidString(uuid: unknown): uuid is UuidString;

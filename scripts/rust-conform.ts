@@ -96,7 +96,6 @@ export function evaluate(request: Request): Outcome {
           base64: result(ts.formatUuidSlug(bytes, offset, "base64url")),
           base32: result(ts.formatUuidSlug(bytes, offset, "base32hex")),
           timestamp: result(ts.extractUuidV7Timestamp(bytes, offset)),
-          entropy: ts.hasUuidV7Entropy(bytes, offset),
           v7: ts.isUuidV7Bytes(bytes),
         });
       }
@@ -107,10 +106,6 @@ export function evaluate(request: Request): Outcome {
       case "timestamp": {
         const bytes = ts.parseUuid(input);
         return result(bytes instanceof Error ? bytes : ts.extractUuidV7Timestamp(bytes));
-      }
-      case "entropy": {
-        const bytes = ts.parseUuid(input);
-        return result(bytes instanceof Error ? bytes : ts.hasUuidV7Entropy(bytes));
       }
       case "guards":
         return result([
@@ -322,7 +317,7 @@ export async function contractRequests(): Promise<Request[]> {
     ...wire.map((v) => v.uuid),
     ...original.plain.map((v) => v.uuid),
   ]) {
-    for (const op of ["parse", "timestamp", "entropy", "guards"]) requests.push({ op, input });
+    for (const op of ["parse", "timestamp", "guards"]) requests.push({ op, input });
     for (const alphabet of ["base64url", "base32hex"]) {
       requests.push({ op: "plain", input, alphabet });
       const encoded = evaluate({ op: "plain", input, alphabet });

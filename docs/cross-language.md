@@ -45,7 +45,7 @@ Use validated `Uuid` values between operations; parse text once rather than at e
 | v4 generation and caller storage | `generation::uuid_v4`, `uuid_v4_with`, `uuid_v4_into_with` |
 | v7 generation, explicit time and caller storage | `UuidV7Generator::generate`, `at`, and their `_with`/`_into_with` forms |
 | Generated plain or masked slugs | Generate a `Uuid`, then call `slug` or the keyed codec |
-| Timestamp and entropy predicate | `Uuid::timestamp`, `Uuid::has_entropy` |
+| UUIDv7 timestamp | `Uuid::timestamp` |
 | Sync/async schemas and custom transforms | `create_mask_schema`, `create_mask_schema_async`, `MaskSchema::custom(id, forward, reverse)` |
 | Explicit public schema | `PUBLIC_MASK_SCHEMA`; `public_mask_schema()` |
 | Key rotation, masked conversion and sentinels | `CodecOptions::new`, `Codec::uuid_v7_to_masked_slug`, `masked_slug_to_uuid_v7`, `sentinels` |

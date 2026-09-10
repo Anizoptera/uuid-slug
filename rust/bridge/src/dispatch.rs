@@ -177,7 +177,6 @@ fn run(request: &Value) -> Result<Value, Error> {
                 "base64": field(|u| Ok(json!(u.slug(Alphabet::Base64Url)))),
                 "base32": field(|u| Ok(json!(u.slug(Alphabet::Base32Hex)))),
                 "timestamp": field(|u| Ok(json!(u.timestamp()?))),
-                "entropy": id.as_ref().is_ok_and(Uuid::has_entropy),
                 "v7": bytes.len() == 16 && Uuid::from_slice(&bytes, 0).is_ok_and(|u| u.is_v7())
             }))
         }
@@ -186,7 +185,6 @@ fn run(request: &Value) -> Result<Value, Error> {
         )),
         "unplain" => Ok(json!(Uuid::parse_slug(input)?.to_string())),
         "timestamp" => Ok(json!(Uuid::parse(input)?.timestamp()?)),
-        "entropy" => Ok(json!(Uuid::parse(input)?.has_entropy())),
         "guards" => {
             let uuid = Uuid::parse(input).ok();
             let slug = Uuid::parse_slug(input).ok();
