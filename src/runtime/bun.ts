@@ -26,29 +26,12 @@ const bunRuntime: Runtime = { fillRandom: webRuntime.fillRandom };
 
 if (webRuntime.uuidV4) bunRuntime.uuidV4 = webRuntime.uuidV4;
 
-/** Normalize native ownership without replacing caller storage. */
-const toOwnBytes = (bytes: Uint8Array, out?: Uint8Array, offset = 0) => {
-  // Bun hands back a node `Buffer`, which IS a Uint8Array and so satisfies the declared return
-  // type while behaving differently in ways nothing catches: `Buffer.toString("hex")` yields hex,
-  // `Uint8Array.toString("hex")` ignores the argument and yields "1,159,242,…", and
-  // `JSON.stringify` emits `{"type":"Buffer","data":[…]}` against `{"0":1,…}`. Code written and
-  // tested on Bun would silently produce different bytes on Node. Copying 16 bytes costs less
-  // than the generation it follows and makes the return type mean one thing everywhere; a view
-  // would share Bun's ArrayBuffer and tie this to its allocator.
-  if (!out) return new Uint8Array(bytes);
-  out.set(bytes, offset);
-  return out;
-};
-
 if (nativeUuidV7) {
   bunRuntime.uuidV7 = () => nativeUuidV7("hex");
   bunRuntime.uuidV7Slug = () => nativeUuidV7("base64url");
   // Native counter exhaustion advances even an explicit timestamp. Leave the At hooks absent
   // so the shared portable generator writes the requested instant without native counter state.
-  bunRuntime.uuidV7Bytes = (out?: Uint8Array, offset = 0) => {
-    const bytes = nativeUuidV7("buffer");
-    return toOwnBytes(bytes, out, offset);
-  };
+  bunRuntime.uuidV7Bytes = () => nativeUuidV7("buffer");
 }
 
 export const runtime = bunRuntime;

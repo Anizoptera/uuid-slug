@@ -78,6 +78,10 @@ const reenteredGeneration = () =>
     "UUIDv7 generation cannot be reentered from its clock or entropy callback.",
   );
 
+/** Keep plain native arrays and copy platform subclasses only when the package owns the result. */
+const ownNativeBytes = (bytes: Uint8Array): Uint8Array =>
+  Object.getPrototypeOf(bytes) === Uint8Array.prototype ? bytes : new Uint8Array(bytes);
+
 /**
  * Seeds the sequence from the same six random bytes and the same bit positions as before, split
  * across the two halves: byte 0 and the top 2 bits of byte 1 form the high half, the rest the
@@ -271,20 +275,17 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
   function uuidV7Bytes(): UuidV7Bytes | UuidSlugError;
   function uuidV7Bytes<T extends Uint8Array>(out: T, offset?: number): T | UuidSlugError;
   function uuidV7Bytes(out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
-    // The range is checked BEFORE delegating for the same reason the instant is: a native writer
-    // is handed the caller's buffer and offset directly, and answers differently from the portable
-    // path. Measured on Bun 1.3.14, `out.set(bytes, offset)` coerces a NaN offset to 0 and writes
-    // at the wrong place reporting success, while a fractional one throws a RangeError that the
-    // catch below would relabel `rng_unavailable` — blaming the entropy source for a caller's
-    // argument. Checking here is what makes every runtime give the one answer.
-    // Guarded only on the branch that leaves this package: the fallback checks the same range
-    // itself, so checking before the branch would pay for it twice on every Node call.
+    // Validate before native generation so a caller error cannot consume entropy or be relabelled
+    // as a runtime failure. The native seam returns owned bytes; only this function commits them.
     if (!runtime.uuidV7Bytes) return fallbackUuidV7Bytes(out, offset);
     const badRange =
       out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
     if (badRange) return badRange;
     try {
-      return runtime.uuidV7Bytes(out, offset);
+      const generated = runtime.uuidV7Bytes();
+      if (out === undefined) return ownNativeBytes(generated);
+      out.set(generated, offset);
+      return out;
     } catch (cause) {
       const result = fallbackUuidV7Bytes(out, offset);
       return result instanceof Error
@@ -326,7 +327,10 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
       out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
     if (badRange) return badRange;
     try {
-      return runtime.uuidV7BytesAt(timestamp, out, offset);
+      const generated = runtime.uuidV7BytesAt(timestamp);
+      if (out === undefined) return ownNativeBytes(generated);
+      out.set(generated, offset);
+      return out;
     } catch (cause) {
       const result = fallbackUuidV7BytesAt(timestamp, out, offset);
       return result instanceof Error

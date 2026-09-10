@@ -128,6 +128,12 @@ try {
   });
   assert.equal(draws, 1, "one generator call must draw once");
   assert.equal(clocks, 1, "one generator call must observe the clock once");
+  assert.equal(api.uuidV7Bytes(into, 4), into, "initialize the package generator");
+  check("caller-owned v7 generation", () => api.uuidV7Bytes(into, 4), {
+    buffers: 0,
+    views: 0,
+    errors: 0,
+  });
   check("exact UUID formatting", () => api.formatUuid(bytes), { buffers: 0, views: 0, errors: 0 });
   if (hasHex) assert.equal(counts.hex, 1, "available native hex must be used once");
   check("exact slug formatting", () => api.formatUuidSlug(bytes), {

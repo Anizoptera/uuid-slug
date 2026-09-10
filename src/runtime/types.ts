@@ -19,7 +19,8 @@ export interface Runtime {
    */
   uuidV4?(this: void): UuidV4String;
   uuidV7?(this: void): UuidV7String;
-  uuidV7Bytes?(this: void, out?: Uint8Array, offset?: number): Uint8Array;
+  /** Return native-owned bytes; caller-buffer validation and writes belong to the public generator. */
+  uuidV7Bytes?(this: void): Uint8Array;
   uuidV7Slug?(this: void): UuidV7Slug;
   /**
    * Generate at a caller-supplied millisecond. SEPARATE from `uuidV7` on purpose, because
@@ -27,5 +28,5 @@ export interface Runtime {
    * the timestamp; otherwise the portable generator handles the request.
    */
   uuidV7At?(this: void, timestamp: number): UuidV7String;
-  uuidV7BytesAt?(this: void, timestamp: number, out?: Uint8Array, offset?: number): Uint8Array;
+  uuidV7BytesAt?(this: void, timestamp: number): Uint8Array;
 }

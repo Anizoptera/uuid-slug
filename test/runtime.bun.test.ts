@@ -32,10 +32,8 @@ import {
 import { unwrap } from "../dev/unwrap";
 
 describe("bun runtime", () => {
-  // The same list `test/buffer-contract.test.ts` runs on Node, against Bun's native byte writers.
-  // It is the case where the split lanes earn their cost: `uuidV7Bytes` here is
-  // `Bun.randomUUIDv7("buffer")` plus `TypedArray.set`, which coerces a NaN offset to 0 and throws
-  // on a fractional one — neither of which the portable generator Node runs would ever do.
+  // The same list runs on Node's portable generator and Bun's native owned-byte adapter, so both
+  // runtime branches must preserve the public caller-buffer contract.
   for (const entry of bufferContractCases) {
     test(entry.name, () => {
       expect(entry.run()).toBeUndefined();

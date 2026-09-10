@@ -36,7 +36,8 @@ notes: the section for a version is published verbatim when its tag is pushed.
 ### Fixed
 
 - Fall back to matching portable UUID generation when an optional native string, slug, or byte
-  generator fails, while preserving both causes if the fallback also fails.
+  generator fails, while preserving both causes if the fallback also fails and leaving caller
+  storage unchanged.
 - Leave portable UUIDv7 sequence state unchanged when entropy fails, so a failed attempt cannot corrupt retry state.
 - Restrict base64url byte helpers to one 16-byte UUID payload and reject every other length.
 - Leave caller-owned storage unchanged when UUID or plain-slug parsing rejects invalid input.

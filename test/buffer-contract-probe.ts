@@ -5,12 +5,9 @@
  * offset matrix.
  *
  * Shared by the vitest and the bun:test lanes for the reason `entropy-probe.ts` gives, and here the
- * split is not hypothetical: the defect this gate exists for reproduced on Node and NOT on Bun.
- * `uuidV7Bytes` resolves to the portable generator under `runtime/node.ts` and to
- * `Bun.randomUUIDv7("buffer")` under `runtime/bun.ts`, and the two disagree about a bad offset —
- * `subarray` truncates a fractional one, `TypedArray.set` throws on it, and direct indexing
- * silently does nothing. A lane that ran on one runtime would report the class fixed while the
- * other still shipped it.
+ * split is not hypothetical: `uuidV7Bytes` reaches the portable generator under Node and the
+ * native owned-byte adapter under Bun. Both must reject the same caller ranges before entropy is
+ * consumed and commit only after generation succeeds.
  *
  * The invariant is what makes the failure self-revealing, rather than the offsets: a rejected call
  * MUST report `invalid_buffer` AND leave the buffer byte-identical. Reporting alone would pass a

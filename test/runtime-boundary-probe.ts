@@ -170,7 +170,7 @@ export const runtimeBoundaryCases = [
     },
   },
   {
-    name: "retains native and portable causes when both generators fail",
+    name: "retains both failure causes without exposing caller storage to the native adapter",
     run(this: void) {
       const nativeCause = new Error("native generator failed");
       const portableCause = new Error("portable generator failed");
@@ -184,18 +184,24 @@ export const runtimeBoundaryCases = [
         uuidV7At() {
           throw nativeCause;
         },
-        uuidV7Bytes() {
+        uuidV7Bytes(...args: Uint8Array[]) {
+          args[0]?.fill(0xaa);
           throw nativeCause;
         },
-        uuidV7BytesAt() {
+        uuidV7BytesAt(_timestamp, ...args: Uint8Array[]) {
+          args[0]?.fill(0xaa);
           throw nativeCause;
         },
       });
+      const currentOut = new Uint8Array(24).fill(0x55);
+      const explicitOut = new Uint8Array(24).fill(0x55);
       for (const result of [
         generator.uuidV7(),
         generator.uuidV7At(timestamp),
         generator.uuidV7Bytes(),
         generator.uuidV7BytesAt(timestamp),
+        generator.uuidV7Bytes(currentOut, 4),
+        generator.uuidV7BytesAt(timestamp, explicitOut, 4),
       ]) {
         assert.ok(result instanceof UuidSlugError);
         assert.ok(result.cause instanceof AggregateError);
@@ -205,6 +211,7 @@ export const runtimeBoundaryCases = [
         assert.equal(portableFailure.code, "rng_unavailable");
         assert.equal(portableFailure.cause, portableCause);
       }
+      for (const out of [currentOut, explicitOut]) assert.ok(out.every((byte) => byte === 0x55));
     },
   },
   {
