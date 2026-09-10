@@ -1,3 +1,4 @@
+import { fromMarkdown } from "mdast-util-from-markdown";
 import ts from "typescript-floor";
 
 export type ReleaseLevel = "prerelease" | "patch" | "minor" | "major";
@@ -136,9 +137,15 @@ export function minimumRelease(
   languages: readonly ReleaseLevel[],
 ): ReleaseLevel {
   if (version.split("+", 1)[0]?.includes("-")) return "prerelease";
-  const declared = notes.includes("### Breaking changes")
+  const headings = new Set(
+    fromMarkdown(notes).children.flatMap((node) => {
+      if (node.type !== "heading" || node.depth !== 3) return [];
+      return [node.children.map((child) => (child.type === "text" ? child.value : "")).join("")];
+    }),
+  );
+  const declared = headings.has("Breaking changes")
     ? "major"
-    : notes.includes("### Added")
+    : headings.has("Added")
       ? "minor"
       : "patch";
   const strongest =

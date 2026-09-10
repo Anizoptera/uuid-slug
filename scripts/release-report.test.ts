@@ -48,6 +48,12 @@ test("the strongest structural or maintainer-classified change sets the minimum 
   expect(minimumRelease("2.0.0-beta.2", "### Breaking changes\n", ["major"])).toBe("prerelease");
 });
 
+test("release classification ignores changelog headings inside examples", () => {
+  expect(minimumRelease("1.2.4", "```md\n### Breaking changes\n### Added\n```", [])).toBe("patch");
+  expect(minimumRelease("1.3.0", "### Added\n\n- Public behavior.\n", [])).toBe("minor");
+  expect(minimumRelease("2.0.0", "### Breaking changes\n\n- Public behavior.\n", [])).toBe("major");
+});
+
 test("retained archives identify the selected package version and Git source", async () => {
   const npm = new Map([
     ["package/package.json", new Blob([JSON.stringify({ name: "pkg", version: "1.2.3" })])],
