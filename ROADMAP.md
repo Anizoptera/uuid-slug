@@ -1,5 +1,10 @@
 # Roadmap
 
+## HLD boundary
+
+- [ ] Preserve every published identifier, accepted format, default, and caller-visible failure unless Art explicitly rules otherwise.
+- [ ] Escalate any proposed public capability, input limit, or compatibility change with measured consequences; derive internal seams, types, tests, and optimizations from the existing contracts.
+
 ## Current audit
 
 ### Scope and contracts
@@ -29,6 +34,8 @@
 - [ ] Audit masking claims for confidentiality limits, offline guessing, checksum false acceptance, key rotation, sentinel leakage, chosen-input behavior, and denial-of-service through schema count or derivation work.
 - [ ] Audit entropy and seed handling for copies, retention, zeroization limits, snapshots, process forks, workers, shared memory, and accidental publication in errors, docs, maps, or artifacts.
 - [ ] Audit attacker-controlled length, iteration, key-list, sentinel-list, and malformed-input work for bounded CPU, memory, allocation, and diagnostics.
+- [ ] Measure seed, previous-mask, and sentinel scaling through geometric mechanism boundaries; derive dominated ranges before proposing any public limit.
+- [ ] Ask Art only for a residual user-visible trade-off that measurements and existing contracts cannot decide, with consequences and proposed wording instead of arbitrary numbers.
 
 ### Core implementation
 
