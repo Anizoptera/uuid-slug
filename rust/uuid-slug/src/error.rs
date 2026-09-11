@@ -25,8 +25,8 @@ pub enum ErrorCode {
     InvalidUuidVersion,
     /// Secure entropy is unavailable.
     RngUnavailable,
-    /// The UUID falls outside the accepted freshness window.
-    StaleUuid,
+    /// The UUID falls outside the accepted timestamp window.
+    TimestampOutsideWindow,
 }
 
 impl ErrorCode {
@@ -43,7 +43,7 @@ impl ErrorCode {
             Self::InvalidUuidSlug => "invalid_uuid_slug",
             Self::InvalidUuidVersion => "invalid_uuid_version",
             Self::RngUnavailable => "rng_unavailable",
-            Self::StaleUuid => "stale_uuid",
+            Self::TimestampOutsideWindow => "timestamp_outside_window",
         }
     }
 
@@ -63,7 +63,7 @@ impl ErrorCode {
             Self::InvalidUuidSlug => "Invalid slug for the requested operation.",
             Self::InvalidUuidVersion => "This operation requires an RFC-variant UUIDv7.",
             Self::RngUnavailable => "Secure random byte generation failed.",
-            Self::StaleUuid => "UUID timestamp falls outside the freshness window.",
+            Self::TimestampOutsideWindow => "UUID timestamp falls outside the accepted window.",
         }
     }
 }

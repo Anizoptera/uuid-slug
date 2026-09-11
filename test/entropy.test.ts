@@ -24,7 +24,7 @@ import {
   insecureAmong,
   sourcesUsedBy,
 } from "./entropy-probe";
-import { uuidV4Bytes } from "../src/index";
+import { generateUuidV4Bytes } from "../src/index";
 
 describe("entropy source", () => {
   it.each(generators)("never reaches for Math.random in %s", (_name, generate) => {
@@ -43,15 +43,15 @@ describe("entropy source", () => {
   it("leaves every v4 bit random except the six the RFC fixes", () => {
     // A pinned bit narrows the id space despite distinct outputs. This detects stuck bits,
     // not bias, correlations, or predictability in a source whose bits all vary.
-    expect(constantBitCount(uuidV4Bytes)).toBe(6);
+    expect(constantBitCount(generateUuidV4Bytes)).toBe(6);
   });
 
   it("draws its own randomness from a source that can be shown to be cryptographic", () => {
-    // `uuidV4Bytes` always goes through this package's `fillRandom`, so an empty result is a
+    // `generateUuidV4Bytes` always goes through this package's `fillRandom`, so an empty result is a
     // real finding: our own entropy could not be attributed. The delegating paths cannot make
     // that claim — a native generator draws inside the engine, below any JavaScript patch —
     // so they only assert the negative.
-    const used = attributedSourcesFor(uuidV4Bytes);
+    const used = attributedSourcesFor(generateUuidV4Bytes);
     expect(used).not.toEqual([]);
     expect(insecureAmong(used)).toEqual([]);
   });

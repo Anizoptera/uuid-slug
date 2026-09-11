@@ -30,12 +30,17 @@ in their durable owner and keep discarded exploration transient.
 
 ## Shape
 
+- Name every public and internal operation for the domain action it performs. Use one term for one
+  behavior and one behavior for one term; encode direction, unit, and ownership where callers or
+  maintainers otherwise have to remember them. When a rename breaks callers or compilation, repair
+  the model and every dependent use from that meaning. Never restore an opaque legacy name merely
+  to make a gate pass. Use explicit operation values instead of Boolean direction flags.
 - Put complexity behind the smallest interface that covers the consumer job. Prefer one obvious
   operation over a sequence that makes callers coordinate package state.
 - Keep keyless transformations and generation as module functions. Put keys, sentinels, rotation,
-  masked freshness, and migration on the codec that owns that configuration.
+  masked timestamp validation, and migration on the codec that owns that configuration.
 - Keep mutable sequence state in generators and immutable configuration in codecs. Let a codec
-  depend on the smallest capability it needs—one `uuidV7Bytes` operation—and validate that result
+  depend on the smallest capability it needs—one `generateUuidV7Bytes` operation—and validate that result
   at the codec seam instead of requiring a full generator or trusting an asserted brand.
 - Use `this: void` when a public method has no receiver semantics. This lets callers detach the
   method safely and prevents compatible implementations from adding hidden receiver state.
@@ -63,12 +68,35 @@ Keep UUID text/binary conversion directional and version-neutral:
   package-owned bytes.
 - Keep generic, v4, and v7 byte guards together. The generic guard proves only the 16-byte shape;
   version guards also prove their version and RFC variant bits.
-- Keep deprecated `parseUuid` and `formatUuid` as thin compatibility paths until a governed
-  breaking release removes them. New code and documentation use the directional names so the
-  compatibility surface does not become a second interface.
+- Do not add aliases before a published contract needs a migration path. Before 1.0, make an
+  approved breaking rename directly so one consumer job has one name and one interface.
+
+### Generation and codecs
+
+- Name keyless generation with `generate` plus the produced representation. Keep
+  `generateUuidV4`, `generateUuidV4Bytes`, `generateUuidV4Slug`, `generateUuidV7`,
+  `generateUuidV7Bytes`, `generateUuidV7At`, `generateUuidV7BytesAt`, and
+  `generateUuidV7Slug` at module scope; use the same UUIDv7 names on a generator so a detached
+  method remains self-explanatory.
+- Give a codec only the byte-producing function it consumes. The optional
+  `generateUuidV7Bytes` callback accepts a detached generator method directly; a one-method source
+  object would add a concept without adding an invariant. Create the default generator lazily so a
+  codec used only to encode or decode pays no generator allocation.
+- Name codec operations for both action and object: `generateSlug`, `encodeUuid`, `decodeSlug`,
+  `decodeSlugToBytes`, and `validateSlugTimestamp`. Name migration operations `decodeSlug` and
+  `decodeSlugCandidates` because detached readers must still identify their input.
+- Use `slugAlphabet` for the codec writer choice. It selects emitted slug spelling; it does not
+  constrain readers, which infer and accept both supported spellings.
+- Require callers to provide `maxTimestampDeltaMs` for every timestamp-window check. Read the
+  optional numeric `referenceUnixMs` once, defaulting only that observation to `Date.now()`; do not
+  embed an application tolerance or callback protocol in validation.
 
 ## Types and validation
 
+- Define each closed vocabulary once as an `as const` runtime value and derive its union type from
+  that value. Export the value when consumers need to validate, enumerate, document, or present the
+  members; keep a type-only union only when no runtime use exists. Never maintain parallel literal
+  lists in types, validators, and tests.
 - Accept ergonomic raw input at the package seam, validate it once, and return the narrowest type
   established by that successful operation. Keep format, UUID version, direct or masked spelling,
   and ownership distinctions when consumers use them.
@@ -88,7 +116,7 @@ Keep UUID text/binary conversion directional and version-neutral:
   `instanceof` fast path is acceptable only when the same interface has a correct cross-realm path
   and measurement shows the fast path removes meaningful work.
 - A brand proves only the property the package checked. Never imply issuance, authenticity,
-  freshness, ownership, or secrecy from syntax alone.
+  timestamp validity, ownership, or secrecy from syntax alone.
 
 ## Failures and effects
 

@@ -22,27 +22,27 @@ mod tests {
     };
 
     #[test]
-    fn freshness_accepts_structurally_valid_v7_endpoint_values() -> Result<(), Error> {
-        let freshness = Freshness {
-            now: 1_234_567_890_000.0,
-            window_ms: 0.0,
+    fn timestamp_window_accepts_structurally_valid_v7_endpoint_values() -> Result<(), Error> {
+        let window = UuidV7TimestampWindow {
+            reference_unix_ms: 1_234_567_890_000.0,
+            max_timestamp_delta_ms: 0.0,
         };
         for text in [
             "011f71fb-0450-7000-8000-000000000000",
             "011f71fb-0450-7fff-bfff-ffffffffffff",
         ] {
             let uuid = Uuid::parse(text)?;
-            assert_eq!(freshness.validate(uuid)?, uuid);
+            assert_eq!(window.validate(uuid)?, uuid);
         }
         Ok(())
     }
 
     #[test]
-    fn freshness_reports_a_valid_uuid_of_the_wrong_version() -> Result<(), Error> {
+    fn timestamp_window_reports_a_valid_uuid_of_the_wrong_version() -> Result<(), Error> {
         let uuid = Uuid::parse("1f04e7f5-c0c6-4044-b5a3-6278bb77ffb4")?;
-        let error = Freshness {
-            now: 0.0,
-            window_ms: 0.0,
+        let error = UuidV7TimestampWindow {
+            reference_unix_ms: 0.0,
+            max_timestamp_delta_ms: 0.0,
         }
         .validate(uuid)
         .expect_err("UUIDv4 must not have a UUIDv7 timestamp");
@@ -69,17 +69,15 @@ mod tests {
         );
         for alphabet in [Alphabet::Base64Url, Alphabet::Base32Hex] {
             let codec = Codec::new(CodecOptions {
-                masked_slug_alphabet: alphabet,
+                sentinels: vec![("nil".to_owned(), reserved)],
+                slug_alphabet: alphabet,
                 ..CodecOptions::new(collision.clone())
             })?;
             assert_eq!(
-                codec.uuid_v7_to_masked_slug(uuid).unwrap_err().code(),
+                codec.encode_uuid(uuid).unwrap_err().code(),
                 ErrorCode::InvalidMaskSchema
             );
-            assert_eq!(
-                codec.masked_slug_to_uuid_v7(&reserved.slug(alphabet))?,
-                reserved
-            );
+            assert_eq!(codec.decode_slug(&reserved.slug(alphabet))?, reserved);
         }
         Ok(())
     }
@@ -104,7 +102,7 @@ mod tests {
         let uuid = Uuid::parse("01234567-89ab-7cde-8fab-0123456789ab")?;
         let good = crate::public_mask_schema();
         let writer = Codec::new(CodecOptions::new(crate::public_mask_schema()))?;
-        let slug = writer.uuid_v7_to_masked_slug(uuid)?;
+        let slug = writer.encode_uuid(uuid)?;
         let fallback = Codec::new(CodecOptions {
             previous_masks: vec![good.clone()],
             ..CodecOptions::new(custom.clone())
@@ -114,10 +112,10 @@ mod tests {
             ..CodecOptions::new(good)
         })?;
         failing.store(true, Ordering::Relaxed);
-        let error = fallback.masked_slug_to_uuid_v7(&slug).unwrap_err();
+        let error = fallback.decode_slug(&slug).unwrap_err();
         assert_eq!(error.code(), ErrorCode::InvalidMaskSchema);
         assert!(std::error::Error::source(&error).is_some());
-        let migration = first.migration(MigrationOptions::default());
+        let migration = first.migration_decoder(MigrationOptions::default());
         assert_eq!(
             migration.decode(&slug, Some(MigrationFormat::Current))?,
             uuid
@@ -139,7 +137,7 @@ pub struct CodecOptions {
     /// Older read keys, in caller-specified order. No keys are added implicitly.
     pub previous_masks: Vec<MaskSchema>,
     /// Alphabet used by masked output and sentinel presentation.
-    pub masked_slug_alphabet: Alphabet,
+    pub slug_alphabet: Alphabet,
     /// Reserved identities; an empty list disables sentinels.
     pub sentinels: Vec<(String, Uuid)>,
 }
@@ -147,21 +145,11 @@ pub struct CodecOptions {
 impl CodecOptions {
     /// Start codec configuration from an explicitly selected current mask.
     pub fn new(mask: MaskSchema) -> Self {
-        let sentinels = [("nil", 0), ("anonymousUser", 1), ("unknownUser", 2)]
-            .into_iter()
-            .map(|(name, timestamp)| {
-                let mut bytes = [0; 16];
-                bytes[5] = timestamp;
-                bytes[6] = 0x70;
-                bytes[8] = 0x80;
-                (name.to_owned(), Uuid::from_bytes(bytes))
-            })
-            .collect();
         Self {
             mask,
             previous_masks: Vec::new(),
-            masked_slug_alphabet: Alphabet::Base64Url,
-            sentinels,
+            slug_alphabet: Alphabet::Base64Url,
+            sentinels: Vec::new(),
         }
     }
 }
@@ -184,7 +172,7 @@ impl Codec {
             if sentinels.iter().any(|entry| entry.uuid == uuid) {
                 return Err(Error::new(ErrorCode::InvalidUuid));
             }
-            let slug = uuid.slug(options.masked_slug_alphabet);
+            let slug = uuid.slug(options.slug_alphabet);
             reserved.push((uuid.slug(Alphabet::Base64Url), uuid));
             reserved.push((uuid.slug(Alphabet::Base32Hex), uuid));
             sentinels.push(Sentinel { name, uuid, slug });
@@ -195,7 +183,7 @@ impl Codec {
             schemas,
             sentinels,
             reserved,
-            masked: options.masked_slug_alphabet,
+            masked: options.slug_alphabet,
         })
     }
 
@@ -212,7 +200,7 @@ impl Codec {
     }
 
     /// Encode a v7, preserving sentinel identities and rejecting ciphertext collisions.
-    pub fn uuid_v7_to_masked_slug(&self, uuid: Uuid) -> Result<String, Error> {
+    pub fn encode_uuid(&self, uuid: Uuid) -> Result<String, Error> {
         uuid.timestamp()?;
         if let Some(sentinel) = self.sentinels.iter().find(|entry| entry.uuid == uuid) {
             return Ok(sentinel.slug.clone());
@@ -232,7 +220,7 @@ impl Codec {
     }
 
     /// Return the first current masked UUIDv7 candidate, not proof that this codec issued the ID.
-    pub fn masked_slug_to_uuid_v7(&self, slug: &str) -> Result<Uuid, Error> {
+    pub fn decode_slug(&self, slug: &str) -> Result<Uuid, Error> {
         if let Some(uuid) = self.sentinel(slug) {
             return Ok(uuid);
         }
@@ -254,44 +242,49 @@ impl Codec {
     }
 
     /// Create an opt-in reader without changing this codec's writer or ordinary decoder.
-    pub fn migration(&self, options: MigrationOptions) -> Migration<'_> {
-        Migration {
+    pub fn migration_decoder(&self, options: MigrationOptions) -> MigrationDecoder<'_> {
+        MigrationDecoder {
             codec: self,
             options,
         }
     }
 
     /// Validate under this codec's key, retaining the caller's exact accepted spelling.
-    pub fn validate_masked_slug_fresh<'a>(
+    pub fn validate_slug_timestamp<'a>(
         &self,
         slug: &'a str,
-        freshness: Freshness,
+        window: UuidV7TimestampWindow,
     ) -> Result<&'a str, Error> {
-        freshness.validate(self.masked_slug_to_uuid_v7(slug)?)?;
+        window.validate(self.decode_slug(slug)?)?;
         Ok(slug)
     }
 }
 
 /// A symmetric, inclusive timestamp window in milliseconds; fractions remain meaningful.
 #[derive(Clone, Copy, Debug)]
-pub struct Freshness {
+pub struct UuidV7TimestampWindow {
     /// Current Unix time, read once by the caller.
-    pub now: f64,
-    /// Allowed past and future distance, normally 86,400,000 ms.
-    pub window_ms: f64,
+    pub reference_unix_ms: f64,
+    /// Maximum allowed past or future distance, inclusive.
+    pub max_timestamp_delta_ms: f64,
 }
 
-impl Freshness {
+impl UuidV7TimestampWindow {
     /// Reject invalid windows and timestamps outside the caller's accepted range.
     pub fn validate(self, uuid: Uuid) -> Result<Uuid, Error> {
         let timestamp = uuid
             .timestamp()
             .map_err(|_| Error::new(ErrorCode::InvalidUuidVersion))? as f64;
-        if !self.window_ms.is_finite() || self.window_ms < 0.0 || !self.now.is_finite() {
+        if !self.max_timestamp_delta_ms.is_finite()
+            || self.max_timestamp_delta_ms < 0.0
+            || !self.reference_unix_ms.is_finite()
+        {
             return Err(Error::new(ErrorCode::InvalidTimestamp));
         }
-        if timestamp < self.now - self.window_ms || timestamp > self.now + self.window_ms {
-            return Err(Error::new(ErrorCode::StaleUuid));
+        if timestamp < self.reference_unix_ms - self.max_timestamp_delta_ms
+            || timestamp > self.reference_unix_ms + self.max_timestamp_delta_ms
+        {
+            return Err(Error::new(ErrorCode::TimestampOutsideWindow));
         }
         Ok(uuid)
     }
@@ -318,12 +311,12 @@ pub enum MigrationFormat {
 }
 
 /// A reader borrowing its codec, so keys and sentinel definitions cannot drift.
-pub struct Migration<'a> {
+pub struct MigrationDecoder<'a> {
     codec: &'a Codec,
     options: MigrationOptions,
 }
 
-impl Migration<'_> {
+impl MigrationDecoder<'_> {
     /// Decode with sentinel/current/original/plain priority, stopping at the first candidate.
     pub fn decode(&self, slug: &str, format: Option<MigrationFormat>) -> Result<Uuid, Error> {
         let mut result = None;

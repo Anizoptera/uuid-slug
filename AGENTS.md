@@ -34,7 +34,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 - Read `docs/public-api.md` before changing or documenting a public export, type, parameter,
   default, error, runtime path, or performance characteristic; it owns interface shape and the
-  declaration comments consumers see.
+  declaration comments consumers see. A naming repair follows domain meaning through every
+  dependent use; a compile failure never licenses restoring an opaque legacy term.
 - The externally visible API is reserved. Put any proposed public export, option, behavior, or
   feature change and its consumer consequences in the same pull request. Merging is the maintainer
   decision; no separate acceptance step exists.
@@ -42,12 +43,16 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   parameters, return values, narrowing, or configuration. A package signature need not mention the
   type. Remove it only when no documented value or operation needs its distinction. Apply this rule
   separately to TypeScript and Rust, document the consumer effect, and verify each packaged surface.
+- Define a closed public vocabulary once as an `as const` runtime value and derive its union type;
+  export the value when consumers need validation, iteration, schemas, or UI choices.
 - `ROADMAP.md` is transient and never owns a contract, decision, or lasting conclusion. Put
   consumer contracts in README, wire design in `docs/design.md`, security boundaries in
   `docs/security.md`, cross-language and distribution decisions in `docs/cross-language.md`, and
   measured conclusions in `bench/PERFORMANCE.md`.
-- Use only `ROADMAP.md` for project planning; never create a shadow, staging, renamed, or temporary
-  roadmap file in this repository.
+- Use only `ROADMAP.md` as the live plan and execution procedure. Keep every current decision and
+  unfinished atomic task there as a Markdown task, update it when evidence or scope changes, replace
+  superseded state in place, and compress completed work to the facts later phases still need.
+  Never create a shadow, staging, renamed, or temporary roadmap file in this repository.
 - Read README §Guarantees before changing generation or tests; it owns the consumer guarantees.
   New guarantees require a maintainer ruling before code or tests impose them. Intra-millisecond ordering
   is explicitly not guaranteed: do not gate it or reject a native generator for lacking it.
@@ -66,18 +71,18 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   of issuance. Do not reject multiple matches or append fallback schemas on the caller's behalf.
 - Every decoder must accept every value that a supported matching encoder can produce. Options
   may add accepted forms; they must not remove existing ones. Reject forms no encoder produces.
-- Keyed operations belong only on the codec holding the key, including masked freshness
+- Keyed operations belong only on the codec holding the key, including masked timestamp
   validation. Do not add top-level masked shortcuts. Codec construction requires an explicit
-  private mask or `PUBLIC_MASK_SCHEMA`; keep the published schema opt-in and remove implicit masked
+  private mask or `UUID_V7_TEST_MASK`; keep the published mask opt-in and remove implicit masked
   defaults. Keep codecs immutable and receiver-free; generators own mutable sequence state. A
-  codec accepts generation through the minimal `uuidV7Bytes` seam and validates every returned
+  codec accepts generation through the minimal `generateUuidV7Bytes` seam and validates every returned
   payload before masking it.
 - Preserve the frozen round count, derivation constants, seed interpretation, alphabets, tag
-  widths, and `keyIterations`: changing them changes previously issued identifiers. Comments
+  widths, and `keyDerivationIterations`: changing them changes previously issued identifiers. Comments
   must explain this wire-format obligation, not historical reasons for choosing the constants.
 - Do not add old API aliases, compatibility subpaths, or a compatibility decoder for 0.2.0.
   The maintainer ruled that release had no consumers; that exception does not justify breaking other formats.
-- Original fixed-mask compatibility is opt-in through `codec.migration`; read README's migration
+- Original fixed-mask compatibility is opt-in through `codec.createMigrationDecoder`; read README's migration
   sections before changing it. Preserve sentinel priority and stored trailing-bit aliases without
   weakening ordinary strict decoding. Writers and accepted old formats remain independent.
 - npm runtime dependencies are forbidden. Rust dependencies require the evidence described in

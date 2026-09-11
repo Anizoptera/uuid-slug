@@ -70,9 +70,9 @@ workloads, and they do not turn development bridges into npm distribution candid
 | `guard.invalid.slug` | 4044 | 16 | 187 | 21 |
 | `guard.uuid` | 75 | 58 | 45 | 32 |
 | `guard.slug` | 93 | 38 | 45 | 41 |
-| `fresh.uuid` | 111 | 125 | 54 | 53 |
-| `fresh.slug` | 409 | 95 | 288 | 49 |
-| `fresh.masked` | 624 | 227 | 443 | 173 |
+| `timestamp.uuid` | 111 | 125 | 54 | 53 |
+| `timestamp.slug` | 409 | 95 | 288 | 49 |
+| `timestamp.masked` | 624 | 227 | 443 | 173 |
 | `masked.generate` | 635 | 444 | 402 | 281 |
 | `masked.encode` | 452 | 381 | 363 | 245 |
 | `masked.decode` | 497 | 307 | 376 | 231 |
@@ -91,7 +91,7 @@ workloads, and they do not turn development bridges into npm distribution candid
 - Native hexadecimal/base64 encoding replaces JavaScript assembly where supported. Older runtimes keep portable paths. Exact-sized buffers bypass redundant views; caller-owned generation writes at the requested offset.
 - Boolean validation no longer constructs decoded buffers or discarded errors. A scanner shared with parsing regressed Bun in the measured trial and was rejected; both paths retain the same character table and contract corpus.
 - Rotation decodes text once and constructs a mismatch error only after all explicit keys fail. Custom callbacks still receive owned bytes. Removing those copies would alter ownership semantics.
-- Freshness consumes decoded bytes directly. Formatting remains at string-returning boundaries; it is not part of validation.
+- TimestampValidation consumes decoded bytes directly. Formatting remains at string-returning boundaries; it is not part of validation.
 - Async and synchronous construction share hash arithmetic and final key expansion. The initial continuation rewrite regressed masking; a single state branch replaced repeated optional-state lookups. Native generators remain delegated without introducing an ordering requirement.
 - Portable v7 continuation keeps the same 16-byte entropy callback contract as initial generation.
   Requesting only the four bytes consumed by same-millisecond continuations reduced pool demand but
@@ -108,8 +108,8 @@ Node Inspector allocation sampling used a 1,024-byte interval with both `include
 |---|---:|---:|
 | Slug predicate | 236 | 0 |
 | Caller-owned v4 generation | 1 | 1 |
-| Plain-slug freshness | 1,596 | 249 |
-| Masked freshness | 2,041 | 464 |
+| Plain-slug timestamp validation | 1,596 | 249 |
+| Masked timestamp validation | 2,041 | 464 |
 | Previous-key decoding | 2,772 | 1,596 |
 | Codec construction | 9,577 | 6,336 |
 

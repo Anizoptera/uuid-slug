@@ -234,7 +234,7 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
     const runner = path.join(root, "consumer.mjs");
     await Bun.write(
       runner,
-      'import * as api from "@anizoptera/uuid-slug";\nimport * as foreign from "./foreign/package/dist/index.js";\nimport { probeConsumer } from "./probe.mjs";\nawait probeConsumer(api);\nconst mask = foreign.createMaskSchema({ seed: "same-version-foreign-schema" });\nif (mask instanceof Error) throw mask;\nconst codec = api.createUuidSlugCodec({ mask });\nif (codec instanceof Error) throw codec;\nconst uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";\nconst slug = codec.uuidV7ToMaskedSlug(uuid);\nif (slug instanceof Error) throw slug;\nif (codec.maskedSlugToUuidV7(slug) !== uuid) throw new Error("A same-version schema from another loaded copy did not round-trip.");\n',
+      'import * as api from "@anizoptera/uuid-slug";\nimport * as foreign from "./foreign/package/dist/index.js";\nimport { probeConsumer } from "./probe.mjs";\nawait probeConsumer(api);\nconst mask = foreign.createUuidV7Mask({ seed: "same-version-foreign-schema" });\nif (mask instanceof Error) throw mask;\nconst codec = api.createUuidV7SlugCodec({ mask });\nif (codec instanceof Error) throw codec;\nconst uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";\nconst slug = codec.encodeUuid(uuid);\nif (slug instanceof Error) throw slug;\nif (codec.decodeSlug(slug) !== uuid) throw new Error("A same-version schema from another loaded copy did not round-trip.");\n',
     );
     const consumers = await Promise.allSettled([
       command(

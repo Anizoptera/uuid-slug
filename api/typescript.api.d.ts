@@ -1,6 +1,7 @@
 // Generated consumer-visible declarations; update with `bun run api:update` instead of editing.
 
-export declare interface AsyncMaskSchemaOptions extends MaskSchemaOptions {
+declare const ALPHABETS: readonly ["base64url", "base32hex"];
+export declare interface AsyncUuidV7MaskOptions extends UuidV7MaskOptions {
   readonly signal?: AbortSignal;
 }
 declare type Brand<Value, Name extends string> = Value & {
@@ -9,31 +10,43 @@ declare type Brand<Value, Name extends string> = Value & {
   };
 };
 declare const brand: unique symbol;
-export declare function bytesToUuid(bytes: Uint8Array, offset?: number): UuidString | UuidSlugError;
-export declare function createCustomMaskSchema(
-  options: CustomMaskSchemaOptions,
-): MaskSchema | UuidSlugError;
-export declare function createMaskSchema(options: MaskSchemaOptions): MaskSchema | UuidSlugError;
-export declare function createMaskSchemaAsync(
-  options: AsyncMaskSchemaOptions,
-): Promise<MaskSchema | UuidSlugError>;
-export declare function createUuidSlugCodec(
-  options: UuidSlugCodecOptions,
-): UuidSlugCodec | UuidSlugError;
+export declare function bytesToSlug(
+  bytes: Uint8Array,
+  alphabet?: SlugAlphabet,
+): UuidSlug | UuidSlugError;
+export declare function bytesToSlug(
+  bytes: Uint8Array,
+  byteOffset: number,
+  alphabet?: SlugAlphabet,
+): UuidSlug | UuidSlugError;
+export declare function bytesToUuid(
+  bytes: Uint8Array,
+  byteOffset?: number,
+): UuidString | UuidSlugError;
+export declare function createCustomUuidV7Mask(
+  options: CustomUuidV7MaskOptions,
+): UuidV7Mask | UuidSlugError;
 export declare function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator;
-export declare interface CustomMaskSchemaOptions {
-  readonly id: string;
-  readonly forward: (input: Uint8Array) => Uint8Array | UuidSlugError;
-  readonly reverse: (input: Uint8Array) => Uint8Array | UuidSlugError;
+export declare function createUuidV7Mask(options: UuidV7MaskOptions): UuidV7Mask | UuidSlugError;
+export declare function createUuidV7MaskAsync(
+  options: AsyncUuidV7MaskOptions,
+): Promise<UuidV7Mask | UuidSlugError>;
+export declare function createUuidV7SlugCodec(
+  options: UuidV7SlugCodecOptions,
+): UuidV7SlugCodec | UuidSlugError;
+export declare interface CustomUuidV7MaskOptions {
+  readonly label: string;
+  readonly mask: (bytes: Uint8Array) => Uint8Array | UuidSlugError;
+  readonly unmask: (bytes: Uint8Array) => Uint8Array | UuidSlugError;
 }
 declare type DirectUuidSlugInput<Input extends string> = RejectKnownInput<
   Input,
   UuidString | MaskedUuidSlug
 >;
 declare type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
-  | "current"
-  | EnabledMigrationOption<Options, "original">
-  | EnabledMigrationOption<Options, "plain">;
+  | "current-mask"
+  | (EnabledMigrationOption<Options, "originalMask"> extends never ? never : "original-mask")
+  | (EnabledMigrationOption<Options, "plainSlug"> extends never ? never : "plain-slug");
 declare type EnabledMigrationOption<
   Options,
   Option extends keyof UuidSlugMigrationOptions,
@@ -49,68 +62,47 @@ declare const ERROR_CODES: readonly [
   "invalid_uuid_slug",
   "invalid_uuid_version",
   "rng_unavailable",
-  "stale_uuid",
+  "timestamp_outside_window",
 ];
 export declare function extractUuidV7Timestamp<Input extends Uint8Array>(
   bytes: UuidV7BytesInput<Input>,
-  offset?: number,
+  byteOffset?: number,
 ): number | UuidSlugError;
-/** @deprecated Use `bytesToUuid`, whose name states the conversion direction. */
-export declare function formatUuid(bytes: Uint8Array, offset?: number): UuidString | UuidSlugError;
-export declare function formatUuidSlug(
-  bytes: Uint8Array,
-  alphabet?: SlugAlphabet,
-): UuidSlug | UuidSlugError;
-export declare function formatUuidSlug(
-  bytes: Uint8Array,
-  offset: number,
-  alphabet?: SlugAlphabet,
-): UuidSlug | UuidSlugError;
-export declare interface FreshValidationOptions {
-  readonly now?: () => number;
-  readonly windowMs?: number;
-}
-export declare function isUuidBytes(bytes: unknown): bytes is UuidBytes;
-export declare function isUuidSlug(slug: unknown): slug is UuidSlug;
+export declare function generateUuidV4(): UuidV4String | UuidSlugError;
+export declare function generateUuidV4Bytes(): UuidV4Bytes | UuidSlugError;
+export declare function generateUuidV4Bytes<Output extends Uint8Array>(
+  output: Output,
+  outputOffset?: number,
+): Output | UuidSlugError;
+export declare function generateUuidV4Slug(alphabet?: SlugAlphabet): UuidV4Slug | UuidSlugError;
+export declare const generateUuidV7: () => UuidV7String | UuidSlugError;
+export declare const generateUuidV7At: (unixMs: number) => UuidV7String | UuidSlugError;
+export declare function generateUuidV7Bytes(): UuidV7Bytes | UuidSlugError;
+export declare function generateUuidV7Bytes<Output extends Uint8Array>(
+  output: Output,
+  outputOffset?: number,
+): Output | UuidSlugError;
+export declare function generateUuidV7BytesAt(unixMs: number): UuidV7Bytes | UuidSlugError;
+export declare function generateUuidV7BytesAt<Output extends Uint8Array>(
+  unixMs: number,
+  output: Output,
+  outputOffset?: number,
+): Output | UuidSlugError;
+export declare function generateUuidV7Slug(alphabet?: SlugAlphabet): UuidV7Slug | UuidSlugError;
+export declare function isUuidBytes(value: unknown): value is UuidBytes;
+export declare function isUuidSlug(value: unknown): value is UuidSlug;
 export declare function isUuidSlugError(value: unknown): value is UuidSlugError;
-export declare function isUuidString(uuid: unknown): uuid is UuidString;
-export declare function isUuidV4Bytes(bytes: unknown): bytes is UuidV4Bytes;
-export declare function isUuidV4Slug(slug: unknown): slug is UuidV4Slug;
-export declare function isUuidV4String(uuid: unknown): uuid is UuidV4String;
-export declare function isUuidV7Bytes(bytes: unknown): bytes is UuidV7Bytes;
-export declare function isUuidV7Slug(slug: unknown): slug is UuidV7Slug;
-export declare function isUuidV7String(uuid: unknown): uuid is UuidV7String;
+export declare function isUuidString(value: unknown): value is UuidString;
+export declare function isUuidV4Bytes(value: unknown): value is UuidV4Bytes;
+export declare function isUuidV4Slug(value: unknown): value is UuidV4Slug;
+export declare function isUuidV4String(value: unknown): value is UuidV4String;
+export declare function isUuidV7Bytes(value: unknown): value is UuidV7Bytes;
+export declare function isUuidV7Slug(value: unknown): value is UuidV7Slug;
+export declare function isUuidV7String(value: unknown): value is UuidV7String;
 declare type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 export declare type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
-export declare interface MaskSchema {
-  readonly id: string;
-  readonly [maskSchemaBrand]: true;
-}
 declare const maskSchemaBrand: unique symbol;
-export declare interface MaskSchemaOptions {
-  readonly id?: string;
-  readonly seed: string | Uint8Array;
-  readonly keyIterations?: number;
-}
-export declare type MigrationFormat = "current" | "original" | "plain";
-/** @deprecated Use `uuidToBytes`, whose name states the conversion direction. */
-export declare function parseUuid<Input extends string>(
-  uuid: UuidStringInput<Input>,
-): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
-/** @deprecated Use `uuidToBytes`, whose name states the conversion direction. */
-export declare function parseUuid<Input extends string, Output extends Uint8Array>(
-  uuid: UuidStringInput<Input>,
-  out: Output,
-  offset?: number,
-): Output | UuidSlugError;
-export declare function parseUuidSlug<Input extends string>(
-  slug: DirectUuidSlugInput<Input>,
-): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
-export declare function parseUuidSlug<Input extends string, Output extends Uint8Array>(
-  slug: DirectUuidSlugInput<Input>,
-  out: Output,
-  offset?: number,
-): Output | UuidSlugError;
+declare const MIGRATION_FORMATS: readonly ["current-mask", "original-mask", "plain-slug"];
 declare type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> = Input extends
   | UuidV4String
   | UuidV4Slug
@@ -118,80 +110,54 @@ declare type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> = In
   : Input extends UuidV7String | UuidV7Slug
     ? Version7
     : UnknownVersion;
-export declare const PUBLIC_MASK_SCHEMA: MaskSchema;
 export declare type PublicUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 declare type RejectKnownInput<Input, Invalid> = [Extract<Input, Invalid>] extends [never]
   ? Input
   : never;
 export declare type SentinelUuidV7Slug = Brand<UuidV7Slug, "SentinelUuidV7Slug">;
-export declare type SlugAlphabet = "base64url" | "base32hex";
+export declare type SlugAlphabet = (typeof UUID_SLUG_ALPHABETS)[number];
 declare type SlugStringInput<Input extends string> = RejectKnownInput<Input, UuidString>;
+export declare function slugToBytes<Input extends string>(
+  slug: DirectUuidSlugInput<Input>,
+): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
+export declare function slugToBytes<Input extends string, Output extends Uint8Array>(
+  slug: DirectUuidSlugInput<Input>,
+  output: Output,
+  outputOffset?: number,
+): Output | UuidSlugError;
 export declare function slugToUuid<Input extends string>(
   slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidString, UuidV4String, UuidV7String> | UuidSlugError;
 export declare function unwrapUuidSlug<Value>(value: Value): Exclude<Value, UuidSlugError>;
+export declare const UUID_SLUG_ALPHABETS: typeof ALPHABETS;
 export declare const UUID_SLUG_ERROR_CODES: typeof ERROR_CODES;
-export declare const UUID_V7_SENTINEL_DEFINITIONS: readonly UuidV7SentinelDefinition[];
+export declare const UUID_SLUG_MIGRATION_FORMATS: typeof MIGRATION_FORMATS;
+export declare const UUID_V7_TEST_MASK: UuidV7Mask;
 export declare type UuidBytes = Brand<Uint8Array, "UuidBytes">;
 export declare type UuidSlug = Brand<string, "UuidSlug">;
-export declare interface UuidSlugCodec {
-  readonly sentinels: readonly UuidV7Sentinel[];
-  migration<const Options extends UuidSlugMigrationOptions = {}>(
-    this: void,
-    options?: Options,
-  ): UuidSlugMigration<EnabledMigrationFormat<Options>>;
-  uuidV7MaskedSlug(this: void): PublicUuidV7Slug | UuidSlugError;
-  uuidV7ToMaskedSlug<Input extends string | Uint8Array>(
-    this: void,
-    uuid: UuidV7ValueInput<Input>,
-  ): PublicUuidV7Slug | UuidSlugError;
-  maskedSlugToUuidV7<Input extends string>(
-    this: void,
-    slug: SlugStringInput<Input>,
-  ): UuidV7String | UuidSlugError;
-  maskedSlugToUuidV7Bytes<Input extends string>(
-    this: void,
-    slug: SlugStringInput<Input>,
-  ): UuidV7Bytes | UuidSlugError;
-  maskedSlugToUuidV7Bytes<Input extends string, Output extends Uint8Array>(
-    this: void,
-    slug: SlugStringInput<Input>,
-    out: Output,
-    offset?: number,
-  ): Output | UuidSlugError;
-  validateMaskedSlugFresh<Input extends string>(
-    this: void,
-    slug: SlugStringInput<Input>,
-    freshness?: FreshValidationOptions,
-  ): (Input & PublicUuidV7Slug) | UuidSlugError;
-}
-export declare interface UuidSlugCodecOptions {
-  readonly generator?: UuidV7BytesSource;
-  readonly previousMasks?: readonly (MaskSchema | MaskSchemaOptions)[];
-  readonly mask: MaskSchema | MaskSchemaOptions;
-  readonly sentinels?: readonly UuidV7SentinelDefinition[];
-  readonly maskedSlugAlphabet?: SlugAlphabet;
-}
 export declare class UuidSlugError extends Error {
   readonly code: UuidSlugErrorCode;
   constructor(code: UuidSlugErrorCode, message: string, options?: ErrorOptions);
 }
 export declare type UuidSlugErrorCode = (typeof UUID_SLUG_ERROR_CODES)[number];
-export declare interface UuidSlugMigration<in Format extends MigrationFormat = MigrationFormat> {
-  decode<Input extends string>(
+export declare interface UuidSlugMigrationDecoder<
+  in Format extends UuidSlugMigrationFormat = UuidSlugMigrationFormat,
+> {
+  decodeSlug<Input extends string>(
     this: void,
     slug: SlugStringInput<Input>,
     format?: Format,
   ): UuidString | UuidSlugError;
-  candidates<Input extends string>(
+  decodeSlugCandidates<Input extends string>(
     this: void,
     slug: SlugStringInput<Input>,
     format?: Format,
   ): UuidString[] | UuidSlugError;
 }
+export declare type UuidSlugMigrationFormat = (typeof UUID_SLUG_MIGRATION_FORMATS)[number];
 export declare interface UuidSlugMigrationOptions {
-  readonly original?: boolean;
-  readonly plain?: boolean;
+  readonly originalMask?: boolean;
+  readonly plainSlug?: boolean;
 }
 export declare type UuidString = Brand<string, "UuidString">;
 declare type UuidStringInput<Input extends string> = RejectKnownInput<
@@ -203,73 +169,96 @@ export declare function uuidToBytes<Input extends string>(
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
 export declare function uuidToBytes<Input extends string, Output extends Uint8Array>(
   uuid: UuidStringInput<Input>,
-  out: Output,
-  offset?: number,
+  output: Output,
+  outputOffset?: number,
 ): Output | UuidSlugError;
 export declare function uuidToSlug<Input extends string>(
   uuid: UuidStringInput<Input>,
   alphabet?: SlugAlphabet,
 ): PreserveUuidVersion<Input, UuidSlug, UuidV4Slug, UuidV7Slug> | UuidSlugError;
-export declare function uuidV4(): UuidV4String | UuidSlugError;
 export declare type UuidV4Bytes = Brand<UuidBytes, "UuidV4Bytes">;
-export declare function uuidV4Bytes(): UuidV4Bytes | UuidSlugError;
-export declare function uuidV4Bytes<Output extends Uint8Array>(
-  out: Output,
-  offset?: number,
-): Output | UuidSlugError;
 export declare type UuidV4Slug = Brand<UuidSlug, "UuidV4Slug">;
-export declare function uuidV4Slug(alphabet?: SlugAlphabet): UuidV4Slug | UuidSlugError;
 export declare type UuidV4String = Brand<UuidString, "UuidV4String">;
-export declare const uuidV7: () => UuidV7String | UuidSlugError;
-export declare const uuidV7At: (timestamp: number) => UuidV7String | UuidSlugError;
 export declare type UuidV7Bytes = Brand<UuidBytes, "UuidV7Bytes">;
-export declare function uuidV7Bytes(): UuidV7Bytes | UuidSlugError;
-export declare function uuidV7Bytes<Output extends Uint8Array>(
-  out: Output,
-  offset?: number,
-): Output | UuidSlugError;
-export declare function uuidV7BytesAt(timestamp: number): UuidV7Bytes | UuidSlugError;
-export declare function uuidV7BytesAt<Output extends Uint8Array>(
-  timestamp: number,
-  out: Output,
-  offset?: number,
-): Output | UuidSlugError;
 declare type UuidV7BytesInput<Input extends Uint8Array> = RejectKnownInput<Input, UuidV4Bytes>;
-export declare interface UuidV7BytesSource {
-  uuidV7Bytes(this: void): Uint8Array | UuidSlugError;
-}
-export declare interface UuidV7Generator extends UuidV7BytesSource {
-  uuidV7(this: void): UuidV7String | UuidSlugError;
-  uuidV7Bytes(this: void): UuidV7Bytes | UuidSlugError;
-  uuidV7Bytes<Output extends Uint8Array>(
+export declare interface UuidV7Generator {
+  generateUuidV7(this: void): UuidV7String | UuidSlugError;
+  generateUuidV7Bytes(this: void): UuidV7Bytes | UuidSlugError;
+  generateUuidV7Bytes<Output extends Uint8Array>(
     this: void,
-    out: Output,
-    offset?: number,
+    output: Output,
+    outputOffset?: number,
   ): Output | UuidSlugError;
-  uuidV7At(this: void, timestamp: number): UuidV7String | UuidSlugError;
-  uuidV7BytesAt(this: void, timestamp: number): UuidV7Bytes | UuidSlugError;
-  uuidV7BytesAt<Output extends Uint8Array>(
+  generateUuidV7At(this: void, unixMs: number): UuidV7String | UuidSlugError;
+  generateUuidV7BytesAt(this: void, unixMs: number): UuidV7Bytes | UuidSlugError;
+  generateUuidV7BytesAt<Output extends Uint8Array>(
     this: void,
-    timestamp: number,
-    out: Output,
-    offset?: number,
+    unixMs: number,
+    output: Output,
+    outputOffset?: number,
   ): Output | UuidSlugError;
 }
 export declare interface UuidV7GeneratorOptions {
   readonly clock?: () => number;
   readonly fillRandom: (bytes: Uint8Array<ArrayBuffer>) => void;
 }
+export declare interface UuidV7Mask {
+  readonly label: string;
+  readonly [maskSchemaBrand]: true;
+}
+export declare interface UuidV7MaskOptions {
+  readonly label?: string;
+  readonly seed: string | Uint8Array;
+  readonly keyDerivationIterations?: number;
+}
 export declare interface UuidV7Sentinel {
   readonly name: string;
   readonly slug: SentinelUuidV7Slug;
   readonly uuid: UuidV7String;
 }
-export declare interface UuidV7SentinelDefinition {
+export declare interface UuidV7SentinelConfig {
   readonly name: string;
   readonly uuid: string;
 }
 export declare type UuidV7Slug = Brand<UuidSlug, "UuidV7Slug">;
-export declare function uuidV7Slug(alphabet?: SlugAlphabet): UuidV7Slug | UuidSlugError;
+export declare interface UuidV7SlugCodec {
+  readonly sentinels: readonly UuidV7Sentinel[];
+  createMigrationDecoder<const Options extends UuidSlugMigrationOptions = {}>(
+    this: void,
+    options?: Options,
+  ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
+  generateSlug(this: void): PublicUuidV7Slug | UuidSlugError;
+  encodeUuid<Input extends string | Uint8Array>(
+    this: void,
+    uuid: UuidV7ValueInput<Input>,
+  ): PublicUuidV7Slug | UuidSlugError;
+  decodeSlug<Input extends string>(
+    this: void,
+    slug: SlugStringInput<Input>,
+  ): UuidV7String | UuidSlugError;
+  decodeSlugToBytes<Input extends string>(
+    this: void,
+    slug: SlugStringInput<Input>,
+  ): UuidV7Bytes | UuidSlugError;
+  decodeSlugToBytes<Input extends string, Output extends Uint8Array>(
+    this: void,
+    slug: SlugStringInput<Input>,
+    output: Output,
+    outputOffset?: number,
+  ): Output | UuidSlugError;
+  validateSlugTimestamp<Input extends string>(
+    this: void,
+    slug: SlugStringInput<Input>,
+    window: UuidV7TimestampWindow,
+  ): (Input & PublicUuidV7Slug) | UuidSlugError;
+}
+export declare interface UuidV7SlugCodecOptions {
+  readonly generateUuidV7Bytes?: (this: void) => Uint8Array | UuidSlugError;
+  readonly previousMasks?: readonly (UuidV7Mask | UuidV7MaskOptions)[];
+  readonly mask: UuidV7Mask | UuidV7MaskOptions;
+  readonly sentinels?: readonly UuidV7SentinelConfig[];
+  readonly slugAlphabet?: SlugAlphabet;
+}
 declare type UuidV7SlugInput<Input extends string> = RejectKnownInput<
   Input,
   UuidString | MaskedUuidSlug | UuidV4Slug
@@ -279,15 +268,19 @@ declare type UuidV7StringInput<Input extends string> = RejectKnownInput<
   Input,
   UuidSlug | MaskedUuidSlug | UuidV4String
 >;
+export declare interface UuidV7TimestampWindow {
+  readonly maxTimestampDeltaMs: number;
+  readonly referenceUnixMs?: number;
+}
 declare type UuidV7ValueInput<Input extends string | Uint8Array> = RejectKnownInput<
   Input,
   UuidSlug | MaskedUuidSlug | UuidV4String | UuidV4Bytes
 >;
-export declare function validateUuidV7Fresh<Input extends string>(
-  uuid: UuidV7StringInput<Input>,
-  options?: FreshValidationOptions,
-): (Input & UuidV7String) | UuidSlugError;
-export declare function validateUuidV7SlugFresh<Input extends string>(
+export declare function validateUuidV7SlugTimestamp<Input extends string>(
   slug: UuidV7SlugInput<Input>,
-  options?: FreshValidationOptions,
+  window: UuidV7TimestampWindow,
 ): (Input & UuidV7Slug) | UuidSlugError;
+export declare function validateUuidV7Timestamp<Input extends string>(
+  uuid: UuidV7StringInput<Input>,
+  window: UuidV7TimestampWindow,
+): (Input & UuidV7String) | UuidSlugError;

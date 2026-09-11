@@ -6,7 +6,7 @@ import { createSchemaHandle } from "./schema-handle";
 import { halfSipHash } from "./siphash";
 import type { HashContinuation } from "./siphash";
 import { yieldToHost } from "./yield";
-import type { AsyncMaskSchemaOptions, MaskSchema, MaskSchemaOptions } from "./types";
+import type { AsyncUuidV7MaskOptions, UuidV7Mask, UuidV7MaskOptions } from "./types";
 
 /** Reject short seeds early; length alone cannot make a chosen secret unpredictable. */
 const SEED_MIN_BYTES = 16;
@@ -38,22 +38,22 @@ function validateOptions(options: unknown) {
       "Mask schema options must contain a string or Uint8Array seed.",
     );
   const input = options as {
-    readonly id?: unknown;
-    readonly keyIterations?: unknown;
+    readonly label?: unknown;
+    readonly keyDerivationIterations?: unknown;
     readonly seed?: unknown;
   };
   const seed = input.seed;
   if (typeof seed !== "string" && !isUint8Array(seed))
     return new UuidSlugError("invalid_mask_schema", "Mask seed must be a string or Uint8Array.");
-  const givenId = input.id;
-  const id = givenId === undefined ? "seeded" : givenId;
-  if (typeof id !== "string")
-    return new UuidSlugError("invalid_mask_schema", "Mask schema id must be a string.");
-  const givenIterations = input.keyIterations;
-  const keyIterations = givenIterations === undefined ? 1 : givenIterations;
-  const iterations = validatedIterations(keyIterations);
+  const givenLabel = input.label;
+  const label = givenLabel === undefined ? "seeded" : givenLabel;
+  if (typeof label !== "string")
+    return new UuidSlugError("invalid_mask_schema", "Mask label must be a string.");
+  const givenIterations = input.keyDerivationIterations;
+  const keyDerivationIterations = givenIterations === undefined ? 1 : givenIterations;
+  const iterations = validatedIterations(keyDerivationIterations);
   if (typeof iterations !== "number") return iterations;
-  return { id, iterations, seed };
+  return { label, iterations, seed };
 }
 
 /** Repack bytes as the little-endian 32-bit words `halfSipHash` absorbs. */
@@ -119,27 +119,27 @@ function roundKeys(chainA: Int32Array, chainB: Int32Array) {
   return keys;
 }
 
-function feistelSchema(id: string, seed: Uint8Array, iterations: number): MaskSchema {
-  return schemaFromKeys(id, derivedKeys(seed, iterations));
+function feistelSchema(label: string, seed: Uint8Array, iterations: number): UuidV7Mask {
+  return schemaFromKeys(label, derivedKeys(seed, iterations));
 }
 
-function schemaFromKeys(id: string, keys: Int32Array): MaskSchema {
-  return createSchemaHandle(id, (input, output, forward) => {
-    feistel16(input, 0, keys, forward, output, 0);
+function schemaFromKeys(label: string, keys: Int32Array): UuidV7Mask {
+  return createSchemaHandle(label, (input, output, direction) => {
+    feistel16(input, 0, keys, direction, output, 0);
   });
 }
 
 /**
- * Derive an immutable mask schema from stable seed options. Seed bytes and `keyIterations` define
+ * Derive an immutable mask schema from stable seed options. Seed bytes and `keyDerivationIterations` define
  * the wire identity; changing either requires retaining the old options in `previousMasks`.
  */
-export function createMaskSchema(options: MaskSchemaOptions): MaskSchema | UuidSlugError {
+export function createUuidV7Mask(options: UuidV7MaskOptions): UuidV7Mask | UuidSlugError {
   try {
     const validated = validateOptions(options);
     if (!("seed" in validated)) return validated;
     const seed = seedBytes(validated.seed);
     const short = invalidSeedLength(seed.length);
-    return short ?? feistelSchema(validated.id, seed, validated.iterations);
+    return short ?? feistelSchema(validated.label, seed, validated.iterations);
   } catch (cause) {
     return new UuidSlugError("invalid_mask_schema", "Mask schema construction failed.", { cause });
   }
@@ -163,7 +163,7 @@ function validatedIterations(iterations: unknown): number | UuidSlugError {
   )
     return new UuidSlugError(
       "invalid_mask_schema",
-      `Mask keyIterations must be a whole number in 1..${MAX_KEY_ITERATIONS}, got ${String(iterations)}.`,
+      `Mask keyDerivationIterations must be a whole number in 1..${MAX_KEY_ITERATIONS}, got ${String(iterations)}.`,
     );
   return iterations;
 }
@@ -246,9 +246,9 @@ function* cooperativeKeys(
  * cancellation stops work and returns `aborted` with the signal reason as its cause.
  * Initial copying, allocation, GC, and host scheduling are outside the work-slice target.
  */
-export async function createMaskSchemaAsync(
-  options: AsyncMaskSchemaOptions,
-): Promise<MaskSchema | UuidSlugError> {
+export async function createUuidV7MaskAsync(
+  options: AsyncUuidV7MaskOptions,
+): Promise<UuidV7Mask | UuidSlugError> {
   try {
     const signal = options?.signal;
     const aborted = () =>
@@ -271,7 +271,7 @@ export async function createMaskSchemaAsync(
       const step = steps.next();
       if (step.done)
         return ArrayBuffer.isView(step.value)
-          ? schemaFromKeys(validated.id, step.value)
+          ? schemaFromKeys(validated.label, step.value)
           : step.value;
       if (performance.now() >= deadline) {
         // eslint-disable-next-line no-await-in-loop -- each slice must yield before continuing the dependent derivation
@@ -290,13 +290,13 @@ export async function createMaskSchemaAsync(
  * exists for.
  *
  * It is exported so a deterministic test or example can opt in visibly with
- * `mask: PUBLIC_MASK_SCHEMA`; codec construction never selects it by omission.
+ * `mask: UUID_V7_TEST_MASK`; codec construction never selects it by omission.
  */
 const DEFAULT_SEED = "anizoptera.uuid-slug.default-mask.v1";
 
-// Built from `feistelSchema` rather than through `createMaskSchema`, whose failures are a short seed and a
+// Built from `feistelSchema` rather than through `createUuidV7Mask`, whose failures are a short seed and a
 // bad iteration count — checks on CALLER input that the literals here cannot fail. Routing through it would return
-// `MaskSchema | UuidSlugError` and force a cast that, at module scope, could only ever hide a real Error
-// behind a `MaskSchema` type at module scope.
+// `UuidV7Mask | UuidSlugError` and force a cast that, at module scope, could only ever hide a real Error
+// behind a `UuidV7Mask` type at module scope.
 /** Schema with published key material for deterministic tests and examples; it provides no secrecy. */
-export const PUBLIC_MASK_SCHEMA: MaskSchema = feistelSchema("default", seedBytes(DEFAULT_SEED), 1);
+export const UUID_V7_TEST_MASK: UuidV7Mask = feistelSchema("default", seedBytes(DEFAULT_SEED), 1);

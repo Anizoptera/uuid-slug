@@ -15,20 +15,23 @@ const ids = Array.from(
   (_, i) => `0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f${i.toString(16).padStart(4, "0")}`,
 );
 const slugs = ids.map((id) => unwrap(api.uuidToSlug(id)));
-const codec = unwrap(api.createUuidSlugCodec({ mask: { seed: "profile-current-seed" } }));
-const older = unwrap(api.createUuidSlugCodec({ mask: { seed: "profile-previous-seed" } }));
+const codec = unwrap(api.createUuidV7SlugCodec({ mask: { seed: "profile-current-seed" } }));
+const older = unwrap(api.createUuidV7SlugCodec({ mask: { seed: "profile-previous-seed" } }));
 const rotated = unwrap(
-  api.createUuidSlugCodec({
+  api.createUuidV7SlugCodec({
     mask: { seed: "profile-current-seed" },
     previousMasks: [{ seed: "profile-previous-seed" }],
   }),
 );
-const masked = ids.map((id) => unwrap(codec.uuidV7ToMaskedSlug(id)));
+const masked = ids.map((id) => unwrap(codec.encodeUuid(id)));
 const old = ids
-  .map((id) => unwrap(older.uuidV7ToMaskedSlug(id)))
-  .filter((slug) => codec.maskedSlugToUuidV7(slug) instanceof Error);
+  .map((id) => unwrap(older.encodeUuid(id)))
+  .filter((slug) => codec.decodeSlug(slug) instanceof Error);
 assert.ok(old.length > 0);
-const now = { now: () => 0x0190a1b2c3d4 };
+const timestampWindow = {
+  maxTimestampDeltaMs: 86_400_000,
+  referenceUnixMs: 0x0190a1b2c3d4,
+};
 type Operation = (index: number) => unknown;
 // These are coarse regression budgets, not public latency promises. Paired primitives set the
 // local speed reference; resource counters catch smaller regressions without noisy timing limits.
@@ -36,31 +39,31 @@ const pairs: { name: string; subject: Operation; reference: Operation; limit: nu
   {
     name: "UUID guard / parsing",
     subject: (i) => api.isUuidV7String(ids[i & 255]),
-    reference: (i) => api.parseUuid(ids[i & 255] as string),
+    reference: (i) => api.uuidToBytes(ids[i & 255] as string),
     limit: 1.5,
   },
   {
     name: "slug guard / decoding",
     subject: (i) => api.isUuidV7Slug(slugs[i & 255]),
-    reference: (i) => api.parseUuidSlug(slugs[i & 255] as string),
+    reference: (i) => api.slugToBytes(slugs[i & 255] as string),
     limit: 1.5,
   },
   {
-    name: "plain freshness / decoding",
-    subject: (i) => api.validateUuidV7SlugFresh(slugs[i & 255] as string, now),
-    reference: (i) => api.parseUuidSlug(slugs[i & 255] as string),
+    name: "plain timestamp validation / decoding",
+    subject: (i) => api.validateUuidV7SlugTimestamp(slugs[i & 255] as string, timestampWindow),
+    reference: (i) => api.slugToBytes(slugs[i & 255] as string),
     limit: 3,
   },
   {
-    name: "masked freshness / decoding",
-    subject: (i) => codec.validateMaskedSlugFresh(masked[i & 255] as string, now),
-    reference: (i) => codec.maskedSlugToUuidV7(masked[i & 255] as string),
+    name: "masked timestamp validation / decoding",
+    subject: (i) => codec.validateSlugTimestamp(masked[i & 255] as string, timestampWindow),
+    reference: (i) => codec.decodeSlug(masked[i & 255] as string),
     limit: 1.5,
   },
   {
     name: "previous key / current key",
-    subject: (i) => rotated.maskedSlugToUuidV7(old[i % old.length] as string),
-    reference: (i) => rotated.maskedSlugToUuidV7(masked[i & 255] as string),
+    subject: (i) => rotated.decodeSlug(old[i % old.length] as string),
+    reference: (i) => rotated.decodeSlug(masked[i & 255] as string),
     limit: 3,
   },
 ];

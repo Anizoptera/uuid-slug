@@ -25,7 +25,7 @@ if (selected === "matrix") {
   ordered.sort(([left], [right]) => left - right);
   const versions = ordered.map(([, version]) => version.slice(1));
   // Keep newest Node unpinned without executing that same major twice.
-  versions[versions.length - 1] = "current";
+  versions[versions.length - 1] = "current-mask";
   console.log(`matrix=${JSON.stringify([...new Set([`${floor}.0.0`, ...versions])])}`);
 } else {
   const node = selected === "floor" ? `${floor}.0.0` : selected;
@@ -36,7 +36,7 @@ if (selected === "matrix") {
     new URL("../node_modules/vite/package.json", import.meta.url),
   ).json();
   const tooling =
-    node === "current" ||
+    node === "current-mask" ||
     [runner, compiler].every((tool) => Bun.semver.satisfies(node, tool.engines.node));
   console.log(`node=${node}\nvitest=${tooling}`);
 }

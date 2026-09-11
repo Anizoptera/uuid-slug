@@ -25,7 +25,7 @@ import path from "node:path";
 import { expect, test } from "bun:test";
 
 /**
- * The seed `PUBLIC_MASK_SCHEMA` derives its key from. Frozen by the wire format — changing it
+ * The seed `UUID_V7_TEST_MASK` derives its key from. Frozen by the wire format — changing it
  * orphans every masked slug ever issued — which is what makes it a stable witness rather than a
  * string that drifts. Its presence in a keyless bundle means the cipher, the schema and the
  * sentinel table came with it.
@@ -62,7 +62,7 @@ test.each([
   // A CEILING, not a target: roughly twice what each measures today, so ordinary growth never
   // touches it and a re-coupling to the codec (which more than doubles both) always does.
   ["uuidToSlug", 5_000],
-  ["uuidV7Slug", 9_000],
+  ["generateUuidV7Slug", 9_000],
 ])("importing %s alone carries no masking machinery", async (name, ceiling) => {
   const code = await bundle(name);
   // Thrown rather than asserted: `expect(code).not.toInclude(...)` prints the WHOLE minified
@@ -80,5 +80,5 @@ test.each([
 test("the witness is present when the codec IS imported", async () => {
   // Without this the case above could pass because the witness stopped being reachable at all --
   // a renamed seed, a changed build, an entry that resolves to nothing. It fails for a reason.
-  expect(await bundle("createUuidSlugCodec")).toInclude(MASKING_WITNESS);
+  expect(await bundle("createUuidV7SlugCodec")).toInclude(MASKING_WITNESS);
 });

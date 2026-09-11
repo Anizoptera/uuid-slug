@@ -12,20 +12,20 @@
  */
 import { instrument, INSECURE_SOURCES } from "./instrument";
 import {
-  createUuidSlugCodec,
-  PUBLIC_MASK_SCHEMA,
-  uuidV4,
-  uuidV4Bytes,
-  uuidV4Slug,
-  uuidV7,
-  uuidV7At,
-  uuidV7Bytes,
-  uuidV7BytesAt,
-  uuidV7Slug,
+  createUuidV7SlugCodec,
+  UUID_V7_TEST_MASK,
+  generateUuidV4,
+  generateUuidV4Bytes,
+  generateUuidV4Slug,
+  generateUuidV7,
+  generateUuidV7At,
+  generateUuidV7Bytes,
+  generateUuidV7BytesAt,
+  generateUuidV7Slug,
 } from "../src/index";
 import { unwrap } from "../dev/unwrap";
 
-const codec = unwrap(createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA }));
+const codec = unwrap(createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }));
 
 /**
  * A fixed instant for the timestamped entry points. It is a constant rather than `Date.now()` so
@@ -36,21 +36,21 @@ const codec = unwrap(createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA }));
 const INSTANT = 1_700_000_000_000;
 
 /**
- * Every entry point that produces randomness. `uuidV4`, `uuidV7` and `uuidV7Slug` hand off to
+ * Every entry point that produces randomness. `generateUuidV4`, `generateUuidV7` and `generateUuidV7Slug` hand off to
  * a native generator whenever the runtime has one, so only the byte and slug forms reach this
  * package's own `fillRandom` unconditionally — a probe through the string forms alone observes
  * nothing of our code. Every public generation route belongs here.
  */
 export const generators: readonly (readonly [string, () => unknown])[] = [
-  ["uuidV4", uuidV4],
-  ["uuidV7", uuidV7],
-  ["uuidV7Slug", uuidV7Slug],
-  ["uuidV4Bytes", uuidV4Bytes],
-  ["uuidV7Bytes", uuidV7Bytes],
-  ["uuidV7At", () => uuidV7At(INSTANT)],
-  ["uuidV7BytesAt", () => uuidV7BytesAt(INSTANT)],
-  ["uuidV4Slug", uuidV4Slug],
-  ["uuidV7MaskedSlug", () => codec.uuidV7MaskedSlug()],
+  ["generateUuidV4", generateUuidV4],
+  ["generateUuidV7", generateUuidV7],
+  ["generateUuidV7Slug", generateUuidV7Slug],
+  ["generateUuidV4Bytes", generateUuidV4Bytes],
+  ["generateUuidV7Bytes", generateUuidV7Bytes],
+  ["generateUuidV7At", () => generateUuidV7At(INSTANT)],
+  ["generateUuidV7BytesAt", () => generateUuidV7BytesAt(INSTANT)],
+  ["generateUuidV4Slug", generateUuidV4Slug],
+  ["generate", () => codec.generateSlug()],
 ];
 
 /**
@@ -60,9 +60,9 @@ export const generators: readonly (readonly [string, () => unknown])[] = [
  * "1,159,242,…" from the other, and `JSON.stringify` produces two different documents.
  */
 export const byteGenerators: readonly (readonly [string, () => Uint8Array | Error])[] = [
-  ["uuidV4Bytes", uuidV4Bytes],
-  ["uuidV7Bytes", uuidV7Bytes],
-  ["uuidV7BytesAt", () => uuidV7BytesAt(INSTANT)],
+  ["generateUuidV4Bytes", generateUuidV4Bytes],
+  ["generateUuidV7Bytes", generateUuidV7Bytes],
+  ["generateUuidV7BytesAt", () => generateUuidV7BytesAt(INSTANT)],
 ];
 
 /** The instrument patches globals, so it is always removed, including on a failing assertion. */

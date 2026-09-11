@@ -32,12 +32,12 @@ has no useful chronological ordering in either alphabet.
 
 ## Deriving a schema from a seed
 
-`createMaskSchema({ seed, keyIterations })` derives round keys deterministically:
+`createUuidV7Mask({ seed, keyDerivationIterations })` derives round keys deterministically:
 
 1. Encode string seeds as UTF-8; byte seeds retain their byte values. Absorb bytes as little-endian
    words, with the actual byte length passed to HalfSipHash-2-4.
 2. Run two chains starting from distinct fixed keys. Each chain hashes the seed, then hashes it
-   again under its preceding output until it has completed `keyIterations` hashes.
+   again under its preceding output until it has completed `keyDerivationIterations` hashes.
 3. For each round, each chain hashes the round's word index under its final key. XOR the two
    outputs to obtain that round's key pair.
 
@@ -50,7 +50,7 @@ not an established security strength. The default iteration count is one. Increa
 construction cost and the cost of trying candidate seeds; it cannot replace a randomly generated
 seed. A known UUID/slug pair permits offline seed guessing.
 
-`createMaskSchemaAsync` uses the same packing, hash and key-expansion primitives. A continuation
+`createUuidV7MaskAsync` uses the same packing, hash and key-expansion primitives. A continuation
 stores only partial hash state; output words are written after finalisation. Cooperative work
 bounds text/byte packing and message absorption as well as iteration batches, so a large seed
 cannot hide inside one uninterrupted hash. The driver yields to host tasks when its work slice
@@ -84,7 +84,7 @@ The HalfSipHash reference-vector tests constrain the round function's implementa
 not establish the security of this key schedule or four-round network. Masking is an
 obfuscation feature, not an authenticated encryption interface.
 
-`createCustomMaskSchema` adapts separate forward and reverse callbacks to the same block layout.
+`createCustomUuidV7Mask` adapts separate forward and reverse callbacks to the same block layout.
 It supplies an isolated input, requires a 16-byte result or package error, and checks representative
 round trips once before returning an opaque handle. Callbacks may mutate and return their input;
 the package copies results into owned storage. Finite probes cannot establish invertibility across
@@ -118,7 +118,7 @@ of their individual rates. The codec must not append schemas on the caller's beh
 Masked decoding always accepts both alphabets, sentinels, and current or previous schema outputs.
 Migration adds only the old formats the caller enables. Other forms are invalid.
 
-Only `codec.migration({ plain: true })` enables direct-slug decoding. A direct slug may
+Only `codec.createMigrationDecoder({ plainSlug: true })` enables direct-slug decoding. A direct slug may
 accidentally pass an earlier mask check and return a different candidate; migration cannot make
 the two representations distinguishable. Confirm candidates against the issuing store.
 
@@ -129,7 +129,7 @@ UUID whose masked result collides with a reserved slug must fail encoding, becau
 would decode to the sentinel and lose the original identity. Safe writers also check the old
 base64url spelling, because converting a safe payload back must not change its identity.
 
-New masked output uses only the layout above. `codec.migration` can separately read the original
+New masked output uses only the layout above. `codec.createMigrationDecoder` can separately read the original
 fixed permutation/XOR layout when enabled; its four-bit check cannot establish identity either.
 The format published in 0.2.0 remains unsupported. See README's migration sections for format
 selection and record lookup; do not add an old layout to ordinary decoding.

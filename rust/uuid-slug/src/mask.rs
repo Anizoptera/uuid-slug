@@ -11,8 +11,8 @@ fn mix32(mut value: u32) -> u32 {
 
 fn tag(bytes: &[u8; 16]) -> u16 {
     let mut acc = 0;
-    for chunk in bytes.chunks_exact(4) {
-        acc = mix32(acc ^ u32::from_be_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]));
+    for chunk in bytes.as_chunks::<4>().0 {
+        acc = mix32(acc ^ u32::from_be_bytes(*chunk));
     }
     (acc >> 16) as u16
 }
@@ -31,7 +31,7 @@ pub(crate) fn mask_bytes(raw: &[u8; 16], schema: &MaskSchema) -> Result<([u8; 16
     tagged[6] = ((inner as u8 & 15) << 4) | (raw[6] & 15);
     tagged[8] = ((inner as u8 & 48) << 2) | (raw[8] & 63);
     tagged[0] = (((inner >> 6) as u8 & 63) << 2) | (raw[0] & 3);
-    Ok((schema.mix_forward(tagged)?, (check & 15) as u8))
+    Ok((schema.mask(tagged)?, (check & 15) as u8))
 }
 
 /// Parse text once before trying keys; canonical padding is checked in either alphabet.
@@ -53,7 +53,7 @@ pub(crate) fn candidate(
     outer: u8,
     schema: &MaskSchema,
 ) -> Result<Option<[u8; 16]>, Error> {
-    let mut raw = schema.mix_reverse(mixed)?;
+    let mut raw = schema.unmask(mixed)?;
     let inner = (raw[6] >> 4) as u16 | ((raw[8] >> 6) as u16) << 4 | ((raw[0] >> 2) as u16) << 6;
     raw[6] = (raw[6] & 15) | 0x70;
     raw[8] = (raw[8] & 63) | 0x80;

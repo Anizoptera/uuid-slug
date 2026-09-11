@@ -35,25 +35,29 @@ The npm package remains TypeScript/JavaScript-only.
 ## Quick start
 
 ```ts
-import { createUuidSlugCodec, unwrapUuidSlug, uuidV7Bytes } from "@anizoptera/uuid-slug";
+import {
+  createUuidV7SlugCodec,
+  generateUuidV7Bytes,
+  unwrapUuidSlug,
+} from "@anizoptera/uuid-slug";
 
 const seed = process.env.ID_MASK_SEED;
 if (!seed) throw new Error("Set ID_MASK_SEED to a stable, randomly generated secret.");
 
 // Reuse the codec: the seed is expanded once, at construction.
-const ids = unwrapUuidSlug(createUuidSlugCodec({ mask: { seed } }));
+const ids = unwrapUuidSlug(createUuidV7SlugCodec({ mask: { seed } }));
 
-const publicId = unwrapUuidSlug(ids.uuidV7MaskedSlug());
-const uuid = unwrapUuidSlug(ids.maskedSlugToUuidV7(publicId));
+const publicId = unwrapUuidSlug(ids.generateSlug());
+const uuid = unwrapUuidSlug(ids.decodeSlug(publicId));
 // Look up uuid in your store and apply the caller's authorization policy.
 ```
 
 Keep binary database keys binary across the same codec seam:
 
 ```ts
-const inputBytes = unwrapUuidSlug(uuidV7Bytes());
-const publicId = unwrapUuidSlug(ids.uuidV7ToMaskedSlug(inputBytes));
-const decodedBytes = unwrapUuidSlug(ids.maskedSlugToUuidV7Bytes(publicId));
+const inputBytes = unwrapUuidSlug(generateUuidV7Bytes());
+const publicId = unwrapUuidSlug(ids.encodeUuid(inputBytes));
+const decodedBytes = unwrapUuidSlug(ids.decodeSlugToBytes(publicId));
 ```
 
 Convert canonical UUID text and binary storage with names that state the direction:
@@ -79,9 +83,9 @@ narrowed before storage or version-specific work.
 store the result outside your source repository. Seeds shorter than 16 bytes are rejected, but
 length alone does not make a seed unpredictable: a known UUID/slug pair allows offline guesses.
 
-Keep the seed and `keyIterations` stable for as long as issued slugs must remain readable.
+Keep the seed and `keyDerivationIterations` stable for as long as issued slugs must remain readable.
 Changing either derives different keys; retain the old settings in `previousMasks` during
-rotation. `keyIterations` defaults to `1`; increasing it adds construction and guessing cost,
+rotation. `keyDerivationIterations` defaults to `1`; increasing it adds construction and guessing cost,
 but does not turn a human-chosen seed into a suitable secret.
 
 ## Two kinds of slug
@@ -98,7 +102,7 @@ makes them usable directly as an ordered database key. base64url cannot do it �
 
 base32hex is also the safer of the two for a **filename**: it is lowercase throughout, so it
 survives a case-insensitive filesystem unchanged, and a directory listing comes back in timestamp
-order across different milliseconds. `uuidV7Slug("base32hex")` generates one directly; the alphabet is an argument on
+order across different milliseconds. `generateUuidV7Slug("base32hex")` generates one directly; the alphabet is an argument on
 every keyless entry point that produces a slug, so nothing about choosing it requires a codec.
 
 You never say which alphabet you are reading. The two lengths are different, 22 and 26, so
@@ -107,7 +111,7 @@ every slug you have already handed out working.
 
 **Masked slug.** A UUIDv7 payload and check passed through a small block cipher keyed by your
 seed, then encoded as 22 base64url characters by default, or 27 lowercase base32hex characters
-with `maskedSlugAlphabet: "base32hex"`. Both preserve the same payload and check. Use it when the identifier is public and you
+with `slugAlphabet: "base32hex"`. Both preserve the same payload and check. Use it when the identifier is public and you
 would rather not publish creation times. The exact steps are in
 [how masking works](https://github.com/Anizoptera/uuid-slug/blob/main/docs/design.md).
 
@@ -125,24 +129,25 @@ part of the contract rather than implementation detail:
   because those six bits are spent on the check. Truncating instead would let two UUIDs share one
   slug, which nothing could recover from. Direct slugs have no such limit.
 
-**Sentinels** are reserved UUIDs that skip masking on purpose, so they stay recognisable in
-logs and support tickets. The defaults always encode to these fixed slugs:
+**Sentinels** are application-selected UUIDv7 values that skip masking on purpose, so they stay
+recognisable in logs and support tickets. Codecs default to no sentinels; configure only identities
+your application has reserved:
 
 | Name            | UUID                                   | Slug                     |
 | --------------- | -------------------------------------- | ------------------------ |
 | `nil`           | `00000000-0000-7000-8000-000000000000` | `AAAAAAAAcACAAAAAAAAAAA` |
-| `anonymousUser` | `00000000-0001-7000-8000-000000000000` | `AAAAAAABcACAAAAAAAAAAA` |
-| `unknownUser`   | `00000000-0002-7000-8000-000000000000` | `AAAAAAACcACAAAAAAAAAAA` |
+| `anonymous`     | `00000000-0001-7000-8000-000000000000` | `AAAAAAABcACAAAAAAAAAAA` |
+| `unknown`       | `00000000-0002-7000-8000-000000000000` | `AAAAAAACcACAAAAAAAAAAA` |
 
-Read the names, UUIDs and slugs from `codec.sentinels`. Pass your own list as `sentinels` to replace the defaults:
+Read the validated names, UUIDs, and slugs from `codec.sentinels`:
 
 ```ts
-const ids = createUuidSlugCodec({
+const ids = createUuidV7SlugCodec({
   mask: { seed },
   sentinels: [{ name: "unknownUser", uuid: "00000000-0002-7000-8000-000000000000" }],
 });
-if (ids instanceof Error) throw ids;
-console.table(ids.sentinels);
+const codec = unwrapUuidSlug(ids);
+console.table(codec.sentinels);
 ```
 
 Keep sentinel definitions stable while their slugs are in use. Decoding checks sentinels first, so they
@@ -165,15 +170,15 @@ and does not turn the API into an authenticated-token system.
 
 **Supply your own secret seed for real identifiers.** Codec construction fails with
 `invalid_mask_schema` when `mask` is missing. For tests and demos that need stable public bytes,
-select `PUBLIC_MASK_SCHEMA` explicitly; anyone can decode identifiers produced with it.
+select `UUID_V7_TEST_MASK` explicitly; anyone can decode identifiers produced with it.
 
 ## Handling errors
 
 Parsing, decoding, formatting, conversion, byte generation, and explicit-timestamp generation
-return `T | UuidSlugError`. Check `instanceof Error` within one realm, or use `isUuidSlugError`
-when values may cross realms or duplicate package copies. The structural guard recognizes the
-package's error name and code vocabulary; it classifies data and does not authenticate untrusted
-input. Codec construction returns the same union and requires an explicit mask.
+return `T | UuidSlugError`. Use `isUuidSlugError` to narrow the union reliably across realms and
+duplicate package copies. The guard recognizes the package's error name and code vocabulary; it
+classifies data and does not authenticate untrusted input. Codec construction returns the same
+union and requires an explicit mask.
 
 Use `unwrapUuidSlug(result)` when failure ends the current operation. It returns the exact success
 type and throws a local or cross-realm `UuidSlugError` unchanged, so the original code, message,
@@ -188,9 +193,9 @@ Replace the removed generic base64url helpers with the UUID operations that own 
 16-byte contract:
 
 ```ts
-formatUuidSlug(bytes); // replaces encodeBase64Url(bytes)
-formatUuidSlug(bytes, "base32hex"); // select the filesystem-safe spelling directly
-parseUuidSlug(slug, output, offset); // replaces decodeBase64Url(slug, output, offset)
+bytesToSlug(bytes); // replaces encodeBase64Url(bytes)
+bytesToSlug(bytes, "base32hex"); // select the filesystem-safe spelling directly
+slugToBytes(slug, output, offset); // replaces decodeBase64Url(slug, output, offset)
 slug.length === 22 && isUuidSlug(slug); // replaces isBase64Url(slug)
 ```
 
@@ -209,22 +214,22 @@ you need to retain the narrowed type. A brand proves format, not issuance: check
   retain the generated version. Byte operations return those exact types when they allocate the
   payload, or preserve the caller's exact array subtype when writing into supplied storage.
 
-  A value typed as masked, or as possibly masked, is rejected by direct-slug decoding and freshness
+  A value typed as masked, or as possibly masked, is rejected by direct-slug decoding and timestamp
   operations; use the codec that owns its key. Raw strings remain accepted because direct and masked
   base64url spellings overlap, so only the application knows which protocol produced external text.
   Values already typed as UUID text are rejected by slug parsers, codecs, and migration readers;
   supplying caller-owned output storage does not weaken either representation check.
-  V7-only timestamp, freshness, and masking operations likewise reject values already typed as v4
+  V7-only timestamp validation and masking operations likewise reject values already typed as v4
   while continuing to validate raw or version-unknown input at runtime.
   Parsing and direct string/slug conversions preserve a known v4 or v7. Formatting mutable bytes
   returns a version-agnostic value because their contents may have changed since validation. Codec
   byte masking rejects a known v4 brand, while byte decoding returns owned `UuidV7Bytes` or the
   exact caller-supplied array subtype.
-- Shapes: `UuidSlugCodec` and `UuidSlugCodecOptions`, `MaskSchema`, `MaskSchemaOptions`,
-  `AsyncMaskSchemaOptions`, and `CustomMaskSchemaOptions`,
-  `UuidV7Sentinel` and `UuidV7SentinelDefinition`, `UuidV7BytesSource`,
-  `UuidV7Generator` and `UuidV7GeneratorOptions`, `FreshValidationOptions`,
-  `MigrationFormat`, `UuidSlugMigration`, `UuidSlugMigrationOptions`, and `UuidSlugErrorCode`.
+- Shapes: `UuidV7SlugCodec` and `UuidV7SlugCodecOptions`, `UuidV7Mask`, `UuidV7MaskOptions`,
+  `AsyncUuidV7MaskOptions`, and `CustomUuidV7MaskOptions`,
+  `UuidV7Sentinel` and `UuidV7SentinelConfig`, `UuidV7Generator` and
+  `UuidV7GeneratorOptions`, `UuidV7TimestampWindow`,
+  `UuidSlugMigrationFormat`, `UuidSlugMigrationDecoder`, `UuidSlugMigrationOptions`, and `UuidSlugErrorCode`.
 
 **Some masked slugs also pass direct-slug guards.** Canonical trailing bits, version, and variant
 can all match by chance. A guard answers "is this well formed", never "is this mine". Decode with
@@ -239,27 +244,27 @@ The **Where** column tells you whether to import a function or call a codec meth
 
 The state split keeps each caller responsible for one thing. A generator owns its clock, entropy,
 and mutable UUIDv7 sequence; a codec owns immutable masking keys, sentinels, rotation, and writer
-settings. A codec needs only a generator's `uuidV7Bytes` operation and validates every returned
-payload before masking, so a custom source does not need access to the rest of the generator.
+settings. A codec needs only a generator's `generateUuidV7Bytes` operation and validates every returned
+payload before masking, so a custom callback does not need access to the rest of the generator.
 Generator, codec, and migration methods do not depend on `this`; they can be passed as callbacks
 without binding them first.
 
 | Method                                                  | Where             | Returns                       | What it does                             |
 | ------------------------------------------------------- | ----------------- | ----------------------------- | ---------------------------------------- |
-| `uuidV4()` / `uuidV7()`                                 | module only       | `UuidSlugError` or UUID string | Generate.                                |
-| `uuidV4Bytes()` / `uuidV7Bytes()`                       | module only       | `UuidSlugError` or typed 16 bytes | Generate owned UUID bytes.            |
-| `uuidV4Bytes(out, offset?)` / `uuidV7Bytes(...)`        | module only       | `UuidSlugError` or the exact `out` type | Generate into storage you own.   |
-| `uuidV7At(ms)` / `uuidV7BytesAt(ms)` / `uuidV7BytesAt(ms, out, offset?)` | module only | `UuidSlugError \| ...` | Generate at an instant you name. |
-| `uuidV4Slug(alphabet?)` / `uuidV7Slug(alphabet?)`       | module only       | `UuidSlugError` or direct slug | Generate and encode in one step.         |
-| `uuidV7MaskedSlug()`                                    | codec only        | `UuidSlugError` or `PublicUuidV7Slug` | Generate a masked or sentinel slug. |
-| `uuidV7ToMaskedSlug(uuidOrBytes)` / `maskedSlugToUuidV7(slug)` | codec only | `UuidSlugError \| ...` | Mask UUIDv7 text or bytes; decode to text. |
-| `maskedSlugToUuidV7Bytes(slug, out?, offset?)` | codec only | `UuidSlugError \| ...` | Decode without producing UUID text. |
-| `validateMaskedSlugFresh(slug, opts?)`                  | codec only        | `UuidSlugError \| ...`        | Unmask, then check the freshness window. |
+| `generateUuidV4()` / `generateUuidV7()`                   | module only | `UuidSlugError` or UUID string | Generate. |
+| `generateUuidV4Bytes()` / `generateUuidV7Bytes()`         | module only | `UuidSlugError` or typed 16 bytes | Generate owned UUID bytes. |
+| `generateUuidV4Bytes(out, offset?)` / `generateUuidV7Bytes(...)` | module only | `UuidSlugError` or the exact `out` type | Generate into caller storage. |
+| `generateUuidV7At(ms)` / `generateUuidV7BytesAt(ms, out?, offset?)` | module only | `UuidSlugError \| ...` | Generate at an explicit instant. |
+| `generateUuidV4Slug(alphabet?)` / `generateUuidV7Slug(alphabet?)` | module only | `UuidSlugError` or direct slug | Generate and encode. |
+| `generateSlug()`                                          | codec only | `UuidSlugError` or `PublicUuidV7Slug` | Generate a masked or sentinel slug. |
+| `encodeUuid(uuidOrBytes)` / `decodeSlug(slug)`            | codec only | `UuidSlugError \| ...` | Mask UUIDv7 text or bytes; decode to text. |
+| `decodeSlugToBytes(slug, out?, offset?)`                  | codec only | `UuidSlugError \| ...` | Decode without producing UUID text. |
+| `validateSlugTimestamp(slug, window)`                     | codec only | `UuidSlugError \| ...` | Decode, then check the timestamp window. |
 | `sentinels`                                             | codec only        | array                         | The reserved values this codec knows.    |
-| `migration(options?)`                                 | codec only        | migration reader              | Read selected old formats without changing new output. |
+| `createMigrationDecoder(options?)`                       | codec only | migration reader | Read selected old formats without changing new output. |
 | `uuidToSlug(uuid, alphabet?)` / `slugToUuid(slug)`      | module only       | `UuidSlugError \| ...`        | Direct slug, both ways.                  |
 | `uuidToBytes(uuid, out?, offset?)` / `bytesToUuid(bytes, offset?)` | module only | `UuidSlugError \| ...` | Convert canonical UUID text and bytes. |
-| `parseUuidSlug` / `formatUuidSlug`                      | module only       | `UuidSlugError \| ...`        | Slug to bytes and back.                  |
+| `slugToBytes` / `bytesToSlug`                      | module only       | `UuidSlugError \| ...`        | Slug to bytes and back.                  |
 
 There is no `uuidToMaskedSlug`: masking is defined for UUIDv7 only, because a v7 is the version
 that leaks a creation time and 22 characters have no room for a version tag as well as the check.
@@ -279,10 +284,6 @@ Each decoder accepts every value that a supported matching encoder can produce. 
 always accepts both alphabets, sentinels, and current or previous mask schemas. Migration adds only
 the old formats you enable. Forms no supported encoder produces are invalid.
 
-The published `parseUuid` and `formatUuid` names remain as deprecated compatibility paths. New
-code should use `uuidToBytes` and `bytesToUuid`; they preserve the same validation, brands,
-caller-owned storage, atomic failure, and offset behavior.
-
 Also exported, all module-level:
 
 - Type guards: `isUuidString`, `isUuidV4String`, `isUuidV7String`, `isUuidSlug`, `isUuidV4Slug`,
@@ -290,12 +291,11 @@ Also exported, all module-level:
 - `extractUuidV7Timestamp` — the instant a v7 was minted at, and an error for anything that is
   not a v7, because a v4's first six bytes are random and would otherwise read back as a
   plausible date.
-- `createMaskSchema` builds a schema from a seed; `createMaskSchemaAsync` adds cooperative
-  cancellation; `createCustomMaskSchema` adapts separate forward and reverse callbacks.
-  `PUBLIC_MASK_SCHEMA` is the explicit, published-key choice for deterministic examples.
-  `UUID_V7_SENTINEL_DEFINITIONS` is the default sentinel list.
+- `createUuidV7Mask` builds a schema from a seed; `createUuidV7MaskAsync` adds cooperative
+  cancellation; `createCustomUuidV7Mask` adapts separate forward and reverse callbacks.
+  `UUID_V7_TEST_MASK` is the explicit, published-key choice for deterministic examples.
 - `createUuidV7Generator(options)` builds a full generator from your own `clock` and `fillRandom`.
-  A `generator:` codec option needs only its `uuidV7Bytes` method, so a bytes-only source also works.
+  A `generateUuidV7Bytes:` codec option accepts that detached method directly.
   The full generator's options type is `UuidV7GeneratorOptions`. Construction throws `TypeError`
   when either configured callback is not a function; callback failures during generation return
   `UuidSlugError` with the thrown value as `cause`. Do not call the same generator from either
@@ -309,62 +309,62 @@ Also exported, all module-level:
 ### Codec options
 
 ```ts
-createUuidSlugCodec({
-  mask: { seed: "…", keyIterations: 1 }, // required
+createUuidV7SlugCodec({
+  mask: { seed: "…", keyDerivationIterations: 1 }, // required
   sentinels: [{ name: "nil", uuid: "…" }],
   previousMasks: [{ seed: "…previous seed…" }],
-  maskedSlugAlphabet: "base32hex", // masked output and sentinel presentation
-  generator: myUuidV7Generator,
+  slugAlphabet: "base32hex", // masked output and sentinel presentation
+  generateUuidV7Bytes: myUuidV7Generator.generateUuidV7Bytes,
 });
 ```
 
-The masked payload is fixed at 132 bits, including a 16-bit check. Both alphabet options default
-to `"base64url"`. Readers accept either masked spelling without an alphabet argument. Safe
+The masked payload is fixed at 132 bits, including a 16-bit check. `slugAlphabet` defaults to
+`"base64url"`. Readers accept either masked spelling without an alphabet argument. Safe
 sentinels use 26-character raw base32hex slugs; old 22-character sentinels remain readable.
 
 To supply a different mixing implementation, call
-`createCustomMaskSchema({ id, forward, reverse })`. Each callback receives distinct 16-byte input
-bytes and returns either a 16-byte result or `UuidSlugError`; `reverse` must invert `forward` for
+`createCustomUuidV7Mask({ label, mask, unmask })`. Each callback receives distinct 16-byte input
+bytes and returns either a 16-byte result or `UuidSlugError`; `unmask` must invert `mask` for
 every input. A callback may mutate and return its isolated input. The factory copies callback results
 into package storage, captures the callbacks in an opaque frozen handle, and rejects invalid results
 and failed round-trip probes. Unexpected throws become errors with the thrown value as their cause.
 Finite probes cannot prove invertibility, so the caller remains responsible for the complete domain.
 
 ```ts
-const custom = createCustomMaskSchema({
-  id: "existing-scheme",
-  forward(input) {
+const custom = createCustomUuidV7Mask({
+  label: "existing-scheme",
+  mask(input) {
     const output = new Uint8Array(16);
     oldSchema.mix(input, output, true);
     return output;
   },
-  reverse(input) {
+  unmask(input) {
     const output = new Uint8Array(16);
     oldSchema.mix(input, output, false);
     return output;
   },
 });
 if (custom instanceof Error) throw custom;
-const ids = createUuidSlugCodec({ mask: custom });
+const ids = createUuidV7SlugCodec({ mask: custom });
 ```
 
-`createMaskSchema({ seed, keyIterations })` returns an error for invalid seed options.
-`createUuidSlugCodec(options)` returns an error for invalid options. Create custom handles before
+`createUuidV7Mask({ seed, keyDerivationIterations })` returns an error for invalid seed options.
+`createUuidV7SlugCodec(options)` returns an error for invalid options. Create custom handles before
 passing them; an arbitrary object is not a schema.
 
-For expensive derivation, await `createMaskSchemaAsync` and pass the completed schema to the codec:
+For expensive derivation, await `createUuidV7MaskAsync` and pass the completed schema to the codec:
 
 ```ts
-import { createMaskSchemaAsync, createUuidSlugCodec } from "@anizoptera/uuid-slug";
+import { createUuidV7MaskAsync, createUuidV7SlugCodec } from "@anizoptera/uuid-slug";
 
 const controller = new AbortController();
-const schema = await createMaskSchemaAsync({
+const schema = await createUuidV7MaskAsync({
   seed, // the same stored secret used by the synchronous constructor
-  keyIterations, // preserve the setting used for issued slugs
+  keyDerivationIterations, // preserve the setting used for issued slugs
   signal: controller.signal, // optional; call controller.abort(reason) to stop
 });
 if (schema instanceof Error) throw schema;
-const codec = createUuidSlugCodec({ mask: schema });
+const codec = createUuidV7SlugCodec({ mask: schema });
 if (codec instanceof Error) throw codec;
 ```
 
@@ -408,42 +408,42 @@ or direct slugs. Never truncate the timestamp or substitute a new identity to ma
 Create a migration reader from your codec. Enable only the old formats your application issued:
 
 ```ts
-const reader = ids.migration({ original: true, plain: true });
-const uuid = reader.decode(incomingSlug);
+const reader = ids.createMigrationDecoder({ originalMask: true, plainSlug: true });
+const uuid = reader.decodeSlug(incomingSlug);
 if (uuid instanceof Error) throw uuid;
 // Look up uuid and check the caller's access to the record.
 ```
 
-`original` accepts the original fixed permutation/XOR format with its 4-bit checksum.
+`originalMask` accepts the original fixed permutation/XOR format with its 4-bit checksum.
 It does **not** accept the different masked format from package version 0.2.0.
-`plain` accepts direct UUID slugs of any version, including old base64url spellings whose
+`plainSlug` accepts direct UUID slugs of any version, including old base64url spellings whose
 last four bits were ignored. Ordinary `slugToUuid` remains strict about those trailing bits.
 Both options must be booleans; malformed reader configuration throws `TypeError` at construction.
 Neither option changes generation, ordinary codec methods, keys or sentinels.
 
-`decode` returns one UUID or `UuidSlugError`: sentinels first, then current keys, then enabled
+`decodeSlug` returns one UUID or `UuidSlugError`: sentinels first, then current keys, then enabled
 original and plain formats. A successful decode still needs a record lookup. The same slug can
 decode to different UUIDs in different formats; the original check has only four bits.
 
 When you know the input format, name it to avoid trying unrelated formats:
 
 ```ts
-const uuid = reader.decode(oldSlug, "original"); // "plain" or "current" also works
+const uuid = reader.decodeSlug(oldSlug, "original-mask"); // "plain-slug" or "current-mask" also works
 if (uuid instanceof Error) throw uuid;
-const replacement = ids.uuidV7ToMaskedSlug(uuid);
+const replacement = ids.encodeUuid(uuid);
 if (replacement instanceof Error) throw replacement;
 // Keep uuid in the database; use replacement in new links.
 ```
 
 Enable an old format before selecting it. Recognized sentinels always return their reserved UUID,
 including old trailing-bit aliases when reading original or plain slugs.
-With literal options, TypeScript offers only `"current"` and the formats enabled with `true`;
+With literal options, TypeScript offers only `"current-mask"` and the formats enabled with `true`;
 options whose values are dynamic remain selectable because they may be enabled at runtime.
 
-For unknown formats, use `candidates` to find the matching record without guessing:
+For unknown formats, use `decodeSlugCandidates` to find the matching record without guessing:
 
 ```ts
-const candidates = reader.candidates(incomingSlug);
+const candidates = reader.decodeSlugCandidates(incomingSlug);
 if (candidates instanceof Error) throw candidates;
 const matches = candidates.length ? await findRecordsByUuids(candidates) : [];
 if (matches.length === 0) throw new Error("ID not found");
@@ -452,34 +452,34 @@ const record = matches[0];
 // Check access to record before returning it.
 ```
 
-`findRecordsByUuids` is your database query. Return distinct records by UUID. `candidates`
+`findRecordsByUuids` is your database query. Return distinct records by UUID. `decodeSlugCandidates`
 returns distinct UUIDs in decoding order, or an empty array if none match. Malformed input and
 failed mask callbacks return an error. Callback errors keep their cause; they never produce a
 successful but incomplete list.
-An old sentinel alias can also be a current masked ID. `candidates` retains both UUIDs;
-`decode` keeps sentinel priority.
+An old sentinel alias can also be a current masked ID. `decodeSlugCandidates` retains both UUIDs;
+`decodeSlug` keeps sentinel priority.
 
-Keep this reader while old inputs must work. Replace it with `ids.migration({ plain: true })`
-to stop trying the original mask, or `ids.migration({ original: true })` to stop plain decoding.
-`ids.migration()` tries only current keys and sentinels. Removing the migration reader entirely
+Keep this reader while old inputs must work. Replace it with `ids.createMigrationDecoder({ plainSlug: true })`
+to stop trying the original mask, or `ids.createMigrationDecoder({ originalMask: true })` to stop plain decoding.
+`ids.createMigrationDecoder()` tries only current keys and sentinels. Removing the migration reader entirely
 leaves ordinary codec decoding unchanged. Neither method can identify the issuing format from
 the slug alone, so successful decoding is not a reliable count of legacy traffic.
 
-### Rejecting stale ids
+### Validating timestamp windows
 
 ```ts
-import { validateUuidV7Fresh } from "@anizoptera/uuid-slug";
+import { validateUuidV7Timestamp } from "@anizoptera/uuid-slug";
 
-const ok = validateUuidV7Fresh(uuid, { windowMs: 60_000 });
+const ok = validateUuidV7Timestamp(uuid, { maxTimestampDeltaMs: 60_000 });
 ```
 
-The timestamp must be inside the inclusive interval `now() - windowMs` through
-`now() + windowMs`; the default radius is 24 hours. `windowMs` must be finite and nonnegative;
-zero and finite fractions are valid. `now` defaults to `Date.now`, must return finite Unix
-milliseconds, and is read once per validation. Invalid settings return an error instead of
-disabling the check.
+The timestamp must be inside the inclusive interval `referenceUnixMs - maxTimestampDeltaMs`
+through `referenceUnixMs + maxTimestampDeltaMs`. The maximum delta is required, finite, and
+nonnegative; zero and finite fractions are valid. `referenceUnixMs` defaults to one `Date.now()`
+reading and must be finite when supplied. Invalid settings return an error instead of disabling
+the check.
 
-`validateUuidV7SlugFresh` starts from a plain slug; `codec.validateMaskedSlugFresh` starts from
+`validateUuidV7SlugTimestamp` starts from a plain slug; `codec.validateSlugTimestamp` starts from
 a slug decoded with that codec. Successful validation returns the same spelling with its validated
 plain or public masked-slug type. This is a symmetric timestamp sanity check, not past-only expiry,
 authentication, or replay prevention. Use ordinary decoding for permanent identifiers. For links
@@ -516,15 +516,15 @@ See [security boundaries](docs/security.md) for entropy failures, custom sources
 - **One type for owned bytes.** Without an output buffer, byte generators return a plain
   `Uint8Array`, never a platform-specific subclass. With an output buffer, they return that same
   caller-owned array and write only the requested UUID range.
-- **Atomic identifier parsing.** `uuidToBytes` and `parseUuidSlug` validate the complete identifier
+- **Atomic identifier parsing.** `uuidToBytes` and `slugToBytes` validate the complete identifier
   before writing. Invalid text or destination ranges return an error and leave caller storage
-  unchanged. The deprecated `parseUuid` path preserves the same behavior.
+  unchanged.
 - **You pay for masking only if you mask.** The keyless operations — generating an id, converting
   between a UUID and a plain slug — reach no codec, so a bundle that imports only those carries
   none of the cipher, key derivation, or sentinel table. Use named imports with a tree-shaking
   bundler; loading the complete module namespace does not promise that removal.
 - **Masking is explicit.** A codec requires private mask options or a package-produced schema
-  handle. The published-key schema is available only as `PUBLIC_MASK_SCHEMA`; omission never
+  handle. The published-key schema is available only as `UUID_V7_TEST_MASK`; omission never
   selects it.
 
 ## Runtime

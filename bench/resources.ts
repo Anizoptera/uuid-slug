@@ -49,24 +49,27 @@ try {
   );
   const id = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
   const time = 0x0190a1b2c3d4;
-  const bytes = api.parseUuid(id);
+  const bytes = api.uuidToBytes(id);
   assert.ok(!(bytes instanceof Error));
   const slug = api.uuidToSlug(id);
   assert.equal(typeof slug, "string");
   const primary = { seed: "profile-current-seed" };
   const previous = { seed: "profile-previous-seed" };
-  const codec = api.createUuidSlugCodec({ mask: primary });
-  const rotated = api.createUuidSlugCodec({ mask: primary, previousMasks: [previous] });
-  const older = api.createUuidSlugCodec({ mask: previous });
+  const codec = api.createUuidV7SlugCodec({
+    mask: primary,
+    sentinels: [{ name: "nil", uuid: "00000000-0000-7000-8000-000000000000" }],
+  });
+  const rotated = api.createUuidV7SlugCodec({ mask: primary, previousMasks: [previous] });
+  const older = api.createUuidV7SlugCodec({ mask: previous });
   assert.ok(!(codec instanceof Error));
   assert.ok(!(rotated instanceof Error));
   assert.ok(!(older instanceof Error));
-  const migration = rotated.migration({ original: true, plain: true });
-  const masked = codec.uuidV7ToMaskedSlug(id);
-  const old = older.uuidV7ToMaskedSlug(id);
+  const migration = rotated.createMigrationDecoder({ originalMask: true, plainSlug: true });
+  const masked = codec.encodeUuid(id);
+  const old = older.encodeUuid(id);
   assert.equal(typeof masked, "string");
   assert.equal(typeof old, "string");
-  assert.ok(codec.maskedSlugToUuidV7(old as string) instanceof Error);
+  assert.ok(codec.decodeSlug(old as string) instanceof Error);
   const into = new Uint8Array(24);
   let draws = 0;
   let clocks = 0;
@@ -107,7 +110,7 @@ try {
   check(
     "pooled v4 generation",
     () => {
-      for (let i = 0; i < 1024; i += 1) api.uuidV4Bytes(into, 4);
+      for (let i = 0; i < 1024; i += 1) api.generateUuidV4Bytes(into, 4);
     },
     { draws: 64, buffers: 0, views: 0, errors: 0 },
   );
@@ -121,15 +124,15 @@ try {
     views: 0,
     errors: 0,
   });
-  check("portable generation", () => portable.uuidV7Bytes(into, 4), {
+  check("portable generation", () => portable.generateUuidV7Bytes(into, 4), {
     buffers: 0,
     views: 0,
     errors: 0,
   });
   assert.equal(draws, 1, "one generator call must draw once");
   assert.equal(clocks, 1, "one generator call must observe the clock once");
-  assert.equal(api.uuidV7Bytes(into, 4), into, "initialize the package generator");
-  check("caller-owned v7 generation", () => api.uuidV7Bytes(into, 4), {
+  assert.equal(api.generateUuidV7Bytes(into, 4), into, "initialize the package generator");
+  check("caller-owned v7 generation", () => api.generateUuidV7Bytes(into, 4), {
     buffers: 0,
     views: 0,
     errors: 0,
@@ -140,47 +143,64 @@ try {
     errors: 0,
   });
   if (hasHex) assert.equal(counts.hex, 1, "available native hex must be used once");
-  check("exact slug formatting", () => api.formatUuidSlug(bytes), {
+  check("exact slug formatting", () => api.bytesToSlug(bytes), {
     buffers: 0,
     views: 0,
     errors: 0,
   });
   if (hasBase64) assert.equal(counts.base64, 1, "available native base64 must be used once");
-  check("previous-key decode", () => rotated.maskedSlugToUuidV7(old as string), {
+  check("previous-key decode", () => rotated.decodeSlug(old as string), {
     errors: 0,
     chars: 22,
   });
-  check("plain freshness", () => api.validateUuidV7SlugFresh(slug as string, { now: () => time }), {
-    buffers: 1,
-    errors: 0,
-    hex: 0,
-    chars: 22,
-  });
-  check("migration first match", () => migration.decode(old as string), {
+  check(
+    "plain timestamp validation",
+    () =>
+      api.validateUuidV7SlugTimestamp(slug as string, {
+        maxTimestampDeltaMs: 86_400_000,
+        referenceUnixMs: time,
+      }),
+    {
+      buffers: 1,
+      errors: 0,
+      hex: 0,
+      chars: 22,
+    },
+  );
+  check("migration first match", () => migration.decodeSlug(old as string), {
     base64: 0,
     errors: 0,
     chars: 22,
     draws: 0,
   });
-  check("migration candidates", () => migration.candidates(old as string), {
+  check("migration candidates", () => migration.decodeSlugCandidates(old as string), {
     base64: 0,
     errors: 0,
     chars: 22,
     draws: 0,
   });
   check(
-    "masked freshness",
-    () => codec.validateMaskedSlugFresh(masked as string, { now: () => time }),
-    { buffers: 2, errors: 0, hex: 0, chars: 22 },
+    "masked timestamp validation",
+    () =>
+      codec.validateSlugTimestamp(masked as string, {
+        maxTimestampDeltaMs: 86_400_000,
+        referenceUnixMs: time,
+      }),
+    {
+      buffers: 2,
+      errors: 0,
+      hex: 0,
+      chars: 22,
+    },
   );
-  check("masked byte encode", () => codec.uuidV7ToMaskedSlug(bytes), {
+  check("masked byte encode", () => codec.encodeUuid(bytes), {
     buffers: 2,
     base64: 1,
     errors: 0,
     hex: 0,
     chars: 22,
   });
-  check("masked byte decode", () => codec.maskedSlugToUuidV7Bytes(masked as string), {
+  check("masked byte decode", () => codec.decodeSlugToBytes(masked as string), {
     buffers: 2,
     errors: 0,
     hex: 0,
@@ -188,7 +208,7 @@ try {
   });
   const sentinel = codec.sentinels[0];
   assert.ok(sentinel);
-  check("cached sentinel", () => codec.maskedSlugToUuidV7(sentinel.slug), {
+  check("cached sentinel", () => codec.decodeSlug(sentinel.slug), {
     buffers: 0,
     errors: 0,
     hex: 0,

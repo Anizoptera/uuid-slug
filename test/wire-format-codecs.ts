@@ -11,12 +11,13 @@
  * The assertions stay in the suites: an assertion that drifts merely narrows coverage, and it is
  * visible on the page.
  */
-import { createCustomMaskSchema, createUuidSlugCodec, PUBLIC_MASK_SCHEMA } from "../src/index";
+import { createCustomUuidV7Mask, createUuidV7SlugCodec, UUID_V7_TEST_MASK } from "../src/index";
 import { unwrap } from "../dev/unwrap";
+import { NIL_TEST_SENTINEL } from "./sentinel-fixtures";
 
 /**
  * A caller-supplied mixing step, standing in for a consumer who brings their own cipher. It is
- * here because `MaskSchema` is the package's only extension point, so the golden vectors are what
+ * here because `UuidV7Mask` is the package's only extension point, so the golden vectors are what
  * prove an outside scheme survives a change to the encoder or the tag layout.
  *
  * It doubles as the whole cost of that extension point: a permute-and-XOR scheme, the shape the
@@ -33,9 +34,9 @@ const inverse = new Uint8Array(16);
 permute.forEach((target, i) => (inverse[target] = i));
 
 const customMix = unwrap(
-  createCustomMaskSchema({
-    id: "custom-mix",
-    forward(input) {
+  createCustomUuidV7Mask({
+    label: "custom-mix",
+    mask(input) {
       const output = new Uint8Array(16);
       for (let i = 0; i < 16; i += 1) {
         const source = permute[i] as number;
@@ -43,7 +44,7 @@ const customMix = unwrap(
       }
       return output;
     },
-    reverse(input) {
+    unmask(input) {
       const output = new Uint8Array(16);
       for (let i = 0; i < 16; i += 1) {
         const source = inverse[i] as number;
@@ -55,7 +56,12 @@ const customMix = unwrap(
 );
 
 export const WIRE_FORMAT_CODECS = {
-  "custom-mix": unwrap(createUuidSlugCodec({ mask: customMix })),
-  default: unwrap(createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA })),
-  "seeded-v2": unwrap(createUuidSlugCodec({ mask: { seed: "golden-vector-seed-v3" } })),
+  "custom-mix": unwrap(createUuidV7SlugCodec({ mask: customMix, sentinels: NIL_TEST_SENTINEL })),
+  default: unwrap(createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK, sentinels: NIL_TEST_SENTINEL })),
+  "seeded-v2": unwrap(
+    createUuidV7SlugCodec({
+      mask: { seed: "golden-vector-seed-v3" },
+      sentinels: NIL_TEST_SENTINEL,
+    }),
+  ),
 };

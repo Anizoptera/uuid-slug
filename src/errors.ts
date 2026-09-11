@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-/** Consumers can enumerate error codes at runtime without duplicating the type's vocabulary. */
+/** Stable runtime vocabulary for branching on package failures. */
 const ERROR_CODES = [
   "aborted",
   "invalid_base32",
@@ -12,16 +12,15 @@ const ERROR_CODES = [
   "invalid_uuid_slug",
   "invalid_uuid_version",
   "rng_unavailable",
-  "stale_uuid",
+  "timestamp_outside_window",
 ] as const;
 
-/** Stable runtime vocabulary for branching on package failures. */
 export const UUID_SLUG_ERROR_CODES: typeof ERROR_CODES = Object.freeze(ERROR_CODES);
 
 /** A stable recovery code carried by every `UuidSlugError`. */
 export type UuidSlugErrorCode = (typeof UUID_SLUG_ERROR_CODES)[number];
 
-const ERROR_CODE_SET: ReadonlySet<unknown> = new Set(ERROR_CODES);
+const ERROR_CODE_SET: ReadonlySet<unknown> = new Set(UUID_SLUG_ERROR_CODES);
 
 const typedArrayTagDescriptor = Object.getOwnPropertyDescriptor(
   Object.getPrototypeOf(Uint8Array.prototype) as object,

@@ -5,29 +5,29 @@ import { UuidSlugError } from "./errors";
 import { mix32, read32 } from "./feistel";
 import { applyMaskSchema } from "./schema-handle";
 import { bytesToUuid } from "./uuid";
-import type { MaskSchema, MaskedUuidV7Slug, UuidString } from "./types";
+import type { UuidV7Mask, MaskedUuidV7Slug, UuidString } from "./types";
 import type { SlugAlphabet } from "./uuid";
 
 /** Custom callbacks can fail after construction; preserve their cause in the public error contract. */
 function applyMix(
-  schema: MaskSchema,
+  schema: UuidV7Mask,
   input: Uint8Array,
   output: Uint8Array,
-  forward: boolean,
+  direction: "mask" | "unmask",
 ): undefined | UuidSlugError {
   try {
-    const cause = applyMaskSchema(schema, input, output, forward);
+    const cause = applyMaskSchema(schema, input, output, direction);
     return cause
       ? new UuidSlugError(
           "invalid_mask_schema",
-          `Mask schema "${schema.id}" failed ${forward ? "encoding" : "decoding"}.`,
+          `UUIDv7 mask "${schema.label}" failed while ${direction === "mask" ? "masking" : "unmasking"}.`,
           { cause },
         )
       : undefined;
   } catch (cause) {
     return new UuidSlugError(
       "invalid_mask_schema",
-      `Mask schema "${schema.id}" failed ${forward ? "encoding" : "decoding"}.`,
+      `UUIDv7 mask "${schema.label}" failed while ${direction === "mask" ? "masking" : "unmasking"}.`,
       { cause },
     );
   }
@@ -83,7 +83,7 @@ const TAG_BITS = INNER_TAG_BITS + OUTER_TAG_BITS;
 
 export function uuidV7BytesToMaskedSlug(
   raw: Uint8Array,
-  schema: MaskSchema,
+  schema: UuidV7Mask,
   alphabet: SlugAlphabet = "base64url",
   reserved?: { readonly size: number; has(slug: string): boolean },
 ): MaskedUuidV7Slug | UuidSlugError {
@@ -98,7 +98,7 @@ export function uuidV7BytesToMaskedSlug(
   const tagged = new Uint8Array(raw);
   injectTag(tagged, tag >>> OUTER_TAG_BITS);
   const mixed = new Uint8Array(16);
-  const failed = applyMix(schema, tagged, mixed, true);
+  const failed = applyMix(schema, tagged, mixed, "mask");
   if (failed) return failed;
   const tail = tag & ((1 << OUTER_TAG_BITS) - 1);
   // Raw sentinels have zero outer bits. Only that tail can collide with retained base64 reads;
@@ -121,8 +121,8 @@ export function uuidV7BytesToMaskedSlug(
 
 export function decodeMaskedSlug(
   slug: string,
-  schema: MaskSchema,
-  previous: readonly MaskSchema[] = [],
+  schema: UuidV7Mask,
+  previous: readonly UuidV7Mask[] = [],
 ): Uint8Array | UuidSlugError {
   if (typeof slug !== "string")
     return new UuidSlugError("invalid_uuid_slug", "Masked UUID slug must be a string.");
@@ -153,7 +153,7 @@ export function decodeMaskedSlug(
 export function decodeMaskedCandidates(
   mixed: Uint8Array,
   outerTag: number,
-  schemas: readonly MaskSchema[],
+  schemas: readonly UuidV7Mask[],
   firstOnly = false,
   candidates: UuidString[] = [],
 ): UuidString[] | UuidSlugError {
@@ -175,10 +175,10 @@ export function decodeMaskedCandidates(
 function unmix(
   mixed: Uint8Array,
   outerTag: number,
-  schema: MaskSchema,
+  schema: UuidV7Mask,
 ): Uint8Array | undefined | UuidSlugError {
   const unmixed = new Uint8Array(16);
-  const failed = applyMix(schema, mixed, unmixed, false);
+  const failed = applyMix(schema, mixed, unmixed, "unmask");
   if (failed) return failed;
   // Both halves come out of the same decryption, so a wrong key garbles the observed check as
   // thoroughly as the payload: the tag needs no key of its own to tell keys apart.

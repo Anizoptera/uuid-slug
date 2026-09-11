@@ -7,6 +7,7 @@ fn evaluate_caught(input: &str) -> Result<String, &'static str> {
     std::panic::catch_unwind(|| dispatch::evaluate(input)).map_err(|_| "Rust bridge panicked")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn plain_caught(input: &str) -> Result<String, &'static str> {
     std::panic::catch_unwind(|| {
         uuid_slug::Uuid::parse(input)
@@ -232,7 +233,7 @@ impl Derivation {
             std::task::Poll::Ready(result) => result
                 .and_then(|mask| {
                     uuid_slug::Codec::new(uuid_slug::CodecOptions::new(mask))?
-                        .uuid_v7_to_masked_slug(self.uuid)
+                        .encode_uuid(self.uuid)
                 })
                 .map(Some)
                 .map_err(|error| wasm_bindgen::JsValue::from_str(error.code().as_str())),

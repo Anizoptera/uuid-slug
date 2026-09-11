@@ -2,8 +2,8 @@
 
 use serde_json::{Value, json};
 use uuid_slug::{
-    Alphabet, Codec, CodecOptions, Error, ErrorCode, Freshness, MaskSchema, MigrationFormat,
-    MigrationOptions, Uuid, create_mask_schema, public_mask_schema,
+    Alphabet, Codec, CodecOptions, Error, ErrorCode, MaskSchema, MigrationFormat, MigrationOptions,
+    Uuid, UuidV7TimestampWindow, create_mask_schema, public_mask_schema,
 };
 
 fn text<'a>(value: &'a Value, key: &str) -> Result<&'a str, Error> {
@@ -93,7 +93,7 @@ fn schema(value: &Value) -> Result<MaskSchema, Error> {
 
 fn codec(request: &Value) -> Result<Codec, Error> {
     let mut options = CodecOptions {
-        masked_slug_alphabet: alphabet(&request["maskedAlphabet"])?,
+        slug_alphabet: alphabet(&request["maskedAlphabet"])?,
         ..CodecOptions::new(schema(&request["mask"])?)
     };
     if let Some(previous) = request["previous"].as_array() {
@@ -241,44 +241,40 @@ fn run(request: &Value) -> Result<Value, Error> {
                 <[u8; 16]>::try_from(bytes).map_err(|_| Error::new(ErrorCode::InvalidBuffer))?;
             Ok(json!(Alphabet::Base64Url.encode(&bytes)))
         }
-        "fresh" | "freshPlain" => {
-            let uuid = if request["op"] == "freshPlain" {
+        "validateUuidTimestamp" | "validateSlugTimestamp" => {
+            let uuid = if request["op"] == "validateSlugTimestamp" {
                 Uuid::parse_slug(input)?
             } else {
                 Uuid::parse(input)?
             };
-            Freshness {
-                now: number(&request["now"]),
-                window_ms: number(&request["window"]),
+            UuidV7TimestampWindow {
+                reference_unix_ms: number(&request["now"]),
+                max_timestamp_delta_ms: number(&request["window"]),
             }
             .validate(uuid)?;
             Ok(json!(input))
         }
-        "mask" => Ok(json!(
-            codec(request)?.uuid_v7_to_masked_slug(Uuid::parse(input)?)?
-        )),
+        "mask" => Ok(json!(codec(request)?.encode_uuid(Uuid::parse(input)?)?)),
         "unmask" => {
             let codec = codec(request)?;
             let uuid = if request["acceptPlain"] == true {
                 codec
-                    .migration(MigrationOptions {
+                    .migration_decoder(MigrationOptions {
                         original: false,
                         plain: true,
                     })
                     .decode(input, None)?
             } else {
-                codec.masked_slug_to_uuid_v7(input)?
+                codec.decode_slug(input)?
             };
             Ok(json!(uuid.to_string()))
         }
-        "unmaskV7" => Ok(json!(
-            codec(request)?.masked_slug_to_uuid_v7(input)?.to_string()
-        )),
-        "freshMasked" => Ok(json!(codec(request)?.validate_masked_slug_fresh(
+        "unmaskV7" => Ok(json!(codec(request)?.decode_slug(input)?.to_string())),
+        "validateMaskedTimestamp" => Ok(json!(codec(request)?.validate_slug_timestamp(
             input,
-            Freshness {
-                now: number(&request["now"]),
-                window_ms: number(&request["window"])
+            UuidV7TimestampWindow {
+                reference_unix_ms: number(&request["now"]),
+                max_timestamp_delta_ms: number(&request["window"])
             },
         )?)),
         "sentinels" => Ok(json!(
@@ -290,15 +286,15 @@ fn run(request: &Value) -> Result<Value, Error> {
         )),
         "migration" | "candidates" => {
             let codec = codec(request)?;
-            let migration = codec.migration(MigrationOptions {
+            let migration = codec.migration_decoder(MigrationOptions {
                 original: request["original"] == true,
                 plain: request["plain"] == true,
             });
             let format = match request["format"].as_str() {
                 None => None,
-                Some("current") => Some(MigrationFormat::Current),
-                Some("original") => Some(MigrationFormat::Original),
-                Some("plain") => Some(MigrationFormat::Plain),
+                Some("current-mask") => Some(MigrationFormat::Current),
+                Some("original-mask") => Some(MigrationFormat::Original),
+                Some("plain-slug") => Some(MigrationFormat::Plain),
                 _ => return Err(Error::new(ErrorCode::InvalidUuidSlug)),
             };
             if request["op"] == "migration" {

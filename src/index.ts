@@ -1,49 +1,47 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export {
-  UUID_V7_SENTINEL_DEFINITIONS,
-  createUuidSlugCodec,
-  validateUuidV7Fresh,
-  validateUuidV7SlugFresh,
+  createUuidV7SlugCodec,
+  validateUuidV7Timestamp,
+  validateUuidV7SlugTimestamp,
 } from "./codec";
 export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError, unwrapUuidSlug } from "./errors";
 /** Export the code type so consumers can write exhaustive handlers without copying its literals. */
 export type { UuidSlugErrorCode } from "./errors";
-export { PUBLIC_MASK_SCHEMA, createMaskSchema, createMaskSchemaAsync } from "./schema";
-export { createCustomMaskSchema } from "./schema-handle";
+export { UUID_V7_TEST_MASK, createUuidV7Mask, createUuidV7MaskAsync } from "./schema";
+export { createCustomUuidV7Mask } from "./schema-handle";
+export { UUID_SLUG_MIGRATION_FORMATS } from "./types";
 export type {
-  AsyncMaskSchemaOptions,
-  CustomMaskSchemaOptions,
-  FreshValidationOptions,
-  MaskSchema,
-  MaskSchemaOptions,
-  MigrationFormat,
+  AsyncUuidV7MaskOptions,
+  CustomUuidV7MaskOptions,
+  UuidV7TimestampWindow,
+  UuidV7Mask,
+  UuidV7MaskOptions,
+  UuidSlugMigrationFormat,
   MaskedUuidV7Slug,
   PublicUuidV7Slug,
   SentinelUuidV7Slug,
   UuidBytes,
   UuidV4Bytes,
   UuidSlug,
-  UuidSlugCodec,
-  UuidSlugCodecOptions,
-  UuidSlugMigration,
+  UuidSlugMigrationDecoder,
   UuidSlugMigrationOptions,
   UuidString,
   UuidV4Slug,
   UuidV4String,
   UuidV7Generator,
-  UuidV7BytesSource,
+  UuidV7SlugCodec,
+  UuidV7SlugCodecOptions,
   UuidV7Bytes,
   UuidV7Sentinel,
-  UuidV7SentinelDefinition,
+  UuidV7SentinelConfig,
   UuidV7Slug,
   UuidV7String,
 } from "./types";
 export {
   bytesToUuid,
   extractUuidV7Timestamp,
-  formatUuid,
-  formatUuidSlug,
+  bytesToSlug,
   isUuidSlug,
   isUuidBytes,
   isUuidV4Bytes,
@@ -53,8 +51,8 @@ export {
   isUuidV7Slug,
   isUuidV7String,
   isUuidString,
-  parseUuid,
-  parseUuidSlug,
+  UUID_SLUG_ALPHABETS,
+  slugToBytes,
   slugToUuid,
   uuidToSlug,
   uuidToBytes,
@@ -66,12 +64,12 @@ export type { UuidV7GeneratorOptions } from "./v7";
 /* Keyless operations stay module-level and avoid codec setup. Masking and sentinels stay on the
  * codec because their meaning depends on its seed and sentinel table. */
 export {
-  uuidV4,
-  uuidV4Bytes,
-  uuidV4Slug,
-  uuidV7,
-  uuidV7At,
-  uuidV7Bytes,
-  uuidV7BytesAt,
-  uuidV7Slug,
+  generateUuidV4,
+  generateUuidV4Bytes,
+  generateUuidV4Slug,
+  generateUuidV7,
+  generateUuidV7At,
+  generateUuidV7Bytes,
+  generateUuidV7BytesAt,
+  generateUuidV7Slug,
 } from "./keyless";

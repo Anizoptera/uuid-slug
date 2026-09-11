@@ -5,7 +5,7 @@
  * offset matrix.
  *
  * Shared by the vitest and the bun:test lanes for the reason `entropy-probe.ts` gives, and here the
- * split is not hypothetical: `uuidV7Bytes` reaches the portable generator under Node and the
+ * split is not hypothetical: `generateUuidV7Bytes` reaches the portable generator under Node and the
  * native owned-byte adapter under Bun. Both must reject the same caller ranges before entropy is
  * consumed and commit only after generation succeeds.
  *
@@ -16,16 +16,16 @@
  */
 import { UuidSlugError } from "../src/errors";
 import {
-  createUuidSlugCodec,
+  createUuidV7SlugCodec,
   extractUuidV7Timestamp,
-  formatUuid,
-  formatUuidSlug,
-  parseUuid,
-  parseUuidSlug,
-  PUBLIC_MASK_SCHEMA,
-  uuidV4Bytes,
-  uuidV7Bytes,
-  uuidV7BytesAt,
+  bytesToUuid,
+  bytesToSlug,
+  uuidToBytes,
+  slugToBytes,
+  UUID_V7_TEST_MASK,
+  generateUuidV4Bytes,
+  generateUuidV7Bytes,
+  generateUuidV7BytesAt,
 } from "../src/index";
 import { bytePatterns } from "./byte-patterns";
 
@@ -37,9 +37,9 @@ const INSTANT = 1_700_000_000_000;
 /** Fill byte chosen so any stray write shows up as a value no generator would produce wholesale. */
 const FILL = 0xee;
 const BUFFER_BYTES = 32;
-const codec = createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA });
+const codec = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK });
 if (codec instanceof Error) throw codec;
-const MASKED_SLUG = codec.uuidV7ToMaskedSlug(UUID);
+const MASKED_SLUG = codec.encodeUuid(UUID);
 if (MASKED_SLUG instanceof Error) throw MASKED_SLUG;
 
 /**
@@ -53,38 +53,32 @@ export const HOSTILE_OFFSETS: readonly unknown[] = [...HOSTILE_NUMERIC_OFFSETS, 
 
 /** Entry points that WRITE into the caller's buffer; the strictest form of the invariant. */
 const writers: readonly (readonly [string, (out: Uint8Array, offset: number) => unknown])[] = [
-  ["parseUuid", (out, offset) => parseUuid(UUID, out, offset)],
-  ["parseUuidSlug", (out, offset) => parseUuidSlug(SLUG, out, offset)],
-  [
-    "maskedSlugToUuidV7Bytes",
-    (out, offset) => codec.maskedSlugToUuidV7Bytes(MASKED_SLUG, out, offset),
-  ],
-  ["uuidV4Bytes", (out, offset) => uuidV4Bytes(out, offset)],
-  ["uuidV7Bytes", (out, offset) => uuidV7Bytes(out, offset)],
-  ["uuidV7BytesAt", (out, offset) => uuidV7BytesAt(INSTANT, out, offset)],
+  ["uuidToBytes", (out, offset) => uuidToBytes(UUID, out, offset)],
+  ["slugToBytes", (out, offset) => slugToBytes(SLUG, out, offset)],
+  ["decodeBytes", (out, offset) => codec.decodeSlugToBytes(MASKED_SLUG, out, offset)],
+  ["generateUuidV4Bytes", (out, offset) => generateUuidV4Bytes(out, offset)],
+  ["generateUuidV7Bytes", (out, offset) => generateUuidV7Bytes(out, offset)],
+  ["generateUuidV7BytesAt", (out, offset) => generateUuidV7BytesAt(INSTANT, out, offset)],
 ];
 
 const malformedWriters: readonly (readonly [string, (out: Uint8Array) => unknown])[] = [
-  ["parseUuid", (out) => parseUuid(UUID.slice(0, -1) + "x", out)],
+  ["uuidToBytes", (out) => uuidToBytes(UUID.slice(0, -1) + "x", out)],
+  ["slugToBytes invalid base64url character", (out) => slugToBytes(SLUG.slice(0, -1) + "!", out)],
   [
-    "parseUuidSlug invalid base64url character",
-    (out) => parseUuidSlug(SLUG.slice(0, -1) + "!", out),
+    "slugToBytes non-canonical base64url padding",
+    (out) => slugToBytes(SLUG.slice(0, -1) + "x", out),
   ],
   [
-    "parseUuidSlug non-canonical base64url padding",
-    (out) => parseUuidSlug(SLUG.slice(0, -1) + "x", out),
+    "slugToBytes invalid base32hex character",
+    (out) => slugToBytes(BASE32_SLUG.slice(0, -1) + "w", out),
   ],
   [
-    "parseUuidSlug invalid base32hex character",
-    (out) => parseUuidSlug(BASE32_SLUG.slice(0, -1) + "w", out),
+    "slugToBytes non-canonical base32hex padding",
+    (out) => slugToBytes(BASE32_SLUG.slice(0, -1) + "d", out),
   ],
   [
-    "parseUuidSlug non-canonical base32hex padding",
-    (out) => parseUuidSlug(BASE32_SLUG.slice(0, -1) + "d", out),
-  ],
-  [
-    "maskedSlugToUuidV7Bytes invalid slug",
-    (out) => codec.maskedSlugToUuidV7Bytes(MASKED_SLUG.slice(0, -1) + "!", out),
+    "decodeBytes invalid slug",
+    (out) => codec.decodeSlugToBytes(MASKED_SLUG.slice(0, -1) + "!", out),
   ],
 ];
 
@@ -94,8 +88,8 @@ const readers: readonly (readonly [
   (bytes: Uint8Array, offset: number) => unknown,
   readonly unknown[],
 ])[] = [
-  ["formatUuid", (bytes, offset) => formatUuid(bytes, offset), HOSTILE_OFFSETS],
-  ["formatUuidSlug", (bytes, offset) => formatUuidSlug(bytes, offset), HOSTILE_NUMERIC_OFFSETS],
+  ["bytesToUuid", (bytes, offset) => bytesToUuid(bytes, offset), HOSTILE_OFFSETS],
+  ["bytesToSlug", (bytes, offset) => bytesToSlug(bytes, offset), HOSTILE_NUMERIC_OFFSETS],
   [
     "extractUuidV7Timestamp",
     (bytes, offset) => extractUuidV7Timestamp(bytes, offset),
@@ -130,11 +124,11 @@ export const cases: readonly ProbeCase[] = [
       for (const backing of [new ArrayBuffer(80), new SharedArrayBuffer(80)]) {
         for (const { bytes, shift } of bytePatterns(backing)) {
           const view = bytes.subarray(4, 20);
-          if (formatUuidSlug(view) !== Buffer.from(view).toString("base64url"))
+          if (bytesToSlug(view) !== Buffer.from(view).toString("base64url"))
             return `base64url differs for shift ${shift}`;
           const hex = Buffer.from(bytes.subarray(4, 20)).toString("hex");
           const expected = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-          if (formatUuid(bytes, 4) !== expected || formatUuid(bytes.subarray(4, 20)) !== expected)
+          if (bytesToUuid(bytes, 4) !== expected || bytesToUuid(bytes.subarray(4, 20)) !== expected)
             return `UUID formatting differs for shift ${shift}`;
         }
       }
@@ -142,15 +136,15 @@ export const cases: readonly ProbeCase[] = [
     },
   },
   {
-    name: "formatUuidSlug selects a whole payload alphabet without a placeholder offset",
+    name: "bytesToSlug selects a whole payload alphabet without a placeholder offset",
     run: () => {
-      const payload = parseUuid(UUID);
+      const payload = uuidToBytes(UUID);
       if (payload instanceof Error) return "could not create the known UUID payload";
       const container = new Uint8Array(24);
       container.set(payload, 4);
-      if (formatUuidSlug(payload, "base32hex") !== BASE32_SLUG)
+      if (bytesToSlug(payload, "base32hex") !== BASE32_SLUG)
         return "whole-payload base32hex output differs from the known spelling";
-      return formatUuidSlug(container, 4, "base32hex") === BASE32_SLUG
+      return bytesToSlug(container, 4, "base32hex") === BASE32_SLUG
         ? undefined
         : "numeric-offset base32hex output differs from the known spelling";
     },

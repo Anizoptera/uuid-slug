@@ -21,7 +21,13 @@ import {
   sourcesUsedBy,
 } from "./entropy-probe";
 import { cases as bufferContractCases } from "./buffer-contract-probe";
-import { isUuidV7String, slugToUuid, uuidV4Slug, uuidV4Bytes, uuidV7Slug } from "../src/index";
+import {
+  isUuidV7String,
+  slugToUuid,
+  generateUuidV4Slug,
+  generateUuidV4Bytes,
+  generateUuidV7Slug,
+} from "../src/index";
 import { unwrap } from "../dev/unwrap";
 
 describe("bun runtime", () => {
@@ -33,17 +39,17 @@ describe("bun runtime", () => {
     });
   }
 
-  test("the keyless uuidV7Slug honours its alphabet argument, not the native generator", () => {
+  test("the keyless generateUuidV7Slug honours its alphabet argument, not the native generator", () => {
     // Bun alone provides the native base64url hook. A branch gated only on that hook's presence
     // would ignore the requested alphabet here while every Node case stayed green.
-    const sortable = unwrap(uuidV7Slug("base32hex"));
+    const sortable = unwrap(generateUuidV7Slug("base32hex"));
     expect(sortable).toHaveLength(26);
     expect<string>(sortable).toBe(sortable.toLowerCase());
     expect(isUuidV7String(slugToUuid(sortable) as string)).toBe(true);
     // The default must still take the native path and still round-trip; a fix that gated the
     // branch away entirely would pass the assertions above.
-    expect(unwrap(uuidV7Slug())).toHaveLength(22);
-    expect(unwrap(uuidV4Slug("base32hex"))).toHaveLength(26);
+    expect(unwrap(generateUuidV7Slug())).toHaveLength(22);
+    expect(unwrap(generateUuidV4Slug("base32hex"))).toHaveLength(26);
   });
 
   test("never reaches for Math.random on any generation path", () => {
@@ -70,11 +76,11 @@ describe("bun runtime", () => {
   test("leaves every v4 bit random except the six the RFC fixes", () => {
     // Bun draws `fillRandom` from `runtime/web.ts`, which vitest never loads, so a bit pinned
     // there is invisible on the Node lane — the same asymmetry as the cases above.
-    expect(constantBitCount(uuidV4Bytes)).toBe(6);
+    expect(constantBitCount(generateUuidV4Bytes)).toBe(6);
   });
 
   test("draws its own randomness from a source that can be shown to be cryptographic", () => {
-    const used = attributedSourcesFor(uuidV4Bytes);
+    const used = attributedSourcesFor(generateUuidV4Bytes);
     expect(used).not.toEqual([]);
     expect(insecureAmong(used)).toEqual([]);
   });

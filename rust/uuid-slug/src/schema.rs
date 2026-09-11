@@ -19,7 +19,13 @@ use std::{
 const CHAIN_A: [u32; 2] = [0x6469_7575, 0x4167_6c73];
 const CHAIN_B: [u32; 2] = [0x6469_7575, 0x4267_6c73];
 const PUBLIC_SEED: &[u8] = b"anizoptera.uuid-slug.default-mask.v1";
-type Mixer = dyn Fn([u8; 16], bool) -> Result<[u8; 16], Error> + Send + Sync;
+#[derive(Clone, Copy)]
+enum Direction {
+    Mask,
+    Unmask,
+}
+
+type Mixer = dyn Fn([u8; 16], Direction) -> Result<[u8; 16], Error> + Send + Sync;
 
 #[derive(Clone)]
 enum Implementation {
@@ -54,39 +60,38 @@ impl MaskSchema {
     /// The caller must supply an inverse for every block; finite probes cannot prove that property.
     pub fn custom(
         id: impl Into<String>,
-        forward: impl Fn([u8; 16]) -> Result<[u8; 16], Error> + Send + Sync + 'static,
-        reverse: impl Fn([u8; 16]) -> Result<[u8; 16], Error> + Send + Sync + 'static,
+        mask: impl Fn([u8; 16]) -> Result<[u8; 16], Error> + Send + Sync + 'static,
+        unmask: impl Fn([u8; 16]) -> Result<[u8; 16], Error> + Send + Sync + 'static,
     ) -> Result<Self, Error> {
         let schema = Self {
             id: id.into(),
-            implementation: Implementation::Custom(Arc::new(move |input, direction| {
-                if direction {
-                    forward(input)
-                } else {
-                    reverse(input)
-                }
-            })),
+            implementation: Implementation::Custom(Arc::new(
+                move |input, direction| match direction {
+                    Direction::Mask => mask(input),
+                    Direction::Unmask => unmask(input),
+                },
+            )),
         };
         for probe in [[0; 16], std::array::from_fn(|index| (index * 17) as u8)] {
-            if schema.mix_reverse(schema.mix_forward(probe)?)? != probe {
+            if schema.unmask(schema.mask(probe)?)? != probe {
                 return Err(Error::new(ErrorCode::InvalidMaskSchema));
             }
         }
         Ok(schema)
     }
 
-    pub(crate) fn mix_forward(&self, input: [u8; 16]) -> Result<[u8; 16], Error> {
-        self.mix(input, true)
+    pub(crate) fn mask(&self, input: [u8; 16]) -> Result<[u8; 16], Error> {
+        self.transform(input, Direction::Mask)
     }
 
-    pub(crate) fn mix_reverse(&self, input: [u8; 16]) -> Result<[u8; 16], Error> {
-        self.mix(input, false)
+    pub(crate) fn unmask(&self, input: [u8; 16]) -> Result<[u8; 16], Error> {
+        self.transform(input, Direction::Unmask)
     }
 
-    fn mix(&self, input: [u8; 16], forward: bool) -> Result<[u8; 16], Error> {
+    fn transform(&self, input: [u8; 16], direction: Direction) -> Result<[u8; 16], Error> {
         match &self.implementation {
-            Implementation::Feistel(keys) => Ok(feistel(input, keys, forward)),
-            Implementation::Custom(mix) => mix(input, forward)
+            Implementation::Feistel(keys) => Ok(feistel(input, keys, direction)),
+            Implementation::Custom(mix) => mix(input, direction)
                 .map_err(|cause| Error::new(ErrorCode::InvalidMaskSchema).with_source(cause)),
         }
     }
@@ -142,19 +147,22 @@ fn from_keys(id: String, keys: [u32; 8]) -> MaskSchema {
     }
 }
 
-fn feistel(bytes: [u8; 16], keys: &[u32; 8], forward: bool) -> [u8; 16] {
+fn feistel(bytes: [u8; 16], keys: &[u32; 8], direction: Direction) -> [u8; 16] {
     let mut words = [0; 4];
-    for (word, bytes) in words.iter_mut().zip(bytes.chunks_exact(4)) {
-        *word = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+    for (word, bytes) in words.iter_mut().zip(bytes.as_chunks::<4>().0) {
+        *word = u32::from_be_bytes(*bytes);
     }
     let [mut l0, mut l1, mut r0, mut r1] = words;
     for round in 0..4 {
-        let index = if forward { round } else { 3 - round } * 2;
+        let index = match direction {
+            Direction::Mask => round,
+            Direction::Unmask => 3 - round,
+        } * 2;
         let [f0, f1] = hash_words([keys[index], keys[index + 1]], &[r0, r1]);
         (l0, l1, r0, r1) = (r0, r1, l0 ^ f0, l1 ^ f1);
     }
     let mut out = [0; 16];
-    for (chunk, word) in out.chunks_exact_mut(4).zip([r0, r1, l0, l1]) {
+    for (chunk, word) in out.as_chunks_mut::<4>().0.iter_mut().zip([r0, r1, l0, l1]) {
         chunk.copy_from_slice(&word.to_be_bytes());
     }
     out
@@ -278,7 +286,7 @@ mod tests {
             let mut seed: Vec<u8> = (0..length).map(|index| index as u8).collect();
             let expected = create_mask_schema(&seed, iterations, "probe")
                 .unwrap()
-                .mix_forward([19; 16])
+                .mask([19; 16])
                 .unwrap();
             let mut future =
                 create_mask_schema_async(&seed, iterations, "probe", Cancellation::default());
@@ -289,7 +297,7 @@ mod tests {
                     break result.unwrap();
                 }
             };
-            assert_eq!(actual.mix_forward([19; 16]).unwrap(), expected);
+            assert_eq!(actual.mask([19; 16]).unwrap(), expected);
         }
         let cancellation = Cancellation::default();
         let mut future = create_mask_schema_async(&[3; 32], 4096, "cancel", cancellation.clone());

@@ -24,7 +24,7 @@ const constantFill = (byte: number) => (bytes: Uint8Array<ArrayBuffer>) => {
 const fixedClock = (ms: number) => () => ms;
 
 const bytesOf = (generator: ReturnType<typeof createUuidV7Generator>): Uint8Array => {
-  const result = generator.uuidV7Bytes();
+  const result = generator.generateUuidV7Bytes();
   if (result instanceof Error) throw result;
   return result;
 };
@@ -119,7 +119,7 @@ describe("uuidv7 at a caller-supplied instant", () => {
       clock: fixedClock(1),
       fillRandom: constantFill(0x00),
     });
-    const bytes = generator.uuidV7BytesAt(ms);
+    const bytes = generator.generateUuidV7BytesAt(ms);
     if (bytes instanceof Error) throw bytes;
     expect(timestampOf(bytes)).toBe(ms);
   });
@@ -133,7 +133,7 @@ describe("uuidv7 at a caller-supplied instant", () => {
       clock: fixedClock(1),
       fillRandom: constantFill(0x00),
     });
-    expect(generator.uuidV7At(ms)).toBeInstanceOf(Error);
+    expect(generator.generateUuidV7At(ms)).toBeInstanceOf(Error);
   });
 
   it("does not disturb the counter the untimestamped path is ordering", () => {
@@ -147,7 +147,7 @@ describe("uuidv7 at a caller-supplied instant", () => {
     });
     let previous = bytesOf(generator);
     for (let i = 0; i < 100; i += 1) {
-      expect(generator.uuidV7At(1_500_000_000_000)).not.toBeInstanceOf(Error);
+      expect(generator.generateUuidV7At(1_500_000_000_000)).not.toBeInstanceOf(Error);
       const current = bytesOf(generator);
       expect(compare(previous, current)).toBeLessThan(0);
       previous = current;
@@ -166,8 +166,8 @@ describe("uuidv7 clock contract", () => {
       clock: fixedClock(ms),
       fillRandom: constantFill(0x00),
     });
-    expect(generator.uuidV7Bytes()).toBeInstanceOf(Error);
-    const failure = generator.uuidV7();
+    expect(generator.generateUuidV7Bytes()).toBeInstanceOf(Error);
+    const failure = generator.generateUuidV7();
     expect(failure).toBeInstanceOf(UuidSlugError);
     expect(failure instanceof UuidSlugError && failure.code).toBe("invalid_timestamp");
   });
@@ -193,7 +193,7 @@ describe("uuidv7 clock contract", () => {
       fillRandom: constantFill(0xff),
     });
     expect(timestampOf(bytesOf(atCeiling))).toBe(2 ** 48 - 1);
-    expect(atCeiling.uuidV7Bytes()).toBeInstanceOf(Error);
+    expect(atCeiling.generateUuidV7Bytes()).toBeInstanceOf(Error);
 
     // The control that proves the refusal is about the ceiling and not about the borrow itself:
     // one millisecond lower, the same sequence borrows and lands ON the ceiling.
@@ -213,7 +213,7 @@ describe("uuidv7 buffer handling", () => {
       fillRandom: constantFill(0x00),
     });
     const target = new Uint8Array(32).fill(0xab);
-    const result = generator.uuidV7Bytes(target, 8);
+    const result = generator.generateUuidV7Bytes(target, 8);
     expect(result).toBe(target);
     // Spread, not `slice` alone: `Uint8Array.prototype.slice` returns a Uint8Array, and `toEqual`
     // treats that as unequal to a plain array however identical the contents.
@@ -226,8 +226,8 @@ describe("uuidv7 buffer handling", () => {
       clock: fixedClock(1),
       fillRandom: constantFill(0x00),
     });
-    expect(generator.uuidV7Bytes(new Uint8Array(16), 1)).toBeInstanceOf(Error);
-    expect(generator.uuidV7Bytes(new Uint8Array(16), -1)).toBeInstanceOf(Error);
+    expect(generator.generateUuidV7Bytes(new Uint8Array(16), 1)).toBeInstanceOf(Error);
+    expect(generator.generateUuidV7Bytes(new Uint8Array(16), -1)).toBeInstanceOf(Error);
   });
 });
 
@@ -247,7 +247,7 @@ describe("uuidv7 entropy use", () => {
     });
     expect(bytesOf(generator)).toEqual(bytesOf(control));
     fail = true;
-    expect(generator.uuidV7Bytes()).toBeInstanceOf(Error);
+    expect(generator.generateUuidV7Bytes()).toBeInstanceOf(Error);
     fail = false;
     expect(bytesOf(generator)).toEqual(bytesOf(control));
   });

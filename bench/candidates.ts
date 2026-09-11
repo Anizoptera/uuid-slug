@@ -19,7 +19,7 @@ import { uuidv7 as uuidv7Js } from "uuidv7-js";
 import { uuidv7 as uuidv7Package } from "uuidv7";
 import nodeCrypto from "node:crypto";
 
-import { uuidV4 as packageUuidV4, uuidV7 as packageUuidV7 } from "../src/index";
+import { generateUuidV4 as packageUuidV4, generateUuidV7 as packageUuidV7 } from "../src/index";
 import { unwrap } from "../dev/unwrap";
 
 export interface BenchCandidate {

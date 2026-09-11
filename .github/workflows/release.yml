@@ -53,10 +53,7 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Install the repository Rust toolchain
         if: steps.evidence.outputs.found != 'true'
-        run: |
-          version=$(awk '$1 == "rust" { print $2 }' .tool-versions)
-          test -n "$version" && rustup toolchain install "$version" --profile minimal --target wasm32-unknown-unknown
-          rustup override set "$version"
+        run: rustc --version && rustup show active-toolchain
       - if: steps.evidence.outputs.found != 'true'
         run: cargo install cargo-public-api --version 0.52.0 --locked
       - if: steps.evidence.outputs.found != 'true'
@@ -127,10 +124,7 @@ jobs:
           bun-version-file: .tool-versions
       - run: bun install --frozen-lockfile
       - name: Install the repository Rust toolchain
-        run: |
-          version=$(awk '$1 == "rust" { print $2 }' .tool-versions)
-          test -n "$version" && rustup toolchain install "$version" --profile minimal
-          rustup override set "$version"
+        run: rustc --version && rustup show active-toolchain
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-evidence

@@ -161,9 +161,9 @@ test("profiling refuses failures after its initial success witness", async () =>
     subject,
     `
 export * from ${JSON.stringify(api)};
-import { formatUuid as original, UuidSlugError } from ${JSON.stringify(api)};
+import { bytesToUuid as original, UuidSlugError } from ${JSON.stringify(api)};
 let calls = 0;
-export function formatUuid(...args) {
+export function bytesToUuid(...args) {
   return calls++ === 0 ? original(...args) : new UuidSlugError("invalid_uuid", "injected profiling failure");
 }
 `,
@@ -187,7 +187,7 @@ test.each([
   ["resources", 'new UuidSlugError("invalid_uuid", "discarded error");', "errors=1 exceeds 0"],
   [
     "latency",
-    "for (let i = 0; i < 64; i += 1) { const result = parseUuid(value); if (result instanceof Error) throw result; }",
+    "for (let i = 0; i < 64; i += 1) { const result = uuidToBytes(value); if (result instanceof Error) throw result; }",
     "median ratio",
   ],
 ])("%s gate rejects a result-preserving regression", async (probe, extraWork, diagnostic) => {
@@ -197,7 +197,7 @@ test.each([
     subject,
     `
 export * from ${JSON.stringify(api)};
-import { isUuidV7String as original, parseUuid, UuidSlugError } from ${JSON.stringify(api)};
+import { isUuidV7String as original, uuidToBytes, UuidSlugError } from ${JSON.stringify(api)};
 export function isUuidV7String(value) { ${extraWork} return original(value); }
 `,
   );

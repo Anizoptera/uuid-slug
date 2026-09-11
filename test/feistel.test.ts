@@ -16,9 +16,9 @@ const keysFrom = (seed: number) => {
 
 const KEYS = keysFrom(0xc0ffee);
 
-const apply = (bytes: Uint8Array, forward: boolean, keys = KEYS) => {
+const apply = (bytes: Uint8Array, direction: "mask" | "unmask", keys = KEYS) => {
   const out = new Uint8Array(16);
-  feistel16(bytes, 0, keys, forward, out, 0);
+  feistel16(bytes, 0, keys, direction, out, 0);
   return out;
 };
 
@@ -49,9 +49,9 @@ describe("feistel mixing", () => {
   it("reverses varied deterministic blocks", () => {
     for (let i = 0; i < 512; i += 1) {
       const source = blockFrom(i);
-      const mixed = apply(source, true);
+      const mixed = apply(source, "mask");
       expect(mixed).toHaveLength(16);
-      expect([...apply(mixed, false)]).toEqual([...source]);
+      expect([...apply(mixed, "unmask")]).toEqual([...source]);
     }
   });
 
@@ -60,9 +60,9 @@ describe("feistel mixing", () => {
   it("works in place", () => {
     const source = blockFrom(0x1234);
     const scratch = new Uint8Array(source);
-    feistel16(scratch, 0, KEYS, true, scratch, 0);
-    expect([...scratch]).toEqual([...apply(source, true)]);
-    feistel16(scratch, 0, KEYS, false, scratch, 0);
+    feistel16(scratch, 0, KEYS, "mask", scratch, 0);
+    expect([...scratch]).toEqual([...apply(source, "mask")]);
+    feistel16(scratch, 0, KEYS, "unmask", scratch, 0);
     expect([...scratch]).toEqual([...source]);
   });
 
@@ -71,8 +71,8 @@ describe("feistel mixing", () => {
     const framed = new Uint8Array(24);
     framed.set(source, 5);
     const out = new Uint8Array(24).fill(0xaa);
-    feistel16(framed, 5, KEYS, true, out, 3);
-    expect([...out.subarray(3, 19)]).toEqual([...apply(source, true)]);
+    feistel16(framed, 5, KEYS, "mask", out, 3);
+    expect([...out.subarray(3, 19)]).toEqual([...apply(source, "mask")]);
     expect([...out.subarray(0, 3)]).toEqual([0xaa, 0xaa, 0xaa]);
   });
 
@@ -99,7 +99,7 @@ describe("feistel mixing", () => {
     };
 
     expect(constantBytes(substitution)).toBeGreaterThan(0);
-    expect(constantBytes((bytes) => apply(bytes, true))).toBe(0);
+    expect(constantBytes((bytes) => apply(bytes, "mask"))).toBe(0);
   });
 
   // A round function with weak diffusion would still round-trip. This is what catches it.
@@ -108,10 +108,10 @@ describe("feistel mixing", () => {
     const samples = 2000;
     for (let i = 0; i < samples; i += 1) {
       const source = blockFrom(i);
-      const before = apply(source, true);
+      const before = apply(source, "mask");
       const bit = i % 128;
       source[bit >> 3] = (source[bit >> 3] as number) ^ (1 << (bit & 7));
-      const after = apply(source, true);
+      const after = apply(source, "mask");
       for (let byte = 0; byte < 16; byte += 1) {
         let diff = (before[byte] as number) ^ (after[byte] as number);
         while (diff) {
@@ -128,9 +128,9 @@ describe("feistel mixing", () => {
   it("produces unrelated output under a different key, and cannot be inverted with one", () => {
     const other = keysFrom(0xc0ffef);
     const source = blockFrom(0xdef0);
-    const mixed = apply(source, true);
-    expect([...apply(source, true, other)]).not.toEqual([...mixed]);
-    expect([...apply(mixed, false, other)]).not.toEqual([...source]);
+    const mixed = apply(source, "mask");
+    expect([...apply(source, "mask", other)]).not.toEqual([...mixed]);
+    expect([...apply(mixed, "unmask", other)]).not.toEqual([...source]);
   });
 
   // Locks the construction to a wire format: byte order, round count, key schedule and the
@@ -143,7 +143,7 @@ describe("feistel mixing", () => {
     ]);
     // Deliberately not a snapshot: `vitest -u` would rewrite a snapshot without anyone reading
     // the diff, which is precisely the mistake this guards against.
-    expect(Buffer.from(apply(block, true)).toString("hex")).toBe(
+    expect(Buffer.from(apply(block, "mask")).toString("hex")).toBe(
       "621e8b47229ec52e58686c204581903e",
     );
   });

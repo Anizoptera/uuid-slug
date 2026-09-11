@@ -3,6 +3,33 @@
 Notable changes per release, newest first. This file is the source of the GitHub Release
 notes: the section for a version is published verbatim when its tag is pushed.
 
+## [0.5.0]
+
+### Breaking changes
+
+- Rename TypeScript generation around the produced value: use `generateUuidV4`,
+  `generateUuidV4Bytes`, `generateUuidV4Slug`, `generateUuidV7`, `generateUuidV7Bytes`,
+  `generateUuidV7At`, `generateUuidV7BytesAt`, and `generateUuidV7Slug`.
+- Replace `createUuidSlugCodec` with `createUuidV7SlugCodec`. Codec operations are now
+  `generateSlug`, `encodeUuid`, `decodeSlug`, `decodeSlugToBytes`, `validateSlugTimestamp`, and
+  `createMigrationDecoder`; migration readers expose `decodeSlug` and `decodeSlugCandidates`.
+- Replace `parseUuid` and `formatUuid` with directional `uuidToBytes` and `bytesToUuid`, and replace
+  `parseUuidSlug` and `formatUuidSlug` with `slugToBytes` and `bytesToSlug`.
+- Rename mask, sentinel, alphabet, derivation, migration, and timestamp-window types and options to
+  state their UUIDv7 domain and effect. Timestamp validation now requires
+  `maxTimestampDeltaMs`; only `referenceUnixMs` defaults to the current clock reading.
+- Codecs default to no sentinels. Applications must explicitly configure every UUID that should
+  bypass masking.
+- Rust codecs use `encode_uuid`, `decode_slug`, `validate_slug_timestamp`, and
+  `migration_decoder`; migration readers are represented by `MigrationDecoder`.
+
+### Added
+
+- Export the closed TypeScript migration-format vocabulary as `UUID_SLUG_MIGRATION_FORMATS` and
+  derive `UuidSlugMigrationFormat` from it.
+- Let a codec accept one detached `generateUuidV7Bytes` callback instead of requiring a source
+  object, while retaining validation of every generated payload.
+
 ## [0.4.0] - 2026-09-08
 
 ### Breaking changes

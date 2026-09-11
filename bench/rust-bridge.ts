@@ -9,7 +9,7 @@ try {
   if (!startup) {
     for (const batch of [0, 1, 64]) {
       const requests = Array.from({ length: batch }, (_, index) => ({
-        op: "plain",
+        op: "plain-slug",
         input: `0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f${index.toString(16).padStart(4, "0")}`,
       }));
       const input = JSON.stringify(requests);

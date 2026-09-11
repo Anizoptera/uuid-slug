@@ -4,22 +4,22 @@
 import { strict as assert } from "node:assert";
 import { setImmediate as nextTask } from "node:timers/promises";
 import {
-  createMaskSchema,
-  createMaskSchemaAsync,
-  createUuidSlugCodec,
+  createUuidV7Mask,
+  createUuidV7MaskAsync,
+  createUuidV7SlugCodec,
   UuidSlugError,
 } from "../src/index";
-import type { MaskSchema } from "../src/index";
+import type { UuidV7Mask } from "../src/index";
 import { unwrap } from "../dev/unwrap";
 
 const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
-function encoded(schema: MaskSchema | UuidSlugError): string {
+function encoded(schema: UuidV7Mask | UuidSlugError): string {
   assert.ok(!(schema instanceof Error));
-  const result = unwrap(createUuidSlugCodec({ mask: schema })).uuidV7ToMaskedSlug(uuid);
+  const result = unwrap(createUuidV7SlugCodec({ mask: schema })).encodeUuid(uuid);
   assert.equal(typeof result, "string");
   return result as string;
 }
-function cancelled(value: MaskSchema | UuidSlugError, reason: unknown): void {
+function cancelled(value: UuidV7Mask | UuidSlugError, reason: unknown): void {
   assert.ok(value instanceof UuidSlugError);
   assert.equal(value.code, "aborted");
   assert.equal(value.cause, reason);
@@ -42,10 +42,13 @@ export const asyncSchemaCases = [
       ];
       await Promise.all(
         seeds.flatMap((seed) =>
-          [1, 2, 17].map(async (keyIterations) => {
+          [1, 2, 17].map(async (keyDerivationIterations) => {
             const bytes = typeof seed === "string" ? new TextEncoder().encode(seed) : seed;
-            const expected = encoded(createMaskSchema({ seed: bytes, keyIterations }));
-            assert.equal(encoded(await createMaskSchemaAsync({ seed, keyIterations })), expected);
+            const expected = encoded(createUuidV7Mask({ seed: bytes, keyDerivationIterations }));
+            assert.equal(
+              encoded(await createUuidV7MaskAsync({ seed, keyDerivationIterations })),
+              expected,
+            );
           }),
         ),
       );
@@ -55,15 +58,15 @@ export const asyncSchemaCases = [
     name: "async construction captures options and byte contents before suspension",
     async run(this: void) {
       const seed = new Uint8Array(32).fill(91);
-      const options = { seed, id: "captured", keyIterations: 65536 };
-      const expected = encoded(createMaskSchema(options));
-      const pending = createMaskSchemaAsync(options);
+      const options = { seed, label: "captured", keyDerivationIterations: 65536 };
+      const expected = encoded(createUuidV7Mask(options));
+      const pending = createUuidV7MaskAsync(options);
       seed.fill(0);
-      options.id = "changed";
-      options.keyIterations = 1;
+      options.label = "changed";
+      options.keyDerivationIterations = 1;
       const result = await pending;
       assert.ok(!(result instanceof Error));
-      assert.equal(result.id, "captured");
+      assert.equal(result.label, "captured");
       assert.equal(encoded(result), expected);
     },
   },
@@ -73,7 +76,7 @@ export const asyncSchemaCases = [
       const reason = { cancelledBy: "caller" };
       const signal = AbortSignal.abort(reason);
       cancelled(
-        await createMaskSchemaAsync({
+        await createUuidV7MaskAsync({
           signal,
           get seed(): string {
             throw new Error("seed must not be read");
@@ -89,17 +92,20 @@ export const asyncSchemaCases = [
       const controller = new AbortController();
       const reason = new Error("cancel one construction");
       const trigger = nextTask().then(() => controller.abort(reason));
-      const pending = createMaskSchemaAsync({
+      const pending = createUuidV7MaskAsync({
         seed: "async-schema-seed",
-        keyIterations: 1 << 24,
+        keyDerivationIterations: 1 << 24,
         signal: controller.signal,
       });
-      const sibling = createMaskSchemaAsync({ seed: "sibling-schema-seed", keyIterations: 8192 });
+      const sibling = createUuidV7MaskAsync({
+        seed: "sibling-schema-seed",
+        keyDerivationIterations: 8192,
+      });
       const [result, independent] = await Promise.all([pending, sibling]);
       cancelled(result, reason);
       assert.equal(
         encoded(independent),
-        encoded(createMaskSchema({ seed: "sibling-schema-seed", keyIterations: 8192 })),
+        encoded(createUuidV7Mask({ seed: "sibling-schema-seed", keyDerivationIterations: 8192 })),
       );
       await trigger;
     },
@@ -109,7 +115,7 @@ export const asyncSchemaCases = [
     async run(this: void) {
       const controller = new AbortController();
       const trigger = nextTask().then(() => controller.abort("large seed cancelled"));
-      const result = await createMaskSchemaAsync({
+      const result = await createUuidV7MaskAsync({
         seed: new Uint8Array(1 << 20).fill(29),
         signal: controller.signal,
       });
@@ -121,17 +127,20 @@ export const asyncSchemaCases = [
     name: "async construction returns invalid-option errors and preserves unexpected causes",
     async run(this: void) {
       await Promise.all(
-        [0, -1, 0.5, NaN, Infinity, (1 << 24) + 1].map(async (keyIterations) => {
-          const result = await createMaskSchemaAsync({ seed: "async-schema-seed", keyIterations });
+        [0, -1, 0.5, NaN, Infinity, (1 << 24) + 1].map(async (keyDerivationIterations) => {
+          const result = await createUuidV7MaskAsync({
+            seed: "async-schema-seed",
+            keyDerivationIterations,
+          });
           assert.ok(result instanceof UuidSlugError);
           assert.equal(result.code, "invalid_mask_schema");
         }),
       );
-      const short = await createMaskSchemaAsync({ seed: "short" });
+      const short = await createUuidV7MaskAsync({ seed: "short" });
       assert.ok(short instanceof UuidSlugError);
       assert.equal(short.code, "invalid_mask_schema");
       const cause = new Error("seed unavailable");
-      const result = await createMaskSchemaAsync({
+      const result = await createUuidV7MaskAsync({
         get seed(): string {
           throw cause;
         },

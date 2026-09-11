@@ -22,8 +22,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # `.tool-versions` is the single toolchain declaration, read by asdf locally
-      # and by this action in CI, so a developer's shell runs what CI runs.
+      # Node and Bun read the same versions that local polyglot tooling reads.
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
@@ -72,17 +71,15 @@ jobs:
           package-manager-cache: false
       - name: Install the repository Rust toolchain
         shell: bash
-        run: |
-          version=$(awk '$1 == "rust" { print $2 }' .tool-versions)
-          test -n "$version" && rustup toolchain install "$version" --profile minimal --component rustfmt --component clippy && rustup override set "$version"
+        run: rustc --version && rustup show active-toolchain
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             rust/target
-          key: rust-${{ matrix.runner }}-${{ hashFiles('.tool-versions', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-${{ github.sha }}
-          restore-keys: rust-${{ matrix.runner }}-${{ hashFiles('.tool-versions', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-
+          key: rust-${{ matrix.runner }}-${{ hashFiles('rust-toolchain.toml', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-${{ github.sha }}
+          restore-keys: rust-${{ matrix.runner }}-${{ hashFiles('rust-toolchain.toml', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-
       - run: bun install --frozen-lockfile
       - run: bun run check:rust
       - name: Select the newest native-research hosts
@@ -190,17 +187,15 @@ jobs:
           bun-version-file: .tool-versions
       - name: Install the repository Rust toolchain
         shell: bash
-        run: |
-          version=$(awk '$1 == "rust" { print $2 }' .tool-versions)
-          test -n "$version" && rustup toolchain install "$version" --profile minimal --target wasm32-unknown-unknown && rustup override set "$version"
+        run: rustc --version && rustup show active-toolchain
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             rust/target
-          key: rust-browser-${{ matrix.profile }}-${{ hashFiles('.tool-versions', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-${{ github.sha }}
-          restore-keys: rust-browser-${{ matrix.profile }}-${{ hashFiles('.tool-versions', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-
+          key: rust-browser-${{ matrix.profile }}-${{ hashFiles('rust-toolchain.toml', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-${{ github.sha }}
+          restore-keys: rust-browser-${{ matrix.profile }}-${{ hashFiles('rust-toolchain.toml', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-
       - run: bun install --frozen-lockfile
       - run: bun run build
       - run: bunx playwright install --with-deps chromium

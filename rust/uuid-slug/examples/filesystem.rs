@@ -18,14 +18,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn exercise(directory: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
     let codec = Codec::new(CodecOptions {
-        masked_slug_alphabet: Alphabet::Base32Hex,
+        slug_alphabet: Alphabet::Base32Hex,
         ..CodecOptions::new(public_mask_schema())
     })?;
     let mut generator = generation::UuidV7Generator::new();
     let uuid = generator.generate()?;
     let mut cases = vec![
         (uuid.slug(Alphabet::Base32Hex), uuid),
-        (codec.uuid_v7_to_masked_slug(uuid)?, uuid),
+        (codec.encode_uuid(uuid)?, uuid),
     ];
     // Cross digit boundaries; never infer chronology from directory enumeration order.
     let mut chronological = Vec::new();
@@ -44,7 +44,7 @@ fn exercise(directory: &std::path::Path) -> Result<(), Box<dyn std::error::Error
     for (name, expected) in &cases {
         fs::write(directory.join(name), expected.to_string())?;
     }
-    let reader = codec.migration(MigrationOptions {
+    let reader = codec.migration_decoder(MigrationOptions {
         plain: true,
         ..MigrationOptions::default()
     });

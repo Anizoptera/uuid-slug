@@ -95,7 +95,7 @@ export async function measureLinkedSizes(
     ),
     Bun.write(
       join(driver, "src/main.rs"),
-      `use std::hint::black_box;\nuse uuid_slug::{public_mask_schema, Codec, CodecOptions, Uuid};\nfn main() {\n let uuid = Uuid::parse("01890f3e-93b8-7cc6-a76b-b2a67b746c2a").unwrap();\n black_box(Codec::new(CodecOptions::new(public_mask_schema())).unwrap().uuid_v7_to_masked_slug(uuid));\n}\n`,
+      `use std::hint::black_box;\nuse uuid_slug::{public_mask_schema, Codec, CodecOptions, Uuid};\nfn main() {\n let uuid = Uuid::parse("01890f3e-93b8-7cc6-a76b-b2a67b746c2a").unwrap();\n black_box(Codec::new(CodecOptions::new(public_mask_schema())).unwrap().encode_uuid(uuid));\n}\n`,
     ),
   ]);
   const manifest = join(driver, "Cargo.toml");
@@ -294,7 +294,7 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
       root,
       inputs.candidate.npm,
       work,
-      "current",
+      "current-mask",
       inputs.name,
       inputs.version,
     );
@@ -302,7 +302,7 @@ export async function releaseReport(cwd: string, artifacts = "release-artifacts"
     const current: Sizes = {
       npm: (await stat(npm)).size,
       crate: (await stat(crate)).size,
-      ...(await measureLinkedSizes(root, crateRoot, work, "current")),
+      ...(await measureLinkedSizes(root, crateRoot, work, "current-mask")),
     };
     const sections = await Promise.all(
       inputs.comparisons.map(async (comparison) => {

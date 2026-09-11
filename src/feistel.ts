@@ -57,14 +57,14 @@ const roundOutput = new Int32Array(2);
 /**
  * Transform 16 bytes from `input` into `output`, which may be the same array.
  *
- * `forward: false` is the exact inverse — the rounds are identical and only the key order
- * differs, which is why the final swap below is undone rather than performed.
+ * Unmasking is the exact inverse: the rounds are identical and only the key order differs, which
+ * is why the final swap below is undone rather than performed.
  */
 export function feistel16(
   input: Uint8Array,
   inputOffset: number,
   keys: Int32Array,
-  forward: boolean,
+  direction: "mask" | "unmask",
   output: Uint8Array,
   outputOffset: number,
 ) {
@@ -73,7 +73,7 @@ export function feistel16(
   let right0 = read32(input, inputOffset + 8);
   let right1 = read32(input, inputOffset + 12);
   for (let round = 0; round < ROUNDS; round += 1) {
-    const key = (forward ? round : ROUNDS - 1 - round) * 2;
+    const key = (direction === "mask" ? round : ROUNDS - 1 - round) * 2;
     roundInput[0] = right0;
     roundInput[1] = right1;
     halfSipHash(keys[key] as number, keys[key + 1] as number, roundInput, 8, roundOutput);

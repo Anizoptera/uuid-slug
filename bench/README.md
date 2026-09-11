@@ -29,7 +29,7 @@ The current-runtime CI lane also runs it with the newest Node and Bun.
 - `resources.ts` counts real constructor, view, encoding, text-read and entropy calls in isolated
   processes. Positive controls must reach each instrument before a zero count can pass. Guards must
   allocate no decoded arrays or errors; rotation must decode text once and avoid mismatch errors on
-  success; freshness must avoid formatting and reparsing; caller-owned paths must avoid temporary
+  success; timestamp validation must avoid formatting and reparsing; caller-owned paths must avoid temporary
   arrays/views; repeated v4 draws must remain pooled. Native encoders must be used when available.
 - These counts cover JavaScript-visible operations, not allocations inside an engine, `.slice()`
   species construction, JIT storage, or arbitrary object literals. They do not establish total bytes

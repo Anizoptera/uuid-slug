@@ -12,13 +12,14 @@ const api: typeof import("../src/index") = await import(
 );
 const importMs = performance.now() - beforeImport;
 const instant = 1_725_000_000_000;
-const now = { now: () => instant };
+const timestampWindow = { maxTimestampDeltaMs: 86_400_000, referenceUnixMs: instant };
 const current = { seed: "profile-current-seed" };
 const previous = { seed: "profile-previous-seed" };
-const codec = unwrap(api.createUuidSlugCodec({ mask: current }));
-const older = unwrap(api.createUuidSlugCodec({ mask: previous }));
-const rotated = unwrap(api.createUuidSlugCodec({ mask: current, previousMasks: [previous] }));
-const migration = rotated.migration({ original: true, plain: true });
+const sentinelConfig = [{ name: "nil", uuid: "00000000-0000-7000-8000-000000000000" }];
+const codec = unwrap(api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelConfig }));
+const older = unwrap(api.createUuidV7SlugCodec({ mask: previous }));
+const rotated = unwrap(api.createUuidV7SlugCodec({ mask: current, previousMasks: [previous] }));
+const migration = rotated.createMigrationDecoder({ originalMask: true, plainSlug: true });
 const originals = originalFixtures.issued.filter(({ slug, raw }) => slug !== raw);
 const portable = api.createUuidV7Generator({
   clock: () => instant,
@@ -32,13 +33,13 @@ const ids = Array.from({ length: 256 }, (_, i) => {
   const tail = (Math.imul(i + 1, 0x9e3779b1) >>> 0).toString(16).padStart(8, "0");
   return `${time.slice(0, 8)}-${time.slice(8)}-7${a}-${b}-${tail}${i.toString(16).padStart(4, "0")}`;
 });
-const raw = ids.map((id) => unwrap(api.parseUuid(id)));
+const raw = ids.map((id) => unwrap(api.uuidToBytes(id)));
 const slugs = ids.map((id) => unwrap(api.uuidToSlug(id)));
 const base32 = ids.map((id) => unwrap(api.uuidToSlug(id, "base32hex")));
-const masked = ids.map((id) => unwrap(codec.uuidV7ToMaskedSlug(id)));
-const old = ids.map((id) => unwrap(older.uuidV7ToMaskedSlug(id)));
+const masked = ids.map((id) => unwrap(codec.encodeUuid(id)));
+const old = ids.map((id) => unwrap(older.encodeUuid(id)));
 // A check can pass under the wrong key. Keep only witnesses that actually reach the previous key.
-const oldOnly = old.filter((slug) => codec.maskedSlugToUuidV7(slug) instanceof Error);
+const oldOnly = old.filter((slug) => codec.decodeSlug(slug) instanceof Error);
 if (oldOnly.length === 0) throw new Error("No previous-key-only fixtures");
 const into = new Uint8Array(24);
 const sentinel = codec.sentinels[0];
@@ -50,52 +51,55 @@ const cases: Record<
   (i: number) => string | number | boolean | Uint8Array | Error | object
 > = {
   control: (i) => ids[i & 255] as string,
-  "v4.string": () => api.uuidV4(),
-  "v7.string": () => api.uuidV7(),
-  "v4.bytes": () => api.uuidV4Bytes(),
-  "v4.into": () => api.uuidV4Bytes(into, 4),
-  "v7.bytes": () => api.uuidV7Bytes(),
-  "v7.into": () => api.uuidV7Bytes(into, 4),
-  "v7.at": (i) => api.uuidV7At(instant + (i & 255)),
-  "v7.at.into": (i) => api.uuidV7BytesAt(instant + (i & 255), into, 4),
-  "portable.string": () => portable.uuidV7(),
-  "portable.into": () => portable.uuidV7Bytes(into, 4),
-  "v4.slug": () => api.uuidV4Slug(),
-  "v7.slug": () => api.uuidV7Slug(),
-  "v7.base32": () => api.uuidV7Slug("base32hex"),
-  parse: (i) => api.parseUuid(ids[i & 255] as string),
-  "parse.into": (i) => api.parseUuid(ids[i & 255] as string, into, 4),
-  format: (i) => api.formatUuid(raw[i & 255] as Uint8Array),
+  "v4.string": () => api.generateUuidV4(),
+  "v7.string": () => api.generateUuidV7(),
+  "v4.bytes": () => api.generateUuidV4Bytes(),
+  "v4.into": () => api.generateUuidV4Bytes(into, 4),
+  "v7.bytes": () => api.generateUuidV7Bytes(),
+  "v7.into": () => api.generateUuidV7Bytes(into, 4),
+  "v7.at": (i) => api.generateUuidV7At(instant + (i & 255)),
+  "v7.at.into": (i) => api.generateUuidV7BytesAt(instant + (i & 255), into, 4),
+  "portable.string": () => portable.generateUuidV7(),
+  "portable.into": () => portable.generateUuidV7Bytes(into, 4),
+  "v4.slug": () => api.generateUuidV4Slug(),
+  "v7.slug": () => api.generateUuidV7Slug(),
+  "v7.base32": () => api.generateUuidV7Slug("base32hex"),
+  parse: (i) => api.uuidToBytes(ids[i & 255] as string),
+  "parse.into": (i) => api.uuidToBytes(ids[i & 255] as string, into, 4),
+  format: (i) => api.bytesToUuid(raw[i & 255] as Uint8Array),
   "plain.encode": (i) => api.uuidToSlug(ids[i & 255] as string),
   "plain.decode": (i) => api.slugToUuid(slugs[i & 255] as string),
   "base32.encode": (i) => api.uuidToSlug(ids[i & 255] as string, "base32hex"),
   "base32.decode": (i) => api.slugToUuid(base32[i & 255] as string),
-  "slug.into": (i) => api.parseUuidSlug(slugs[i & 255] as string, into, 4),
+  "slug.into": (i) => api.slugToBytes(slugs[i & 255] as string, into, 4),
   "guard.invalid.uuid": () => api.isUuidV7String(badUuid),
   "guard.invalid.slug": () => api.isUuidV7Slug(badSlug),
   "guard.uuid": (i) => api.isUuidV7String(ids[i & 255]),
   "guard.slug": (i) => api.isUuidV7Slug(slugs[i & 255]),
-  "fresh.uuid": (i) => api.validateUuidV7Fresh(ids[i & 255] as string, now),
-  "fresh.slug": (i) => api.validateUuidV7SlugFresh(slugs[i & 255] as string, now),
-  "fresh.masked": (i) => codec.validateMaskedSlugFresh(masked[i & 255] as string, now),
-  "masked.generate": () => codec.uuidV7MaskedSlug(),
-  "masked.encode": (i) => codec.uuidV7ToMaskedSlug(ids[i & 255] as string),
-  "masked.decode": (i) => codec.maskedSlugToUuidV7(masked[i & 255] as string),
-  "rotation.current": (i) => rotated.maskedSlugToUuidV7(masked[i & 255] as string),
-  "rotation.previous": (i) => rotated.maskedSlugToUuidV7(oldOnly[i % oldOnly.length] as string),
-  "migration.current": (i) => migration.decode(masked[i & 255] as string),
-  "migration.previous": (i) => migration.decode(oldOnly[i % oldOnly.length] as string),
-  "migration.candidates": (i) => migration.candidates(masked[i & 255] as string),
-  "migration.plain": (i) => migration.decode(slugs[i & 255] as string, "plain"),
-  "migration.base32": (i) => migration.decode(base32[i & 255] as string, "plain"),
-  "migration.original": (i) => migration.decode(originals[i % originals.length]!.slug, "original"),
-  "sentinel.encode": () => codec.uuidV7ToMaskedSlug(sentinel.uuid),
-  "sentinel.decode": () => codec.maskedSlugToUuidV7(sentinel.slug),
-  "invalid.uuid": () => api.parseUuid(badUuid),
-  "invalid.slug": () => api.parseUuidSlug(badSlug),
-  "invalid.mask": (i) => codec.maskedSlugToUuidV7(oldOnly[i % oldOnly.length] as string),
-  "construct.codec": () => api.createUuidSlugCodec({ mask: current }),
-  "construct.schema": () => api.createMaskSchema(current),
+  "timestamp.uuid": (i) => api.validateUuidV7Timestamp(ids[i & 255] as string, timestampWindow),
+  "timestamp.slug": (i) =>
+    api.validateUuidV7SlugTimestamp(slugs[i & 255] as string, timestampWindow),
+  "timestamp.masked": (i) =>
+    codec.validateSlugTimestamp(masked[i & 255] as string, timestampWindow),
+  "masked.generate": () => codec.generateSlug(),
+  "masked.encode": (i) => codec.encodeUuid(ids[i & 255] as string),
+  "masked.decode": (i) => codec.decodeSlug(masked[i & 255] as string),
+  "rotation.current": (i) => rotated.decodeSlug(masked[i & 255] as string),
+  "rotation.previous": (i) => rotated.decodeSlug(oldOnly[i % oldOnly.length] as string),
+  "migration.current": (i) => migration.decodeSlug(masked[i & 255] as string),
+  "migration.previous": (i) => migration.decodeSlug(oldOnly[i % oldOnly.length] as string),
+  "migration.decodeCandidates": (i) => migration.decodeSlugCandidates(masked[i & 255] as string),
+  "migration.plain": (i) => migration.decodeSlug(slugs[i & 255] as string, "plain-slug"),
+  "migration.base32": (i) => migration.decodeSlug(base32[i & 255] as string, "plain-slug"),
+  "migration.original": (i) =>
+    migration.decodeSlug(originals[i % originals.length]!.slug, "original-mask"),
+  "sentinel.encode": () => codec.encodeUuid(sentinel.uuid),
+  "sentinel.decode": () => codec.decodeSlug(sentinel.slug),
+  "invalid.uuid": () => api.uuidToBytes(badUuid),
+  "invalid.slug": () => api.slugToBytes(badSlug),
+  "invalid.mask": (i) => codec.decodeSlug(oldOnly[i % oldOnly.length] as string),
+  "construct.codec": () => api.createUuidV7SlugCodec({ mask: current }),
+  "construct.schema": () => api.createUuidV7Mask(current),
 };
 let sink = 0;
 function batch(

@@ -228,22 +228,22 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
     }
   }
 
-  function uuidV7Bytes(): UuidV7Bytes | UuidSlugError;
-  function uuidV7Bytes<Output extends Uint8Array>(
+  function generateUuidV7Bytes(): UuidV7Bytes | UuidSlugError;
+  function generateUuidV7Bytes<Output extends Uint8Array>(
     out: Output,
     offset?: number,
   ): Output | UuidSlugError;
-  function uuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Array | UuidSlugError {
+  function generateUuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Array | UuidSlugError {
     return bytes(out, offset);
   }
 
-  function uuidV7BytesAt(timestamp: number): UuidV7Bytes | UuidSlugError;
-  function uuidV7BytesAt<Output extends Uint8Array>(
+  function generateUuidV7BytesAt(timestamp: number): UuidV7Bytes | UuidSlugError;
+  function generateUuidV7BytesAt<Output extends Uint8Array>(
     timestamp: number,
     out: Output,
     offset?: number,
   ): Output | UuidSlugError;
-  function uuidV7BytesAt(
+  function generateUuidV7BytesAt(
     timestamp: number,
     out?: Uint8Array,
     offset?: number,
@@ -252,41 +252,41 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
   }
 
   return {
-    uuidV7: () => formatUuidV7(bytes()),
-    uuidV7At: (timestamp) => formatUuidV7(bytesAt(timestamp)),
-    uuidV7Bytes,
-    uuidV7BytesAt,
+    generateUuidV7: () => formatUuidV7(bytes()),
+    generateUuidV7At: (timestamp) => formatUuidV7(bytesAt(timestamp)),
+    generateUuidV7Bytes,
+    generateUuidV7BytesAt,
   };
 }
 
 export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
   const fallback = createUuidV7Generator({ fillRandom: runtime.fillRandom });
-  const fallbackUuidV7Bytes = fallback.uuidV7Bytes as (
+  const fallbackUuidV7Bytes = fallback.generateUuidV7Bytes as (
     out?: Uint8Array,
     offset?: number,
   ) => Uint8Array | UuidSlugError;
-  const fallbackUuidV7BytesAt = fallback.uuidV7BytesAt as (
+  const fallbackUuidV7BytesAt = fallback.generateUuidV7BytesAt as (
     timestamp: number,
     out?: Uint8Array,
     offset?: number,
   ) => Uint8Array | UuidSlugError;
-  function uuidV7() {
-    if (!runtime.uuidV7) return fallback.uuidV7();
+  function generateUuidV7() {
+    if (!runtime.uuidV7) return fallback.generateUuidV7();
     return nativeOrFallback(
       runtime.uuidV7,
       isUuidV7String,
       (value) => value,
-      fallback.uuidV7,
+      fallback.generateUuidV7,
       "UUIDv7 generation",
     );
   }
 
-  function uuidV7Bytes(): UuidV7Bytes | UuidSlugError;
-  function uuidV7Bytes<Output extends Uint8Array>(
+  function generateUuidV7Bytes(): UuidV7Bytes | UuidSlugError;
+  function generateUuidV7Bytes<Output extends Uint8Array>(
     out: Output,
     offset?: number,
   ): Output | UuidSlugError;
-  function uuidV7Bytes(out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
+  function generateUuidV7Bytes(out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
     // Validate before native generation so a caller error cannot consume entropy or be relabelled
     // as a runtime failure. The native seam returns owned bytes; only this function commits them.
     if (!runtime.uuidV7Bytes) return fallbackUuidV7Bytes(out, offset);
@@ -306,27 +306,27 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
     );
   }
 
-  function uuidV7At(timestamp: number) {
+  function generateUuidV7At(timestamp: number) {
     // Validate before delegation because native generators may coerce invalid timestamps.
-    if (!runtime.uuidV7At) return fallback.uuidV7At(timestamp);
+    if (!runtime.uuidV7At) return fallback.generateUuidV7At(timestamp);
     const invalid = rejectInstant(timestamp);
     if (invalid) return invalid;
     return nativeOrFallback(
       () => runtime.uuidV7At?.(timestamp),
       isUuidV7String,
       (value) => value,
-      () => fallback.uuidV7At(timestamp),
+      () => fallback.generateUuidV7At(timestamp),
       "UUIDv7 generation",
     );
   }
 
-  function uuidV7BytesAt(timestamp: number): UuidV7Bytes | UuidSlugError;
-  function uuidV7BytesAt<Output extends Uint8Array>(
+  function generateUuidV7BytesAt(timestamp: number): UuidV7Bytes | UuidSlugError;
+  function generateUuidV7BytesAt<Output extends Uint8Array>(
     timestamp: number,
     out: Output,
     offset?: number,
   ): Output | UuidSlugError;
-  function uuidV7BytesAt(
+  function generateUuidV7BytesAt(
     timestamp: number,
     out?: Uint8Array,
     offset = 0,
@@ -351,9 +351,9 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
   }
 
   return {
-    uuidV7,
-    uuidV7Bytes,
-    uuidV7At,
-    uuidV7BytesAt,
+    generateUuidV7,
+    generateUuidV7Bytes,
+    generateUuidV7At,
+    generateUuidV7BytesAt,
   };
 }

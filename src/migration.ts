@@ -5,45 +5,44 @@ import { UuidSlugError } from "./errors";
 import { decodeOriginalMask } from "./legacy-mask";
 import { decodeMaskedCandidates } from "./mask";
 import type {
-  MaskSchema,
-  MigrationFormat,
-  UuidSlugMigration,
+  UuidV7Mask,
+  UuidSlugMigrationDecoder,
+  UuidSlugMigrationFormat,
   UuidSlugMigrationOptions,
   UuidString,
   UuidV7String,
 } from "./types";
+import { UUID_SLUG_MIGRATION_FORMATS } from "./types";
 import { bytesToUuid } from "./uuid";
 
 /** Read old IDs with the codec's keys and sentinels; never change how new IDs are written. */
 export function createMigration(
-  schemas: readonly MaskSchema[],
+  schemas: readonly UuidV7Mask[],
   sentinels: ReadonlyMap<string, { uuid: UuidV7String }>,
   options?: UuidSlugMigrationOptions,
-): UuidSlugMigration {
+): UuidSlugMigrationDecoder {
   if (
     options !== undefined &&
     (typeof options !== "object" || options === null || Array.isArray(options))
   )
     throw new TypeError("Migration options must be an object.");
-  const originalOption = options?.original;
-  const plainOption = options?.plain;
+  const originalOption = options?.originalMask;
+  const plainOption = options?.plainSlug;
   if (originalOption !== undefined && typeof originalOption !== "boolean")
-    throw new TypeError("Migration original option must be a boolean.");
+    throw new TypeError("Migration originalMask option must be a boolean.");
   if (plainOption !== undefined && typeof plainOption !== "boolean")
-    throw new TypeError("Migration plain option must be a boolean.");
+    throw new TypeError("Migration plainSlug option must be a boolean.");
   const original = originalOption === true;
   const plain = plainOption === true;
 
-  function read(slug: string, format: MigrationFormat | undefined, firstOnly: boolean) {
+  function read(slug: string, format: UuidSlugMigrationFormat | undefined, firstOnly: boolean) {
     if (typeof slug !== "string")
       return new UuidSlugError("invalid_uuid_slug", "Migration slug must be a string.");
     if (
       (format !== undefined &&
-        format !== "current" &&
-        format !== "original" &&
-        format !== "plain") ||
-      (format === "original" && !original) ||
-      (format === "plain" && !plain)
+        !UUID_SLUG_MIGRATION_FORMATS.some((candidate) => candidate === format)) ||
+      (format === "original-mask" && !original) ||
+      (format === "plain-slug" && !plain)
     )
       return new UuidSlugError(
         "invalid_uuid_slug",
@@ -52,9 +51,9 @@ export function createMigration(
 
     const sentinel = sentinels.get(slug);
     if (sentinel) return [sentinel.uuid];
-    const useCurrent = format === undefined || format === "current";
-    const useOriginal = original && (format === undefined || format === "original");
-    const usePlain = plain && (format === undefined || format === "plain");
+    const useCurrent = format === undefined || format === "current-mask";
+    const useOriginal = original && (format === undefined || format === "original-mask");
+    const usePlain = plain && (format === undefined || format === "plain-slug");
     const bytes = new Uint8Array(16);
     // Original readers ignored the four trailing bits. Keep those aliases confined to migration.
     const base32 = slug.length === 26 && usePlain;
@@ -112,14 +111,14 @@ export function createMigration(
   }
 
   return {
-    decode(slug, format) {
+    decodeSlug(slug, format) {
       const result = read(slug, format, true);
       return result instanceof Error
         ? result
         : (result[0] ??
             new UuidSlugError("invalid_uuid_slug", "Slug does not match an enabled format."));
     },
-    candidates(slug, format) {
+    decodeSlugCandidates(slug, format) {
       return read(slug, format, false);
     },
   };

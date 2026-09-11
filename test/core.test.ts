@@ -1,32 +1,33 @@
 import { describe, expect, it } from "vitest";
 import { runInNewContext } from "node:vm";
 import {
-  createCustomMaskSchema,
-  createMaskSchema,
-  createUuidSlugCodec as createCodec,
+  createCustomUuidV7Mask,
+  createUuidV7Mask,
+  createUuidV7SlugCodec as createCodec,
   extractUuidV7Timestamp,
   isUuidSlug,
   isUuidSlugError,
-  parseUuid,
-  PUBLIC_MASK_SCHEMA,
+  uuidToBytes,
+  UUID_V7_TEST_MASK,
   slugToUuid,
   unwrapUuidSlug,
   uuidToSlug,
-  uuidV4Bytes,
-  uuidV4Slug,
-  uuidV7BytesAt,
-  uuidV7Slug,
+  generateUuidV4Bytes,
+  generateUuidV4Slug,
+  generateUuidV7BytesAt,
+  generateUuidV7Slug,
   UuidSlugError,
-  validateUuidV7SlugFresh,
+  validateUuidV7SlugTimestamp,
 } from "../src/index";
-import type { SlugAlphabet, UuidSlugCodecOptions } from "../src/index";
+import type { SlugAlphabet, UuidV7SlugCodecOptions } from "../src/index";
 import { unwrap } from "../dev/unwrap";
+import { TEST_SENTINELS } from "./sentinel-fixtures";
 
 const SAMPLE_V7_A = "01987008-ef3e-7f69-b677-22ec1a5bbdb2";
 const SAMPLE_V7_B = "01987bbb-178b-7858-93e8-fc5e5444913b";
 const SAMPLE_V4 = "b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5";
 
-const createUuidSlugCodec = (options: UuidSlugCodecOptions) => unwrap(createCodec(options));
+const createUuidV7SlugCodec = (options: UuidV7SlugCodecOptions) => unwrap(createCodec(options));
 
 describe("error classification", () => {
   it("accepts package errors across realms without accepting lookalike data or throwing", () => {
@@ -76,10 +77,10 @@ const v7PatternAt = (length: number, offset: number) => {
 describe("UUIDv7 timestamp extraction", () => {
   // The defect this pins is silent rather than loud: a v4's first six bytes are random, so the
   // old signature returned a confident date drawn from the next nine thousand years instead of
-  // reporting the wrong version. Anything built on it — a freshness window, an audit trail —
+  // reporting the wrong version. Anything built on it — a timestamp window, an audit trail —
   // accepted or rejected by coin flip while every type checked out.
   it("refuses a UUIDv4 rather than reading its random bytes as a date", () => {
-    const v4 = parseUuid(SAMPLE_V4);
+    const v4 = uuidToBytes(SAMPLE_V4);
     if (v4 instanceof Error) throw v4;
     expect(extractUuidV7Timestamp(v4)).toBeInstanceOf(Error);
   });
@@ -97,11 +98,11 @@ describe("UUIDv7 timestamp extraction", () => {
   });
 
   it("reads back the exact instant a UUID was minted at, at any offset", () => {
-    // `uuidV7BytesAt` is the independent oracle: the instant is chosen here, not read back from
+    // `generateUuidV7BytesAt` is the independent oracle: the instant is chosen here, not read back from
     // whatever the generator happened to produce, so the two must agree on the 48-bit layout.
     const instant = 1_700_000_000_123;
     const buffer = new Uint8Array(32);
-    const written = uuidV7BytesAt(instant, buffer, 16);
+    const written = generateUuidV7BytesAt(instant, buffer, 16);
     if (written instanceof Error) throw written;
     expect(extractUuidV7Timestamp(buffer, 16)).toBe(instant);
   });
@@ -116,7 +117,7 @@ describe("direct UUID slugs", () => {
   });
 
   it("rejects uppercase UUIDs instead of silently canonicalizing external input", () => {
-    expect(parseUuid(SAMPLE_V7_A.toUpperCase())).toBeInstanceOf(Error);
+    expect(uuidToBytes(SAMPLE_V7_A.toUpperCase())).toBeInstanceOf(Error);
   });
 
   // A UUIDv7 leads with its 48-bit timestamp, so slugs sort by creation time exactly when the
@@ -154,10 +155,13 @@ describe("direct UUID slugs", () => {
     // The option's boundary is the point of this case. Sentinels are matched against masked input,
     // and masked slugs are base64url by ruling, so a codec-wide alphabet that leaked into either
     // would make sentinels unrecognisable exactly where they are used.
-    const codec = createUuidSlugCodec({ mask: { seed: "alpha-test-seed-0000" } });
-    expect(uuidV7Slug("base32hex")).toHaveLength(26);
-    expect(uuidV4Slug("base32hex")).toHaveLength(26);
-    expect(codec.uuidV7MaskedSlug()).toHaveLength(22);
+    const codec = createUuidV7SlugCodec({
+      mask: { seed: "alpha-test-seed-0000" },
+      sentinels: TEST_SENTINELS,
+    });
+    expect(generateUuidV7Slug("base32hex")).toHaveLength(26);
+    expect(generateUuidV4Slug("base32hex")).toHaveLength(26);
+    expect(codec.generateSlug()).toHaveLength(22);
     expect(codec.sentinels[0]?.slug).toHaveLength(22);
   });
 
@@ -187,7 +191,10 @@ describe("masked UUID slugs", () => {
   it("uses direct precomputed sentinel slugs for sentinel transmission", () => {
     // Sentinels stay readable by eye on purpose, so a masked codec is what makes the assertion
     // mean anything: it proves masking is bypassed for them rather than merely absent.
-    const codec = createUuidSlugCodec({ mask: { seed: "sentinel-bypass-test-seed-0000" } });
+    const codec = createUuidV7SlugCodec({
+      mask: { seed: "sentinel-bypass-test-seed-0000" },
+      sentinels: TEST_SENTINELS,
+    });
     const [, anonymousUser, unknownUser] = codec.sentinels;
     if (!anonymousUser || !unknownUser) throw new Error("sentinel setup failed");
     expect(codec.sentinels.map((item) => item.slug)).toEqual([
@@ -195,75 +202,92 @@ describe("masked UUID slugs", () => {
       "AAAAAAABcACAAAAAAAAAAA",
       "AAAAAAACcACAAAAAAAAAAA",
     ]);
-    expect(codec.uuidV7ToMaskedSlug(anonymousUser.uuid)).toBe("AAAAAAABcACAAAAAAAAAAA");
-    expect(codec.maskedSlugToUuidV7("AAAAAAACcACAAAAAAAAAAA")).toBe(unknownUser.uuid);
+    expect(codec.encodeUuid(anonymousUser.uuid)).toBe("AAAAAAABcACAAAAAAAAAAA");
+    expect(codec.decodeSlug("AAAAAAACcACAAAAAAAAAAA")).toBe(unknownUser.uuid);
   });
 
   it("rejects a wrong schema unless the caller listed it as a previous one", () => {
-    const first = createMaskSchema({ seed: "project-a-test-seed-0000" });
-    const second = createMaskSchema({ seed: "project-b-test-seed-0000" });
+    const first = createUuidV7Mask({ seed: "project-a-test-seed-0000" });
+    const second = createUuidV7Mask({ seed: "project-b-test-seed-0000" });
     if (first instanceof Error || second instanceof Error)
       throw new Error("schema creation failed");
-    const a = createUuidSlugCodec({ mask: first });
-    const b = createUuidSlugCodec({ mask: second });
-    const slug = a.uuidV7ToMaskedSlug(SAMPLE_V7_A);
+    const a = createUuidV7SlugCodec({ mask: first });
+    const b = createUuidV7SlugCodec({ mask: second });
+    const slug = a.encodeUuid(SAMPLE_V7_A);
     if (slug instanceof Error) throw slug;
-    expect(b.maskedSlugToUuidV7(slug)).toBeInstanceOf(Error);
+    expect(b.decodeSlug(slug)).toBeInstanceOf(Error);
     expect(
-      createUuidSlugCodec({
+      createUuidV7SlugCodec({
         mask: second,
         previousMasks: [first],
-      }).maskedSlugToUuidV7(slug),
+      }).decodeSlug(slug),
     ).toBe(SAMPLE_V7_A);
   });
 
-  it("validates freshness against the codec's OWN key, not the package's published one", () => {
-    // This case fails if freshness unmasking uses any schema other than the codec's selected key.
-    const ids = createUuidSlugCodec({ mask: { seed: "not-the-published-one-test-seed-0000" } });
-    const slug = ids.uuidV7ToMaskedSlug(SAMPLE_V7_A);
+  it("validates timestamps against the codec's OWN key, not the package's published one", () => {
+    // This case fails if timestamp validation uses any schema other than the codec's selected key.
+    const ids = createUuidV7SlugCodec({ mask: { seed: "not-the-published-one-test-seed-0000" } });
+    const slug = ids.encodeUuid(SAMPLE_V7_A);
     if (slug instanceof Error) throw slug;
     // `now` is pinned to the sample's own instant so the window, not the clock, decides.
-    const at = extractUuidV7Timestamp(parseUuid(SAMPLE_V7_A) as Uint8Array) as number;
-    expect(ids.validateMaskedSlugFresh(slug, { now: () => at })).toBe(slug);
-    expect(ids.validateMaskedSlugFresh(slug, { now: () => at + 86_400_001 })).toBeInstanceOf(Error);
+    const at = extractUuidV7Timestamp(uuidToBytes(SAMPLE_V7_A) as Uint8Array) as number;
+    expect(
+      ids.validateSlugTimestamp(slug, { maxTimestampDeltaMs: 86_400_000, referenceUnixMs: at }),
+    ).toBe(slug);
+    expect(
+      ids.validateSlugTimestamp(slug, {
+        maxTimestampDeltaMs: 86_400_000,
+        referenceUnixMs: at + 86_400_001,
+      }),
+    ).toBeInstanceOf(Error);
     // Both edges exactly, because the README says an id is refused when it sits OUTSIDE the
     // window — so the boundary itself is inside it, and nothing else says which. Relaxing either
     // comparison to its non-strict form left the suite green (measured 2026-08-12); an off-by-one
     // here silently expires ids a day early, or accepts ones a day stale.
-    expect(ids.validateMaskedSlugFresh(slug, { now: () => at + 86_400_000 })).toBe(slug);
-    expect(ids.validateMaskedSlugFresh(slug, { now: () => at - 86_400_000 })).toBe(slug);
+    expect(
+      ids.validateSlugTimestamp(slug, {
+        maxTimestampDeltaMs: 86_400_000,
+        referenceUnixMs: at + 86_400_000,
+      }),
+    ).toBe(slug);
+    expect(
+      ids.validateSlugTimestamp(slug, {
+        maxTimestampDeltaMs: 86_400_000,
+        referenceUnixMs: at - 86_400_000,
+      }),
+    ).toBe(slug);
   });
 
   it("rotates a seed without making the caller build a schema for the old one", () => {
     // Rotation is the whole reason the list exists, so listing a previous SEED must cost what
     // naming the current one costs. It used to demand a constructor and an error branch.
-    const before = createUuidSlugCodec({ mask: { seed: "key-v1-test-seed-0000" } });
-    const slug = before.uuidV7ToMaskedSlug(SAMPLE_V7_A);
+    const before = createUuidV7SlugCodec({ mask: { seed: "key-v1-test-seed-0000" } });
+    const slug = before.encodeUuid(SAMPLE_V7_A);
     if (slug instanceof Error) throw slug;
-    const after = createUuidSlugCodec({
+    const after = createUuidV7SlugCodec({
       mask: { seed: "key-v2-test-seed-0000" },
       previousMasks: [{ seed: "key-v1-test-seed-0000" }],
     });
-    expect(after.maskedSlugToUuidV7(slug)).toBe(SAMPLE_V7_A);
+    expect(after.decodeSlug(slug)).toBe(SAMPLE_V7_A);
     // And the rotation actually rotated: new ids are issued under v2, not v1.
-    expect(after.uuidV7ToMaskedSlug(SAMPLE_V7_A)).not.toBe(slug);
+    expect(after.encodeUuid(SAMPLE_V7_A)).not.toBe(slug);
   });
 
   it("refuses a caller's schema that does not reverse its own mixing step", () => {
     // A custom schema is the only extension point, and getting the inverse wrong is silent: encoding still
     // produces a slug, and every id issued under it is unreadable forever. So it must fail at
     // construction. Two distinct ways to get it wrong, because one probe cannot see both.
-    const ignoresDirection = createCustomMaskSchema({
-      id: "one-way",
-      forward: (input) => input.map((byte) => (byte + 1) & 0xff),
-      reverse: (input) => input.map((byte) => (byte + 1) & 0xff),
+    const ignoresDirection = createCustomUuidV7Mask({
+      label: "one-way",
+      mask: (input) => input.map((byte) => (byte + 1) & 0xff),
+      unmask: (input) => input.map((byte) => (byte + 1) & 0xff),
     });
     // Reorders identically in both directions — the classic permutation-table mistake, and the
     // reason an all-zero probe alone is not enough: zeroes survive any reordering unchanged.
-    const reordersBothWays = createCustomMaskSchema({
-      id: "same-both-ways",
-      forward: (input) => input.map((_, i) => input[(i + 5) % 16] as number),
-      reverse: (input) => input.map((_, i) => input[(i + 5) % 16] as number),
+    const reordersBothWays = createCustomUuidV7Mask({
+      label: "same-both-ways",
+      mask: (input) => input.map((_, i) => input[(i + 5) % 16] as number),
+      unmask: (input) => input.map((_, i) => input[(i + 5) % 16] as number),
     });
     expect(ignoresDirection).toMatchObject({ code: "invalid_mask_schema" });
     expect(reordersBothWays).toMatchObject({ code: "invalid_mask_schema" });
@@ -276,21 +300,30 @@ describe("masked UUID slugs", () => {
   it.each([
     ["empty seed", { seed: "" }],
     ["seed under the 16-byte floor", { seed: "fifteen-bytes!" }],
-    ["fractional keyIterations", { seed: "long-enough-seed-here", keyIterations: 1.5 }],
-    ["zero keyIterations", { seed: "long-enough-seed-here", keyIterations: 0 }],
-    ["keyIterations past the ceiling", { seed: "long-enough-seed-here", keyIterations: 2 ** 30 }],
+    [
+      "fractional keyDerivationIterations",
+      { seed: "long-enough-seed-here", keyDerivationIterations: 1.5 },
+    ],
+    ["zero keyDerivationIterations", { seed: "long-enough-seed-here", keyDerivationIterations: 0 }],
+    [
+      "keyDerivationIterations past the ceiling",
+      { seed: "long-enough-seed-here", keyDerivationIterations: 2 ** 30 },
+    ],
   ])("refuses a %s", (_label, options) => {
-    expect(createMaskSchema(options)).toBeInstanceOf(Error);
+    expect(createUuidV7Mask(options)).toBeInstanceOf(Error);
   });
 
   it("derives a different key for a different iteration count, and the same one for a repeat", () => {
-    // keyIterations is part of the key, not a tuning knob: this is what makes the wire-format
+    // keyDerivationIterations is part of the key, not a tuning knob: this is what makes the wire-format
     // warning on it true rather than merely cautious.
     const uuid = "019ff19b-58b8-7000-9b1b-df713bd5562c";
-    const slugAt = (keyIterations: number) => {
-      const schema = createMaskSchema({ seed: "rotation-seed-long-enough", keyIterations });
+    const slugAt = (keyDerivationIterations: number) => {
+      const schema = createUuidV7Mask({
+        seed: "rotation-seed-long-enough",
+        keyDerivationIterations,
+      });
       if (schema instanceof Error) throw schema;
-      return createUuidSlugCodec({ mask: schema }).uuidV7ToMaskedSlug(uuid);
+      return createUuidV7SlugCodec({ mask: schema }).encodeUuid(uuid);
     };
     expect(slugAt(1)).not.toBe(slugAt(2));
     expect(slugAt(3)).toBe(slugAt(3));
@@ -303,34 +336,39 @@ describe("plain-slug migration", () => {
   // below are chosen to fail loudly if either recurs.
   it("decodes a plain UUIDv4 slug, which the v7 form cannot", () => {
     // The flag exists to migrate off unmasked ids, and those predate any decision to use v7.
-    // `maskedSlugToUuidV7` rejecting them is correct; something has to accept them.
-    const codec = createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA });
+    // `decode` rejecting them is correct; something has to accept them.
+    const codec = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK });
     const slug = uuidToSlug(SAMPLE_V4);
-    expect(codec.migration({ plain: true }).decode(String(slug))).toBe(SAMPLE_V4);
-    expect(codec.maskedSlugToUuidV7(String(slug))).toBeInstanceOf(Error);
+    expect(codec.createMigrationDecoder({ plainSlug: true }).decodeSlug(String(slug))).toBe(
+      SAMPLE_V4,
+    );
+    expect(codec.decodeSlug(String(slug))).toBeInstanceOf(Error);
   });
 
   it("keeps wrong-key diagnosis out of an explicitly enabled plain migration", () => {
     // Ordinary decoding owns current masked identifiers and must report the wrong key. A separate
-    // migration reader with `plain: true` deliberately adds the overlapping direct interpretation;
+    // migration reader with `plainSlug: true` deliberately adds the overlapping direct interpretation;
     // it must return that candidate instead of changing ordinary codec behavior.
-    const mine = createMaskSchema({ id: "feistel-only", seed: "the-key-in-use-test-seed-0000" });
-    const theirs = createMaskSchema({ id: "feistel-only", seed: "a-different-key-test-seed-0000" });
+    const mine = createUuidV7Mask({ label: "feistel-only", seed: "the-key-in-use-test-seed-0000" });
+    const theirs = createUuidV7Mask({
+      label: "feistel-only",
+      seed: "a-different-key-test-seed-0000",
+    });
     if (mine instanceof Error) throw mine;
     if (theirs instanceof Error) throw theirs;
-    const foreign = String(createUuidSlugCodec({ mask: theirs }).uuidV7ToMaskedSlug(SAMPLE_V7_A));
+    const foreign = String(createUuidV7SlugCodec({ mask: theirs }).encodeUuid(SAMPLE_V7_A));
 
-    const codec = createUuidSlugCodec({ mask: mine });
-    const failure = codec.maskedSlugToUuidV7(foreign);
+    const codec = createUuidV7SlugCodec({ mask: mine });
+    const failure = codec.decodeSlug(foreign);
     expect(failure).toBeInstanceOf(UuidSlugError);
     expect((failure as UuidSlugError).code).toBe("invalid_uuid_slug");
-    expect(codec.migration({ plain: true }).decode(foreign)).toBe(
+    expect(codec.createMigrationDecoder({ plainSlug: true }).decodeSlug(foreign)).toBe(
       "1f04e7f5-c0c6-4044-b5a3-6278bb77ffb4",
     );
   });
 
   it("returns a base32hex slug it accepted as itself, not as a base64url one", () => {
-    // `validateMaskedSlugFresh` used to declare a masked v7 slug even though plain migration can
+    // `validateTimestamp` used to declare a masked v7 slug even though plain migration can
     // while this path hands back a 26-character base32hex string, so the declared type was false
     // and an exact base64url check on the result was `false`. The behaviour is correct:
     // whose own alphabet is base32hex has exactly these legacy ids, which is what the flag is for.
@@ -338,10 +376,15 @@ describe("plain-slug migration", () => {
     // what checks that half. This pins the behaviour the type had to be made honest about.
     const legacy = String(uuidToSlug(SAMPLE_V7_A, "base32hex"));
     expect(legacy).toHaveLength(26);
-    // `now` pinned to the sample's own instant, so the freshness window is satisfied and the case
+    // `now` pinned to the sample's own instant, so the timestamp window is satisfied and the case
     // is about the returned VALUE rather than about the clock.
-    const minted = extractUuidV7Timestamp(parseUuid(SAMPLE_V7_A) as Uint8Array) as number;
-    expect(validateUuidV7SlugFresh(legacy, { now: () => minted })).toBe(legacy);
+    const minted = extractUuidV7Timestamp(uuidToBytes(SAMPLE_V7_A) as Uint8Array) as number;
+    expect(
+      validateUuidV7SlugTimestamp(legacy, {
+        maxTimestampDeltaMs: 86_400_000,
+        referenceUnixMs: minted,
+      }),
+    ).toBe(legacy);
     expect(legacy.length === 22 && isUuidSlug(legacy)).toBe(false);
   });
 });
@@ -350,7 +393,7 @@ describe("sentinel definitions", () => {
   it("refuses a sentinel that is not a UUIDv7", () => {
     expect(
       createCodec({
-        mask: PUBLIC_MASK_SCHEMA,
+        mask: UUID_V7_TEST_MASK,
         sentinels: [{ name: "v4-sentinel", uuid: SAMPLE_V4 }],
       }),
     ).toMatchObject({ code: "invalid_uuid_version" });
@@ -359,7 +402,7 @@ describe("sentinel definitions", () => {
   it("refuses two sentinels sharing one UUID, which would collapse silently", () => {
     expect(
       createCodec({
-        mask: PUBLIC_MASK_SCHEMA,
+        mask: UUID_V7_TEST_MASK,
         sentinels: [
           { name: "first", uuid: SAMPLE_V7_A },
           { name: "second", uuid: SAMPLE_V7_A },
@@ -379,7 +422,7 @@ describe("UUIDv4 generation", () => {
     // README §Guarantees promises correct version and variant bits for EVERY generated id. This is
     // the only case that holds that promise for a v4. The length is asserted with them because the
     // same line decides it, and a 17-byte "UUID" fails no other case here.
-    const bytes = uuidV4Bytes();
+    const bytes = generateUuidV4Bytes();
     if (bytes instanceof Error) throw bytes;
     expect(bytes).toHaveLength(16);
     expect((bytes[6] as number) >> 4).toBe(0x4);
@@ -390,7 +433,7 @@ describe("UUIDv4 generation", () => {
     // Both arms of the guard, matching the v7 case: past the end once the offset is added, and a
     // negative offset that stays inside the length. A short write is silent — the bytes past the
     // end are dropped and the id comes back truncated with no error anywhere.
-    expect(uuidV4Bytes(new Uint8Array(16), 1)).toBeInstanceOf(Error);
-    expect(uuidV4Bytes(new Uint8Array(16), -1)).toBeInstanceOf(Error);
+    expect(generateUuidV4Bytes(new Uint8Array(16), 1)).toBeInstanceOf(Error);
+    expect(generateUuidV4Bytes(new Uint8Array(16), -1)).toBeInstanceOf(Error);
   });
 });

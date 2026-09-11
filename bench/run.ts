@@ -11,14 +11,14 @@ import { performance } from "node:perf_hooks";
 import { unwrap } from "../dev/unwrap";
 import { candidates, nativeVariants, runtimeName } from "./candidates";
 import {
-  createUuidSlugCodec,
-  PUBLIC_MASK_SCHEMA,
+  createUuidV7SlugCodec,
+  UUID_V7_TEST_MASK,
   slugToUuid,
   uuidToSlug,
   uuidToBytes,
-  uuidV7Bytes,
-  uuidV7Slug,
-  validateUuidV7Fresh,
+  generateUuidV7Bytes,
+  generateUuidV7Slug,
+  validateUuidV7Timestamp,
 } from "../src/index";
 
 const smoke = process.argv.includes("--smoke");
@@ -67,9 +67,9 @@ for (const candidate of candidates) {
   if (candidate.uuidV7) measure(`${candidate.name}.v7.string`, candidate.uuidV7);
 }
 
-const publicCodec = unwrap(createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA }));
-measure("package.v7.slug", () => unwrap(uuidV7Slug()));
-measure("package.v7.maskedSlug", () => unwrap(publicCodec.uuidV7MaskedSlug()));
+const publicCodec = unwrap(createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }));
+measure("package.v7.slug", () => unwrap(generateUuidV7Slug()));
+measure("package.v7.maskedSlug", () => unwrap(publicCodec.generateSlug()));
 
 // Fixed inputs exclude generation and key derivation from conversion costs. Error discrimination
 // stays inside the timed call because callers of these APIs must handle the returned error.
@@ -80,43 +80,41 @@ for (const alphabet of ["base64url", "base32hex"] as const) {
   measure(`package.${alphabet}.decode`, () => unwrap(slugToUuid(slug)));
 }
 const timestamp = Number.parseInt(input.slice(0, 13).replace("-", ""), 16);
-const freshness = { now: () => timestamp };
-measure("package.v7.fresh", () => unwrap(validateUuidV7Fresh(input, freshness)));
-const current = { id: "current", seed: "benchmark-current-key" };
+const timestampWindow = { maxTimestampDeltaMs: 86_400_000, referenceUnixMs: timestamp };
+measure("package.v7.timestamp", () => unwrap(validateUuidV7Timestamp(input, timestampWindow)));
+const current = { id: "current-mask", seed: "benchmark-current-key" };
 const previous = { id: "previous", seed: "benchmark-previous-key" };
-const masked = unwrap(createUuidSlugCodec({ mask: current }));
-const rotated = unwrap(createUuidSlugCodec({ mask: current, previousMasks: [previous] }));
+const masked = unwrap(createUuidV7SlugCodec({ mask: current }));
+const rotated = unwrap(createUuidV7SlugCodec({ mask: current, previousMasks: [previous] }));
 const inputBytes = unwrap(uuidToBytes(input));
-const maskedSlug = unwrap(masked.uuidV7ToMaskedSlug(input));
-const previousSlug = unwrap(
-  unwrap(createUuidSlugCodec({ mask: previous })).uuidV7ToMaskedSlug(input),
-);
+const maskedSlug = unwrap(masked.encodeUuid(input));
+const previousSlug = unwrap(unwrap(createUuidV7SlugCodec({ mask: previous })).encodeUuid(input));
 // A short mask check can accept another key's output; prove this fixture reaches the older key.
 if (
-  !(masked.maskedSlugToUuidV7(previousSlug) instanceof Error) ||
-  unwrap(rotated.maskedSlugToUuidV7(previousSlug)) !== input
+  !(masked.decodeSlug(previousSlug) instanceof Error) ||
+  unwrap(rotated.decodeSlug(previousSlug)) !== input
 )
   throw new Error(
     "Rotation benchmark fixture must reject the current key and resolve through the previous key",
   );
-measure("package.masked.encode", () => unwrap(masked.uuidV7ToMaskedSlug(input)));
-measure("package.masked.encode.bytes", () => unwrap(masked.uuidV7ToMaskedSlug(inputBytes)));
-measure("package.masked.decode", () => unwrap(masked.maskedSlugToUuidV7(maskedSlug)));
-measure("package.rotation.current", () => unwrap(rotated.maskedSlugToUuidV7(maskedSlug)));
-measure("package.rotation.previous", () => unwrap(rotated.maskedSlugToUuidV7(previousSlug)));
+measure("package.masked.encode", () => unwrap(masked.encodeUuid(input)));
+measure("package.masked.encode.bytes", () => unwrap(masked.encodeUuid(inputBytes)));
+measure("package.masked.decode", () => unwrap(masked.decodeSlug(maskedSlug)));
+measure("package.rotation.current", () => unwrap(rotated.decodeSlug(maskedSlug)));
+measure("package.rotation.previous", () => unwrap(rotated.decodeSlug(previousSlug)));
 measure("package.masked.invalid", () => {
-  const result = masked.maskedSlugToUuidV7("invalid");
+  const result = masked.decodeSlug("invalid");
   if (!(result instanceof Error)) throw new Error("invalid input was accepted");
   return result.code;
 });
 // Timed by the byte loop, so it stands beside `bun.v7.buffer` on equal terms. The result check
-// is inside the timed section on purpose: `uuidV7Bytes` reports failure by returning an Error
+// is inside the timed section on purpose: `generateUuidV7Bytes` reports failure by returning an Error
 // rather than throwing, so every real caller pays this branch and a row that skipped it would be
 // measuring an API nobody can actually use.
 measureBytes(
   "package.v7.bytes",
   () => {
-    const bytes = uuidV7Bytes();
+    const bytes = generateUuidV7Bytes();
     if (bytes instanceof Error) throw bytes;
     return bytes;
   },

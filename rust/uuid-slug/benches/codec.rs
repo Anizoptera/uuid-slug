@@ -105,21 +105,17 @@ fn main() -> Result<(), Error> {
         ..CodecOptions::new(schema.clone())
     })?;
     let safe = Codec::new(CodecOptions {
-        masked_slug_alphabet: Alphabet::Base32Hex,
+        slug_alphabet: Alphabet::Base32Hex,
         ..CodecOptions::new(schema)
     })?;
     sample("plain/base64", &ids, |id| id.slug(Alphabet::Base64Url));
     sample("plain/base32", &ids, |id| id.slug(Alphabet::Base32Hex));
-    sample("mask/base64", &ids, |id| {
-        compact.uuid_v7_to_masked_slug(id).unwrap()
-    });
-    sample("mask/base32", &ids, |id| {
-        safe.uuid_v7_to_masked_slug(id).unwrap()
-    });
+    sample("mask/base64", &ids, |id| compact.encode_uuid(id).unwrap());
+    sample("mask/base32", &ids, |id| safe.encode_uuid(id).unwrap());
     let text: Vec<String> = ids.iter().map(ToString::to_string).collect();
     let encoded: Vec<String> = ids
         .iter()
-        .map(|id| compact.uuid_v7_to_masked_slug(*id))
+        .map(|id| compact.encode_uuid(*id))
         .collect::<Result<_, _>>()?;
     let mut cursor = 0;
     sample("parse/uuid", &ids, |_| {
@@ -128,7 +124,7 @@ fn main() -> Result<(), Error> {
     });
     sample("unmask/base64", &ids, |_| {
         cursor = (cursor + 1) % encoded.len();
-        compact.masked_slug_to_uuid_v7(&encoded[cursor]).unwrap()
+        compact.decode_slug(&encoded[cursor]).unwrap()
     });
     sample("construct/default", &ids, |_| {
         Codec::new(CodecOptions::new(uuid_slug::public_mask_schema())).unwrap()
@@ -147,7 +143,7 @@ fn main() -> Result<(), Error> {
                 .unwrap(),
         );
     });
-    let migration = compact.migration(Default::default());
+    let migration = compact.migration_decoder(Default::default());
     sample("migration/first", &ids, |_| {
         cursor = (cursor + 1) % encoded.len();
         migration.decode(&encoded[cursor], None).unwrap()

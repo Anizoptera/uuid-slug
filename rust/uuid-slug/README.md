@@ -14,11 +14,11 @@ assert_eq!(Uuid::parse_slug(&filename)?, uuid);
 
 let mask = create_mask_schema(b"replace-with-your-own-secret-seed", 1, "current")?;
 let codec = Codec::new(CodecOptions {
-    masked_slug_alphabet: Alphabet::Base32Hex,
+    slug_alphabet: Alphabet::Base32Hex,
     ..CodecOptions::new(mask)
 })?;
-let masked = codec.uuid_v7_to_masked_slug(uuid)?;
-assert_eq!(codec.masked_slug_to_uuid_v7(&masked)?, uuid);
+let masked = codec.encode_uuid(uuid)?;
+assert_eq!(codec.decode_slug(&masked)?, uuid);
 # Ok(())
 # }
 ```
@@ -46,14 +46,14 @@ use uuid_slug::{Codec, CodecOptions, MigrationOptions, create_mask_schema};
 let old_key = create_mask_schema(b"previous-private-seed", 1, "previous")?;
 let new_key = create_mask_schema(b"replacement-private-seed", 1, "current")?;
 # let uuid = uuid_slug::Uuid::parse("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")?;
-# let stored = Codec::new(CodecOptions::new(old_key.clone()))?.uuid_v7_to_masked_slug(uuid)?;
+# let stored = Codec::new(CodecOptions::new(old_key.clone()))?.encode_uuid(uuid)?;
 let reader = Codec::new(CodecOptions {
     previous_masks: vec![old_key],
     ..CodecOptions::new(new_key)
 })?;
-let id = reader.masked_slug_to_uuid_v7(&stored)?;
+let id = reader.decode_slug(&stored)?;
 # assert_eq!(id, uuid);
-let migration = reader.migration(MigrationOptions {
+let migration = reader.migration_decoder(MigrationOptions {
     original: true,
     plain: true,
 });

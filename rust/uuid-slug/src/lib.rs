@@ -17,7 +17,8 @@ pub mod uuid;
 
 pub use alphabet::Alphabet;
 pub use codec::{
-    Codec, CodecOptions, Freshness, Migration, MigrationFormat, MigrationOptions, Sentinel,
+    Codec, CodecOptions, MigrationDecoder, MigrationFormat, MigrationOptions, Sentinel,
+    UuidV7TimestampWindow,
 };
 pub use error::{Error, ErrorCode};
 pub use schema::{MaskSchema, create_mask_schema, create_mask_schema_async, public_mask_schema};

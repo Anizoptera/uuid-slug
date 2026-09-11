@@ -53,11 +53,11 @@ impl HashState {
 /// Hash bytes without allocating a packed copy of the message.
 pub(crate) fn hash_bytes(key: [u32; 2], bytes: &[u8]) -> [u32; 2] {
     let mut state = HashState::new(key);
-    let mut chunks = bytes.chunks_exact(4);
-    for chunk in &mut chunks {
-        state.absorb(u32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]));
+    let (chunks, remainder) = bytes.as_chunks::<4>();
+    for chunk in chunks {
+        state.absorb(u32::from_le_bytes(*chunk));
     }
-    state.finish(tail_word(chunks.remainder()), bytes.len())
+    state.finish(tail_word(remainder), bytes.len())
 }
 
 pub(crate) fn tail_word(bytes: &[u8]) -> u32 {

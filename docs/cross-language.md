@@ -16,7 +16,7 @@ properties. Preserve issued identifiers when changing either implementation.
 
 Identical deterministic inputs must produce identical bytes, text, keys, and decoded candidates.
 Parity includes accepted and rejected inputs, defaults, error conditions, sentinel priority, key
-order, migration controls, freshness boundaries, cancellation, and ownership of returned data.
+order, migration controls, timestamp windows, cancellation, and ownership of returned data.
 Every decoder must accept every value that a supported matching encoder can produce. Options may
 add accepted forms; they must not remove existing ones. Forms no supported encoder produces are invalid.
 Generated identifiers must meet the same promises; random draws, scheduling, allocation strategy,
@@ -50,12 +50,12 @@ Use validated `Uuid` values between operations; parse text once rather than at e
 | v7 generation, explicit time and caller storage | `UuidV7Generator::generate`, `at`, and their `_with`/`_into_with` forms |
 | Generated plain or masked slugs | Generate a `Uuid`, then call `slug` or the keyed codec |
 | UUIDv7 timestamp | `Uuid::timestamp` |
-| Sync/async schemas and custom transforms | `create_mask_schema`, `create_mask_schema_async`, `MaskSchema::custom(id, forward, reverse)` |
-| Explicit public schema | `PUBLIC_MASK_SCHEMA`; `public_mask_schema()` |
-| Key rotation, masked text/byte conversion and sentinels | `CodecOptions::new`, `Codec::uuid_v7_to_masked_slug`, `masked_slug_to_uuid_v7`, `Uuid::as_bytes`, `write_into`, `sentinels` |
-| Known/mixed-format migration and candidates | `Codec::migration`, `Migration::decode`, `candidates`, `MigrationOptions` |
-| Plain freshness | Parse UUID or plain slug, then `Freshness::validate`; retain the original text if needed |
-| Masked freshness | `Codec::validate_masked_slug_fresh` |
+| Sync/async schemas and custom transforms | `create_mask_schema`, `create_mask_schema_async`, `MaskSchema::custom(label, mask, unmask)` |
+| Explicit public schema | `UUID_V7_TEST_MASK`; `public_mask_schema()` |
+| Key rotation, masked text/byte conversion and sentinels | `CodecOptions::new`, `Codec::encode_uuid`, `decode_slug`, `Uuid::as_bytes`, `write_into`, `sentinels` |
+| Known/mixed-format migration and candidates | `Codec::migration_decoder`, `MigrationDecoder::decode`, `candidates`, `MigrationOptions` |
+| Plain timestamp window | Parse UUID or plain slug, then `UuidV7TimestampWindow::validate`; retain the original text if needed |
+| Masked timestamp window | `Codec::validate_slug_timestamp` |
 | Error classification and causes | `Error::code`, `ErrorCode::as_str`, and `std::error::Error::source` |
 
 TypeScript additionally exports `isUuidSlugError` because JavaScript values can cross realms or
