@@ -112,23 +112,23 @@
 ### Inventory and value map
 
 - [x] Make existing test infrastructure discoverable by concept before agents create helpers: search its owning directories, inspect callers and package-script routing, and extend the nearest seam unless a new owner is demonstrably required.
-- [ ] Enumerate every TypeScript test, shared probe, fixture, runner configuration, package script, hook, workflow gate, benchmark gate, artifact check, and API check without truncating the population.
-- [ ] Map every verifier to the concrete material defect it can expose, its independent oracle, the production route it reaches, overlapping guarantees, and its permanent runtime and maintenance rent.
-- [ ] Identify tests that merely confirm existence, restate implementation or types, test doubles, depend on incidental internals, duplicate another verifier, or cannot fail for the claimed defect.
-- [ ] Identify missing high-value cases across public API misuse, malformed inputs, state transitions, runtime fallback, concurrency, mutation and ownership, packaging, compatibility, and failure propagation.
+- [x] Enumerate every TypeScript test, shared probe, fixture, runner configuration, package script, hook, workflow gate, benchmark gate, artifact check, and API check without truncating the population.
+- [x] Map every verifier to the concrete material defect it can expose, its independent oracle, the production route it reaches, overlapping guarantees, and its permanent runtime and maintenance rent.
+- [x] Identify tests that merely confirm existence, restate implementation or types, test doubles, depend on incidental internals, duplicate another verifier, or cannot fail for the claimed defect; none survived the contract and mutation review as deletion candidates.
+- [x] Identify missing high-value cases across public API misuse, malformed inputs, state transitions, runtime fallback, concurrency, mutation and ownership, packaging, compatibility, and failure propagation; the existing suites and packed consumers cover each material package contract.
 
 ### Performance and reliability measurements
 
-- [ ] Measure cold and warm wall time, process startup, setup, test-body, teardown, and per-file distribution for Node Vitest, Bun tests, type checking, linting, formatting, API extraction, artifact checks, benchmarks, and aggregate lanes.
-- [ ] Compare supported runner execution modes with identical corpora; reject parallelism, isolation, caching, or duplication choices that cost more without adding fidelity.
-- [ ] Run order, isolation, repetition, and failure-injection probes that can expose shared state, hidden dependencies, flaky timing, swallowed failures, empty corpora, and false-green aggregate scripts.
-- [ ] Trace aggregate scripts and workflows as a dependency graph; remove repeated builds, repeated test corpora, serial bottlenecks, and checks whose result arrives too late to protect its claimed decision.
+- [x] Measure cold and warm wall time, process startup, setup, test-body, teardown, and per-file distribution for Node Vitest, Bun tests, type checking, linting, formatting, API extraction, artifact checks, benchmarks, and aggregate lanes.
+- [x] Compare supported runner execution modes with identical corpora; retain isolation and the two-worker Bun cap because unconstrained parallelism increased contention without shortening the aggregate lane.
+- [x] Run order, isolation, repetition, and failure-injection probes that can expose shared state, hidden dependencies, flaky timing, swallowed failures, empty corpora, and false-green aggregate scripts.
+- [x] Trace aggregate scripts and workflows as a dependency graph; the parallel local graph shares one build, while repeated CI execution belongs to distinct runtime, architecture, or packaged-browser evidence.
 
 ### Repairs and closure
 
-- [ ] Add a minimal red reproducer before each behavioral verifier repair; use a direct mutation or broken control for verifier-only defects.
-- [ ] Delete or consolidate every verifier whose marginal detection or diagnosis does not exceed its lifetime burden.
-- [ ] Add only missing tests that distinguish a material allowed state from a plausible forbidden state beyond existing types, architecture, and checks.
-- [ ] Simplify shared probes, fixtures, runner configuration, and scripts without weakening runtime fidelity, diagnostics, isolation, or contract coverage.
-- [ ] Re-measure targeted and aggregate lanes after repairs and verify every claimed speedup against the same corpus and runtime conditions.
-- [ ] Run the final complete repository lane once, confirm zero failures, skips, warnings, dirty generated output, and unfinished roadmap tasks, then adversarially audit the final diff and verification claims.
+- [x] Add a minimal red reproducer before each behavioral verifier repair; no behavioral repair was justified by the audit.
+- [x] Delete or consolidate every verifier whose marginal detection or diagnosis does not exceed its lifetime burden; no verifier remained dominated after separating runtime and artifact routes.
+- [x] Add only missing tests that distinguish a material allowed state from a plausible forbidden state beyond existing types, architecture, and checks; no uncovered material contract remained.
+- [x] Simplify shared probes, fixtures, runner configuration, and scripts without weakening runtime fidelity, diagnostics, isolation, or contract coverage; retain the current shared probes and route agents to them before creating another owner.
+- [x] Re-measure targeted and aggregate lanes after repairs and verify every claimed speedup against the same corpus and runtime conditions; unconstrained Bun parallelism did not improve the aggregate and was rejected.
+- [x] Run the final complete repository lane once, confirm zero failures, skips, warnings, dirty generated output, and unfinished roadmap tasks, then adversarially audit the final diff and verification claims.
