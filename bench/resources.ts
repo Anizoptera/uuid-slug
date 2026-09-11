@@ -169,6 +169,13 @@ try {
     () => codec.validateMaskedSlugFresh(masked as string, { now: () => time }),
     { buffers: 2, errors: 0, hex: 0, chars: 22 },
   );
+  check("masked byte encode", () => codec.uuidV7ToMaskedSlug(bytes), {
+    buffers: 2,
+    base64: 1,
+    errors: 0,
+    hex: 0,
+    chars: 22,
+  });
   check("masked byte decode", () => codec.maskedSlugToUuidV7Bytes(masked as string), {
     buffers: 2,
     errors: 0,

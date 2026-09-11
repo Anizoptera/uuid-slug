@@ -12,6 +12,7 @@ import { unwrap } from "../dev/unwrap";
 import { candidates, nativeVariants, runtimeName } from "./candidates";
 import {
   createUuidSlugCodec,
+  parseUuid,
   PUBLIC_MASK_SCHEMA,
   slugToUuid,
   uuidToSlug,
@@ -85,6 +86,7 @@ const current = { id: "current", seed: "benchmark-current-key" };
 const previous = { id: "previous", seed: "benchmark-previous-key" };
 const masked = unwrap(createUuidSlugCodec({ mask: current }));
 const rotated = unwrap(createUuidSlugCodec({ mask: current, previousMasks: [previous] }));
+const inputBytes = unwrap(parseUuid(input));
 const maskedSlug = unwrap(masked.uuidV7ToMaskedSlug(input));
 const previousSlug = unwrap(
   unwrap(createUuidSlugCodec({ mask: previous })).uuidV7ToMaskedSlug(input),
@@ -98,6 +100,7 @@ if (
     "Rotation benchmark fixture must reject the current key and resolve through the previous key",
   );
 measure("package.masked.encode", () => unwrap(masked.uuidV7ToMaskedSlug(input)));
+measure("package.masked.encode.bytes", () => unwrap(masked.uuidV7ToMaskedSlug(inputBytes)));
 measure("package.masked.decode", () => unwrap(masked.maskedSlugToUuidV7(maskedSlug)));
 measure("package.rotation.current", () => unwrap(rotated.maskedSlugToUuidV7(maskedSlug)));
 measure("package.rotation.previous", () => unwrap(rotated.maskedSlugToUuidV7(previousSlug)));
