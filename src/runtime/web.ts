@@ -18,7 +18,7 @@ function cryptoObject(): Crypto {
 const runtimeCapabilities: Runtime = {
   /**
    * Pooled for the same reason as Node's: `getRandomValues` costs far more per call than per
-   * byte, and a v7 id needs 16. Bun draws this path too, where pooling measured 16x.
+   * UUID-sized draw. Bun uses this path too, where pooling measured 16x.
    */
   fillRandom: pooledFill((into) => {
     cryptoObject().getRandomValues(into);
