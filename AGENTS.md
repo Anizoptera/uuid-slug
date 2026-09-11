@@ -95,6 +95,11 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Runtime boundaries and evidence
 
+- Reuse the repository's test infrastructure instead of creating another harness. Before adding a
+  test helper, fixture, probe, benchmark, or verification script, search `test/`, `bench/`, and
+  `scripts/` by the capability and failure class, then inspect its callers and the package scripts
+  that route it. Extend the nearest existing owner; create a new tool only when no existing seam can
+  own the evidence without weakening its oracle, runtime fidelity, isolation, or feedback time.
 - Keep routine verification in `.github/workflows/check.yml`. Add another workflow only when it
   needs a different trigger or permission boundary.
 - Gate every runtime-dependent change in both Node Vitest and Bun tests, including branches

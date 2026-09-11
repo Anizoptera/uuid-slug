@@ -106,3 +106,29 @@
 - [x] Pair every roadmap criterion with its concrete instrument and result; leave no completion mark supported only by code reading or a green aggregate.
 - [x] State the strongest surviving uncertainty and the exact observation that would change each final verdict; never convert unexecuted environments into a universal claim.
 - [x] Audit the audit itself for narrowed searches, truncated output, unchecked files, shared-origin evidence, stale generated output, and conclusions stronger than their instruments.
+
+## Current verifier audit
+
+### Inventory and value map
+
+- [x] Make existing test infrastructure discoverable by concept before agents create helpers: search its owning directories, inspect callers and package-script routing, and extend the nearest seam unless a new owner is demonstrably required.
+- [ ] Enumerate every TypeScript test, shared probe, fixture, runner configuration, package script, hook, workflow gate, benchmark gate, artifact check, and API check without truncating the population.
+- [ ] Map every verifier to the concrete material defect it can expose, its independent oracle, the production route it reaches, overlapping guarantees, and its permanent runtime and maintenance rent.
+- [ ] Identify tests that merely confirm existence, restate implementation or types, test doubles, depend on incidental internals, duplicate another verifier, or cannot fail for the claimed defect.
+- [ ] Identify missing high-value cases across public API misuse, malformed inputs, state transitions, runtime fallback, concurrency, mutation and ownership, packaging, compatibility, and failure propagation.
+
+### Performance and reliability measurements
+
+- [ ] Measure cold and warm wall time, process startup, setup, test-body, teardown, and per-file distribution for Node Vitest, Bun tests, type checking, linting, formatting, API extraction, artifact checks, benchmarks, and aggregate lanes.
+- [ ] Compare supported runner execution modes with identical corpora; reject parallelism, isolation, caching, or duplication choices that cost more without adding fidelity.
+- [ ] Run order, isolation, repetition, and failure-injection probes that can expose shared state, hidden dependencies, flaky timing, swallowed failures, empty corpora, and false-green aggregate scripts.
+- [ ] Trace aggregate scripts and workflows as a dependency graph; remove repeated builds, repeated test corpora, serial bottlenecks, and checks whose result arrives too late to protect its claimed decision.
+
+### Repairs and closure
+
+- [ ] Add a minimal red reproducer before each behavioral verifier repair; use a direct mutation or broken control for verifier-only defects.
+- [ ] Delete or consolidate every verifier whose marginal detection or diagnosis does not exceed its lifetime burden.
+- [ ] Add only missing tests that distinguish a material allowed state from a plausible forbidden state beyond existing types, architecture, and checks.
+- [ ] Simplify shared probes, fixtures, runner configuration, and scripts without weakening runtime fidelity, diagnostics, isolation, or contract coverage.
+- [ ] Re-measure targeted and aggregate lanes after repairs and verify every claimed speedup against the same corpus and runtime conditions.
+- [ ] Run the final complete repository lane once, confirm zero failures, skips, warnings, dirty generated output, and unfinished roadmap tasks, then adversarially audit the final diff and verification claims.
