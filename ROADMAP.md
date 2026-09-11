@@ -28,6 +28,8 @@ paths only. Do not change the Rust implementation or use it to hide TypeScript c
   selection and portable fallback, to the package artifact each consumer loads.
 - [ ] Audit benchmark setup, warm-up, sinks, batching, clocks, GC handling, process isolation, output
   validation, and statistics for optimizer elimination, harness domination, and false comparisons.
+- [ ] Enumerate syntax, call-shape, allocation-ownership, specialization, inlining, closure, module,
+  lookup, arithmetic, typed-array, and runtime-delegation variants that can change generated code or JIT behavior.
 - [x] Extend one maintained profiling harness to run the same applicable public-operation corpus on
   Node, Bun, Deno, and a real browser; fail on missing runtimes, cases, malformed output, or zero work.
 - [x] Add native CPU profiling launch and normalization for Node, Bun, Deno/V8, and the browser;
@@ -49,6 +51,8 @@ paths only. Do not change the Rust implementation or use it to hide TypeScript c
   measure uninterrupted work separately from throughput and reject readiness sleeps.
 - [x] Keep smoke instrumentation within routine feedback budgets and put deeper sampling behind the
   same harness without giving slow evidence gating authority.
+- [ ] Keep corpus preparation outside native capture windows and start measurement only from an
+  observed runtime-ready signal; quantify unavoidable profiler start/stop self-noise.
 
 ### Baseline and attribution
 
@@ -72,6 +76,8 @@ paths only. Do not change the Rust implementation or use it to hide TypeScript c
 - [ ] For each selected mechanism, evaluate deletion, platform primitive, fused pass, cached invariant,
   caller-owned storage, lookup structure, arithmetic/layout change, specialization, and runtime-specific
   delegation before adding abstraction.
+- [ ] Document every retained unusual syntax form at its code site with the performance reason,
+  semantic boundary, and evidence condition that would justify replacing it.
 - [ ] Implement each optimization as a focused change with unchanged public semantics and a direct
   falsifier for the behavior or resource invariant it could break.
 - [ ] Re-profile every affected operation and its strongest regression rival on all applicable

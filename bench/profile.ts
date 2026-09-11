@@ -17,13 +17,6 @@ if (nativeDirectory && !nativeName)
 if (session) {
   session.connect();
   await Promise.all([session.post("Profiler.enable"), session.post("HeapProfiler.enable")]);
-  await session.post("Profiler.setSamplingInterval", { interval: 100 });
-  await session.post("HeapProfiler.startSampling", {
-    samplingInterval: 4096,
-    includeObjectsCollectedByMajorGC: true,
-    includeObjectsCollectedByMinorGC: true,
-  });
-  await session.post("Profiler.start");
 }
 
 const beforeImport = performance.now();
@@ -60,6 +53,20 @@ if (!Number.isSafeInteger(samples) || samples < 1 || !Number.isFinite(duration) 
   throw new Error("Profile samples must be a positive integer and duration positive milliseconds");
 const selected = Object.entries(cases).filter(([name]) => !filter || name.includes(filter));
 if (selected.length === 0) throw new Error("Profile filter selected no cases");
+if (session) {
+  for (const [name, fn] of selected) {
+    assertProfileOutcome(name, fn(0));
+    batch(fn, 2048, name.startsWith("invalid."));
+  }
+  gc?.();
+  await session.post("Profiler.setSamplingInterval", { interval: 100 });
+  await session.post("HeapProfiler.startSampling", {
+    samplingInterval: 4096,
+    includeObjectsCollectedByMajorGC: true,
+    includeObjectsCollectedByMinorGC: true,
+  });
+  await session.post("Profiler.start");
+}
 const versions = process.versions as typeof process.versions & { deno?: string };
 const runtime = versions.bun
   ? `bun ${versions.bun}`
@@ -79,7 +86,7 @@ console.log(
 for (const [name, fn] of selected) {
   const witness = fn(0);
   const expectedError = assertProfileOutcome(name, witness);
-  batch(fn, 2048, expectedError);
+  if (!session) batch(fn, 2048, expectedError);
   gc?.();
   const heapBefore = process.memoryUsage();
   const cpuBefore = process.cpuUsage();

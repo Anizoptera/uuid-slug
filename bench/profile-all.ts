@@ -11,7 +11,7 @@ const reports = join(import.meta.dir, "reports");
 const smoke = process.argv.includes("--smoke");
 const native = process.argv.includes("--native");
 const samples = process.env.UUID_SLUG_PROFILE_SAMPLES ?? (smoke ? "1" : "7");
-const duration = process.env.UUID_SLUG_PROFILE_MS ?? (smoke ? "2" : "20");
+const duration = process.env.UUID_SLUG_PROFILE_MS ?? "2";
 const filter = process.env.UUID_SLUG_PROFILE_FILTER ?? "";
 const environment: Readonly<Record<string, string>> = {
   UUID_SLUG_PROFILE_FILTER: filter,
@@ -142,6 +142,10 @@ async function runBrowser(entry: string) {
     const snapshotChunks: string[] = [];
     session.on("Tracing.dataCollected", ({ value }) => traceEvents.push(...value));
     session.on("HeapProfiler.addHeapSnapshotChunk", ({ chunk }) => snapshotChunks.push(chunk));
+    const query = new URLSearchParams({ samples, duration });
+    if (filter) query.set("filter", filter);
+    await page.goto(`${server.url.href}?${query}`);
+    await page.waitForFunction(() => "runUuidSlugProfile" in globalThis);
     if (native) {
       await Promise.all([
         session.send("Profiler.enable"),
@@ -162,17 +166,14 @@ async function runBrowser(entry: string) {
       });
     }
     const before = native ? await session.send("Performance.getMetrics") : undefined;
-    const query = new URLSearchParams({ samples, duration });
-    if (filter) query.set("filter", filter);
-    await page.goto(`${server.url.href}?${query}`);
     const rows = await page.evaluate(async () => {
-      const profile = (
+      const run = (
         globalThis as typeof globalThis & {
-          uuidSlugProfile?: Promise<readonly Record<string, unknown>[]>;
+          runUuidSlugProfile?: () => Promise<readonly Record<string, unknown>[]>;
         }
-      ).uuidSlugProfile;
-      if (!profile) throw new Error("Browser profile module did not start");
-      return profile;
+      ).runUuidSlugProfile;
+      if (!run) throw new Error("Browser profile module did not prepare");
+      return run();
     });
     const cpu = native ? await session.send("Profiler.stop") : undefined;
     const heap = native ? await session.send("HeapProfiler.stopSampling") : undefined;

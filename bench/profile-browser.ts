@@ -60,10 +60,7 @@ function yieldToBrowser(): Promise<void> {
   });
 }
 
-/** Measure the browser artifact with the same operation corpus used by server runtimes. */
-export async function runBrowserProfile(
-  options: BrowserProfileOptions,
-): Promise<readonly BrowserProfileRow[]> {
+function selectProfileCases(options: BrowserProfileOptions): readonly [string, ProfileCase][] {
   if (
     !Number.isSafeInteger(options.samples) ||
     options.samples < 1 ||
@@ -78,9 +75,17 @@ export async function runBrowserProfile(
     ([name]) => !options.filter || name.includes(options.filter),
   );
   if (selected.length === 0) throw new Error("Profile filter selected no cases");
+  for (const [name, operation] of selected) assertProfileOutcome(name, operation(0));
+  return selected;
+}
+
+async function measureProfileCases(
+  selected: readonly [string, ProfileCase][],
+  options: BrowserProfileOptions,
+): Promise<readonly BrowserProfileRow[]> {
   const rows: BrowserProfileRow[] = [];
   for (const [name, operation] of selected) {
-    const expectedError = assertProfileOutcome(name, operation(0));
+    const expectedError = name.startsWith("invalid.");
     batch(operation, 2048, expectedError);
     const ns: number[] = [];
     let maxBatchMs = 0;
@@ -108,12 +113,23 @@ export async function runBrowserProfile(
   return rows;
 }
 
+/** Measure the browser artifact with the same operation corpus used by server runtimes. */
+export function runBrowserProfile(
+  options: BrowserProfileOptions,
+): Promise<readonly BrowserProfileRow[]> {
+  return measureProfileCases(selectProfileCases(options), options);
+}
+
 const parameters = new URL(location.href).searchParams;
 const filter = parameters.get("filter");
-(
-  globalThis as typeof globalThis & { uuidSlugProfile?: Promise<readonly BrowserProfileRow[]> }
-).uuidSlugProfile = runBrowserProfile({
-  duration: Number(parameters.get("duration") ?? 20),
+const options = {
+  duration: Number(parameters.get("duration") ?? 2),
   samples: Number(parameters.get("samples") ?? 7),
   ...(filter === null ? {} : { filter }),
-});
+};
+const selected = selectProfileCases(options);
+(
+  globalThis as typeof globalThis & {
+    runUuidSlugProfile?: () => Promise<readonly BrowserProfileRow[]>;
+  }
+).runUuidSlugProfile = () => measureProfileCases(selected, options);
