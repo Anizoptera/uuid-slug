@@ -169,6 +169,12 @@ try {
     () => codec.validateMaskedSlugFresh(masked as string, { now: () => time }),
     { buffers: 2, errors: 0, hex: 0, chars: 22 },
   );
+  check("masked byte decode", () => codec.maskedSlugToUuidV7Bytes(masked as string), {
+    buffers: 2,
+    errors: 0,
+    hex: 0,
+    chars: 22,
+  });
   const sentinel = codec.sentinels[0];
   assert.ok(sentinel);
   check("cached sentinel", () => codec.maskedSlugToUuidV7(sentinel.slug), {

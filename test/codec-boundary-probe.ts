@@ -143,6 +143,10 @@ export const codecBoundaryCases = [
       const codec = createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA });
       const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
       const bytes = unwrap(parseUuid(uuid));
+      const v4 = unwrap(parseUuid("550e8400-e29b-41d4-a716-446655440000"));
+      const refused = codec.uuidV7BytesToMaskedSlug(v4);
+      assert.ok(refused instanceof UuidSlugError);
+      assert.equal(refused.code, "invalid_uuid_version");
       const slug = unwrap(codec.uuidV7BytesToMaskedSlug(bytes));
       const owned = unwrap(codec.maskedSlugToUuidV7Bytes(slug));
       assert.equal(owned.constructor, Uint8Array);
@@ -208,16 +212,21 @@ export const codecBoundaryCases = [
         "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051",
         "03ffffff-ffff-7fff-bfff-ffffffffffff",
       ]) {
+        const bytes = unwrap(parseUuid(uuid));
         const legacy = old.uuidV7ToMaskedSlug(uuid);
         const encoded = safe.uuidV7ToMaskedSlug(uuid);
         assert.equal(typeof legacy, "string");
         assert.equal(typeof encoded, "string");
+        assert.equal(old.uuidV7BytesToMaskedSlug(bytes), legacy);
+        assert.equal(safe.uuidV7BytesToMaskedSlug(bytes), encoded);
         const text = encoded as string;
         assert.equal(text.length, 27);
         assert.equal(bits(text, alphabet32, 5), bits(legacy as string, alphabet64, 6) + "000");
         for (const reader of [old, safe, rotated]) {
           assert.equal(reader.maskedSlugToUuidV7(text), uuid);
           assert.equal(reader.maskedSlugToUuidV7(legacy as string), uuid);
+          assert.deepEqual(reader.maskedSlugToUuidV7Bytes(text), bytes);
+          assert.deepEqual(reader.maskedSlugToUuidV7Bytes(legacy as string), bytes);
           assert.deepEqual(reader.migration().candidates(text, "current"), [uuid]);
           assert.deepEqual(reader.migration({ plain: true, original: true }).candidates(text), [
             uuid,

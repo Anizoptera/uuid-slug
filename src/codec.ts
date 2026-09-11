@@ -204,10 +204,6 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
     return encodeMasked(bytes);
   }
 
-  function decodeMaskedBytes(slug: string): Uint8Array | UuidSlugError {
-    return sentinels.bySlug.get(slug)?.bytes ?? decodeMaskedSlug(slug, schema, previousMasks);
-  }
-
   function maskedSlugToUuidV7(slug: string): UuidV7String | UuidSlugError {
     const sentinel = sentinels.bySlug.get(slug);
     if (sentinel) return sentinel.uuid;
@@ -229,13 +225,14 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
   ): Uint8Array | UuidSlugError {
     const badRange = out === undefined ? undefined : checkByteRange(out, offset, 16);
     if (badRange) return badRange;
-    const decoded = decodeMaskedBytes(slug);
+    const sentinelBytes = sentinels.bySlug.get(slug)?.bytes;
+    const decoded = sentinelBytes ?? decodeMaskedSlug(slug, schema, previousMasks);
     if (decoded instanceof Error) return decoded;
     if (out) {
       out.set(decoded, offset);
       return out;
     }
-    return new Uint8Array(decoded);
+    return sentinelBytes ? new Uint8Array(sentinelBytes) : decoded;
   }
 
   function generateMaskedSlug(): PublicUuidV7Slug | UuidSlugError {
