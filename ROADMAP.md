@@ -30,6 +30,8 @@ paths only. Do not change the Rust implementation or use it to hide TypeScript c
   selection and portable fallback, to the package artifact each consumer loads.
 - [ ] Audit benchmark setup, warm-up, sinks, batching, clocks, GC handling, process isolation, output
   validation, and statistics for optimizer elimination, harness domination, and false comparisons.
+- [ ] Replace fixed-order single-pass candidate acceptance with one alternating baseline/candidate
+  driver over identical packed artifacts, randomized runtime order, distributions, and control rows.
 - [ ] Enumerate syntax, call-shape, allocation-ownership, specialization, inlining, closure, module,
   lookup, arithmetic, typed-array, and runtime-delegation variants that can change generated code or JIT behavior.
 - [x] Extend one maintained profiling harness to run the same applicable public-operation corpus on
