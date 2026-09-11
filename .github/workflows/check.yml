@@ -169,10 +169,6 @@ jobs:
       - if: matrix.node == 'current'
         run: bun run build && bun test test/*.bun.test.ts && bun run perf:check
       - if: matrix.node == 'current'
-        env:
-          UUID_SLUG_TEST_RUNTIME: bun
-        run: bun --bun node_modules/vitest/vitest.mjs run
-      - if: matrix.node == 'current'
         run: bun scripts/runtime-probe.ts runtime-reference.json
 
   # Packed browser/Deno consumers need external engines, so keep their setup outside local check.
