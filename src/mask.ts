@@ -4,7 +4,7 @@ import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "./alphabet"
 import { UuidSlugError } from "./errors";
 import { mix32, read32 } from "./feistel";
 import { applyMaskSchema } from "./schema-handle";
-import { formatUuid } from "./uuid";
+import { bytesToUuid } from "./uuid";
 import type { MaskSchema, MaskedUuidV7Slug, UuidString } from "./types";
 import type { SlugAlphabet } from "./uuid";
 
@@ -163,7 +163,7 @@ export function decodeMaskedCandidates(
     // A failed callback means the candidate list is incomplete, not that its key mismatched.
     if (decoded instanceof Error) return decoded;
     if (decoded) {
-      const uuid = formatUuid(decoded);
+      const uuid = bytesToUuid(decoded);
       if (uuid instanceof Error) return uuid;
       if (!candidates.includes(uuid)) candidates.push(uuid);
       if (firstOnly) break;

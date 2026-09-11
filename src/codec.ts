@@ -28,9 +28,9 @@ import { createRuntimeGenerator } from "./v7";
 import {
   isUuidV7Bytes,
   resolveSlugAlphabet,
-  parseUuid,
+  uuidToBytes,
   parseUuidSlug,
-  formatUuid,
+  bytesToUuid,
   formatUuidSlug,
   extractUuidV7Timestamp,
 } from "./uuid";
@@ -88,7 +88,7 @@ function createSentinels(
     // Sentinel configuration accepts raw strings so callers do not need casts before reaching the
     // validating seam. Check each value here, while a bad definition is still a constructor error
     // rather than a codec that fails on every later decode.
-    const bytes = parseUuid(definition.uuid);
+    const bytes = uuidToBytes(definition.uuid);
     if (bytes instanceof Error) return bytes;
     if (!isUuidV7Bytes(bytes))
       return new UuidSlugError(
@@ -192,7 +192,7 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
 
   function uuidV7ToMaskedSlug(uuid: string | Uint8Array): PublicUuidV7Slug | UuidSlugError {
     if (typeof uuid !== "string") return encodeMasked(uuid);
-    const bytes = parseUuid(uuid);
+    const bytes = uuidToBytes(uuid);
     return bytes instanceof Error ? bytes : encodeMasked(bytes);
   }
 
@@ -201,7 +201,7 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
     if (sentinel) return sentinel.uuid;
     const decoded = decodeMaskedSlug(slug, schema, previousMasks);
     if (decoded instanceof Error) return decoded;
-    return formatUuid(decoded) as UuidV7String | UuidSlugError;
+    return bytesToUuid(decoded) as UuidV7String | UuidSlugError;
   }
 
   function maskedSlugToUuidV7Bytes(slug: string): UuidV7Bytes | UuidSlugError;
@@ -282,7 +282,7 @@ export function validateUuidV7Fresh<Input extends string>(
   options?: FreshValidationOptions,
 ): (Input & UuidV7String) | UuidSlugError {
   const uuidText: string = uuid;
-  const bytes = parseUuid(uuidText);
+  const bytes = uuidToBytes(uuidText);
   if (bytes instanceof Error)
     return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
   const valid = validateFreshBytes(bytes, options);

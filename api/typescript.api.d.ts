@@ -9,6 +9,7 @@ declare type Brand<Value, Name extends string> = Value & {
   };
 };
 declare const brand: unique symbol;
+export declare function bytesToUuid(bytes: Uint8Array, offset?: number): UuidString | UuidSlugError;
 export declare function createCustomMaskSchema(
   options: CustomMaskSchemaOptions,
 ): MaskSchema | UuidSlugError;
@@ -54,6 +55,7 @@ export declare function extractUuidV7Timestamp<Input extends Uint8Array>(
   bytes: UuidV7BytesInput<Input>,
   offset?: number,
 ): number | UuidSlugError;
+/** @deprecated Use `bytesToUuid`, whose name states the conversion direction. */
 export declare function formatUuid(bytes: Uint8Array, offset?: number): UuidString | UuidSlugError;
 export declare function formatUuidSlug(
   bytes: Uint8Array,
@@ -68,9 +70,11 @@ export declare interface FreshValidationOptions {
   readonly now?: () => number;
   readonly windowMs?: number;
 }
+export declare function isUuidBytes(bytes: unknown): bytes is UuidBytes;
 export declare function isUuidSlug(slug: unknown): slug is UuidSlug;
 export declare function isUuidSlugError(value: unknown): value is UuidSlugError;
 export declare function isUuidString(uuid: unknown): uuid is UuidString;
+export declare function isUuidV4Bytes(bytes: unknown): bytes is UuidV4Bytes;
 export declare function isUuidV4Slug(slug: unknown): slug is UuidV4Slug;
 export declare function isUuidV4String(uuid: unknown): uuid is UuidV4String;
 export declare function isUuidV7Bytes(bytes: unknown): bytes is UuidV7Bytes;
@@ -89,9 +93,11 @@ export declare interface MaskSchemaOptions {
   readonly keyIterations?: number;
 }
 export declare type MigrationFormat = "current" | "original" | "plain";
+/** @deprecated Use `uuidToBytes`, whose name states the conversion direction. */
 export declare function parseUuid<Input extends string>(
   uuid: UuidStringInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
+/** @deprecated Use `uuidToBytes`, whose name states the conversion direction. */
 export declare function parseUuid<Input extends string, Output extends Uint8Array>(
   uuid: UuidStringInput<Input>,
   out: Output,
@@ -192,6 +198,14 @@ declare type UuidStringInput<Input extends string> = RejectKnownInput<
   Input,
   UuidSlug | MaskedUuidSlug
 >;
+export declare function uuidToBytes<Input extends string>(
+  uuid: UuidStringInput<Input>,
+): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
+export declare function uuidToBytes<Input extends string, Output extends Uint8Array>(
+  uuid: UuidStringInput<Input>,
+  out: Output,
+  offset?: number,
+): Output | UuidSlugError;
 export declare function uuidToSlug<Input extends string>(
   uuid: UuidStringInput<Input>,
   alphabet?: SlugAlphabet,

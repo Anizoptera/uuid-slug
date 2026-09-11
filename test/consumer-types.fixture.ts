@@ -1,9 +1,12 @@
 import {
+  bytesToUuid,
   createMaskSchemaAsync,
   createUuidSlugCodec,
   extractUuidV7Timestamp,
   formatUuid,
   formatUuidSlug,
+  isUuidBytes,
+  isUuidV4Bytes,
   isUuidV7String,
   parseUuid,
   parseUuidSlug,
@@ -14,6 +17,7 @@ import {
   validateUuidV7SlugFresh,
   validateUuidV7Fresh,
   uuidToSlug,
+  uuidToBytes,
   uuidV4Bytes,
   uuidV4Slug,
   uuidV7Bytes,
@@ -110,6 +114,15 @@ if (formattedSlug instanceof Error) throw formattedSlug;
 const roundTripSlug: UuidV7Slug = formattedSlug;
 class ConsumerBuffer extends Uint8Array {}
 const destination = new ConsumerBuffer(32);
+const externalBinary: unknown = versionedBytes;
+if (!isUuidBytes(externalBinary)) throw new Error("Expected UUID bytes.");
+const checkedBinary: UuidBytes = externalBinary;
+if (!isUuidV4Bytes(externalBinary)) throw new Error("Expected UUIDv4 bytes for type narrowing.");
+const checkedV4Binary: UuidV4Bytes = externalBinary;
+const directionalBytes = uuidToBytes(checkedUuid);
+expectType<UuidV7Bytes | UuidSlugError>()(directionalBytes);
+expectType<ConsumerBuffer | UuidSlugError>()(uuidToBytes(checkedUuid, destination, 8));
+expectType<UuidString | UuidSlugError>()(bytesToUuid(versionedBytes));
 expectType<ConsumerBuffer | UuidSlugError>()(generator.uuidV7Bytes(destination, 8));
 expectType<ConsumerBuffer | UuidSlugError>()(generator.uuidV7BytesAt(0, destination, 8));
 const parsedInto: ConsumerBuffer | UuidSlugError = parseUuid(checkedUuid, destination, 8);
@@ -240,6 +253,8 @@ void [
   maskedFromBytes,
   decodedMaskedBytes,
   decodedMaskedInto,
+  checkedBinary,
+  checkedV4Binary,
   unwrappedPlain,
 ];
 const publicSlugResult = codec.uuidV7MaskedSlug();

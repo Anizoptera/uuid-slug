@@ -12,10 +12,10 @@ import { unwrap } from "../dev/unwrap";
 import { candidates, nativeVariants, runtimeName } from "./candidates";
 import {
   createUuidSlugCodec,
-  parseUuid,
   PUBLIC_MASK_SCHEMA,
   slugToUuid,
   uuidToSlug,
+  uuidToBytes,
   uuidV7Bytes,
   uuidV7Slug,
   validateUuidV7Fresh,
@@ -86,7 +86,7 @@ const current = { id: "current", seed: "benchmark-current-key" };
 const previous = { id: "previous", seed: "benchmark-previous-key" };
 const masked = unwrap(createUuidSlugCodec({ mask: current }));
 const rotated = unwrap(createUuidSlugCodec({ mask: current, previousMasks: [previous] }));
-const inputBytes = unwrap(parseUuid(input));
+const inputBytes = unwrap(uuidToBytes(input));
 const maskedSlug = unwrap(masked.uuidV7ToMaskedSlug(input));
 const previousSlug = unwrap(
   unwrap(createUuidSlugCodec({ mask: previous })).uuidV7ToMaskedSlug(input),

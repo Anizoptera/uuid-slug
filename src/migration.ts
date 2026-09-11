@@ -12,7 +12,7 @@ import type {
   UuidString,
   UuidV7String,
 } from "./types";
-import { formatUuid } from "./uuid";
+import { bytesToUuid } from "./uuid";
 
 /** Read old IDs with the codec's keys and sentinels; never change how new IDs are written. */
 export function createMigration(
@@ -83,7 +83,7 @@ export function createMigration(
     if (reserved && firstOnly) return [reserved.uuid];
     const candidates: UuidString[] = reserved ? [reserved.uuid] : [];
     function add(value: Uint8Array) {
-      const uuid = formatUuid(value);
+      const uuid = bytesToUuid(value);
       if (uuid instanceof Error) return uuid;
       if (!candidates.includes(uuid)) candidates.push(uuid);
       return undefined;

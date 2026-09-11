@@ -148,6 +148,9 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   const bytes = api.uuidV7BytesAt(1234567890000);
   if (bytes instanceof Error) throw bytes;
   equal(bytes.constructor, Uint8Array, "owned byte constructor");
+  const uuidText = api.bytesToUuid(bytes);
+  if (uuidText instanceof Error) throw uuidText;
+  equal(api.uuidToBytes(uuidText) instanceof Uint8Array, true, "directional UUID conversion");
   const out = new Uint8Array(20).fill(0x55);
   equal(api.uuidV7BytesAt(1234567890000, out, 2), out, "caller buffer identity");
   equal(out[0], 0x55, "caller prefix");

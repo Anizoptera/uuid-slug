@@ -18,7 +18,7 @@ import type {
   UuidV7Slug,
   UuidV7String,
 } from "./types";
-import { formatUuid, formatUuidSlug, isUuidV4String, isUuidV7Slug } from "./uuid";
+import { bytesToUuid, formatUuidSlug, isUuidV4String, isUuidV7Slug } from "./uuid";
 import type { SlugAlphabet } from "./uuid";
 import { createRuntimeGenerator } from "./v7";
 
@@ -54,7 +54,7 @@ export function uuidV4Bytes(out?: Uint8Array, offset = 0): Uint8Array | UuidSlug
 
 function portableUuidV4(): UuidV4String | UuidSlugError {
   const bytes = uuidV4Bytes();
-  return bytes instanceof Error ? bytes : (formatUuid(bytes) as UuidV4String | UuidSlugError);
+  return bytes instanceof Error ? bytes : (bytesToUuid(bytes) as UuidV4String | UuidSlugError);
 }
 
 /** Generate a canonical UUIDv4 string with platform cryptographic randomness. */

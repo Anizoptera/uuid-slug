@@ -99,19 +99,23 @@ function hexValue(code: number) {
 }
 
 /**
- * Parse one canonical lowercase UUID into 16 bytes; failure leaves caller storage unchanged.
+ * Convert one canonical lowercase UUID to 16 bytes; failure leaves caller storage unchanged.
  * Generic capture rejects known slug brands, while bare strings stay open to runtime validation
  * because widening has erased their provenance.
  */
-export function parseUuid<Input extends string>(
+export function uuidToBytes<Input extends string>(
   uuid: UuidStringInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
-export function parseUuid<Input extends string, Output extends Uint8Array>(
+export function uuidToBytes<Input extends string, Output extends Uint8Array>(
   uuid: UuidStringInput<Input>,
   out: Output,
   offset?: number,
 ): Output | UuidSlugError;
-export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
+export function uuidToBytes(
+  uuid: string,
+  out?: Uint8Array,
+  offset = 0,
+): Uint8Array | UuidSlugError {
   if (typeof uuid !== "string" || uuid.length !== UUID_LENGTH)
     return new UuidSlugError("invalid_uuid", "UUID must be 36 characters.");
   if (uuid[8] !== "-" || uuid[13] !== "-" || uuid[18] !== "-" || uuid[23] !== "-") {
@@ -135,8 +139,8 @@ export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): Uint8Arra
   return target;
 }
 
-/** Format exactly 16 bytes at `offset` as a canonical lowercase UUID string. */
-export function formatUuid(bytes: Uint8Array, offset = 0): UuidString | UuidSlugError {
+/** Return canonical lowercase UUID text for exactly 16 bytes at `offset`. */
+export function bytesToUuid(bytes: Uint8Array, offset = 0): UuidString | UuidSlugError {
   const badRange = checkByteRange(bytes, offset, 16);
   if (badRange) return badRange;
   if (nativeToHex) {
@@ -150,6 +154,31 @@ export function formatUuid(bytes: Uint8Array, offset = 0): UuidString | UuidSlug
     out += HEX_BYTES[byte];
   }
   return out as UuidString;
+}
+
+/** @deprecated Use `uuidToBytes`, whose name states the conversion direction. */
+export function parseUuid<Input extends string>(
+  uuid: UuidStringInput<Input>,
+): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
+/** @deprecated Use `uuidToBytes`, whose name states the conversion direction. */
+export function parseUuid<Input extends string, Output extends Uint8Array>(
+  uuid: UuidStringInput<Input>,
+  out: Output,
+  offset?: number,
+): Output | UuidSlugError;
+export function parseUuid(
+  uuid: string,
+  out?: Uint8Array,
+  offset?: number,
+): Uint8Array | UuidSlugError {
+  if (out !== undefined) return uuidToBytes(uuid, out, offset);
+  const badRange = checkRange(16, offset ?? 0, 16);
+  return badRange ?? uuidToBytes(uuid);
+}
+
+/** @deprecated Use `bytesToUuid`, whose name states the conversion direction. */
+export function formatUuid(bytes: Uint8Array, offset?: number): UuidString | UuidSlugError {
+  return bytesToUuid(bytes, offset);
 }
 
 export function uuidVersion(bytes: Uint8Array, offset = 0): number {
@@ -188,15 +217,23 @@ export function isUuidV7String(uuid: unknown): uuid is UuidV7String {
   return isUuidString(uuid) && uuid[14] === "7" && stringHasRfcVariant(uuid);
 }
 
+/** Check for exactly 16 UUID bytes without assigning a version. */
+export function isUuidBytes(bytes: unknown): bytes is UuidBytes {
+  return isUint8Array(bytes) && bytes.length === 16;
+}
+
+/** Check for exactly 16 UUIDv4 bytes with the RFC variant required by generation. */
+export function isUuidV4Bytes(bytes: unknown): bytes is UuidV4Bytes {
+  return isUuidBytes(bytes) && uuidVersion(bytes) === 4 && isRfcVariant(bytes);
+}
+
 /**
  * Check for exactly 16 UUIDv7 bytes with the RFC variant required by masking and timestamps.
  * General byte input can use `bytesToUuid`; this narrower predicate proves the version those
  * v7-only operations require.
  */
 export function isUuidV7Bytes(bytes: unknown): bytes is UuidV7Bytes {
-  return (
-    isUint8Array(bytes) && bytes.length === 16 && uuidVersion(bytes) === 7 && isRfcVariant(bytes)
-  );
+  return isUuidBytes(bytes) && uuidVersion(bytes) === 7 && isRfcVariant(bytes);
 }
 
 /** Encode exactly 16 bytes as a direct UUID slug; base64url is the default. */
@@ -287,7 +324,7 @@ export function uuidToSlug(
   uuid: string,
   alphabet: SlugAlphabet = "base64url",
 ): UuidSlug | UuidSlugError {
-  const bytes = parseUuid(uuid);
+  const bytes = uuidToBytes(uuid);
   if (bytes instanceof Error) return bytes;
   return formatUuidSlug(bytes, alphabet);
 }
@@ -302,7 +339,7 @@ export function slugToUuid<Input extends string>(
 export function slugToUuid(slug: string): UuidString | UuidSlugError {
   const bytes = parseUuidSlug(slug);
   if (bytes instanceof Error) return bytes;
-  return formatUuid(bytes);
+  return bytesToUuid(bytes);
 }
 
 /** Check a canonical 22-character base64url or 26-character lowercase base32hex direct slug. */

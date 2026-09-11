@@ -116,7 +116,7 @@ try {
     check("UUID predicate", () => api.isUuidV7String(value), { buffers: 0, errors: 0, views: 0 });
   for (const value of [slug as string, (slug as string).slice(0, -1) + "B", "!".repeat(22)])
     check("slug predicate", () => api.isUuidV7Slug(value), { buffers: 0, errors: 0, views: 0 });
-  check("caller-owned parse", () => api.parseUuid(id, into, 4), {
+  check("caller-owned UUID conversion", () => api.uuidToBytes(id, into, 4), {
     buffers: 0,
     views: 0,
     errors: 0,
@@ -134,7 +134,11 @@ try {
     views: 0,
     errors: 0,
   });
-  check("exact UUID formatting", () => api.formatUuid(bytes), { buffers: 0, views: 0, errors: 0 });
+  check("exact UUID text conversion", () => api.bytesToUuid(bytes), {
+    buffers: 0,
+    views: 0,
+    errors: 0,
+  });
   if (hasHex) assert.equal(counts.hex, 1, "available native hex must be used once");
   check("exact slug formatting", () => api.formatUuidSlug(bytes), {
     buffers: 0,

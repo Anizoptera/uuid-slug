@@ -2,6 +2,7 @@
 
 import { strict as assert } from "node:assert";
 import {
+  bytesToUuid,
   createCustomMaskSchema,
   createMaskSchema,
   createMaskSchemaAsync,
@@ -9,6 +10,8 @@ import {
   createUuidV7Generator,
   PUBLIC_MASK_SCHEMA,
   isUuidSlugError,
+  isUuidBytes,
+  isUuidV4Bytes,
   isUuidString,
   isUuidV4String,
   isUuidV7Bytes,
@@ -17,6 +20,7 @@ import {
   isUuidV4Slug,
   isUuidV7Slug,
   parseUuid,
+  uuidToBytes,
   uuidToSlug,
   uuidV7Slug,
   slugToUuid,
@@ -38,6 +42,35 @@ function bits(text: string, alphabet: string, width: number) {
 }
 
 export const codecBoundaryCases = [
+  {
+    name: "converts UUIDv4 and UUIDv7 between canonical text and bytes",
+    run() {
+      for (const uuid of [
+        "550e8400-e29b-41d4-a716-446655440000",
+        "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051",
+      ]) {
+        const bytes = unwrap(uuidToBytes(uuid));
+        assert.equal(isUuidBytes(bytes), true);
+        assert.equal(bytes.constructor, Uint8Array);
+        assert.equal(bytesToUuid(bytes), uuid);
+
+        const destination = new Uint8Array(24).fill(0xee);
+        assert.equal(uuidToBytes(uuid, destination, 4), destination);
+        assert.equal(bytesToUuid(destination, 4), uuid);
+      }
+      assert.equal(
+        isUuidV4Bytes(unwrap(uuidToBytes("550e8400-e29b-41d4-a716-446655440000"))),
+        true,
+      );
+      assert.equal(
+        isUuidV4Bytes(unwrap(uuidToBytes("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051"))),
+        false,
+      );
+      assert.ok(uuidToBytes("not a UUID") instanceof UuidSlugError);
+      assert.ok(bytesToUuid(new Uint8Array(15)) instanceof UuidSlugError);
+      assert.equal(isUuidBytes(new Uint8Array(15)), false);
+    },
+  },
   {
     name: "schema factories reject untyped coercions before deriving keys",
     async run() {

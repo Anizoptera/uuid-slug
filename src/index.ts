@@ -40,10 +40,13 @@ export type {
   UuidV7String,
 } from "./types";
 export {
+  bytesToUuid,
   extractUuidV7Timestamp,
   formatUuid,
   formatUuidSlug,
   isUuidSlug,
+  isUuidBytes,
+  isUuidV4Bytes,
   isUuidV4Slug,
   isUuidV4String,
   isUuidV7Bytes,
@@ -54,6 +57,7 @@ export {
   parseUuidSlug,
   slugToUuid,
   uuidToSlug,
+  uuidToBytes,
 } from "./uuid";
 export type { SlugAlphabet } from "./uuid";
 export { createUuidV7Generator } from "./v7";

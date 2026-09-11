@@ -9,7 +9,7 @@ import {
   UuidSlugError,
 } from "./errors";
 import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types";
-import { formatUuid, isUuidV7Bytes, isUuidV7String } from "./uuid";
+import { bytesToUuid, isUuidV7Bytes, isUuidV7String } from "./uuid";
 import type { Runtime } from "./runtime/types";
 
 /** Supply the clock and cryptographic entropy used by one owned UUIDv7 sequence. */
@@ -69,11 +69,11 @@ const rejectInstant = (ms: number): undefined | UuidSlugError =>
 /**
  * Both string forms differ only in where the instant comes from, so the byte-or-error result is
  * carried through here rather than unwrapped twice. The narrowing is an assertion because
- * `formatUuid` is version-agnostic: the v7-ness is established by the caller having produced the
+ * `bytesToUuid` is version-agnostic: the v7-ness is established by the caller having produced the
  * bytes, not by anything the formatter can check.
  */
 const formatUuidV7 = (result: Uint8Array | UuidSlugError): UuidV7String | UuidSlugError =>
-  result instanceof Error ? result : (formatUuid(result) as UuidV7String | UuidSlugError);
+  result instanceof Error ? result : (bytesToUuid(result) as UuidV7String | UuidSlugError);
 
 const reenteredGeneration = () =>
   new UuidSlugError(
