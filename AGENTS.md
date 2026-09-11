@@ -2,34 +2,6 @@
 
 Preserve the published identifier contracts and verify the runtime paths that each change reaches.
 
-## Code reasoning
-
-- Map a decision by its independent axes, values, inversions, extremes, and important interactions.
-  Keep candidates only when their behavior differs; refine the map when a counterexample exposes a
-  missing distinction.
-- Write each durable rule as trigger → ranked act → strength → boundary → override. Name the future
-  decision it must change and nearby cases it must leave unchanged; cut any clause whose removal
-  causes no repeatable behavioral loss in relevant contexts.
-- Every code unit MUST explain itself in isolation through names, types, structure, and necessary
-  comments. Keep each non-trivial decision's constraints, rejected live alternatives, and
-  invalidating assumption at its code site; wider docs connect decisions but never replace them.
-- Comment reasons and boundaries, not syntax or work history. If the reasoning cannot be stated
-  plainly, resolve the decision before encoding it.
-- Before significant implementation, state the core assumption and the earliest observable signal
-  expected if it is correct. Track that signal while outcome evidence lags; no concrete signal means
-  the assumption is not ready to fund work.
-
-## Documentation
-
-- Write for the next consumer's decision. Lead with the required act and its reason; preserve the
-  constraints, rejected live alternatives, and assumption that would change it.
-- Keep common guidance here. Put branch-specific detail in one owning document only when this file
-  names the trigger for reading it; links connect owners and never replace needed local context.
-- Use plain, direct English and the fewest words that preserve the decision. Remove session history,
-  repeated meaning, unstable inventories, and internal language from consumer-facing text.
-- Make every diagnostic actionable without prior context: name the failed contract, affected input,
-  and next valid action.
-
 ## Contract owners
 
 - Read `docs/public-api.md` before changing or documenting a public export, type, parameter,
@@ -95,11 +67,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Runtime boundaries and evidence
 
-- Reuse the repository's test infrastructure instead of creating another harness. Before adding a
-  test helper, fixture, probe, benchmark, or verification script, search `test/`, `bench/`, and
-  `scripts/` by the capability and failure class, then inspect its callers and the package scripts
-  that route it. Extend the nearest existing owner; create a new tool only when no existing seam can
-  own the evidence without weakening its oracle, runtime fidelity, isolation, or feedback time.
+- Before adding test infrastructure, search `test/`, `bench/`, and `scripts/` by capability and
+  failure, then inspect callers and package-script routing. Extend the nearest owner. Split only for
+  a different oracle, runtime, isolation, or feedback boundary.
 - Keep routine verification in `.github/workflows/check.yml`. Add another workflow only when it
   needs a different trigger or permission boundary.
 - Gate every runtime-dependent change in both Node Vitest and Bun tests, including branches
@@ -135,27 +105,7 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 - Remote writes require explicit maintainer authorization for each exact operation. Do not push,
   open a pull request, upload a tag, create a release, publish, or change remote settings.
-- Publish through `publish-clean`; validate the final cleaned archive and use `--access public
-  --provenance`. Derive the dist-tag from the git tag: prereleases use `next`, releases `latest`.
-- Keep `@anizoptera/publish-clean` a normal registry dependency, never a Git SHA or tarball URL.
-- Keep publication in `.github/workflows/release.yml`; trusted publishing binds its filename.
 - Read `docs/release.md` before selecting or changing a version, predecessor, release evidence,
   publication, recovery, asset, note, or finalization path; it owns the complete release procedure.
-- Run verification on the tagged commit without publishing credentials, then make publication
-  depend on it. Keep verification and credential-bearing publication in separate jobs; local
-  `preversion` is feedback, not the release gate.
-- `CHANGELOG.md` owns release notes. Draft with `bun run changelog v<next>`, edit for consumers,
-  commit the draft, run `bun run release <next>`, then `git push --follow-tags`. The draft must
-  be committed because versioning requires a clean tree. Do not introduce a release bot.
-- Refuse publication unless the tag matches the manifest and its changelog section is nonempty.
-  Publish that section verbatim. Refuse local versioning without the new version's section.
-- Dev bumps use `bun run version:set <X.Y.Z-dev>` and change only the candidate. NEVER run
-  `bun run release` or create a release commit or tag for a dev bump.
-- Classify the full consumer effect before committing: fixes with no new public behavior are patch;
-  backward-compatible public behavior is minor; incompatible behavior is major, or minor before
-  1.0. Structural checks provide a lower bound; they cannot classify semantic behavior or approve
-  a public change.
-- Obtain retained archives through `--tarball-out DIR` in a caller-owned directory and clean it
-  up. Never parse archive paths from human-facing stdout.
 - Run `bun run check` before committing unless a maintainer explicitly selects narrower intermediate
   checks for the current work; the complete check still gates final delivery.
