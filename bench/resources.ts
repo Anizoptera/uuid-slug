@@ -194,6 +194,12 @@ try {
     hex: 0,
     chars: 22,
   });
+  check("masked string encode", () => codec.encodeUuid(id), {
+    buffers: 1,
+    base64: 1,
+    errors: 0,
+    hex: 0,
+  });
   check("masked byte decode", () => codec.decodeSlugToBytes(masked as string), {
     buffers: 1,
     errors: 0,

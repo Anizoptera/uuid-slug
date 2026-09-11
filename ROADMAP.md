@@ -6,12 +6,18 @@ Preserve every published TypeScript contract, wire format, accepted input, outpu
 fallback, ownership rule, and supported runtime. Optimize Node, Bun, Deno, and browser TypeScript
 paths only. Do not change the Rust implementation or use it to hide TypeScript cost.
 
+Prioritize performance decisions in this order: Bun and Node first, Chromium second, Deno third.
+A Deno-only regression does not veto a clear primary-runtime improvement; quantify it and preserve
+all Deno contracts.
+
 ## Evidence rules
 
 - Profile the complete public call, not an internal proxy. A faster implementation is rejected if
   correctness, entropy, ownership, fallback, responsiveness, or package behavior changes.
 - Compare runtimes independently. Record executable, version, hardware, inputs, warm-up, sample
   distribution, CPU attribution, allocation evidence, and profiler limits.
+- Never act on one performance run. Repeat the decision-relevant workload and require a reproducible,
+  statistically distinguishable, material effect; an unresolved or negligible result earns no code.
 - Before each experiment, state the rival explanations and the result that would reject the change.
   Change one mechanism at a time; alternate baseline and candidate order.
 - Keep a change only when repeated measurements show a material win or remove proven wasted work
@@ -32,6 +38,8 @@ paths only. Do not change the Rust implementation or use it to hide TypeScript c
   validation, and statistics for optimizer elimination, harness domination, and false comparisons.
 - [x] Replace fixed-order single-pass candidate acceptance with one alternating baseline/candidate
   driver over identical packed artifacts, randomized runtime order, distributions, and control rows.
+- [x] Report paired per-round ratios with an exact distribution-free 95% median interval; short
+  smoke runs make no performance claim, and retained changes require two significant full replays.
 - [x] Enumerate syntax, call-shape, allocation-ownership, specialization, inlining, closure, module,
   lookup, arithmetic, typed-array, and runtime-delegation variants that can change generated code or JIT behavior.
 - [x] Extend one maintained profiling harness to run the same applicable public-operation corpus on
@@ -75,10 +83,12 @@ paths only. Do not change the Rust implementation or use it to hide TypeScript c
 - [x] Reject fixed-offset check-tag unrolling: it produced no cross-runtime win and regressed
   selected Node, Deno, and Chromium masked routes by 4.9%, 8.2%, and 13.9%, respectively.
 - [ ] Falsify a separate tag pass versus tag accumulation during the mandatory input read.
-- [ ] Falsify cloning before tagging versus direct copy-and-tag construction.
+- [x] Reuse owned UUID blocks for tagging and masking. Retain one shared guard path with a final
+  direct ownership branch; duplicated closures and indirect dispatch slowed Bun's borrowed route.
 - [ ] Falsify general alphabet dispatch versus codec-construction specialization.
 - [ ] Falsify native base64url conversion versus portable fixed-size encoding per runtime.
-- [ ] Falsify string UUID parsing plus masking versus a fused validated parse into the mask block.
+- [x] Mask the validated parser-owned block directly: repeated packed comparisons improved string
+  encoding on every runtime while preserving the caller-owned byte path.
 - [ ] Falsify owned mask output versus caller-owned internal codec scratch under reentrancy constraints.
 - [ ] Falsify linear sentinel lookup versus construction-time `Set` lookup across sentinel cardinalities.
 - [ ] Falsify linear previous-key traversal versus caller-ordered precompiled decode operations.
@@ -86,6 +96,17 @@ paths only. Do not change the Rust implementation or use it to hide TypeScript c
 - [ ] Falsify generic schema callbacks versus a private built-in schema discriminant without exposing API state.
 - [ ] Falsify eager runtime adapter imports versus guarded lazy capability loading using cold and warm routes.
 - [ ] Falsify native UUID generation delegation versus portable generation by output form and entropy behavior.
+- [ ] Map every portable UUID generation path independently: v4/v7, string/bytes/slug, explicit time,
+  same-millisecond continuation, clock rollback, entropy refill, caller-owned output, and each alphabet.
+- [ ] Force and profile the portable generator directly on Node, Bun, Deno, and Chromium, including
+  hosts with native UUID generation, so delegation cannot hide fallback CPU, allocation, entropy,
+  state-transition, or responsiveness costs.
+- [ ] Falsify portable generation alternatives for entropy draw size and reuse, state layout, byte
+  assembly, formatting, caller-owned writes, clock reads, branches, and runtime-specific primitives.
+- [ ] Optimize every retained portable path to the measured runtime frontier without changing its
+  entropy, UUID layout, ordering, ownership, fallback, error, or wire contracts.
+- [ ] Repeat statistically distinguishable packed comparisons for each changed portable route and
+  verify native-capability failure selects the optimized fallback on every runtime.
 - [ ] Falsify per-call capability lookup versus the current module-load probe and captured adapter.
 - [ ] Falsify construction-time TextEncoder and word packing versus runtime-specific UTF-8 primitives.
 - [ ] Falsify synchronous derivation versus cooperative derivation at measured seed and iteration boundaries.

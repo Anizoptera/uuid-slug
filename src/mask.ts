@@ -87,6 +87,20 @@ export function uuidV7BytesToMaskedSlug(
   alphabet: SlugAlphabet = "base64url",
   reserved?: { readonly size: number; has(slug: string): boolean },
 ): MaskedUuidV7Slug | UuidSlugError {
+  return ownedUuidV7BytesToMaskedSlug(new Uint8Array(raw), schema, alphabet, reserved);
+}
+
+/**
+ * Mask a private block in place. Callers must own `raw`: tag injection destroys its UUID bytes.
+ * This separate entry keeps mutation impossible on the ordinary caller-owned byte path while a
+ * freshly parsed UUID string can avoid an otherwise redundant copy.
+ */
+export function ownedUuidV7BytesToMaskedSlug(
+  raw: Uint8Array,
+  schema: UuidV7Mask,
+  alphabet: SlugAlphabet = "base64url",
+  reserved?: { readonly size: number; has(slug: string): boolean },
+): MaskedUuidV7Slug | UuidSlugError {
   // Truncating instead would make encoding non-injective — two UUIDs would share one slug, and no
   // decoder could ever tell which was meant. Refusing is the only recoverable answer.
   if ((raw[0] ?? 0) > 0x03)
@@ -95,18 +109,17 @@ export function uuidV7BytesToMaskedSlug(
       "Masking requires a UUIDv7 timestamped before 2^42 ms (year 2109); its top six bits carry the check.",
     );
   const tag = tagFor(raw, TAG_BITS);
-  const mixed = new Uint8Array(raw);
-  injectTag(mixed, tag >>> OUTER_TAG_BITS);
+  injectTag(raw, tag >>> OUTER_TAG_BITS);
   // Every schema receives an isolated block. Reusing that block as output removes a second
   // allocation; built-in transforms read all words before writing and custom transforms copy input.
-  const failed = applyMix(schema, mixed, mixed, "mask");
+  const failed = applyMix(schema, raw, raw, "mask");
   if (failed) return failed;
   const tail = tag & ((1 << OUTER_TAG_BITS) - 1);
   // Raw sentinels have zero outer bits. Only that tail can collide with retained base64 reads;
   // other safe writes need no second encoding to check a collision that cannot occur.
   const canonical =
     alphabet === "base64url" || (tail === 0 && reserved?.size)
-      ? encode(mixed, BASE64URL, tail, OUTER_TAG_BITS)
+      ? encode(raw, BASE64URL, tail, OUTER_TAG_BITS)
       : undefined;
   if (canonical !== undefined && reserved?.has(canonical))
     return new UuidSlugError(
@@ -116,7 +129,7 @@ export function uuidV7BytesToMaskedSlug(
   return (
     canonical !== undefined && alphabet === "base64url"
       ? canonical
-      : encode(mixed, BASE32HEX, tail, OUTER_TAG_BITS)
+      : encode(raw, BASE32HEX, tail, OUTER_TAG_BITS)
   ) as MaskedUuidV7Slug;
 }
 

@@ -119,6 +119,26 @@ These measurements isolate shipped public routes, not each generated-machine-cod
 fixed-length trial changed both message dispatch and argument shape, so it does not reject either
 mechanism independently; the roadmap keeps those axes separate.
 
+### Owned masking blocks
+
+Mask UUID bytes in place only when the codec owns the block. UUID strings parse into a private
+16-byte block, and codec generation uses its package-owned byte source. Caller-supplied byte arrays
+still take the copying path. This removes one buffer allocation without changing the public surface.
+
+On 2026-09-11, two packed comparisons used 24 alternating rounds on Node 24.20.0, Bun 1.4.1,
+Deno 2.9.6, and Chromium 151. Each summary uses
+paired candidate/baseline ratios and an exact distribution-free 95% interval for their median.
+String encoding improved by 4.7–5.8% on Node, 4.6–4.7% on Bun, 4.3–5.9% on Chromium, and
+18.2–18.7% on Deno. Generation improved by 3.9–4.3%, 3.3%, 3.3–4.6%, and 10.3–12.0%,
+respectively. Every interval for these improvements excluded 1.0.
+
+Borrowed-byte encoding remained statistically unresolved on Node, Bun, and Chromium. Deno regressed
+by 3.0–3.6% in the mixed workload; the retained runtime priority puts Bun and Node first, Chromium
+second, and Deno third. A duplicated guard closure was rejected after it made Bun's borrowed route
+slower in two mixed-workload runs. Indirect function dispatch and split guard helpers also slowed a
+primary borrowed route in exploratory trials; one shared guard path with a final direct ownership
+branch avoided that cost. Revisit the branch if a runtime changes either primary result.
+
 ## Allocation and key rotation
 
 Node Inspector allocation sampling used a 1,024-byte interval with both `includeObjectsCollectedByMajorGC` and `includeObjectsCollectedByMinorGC` enabled. Each operation ran 32,768 calls (construction: 2,048), after warm-up. The empty control sampled approximately zero bytes per call. These are sampling estimates from one matched process pair, not exact allocation counts:

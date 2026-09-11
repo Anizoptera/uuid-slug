@@ -2,7 +2,7 @@
 
 import { checkByteRange, isUuidSlugError, UuidSlugError } from "./errors";
 import { generateUuidV7Bytes as generateDefaultUuidV7Bytes } from "./keyless";
-import { uuidV7BytesToMaskedSlug, decodeMaskedSlug } from "./mask";
+import { uuidV7BytesToMaskedSlug, ownedUuidV7BytesToMaskedSlug, decodeMaskedSlug } from "./mask";
 import { createMigration } from "./migration";
 import { isMaskSchema } from "./schema-handle";
 import { createUuidV7Mask } from "./schema";
@@ -194,7 +194,7 @@ function buildUuidSlugCodec(
   if (isUuidSlugError(sentinelState)) return sentinelState;
   const sentinels = sentinelState;
 
-  function encodeMasked(bytes: Uint8Array): UuidV7CodecSlug | UuidSlugError {
+  function encodeMasked(bytes: Uint8Array, owned = false): UuidV7CodecSlug | UuidSlugError {
     if (!isUuidV7Bytes(bytes))
       return new UuidSlugError(
         "invalid_uuid_version",
@@ -205,13 +205,16 @@ function buildUuidSlugCodec(
       while (index < 16 && sentinel.bytes[index] === bytes[index]) index += 1;
       if (index === 16) return sentinel.slug;
     }
+    // Branch after common validation so ordinary callers retain one direct borrowed-byte route.
+    // Split guard helpers slowed that Bun route; reconsider only with packed mixed-workload evidence.
+    if (owned) return ownedUuidV7BytesToMaskedSlug(bytes, schema, outputAlphabet, sentinels.bySlug);
     return uuidV7BytesToMaskedSlug(bytes, schema, outputAlphabet, sentinels.bySlug);
   }
 
   function encodeUuid(uuid: string | Uint8Array): UuidV7CodecSlug | UuidSlugError {
     if (typeof uuid !== "string") return encodeMasked(uuid);
     const bytes = uuidToBytes(uuid);
-    return bytes instanceof Error ? bytes : encodeMasked(bytes);
+    return bytes instanceof Error ? bytes : encodeMasked(bytes, true);
   }
 
   function decodeSlug(slug: string): UuidV7String | UuidSlugError {
@@ -248,7 +251,7 @@ function buildUuidSlugCodec(
   function generateSlug(): UuidV7CodecSlug | UuidSlugError {
     try {
       const bytes = generateBytes();
-      return isUuidSlugError(bytes) ? bytes : encodeMasked(bytes);
+      return isUuidSlugError(bytes) ? bytes : encodeMasked(bytes, true);
     } catch (cause) {
       return new UuidSlugError("rng_unavailable", "UUIDv7 byte generation failed.", { cause });
     }
