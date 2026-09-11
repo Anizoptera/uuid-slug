@@ -76,6 +76,17 @@ copy.
 
 ## Publication and recovery
 
+Draft notes with `bun run changelog v<next>`, edit `CHANGELOG.md` for consumers, and commit the
+draft before `bun run release <next>`; versioning requires a clean tree. Do not add a release bot.
+The release command must reject a tag that differs from the manifest or lacks a nonempty changelog
+section. Publication copies that section verbatim.
+
+Keep `@anizoptera/publish-clean` as a registry dependency and publication in
+`.github/workflows/release.yml`, whose filename is bound to trusted publishing. Verification of the
+tagged commit runs without publication credentials; only a dependent publication job receives
+them. Validate the cleaned archive, publish with public access and provenance, and derive the npm
+dist-tag from the Git tag: prereleases use `next`; stable releases use `latest`.
+
 Create or update one draft GitHub release. Publish missing npm or crates.io artifacts only after
 checking whether that exact version already exists. Existing versions must match the retained bytes;
 never overwrite or attest different content. Attach only registry-matching archives and reproducible
@@ -85,6 +96,9 @@ Keep the GitHub release as a draft until npm, crates.io, both attached archives,
 notes are verified. Verify each attachment by GitHub's SHA-256 digest, and create provenance before
 making the draft public. A rerun repairs only missing publication, attachment, or note work. Finalize
 the release once every required result is observable and matches the retained release inputs.
+
+Write retained archives only through `--tarball-out DIR` into a caller-owned directory, then remove
+that directory. Never parse an archive path from human-facing output.
 
 Publishing and every other remote write require separate explicit maintainer authorization for the
 exact operation.

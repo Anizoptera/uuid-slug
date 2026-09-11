@@ -105,7 +105,7 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 - Remote writes require explicit maintainer authorization for each exact operation. Do not push,
   open a pull request, upload a tag, create a release, publish, or change remote settings.
-- Read `docs/release.md` before selecting or changing a version, predecessor, release evidence,
-  publication, recovery, asset, note, or finalization path; it owns the complete release procedure.
+- MUST read `docs/release.md` in full before changing versions, release tooling or workflows,
+  packaging, publication, recovery, assets, notes, or finalization.
 - Run `bun run check` before committing unless a maintainer explicitly selects narrower intermediate
   checks for the current work; the complete check still gates final delivery.
