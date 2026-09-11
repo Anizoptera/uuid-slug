@@ -2,6 +2,27 @@
 
 Preserve the published identifier contracts and verify the runtime paths that each change reaches.
 
+## Code reasoning
+
+- Make every code unit understandable in isolation. Keep the constraint, rejected live alternative,
+  and assumption that would change a non-obvious decision inline; use wider docs to connect units,
+  not to replace the reasoning a reviewer needs at the decision site.
+- Before significant implementation, state the core assumption and the earliest observable signal
+  that would contradict or support it. Use that signal to steer while outcome evidence still lags.
+- Comment decisions and boundaries, not syntax or work history. If the reasoning cannot be stated
+  plainly, resolve the decision before encoding it.
+
+## Documentation
+
+- Write for the next consumer's decision. Lead with the required act and its reason; preserve the
+  constraints, rejected live alternatives, and assumption that would change it.
+- Keep common guidance here. Put branch-specific detail in one owning document only when this file
+  names the trigger for reading it; links connect owners and never replace needed local context.
+- Use plain, direct English and the fewest words that preserve the decision. Remove session history,
+  repeated meaning, unstable inventories, and internal language from consumer-facing text.
+- Make every diagnostic actionable without prior context: name the failed contract, affected input,
+  and next valid action.
+
 ## Contract owners
 
 - Read `docs/public-api.md` before changing or documenting a public export, type, parameter,

@@ -57,9 +57,8 @@ const SLUG_ALPHABETS: { base32hex: Alphabet; base64url: Alphabet } = {
 } as const;
 
 /**
- * Select 22-character base64url or 26-character lowercase base32hex direct slugs. Names keep the
- * decode tables private and avoid creating a second arbitrary-alphabet extension point beside
- * custom mask schemas.
+ * Select 22-character base64url or 26-character lowercase base32hex direct slugs. A closed choice
+ * preserves canonical spelling and lets decoding infer the alphabet from the encoded length.
  */
 export type SlugAlphabet = "base64url" | "base32hex";
 
@@ -184,9 +183,9 @@ export function isUuidV7String(uuid: unknown): uuid is UuidV7String {
 }
 
 /**
- * Check for exactly 16 UUIDv7 bytes with the RFC variant required by masking and timestamps. The
- * byte predicate is v7-only because no public byte operation needs a v4-specific guard; add public
- * surface for a consumer job, not for symmetry.
+ * Check for exactly 16 UUIDv7 bytes with the RFC variant required by masking and timestamps.
+ * General byte input can use `bytesToUuid`; this narrower predicate proves the version those
+ * v7-only operations require.
  */
 export function isUuidV7Bytes(bytes: unknown): bytes is UuidV7Bytes {
   return (

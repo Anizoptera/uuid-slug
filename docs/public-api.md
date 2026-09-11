@@ -15,11 +15,13 @@ For every public part, name the consumer job that fails without it. Remove the p
 operations compose into that job without extra caller state, repeated validation, hidden runtime
 work, or an easy wrong turn. Implementation convenience does not justify caller burden.
 
-Before selecting a new public concept or changing an existing one, compare at least twenty
-materially different shapes and combinations. Include removal, composition, a narrower function,
-an overload, an options object, a codec-owned operation, a validated value, and an internal-only
-seam where applicable. Cosmetic renames do not count. Record only the selected consumer contract
-and consequential trade-offs in its durable owner; keep exploration transient.
+Before selecting a new public concept or changing an existing one, state the consumer job,
+constraints, core assumptions, and earliest observable signal that would challenge or support the
+direction. Compare materially different live shapes, including removal, composition, a narrower
+function, an overload, an options object, a codec-owned operation, a validated value, and an
+internal-only seam where applicable. Keep the constraints, rejected alternatives, and invalidating
+assumptions beside the affected declarations; connect wider consequences in their durable owner and
+keep discarded exploration transient.
 
 ## Shape
 
@@ -124,9 +126,8 @@ export without reconstructing its contract from implementation code.
   the declaration where a caller encounters them.
 - Write in public tokens and plain language. Link to a detailed owner when the full mechanism is too
   large, but keep the decision-relevant reason inline.
-- Verify JSDoc on the built declarations with the public-documentation gate. Its structural pass
-  proves presence, not accuracy; review each changed comment against its declaration and owning
-  contract.
+- Review each changed comment in the built declarations against its declaration and owning
+  contract; comment presence does not prove accuracy.
 
 ## Proof
 

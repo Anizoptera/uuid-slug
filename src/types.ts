@@ -74,7 +74,7 @@ export interface UuidV7BytesSource {
 
 /**
  * Generate UUIDv7 values with one owned clock, entropy source, and sequence state. Methods use
- * `this: void` so callers can detach them safely and implementations cannot hide instance state.
+ * `this: void` so callers can detach them safely and implementations cannot require receiver state.
  */
 export interface UuidV7Generator extends UuidV7BytesSource {
   /** Generate a canonical UUIDv7 string for the current clock reading. */

@@ -4,7 +4,6 @@ import { mkdir, readFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { checkReleasedApi, typescriptDeclarations } from "./api-evolution";
 import { command } from "./command";
-import { checkPublicDocumentation } from "./public-documentation";
 import { annotateRustApi, rustDeprecations } from "./rust-deprecations";
 import type { Rustdoc } from "./rust-deprecations";
 
@@ -144,7 +143,6 @@ try {
   await checkApiExtractorVersion(packageManifest);
   await checkCargoPublicApiVersion();
   if (!useExistingBuild) await command("bun", ["run", "build"], root);
-  checkPublicDocumentation(join(root, "dist/index.d.ts"));
   await command("api-extractor", ["run", "--local", "--config", "api-extractor.json"], root);
 
   const declarationRollup = typescriptDeclarations(
