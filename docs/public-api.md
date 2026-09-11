@@ -55,8 +55,8 @@ in their durable owner and keep discarded exploration transient.
   policy, entropy source, or runtime adapter.
 - Require each codec sentinel to have a nonempty unique application name and unique UUID so every
   entry exposed through `codec.sentinels` identifies one reserved value without caller repair.
-  Validate identity and uniqueness before building arrays or lookup maps; no projection may choose
-  its own winner for ambiguous configuration.
+  Reject ambiguity before building arrays or lookup maps so every representation selects the same
+  definition.
 - Hide implementation seams until two real adapters or a consumer-visible capability need them.
   Tests exercise the same public interface as callers unless an internal seam is required to prove
   a runtime path.
@@ -198,8 +198,7 @@ For each changed interface, state the consumer job, the misuse or work eliminate
 shape, its rejected live alternatives, and the strongest remaining trade-off. Then prove the
 applicable links:
 
-- declaration inference, accepted spellings, and rejection of removed names and options with the
-  TypeScript floor and current compiler;
+- declaration inference for current names and options, plus compiler rejection of removed ones;
 - direct behavior and each construction invariant or failure path in Node and Bun;
 - actual adapter selection in Deno and a browser when that path can differ;
 - packed export resolution and use from an extracted consumer;
