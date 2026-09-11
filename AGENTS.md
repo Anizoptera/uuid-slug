@@ -66,8 +66,6 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   of issuance. Do not reject multiple matches or append fallback schemas on the caller's behalf.
 - Every decoder must accept every value that a supported matching encoder can produce. Options
   may add accepted forms; they must not remove existing ones. Reject forms no encoder produces.
-- Use `uuidToBytes` and `bytesToUuid` for UUID text/binary conversion. Keep deprecated `parseUuid`
-  and `formatUuid` as compatibility paths, and preserve generic, v4, and v7 byte guards together.
 - Keyed operations belong only on the codec holding the key, including masked freshness
   validation. Do not add top-level masked shortcuts. Codec construction requires an explicit
   private mask or `PUBLIC_MASK_SCHEMA`; keep the published schema opt-in and remove implicit masked

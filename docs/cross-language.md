@@ -27,10 +27,9 @@ errors and `Result` instead of JavaScript conventions. Such differences must not
 the accepted domain or result semantics. In particular, a lazy result must not expose partial
 candidates where the existing operation reports an error for the whole call.
 
-TypeScript names text/binary conversion by direction because raw `Uint8Array` values need runtime
-validation and may target caller storage. Rust keeps the idiomatic `Uuid` parse, slice, byte, and
-display operations because its fixed UUID type already owns that validation. Both accept the same
-canonical text and 16-byte domain and preserve the same value.
+TypeScript uses directional text/binary names because raw `Uint8Array` values require validation
+and may target caller storage. Rust uses idiomatic `Uuid` operations because its fixed UUID type
+already owns that validation. Both preserve the same canonical text and 16-byte domain.
 
 Run shared cases through each implementation from its first increment; check nonzero execution
 per adapter, because an aggregate pass can hide one that ran nothing. Keep native ownership and
