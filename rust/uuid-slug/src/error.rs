@@ -15,6 +15,8 @@ pub enum ErrorCode {
     InvalidBuffer,
     /// The mask configuration violates its contract.
     InvalidMaskSchema,
+    /// A sentinel name is empty or repeats within one codec.
+    InvalidSentinel,
     /// A timestamp is nonfinite, negative, fractional or outside its allowed range.
     InvalidTimestamp,
     /// UUID text is not canonical lowercase hexadecimal with hyphens.
@@ -38,6 +40,7 @@ impl ErrorCode {
             Self::InvalidBase64Url => "invalid_base64url",
             Self::InvalidBuffer => "invalid_buffer",
             Self::InvalidMaskSchema => "invalid_mask_schema",
+            Self::InvalidSentinel => "invalid_sentinel",
             Self::InvalidTimestamp => "invalid_timestamp",
             Self::InvalidUuid => "invalid_uuid",
             Self::InvalidUuidSlug => "invalid_uuid_slug",
@@ -58,6 +61,7 @@ impl ErrorCode {
             }
             Self::InvalidBuffer => "The requested byte range does not fit the buffer.",
             Self::InvalidMaskSchema => "Invalid mask schema or key parameters.",
+            Self::InvalidSentinel => "Sentinel names must be nonempty and unique within a codec.",
             Self::InvalidTimestamp => "Timestamp must fit the operation's millisecond range.",
             Self::InvalidUuid => "Expected a lowercase UUID with canonical hyphens.",
             Self::InvalidUuidSlug => "Invalid slug for the requested operation.",

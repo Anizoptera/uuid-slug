@@ -7,6 +7,7 @@ const ERROR_CODES = [
   "invalid_base64url",
   "invalid_buffer",
   "invalid_mask_schema",
+  "invalid_sentinel",
   "invalid_timestamp",
   "invalid_uuid",
   "invalid_uuid_slug",

@@ -203,12 +203,17 @@ export const codecBoundaryCases = [
       for (const sentinels of [
         [{ name: "", uuid: TEST_SENTINELS[0].uuid }],
         [TEST_SENTINELS[0], { name: TEST_SENTINELS[0].name, uuid: TEST_SENTINELS[1].uuid }],
-        [TEST_SENTINELS[0], { name: "same-uuid", uuid: TEST_SENTINELS[0].uuid }],
       ]) {
         const result = createCodec({ mask: UUID_V7_TEST_MASK, sentinels });
         assert.ok(result instanceof UuidSlugError);
-        assert.equal(result.code, "invalid_uuid");
+        assert.equal(result.code, "invalid_sentinel");
       }
+      const duplicateUuid = createCodec({
+        mask: UUID_V7_TEST_MASK,
+        sentinels: [TEST_SENTINELS[0], { name: "same-uuid", uuid: TEST_SENTINELS[0].uuid }],
+      });
+      assert.ok(duplicateUuid instanceof UuidSlugError);
+      assert.equal(duplicateUuid.code, "invalid_uuid");
     },
   },
   {

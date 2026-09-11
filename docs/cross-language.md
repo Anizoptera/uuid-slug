@@ -17,6 +17,8 @@ properties. Preserve issued identifiers when changing either implementation.
 Identical deterministic inputs must produce identical bytes, text, keys, and decoded candidates.
 Parity includes accepted and rejected inputs, defaults, error conditions, sentinel priority, key
 order, migration controls, timestamp windows, cancellation, and ownership of returned data.
+Sentinel names are nonempty and unique within one codec; both languages report name violations as
+`invalid_sentinel` without relabeling malformed UUID text or UUID-version failures.
 Every decoder must accept every value that a supported matching encoder can produce. Options may
 add accepted forms; they must not remove existing ones. Forms no supported encoder produces are invalid.
 Generated identifiers must meet the same promises; random draws, scheduling, allocation strategy,

@@ -78,12 +78,15 @@ function createSentinels(
       typeof definition.name !== "string" ||
       typeof definition.uuid !== "string"
     )
-      return new UuidSlugError("invalid_uuid", "Each sentinel must have a name and UUIDv7 string.");
+      return new UuidSlugError(
+        "invalid_sentinel",
+        "Each sentinel must have a name and UUIDv7 string.",
+      );
     if (definition.name.length === 0)
-      return new UuidSlugError("invalid_uuid", "Sentinel names must not be empty.");
+      return new UuidSlugError("invalid_sentinel", "Sentinel names must not be empty.");
     if (names.has(definition.name))
       return new UuidSlugError(
-        "invalid_uuid",
+        "invalid_sentinel",
         `Sentinel name "${definition.name}" must be unique within a codec.`,
       );
     // Sentinel configuration accepts raw strings so callers do not need casts before reaching the
@@ -169,7 +172,10 @@ function buildUuidSlugCodec(options: UuidV7SlugCodecOptions): UuidV7SlugCodec | 
   if (isUuidSlugError(outputAlphabetResult)) return outputAlphabetResult;
   const sentinelDefinitions = options.sentinels ?? EMPTY_SENTINELS;
   if (!Array.isArray(sentinelDefinitions))
-    return new UuidSlugError("invalid_uuid", "sentinels must be an array of named UUIDv7 values.");
+    return new UuidSlugError(
+      "invalid_sentinel",
+      "sentinels must be an array of named UUIDv7 values.",
+    );
   const sentinelState =
     sentinelDefinitions.length === 0
       ? EMPTY_SENTINEL_STATE

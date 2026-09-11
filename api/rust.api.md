@@ -150,6 +150,7 @@ pub uuid_slug::error::ErrorCode::InvalidBase32
 pub uuid_slug::error::ErrorCode::InvalidBase64Url
 pub uuid_slug::error::ErrorCode::InvalidBuffer
 pub uuid_slug::error::ErrorCode::InvalidMaskSchema
+pub uuid_slug::error::ErrorCode::InvalidSentinel
 pub uuid_slug::error::ErrorCode::InvalidTimestamp
 pub uuid_slug::error::ErrorCode::InvalidUuid
 pub uuid_slug::error::ErrorCode::InvalidUuidSlug
@@ -330,6 +331,7 @@ pub uuid_slug::ErrorCode::InvalidBase32
 pub uuid_slug::ErrorCode::InvalidBase64Url
 pub uuid_slug::ErrorCode::InvalidBuffer
 pub uuid_slug::ErrorCode::InvalidMaskSchema
+pub uuid_slug::ErrorCode::InvalidSentinel
 pub uuid_slug::ErrorCode::InvalidTimestamp
 pub uuid_slug::ErrorCode::InvalidUuid
 pub uuid_slug::ErrorCode::InvalidUuidSlug
@@ -692,6 +694,7 @@ pub uuid_slug::error::ErrorCode::InvalidBase32
 pub uuid_slug::error::ErrorCode::InvalidBase64Url
 pub uuid_slug::error::ErrorCode::InvalidBuffer
 pub uuid_slug::error::ErrorCode::InvalidMaskSchema
+pub uuid_slug::error::ErrorCode::InvalidSentinel
 pub uuid_slug::error::ErrorCode::InvalidTimestamp
 pub uuid_slug::error::ErrorCode::InvalidUuid
 pub uuid_slug::error::ErrorCode::InvalidUuidSlug
@@ -868,6 +871,7 @@ pub uuid_slug::ErrorCode::InvalidBase32
 pub uuid_slug::ErrorCode::InvalidBase64Url
 pub uuid_slug::ErrorCode::InvalidBuffer
 pub uuid_slug::ErrorCode::InvalidMaskSchema
+pub uuid_slug::ErrorCode::InvalidSentinel
 pub uuid_slug::ErrorCode::InvalidTimestamp
 pub uuid_slug::ErrorCode::InvalidUuid
 pub uuid_slug::ErrorCode::InvalidUuidSlug

@@ -136,6 +136,9 @@ Keep UUID text/binary conversion directional and version-neutral:
   when they add no data or behavior and would make a newly reachable code a source break. Validate
   configuration at construction when possible; preserve the original cause when an external
   capability fails.
+- Classify sentinel-list shape and name identity as `invalid_sentinel`. Keep malformed UUID text as
+  `invalid_uuid`, a wrong UUID version as `invalid_uuid_version`, and duplicate UUID compatibility
+  unchanged; these failures require different caller repairs.
 - Provide one opt-in helper that returns the exact success type and throws a recognized package
   error unchanged. Keep the underlying operations as errors-as-values so recoverable callers retain
   explicit control; do not duplicate every operation into a throwing interface.

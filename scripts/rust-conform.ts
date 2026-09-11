@@ -278,6 +278,11 @@ export async function contractRequests(): Promise<Request[]> {
   for (const sentinels of [
     [],
     [{ name: "reserved", uuid: ordinary.uuid }],
+    [{ name: "", uuid: ordinary.uuid }],
+    [
+      { name: "reserved", uuid: ordinary.uuid },
+      { name: "reserved", uuid: first.uuid },
+    ],
     [{ name: "reserved", uuid: "ffffffff-ffff-7fff-bfff-ffffffffffff" }],
     [{ name: "wrong-version", uuid: "00000000-0000-4000-8000-000000000000" }],
     [{ name: "malformed", uuid: "invalid" }],

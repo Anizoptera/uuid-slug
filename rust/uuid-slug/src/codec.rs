@@ -51,6 +51,24 @@ mod tests {
     }
 
     #[test]
+    fn sentinel_names_are_nonempty_and_unique() -> Result<(), Error> {
+        let uuid = Uuid::parse("00000000-0000-7000-8000-000000000000")?;
+        for sentinels in [
+            vec![(String::new(), uuid)],
+            vec![("nil".to_owned(), uuid), ("nil".to_owned(), uuid)],
+        ] {
+            let error = Codec::new(CodecOptions {
+                sentinels,
+                ..CodecOptions::new(crate::public_mask_schema())
+            })
+            .err()
+            .expect("invalid sentinel names must fail codec construction");
+            assert_eq!(error.code(), ErrorCode::InvalidSentinel);
+        }
+        Ok(())
+    }
+
+    #[test]
     fn ciphertext_cannot_alias_a_reserved_identity() -> Result<(), Error> {
         let uuid = Uuid::parse("019ff19b-58b8-7000-9b1b-df713bd55607")?;
         let reserved = Uuid::parse("00000000-0000-7000-8000-000000000000")?;
@@ -168,6 +186,9 @@ impl Codec {
         let mut sentinels: Vec<Sentinel> = Vec::new();
         let mut reserved = Vec::new();
         for (name, uuid) in options.sentinels {
+            if name.is_empty() || sentinels.iter().any(|entry| entry.name == name) {
+                return Err(Error::new(ErrorCode::InvalidSentinel));
+            }
             uuid.timestamp()?;
             if sentinels.iter().any(|entry| entry.uuid == uuid) {
                 return Err(Error::new(ErrorCode::InvalidUuid));
