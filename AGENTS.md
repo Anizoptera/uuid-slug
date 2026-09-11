@@ -144,15 +144,12 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   be committed because versioning requires a clean tree. Do not introduce a release bot.
 - Refuse publication unless the tag matches the manifest and its changelog section is nonempty.
   Publish that section verbatim. Refuse local versioning without the new version's section.
-- Dev bumps change only the `-dev` candidate. Follow `docs/release.md`: start with the next patch
-  after release, then raise it when all unreleased changes require a minor or major. NEVER run
+- Dev bumps use `bun run version:set <X.Y.Z-dev>` and change only the candidate. NEVER run
   `bun run release` or create a release commit or tag for a dev bump.
 - Classify the full consumer effect before committing: fixes with no new public behavior are patch;
   backward-compatible public behavior is minor; incompatible behavior is major, or minor before
   1.0. Structural checks provide a lower bound; they cannot classify semantic behavior or approve
   a public change.
-- Use `bun run version:set <X.Y.Z-dev>` to update and verify both manifests and the lockfile
-  together. Release tags and published manifests use the same stable version without `-dev`.
 - Obtain retained archives through `--tarball-out DIR` in a caller-owned directory and clean it
   up. Never parse archive paths from human-facing stdout.
 - Run `bun run check` before committing unless a maintainer explicitly selects narrower intermediate
