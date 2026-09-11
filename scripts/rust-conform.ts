@@ -278,18 +278,7 @@ export async function contractRequests(): Promise<Request[]> {
   for (const sentinels of [
     [],
     [{ name: "reserved", uuid: ordinary.uuid }],
-    [{ name: "", uuid: ordinary.uuid }],
-    [
-      { name: "reserved", uuid: ordinary.uuid },
-      { name: "reserved", uuid: first.uuid },
-    ],
     [{ name: "reserved", uuid: "ffffffff-ffff-7fff-bfff-ffffffffffff" }],
-    [{ name: "wrong-version", uuid: "00000000-0000-4000-8000-000000000000" }],
-    [{ name: "malformed", uuid: "invalid" }],
-    [
-      { name: "first", uuid: first.uuid },
-      { name: "duplicate", uuid: first.uuid },
-    ],
   ])
     for (const maskedAlphabet of ["base64url", "base32hex"])
       for (const op of ["sentinels", "mask", "unmask", "migration", "candidates"])
@@ -299,6 +288,25 @@ export async function contractRequests(): Promise<Request[]> {
           maskedAlphabet,
           input: op === "mask" ? ordinary.uuid : ordinary.direct,
         });
+  for (const sentinels of [
+    [{ name: "", uuid: ordinary.uuid }],
+    [
+      { name: "reserved", uuid: ordinary.uuid },
+      { name: "reserved", uuid: first.uuid },
+    ],
+    [{ name: "wrong-version", uuid: "00000000-0000-4000-8000-000000000000" }],
+    [{ name: "malformed", uuid: "invalid" }],
+    [
+      { name: "first", uuid: first.uuid },
+      { name: "duplicate", uuid: first.uuid },
+    ],
+  ])
+    requests.push({
+      op: "sentinels",
+      sentinels,
+      maskedAlphabet: "base64url",
+      input: ordinary.direct,
+    });
   for (const vector of wire) {
     const key =
       vector.schema === "custom-mix"
