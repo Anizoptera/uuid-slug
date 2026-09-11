@@ -9,6 +9,48 @@ const BUILD_PATH_LEAK = /(?:\/Users\/|\/home\/[a-z]|[A-Z]:\\Users\\)/;
 const FORBIDDEN_PATHS = new Set(["bench", "test", ".github", "scripts", "AGENTS.md", "NOTICE"]);
 const project = path.resolve(import.meta.dir, "..");
 
+/** Require every source-map input to be supplied by the archive rather than a build machine. */
+function validateSourceMap(name: string, text: string, entries: ReadonlyMap<string, Blob>): void {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (cause) {
+    throw new Error(`Invalid source map: ${name}`, { cause });
+  }
+  if (typeof parsed !== "object" || parsed === null) throw new Error(`Invalid source map: ${name}`);
+  const map = parsed as {
+    mappings?: unknown;
+    sourceRoot?: unknown;
+    sources?: unknown;
+    sourcesContent?: unknown;
+    version?: unknown;
+  };
+  const root = map.sourceRoot ?? "";
+  if (
+    map.version !== 3 ||
+    typeof map.mappings !== "string" ||
+    typeof root !== "string" ||
+    !Array.isArray(map.sources)
+  )
+    throw new Error(`Invalid source map: ${name}`);
+  const embedded = Array.isArray(map.sourcesContent) ? map.sourcesContent : [];
+  for (const [index, source] of map.sources.entries()) {
+    if (typeof source !== "string") throw new Error(`Invalid source map: ${name}`);
+    const input = path.posix.join(root, source);
+    if (
+      /^(?:[a-z][a-z\d+.-]*:|\/|\\|[a-z]:)/i.test(root) ||
+      /^(?:[a-z][a-z\d+.-]*:|\/|\\|[a-z]:)/i.test(source)
+    )
+      throw new Error(`Source map input must stay inside the package: ${name} -> ${input}`);
+    const resolved = path.posix.normalize(path.posix.join(path.posix.dirname(name), input));
+    if (
+      !resolved.startsWith("package/") ||
+      (!entries.has(resolved) && typeof embedded[index] !== "string")
+    )
+      throw new Error(`Source map input must stay inside the package: ${name} -> ${input}`);
+  }
+}
+
 /** Validate the archive itself; callers supplying a tarball never invoke the packer. */
 export async function inspectArtifact(tarball: string, web = false): Promise<void> {
   const expected = process.env.UUID_SLUG_EXPECTED_ARCHIVE;
@@ -46,8 +88,9 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
         // Module graphs cannot see unreferenced native build outputs in an allowed directory.
         if (/\.(?:node|wasm|dll|dylib|so(?:\.\d+)*|a|lib|rlib|o|obj|exe)$/i.test(name))
           throw new Error(`Native payload is forbidden in the npm package: ${name}`);
-        if (BUILD_PATH_LEAK.test(await file.text()))
-          throw new Error(`Build-machine path leaked in ${name}`);
+        const text = await file.text();
+        if (BUILD_PATH_LEAK.test(text)) throw new Error(`Build-machine path leaked in ${name}`);
+        if (name.endsWith(".map")) validateSourceMap(name, text, entries);
       }),
     );
     await archive.extract(root);

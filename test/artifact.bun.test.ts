@@ -90,6 +90,29 @@ test("refuses runtime conditions before source conditions", () =>
   ));
 test("finds machine paths in extensionless files", () =>
   rejected({ ...base, "package/leak": "/Users/builder/private" }, "Build-machine path"));
+test.each([
+  ["absolute POSIX input", { sources: ["/opt/build/src/index.ts"] }],
+  ["file URL input", { sources: ["file:///private/var/build/src/index.ts"] }],
+  ["absolute Windows input", { sources: ["D:\\build\\src\\index.ts"] }],
+  ["escaping relative input", { sources: ["../../../outside.ts"] }],
+  ["missing relative input", { sources: ["../missing.ts"] }],
+  ["absolute source root", { sourceRoot: "/workspace/source", sources: ["index.ts"] }],
+])("refuses a source map with %s", (_name, fields) =>
+  rejected(
+    {
+      ...base,
+      "package/dist/index.js.map": JSON.stringify({ version: 3, mappings: "", ...fields }),
+    },
+    "Source map input must stay inside the package",
+  ),
+);
+test("refuses malformed source maps before consumer execution", () =>
+  rejected({ ...base, "package/dist/index.js.map": "{" }, "Invalid source map"));
+test("refuses source-map metadata that cannot describe a usable map", () =>
+  rejected(
+    { ...base, "package/dist/index.js.map": JSON.stringify({ version: 2, sources: [] }) },
+    "Invalid source map",
+  ));
 test("refuses development files", () =>
   rejected({ ...base, "package/test/hidden.js": "" }, "Forbidden artifact path"));
 for (const code of [
