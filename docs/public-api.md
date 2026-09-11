@@ -15,6 +15,11 @@ For every public part, name the consumer job that fails without it. Remove the p
 operations compose into that job without extra caller state, repeated validation, hidden runtime
 work, or an easy wrong turn. Implementation convenience does not justify caller burden.
 
+Count interface cost by everything a caller must learn or coordinate: concepts, invariants,
+configuration, ordering, failures, effects, performance, and plausible wrong paths. Symbol count
+alone misses that burden, and every observable choice becomes a compatibility obligation for every
+future caller.
+
 Before selecting or changing a public concept, map the independent caller-visible axes and their
 values, inversions, extremes, and important interactions. Keep candidates only when caller behavior
 differs; a counterexample that the map cannot express requires a new axis and another comparison.
@@ -29,6 +34,11 @@ in their durable owner and keep discarded exploration transient.
   operation over a sequence that makes callers coordinate package state.
 - Keep keyless transformations and generation as module functions. Put keys, sentinels, rotation,
   masked freshness, and migration on the codec that owns that configuration.
+- Keep mutable sequence state in generators and immutable configuration in codecs. Let a codec
+  depend on the smallest capability it needs—one `uuidV7Bytes` operation—and validate that result
+  at the codec seam instead of requiring a full generator or trusting an asserted brand.
+- Use `this: void` when a public method has no receiver semantics. This lets callers detach the
+  method safely and prevents compatible implementations from adding hidden receiver state.
 - Use an overload only when it preserves one operation and makes the common call shorter without
   creating ambiguous argument meaning. Use an options object when independent optional axes would
   otherwise become positional.

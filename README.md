@@ -207,6 +207,13 @@ The **Where** column tells you whether to import a function or call a codec meth
 - **codec only.** Uses your configured keys or sentinels.
 - **module only.** Import these functions directly. Codec settings do not affect them.
 
+The state split keeps each caller responsible for one thing. A generator owns its clock, entropy,
+and mutable UUIDv7 sequence; a codec owns immutable masking keys, sentinels, rotation, and writer
+settings. A codec needs only a generator's `uuidV7Bytes` operation and validates every returned
+payload before masking, so a custom source does not need access to the rest of the generator.
+Generator, codec, and migration methods do not depend on `this`; they can be passed as callbacks
+without binding them first.
+
 | Method                                                  | Where             | Returns                       | What it does                             |
 | ------------------------------------------------------- | ----------------- | ----------------------------- | ---------------------------------------- |
 | `uuidV4()` / `uuidV7()`                                 | module only       | `UuidSlugError` or UUID string | Generate.                                |

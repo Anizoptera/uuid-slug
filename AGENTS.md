@@ -69,7 +69,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Keyed operations belong only on the codec holding the key, including masked freshness
   validation. Do not add top-level masked shortcuts. Codec construction requires an explicit
   private mask or `PUBLIC_MASK_SCHEMA`; keep the published schema opt-in and remove implicit masked
-  defaults.
+  defaults. Keep codecs immutable and receiver-free; generators own mutable sequence state. A
+  codec accepts generation through the minimal `uuidV7Bytes` seam and validates every returned
+  payload before masking it.
 - Preserve the frozen round count, derivation constants, seed interpretation, alphabets, tag
   widths, and `keyIterations`: changing them changes previously issued identifiers. Comments
   must explain this wire-format obligation, not historical reasons for choosing the constants.
