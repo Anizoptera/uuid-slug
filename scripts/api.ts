@@ -31,7 +31,7 @@ async function checkCargoPublicApiVersion(): Promise<void> {
       `cargo-public-api ${expected} is required; install it with cargo install cargo-public-api --version ${expected} --locked.`,
     );
   }
-  if (!actual.endsWith(expected))
+  if (actual !== `cargo-public-api ${expected}`)
     throw new Error(
       `cargo-public-api ${expected} is required; found ${actual || "no version"}. Install it with: cargo install cargo-public-api --version ${expected} --locked`,
     );
