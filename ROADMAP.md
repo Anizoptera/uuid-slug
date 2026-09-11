@@ -2,21 +2,6 @@
 
 Keep only unfinished work here; durable contracts and decisions belong in their owning documentation.
 
-## TypeScript success-path ergonomics
-
-Make expected failures explicit without forcing every success-path consumer to maintain the same
-error-unwrapping helper. The public seam must preserve actionable errors-as-values by default,
-offer an opt-in throwing path with correct cross-realm recognition, infer the exact success type,
-and add no work to callers that do not select it.
-
-- [ ] Add a public success-value helper through a failing consumer type and runtime case first.
-- [ ] Replace the repository's private duplicate with the public operation and document both error policies.
-- [ ] Remove the unmeasured identity shortcut from cross-realm error recognition without weakening local, foreign, or hostile-value behavior.
-- [ ] Keep known masked outputs out of direct-slug decoders and freshness checks at compile time while accepting raw external strings.
-- [ ] Reject known UUIDv4 values from every v7-only public operation while preserving raw and version-unknown inputs.
-- [ ] Verify current and floor declaration inference, Node and Bun behavior, packed consumption, API classification, and the complete repository gate.
-- [ ] Adversarially audit the changed interface and remove this section only when every promise has evidence.
-
 ## Remote-write hold
 
 These entries are inventory, not executable tasks. Do not start or ask about one unless a maintainer explicitly requests that exact operation.

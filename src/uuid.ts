@@ -103,8 +103,8 @@ function hexValue(code: number) {
 export function parseUuid<Input extends string>(
   uuid: UuidStringInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
-export function parseUuid<T extends Uint8Array>(
-  uuid: string,
+export function parseUuid<Input extends string, T extends Uint8Array>(
+  uuid: UuidStringInput<Input>,
   out: T,
   offset?: number,
 ): T | UuidSlugError;
@@ -232,8 +232,8 @@ export function formatUuidSlug(
 export function parseUuidSlug<Input extends string>(
   slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
-export function parseUuidSlug<T extends Uint8Array>(
-  slug: string,
+export function parseUuidSlug<Input extends string, T extends Uint8Array>(
+  slug: DirectUuidSlugInput<Input>,
   out: T,
   offset?: number,
 ): T | UuidSlugError;

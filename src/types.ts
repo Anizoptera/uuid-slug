@@ -33,6 +33,7 @@ export type DirectUuidSlugInput<Input extends string> = RejectKnownInput<
   Input,
   UuidString | MaskedUuidSlug
 >;
+export type SlugStringInput<Input extends string> = RejectKnownInput<Input, UuidString>;
 export type UuidV7StringInput<Input extends string> = RejectKnownInput<
   Input,
   UuidSlug | MaskedUuidSlug | UuidV4String
@@ -156,9 +157,17 @@ export type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
 
 export interface UuidSlugMigration<in Format extends MigrationFormat = MigrationFormat> {
   /** Return the first candidate: sentinel, current keys, original mask, then plain UUID. */
-  decode(this: void, slug: string, format?: Format): UuidString | UuidSlugError;
+  decode<Input extends string>(
+    this: void,
+    slug: SlugStringInput<Input>,
+    format?: Format,
+  ): UuidString | UuidSlugError;
   /** Return distinct candidates for one application lookup; an empty array means no match. */
-  candidates(this: void, slug: string, format?: Format): UuidString[] | UuidSlugError;
+  candidates<Input extends string>(
+    this: void,
+    slug: SlugStringInput<Input>,
+    format?: Format,
+  ): UuidString[] | UuidSlugError;
 }
 
 export interface UuidSlugCodecOptions {
@@ -224,7 +233,10 @@ export interface UuidSlugCodec {
     this: void,
     uuid: UuidV7StringInput<Input>,
   ): PublicUuidV7Slug | UuidSlugError;
-  maskedSlugToUuidV7(this: void, slug: string): UuidV7String | UuidSlugError;
+  maskedSlugToUuidV7<Input extends string>(
+    this: void,
+    slug: SlugStringInput<Input>,
+  ): UuidV7String | UuidSlugError;
   /**
    * `maskedSlugToUuidV7` plus the freshness rules of `validateUuidV7Fresh`, returning the slug.
    *
@@ -236,7 +248,7 @@ export interface UuidSlugCodec {
    */
   validateMaskedSlugFresh<S extends string>(
     this: void,
-    slug: S,
+    slug: SlugStringInput<S>,
     freshness?: FreshValidationOptions,
   ): (S & PublicUuidV7Slug) | UuidSlugError;
 }

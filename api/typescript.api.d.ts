@@ -92,16 +92,16 @@ export declare type MigrationFormat = "current" | "original" | "plain";
 export declare function parseUuid<Input extends string>(
   uuid: UuidStringInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
-export declare function parseUuid<T extends Uint8Array>(
-  uuid: string,
+export declare function parseUuid<Input extends string, T extends Uint8Array>(
+  uuid: UuidStringInput<Input>,
   out: T,
   offset?: number,
 ): T | UuidSlugError;
 export declare function parseUuidSlug<Input extends string>(
   slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
-export declare function parseUuidSlug<T extends Uint8Array>(
-  slug: string,
+export declare function parseUuidSlug<Input extends string, T extends Uint8Array>(
+  slug: DirectUuidSlugInput<Input>,
   out: T,
   offset?: number,
 ): T | UuidSlugError;
@@ -117,6 +117,7 @@ declare type RejectKnownInput<Input, Invalid> = [Extract<Input, Invalid>] extend
   : never;
 export declare type SentinelUuidV7Slug = Brand<UuidV7Slug, "SentinelUuidV7Slug">;
 export declare type SlugAlphabet = "base64url" | "base32hex";
+declare type SlugStringInput<Input extends string> = RejectKnownInput<Input, UuidString>;
 export declare function slugToUuid<Input extends string>(
   slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidString, UuidV4String, UuidV7String> | UuidSlugError;
@@ -136,10 +137,13 @@ export declare interface UuidSlugCodec {
     this: void,
     uuid: UuidV7StringInput<Input>,
   ): PublicUuidV7Slug | UuidSlugError;
-  maskedSlugToUuidV7(this: void, slug: string): UuidV7String | UuidSlugError;
+  maskedSlugToUuidV7<Input extends string>(
+    this: void,
+    slug: SlugStringInput<Input>,
+  ): UuidV7String | UuidSlugError;
   validateMaskedSlugFresh<S extends string>(
     this: void,
-    slug: S,
+    slug: SlugStringInput<S>,
     freshness?: FreshValidationOptions,
   ): (S & PublicUuidV7Slug) | UuidSlugError;
 }
@@ -156,8 +160,16 @@ export declare class UuidSlugError extends Error {
 }
 export declare type UuidSlugErrorCode = (typeof UUID_SLUG_ERROR_CODES)[number];
 export declare interface UuidSlugMigration<in Format extends MigrationFormat = MigrationFormat> {
-  decode(this: void, slug: string, format?: Format): UuidString | UuidSlugError;
-  candidates(this: void, slug: string, format?: Format): UuidString[] | UuidSlugError;
+  decode<Input extends string>(
+    this: void,
+    slug: SlugStringInput<Input>,
+    format?: Format,
+  ): UuidString | UuidSlugError;
+  candidates<Input extends string>(
+    this: void,
+    slug: SlugStringInput<Input>,
+    format?: Format,
+  ): UuidString[] | UuidSlugError;
 }
 export declare interface UuidSlugMigrationOptions {
   readonly original?: boolean;
