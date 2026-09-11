@@ -51,6 +51,8 @@ in their durable owner and keep discarded exploration transient.
   additional accepted forms, expensive work, or weaker guarantees.
 - Keep public concepts orthogonal. Selecting a slug alphabet must not select a mask, migration
   policy, entropy source, or runtime adapter.
+- Require each codec sentinel to have a nonempty unique application name and unique UUID so every
+  entry exposed through `codec.sentinels` identifies one reserved value without caller repair.
 - Hide implementation seams until two real adapters or a consumer-visible capability need them.
   Tests exercise the same public interface as callers unless an internal seam is required to prove
   a runtime path.
@@ -85,7 +87,7 @@ Keep UUID text/binary conversion directional and version-neutral:
 - Name codec operations for both action and object: `generateSlug`, `encodeUuid`, `decodeSlug`,
   `decodeSlugToBytes`, and `validateSlugTimestamp`. Name migration operations `decodeSlug` and
   `decodeSlugCandidates` because detached readers must still identify their input.
-- Use `slugAlphabet` for the codec writer choice. It selects emitted slug spelling; it does not
+- Use `outputAlphabet` for the codec writer choice. It selects emitted slug spelling; it does not
   constrain readers, which infer and accept both supported spellings.
 - Require callers to provide `maxTimestampDeltaMs` for every timestamp-window check. Read the
   optional numeric `referenceUnixMs` once, defaulting only that observation to `Date.now()`; do not

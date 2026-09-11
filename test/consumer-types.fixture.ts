@@ -28,7 +28,7 @@ import type {
   UuidV7TimestampWindow,
   UuidV7Mask,
   MaskedUuidV7Slug,
-  PublicUuidV7Slug,
+  UuidV7CodecSlug,
   UuidBytes,
   UuidSlug,
   UuidSlugError,
@@ -168,14 +168,14 @@ const codecResult = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK });
 if (codecResult instanceof Error) throw codecResult;
 const codec = codecResult;
 expectType<UuidV7SlugCodec>()(codec);
-expectType<PublicUuidV7Slug | UuidSlugError>()(codec.generateSlug());
-expectType<PublicUuidV7Slug | UuidSlugError>()(codec.encodeUuid(versionedBytes));
+expectType<UuidV7CodecSlug | UuidSlugError>()(codec.generateSlug());
+expectType<UuidV7CodecSlug | UuidSlugError>()(codec.encodeUuid(versionedBytes));
 expectType<UuidV7String | UuidSlugError>()(codec.decodeSlug("AZ_xnLf5cACbG99xO9VWLw"));
 expectType<UuidV7Bytes | UuidSlugError>()(codec.decodeSlugToBytes("AZ_xnLf5cACbG99xO9VWLw"));
 expectType<ConsumerBuffer | UuidSlugError>()(
   codec.decodeSlugToBytes("AZ_xnLf5cACbG99xO9VWLw", destination, 8),
 );
-expectType<(PublicUuidV7Slug & "AZ_xnLf5cACbG99xO9VWLw") | UuidSlugError>()(
+expectType<(UuidV7CodecSlug & "AZ_xnLf5cACbG99xO9VWLw") | UuidSlugError>()(
   codec.validateSlugTimestamp("AZ_xnLf5cACbG99xO9VWLw", { maxTimestampDeltaMs: 0 }),
 );
 // @ts-expect-error Removed codec methods are not part of the public interface.
@@ -184,10 +184,18 @@ codec.uuidV7MaskedSlug();
 type _RemovedCodec = import("@anizoptera/uuid-slug")["UuidSlugCodec"];
 // @ts-expect-error Removed codec factories are not exported.
 type _RemovedCodecFactory = (typeof import("@anizoptera/uuid-slug"))["createUuidSlugCodec"];
+// @ts-expect-error Visibility did not describe the codec-owned slug value.
+type _RemovedPublicSlug = import("@anizoptera/uuid-slug")["PublicUuidV7Slug"];
+createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK, outputAlphabet: "base32hex" });
+createUuidV7SlugCodec({
+  mask: UUID_V7_TEST_MASK,
+  // @ts-expect-error The writer-only option names its output effect.
+  slugAlphabet: "base32hex",
+});
 const maskedFromBytes = codec.encodeUuid(versionedBytes);
-expectType<PublicUuidV7Slug | UuidSlugError>()(maskedFromBytes);
+expectType<UuidV7CodecSlug | UuidSlugError>()(maskedFromBytes);
 const uuidTextOrBytes = (true as boolean) ? "019ff19b-58b8-7000-9b1b-df713bd5562c" : versionedBytes;
-expectType<PublicUuidV7Slug | UuidSlugError>()(codec.encodeUuid(uuidTextOrBytes));
+expectType<UuidV7CodecSlug | UuidSlugError>()(codec.encodeUuid(uuidTextOrBytes));
 const decodedMaskedBytes = codec.decodeSlugToBytes("AZ_xnLf5cACbG99xO9VWLw");
 expectType<UuidV7Bytes | UuidSlugError>()(decodedMaskedBytes);
 const decodedMaskedInto = codec.decodeSlugToBytes("AZ_xnLf5cACbG99xO9VWLw", destination, 8);
@@ -268,9 +276,9 @@ void [
   unwrappedPlain,
 ];
 const publicSlugResult = codec.generateSlug();
-expectType<PublicUuidV7Slug | UuidSlugError>()(publicSlugResult);
+expectType<UuidV7CodecSlug | UuidSlugError>()(publicSlugResult);
 if (publicSlugResult instanceof Error) throw publicSlugResult;
-const publicSlug: PublicUuidV7Slug = publicSlugResult;
+const publicSlug: UuidV7CodecSlug = publicSlugResult;
 // @ts-expect-error A masked-or-sentinel result is not always a canonical direct UUID slug.
 const directPublicSlug: UuidSlug = publicSlug;
 // @ts-expect-error A possibly masked slug must be decoded by the codec that owns its key.
@@ -285,9 +293,9 @@ const uncheckedPublicSlug: string = publicSlug;
 const checkedPublicSlugResult = codec.validateSlugTimestamp(uncheckedPublicSlug, {
   maxTimestampDeltaMs: 0,
 });
-expectType<PublicUuidV7Slug | UuidSlugError>()(checkedPublicSlugResult);
+expectType<UuidV7CodecSlug | UuidSlugError>()(checkedPublicSlugResult);
 if (checkedPublicSlugResult instanceof Error) throw checkedPublicSlugResult;
-const checkedPublicSlug: PublicUuidV7Slug = checkedPublicSlugResult;
+const checkedPublicSlug: UuidV7CodecSlug = checkedPublicSlugResult;
 codec.encodeUuid("019ff19b-58b8-7000-9b1b-df713bd5562c");
 // @ts-expect-error A plain slug does not carry the masked brand.
 const masked: MaskedUuidV7Slug = plain;
@@ -324,5 +332,6 @@ declare const internalTypes: readonly [
   _RuntimeErrorIsInternal,
   _GenericMaskedSlugIsInternal,
   _MigrationProjectionIsInternal,
+  _RemovedPublicSlug,
 ];
 void internalTypes;

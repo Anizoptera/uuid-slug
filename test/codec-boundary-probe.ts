@@ -196,6 +196,22 @@ export const codecBoundaryCases = [
     },
   },
   {
+    name: "requires each sentinel to have one nonempty name and one unique UUID",
+    run() {
+      const distinct = createCodec({ mask: UUID_V7_TEST_MASK, sentinels: TEST_SENTINELS });
+      assert.ok(!(distinct instanceof Error));
+      for (const sentinels of [
+        [{ name: "", uuid: TEST_SENTINELS[0].uuid }],
+        [TEST_SENTINELS[0], { name: TEST_SENTINELS[0].name, uuid: TEST_SENTINELS[1].uuid }],
+        [TEST_SENTINELS[0], { name: "same-uuid", uuid: TEST_SENTINELS[0].uuid }],
+      ]) {
+        const result = createCodec({ mask: UUID_V7_TEST_MASK, sentinels });
+        assert.ok(result instanceof UuidSlugError);
+        assert.equal(result.code, "invalid_uuid");
+      }
+    },
+  },
+  {
     name: "codec masks and unmasks UUIDv7 bytes without a text round trip",
     run() {
       const codec = createUuidV7SlugCodec({
@@ -265,7 +281,7 @@ export const codecBoundaryCases = [
       const safe = createUuidV7SlugCodec({
         mask,
         sentinels: TEST_SENTINELS,
-        slugAlphabet: "base32hex",
+        outputAlphabet: "base32hex",
       });
       const rotated = createUuidV7SlugCodec({
         mask: { seed: "safe-rotated-contract" },
@@ -482,7 +498,7 @@ export const codecBoundaryCases = [
         const codec = createUuidV7SlugCodec({
           mask,
           sentinels: [TEST_SENTINELS[0]],
-          slugAlphabet,
+          outputAlphabet: slugAlphabet,
         });
         const result = codec.encodeUuid("019ff19b-58b8-7000-9b1b-df713bd55607");
         assert.ok(result instanceof UuidSlugError);
@@ -613,10 +629,10 @@ export const codecBoundaryCases = [
     run() {
       const options: {
         mask: UuidV7Mask;
-        slugAlphabet: "base64url" | "base32hex";
-      } = { mask: UUID_V7_TEST_MASK, slugAlphabet: "base64url" };
+        outputAlphabet: "base64url" | "base32hex";
+      } = { mask: UUID_V7_TEST_MASK, outputAlphabet: "base64url" };
       const codec = createUuidV7SlugCodec({ ...options, sentinels: TEST_SENTINELS });
-      options.slugAlphabet = "base32hex";
+      options.outputAlphabet = "base32hex";
       assert.ok(codec.decodeSlug("AAAAAAAAQACAAAAAAAAAAA") instanceof UuidSlugError);
       assert.ok(Object.isFrozen(codec));
       assert.ok(Object.isFrozen(codec.sentinels));
@@ -672,7 +688,7 @@ export const codecBoundaryCases = [
     run() {
       const error = createCodec({
         mask: UUID_V7_TEST_MASK,
-        slugAlphabet: slugAlphabet,
+        outputAlphabet: slugAlphabet,
       } as UuidV7SlugCodecOptions);
       assert.ok(error instanceof UuidSlugError);
       assert.equal(error.code, "invalid_uuid_slug");

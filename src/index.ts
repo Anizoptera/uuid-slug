@@ -19,7 +19,7 @@ export type {
   UuidV7MaskOptions,
   UuidSlugMigrationFormat,
   MaskedUuidV7Slug,
-  PublicUuidV7Slug,
+  UuidV7CodecSlug,
   SentinelUuidV7Slug,
   UuidBytes,
   UuidV4Bytes,

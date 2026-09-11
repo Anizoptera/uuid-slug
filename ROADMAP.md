@@ -20,13 +20,13 @@ definitions, and preserve the direct calls and runtime work that existing consum
 
 ## Work
 
-- [ ] Rename the codec slug result type through declarations, implementation, docs, fixtures,
+- [x] Rename the codec slug result type through declarations, implementation, docs, fixtures,
   benchmarks, and TypeScript API baseline without leaving an alias.
-- [ ] Rename the codec writer option through TypeScript and shared conformance callers; preserve
+- [x] Rename the codec writer option through TypeScript and shared conformance callers; preserve
   base64url as the default and unconditional dual-alphabet decoding.
-- [ ] Reject empty and duplicate sentinel names at codec construction and prove distinct-name,
+- [x] Reject empty and duplicate sentinel names at codec construction and prove distinct-name,
   duplicate-name, empty-name, and duplicate-UUID cases through the public codec factory.
-- [ ] Build declarations and compile packed consumers with the TypeScript floor and development
+- [x] Build declarations and compile packed consumers with the TypeScript floor and development
   compiler; remove one negative guard and confirm the intended diagnostic before restoring it.
-- [ ] Run Node and Bun behavior suites, artifact/API checks, Rust parity checks, and the complete
+- [x] Run Node and Bun behavior suites, artifact/API checks, Rust parity checks, and the complete
   repository gate; inspect the final diff and map each changed public promise to direct evidence.

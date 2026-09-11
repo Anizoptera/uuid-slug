@@ -110,7 +110,6 @@ declare type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> = In
   : Input extends UuidV7String | UuidV7Slug
     ? Version7
     : UnknownVersion;
-export declare type PublicUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 declare type RejectKnownInput<Input, Invalid> = [Extract<Input, Invalid>] extends [never]
   ? Input
   : never;
@@ -181,6 +180,7 @@ export declare type UuidV4Slug = Brand<UuidSlug, "UuidV4Slug">;
 export declare type UuidV4String = Brand<UuidString, "UuidV4String">;
 export declare type UuidV7Bytes = Brand<UuidBytes, "UuidV7Bytes">;
 declare type UuidV7BytesInput<Input extends Uint8Array> = RejectKnownInput<Input, UuidV4Bytes>;
+export declare type UuidV7CodecSlug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 export declare interface UuidV7Generator {
   generateUuidV7(this: void): UuidV7String | UuidSlugError;
   generateUuidV7Bytes(this: void): UuidV7Bytes | UuidSlugError;
@@ -227,11 +227,11 @@ export declare interface UuidV7SlugCodec {
     this: void,
     options?: Options,
   ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
-  generateSlug(this: void): PublicUuidV7Slug | UuidSlugError;
+  generateSlug(this: void): UuidV7CodecSlug | UuidSlugError;
   encodeUuid<Input extends string | Uint8Array>(
     this: void,
     uuid: UuidV7ValueInput<Input>,
-  ): PublicUuidV7Slug | UuidSlugError;
+  ): UuidV7CodecSlug | UuidSlugError;
   decodeSlug<Input extends string>(
     this: void,
     slug: SlugStringInput<Input>,
@@ -250,14 +250,14 @@ export declare interface UuidV7SlugCodec {
     this: void,
     slug: SlugStringInput<Input>,
     window: UuidV7TimestampWindow,
-  ): (Input & PublicUuidV7Slug) | UuidSlugError;
+  ): (Input & UuidV7CodecSlug) | UuidSlugError;
 }
 export declare interface UuidV7SlugCodecOptions {
   readonly generateUuidV7Bytes?: (this: void) => Uint8Array | UuidSlugError;
   readonly previousMasks?: readonly (UuidV7Mask | UuidV7MaskOptions)[];
   readonly mask: UuidV7Mask | UuidV7MaskOptions;
   readonly sentinels?: readonly UuidV7SentinelConfig[];
-  readonly slugAlphabet?: SlugAlphabet;
+  readonly outputAlphabet?: SlugAlphabet;
 }
 declare type UuidV7SlugInput<Input extends string> = RejectKnownInput<
   Input,

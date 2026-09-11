@@ -30,7 +30,7 @@ export type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
 /** A reserved UUIDv7 written as a raw 22- or 26-character direct slug. */
 export type SentinelUuidV7Slug = Brand<UuidV7Slug, "SentinelUuidV7Slug">;
 /** The result of masked encoding: a 22/27-character payload or a 22/26-character sentinel. */
-export type PublicUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
+export type UuidV7CodecSlug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 
 /**
  * Reject a captured brand that proves an input cannot satisfy an operation. Bare strings remain
@@ -153,7 +153,7 @@ export interface AsyncUuidV7MaskOptions extends UuidV7MaskOptions {
 
 /** Define a named UUIDv7 that must bypass masking. */
 export interface UuidV7SentinelConfig {
-  /** Application-facing name exposed through `codec.sentinels`. */
+  /** Nonempty application-facing name, unique within the codec and exposed through `codec.sentinels`. */
   readonly name: string;
   /** Canonical UUIDv7 text reserved by the codec. */
   readonly uuid: string;
@@ -245,7 +245,7 @@ export interface UuidV7SlugCodecOptions {
    * sentinels), suitable for case-insensitive filesystems. Masked output has no sort-order promise.
    * Readers accept both spellings regardless of this writer selection.
    */
-  readonly slugAlphabet?: SlugAlphabet;
+  readonly outputAlphabet?: SlugAlphabet;
 }
 
 /**
@@ -265,7 +265,7 @@ export interface UuidV7SlugCodec {
     options?: Options,
   ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
   /** Generate UUIDv7 bytes, then return a masked slug or the matching raw sentinel slug. */
-  generateSlug(this: void): PublicUuidV7Slug | UuidSlugError;
+  generateSlug(this: void): UuidV7CodecSlug | UuidSlugError;
   /**
    * Mask one UUIDv7 supplied as canonical text or 16 bytes, or return its raw sentinel slug. Byte
    * input stays binary. Other UUID versions do not have the spare constant bits that keep this
@@ -275,7 +275,7 @@ export interface UuidV7SlugCodec {
   encodeUuid<Input extends string | Uint8Array>(
     this: void,
     uuid: UuidV7ValueInput<Input>,
-  ): PublicUuidV7Slug | UuidSlugError;
+  ): UuidV7CodecSlug | UuidSlugError;
   /**
    * Return the first sentinel or schema candidate in configured order; this does not prove issuance.
    * Generic capture rejects known UUID text; slug brands remain accepted because overlapping
@@ -310,5 +310,5 @@ export interface UuidV7SlugCodec {
     this: void,
     slug: SlugStringInput<Input>,
     window: UuidV7TimestampWindow,
-  ): (Input & PublicUuidV7Slug) | UuidSlugError;
+  ): (Input & UuidV7CodecSlug) | UuidSlugError;
 }

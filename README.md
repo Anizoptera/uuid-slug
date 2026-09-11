@@ -111,7 +111,7 @@ every slug you have already handed out working.
 
 **Masked slug.** A UUIDv7 payload and check passed through a small block cipher keyed by your
 seed, then encoded as 22 base64url characters by default, or 27 lowercase base32hex characters
-with `slugAlphabet: "base32hex"`. Both preserve the same payload and check. Use it when the identifier is public and you
+with `outputAlphabet: "base32hex"`. Both preserve the same payload and check. Use it when the identifier is public and you
 would rather not publish creation times. The exact steps are in
 [how masking works](https://github.com/Anizoptera/uuid-slug/blob/main/docs/design.md).
 
@@ -149,6 +149,9 @@ const ids = createUuidV7SlugCodec({
 const codec = unwrapUuidSlug(ids);
 console.table(codec.sentinels);
 ```
+
+Each sentinel name must be nonempty and unique within the codec. Each sentinel UUID must also be
+unique, canonical UUIDv7 text.
 
 Keep sentinel definitions stable while their slugs are in use. Decoding checks sentinels first, so they
 are reserved even if a mask could produce the same text. Encoding rejects a non-sentinel UUID
@@ -208,7 +211,7 @@ you need to retain the narrowed type. A brand proves format, not issuance: check
 - Strings: `UuidString`, `UuidV4String`, `UuidV7String`.
 - Direct slugs: `UuidSlug` (either alphabet), `UuidV4Slug`, and `UuidV7Slug`. Masked types stay
   separate because their check bits and lengths are not direct UUID encodings. They cover both
-  spellings — `MaskedUuidV7Slug`, `SentinelUuidV7Slug`, and `PublicUuidV7Slug` for
+  spellings — `MaskedUuidV7Slug`, `SentinelUuidV7Slug`, and `UuidV7CodecSlug` for
   "masked or sentinel", which is what a masking call returns. `SlugAlphabet` names the two
   alphabets. `UuidBytes` labels one validated 16-byte UUID payload; `UuidV4Bytes` and `UuidV7Bytes`
   retain the generated version. Byte operations return those exact types when they allocate the
@@ -256,7 +259,7 @@ without binding them first.
 | `generateUuidV4Bytes(out, offset?)` / `generateUuidV7Bytes(...)` | module only | `UuidSlugError` or the exact `out` type | Generate into caller storage. |
 | `generateUuidV7At(ms)` / `generateUuidV7BytesAt(ms, out?, offset?)` | module only | `UuidSlugError \| ...` | Generate at an explicit instant. |
 | `generateUuidV4Slug(alphabet?)` / `generateUuidV7Slug(alphabet?)` | module only | `UuidSlugError` or direct slug | Generate and encode. |
-| `generateSlug()`                                          | codec only | `UuidSlugError` or `PublicUuidV7Slug` | Generate a masked or sentinel slug. |
+| `generateSlug()`                                          | codec only | `UuidSlugError` or `UuidV7CodecSlug` | Generate a masked or sentinel slug. |
 | `encodeUuid(uuidOrBytes)` / `decodeSlug(slug)`            | codec only | `UuidSlugError \| ...` | Mask UUIDv7 text or bytes; decode to text. |
 | `decodeSlugToBytes(slug, out?, offset?)`                  | codec only | `UuidSlugError \| ...` | Decode without producing UUID text. |
 | `validateSlugTimestamp(slug, window)`                     | codec only | `UuidSlugError \| ...` | Decode, then check the timestamp window. |
@@ -274,7 +277,7 @@ an error unless it is a whole number of Unix milliseconds in 0..2^48-1. Its inte
 current-time generation is runtime-specific; within-millisecond ordering is not promised.
 
 Both masking entry points return a raw sentinel slug when the UUID is registered as a sentinel.
-Their result type is `PublicUuidV7Slug`, the union of masked and sentinel slugs.
+Their result type is `UuidV7CodecSlug`, the union of masked and sentinel slugs.
 
 The byte decoder returns a new plain `Uint8Array` branded as `UuidV7Bytes` when storage is omitted.
 When storage is supplied, it validates and decodes before writing, then returns that exact array;
@@ -313,12 +316,12 @@ createUuidV7SlugCodec({
   mask: { seed: "…", keyDerivationIterations: 1 }, // required
   sentinels: [{ name: "nil", uuid: "…" }],
   previousMasks: [{ seed: "…previous seed…" }],
-  slugAlphabet: "base32hex", // masked output and sentinel presentation
+  outputAlphabet: "base32hex", // masked output and sentinel presentation
   generateUuidV7Bytes: myUuidV7Generator.generateUuidV7Bytes,
 });
 ```
 
-The masked payload is fixed at 132 bits, including a 16-bit check. `slugAlphabet` defaults to
+The masked payload is fixed at 132 bits, including a 16-bit check. `outputAlphabet` defaults to
 `"base64url"`. Readers accept either masked spelling without an alphabet argument. Safe
 sentinels use 26-character raw base32hex slugs; old 22-character sentinels remain readable.
 

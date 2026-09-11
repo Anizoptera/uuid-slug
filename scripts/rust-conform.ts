@@ -190,7 +190,7 @@ export function evaluate(request: Request): Outcome {
             }),
         ...(request.maskedAlphabet === undefined
           ? {}
-          : { slugAlphabet: request.maskedAlphabet as SlugAlphabet }),
+          : { outputAlphabet: request.maskedAlphabet as SlugAlphabet }),
         ...(request.sentinels === undefined
           ? {}
           : { sentinels: request.sentinels as ts.UuidV7SentinelConfig[] }),
