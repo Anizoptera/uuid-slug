@@ -86,6 +86,8 @@ rows stay outside the synchronous corpus so task scheduling cannot contaminate p
 Set `UUID_SLUG_PROFILE_FILTER` to a case-name substring before native profiling so startup and unrelated
 operations do not dominate attribution. `UUID_SLUG_PROFILE_SAMPLES` and `UUID_SLUG_PROFILE_MS` control
 timing samples. Add `--smoke` to `bench/profile-all.ts` only when checking harness wiring. Compare
-revisions in fresh processes with alternating order and identical settings. A heap snapshot measures
+the current worktree with a committed baseline through `bun run bench:compare <baseline-ref>`; the
+driver packs each revision, alternates revision order in fresh processes,
+rotates runtime order, and emits raw samples plus per-operation median ratios. A heap snapshot measures
 retention, not gross allocation; sampled profiles are estimates; forced GC changes the workload;
 `maxBatchMs` and `maxUninterruptedMs` are observations, not universal latency bounds.

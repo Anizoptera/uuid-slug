@@ -98,6 +98,7 @@
     "bench:matrix": "bun bench/matrix.ts",
     "bench:profile": "bun bench/profile-all.ts",
     "bench:profile:native": "bun bench/profile-all.ts --native",
+    "bench:compare": "bun bench/compare.ts",
     "lint": "oxlint --type-aware",
     "lint:fix": "oxlint --type-aware --fix",
     "artifact:web": "bun scripts/check-artifact.ts --web",
