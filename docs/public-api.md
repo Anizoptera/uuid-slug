@@ -44,9 +44,8 @@ alternatives, and invalidating assumption beside the declaration; keep explorati
   operation over a sequence that makes callers coordinate package state.
 - Keep keyless transformations and generation as module functions. Put keys, sentinels, rotation,
   masked timestamp validation, and migration on the codec that owns that configuration.
-- Keep mutable sequence state in generators and immutable configuration in codecs. Let a codec
-  depend on the smallest capability it needs—one `generateUuidV7Bytes` operation—and validate that result
-  at the codec seam instead of requiring a full generator or trusting an asserted brand.
+- Keep mutable sequence state in generators and immutable configuration in codecs. Keep
+  cryptographic entropy behind the package runtime so public generation cannot accept weaker bytes.
 - Use `this: void` when a public method has no receiver semantics. This lets callers detach the
   method safely and prevents compatible implementations from adding hidden receiver state.
 - Use an overload only when it preserves one operation and makes the common call shorter without
@@ -87,10 +86,9 @@ Keep UUID text/binary conversion directional and version-neutral:
   `generateUuidV7Bytes`, `generateUuidV7At`, `generateUuidV7BytesAt`, and
   `generateUuidV7Slug` at module scope; use the same UUIDv7 names on a generator so a detached
   method remains self-explanatory.
-- Give a codec only the byte-producing function it consumes. The optional
-  `generateUuidV7Bytes` callback accepts a detached generator method directly; a one-method source
-  object would add a concept without adding an invariant. Create the default generator lazily so a
-  codec used only to encode or decode pays no generator allocation.
+- Create the default generator lazily so a codec used only to encode or decode pays no generator
+  allocation. Codec generation uses that package-owned source; callers encode externally produced
+  UUIDs through `encodeUuid` instead of replacing the codec's entropy source.
 - Name codec operations for both action and object: `generateSlug`, `encodeUuid`, `decodeSlug`,
   `decodeSlugToBytes`, and `validateSlugTimestamp`. Name migration operations `decodeSlug` and
   `decodeSlugCandidates` because detached readers must still identify their input.

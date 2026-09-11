@@ -6,9 +6,9 @@ import { pooledFill } from "../src/runtime/pool";
 import { runtime } from "#runtime";
 import { unwrap } from "../dev/unwrap";
 import {
+  createUuidV7Generator as createSecureUuidV7Generator,
   createUuidV7SlugCodec,
   createCustomUuidV7Mask,
-  createUuidV7Generator,
   extractUuidV7Timestamp,
   bytesToUuid,
   bytesToSlug,
@@ -30,6 +30,8 @@ import {
   generateUuidV7BytesAt,
   generateUuidV7Slug,
 } from "../src/index";
+import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
+import { createUuidV7SlugCodecWithGenerator } from "../src/codec";
 import type { UuidV7Generator } from "../src/types";
 import { createRuntimeGenerator } from "../src/v7";
 import { NIL_TEST_SENTINEL } from "./sentinel-fixtures";
@@ -40,6 +42,51 @@ const makeGenerator = () =>
   createUuidV7Generator({ clock: () => timestamp, fillRandom: (bytes) => bytes.fill(0x12) });
 
 export const runtimeBoundaryCases = [
+  {
+    name: "public generators never read caller-supplied entropy",
+    run(this: void) {
+      const originalFill = runtime.fillRandom;
+      let runtimeDraws = 0;
+      runtime.fillRandom = (bytes) => {
+        runtimeDraws += 1;
+        originalFill(bytes);
+      };
+      const options = {
+        clock: () => timestamp,
+        get fillRandom(): never {
+          throw new Error("untrusted entropy was read");
+        },
+      };
+      try {
+        const generator = Reflect.apply(createSecureUuidV7Generator, undefined, [options]);
+        assert.ok(!(generator.generateUuidV7Bytes() instanceof Error));
+        assert.equal(runtimeDraws, 1);
+      } finally {
+        runtime.fillRandom = originalFill;
+      }
+    },
+  },
+  {
+    name: "public generators fail atomically when platform entropy is unavailable",
+    run(this: void) {
+      const originalFill = runtime.fillRandom;
+      const cause = new Error("platform entropy unavailable");
+      runtime.fillRandom = () => {
+        throw cause;
+      };
+      const out = new Uint8Array(24).fill(0xa5);
+      try {
+        const generator = createSecureUuidV7Generator({ clock: () => timestamp });
+        const failure = generator.generateUuidV7Bytes(out, 4);
+        assert.ok(failure instanceof UuidSlugError);
+        assert.equal(failure.code, "rng_unavailable");
+        assert.equal(failure.cause, cause);
+        assert.deepEqual(out, new Uint8Array(24).fill(0xa5));
+      } finally {
+        runtime.fillRandom = originalFill;
+      }
+    },
+  },
   {
     name: "falls back when optional native string generation throws",
     run(this: void) {
@@ -186,10 +233,10 @@ export const runtimeBoundaryCases = [
         generateUuidV7Bytes: () => foreignError,
         generateUuidV7BytesAt: () => foreignError,
       };
-      const codec = createUuidV7SlugCodec({
-        mask: { seed: "cross-realm-generator" },
-        generateUuidV7Bytes: generator.generateUuidV7Bytes,
-      });
+      const codec = createUuidV7SlugCodecWithGenerator(
+        { mask: { seed: "cross-realm-generator" } },
+        generator.generateUuidV7Bytes,
+      );
       assert.ok(!(codec instanceof Error));
       assert.equal(codec.generateSlug(), foreignError);
     },
@@ -603,11 +650,7 @@ export const runtimeBoundaryCases = [
         }),
       );
       const codec = unwrap(
-        createUuidV7SlugCodec({
-          generateUuidV7Bytes: () => bytes,
-          mask,
-          sentinels: NIL_TEST_SENTINEL,
-        }),
+        createUuidV7SlugCodecWithGenerator({ mask, sentinels: NIL_TEST_SENTINEL }, () => bytes),
       );
       const failure = codec.generateSlug();
       assert.ok(failure instanceof UuidSlugError);

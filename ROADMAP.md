@@ -82,6 +82,9 @@
 
 ### Findings, fixes, and closure
 
+- [x] Ensure every public identifier generator requires package-controlled platform entropy; caller input cannot replace the trusted source, and unavailable trusted entropy returns `rng_unavailable` without output.
+- [x] Remove deterministic or caller-only entropy from public generation while retaining a narrow internal seam for algorithm and parity falsification; update declarations, codecs, docs, examples, benchmarks, and conformance consumers.
+- [x] Prove caller entropy properties are ignored and trusted-source failures preserve their cause without changing caller output; retain direct internal state-transition coverage for sequence atomicity.
 - [x] Prevent reentrant UUIDv4 entropy callbacks from overwriting shared scratch bytes and returning duplicate identifiers; preserve the allocation-free ordinary path.
 - [x] Remove probabilistic no-collision tests that contradict the published collision contract and add no package-controlled evidence beyond source, pool, and generator-state tests.
 - [x] Preserve UUIDv7's documented 16-byte entropy callback requests; the narrower draw changed observable callback behavior and contradicted the recorded rejection of that alternative.

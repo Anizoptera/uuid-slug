@@ -18,11 +18,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     thrown = error;
   }
   equal(thrown, invalidUuid, "public success-value helper failure identity");
-  const backfill = api.createUuidV7Generator({
-    fillRandom(bytes) {
-      bytes.fill(0x5a);
-    },
-  });
+  const backfill = api.createUuidV7Generator({});
   const destination = new Uint8Array(20).fill(0x55);
   const generators = [
     (ms: number) => api.generateUuidV7At(ms),
@@ -64,16 +60,10 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     const slug = api.uuidToSlug(uuid, alphabet);
     if (slug instanceof Error) throw slug;
     equal(api.slugToUuid(slug), uuid, `${alphabet} conversion`);
-    const generator = api.createUuidV7Generator({
-      clock: () => 1234567890000,
-      fillRandom: (b) => {
-        b.fill(0x12);
-      },
-    });
+    const generator = api.createUuidV7Generator({ clock: () => 1234567890000 });
     const codec = unwrap(
       api.createUuidV7SlugCodec({
         mask: api.UUID_V7_TEST_MASK,
-        generateUuidV7Bytes: generator.generateUuidV7Bytes,
       }),
     );
     equal(
@@ -82,11 +72,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
       `${alphabet} migration`,
     );
     const generated = unwrap(generator.generateUuidV7());
-    equal(
-      api.slugToUuid(unwrap(api.uuidToSlug(generated, alphabet))),
-      "011f71fb-0450-7121-8848-484a12121212",
-      `${alphabet} custom generator`,
-    );
+    equal(generated.slice(0, 13), "011f71fb-0450", `${alphabet} custom clock`);
   }
   const schemaOptions = { seed: "consumer-schema-seed", keyDerivationIterations: 1024 };
   const synchronous = api.createUuidV7Mask(schemaOptions);

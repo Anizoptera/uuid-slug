@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * The v7 generator is driven here through the seams it already exposes — `clock` and
- * `fillRandom` are constructor options, so every case below runs the real generator with no
- * substitute for any part of it. What varies is the input, and the inputs chosen are the
+ * The portable v7 state machine is driven through its internal `clock` and `fillRandom` controls,
+ * so every case below runs the real algorithm with no substitute for any part of it. What varies is the input, and the inputs chosen are the
  * hostile ones: a clock that stands still or runs backwards, and randomness that is entirely
  * zeroes or entirely ones, which are exactly the seeds that drive the counter to its bounds.
  *
@@ -13,7 +12,8 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { createUuidV7Generator, UuidSlugError } from "../src/index";
+import { UuidSlugError } from "../src/index";
+import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
 
 /** Fills with one repeated byte, so the counter seed lands on a known bound. */
 const constantFill = (byte: number) => (bytes: Uint8Array<ArrayBuffer>) => {

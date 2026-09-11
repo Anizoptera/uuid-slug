@@ -20,7 +20,24 @@ import type {
 } from "./types";
 import { bytesToUuid, bytesToSlug, isUuidV4String, isUuidV7Slug } from "./uuid";
 import type { SlugAlphabet } from "./uuid";
-import { createRuntimeGenerator } from "./v7";
+import { createPortableUuidV7Generator, createRuntimeGenerator } from "./v7";
+
+/** Configure the clock for one sequence; entropy always comes from the package runtime. */
+export interface UuidV7GeneratorOptions {
+  /** Return Unix milliseconds; finite fractional readings are truncated. Defaults to `Date.now`. */
+  readonly clock?: () => number;
+}
+
+/** Create an owned UUIDv7 sequence backed by the package's cryptographic runtime source. */
+export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator {
+  if (options === null || typeof options !== "object" || Array.isArray(options))
+    throw new TypeError("Generator options must be an object.");
+  const clock = options.clock;
+  return createPortableUuidV7Generator({
+    ...(clock === undefined ? {} : { clock }),
+    fillRandom: runtime.fillRandom,
+  });
+}
 
 /** Delay generator setup so conversion-only imports draw no entropy and bundle no generator. */
 let generator: UuidV7Generator | undefined;

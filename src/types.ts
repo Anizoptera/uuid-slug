@@ -78,7 +78,7 @@ export interface UuidV7TimestampWindow {
 }
 
 /**
- * Generate UUIDv7 values with one owned clock, entropy source, and sequence state. Methods use
+ * Generate UUIDv7 values with one owned clock and sequence state. Methods use
  * `this: void` so callers can detach them safely and implementations cannot require receiver state.
  */
 export interface UuidV7Generator {
@@ -223,8 +223,6 @@ export interface UuidSlugMigrationDecoder<
 
 /** Configure one immutable owner for UUIDv7 slug encoding, rotation, and sentinels. */
 export interface UuidV7SlugCodecOptions {
-  /** Optional UUIDv7 byte generator; the codec validates every returned payload before masking. */
-  readonly generateUuidV7Bytes?: (this: void) => Uint8Array | UuidSlugError;
   /**
    * Decode-only schemas tried after `mask`, in caller order. Seed options are accepted directly so
    * ordinary key rotation needs no separate constructor or error branch. Keep the list short:

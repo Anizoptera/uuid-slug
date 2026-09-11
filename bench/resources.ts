@@ -71,13 +71,8 @@ try {
   assert.equal(typeof old, "string");
   assert.ok(codec.decodeSlug(old as string) instanceof Error);
   const into = new Uint8Array(24);
-  let draws = 0;
   let clocks = 0;
   const portable = api.createUuidV7Generator({
-    fillRandom: (target) => {
-      draws += 1;
-      globalThis.crypto.getRandomValues(target);
-    },
     clock: () => {
       clocks += 1;
       return time;
@@ -129,7 +124,6 @@ try {
     views: 0,
     errors: 0,
   });
-  assert.equal(draws, 1, "one generator call must draw once");
   assert.equal(clocks, 1, "one generator call must observe the clock once");
   assert.equal(api.generateUuidV7Bytes(into, 4), into, "initialize the package generator");
   check("caller-owned v7 generation", () => api.generateUuidV7Bytes(into, 4), {

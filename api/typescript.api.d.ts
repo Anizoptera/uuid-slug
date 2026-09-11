@@ -201,7 +201,6 @@ export declare interface UuidV7Generator {
 }
 export declare interface UuidV7GeneratorOptions {
   readonly clock?: () => number;
-  readonly fillRandom: (bytes: Uint8Array<ArrayBuffer>) => void;
 }
 export declare interface UuidV7Mask {
   readonly label: string;
@@ -254,7 +253,6 @@ export declare interface UuidV7SlugCodec {
   ): (Input & UuidV7CodecSlug) | UuidSlugError;
 }
 export declare interface UuidV7SlugCodecOptions {
-  readonly generateUuidV7Bytes?: (this: void) => Uint8Array | UuidSlugError;
   readonly previousMasks?: readonly (UuidV7Mask | UuidV7MaskOptions)[];
   readonly mask: UuidV7Mask | UuidV7MaskOptions;
   readonly sentinels?: readonly UuidV7SentinelConfig[];

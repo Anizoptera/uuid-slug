@@ -23,7 +23,6 @@ const migration = rotated.createMigrationDecoder({ originalMask: true, plainSlug
 const originals = originalFixtures.issued.filter(({ slug, raw }) => slug !== raw);
 const portable = api.createUuidV7Generator({
   clock: () => instant,
-  fillRandom: (bytes) => crypto.getRandomValues(bytes),
 });
 // Fixed, varied payloads make separate runtime/revision processes exercise the same inputs.
 const ids = Array.from({ length: 256 }, (_, i) => {

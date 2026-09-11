@@ -7,7 +7,6 @@ import {
   createUuidV7Mask,
   createUuidV7MaskAsync,
   createUuidV7SlugCodec as createCodec,
-  createUuidV7Generator,
   extractUuidV7Timestamp,
   UUID_V7_TEST_MASK,
   isUuidSlugError,
@@ -27,6 +26,8 @@ import {
   UUID_SLUG_ERROR_CODES,
   UuidSlugError,
 } from "../src/index";
+import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
+import { createUuidV7SlugCodecWithGenerator } from "../src/codec";
 import type { UuidV7Mask, UuidV7SlugCodecOptions } from "../src/types";
 import { unwrap } from "../dev/unwrap";
 import { uuidVariants } from "./uuid-variants";
@@ -142,9 +143,6 @@ export const codecBoundaryCases = [
         { mask: UUID_V7_TEST_MASK, previousMasks: 1 },
         { mask: UUID_V7_TEST_MASK, sentinels: 1 },
         { mask: UUID_V7_TEST_MASK, sentinels: [null] },
-        { mask: UUID_V7_TEST_MASK, generateUuidV7Bytes: null },
-        { mask: UUID_V7_TEST_MASK, generateUuidV7Bytes: 1 },
-        { mask: UUID_V7_TEST_MASK, generateUuidV7Bytes: {} },
         {
           mask: UUID_V7_TEST_MASK,
           sentinels: [{ name: 7, uuid: "00000000-0000-7000-8000-000000000000" }],
@@ -157,17 +155,25 @@ export const codecBoundaryCases = [
             },
           },
         ),
-        {
-          mask: UUID_V7_TEST_MASK,
-          get generateUuidV7Bytes() {
-            throw new Error("unreadable UUIDv7 byte generator");
-          },
-        },
       ];
       for (const options of cases) {
         const result = Reflect.apply(createCodec, undefined, [options]);
         assert.ok(isUuidSlugError(result));
       }
+    },
+  },
+  {
+    name: "codec generation ignores caller-supplied entropy",
+    run() {
+      const options = {
+        mask: UUID_V7_TEST_MASK,
+        get generateUuidV7Bytes(): never {
+          throw new Error("untrusted UUIDv7 byte generator was read");
+        },
+      };
+      const codec = Reflect.apply(createCodec, undefined, [options]);
+      assert.ok(!(codec instanceof Error));
+      assert.equal(typeof codec.generateSlug(), "string");
     },
   },
   {
@@ -548,11 +554,12 @@ export const codecBoundaryCases = [
         clock: () => 0,
         fillRandom: (bytes) => bytes.fill(0),
       });
-      const codec = createUuidV7SlugCodec({
-        mask: UUID_V7_TEST_MASK,
-        sentinels: TEST_SENTINELS,
-        generateUuidV7Bytes: generator.generateUuidV7Bytes,
-      });
+      const codec = unwrap(
+        createUuidV7SlugCodecWithGenerator(
+          { mask: UUID_V7_TEST_MASK, sentinels: TEST_SENTINELS },
+          generator.generateUuidV7Bytes,
+        ),
+      );
       assert.equal(codec.generateSlug(), "AAAAAAAAcACAAAAAAAAAAA");
     },
   },
@@ -560,22 +567,23 @@ export const codecBoundaryCases = [
     name: "contains thrown and malformed injected generator results",
     run() {
       const cause = new Error("custom generator failed");
-      const throwing = createUuidV7SlugCodec({
-        mask: UUID_V7_TEST_MASK,
-        generateUuidV7Bytes() {
+      const throwing = unwrap(
+        createUuidV7SlugCodecWithGenerator({ mask: UUID_V7_TEST_MASK }, function () {
           throw cause;
-        },
-      });
+        }),
+      );
       const thrown = throwing.generateSlug();
       assert.ok(isUuidSlugError(thrown));
       assert.equal(thrown.code, "rng_unavailable");
       assert.equal(thrown.cause, cause);
 
       for (const value of [null, "not bytes", new Uint8Array(15)] as const) {
-        const malformed = createUuidV7SlugCodec({
-          mask: UUID_V7_TEST_MASK,
-          generateUuidV7Bytes: () => value as unknown as Uint8Array,
-        }).generateSlug();
+        const malformed = unwrap(
+          createUuidV7SlugCodecWithGenerator(
+            { mask: UUID_V7_TEST_MASK },
+            () => value as unknown as Uint8Array,
+          ),
+        ).generateSlug();
         assert.ok(isUuidSlugError(malformed));
         assert.equal(malformed.code, "invalid_uuid_version");
       }

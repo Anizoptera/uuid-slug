@@ -3,6 +3,7 @@ import { deepStrictEqual } from "node:assert";
 import { readFile } from "node:fs/promises";
 import { unwrap } from "../dev/unwrap";
 import * as ts from "../src/index";
+import { createPortableUuidV7Generator } from "../src/v7";
 import type {
   UuidV7Mask,
   UuidV7MaskOptions,
@@ -72,7 +73,7 @@ export function evaluate(request: Request): Outcome {
       case "generateSequence": {
         type Step = { clock?: number | string; at?: number | string; byte: number; fail?: boolean };
         let current: Step = { byte: 0 };
-        const generator = ts.createUuidV7Generator({
+        const generator = createPortableUuidV7Generator({
           clock: () => Number(current.clock),
           fillRandom: (bytes) => {
             if (current.fail) throw new Error("entropy unavailable");

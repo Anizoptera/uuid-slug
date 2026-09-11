@@ -1,6 +1,7 @@
 import {
   bytesToUuid,
   createUuidV7MaskAsync,
+  createUuidV7Generator,
   createUuidV7SlugCodec,
   extractUuidV7Timestamp,
   bytesToSlug,
@@ -219,12 +220,8 @@ if (knownSentinel) {
 }
 createUuidV7SlugCodec({
   mask: UUID_V7_TEST_MASK,
+  // @ts-expect-error Codec generation always uses the package's cryptographic runtime source.
   generateUuidV7Bytes: () => new Uint8Array(16),
-});
-createUuidV7SlugCodec({
-  mask: UUID_V7_TEST_MASK,
-  // @ts-expect-error The codec callback must be callable without caller-owned storage.
-  generateUuidV7Bytes: (output: Uint8Array) => output,
 });
 const migration: UuidSlugMigrationDecoder = codec.createMigrationDecoder({
   originalMask: true,
@@ -321,6 +318,9 @@ const pendingSchema: Promise<UuidV7Mask | UuidSlugError> = createUuidV7MaskAsync
 // @ts-expect-error A pending schema cannot be used as a codec key before awaiting its result.
 createUuidV7SlugCodec({ mask: pendingSchema });
 void pendingSchema;
+
+// @ts-expect-error Public generators always use the package's cryptographic runtime source.
+createUuidV7Generator({ fillRandom: (bytes: Uint8Array) => bytes.fill(0) });
 
 // @ts-expect-error Consumers branch on UuidSlugErrorCode; no runtime-specific error class exists.
 type _RuntimeErrorIsInternal = UuidSlugApi.UuidRuntimeError;

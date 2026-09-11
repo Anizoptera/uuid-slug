@@ -58,8 +58,8 @@ export {
   uuidToBytes,
 } from "./uuid";
 export type { SlugAlphabet } from "./uuid";
-export { createUuidV7Generator } from "./v7";
-export type { UuidV7GeneratorOptions } from "./v7";
+export { createUuidV7Generator } from "./keyless";
+export type { UuidV7GeneratorOptions } from "./keyless";
 
 /* Keyless operations stay module-level and avoid codec setup. Masking and sentinels stay on the
  * codec because their meaning depends on its seed and sentinel table. */

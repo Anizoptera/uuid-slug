@@ -12,8 +12,8 @@ import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types";
 import { bytesToUuid, isUuidV7Bytes, isUuidV7String } from "./uuid";
 import type { Runtime } from "./runtime/types";
 
-/** Supply the clock and cryptographic entropy used by one owned UUIDv7 sequence. */
-export interface UuidV7GeneratorOptions {
+/** Internal controls for exercising the portable UUIDv7 state machine. */
+export interface PortableUuidV7GeneratorOptions {
   /** Return Unix milliseconds; finite fractional readings are truncated. Defaults to `Date.now`. */
   readonly clock?: () => number;
   /** Fill every byte or throw; generation returns the thrown value as an error cause. */
@@ -105,7 +105,9 @@ const seedLo = (bytes: Uint8Array) =>
  * Create a stateful UUIDv7 generator. Malformed option shapes throw `TypeError`; clock and entropy
  * failures return `UuidSlugError`, and reentrant calls fail without changing sequence state.
  */
-export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator {
+export function createPortableUuidV7Generator(
+  options: PortableUuidV7GeneratorOptions,
+): UuidV7Generator {
   if (typeof options !== "object" || options === null || Array.isArray(options))
     throw new TypeError("Generator options must be an object.");
   const clock = options.clock ?? Date.now;
@@ -260,7 +262,7 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
 }
 
 export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
-  const fallback = createUuidV7Generator({ fillRandom: runtime.fillRandom });
+  const fallback = createPortableUuidV7Generator({ fillRandom: runtime.fillRandom });
   const fallbackUuidV7Bytes = fallback.generateUuidV7Bytes as (
     out?: Uint8Array,
     offset?: number,

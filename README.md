@@ -27,7 +27,6 @@ pnpm add @anizoptera/uuid-slug
 ```
 
 Requires TypeScript 5.7 or newer for `Uint8Array<ArrayBuffer>` declarations.
-Custom `fillRandom` callbacks receive an ordinary `ArrayBuffer` view, which Web Crypto accepts.
 
 The native Rust crate implements the same wire contract and lives in [`rust/uuid-slug`](rust/uuid-slug).
 The npm package remains TypeScript/JavaScript-only.
@@ -245,10 +244,9 @@ The **Where** column tells you whether to import a function or call a codec meth
 - **codec only.** Uses your configured keys or sentinels.
 - **module only.** Import these functions directly. Codec settings do not affect them.
 
-The state split keeps each caller responsible for one thing. A generator owns its clock, entropy,
-and mutable UUIDv7 sequence; a codec owns immutable masking keys, sentinels, rotation, and writer
-settings. A codec needs only a generator's `generateUuidV7Bytes` operation and validates every returned
-payload before masking, so a custom callback does not need access to the rest of the generator.
+The state split keeps each caller responsible for one thing. A generator owns its clock and mutable
+UUIDv7 sequence; the package runtime owns cryptographic entropy. A codec owns immutable masking
+keys, sentinels, rotation, and writer settings.
 Generator, codec, and migration methods do not depend on `this`; they can be passed as callbacks
 without binding them first.
 
@@ -297,13 +295,10 @@ Also exported, all module-level:
 - `createUuidV7Mask` builds a schema from a seed; `createUuidV7MaskAsync` adds cooperative
   cancellation; `createCustomUuidV7Mask` adapts separate forward and reverse callbacks.
   `UUID_V7_TEST_MASK` is the explicit, published-key choice for deterministic examples.
-- `createUuidV7Generator(options)` builds a full generator from your own `clock` and `fillRandom`.
-  A `generateUuidV7Bytes:` codec option accepts that detached method directly.
-  The full generator's options type is `UuidV7GeneratorOptions`. Construction throws `TypeError`
-  when either configured callback is not a function; callback failures during generation return
-  `UuidSlugError` with the thrown value as `cause`. Do not call the same generator from either
-  callback: reentrant generation returns `rng_unavailable` so partially updated sequence state
-  cannot emit duplicate identifiers.
+- `createUuidV7Generator(options)` builds a full generator with your `clock` and the package's
+  platform cryptographic entropy. Its options type is `UuidV7GeneratorOptions`. Construction throws
+  `TypeError` when the clock is not a function. Generation returns `rng_unavailable` when secure
+  platform entropy is unavailable and never substitutes caller-controlled bytes.
 - `UuidSlugError`, including code `rng_unavailable` when the runtime has no usable randomness.
   `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes package errors across
   JavaScript realms and duplicate package copies. `unwrapUuidSlug` opts a success-path call into
@@ -317,7 +312,6 @@ createUuidV7SlugCodec({
   sentinels: [{ name: "nil", uuid: "…" }],
   previousMasks: [{ seed: "…previous seed…" }],
   outputAlphabet: "base32hex", // masked output and sentinel presentation
-  generateUuidV7Bytes: myUuidV7Generator.generateUuidV7Bytes,
 });
 ```
 
@@ -492,13 +486,12 @@ with expiration or one-time use, check the stored expiry and consumption state a
 
 These are API contracts. Runtime measurements and their exercised conditions belong in
 [`bench/README.md`](bench/README.md); a benchmark pass is not proof of every guarantee.
-See [security boundaries](docs/security.md) for entropy failures, custom sources and masking limits.
+See [security boundaries](docs/security.md) for entropy failures and masking limits.
 
-- **Conformance.** Generated ids have RFC 9562 version and variant bits. A custom generator or
-  codec byte source is responsible for honoring its declared contract.
+- **Conformance.** Generated ids have RFC 9562 version and variant bits.
 - **Randomness.** Built-in portable generation draws from Web Crypto or `node:crypto`, never
-  `Math.random`. Native generation delegates to the platform; a caller-supplied `fillRandom`
-  controls its own entropy. Collisions are possible: enforce uniqueness in storage when required.
+  `Math.random`. Native generation delegates to the platform. Collisions remain possible: enforce
+  uniqueness in storage when required.
 - **Native generation degrades safely.** Optional native generation is a shortcut, not a second
   behavior: if it throws or returns a malformed UUID, slug, or byte array, the matching portable
   generator is tried. If both fail, the returned error retains both causes.

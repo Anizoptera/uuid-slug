@@ -136,13 +136,28 @@ export function createUuidV7SlugCodec(
   options: UuidV7SlugCodecOptions,
 ): UuidV7SlugCodec | UuidSlugError {
   try {
-    return buildUuidSlugCodec(options);
+    return buildUuidSlugCodec(options, generateDefaultUuidV7Bytes);
   } catch (cause) {
     return new UuidSlugError("invalid_mask_schema", "Codec construction failed.", { cause });
   }
 }
 
-function buildUuidSlugCodec(options: UuidV7SlugCodecOptions): UuidV7SlugCodec | UuidSlugError {
+/** Internal seam for exercising generator failures without weakening public generation. */
+export function createUuidV7SlugCodecWithGenerator(
+  options: UuidV7SlugCodecOptions,
+  generateUuidV7Bytes: (this: void) => Uint8Array | UuidSlugError,
+): UuidV7SlugCodec | UuidSlugError {
+  try {
+    return buildUuidSlugCodec(options, generateUuidV7Bytes);
+  } catch (cause) {
+    return new UuidSlugError("invalid_mask_schema", "Codec construction failed.", { cause });
+  }
+}
+
+function buildUuidSlugCodec(
+  options: UuidV7SlugCodecOptions,
+  generateBytes: (this: void) => Uint8Array | UuidSlugError,
+): UuidV7SlugCodec | UuidSlugError {
   const mask = typeof options === "object" && options !== null ? options.mask : undefined;
   if (mask === undefined || mask === null)
     return new UuidSlugError(
@@ -163,10 +178,6 @@ function buildUuidSlugCodec(options: UuidV7SlugCodecOptions): UuidV7SlugCodec | 
     if (isUuidSlugError(previous)) return previous;
     previousMasks.push(previous);
   }
-  const generateUuidV7Bytes = options.generateUuidV7Bytes;
-  if (generateUuidV7Bytes !== undefined && typeof generateUuidV7Bytes !== "function")
-    return new UuidSlugError("invalid_mask_schema", "generateUuidV7Bytes must be a function.");
-  const generateBytes = generateUuidV7Bytes ?? generateDefaultUuidV7Bytes;
   const outputAlphabet = options.outputAlphabet ?? "base64url";
   const outputAlphabetResult = resolveSlugAlphabet(outputAlphabet);
   if (isUuidSlugError(outputAlphabetResult)) return outputAlphabetResult;

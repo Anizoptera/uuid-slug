@@ -93,11 +93,11 @@ workloads, and they do not turn development bridges into npm distribution candid
 - Rotation decodes text once and constructs a mismatch error only after all explicit keys fail. Custom callbacks still receive owned bytes. Removing those copies would alter ownership semantics.
 - TimestampValidation consumes decoded bytes directly. Formatting remains at string-returning boundaries; it is not part of validation.
 - Async and synchronous construction share hash arithmetic and final key expansion. The initial continuation rewrite regressed masking; a single state branch replaced repeated optional-state lookups. Native generators remain delegated without introducing an ordering requirement.
-- Portable v7 continuation keeps the same 16-byte entropy callback contract as initial generation.
-  Requesting only the four bytes consumed by same-millisecond continuations reduced pool demand but
-  measured about 2% slower on Bun's `v7.bytes` path, so it added a branch without a demonstrated
-  consumer-path gain. Revisit only with a measured end-to-end improvement that preserves custom
-  callback behavior.
+- Portable v7 currently requests 16 bytes from its entropy callback for both initial and
+  same-millisecond generation. Requesting only the four consumed continuation bytes reduced pool
+  demand but measured about 2% slower on Bun's `v7.bytes` path, so it added a branch without a
+  demonstrated consumer-path gain. Callbacks fill the supplied view and must not depend on its
+  current length; revisit the internal draw size only with a measured end-to-end improvement.
 - Node's mixed-workload parser row regresses while isolated parsing improves. Restoring the exact baseline parser inside the current package measured about 93 ns for parsing and 74 ns for caller-owned parsing, versus 82/62 ns with the final parser. Direct lookup inlining and a combined sign check did not improve the mixed result and were discarded. This rules out restoring the old parser as a remedy; it does not identify the remaining JIT/workload cause. The mixed result remains disclosed, not relabelled as a speedup.
 
 ## Allocation and key rotation
