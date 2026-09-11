@@ -86,7 +86,7 @@
 - [x] Remove probabilistic no-collision tests that contradict the published collision contract and add no package-controlled evidence beyond source, pool, and generator-state tests.
 - [x] Draw only UUIDv7's ten random payload bytes when seeding and four on same-millisecond increments instead of discarding 60–75% of each entropy draw.
 - [x] Stop classifying the undocumented legacy `UuidRuntimeError` name as a current package error; retain current-name recognition across realms and duplicate copies.
-- [x] Remove a stale Node introduction-version claim from the runtime probe comment; capability presence remains the executable compatibility boundary.
+- [x] Correct stale Node `randomUUIDv7` chronology in benchmark evidence and remove it from runtime compatibility logic; capability presence remains the executable boundary.
 - [ ] Record each credible defect with exact evidence, consequence, strongest rival explanation, and the observation that can overturn it.
 - [ ] For each proven defect, enumerate distinct live fixes across API shape, type constraint, invariant, algorithm, data structure, runtime seam, test oracle, and deletion; compare hybrids by caller burden, correctness, compatibility, work, and owned complexity.
 - [ ] Add the smallest red reproducer before fixing a bug; prove it fails because the intended defect is reachable, then keep it only if its marginal value exceeds its rent.

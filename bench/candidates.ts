@@ -53,7 +53,7 @@ interface BunGlobal {
 }
 
 /**
- * Node gained `randomUUIDv7` in v26.6.0, so it is absent on every LTS line before that. Both it
+ * Node 26 added `randomUUIDv7`, so it is absent on every earlier LTS line. Both it
  * and `randomUUID` cache entropy for up to 128 identifiers unless told not to, which is a real
  * cost difference worth measuring rather than a detail — the cached path is what a consumer gets
  * by default.
@@ -61,7 +61,7 @@ interface BunGlobal {
 // NOT intersected with `typeof nodeCrypto`. `@types/node` is pinned ahead of the runtime in
 // `.tool-versions` and declares `randomUUIDv7` unconditionally, so an intersection keeps it
 // non-optional and every `nodeUuidV7 ? ... : []` below reads as always-true to the compiler — while
-// the value is genuinely `undefined` on Node under 26.6, which is why those rows are absent from
+// the value is genuinely `undefined` on Node before 26, which is why those rows are absent from
 // the Node 24 column of `RESULTS.md`. A narrow shape is what makes the optionality checkable.
 type NodeCryptoWithV7 = {
   randomUUIDv7?: (options?: { disableEntropyCache?: boolean }) => string;

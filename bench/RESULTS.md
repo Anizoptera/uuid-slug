@@ -10,7 +10,7 @@ read ratios, not digits. Every figure below comes from that command; nothing her
 ## What this changed
 
 **Intra-millisecond ordering differs by runtime, and this package does not promise it.**
-`crypto.randomUUIDv7` arrived in Node 26.6.0 and re-randomises all 74 random bits on every call:
+`crypto.randomUUIDv7` arrived in Node 26.1.0 and re-randomises all 74 random bits on every call:
 consecutive values inside one millisecond sort in creation order **49.97%** of the time — chance.
 Bun's advances a 12-bit counter and reaches 99.98%. Node 24, which has no native v7, runs this
 package's own generator and reaches 100%. All three are conformant; RFC 9562 §6.2 leaves the
@@ -46,7 +46,7 @@ behaviour underneath this package turns a lane red rather than a consumer's inde
 | `uuidv7-js`             |      2.71M |        1.23M |       1.18M |
 | `@kripod/uuidv7`        |      2.05M |        0.65M |       0.62M |
 
-`package.v7.string` more than doubles between Node 24 and Node 26 — 2.65M to 5.69M — because 26.6
+`package.v7.string` more than doubles between Node 24 and Node 26 — 2.65M to 5.69M — because Node 26
 added `crypto.randomUUIDv7` and the adapter adopts it. That is the same change that costs
 intra-millisecond ordering in the table below: one number moved because the other did.
 
@@ -63,7 +63,7 @@ generation plus a four-round keyed cipher plus encoding.
 | `Bun.randomUUIDv7("base64url")`                   |     16.32M |            — |           — | **22-char slug, natively** |
 | `Bun.randomUUIDv7("hex")`                         |     15.89M |            — |           — | canonical 36-char          |
 | `Bun.randomUUIDv5`                                |      8.92M |            — |           — | deterministic, name-based  |
-| `crypto.randomUUIDv7()`                           |          — |            — |       5.86M | Node ≥26.6.0               |
+| `crypto.randomUUIDv7()`                           |          — |            — |       5.86M | Node ≥26.1.0               |
 | `crypto.randomUUIDv7({disableEntropyCache:true})` |          — |            — |       1.41M | 4.2× cost                  |
 | `crypto.randomUUID()`                             |     31.08M |        8.63M |       7.08M | v4                         |
 | `crypto.randomUUID({disableEntropyCache:true})`   |      3.66M |        1.47M |       1.46M | 4.8–5.9× cost              |
