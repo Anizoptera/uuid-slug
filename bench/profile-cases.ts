@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { unwrap } from "../dev/unwrap";
+import { generatePortableUuidV4 } from "../src/v4";
 
 type Api = typeof import("../src/index");
 export type ProfileValue = string | number | boolean | Uint8Array | Error | object;
@@ -86,6 +87,7 @@ export function createProfileCases(
   return {
     control: (index) => ids[index & 255] as string,
     "v4.string": () => api.generateUuidV4(),
+    "portable.v4.string": () => generatePortableUuidV4(),
     "v7.string": () => api.generateUuidV7(),
     "v4.bytes": () => api.generateUuidV4Bytes(),
     "v4.into": () => api.generateUuidV4Bytes(into, 4),

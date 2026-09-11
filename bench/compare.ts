@@ -89,7 +89,6 @@ async function buildHostDriver(outdir: string): Promise<string> {
   const result = await Bun.build({
     entrypoints: [join(import.meta.dir, "profile.ts")],
     target: "node",
-    packages: "external",
     outdir,
     naming: "host-profile.mjs",
   });

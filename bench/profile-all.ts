@@ -105,7 +105,6 @@ async function build(entry: string, target: "browser" | "node", conditions: stri
     conditions,
     outdir: reports,
     naming: name,
-    ...(target === "node" ? { packages: "external" as const } : {}),
   });
   if (!result.success)
     throw new AggregateError(

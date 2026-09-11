@@ -2,24 +2,12 @@
 
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
-import {
-  checkByteRange,
-  checkRange,
-  fillRandomBytes,
-  nativeOrFallback,
-  UuidSlugError,
-} from "./errors";
-import type {
-  UuidV4Bytes,
-  UuidV4Slug,
-  UuidV4String,
-  UuidV7Bytes,
-  UuidV7Generator,
-  UuidV7Slug,
-  UuidV7String,
-} from "./types";
-import { bytesToUuid, bytesToSlug, isUuidV4String, isUuidV7Slug } from "./uuid";
+import { nativeOrFallback, UuidSlugError } from "./errors";
+import type { UuidV4Slug, UuidV7Bytes, UuidV7Generator, UuidV7Slug, UuidV7String } from "./types";
+import { bytesToSlug, isUuidV7Slug } from "./uuid";
 import type { SlugAlphabet } from "./uuid";
+export { generateUuidV4, generateUuidV4Bytes } from "./v4";
+import { generateUuidV4Bytes } from "./v4";
 import { createPortableUuidV7Generator, createRuntimeGenerator } from "./v7";
 
 /** Configure the clock for one sequence; entropy always comes from the package runtime. */
@@ -42,67 +30,6 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
 /** Delay generator setup so conversion-only imports draw no entropy and bundle no generator. */
 let generator: UuidV7Generator | undefined;
 const v7 = () => (generator ??= createRuntimeGenerator(runtime));
-
-/**
- * Randomness is drawn into a private buffer and copied out instead of filled through a view of the
- * caller's array: `fillRandom` requires a plain `ArrayBuffer` because Web Crypto rejects a
- * `SharedArrayBuffer` view, and caller-supplied output carries no such guarantee. Reused rather
- * than allocated per call, matching the v7 generator, so the cost is one 16-byte copy.
- */
-const v4Random = new Uint8Array(16);
-let generatingV4 = false;
-
-/** Generate package-owned UUIDv4 bytes, or write atomically into caller storage. */
-export function generateUuidV4Bytes(): UuidV4Bytes | UuidSlugError;
-export function generateUuidV4Bytes<Output extends Uint8Array>(
-  output: Output,
-  outputOffset?: number,
-): Output | UuidSlugError;
-export function generateUuidV4Bytes(
-  output?: Uint8Array,
-  outputOffset = 0,
-): Uint8Array | UuidSlugError {
-  if (generatingV4)
-    return new UuidSlugError(
-      "rng_unavailable",
-      "UUIDv4 generation cannot be reentered from its entropy source.",
-    );
-  const target = output ?? new Uint8Array(16);
-  const badRange =
-    output === undefined
-      ? checkRange(16, outputOffset, 16)
-      : checkByteRange(output, outputOffset, 16);
-  if (badRange) return badRange;
-  generatingV4 = true;
-  try {
-    const failed = fillRandomBytes(runtime.fillRandom, v4Random);
-    if (failed) return failed;
-    target.set(v4Random, outputOffset);
-    target[outputOffset + 6] = ((target[outputOffset + 6] ?? 0) & 0x0f) | 0x40;
-    target[outputOffset + 8] = ((target[outputOffset + 8] ?? 0) & 0x3f) | 0x80;
-    return target;
-  } finally {
-    generatingV4 = false;
-  }
-}
-
-function portableUuidV4(): UuidV4String | UuidSlugError {
-  const bytes = generateUuidV4Bytes();
-  return bytes instanceof Error ? bytes : (bytesToUuid(bytes) as UuidV4String | UuidSlugError);
-}
-
-/** Generate a canonical UUIDv4 string with platform cryptographic randomness. */
-export function generateUuidV4(): UuidV4String | UuidSlugError {
-  return runtime.uuidV4
-    ? nativeOrFallback(
-        runtime.uuidV4,
-        isUuidV4String,
-        (value) => value,
-        portableUuidV4,
-        "UUIDv4 generation",
-      )
-    : portableUuidV4();
-}
 
 /**
  * Generate a direct UUIDv4 slug in the selected alphabet. Alphabet selection is representation,

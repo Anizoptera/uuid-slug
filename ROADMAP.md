@@ -105,6 +105,8 @@ protection, and no default or fallback may select it.
 - [ ] Force and profile the portable generator directly on Node, Bun, Deno, and Chromium, including
   hosts with native UUID generation, so delegation cannot hide fallback CPU, allocation, entropy,
   state-transition, or responsiveness costs.
+- [x] Route the exact private UUIDv4 text fallback into the shared profiler; its source-built case
+  executes on Node, Bun, Deno, and Chromium without disabling each host's native public route.
 - [ ] Falsify portable generation alternatives for entropy draw size and reuse, state layout, byte
   assembly, formatting, caller-owned writes, clock reads, branches, and runtime-specific primitives.
 - [x] Select the portable UUIDv7 timestamp writer once per module: fixed word writes repeatedly
