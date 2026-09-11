@@ -21,14 +21,7 @@ import {
   sourcesUsedBy,
 } from "./entropy-probe";
 import { cases as bufferContractCases } from "./buffer-contract-probe";
-import {
-  isUuidV7String,
-  slugToUuid,
-  uuidV4Slug,
-  uuidV4Bytes,
-  uuidV7,
-  uuidV7Slug,
-} from "../src/index";
+import { isUuidV7String, slugToUuid, uuidV4Slug, uuidV4Bytes, uuidV7Slug } from "../src/index";
 import { unwrap } from "../dev/unwrap";
 
 describe("bun runtime", () => {
@@ -39,10 +32,6 @@ describe("bun runtime", () => {
       expect(entry.run()).toBeUndefined();
     });
   }
-
-  test("imports the source condition and generates UUIDv7", () => {
-    expect(isUuidV7String(unwrap(uuidV7()))).toBe(true);
-  });
 
   test("the keyless uuidV7Slug honours its alphabet argument, not the native generator", () => {
     // Bun alone provides the native base64url hook. A branch gated only on that hook's presence

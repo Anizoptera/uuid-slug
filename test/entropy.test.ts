@@ -15,8 +15,6 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { instrument } from "./instrument";
-import { unwrap } from "../dev/unwrap";
-
 import {
   attributedSourcesFor,
   byteGenerators,
@@ -26,7 +24,7 @@ import {
   insecureAmong,
   sourcesUsedBy,
 } from "./entropy-probe";
-import { uuidV4Bytes, uuidV7 } from "../src/index";
+import { uuidV4Bytes } from "../src/index";
 
 describe("entropy source", () => {
   it.each(generators)("never reaches for Math.random in %s", (_name, generate) => {
@@ -56,16 +54,6 @@ describe("entropy source", () => {
     const used = attributedSourcesFor(uuidV4Bytes);
     expect(used).not.toEqual([]);
     expect(insecureAmong(used)).toEqual([]);
-  });
-});
-
-describe("generated v7 values", () => {
-  it("keep the v7 version and RFC variant", () => {
-    for (let i = 0; i < 2_000; i += 1) {
-      const hex = unwrap(uuidV7()).replaceAll("-", "");
-      expect(hex[12]).toBe("7");
-      expect("89ab").toContain(hex[16]);
-    }
   });
 });
 

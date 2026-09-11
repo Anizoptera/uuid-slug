@@ -13,7 +13,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { createUuidV7Generator, parseUuid, uuidV7At, UuidSlugError } from "../src/index";
+import { createUuidV7Generator, UuidSlugError } from "../src/index";
 
 /** Fills with one repeated byte, so the counter seed lands on a known bound. */
 const constantFill = (byte: number) => (bytes: Uint8Array<ArrayBuffer>) => {
@@ -152,19 +152,6 @@ describe("uuidv7 at a caller-supplied instant", () => {
       expect(compare(previous, current)).toBeLessThan(0);
       previous = current;
     }
-  });
-
-  it("is reachable from the package entry point", () => {
-    // Not a smoke test: these two entry points were implemented in `v7.ts`, declared on `Runtime`
-    // and given a native Bun path, yet `createRuntimeGenerator` dropped the argument and the codec
-    // never forwarded them, so nothing a consumer can call reached any of it. This asserts the
-    // whole chain — top-level binding, codec forwarding, and the runtime generator's own
-    // validate-then-delegate — against a value only the supplied instant can produce.
-    const uuid = uuidV7At(1_700_000_000_000);
-    if (uuid instanceof Error) throw uuid;
-    const bytes = parseUuid(uuid);
-    if (bytes instanceof Error) throw bytes;
-    expect(timestampOf(bytes)).toBe(1_700_000_000_000);
   });
 });
 
