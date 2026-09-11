@@ -3,103 +3,35 @@
 // Profile the public package with varying inputs; keep setup, GC and reporting outside timed batches.
 import { performance } from "node:perf_hooks";
 import { setImmediate as yieldToLoop } from "node:timers/promises";
-import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
-import { unwrap } from "../dev/unwrap";
+import { writeFile } from "node:fs/promises";
+import inspector from "node:inspector/promises";
+import { writeHeapSnapshot } from "node:v8";
+import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json" with { type: "json" };
+import { assertProfileOutcome, createProfileCases } from "./profile-cases";
+
+const nativeDirectory = process.env.UUID_SLUG_PROFILE_NATIVE_DIR;
+const nativeName = process.env.UUID_SLUG_PROFILE_NATIVE_NAME;
+const session = nativeDirectory ? new inspector.Session() : undefined;
+if (nativeDirectory && !nativeName)
+  throw new Error("UUID_SLUG_PROFILE_NATIVE_NAME is required with native profiling");
+if (session) {
+  session.connect();
+  await Promise.all([session.post("Profiler.enable"), session.post("HeapProfiler.enable")]);
+  await session.post("Profiler.setSamplingInterval", { interval: 100 });
+  await session.post("HeapProfiler.startSampling", {
+    samplingInterval: 4096,
+    includeObjectsCollectedByMajorGC: true,
+    includeObjectsCollectedByMinorGC: true,
+  });
+  await session.post("Profiler.start");
+}
 
 const beforeImport = performance.now();
 const api: typeof import("../src/index") = await import(
   process.env.UUID_SLUG_PROFILE_MODULE ?? "@anizoptera/uuid-slug"
 );
 const importMs = performance.now() - beforeImport;
-const instant = 1_725_000_000_000;
-const timestampWindow = { maxTimestampDeltaMs: 86_400_000, referenceUnixMs: instant };
-const current = { seed: "profile-current-seed" };
-const previous = { seed: "profile-previous-seed" };
-const sentinelConfig = [{ name: "nil", uuid: "00000000-0000-7000-8000-000000000000" }];
-const codec = unwrap(api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelConfig }));
-const older = unwrap(api.createUuidV7SlugCodec({ mask: previous }));
-const rotated = unwrap(api.createUuidV7SlugCodec({ mask: current, previousMasks: [previous] }));
-const migration = rotated.createMigrationDecoder({ originalMask: true, plainSlug: true });
-const originals = originalFixtures.issued.filter(({ slug, raw }) => slug !== raw);
-const portable = api.createUuidV7Generator({
-  clock: () => instant,
-});
-// Fixed, varied payloads make separate runtime/revision processes exercise the same inputs.
-const ids = Array.from({ length: 256 }, (_, i) => {
-  const time = (instant + i).toString(16).padStart(12, "0");
-  const a = ((i * 251) & 4095).toString(16).padStart(3, "0");
-  const b = (0x8000 | ((i * 31337) & 16383)).toString(16);
-  const tail = (Math.imul(i + 1, 0x9e3779b1) >>> 0).toString(16).padStart(8, "0");
-  return `${time.slice(0, 8)}-${time.slice(8)}-7${a}-${b}-${tail}${i.toString(16).padStart(4, "0")}`;
-});
-const raw = ids.map((id) => unwrap(api.uuidToBytes(id)));
-const slugs = ids.map((id) => unwrap(api.uuidToSlug(id)));
-const base32 = ids.map((id) => unwrap(api.uuidToSlug(id, "base32hex")));
-const masked = ids.map((id) => unwrap(codec.encodeUuid(id)));
-const old = ids.map((id) => unwrap(older.encodeUuid(id)));
-// A check can pass under the wrong key. Keep only witnesses that actually reach the previous key.
-const oldOnly = old.filter((slug) => codec.decodeSlug(slug) instanceof Error);
-if (oldOnly.length === 0) throw new Error("No previous-key-only fixtures");
-const into = new Uint8Array(24);
-const sentinel = codec.sentinels[0];
-if (!sentinel) throw new Error("Missing sentinel fixture");
-const badUuid = "z".repeat(36);
-const badSlug = "!".repeat(22);
-const cases: Record<
-  string,
-  (i: number) => string | number | boolean | Uint8Array | Error | object
-> = {
-  control: (i) => ids[i & 255] as string,
-  "v4.string": () => api.generateUuidV4(),
-  "v7.string": () => api.generateUuidV7(),
-  "v4.bytes": () => api.generateUuidV4Bytes(),
-  "v4.into": () => api.generateUuidV4Bytes(into, 4),
-  "v7.bytes": () => api.generateUuidV7Bytes(),
-  "v7.into": () => api.generateUuidV7Bytes(into, 4),
-  "v7.at": (i) => api.generateUuidV7At(instant + (i & 255)),
-  "v7.at.into": (i) => api.generateUuidV7BytesAt(instant + (i & 255), into, 4),
-  "portable.string": () => portable.generateUuidV7(),
-  "portable.into": () => portable.generateUuidV7Bytes(into, 4),
-  "v4.slug": () => api.generateUuidV4Slug(),
-  "v7.slug": () => api.generateUuidV7Slug(),
-  "v7.base32": () => api.generateUuidV7Slug("base32hex"),
-  parse: (i) => api.uuidToBytes(ids[i & 255] as string),
-  "parse.into": (i) => api.uuidToBytes(ids[i & 255] as string, into, 4),
-  format: (i) => api.bytesToUuid(raw[i & 255] as Uint8Array),
-  "plain.encode": (i) => api.uuidToSlug(ids[i & 255] as string),
-  "plain.decode": (i) => api.slugToUuid(slugs[i & 255] as string),
-  "base32.encode": (i) => api.uuidToSlug(ids[i & 255] as string, "base32hex"),
-  "base32.decode": (i) => api.slugToUuid(base32[i & 255] as string),
-  "slug.into": (i) => api.slugToBytes(slugs[i & 255] as string, into, 4),
-  "guard.invalid.uuid": () => api.isUuidV7String(badUuid),
-  "guard.invalid.slug": () => api.isUuidV7Slug(badSlug),
-  "guard.uuid": (i) => api.isUuidV7String(ids[i & 255]),
-  "guard.slug": (i) => api.isUuidV7Slug(slugs[i & 255]),
-  "timestamp.uuid": (i) => api.validateUuidV7Timestamp(ids[i & 255] as string, timestampWindow),
-  "timestamp.slug": (i) =>
-    api.validateUuidV7SlugTimestamp(slugs[i & 255] as string, timestampWindow),
-  "timestamp.masked": (i) =>
-    codec.validateSlugTimestamp(masked[i & 255] as string, timestampWindow),
-  "masked.generate": () => codec.generateSlug(),
-  "masked.encode": (i) => codec.encodeUuid(ids[i & 255] as string),
-  "masked.decode": (i) => codec.decodeSlug(masked[i & 255] as string),
-  "rotation.current": (i) => rotated.decodeSlug(masked[i & 255] as string),
-  "rotation.previous": (i) => rotated.decodeSlug(oldOnly[i % oldOnly.length] as string),
-  "migration.current": (i) => migration.decodeSlug(masked[i & 255] as string),
-  "migration.previous": (i) => migration.decodeSlug(oldOnly[i % oldOnly.length] as string),
-  "migration.decodeCandidates": (i) => migration.decodeSlugCandidates(masked[i & 255] as string),
-  "migration.plain": (i) => migration.decodeSlug(slugs[i & 255] as string, "plain-slug"),
-  "migration.base32": (i) => migration.decodeSlug(base32[i & 255] as string, "plain-slug"),
-  "migration.original": (i) =>
-    migration.decodeSlug(originals[i % originals.length]!.slug, "original-mask"),
-  "sentinel.encode": () => codec.encodeUuid(sentinel.uuid),
-  "sentinel.decode": () => codec.decodeSlug(sentinel.slug),
-  "invalid.uuid": () => api.uuidToBytes(badUuid),
-  "invalid.slug": () => api.slugToBytes(badSlug),
-  "invalid.mask": (i) => codec.decodeSlug(oldOnly[i % oldOnly.length] as string),
-  "construct.codec": () => api.createUuidV7SlugCodec({ mask: current }),
-  "construct.schema": () => api.createUuidV7Mask(current),
-};
+const cases = createProfileCases(api, originalFixtures.issued);
 let sink = 0;
 function batch(
   fn: (i: number) => ReturnType<(typeof cases)[string]>,
@@ -117,7 +49,7 @@ function batch(
     else if (typeof value === "boolean") sink ^= Number(value);
     else if (value instanceof Uint8Array) sink ^= value[i % value.length] as number;
     else if (value instanceof Error) sink ^= value.message.length;
-    else sink ^= Object.keys(value).length;
+    else sink ^= 1;
   }
 }
 const gc = (globalThis as { gc?: () => void }).gc;
@@ -128,9 +60,15 @@ if (!Number.isSafeInteger(samples) || samples < 1 || !Number.isFinite(duration) 
   throw new Error("Profile samples must be a positive integer and duration positive milliseconds");
 const selected = Object.entries(cases).filter(([name]) => !filter || name.includes(filter));
 if (selected.length === 0) throw new Error("Profile filter selected no cases");
+const versions = process.versions as typeof process.versions & { deno?: string };
+const runtime = versions.bun
+  ? `bun ${versions.bun}`
+  : versions.deno
+    ? `deno ${versions.deno}`
+    : `node ${process.version}`;
 console.log(
   JSON.stringify({
-    runtime: process.versions.bun ? `bun ${process.versions.bun}` : `node ${process.version}`,
+    runtime,
     executable: process.execPath,
     importMs,
     gc: Boolean(gc),
@@ -140,9 +78,7 @@ console.log(
 );
 for (const [name, fn] of selected) {
   const witness = fn(0);
-  if (name.startsWith("invalid.") !== witness instanceof Error)
-    throw new Error(`Unexpected outcome for ${name}`, { cause: witness });
-  const expectedError = name.startsWith("invalid.");
+  const expectedError = assertProfileOutcome(name, witness);
   batch(fn, 2048, expectedError);
   gc?.();
   const heapBefore = process.memoryUsage();
@@ -187,4 +123,16 @@ for (const [name, fn] of selected) {
       arrayBuffers: retained.arrayBuffers,
     }),
   );
+}
+if (session && nativeDirectory) {
+  const [cpu, heap] = await Promise.all([
+    session.post("Profiler.stop"),
+    session.post("HeapProfiler.stopSampling"),
+  ]);
+  session.disconnect();
+  writeHeapSnapshot(`${nativeDirectory}/${nativeName}.heapsnapshot`);
+  await Promise.all([
+    writeFile(`${nativeDirectory}/${nativeName}.cpuprofile`, JSON.stringify(cpu.profile)),
+    writeFile(`${nativeDirectory}/${nativeName}.heapprofile`, JSON.stringify(heap.profile)),
+  ]);
 }

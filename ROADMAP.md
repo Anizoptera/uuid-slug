@@ -28,15 +28,26 @@ paths only. Do not change the Rust implementation or use it to hide TypeScript c
   selection and portable fallback, to the package artifact each consumer loads.
 - [ ] Audit benchmark setup, warm-up, sinks, batching, clocks, GC handling, process isolation, output
   validation, and statistics for optimizer elimination, harness domination, and false comparisons.
-- [ ] Extend one maintained profiling harness to run the same applicable public-operation corpus on
+- [x] Extend one maintained profiling harness to run the same applicable public-operation corpus on
   Node, Bun, Deno, and a real browser; fail on missing runtimes, cases, malformed output, or zero work.
-- [ ] Add native CPU profiling launch and normalization for Node, Bun, Deno/V8, and the browser;
+- [x] Add native CPU profiling launch and normalization for Node, Bun, Deno/V8, and the browser;
   retain raw engine profiles only under ignored `bench/reports/`.
-- [ ] Add allocation and retained-memory probes that distinguish gross allocation, survivor growth,
+- [x] Census current official runtime profiling surfaces and probe installed CLIs with invalid-option
+  controls; distinguish documented, accepted, effective, unavailable, and version-dependent channels.
+- [x] Capture Bun's separate JavaScriptCore and native allocator heaps through `heapStats`, a JSC
+  object-graph snapshot, forced-GC survivor state, and paired mimalloc reports; do not treat the
+  V8-format exit snapshot as allocation sampling.
+- [x] Capture Bun's JavaScriptCore sampling profile, including JIT-tier bytecode attribution, and
+  reject unstable profiler entry points that crash the installed runtime.
+- [x] Capture Node and Deno V8 CPU, allocation, retained-heap, GC, native-code, and process-resource
+  evidence through the strongest available independent channels; record unsupported channels.
+- [x] Capture Chromium CPU, allocation, retained-heap, task/GC trace, performance metrics, and
+  responsiveness from the shipped browser artifact through CDP.
+- [x] Add allocation and retained-memory probes that distinguish gross allocation, survivor growth,
   caller-owned output, and runtime startup where each host exposes suitable evidence.
-- [ ] Add event-loop responsiveness probes for long-running construction and repeated public calls;
+- [x] Add event-loop responsiveness probes for long-running construction and repeated public calls;
   measure uninterrupted work separately from throughput and reject readiness sleeps.
-- [ ] Keep smoke instrumentation within routine feedback budgets and put deeper sampling behind the
+- [x] Keep smoke instrumentation within routine feedback budgets and put deeper sampling behind the
   same harness without giving slow evidence gating authority.
 
 ### Baseline and attribution

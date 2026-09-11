@@ -96,6 +96,8 @@
     "version:set": "bun scripts/release-version.ts",
     "version": "bun scripts/release-notes.ts --sync > /dev/null && git add rust/Cargo.toml rust/Cargo.lock",
     "bench:matrix": "bun bench/matrix.ts",
+    "bench:profile": "bun bench/profile-all.ts",
+    "bench:profile:native": "bun bench/profile-all.ts --native",
     "lint": "oxlint --type-aware",
     "lint:fix": "oxlint --type-aware --fix",
     "artifact:web": "bun scripts/check-artifact.ts --web",

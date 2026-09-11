@@ -64,24 +64,24 @@ On macOS, Instruments' Allocations template can record a separately signed debug
 never add debugging entitlements to a distributed artifact. Export its Statistics detail and
 compare both execution orders. Include setup and warm-up when interpreting process totals.
 
-Build before Node measurements; its package export resolves to emitted JavaScript, while Bun uses
-TypeScript. Build the driver without bundling the measured package:
+Run one corpus through every installed JavaScript runtime:
 
 ```sh
-bun run build
-bun build bench/profile.ts --target=node --packages=external --outfile=bench/reports/profile.mjs
-node --expose-gc bench/reports/profile.mjs
-bun --expose-gc bench/profile.ts
+bun run bench:profile
+UUID_SLUG_PROFILE_FILTER=plain.encode bun run bench:profile:native
 ```
 
-Set `UUID_SLUG_PROFILE_FILTER` to a case-name substring to narrow attribution. Optional
-`UUID_SLUG_PROFILE_MODULE` selects an isolated revision's absolute file URL; resolve that revision's
-runtime condition correctly. `UUID_SLUG_PROFILE_SAMPLES` and `UUID_SLUG_PROFILE_MS` control sampling.
-Run CPU measurements sequentially with identical inputs and alternating revision order. Record exact
-executables, versions, hardware, warmed versus cold state, and all samples rather than only a winner.
+The ordinary command records timing, CPU, process-memory and responsiveness rows from Node, Bun,
+Deno and Chromium. `:native` adds each host's independent native evidence: inspector and exit CPU or
+allocation profiles, V8 native ticks and trace events, Deno Markdown and flamegraph reports, Bun
+JavaScriptCore JIT samples and heap statistics, JSC and V8-format object graphs, paired mimalloc
+states, and Chromium CDP metrics and tracing. The lanes run sequentially to avoid profiler contention.
+Generated drivers and reports stay under ignored `bench/reports/`; malformed, empty or missing output
+fails the command.
 
-Use Node `--cpu-prof` or Bun `--cpu-prof` on the corresponding driver for CPU attribution; use Node
-`--heap-prof` or Bun `--heap-prof-md` for retained-heap attribution. A heap snapshot/survivor profile
-is not gross allocation volume. `heapDelta` is affected by GC; `maxBatchMs` covers only an inner batch,
-whereas `maxUninterruptedMs` covers the entire sample before yielding. Neither establishes a universal
-operation-latency bound. Keep generated profiles under ignored `bench/reports/`.
+Set `UUID_SLUG_PROFILE_FILTER` to a case-name substring before native profiling so startup and unrelated
+operations do not dominate attribution. `UUID_SLUG_PROFILE_SAMPLES` and `UUID_SLUG_PROFILE_MS` control
+timing samples. Add `--smoke` to `bench/profile-all.ts` only when checking harness wiring. Compare
+revisions in fresh processes with alternating order and identical settings. A heap snapshot measures
+retention, not gross allocation; sampled profiles are estimates; forced GC changes the workload;
+`maxBatchMs` and `maxUninterruptedMs` are observations, not universal latency bounds.
