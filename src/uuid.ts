@@ -152,6 +152,11 @@ export function uuidToBytes(
 export function bytesToUuid(bytes: Uint8Array, byteOffset = 0): UuidString | UuidSlugError {
   const badRange = checkByteRange(bytes, byteOffset, 16);
   if (badRange) return badRange;
+  return formatUuidBytesUnchecked(bytes, byteOffset);
+}
+
+/** Format a range already proved to contain 16 bytes; package-owned generators avoid revalidation. */
+export function formatUuidBytesUnchecked(bytes: Uint8Array, byteOffset = 0): UuidString {
   if (nativeToHex) {
     const hex = nativeToHex.call(
       bytes.length === 16 ? bytes : bytes.subarray(byteOffset, byteOffset + 16),
