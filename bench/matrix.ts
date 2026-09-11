@@ -21,6 +21,12 @@ interface Runtime {
   readonly bundled: boolean;
 }
 
+interface ParsedReport {
+  readonly errors: string[];
+  readonly records: Record<string, unknown>[];
+  readonly version: string;
+}
+
 const runtimes: readonly Runtime[] = [
   { label: "bun", command: ["bun"], bundled: false },
   { label: "node", command: ["node"], bundled: true },
@@ -57,8 +63,6 @@ async function run(
 ): Promise<{ records: Record<string, unknown>[]; version: string; failed: boolean }> {
   const argv = [...runtime.command, target, ...(smoke ? ["--smoke"] : [])];
   // Bound the default matrix sample without overriding an explicit caller-selected sample.
-  const records: Record<string, unknown>[] = [];
-  let version = "";
   let failed = false;
   const fail = (message: string) => {
     failed = true;
@@ -77,28 +81,39 @@ async function run(
       child.exited,
     ]);
     if (status !== 0) fail(`exited ${status}\n${stderr}`);
-    const names = new Set<string>();
-    for (const [index, line] of stdout.split("\n").entries()) {
-      if (!line.trim()) continue;
-      try {
-        const record: unknown = JSON.parse(line);
-        if (!validRecord(record, entry)) throw new Error("invalid measurement fields");
-        const reported = record.runtime as string;
-        const name = record[entry === "run" ? "name" : "candidate"] as string;
-        if (version && reported !== version) throw new Error("runtime changes between records");
-        if (names.has(name)) throw new Error(`duplicate measurement ${name}`);
-        version = reported;
-        names.add(name);
-        records.push(record);
-      } catch (cause) {
-        fail(`line ${index + 1}: ${String(cause)}`);
-      }
-    }
+    const parsed = parseReport(runtime.label, entry, stdout);
+    for (const error of parsed.errors) fail(error);
+    return { records: parsed.records, version: parsed.version, failed };
   } catch (cause) {
     fail(`could not run ${argv[0]}: ${String(cause)}`);
   }
-  if (records.length === 0) fail("no valid measurements");
-  return { records, version: version || runtime.label, failed };
+  return { records: [], version: runtime.label, failed };
+}
+
+/** Parse a child report independently from process transport and presentation. */
+export function parseReport(label: string, entry: "run" | "entropy", output: string): ParsedReport {
+  const records: Record<string, unknown>[] = [];
+  const errors: string[] = [];
+  const names = new Set<string>();
+  let version = "";
+  for (const [index, line] of output.split("\n").entries()) {
+    if (!line.trim()) continue;
+    try {
+      const record: unknown = JSON.parse(line);
+      if (!validRecord(record, entry)) throw new Error("invalid measurement fields");
+      const reported = record.runtime as string;
+      const name = record[entry === "run" ? "name" : "candidate"] as string;
+      if (version && reported !== version) throw new Error("runtime changes between records");
+      if (names.has(name)) throw new Error(`duplicate measurement ${name}`);
+      version = reported;
+      names.add(name);
+      records.push(record);
+    } catch (cause) {
+      errors.push(`line ${index + 1}: ${String(cause)}`);
+    }
+  }
+  if (records.length === 0) errors.push("no valid measurements");
+  return { records, version: version || label, errors };
 }
 
 /** Reject broken report transport, not poor performance or weak randomness. */

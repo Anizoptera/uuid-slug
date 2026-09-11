@@ -6,6 +6,89 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterAll, beforeAll, expect, test } from "bun:test";
+import { parseReport } from "../bench/matrix";
+
+const speed = {
+  runtime: "fixture 1",
+  name: "measured",
+  opsPerSecond: 100,
+  elapsedMs: 10,
+  iterations: 1,
+};
+const entropy = {
+  runtime: "fixture 1",
+  candidate: "measured",
+  samples: 2,
+  sources: [],
+  distinctFields: 2,
+  sameTickPairs: 1,
+  orderedWithinTick: 0,
+  peakDrawsPerTick: 2,
+  counterBits: 0,
+  counterHolds: 0,
+  minOnesRatio: 0,
+  maxOnesRatio: 1,
+};
+
+test.each([
+  ["malformed JSON", "run", "not JSON", "line 1"],
+  ["missing fields", "run", JSON.stringify({ runtime: "fixture 1" }), "invalid measurement fields"],
+  [
+    "non-finite fields",
+    "run",
+    JSON.stringify({ ...speed, opsPerSecond: null }),
+    "invalid measurement fields",
+  ],
+  [
+    "duplicate names",
+    "run",
+    `${JSON.stringify(speed)}\n${JSON.stringify(speed)}`,
+    "duplicate measurement",
+  ],
+  [
+    "runtime changes",
+    "run",
+    `${JSON.stringify(speed)}\n${JSON.stringify({ ...speed, name: "second", runtime: "other 2" })}`,
+    "runtime changes between records",
+  ],
+  [
+    "out-of-range ratios",
+    "entropy",
+    JSON.stringify({ ...entropy, maxOnesRatio: 2 }),
+    "invalid measurement fields",
+  ],
+  [
+    "inconsistent counts",
+    "entropy",
+    JSON.stringify({ ...entropy, orderedWithinTick: 2 }),
+    "invalid measurement fields",
+  ],
+  [
+    "non-string sources",
+    "entropy",
+    JSON.stringify({ ...entropy, sources: [3] }),
+    "invalid measurement fields",
+  ],
+] as const)("report parsing rejects %s", (_case, entry, output, diagnostic) => {
+  const parsed = parseReport("subject", entry, output);
+  expect(parsed.errors.join("\n")).toContain(diagnostic);
+});
+
+test.each(["run", "entropy"] as const)("empty %s reports yield no measurements", (entry) => {
+  expect(parseReport("subject", entry, "")).toEqual({
+    records: [],
+    version: "subject",
+    errors: ["no valid measurements"],
+  });
+});
+
+test("zero-valued entropy statistics remain valid observations", () => {
+  expect(parseReport("subject", "entropy", JSON.stringify(entropy))).toEqual({
+    records: [entropy],
+    version: "fixture 1",
+    errors: [],
+  });
+});
 
 let directory: string;
 let fixture: string;
@@ -23,20 +106,9 @@ const record = speed
       sameTickPairs: 1, orderedWithinTick: 0, peakDrawsPerTick: 2, counterBits: 0,
       counterHolds: 0, minOnesRatio: 0, maxOnesRatio: 1 };
 if (mode === "hang") { setInterval(() => {}, 1000); await new Promise(() => {}); }
-if (mode === "empty") process.exit(0);
-if (mode === "exit") { console.error("child failure"); process.exit(7); }
-if (mode === "entropy-empty" && !speed) process.exit(0);
-if (mode === "malformed") console.log("not JSON");
-if (mode === "fields") { console.log(JSON.stringify({ runtime: "fixture 1" })); process.exit(0); }
-if (mode === "nonfinite" && speed) record.opsPerSecond = Infinity;
-if (mode === "range" && !speed) record.maxOnesRatio = 2;
-if (mode === "counts" && !speed) record.orderedWithinTick = 2;
-if (mode === "sources" && !speed) record.sources = [3];
 if (mode === "entries" && !speed) record.runtime = "different 2";
 console.log(JSON.stringify(record));
 if (mode === "exit-after") process.exit(7);
-if (mode === "duplicate") console.log(JSON.stringify(record));
-if (mode === "runtime") console.log(JSON.stringify({ ...record, runtime: "different 2" }));
 `,
   );
 });
@@ -177,18 +249,7 @@ async function matrix(mode: string, timeoutMs = 30_000) {
 }
 
 test.each([
-  ["exit", "exited 7"],
   ["missing", "could not run"],
-  ["empty", "no valid measurements"],
-  ["entropy-empty", "entropy: no valid measurements"],
-  ["malformed", "line 1"],
-  ["fields", "invalid measurement fields"],
-  ["nonfinite", "invalid measurement fields"],
-  ["duplicate", "duplicate measurement"],
-  ["runtime", "runtime changes between records"],
-  ["range", "invalid measurement fields"],
-  ["counts", "invalid measurement fields"],
-  ["sources", "invalid measurement fields"],
   ["entries", "runtime changes between speed and entropy reports"],
   ["exit-after", "exited 7"],
 ])("matrix fails %s and preserves the successful runtime", async (mode, diagnostic) => {
@@ -198,16 +259,7 @@ test.each([
   expect(result.stdout).toContain("control (fixture 1)");
   expect(result.stdout).toContain("measured");
   expect(result.stdout).toContain("Randomness — control (fixture 1)");
-  if (mode === "malformed" || mode === "exit-after")
-    expect(result.stdout).toContain("Randomness — subject (fixture 1)");
-});
-
-test("valid zero-valued entropy statistics do not impose quality thresholds", async () => {
-  const result = await matrix("valid");
-  expect(result.status).toBe(0);
-  expect(result.stderr).toBe("");
-  expect(result.stdout).toContain("Randomness — subject (fixture 1)");
-  expect(result.stdout).toContain("Randomness — control (fixture 1)");
+  if (mode === "exit-after") expect(result.stdout).toContain("Randomness — subject (fixture 1)");
 });
 
 test.each(["0", "-1", "1.5", "NaN", "Infinity"])(
