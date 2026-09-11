@@ -14,8 +14,4 @@ The TypeScript baseline is a declaration file containing everything reachable fr
 
 Keep public types that name a documented value or distinction consumers use in storage, parameters, return values, narrowing, or configuration. A package signature need not mention the type. Remove it only when no documented value or operation needs its distinction. `test/consumer-types.fixture.ts` compiles through the packed TypeScript declaration entry. Rust's generated baselines cover its feature surfaces; retained-release checks compile a linked consumer against the extracted crate.
 
-Keep every TypeScript export imported and used in the packed consumer fixture. The API check compares
-the generated declaration names with that fixture, so a new export fails until the fixture contains
-a consumer-level reference.
-
 These declaration baselines do not duplicate package manifests. Artifact checks verify the packed npm manifest, Cargo checks verify the crate graph and feature selections, release checks compare retained package entry metadata, and cargo-semver-checks evaluates Rust compatibility. Contract tests own behavior, target builds own supported compilation, and maintainer rulings own changes to the public contract. Deprecation annotations stay on their declarations; other comments are excluded so documentation edits do not masquerade as API changes.

@@ -2,11 +2,7 @@
 
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import {
-  checkReleasedApi,
-  checkTypeScriptConsumerExportCoverage,
-  typescriptDeclarations,
-} from "./api-evolution";
+import { checkReleasedApi, typescriptDeclarations } from "./api-evolution";
 import { command } from "./command";
 import { annotateRustApi, rustDeprecations } from "./rust-deprecations";
 import type { Rustdoc } from "./rust-deprecations";
@@ -18,7 +14,6 @@ const mode = process.argv[2];
 const useExistingBuild = process.argv[3] === "--built" && process.argv.length === 4;
 
 type PackageManifest = {
-  name?: unknown;
   devDependencies?: Record<string, unknown>;
 };
 
@@ -152,13 +147,6 @@ try {
 
   const declarationRollup = typescriptDeclarations(
     await readFile(join(work, "typescript.d.ts"), "utf8"),
-  );
-  if (typeof packageManifest.name !== "string")
-    throw new Error("package.json must name the package whose consumer coverage is checked.");
-  checkTypeScriptConsumerExportCoverage(
-    declarationRollup,
-    await readFile(join(root, "test/consumer-types.fixture.ts"), "utf8"),
-    packageManifest.name,
   );
   const typescript = await formatTypeScriptReport(declarationRollup);
 

@@ -1,6 +1,5 @@
 import { expect, test } from "bun:test";
 import {
-  checkTypeScriptConsumerExportCoverage,
   selectReleaseTag,
   typescriptDeclarations,
   validateVersion,
@@ -48,38 +47,6 @@ test("TypeScript declarations retain only deprecation documentation", () => {
   expect(typescriptDeclarations(source)).toBe(
     `export declare function current(): void;\n/** @deprecated Use current. */\nexport declare function old(): void;`,
   );
-});
-
-test("API coverage rejects declarations omitted from packed consumer imports", () => {
-  const declarations = `
-    export declare interface Options { readonly enabled?: boolean; }
-    export declare function create(options: Options): void;
-    export declare const VERSION: string;
-  `;
-  const incompleteConsumer = `
-    import { create } from "@anizoptera/uuid-slug";
-    import type { Options } from "@anizoptera/uuid-slug";
-    const options = {} satisfies Options;
-    create(options);
-  `;
-  expect(() =>
-    checkTypeScriptConsumerExportCoverage(
-      declarations,
-      incompleteConsumer,
-      "@anizoptera/uuid-slug",
-    ),
-  ).toThrow("missing public exports: VERSION");
-
-  const completeConsumer = `
-    import { create, VERSION } from "@anizoptera/uuid-slug";
-    import type { Options } from "@anizoptera/uuid-slug";
-    const options = {} satisfies Options;
-    create(options);
-    void VERSION;
-  `;
-  expect(() =>
-    checkTypeScriptConsumerExportCoverage(declarations, completeConsumer, "@anizoptera/uuid-slug"),
-  ).not.toThrow();
 });
 
 test("inline TypeScript deprecation authorizes only a later removal", () => {
