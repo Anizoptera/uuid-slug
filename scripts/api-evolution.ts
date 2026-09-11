@@ -69,6 +69,7 @@ function typescriptName(node: ts.Node): string | undefined {
   if (
     ts.isClassDeclaration(node) ||
     ts.isEnumDeclaration(node) ||
+    ts.isFunctionDeclaration(node) ||
     ts.isInterfaceDeclaration(node) ||
     ts.isModuleDeclaration(node) ||
     ts.isTypeAliasDeclaration(node)
@@ -80,6 +81,62 @@ function typescriptName(node: ts.Node): string | undefined {
 function typescriptEntries(source: string): ReadonlySet<string> {
   const file = ts.createSourceFile("public.d.ts", source, ts.ScriptTarget.Latest, true);
   return collectTypeScriptEntries(file, file.statements);
+}
+
+function hasExportModifier(node: ts.Node): boolean {
+  return (
+    ts.canHaveModifiers(node) &&
+    (ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) ??
+      false)
+  );
+}
+
+function declarationExportNames(source: string): ReadonlySet<string> {
+  const file = ts.createSourceFile("public.d.ts", source, ts.ScriptTarget.Latest, true);
+  const names = new Set<string>();
+  for (const statement of file.statements) {
+    if (!hasExportModifier(statement)) continue;
+    if (ts.isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations) {
+        if (!ts.isIdentifier(declaration.name))
+          throw new Error("API Extractor emitted an unsupported destructured export.");
+        names.add(declaration.name.text);
+      }
+      continue;
+    }
+    const name = typescriptName(statement);
+    if (!name) throw new Error("API Extractor emitted an unsupported public declaration.");
+    names.add(name);
+  }
+  return names;
+}
+
+/** Keep the packed consumer exhaustive as the declaration rollup gains or loses public names. */
+export function checkTypeScriptConsumerExportCoverage(
+  declarations: string,
+  consumer: string,
+  packageName: string,
+): void {
+  const publicNames = declarationExportNames(declarations);
+  const file = ts.createSourceFile("consumer.ts", consumer, ts.ScriptTarget.Latest, true);
+  const imports = new Set<string>();
+  for (const statement of file.statements) {
+    if (
+      !ts.isImportDeclaration(statement) ||
+      !ts.isStringLiteral(statement.moduleSpecifier) ||
+      statement.moduleSpecifier.text !== packageName
+    )
+      continue;
+    const clause = statement.importClause;
+    if (clause?.name) imports.add("default");
+    if (clause?.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+      for (const element of clause.namedBindings.elements)
+        imports.add((element.propertyName ?? element.name).text);
+    }
+  }
+  const missing = [...publicNames].filter((name) => !imports.has(name));
+  if (missing.length)
+    throw new Error(`consumer export coverage missing public exports: ${missing.join(", ")}`);
 }
 
 function collectTypeScriptEntries(

@@ -81,6 +81,9 @@ type IsExact<Actual, Expected> =
 declare function expectType<Expected>(): <Actual>(
   actual: IsExact<Actual, Expected> extends true ? Actual : never,
 ) => void;
+declare const untypedValue: ReturnType<typeof JSON.parse>;
+// @ts-expect-error Exact assertions must reject `any` or every inferred result can pass unchecked.
+expectType<string>()(untypedValue);
 
 const alphabet: SlugAlphabet = "base32hex";
 const errorCode: UuidSlugErrorCode = UUID_SLUG_ERROR_CODES[0];
@@ -110,7 +113,7 @@ const codecOptions = { mask: PUBLIC_MASK_SCHEMA, generator } satisfies UuidSlugC
 expectType<UuidSlugCodec | UuidSlugError>()(createUuidSlugCodec(codecOptions));
 const migrationOptions = { original: true, plain: true } satisfies UuidSlugMigrationOptions;
 const migrationFormat: MigrationFormat = "current";
-void [alphabet, migrationOptions, migrationFormat];
+void [alphabet, migrationFormat];
 
 // The emitted declarations must infer strict brands without requiring branded inputs.
 const plainResult = uuidV7Slug();
@@ -238,6 +241,7 @@ expectType<UuidSlugCodec | UuidSlugError>()(codecResult);
 if (codecResult instanceof Error) throw codecResult;
 const codec = codecResult;
 expectType<readonly UuidV7Sentinel[]>()(codec.sentinels);
+expectType<UuidSlugMigration>()(codec.migration(migrationOptions));
 // @ts-expect-error UUIDv4 cannot enter UUIDv7-only masking.
 codec.uuidV7ToMaskedSlug(generatedV4);
 // @ts-expect-error UUID text masking accepts UUID text, not known slug text.
