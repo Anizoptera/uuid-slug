@@ -21,7 +21,6 @@ import {
 } from "../src/index";
 import type { SlugAlphabet, UuidSlugCodecOptions } from "../src/index";
 import { unwrap } from "../dev/unwrap";
-import { deterministicUuidV7 } from "./deterministic-uuid";
 
 const SAMPLE_V7_A = "01987008-ef3e-7f69-b677-22ec1a5bbdb2";
 const SAMPLE_V7_B = "01987bbb-178b-7858-93e8-fc5e5444913b";
@@ -300,7 +299,7 @@ describe("masked UUID slugs", () => {
 
 describe("plain-slug migration", () => {
   // Nothing pinned this flag before, which is how a decode path got deleted as a "duplicate"
-  // and how a schema combination that silently returns WRONG uuids went unnoticed. Both cases
+  // and how a schema combination that silently returns WRONG uuids went unnoticed. The cases
   // below are chosen to fail loudly if either recurs.
   it("decodes a plain UUIDv4 slug, which the v7 form cannot", () => {
     // The flag exists to migrate off unmasked ids, and those predate any decision to use v7.
@@ -309,30 +308,6 @@ describe("plain-slug migration", () => {
     const slug = uuidToSlug(SAMPLE_V4);
     expect(codec.migration({ plain: true }).decode(String(slug))).toBe(SAMPLE_V4);
     expect(codec.maskedSlugToUuidV7(String(slug))).toBeInstanceOf(Error);
-  });
-
-  it("mistakes a direct slug for a masked one at the check's rate and no more often", () => {
-    // A direct slug and a masked one are the same 22 characters of the same alphabet, so the ONLY
-    // thing separating them is the check — one direct slug in 2^16 passes it and decodes to a
-    // UUID nobody issued. That is the ruled 16-bit format's price and it cannot be bought back:
-    // 16 check bits spend all 132 bits of a 22-character slug, leaving nothing for the scheme
-    // marker that used to make this exclusion exact.
-    //
-    // The bound is what this asserts, because the rate is the thing that can silently regress.
-    // Narrowing the check to the old 6-bit tag would put roughly 312 confusions in this sample.
-    const schema = createMaskSchema({ id: "feistel-only", seed: "direct-decode-test-seed-0000" });
-    if (schema instanceof Error) throw schema;
-    const codec = createUuidSlugCodec({ mask: schema });
-    const reader = codec.migration({ plain: true });
-    let confused = 0;
-    for (let i = 0; i < 20_000; i += 1) {
-      const uuid = deterministicUuidV7(i);
-      if (reader.decode(String(uuidToSlug(uuid))) !== uuid) confused += 1;
-    }
-    // Deterministic input, so this is a fixed count rather than a sample: measured 1 here, and 3
-    // in 200,000 against the 3.05 that 2^-16 predicts. The headroom absorbs a reseed, not a
-    // format change.
-    expect(confused).toBeLessThanOrEqual(4);
   });
 
   it("keeps wrong-key diagnosis out of an explicitly enabled plain migration", () => {

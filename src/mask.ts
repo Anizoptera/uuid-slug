@@ -34,9 +34,9 @@ function applyMix(
 }
 
 /**
- * The check must fail a wrong key with probability 2^-width, which holds only if the function
- * spreads its input across its whole output — so this is an avalanche mixer, not a sum. Measured
- * over 100,000 draws: uniform to chi-squared/df 0.999 across all 65,536 buckets of its top 16 bits.
+ * Spread every input word across the check so structured UUID fields do not collapse into a sum.
+ * This avalanche mixer supplies error detection, not authentication or a cryptographic-strength
+ * claim; `docs/security.md` defines that boundary.
  *
  * Taken from the TOP so that widening the check never renumbers the bits below it.
  */

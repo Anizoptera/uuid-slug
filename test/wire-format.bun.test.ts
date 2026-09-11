@@ -33,8 +33,7 @@ describe("wire format is identical across runtimes", () => {
   // survive the trip. A tail that round-trips for some values and not others would narrow the
   // check silently: the slug still decodes, and only the rate of wrong-key acceptance moves.
   test("both alphabets round-trip 16 bytes plus every value of their spare bits", () => {
-    const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
+    const bytes = Uint8Array.from({ length: 16 }, (_, index) => index * 17);
     for (const [alpha, length] of [
       [BASE64URL, 22],
       [BASE32HEX, 26],
