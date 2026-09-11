@@ -30,6 +30,11 @@ export type SentinelUuidV7Slug = Brand<UuidV7Slug, "SentinelUuidV7Slug">;
 /** The result of masked encoding: a 22/27-character payload or a 22/26-character sentinel. */
 export type PublicUuidV7Slug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 
+/**
+ * Reject a captured brand that proves an input cannot satisfy an operation. Bare strings remain
+ * valid because widening erases their child brand, leaving runtime validation as the only sound
+ * judge; tuple wrapping makes one invalid member reject the entire known union.
+ */
 type RejectKnownInput<Input, Invalid> = [Extract<Input, Invalid>] extends [never] ? Input : never;
 
 /** Reject values whose known representation or UUID version cannot satisfy the target operation. */
@@ -184,13 +189,19 @@ export type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
 
 /** Read only the historical forms enabled at construction; this never changes codec writers. */
 export interface UuidSlugMigration<in Format extends MigrationFormat = MigrationFormat> {
-  /** Return the first candidate: sentinel, current keys, original mask, then plain UUID. */
+  /**
+   * Return the first candidate: sentinel, current keys, original mask, then plain UUID. Known UUID
+   * text is rejected; slug brands remain accepted because overlapping spellings do not prove origin.
+   */
   decode<Input extends string>(
     this: void,
     slug: SlugStringInput<Input>,
     format?: Format,
   ): UuidString | UuidSlugError;
-  /** Return distinct candidates for one application lookup; an empty array means no match. */
+  /**
+   * Return distinct candidates for one application lookup; an empty array means no match. Known
+   * UUID text is rejected, while every slug spelling must be resolved by the enabled decoders.
+   */
   candidates<Input extends string>(
     this: void,
     slug: SlugStringInput<Input>,
@@ -245,13 +256,18 @@ export interface UuidSlugCodec {
   uuidV7MaskedSlug(this: void): PublicUuidV7Slug | UuidSlugError;
   /**
    * Mask one UUIDv7, or return its raw sentinel slug. Other UUID versions do not have the spare
-   * constant bits that keep this checked format at 22 base64url characters.
+   * constant bits that keep this checked format at 22 base64url characters. Generic capture rejects
+   * known slug and UUIDv4 brands; bare external strings remain runtime-validated.
    */
   uuidV7ToMaskedSlug<Input extends string>(
     this: void,
     uuid: UuidV7StringInput<Input>,
   ): PublicUuidV7Slug | UuidSlugError;
-  /** Return the first sentinel or schema candidate in configured order; this does not prove issuance. */
+  /**
+   * Return the first sentinel or schema candidate in configured order; this does not prove issuance.
+   * Generic capture rejects known UUID text; slug brands remain accepted because overlapping
+   * spellings do not prove which encoder produced them.
+   */
   maskedSlugToUuidV7<Input extends string>(
     this: void,
     slug: SlugStringInput<Input>,
@@ -259,6 +275,8 @@ export interface UuidSlugCodec {
   /**
    * Decode with this codec, apply the symmetric freshness window, and return the same spelling.
    * The check establishes timestamp sanity, not expiry, authentication, replay safety, or issuance.
+   * Generic capture rejects known UUID text; slug brands remain accepted because only decoding with
+   * this codec can resolve their overlapping spellings.
    */
   validateMaskedSlugFresh<S extends string>(
     this: void,

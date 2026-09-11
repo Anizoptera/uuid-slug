@@ -96,7 +96,11 @@ function hexValue(code: number) {
   return HEX_DECODE[code] ?? -1;
 }
 
-/** Parse one canonical lowercase UUID into 16 bytes; failure leaves caller storage unchanged. */
+/**
+ * Parse one canonical lowercase UUID into 16 bytes; failure leaves caller storage unchanged.
+ * Generic capture rejects known slug brands, while bare strings stay open to runtime validation
+ * because widening has erased their provenance.
+ */
 export function parseUuid<Input extends string>(
   uuid: UuidStringInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
@@ -229,7 +233,10 @@ export function formatUuidSlug(
   ) as UuidSlug;
 }
 
-/** Parse either direct-slug length into 16 bytes; failure leaves caller storage unchanged. */
+/**
+ * Parse either direct-slug length into 16 bytes; failure leaves caller storage unchanged. Generic
+ * capture rejects known UUID and masked brands; bare strings still need runtime validation.
+ */
 export function parseUuidSlug<Input extends string>(
   slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
@@ -266,7 +273,10 @@ export function parseUuidSlug(
   return result instanceof Error ? result : target;
 }
 
-/** Validate UUID text and encode the same 128-bit value as a direct slug. */
+/**
+ * Validate UUID text and encode the same 128-bit value as a direct slug. Generic capture rejects a
+ * known slug brand but accepts bare strings whose provenance only runtime parsing can establish.
+ */
 export function uuidToSlug<Input extends string>(
   uuid: UuidStringInput<Input>,
   alphabet?: SlugAlphabet,
@@ -280,7 +290,10 @@ export function uuidToSlug(
   return formatUuidSlug(bytes, alphabet);
 }
 
-/** Validate a direct slug, infer its alphabet from length, and return canonical UUID text. */
+/**
+ * Validate a direct slug, infer its alphabet from length, and return canonical UUID text. Generic
+ * capture rejects known UUID and masked brands but accepts external strings whose origin is unknown.
+ */
 export function slugToUuid<Input extends string>(
   slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidString, UuidV4String, UuidV7String> | UuidSlugError;
@@ -326,6 +339,7 @@ export function isUuidV7Slug(slug: unknown): slug is UuidV7Slug {
 /**
  * Read the 48-bit Unix millisecond from UUIDv7 bytes at `offset`.
  * Other versions are rejected because their first six bytes are not a timestamp.
+ * Generic capture rejects known UUIDv4 bytes; unbranded bytes still require the runtime check.
  * The range check runs first so truncated storage reports `invalid_buffer`, not a fictitious UUID
  * version read from a missing byte.
  */

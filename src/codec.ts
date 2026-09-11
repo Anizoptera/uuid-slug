@@ -250,6 +250,8 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
 /**
  * Return canonical UUIDv7 text when its timestamp is inside the inclusive symmetric window.
  * This checks timestamp sanity, not expiry, authentication, replay safety, or issuance.
+ * Generic capture rejects known slug and UUIDv4 brands; bare strings remain runtime-validated
+ * because widening has erased their provenance.
  */
 export function validateUuidV7Fresh<Input extends string>(
   uuid: UuidV7StringInput<Input>,
@@ -309,7 +311,8 @@ function validateFreshBytes(
 
 /**
  * Return the same direct UUIDv7 slug when its timestamp is inside the inclusive symmetric window.
- * Use a codec method for masked or sentinel input.
+ * Use a codec method for masked or sentinel input. Generic capture rejects known UUID, masked, and
+ * UUIDv4-slug brands; bare strings remain runtime-validated after their provenance is erased.
  */
 export function validateUuidV7SlugFresh<Input extends string>(
   slug: UuidV7SlugInput<Input>,

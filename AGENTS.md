@@ -114,6 +114,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Runtime values must carry strict brands that reject unchecked strings and bytes. Keep raw
   function and configuration inputs ergonomic, validate them at the package seam, and infer brands
   from successful generation, parsing, conversion, and guards without caller casts.
+- Capture branded inputs generically so a known wrong representation or UUID version is rejected.
+  Keep bare strings accepted: widening erases the child brand, so only runtime validation can judge them.
 - Owned byte outputs must be plain `Uint8Array`, not native `Buffer` subclasses. Adapt at the
   runtime boundary and verify constructors in both runners; preserve caller-supplied buffers.
 
