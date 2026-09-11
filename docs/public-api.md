@@ -162,6 +162,10 @@ Keep UUID text/binary conversion directional and version-neutral:
 - Keep successful common paths free of exception-driven capability detection, repeated schema
   derivation, duplicate validation, unnecessary allocation, runtime dependencies, and work for
   opt-in features.
+- Keep the safe operation as the default. Add an explicitly named unsafe variant only when repeated
+  public-route measurements show a substantial consumer benefit that retained checks prevent. State
+  the lost protection at the declaration, constrain every remaining invariant in its types, and
+  never select the unsafe variant implicitly.
 - Measure the consumer-sized operation and the runtime that owns it. Bulk throughput, a different
   adapter, or a green aggregate cannot justify a hot-path claim.
 
