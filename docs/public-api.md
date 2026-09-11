@@ -32,9 +32,11 @@ in their durable owner and keep discarded exploration transient.
 
 - Name every public and internal operation for the domain action it performs. Use one term for one
   behavior and one behavior for one term; encode direction, unit, and ownership where callers or
-  maintainers otherwise have to remember them. When a rename breaks callers or compilation, repair
-  the model and every dependent use from that meaning. Never restore an opaque legacy name merely
-  to make a gate pass. Use explicit operation values instead of Boolean direction flags.
+  maintainers otherwise have to remember them. Names MUST NOT claim visibility, safety, security,
+  or provenance unless the interface enforces that property. When a rename breaks callers or
+  compilation, repair the model and every dependent use from that meaning. Never restore an opaque
+  legacy name merely to make a gate pass. Use explicit operation values instead of Boolean direction
+  flags.
 - Put complexity behind the smallest interface that covers the consumer job. Prefer one obvious
   operation over a sequence that makes callers coordinate package state.
 - Keep keyless transformations and generation as module functions. Put keys, sentinels, rotation,
@@ -53,6 +55,8 @@ in their durable owner and keep discarded exploration transient.
   policy, entropy source, or runtime adapter.
 - Require each codec sentinel to have a nonempty unique application name and unique UUID so every
   entry exposed through `codec.sentinels` identifies one reserved value without caller repair.
+  Validate identity and uniqueness before building arrays or lookup maps; no projection may choose
+  its own winner for ambiguous configuration.
 - Hide implementation seams until two real adapters or a consumer-visible capability need them.
   Tests exercise the same public interface as callers unless an internal seam is required to prove
   a runtime path.
@@ -194,8 +198,9 @@ For each changed interface, state the consumer job, the misuse or work eliminate
 shape, its rejected live alternatives, and the strongest remaining trade-off. Then prove the
 applicable links:
 
-- declaration inference and rejection with the TypeScript floor and current compiler;
-- direct behavior and failure paths in Node and Bun;
+- declaration inference, accepted spellings, and rejection of removed names and options with the
+  TypeScript floor and current compiler;
+- direct behavior and each construction invariant or failure path in Node and Bun;
 - actual adapter selection in Deno and a browser when that path can differ;
 - packed export resolution and use from an extracted consumer;
 - shared TypeScript and Rust contract cases for cross-language behavior;
