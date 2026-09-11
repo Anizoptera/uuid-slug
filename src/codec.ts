@@ -193,15 +193,14 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
 
   function uuidV7ToMaskedSlug<Input extends string>(
     uuid: UuidV7StringInput<Input>,
-  ): PublicUuidV7Slug | UuidSlugError {
-    const bytes = parseUuid(uuid as string);
+  ): PublicUuidV7Slug | UuidSlugError;
+  function uuidV7ToMaskedSlug<Input extends Uint8Array>(
+    uuid: UuidV7BytesInput<Input>,
+  ): PublicUuidV7Slug | UuidSlugError;
+  function uuidV7ToMaskedSlug(uuid: string | Uint8Array): PublicUuidV7Slug | UuidSlugError {
+    if (typeof uuid !== "string") return encodeMasked(uuid);
+    const bytes = parseUuid(uuid);
     return bytes instanceof Error ? bytes : encodeMasked(bytes);
-  }
-
-  function maskUuidV7Bytes<Input extends Uint8Array>(
-    bytes: UuidV7BytesInput<Input>,
-  ): PublicUuidV7Slug | UuidSlugError {
-    return encodeMasked(bytes);
   }
 
   function maskedSlugToUuidV7(slug: string): UuidV7String | UuidSlugError {
@@ -255,7 +254,6 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
     migration,
     uuidV7MaskedSlug: generateMaskedSlug,
     uuidV7ToMaskedSlug,
-    uuidV7BytesToMaskedSlug: maskUuidV7Bytes,
     maskedSlugToUuidV7,
     maskedSlugToUuidV7Bytes,
     /**

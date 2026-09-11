@@ -139,9 +139,9 @@ export declare interface UuidSlugCodec {
     this: void,
     uuid: UuidV7StringInput<Input>,
   ): PublicUuidV7Slug | UuidSlugError;
-  uuidV7BytesToMaskedSlug<Input extends Uint8Array>(
+  uuidV7ToMaskedSlug<Input extends Uint8Array>(
     this: void,
-    bytes: UuidV7BytesInput<Input>,
+    uuid: UuidV7BytesInput<Input>,
   ): PublicUuidV7Slug | UuidSlugError;
   maskedSlugToUuidV7<Input extends string>(
     this: void,

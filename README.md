@@ -50,7 +50,7 @@ const uuid = unwrapUuidSlug(ids.maskedSlugToUuidV7(publicId));
 Keep binary database keys binary across the same codec seam:
 
 ```ts
-const publicId = unwrapUuidSlug(ids.uuidV7BytesToMaskedSlug(uuidBytes));
+const publicId = unwrapUuidSlug(ids.uuidV7ToMaskedSlug(uuidBytes));
 const uuidBytes = unwrapUuidSlug(ids.maskedSlugToUuidV7Bytes(publicId));
 ```
 
@@ -231,8 +231,8 @@ without binding them first.
 | `uuidV7At(ms)` / `uuidV7BytesAt(ms)` / `uuidV7BytesAt(ms, out, offset?)` | module only | `UuidSlugError \| ...` | Generate at an instant you name. |
 | `uuidV4Slug(alphabet?)` / `uuidV7Slug(alphabet?)`       | module only       | `UuidSlugError` or direct slug | Generate and encode in one step.         |
 | `uuidV7MaskedSlug()`                                    | codec only        | `UuidSlugError` or `PublicUuidV7Slug` | Generate a masked or sentinel slug. |
-| `uuidV7ToMaskedSlug(uuid)` / `maskedSlugToUuidV7(slug)` | codec only        | `UuidSlugError \| ...`        | Masked slug, both ways; v7 only.         |
-| `uuidV7BytesToMaskedSlug(bytes)` / `maskedSlugToUuidV7Bytes(slug, out?, offset?)` | codec only | `UuidSlugError \| ...` | Mask or decode without UUID text. |
+| `uuidV7ToMaskedSlug(uuidOrBytes)` / `maskedSlugToUuidV7(slug)` | codec only | `UuidSlugError \| ...` | Mask UUIDv7 text or bytes; decode to text. |
+| `maskedSlugToUuidV7Bytes(slug, out?, offset?)` | codec only | `UuidSlugError \| ...` | Decode without producing UUID text. |
 | `validateMaskedSlugFresh(slug, opts?)`                  | codec only        | `UuidSlugError \| ...`        | Unmask, then check the freshness window. |
 | `sentinels`                                             | codec only        | array                         | The reserved values this codec knows.    |
 | `migration(options?)`                                 | codec only        | migration reader              | Read selected old formats without changing new output. |

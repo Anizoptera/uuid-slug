@@ -271,11 +271,11 @@ export interface UuidSlugCodec {
   ): PublicUuidV7Slug | UuidSlugError;
   /**
    * Mask one validated or raw UUIDv7 byte payload without formatting intermediate UUID text.
-   * The byte-specific name keeps storage representation explicit and rejects known UUIDv4 bytes.
+   * Input overloads let callers keep the UUID representation they already own.
    */
-  uuidV7BytesToMaskedSlug<Input extends Uint8Array>(
+  uuidV7ToMaskedSlug<Input extends Uint8Array>(
     this: void,
-    bytes: UuidV7BytesInput<Input>,
+    uuid: UuidV7BytesInput<Input>,
   ): PublicUuidV7Slug | UuidSlugError;
   /**
    * Return the first sentinel or schema candidate in configured order; this does not prove issuance.

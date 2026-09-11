@@ -144,10 +144,10 @@ export const codecBoundaryCases = [
       const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
       const bytes = unwrap(parseUuid(uuid));
       const v4 = unwrap(parseUuid("550e8400-e29b-41d4-a716-446655440000"));
-      const refused = codec.uuidV7BytesToMaskedSlug(v4);
+      const refused = codec.uuidV7ToMaskedSlug(v4);
       assert.ok(refused instanceof UuidSlugError);
       assert.equal(refused.code, "invalid_uuid_version");
-      const slug = unwrap(codec.uuidV7BytesToMaskedSlug(bytes));
+      const slug = unwrap(codec.uuidV7ToMaskedSlug(bytes));
       const owned = unwrap(codec.maskedSlugToUuidV7Bytes(slug));
       assert.equal(owned.constructor, Uint8Array);
       assert.deepEqual(owned, bytes);
@@ -217,8 +217,8 @@ export const codecBoundaryCases = [
         const encoded = safe.uuidV7ToMaskedSlug(uuid);
         assert.equal(typeof legacy, "string");
         assert.equal(typeof encoded, "string");
-        assert.equal(old.uuidV7BytesToMaskedSlug(bytes), legacy);
-        assert.equal(safe.uuidV7BytesToMaskedSlug(bytes), encoded);
+        assert.equal(old.uuidV7ToMaskedSlug(bytes), legacy);
+        assert.equal(safe.uuidV7ToMaskedSlug(bytes), encoded);
         const text = encoded as string;
         assert.equal(text.length, 27);
         assert.equal(bits(text, alphabet32, 5), bits(legacy as string, alphabet64, 6) + "000");

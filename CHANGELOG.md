@@ -23,8 +23,9 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 ### Added
 
-- Mask and decode UUIDv7 bytes directly through a TypeScript codec. Owned decode results are plain
-  `Uint8Array` values; caller storage is written atomically and returned with its exact subtype.
+- Pass UUIDv7 text or bytes to the same TypeScript codec masking operation, and decode directly to
+  bytes when needed. Owned decode results are plain `Uint8Array` values; caller storage is written
+  atomically and returned with its exact subtype.
 - `createCustomMaskSchema` adapts caller-defined reversible transforms into opaque TypeScript
   schema handles. Each TypeScript callback returns transformed bytes or a package error instead of
   managing a destination buffer. Rust callers use separate forward and reverse callbacks with
