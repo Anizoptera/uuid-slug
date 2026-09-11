@@ -97,9 +97,9 @@
 - [x] Add the smallest red reproducer before each behavioral fix; retain only regressions whose marginal defect detection exceeds their rent.
 - [x] Fix proven defects with the smallest complete design; run narrow falsifiers and commit each self-contained change with explicit files.
 - [x] Re-audit affected callers, declarations, docs, runtime paths, tests, and cross-language behavior after every semantic fix.
-- [ ] Run packed-consumer, declaration, runtime, artifact, interoperability, performance, and full repository checks required by the final state.
-- [ ] Re-read every changed line and nearby comment; remove redundant work, stale claims, shadow sources, completed plan state, and any verifier that did not earn its place.
-- [ ] Search every contract owner by subject terms after the implementation review so different wording cannot hide a conflicting rule or duplicate source of truth.
-- [ ] Pair every roadmap criterion with its concrete instrument and result; leave no completion mark supported only by code reading or a green aggregate.
-- [ ] State the strongest surviving uncertainty and the exact observation that would change each final verdict; never convert unexecuted environments into a universal claim.
-- [ ] Audit the audit itself for narrowed searches, truncated output, unchecked files, shared-origin evidence, stale generated output, and conclusions stronger than their instruments.
+- [x] Run packed-consumer, declaration, runtime, artifact, interoperability, performance, and full repository checks required by the final state.
+- [x] Re-read every changed line and nearby comment; remove redundant work, stale claims, shadow sources, completed plan state, and any verifier that did not earn its place.
+- [x] Search every contract owner by subject terms after the implementation review so different wording cannot hide a conflicting rule or duplicate source of truth.
+- [x] Pair every roadmap criterion with its concrete instrument and result; leave no completion mark supported only by code reading or a green aggregate.
+- [x] State the strongest surviving uncertainty and the exact observation that would change each final verdict; never convert unexecuted environments into a universal claim.
+- [x] Audit the audit itself for narrowed searches, truncated output, unchecked files, shared-origin evidence, stale generated output, and conclusions stronger than their instruments.
