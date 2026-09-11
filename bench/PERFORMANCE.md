@@ -182,4 +182,8 @@ model. Removing diagnostic errors or callback-owned buffers would change contrac
 
 `bun run perf:check` protects JavaScript-visible allocation, decoding, encoding and entropy work, plus coarse relative pipeline timings on both runtimes. Its injected result-preserving regressions must fail. Shared functional cases protect wire identity, ownership, invalid input and optional native branches. Async cases protect snapshots, UTF-8 chunk boundaries, cancellation and independent concurrent constructions; changing host yields to microtasks makes cancellation fail.
 
+The Bun test lane uses two isolated workers. Automatic parallelism increased contention without
+shortening the complete local check on 2026-09-11; change the cap only after measuring the complete
+lane with the same corpus and isolation.
+
 The gates do not prove all performance properties. Relative timing cannot detect a slowdown shared by both sides. Constructor counters cannot see every engine allocation. Latest-runtime CI complements pinned runs, but this study did not execute hosted CI or measure every OS/architecture. Keep these limits when interpreting a pass.
