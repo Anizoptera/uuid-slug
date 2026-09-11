@@ -35,7 +35,7 @@
 - [ ] Audit entropy and seed handling for copies, retention, zeroization limits, snapshots, process forks, workers, shared memory, and accidental publication in errors, docs, maps, or artifacts.
 - [ ] Audit attacker-controlled length, iteration, key-list, sentinel-list, and malformed-input work for bounded CPU, memory, allocation, and diagnostics.
 - [ ] Measure seed, previous-mask, and sentinel scaling through geometric mechanism boundaries; derive dominated ranges before proposing any public limit.
-- [ ] Ask Art only for a residual user-visible trade-off that measurements and existing contracts cannot decide, with consequences and proposed wording instead of arbitrary numbers.
+- [ ] Decide whether resource growth needs a structural fix, a documented boundary, or a public limit from security, responsiveness, compatibility, and caller demand; escalate only if the best complete solution changes caller-visible behavior.
 
 ### Core implementation
 
@@ -84,6 +84,7 @@
 
 - [x] Prevent reentrant UUIDv4 entropy callbacks from overwriting shared scratch bytes and returning duplicate identifiers; preserve the allocation-free ordinary path.
 - [x] Remove probabilistic no-collision tests that contradict the published collision contract and add no package-controlled evidence beyond source, pool, and generator-state tests.
+- [x] Draw only UUIDv7's ten random payload bytes when seeding and four on same-millisecond increments instead of discarding 60–75% of each entropy draw.
 - [ ] Record each credible defect with exact evidence, consequence, strongest rival explanation, and the observation that can overturn it.
 - [ ] For each proven defect, enumerate distinct live fixes across API shape, type constraint, invariant, algorithm, data structure, runtime seam, test oracle, and deletion; compare hybrids by caller burden, correctness, compatibility, work, and owned complexity.
 - [ ] Add the smallest red reproducer before fixing a bug; prove it fails because the intended defect is reachable, then keep it only if its marginal value exceeds its rent.
