@@ -23,7 +23,7 @@ const nodeRuntime: Runtime = {
    * `randomFillSync` writes into the buffer it is given. `randomBytes` would allocate a fresh
    * `Buffer` per call and copy out of it, leaving a second, unzeroed copy of the random
    * material on the heap for the collector to get to whenever it does. Pooled because the
-   * per-call cost dominates for UUID-sized draws; see `pool.ts`.
+   * per-call cost dominates at 16 bytes; see `pool.ts`.
    */
   fillRandom: pooledFill((into) => {
     crypto.randomFillSync(into);

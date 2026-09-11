@@ -112,10 +112,7 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
   const fill = options.fillRandom;
   if (typeof clock !== "function") throw new TypeError("Generator clock must be a function.");
   if (typeof fill !== "function") throw new TypeError("Generator fillRandom must be a function.");
-  // Six bytes seed the counter and four remain random in the UUID. Keeping the tail view avoids
-  // drawing and discarding twelve bytes on every later value in the same millisecond.
-  const random = new Uint8Array(10);
-  const randomTail = random.subarray(6);
+  const random = new Uint8Array(16);
   /**
    * Below every timestamp the clock check admits, which is what makes it the uninitialised
    * sentinel rather than a value: `now > lastMs` alone therefore takes the reseed branch on the
@@ -147,7 +144,7 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
   ) {
     writeTimestamp(target, ms, offset);
     writeCounter(target, sequenceHi, sequenceLo, offset);
-    for (let i = 0; i < 4; i += 1) target[offset + 12 + i] = randomTail[i] as number;
+    for (let i = 12; i < 16; i += 1) target[offset + i] = random[i] as number;
     return target;
   }
 
@@ -199,7 +196,7 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
           const failed = reseed(lastMs + 1);
           if (failed) return failed;
         } else {
-          const failed = fillRandomBytes(fill, randomTail);
+          const failed = fillRandomBytes(fill, random);
           if (failed) return failed;
           // Commit only after entropy succeeds; a failed draw must not consume sequence state.
           counterLo = nextLo;

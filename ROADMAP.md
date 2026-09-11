@@ -84,7 +84,7 @@
 
 - [x] Prevent reentrant UUIDv4 entropy callbacks from overwriting shared scratch bytes and returning duplicate identifiers; preserve the allocation-free ordinary path.
 - [x] Remove probabilistic no-collision tests that contradict the published collision contract and add no package-controlled evidence beyond source, pool, and generator-state tests.
-- [x] Draw only UUIDv7's ten random payload bytes when seeding and four on same-millisecond increments instead of discarding 60–75% of each entropy draw.
+- [x] Preserve UUIDv7's documented 16-byte entropy callback requests; the narrower draw changed observable callback behavior and contradicted the recorded rejection of that alternative.
 - [x] Stop classifying the undocumented legacy `UuidRuntimeError` name as a current package error; retain current-name recognition across realms and duplicate copies.
 - [x] Correct stale Node `randomUUIDv7` chronology in benchmark evidence and remove it from runtime compatibility logic; capability presence remains the executable boundary.
 - [x] Execute the cleaned archive through its extracted package exports on Node, Bun, Deno, and Chromium; retain the direct archive validator as the packaged-route proof.

@@ -3,7 +3,7 @@
 /**
  * Draws cryptographic randomness a page at a time instead of per id.
  *
- * Randomness calls cost more than copying the small payload an identifier needs. The bounded pool
+ * Randomness calls cost more than copying the 16 bytes an identifier needs. The bounded pool
  * amortizes that call without retaining more unissued material than needed.
  *
  * The source is unchanged — this batches the same CSPRNG, it does not replace or stretch it.
@@ -14,10 +14,10 @@ const POOL_BYTES = 8192;
  * Wraps a direct random-fill primitive in a pool.
  *
  * Consumed bytes are zeroed as they are handed out. Batching is what creates the need: without
- * a pool, material for an id is gone once used, whereas a live buffer would otherwise retain
- * consumed random material, so a heap dump could expose ids the process had already handed out.
- * Zeroing restores the property batching would remove; the cost is one write per byte already
- * being copied.
+ * a pool, material for an id is gone once used, whereas a live 8 KiB buffer would otherwise
+ * retain the random half of up to 512 already-issued ids, so a heap dump would expose ids the
+ * process had already handed out. Zeroing restores the property batching would remove; the cost
+ * is one write per byte already being copied.
  *
  * Each module instance owns its pool, so worker threads never share one. This is safe under
  * Node's process model because a new process gets a fresh heap; it would NOT be safe under a
