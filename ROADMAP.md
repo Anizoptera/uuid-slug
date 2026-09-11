@@ -71,6 +71,8 @@ paths only. Do not change the Rust implementation or use it to hide TypeScript c
 
 ### Optimization
 
+- [x] Reuse each schema attempt's isolated 16-byte block as transform output; preserve custom-mask
+  isolation while reducing ordinary masked encode and one-key decode from two allocations to one.
 - [ ] Rank proven bottlenecks by consumer frequency, avoidable work, cross-runtime reach, and change
   risk; optimize the highest-value TypeScript mechanism first.
 - [ ] For each selected mechanism, evaluate deletion, platform primitive, fused pass, cached invariant,

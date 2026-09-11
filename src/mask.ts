@@ -95,10 +95,11 @@ export function uuidV7BytesToMaskedSlug(
       "Masking requires a UUIDv7 timestamped before 2^42 ms (year 2109); its top six bits carry the check.",
     );
   const tag = tagFor(raw, TAG_BITS);
-  const tagged = new Uint8Array(raw);
-  injectTag(tagged, tag >>> OUTER_TAG_BITS);
-  const mixed = new Uint8Array(16);
-  const failed = applyMix(schema, tagged, mixed, "mask");
+  const mixed = new Uint8Array(raw);
+  injectTag(mixed, tag >>> OUTER_TAG_BITS);
+  // Every schema receives an isolated block. Reusing that block as output removes a second
+  // allocation; built-in transforms read all words before writing and custom transforms copy input.
+  const failed = applyMix(schema, mixed, mixed, "mask");
   if (failed) return failed;
   const tail = tag & ((1 << OUTER_TAG_BITS) - 1);
   // Raw sentinels have zero outer bits. Only that tail can collide with retained base64 reads;
@@ -177,13 +178,14 @@ function unmix(
   outerTag: number,
   schema: UuidV7Mask,
 ): Uint8Array | undefined | UuidSlugError {
-  const unmixed = new Uint8Array(16);
-  const failed = applyMix(schema, mixed, unmixed, "unmask");
+  // `mixed` is already private to this schema attempt, so the same alias-safe transform contract
+  // can write back into it instead of allocating another block.
+  const failed = applyMix(schema, mixed, mixed, "unmask");
   if (failed) return failed;
   // Both halves come out of the same decryption, so a wrong key garbles the observed check as
   // thoroughly as the payload: the tag needs no key of its own to tell keys apart.
-  const foundTag = (extractTag(unmixed) << OUTER_TAG_BITS) | outerTag;
-  restoreV7(unmixed);
-  if (tagFor(unmixed, TAG_BITS) !== foundTag) return undefined;
-  return unmixed;
+  const foundTag = (extractTag(mixed) << OUTER_TAG_BITS) | outerTag;
+  restoreV7(mixed);
+  if (tagFor(mixed, TAG_BITS) !== foundTag) return undefined;
+  return mixed;
 }

@@ -188,14 +188,14 @@ try {
     },
   );
   check("masked byte encode", () => codec.encodeUuid(bytes), {
-    buffers: 2,
+    buffers: 1,
     base64: 1,
     errors: 0,
     hex: 0,
     chars: 22,
   });
   check("masked byte decode", () => codec.decodeSlugToBytes(masked as string), {
-    buffers: 2,
+    buffers: 1,
     errors: 0,
     hex: 0,
     chars: 22,
