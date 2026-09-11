@@ -56,6 +56,7 @@
 
 ### Findings, fixes, and closure
 
+- [x] Prevent reentrant UUIDv4 entropy callbacks from overwriting shared scratch bytes and returning duplicate identifiers; preserve the allocation-free ordinary path.
 - [ ] Record each credible defect with exact evidence, consequence, strongest rival explanation, and the observation that can overturn it.
 - [ ] For each proven defect, enumerate distinct live fixes across API shape, type constraint, invariant, algorithm, data structure, runtime seam, test oracle, and deletion; compare hybrids by caller burden, correctness, compatibility, work, and owned complexity.
 - [ ] Add the smallest red reproducer before fixing a bug; prove it fails because the intended defect is reachable, then keep it only if its marginal value exceeds its rent.

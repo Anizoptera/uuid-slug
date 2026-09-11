@@ -329,6 +329,24 @@ export const runtimeBoundaryCases = [
       assert.ok(out.every((byte) => byte === 0x22));
     },
   },
+  {
+    name: "refuses UUIDv4 generation reentered from its entropy source",
+    run(this: void) {
+      const originalFill = runtime.fillRandom;
+      let nested: unknown;
+      runtime.fillRandom = (bytes) => {
+        bytes.fill(nested === undefined ? 0x11 : 0x22);
+        if (nested === undefined) nested = generateUuidV4Bytes();
+      };
+      try {
+        assert.ok(!(generateUuidV4Bytes() instanceof Error));
+        assert.ok(nested instanceof UuidSlugError);
+        assert.equal(nested.code, "rng_unavailable");
+      } finally {
+        runtime.fillRandom = originalFill;
+      }
+    },
+  },
   ...(["base64url", "base32hex"] as const).map((slugAlphabet) => ({
     name: `uses the supplied generator for ${slugAlphabet}`,
     run(this: void) {

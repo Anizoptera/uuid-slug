@@ -33,6 +33,7 @@ const v7 = () => (generator ??= createRuntimeGenerator(runtime));
  * than allocated per call, matching the v7 generator, so the cost is one 16-byte copy.
  */
 const v4Random = new Uint8Array(16);
+let generatingV4 = false;
 
 /** Generate package-owned UUIDv4 bytes, or write atomically into caller storage. */
 export function generateUuidV4Bytes(): UuidV4Bytes | UuidSlugError;
@@ -44,18 +45,28 @@ export function generateUuidV4Bytes(
   output?: Uint8Array,
   outputOffset = 0,
 ): Uint8Array | UuidSlugError {
+  if (generatingV4)
+    return new UuidSlugError(
+      "rng_unavailable",
+      "UUIDv4 generation cannot be reentered from its entropy source.",
+    );
   const target = output ?? new Uint8Array(16);
   const badRange =
     output === undefined
       ? checkRange(16, outputOffset, 16)
       : checkByteRange(output, outputOffset, 16);
   if (badRange) return badRange;
-  const failed = fillRandomBytes(runtime.fillRandom, v4Random);
-  if (failed) return failed;
-  target.set(v4Random, outputOffset);
-  target[outputOffset + 6] = ((target[outputOffset + 6] ?? 0) & 0x0f) | 0x40;
-  target[outputOffset + 8] = ((target[outputOffset + 8] ?? 0) & 0x3f) | 0x80;
-  return target;
+  generatingV4 = true;
+  try {
+    const failed = fillRandomBytes(runtime.fillRandom, v4Random);
+    if (failed) return failed;
+    target.set(v4Random, outputOffset);
+    target[outputOffset + 6] = ((target[outputOffset + 6] ?? 0) & 0x0f) | 0x40;
+    target[outputOffset + 8] = ((target[outputOffset + 8] ?? 0) & 0x3f) | 0x80;
+    return target;
+  } finally {
+    generatingV4 = false;
+  }
 }
 
 function portableUuidV4(): UuidV4String | UuidSlugError {
