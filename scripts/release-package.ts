@@ -49,10 +49,9 @@ export async function releasePackage(
   cwd: string,
   tag: string,
   mode: "prepare" | "publish",
-  registry = "https://registry.npmjs.org",
 ): Promise<void> {
   const { name, version } = await preflightRelease(cwd, tag);
-  const url = `${registry}/${encodeURIComponent(name)}/${encodeURIComponent(version)}`;
+  const url = `https://registry.npmjs.org/${encodeURIComponent(name)}/${encodeURIComponent(version)}`;
   if (mode === "prepare") {
     await pack(cwd, join(cwd, reviewedDirectory), version, true);
     return;

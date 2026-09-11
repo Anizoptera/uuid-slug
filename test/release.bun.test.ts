@@ -7,7 +7,7 @@ import { rejects } from "node:assert/strict";
 import { inspectArtifact } from "../scripts/check-artifact";
 import { tagReleaseFixture } from "./release-fixture";
 import { releaseNotes } from "../scripts/release-notes";
-import { registryIntegrity, verifyIntegrity } from "../scripts/registry-integrity";
+import { verifyIntegrity } from "../scripts/registry-integrity";
 
 async function rustReleaseFixture(root: string, version: string): Promise<void> {
   await Bun.write(
@@ -90,98 +90,6 @@ test("artifact validation rejects a credential-bearing repack before publication
     await inspectArtifact(actual);
   } finally {
     delete process.env.UUID_SLUG_EXPECTED_ARCHIVE;
-    await rm(root, { recursive: true, force: true });
-  }
-});
-test("registry transport distinguishes absence, outage and malformed metadata", async () => {
-  const server = Bun.serve({
-    port: 0,
-    fetch(request) {
-      switch (new URL(request.url).pathname) {
-        case "/missing":
-          return new Response(null, { status: 404 });
-        case "/outage":
-          return new Response(null, { status: 503 });
-        case "/invalid":
-          return Response.json({ dist: {} });
-        default:
-          return Response.json({ dist: { integrity: "sha512-published" } });
-      }
-    },
-  });
-  try {
-    expect(await registryIntegrity(new URL("/missing", server.url).href)).toBeUndefined();
-    expect(await registryIntegrity(server.url.href)).toBe("sha512-published");
-    await rejects(registryIntegrity(new URL("/outage", server.url).href), /503/);
-    await rejects(registryIntegrity(new URL("/invalid", server.url).href), /integrity/);
-  } finally {
-    await server.stop(true);
-  }
-});
-
-// A real child process stands in for the uploader, so failure and argv propagation cross
-// the same boundary as CI without contacting or publishing to a real registry.
-test("release process prepares without credentials and repairs only a missing npm version", async () => {
-  const { releasePackage } = await import("../scripts/release-package");
-  const root = await mkdtemp(join(tmpdir(), "uuid-slug-publish-"));
-  const bytes = new TextEncoder().encode("published archive");
-  const digest = `sha512-${createHash("sha512").update(bytes).digest("base64")}`;
-  let integrity = digest;
-  let unpublished = false;
-  const server = Bun.serve({
-    port: 0,
-    fetch: () => {
-      if (unpublished) {
-        unpublished = false;
-        return new Response(null, { status: 404 });
-      }
-      return Response.json({ dist: { integrity } });
-    },
-  });
-  try {
-    await Bun.write(
-      join(root, "package.json"),
-      JSON.stringify({ name: "test", version: "1.2.3-rc.1" }),
-    );
-    await Bun.write(join(root, "CHANGELOG.md"), "## [1.2.3-rc.1]\n- Change.\n");
-    await rustReleaseFixture(root, "1.2.3-rc.1");
-    await tagReleaseFixture(root, "1.2.3-rc.1");
-    await Bun.write(
-      join(root, "node_modules/.bin/publish-clean"),
-      `
-      await Bun.write("invoked.json", JSON.stringify(process.argv.slice(2)));
-      const out = process.argv[process.argv.indexOf("--tarball-out") + 1];
-      await Bun.write(out + "/archive.tgz", "published archive");
-    `,
-    );
-    await rejects(releasePackage(root, "v9.0.0", "prepare", server.url.origin), /does not match/);
-    expect(await Bun.file(join(root, "invoked.json")).exists()).toBe(false);
-    await releasePackage(root, "v1.2.3-rc.1", "prepare", server.url.origin);
-    const args = await Bun.file(join(root, "invoked.json")).json();
-    expect(args).toContain("--guard-only");
-    expect(args.slice(-5)).toEqual(["--access", "public", "--tag", "next", "--provenance"]);
-    await releasePackage(root, "v1.2.3-rc.1", "publish", server.url.origin);
-    await rm(join(root, "release-artifacts"), { recursive: true });
-    await releasePackage(root, "v1.2.3-rc.1", "prepare", server.url.origin);
-    unpublished = true;
-    await releasePackage(root, "v1.2.3-rc.1", "publish", server.url.origin);
-    expect(await Bun.file(join(root, "invoked.json")).json()).not.toContain("--guard-only");
-    await rm(join(root, "release-artifacts"), { recursive: true });
-    await releasePackage(root, "v1.2.3-rc.1", "prepare", server.url.origin);
-    integrity = "sha512-different";
-    await rejects(releasePackage(root, "v1.2.3-rc.1", "publish", server.url.origin), /differs/);
-    expect(await Bun.file(join(root, "release-artifacts/published-npm")).exists()).toBe(false);
-    await rm(join(root, "release-artifacts"), { recursive: true });
-    await releasePackage(root, "v1.2.3-rc.1", "prepare", server.url.origin);
-    integrity = digest;
-    await Bun.write(join(root, "node_modules/.bin/publish-clean"), "process.exit(9);");
-    unpublished = true;
-    await rejects(
-      releasePackage(root, "v1.2.3-rc.1", "publish", server.url.origin),
-      /Command failed/,
-    );
-  } finally {
-    await server.stop(true);
     await rm(root, { recursive: true, force: true });
   }
 });

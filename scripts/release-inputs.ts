@@ -187,8 +187,6 @@ export async function collectReleaseInputs(
   cwd: string,
   tag: string,
   output: string,
-  npmRegistry = "https://registry.npmjs.org",
-  cratesRegistry = "https://crates.io",
   candidateFiles?: { readonly npm: string; readonly crate: string },
 ): Promise<ReleaseInputs> {
   if (!candidateFiles) throw new Error("Candidate npm and crate archives are required.");
@@ -223,8 +221,8 @@ export async function collectReleaseInputs(
   }
   const [choices, npm, crate] = await Promise.all([
     releaseComparisons(cwd, tag),
-    npmHistory(npmRegistry, name),
-    crateHistory(cratesRegistry, "uuid-slug"),
+    npmHistory("https://registry.npmjs.org", name),
+    crateHistory("https://crates.io", "uuid-slug"),
   ]);
   if (npm.versions.has(version) || crate.versions.has(version))
     throw new Error(
@@ -292,7 +290,7 @@ if (import.meta.main) {
   const crate = process.argv[5];
   if (!tag || !npm || !crate)
     throw new Error("Usage: release-inputs.ts vVERSION output-directory npm-archive crate-archive");
-  collectReleaseInputs(process.cwd(), tag, resolve(output), undefined, undefined, {
+  collectReleaseInputs(process.cwd(), tag, resolve(output), {
     npm: resolve(npm),
     crate: resolve(crate),
   }).catch((error: unknown) => {

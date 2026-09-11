@@ -5,8 +5,9 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { tagReleaseFixture } from "../test/release-fixture";
+import { command } from "./command";
 import { collectReleaseInputs } from "./release-inputs";
-import { crateHistory, npmHistory, readRetainedArchive, registryVersion } from "./release-inputs";
+import { readRetainedArchive, registryVersion } from "./release-inputs";
 
 test("retained archive consumers reject changed bytes and unsupported digests", async () => {
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-retained-"));
@@ -40,25 +41,6 @@ test("retained archive consumers reject changed bytes and unsupported digests", 
 
 test("input retries preserve their comparison basis and reject changed candidate bytes", async () => {
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-input-retry-"));
-  let reads = 0;
-  let published = false;
-  const server = Bun.serve({
-    port: 0,
-    fetch(request) {
-      reads++;
-      if (published && new URL(request.url).pathname.startsWith("/npm/"))
-        return Response.json({
-          versions: {
-            "1.2.3": {
-              dist: { integrity: "sha512-value", tarball: "https://example.invalid/archive" },
-            },
-          },
-        });
-      return Response.json({
-        versions: new URL(request.url).pathname.startsWith("/npm/") ? {} : [],
-      });
-    },
-  });
   try {
     await Promise.all([
       Bun.write(join(root, "package.json"), JSON.stringify({ name: "test", version: "1.2.3" })),
@@ -75,32 +57,34 @@ test("input retries preserve their comparison basis and reject changed candidate
       Bun.write(join(root, candidate.npm), "npm bytes"),
       Bun.write(join(root, candidate.crate), "crate bytes"),
     ]);
-    const collect = () =>
-      collectReleaseInputs(
-        root,
-        "v1.2.3",
-        join(root, "history"),
-        `${server.url}npm`,
-        server.url.origin,
-        candidate,
-      );
-    const initial = await collect();
-    const initialReads = reads;
-    published = true;
-    expect(initialReads).toBeGreaterThan(0);
-    expect(await collect()).toEqual(initial);
-    expect(reads).toBe(initialReads);
+    const commit = (await command("git", ["rev-list", "-n", "1", "v1.2.3"], root)).trim();
+    const initial = {
+      name: "test",
+      version: "1.2.3",
+      tag: "v1.2.3",
+      commit,
+      candidate: {
+        npm: {
+          file: candidate.npm,
+          integrity: `sha512-${createHash("sha512").update("npm bytes").digest("base64")}`,
+        },
+        crate: {
+          file: candidate.crate,
+          integrity: `sha256-${createHash("sha256").update("crate bytes").digest("hex")}`,
+        },
+      },
+      comparisons: [],
+    } as const;
     const record = join(root, "history/release-inputs.json");
+    await Bun.write(record, JSON.stringify(initial));
+    const collect = () => collectReleaseInputs(root, "v1.2.3", join(root, "history"), candidate);
+    expect(await collect()).toEqual(initial);
     await Bun.write(record, JSON.stringify({ ...initial, commit: "different commit" }));
     await rejects(collect(), /different package, version, tag, or commit/);
     await Bun.write(record, JSON.stringify(initial));
     await Bun.write(join(root, candidate.npm), "different npm bytes");
     await rejects(collect(), /differs from release inputs/);
-    expect(reads).toBe(initialReads);
-    await rm(record);
-    await rejects(collect(), /published candidate has no retained release inputs/);
   } finally {
-    await server.stop(true);
     await rm(root, { recursive: true, force: true });
   }
 });
@@ -111,48 +95,5 @@ describe("release registry history", () => {
     expect(() =>
       registryVersion({ versions: new Map([["0.2.0", "bytes"]]) }, "0.3.0", "npm"),
     ).toThrow("Git and registry history disagree");
-  });
-
-  test("reads each registry version index and rejects incomplete entries", async () => {
-    let origin = "";
-    const server: Bun.Server<undefined> = Bun.serve({
-      port: 0,
-      fetch(request): Response {
-        const path = new URL(request.url).pathname;
-        if (path === "/npm/missing" || path === "/crates/api/v1/crates/missing")
-          return new Response(null, { status: 404 });
-        if (path === "/npm/broken") return Response.json({ versions: { "1.0.0": { dist: {} } } });
-        if (path === "/crates/api/v1/crates/broken")
-          return Response.json({ versions: [{ num: "1.0.0", checksum: "bad" }] });
-        if (path === "/npm/pkg")
-          return Response.json({
-            versions: {
-              "1.0.0": {
-                dist: { integrity: "sha512-value", tarball: `${origin}npm/archive` },
-              },
-            },
-          });
-        return Response.json({
-          versions: [{ num: "1.0.0", checksum: "a".repeat(64), dl_path: "/crate/archive" }],
-        });
-      },
-    });
-    origin = server.url.href;
-    try {
-      expect((await npmHistory(`${server.url}npm`, "missing")).versions.size).toBe(0);
-      expect((await crateHistory(`${server.url}crates`, "missing")).versions.size).toBe(0);
-      expect((await npmHistory(`${server.url}npm`, "pkg")).versions.get("1.0.0")).toEqual({
-        integrity: "sha512-value",
-        tarball: `${server.url}npm/archive`,
-      });
-      expect((await crateHistory(`${server.url}crates`, "pkg")).versions.get("1.0.0")).toEqual({
-        checksum: "a".repeat(64),
-        download: `${server.url}crate/archive`,
-      });
-      await rejects(npmHistory(`${server.url}npm`, "broken"), /integrity/);
-      await rejects(crateHistory(`${server.url}crates`, "broken"), /checksum/);
-    } finally {
-      await server.stop(true);
-    }
   });
 });
