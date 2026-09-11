@@ -184,6 +184,8 @@ caller-owned output regresses reproducibly.
 An internal unchecked formatter removed range validation from the exact fallback but produced no
 distinguishable gain in a 24-round screen on any runtime. Keep one validated formatter until a
 string-assembly change improves the complete fallback rather than only removing its boundary check.
+A fixed template using the same byte-pair table produced no formatter win and made Node offset
+formatting 2.3% slower with its 95% median interval above no change; retain the compact loop.
 
 ## Allocation and key rotation
 
