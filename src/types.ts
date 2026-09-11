@@ -270,6 +270,14 @@ export interface UuidSlugCodec {
     uuid: UuidV7StringInput<Input>,
   ): PublicUuidV7Slug | UuidSlugError;
   /**
+   * Mask one validated or raw UUIDv7 byte payload without formatting intermediate UUID text.
+   * The byte-specific name keeps storage representation explicit and rejects known UUIDv4 bytes.
+   */
+  uuidV7BytesToMaskedSlug<Input extends Uint8Array>(
+    this: void,
+    bytes: UuidV7BytesInput<Input>,
+  ): PublicUuidV7Slug | UuidSlugError;
+  /**
    * Return the first sentinel or schema candidate in configured order; this does not prove issuance.
    * Generic capture rejects known UUID text; slug brands remain accepted because overlapping
    * spellings do not prove which encoder produced them.
@@ -278,6 +286,21 @@ export interface UuidSlugCodec {
     this: void,
     slug: SlugStringInput<Input>,
   ): UuidV7String | UuidSlugError;
+  /**
+   * Decode to package-owned plain UUIDv7 bytes without formatting intermediate UUID text.
+   * Use this form when the UUID remains binary; text decoding stays a separate unambiguous method.
+   */
+  maskedSlugToUuidV7Bytes<Input extends string>(
+    this: void,
+    slug: SlugStringInput<Input>,
+  ): UuidV7Bytes | UuidSlugError;
+  /** Decode atomically into `out` and return that exact array. */
+  maskedSlugToUuidV7Bytes<Input extends string, Output extends Uint8Array>(
+    this: void,
+    slug: SlugStringInput<Input>,
+    out: Output,
+    offset?: number,
+  ): Output | UuidSlugError;
   /**
    * Decode with this codec, apply the symmetric freshness window, and return the same spelling.
    * The check establishes timestamp sanity, not expiry, authentication, replay safety, or issuance.

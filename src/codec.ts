@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { runtime } from "#runtime";
-import { isUuidSlugError, readClock, UuidSlugError } from "./errors";
+import { checkByteRange, isUuidSlugError, readClock, UuidSlugError } from "./errors";
 import { uuidV7BytesToMaskedSlug, decodeMaskedSlug } from "./mask";
 import { createMigration } from "./migration";
 import { isMaskSchema } from "./schema-handle";
@@ -17,6 +17,8 @@ import type {
   UuidSlugMigration,
   UuidSlugMigrationOptions,
   UuidV7BytesSource,
+  UuidV7Bytes,
+  UuidV7BytesInput,
   UuidV7Slug,
   UuidV7SlugInput,
   UuidV7Sentinel,
@@ -196,12 +198,44 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
     return bytes instanceof Error ? bytes : encodeMasked(bytes);
   }
 
+  function maskUuidV7Bytes<Input extends Uint8Array>(
+    bytes: UuidV7BytesInput<Input>,
+  ): PublicUuidV7Slug | UuidSlugError {
+    return encodeMasked(bytes);
+  }
+
+  function decodeMaskedBytes(slug: string): Uint8Array | UuidSlugError {
+    return sentinels.bySlug.get(slug)?.bytes ?? decodeMaskedSlug(slug, schema, previousMasks);
+  }
+
   function maskedSlugToUuidV7(slug: string): UuidV7String | UuidSlugError {
     const sentinel = sentinels.bySlug.get(slug);
     if (sentinel) return sentinel.uuid;
     const decoded = decodeMaskedSlug(slug, schema, previousMasks);
     if (decoded instanceof Error) return decoded;
     return formatUuid(decoded) as UuidV7String | UuidSlugError;
+  }
+
+  function maskedSlugToUuidV7Bytes(slug: string): UuidV7Bytes | UuidSlugError;
+  function maskedSlugToUuidV7Bytes<Output extends Uint8Array>(
+    slug: string,
+    out: Output,
+    offset?: number,
+  ): Output | UuidSlugError;
+  function maskedSlugToUuidV7Bytes(
+    slug: string,
+    out?: Uint8Array,
+    offset = 0,
+  ): Uint8Array | UuidSlugError {
+    const badRange = out === undefined ? undefined : checkByteRange(out, offset, 16);
+    if (badRange) return badRange;
+    const decoded = decodeMaskedBytes(slug);
+    if (decoded instanceof Error) return decoded;
+    if (out) {
+      out.set(decoded, offset);
+      return out;
+    }
+    return new Uint8Array(decoded);
   }
 
   function generateMaskedSlug(): PublicUuidV7Slug | UuidSlugError {
@@ -224,7 +258,9 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
     migration,
     uuidV7MaskedSlug: generateMaskedSlug,
     uuidV7ToMaskedSlug,
+    uuidV7BytesToMaskedSlug: maskUuidV7Bytes,
     maskedSlugToUuidV7,
+    maskedSlugToUuidV7Bytes,
     /**
      * Unmask, then apply the same freshness rules as `validateUuidV7Fresh`, returning the slug.
      *

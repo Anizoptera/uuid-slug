@@ -139,10 +139,24 @@ export declare interface UuidSlugCodec {
     this: void,
     uuid: UuidV7StringInput<Input>,
   ): PublicUuidV7Slug | UuidSlugError;
+  uuidV7BytesToMaskedSlug<Input extends Uint8Array>(
+    this: void,
+    bytes: UuidV7BytesInput<Input>,
+  ): PublicUuidV7Slug | UuidSlugError;
   maskedSlugToUuidV7<Input extends string>(
     this: void,
     slug: SlugStringInput<Input>,
   ): UuidV7String | UuidSlugError;
+  maskedSlugToUuidV7Bytes<Input extends string>(
+    this: void,
+    slug: SlugStringInput<Input>,
+  ): UuidV7Bytes | UuidSlugError;
+  maskedSlugToUuidV7Bytes<Input extends string, Output extends Uint8Array>(
+    this: void,
+    slug: SlugStringInput<Input>,
+    out: Output,
+    offset?: number,
+  ): Output | UuidSlugError;
   validateMaskedSlugFresh<Input extends string>(
     this: void,
     slug: SlugStringInput<Input>,

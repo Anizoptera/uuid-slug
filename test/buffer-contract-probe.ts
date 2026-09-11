@@ -16,11 +16,13 @@
  */
 import { UuidSlugError } from "../src/errors";
 import {
+  createUuidSlugCodec,
   extractUuidV7Timestamp,
   formatUuid,
   formatUuidSlug,
   parseUuid,
   parseUuidSlug,
+  PUBLIC_MASK_SCHEMA,
   uuidV4Bytes,
   uuidV7Bytes,
   uuidV7BytesAt,
@@ -35,6 +37,10 @@ const INSTANT = 1_700_000_000_000;
 /** Fill byte chosen so any stray write shows up as a value no generator would produce wholesale. */
 const FILL = 0xee;
 const BUFFER_BYTES = 32;
+const codec = createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA });
+if (codec instanceof Error) throw codec;
+const MASKED_SLUG = codec.uuidV7ToMaskedSlug(UUID);
+if (MASKED_SLUG instanceof Error) throw MASKED_SLUG;
 
 /**
  * `"4"` is in the matrix because a string offset defeats a length guard by CONCATENATION rather
@@ -49,6 +55,10 @@ export const HOSTILE_OFFSETS: readonly unknown[] = [...HOSTILE_NUMERIC_OFFSETS, 
 const writers: readonly (readonly [string, (out: Uint8Array, offset: number) => unknown])[] = [
   ["parseUuid", (out, offset) => parseUuid(UUID, out, offset)],
   ["parseUuidSlug", (out, offset) => parseUuidSlug(SLUG, out, offset)],
+  [
+    "maskedSlugToUuidV7Bytes",
+    (out, offset) => codec.maskedSlugToUuidV7Bytes(MASKED_SLUG, out, offset),
+  ],
   ["uuidV4Bytes", (out, offset) => uuidV4Bytes(out, offset)],
   ["uuidV7Bytes", (out, offset) => uuidV7Bytes(out, offset)],
   ["uuidV7BytesAt", (out, offset) => uuidV7BytesAt(INSTANT, out, offset)],
@@ -71,6 +81,10 @@ const malformedWriters: readonly (readonly [string, (out: Uint8Array) => unknown
   [
     "parseUuidSlug non-canonical base32hex padding",
     (out) => parseUuidSlug(BASE32_SLUG.slice(0, -1) + "d", out),
+  ],
+  [
+    "maskedSlugToUuidV7Bytes invalid slug",
+    (out) => codec.maskedSlugToUuidV7Bytes(MASKED_SLUG.slice(0, -1) + "!", out),
   ],
 ];
 

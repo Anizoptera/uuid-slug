@@ -47,6 +47,13 @@ const uuid = unwrapUuidSlug(ids.maskedSlugToUuidV7(publicId));
 // Look up uuid in your store and apply the caller's authorization policy.
 ```
 
+Keep binary database keys binary across the same codec seam:
+
+```ts
+const publicId = unwrapUuidSlug(ids.uuidV7BytesToMaskedSlug(uuidBytes));
+const uuidBytes = unwrapUuidSlug(ids.maskedSlugToUuidV7Bytes(publicId));
+```
+
 **Generate the seed; do not think one up.** For example, run `openssl rand -base64 32` and
 store the result outside your source repository. Seeds shorter than 16 bytes are rejected, but
 length alone does not make a seed unpredictable: a known UUID/slug pair allows offline guesses.
@@ -189,7 +196,9 @@ you need to retain the narrowed type. A brand proves format, not issuance: check
   V7-only timestamp, freshness, and masking operations likewise reject values already typed as v4
   while continuing to validate raw or version-unknown input at runtime.
   Parsing and direct string/slug conversions preserve a known v4 or v7. Formatting mutable bytes
-  returns a version-agnostic value because their contents may have changed since validation.
+  returns a version-agnostic value because their contents may have changed since validation. Codec
+  byte masking rejects a known v4 brand, while byte decoding returns owned `UuidV7Bytes` or the
+  exact caller-supplied array subtype.
 - Shapes: `UuidSlugCodec` and `UuidSlugCodecOptions`, `MaskSchema`, `MaskSchemaOptions`,
   `AsyncMaskSchemaOptions`, and `CustomMaskSchemaOptions`,
   `UuidV7Sentinel` and `UuidV7SentinelDefinition`, `UuidV7BytesSource`,
@@ -223,6 +232,7 @@ without binding them first.
 | `uuidV4Slug(alphabet?)` / `uuidV7Slug(alphabet?)`       | module only       | `UuidSlugError` or direct slug | Generate and encode in one step.         |
 | `uuidV7MaskedSlug()`                                    | codec only        | `UuidSlugError` or `PublicUuidV7Slug` | Generate a masked or sentinel slug. |
 | `uuidV7ToMaskedSlug(uuid)` / `maskedSlugToUuidV7(slug)` | codec only        | `UuidSlugError \| ...`        | Masked slug, both ways; v7 only.         |
+| `uuidV7BytesToMaskedSlug(bytes)` / `maskedSlugToUuidV7Bytes(slug, out?, offset?)` | codec only | `UuidSlugError \| ...` | Mask or decode without UUID text. |
 | `validateMaskedSlugFresh(slug, opts?)`                  | codec only        | `UuidSlugError \| ...`        | Unmask, then check the freshness window. |
 | `sentinels`                                             | codec only        | array                         | The reserved values this codec knows.    |
 | `migration(options?)`                                 | codec only        | migration reader              | Read selected old formats without changing new output. |
@@ -239,6 +249,10 @@ current-time generation is runtime-specific; within-millisecond ordering is not 
 
 Both masking entry points return a raw sentinel slug when the UUID is registered as a sentinel.
 Their result type is `PublicUuidV7Slug`, the union of masked and sentinel slugs.
+
+The byte decoder returns a new plain `Uint8Array` branded as `UuidV7Bytes` when storage is omitted.
+When storage is supplied, it validates and decodes before writing, then returns that exact array;
+an error leaves the array unchanged.
 
 Each decoder accepts every value that a supported matching encoder can produce. Masked decoding
 always accepts both alphabets, sentinels, and current or previous mask schemas. Migration adds only

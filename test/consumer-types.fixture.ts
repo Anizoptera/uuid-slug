@@ -152,8 +152,16 @@ uuidV7BytesAt(0, undefined, 8);
 const codecResult = createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA });
 if (codecResult instanceof Error) throw codecResult;
 const codec = codecResult;
+const maskedFromBytes = codec.uuidV7BytesToMaskedSlug(versionedBytes);
+expectType<PublicUuidV7Slug | UuidSlugError>()(maskedFromBytes);
+const decodedMaskedBytes = codec.maskedSlugToUuidV7Bytes("AZ_xnLf5cACbG99xO9VWLw");
+expectType<UuidV7Bytes | UuidSlugError>()(decodedMaskedBytes);
+const decodedMaskedInto = codec.maskedSlugToUuidV7Bytes("AZ_xnLf5cACbG99xO9VWLw", destination, 8);
+expectType<ConsumerBuffer | UuidSlugError>()(decodedMaskedInto);
 // @ts-expect-error UUIDv4 cannot enter UUIDv7-only masking.
 codec.uuidV7ToMaskedSlug(generatedV4);
+// @ts-expect-error Known UUIDv4 bytes cannot enter UUIDv7-only masking.
+codec.uuidV7BytesToMaskedSlug(ownedV4);
 // @ts-expect-error UUID text masking accepts UUID text, not known slug text.
 codec.uuidV7ToMaskedSlug(versionedSlug);
 // @ts-expect-error Masked decoding accepts slug text, not known UUID text.
@@ -224,6 +232,9 @@ void [
   migrated,
   candidates,
   widenedMigration,
+  maskedFromBytes,
+  decodedMaskedBytes,
+  decodedMaskedInto,
   unwrappedPlain,
 ];
 const publicSlugResult = codec.uuidV7MaskedSlug();

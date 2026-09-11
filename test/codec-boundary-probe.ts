@@ -16,6 +16,7 @@ import {
   isUuidSlug,
   isUuidV4Slug,
   isUuidV7Slug,
+  parseUuid,
   uuidToSlug,
   uuidV7Slug,
   slugToUuid,
@@ -134,6 +135,33 @@ export const codecBoundaryCases = [
       assert.ok(forged instanceof UuidSlugError);
       assert.equal(forged.code, "invalid_mask_schema");
       assert.ok(!(createCodec({ mask: PUBLIC_MASK_SCHEMA }) instanceof Error));
+    },
+  },
+  {
+    name: "codec masks and unmasks UUIDv7 bytes without a text round trip",
+    run() {
+      const codec = createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA });
+      const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
+      const bytes = unwrap(parseUuid(uuid));
+      const slug = unwrap(codec.uuidV7BytesToMaskedSlug(bytes));
+      const owned = unwrap(codec.maskedSlugToUuidV7Bytes(slug));
+      assert.equal(owned.constructor, Uint8Array);
+      assert.deepEqual(owned, bytes);
+      const destination = new Uint8Array(24).fill(0xee);
+      const returned = unwrap(codec.maskedSlugToUuidV7Bytes(slug, destination, 4));
+      assert.equal(returned, destination);
+      assert.deepEqual(destination.subarray(4, 20), bytes);
+      assert.deepEqual(destination.subarray(0, 4), new Uint8Array(4).fill(0xee));
+      assert.deepEqual(destination.subarray(20), new Uint8Array(4).fill(0xee));
+      const sentinel = codec.sentinels[0];
+      assert.ok(sentinel);
+      const firstSentinelBytes = unwrap(codec.maskedSlugToUuidV7Bytes(sentinel.slug));
+      firstSentinelBytes.fill(0xff);
+      assert.equal(
+        codec.maskedSlugToUuidV7(sentinel.slug),
+        sentinel.uuid,
+        "owned bytes must not expose mutable sentinel storage",
+      );
     },
   },
   {
@@ -298,6 +326,7 @@ export const codecBoundaryCases = [
       for (const value of [null, 1, Symbol("slug"), { length: 22 }]) {
         for (const decode of [
           codec.maskedSlugToUuidV7,
+          codec.maskedSlugToUuidV7Bytes,
           codec.validateMaskedSlugFresh,
           migration.decode,
           migration.candidates,

@@ -48,7 +48,7 @@ Use validated `Uuid` values between operations; parse text once rather than at e
 | UUIDv7 timestamp | `Uuid::timestamp` |
 | Sync/async schemas and custom transforms | `create_mask_schema`, `create_mask_schema_async`, `MaskSchema::custom(id, forward, reverse)` |
 | Explicit public schema | `PUBLIC_MASK_SCHEMA`; `public_mask_schema()` |
-| Key rotation, masked conversion and sentinels | `CodecOptions::new`, `Codec::uuid_v7_to_masked_slug`, `masked_slug_to_uuid_v7`, `sentinels` |
+| Key rotation, masked text/byte conversion and sentinels | `CodecOptions::new`, `Codec::uuid_v7_to_masked_slug`, `masked_slug_to_uuid_v7`, `Uuid::as_bytes`, `write_into`, `sentinels` |
 | Known/mixed-format migration and candidates | `Codec::migration`, `Migration::decode`, `candidates`, `MigrationOptions` |
 | Plain freshness | Parse UUID or plain slug, then `Freshness::validate`; retain the original text if needed |
 | Masked freshness | `Codec::validate_masked_slug_fresh` |
