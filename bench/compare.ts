@@ -32,6 +32,7 @@ const baselineRef = positional[0] ?? "HEAD^";
 if (positional.length > 1) throw new Error("Usage: bun bench/compare.ts [baseline-ref] [--smoke]");
 const rounds = Number(process.env.UUID_SLUG_COMPARE_ROUNDS ?? (smoke ? 2 : 6));
 const duration = process.env.UUID_SLUG_PROFILE_MS ?? (smoke ? "1" : "5");
+const warmup = process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (smoke ? "2" : "20");
 const filter = process.env.UUID_SLUG_PROFILE_FILTER ?? "";
 if (!Number.isSafeInteger(rounds) || rounds < 1)
   throw new Error("UUID_SLUG_COMPARE_ROUNDS must be a positive safe integer");
@@ -157,12 +158,15 @@ async function runHost(runtime: Exclude<Runtime, "chromium">, driver: string, ap
       UUID_SLUG_PROFILE_MODULE: pathToFileURL(api).href,
       UUID_SLUG_PROFILE_MS: duration,
       UUID_SLUG_PROFILE_SAMPLES: "1",
+      UUID_SLUG_PROFILE_WARMUP_MS: warmup,
     }),
   );
 }
 
 async function runBrowser(page: Page, origin: string, revision: Revision): Promise<ProfileRow[]> {
-  await page.goto(`${origin}?duration=${duration}&samples=1&filter=${encodeURIComponent(filter)}`);
+  await page.goto(
+    `${origin}?duration=${duration}&warmup=${warmup}&samples=1&filter=${encodeURIComponent(filter)}`,
+  );
   await page.addScriptTag({ type: "module", url: `/${revision}.mjs` });
   await page.waitForFunction(() => "runUuidSlugProfile" in globalThis);
   const rows: unknown = await page.evaluate(async () => {

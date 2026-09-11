@@ -49,15 +49,27 @@ const gc = (globalThis as { gc?: () => void }).gc;
 const filter = process.env.UUID_SLUG_PROFILE_FILTER;
 const samples = Number(process.env.UUID_SLUG_PROFILE_SAMPLES ?? 7);
 const duration = Number(process.env.UUID_SLUG_PROFILE_MS ?? 20);
-if (!Number.isSafeInteger(samples) || samples < 1 || !Number.isFinite(duration) || duration <= 0)
-  throw new Error("Profile samples must be a positive integer and duration positive milliseconds");
+const warmup = Number(process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? 20);
+if (
+  !Number.isSafeInteger(samples) ||
+  samples < 1 ||
+  !Number.isFinite(duration) ||
+  duration <= 0 ||
+  !Number.isFinite(warmup) ||
+  warmup <= 0
+)
+  throw new Error(
+    "Profile samples must be positive, with positive duration and warm-up milliseconds",
+  );
 const selected = Object.entries(cases).filter(([name]) => !filter || name.includes(filter));
 if (selected.length === 0) throw new Error("Profile filter selected no cases");
+for (const [name, fn] of selected) {
+  const expectedError = assertProfileOutcome(name, fn(0));
+  const started = performance.now();
+  do batch(fn, 256, expectedError);
+  while (performance.now() - started < warmup);
+}
 if (session) {
-  for (const [name, fn] of selected) {
-    assertProfileOutcome(name, fn(0));
-    batch(fn, 2048, name.startsWith("invalid."));
-  }
   gc?.();
   await session.post("Profiler.setSamplingInterval", { interval: 100 });
   await session.post("HeapProfiler.startSampling", {
@@ -81,6 +93,7 @@ console.log(
     gc: Boolean(gc),
     samples,
     duration,
+    warmup,
   }),
 );
 for (const [name, fn] of selected) {

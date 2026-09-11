@@ -12,11 +12,13 @@ const smoke = process.argv.includes("--smoke");
 const native = process.argv.includes("--native");
 const samples = process.env.UUID_SLUG_PROFILE_SAMPLES ?? (smoke ? "1" : "7");
 const duration = process.env.UUID_SLUG_PROFILE_MS ?? "2";
+const warmup = process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (smoke ? "2" : "20");
 const filter = process.env.UUID_SLUG_PROFILE_FILTER ?? "";
 const environment: Readonly<Record<string, string>> = {
   UUID_SLUG_PROFILE_FILTER: filter,
   UUID_SLUG_PROFILE_MS: duration,
   UUID_SLUG_PROFILE_SAMPLES: samples,
+  UUID_SLUG_PROFILE_WARMUP_MS: warmup,
 };
 
 const nativeFiles = [
@@ -152,7 +154,7 @@ async function runBrowser(entry: string, asyncEntry: string) {
     const snapshotChunks: string[] = [];
     session.on("Tracing.dataCollected", ({ value }) => traceEvents.push(...value));
     session.on("HeapProfiler.addHeapSnapshotChunk", ({ chunk }) => snapshotChunks.push(chunk));
-    const query = new URLSearchParams({ samples, duration });
+    const query = new URLSearchParams({ samples, duration, warmup });
     if (filter) query.set("filter", filter);
     await page.goto(`${server.url.href}?${query}`);
     await page.waitForFunction(() => "runUuidSlugProfile" in globalThis);

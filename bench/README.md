@@ -84,10 +84,11 @@ chunk boundaries, geometric work factors, host-task progress, and cancellation. 
 rows stay outside the synchronous corpus so task scheduling cannot contaminate per-call throughput.
 
 Set `UUID_SLUG_PROFILE_FILTER` to a case-name substring before native profiling so startup and unrelated
-operations do not dominate attribution. `UUID_SLUG_PROFILE_SAMPLES` and `UUID_SLUG_PROFILE_MS` control
-timing samples. Add `--smoke` to `bench/profile-all.ts` only when checking harness wiring. Compare
+operations do not dominate attribution. `UUID_SLUG_PROFILE_WARMUP_MS`, `UUID_SLUG_PROFILE_SAMPLES`, and
+`UUID_SLUG_PROFILE_MS` control per-case warm-up and timing samples. Add `--smoke` to
+`bench/profile-all.ts` only when checking harness wiring. Compare
 the current worktree with a committed baseline through `bun run bench:compare <baseline-ref>`; the
 driver packs each revision, alternates revision order in fresh processes,
-rotates runtime order, and emits raw samples plus per-operation median ratios. A heap snapshot measures
+rotates runtime order, and emits JSON Lines containing raw samples and per-operation median ratios. A heap snapshot measures
 retention, not gross allocation; sampled profiles are estimates; forced GC changes the workload;
 `maxBatchMs` and `maxUninterruptedMs` are observations, not universal latency bounds.

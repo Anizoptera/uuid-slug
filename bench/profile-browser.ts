@@ -9,6 +9,7 @@ export interface BrowserProfileOptions {
   readonly duration: number;
   readonly filter?: string;
   readonly samples: number;
+  readonly warmup: number;
 }
 
 export interface BrowserProfileRow {
@@ -65,17 +66,24 @@ function selectProfileCases(options: BrowserProfileOptions): readonly [string, P
     !Number.isSafeInteger(options.samples) ||
     options.samples < 1 ||
     !Number.isFinite(options.duration) ||
-    options.duration <= 0
+    options.duration <= 0 ||
+    !Number.isFinite(options.warmup) ||
+    options.warmup <= 0
   )
     throw new Error(
-      "Profile samples must be a positive integer and duration positive milliseconds",
+      "Profile samples must be positive, with positive duration and warm-up milliseconds",
     );
   const cases = createProfileCases(api, originalFixtures.issued);
   const selected = Object.entries(cases).filter(
     ([name]) => !options.filter || name.includes(options.filter),
   );
   if (selected.length === 0) throw new Error("Profile filter selected no cases");
-  for (const [name, operation] of selected) assertProfileOutcome(name, operation(0));
+  for (const [name, operation] of selected) {
+    const expectedError = assertProfileOutcome(name, operation(0));
+    const started = performance.now();
+    do batch(operation, 256, expectedError);
+    while (performance.now() - started < options.warmup);
+  }
   return selected;
 }
 
@@ -125,6 +133,7 @@ const filter = parameters.get("filter");
 const options = {
   duration: Number(parameters.get("duration") ?? 2),
   samples: Number(parameters.get("samples") ?? 7),
+  warmup: Number(parameters.get("warmup") ?? 20),
   ...(filter === null ? {} : { filter }),
 };
 const selected = selectProfileCases(options);
