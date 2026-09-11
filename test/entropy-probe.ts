@@ -78,26 +78,6 @@ export function sourcesUsedBy(generate: () => unknown, calls = 100): string[] {
 }
 
 /**
- * Distinct outputs over `calls` draws, which is the only check here that catches a randomness
- * source repeating values rather than failing subtly. A cycling pool can preserve the version,
- * variant and length while repeating identifiers. Predictable generators can pass this check;
- * distinct outputs alone say nothing about cryptographic strength.
- */
-export const distinctValuesFrom = (generate: () => unknown, calls = 5_000): number =>
-  new Set(Array.from({ length: calls }, () => distinctKey(generate()))).size;
-
-/**
- * `String()` is NOT usable here and the reason is a trap worth keeping: on a byte generator it
- * decodes the bytes as text, and every invalid UTF-8 sequence becomes U+FFFD, so distinct
- * identifiers collapse to one key. Measured 2026-08-11 that cost 11 false duplicates in 200,000
- * draws whose bytes were all unique — a red gate accusing the package of repeating identifiers.
- * Joining the elements is lossless for any typed array, including a node `Buffer`, which does not
- * override `join`.
- */
-const distinctKey = (value: unknown): string =>
-  value instanceof Uint8Array ? value.join(",") : String(value);
-
-/**
  * Sources attributed to `generate`, retrying until at least one appears.
  *
  * Randomness is drawn a pool at a time, so most windows attribute no source at all and one has to

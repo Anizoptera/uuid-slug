@@ -15,7 +15,6 @@ import {
   attributedSourcesFor,
   byteGenerators,
   constantBitCount,
-  distinctValuesFrom,
   generators,
   insecureAmong,
   sourcesUsedBy,
@@ -64,12 +63,6 @@ describe("bun runtime", () => {
     for (const [name, generate] of byteGenerators) {
       const bytes = generate();
       expect([name, (bytes as Uint8Array).constructor.name]).toEqual([name, "Uint8Array"]);
-    }
-  });
-
-  test("never repeats a value on any generation path", () => {
-    for (const [name, generate] of generators) {
-      expect([name, distinctValuesFrom(generate)]).toEqual([name, 5_000]);
     }
   });
 

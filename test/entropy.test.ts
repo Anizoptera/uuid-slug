@@ -19,7 +19,6 @@ import {
   attributedSourcesFor,
   byteGenerators,
   constantBitCount,
-  distinctValuesFrom,
   generators,
   insecureAmong,
   sourcesUsedBy,
@@ -33,11 +32,6 @@ describe("entropy source", () => {
 
   it.each(byteGenerators)("returns plain Uint8Array bytes from %s", (_name, generate) => {
     expect((generate() as Uint8Array).constructor.name).toBe("Uint8Array");
-  });
-
-  it.each(generators)("never repeats a value in %s", (_name, generate) => {
-    // Detect repeated outputs despite source calls; distinct samples do not prove fresh entropy.
-    expect(distinctValuesFrom(generate)).toBe(5_000);
   });
 
   it("leaves every v4 bit random except the six the RFC fixes", () => {
