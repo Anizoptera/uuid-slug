@@ -18,7 +18,6 @@ import type {
   UuidSlugMigrationOptions,
   UuidV7BytesSource,
   UuidV7Bytes,
-  UuidV7BytesInput,
   UuidV7Slug,
   UuidV7SlugInput,
   UuidV7Sentinel,
@@ -191,12 +190,6 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
     return uuidV7BytesToMaskedSlug(bytes, schema, maskedSlugAlphabet, sentinels.bySlug);
   }
 
-  function uuidV7ToMaskedSlug<Input extends string>(
-    uuid: UuidV7StringInput<Input>,
-  ): PublicUuidV7Slug | UuidSlugError;
-  function uuidV7ToMaskedSlug<Input extends Uint8Array>(
-    uuid: UuidV7BytesInput<Input>,
-  ): PublicUuidV7Slug | UuidSlugError;
   function uuidV7ToMaskedSlug(uuid: string | Uint8Array): PublicUuidV7Slug | UuidSlugError {
     if (typeof uuid !== "string") return encodeMasked(uuid);
     const bytes = parseUuid(uuid);

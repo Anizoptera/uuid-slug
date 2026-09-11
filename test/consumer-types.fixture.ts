@@ -154,6 +154,8 @@ if (codecResult instanceof Error) throw codecResult;
 const codec = codecResult;
 const maskedFromBytes = codec.uuidV7ToMaskedSlug(versionedBytes);
 expectType<PublicUuidV7Slug | UuidSlugError>()(maskedFromBytes);
+const uuidTextOrBytes = (true as boolean) ? "019ff19b-58b8-7000-9b1b-df713bd5562c" : versionedBytes;
+expectType<PublicUuidV7Slug | UuidSlugError>()(codec.uuidV7ToMaskedSlug(uuidTextOrBytes));
 const decodedMaskedBytes = codec.maskedSlugToUuidV7Bytes("AZ_xnLf5cACbG99xO9VWLw");
 expectType<UuidV7Bytes | UuidSlugError>()(decodedMaskedBytes);
 const decodedMaskedInto = codec.maskedSlugToUuidV7Bytes("AZ_xnLf5cACbG99xO9VWLw", destination, 8);
@@ -162,6 +164,9 @@ expectType<ConsumerBuffer | UuidSlugError>()(decodedMaskedInto);
 codec.uuidV7ToMaskedSlug(generatedV4);
 // @ts-expect-error Known UUIDv4 bytes cannot enter UUIDv7-only masking.
 codec.uuidV7ToMaskedSlug(ownedV4);
+const knownV4TextOrBytes = (true as boolean) ? generatedV4 : ownedV4;
+// @ts-expect-error One known UUIDv4 member makes the whole input union invalid.
+codec.uuidV7ToMaskedSlug(knownV4TextOrBytes);
 // @ts-expect-error UUID text masking accepts UUID text, not known slug text.
 codec.uuidV7ToMaskedSlug(versionedSlug);
 // @ts-expect-error Masked decoding accepts slug text, not known UUID text.

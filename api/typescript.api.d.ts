@@ -135,13 +135,9 @@ export declare interface UuidSlugCodec {
     options?: Options,
   ): UuidSlugMigration<EnabledMigrationFormat<Options>>;
   uuidV7MaskedSlug(this: void): PublicUuidV7Slug | UuidSlugError;
-  uuidV7ToMaskedSlug<Input extends string>(
+  uuidV7ToMaskedSlug<Input extends string | Uint8Array>(
     this: void,
-    uuid: UuidV7StringInput<Input>,
-  ): PublicUuidV7Slug | UuidSlugError;
-  uuidV7ToMaskedSlug<Input extends Uint8Array>(
-    this: void,
-    uuid: UuidV7BytesInput<Input>,
+    uuid: UuidV7ValueInput<Input>,
   ): PublicUuidV7Slug | UuidSlugError;
   maskedSlugToUuidV7<Input extends string>(
     this: void,
@@ -268,6 +264,10 @@ export declare type UuidV7String = Brand<UuidString, "UuidV7String">;
 declare type UuidV7StringInput<Input extends string> = RejectKnownInput<
   Input,
   UuidSlug | MaskedUuidSlug | UuidV4String
+>;
+declare type UuidV7ValueInput<Input extends string | Uint8Array> = RejectKnownInput<
+  Input,
+  UuidSlug | MaskedUuidSlug | UuidV4String | UuidV4Bytes
 >;
 export declare function validateUuidV7Fresh<Input extends string>(
   uuid: UuidV7StringInput<Input>,

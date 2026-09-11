@@ -58,6 +58,10 @@ export type UuidV7SlugInput<Input extends string> = RejectKnownInput<
   UuidString | MaskedUuidSlug | UuidV4Slug
 >;
 export type UuidV7BytesInput<Input extends Uint8Array> = RejectKnownInput<Input, UuidV4Bytes>;
+type UuidV7ValueInput<Input extends string | Uint8Array> = RejectKnownInput<
+  Input,
+  UuidSlug | MaskedUuidSlug | UuidV4String | UuidV4Bytes
+>;
 /** One validated 16-byte UUID payload. Package-owned values are plain `Uint8Array`. */
 export type UuidBytes = Brand<Uint8Array, "UuidBytes">;
 /** UUID bytes with version 4 and RFC variant bits. */
@@ -261,21 +265,14 @@ export interface UuidSlugCodec {
   /** Generate UUIDv7 bytes, then return a masked slug or the matching raw sentinel slug. */
   uuidV7MaskedSlug(this: void): PublicUuidV7Slug | UuidSlugError;
   /**
-   * Mask one UUIDv7, or return its raw sentinel slug. Other UUID versions do not have the spare
-   * constant bits that keep this checked format at 22 base64url characters. Generic capture rejects
-   * known slug and UUIDv4 brands; bare external strings remain runtime-validated.
+   * Mask one UUIDv7 supplied as canonical text or 16 bytes, or return its raw sentinel slug. Byte
+   * input stays binary. Other UUID versions do not have the spare constant bits that keep this
+   * checked format at 22 base64url characters. Generic capture rejects known slug and UUIDv4
+   * brands; bare external values remain runtime-validated.
    */
-  uuidV7ToMaskedSlug<Input extends string>(
+  uuidV7ToMaskedSlug<Input extends string | Uint8Array>(
     this: void,
-    uuid: UuidV7StringInput<Input>,
-  ): PublicUuidV7Slug | UuidSlugError;
-  /**
-   * Mask one validated or raw UUIDv7 byte payload without formatting intermediate UUID text.
-   * Input overloads let callers keep the UUID representation they already own.
-   */
-  uuidV7ToMaskedSlug<Input extends Uint8Array>(
-    this: void,
-    uuid: UuidV7BytesInput<Input>,
+    uuid: UuidV7ValueInput<Input>,
   ): PublicUuidV7Slug | UuidSlugError;
   /**
    * Return the first sentinel or schema candidate in configured order; this does not prove issuance.
