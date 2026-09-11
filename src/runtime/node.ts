@@ -5,8 +5,8 @@ import { pooledFill } from "./pool";
 import type { Runtime } from "./types";
 
 /**
- * Node grew `crypto.randomUUIDv7` in 26.6.0, so on every earlier release this is `undefined`
- * and the capability is simply absent. Probed once here rather than inside the method:
+ * Node releases without `crypto.randomUUIDv7` expose `undefined`, so the capability is simply
+ * absent. Probed once here rather than inside the method:
  * `Runtime.uuidV7` is optional precisely so a consumer can branch on its presence, and a
  * method that exists but always throws defeats that and pays exception-driven fallback per call.
  */
