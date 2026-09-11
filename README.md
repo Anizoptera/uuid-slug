@@ -35,7 +35,7 @@ The npm package remains TypeScript/JavaScript-only.
 ## Quick start
 
 ```ts
-import { createUuidSlugCodec, unwrapUuidSlug } from "@anizoptera/uuid-slug";
+import { createUuidSlugCodec, unwrapUuidSlug, uuidV7Bytes } from "@anizoptera/uuid-slug";
 
 const seed = process.env.ID_MASK_SEED;
 if (!seed) throw new Error("Set ID_MASK_SEED to a stable, randomly generated secret.");
@@ -51,8 +51,9 @@ const uuid = unwrapUuidSlug(ids.maskedSlugToUuidV7(publicId));
 Keep binary database keys binary across the same codec seam:
 
 ```ts
-const publicId = unwrapUuidSlug(ids.uuidV7ToMaskedSlug(uuidBytes));
-const uuidBytes = unwrapUuidSlug(ids.maskedSlugToUuidV7Bytes(publicId));
+const inputBytes = unwrapUuidSlug(uuidV7Bytes());
+const publicId = unwrapUuidSlug(ids.uuidV7ToMaskedSlug(inputBytes));
+const decodedBytes = unwrapUuidSlug(ids.maskedSlugToUuidV7Bytes(publicId));
 ```
 
 Convert canonical UUID text and binary storage with names that state the direction:
