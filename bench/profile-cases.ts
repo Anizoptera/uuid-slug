@@ -50,6 +50,7 @@ export function createProfileCases(
   const customCodec = unwrap(api.createUuidV7SlugCodec({ mask: customMask }));
   const rotated = unwrap(api.createUuidV7SlugCodec({ mask: current, previousMasks: [previous] }));
   const migration = rotated.createMigrationDecoder({ originalMask: true, plainSlug: true });
+  const maskedOnlyMigration = codec.createMigrationDecoder();
   const originals = originalFixtures.filter(({ slug, raw }) => slug !== raw);
   const portable = api.createUuidV7Generator({ clock: () => instant });
   const ids = Array.from({ length: 256 }, (_, index) => {
@@ -74,6 +75,7 @@ export function createProfileCases(
   if (!sentinel) throw new Error("Missing sentinel fixture");
   const badUuid = "z".repeat(36);
   const badSlug = "!".repeat(22);
+  const v4Uuid = "3b12f1df-5232-4804-897e-917bf397618a";
   if (!base32Sentinel) throw new Error("Missing base32 sentinel fixture");
 
   return {
@@ -120,7 +122,7 @@ export function createProfileCases(
     "slug.into": (index) => api.slugToBytes(slugs[index & 255] as string, into, 4),
     "slug.base32.into": (index) => api.slugToBytes(base32[index & 255] as string, into, 4),
     "guard.uuid.any": (index) => api.isUuidString(ids[index & 255]),
-    "guard.uuid.v4": () => api.isUuidV4String("3b12f1df-5232-4804-897e-917bf397618a"),
+    "guard.uuid.v4": () => api.isUuidV4String(v4Uuid),
     "guard.invalid.uuid": () => api.isUuidV7String(badUuid),
     "guard.invalid.slug": () => api.isUuidV7Slug(badSlug),
     "guard.uuid": (index) => api.isUuidV7String(ids[index & 255]),
@@ -153,6 +155,8 @@ export function createProfileCases(
       codec.decodeSlugToBytes(masked[index & 255] as string, into, 4),
     "masked.base32.encode": (index) => base32Codec.encodeUuid(ids[index & 255] as string),
     "masked.base32.decode": (index) => base32Codec.decodeSlug(maskedBase32[index & 255] as string),
+    "masked.base32.decode.bytes": (index) =>
+      base32Codec.decodeSlugToBytes(maskedBase32[index & 255] as string),
     "masked.custom.encode": (index) => customCodec.encodeUuid(bytes[index & 255] as Uint8Array),
     "masked.custom.decode": (index) => customCodec.decodeSlug(maskedCustom[index & 255] as string),
     "rotation.current": (index) => rotated.decodeSlug(masked[index & 255] as string),
@@ -169,6 +173,8 @@ export function createProfileCases(
       migration.decodeSlug(base32[index & 255] as string, "plain-slug"),
     "migration.original": (index) =>
       migration.decodeSlug(originals[index % originals.length]!.slug, "original-mask"),
+    "invalid.migration": () => maskedOnlyMigration.decodeSlug(badSlug),
+    "invalid.migrationCandidates": () => maskedOnlyMigration.decodeSlugCandidates(badSlug),
     "sentinel.encode": () => codec.encodeUuid(sentinel.uuid),
     "sentinel.decode": () => codec.decodeSlug(sentinel.slug),
     "sentinel.base32.encode": () => base32Codec.encodeUuid(base32Sentinel.uuid),
@@ -176,12 +182,27 @@ export function createProfileCases(
     "invalid.uuid": () => api.uuidToBytes(badUuid),
     "invalid.slug": () => api.slugToBytes(badSlug),
     "invalid.mask": (index) => codec.decodeSlug(oldOnly[index % oldOnly.length] as string),
+    "invalid.timestamp.version": () => api.validateUuidV7Timestamp(v4Uuid, timestampWindow),
     "error.classify": () => api.isUuidSlugError(api.uuidToBytes(badUuid)),
     "error.unwrap.success": (index) => api.unwrapUuidSlug(bytes[index & 255] as Uint8Array),
+    "invalid.error.unwrap": () => {
+      try {
+        return api.unwrapUuidSlug(api.uuidToBytes(badUuid));
+      } catch (cause) {
+        if (!(cause instanceof Error)) throw cause;
+        return cause;
+      }
+    },
     "construct.codec": () => api.createUuidV7SlugCodec({ mask: current }),
     "construct.schema": () => api.createUuidV7Mask(current),
     "construct.schema.iterated": () =>
       api.createUuidV7Mask({ ...current, keyDerivationIterations: 8 }),
+    "construct.codec.rotation": () =>
+      api.createUuidV7SlugCodec({
+        mask: current,
+        previousMasks: [previous, { seed: "profile-third-seed" }],
+      }),
+    "construct.codec.sentinels": () => api.createUuidV7SlugCodec({ mask: current, sentinels }),
     "construct.custom": () =>
       api.createCustomUuidV7Mask({
         label: "profile-identity",
