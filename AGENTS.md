@@ -128,14 +128,15 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Release
 
-- Remote writes are forbidden unless a maintainer explicitly authorizes the exact operation. Do not push,
-  open a pull request, upload a tag, create a release, publish a package, or change remote settings.
+- A maintainer must explicitly request the exact version before any release commit or Git tag is
+  created. Public release actions need separate authorization for each exact remote operation: do
+  not push, open a pull request, upload a tag, create a release, publish, or change remote settings.
 - Publish through `publish-clean`; validate the final cleaned archive and use `--access public
   --provenance`. Derive the dist-tag from the git tag: prereleases use `next`, releases `latest`.
 - Keep `@anizoptera/publish-clean` a normal registry dependency, never a Git SHA or tarball URL.
 - Keep publication in `.github/workflows/release.yml`; trusted publishing binds its filename.
-- Read `docs/release.md` before changing predecessor selection, release evidence, publication,
-  recovery, assets, notes, or finalization.
+- Read `docs/release.md` before selecting or changing a version, predecessor, release evidence,
+  publication, recovery, asset, note, or finalization path; it owns the complete release procedure.
 - Run verification on the tagged commit without publishing credentials, then make publication
   depend on it. Keep verification and credential-bearing publication in separate jobs; local
   `preversion` is feedback, not the release gate.
@@ -144,19 +145,15 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   be committed because versioning requires a clean tree. Do not introduce a release bot.
 - Refuse publication unless the tag matches the manifest and its changelog section is nonempty.
   Publish that section verbatim. Refuse local versioning without the new version's section.
-- Choose versions explicitly: 1.0.0 is a decision, not an automatic bump; a pre-1.0 breaking
-  change is a minor. New tags use annotated tags through `bun run release`; historical selection
-  must retain the existing lightweight release tags.
+- Choose versions through `docs/release.md`; never infer a new target from one change in isolation.
+  New tags use annotated tags through `bun run release`; historical selection must retain the
+  existing lightweight release tags.
 - Classify the full consumer effect before committing: fixes with no new public behavior are patch;
   backward-compatible public behavior is minor; incompatible behavior is major, or minor before
   1.0. Structural checks provide a lower bound; they cannot classify semantic behavior or approve
   a public change.
-- Choose the development target against the latest governed release. After a release, start with
-  its next patch. Raise the target only when the changes since that release require a minor or major
-  under the rule above. With no governed release, keep the planned first release unless the
-  maintainer changes it. Changes to unreleased APIs do not justify a higher target. Use
-  `bun run version:set <X.Y.Z-dev>` to update and verify both manifests and the lockfile together.
-  Release tags and published manifests use the same stable version without `-dev`.
+- Use `bun run version:set <X.Y.Z-dev>` to update and verify both manifests and the lockfile
+  together. Release tags and published manifests use the same stable version without `-dev`.
 - Obtain retained archives through `--tarball-out DIR` in a caller-owned directory and clean it
   up. Never parse archive paths from human-facing stdout.
 - Run `bun run check` before committing unless a maintainer explicitly selects narrower intermediate

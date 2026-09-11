@@ -1,6 +1,6 @@
 {
   "name": "@anizoptera/uuid-slug",
-  "version": "0.5.0-dev",
+  "version": "0.4.0-dev",
   "description": "Short URL-safe UUIDs: 22-character base64url slugs, plus reversible masking that hides the UUIDv7 timestamp. Zero dependencies.",
   "keywords": [
     "base64url",

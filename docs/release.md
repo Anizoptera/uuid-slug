@@ -54,8 +54,9 @@ changes it. Changes to unreleased APIs do not justify a higher target.
 
 Run `bun run version:set <X.Y.Z-dev>` when the planned release version changes. The command updates
 `package.json`, `rust/Cargo.toml`, and `rust/Cargo.lock`, then checks that all three versions match.
-It restores all three files if the update fails. Use `bun run release <X.Y.Z>` for a stable version;
-release tags and published manifests never use the `-dev` suffix.
+It restores all three files if the update fails. This does not authorize a release. Run
+`bun run release <X.Y.Z>` only after a maintainer requests that exact stable version; it creates the
+release commit and annotated tag. Release tags and published manifests never use the `-dev` suffix.
 
 The commit hook checks two independent rules. Generated declarations must match the reviewed
 baseline and remain compatible with the latest release. Updating the reviewed baseline cannot
@@ -85,4 +86,5 @@ notes are verified. Verify each attachment by GitHub's SHA-256 digest, and creat
 making the draft public. A rerun repairs only missing publication, attachment, or note work. Finalize
 the release once every required result is observable and matches the retained release inputs.
 
-Remote writes remain forbidden without explicit maintainer authorization for the exact operation.
+Publishing and every other remote write require separate explicit maintainer authorization for the
+exact operation.
