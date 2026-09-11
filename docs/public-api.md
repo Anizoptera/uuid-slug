@@ -15,13 +15,13 @@ For every public part, name the consumer job that fails without it. Remove the p
 operations compose into that job without extra caller state, repeated validation, hidden runtime
 work, or an easy wrong turn. Implementation convenience does not justify caller burden.
 
-Before selecting a new public concept or changing an existing one, state the consumer job,
-constraints, core assumptions, and earliest observable signal that would challenge or support the
-direction. Compare materially different live shapes, including removal, composition, a narrower
-function, an overload, an options object, a codec-owned operation, a validated value, and an
-internal-only seam where applicable. Keep the constraints, rejected alternatives, and invalidating
-assumptions beside the affected declarations; connect wider consequences in their durable owner and
-keep discarded exploration transient.
+Before selecting or changing a public concept, map the independent caller-visible axes and their
+values, inversions, extremes, and important interactions. Keep candidates only when caller behavior
+differs; a counterexample that the map cannot express requires a new axis and another comparison.
+State the consumer job, constraints, core assumption, and earliest observable signal expected if
+that assumption is correct before implementation. Keep the selected shape's constraints, rejected
+live alternatives, and invalidating assumption beside its declarations; connect wider consequences
+in their durable owner and keep discarded exploration transient.
 
 ## Shape
 

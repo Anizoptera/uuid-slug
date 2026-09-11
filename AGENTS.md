@@ -4,13 +4,20 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Code reasoning
 
-- Make every code unit understandable in isolation. Keep the constraint, rejected live alternative,
-  and assumption that would change a non-obvious decision inline; use wider docs to connect units,
-  not to replace the reasoning a reviewer needs at the decision site.
-- Before significant implementation, state the core assumption and the earliest observable signal
-  that would contradict or support it. Use that signal to steer while outcome evidence still lags.
-- Comment decisions and boundaries, not syntax or work history. If the reasoning cannot be stated
+- Map a decision by its independent axes, values, inversions, extremes, and important interactions.
+  Keep candidates only when their behavior differs; refine the map when a counterexample exposes a
+  missing distinction.
+- Write each durable rule as trigger → ranked act → strength → boundary → override. Name the future
+  decision it must change and nearby cases it must leave unchanged; cut any clause whose removal
+  causes no repeatable behavioral loss in relevant contexts.
+- Every code unit MUST explain itself in isolation through names, types, structure, and necessary
+  comments. Keep each non-trivial decision's constraints, rejected live alternatives, and
+  invalidating assumption at its code site; wider docs connect decisions but never replace them.
+- Comment reasons and boundaries, not syntax or work history. If the reasoning cannot be stated
   plainly, resolve the decision before encoding it.
+- Before significant implementation, state the core assumption and the earliest observable signal
+  expected if it is correct. Track that signal while outcome evidence lags; no concrete signal means
+  the assumption is not ready to fund work.
 
 ## Documentation
 
