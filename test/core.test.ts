@@ -31,11 +31,16 @@ const createUuidV7SlugCodec = (options: UuidV7SlugCodecOptions) => unwrap(create
 
 describe("error classification", () => {
   it("accepts package errors across realms without accepting lookalike data or throwing", () => {
-    const foreign: unknown[] = runInNewContext(
-      '["UuidSlugError", "UuidRuntimeError"].map(name => Object.assign(new Error("failure"), { name, code: "invalid_uuid" }))',
-    );
+    const foreign = runInNewContext(
+      'Object.assign(new Error("failure"), { name: "UuidSlugError", code: "invalid_uuid" })',
+    ) as UuidSlugError;
     expect(isUuidSlugError(new UuidSlugError("invalid_uuid", "bad UUID"))).toBe(true);
-    expect(foreign.every(isUuidSlugError)).toBe(true);
+    expect(isUuidSlugError(foreign)).toBe(true);
+    expect(
+      isUuidSlugError(
+        Object.assign(new Error("legacy"), { name: "UuidRuntimeError", code: "invalid_uuid" }),
+      ),
+    ).toBe(false);
     expect(isUuidSlugError({ name: "UuidSlugError", code: "invalid_uuid" })).toBe(false);
     expect(
       isUuidSlugError(

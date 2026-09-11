@@ -46,8 +46,7 @@ export function isUuidSlugError(value: unknown): value is UuidSlugError {
   try {
     return (
       Object.prototype.toString.call(value) === "[object Error]" &&
-      (Reflect.get(value, "name") === "UuidSlugError" ||
-        Reflect.get(value, "name") === "UuidRuntimeError") &&
+      Reflect.get(value, "name") === "UuidSlugError" &&
       ERROR_CODE_SET.has(Reflect.get(value, "code"))
     );
   } catch {
