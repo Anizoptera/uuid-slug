@@ -15,8 +15,10 @@ const ERROR_CODES = [
   "stale_uuid",
 ] as const;
 
+/** Stable runtime vocabulary for branching on package failures. */
 export const UUID_SLUG_ERROR_CODES: typeof ERROR_CODES = Object.freeze(ERROR_CODES);
 
+/** A stable recovery code carried by every `UuidSlugError`. */
 export type UuidSlugErrorCode = (typeof UUID_SLUG_ERROR_CODES)[number];
 
 const ERROR_CODE_SET: ReadonlySet<unknown> = new Set(ERROR_CODES);
@@ -26,7 +28,9 @@ const typedArrayTagDescriptor = Object.getOwnPropertyDescriptor(
   Symbol.toStringTag,
 );
 
+/** Expected package failure with a stable code and an optional original cause. */
 export class UuidSlugError extends Error {
+  /** Stable recovery category; use `message` and `cause` for diagnostics. */
   readonly code: UuidSlugErrorCode;
 
   constructor(code: UuidSlugErrorCode, message: string, options?: ErrorOptions) {
@@ -36,7 +40,7 @@ export class UuidSlugError extends Error {
   }
 }
 
-/** Recognize package errors across realms and duplicate package copies without trusting them. */
+/** Classify package errors across realms and duplicate copies; this does not authenticate input. */
 export function isUuidSlugError(value: unknown): value is UuidSlugError {
   if (typeof value !== "object" || value === null) return false;
   try {
@@ -51,7 +55,7 @@ export function isUuidSlugError(value: unknown): value is UuidSlugError {
   }
 }
 
-/** Return a successful package result or throw its actionable error unchanged. */
+/** Return the exact success value or throw a recognized package error unchanged. */
 export function unwrapUuidSlug<Value>(value: Value): Exclude<Value, UuidSlugError> {
   if (isUuidSlugError(value)) throw value;
   return value as Exclude<Value, UuidSlugError>;

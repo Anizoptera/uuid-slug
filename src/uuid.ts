@@ -56,13 +56,7 @@ const SLUG_ALPHABETS: { base32hex: Alphabet; base64url: Alphabet } = {
   base64url: BASE64URL,
 } as const;
 
-/**
- * Callers name an alphabet rather than passing one. `Alphabet` holds a decode table and a bit
- * width — internals that would become public surface the moment the type escaped — and accepting
- * an arbitrary one would also open a second extension point beside `MaskSchema`, which this
- * package documents as its only one. A union of two names cannot be widened by a caller at all, so
- * there is nothing to validate.
- */
+/** Select 22-character base64url or 26-character lowercase base32hex direct slugs. */
 export type SlugAlphabet = "base64url" | "base32hex";
 
 /** Reject values outside the public alphabet union when untyped JavaScript bypasses TypeScript. */
@@ -99,7 +93,7 @@ function hexValue(code: number) {
   return HEX_DECODE[code] ?? -1;
 }
 
-/** Parse one canonical UUID; a failure leaves caller-supplied storage unchanged. */
+/** Parse one canonical lowercase UUID into 16 bytes; failure leaves caller storage unchanged. */
 export function parseUuid<Input extends string>(
   uuid: UuidStringInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
@@ -132,6 +126,7 @@ export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): Uint8Arra
   return target;
 }
 
+/** Format exactly 16 bytes at `offset` as a canonical lowercase UUID string. */
 export function formatUuid(bytes: Uint8Array, offset = 0): UuidString | UuidSlugError {
   const badRange = checkByteRange(bytes, offset, 16);
   if (badRange) return badRange;
@@ -157,6 +152,7 @@ export function isRfcVariant(bytes: Uint8Array, offset = 0): boolean {
 }
 
 // Predicates inspect the same hex table as parsing without allocating output bytes or Errors.
+/** Check canonical lowercase UUID syntax without checking version or RFC variant. */
 export function isUuidString(uuid: unknown): uuid is UuidString {
   if (typeof uuid !== "string" || uuid.length !== UUID_LENGTH) return false;
   if (uuid[8] !== "-" || uuid[13] !== "-" || uuid[18] !== "-" || uuid[23] !== "-") return false;
@@ -173,26 +169,24 @@ function stringHasRfcVariant(uuid: string): boolean {
   return (HEX_DECODE[uuid.charCodeAt(19)] as number) >>> 2 === 2;
 }
 
+/** Check canonical UUID text with version 4 and RFC variant bits. */
 export function isUuidV4String(uuid: unknown): uuid is UuidV4String {
   return isUuidString(uuid) && uuid[14] === "4" && stringHasRfcVariant(uuid);
 }
 
+/** Check canonical UUID text with version 7 and RFC variant bits. */
 export function isUuidV7String(uuid: unknown): uuid is UuidV7String {
   return isUuidString(uuid) && uuid[14] === "7" && stringHasRfcVariant(uuid);
 }
 
-/**
- * The only BYTE-level predicate, and the asymmetry against `isUuidV4String` is deliberate: masking
- * accepts v7 alone, so a caller holding raw bytes has a reason to ask this and none to ask the v4
- * question. `isUuidV4Bytes` is absent because nothing needs it, not because it was overlooked —
- * add it when a caller appears, never for symmetry, since an export is permanent surface.
- */
+/** Check for exactly 16 UUIDv7 bytes with the RFC variant required by masking and timestamps. */
 export function isUuidV7Bytes(bytes: unknown): bytes is UuidV7Bytes {
   return (
     isUint8Array(bytes) && bytes.length === 16 && uuidVersion(bytes) === 7 && isRfcVariant(bytes)
   );
 }
 
+/** Encode exactly 16 bytes as a direct UUID slug; base64url is the default. */
 export function formatUuidSlug(
   bytes: Uint8Array,
   alphabet?: SlugAlphabet,
@@ -228,7 +222,7 @@ export function formatUuidSlug(
   ) as UuidSlug;
 }
 
-/** Accept either slug alphabet and leave caller-supplied storage unchanged on failure. */
+/** Parse either direct-slug length into 16 bytes; failure leaves caller storage unchanged. */
 export function parseUuidSlug<Input extends string>(
   slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
@@ -265,6 +259,7 @@ export function parseUuidSlug(
   return result instanceof Error ? result : target;
 }
 
+/** Validate UUID text and encode the same 128-bit value as a direct slug. */
 export function uuidToSlug<Input extends string>(
   uuid: UuidStringInput<Input>,
   alphabet?: SlugAlphabet,
@@ -278,6 +273,7 @@ export function uuidToSlug(
   return formatUuidSlug(bytes, alphabet);
 }
 
+/** Validate a direct slug, infer its alphabet from length, and return canonical UUID text. */
 export function slugToUuid<Input extends string>(
   slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidString, UuidV4String, UuidV7String> | UuidSlugError;
@@ -287,6 +283,7 @@ export function slugToUuid(slug: string): UuidString | UuidSlugError {
   return formatUuid(bytes);
 }
 
+/** Check a canonical 22-character base64url or 26-character lowercase base32hex direct slug. */
 export function isUuidSlug(slug: unknown): slug is UuidSlug {
   if (typeof slug !== "string" || !slug) return false;
   const alpha = SLUG_ALPHABET_BY_LENGTH[slug.length];
@@ -309,24 +306,19 @@ function isVersionedSlug(slug: unknown, version: number): slug is UuidSlug {
   return slugByte(slug, alpha, 6) >>> 4 === version && slugByte(slug, alpha, 8) >>> 6 === 2;
 }
 
+/** Check a canonical direct slug whose payload is an RFC-variant UUIDv4. */
 export function isUuidV4Slug(slug: unknown): slug is UuidV4Slug {
   return isVersionedSlug(slug, 4);
 }
 
+/** Check a canonical direct slug whose payload is an RFC-variant UUIDv7. */
 export function isUuidV7Slug(slug: unknown): slug is UuidV7Slug {
   return isVersionedSlug(slug, 7);
 }
 
 /**
- * The 48-bit millisecond a UUIDv7 was minted at.
- *
- * It REFUSES anything that is not a v7, which is the whole point of the return type: the first six
- * bytes of a v4 are random, so reading them yields a confident, well-formed date drawn uniformly
- * from the next nine thousand years. A caller that passed the wrong version got that date silently,
- * and a freshness check built on it would accept or reject by coin flip while looking correct.
- *
- * Short input is reported separately from wrong version, because `uuidVersion` reads a missing byte
- * as zero and would otherwise blame a truncated buffer for holding a v0.
+ * Read the 48-bit Unix millisecond from UUIDv7 bytes at `offset`.
+ * Other versions are rejected because their first six bytes are not a timestamp.
  */
 export function extractUuidV7Timestamp<Input extends Uint8Array>(
   bytes: UuidV7BytesInput<Input>,

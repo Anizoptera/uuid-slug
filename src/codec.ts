@@ -36,6 +36,7 @@ import {
 import type { FreshValidationOptions, UuidV7SentinelDefinition } from "./types";
 import type { SlugAlphabet } from "./uuid";
 
+/** Default raw UUIDv7 sentinels used unless codec construction receives `sentinels`. */
 export const UUID_V7_SENTINEL_DEFINITIONS: readonly UuidV7SentinelDefinition[] = Object.freeze([
   Object.freeze({
     name: "nil",
@@ -121,6 +122,10 @@ function createSentinels(
   return { bySlug, encoded, sentinels: Object.freeze(sentinels) };
 }
 
+/**
+ * Build an immutable keyed codec. The current mask writes and reads first; previous masks only
+ * read in caller order. Invalid options and unexpected construction failures return package errors.
+ */
 export function createUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | UuidSlugError {
   try {
     return buildUuidSlugCodec(options);
@@ -242,6 +247,10 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
   return Object.freeze(codec);
 }
 
+/**
+ * Return canonical UUIDv7 text when its timestamp is inside the inclusive symmetric window.
+ * This checks timestamp sanity, not expiry, authentication, replay safety, or issuance.
+ */
 export function validateUuidV7Fresh<Input extends string>(
   uuid: UuidV7StringInput<Input>,
   options?: FreshValidationOptions,
@@ -299,6 +308,10 @@ function validateFreshBytes(
   return undefined;
 }
 
+/**
+ * Return the same direct UUIDv7 slug when its timestamp is inside the inclusive symmetric window.
+ * Use a codec method for masked or sentinel input.
+ */
 export function validateUuidV7SlugFresh<Input extends string>(
   slug: UuidV7SlugInput<Input>,
   options?: FreshValidationOptions,

@@ -7,12 +7,7 @@ export {
   validateUuidV7SlugFresh,
 } from "./codec";
 export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError, unwrapUuidSlug } from "./errors";
-/**
- * Exported because `UuidSlugError.code` is public and the README tells consumers to branch on it.
- * The type was emitted into the declarations and left out of the export list, so the property had
- * a type no consumer could name — a switch over it could not be written without restating the
- * literals by hand, which is exactly the duplication `UUID_SLUG_ERROR_CODES` exists to prevent.
- */
+/** Export the code type so consumers can write exhaustive handlers without copying its literals. */
 export type { UuidSlugErrorCode } from "./errors";
 export { PUBLIC_MASK_SCHEMA, createMaskSchema, createMaskSchemaAsync } from "./schema";
 export { createCustomMaskSchema } from "./schema-handle";
@@ -61,7 +56,6 @@ export {
   uuidToSlug,
 } from "./uuid";
 export type { SlugAlphabet } from "./uuid";
-/** Runtime selection is internal; codecs create the matching generator when none is supplied. */
 export { createUuidV7Generator } from "./v7";
 export type { UuidV7GeneratorOptions } from "./v7";
 

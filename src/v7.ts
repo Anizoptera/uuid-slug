@@ -12,8 +12,11 @@ import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types";
 import { formatUuid, isUuidV7Bytes, isUuidV7String } from "./uuid";
 import type { Runtime } from "./runtime/types";
 
+/** Supply the clock and cryptographic entropy used by one owned UUIDv7 sequence. */
 export interface UuidV7GeneratorOptions {
+  /** Return Unix milliseconds; finite fractional readings are truncated. Defaults to `Date.now`. */
   readonly clock?: () => number;
+  /** Fill every byte or throw; generation returns the thrown value as an error cause. */
   readonly fillRandom: (bytes: Uint8Array<ArrayBuffer>) => void;
 }
 
@@ -98,6 +101,10 @@ const seedLo = (bytes: Uint8Array) =>
     ((bytes[5] ?? 0) & 0x03)) >>>
   0;
 
+/**
+ * Create a stateful UUIDv7 generator. Malformed option shapes throw `TypeError`; clock and entropy
+ * failures return `UuidSlugError`, and reentrant calls fail without changing sequence state.
+ */
 export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator {
   if (typeof options !== "object" || options === null || Array.isArray(options))
     throw new TypeError("Generator options must be an object.");

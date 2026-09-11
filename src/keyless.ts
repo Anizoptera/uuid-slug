@@ -34,7 +34,7 @@ const v7 = () => (generator ??= createRuntimeGenerator(runtime));
  */
 const v4Random = new Uint8Array(16);
 
-/** Shared with `createUuidSlugCodec`, so a v4 has one implementation however it is reached. */
+/** Generate package-owned UUIDv4 bytes, or write atomically into caller storage. */
 export function uuidV4Bytes(): UuidV4Bytes | UuidSlugError;
 export function uuidV4Bytes<T extends Uint8Array>(out: T, offset?: number): T | UuidSlugError;
 export function uuidV4Bytes(out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
@@ -54,6 +54,7 @@ function portableUuidV4(): UuidV4String | UuidSlugError {
   return bytes instanceof Error ? bytes : (formatUuid(bytes) as UuidV4String | UuidSlugError);
 }
 
+/** Generate a canonical UUIDv4 string with platform cryptographic randomness. */
 export function uuidV4(): UuidV4String | UuidSlugError {
   return runtime.uuidV4
     ? nativeOrFallback(
@@ -66,12 +67,7 @@ export function uuidV4(): UuidV4String | UuidSlugError {
     : portableUuidV4();
 }
 
-/**
- * Takes the alphabet for the same reason `uuidV7Slug` does, and NOT because a v4 slug sorts — it
- * does not. The alphabet is a choice of representation, so a project that has standardised on the
- * 26-character lowercase form for its public ids needs its v4 slugs in it too; the pair differing
- * would be an asymmetry with nothing behind it.
- */
+/** Generate a direct UUIDv4 slug in the selected alphabet; UUIDv4 slugs have no sort-order promise. */
 export function uuidV4Slug(alphabet: SlugAlphabet = "base64url"): UuidV4Slug | UuidSlugError {
   const bytes = uuidV4Bytes();
   if (bytes instanceof Error) return bytes;
@@ -83,8 +79,10 @@ export function uuidV4Slug(alphabet: SlugAlphabet = "base64url"): UuidV4Slug | U
  * a widened method there silently widens the package's public surface. A declared type turns that
  * mismatch into a compile error at the one site that is wrong.
  */
+/** Generate a canonical UUIDv7 string for the current clock reading. */
 export const uuidV7 = (): UuidV7String | UuidSlugError => v7().uuidV7();
 
+/** Generate package-owned UUIDv7 bytes, or write atomically into caller storage. */
 export function uuidV7Bytes(): UuidV7Bytes | UuidSlugError;
 export function uuidV7Bytes<T extends Uint8Array>(out: T, offset?: number): T | UuidSlugError;
 export function uuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Array | UuidSlugError {
@@ -95,9 +93,11 @@ export function uuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Array | Uui
   return generate(out, offset);
 }
 
+/** Generate UUIDv7 text at a whole Unix millisecond in `0..2^48-1`. */
 export const uuidV7At = (timestamp: number): UuidV7String | UuidSlugError =>
   v7().uuidV7At(timestamp);
 
+/** Generate explicit-time UUIDv7 bytes without changing current-time sequence state. */
 export function uuidV7BytesAt(timestamp: number): UuidV7Bytes | UuidSlugError;
 export function uuidV7BytesAt<T extends Uint8Array>(
   timestamp: number,
@@ -118,11 +118,8 @@ export function uuidV7BytesAt(
 }
 
 /**
- * The alphabet is an argument here, exactly as it is on `uuidToSlug(uuid, alphabet)`, because
- * choosing it needs no key: without it the only way to GENERATE a base32hex slug was to build a
- * codec, so the sortable form cost the whole masking machinery while the unsortable one was free.
- * Positional and last, matching `uuidToSlug`, so the two spellings of "encode in this alphabet"
- * do not diverge.
+ * Generate a direct UUIDv7 slug. Lowercase base32hex sorts across different milliseconds;
+ * base64url and values generated within one millisecond have no chronological sort guarantee.
  */
 export function uuidV7Slug(alphabet: SlugAlphabet = "base64url"): UuidV7Slug | UuidSlugError {
   // Gated on the ALPHABET, not merely on the hook's presence. The runtime's slug generator emits

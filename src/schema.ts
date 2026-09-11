@@ -129,6 +129,10 @@ function schemaFromKeys(id: string, keys: Int32Array): MaskSchema {
   });
 }
 
+/**
+ * Derive an immutable mask schema from stable seed options. Seed bytes and `keyIterations` define
+ * the wire identity; changing either requires retaining the old options in `previousMasks`.
+ */
 export function createMaskSchema(options: MaskSchemaOptions): MaskSchema | UuidSlugError {
   try {
     const validated = validateOptions(options);
@@ -238,13 +242,9 @@ function* cooperativeKeys(
 }
 
 /**
- * Derive the same schema while allowing other host tasks to run. Options and byte contents are
- * captured before suspension; cancellation returns an `aborted` error with the signal's reason
- * as its cause. Checkpoints stop computation rather than racing a still-running derivation.
- *
- * Two-millisecond work slices leave headroom for host scheduling. This is a responsiveness target,
- * not a bound on the initial byte snapshot, allocation, GC or scheduler delays. Tiny derivations
- * need no host yield. Passing the result as a codec's `mask` avoids deriving it again.
+ * Derive the same schema cooperatively. Options and byte seeds are captured before suspension;
+ * cancellation stops work and returns `aborted` with the signal reason as its cause.
+ * Initial copying, allocation, GC, and host scheduling are outside the work-slice target.
  */
 export async function createMaskSchemaAsync(
   options: AsyncMaskSchemaOptions,
@@ -298,4 +298,5 @@ const DEFAULT_SEED = "anizoptera.uuid-slug.default-mask.v1";
 // bad iteration count — checks on CALLER input that the literals here cannot fail. Routing through it would return
 // `MaskSchema | UuidSlugError` and force a cast that, at module scope, could only ever hide a real Error
 // behind a `MaskSchema` type at module scope.
+/** Schema with published key material for deterministic tests and examples; it provides no secrecy. */
 export const PUBLIC_MASK_SCHEMA: MaskSchema = feistelSchema("default", seedBytes(DEFAULT_SEED), 1);
