@@ -6,18 +6,15 @@ import { formatUuidSlug, isUuidSlug, parseUuidSlug, uuidToSlug } from "../src/in
 import { WIRE_FORMAT_CODECS as codecs } from "./wire-format-codecs";
 import golden from "../rust/uuid-slug/tests/fixtures/fixtures-wire-format.json";
 
-const randomBytes = (length: number) => {
-  const bytes = new Uint8Array(length);
-  crypto.getRandomValues(bytes);
-  return bytes;
-};
+const bytesFrom = (length: number) =>
+  Uint8Array.from({ length }, (_, index) => (Math.imul(length + 1, 131) + index * 197) & 0xff);
 
 describe("bit-packing codec", () => {
   // An oracle only has value when it can fail independently of the code under test. Comparing
   // against this package's own previous output would agree by construction; `Buffer` is a
   // separate implementation of the same RFC 4648 alphabet.
   it("encodes a UUID payload identically to node Buffer", () => {
-    const bytes = randomBytes(16);
+    const bytes = bytesFrom(16);
     expect(formatUuidSlug(bytes)).toBe(Buffer.from(bytes).toString("base64url"));
   });
 
@@ -25,7 +22,7 @@ describe("bit-packing codec", () => {
   // one big integer, left-aligned to a whole number of characters, read five bits at a time.
   it("encodes base32hex identically to a bit-level reference", () => {
     for (let length = 1; length <= 33; length += 1) {
-      const bytes = randomBytes(length);
+      const bytes = bytesFrom(length);
       let value = 0n;
       for (const byte of bytes) value = (value << 8n) | BigInt(byte);
       const chars = Math.ceil((length * 8) / 5);
@@ -40,7 +37,7 @@ describe("bit-packing codec", () => {
   it("round-trips both alphabets through the shared decoder", () => {
     for (const alpha of [BASE64URL, BASE32HEX])
       for (let length = 1; length <= 33; length += 1) {
-        const bytes = randomBytes(length);
+        const bytes = bytesFrom(length);
         const out = new Uint8Array(length);
         expect(decodeInto(encode(bytes, alpha), alpha, out, 0, length)).toBe(0);
         expect([...out]).toEqual([...bytes]);
@@ -55,7 +52,7 @@ describe("bit-packing codec", () => {
   });
 
   it("carries a trailing value in the spare bits without changing the length", () => {
-    const bytes = randomBytes(16);
+    const bytes = bytesFrom(16);
     for (const [alpha, length] of [
       [BASE64URL, 22],
       [BASE32HEX, 26],

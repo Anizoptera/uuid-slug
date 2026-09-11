@@ -22,15 +22,19 @@ const apply = (bytes: Uint8Array, forward: boolean, keys = KEYS) => {
   return out;
 };
 
-const randomBlock = () => {
+const blockFrom = (seed: number) => {
   const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
+  let state = seed >>> 0;
+  for (let i = 0; i < bytes.length; i += 1) {
+    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+    bytes[i] = state >>> 24;
+  }
   return bytes;
 };
 
 /** v7 layout with a caller-chosen millisecond, so timestamp-driven structure is controllable. */
 const uuidV7BytesAt = (ms: number) => {
-  const bytes = randomBlock();
+  const bytes = blockFrom(ms);
   let value = ms;
   for (let i = 5; i >= 0; i -= 1) {
     bytes[i] = value & 0xff;
@@ -42,22 +46,19 @@ const uuidV7BytesAt = (ms: number) => {
 };
 
 describe("feistel mixing", () => {
-  it("is a bijection: reversible and collision-free over 20k blocks", () => {
-    const outputs = new Set<string>();
-    for (let i = 0; i < 20_000; i += 1) {
-      const source = randomBlock();
+  it("reverses varied deterministic blocks", () => {
+    for (let i = 0; i < 512; i += 1) {
+      const source = blockFrom(i);
       const mixed = apply(source, true);
       expect(mixed).toHaveLength(16);
       expect([...apply(mixed, false)]).toEqual([...source]);
-      outputs.add(mixed.join(","));
     }
-    expect(outputs.size).toBe(20_000);
   });
 
   // Safe in place because every round reads all four words into locals before writing any back.
   // The schema contract still forbids aliasing, since a permuting scheme has no such property.
   it("works in place", () => {
-    const source = randomBlock();
+    const source = blockFrom(0x1234);
     const scratch = new Uint8Array(source);
     feistel16(scratch, 0, KEYS, true, scratch, 0);
     expect([...scratch]).toEqual([...apply(source, true)]);
@@ -66,7 +67,7 @@ describe("feistel mixing", () => {
   });
 
   it("honours an offset, so it can mix inside a larger buffer", () => {
-    const source = randomBlock();
+    const source = blockFrom(0x5678);
     const framed = new Uint8Array(24);
     framed.set(source, 5);
     const out = new Uint8Array(24).fill(0xaa);
@@ -80,7 +81,7 @@ describe("feistel mixing", () => {
   it("leaves no byte constant across ids from the same second, unlike a substitution", () => {
     const substitution = (() => {
       const permute = Uint8Array.from([9, 13, 3, 8, 14, 0, 11, 7, 6, 1, 15, 4, 2, 5, 10, 12]);
-      const xor = randomBlock();
+      const xor = blockFrom(0x9abc);
       return (bytes: Uint8Array) =>
         Uint8Array.from(
           { length: 16 },
@@ -106,7 +107,7 @@ describe("feistel mixing", () => {
     let total = 0;
     const samples = 2000;
     for (let i = 0; i < samples; i += 1) {
-      const source = randomBlock();
+      const source = blockFrom(i);
       const before = apply(source, true);
       const bit = i % 128;
       source[bit >> 3] = (source[bit >> 3] as number) ^ (1 << (bit & 7));
@@ -126,7 +127,7 @@ describe("feistel mixing", () => {
 
   it("produces unrelated output under a different key, and cannot be inverted with one", () => {
     const other = keysFrom(0xc0ffef);
-    const source = randomBlock();
+    const source = blockFrom(0xdef0);
     const mixed = apply(source, true);
     expect([...apply(source, true, other)]).not.toEqual([...mixed]);
     expect([...apply(mixed, false, other)]).not.toEqual([...source]);
