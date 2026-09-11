@@ -23,6 +23,10 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 ### Added
 
+- Convert canonical UUID text and binary storage with `uuidToBytes` and `bytesToUuid`, while the
+  former preserves UUIDv4/v7 brands and caller-owned array subtypes. Narrow unknown binary input
+  with the new `isUuidBytes` and `isUuidV4Bytes` guards or the existing `isUuidV7Bytes` guard.
+  The published `parseUuid` and `formatUuid` names remain as deprecated compatibility paths.
 - Pass UUIDv7 text or bytes to the same TypeScript codec masking operation, and decode directly to
   bytes when needed. Owned decode results are plain `Uint8Array` values; caller storage is written
   atomically and returned with its exact subtype.

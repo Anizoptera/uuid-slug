@@ -34,6 +34,9 @@ in their durable owner and keep discarded exploration transient.
   operation over a sequence that makes callers coordinate package state.
 - Keep keyless transformations and generation as module functions. Put keys, sentinels, rotation,
   masked freshness, and migration on the codec that owns that configuration.
+- Name opposite conversions by source and destination: `uuidToBytes` converts canonical UUID text
+  to binary storage and `bytesToUuid` converts binary storage to canonical UUID text. Keep version
+  selection out of these names because both operations preserve every UUID version.
 - Keep mutable sequence state in generators and immutable configuration in codecs. Let a codec
   depend on the smallest capability it needs—one `uuidV7Bytes` operation—and validate that result
   at the codec seam instead of requiring a full generator or trusting an asserted brand.
@@ -69,6 +72,11 @@ in their durable owner and keep discarded exploration transient.
   nearest seam. Do not use `any` in the public surface.
 - Preserve caller-owned byte-array subtypes and commit caller storage only after complete success.
   Return plain `Uint8Array` for package-owned bytes.
+- Accept `Uint8Array` and its subtypes for binary UUID input. Keep `ArrayBuffer`, `DataView`, and
+  array-like values outside the interface because they add offset, view, and ownership meanings
+  that the UUID operation cannot infer.
+- Provide generic, v4, and v7 byte guards together. The generic guard proves only the 16-byte UUID
+  shape; version guards additionally prove their version and RFC variant bits.
 - Use structural checks where values can cross realms or duplicate package copies. An
   `instanceof` fast path is acceptable only when the same interface has a correct cross-realm path
   and measurement shows the fast path removes meaningful work.
@@ -120,6 +128,9 @@ in their durable owner and keep discarded exploration transient.
   performance characteristics, package exports, and runtime selection as interface promises.
 - Add a public part only with its consumer consequences and release classification. Remove a
   published part only through the governed deprecation and migration policy.
+- Keep deprecated conversion names as thin paths to the canonical directional operations until a
+  governed major release removes them. New implementation code and documentation use the
+  directional names so compatibility does not create two competing interfaces.
 - Keep TypeScript and Rust semantics aligned without forcing either language into the other's
   conventions. A language-specific interface difference must preserve the same accepted domain,
   result meaning, ownership, and failure behavior.

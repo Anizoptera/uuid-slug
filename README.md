@@ -1,6 +1,7 @@
 # @anizoptera/uuid-slug
 
-Use shorter UUIDs in URLs, with optional masking of UUIDv7 timestamps.
+Generate, validate, convert, shorten, and optionally mask UUIDv4 and UUIDv7 identifiers without a
+runtime dependency.
 
 [![npm version](https://img.shields.io/npm/v/@anizoptera/uuid-slug?label=npm)](https://www.npmjs.com/package/@anizoptera/uuid-slug)
 [![CI](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml)
@@ -53,6 +54,25 @@ Keep binary database keys binary across the same codec seam:
 const publicId = unwrapUuidSlug(ids.uuidV7ToMaskedSlug(uuidBytes));
 const uuidBytes = unwrapUuidSlug(ids.maskedSlugToUuidV7Bytes(publicId));
 ```
+
+Convert canonical UUID text and binary storage with names that state the direction:
+
+```ts
+import { bytesToUuid, unwrapUuidSlug, uuidToBytes } from "@anizoptera/uuid-slug";
+
+const bytes = unwrapUuidSlug(uuidToBytes("01990d4d-e600-7000-8000-000000000000"));
+const uuid = unwrapUuidSlug(bytesToUuid(bytes));
+
+// Convert atomically into storage you already own.
+const record = new Uint8Array(32);
+unwrapUuidSlug(uuidToBytes(uuid, record, 8));
+```
+
+`uuidToBytes` accepts one canonical lowercase UUID and either allocates a plain `Uint8Array` or
+writes 16 bytes at the requested offset. `bytesToUuid` reads 16 bytes at an optional offset.
+`Buffer` works because it is a `Uint8Array`; `ArrayBuffer`, `DataView`, and array-like values do
+not. Use `isUuidBytes`, `isUuidV4Bytes`, or `isUuidV7Bytes` when unknown binary input must be
+narrowed before storage or version-specific work.
 
 **Generate the seed; do not think one up.** For example, run `openssl rand -base64 32` and
 store the result outside your source repository. Seeds shorter than 16 bytes are rejected, but
@@ -237,7 +257,7 @@ without binding them first.
 | `sentinels`                                             | codec only        | array                         | The reserved values this codec knows.    |
 | `migration(options?)`                                 | codec only        | migration reader              | Read selected old formats without changing new output. |
 | `uuidToSlug(uuid, alphabet?)` / `slugToUuid(slug)`      | module only       | `UuidSlugError \| ...`        | Direct slug, both ways.                  |
-| `parseUuid` / `formatUuid`                              | module only       | `UuidSlugError \| ...`        | UUID string to bytes and back.           |
+| `uuidToBytes(uuid, out?, offset?)` / `bytesToUuid(bytes, offset?)` | module only | `UuidSlugError \| ...` | Convert canonical UUID text and bytes. |
 | `parseUuidSlug` / `formatUuidSlug`                      | module only       | `UuidSlugError \| ...`        | Slug to bytes and back.                  |
 
 There is no `uuidToMaskedSlug`: masking is defined for UUIDv7 only, because a v7 is the version
@@ -258,10 +278,14 @@ Each decoder accepts every value that a supported matching encoder can produce. 
 always accepts both alphabets, sentinels, and current or previous mask schemas. Migration adds only
 the old formats you enable. Forms no supported encoder produces are invalid.
 
+The published `parseUuid` and `formatUuid` names remain as deprecated compatibility paths. New
+code should use `uuidToBytes` and `bytesToUuid`; they preserve the same validation, brands,
+caller-owned storage, atomic failure, and offset behavior.
+
 Also exported, all module-level:
 
 - Type guards: `isUuidString`, `isUuidV4String`, `isUuidV7String`, `isUuidSlug`, `isUuidV4Slug`,
-  `isUuidV7Slug`, and `isUuidV7Bytes` for 16 bytes you already hold.
+  `isUuidV7Slug`, `isUuidBytes`, `isUuidV4Bytes`, and `isUuidV7Bytes`.
 - `extractUuidV7Timestamp` — the instant a v7 was minted at, and an error for anything that is
   not a v7, because a v4's first six bytes are random and would otherwise read back as a
   plausible date.
@@ -491,9 +515,9 @@ See [security boundaries](docs/security.md) for entropy failures, custom sources
 - **One type for owned bytes.** Without an output buffer, byte generators return a plain
   `Uint8Array`, never a platform-specific subclass. With an output buffer, they return that same
   caller-owned array and write only the requested UUID range.
-- **Atomic identifier parsing.** `parseUuid` and `parseUuidSlug` validate the complete identifier
+- **Atomic identifier parsing.** `uuidToBytes` and `parseUuidSlug` validate the complete identifier
   before writing. Invalid text or destination ranges return an error and leave caller storage
-  unchanged.
+  unchanged. The deprecated `parseUuid` path preserves the same behavior.
 - **You pay for masking only if you mask.** The keyless operations — generating an id, converting
   between a UUID and a plain slug — reach no codec, so a bundle that imports only those carries
   none of the cipher, key derivation, or sentinel table. Use named imports with a tree-shaking

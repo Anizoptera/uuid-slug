@@ -27,6 +27,11 @@ errors and `Result` instead of JavaScript conventions. Such differences must not
 the accepted domain or result semantics. In particular, a lazy result must not expose partial
 candidates where the existing operation reports an error for the whole call.
 
+TypeScript names text/binary conversion by direction because raw `Uint8Array` values need runtime
+validation and may target caller storage. Rust keeps the idiomatic `Uuid` parse, slice, byte, and
+display operations because its fixed UUID type already owns that validation. Both accept the same
+canonical text and 16-byte domain and preserve the same value.
+
 Run shared cases through each implementation from its first increment; check nonzero execution
 per adapter, because an aggregate pass can hide one that ran nothing. Keep native ownership and
 callback checks; map JS UTF-16 explicitly rather than pretending Rust strings cover its full domain.
@@ -37,9 +42,9 @@ Use validated `Uuid` values between operations; parse text once rather than at e
 
 | TypeScript capability | Rust entry point or composition |
 | --- | --- |
-| Parse/format UUID; bytes and offsets | `Uuid::parse`, `from_slice`, `as_bytes`, `write_into`, `Display` |
+| `uuidToBytes` / `bytesToUuid`; bytes and offsets | `Uuid::parse`, `from_slice`, `as_bytes`, `write_into`, `Display` |
 | Plain slug conversion | `Uuid::slug`, `Uuid::parse_slug` |
-| UUID/string/slug guards | Parse once, then `Uuid::is_v4`, `is_v7`, `is_rfc_variant` |
+| UUID/string/slug and generic/v4/v7 byte guards | Parse once, then `Uuid::is_v4`, `is_v7`, `is_rfc_variant` |
 | Base64url UUID payload | `Alphabet::Base64Url.encode(&[u8; 16])`, `decode`, `decode_to` |
 | Canonical base64url guard | Check `Alphabet::Base64Url.decode` success for exactly 22 characters |
 | v4 generation and caller storage | `generation::uuid_v4`, `uuid_v4_with`, `uuid_v4_into_with` |
