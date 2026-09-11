@@ -108,6 +108,26 @@ and consequential trade-offs in its durable owner; keep exploration transient.
   conventions. A language-specific interface difference must preserve the same accepted domain,
   result meaning, ownership, and failure behavior.
 
+## Declaration comments
+
+Public declaration comments are part of the interface: they must let a caller choose and use an
+export without reconstructing its contract from implementation code.
+
+- Give every root export and public interface member caller-facing JSDoc. State the accepted value,
+  result, error or side effect, and boundary that can change the caller's decision.
+- Keep the reason for a non-obvious shape beside its declaration. Name the realistic wrong turn or
+  alternative it prevents and the condition that would justify revisiting it; a shorter comment
+  that says only what the signature already says is a regression.
+- Preserve semantic units when editing comments. Compare the old and new claims, then remove only
+  repetition, session history, implementation trivia, or detail already obvious from the
+  declaration. Keep wire obligations, ownership, ordering, security limits, and error behavior at
+  the declaration where a caller encounters them.
+- Write in public tokens and plain language. Link to a detailed owner when the full mechanism is too
+  large, but keep the decision-relevant reason inline.
+- Verify JSDoc on the built declarations with the public-documentation gate. Its structural pass
+  proves presence, not accuracy; review each changed comment against its declaration and owning
+  contract.
+
 ## Proof
 
 For each changed interface, state the consumer job, the misuse or work eliminated, the selected

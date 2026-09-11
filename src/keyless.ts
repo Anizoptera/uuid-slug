@@ -67,7 +67,10 @@ export function uuidV4(): UuidV4String | UuidSlugError {
     : portableUuidV4();
 }
 
-/** Generate a direct UUIDv4 slug in the selected alphabet; UUIDv4 slugs have no sort-order promise. */
+/**
+ * Generate a direct UUIDv4 slug in the selected alphabet. Alphabet selection is representation,
+ * not sorting, so v4 and v7 generation accept the same project-wide spelling choice.
+ */
 export function uuidV4Slug(alphabet: SlugAlphabet = "base64url"): UuidV4Slug | UuidSlugError {
   const bytes = uuidV4Bytes();
   if (bytes instanceof Error) return bytes;
@@ -120,6 +123,8 @@ export function uuidV7BytesAt(
 /**
  * Generate a direct UUIDv7 slug. Lowercase base32hex sorts across different milliseconds;
  * base64url and values generated within one millisecond have no chronological sort guarantee.
+ * Taking the alphabet here keeps the sortable spelling available without constructing a keyed
+ * codec, matching the representation argument on `uuidToSlug`.
  */
 export function uuidV7Slug(alphabet: SlugAlphabet = "base64url"): UuidV7Slug | UuidSlugError {
   // Gated on the ALPHABET, not merely on the hook's presence. The runtime's slug generator emits

@@ -56,7 +56,11 @@ const SLUG_ALPHABETS: { base32hex: Alphabet; base64url: Alphabet } = {
   base64url: BASE64URL,
 } as const;
 
-/** Select 22-character base64url or 26-character lowercase base32hex direct slugs. */
+/**
+ * Select 22-character base64url or 26-character lowercase base32hex direct slugs. Names keep the
+ * decode tables private and avoid creating a second arbitrary-alphabet extension point beside
+ * custom mask schemas.
+ */
 export type SlugAlphabet = "base64url" | "base32hex";
 
 /** Reject values outside the public alphabet union when untyped JavaScript bypasses TypeScript. */
@@ -179,7 +183,11 @@ export function isUuidV7String(uuid: unknown): uuid is UuidV7String {
   return isUuidString(uuid) && uuid[14] === "7" && stringHasRfcVariant(uuid);
 }
 
-/** Check for exactly 16 UUIDv7 bytes with the RFC variant required by masking and timestamps. */
+/**
+ * Check for exactly 16 UUIDv7 bytes with the RFC variant required by masking and timestamps. The
+ * byte predicate is v7-only because no public byte operation needs a v4-specific guard; add public
+ * surface for a consumer job, not for symmetry.
+ */
 export function isUuidV7Bytes(bytes: unknown): bytes is UuidV7Bytes {
   return (
     isUint8Array(bytes) && bytes.length === 16 && uuidVersion(bytes) === 7 && isRfcVariant(bytes)
@@ -319,6 +327,8 @@ export function isUuidV7Slug(slug: unknown): slug is UuidV7Slug {
 /**
  * Read the 48-bit Unix millisecond from UUIDv7 bytes at `offset`.
  * Other versions are rejected because their first six bytes are not a timestamp.
+ * The range check runs first so truncated storage reports `invalid_buffer`, not a fictitious UUID
+ * version read from a missing byte.
  */
 export function extractUuidV7Timestamp<Input extends Uint8Array>(
   bytes: UuidV7BytesInput<Input>,

@@ -72,7 +72,10 @@ export interface UuidV7BytesSource {
   uuidV7Bytes(this: void): Uint8Array | UuidSlugError;
 }
 
-/** Generate UUIDv7 values with one owned clock, entropy source, and sequence state. */
+/**
+ * Generate UUIDv7 values with one owned clock, entropy source, and sequence state. Methods use
+ * `this: void` so callers can detach them safely and implementations cannot hide instance state.
+ */
 export interface UuidV7Generator extends UuidV7BytesSource {
   /** Generate a canonical UUIDv7 string for the current clock reading. */
   uuidV7(this: void): UuidV7String | UuidSlugError;
@@ -113,7 +116,10 @@ export interface CustomMaskSchemaOptions {
   readonly reverse: (input: Uint8Array) => Uint8Array | UuidSlugError;
 }
 
-/** Derive an immutable masking schema from stable key material. */
+/**
+ * Derive an immutable masking schema from stable key material. UUIDv7's constant bits leave the
+ * 16-bit check used by this format; another reversible transform belongs in a custom schema.
+ */
 export interface MaskSchemaOptions {
   /** Diagnostic label only; decoding uses the schema object and caller-specified order. */
   readonly id?: string;
@@ -123,8 +129,9 @@ export interface MaskSchemaOptions {
    */
   readonly seed: string | Uint8Array;
   /**
-   * Key-derivation work factor, default `1`. Changing it changes every derived key, so retain the
-   * old seed and count in `previousMasks` when identifiers issued under them must remain readable.
+   * Key-derivation work factor, default `1`, paid at schema construction rather than per ID.
+   * Changing it changes every derived key, so retain the old seed and count in `previousMasks`
+   * when identifiers issued under them must remain readable.
    */
   readonly keyIterations?: number;
 }
@@ -196,8 +203,9 @@ export interface UuidSlugCodecOptions {
   /** Optional UUIDv7 byte source; the codec validates every returned payload before masking. */
   readonly generator?: UuidV7BytesSource;
   /**
-   * Decode-only schemas tried after `mask`, in caller order. Keep the list short because every
-   * schema adds work and another chance for a random input to pass its 16-bit check.
+   * Decode-only schemas tried after `mask`, in caller order. Seed options are accepted directly so
+   * ordinary key rotation needs no separate constructor or error branch. Keep the list short:
+   * every schema adds work and another chance for a random input to pass its 16-bit check.
    */
   readonly previousMasks?: readonly (MaskSchema | MaskSchemaOptions)[];
   /**
@@ -217,7 +225,11 @@ export interface UuidSlugCodecOptions {
   readonly maskedSlugAlphabet?: SlugAlphabet;
 }
 
-/** Own the keys, sentinels, writer spelling, and byte source used by masked operations. */
+/**
+ * Own the keys, sentinels, writer spelling, and byte source used by masked operations. Plain
+ * conversions stay module-level because they need none of that state. Methods use `this: void` so
+ * callers can detach them without binding and implementations cannot depend on a receiver.
+ */
 export interface UuidSlugCodec {
   /** Frozen reserved values in the codec's configured output alphabet. */
   readonly sentinels: readonly UuidV7Sentinel[];
