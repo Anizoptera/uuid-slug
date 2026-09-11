@@ -28,7 +28,7 @@ interface OriginalFixture {
 export function createProfileCases(
   api: Api,
   originalFixtures: readonly OriginalFixture[],
-  privateApi?: PrivateApi,
+  privateApi: PrivateApi | undefined,
 ): Record<string, ProfileCase> {
   const instant = 1_725_000_000_000;
   const timestampWindow = { maxTimestampDeltaMs: 86_400_000, referenceUnixMs: instant };
