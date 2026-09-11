@@ -186,6 +186,12 @@ distinguishable gain in a 24-round screen on any runtime. Keep one validated for
 string-assembly change improves the complete fallback rather than only removing its boundary check.
 A fixed template using the same byte-pair table produced no formatter win and made Node offset
 formatting 2.3% slower with its 95% median interval above no change; retain the compact loop.
+Replacing the entropy pool's copy-and-erase loop with `set(subarray)` plus ranged `fill` regressed
+UUIDv4 byte routes by 57–88% on Node, 60–95% on Bun, 20–108% on Deno, and 65–87% on Chromium.
+The allocated view and two native calls cost more than one 16-byte JavaScript loop.
+A separate fixed-16 loop improved Node caller-owned UUIDv4 by 4.7–5.1% and Chromium UUIDv4 byte
+routes, but Bun gained nothing and Node portable-v7 caller output regressed by 5.3% in one replay.
+The extra dispatch moved JIT cost among pool consumers instead of reducing the shared work.
 
 ## Allocation and key rotation
 
