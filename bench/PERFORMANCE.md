@@ -139,6 +139,26 @@ slower in two mixed-workload runs. Indirect function dispatch and split guard he
 primary borrowed route in exploratory trials; one shared guard path with a final direct ownership
 branch avoided that cost. Revisit the branch if a runtime changes either primary result.
 
+### Portable UUIDv7 timestamp writes
+
+Select the fixed 48-bit timestamp writer once when the module loads. Bun keeps the six-byte loop;
+other runtimes split the timestamp into one high 16-bit word and one low 32-bit word. The split
+avoids five iterative divisions on V8 without adding a branch to each UUID write.
+
+Two packed comparisons on 2026-09-11 used 24 alternating rounds on Node 24.20.0, Bun 1.4.1,
+Deno 2.9.6, and Chromium 151. Each interval is the exact distribution-free 95% interval for the
+median paired ratio. Node's caller-owned continuation route improved by 6.8% and 8.6%, and its
+advancing-clock route improved by 14.8% and 14.3%. Chromium's caller-owned continuation route
+improved by 13.3% and 12.3%; its advancing-clock route improved by 4.4% and 5.0%. Those intervals
+excluded no change in both replays. Bun had no significant regression in either replay; its byte
+route ranged from a 0.6% to a 4.1% slower median with intervals crossing no change. Deno improved
+on caller-owned continuation, advancing-clock, and rollback routes in both replays.
+
+A universal word writer was rejected because Bun's advancing and rollback routes regressed by
+6.2% and 5.3%. A per-call runtime branch was rejected because it slowed Bun byte routes by 4–10%.
+The module-selected function keeps one implementation per engine without recurring dispatch cost.
+Replace this split if JavaScriptCore no longer favors the loop or V8 no longer favors fixed writes.
+
 ## Allocation and key rotation
 
 Node Inspector allocation sampling used a 1,024-byte interval with both `includeObjectsCollectedByMajorGC` and `includeObjectsCollectedByMinorGC` enabled. Each operation ran 32,768 calls (construction: 2,048), after warm-up. The empty control sampled approximately zero bytes per call. These are sampling estimates from one matched process pair, not exact allocation counts:

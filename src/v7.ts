@@ -20,13 +20,31 @@ export interface PortableUuidV7GeneratorOptions {
   readonly fillRandom: (bytes: Uint8Array<ArrayBuffer>) => void;
 }
 
-function writeTimestamp(bytes: Uint8Array, ms: number, offset: number) {
-  let value = Math.trunc(ms);
-  for (let i = 5; i >= 0; i -= 1) {
-    bytes[offset + i] = value & 0xff;
+function writeTimestampWords(bytes: Uint8Array, ms: number, offset: number) {
+  // Split the fixed 48-bit field once: JavaScript bitwise operators keep the low 32 bits, while
+  // division supplies the independent high 16 bits without BigInt or six iterative divisions.
+  const high = Math.floor(ms / 0x1_0000_0000);
+  bytes[offset] = high >>> 8;
+  bytes[offset + 1] = high;
+  bytes[offset + 2] = ms >>> 24;
+  bytes[offset + 3] = ms >>> 16;
+  bytes[offset + 4] = ms >>> 8;
+  bytes[offset + 5] = ms;
+}
+
+function writeTimestampLoop(bytes: Uint8Array, ms: number, offset: number) {
+  let value = ms;
+  for (let index = 5; index >= 0; index -= 1) {
+    bytes[offset + index] = value & 0xff;
     value = Math.floor(value / 256);
   }
 }
+
+// Measured Bun favors the loop while Node and Chromium favor fixed writes; select once so generation
+// pays no per-call branch. bench/PERFORMANCE.md owns the measurements and replacement condition.
+const writeTimestamp = (globalThis as { Bun?: object }).Bun
+  ? writeTimestampLoop
+  : writeTimestampWords;
 
 /**
  * Writes the 42-bit sequence RFC 9562 §6.2 allows in `rand_a` plus the top of `rand_b`, along

@@ -54,6 +54,10 @@ export function createProfileCases(
   const maskedOnlyMigration = codec.createMigrationDecoder();
   const originals = originalFixtures.filter(({ slug, raw }) => slug !== raw);
   const portable = api.createUuidV7Generator({ clock: () => instant });
+  let advancingMs = instant;
+  const portableAdvancing = api.createUuidV7Generator({ clock: () => (advancingMs += 1) });
+  let rollingBackMs = instant;
+  const portableRollingBack = api.createUuidV7Generator({ clock: () => (rollingBackMs -= 1) });
   const ids = Array.from({ length: 256 }, (_, index) => {
     const time = (instant + index).toString(16).padStart(12, "0");
     const a = ((index * 251) & 4095).toString(16).padStart(3, "0");
@@ -95,6 +99,10 @@ export function createProfileCases(
     "portable.at": (index) => portable.generateUuidV7At(instant + (index & 255)),
     "portable.at.bytes": (index) => portable.generateUuidV7BytesAt(instant + (index & 255)),
     "portable.at.into": (index) => portable.generateUuidV7BytesAt(instant + (index & 255), into, 4),
+    // Advancing and rollback clocks select opposite state-machine edges; a fixed clock covers only
+    // same-millisecond continuation even though all three routes write the same UUID layout.
+    "portable.advance.into": () => portableAdvancing.generateUuidV7Bytes(into, 4),
+    "portable.rollback.into": () => portableRollingBack.generateUuidV7Bytes(into, 4),
     "construct.generator": () => api.createUuidV7Generator({ clock: () => instant }),
     "v4.slug": () => api.generateUuidV4Slug(),
     "v4.base32": () => api.generateUuidV4Slug("base32hex"),

@@ -10,6 +10,10 @@ Prioritize performance decisions in this order: Bun and Node first, Chromium sec
 A Deno-only regression does not veto a clear primary-runtime improvement; quantify it and preserve
 all Deno contracts.
 
+Safe APIs remain the default. A substantially faster unsafe public variant is permitted only when
+consumer value justifies its explicit misuse risk; its name and declaration must state the lost
+protection, and no default or fallback may select it.
+
 ## Evidence rules
 
 - Profile the complete public call, not an internal proxy. A faster implementation is rejected if
@@ -103,6 +107,8 @@ all Deno contracts.
   state-transition, or responsiveness costs.
 - [ ] Falsify portable generation alternatives for entropy draw size and reuse, state layout, byte
   assembly, formatting, caller-owned writes, clock reads, branches, and runtime-specific primitives.
+- [x] Select the portable UUIDv7 timestamp writer once per module: fixed word writes repeatedly
+  improved Node and Chromium while Bun retained its faster loop; per-call dispatch regressed Bun.
 - [ ] Optimize every retained portable path to the measured runtime frontier without changing its
   entropy, UUID layout, ordering, ownership, fallback, error, or wire contracts.
 - [ ] Repeat statistically distinguishable packed comparisons for each changed portable route and
