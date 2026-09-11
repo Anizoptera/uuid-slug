@@ -82,6 +82,9 @@
 
 ### Findings, fixes, and closure
 
+- [x] Map the strongest suitable cryptographic UUID and byte-generation primitive available in each supported Node, Bun, browser, and Deno runtime, including capability conditions and failure semantics.
+- [x] Confirm each runtime adapter prefers its best representation-specific native cryptographic operation while preserving validated portable fallback and fail-closed entropy behavior.
+- [x] Prove Node and Bun expose every available modeled native primitive, browser capability loss keeps the cryptographic byte path, every public route avoids non-cryptographic randomness, and packaged Deno/browser paths pass their owning artifact checks.
 - [x] Ensure every public identifier generator requires package-controlled platform entropy; caller input cannot replace the trusted source, and unavailable trusted entropy returns `rng_unavailable` without output.
 - [x] Remove deterministic or caller-only entropy from public generation while retaining a narrow internal seam for algorithm and parity falsification; update declarations, codecs, docs, examples, benchmarks, and conformance consumers.
 - [x] Prove caller entropy properties are ignored and trusted-source failures preserve their cause without changing caller output; retain direct internal state-transition coverage for sequence atomicity.

@@ -13,6 +13,7 @@
  * perfectly random.
  */
 import { describe, expect, it, vi } from "vitest";
+import nodeCrypto from "node:crypto";
 
 import { instrument } from "./instrument";
 import {
@@ -24,8 +25,16 @@ import {
   sourcesUsedBy,
 } from "./entropy-probe";
 import { generateUuidV4Bytes } from "../src/index";
+import { runtime as nodeRuntime } from "../src/runtime/node";
 
 describe("entropy source", () => {
+  it("exposes every supported native Node UUID primitive", () => {
+    expect(typeof nodeRuntime.uuidV4).toBe(typeof nodeCrypto.randomUUID);
+    expect(typeof nodeRuntime.uuidV7).toBe(
+      typeof (nodeCrypto as { randomUUIDv7?: () => string }).randomUUIDv7,
+    );
+  });
+
   it.each(generators)("never reaches for Math.random in %s", (_name, generate) => {
     expect(insecureAmong(sourcesUsedBy(generate))).toEqual([]);
   });

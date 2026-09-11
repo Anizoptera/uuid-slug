@@ -9,6 +9,16 @@ randomness when the secure source fails. TypeScript public generation does not a
 entropy source because a successful weak or partial fill cannot be detected reliably from its
 output. A plausible-looking UUID does not establish that cryptographic entropy was used.
 
+Runtime adapters select cryptographic primitives by capability, not version:
+
+- Node uses `crypto.randomUUID()` for UUIDv4, `crypto.randomUUIDv7()` when available for UUIDv7
+  text, and pooled `crypto.randomFillSync()` for byte generation and portable UUIDv7 fallback.
+- Bun uses `Bun.randomUUIDv7()` for UUIDv7 text, base64url, and bytes; UUIDv4 and fallback bytes use
+  Web Crypto `randomUUID()` and pooled `getRandomValues()`.
+- Browsers and Deno use Web Crypto `randomUUID()` for UUIDv4 and pooled `getRandomValues()` for
+  bytes and portable UUIDv7 generation. Neither platform currently exposes a standard native
+  UUIDv7 primitive.
+
 The platform source choices are documented by [Node](https://nodejs.org/api/crypto.html#cryptorandomfillsyncbuffer-offset-size),
 [Web Crypto](https://www.w3.org/TR/webcrypto/#Crypto-method-getRandomValues),
 [Bun](https://bun.sh/docs/runtime/utils#bunrandomuuidv7) and

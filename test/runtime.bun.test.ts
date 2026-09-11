@@ -20,6 +20,7 @@ import {
   sourcesUsedBy,
 } from "./entropy-probe";
 import { cases as bufferContractCases } from "./buffer-contract-probe";
+import { runtime as bunRuntime } from "../src/runtime/bun";
 import {
   isUuidV7String,
   slugToUuid,
@@ -30,6 +31,13 @@ import {
 import { unwrap } from "../dev/unwrap";
 
 describe("bun runtime", () => {
+  test("exposes every supported native Bun UUIDv7 representation", () => {
+    const availability = typeof Bun.randomUUIDv7 === "function" ? "function" : "undefined";
+    expect(typeof bunRuntime.uuidV7).toBe(availability);
+    expect(typeof bunRuntime.uuidV7Bytes).toBe(availability);
+    expect(typeof bunRuntime.uuidV7Slug).toBe(availability);
+  });
+
   // The same list runs on Node's portable generator and Bun's native owned-byte adapter, so both
   // runtime branches must preserve the public caller-buffer contract.
   for (const entry of bufferContractCases) {
