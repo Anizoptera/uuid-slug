@@ -128,9 +128,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Release
 
-- A maintainer must explicitly request the exact version before any release commit or Git tag is
-  created. Public release actions need separate authorization for each exact remote operation: do
-  not push, open a pull request, upload a tag, create a release, publish, or change remote settings.
+- Remote writes require explicit maintainer authorization for each exact operation. Do not push,
+  open a pull request, upload a tag, create a release, publish, or change remote settings.
 - Publish through `publish-clean`; validate the final cleaned archive and use `--access public
   --provenance`. Derive the dist-tag from the git tag: prereleases use `next`, releases `latest`.
 - Keep `@anizoptera/publish-clean` a normal registry dependency, never a Git SHA or tarball URL.
@@ -145,9 +144,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   be committed because versioning requires a clean tree. Do not introduce a release bot.
 - Refuse publication unless the tag matches the manifest and its changelog section is nonempty.
   Publish that section verbatim. Refuse local versioning without the new version's section.
-- Choose versions through `docs/release.md`; never infer a new target from one change in isolation.
-  New tags use annotated tags through `bun run release`; historical selection must retain the
-  existing lightweight release tags.
+- Dev bumps change only the `-dev` candidate. Follow `docs/release.md`: start with the next patch
+  after release, then raise it when all unreleased changes require a minor or major. NEVER run
+  `bun run release` or create a release commit or tag for a dev bump.
 - Classify the full consumer effect before committing: fixes with no new public behavior are patch;
   backward-compatible public behavior is minor; incompatible behavior is major, or minor before
   1.0. Structural checks provide a lower bound; they cannot classify semantic behavior or approve
