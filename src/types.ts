@@ -7,7 +7,9 @@ declare const brand: unique symbol;
 declare const maskSchemaBrand: unique symbol;
 
 /** Accumulate validated value kinds without changing their runtime representation. */
-export type Brand<T, Name extends string> = T & { readonly [brand]: { [K in Name]: true } };
+export type Brand<Value, Name extends string> = Value & {
+  readonly [brand]: { [BrandName in Name]: true };
+};
 
 /** A canonical lowercase UUID string. This says nothing about issuance or ownership. */
 export type UuidString = Brand<string, "UuidString">;
@@ -87,7 +89,11 @@ export interface UuidV7Generator extends UuidV7BytesSource {
   /** Generate package-owned UUIDv7 bytes for the current clock reading. */
   uuidV7Bytes(this: void): UuidV7Bytes | UuidSlugError;
   /** Write one UUIDv7 into `out` atomically and return that exact array. */
-  uuidV7Bytes<T extends Uint8Array>(this: void, out: T, offset?: number): T | UuidSlugError;
+  uuidV7Bytes<Output extends Uint8Array>(
+    this: void,
+    out: Output,
+    offset?: number,
+  ): Output | UuidSlugError;
   /**
    * Generate at a whole Unix millisecond in `0..2^48-1` without changing current-time sequence
    * state. The timestamp comes first so callback indices cannot become timestamps by accident.
@@ -96,12 +102,12 @@ export interface UuidV7Generator extends UuidV7BytesSource {
   /** Generate package-owned bytes at an explicit millisecond without changing sequence state. */
   uuidV7BytesAt(this: void, timestamp: number): UuidV7Bytes | UuidSlugError;
   /** Write one explicit-time UUIDv7 into `out` atomically and return that exact array. */
-  uuidV7BytesAt<T extends Uint8Array>(
+  uuidV7BytesAt<Output extends Uint8Array>(
     this: void,
     timestamp: number,
-    out: T,
+    out: Output,
     offset?: number,
-  ): T | UuidSlugError;
+  ): Output | UuidSlugError;
 }
 
 /** A frozen package-produced masking handle whose transform and key material stay private. */
@@ -278,9 +284,9 @@ export interface UuidSlugCodec {
    * Generic capture rejects known UUID text; slug brands remain accepted because only decoding with
    * this codec can resolve their overlapping spellings.
    */
-  validateMaskedSlugFresh<S extends string>(
+  validateMaskedSlugFresh<Input extends string>(
     this: void,
-    slug: SlugStringInput<S>,
+    slug: SlugStringInput<Input>,
     freshness?: FreshValidationOptions,
-  ): (S & PublicUuidV7Slug) | UuidSlugError;
+  ): (Input & PublicUuidV7Slug) | UuidSlugError;
 }

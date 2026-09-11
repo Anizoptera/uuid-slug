@@ -229,17 +229,20 @@ export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Ge
   }
 
   function uuidV7Bytes(): UuidV7Bytes | UuidSlugError;
-  function uuidV7Bytes<T extends Uint8Array>(out: T, offset?: number): T | UuidSlugError;
+  function uuidV7Bytes<Output extends Uint8Array>(
+    out: Output,
+    offset?: number,
+  ): Output | UuidSlugError;
   function uuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Array | UuidSlugError {
     return bytes(out, offset);
   }
 
   function uuidV7BytesAt(timestamp: number): UuidV7Bytes | UuidSlugError;
-  function uuidV7BytesAt<T extends Uint8Array>(
+  function uuidV7BytesAt<Output extends Uint8Array>(
     timestamp: number,
-    out: T,
+    out: Output,
     offset?: number,
-  ): T | UuidSlugError;
+  ): Output | UuidSlugError;
   function uuidV7BytesAt(
     timestamp: number,
     out?: Uint8Array,
@@ -279,7 +282,10 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
   }
 
   function uuidV7Bytes(): UuidV7Bytes | UuidSlugError;
-  function uuidV7Bytes<T extends Uint8Array>(out: T, offset?: number): T | UuidSlugError;
+  function uuidV7Bytes<Output extends Uint8Array>(
+    out: Output,
+    offset?: number,
+  ): Output | UuidSlugError;
   function uuidV7Bytes(out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
     // Validate before native generation so a caller error cannot consume entropy or be relabelled
     // as a runtime failure. The native seam returns owned bytes; only this function commits them.
@@ -315,11 +321,11 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
   }
 
   function uuidV7BytesAt(timestamp: number): UuidV7Bytes | UuidSlugError;
-  function uuidV7BytesAt<T extends Uint8Array>(
+  function uuidV7BytesAt<Output extends Uint8Array>(
     timestamp: number,
-    out: T,
+    out: Output,
     offset?: number,
-  ): T | UuidSlugError;
+  ): Output | UuidSlugError;
   function uuidV7BytesAt(
     timestamp: number,
     out?: Uint8Array,

@@ -36,7 +36,10 @@ const v4Random = new Uint8Array(16);
 
 /** Generate package-owned UUIDv4 bytes, or write atomically into caller storage. */
 export function uuidV4Bytes(): UuidV4Bytes | UuidSlugError;
-export function uuidV4Bytes<T extends Uint8Array>(out: T, offset?: number): T | UuidSlugError;
+export function uuidV4Bytes<Output extends Uint8Array>(
+  out: Output,
+  offset?: number,
+): Output | UuidSlugError;
 export function uuidV4Bytes(out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
   const target = out ?? new Uint8Array(16);
   const badRange = out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
@@ -87,7 +90,10 @@ export const uuidV7 = (): UuidV7String | UuidSlugError => v7().uuidV7();
 
 /** Generate package-owned UUIDv7 bytes, or write atomically into caller storage. */
 export function uuidV7Bytes(): UuidV7Bytes | UuidSlugError;
-export function uuidV7Bytes<T extends Uint8Array>(out: T, offset?: number): T | UuidSlugError;
+export function uuidV7Bytes<Output extends Uint8Array>(
+  out: Output,
+  offset?: number,
+): Output | UuidSlugError;
 export function uuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Array | UuidSlugError {
   const generate = v7().uuidV7Bytes as (
     out?: Uint8Array,
@@ -102,11 +108,11 @@ export const uuidV7At = (timestamp: number): UuidV7String | UuidSlugError =>
 
 /** Generate explicit-time UUIDv7 bytes without changing current-time sequence state. */
 export function uuidV7BytesAt(timestamp: number): UuidV7Bytes | UuidSlugError;
-export function uuidV7BytesAt<T extends Uint8Array>(
+export function uuidV7BytesAt<Output extends Uint8Array>(
   timestamp: number,
-  out: T,
+  out: Output,
   offset?: number,
-): T | UuidSlugError;
+): Output | UuidSlugError;
 export function uuidV7BytesAt(
   timestamp: number,
   out?: Uint8Array,

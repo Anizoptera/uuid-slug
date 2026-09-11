@@ -47,12 +47,14 @@ in their durable owner and keep discarded exploration transient.
   and ownership distinctions when consumers use them.
 - Make invalid combinations unrepresentable when TypeScript can infer the distinction without a
   cast or annotation. Do not move runtime-only uncertainty into elaborate caller-facing generics.
-- Capture string inputs generically and reject a captured brand that proves the representation or
-  UUID version cannot satisfy the operation. Keep bare strings accepted because `string` does not
-  extend any narrower brand: widening has erased the value's origin, and external strings need the
-  runtime validator. Tuple-wrap the conditional check so one invalid member rejects a whole known
-  union instead of distributively preserving its other members. Revisit this only if TypeScript can
-  retain erased provenance or the package stops accepting external text at its validation seam.
+- Name generics by their job: `Input` captures a value for branded validation, while `Output`
+  preserves the exact caller-owned byte-array subtype returned after a successful write.
+- Capture string and byte inputs generically and reject a captured brand that proves the
+  representation or UUID version cannot satisfy the operation. Keep unbranded values accepted:
+  widening has erased their origin, so the runtime validator must judge them. Tuple-wrap the
+  conditional check so one invalid member rejects a whole known union instead of distributively
+  preserving its other members. Revisit this only if TypeScript can retain erased provenance or
+  the package stops accepting external values at its validation seam.
 - Use `unknown` only for genuinely unbounded external input or caught values, then narrow it at the
   nearest seam. Do not use `any` in the public surface.
 - Preserve caller-owned byte-array subtypes and commit caller storage only after complete success.

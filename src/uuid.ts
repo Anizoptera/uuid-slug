@@ -19,11 +19,13 @@ import type {
 } from "./types";
 
 /** Carry a validated UUID version through lossless representation changes. */
-type PreserveUuidVersion<Input, General, V4, V7> = Input extends UuidV4String | UuidV4Slug
-  ? V4
+type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> = Input extends
+  | UuidV4String
+  | UuidV4Slug
+  ? Version4
   : Input extends UuidV7String | UuidV7Slug
-    ? V7
-    : General;
+    ? Version7
+    : UnknownVersion;
 
 const HEX = "0123456789abcdef";
 // Probe once and allocate the byte-pair fallback only on engines that need it.
@@ -104,11 +106,11 @@ function hexValue(code: number) {
 export function parseUuid<Input extends string>(
   uuid: UuidStringInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
-export function parseUuid<Input extends string, T extends Uint8Array>(
+export function parseUuid<Input extends string, Output extends Uint8Array>(
   uuid: UuidStringInput<Input>,
-  out: T,
+  out: Output,
   offset?: number,
-): T | UuidSlugError;
+): Output | UuidSlugError;
 export function parseUuid(uuid: string, out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
   if (typeof uuid !== "string" || uuid.length !== UUID_LENGTH)
     return new UuidSlugError("invalid_uuid", "UUID must be 36 characters.");
@@ -240,11 +242,11 @@ export function formatUuidSlug(
 export function parseUuidSlug<Input extends string>(
   slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
-export function parseUuidSlug<Input extends string, T extends Uint8Array>(
+export function parseUuidSlug<Input extends string, Output extends Uint8Array>(
   slug: DirectUuidSlugInput<Input>,
-  out: T,
+  out: Output,
   offset?: number,
-): T | UuidSlugError;
+): Output | UuidSlugError;
 export function parseUuidSlug(
   slug: string,
   out?: Uint8Array,
