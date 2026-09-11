@@ -181,6 +181,10 @@ regressed Bun by 3.6–5.7%. The retained split duplicates the short guard and d
 both hot paths branch-free. Merge it if a primary runtime no longer improves owned output or if
 caller-owned output regresses reproducibly.
 
+An internal unchecked formatter removed range validation from the exact fallback but produced no
+distinguishable gain in a 24-round screen on any runtime. Keep one validated formatter until a
+string-assembly change improves the complete fallback rather than only removing its boundary check.
+
 ## Allocation and key rotation
 
 Node Inspector allocation sampling used a 1,024-byte interval with both `includeObjectsCollectedByMajorGC` and `includeObjectsCollectedByMinorGC` enabled. Each operation ran 32,768 calls (construction: 2,048), after warm-up. The empty control sampled approximately zero bytes per call. These are sampling estimates from one matched process pair, not exact allocation counts:
