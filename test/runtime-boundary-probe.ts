@@ -25,6 +25,7 @@ import {
   uuidV4,
   uuidV4Bytes,
   validateUuidV7Fresh,
+  validateUuidV7SlugFresh,
   uuidV7Bytes,
   uuidV7BytesAt,
   uuidV7Slug,
@@ -473,6 +474,18 @@ export const runtimeBoundaryCases = [
         const result = validateUuidV7Fresh(uuid, { now: () => now });
         assert.ok(result instanceof UuidSlugError);
         assert.equal(result.code, "invalid_timestamp");
+      }
+    },
+  },
+  {
+    name: "distinguishes valid UUIDv4 values from malformed UUID text and slugs",
+    run(this: void) {
+      for (const result of [
+        validateUuidV7Fresh("1f04e7f5-c0c6-4044-b5a3-6278bb77ffb4"),
+        validateUuidV7SlugFresh("HwTn9cDGQES1o2J4u3f_tA"),
+      ]) {
+        assert.ok(result instanceof UuidSlugError);
+        assert.equal(result.code, "invalid_uuid_version");
       }
     },
   },

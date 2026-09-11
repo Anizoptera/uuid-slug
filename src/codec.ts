@@ -254,13 +254,13 @@ function buildUuidSlugCodec(options: UuidSlugCodecOptions): UuidSlugCodec | Uuid
 export function validateUuidV7Fresh<Input extends string>(
   uuid: UuidV7StringInput<Input>,
   options?: FreshValidationOptions,
-): UuidV7String | UuidSlugError {
+): (Input & UuidV7String) | UuidSlugError {
   const uuidText: string = uuid;
   const bytes = parseUuid(uuidText);
   if (bytes instanceof Error)
     return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
   const valid = validateFreshBytes(bytes, options);
-  return valid instanceof Error ? valid : (uuidText as UuidV7String);
+  return valid instanceof Error ? valid : (uuidText as Input & UuidV7String);
 }
 
 /** Capture decoded fields before calling an external clock, which can reenter a custom schema. */
@@ -268,8 +268,7 @@ function validateFreshBytes(
   bytes: Uint8Array,
   options?: FreshValidationOptions,
 ): undefined | UuidSlugError {
-  if (!isUuidV7Bytes(bytes))
-    return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
+  if (!isUuidV7Bytes(bytes)) return new UuidSlugError("invalid_uuid_version", "Expected UUIDv7.");
   const timestamp = extractUuidV7Timestamp(bytes);
   if (timestamp instanceof Error) return timestamp;
   let windowMs = 86_400_000;
@@ -315,10 +314,10 @@ function validateFreshBytes(
 export function validateUuidV7SlugFresh<Input extends string>(
   slug: UuidV7SlugInput<Input>,
   options?: FreshValidationOptions,
-): UuidV7Slug | UuidSlugError {
+): (Input & UuidV7Slug) | UuidSlugError {
   const directSlug: string = slug;
   const bytes = parseUuidSlug(directSlug);
   if (bytes instanceof Error) return bytes;
   const valid = validateFreshBytes(bytes, options);
-  return valid instanceof Error ? valid : (directSlug as UuidV7Slug);
+  return valid instanceof Error ? valid : (directSlug as Input & UuidV7Slug);
 }

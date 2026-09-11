@@ -38,6 +38,19 @@ mod tests {
     }
 
     #[test]
+    fn freshness_reports_a_valid_uuid_of_the_wrong_version() -> Result<(), Error> {
+        let uuid = Uuid::parse("1f04e7f5-c0c6-4044-b5a3-6278bb77ffb4")?;
+        let error = Freshness {
+            now: 0.0,
+            window_ms: 0.0,
+        }
+        .validate(uuid)
+        .expect_err("UUIDv4 must not have a UUIDv7 timestamp");
+        assert_eq!(error.code(), ErrorCode::InvalidUuidVersion);
+        Ok(())
+    }
+
+    #[test]
     fn ciphertext_cannot_alias_a_reserved_identity() -> Result<(), Error> {
         let uuid = Uuid::parse("019ff19b-58b8-7000-9b1b-df713bd55607")?;
         let reserved = Uuid::parse("00000000-0000-7000-8000-000000000000")?;
@@ -273,7 +286,7 @@ impl Freshness {
     pub fn validate(self, uuid: Uuid) -> Result<Uuid, Error> {
         let timestamp = uuid
             .timestamp()
-            .map_err(|_| Error::new(ErrorCode::InvalidUuid))? as f64;
+            .map_err(|_| Error::new(ErrorCode::InvalidUuidVersion))? as f64;
         if !self.window_ms.is_finite() || self.window_ms < 0.0 || !self.now.is_finite() {
             return Err(Error::new(ErrorCode::InvalidTimestamp));
         }

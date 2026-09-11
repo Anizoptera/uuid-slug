@@ -130,13 +130,13 @@ extractUuidV7Timestamp(ownedV4);
 const generatedV4 = unwrapUuidSlug(uuidV4());
 // @ts-expect-error UUIDv7 freshness is undefined for a known UUIDv4.
 validateUuidV7Fresh(generatedV4);
-expectType<UuidV7String | UuidSlugError>()(
+expectType<(UuidV7String & "019ff19b-58b8-7000-9b1b-df713bd5562c") | UuidSlugError>()(
   validateUuidV7Fresh("019ff19b-58b8-7000-9b1b-df713bd5562c"),
 );
 const generatedV4Slug = unwrapUuidSlug(uuidV4Slug());
 // @ts-expect-error UUIDv7 freshness is undefined for a known UUIDv4 slug.
 validateUuidV7SlugFresh(generatedV4Slug);
-expectType<UuidV7Slug | UuidSlugError>()(
+expectType<(UuidV7Slug & "AZ_xnLf5cACbG99xO9VWLAAAAAAAAAAAAAAAAA") | UuidSlugError>()(
   validateUuidV7SlugFresh("AZ_xnLf5cACbG99xO9VWLAAAAAAAAAAAAAAAAA"),
 );
 const formattedV4 = formatUuid(ownedV4);

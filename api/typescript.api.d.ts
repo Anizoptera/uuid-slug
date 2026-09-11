@@ -252,8 +252,8 @@ declare type UuidV7StringInput<Input extends string> = RejectKnownInput<
 export declare function validateUuidV7Fresh<Input extends string>(
   uuid: UuidV7StringInput<Input>,
   options?: FreshValidationOptions,
-): UuidV7String | UuidSlugError;
+): (Input & UuidV7String) | UuidSlugError;
 export declare function validateUuidV7SlugFresh<Input extends string>(
   slug: UuidV7SlugInput<Input>,
   options?: FreshValidationOptions,
-): UuidV7Slug | UuidSlugError;
+): (Input & UuidV7Slug) | UuidSlugError;
