@@ -279,10 +279,10 @@ export const runtimeBoundaryCases = [
           assert.ok(bytes instanceof Uint8Array);
           return bytes.reduce((bits, byte) => (bits << 8n) | BigInt(byte), 0n);
         };
-        const baseline = generate(new Uint8Array(16));
+        const baseline = generate(new Uint8Array(10));
         let seen = 0n;
-        for (let bit = 0; bit < 128; bit += 1) {
-          const input = new Uint8Array(16);
+        for (let bit = 0; bit < 80; bit += 1) {
+          const input = new Uint8Array(10);
           input[bit >> 3] = 1 << (bit & 7);
           const changed = generate(input) ^ baseline;
           assert.equal(changed & (changed - 1n), 0n, "one input bit changed multiple bits");

@@ -232,6 +232,21 @@ describe("uuidv7 buffer handling", () => {
 });
 
 describe("uuidv7 entropy use", () => {
+  it("draws only the ten random payload bytes, then only the four fresh tail bytes", () => {
+    const lengths: number[] = [];
+    const generator = createUuidV7Generator({
+      clock: fixedClock(10),
+      fillRandom(bytes) {
+        lengths.push(bytes.length);
+        bytes.fill(0);
+      },
+    });
+    bytesOf(generator);
+    bytesOf(generator);
+    generator.generateUuidV7BytesAt(10);
+    expect(lengths).toEqual([10, 4, 10]);
+  });
+
   it.each([0x00, 0xff])("retries a failed draw without consuming sequence state (%d)", (byte) => {
     let fail = false;
     const generator = createUuidV7Generator({
