@@ -100,6 +100,25 @@ workloads, and they do not turn development bridges into npm distribution candid
   current length; revisit the internal draw size only with a measured end-to-end improvement.
 - Node's mixed-workload parser row regresses while isolated parsing improves. Restoring the exact baseline parser inside the current package measured about 93 ns for parsing and 74 ns for caller-owned parsing, versus 82/62 ns with the final parser. Direct lookup inlining and a combined sign check did not improve the mixed result and were discarded. This rules out restoring the old parser as a remedy; it does not identify the remaining JIT/workload cause. The mixed result remains disclosed, not relabelled as a speedup.
 
+### Rejected TypeScript hot-path shapes
+
+Use the general HalfSipHash path and the four-word check-tag loop. Retest only when a runtime or
+compiler change moves either result outside the identical-code noise band.
+
+On 2026-09-11, `bun run bench:compare HEAD` packed both revisions and ran six or eight alternating
+fresh-process rounds on Node 24.20.0, Bun 1.4.1, Deno 2.9.6, and Chrome 152. An identical-code control
+put all masked median ratios within 3.3% of 1.0 under the same warm-up policy.
+
+- A separate fixed-eight-byte HalfSipHash function removed continuation, tail, length, and input-array
+  handling from Feistel rounds. Bun improved by 2–4%; Node and Deno stayed near the control band;
+  Chrome's built-in masked routes regressed by 8.7–19.9%. The function also duplicated the hash core.
+- Fixed-offset expansion of the four-word check-tag loop produced no consistent runtime win. Selected
+  masked routes regressed by up to 4.9% on Node, 8.2% on Deno, and 13.9% on Chrome.
+
+These measurements isolate shipped public routes, not each generated-machine-code difference. The
+fixed-length trial changed both message dispatch and argument shape, so it does not reject either
+mechanism independently; the roadmap keeps those axes separate.
+
 ## Allocation and key rotation
 
 Node Inspector allocation sampling used a 1,024-byte interval with both `includeObjectsCollectedByMajorGC` and `includeObjectsCollectedByMinorGC` enabled. Each operation ran 32,768 calls (construction: 2,048), after warm-up. The empty control sampled approximately zero bytes per call. These are sampling estimates from one matched process pair, not exact allocation counts:

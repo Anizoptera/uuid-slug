@@ -28,11 +28,11 @@ paths only. Do not change the Rust implementation or use it to hide TypeScript c
   boundaries, iteration count, chunk boundaries, cancellation phase, scheduling delay, and runtime.
 - [ ] Map the supported Node, Bun, Deno, and browser execution routes, including native capability
   selection and portable fallback, to the package artifact each consumer loads.
-- [ ] Audit benchmark setup, warm-up, sinks, batching, clocks, GC handling, process isolation, output
+- [x] Audit benchmark setup, warm-up, sinks, batching, clocks, GC handling, process isolation, output
   validation, and statistics for optimizer elimination, harness domination, and false comparisons.
 - [x] Replace fixed-order single-pass candidate acceptance with one alternating baseline/candidate
   driver over identical packed artifacts, randomized runtime order, distributions, and control rows.
-- [ ] Enumerate syntax, call-shape, allocation-ownership, specialization, inlining, closure, module,
+- [x] Enumerate syntax, call-shape, allocation-ownership, specialization, inlining, closure, module,
   lookup, arithmetic, typed-array, and runtime-delegation variants that can change generated code or JIT behavior.
 - [x] Extend one maintained profiling harness to run the same applicable public-operation corpus on
   Node, Bun, Deno, and a real browser; fail on missing runtimes, cases, malformed output, or zero work.
@@ -57,6 +57,42 @@ paths only. Do not change the Rust implementation or use it to hide TypeScript c
   same harness without giving slow evidence gating authority.
 - [ ] Keep corpus preparation outside native capture windows and start measurement only from an
   observed runtime-ready signal; quantify unavoidable profiler start/stop self-noise.
+
+### Candidate map
+
+- [ ] Falsify looped versus unrolled HalfSipHash compression rounds without changing message shape.
+- [ ] Falsify looped versus unrolled HalfSipHash finalization rounds without changing message shape.
+- [ ] Falsify fixed-length dispatch inside the existing hash function without scalar arguments.
+- [ ] Falsify scalar Feistel message arguments without duplicating hash rounds.
+- [ ] Falsify `Int32Array` versus ordinary numeric scratch while preserving signed 32-bit coercion.
+- [ ] Falsify caller scratch versus module scratch versus closure-owned scratch for reentrancy and JIT locality.
+- [ ] Falsify indexed versus unrolled four-round Feistel traversal.
+- [ ] Falsify one direction branch per round versus preselected start and stride.
+- [ ] Falsify shared reversible Feistel code versus separate mask and unmask loops.
+- [ ] Falsify indexed key reads versus construction-time scalar capture.
+- [ ] Falsify helper calls versus inlined big-endian reads and writes at the fixed offsets.
+- [ ] Falsify shifts versus `DataView` for big-endian word I/O on every runtime.
+- [x] Reject fixed-offset check-tag unrolling: it produced no cross-runtime win and regressed
+  selected Node, Deno, and Chromium masked routes by 4.9%, 8.2%, and 13.9%, respectively.
+- [ ] Falsify a separate tag pass versus tag accumulation during the mandatory input read.
+- [ ] Falsify cloning before tagging versus direct copy-and-tag construction.
+- [ ] Falsify general alphabet dispatch versus codec-construction specialization.
+- [ ] Falsify native base64url conversion versus portable fixed-size encoding per runtime.
+- [ ] Falsify string UUID parsing plus masking versus a fused validated parse into the mask block.
+- [ ] Falsify owned mask output versus caller-owned internal codec scratch under reentrancy constraints.
+- [ ] Falsify linear sentinel lookup versus construction-time `Set` lookup across sentinel cardinalities.
+- [ ] Falsify linear previous-key traversal versus caller-ordered precompiled decode operations.
+- [ ] Falsify exception containment on built-in masks versus a built-in non-throwing path and custom boundary.
+- [ ] Falsify generic schema callbacks versus a private built-in schema discriminant without exposing API state.
+- [ ] Falsify eager runtime adapter imports versus guarded lazy capability loading using cold and warm routes.
+- [ ] Falsify native UUID generation delegation versus portable generation by output form and entropy behavior.
+- [ ] Falsify per-call capability lookup versus the current module-load probe and captured adapter.
+- [ ] Falsify construction-time TextEncoder and word packing versus runtime-specific UTF-8 primitives.
+- [ ] Falsify synchronous derivation versus cooperative derivation at measured seed and iteration boundaries.
+- [ ] Falsify current 256-call batches against geometric batch sizes for clock cost and event-loop blocking.
+- [ ] Falsify fixed warm-up against geometric warm-up durations using identical-code comparisons.
+- [x] Reject a duplicated fixed-eight-byte scalar HalfSipHash path: it improved Bun masking by 2–4%,
+  stayed within noise on Node and Deno, and regressed Chromium built-in masking by 8.7–19.9%.
 
 ### Baseline and attribution
 
