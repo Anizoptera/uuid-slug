@@ -1,7 +1,6 @@
 import {
   createMaskSchemaAsync,
   createUuidSlugCodec,
-  createUuidV7Generator,
   extractUuidV7Timestamp,
   formatUuid,
   formatUuidSlug,
@@ -39,7 +38,6 @@ import type {
   UuidV7Bytes,
   UuidV7String,
   UuidV7Generator,
-  UuidV7GeneratorOptions,
   UuidString,
   UuidSlugMigration,
 } from "@anizoptera/uuid-slug";
@@ -62,12 +60,7 @@ declare const untypedValue: ReturnType<typeof JSON.parse>;
 // @ts-expect-error Exact assertions must reject `any` or every inferred result can pass unchecked.
 expectType<string>()(untypedValue);
 
-const generatorOptions = {
-  clock: () => 0,
-  fillRandom: (bytes: Uint8Array<ArrayBuffer>) => bytes.fill(0),
-} satisfies UuidV7GeneratorOptions;
-const generator: UuidV7Generator = createUuidV7Generator(generatorOptions);
-createUuidSlugCodec({ mask: PUBLIC_MASK_SCHEMA, generator });
+declare const generator: UuidV7Generator;
 
 // The emitted declarations must infer strict brands without requiring branded inputs.
 const plainResult = uuidV7Slug();

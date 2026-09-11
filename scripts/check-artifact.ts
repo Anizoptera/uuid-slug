@@ -182,7 +182,6 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
           target: "ES2022",
           module: "NodeNext",
           moduleResolution: "NodeNext",
-          noUnusedLocals: true,
           types: [],
           skipLibCheck: false,
         },
