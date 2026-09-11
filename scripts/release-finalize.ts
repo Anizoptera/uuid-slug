@@ -22,10 +22,6 @@ interface Release {
 interface FinalizeOptions {
   readonly repository: string;
   readonly token: string;
-  readonly githubApi?: string;
-  readonly npmRegistry?: string;
-  readonly cratesRegistry?: string;
-  readonly artifacts?: string;
 }
 
 function object(value: unknown, context: string): Record<string, unknown> {
@@ -87,7 +83,7 @@ async function jsonResponse(response: Response, context: string): Promise<unknow
 /** Publish a draft only after both registries and GitHub expose the retained bytes and notes. */
 export async function finalizeRelease(cwd: string, options: FinalizeOptions): Promise<void> {
   const root = resolve(cwd);
-  const artifacts = resolve(root, options.artifacts ?? "release-artifacts");
+  const artifacts = resolve(root, "release-artifacts");
   const inputs = (await Bun.file(
     join(artifacts, "history/release-inputs.json"),
   ).json()) as ReleaseInputs;
@@ -110,15 +106,15 @@ export async function finalizeRelease(cwd: string, options: FinalizeOptions): Pr
     digest(npmArchive),
     digest(crateArchive),
     registryIntegrity(
-      `${options.npmRegistry ?? "https://registry.npmjs.org"}/${encodeURIComponent(inputs.name)}/${inputs.version}`,
+      `https://registry.npmjs.org/${encodeURIComponent(inputs.name)}/${inputs.version}`,
     ),
-    crateChecksum(inputs.version, options.cratesRegistry),
+    crateChecksum(inputs.version),
   ]);
   if (!npmPublished || !cratePublished) throw new Error("Both registries must expose the version.");
   verifyIntegrity(npmBytes.bytes, npmPublished);
   verifyCrateChecksum(crateBytes.bytes, cratePublished);
 
-  const api = options.githubApi ?? "https://api.github.com";
+  const api = "https://api.github.com";
   const byTag = `${api}/repos/${options.repository}/releases/tags/${encodeURIComponent(inputs.tag)}`;
   let response = await github(byTag, options.token);
   let current: Release;
