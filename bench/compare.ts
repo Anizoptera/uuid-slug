@@ -8,6 +8,7 @@ import { chromium } from "playwright";
 import type { Page } from "playwright";
 
 import { command } from "../scripts/command";
+import { medianConfidence95 } from "./statistics";
 
 type Revision = "baseline" | "candidate";
 type Runtime = "node" | "bun" | "deno" | "chromium";
@@ -216,6 +217,10 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
       const name = key.slice(prefix.length);
       const candidate = observations.get(`${runtime}\0candidate\0${name}`);
       if (!candidate?.length) throw new Error(`${runtime} candidate omitted ${name}`);
+      if (candidate.length !== baseline.length)
+        throw new Error(`${runtime} ${name} has unpaired baseline and candidate samples`);
+      const pairedRatios = candidate.map((value, index) => value / (baseline[index] as number));
+      const medianRatio95 = medianConfidence95(pairedRatios);
       console.log(
         JSON.stringify({
           kind: "summary",
@@ -224,6 +229,11 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
           baseline,
           candidate,
           medianRatio: median(candidate) / median(baseline),
+          pairedMedianRatio: median(pairedRatios),
+          medianRatio95,
+          statisticallyDistinct: medianRatio95
+            ? medianRatio95[0] > 1 || medianRatio95[1] < 1
+            : undefined,
         }),
       );
     }

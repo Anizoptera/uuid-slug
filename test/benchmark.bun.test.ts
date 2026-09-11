@@ -7,6 +7,7 @@ import { join } from "node:path";
 
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { parseReport } from "../bench/matrix";
+import { medianConfidence95 } from "../bench/statistics";
 
 const speed = {
   runtime: "fixture 1",
@@ -29,6 +30,13 @@ const entropy = {
   minOnesRatio: 0,
   maxOnesRatio: 1,
 };
+
+test("median inference requires enough rounds and uses exact order-statistic bounds", () => {
+  expect(medianConfidence95([1, 2, 3, 4, 5])).toBeUndefined();
+  const values = [16, 3, 8, 11, 1, 15, 6, 13, 4, 10, 2, 14, 7, 12, 5, 9];
+  expect(medianConfidence95(values)).toEqual([4, 13]);
+  expect(values).toEqual([16, 3, 8, 11, 1, 15, 6, 13, 4, 10, 2, 14, 7, 12, 5, 9]);
+});
 
 test.each([
   ["malformed JSON", "run", "not JSON", "line 1"],
