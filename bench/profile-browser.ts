@@ -2,6 +2,7 @@
 
 import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json" with { type: "json" };
 import * as api from "../src/index";
+import * as privateApi from "../src/v4";
 import { assertProfileOutcome, createProfileCases } from "./profile-cases";
 import type { ProfileCase, ProfileValue } from "./profile-cases";
 
@@ -10,6 +11,7 @@ export interface BrowserProfileOptions {
   readonly filter?: string;
   readonly samples: number;
   readonly warmup: number;
+  readonly privateImplementations?: boolean;
 }
 
 export interface BrowserProfileRow {
@@ -73,7 +75,11 @@ function selectProfileCases(options: BrowserProfileOptions): readonly [string, P
     throw new Error(
       "Profile samples must be positive, with positive duration and warm-up milliseconds",
     );
-  const cases = createProfileCases(api, originalFixtures.issued);
+  const cases = createProfileCases(
+    api,
+    originalFixtures.issued,
+    options.privateImplementations ? privateApi : undefined,
+  );
   const selected = Object.entries(cases).filter(
     ([name]) => !options.filter || name.includes(options.filter),
   );
@@ -134,6 +140,7 @@ const options = {
   duration: Number(parameters.get("duration") ?? 2),
   samples: Number(parameters.get("samples") ?? 7),
   warmup: Number(parameters.get("warmup") ?? 20),
+  privateImplementations: parameters.get("private") === "1",
   ...(filter === null ? {} : { filter }),
 };
 const selected = selectProfileCases(options);

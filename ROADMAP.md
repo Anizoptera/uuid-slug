@@ -109,6 +109,8 @@ protection, and no default or fallback may select it.
   executes on Node, Bun, Deno, and Chromium without disabling each host's native public route.
 - [ ] Falsify portable generation alternatives for entropy draw size and reuse, state layout, byte
   assembly, formatting, caller-owned writes, clock reads, branches, and runtime-specific primitives.
+- [x] Split portable UUIDv4 generation by output ownership: package-owned output draws directly into
+  its result; caller-owned output retains private staging and shows no primary-runtime regression.
 - [x] Select the portable UUIDv7 timestamp writer once per module: fixed word writes repeatedly
   improved Node and Chromium while Bun retained its faster loop; per-call dispatch regressed Bun.
 - [ ] Optimize every retained portable path to the measured runtime frontier without changing its

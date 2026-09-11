@@ -159,6 +159,28 @@ A universal word writer was rejected because Bun's advancing and rollback routes
 The module-selected function keeps one implementation per engine without recurring dispatch cost.
 Replace this split if JavaScriptCore no longer favors the loop or V8 no longer favors fixed writes.
 
+### Portable UUIDv4 ownership paths
+
+Draw entropy directly into package-owned output. Keep caller-owned output on a separate path that
+draws into private storage before copying, so entropy failure cannot partly modify caller data and
+Web Crypto never receives an unsupported caller view.
+
+Two packed comparisons on 2026-09-11 used 24 alternating rounds on Node 24.20.0, Bun 1.4.1,
+Deno 2.9.6, and Chromium 151. Owned byte generation improved by 10.7–13.3% on Node, 30.2–33.2%
+on Bun, and 7.4–9.3% on Chromium. Bun base64url and base32hex slug generation improved by
+7.9–10.8% and 7.7–9.3%. Each interval excluded no change in both replays. Caller-owned writes
+were unresolved on Node, Bun, and Chromium and improved by 10.1–12.2% on Deno.
+
+The exact private text fallback was measured independently even where the public string route uses
+a native API. Two 96-round replays improved it by 2.7% and 4.2% on Node, 2.3% and 1.9% on Bun,
+and 2.3% and 2.4% on Chromium; every 95% median interval excluded no change. Deno was unresolved.
+
+A shared path with an ownership branch after the entropy draw was rejected because caller-owned
+writes regressed by 4.1–4.3% on Bun and 4.3–5.7% on Deno. Moving the branch before the draw still
+regressed Bun by 3.6–5.7%. The retained split duplicates the short guard and draw sequence to keep
+both hot paths branch-free. Merge it if a primary runtime no longer improves owned output or if
+caller-owned output regresses reproducibly.
+
 ## Allocation and key rotation
 
 Node Inspector allocation sampling used a 1,024-byte interval with both `includeObjectsCollectedByMajorGC` and `includeObjectsCollectedByMinorGC` enabled. Each operation ran 32,768 calls (construction: 2,048), after warm-up. The empty control sampled approximately zero bytes per call. These are sampling estimates from one matched process pair, not exact allocation counts:

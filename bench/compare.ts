@@ -14,10 +14,8 @@ type Revision = "baseline" | "candidate";
 type Runtime = "node" | "bun" | "deno" | "chromium";
 
 interface ArtifactSet {
-  readonly browser: string;
-  readonly bun: string;
-  readonly deno: string;
-  readonly node: string;
+  readonly api: Readonly<Record<Runtime, string>>;
+  readonly privateApi: Readonly<Record<Runtime, string>>;
 }
 
 interface ProfileRow {
@@ -78,10 +76,18 @@ async function packArtifacts(root: string, outdir: string): Promise<ArtifactSet>
   await command("tar", ["-xzf", join(outdir, archive), "-C", extracted], project);
   const packed = join(extracted, "package");
   return {
-    node: join(packed, "dist/node/index.js"),
-    bun: join(packed, "src/index.ts"),
-    deno: join(packed, "dist/index.js"),
-    browser: join(packed, "dist/index.js"),
+    api: {
+      node: join(packed, "dist/node/index.js"),
+      bun: join(packed, "src/index.ts"),
+      deno: join(packed, "dist/index.js"),
+      chromium: join(packed, "dist/index.js"),
+    },
+    privateApi: {
+      node: join(packed, "dist/node/v4.js"),
+      bun: join(packed, "src/v4.ts"),
+      deno: join(packed, "dist/v4.js"),
+      chromium: join(packed, "dist/v4.js"),
+    },
   };
 }
 
@@ -98,6 +104,7 @@ async function buildHostDriver(outdir: string): Promise<string> {
 
 async function buildBrowserDriver(
   api: string,
+  privateApi: string,
   outdir: string,
   revision: Revision,
 ): Promise<string> {
@@ -111,6 +118,7 @@ async function buildBrowserDriver(
         name: "profile-api",
         setup(builder) {
           builder.onResolve({ filter: /^\.\.\/src\/index$/ }, () => ({ path: api }));
+          builder.onResolve({ filter: /^\.\.\/src\/v4$/ }, () => ({ path: privateApi }));
         },
       },
     ],
@@ -150,12 +158,18 @@ function parseHost(output: string): ProfileRow[] {
   return validateRows(rows, "Comparison host");
 }
 
-async function runHost(runtime: Exclude<Runtime, "chromium">, driver: string, api: string) {
+async function runHost(
+  runtime: Exclude<Runtime, "chromium">,
+  driver: string,
+  api: string,
+  privateApi: string,
+) {
   const args = runtime === "deno" ? ["run", "--allow-env", "--allow-read", driver] : [driver];
   return parseHost(
     await command(runtime, args, project, {
       UUID_SLUG_PROFILE_FILTER: filter,
       UUID_SLUG_PROFILE_MODULE: pathToFileURL(api).href,
+      UUID_SLUG_PROFILE_PRIVATE_MODULE: pathToFileURL(privateApi).href,
       UUID_SLUG_PROFILE_MS: duration,
       UUID_SLUG_PROFILE_SAMPLES: "1",
       UUID_SLUG_PROFILE_WARMUP_MS: warmup,
@@ -165,7 +179,7 @@ async function runHost(runtime: Exclude<Runtime, "chromium">, driver: string, ap
 
 async function runBrowser(page: Page, origin: string, revision: Revision): Promise<ProfileRow[]> {
   await page.goto(
-    `${origin}?duration=${duration}&warmup=${warmup}&samples=1&filter=${encodeURIComponent(filter)}`,
+    `${origin}?duration=${duration}&warmup=${warmup}&samples=1&private=1&filter=${encodeURIComponent(filter)}`,
   );
   await page.addScriptTag({ type: "module", url: `/${revision}.mjs` });
   await page.waitForFunction(() => "runUuidSlugProfile" in globalThis);
@@ -253,8 +267,13 @@ async function main(): Promise<void> {
       buildHostDriver(scratch),
     ]);
     const [baselineBrowser, candidateBrowser] = await Promise.all([
-      buildBrowserDriver(baseline.browser, scratch, "baseline"),
-      buildBrowserDriver(candidate.browser, scratch, "candidate"),
+      buildBrowserDriver(baseline.api.chromium, baseline.privateApi.chromium, scratch, "baseline"),
+      buildBrowserDriver(
+        candidate.api.chromium,
+        candidate.privateApi.chromium,
+        scratch,
+        "candidate",
+      ),
     ]);
     const scripts = {
       baseline: await readFile(baselineBrowser, "utf8"),
@@ -287,7 +306,8 @@ async function main(): Promise<void> {
                 : await runHost(
                     runtime,
                     driver,
-                    (revision === "baseline" ? baseline : candidate)[runtime],
+                    (revision === "baseline" ? baseline : candidate).api[runtime],
+                    (revision === "baseline" ? baseline : candidate).privateApi[runtime],
                   );
             emit(runtime, revision, round, order, rows, observations);
           }

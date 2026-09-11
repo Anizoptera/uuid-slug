@@ -19,6 +19,7 @@ const environment: Readonly<Record<string, string>> = {
   UUID_SLUG_PROFILE_MS: duration,
   UUID_SLUG_PROFILE_SAMPLES: samples,
   UUID_SLUG_PROFILE_WARMUP_MS: warmup,
+  UUID_SLUG_PROFILE_PRIVATE: "1",
 };
 
 const nativeFiles = [
@@ -154,6 +155,7 @@ async function runBrowser(entry: string, asyncEntry: string) {
     session.on("Tracing.dataCollected", ({ value }) => traceEvents.push(...value));
     session.on("HeapProfiler.addHeapSnapshotChunk", ({ chunk }) => snapshotChunks.push(chunk));
     const query = new URLSearchParams({ samples, duration, warmup });
+    query.set("private", "1");
     if (filter) query.set("filter", filter);
     await page.goto(`${server.url.href}?${query}`);
     await page.waitForFunction(() => "runUuidSlugProfile" in globalThis);
