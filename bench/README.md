@@ -79,6 +79,10 @@ states, and Chromium CDP metrics and tracing. The lanes run sequentially to avoi
 Generated drivers and reports stay under ignored `bench/reports/`; malformed, empty or missing output
 fails the command.
 
+The same command separately measures cooperative schema construction around byte-packing and UTF-8
+chunk boundaries, geometric work factors, host-task progress, and cancellation. These promise-based
+rows stay outside the synchronous corpus so task scheduling cannot contaminate per-call throughput.
+
 Set `UUID_SLUG_PROFILE_FILTER` to a case-name substring before native profiling so startup and unrelated
 operations do not dominate attribution. `UUID_SLUG_PROFILE_SAMPLES` and `UUID_SLUG_PROFILE_MS` control
 timing samples. Add `--smoke` to `bench/profile-all.ts` only when checking harness wiring. Compare

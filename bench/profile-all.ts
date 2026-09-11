@@ -113,22 +113,32 @@ async function build(entry: string, target: "browser" | "node", conditions: stri
   return join(reports, name);
 }
 
-async function runHost(name: string, executable: string, args: string[], env = environment) {
+async function runHost(
+  name: string,
+  executable: string,
+  args: string[],
+  env = environment,
+  headerRows = 1,
+) {
   const output = await command(executable, args, project, env);
   const lines = output.trim().split("\n");
-  if (lines.length < 2 || lines.some((line) => !JSON.parse(line)))
+  if (lines.length <= headerRows || lines.some((line) => !JSON.parse(line)))
     throw new Error(`${name} emitted no complete profile`);
   await Bun.write(join(reports, `${name}.jsonl`), `${output.trim()}\n`);
-  console.log(`${name}: ${lines.length - 1} operations`);
+  console.log(`${name}: ${lines.length - headerRows} operations`);
 }
 
-async function runBrowser(entry: string) {
+async function runBrowser(entry: string, asyncEntry: string) {
   const script = await Bun.file(entry).text();
+  const asyncScript = await Bun.file(asyncEntry).text();
   const server = Bun.serve({
     port: 0,
     fetch(request) {
-      return new URL(request.url).pathname === "/profile.mjs"
-        ? new Response(script, { headers: { "content-type": "text/javascript" } })
+      const path = new URL(request.url).pathname;
+      return path === "/profile.mjs" || path === "/profile-async.mjs"
+        ? new Response(path === "/profile.mjs" ? script : asyncScript, {
+            headers: { "content-type": "text/javascript" },
+          })
         : new Response('<!doctype html><script type="module" src="/profile.mjs"></script>', {
             headers: { "content-type": "text/html" },
           });
@@ -187,7 +197,19 @@ async function runBrowser(entry: string) {
       await session.send("HeapProfiler.takeHeapSnapshot");
     }
     if (rows.length === 0) throw new Error("Chromium emitted no profile rows");
+    await page.addScriptTag({ type: "module", url: "/profile-async.mjs" });
+    const asyncRows = await page.evaluate(async () => {
+      const run = (
+        globalThis as typeof globalThis & {
+          runUuidSlugAsyncProfile?: () => Promise<readonly Record<string, unknown>[]>;
+        }
+      ).runUuidSlugAsyncProfile;
+      if (!run) throw new Error("Browser async profile module did not prepare");
+      return run();
+    });
+    if (asyncRows.length === 0) throw new Error("Chromium emitted no async profile rows");
     await Bun.write(join(reports, "chromium.json"), JSON.stringify(rows));
+    await Bun.write(join(reports, "chromium-async.json"), JSON.stringify(asyncRows));
     if (native) {
       if (!before || !cpu || !heap || !after)
         throw new Error("Chromium did not return every requested native profile");
@@ -200,6 +222,7 @@ async function runBrowser(entry: string) {
       ]);
     }
     console.log(`chromium: ${rows.length} operations`);
+    console.log(`chromium async: ${asyncRows.length} operations`);
   } finally {
     await browser.close();
     await server.stop(true);
@@ -309,11 +332,15 @@ async function main() {
   await mkdir(reports, { recursive: true });
   if (native) await resetNativeFiles();
   await command("bun", ["run", "build"], project);
-  const [nodeEntry, denoEntry, browserEntry] = await Promise.all([
-    build("profile", "node"),
-    build("profile", "node", ["deno"]),
-    build("profile-browser", "browser"),
-  ]);
+  const [nodeEntry, denoEntry, browserEntry, asyncNodeEntry, asyncDenoEntry, asyncBrowserEntry] =
+    await Promise.all([
+      build("profile", "node"),
+      build("profile", "node", ["deno"]),
+      build("profile-browser", "browser"),
+      build("profile-async", "node"),
+      build("profile-async", "node", ["deno"]),
+      build("profile-async", "browser"),
+    ]);
   await runHost(
     "node",
     "node",
@@ -336,7 +363,16 @@ async function main() {
       UUID_SLUG_PROFILE_MODULE: new URL("../dist/index.js", import.meta.url).href,
     },
   );
-  await runBrowser(browserEntry);
+  await runBrowser(browserEntry, asyncBrowserEntry);
+  await runHost("node-async", "node", [asyncNodeEntry], environment, 0);
+  await runHost("bun-async", "bun", [join(import.meta.dir, "profile-async.ts")], environment, 0);
+  await runHost(
+    "deno-async",
+    "deno",
+    ["run", "--allow-env", "--allow-read", asyncDenoEntry],
+    environment,
+    0,
+  );
   if (native) {
     await runExitProfiles(nodeEntry, denoEntry);
     await requireNativeFiles();

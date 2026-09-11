@@ -38,6 +38,7 @@ export function createProfileCases(
   const base32Codec = unwrap(
     api.createUuidV7SlugCodec({ mask: current, outputAlphabet: "base32hex", sentinels }),
   );
+  const base32Sentinel = base32Codec.sentinels[0];
   const older = unwrap(api.createUuidV7SlugCodec({ mask: previous }));
   const customMask = unwrap(
     api.createCustomUuidV7Mask({
@@ -63,6 +64,7 @@ export function createProfileCases(
   const base32 = ids.map((id) => unwrap(api.uuidToSlug(id, "base32hex")));
   const masked = ids.map((id) => unwrap(codec.encodeUuid(id)));
   const maskedBase32 = ids.map((id) => unwrap(base32Codec.encodeUuid(id)));
+  const maskedCustom = bytes.map((value) => unwrap(customCodec.encodeUuid(value)));
   const oldOnly = ids
     .map((id) => unwrap(older.encodeUuid(id)))
     .filter((slug) => codec.decodeSlug(slug) instanceof Error);
@@ -72,6 +74,7 @@ export function createProfileCases(
   if (!sentinel) throw new Error("Missing sentinel fixture");
   const badUuid = "z".repeat(36);
   const badSlug = "!".repeat(22);
+  if (!base32Sentinel) throw new Error("Missing base32 sentinel fixture");
 
   return {
     control: (index) => ids[index & 255] as string,
@@ -151,6 +154,7 @@ export function createProfileCases(
     "masked.base32.encode": (index) => base32Codec.encodeUuid(ids[index & 255] as string),
     "masked.base32.decode": (index) => base32Codec.decodeSlug(maskedBase32[index & 255] as string),
     "masked.custom.encode": (index) => customCodec.encodeUuid(bytes[index & 255] as Uint8Array),
+    "masked.custom.decode": (index) => customCodec.decodeSlug(maskedCustom[index & 255] as string),
     "rotation.current": (index) => rotated.decodeSlug(masked[index & 255] as string),
     "rotation.previous": (index) => rotated.decodeSlug(oldOnly[index % oldOnly.length] as string),
     "migration.current": (index) => migration.decodeSlug(masked[index & 255] as string),
@@ -158,6 +162,8 @@ export function createProfileCases(
       migration.decodeSlug(oldOnly[index % oldOnly.length] as string),
     "migration.decodeCandidates": (index) =>
       migration.decodeSlugCandidates(masked[index & 255] as string),
+    "migration.previousCandidates": (index) =>
+      migration.decodeSlugCandidates(oldOnly[index % oldOnly.length] as string),
     "migration.plain": (index) => migration.decodeSlug(slugs[index & 255] as string, "plain-slug"),
     "migration.base32": (index) =>
       migration.decodeSlug(base32[index & 255] as string, "plain-slug"),
@@ -165,6 +171,8 @@ export function createProfileCases(
       migration.decodeSlug(originals[index % originals.length]!.slug, "original-mask"),
     "sentinel.encode": () => codec.encodeUuid(sentinel.uuid),
     "sentinel.decode": () => codec.decodeSlug(sentinel.slug),
+    "sentinel.base32.encode": () => base32Codec.encodeUuid(base32Sentinel.uuid),
+    "sentinel.base32.decode": () => base32Codec.decodeSlug(base32Sentinel.slug),
     "invalid.uuid": () => api.uuidToBytes(badUuid),
     "invalid.slug": () => api.slugToBytes(badSlug),
     "invalid.mask": (index) => codec.decodeSlug(oldOnly[index % oldOnly.length] as string),

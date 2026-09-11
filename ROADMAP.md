@@ -24,7 +24,7 @@ paths only. Do not change the Rust implementation or use it to hide TypeScript c
 - [ ] Map every public TypeScript method, overload, option, alphabet, success path, failure path,
   caller-owned buffer path, codec mode, migration mode, sentinel path, and runtime delegation path
   to an existing benchmark case or an explicit missing case.
-- [ ] Profile cooperative mask derivation separately from synchronous calls across seed type, UTF-8
+- [x] Profile cooperative mask derivation separately from synchronous calls across seed type, UTF-8
   boundaries, iteration count, chunk boundaries, cancellation phase, scheduling delay, and runtime.
 - [ ] Map the supported Node, Bun, Deno, and browser execution routes, including native capability
   selection and portable fallback, to the package artifact each consumer loads.
