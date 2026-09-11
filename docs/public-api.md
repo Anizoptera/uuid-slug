@@ -6,27 +6,30 @@ This document owns how TypeScript and Rust public interfaces are formed. README 
 promises, [design.md](design.md) owns the wire format, [security.md](security.md) owns trust
 boundaries, and [cross-language.md](cross-language.md) owns parity and distribution.
 
-## Decision order
+## Rules
 
-Apply these priorities in order: tell the truth, bound harm, preserve published contracts, reduce
-caller burden, then broaden capability. Never buy convenience by weakening an earlier priority.
+Design from caller code, not implementation convenience. Every concept, option, failure, effect,
+and wrong turn becomes work at every call site for the life of the API.
 
-For every public part, name the consumer job that fails without it. Remove the part when existing
-operations compose into that job without extra caller state, repeated validation, hidden runtime
-work, or an easy wrong turn. Implementation convenience does not justify caller burden.
+Apply these rules in order. A later rule MUST NOT weaken an earlier one.
 
-Count interface cost by everything a caller must learn or coordinate: concepts, invariants,
-configuration, ordering, failures, effects, performance, and plausible wrong paths. Symbol count
-alone misses that burden, and every observable choice becomes a compatibility obligation for every
-future caller.
+1. **Tell the truth.** Names, types, results, and errors state only what the code enforces. Otherwise
+   callers build on a false promise.
+2. **Prevent misuse.** Let types reject invalid combinations. Validate external data once at the
+   public boundary. Expose state and side effects so failures stay local and predictable.
+3. **Keep promises.** Preserve every visible behavior after release, or provide a migration. Hiding
+   an implementation detail now is cheaper than supporting it forever.
+4. **Keep the API small.** Provide the fewest independent operations that cover real caller jobs.
+   Remove any part that adds no capability. The obvious call must be correct, and a simple job must
+   need one simple call.
+5. **Do only requested work.** Use the best available host capability behind one result, with a
+   compatible fallback. Hidden parsing, allocation, or fallback work compounds across every call.
+6. **Prove behavior from outside.** Compile caller code, run failure paths, inspect the packed
+   package, and measure real operations. Reading the implementation proves none of these.
 
-Before selecting or changing a public concept, map the independent caller-visible axes and their
-values, inversions, extremes, and important interactions. Keep candidates only when caller behavior
-differs; a counterexample that the map cannot express requires a new axis and another comparison.
-State the consumer job, constraints, core assumption, and earliest observable signal expected if
-that assumption is correct before implementation. Keep the selected shape's constraints, rejected
-live alternatives, and invalidating assumption beside its declarations; connect wider consequences
-in their durable owner and keep discarded exploration transient.
+Before selecting a shape, map independent caller-visible axes and the interactions that change
+behavior. Compare live alternatives and combinations. Record the selected constraints, rejected
+alternatives, and invalidating assumption beside the declaration; keep exploration transient.
 
 ## Shape
 
