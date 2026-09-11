@@ -71,6 +71,8 @@ let sink: unknown;
 function measure(operation: Operation): number {
   let calls = 0;
   const start = performance.now();
+  // Wall time bounds the sample; process CPU excludes scheduler pauses that can dwarf this short lane.
+  const cpuStart = process.cpuUsage();
   do {
     for (let i = 0; i < 256; i += 1) {
       sink = operation(i);
@@ -78,7 +80,8 @@ function measure(operation: Operation): number {
     }
     calls += 256;
   } while (performance.now() - start < 3);
-  return (performance.now() - start) / calls;
+  const cpu = process.cpuUsage(cpuStart);
+  return (cpu.user + cpu.system) / calls;
 }
 for (const pair of pairs) {
   for (let i = 0; i < 4096; i += 1) {
