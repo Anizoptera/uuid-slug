@@ -118,25 +118,37 @@ function consumerSource(
   return `import { ${job.imports} } from ${JSON.stringify(specifier)};\n${job.probe}\n`;
 }
 
-export interface ConsumerGraphResult {
-  readonly entry: "root" | "subpath";
+interface ConsumerGraphResult {
   readonly job: (typeof jobs)[number]["name"];
   readonly optimizer: Optimizer;
-  readonly directModules: number;
   readonly rawBytes: number;
   readonly gzipBytes: number;
   readonly brotliBytes: number;
   readonly zstdBytes: number;
 }
 
-export function formatConsumerGraph(results: readonly ConsumerGraphResult[]): string {
+interface DirectConsumerResult {
+  readonly entry: "root" | "subpath";
+  readonly job: Exclude<(typeof jobs)[number]["name"], "masked">;
+  readonly modules: number;
+}
+
+interface ConsumerGraphReport {
+  readonly bundled: readonly ConsumerGraphResult[];
+  readonly direct: readonly DirectConsumerResult[];
+}
+
+export function formatConsumerGraph(report: ConsumerGraphReport): string {
   return [
-    "job entry optimizer modules raw gzip brotli zstd",
-    ...results.map(
+    "job optimizer raw gzip brotli zstd",
+    ...report.bundled.map(
       (result) =>
-        `${result.job} ${result.entry} ${result.optimizer} ${result.directModules} ` +
+        `${result.job} ${result.optimizer} ` +
         `${result.rawBytes} ${result.gzipBytes} ${result.brotliBytes} ${result.zstdBytes}`,
     ),
+    "",
+    "job entry modules",
+    ...report.direct.map((result) => `${result.job} ${result.entry} ${result.modules}`),
   ].join("\n");
 }
 
@@ -145,7 +157,7 @@ async function countDirectModules(
   consumerRoot: string,
   source: string,
   caseName: string,
-): Promise<number> {
+): Promise<readonly string[]> {
   const loader = path.join(root, "module-loader.mjs");
   const runner = path.join(root, `direct-${caseName}.mjs`);
   const log = path.join(root, `direct-${caseName}.log`);
@@ -153,7 +165,7 @@ async function countDirectModules(
   await command("node", ["--no-warnings", "--experimental-loader", loader, runner], consumerRoot, {
     UUID_SLUG_MODULE_LOG: log,
   });
-  return (await readFile(log, "utf8")).trim().split("\n").length;
+  return (await readFile(log, "utf8")).trim().split("\n");
 }
 
 const bundlerConfig = (entry: string, outdir: string) => ({
@@ -242,11 +254,11 @@ async function compile(optimizer: Optimizer, entry: string, outdir: string): Pro
   return readFile(outfile);
 }
 
-/** Prove that each public job excludes masking consistently across independent optimizers. */
+/** Prove root imports retain masking only when requested and focused entries bypass it directly. */
 export async function inspectConsumerGraph(
   consumerRoot: string,
   packageName: string,
-): Promise<readonly ConsumerGraphResult[]> {
+): Promise<ConsumerGraphReport> {
   const root = path.join(consumerRoot, "consumer-graph");
   const optimizers = [
     "bun",
@@ -267,70 +279,62 @@ export async function inspectConsumerGraph(
       path.join(root, "module-loader.mjs"),
       'import { appendFileSync } from "node:fs";\nconst log = process.env.UUID_SLUG_MODULE_LOG;\nexport async function load(url, context, nextLoad) {\n  if (log && url.includes("/package/dist/")) appendFileSync(log, url + "\\n");\n  return nextLoad(url, context);\n}\n',
     );
-    const directCounts = new Map(
-      await Promise.all(
-        jobs.flatMap((job) =>
-          (job.subpath === null ? (["root"] as const) : (["root", "subpath"] as const)).map(
-            async (entryKind) => {
-              const count = await countDirectModules(
+    const direct = await Promise.all(
+      jobs.flatMap((job) =>
+        job.subpath === null
+          ? []
+          : (["root", "subpath"] as const).map(async (entry) => {
+              const modules = await countDirectModules(
                 root,
                 consumerRoot,
-                consumerSource(job, packageName, entryKind),
-                `${job.name}-${entryKind}`,
+                consumerSource(job, packageName, entry),
+                `${job.name}-${entry}`,
               );
-              return [`${job.name}:${entryKind}`, count] as const;
-            },
-          ),
-        ),
+              if (entry === "subpath") {
+                const maskingModules = modules.filter((url) =>
+                  /\/(?:codec|mask|migration|schema(?:-handle)?)\.js$/.test(url),
+                );
+                if (maskingModules.length > 0)
+                  throw new Error(
+                    `${job.name} subpath loaded masking modules:\n${maskingModules.join("\n")}`,
+                  );
+              }
+              return { entry, job: job.name, modules: modules.length };
+            }),
       ),
     );
     const cases = jobs.flatMap((job) =>
-      (job.subpath === null ? (["root"] as const) : (["root", "subpath"] as const)).flatMap(
-        (entryKind) =>
-          optimizers.map(async (optimizer): Promise<ConsumerGraphResult> => {
-            const caseName = `${job.name}-${entryKind}-${optimizer}`;
-            const entry = path.join(root, `${caseName}.js`);
-            await Bun.write(entry, consumerSource(job, packageName, entryKind));
-            const code = await compile(optimizer, entry, path.join(root, caseName));
-            const text = new TextDecoder().decode(code);
-            if (text.includes(MASKING_WITNESS) !== job.masked)
-              throw new Error(`${caseName} ${job.masked ? "lost" : "retained"} masking code.`);
-            await command("node", [path.join(root, caseName, "bundle.js")], consumerRoot);
-            return {
-              entry: entryKind,
-              job: job.name,
-              optimizer,
-              directModules: directCounts.get(`${job.name}:${entryKind}`) ?? 0,
-              rawBytes: code.byteLength,
-              gzipBytes: gzipSync(code).byteLength,
-              brotliBytes: brotliCompressSync(code).byteLength,
-              zstdBytes: zstdCompressSync(code).byteLength,
-            };
-          }),
-      ),
+      optimizers.map(async (optimizer): Promise<ConsumerGraphResult> => {
+        const caseName = `${job.name}-${optimizer}`;
+        const entry = path.join(root, `${caseName}.js`);
+        await Bun.write(entry, consumerSource(job, packageName, "root"));
+        const code = await compile(optimizer, entry, path.join(root, caseName));
+        const text = new TextDecoder().decode(code);
+        if (text.includes(MASKING_WITNESS) !== job.masked)
+          throw new Error(`${caseName} ${job.masked ? "lost" : "retained"} masking code.`);
+        await command("node", [path.join(root, caseName, "bundle.js")], consumerRoot);
+        return {
+          job: job.name,
+          optimizer,
+          rawBytes: code.byteLength,
+          gzipBytes: gzipSync(code).byteLength,
+          brotliBytes: brotliCompressSync(code).byteLength,
+          zstdBytes: zstdCompressSync(code).byteLength,
+        };
+      }),
     );
-    const results = await Promise.all(cases);
-    for (const job of jobs) {
-      if (job.subpath === null) continue;
-      const jobResults = results.filter((result) => result.job === job.name);
-      const improves = jobResults.some((result) => {
-        const rootResult = jobResults.find(
-          (candidate) => candidate.entry === "root" && candidate.optimizer === result.optimizer,
-        );
-        return (
-          result.entry === "subpath" &&
-          rootResult !== undefined &&
-          (result.rawBytes < rootResult.rawBytes || result.directModules < rootResult.directModules)
-        );
-      });
-      if (!improves)
+    const bundled = await Promise.all(cases);
+    for (const subpath of direct.filter((result) => result.entry === "subpath")) {
+      const rootResult = direct.find(
+        (result) => result.entry === "root" && result.job === subpath.job,
+      );
+      if (rootResult === undefined || subpath.modules >= rootResult.modules)
         throw new Error(
-          `${job.name} subpath reduces neither optimized bytes nor direct ESM modules. ` +
-            `Direct modules: root=${jobResults.find((result) => result.entry === "root")?.directModules}, ` +
-            `subpath=${jobResults.find((result) => result.entry === "subpath")?.directModules}.`,
+          `${subpath.job} subpath does not reduce direct ESM modules: ` +
+            `root=${rootResult?.modules}, subpath=${subpath.modules}.`,
         );
     }
-    return results;
+    return { bundled, direct };
   } finally {
     await rm(root, { recursive: true, force: true });
   }

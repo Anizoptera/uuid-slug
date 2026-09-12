@@ -44,3 +44,12 @@ Make each consumer pay only for UUID generation, plain slugs, or masking that it
 - [x] Add Rollup and Parcel as distinct engines; omit Vite because its production engine is Rolldown.
 - [x] Require every optimizer's root bundle to execute correctly and exclude the masking witness.
 - [x] Run `bun run check`, inspect the final diff and package archive, then commit focused changes.
+
+## Consumer-graph simplification audit
+
+- [x] Map each retained module, public entry, dependency, and consumer-graph check to the distinct failure it prevents.
+- [x] Reduce the matrix from 133 bundled cases plus 19 direct loads to 70 root bundles plus 18 direct loads; the removed subpath bundles repeated the root optimizer verdict instead of testing the direct-ESM reason for those paths.
+- [x] Keep the facades, direct slug entries, optimizer adapters, and their dev dependencies: each preserves a public boundary, lowers direct loading, or exercises a distinct optimizer family.
+- [x] Test every root use case with every optimizer; test focused entries with Node's loader, reject masking imports, and require fewer loaded modules than root.
+- [x] Re-run packed consumers, TypeScript 7 and 5.7, all retained optimizers, runtime tests, and the full repository gate.
+- [x] Inspect the final diff and packed artifact, then commit the smallest complete simplification.
