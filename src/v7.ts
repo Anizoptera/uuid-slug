@@ -9,7 +9,7 @@ import {
   UuidSlugError,
 } from "./errors";
 import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types";
-import { bytesToUuid, isUuidV7Bytes, isUuidV7String } from "./uuid";
+import { bytesToUuid, isUuidV7String } from "./uuid";
 import type { Runtime } from "./runtime/types";
 
 /** Internal controls for exercising the portable UUIDv7 state machine. */
@@ -98,10 +98,6 @@ const reenteredGeneration = () =>
     "rng_unavailable",
     "UUIDv7 generation cannot be reentered from its clock or entropy callback.",
   );
-
-/** Keep plain native arrays and copy platform subclasses only when the package owns the result. */
-const ownNativeBytes = (bytes: Uint8Array): Uint8Array =>
-  Object.getPrototypeOf(bytes) === Uint8Array.prototype ? bytes : new Uint8Array(bytes);
 
 /**
  * Seeds the sequence from the same six random bytes and the same bit positions as before, split
@@ -285,15 +281,6 @@ export function createPortableUuidV7Generator(
 
 export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
   const fallback = createPortableUuidV7Generator({ fillRandom: runtime.fillRandom });
-  const fallbackUuidV7Bytes = fallback.generateUuidV7Bytes as (
-    out?: Uint8Array,
-    offset?: number,
-  ) => Uint8Array | UuidSlugError;
-  const fallbackUuidV7BytesAt = fallback.generateUuidV7BytesAt as (
-    timestamp: number,
-    out?: Uint8Array,
-    offset?: number,
-  ) => Uint8Array | UuidSlugError;
   function generateUuidV7() {
     if (!runtime.uuidV7) return fallback.generateUuidV7();
     return nativeOrFallback(
@@ -304,80 +291,5 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
       "UUIDv7 generation",
     );
   }
-
-  function generateUuidV7Bytes(): UuidV7Bytes | UuidSlugError;
-  function generateUuidV7Bytes<Output extends Uint8Array>(
-    out: Output,
-    offset?: number,
-  ): Output | UuidSlugError;
-  function generateUuidV7Bytes(out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
-    // Validate before native generation so a caller error cannot consume entropy or be relabelled
-    // as a runtime failure. The native seam returns owned bytes; only this function commits them.
-    if (!runtime.uuidV7Bytes) return fallbackUuidV7Bytes(out, offset);
-    const badRange =
-      out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
-    if (badRange) return badRange;
-    return nativeOrFallback(
-      runtime.uuidV7Bytes,
-      isUuidV7Bytes,
-      (generated) => {
-        if (out === undefined) return ownNativeBytes(generated);
-        out.set(generated, offset);
-        return out;
-      },
-      () => fallbackUuidV7Bytes(out, offset),
-      "UUIDv7 generation",
-    );
-  }
-
-  function generateUuidV7At(timestamp: number) {
-    // Validate before delegation because native generators may coerce invalid timestamps.
-    if (!runtime.uuidV7At) return fallback.generateUuidV7At(timestamp);
-    const invalid = rejectInstant(timestamp);
-    if (invalid) return invalid;
-    return nativeOrFallback(
-      () => runtime.uuidV7At?.(timestamp),
-      isUuidV7String,
-      (value) => value,
-      () => fallback.generateUuidV7At(timestamp),
-      "UUIDv7 generation",
-    );
-  }
-
-  function generateUuidV7BytesAt(timestamp: number): UuidV7Bytes | UuidSlugError;
-  function generateUuidV7BytesAt<Output extends Uint8Array>(
-    timestamp: number,
-    out: Output,
-    offset?: number,
-  ): Output | UuidSlugError;
-  function generateUuidV7BytesAt(
-    timestamp: number,
-    out?: Uint8Array,
-    offset = 0,
-  ): Uint8Array | UuidSlugError {
-    if (!runtime.uuidV7BytesAt) return fallbackUuidV7BytesAt(timestamp, out, offset);
-    const invalid = rejectInstant(timestamp);
-    if (invalid) return invalid;
-    const badRange =
-      out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
-    if (badRange) return badRange;
-    return nativeOrFallback(
-      () => runtime.uuidV7BytesAt?.(timestamp),
-      isUuidV7Bytes,
-      (generated) => {
-        if (out === undefined) return ownNativeBytes(generated);
-        out.set(generated, offset);
-        return out;
-      },
-      () => fallbackUuidV7BytesAt(timestamp, out, offset),
-      "UUIDv7 generation",
-    );
-  }
-
-  return {
-    generateUuidV7,
-    generateUuidV7Bytes,
-    generateUuidV7At,
-    generateUuidV7BytesAt,
-  };
+  return { ...fallback, generateUuidV7 };
 }

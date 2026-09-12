@@ -21,21 +21,12 @@ import {
 } from "./entropy-probe";
 import { cases as bufferContractCases } from "./buffer-contract-probe";
 import { runtime as bunRuntime } from "../src/runtime/bun";
-import {
-  isUuidV7String,
-  slugToUuid,
-  generateUuidV4Slug,
-  generateUuidV4Bytes,
-  generateUuidV7Slug,
-} from "../src/index";
-import { unwrap } from "../dev/unwrap";
+import { generateUuidV4Bytes } from "../src/index";
 
 describe("bun runtime", () => {
-  test("uses native UUIDv7 only for the representation it improves", () => {
+  test("uses native UUIDv7 only for canonical strings", () => {
     const availability = typeof Bun.randomUUIDv7 === "function" ? "function" : "undefined";
     expect(typeof bunRuntime.uuidV7).toBe(availability);
-    expect(bunRuntime.uuidV7Bytes).toBeUndefined();
-    expect(bunRuntime.uuidV7Slug).toBeUndefined();
   });
 
   // The same list runs on Node and Bun's portable owned-byte generators, so both runtime branches
@@ -45,18 +36,6 @@ describe("bun runtime", () => {
       expect(entry.run()).toBeUndefined();
     });
   }
-
-  test("the keyless generateUuidV7Slug honours its alphabet argument, not the native generator", () => {
-    // Bun exposes native base64url generation, but the adapter omits that slower hook. A branch
-    // gated only on runtime capability would ignore the requested alphabet here.
-    const sortable = unwrap(generateUuidV7Slug("base32hex"));
-    expect(sortable).toHaveLength(26);
-    expect<string>(sortable).toBe(sortable.toLowerCase());
-    expect(isUuidV7String(slugToUuid(sortable) as string)).toBe(true);
-    // The portable default must still round-trip; the native hex path is covered separately.
-    expect(unwrap(generateUuidV7Slug())).toHaveLength(22);
-    expect(unwrap(generateUuidV4Slug("base32hex"))).toHaveLength(26);
-  });
 
   test("never reaches for Math.random on any generation path", () => {
     for (const [name, generate] of generators) {

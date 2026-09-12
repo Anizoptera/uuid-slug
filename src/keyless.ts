@@ -2,9 +2,9 @@
 
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
-import { nativeOrFallback, UuidSlugError } from "./errors";
+import { UuidSlugError } from "./errors";
 import type { UuidV4Slug, UuidV7Bytes, UuidV7Generator, UuidV7Slug, UuidV7String } from "./types";
-import { bytesToSlug, isUuidV7Slug } from "./uuid";
+import { bytesToSlug } from "./uuid";
 import type { SlugAlphabet } from "./uuid";
 export { generateUuidV4, generateUuidV4Bytes } from "./v4";
 import { generateUuidV4Bytes } from "./v4";
@@ -98,27 +98,6 @@ export function generateUuidV7BytesAt(
 export function generateUuidV7Slug(
   alphabet: SlugAlphabet = "base64url",
 ): UuidV7Slug | UuidSlugError {
-  // Gated on the ALPHABET, not merely on the hook's presence. The runtime's slug generator emits
-  // base64url and nothing else, so an ungated branch answers a base32hex request with a 22-char
-  // base64url string — and only Bun defines the hook, so vitest on Node cannot reach the branch at
-  // all and the entire suite stays green. `test/runtime.bun.test.ts` is what actually covers it.
-  // Probed per call rather than resolved once: resolving at module scope would reintroduce the
-  // eager work the lazy cell above exists to avoid.
-  //
-  // Only base64url can use the native slug path; base32hex needs bytes for package encoding.
-  const native = alphabet === "base64url" ? runtime.uuidV7Slug : undefined;
-  if (native)
-    return nativeOrFallback(
-      native,
-      isUuidV7Slug,
-      (value) => value,
-      () => portableUuidV7Slug(alphabet),
-      "UUIDv7 slug generation",
-    );
-  return portableUuidV7Slug(alphabet);
-}
-
-function portableUuidV7Slug(alphabet: SlugAlphabet): UuidV7Slug | UuidSlugError {
   const bytes = v7().generateUuidV7Bytes();
   if (bytes instanceof Error) return bytes;
   return bytesToSlug(bytes, alphabet) as UuidV7Slug | UuidSlugError;

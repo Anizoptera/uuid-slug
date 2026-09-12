@@ -36,8 +36,8 @@ const codec = unwrap(createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }));
 const INSTANT = 1_700_000_000_000;
 
 /**
- * Every entry point that produces randomness. `generateUuidV4`, `generateUuidV7` and `generateUuidV7Slug` hand off to
- * a native generator whenever the runtime has one, so only the byte and slug forms reach this
+ * Every entry point that produces randomness. `generateUuidV4` and `generateUuidV7` hand off to
+ * a native generator whenever the runtime has one, so byte generation is what reaches this
  * package's own `fillRandom` unconditionally — a probe through the string forms alone observes
  * nothing of our code. Every public generation route belongs here.
  */

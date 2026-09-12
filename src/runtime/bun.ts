@@ -14,7 +14,7 @@ interface BunUuid {
  * Probed once at module load, not per call. This module is only ever selected by the `bun`
  * export condition, so the global is there; what can differ is the version, and a Bun old
  * enough to lack `randomUUIDv7` should degrade to the portable generator rather than throw
- * from a method that claims to exist. `Runtime.uuidV7` and friends are optional so that
+ * from a method that claims to exist. `Runtime.uuidV7` is optional so that
  * absence is representable — a method that exists but throws makes the caller catch and fall
  * back on every single call instead.
  */
