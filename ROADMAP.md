@@ -46,11 +46,11 @@ protection, and no default or fallback may select it.
 - [ ] Map every public TypeScript method, overload, option, alphabet, success path, failure path,
   caller-owned buffer path, codec mode, migration mode, sentinel path, and runtime delegation path
   to an existing benchmark case or an explicit missing case.
-- [ ] Add the missing invalid-range, invalid-alphabet, wrong-version, timestamp-window, and
+- [x] Add the missing invalid-range, invalid-alphabet, wrong-version, timestamp-window, and
   construction-failure rows; keep returned errors separate from thrown programmer errors.
-- [ ] Add the missing mask seed representation, derivation-work, custom-transform failure, codec
+- [x] Add the missing mask seed representation, derivation-work, custom-transform failure, codec
   option, migration-option combination, and sentinel-collision rows.
-- [ ] Verify every overload and caller-owned row preserves output identity and atomic failure before
+- [x] Verify every overload and caller-owned row preserves output identity and atomic failure before
   its timing result can rank an implementation.
 - [ ] Verify each native success, native malformed-result, native throw, portable success, and
   dual-failure route independently for v4 and v7 string, byte, and slug output.
