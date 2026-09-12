@@ -738,6 +738,16 @@ and doubled Deno's worst observed batch from 0.051–0.078 ms to 0.107–0.110 m
 Larger pools also retain and can discard proportionally more unused random bytes. Keep 8 KiB unless
 a changed platform source moves both the primary-runtime crossover and complete-route latency.
 
+A wrap-preserving cursor was rejected. Atomic refill failure requires keeping the old tail outside
+the pool until the new draw succeeds; the smallest lawful variant allocated and erased a carry only
+at wraps. It improved 10-byte generation on Node and Deno, and advancing-clock generation on Bun,
+in two replays, but did not improve 4-byte continuation and left Chromium unresolved. An 8,160-byte
+control divisible by every 4-, 10-, and 16-byte request removed homogeneous tail waste without the
+cursor and was neutral on Node, Bun, and Deno; it also increased v4 source calls from one per 512 ids
+to one per 510. The cursor's gains therefore did not isolate tail reuse and do not justify extra
+allocation and failure state. Keep the one-buffer linear cursor; reconsider only if discarded-byte
+measurement, not unrelated JIT movement, becomes material.
+
 ## Allocation and key rotation
 
 ### Profiler batch size

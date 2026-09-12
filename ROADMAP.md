@@ -144,7 +144,7 @@ unless the maintainer separately changes the HLD.
   clock rollback, reseed, native delegation, and caller-owned output before changing state shape.
 - [x] Test random-pool refill size geometrically across syscall count, cache footprint, contention,
   latency tails, and discarded bytes; choose no fixed size from throughput alone.
-- [ ] Test a ring cursor over the random pool against copy-and-erase traversal. Preserve erasure and
+- [x] Test a ring cursor over the random pool against copy-and-erase traversal. Preserve erasure and
   caller ownership; reject retained secret bytes or extra views even if average throughput improves.
 - [ ] Test thresholded migration-candidate deduplication with linear scan below crossover and `Set`
   above it; compare duplicate-heavy and distinct-heavy schema outputs before adding a second structure.
