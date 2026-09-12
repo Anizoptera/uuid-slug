@@ -90,7 +90,7 @@ unless the maintainer separately changes the HLD.
   size, and reject if it duplicates the canonical sentinel identity source.
 - [x] Test canonical UUID-string sentinel lookup for string inputs as an independent path; reject if
   formatting bytes merely moves more work ahead of the existing exact byte comparison.
-- [ ] Test direct canonical base64url slug-to-UUID formatting without an intermediate byte array.
+- [x] Test direct canonical base64url slug-to-UUID formatting without an intermediate byte array.
   Preserve canonical-tail rejection and exact invalid-character offsets; reject if native
   hexadecimal formatting or code duplication dominates the public route.
 - [ ] Test direct canonical base32hex slug-to-UUID formatting without an intermediate byte array.
