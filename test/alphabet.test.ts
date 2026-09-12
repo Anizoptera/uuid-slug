@@ -44,6 +44,40 @@ describe("bit-packing codec", () => {
       }
   });
 
+  it("decodes varied 16-byte base64url payloads from an independent encoder", () => {
+    for (let seed = 0; seed < 256; seed += 1) {
+      const bytes = Uint8Array.from({ length: 16 }, (_, index) =>
+        Math.imul(seed + 1, index * 197 + 131),
+      );
+      const encoded = Buffer.from(bytes).toString("base64url");
+      const out = new Uint8Array(16);
+      expect(decodeInto(encoded, BASE64URL, out, 0, 16)).toBe(0);
+      expect(out).toEqual(bytes);
+    }
+  });
+
+  it("reports every invalid base64url character position on the fixed UUID path", () => {
+    const encoded = Buffer.alloc(16).toString("base64url");
+    for (let index = 0; index < encoded.length; index += 1) {
+      const invalid = `${encoded.slice(0, index)}!${encoded.slice(index + 1)}`;
+      expect(decodeInto(invalid, BASE64URL, new Uint8Array(16), 0, 16)).toMatchObject({
+        message: `Invalid base64url character at offset ${index}.`,
+      });
+    }
+  });
+
+  it("preserves every base64url UUID tail and rejects non-canonical plain tails", () => {
+    const bytes = bytesFrom(16);
+    for (let tail = 0; tail < 16; tail += 1) {
+      const out = new Uint8Array(16);
+      expect(decodeInto(encode(bytes, BASE64URL, tail, 4), BASE64URL, out, 0, 16, 4)).toBe(tail);
+      expect(out).toEqual(bytes);
+    }
+    expect(decodeInto(`${"A".repeat(21)}B`, BASE64URL, new Uint8Array(16), 0, 16)).toMatchObject({
+      message: "base64url value has non-canonical trailing bits.",
+    });
+  });
+
   // The spare bits are what let a schema id ride along at no cost in length. If this ever stops
   // holding, the masked slug silently grows a character.
   it("leaves exactly 4 spare bits in base64url and 2 in base32hex for 16 bytes", () => {

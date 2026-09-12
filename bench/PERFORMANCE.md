@@ -271,6 +271,21 @@ interval excluded no change in both replays.
 Retest the fixed groups if UUID routes stop owning exactly 16 bytes or a runtime adds native
 base32hex encoding. The generic path still owns all other input shapes.
 
+### Fixed-size portable base64url decoding
+
+Decode a 16-byte base64url payload as five complete four-character groups plus the final byte.
+Keep the generic accumulator for every other length, alphabet, and tail width. Exact invalid-character
+offsets and canonical trailing-bit rejection remain part of this specialized path.
+
+Two 24-round packed comparisons on 2026-09-12 improved direct decoding by 12–13% on Node 24.20.0,
+16–17% on Bun 1.4.1, 26–27% on Deno 2.9.6, and 22–24% on Chromium 151. Caller-owned public decoding
+improved by 10–11%, 7–10%, 14–19%, and 13–15%, respectively. Every cited 95% median interval
+excluded no change in both replays. Public allocated decoding also improved on Bun, Deno, and
+Chromium in both replays; Node improved by 4–5%, but one interval included no change.
+
+Retest the fixed decoder if UUID routes stop decoding exactly 16 bytes or use a tail width other than
+zero or four. The generic path remains responsible for every other supported shape.
+
 ### Portable UUIDv7 timestamp writes
 
 Select the fixed 48-bit timestamp writer once when the module loads. Bun keeps the six-byte loop;

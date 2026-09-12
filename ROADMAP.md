@@ -122,6 +122,8 @@ protection, and no default or fallback may select it.
   including runtimes whose public route normally delegates to native encoding.
 - [ ] Profile and optimize portable base64url and base32hex decoding directly on Node, Bun, Deno,
   and Chromium; preserve exact character offsets, canonical padding rejection, and caller-owned writes.
+- [x] Specialize portable 16-byte base64url decoding. Two packed replays improved direct and
+  caller-owned routes on every runtime while exact offsets, canonical tails, and bytes stayed fixed.
 - [x] Specialize portable 16-byte base32hex encoding. Two packed replays improved Node's direct
   fallback and public conversion while Bun stayed improved or unresolved; all runtimes exercised
   the exact portable implementation.

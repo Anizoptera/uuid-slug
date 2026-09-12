@@ -210,6 +210,36 @@ export function decodeInto(
   const badRange = checkRange(out.length, offset, byteLength);
   if (badRange) return badRange;
 
+  // UUID base64url has five complete groups and one byte. Decode that fixed wire shape directly;
+  // keep the accumulator below for every other byte length, alphabet, and tail width.
+  if (alpha === BASE64URL && byteLength === 16 && (tailBits === 0 || tailBits === 4)) {
+    let written = offset;
+    for (let start = 0; start < 20; start += 4) {
+      let block = 0;
+      for (let i = start; i < start + 4; i += 1) {
+        const charCode = value.charCodeAt(i);
+        const digit = charCode < 128 ? (table[charCode] as number) : -1;
+        if (digit < 0) return new UuidSlugError(code, `Invalid ${name} character at offset ${i}.`);
+        block = (block << 6) | digit;
+      }
+      out[written] = block >>> 16;
+      out[written + 1] = block >>> 8;
+      out[written + 2] = block;
+      written += 3;
+    }
+    const firstCode = value.charCodeAt(20);
+    const first = firstCode < 128 ? (table[firstCode] as number) : -1;
+    if (first < 0) return new UuidSlugError(code, `Invalid ${name} character at offset 20.`);
+    const lastCode = value.charCodeAt(21);
+    const last = lastCode < 128 ? (table[lastCode] as number) : -1;
+    if (last < 0) return new UuidSlugError(code, `Invalid ${name} character at offset 21.`);
+    out[written] = (first << 2) | (last >>> 4);
+    if (tailBits === 4) return last & 15;
+    if ((last & 15) !== 0)
+      return new UuidSlugError(code, `${name} value has non-canonical trailing bits.`);
+    return 0;
+  }
+
   let acc = 0;
   let bits = 0;
   let written = 0;
