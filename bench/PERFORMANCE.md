@@ -239,6 +239,22 @@ interval excluded parity in both replays. Node 24.20.0 was unresolved because bo
 the fallback. Remove native delegation only if a supported runtime reproduces a complete-route loss
 or changes the strict output contract.
 
+### Fixed-size portable base64url encoding
+
+Encode 16-byte base64url payloads in five 24-bit groups plus the final byte. Keep the generic bit
+accumulator for other lengths, alphabets, and tail widths. This specializes the UUID shape without
+changing native delegation or the wire format.
+
+Two 24-round packed comparisons on 2026-09-12 improved Node 24.20.0 plain encoding by 10–11%,
+masked string encoding by 7–8%, and masked byte-input encoding by 9–10%. Every 95% median interval
+excluded no change in both replays. Bun 1.4.1 uses native base64url encoding on these public routes
+and remained unresolved around parity. Direct fallback profiles reached the same implementation on
+Node, Bun, Deno, and Chromium; two runs put their median cost between 115 and 138 ns per payload.
+Those absolute runs prove reachability and scale only; they do not rank algorithm alternatives.
+
+Retest the fixed specialization if Node gains a native encoder or if UUID routes stop owning exactly
+16 bytes. The generic path remains the contract owner for every other supported input shape.
+
 ### Portable UUIDv7 timestamp writes
 
 Select the fixed 48-bit timestamp writer once when the module loads. Bun keeps the six-byte loop;

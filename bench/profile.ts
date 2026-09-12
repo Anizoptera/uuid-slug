@@ -23,13 +23,18 @@ const beforeImport = performance.now();
 const api: typeof import("../src/index") = await import(
   process.env.UUID_SLUG_PROFILE_MODULE ?? "@anizoptera/uuid-slug"
 );
-const privateApi = process.env.UUID_SLUG_PROFILE_PRIVATE_MODULE
+const privateV4Api = process.env.UUID_SLUG_PROFILE_PRIVATE_MODULE
   ? await import(process.env.UUID_SLUG_PROFILE_PRIVATE_MODULE)
   : process.env.UUID_SLUG_PROFILE_PRIVATE === "1"
     ? await import("../src/v4")
     : undefined;
+const privateAlphabetApi = process.env.UUID_SLUG_PROFILE_ALPHABET_MODULE
+  ? await import(process.env.UUID_SLUG_PROFILE_ALPHABET_MODULE)
+  : process.env.UUID_SLUG_PROFILE_PRIVATE === "1"
+    ? await import("../src/alphabet")
+    : undefined;
 const importMs = performance.now() - beforeImport;
-const cases = createProfileCases(api, originalFixtures.issued, privateApi);
+const cases = createProfileCases(api, originalFixtures.issued, privateV4Api, privateAlphabetApi);
 let sink = 0;
 function batch(
   fn: (i: number) => ReturnType<(typeof cases)[string]>,

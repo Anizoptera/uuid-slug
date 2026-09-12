@@ -2,7 +2,8 @@
 
 import { unwrap } from "../dev/unwrap";
 type Api = typeof import("../src/index");
-type PrivateApi = Pick<typeof import("../src/v4"), "generatePortableUuidV4">;
+type PrivateV4Api = Pick<typeof import("../src/v4"), "generatePortableUuidV4">;
+type PrivateAlphabetApi = Pick<typeof import("../src/alphabet"), "BASE64URL" | "encodePortable">;
 export type ProfileValue = string | number | boolean | Uint8Array | Error | object;
 export type ProfileCase = (index: number) => ProfileValue;
 
@@ -28,7 +29,8 @@ interface OriginalFixture {
 export function createProfileCases(
   api: Api,
   originalFixtures: readonly OriginalFixture[],
-  privateApi: PrivateApi | undefined,
+  privateV4Api: PrivateV4Api | undefined,
+  privateAlphabetApi?: PrivateAlphabetApi,
 ): Record<string, ProfileCase> {
   const instant = 1_725_000_000_000;
   const timestampWindow = { maxTimestampDeltaMs: 86_400_000, referenceUnixMs: instant };
@@ -95,6 +97,12 @@ export function createProfileCases(
   const bytes = ids.map((id) => unwrap(api.uuidToBytes(id)));
   const sentinelBytes = sentinelDefinitions.map(({ uuid }) => unwrap(api.uuidToBytes(uuid)));
   const slugs = ids.map((id) => unwrap(api.uuidToSlug(id)));
+  if (
+    privateAlphabetApi &&
+    privateAlphabetApi.encodePortable(bytes[0] as Uint8Array, privateAlphabetApi.BASE64URL) !==
+      slugs[0]
+  )
+    throw new Error("Portable base64url encoding differs from the public canonical spelling");
   const base32 = ids.map((id) => unwrap(api.uuidToSlug(id, "base32hex")));
   const masked = ids.map((id) => unwrap(codec.encodeUuid(id)));
   const maskedBase32 = ids.map((id) => unwrap(base32Codec.encodeUuid(id)));
@@ -137,7 +145,16 @@ export function createProfileCases(
   return {
     control: (index) => ids[index & 255] as string,
     "v4.string": () => api.generateUuidV4(),
-    ...(privateApi ? { "portable.v4.string": () => privateApi.generatePortableUuidV4() } : {}),
+    ...(privateV4Api ? { "portable.v4.string": () => privateV4Api.generatePortableUuidV4() } : {}),
+    ...(privateAlphabetApi
+      ? {
+          "portable.base64.encode": (index: number) =>
+            privateAlphabetApi.encodePortable(
+              bytes[index & 255] as Uint8Array,
+              privateAlphabetApi.BASE64URL,
+            ),
+        }
+      : {}),
     "v7.string": () => api.generateUuidV7(),
     "v4.bytes": () => api.generateUuidV4Bytes(),
     "v4.into": () => api.generateUuidV4Bytes(into, 4),

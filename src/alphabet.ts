@@ -112,6 +112,33 @@ export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 
     const trailing = (tail & ((1 << tailBits) - 1)) << (spareBits(alpha, bytes.length) - tailBits);
     return encoded.slice(0, last) + alpha.chars[digit | trailing];
   }
+  return encodePortable(bytes, alpha, tail, tailBits);
+}
+
+/** Encode without runtime-native delegation so fallback performance can be measured directly. */
+export function encodePortable(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {
+  // UUID routes always encode one 16-byte block. Fixed groups remove the generic accumulator from
+  // Node's active fallback; keep the generic path for every other supported shape and alphabet.
+  if (alpha === BASE64URL && bytes.length === 16 && (tailBits === 0 || tailBits === 4)) {
+    let encoded = "";
+    for (let offset = 0; offset < 15; offset += 3) {
+      const block =
+        ((bytes[offset] as number) << 16) |
+        ((bytes[offset + 1] as number) << 8) |
+        (bytes[offset + 2] as number);
+      encoded +=
+        (alpha.chars[block >>> 18] as string) +
+        (alpha.chars[(block >>> 12) & 63] as string) +
+        (alpha.chars[(block >>> 6) & 63] as string) +
+        (alpha.chars[block & 63] as string);
+    }
+    const last = bytes[15] as number;
+    return (
+      encoded +
+      (alpha.chars[last >>> 2] as string) +
+      (alpha.chars[((last & 3) << 4) | (tail & 15)] as string)
+    );
+  }
   const { bitsPerChar, chars } = alpha;
   const mask = (1 << bitsPerChar) - 1;
   let out = "";

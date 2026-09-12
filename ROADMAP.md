@@ -116,6 +116,9 @@ protection, and no default or fallback may select it.
 - [ ] Falsify general alphabet dispatch versus codec-construction specialization.
 - [ ] Profile and optimize each portable alphabet encoder directly on Node, Bun, Deno, and Chromium,
   including runtimes whose public route normally delegates to native encoding.
+- [x] Specialize portable 16-byte base64url encoding and expose it to the shared profiler. Two
+  packed replays improved Node plain and masked routes while native-shadowed Bun stayed unchanged;
+  direct profiles reached the fallback on all four runtimes.
 - [x] Keep capability-probed native base64url encoding with a portable fallback. Two public-route
   replays rejected portable encoding on Bun, Deno, and Chromium; Node used the fallback in both.
 - [x] Mask the validated parser-owned block directly: repeated packed comparisons improved string

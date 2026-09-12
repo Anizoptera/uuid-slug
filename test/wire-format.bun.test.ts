@@ -13,7 +13,14 @@
  * other.
  */
 import { describe, expect, test } from "bun:test";
-import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "../src/alphabet";
+import {
+  BASE32HEX,
+  BASE64URL,
+  decodeInto,
+  encode,
+  encodePortable,
+  spareBits,
+} from "../src/alphabet";
 import { uuidToSlug } from "../src/index";
 import golden from "../rust/uuid-slug/tests/fixtures/fixtures-wire-format.json";
 import { WIRE_FORMAT_CODECS as codecs } from "./wire-format-codecs";
@@ -41,6 +48,7 @@ describe("wire format is identical across runtimes", () => {
       const width = spareBits(alpha, 16);
       for (let tail = 0; tail < 1 << width; tail += 1) {
         const encoded = encode(bytes, alpha, tail, width);
+        expect(encodePortable(bytes, alpha, tail, width)).toBe(encoded);
         expect(encoded).toHaveLength(length);
         const out = new Uint8Array(16);
         expect(decodeInto(encoded, alpha, out, 0, 16, width)).toBe(tail);

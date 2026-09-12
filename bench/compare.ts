@@ -16,7 +16,8 @@ const RUNTIMES = ["node", "bun", "deno", "chromium"] as const satisfies readonly
 
 interface ArtifactSet {
   readonly api: Readonly<Record<Runtime, string>>;
-  readonly privateApi: Readonly<Record<Runtime, string>>;
+  readonly privateAlphabetApi: Readonly<Record<Runtime, string>>;
+  readonly privateV4Api: Readonly<Record<Runtime, string>>;
 }
 
 interface ProfileRow {
@@ -92,7 +93,13 @@ async function packArtifacts(root: string, outdir: string): Promise<ArtifactSet>
       deno: join(packed, "dist/index.js"),
       chromium: join(packed, "dist/index.js"),
     },
-    privateApi: {
+    privateAlphabetApi: {
+      node: join(packed, "dist/node/alphabet.js"),
+      bun: join(packed, "src/alphabet.ts"),
+      deno: join(packed, "dist/alphabet.js"),
+      chromium: join(packed, "dist/alphabet.js"),
+    },
+    privateV4Api: {
       node: join(packed, "dist/node/v4.js"),
       bun: join(packed, "src/v4.ts"),
       deno: join(packed, "dist/v4.js"),
@@ -114,7 +121,8 @@ async function buildHostDriver(outdir: string): Promise<string> {
 
 async function buildBrowserDriver(
   api: string,
-  privateApi: string,
+  privateAlphabetApi: string,
+  privateV4Api: string,
   outdir: string,
   revision: Revision,
 ): Promise<string> {
@@ -128,7 +136,10 @@ async function buildBrowserDriver(
         name: "profile-api",
         setup(builder) {
           builder.onResolve({ filter: /^\.\.\/src\/index$/ }, () => ({ path: api }));
-          builder.onResolve({ filter: /^\.\.\/src\/v4$/ }, () => ({ path: privateApi }));
+          builder.onResolve({ filter: /^\.\.\/src\/alphabet$/ }, () => ({
+            path: privateAlphabetApi,
+          }));
+          builder.onResolve({ filter: /^\.\.\/src\/v4$/ }, () => ({ path: privateV4Api }));
         },
       },
     ],
@@ -172,14 +183,16 @@ async function runHost(
   runtime: Exclude<Runtime, "chromium">,
   driver: string,
   api: string,
-  privateApi: string,
+  privateAlphabetApi: string,
+  privateV4Api: string,
 ) {
   const args = runtime === "deno" ? ["run", "--allow-env", "--allow-read", driver] : [driver];
   return parseHost(
     await command(runtime, args, project, {
       UUID_SLUG_PROFILE_FILTER: filter,
+      UUID_SLUG_PROFILE_ALPHABET_MODULE: pathToFileURL(privateAlphabetApi).href,
       UUID_SLUG_PROFILE_MODULE: pathToFileURL(api).href,
-      UUID_SLUG_PROFILE_PRIVATE_MODULE: pathToFileURL(privateApi).href,
+      UUID_SLUG_PROFILE_PRIVATE_MODULE: pathToFileURL(privateV4Api).href,
       UUID_SLUG_PROFILE_MS: duration,
       UUID_SLUG_PROFILE_SAMPLES: "1",
       UUID_SLUG_PROFILE_WARMUP_MS: warmup,
@@ -277,10 +290,17 @@ async function main(): Promise<void> {
       buildHostDriver(scratch),
     ]);
     const [baselineBrowser, candidateBrowser] = await Promise.all([
-      buildBrowserDriver(baseline.api.chromium, baseline.privateApi.chromium, scratch, "baseline"),
+      buildBrowserDriver(
+        baseline.api.chromium,
+        baseline.privateAlphabetApi.chromium,
+        baseline.privateV4Api.chromium,
+        scratch,
+        "baseline",
+      ),
       buildBrowserDriver(
         candidate.api.chromium,
-        candidate.privateApi.chromium,
+        candidate.privateAlphabetApi.chromium,
+        candidate.privateV4Api.chromium,
         scratch,
         "candidate",
       ),
@@ -317,7 +337,8 @@ async function main(): Promise<void> {
                     runtime,
                     driver,
                     (revision === "baseline" ? baseline : candidate).api[runtime],
-                    (revision === "baseline" ? baseline : candidate).privateApi[runtime],
+                    (revision === "baseline" ? baseline : candidate).privateAlphabetApi[runtime],
+                    (revision === "baseline" ? baseline : candidate).privateV4Api[runtime],
                   );
             emit(runtime, revision, round, order, rows, observations);
           }

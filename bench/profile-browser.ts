@@ -2,7 +2,8 @@
 
 import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json" with { type: "json" };
 import * as api from "../src/index";
-import * as privateApi from "../src/v4";
+import * as privateAlphabetApi from "../src/alphabet";
+import * as privateV4Api from "../src/v4";
 import { assertProfileOutcome, createProfileCases } from "./profile-cases";
 import type { ProfileCase, ProfileValue } from "./profile-cases";
 
@@ -78,7 +79,8 @@ function selectProfileCases(options: BrowserProfileOptions): readonly [string, P
   const cases = createProfileCases(
     api,
     originalFixtures.issued,
-    options.privateImplementations ? privateApi : undefined,
+    options.privateImplementations ? privateV4Api : undefined,
+    options.privateImplementations ? privateAlphabetApi : undefined,
   );
   const selected = Object.entries(cases).filter(
     ([name]) => !options.filter || name.includes(options.filter),
