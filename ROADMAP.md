@@ -56,8 +56,8 @@ protection, and no default or fallback may select it.
   dual-failure route independently for v4 and v7 string, byte, and slug output.
 - [x] Profile cooperative mask derivation separately from synchronous calls across seed type, UTF-8
   boundaries, iteration count, chunk boundaries, cancellation phase, scheduling delay, and runtime.
-- [ ] Map the supported Node, Bun, Deno, and browser execution routes, including native capability
-  selection and portable fallback, to the package artifact each consumer loads.
+- [x] Map and execute the packed routes: Node loads `dist/node` with its adapter, Bun loads published
+  TypeScript with its adapter, and Deno plus Chromium load `dist` with the web adapter.
 - [x] Audit benchmark setup, warm-up, sinks, batching, clocks, GC handling, process isolation, output
   validation, and statistics for optimizer elimination, harness domination, and false comparisons.
 - [x] Replace fixed-order single-pass candidate acceptance with one alternating baseline/candidate
