@@ -164,10 +164,17 @@ describe("direct UUID slugs", () => {
       mask: { seed: "alpha-test-seed-0000" },
       sentinels: TEST_SENTINELS,
     });
+    const base32Codec = createUuidV7SlugCodec({
+      mask: { seed: "alpha-test-seed-0000" },
+      outputAlphabet: "base32hex",
+      sentinels: TEST_SENTINELS,
+    });
     expect(generateUuidV7Slug("base32hex")).toHaveLength(26);
     expect(generateUuidV4Slug("base32hex")).toHaveLength(26);
     expect(codec.generateSlug()).toHaveLength(22);
     expect(codec.sentinels[0]?.slug).toHaveLength(22);
+    expect(base32Codec.generateSlug()).toHaveLength(27);
+    expect(base32Codec.sentinels[0]?.slug).toHaveLength(26);
   });
 
   it("answers rather than crashing when JavaScript passes an alphabet name TypeScript forbids", () => {

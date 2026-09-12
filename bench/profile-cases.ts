@@ -217,6 +217,7 @@ export function createProfileCases(
   const badSlug = "!".repeat(22);
   const v4Uuid = "3b12f1df-5232-4804-897e-917bf397618a";
   const v4Bytes = unwrap(api.uuidToBytes(v4Uuid));
+  const v4Slug = unwrap(api.uuidToSlug(v4Uuid));
   const outsideTimestampWindow = { maxTimestampDeltaMs: 0, referenceUnixMs: instant + 1 };
   if (!base32Sentinel) throw new Error("Missing base32 sentinel fixture");
   customFailureEnabled = true;
@@ -276,6 +277,7 @@ export function createProfileCases(
     "portable.advance.into": () => portableAdvancing.generateUuidV7Bytes(into, 4),
     "portable.rollback.into": () => portableRollingBack.generateUuidV7Bytes(into, 4),
     "construct.generator": () => api.createUuidV7Generator({ clock: () => instant }),
+    "construct.generator.default": () => api.createUuidV7Generator({}),
     "v4.slug": () => api.generateUuidV4Slug(),
     "v4.base32": () => api.generateUuidV4Slug("base32hex"),
     "v7.slug": () => api.generateUuidV7Slug(),
@@ -333,6 +335,7 @@ export function createProfileCases(
     "timestamp.masked.base32": (index) =>
       base32Codec.validateSlugTimestamp(maskedBase32[index & 255] as string, timestampWindow),
     "masked.generate": () => codec.generateSlug(),
+    "masked.base32.generate": () => base32Codec.generateSlug(),
     "masked.encode": (index) => codec.encodeUuid(ids[index & 255] as string),
     "masked.encode.bytes": (index) => codec.encodeUuid(bytes[index & 255] as Uint8Array),
     "masked.decode": (index) => codec.decodeSlug(masked[index & 255] as string),
@@ -340,6 +343,8 @@ export function createProfileCases(
     "masked.decode.into": (index) =>
       codec.decodeSlugToBytes(masked[index & 255] as string, into, 4),
     "masked.base32.encode": (index) => base32Codec.encodeUuid(ids[index & 255] as string),
+    "masked.base32.encode.bytes": (index) =>
+      base32Codec.encodeUuid(bytes[index & 255] as Uint8Array),
     "masked.base32.decode": (index) => base32Codec.decodeSlug(maskedBase32[index & 255] as string),
     "masked.base32.decode.bytes": (index) =>
       base32Codec.decodeSlugToBytes(maskedBase32[index & 255] as string),
@@ -375,6 +380,8 @@ export function createProfileCases(
     "migration.plain": (index) => migration.decodeSlug(slugs[index & 255] as string, "plain-slug"),
     "migration.base32": (index) =>
       migration.decodeSlug(base32[index & 255] as string, "plain-slug"),
+    "migration.base32Candidates": (index) =>
+      migration.decodeSlugCandidates(base32[index & 255] as string, "plain-slug"),
     "migration.original": (index) =>
       migration.decodeSlug(originals[index % originals.length]!.slug, "original-mask"),
     "migration.plainCandidates": (index) =>
@@ -386,10 +393,15 @@ export function createProfileCases(
     "sentinel.encode": () => codec.encodeUuid(sentinel.uuid),
     "sentinel.decode": () => codec.decodeSlug(sentinel.slug),
     "sentinel.decode.bytes": () => codec.decodeSlugToBytes(sentinel.slug),
+    "sentinel.decode.into": () => codec.decodeSlugToBytes(sentinel.slug, into, 4),
     "sentinel.timestamp": () => codec.validateSlugTimestamp(sentinel.slug, sentinelTimestampWindow),
     "sentinel.base32.encode": () => base32Codec.encodeUuid(base32Sentinel.uuid),
     "sentinel.base32.decode": () => base32Codec.decodeSlug(base32Sentinel.slug),
     "sentinel.base32.decode.bytes": () => base32Codec.decodeSlugToBytes(base32Sentinel.slug),
+    "sentinel.base32.decode.into": () =>
+      base32Codec.decodeSlugToBytes(base32Sentinel.slug, into, 4),
+    "sentinel.base32.timestamp": () =>
+      base32Codec.validateSlugTimestamp(base32Sentinel.slug, sentinelTimestampWindow),
     "sentinel.scan4.first": () => sentinelCodec4.encodeUuid(sentinelDefinitions[0]!.uuid),
     "sentinel.scan4.middle": () => sentinelCodec4.encodeUuid(sentinelDefinitions[2]!.uuid),
     "sentinel.scan4.last": () => sentinelCodec4.encodeUuid(sentinelDefinitions[3]!.uuid),
@@ -416,11 +428,13 @@ export function createProfileCases(
     "sentinel.scan16.bytes.last": () => sentinelCodec16.encodeUuid(sentinelBytes[15] as Uint8Array),
     "sentinel.scan16.bytes.miss": () => sentinelCodec16.encodeUuid(bytes[255] as Uint8Array),
     "invalid.uuid": () => api.uuidToBytes(badUuid),
+    "invalid.uuid.slug": () => api.uuidToSlug(badUuid),
     "invalid.uuid.into.range": () => api.uuidToBytes(ids[0] as string, into, 9),
     "invalid.uuid.format.range": () => api.bytesToUuid(into, 9),
     "invalid.slug.format.range": () => api.bytesToSlug(into, 9),
     "invalid.timestamp.extract.range": () => api.extractUuidV7Timestamp(into, 9),
     "invalid.slug": () => api.slugToBytes(badSlug),
+    "invalid.slug.uuid": () => api.slugToUuid(badSlug),
     "invalid.slug.into.range": () => api.slugToBytes(slugs[0] as string, into, 9),
     "invalid.mask.into.range": () => codec.decodeSlugToBytes(masked[0] as string, into, 9),
     "invalid.alphabet": () =>
@@ -436,6 +450,10 @@ export function createProfileCases(
     "invalid.timestamp.version": () => api.validateUuidV7Timestamp(v4Uuid, timestampWindow),
     "invalid.timestamp.window": () =>
       api.validateUuidV7Timestamp(ids[0] as string, outsideTimestampWindow),
+    "invalid.timestamp.slug.version": () =>
+      api.validateUuidV7SlugTimestamp(v4Slug, timestampWindow),
+    "invalid.timestamp.slug.window": () =>
+      api.validateUuidV7SlugTimestamp(slugs[0] as string, outsideTimestampWindow),
     "invalid.construct.schema": () => api.createUuidV7Mask({ seed: "" }),
     "invalid.construct.custom": () =>
       api.createCustomUuidV7Mask({
@@ -443,6 +461,14 @@ export function createProfileCases(
         mask: () => new Uint8Array(15),
         unmask: (input) => input,
       }),
+    "invalid.construct.generator": () => {
+      try {
+        return Reflect.apply(api.createUuidV7Generator, undefined, [null]);
+      } catch (cause) {
+        if (!(cause instanceof Error)) throw cause;
+        return cause;
+      }
+    },
     "invalid.construct.codec.sentinel": () =>
       api.createUuidV7SlugCodec({
         mask: current,

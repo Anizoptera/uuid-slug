@@ -45,9 +45,10 @@ protection, and no default or fallback may select it.
 
 ### Inventory and instrumentation
 
-- [ ] Map every public TypeScript method, overload, option, alphabet, success path, failure path,
-  caller-owned buffer path, codec mode, migration mode, sentinel path, and runtime delegation path
-  to an existing benchmark case or an explicit missing case.
+- [x] Map every public executable TypeScript behavior to the shared corpus: generation, conversion,
+  guards, timestamp work, masking, rotation, migration, sentinels, construction, errors, both
+  alphabets, caller-owned output, and runtime delegation have distinct success and failure rows.
+  Types and frozen vocabularies have no timed mechanism; declaration and package checks own them.
 - [x] Add the missing invalid-range, invalid-alphabet, wrong-version, timestamp-window, and
   construction-failure rows; keep returned errors separate from thrown programmer errors.
 - [x] Add the missing mask seed representation, derivation-work, custom-transform failure, codec
