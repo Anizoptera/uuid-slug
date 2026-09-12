@@ -153,6 +153,11 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   method name identifies the code under test. Compare byte keys with `join(",")` or hex,
   never platform-dependent string coercion or UTF-8 decoding.
 - Preserve an unpinned newest-Node CI lane: pinned runtimes cannot expose newly added native APIs.
+- Rank native platform primitives and every competitor that produces the requested standards-compliant
+  result with cryptographic entropy. Different API shape or internal policy is not grounds for
+  exclusion unless it causes a material correctness, entropy, uniqueness, or timestamp failure in
+  the measured operation. Keep rejected rows timed but out of winner selection, store the concrete
+  reason in the case inventory, and recheck every rejection when that package version changes.
 - Probe optional capabilities once at module load; absent methods remain undefined. A defined
   method that throws for an absent capability creates exception-driven fallback on every call.
 - Cast probes to narrow optional capability shapes, not intersections with ambient types that

@@ -43,10 +43,17 @@ export interface GenerationCase {
   readonly operation: () => GenerationValue;
   readonly expectedTimestamps?: readonly number[];
   readonly secure?: boolean;
+  readonly qualification: "qualified" | "rejected";
+  readonly rejectionReason?: string;
   readonly version: 4 | 7;
 }
 
-type RowOptions = Pick<GenerationCase, "expectedTimestamps" | "note" | "outputOffset" | "secure">;
+type RowOptions = Partial<
+  Pick<
+    GenerationCase,
+    "expectedTimestamps" | "note" | "outputOffset" | "rejectionReason" | "secure"
+  >
+> & { readonly qualification?: GenerationCase["qualification"] };
 
 const intoV4 = new Uint8Array(24);
 const intoV7 = new Uint8Array(24);
@@ -116,6 +123,7 @@ const row = (
   implementation,
   name,
   operation,
+  qualification: "qualified",
   version,
   ...options,
 });
@@ -186,6 +194,8 @@ export const generationCases: readonly GenerationCase[] = [
   row("uuid-random.v4.text", 4, "v4.text.secure", "pooled-portable", uuidRandom),
   row("lukeed.v4.text.insecure", 4, "v4.text.insecure", "math-random", lukeedV4, {
     note: "Not a cryptographically secure UUIDv4 competitor",
+    qualification: "rejected",
+    rejectionReason: "Math.random does not provide cryptographic UUIDv4 entropy.",
     secure: false,
   }),
 
@@ -238,7 +248,7 @@ export const generationCases: readonly GenerationCase[] = [
     "portable-stateful",
     () => packageUuidV7V7Object().bytes,
   ),
-  row("fastv7.v7.text", 7, "v7.text.secure", "pooled-portable", fastV7),
+  row("fastv7.v7.text", 7, "v7.text.secure", "pooled-portable", fastV7, {}),
   row("uuidv7-js.v7.text", 7, "v7.text.secure", "portable-stateful", uuidv7Js),
   row("kripod.v7.text", 7, "v7.text.secure", "portable-stateful", kripodV7),
 
@@ -321,6 +331,8 @@ export const generationCases: readonly GenerationCase[] = [
     {
       expectedTimestamps: timestamps,
       note: "Parses canonical UUID text but does not reject a non-v7 UUID",
+      qualification: "rejected",
+      rejectionReason: "The call does not verify that its input is UUIDv7.",
     },
   ),
 ];

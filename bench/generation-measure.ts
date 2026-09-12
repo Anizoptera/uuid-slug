@@ -17,6 +17,8 @@ export interface GenerationMeasurement {
   readonly note?: string;
   readonly ns: readonly number[];
   readonly operations: number;
+  readonly qualification: GenerationCase["qualification"];
+  readonly rejectionReason?: string;
   readonly secure?: boolean;
   readonly sink: number;
   readonly version: 4 | 7;
@@ -58,6 +60,10 @@ export async function measureGenerationCases(
   if (new Set(candidates.map(({ name }) => name)).size !== candidates.length)
     throw new Error("Benchmark case names must be unique");
   for (const candidate of candidates) {
+    if (candidate.qualification === "rejected" && !candidate.rejectionReason)
+      throw new Error(`${candidate.name} needs a concrete rejection reason`);
+    if (candidate.qualification === "qualified" && candidate.rejectionReason)
+      throw new Error(`${candidate.name} cannot be qualified and rejected`);
     verifyGenerationCase(candidate);
     const started = performance.now();
     do batch(candidate, 64);

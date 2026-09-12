@@ -15,6 +15,8 @@ interface Measurement {
   readonly name: string;
   readonly ns: readonly number[];
   readonly operations: number;
+  readonly qualification: "qualified" | "rejected";
+  readonly rejectionReason?: string;
   readonly runtime: string;
   readonly secure?: boolean;
 }
@@ -65,10 +67,13 @@ function parseMeasurements(output: string, runtime: string): Measurement[] {
     new Set(names).size !== names.length ||
     inventory.caseNames.some((name) => !names.includes(name)) ||
     rows.some(
-      ({ ns, operations }) =>
+      ({ ns, operations, qualification, rejectionReason }) =>
         ns.length !== inventory.samples ||
         operations < 1 ||
-        ns.some((value) => !Number.isFinite(value) || value <= 0),
+        ns.some((value) => !Number.isFinite(value) || value <= 0) ||
+        (qualification !== "qualified" && qualification !== "rejected") ||
+        (qualification === "rejected" && !rejectionReason) ||
+        (qualification === "qualified" && rejectionReason !== undefined),
     )
   )
     throw new Error(`${runtime} emitted incomplete or malformed benchmark measurements`);
@@ -99,7 +104,9 @@ function print(runtime: string, rows: readonly Measurement[]): void {
     );
   }
   for (const group of new Set(rows.map(({ comparable }) => comparable))) {
-    const candidates = rows.filter((row) => row.comparable === group && row.secure !== false);
+    const candidates = rows.filter(
+      (row) => row.comparable === group && row.qualification === "qualified",
+    );
     const packageRows = candidates.filter(({ name }) => name.startsWith("package."));
     const otherRows = candidates.filter(({ name }) => !name.startsWith("package."));
     if (packageRows.length === 0 || otherRows.length === 0) continue;
@@ -116,6 +123,17 @@ function print(runtime: string, rows: readonly Measurement[]): void {
         packageBest: packageBest.name,
         packageToBestRatio: median(packageBest.ns) / median(otherBest.ns),
         referenceBest: otherBest.name,
+        runtime,
+      }),
+    );
+  }
+  for (const row of rows) {
+    if (row.qualification !== "rejected") continue;
+    console.log(
+      JSON.stringify({
+        kind: "rejection",
+        name: row.name,
+        reason: row.rejectionReason,
         runtime,
       }),
     );

@@ -1162,9 +1162,11 @@ A full local run on 2026-09-12 used Node 24.21.0, Bun 1.4.2, Deno 2.9.6, and Chr
 caller-buffer group except Deno v7 allocation, where `uuidv7` was about 3% faster. Native v4 text
 was within 1% of Node's platform primitive; Deno paid about 34% over its primitive for the package's
 validation and error-value boundary; Chromium's portable text was about 4% behind `@lukeed/uuid`.
-The package led v7 text on Bun. `fastv7` led by about 9% on Deno, 15% on Node, and 9% on Chromium,
-but has a 12-bit zero-based sequence, bounded rollback policy, no caller-controlled clock, and no
-error-value or reentrancy boundary; adopting those omissions would weaken this package's contract.
+The package led v7 text on Bun. `fastv7` led by about 9% on Deno, 15% on Node, and 9% on Chromium.
+It remains a qualified competitor because it emits conforming values from cryptographic entropy.
+Its 12-bit zero-based sequence, bounded rollback policy, and absent caller-controlled clock explain
+why its complete mechanism cannot replace this package's state machine without changing behavior;
+they do not erase its measured speed.
 Validated text timestamp extraction was within about 3% of `uuidv7-js` on Node and Deno and 15% on
 Chromium. `uniku` timestamp results are not ranked because its call accepts non-v7 UUID text.
 
@@ -1172,5 +1174,11 @@ These are single-machine warm-throughput observations, not universal rankings. P
 bundle size, memory, operating-system entropy quality, other hardware, and other engine versions
 were not measured. Platform rows expose wrapper cost; they are floors, not APIs that satisfy the
 package's failure contract.
+
+Rejected rows remain timed and are reconsidered after every package update. The insecure
+`@lukeed/uuid` entry uses `Math.random`, so it cannot establish secure UUIDv4 performance. The
+`uniku` timestamp call does not verify UUIDv7, so it cannot establish validated UUIDv7 extraction
+performance. Native platform rows are always qualified floors; error handling around them is
+package overhead, not a reason to hide them.
 
 The gates do not prove all performance properties. Relative timing cannot detect a slowdown shared by both sides. Constructor counters cannot see every engine allocation. Latest-runtime CI complements pinned runs, but this study did not execute hosted CI or measure every OS/architecture. Keep these limits when interpreting a pass.

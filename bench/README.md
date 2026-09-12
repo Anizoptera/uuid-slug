@@ -18,6 +18,10 @@ Rules:
   tests fail for the intended defect. A faster result has no standing until those tests pass again.
 - Competitor and randomness figures are informational. Process failures, empty output and
   malformed records fail the matrix while successful measurements remain visible.
+- Count native platform primitives and every implementation that returns the requested valid UUID
+  result with cryptographic entropy. Reject a row only for a measured correctness, entropy,
+  uniqueness, timestamp, or operation-equivalence failure—not for a different API shape or internal
+  policy. Keep its timing visible, emit the reason, and recheck the decision after any package update.
 - Run `bun run bench:matrix --smoke` for a short comparison. Set `UUID_SLUG_BENCH_RUNTIMES` to
   colon-separated executable paths to add runtimes. Each requested runtime must produce both reports.
 - `UUID_SLUG_BENCH_ITERATIONS` and `UUID_SLUG_ENTROPY_SAMPLES` accept positive safe integers.
