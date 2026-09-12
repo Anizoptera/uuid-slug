@@ -216,7 +216,8 @@ protection, and no default or fallback may select it.
 - [x] Keep synchronous and cooperative derivation as separate contracts. Boundary profiles showed
   the cooperative path schedules no host task below its measured deadline and yields by elapsed work,
   while a size threshold would misclassify the same workload across runtimes.
-- [ ] Falsify current 256-call batches against geometric batch sizes for clock cost and event-loop blocking.
+- [x] Keep 256-call profiler batches. Geometric 1–2048-call profiles showed smaller batches expose
+  clock domination, while 2048 crossed the 4 ms blocking boundary on every runtime's slow route.
 - [ ] Falsify fixed warm-up against geometric warm-up durations using identical-code comparisons.
 - [x] Reject a duplicated fixed-eight-byte scalar HalfSipHash path: it improved Bun masking by 2–4%,
   stayed within noise on Node and Deno, and regressed Chromium built-in masking by 8.7–19.9%.

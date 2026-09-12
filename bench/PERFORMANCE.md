@@ -547,6 +547,20 @@ The extra dispatch moved JIT cost among pool consumers instead of reducing the s
 
 ## Allocation and key rotation
 
+### Profiler batch size
+
+Keep 256 calls per timed batch. A geometric study on 2026-09-12 held the operation, warm-up,
+five-millisecond sample, sink, and seven samples fixed while varying 1, 4, 16, 64, 256, 1024,
+and 2048 calls on Node 24.20.0, Bun 1.4.1, Deno 2.9.6, and Chromium 152. It covered a prepared-string
+control, ordinary UUID-to-slug conversion, and a 16-key last-hit decode.
+
+Batches of 1–16 made clock and loop cost dominate the control. Sizes 64–1024 gave similar operation
+throughput, but 256 kept the slow route below 0.95 ms per batch on every runtime. At 2048, that route
+blocked for 4.34–6.03 ms and stretched a nominal five-millisecond sample to 8.24–9.02 ms. A configurable
+batch-size surface was rejected because it would let unrelated runs silently use incomparable harnesses;
+retest the fixed value if a representative operation exceeds one millisecond per batch or clock cost
+becomes material at 256.
+
 ### Profiler capture boundary
 
 Corpus construction, outcome verification, case selection, and warm-up finish before native CPU and
