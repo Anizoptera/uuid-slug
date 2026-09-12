@@ -23,15 +23,26 @@ export interface UuidV7GeneratorOptions {
 
 /**
  * Create an independent UUIDv7 sequence with a caller-supplied clock and platform randomness.
- * Invalid JavaScript options throw `TypeError`; clock and entropy failures are returned by methods.
+ * Untyped calls with invalid options return `UuidSlugError`; valid TypeScript calls create the
+ * generator directly. Clock and entropy failures are returned by generator methods.
  *
  * @param options - Clock used by this independent UUIDv7 sequence.
- * @throws `TypeError` if `options` is not an object or `clock` is not a function.
+ * @returns An independent generator.
  */
-export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator {
+export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator;
+export function createUuidV7Generator(
+  options: UuidV7GeneratorOptions,
+): UuidV7Generator | UuidSlugError {
   if (options === null || typeof options !== "object" || Array.isArray(options))
-    throw new TypeError("Generator options must be an object.");
-  const clock = options.clock;
+    return new UuidSlugError("invalid_options", "Generator options must be an object.");
+  let clock: UuidV7GeneratorOptions["clock"];
+  try {
+    clock = options.clock;
+  } catch (cause) {
+    return new UuidSlugError("invalid_options", "Reading generator options failed.", { cause });
+  }
+  if (clock !== undefined && typeof clock !== "function")
+    return new UuidSlugError("invalid_options", "Generator clock must be a function.");
   return createPortableUuidV7Generator({
     ...(clock === undefined ? {} : { clock }),
     fillRandom: runtime.fillRandom,

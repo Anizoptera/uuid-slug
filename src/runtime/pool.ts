@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import { randomFailure } from "../errors";
+import type { UuidSlugError } from "../errors";
+
 /**
  * Draws cryptographic randomness a page at a time instead of per id.
  *
@@ -24,8 +27,8 @@ const POOL_BYTES = 8192;
  * POSIX `fork` that copies the heap, where parent and child would issue identical bytes.
  */
 export function pooledFill(
-  fill: (into: Uint8Array<ArrayBuffer>) => void,
-): (bytes: Uint8Array<ArrayBuffer>) => void {
+  fill: (into: Uint8Array<ArrayBuffer>) => unknown,
+): (bytes: Uint8Array<ArrayBuffer>) => undefined | UuidSlugError {
   const pool = new Uint8Array(POOL_BYTES);
   // STARTS EMPTY, and must. Pre-filling here would move the first call's syscall off the hot path,
   // which looks like a free win and is the one change that breaks heap-snapshot safety: a snapshot
@@ -39,11 +42,11 @@ export function pooledFill(
     const { length } = bytes;
     // A request larger than the pool would refill for a single use; serve it directly instead.
     if (length > POOL_BYTES) {
-      fill(bytes);
-      return;
+      return randomFailure(fill(bytes));
     }
     if (offset + length > POOL_BYTES) {
-      fill(pool);
+      const failed = randomFailure(fill(pool));
+      if (failed) return failed;
       offset = 0;
     }
     // Copy and erase in one pass; `subarray` plus `set` would allocate a view per call.
@@ -52,5 +55,6 @@ export function pooledFill(
       pool[offset + i] = 0;
     }
     offset += length;
+    return undefined;
   };
 }

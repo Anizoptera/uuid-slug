@@ -58,39 +58,44 @@ The npm package remains TypeScript/JavaScript-only.
 import {
   createUuidV7SlugCodec,
   generateUuidV7Bytes,
-  unwrapUuidSlug,
 } from "@anizoptera/uuid-slug";
 
-const seed = process.env.ID_MASK_SEED;
-if (!seed) throw new Error("Set ID_MASK_SEED to a stable, randomly generated secret.");
+function createPublicId(seed: string) {
+  // Reuse the codec in real code: the seed is expanded once, at construction.
+  const ids = createUuidV7SlugCodec({ mask: { seed } });
+  if (ids instanceof Error) return ids;
 
-// Reuse the codec: the seed is expanded once, at construction.
-const ids = unwrapUuidSlug(createUuidV7SlugCodec({ mask: { seed } }));
-
-const publicId = unwrapUuidSlug(ids.generateSlug());
-const uuid = unwrapUuidSlug(ids.decodeSlug(publicId));
-// Look up uuid in your store and apply the caller's authorization policy.
+  const publicId = ids.generateSlug();
+  if (publicId instanceof Error) return publicId;
+  return { ids, publicId };
+}
 ```
 
 Keep binary database keys binary across the same codec seam:
 
 ```ts
-const inputBytes = unwrapUuidSlug(generateUuidV7Bytes());
-const publicId = unwrapUuidSlug(ids.encodeUuid(inputBytes));
-const decodedBytes = unwrapUuidSlug(ids.decodeSlugToBytes(publicId));
+const inputBytes = generateUuidV7Bytes();
+if (inputBytes instanceof Error) return inputBytes;
+const publicId = ids.encodeUuid(inputBytes);
+if (publicId instanceof Error) return publicId;
+const decodedBytes = ids.decodeSlugToBytes(publicId);
+if (decodedBytes instanceof Error) return decodedBytes;
 ```
 
 Convert canonical UUID text and binary storage with names that state the direction:
 
 ```ts
-import { bytesToUuid, unwrapUuidSlug, uuidToBytes } from "@anizoptera/uuid-slug";
+import { bytesToUuid, uuidToBytes } from "@anizoptera/uuid-slug";
 
-const bytes = unwrapUuidSlug(uuidToBytes("01990d4d-e600-7000-8000-000000000000"));
-const uuid = unwrapUuidSlug(bytesToUuid(bytes));
+const bytes = uuidToBytes("01990d4d-e600-7000-8000-000000000000");
+if (bytes instanceof Error) return bytes;
+const uuid = bytesToUuid(bytes);
+if (uuid instanceof Error) return uuid;
 
 // Convert atomically into storage you already own.
 const record = new Uint8Array(32);
-unwrapUuidSlug(uuidToBytes(uuid, record, 8));
+const written = uuidToBytes(uuid, record, 8);
+if (written instanceof Error) return written;
 ```
 
 `uuidToBytes` accepts one canonical lowercase UUID and either allocates a plain `Uint8Array` or
@@ -186,7 +191,8 @@ const ids = createUuidV7SlugCodec({
   mask: { seed },
   sentinels: [{ name: "unknownUser", uuid: "00000000-0002-7000-8000-000000000000" }],
 });
-const codec = unwrapUuidSlug(ids);
+if (ids instanceof Error) return ids;
+const codec = ids;
 console.table(codec.sentinels);
 ```
 
@@ -222,11 +228,6 @@ return `T | UuidSlugError`. Use `isUuidSlugError` to narrow the union reliably a
 duplicate package copies. The guard recognizes the package's error name and code vocabulary; it
 classifies data and does not authenticate untrusted input. Codec construction returns the same
 union and requires an explicit mask.
-
-Use `unwrapUuidSlug(result)` when failure ends the current operation. It returns the exact success
-type and throws a local or cross-realm `UuidSlugError` unchanged, so the original code, message,
-stack, and cause remain available to an outer error boundary. Callers that can recover should keep
-the returned union and branch on its error instead.
 
 Use the error's `code` for handling and its `message` for diagnostics. `UuidSlugErrorCode` and
 `UUID_SLUG_ERROR_CODES` are the exported type and runtime list of codes. Errors wrapping failed
@@ -344,13 +345,12 @@ Also exported, all module-level:
   cancellation; `createCustomUuidV7Mask` adapts separate forward and reverse callbacks.
   `UUID_V7_TEST_MASK` is the explicit, published-key choice for deterministic examples.
 - `createUuidV7Generator(options)` builds a full generator with your `clock` and the package's
-  platform cryptographic entropy. Its options type is `UuidV7GeneratorOptions`. Construction throws
-  `TypeError` when the clock is not a function. Generation returns `rng_unavailable` when secure
+  platform cryptographic entropy. Its options type is `UuidV7GeneratorOptions`. Untyped malformed
+  options return `invalid_options`. Generation returns `rng_unavailable` when secure
   platform entropy is unavailable and never substitutes caller-controlled bytes.
 - `UuidSlugError`, including code `rng_unavailable` when the runtime has no usable randomness.
   `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes package errors across
-  JavaScript realms and duplicate package copies. `unwrapUuidSlug` opts a success-path call into
-  throwing that same error unchanged.
+  JavaScript realms and duplicate package copies.
 
 ### Codec options
 
@@ -389,7 +389,7 @@ const custom = createCustomUuidV7Mask({
     return output;
   },
 });
-if (custom instanceof Error) throw custom;
+if (custom instanceof Error) return custom;
 const ids = createUuidV7SlugCodec({ mask: custom });
 ```
 
@@ -408,9 +408,9 @@ const schema = await createUuidV7MaskAsync({
   keyDerivationIterations, // preserve the setting used for issued slugs
   signal: controller.signal, // optional; call controller.abort(reason) to stop
 });
-if (schema instanceof Error) throw schema;
+if (schema instanceof Error) return schema;
 const codec = createUuidV7SlugCodec({ mask: schema });
-if (codec instanceof Error) throw codec;
+if (codec instanceof Error) return codec;
 ```
 
 The async form derives the same keys and accepts the same seed settings. It splits encoding,
@@ -455,7 +455,7 @@ Create a migration reader from your codec. Enable only the old formats your appl
 ```ts
 const reader = ids.createMigrationDecoder({ originalMask: true, plainSlug: true });
 const uuid = reader.decodeSlug(incomingSlug);
-if (uuid instanceof Error) throw uuid;
+if (uuid instanceof Error) return uuid;
 // Look up uuid and check the caller's access to the record.
 ```
 
@@ -463,7 +463,7 @@ if (uuid instanceof Error) throw uuid;
 It does **not** accept the different masked format from package version 0.2.0.
 `plainSlug` accepts direct UUID slugs of any version, including old base64url spellings whose
 last four bits were ignored. Ordinary `slugToUuid` remains strict about those trailing bits.
-Both options must be booleans; malformed reader configuration throws `TypeError` at construction.
+Both options must be booleans; untyped malformed reader configuration returns `invalid_options`.
 Neither option changes generation, ordinary codec methods, keys or sentinels.
 
 `decodeSlug` returns one UUID or `UuidSlugError`: sentinels first, then current keys, then enabled
@@ -474,9 +474,9 @@ When you know the input format, name it to avoid trying unrelated formats:
 
 ```ts
 const uuid = reader.decodeSlug(oldSlug, "original-mask"); // "plain-slug" or "current-mask" also works
-if (uuid instanceof Error) throw uuid;
+if (uuid instanceof Error) return uuid;
 const replacement = ids.encodeUuid(uuid);
-if (replacement instanceof Error) throw replacement;
+if (replacement instanceof Error) return replacement;
 // Keep uuid in the database; use replacement in new links.
 ```
 
@@ -489,10 +489,11 @@ For unknown formats, use `decodeSlugCandidates` to find the matching record with
 
 ```ts
 const candidates = reader.decodeSlugCandidates(incomingSlug);
-if (candidates instanceof Error) throw candidates;
+if (candidates instanceof Error) return candidates;
 const matches = candidates.length ? await findRecordsByUuids(candidates) : [];
-if (matches.length === 0) throw new Error("ID not found");
-if (matches.length !== 1) throw new Error("ID matches multiple records; supply its original format");
+if (matches.length === 0) return new Error("ID not found");
+if (matches.length !== 1)
+  return new Error("ID matches multiple records; supply its original format");
 const record = matches[0];
 // Check access to record before returning it.
 ```

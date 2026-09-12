@@ -649,29 +649,14 @@ export function createProfileCases(
         mask: () => new Uint8Array(15),
         unmask: (input) => input,
       }),
-    "invalid.construct.generator": () => {
-      try {
-        return Reflect.apply(api.createUuidV7Generator, undefined, [null]);
-      } catch (cause) {
-        if (!(cause instanceof Error)) throw cause;
-        return cause;
-      }
-    },
+    "invalid.construct.generator": () =>
+      Reflect.apply(api.createUuidV7Generator, undefined, [null]),
     "invalid.construct.codec.sentinel": () =>
       api.createUuidV7SlugCodec({
         mask: current,
         sentinels: [sentinelDefinitions[0]!, { ...sentinelDefinitions[1]!, name: "sentinel-0" }],
       }),
     "error.classify": () => api.isUuidSlugError(api.uuidToBytes(badUuid)),
-    "error.unwrap.success": (index) => api.unwrapUuidSlug(bytes[index & 255] as Uint8Array),
-    "invalid.error.unwrap": () => {
-      try {
-        return api.unwrapUuidSlug(api.uuidToBytes(badUuid));
-      } catch (cause) {
-        if (!(cause instanceof Error)) throw cause;
-        return cause;
-      }
-    },
     "construct.codec": () => api.createUuidV7SlugCodec({ mask: current }),
     "construct.schema": () => api.createUuidV7Mask(current),
     "construct.schema.bytes": () =>

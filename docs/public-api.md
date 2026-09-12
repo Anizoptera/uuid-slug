@@ -133,8 +133,8 @@ Keep UUID text/binary conversion directional and version-neutral:
 
 ## Failures and effects
 
-- Return `UuidSlugError` for expected data, entropy, clock, configuration, and injected-callback
-  failures. Reserve thrown exceptions for programmer errors that the declared interface excludes.
+- Return `UuidSlugError` for every caller-caused or recoverable failure. Package-owned interfaces
+  carry failures as values; adapt and contain exception-based dependencies at their boundary.
 - Keep one error class with stable, actionable codes. Codes guide different recovery actions without
   multiplying runtime types; do not publish subclasses or operation-specific error-code generics
   when they add no data or behavior and would make a newly reachable code a source break. Validate
@@ -143,9 +143,6 @@ Keep UUID text/binary conversion directional and version-neutral:
 - Classify sentinel-list shape and name identity as `invalid_sentinel`. Keep malformed UUID text as
   `invalid_uuid`, a wrong UUID version as `invalid_uuid_version`, and duplicate UUID compatibility
   unchanged; these failures require different caller repairs.
-- Provide one opt-in helper that returns the exact success type and throws a recognized package
-  error unchanged. Keep the underlying operations as errors-as-values so recoverable callers retain
-  explicit control; do not duplicate every operation into a throwing interface.
 - Make validation and conversion deterministic and side-effect free. Generation may consume
   entropy and advance its owned sequence state; failed operations must not publish partial output
   or corrupt the next attempt.
@@ -204,8 +201,8 @@ export without reconstructing its contract from implementation code.
   ordering, security limits, and error behavior at the declaration where a caller encounters them.
 - Write in public tokens and plain language. Link to a detailed owner when the full mechanism is too
   large, but keep the decision-relevant reason inline.
-- Document every configuration property at that property. Use `@defaultValue`, `@returns`,
-  `@throws`, and `@remarks` only when the tag makes editor help clearer than plain prose; a tag that
+- Document every configuration property at that property. Use `@defaultValue`, `@returns`, and
+  `@remarks` only when the tag makes editor help clearer than plain prose; a tag that
   repeats the declaration is noise.
 - Review each changed comment in the built declarations against its declaration and owning
   contract; comment presence does not prove accuracy.

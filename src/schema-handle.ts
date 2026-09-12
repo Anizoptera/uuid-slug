@@ -45,7 +45,11 @@ export function applyMaskSchema(
   direction: "mask" | "unmask",
 ): undefined | UuidSlugError {
   const protocol = schemaProtocol(schema);
-  if (!protocol) throw new TypeError("Mask schema handle is invalid or incompatible.");
+  if (!protocol)
+    return new UuidSlugError(
+      "invalid_mask_schema",
+      "Mask schema handle is invalid or incompatible.",
+    );
   return protocol.mix(input, output, direction);
 }
 

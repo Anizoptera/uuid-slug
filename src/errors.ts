@@ -6,6 +6,7 @@ const ERROR_CODES = [
   "invalid_base64url",
   "invalid_buffer",
   "invalid_mask_schema",
+  "invalid_options",
   "invalid_sentinel",
   "invalid_timestamp",
   "invalid_uuid",
@@ -67,18 +68,6 @@ export function isUuidSlugError(value: unknown): value is UuidSlugError {
   }
 }
 
-/**
- * Return the success value, or throw a recognized `UuidSlugError` unchanged.
- * Use this only when the caller cannot recover locally; otherwise branch with `isUuidSlugError`.
- *
- * @param value - Package result to unwrap.
- * @throws The same `UuidSlugError` when `value` is an expected package failure.
- */
-export function unwrapUuidSlug<Value>(value: Value): Exclude<Value, UuidSlugError> {
-  if (isUuidSlugError(value)) throw value;
-  return value as Exclude<Value, UuidSlugError>;
-}
-
 /** Use fast local identity, then an unspoofable intrinsic brand for cross-realm Uint8Array values. */
 export function isUint8Array(value: unknown): value is Uint8Array {
   return (
@@ -131,13 +120,19 @@ export function checkByteRange(
 }
 
 /** Preserve failures from an injected or platform entropy source without changing successful draws. */
+export const randomFailure = (value: unknown): undefined | UuidSlugError => {
+  if (value instanceof UuidSlugError) return value;
+  return value instanceof Error
+    ? new UuidSlugError("rng_unavailable", "Random byte generation failed.", { cause: value })
+    : undefined;
+};
+
 export function fillRandomBytes(
-  fill: (bytes: Uint8Array<ArrayBuffer>) => void,
+  fill: (bytes: Uint8Array<ArrayBuffer>) => unknown,
   bytes: Uint8Array<ArrayBuffer>,
 ): undefined | UuidSlugError {
   try {
-    fill(bytes);
-    return undefined;
+    return randomFailure(fill(bytes));
   } catch (cause) {
     return new UuidSlugError("rng_unavailable", "Random byte generation failed.", { cause });
   }

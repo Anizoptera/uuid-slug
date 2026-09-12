@@ -12,7 +12,6 @@ import {
   slugToBytes,
   UUID_V7_TEST_MASK,
   slugToUuid,
-  unwrapUuidSlug,
   generateUuidV4,
   validateUuidV7SlugTimestamp,
   validateUuidV7Timestamp,
@@ -68,7 +67,6 @@ declare const generator: UuidV7Generator;
 // The emitted declarations must infer strict brands without requiring branded inputs.
 const plainResult = generateUuidV7Slug();
 expectType<UuidV7Slug | UuidSlugError>()(plainResult);
-const unwrappedPlain: UuidV7Slug = unwrapUuidSlug(plainResult);
 if (plainResult instanceof Error) throw plainResult;
 const plainSlug: UuidV7Slug = plainResult;
 // @ts-expect-error Unchecked bytes are not a validated UUID payload.
@@ -143,7 +141,9 @@ if (ownedV4 instanceof Error) throw ownedV4;
 if (ownedV7 instanceof Error) throw ownedV7;
 // @ts-expect-error A known UUIDv4 has no UUIDv7 timestamp.
 extractUuidV7Timestamp(ownedV4);
-const generatedV4 = unwrapUuidSlug(generateUuidV4());
+const generatedV4Result = generateUuidV4();
+if (generatedV4Result instanceof Error) throw generatedV4Result;
+const generatedV4 = generatedV4Result;
 // @ts-expect-error UUIDv7 timestamp validation is undefined for a known UUIDv4.
 validateUuidV7Timestamp(generatedV4, { maxTimestampDeltaMs: 0 });
 expectType<(UuidV7String & "019ff19b-58b8-7000-9b1b-df713bd5562c") | UuidSlugError>()(
@@ -151,7 +151,9 @@ expectType<(UuidV7String & "019ff19b-58b8-7000-9b1b-df713bd5562c") | UuidSlugErr
     maxTimestampDeltaMs: 0,
   }),
 );
-const generatedV4Slug = unwrapUuidSlug(generateUuidV4Slug());
+const generatedV4SlugResult = generateUuidV4Slug();
+if (generatedV4SlugResult instanceof Error) throw generatedV4SlugResult;
+const generatedV4Slug = generatedV4SlugResult;
 // @ts-expect-error UUIDv7 timestamp validation is undefined for a known UUIDv4 slug.
 validateUuidV7SlugTimestamp(generatedV4Slug, { maxTimestampDeltaMs: 0 });
 expectType<(UuidV7Slug & "AZ_xnLf5cACbG99xO9VWLAAAAAAAAAAAAAAAAA") | UuidSlugError>()(
@@ -228,10 +230,12 @@ createUuidV7SlugCodec({
   // @ts-expect-error Codec generation always uses the package's cryptographic runtime source.
   generateUuidV7Bytes: () => new Uint8Array(16),
 });
-const migration: UuidSlugMigrationDecoder = codec.createMigrationDecoder({
+const migrationResult = codec.createMigrationDecoder({
   originalMask: true,
   plainSlug: true,
 });
+if (migrationResult instanceof Error) throw migrationResult;
+const migration: UuidSlugMigrationDecoder = migrationResult;
 // @ts-expect-error Migration readers accept encoded slug text, not known UUID text.
 migration.decodeSlug(checkedUuid);
 // @ts-expect-error Candidate discovery accepts encoded slug text, not known UUID text.
@@ -242,10 +246,12 @@ const candidates: UuidString[] | UuidSlugError = migration.decodeSlugCandidates(
   "original-mask",
 );
 const plainOnlyMigration = codec.createMigrationDecoder({ plainSlug: true });
+if (plainOnlyMigration instanceof Error) throw plainOnlyMigration;
 plainOnlyMigration.decodeSlug("AAAAAAAAcACAAAAAAAAAAA", "plain-slug");
 // @ts-expect-error This reader was not configured to accept the original masked format.
 plainOnlyMigration.decodeSlug("AAAAAAAAcACAAAAAAAAAAA", "original-mask");
 const currentOnlyMigration = codec.createMigrationDecoder();
+if (currentOnlyMigration instanceof Error) throw currentOnlyMigration;
 // @ts-expect-error A current-only reader cannot select a disabled historical format.
 currentOnlyMigration.decodeSlug("AAAAAAAAcACAAAAAAAAAAA", "plain-slug");
 void [
@@ -275,7 +281,6 @@ void [
   decodedMaskedInto,
   checkedBinary,
   checkedV4Binary,
-  unwrappedPlain,
 ];
 const publicSlugResult = codec.generateSlug();
 expectType<UuidV7CodecSlug | UuidSlugError>()(publicSlugResult);

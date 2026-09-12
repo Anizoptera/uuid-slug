@@ -78,9 +78,8 @@ export const runtimeBoundaryCases = [
     run(this: void) {
       const originalFill = runtime.fillRandom;
       const cause = new Error("platform entropy unavailable");
-      runtime.fillRandom = () => {
-        throw cause;
-      };
+      runtime.fillRandom = () =>
+        new UuidSlugError("rng_unavailable", "platform entropy unavailable", { cause });
       const out = new Uint8Array(24).fill(0xa5);
       try {
         const generator = createSecureUuidV7Generator({ clock: () => timestamp });
@@ -203,7 +202,10 @@ export const runtimeBoundaryCases = [
       }
 
       const generator = createRuntimeGenerator({
-        fillRandom: (bytes) => bytes.fill(0x12),
+        fillRandom: (bytes) => {
+          bytes.fill(0x12);
+          return undefined;
+        },
         uuidV7: () => "not-a-uuid",
       });
       assert.equal(isUuidV7String(generator.generateUuidV7()), true);
@@ -500,26 +502,24 @@ export const runtimeBoundaryCases = [
     },
   },
   {
-    name: "rejects malformed portable generator configuration",
+    name: "returns errors for malformed public generator configuration",
     run(this: void) {
-      for (const options of [null, 1, "generator", [], {}, { fillRandom: 1 }]) {
-        assert.throws(() => Reflect.apply(createUuidV7Generator, undefined, [options]), TypeError);
+      for (const options of [null, 1, "generator", [], { clock: 1 }]) {
+        const result = Reflect.apply(createSecureUuidV7Generator, undefined, [options]);
+        assert.ok(result instanceof UuidSlugError);
+        assert.equal(result.code, "invalid_options");
       }
-      for (const property of ["clock", "fillRandom"] as const) {
-        const cause = new Error(`${property} getter failed`);
-        const options = Object.defineProperty(
-          { fillRandom: (bytes: Uint8Array) => bytes.fill(0) },
-          property,
-          {
-            get() {
-              throw cause;
-            },
+      for (const property of ["clock"] as const) {
+        const cause = new Error("clock getter failed");
+        const options = Object.defineProperty({}, property, {
+          get() {
+            throw cause;
           },
-        );
-        assert.throws(
-          () => Reflect.apply(createUuidV7Generator, undefined, [options]),
-          (error: unknown) => error === cause,
-        );
+        });
+        const result = Reflect.apply(createSecureUuidV7Generator, undefined, [options]);
+        assert.ok(result instanceof UuidSlugError);
+        assert.equal(result.code, "invalid_options");
+        assert.equal(result.cause, cause);
       }
     },
   },

@@ -9,24 +9,18 @@ const utf8Encoder = new TextEncoder();
 /** Reuse the platform encoder because schema construction owns no state that requires a fresh instance. */
 export const encodeUtf8 = (text: string): Uint8Array => utf8Encoder.encode(text);
 
-/**
- * Resolve Web Crypto per draw so instrumentation installed after import can observe the source.
- * Binding it at module load would bypass `test/instrument.ts` and hide those calls from the gate.
- */
-function cryptoObject(): Crypto {
-  const value = globalThis.crypto;
-  if (!value?.getRandomValues)
-    throw new UuidSlugError("rng_unavailable", "Web Crypto getRandomValues is unavailable.");
-  return value;
-}
-
 const runtimeCapabilities: Runtime = {
   /**
    * Pooled for the same reason as Node's: `getRandomValues` costs far more per call than per
    * byte, and a v7 id needs 16. Bun draws this path too, where pooling measured 16x.
    */
   fillRandom: pooledFill((into) => {
-    cryptoObject().getRandomValues(into);
+    // Resolve per draw so instrumentation installed after import observes the source.
+    const crypto = globalThis.crypto;
+    if (!crypto?.getRandomValues)
+      return new UuidSlugError("rng_unavailable", "Web Crypto getRandomValues is unavailable.");
+    crypto.getRandomValues(into);
+    return undefined;
   }),
 };
 
@@ -48,6 +42,6 @@ const runtimeCapabilities: Runtime = {
  * secure context, the check describes every context.
  */
 if ((globalThis.crypto as Partial<Crypto> | undefined)?.randomUUID)
-  runtimeCapabilities.uuidV4 = () => cryptoObject().randomUUID();
+  runtimeCapabilities.uuidV4 = () => globalThis.crypto.randomUUID();
 
 export const runtime: Runtime = runtimeCapabilities;

@@ -20,7 +20,6 @@ export interface Alphabet {
 
 function alphabet(name: string, chars: string, code: UuidSlugErrorCode): Alphabet {
   const bitsPerChar = Math.log2(chars.length);
-  if (!Number.isInteger(bitsPerChar)) throw new Error(`${name} alphabet must be a power of two.`);
   const decode = new Int16Array(128).fill(-1);
   for (let i = 0; i < chars.length; i += 1) decode[chars.charCodeAt(i)] = i;
   return {

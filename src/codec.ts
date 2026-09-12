@@ -362,7 +362,10 @@ function buildUuidSlugCodec(
 
   function createMigrationDecoder<const Options extends UuidSlugMigrationOptions = {}>(
     migrationOptions?: Options,
-  ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>> {
+  ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
+  function createMigrationDecoder<const Options extends UuidSlugMigrationOptions = {}>(
+    migrationOptions?: Options,
+  ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>> | UuidSlugError {
     return createMigration([schema, ...previousMasks], sentinels.bySlug, migrationOptions);
   }
 

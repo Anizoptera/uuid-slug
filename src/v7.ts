@@ -16,8 +16,8 @@ import type { Runtime } from "./runtime/types";
 export interface PortableUuidV7GeneratorOptions {
   /** Return Unix milliseconds; finite fractional readings are truncated. Defaults to `Date.now`. */
   readonly clock?: () => number;
-  /** Fill every byte or throw; generation returns the thrown value as an error cause. */
-  readonly fillRandom: (bytes: Uint8Array<ArrayBuffer>) => void;
+  /** Fill every byte. Returned or thrown failures are contained by generation. */
+  readonly fillRandom: (bytes: Uint8Array<ArrayBuffer>) => unknown;
 }
 
 function writeTimestampWords(bytes: Uint8Array, ms: number, offset: number) {
@@ -116,18 +116,14 @@ const seedLo = (bytes: Uint8Array) =>
   0;
 
 /**
- * Create a stateful UUIDv7 generator. Malformed option shapes throw `TypeError`; clock and entropy
- * failures return `UuidSlugError`, and reentrant calls fail without changing sequence state.
+ * Create a stateful UUIDv7 generator from package-owned, statically checked dependencies.
+ * Clock and entropy failures return `UuidSlugError`; reentrant calls preserve sequence state.
  */
 export function createPortableUuidV7Generator(
   options: PortableUuidV7GeneratorOptions,
 ): UuidV7Generator {
-  if (typeof options !== "object" || options === null || Array.isArray(options))
-    throw new TypeError("Generator options must be an object.");
   const clock = options.clock ?? Date.now;
   const fill = options.fillRandom;
-  if (typeof clock !== "function") throw new TypeError("Generator clock must be a function.");
-  if (typeof fill !== "function") throw new TypeError("Generator fillRandom must be a function.");
   // The sequence seed consumes six bytes and the UUID tail consumes four. Drawing a full UUID
   // block would copy six bytes that version, variant, timestamp, and sequence fields replace.
   const random = new Uint8Array(10);

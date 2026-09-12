@@ -67,13 +67,16 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   Bun and development load published TypeScript; Node keeps its native-runtime build.
 - Public docs use caller-facing tokens such as `"base32hex"`, not internal symbol names.
   Documentation-alignment gates are ruled out; test the API behavior instead.
+- Return `UuidSlugError` for every caller-caused or recoverable failure. Never add a throwing
+  convenience API. Package-owned interfaces carry failures as values; adapt and contain
+  exception-based dependencies at their boundary.
 - Give every root export, overload family, public type, interface, property, method, option, and
   callback consumer-facing JSDoc in its owning source. Explain what changes the caller's decision:
   valid input, defaults, result and ownership, expected errors or effects, ordering, important
   limits, and realistic misuse. Equivalent operations MUST document equivalent facts with the same
   terms, TSDoc fields, and order; vary the wording only where their contracts differ. Document every
   configuration property at that property. Use the representation that serves each consumer: TSDoc
-  `@param`, `@defaultValue`, `@returns`, `@throws`, or short `@remarks` where structured editor help
+  `@param`, `@defaultValue`, `@returns`, or short `@remarks` where structured editor help
   adds information; prose, examples, or tables where they explain a workflow better. Never add tags
   to restate the signature. Omit facts already clear from the type.
   Non-public declarations may use TSDoc when editor help benefits maintainers.

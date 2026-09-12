@@ -319,7 +319,8 @@ export interface UuidV7SlugCodec {
   readonly sentinels: readonly UuidV7Sentinel[];
   /**
    * Create a reader for current and explicitly enabled old formats without changing this codec.
-   * Invalid JavaScript option shapes throw `TypeError`; decode failures return `UuidSlugError`.
+   * Untyped calls with invalid options return `UuidSlugError`; decode failures return it from the
+   * reader. Valid TypeScript options create the reader directly.
    *
    * @param options - Old formats this application has actually issued. Omit for current formats only.
    */

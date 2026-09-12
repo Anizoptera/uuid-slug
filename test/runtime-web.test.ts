@@ -34,6 +34,12 @@ afterEach(() => {
 });
 
 describe("web runtime capability probe", () => {
+  it("returns rng_unavailable when Web Crypto entropy is absent", async () => {
+    const runtime = await adapterWith(undefined);
+    const failure = runtime.fillRandom(new Uint8Array(16));
+    expect(failure).toMatchObject({ code: "rng_unavailable" });
+  });
+
   it("leaves uuidV4 undefined when the page has getRandomValues but not randomUUID", async () => {
     const runtime = await adapterWith({ getRandomValues: fill });
     expect(runtime.uuidV4).toBeUndefined();

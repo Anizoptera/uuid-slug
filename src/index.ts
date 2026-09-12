@@ -5,7 +5,7 @@ export {
   validateUuidV7Timestamp,
   validateUuidV7SlugTimestamp,
 } from "./codec";
-export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError, unwrapUuidSlug } from "./errors";
+export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError } from "./errors";
 /** Export the code type so consumers can write exhaustive handlers without copying its literals. */
 export type { UuidSlugErrorCode } from "./errors";
 export { UUID_V7_TEST_MASK, createUuidV7Mask, createUuidV7MaskAsync } from "./schema";

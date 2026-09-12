@@ -34,6 +34,7 @@ const nodeRuntime: Runtime = {
    */
   fillRandom: pooledFill((into) => {
     crypto.randomFillSync(into);
+    return undefined;
   }),
   uuidV4() {
     return crypto.randomUUID();

@@ -9,16 +9,10 @@ function equal(actual: unknown, expected: unknown, context: string): void {
 
 /** Exercise public calls through the module supplied by the consumer's own resolver. */
 export async function probeConsumer(api: typeof Api): Promise<void> {
-  equal(api.unwrapUuidSlug(api.generateUuidV7()).length, 36, "public success-value helper");
+  equal(unwrap(api.generateUuidV7()).length, 36, "public UUIDv7 generation");
   const invalidUuid = api.uuidToBytes("not a UUID");
-  let thrown: unknown;
-  try {
-    api.unwrapUuidSlug(invalidUuid);
-  } catch (error) {
-    thrown = error;
-  }
-  equal(thrown, invalidUuid, "public success-value helper failure identity");
-  const backfill = api.createUuidV7Generator({});
+  equal(invalidUuid instanceof Error && invalidUuid.code, "invalid_uuid", "error value");
+  const backfill = unwrap(api.createUuidV7Generator({}));
   const destination = new Uint8Array(20).fill(0x55);
   const generators = [
     (ms: number) => api.generateUuidV7At(ms),
@@ -60,14 +54,14 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     const slug = api.uuidToSlug(uuid, alphabet);
     if (slug instanceof Error) throw slug;
     equal(api.slugToUuid(slug), uuid, `${alphabet} conversion`);
-    const generator = api.createUuidV7Generator({ clock: () => 1234567890000 });
+    const generator = unwrap(api.createUuidV7Generator({ clock: () => 1234567890000 }));
     const codec = unwrap(
       api.createUuidV7SlugCodec({
         mask: api.UUID_V7_TEST_MASK,
       }),
     );
     equal(
-      codec.createMigrationDecoder({ plainSlug: true }).decodeSlug(slug, "plain-slug"),
+      unwrap(codec.createMigrationDecoder({ plainSlug: true })).decodeSlug(slug, "plain-slug"),
       uuid,
       `${alphabet} migration`,
     );
@@ -115,7 +109,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   const codec = unwrap(api.createUuidV7SlugCodec({ mask: api.UUID_V7_TEST_MASK }));
   const { seed, slug: overlap, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
   const migrating = unwrap(api.createUuidV7SlugCodec({ mask: { seed } }));
-  const reader = migrating.createMigrationDecoder({ originalMask: true, plainSlug: true });
+  const reader = unwrap(migrating.createMigrationDecoder({ originalMask: true, plainSlug: true }));
   equal(reader.decodeSlug(overlap), currentUuid, "migration default");
   equal(reader.decodeSlug(overlap, "original-mask"), originalUuid, "original migration");
   equal(reader.decodeSlug(overlap, "plain-slug"), plainUuid, "plain migration");

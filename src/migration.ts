@@ -20,18 +20,24 @@ export function createMigration(
   schemas: readonly UuidV7Mask[],
   sentinels: ReadonlyMap<string, { uuid: UuidV7String }>,
   options?: UuidSlugMigrationOptions,
-): UuidSlugMigrationDecoder {
+): UuidSlugMigrationDecoder | UuidSlugError {
   if (
     options !== undefined &&
     (typeof options !== "object" || options === null || Array.isArray(options))
   )
-    throw new TypeError("Migration options must be an object.");
-  const originalOption = options?.originalMask;
-  const plainOption = options?.plainSlug;
+    return new UuidSlugError("invalid_options", "Migration options must be an object.");
+  let originalOption: boolean | undefined;
+  let plainOption: boolean | undefined;
+  try {
+    originalOption = options?.originalMask;
+    plainOption = options?.plainSlug;
+  } catch (cause) {
+    return new UuidSlugError("invalid_options", "Reading migration options failed.", { cause });
+  }
   if (originalOption !== undefined && typeof originalOption !== "boolean")
-    throw new TypeError("Migration originalMask option must be a boolean.");
+    return new UuidSlugError("invalid_options", "Migration originalMask option must be a boolean.");
   if (plainOption !== undefined && typeof plainOption !== "boolean")
-    throw new TypeError("Migration plainSlug option must be a boolean.");
+    return new UuidSlugError("invalid_options", "Migration plainSlug option must be a boolean.");
   const original = originalOption === true;
   const plain = plainOption === true;
 

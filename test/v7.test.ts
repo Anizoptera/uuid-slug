@@ -237,8 +237,9 @@ describe("uuidv7 entropy use", () => {
     const generator = createUuidV7Generator({
       clock: fixedClock(10),
       fillRandom: (bytes) => {
-        if (fail) throw new Error("entropy unavailable");
+        if (fail) return new Error("entropy unavailable");
         bytes.fill(byte);
+        return undefined;
       },
     });
     const control = createUuidV7Generator({

@@ -57,6 +57,7 @@ declare const ERROR_CODES: readonly [
   "invalid_base64url",
   "invalid_buffer",
   "invalid_mask_schema",
+  "invalid_options",
   "invalid_sentinel",
   "invalid_timestamp",
   "invalid_uuid",
@@ -131,7 +132,6 @@ export declare function slugToBytes<Input extends string, Output extends Uint8Ar
 export declare function slugToUuid<Input extends string>(
   slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidString, UuidV4String, UuidV7String> | UuidSlugError;
-export declare function unwrapUuidSlug<Value>(value: Value): Exclude<Value, UuidSlugError>;
 export declare const UUID_SLUG_ALPHABETS: typeof ALPHABETS;
 export declare const UUID_SLUG_ERROR_CODES: typeof ERROR_CODES;
 export declare const UUID_SLUG_MIGRATION_FORMATS: typeof MIGRATION_FORMATS;

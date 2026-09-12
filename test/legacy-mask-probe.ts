@@ -7,6 +7,7 @@ import { decodeOriginalMask } from "../src/legacy-mask";
 import { decodeMaskedCandidates } from "../src/mask";
 import { applyMaskSchema, createCustomUuidV7Mask } from "../src/schema-handle";
 import { createUuidV7Mask, UUID_V7_TEST_MASK } from "../src/schema";
+import { UuidSlugError } from "../src/errors";
 import { bytesToUuid, slugToBytes, uuidToSlug } from "../src/uuid";
 import fixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
 import { unwrap } from "../dev/unwrap";
@@ -221,14 +222,14 @@ export const legacyMaskCases = [
       });
       fail = true;
       for (const result of [custom.decodeSlug(slug), custom.decodeSlugCandidates(slug)]) {
-        assert.ok(result instanceof Error);
+        assert.ok(result instanceof UuidSlugError);
         assert.equal(result.cause, cause);
       }
       assert.equal(custom.decodeSlug(slug, "plain-slug"), plainUuid);
     },
   },
   {
-    name: "migration rejects malformed reader configuration",
+    name: "migration returns errors for malformed reader configuration",
     run(this: void) {
       const codec = unwrap(createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }));
       for (const options of [
@@ -239,10 +240,9 @@ export const legacyMaskCases = [
         { originalMask: 1 },
         { plainSlug: "true" },
       ]) {
-        assert.throws(
-          () => Reflect.apply(codec.createMigrationDecoder, undefined, [options]),
-          TypeError,
-        );
+        const result = Reflect.apply(codec.createMigrationDecoder, undefined, [options]);
+        assert.ok(result instanceof UuidSlugError);
+        assert.equal(result.code, "invalid_options");
       }
       const cause = new Error("migration option getter failed");
       const options = Object.defineProperty({}, "plainSlug", {
@@ -250,10 +250,10 @@ export const legacyMaskCases = [
           throw cause;
         },
       });
-      assert.throws(
-        () => Reflect.apply(codec.createMigrationDecoder, undefined, [options]),
-        (error: unknown) => error === cause,
-      );
+      const result = Reflect.apply(codec.createMigrationDecoder, undefined, [options]);
+      assert.ok(result instanceof UuidSlugError);
+      assert.equal(result.code, "invalid_options");
+      assert.equal(result.cause, cause);
     },
   },
   {
