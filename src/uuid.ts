@@ -197,9 +197,10 @@ export function isUuidString(value: unknown): value is UuidString {
   return true;
 }
 
-/** The string has already passed canonical validation, so the variant digit is a known hex value. */
-function stringHasRfcVariant(uuid: string): boolean {
-  return (HEX_DECODE[uuid.charCodeAt(19)] as number) >>> 2 === 2;
+function hasUuidVersionAndVariant(value: unknown, version: "4" | "7"): value is string {
+  return (
+    typeof value === "string" && value[14] === version && hexValue(value.charCodeAt(19)) >>> 2 === 2
+  );
 }
 
 /** Encode validated canonical UUID text directly into its fixed 22-character base64url shape. */
@@ -246,12 +247,12 @@ function uuidStringToBase32hex(uuid: string): UuidSlug {
 
 /** Check canonical UUID text with version 4 and RFC variant bits. */
 export function isUuidV4String(value: unknown): value is UuidV4String {
-  return isUuidString(value) && value[14] === "4" && stringHasRfcVariant(value);
+  return hasUuidVersionAndVariant(value, "4") && isUuidString(value);
 }
 
 /** Check canonical UUID text with version 7 and RFC variant bits. */
 export function isUuidV7String(value: unknown): value is UuidV7String {
-  return isUuidString(value) && value[14] === "7" && stringHasRfcVariant(value);
+  return hasUuidVersionAndVariant(value, "7") && isUuidString(value);
 }
 
 /** Check for exactly 16 UUID bytes without assigning a version. */

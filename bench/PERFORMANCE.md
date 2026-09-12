@@ -900,6 +900,17 @@ no repeated change. The direct route allocates no byte buffer and shares byte ex
 byte-space comparison, and exact parser diagnostics with base64url. Reconsider it if a runtime adds
 native base32hex encoding.
 
+Versioned UUID guards reject a wrong version or RFC variant before scanning canonical syntax, then
+delegate the full grammar to `isUuidString`. Two packed primary-runtime replays on 2026-09-12 used
+prebuilt invalid values spanning early, middle, and late hex, hyphen, version, variant, and uppercase
+failures. The mixed invalid route took 63–64% of baseline on Node 26.8.2 and 72–75% on Bun 1.4.2;
+mixed valid v4/v7 intervals included no change. An eight-round all-runtime replay measured 72% on
+Chromium 153, 66% on Deno 2.9.6, and 55% on Node JITless, while every mixed-valid interval included
+no change. A fused specialized grammar pass also improved invalid values, but its clean primary
+replay was no faster than the precheck on Node and was slower on Bun. It duplicated the canonical
+syntax loop while mixed-valid intervals still included no change. Keep one grammar validator and
+the cheap version/variant precheck; reconsider only if valid-heavy traffic regresses on a later engine.
+
 Node v26.8.2 profiling combines process counters, `GCProfiler`, V8 heap/code/space state, Inspector
 CPU and allocation samples, heap snapshots, V8 ticks, and trace events. Each source answers a
 different question; correlation is evidence, while two APIs over the same V8 sampler are not

@@ -107,7 +107,7 @@ unless the maintainer separately changes the HLD.
   the frozen HalfSipHash byte stream. Compare synchronous and cooperative construction over
   geometric seed sizes; reject unless large-input resource savings justify the additional state
   machine and ordinary seeds remain unaffected.
-- [ ] Test a standalone specialized UUID validator rather than sharing parser control flow. Compare
+- [x] Test a standalone specialized UUID validator rather than sharing parser control flow. Compare
   valid values and invalid character/hyphen/version/variant positions under mixed workloads; reject
   unless both primary runtimes improve repeatedly without a second validation truth source.
 - [ ] Isolate Node's unresolved mixed-workload parser slowdown by varying only preceding operation
