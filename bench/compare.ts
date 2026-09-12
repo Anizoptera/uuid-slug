@@ -110,9 +110,9 @@ async function packArtifacts(root: string, outdir: string): Promise<ArtifactSet>
   };
 }
 
-async function buildHostDriver(outdir: string): Promise<string> {
+async function buildHostDriver(root: string, outdir: string): Promise<string> {
   const result = await Bun.build({
-    entrypoints: [join(import.meta.dir, "profile.ts")],
+    entrypoints: [join(root, "bench/profile.ts")],
     target: "node",
     outdir,
     naming: "host-profile.mjs",
@@ -122,6 +122,7 @@ async function buildHostDriver(outdir: string): Promise<string> {
 }
 
 async function buildBrowserDriver(
+  root: string,
   api: string,
   privateAlphabetApi: string,
   privateV4Api: string,
@@ -129,7 +130,7 @@ async function buildBrowserDriver(
   revision: Revision,
 ): Promise<string> {
   const result = await Bun.build({
-    entrypoints: [join(import.meta.dir, "profile-browser.ts")],
+    entrypoints: [join(root, "bench/profile-browser.ts")],
     target: "browser",
     outdir,
     naming: `${revision}-browser-profile.mjs`,
@@ -291,13 +292,15 @@ async function main(): Promise<void> {
     }
     const baselineOut = join(scratch, "baseline-artifacts");
     const candidateOut = join(scratch, "candidate-artifacts");
+    const driverRoot = baselineRoot;
     const [baseline, candidate, driver] = await Promise.all([
       packArtifacts(baselineRoot, baselineOut),
       packArtifacts(candidateRoot, candidateOut),
-      buildHostDriver(scratch),
+      buildHostDriver(driverRoot, scratch),
     ]);
     const [baselineBrowser, candidateBrowser] = await Promise.all([
       buildBrowserDriver(
+        driverRoot,
         baseline.api.chromium,
         baseline.privateAlphabetApi.chromium,
         baseline.privateV4Api.chromium,
@@ -305,6 +308,7 @@ async function main(): Promise<void> {
         "baseline",
       ),
       buildBrowserDriver(
+        driverRoot,
         candidate.api.chromium,
         candidate.privateAlphabetApi.chromium,
         candidate.privateV4Api.chromium,
