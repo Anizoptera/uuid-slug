@@ -120,7 +120,7 @@ unless the maintainer separately changes the HLD.
 - [x] Test a standalone specialized UUID validator rather than sharing parser control flow. Compare
   valid values and invalid character/hyphen/version/variant positions under mixed workloads; reject
   unless both primary runtimes improve repeatedly without a second validation truth source.
-- [ ] Isolate Node's unresolved mixed-workload parser slowdown by varying only preceding operation
+- [x] Isolate Node's unresolved mixed-workload parser slowdown by varying only preceding operation
   families and order. A product change requires a repeatable public workload mechanism, not a
   benchmark-order artifact; close the task if no code-shape candidate predicts and removes it.
 - [ ] Test a subarray-free offset byte-to-UUID formatter against native and portable formatting.

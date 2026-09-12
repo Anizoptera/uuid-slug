@@ -151,7 +151,16 @@ workloads, and they do not turn development bridges into npm distribution candid
   demand but measured about 2% slower on Bun's `v7.bytes` path, so it added a branch without a
   demonstrated consumer-path gain. Callbacks fill the supplied view and must not depend on its
   current length; revisit the internal draw size only with a measured end-to-end improvement.
-- Node's mixed-workload parser row regresses while isolated parsing improves. Restoring the exact baseline parser inside the current package measured about 93 ns for parsing and 74 ns for caller-owned parsing, versus 82/62 ns with the final parser. Direct lookup inlining and a combined sign check did not improve the mixed result and were discarded. This rules out restoring the old parser as a remedy; it does not identify the remaining JIT/workload cause. The mixed result remains disclosed, not relabelled as a speedup.
+- Node's earlier mixed-workload parser regression did not survive controlled order tests. Two
+  fresh-process replays on 2026-09-12 used Node 26.8.2 to compare `37f6258` with `2c5ba55` after
+  generation, formatting, decoding, valid and invalid guards, errors, construction, and reversed
+  two-family orders. No predecessor reproduced a candidate slowdown: repeated single-family median
+  ratios were 0.86–0.96. The empty
+  prefix and parse-before-guard controls changed direction between replays. Restoring the baseline
+  parser remained slower in the current package, while direct lookup inlining and a combined sign
+  check did not improve the old mixed row. Treat that row as benchmark-history evidence, not a
+  product mechanism. Reopen only when a public workload reproduces a slowdown twice and a code-shape
+  candidate predicts it.
 
 ### Rejected TypeScript hot-path shapes
 
