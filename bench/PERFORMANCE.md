@@ -115,6 +115,10 @@ put all masked median ratios within 3.3% of 1.0 under the same warm-up policy.
 - A fixed-eight-byte branch inside the shared hash skipped tail, continuation, and block-limit setup
   without changing its arguments or rounds. Two 24-round replays made major Node masking routes
   3–7% slower; Deno and Chromium also regressed, so one setup path remains.
+- A union-discriminated hash input passed Feistel's two message words as scalars and removed eight
+  typed-array stores per masked block. Two 24-round replays made Bun byte-decode routes 3–8% slower
+  and Chromium routes 9–21% slower. Keep the monomorphic typed-array input; retest scalar input only
+  through a distinct entry that does not make the general hash call polymorphic.
 - Fixed-offset expansion of the four-word check-tag loop produced no consistent runtime win. Selected
   masked routes regressed by up to 4.9% on Node, 8.2% on Deno, and 13.9% on Chrome.
 - Inlining both compression rounds removed the counted loop but duplicated its arithmetic. Two

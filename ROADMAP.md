@@ -26,6 +26,8 @@ protection, and no default or fallback may select it.
   Change one mechanism at a time; alternate baseline and candidate order.
 - Keep a change only when repeated measurements show a material win or remove proven wasted work
   without moving cost to another public path. Delete experimental code and generated profiles.
+- Record every rejected variant in `bench/PERFORMANCE.md`: name the changed mechanism, repeated
+  public-route result, rejection reason, and evidence that would justify retesting it.
 
 ## Work
 
@@ -78,7 +80,10 @@ protection, and no default or fallback may select it.
   repeatable Bun or Node gain, while straight-line duplication enlarged the hash core.
 - [x] Reject fixed-length dispatch inside the existing hash function: two packed 24-round replays
   reproduced 3–7% regressions across major Node masking routes.
-- [ ] Falsify scalar Feistel message arguments without duplicating hash rounds.
+- [x] Reject union-discriminated scalar Feistel message arguments: two packed 24-round replays
+  reproduced Bun and Chromium regressions because polymorphic hash dispatch outweighed removed stores.
+- [ ] Falsify a dedicated scalar hash entry over one shared round core; do not treat union dispatch
+  as evidence for its distinct JIT call shape.
 - [ ] Falsify `Int32Array` versus ordinary numeric scratch while preserving signed 32-bit coercion.
 - [ ] Falsify caller scratch versus module scratch versus closure-owned scratch for reentrancy and JIT locality.
 - [ ] Falsify indexed versus unrolled four-round Feistel traversal.
