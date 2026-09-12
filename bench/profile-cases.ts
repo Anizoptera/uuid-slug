@@ -5,7 +5,7 @@ type Api = typeof import("../src/index");
 type PrivateV4Api = Pick<typeof import("../src/v4"), "generatePortableUuidV4">;
 type PrivateAlphabetApi = Pick<
   typeof import("../src/alphabet"),
-  "BASE32HEX" | "BASE64URL" | "encodePortable"
+  "BASE32HEX" | "BASE64URL" | "decodeInto" | "encodePortable"
 >;
 export type ProfileValue = string | number | boolean | Uint8Array | Error | object;
 export type ProfileCase = (index: number) => ProfileValue;
@@ -144,6 +144,17 @@ export function createProfileCases(
   const rotation8 = rotationFixture(8);
   const rotation16 = rotationFixture(16);
   const into = new Uint8Array(24);
+  const portableDecodeInto = new Uint8Array(16);
+  if (privateAlphabetApi) {
+    for (const [value, alpha] of [
+      [slugs[0], privateAlphabetApi.BASE64URL],
+      [base32[0], privateAlphabetApi.BASE32HEX],
+    ] as const) {
+      const tail = privateAlphabetApi.decodeInto(value as string, alpha, portableDecodeInto, 0, 16);
+      if (tail !== 0 || portableDecodeInto.join(",") !== (bytes[0] as Uint8Array).join(","))
+        throw new Error(`Portable ${alpha.name} decoding differs from the public canonical value`);
+    }
+  }
   const sentinel = codec.sentinels[0];
   if (!sentinel) throw new Error("Missing sentinel fixture");
   const badUuid = "z".repeat(36);
@@ -166,6 +177,22 @@ export function createProfileCases(
             privateAlphabetApi.encodePortable(
               bytes[index & 255] as Uint8Array,
               privateAlphabetApi.BASE32HEX,
+            ),
+          "portable.base64.decode": (index: number) =>
+            privateAlphabetApi.decodeInto(
+              slugs[index & 255] as string,
+              privateAlphabetApi.BASE64URL,
+              portableDecodeInto,
+              0,
+              16,
+            ),
+          "portable.base32.decode": (index: number) =>
+            privateAlphabetApi.decodeInto(
+              base32[index & 255] as string,
+              privateAlphabetApi.BASE32HEX,
+              portableDecodeInto,
+              0,
+              16,
             ),
         }
       : {}),
