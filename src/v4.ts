@@ -18,7 +18,10 @@ import { bytesToUuid, isUuidV4String } from "./uuid";
 const random = new Uint8Array(16);
 let generating = false;
 
-/** Generate package-owned UUIDv4 bytes, or write atomically into caller storage. */
+/**
+ * Generate UUIDv4 bytes with platform randomness. Without storage, return a new plain 16-byte
+ * `Uint8Array`. With storage, write only after success and return the exact supplied array.
+ */
 export function generateUuidV4Bytes(): UuidV4Bytes | UuidSlugError;
 export function generateUuidV4Bytes<Output extends Uint8Array>(
   output: Output,
@@ -78,7 +81,7 @@ export function generatePortableUuidV4(): UuidV4String | UuidSlugError {
   return bytes instanceof Error ? bytes : (bytesToUuid(bytes) as UuidV4String | UuidSlugError);
 }
 
-/** Generate a canonical UUIDv4 string with platform cryptographic randomness. */
+/** Generate canonical UUIDv4 text with platform cryptographic randomness. */
 export function generateUuidV4(): UuidV4String | UuidSlugError {
   // Native generation is useful only for text, which the host returns directly. Byte and slug
   // routes stay portable because parsing native text adds work and complicates atomic output.

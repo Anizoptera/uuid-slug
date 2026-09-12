@@ -28,8 +28,9 @@ Apply these rules in order. A later rule MUST NOT weaken an earlier one.
    package, and measure real operations. Reading the implementation proves none of these.
 
 Before selecting a shape, map independent caller-visible axes and the interactions that change
-behavior. Compare live alternatives and combinations. Record the selected constraints, rejected
-alternatives, and invalidating assumption beside the declaration; keep exploration transient.
+behavior. Compare live alternatives and combinations. Put the caller contract in public JSDoc.
+Keep implementation constraints, rejected alternatives, and invalidating assumptions in nearby
+non-JSDoc comments; keep exploration transient.
 
 ## Shape
 
@@ -188,15 +189,19 @@ export without reconstructing its contract from implementation code.
 
 - Give every root export and public interface member caller-facing JSDoc. State the accepted value,
   result, error or side effect, and boundary that can change the caller's decision.
-- Keep the reason for a non-obvious shape beside its declaration. Name the realistic wrong turn or
-  alternative it prevents and the condition that would justify revisiting it; a shorter comment
-  that says only what the signature already says is a regression.
+- Explain a non-obvious public shape in caller terms: the choice it affects, the misuse it prevents,
+  and the public condition that would change the advice. Keep internal alternatives, measurements,
+  dispatch, and implementation constraints out of JSDoc and in nearby non-JSDoc comments.
 - Preserve semantic units when editing comments. Compare the old and new claims, then remove only
   repetition, session history, implementation trivia, or detail already obvious from the
-  declaration. Keep wire obligations, ownership, ordering, security limits, and error behavior at
-  the declaration where a caller encounters them.
+  declaration. Relocate useful implementation reasoning to the nearest owning non-JSDoc comment;
+  never erase it merely because it does not belong in public docs. Keep wire obligations, ownership,
+  ordering, security limits, and error behavior at the declaration where a caller encounters them.
 - Write in public tokens and plain language. Link to a detailed owner when the full mechanism is too
   large, but keep the decision-relevant reason inline.
+- Document every configuration property at that property. Use `@defaultValue`, `@returns`,
+  `@throws`, and `@remarks` only when the tag makes editor help clearer than plain prose; a tag that
+  repeats the declaration is noise.
 - Review each changed comment in the built declarations against its declaration and owning
   contract; comment presence does not prove accuracy.
 

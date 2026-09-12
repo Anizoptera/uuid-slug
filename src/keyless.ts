@@ -10,13 +10,23 @@ export { generateUuidV4, generateUuidV4Bytes } from "./v4";
 import { generateUuidV4Bytes } from "./v4";
 import { createPortableUuidV7Generator, createRuntimeGenerator } from "./v7";
 
-/** Configure the clock for one sequence; entropy always comes from the package runtime. */
+/** Configure one UUIDv7 sequence. Entropy always comes from the package runtime. */
 export interface UuidV7GeneratorOptions {
-  /** Return Unix milliseconds; finite fractional readings are truncated. Defaults to `Date.now`. */
+  /**
+   * Return Unix milliseconds; finite fractional readings are truncated. Invalid readings and
+   * thrown values make that generation call return `invalid_timestamp`.
+   *
+   * @defaultValue `Date.now`
+   */
   readonly clock?: () => number;
 }
 
-/** Create an owned UUIDv7 sequence backed by the package's cryptographic runtime source. */
+/**
+ * Create an independent UUIDv7 sequence with a caller-supplied clock and platform randomness.
+ * Invalid JavaScript options throw `TypeError`; clock and entropy failures are returned by methods.
+ *
+ * @throws `TypeError` if `options` is not an object or `clock` is not a function.
+ */
 export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator {
   if (options === null || typeof options !== "object" || Array.isArray(options))
     throw new TypeError("Generator options must be an object.");
@@ -32,8 +42,8 @@ let generator: UuidV7Generator | undefined;
 const v7 = () => (generator ??= createRuntimeGenerator(runtime));
 
 /**
- * Generate a direct UUIDv4 slug in the selected alphabet. Alphabet selection is representation,
- * not sorting, so v4 and v7 generation accept the same project-wide spelling choice.
+ * Generate a direct UUIDv4 slug with platform randomness, using base64url by default. base32hex is
+ * filesystem-safe but cannot make random UUIDv4 values chronological.
  */
 export function generateUuidV4Slug(
   alphabet: SlugAlphabet = "base64url",
@@ -48,10 +58,13 @@ export function generateUuidV4Slug(
  * a widened method there silently widens the package's public surface. A declared type turns that
  * mismatch into a compile error at the one site that is wrong.
  */
-/** Generate a canonical UUIDv7 string for the current clock reading. */
+/** Generate canonical UUIDv7 text for the current clock reading and platform randomness. */
 export const generateUuidV7 = (): UuidV7String | UuidSlugError => v7().generateUuidV7();
 
-/** Generate package-owned UUIDv7 bytes, or write atomically into caller storage. */
+/**
+ * Generate UUIDv7 bytes with platform randomness. Without storage, return a new plain 16-byte
+ * `Uint8Array`. With storage, write only after success and return the exact supplied array.
+ */
 export function generateUuidV7Bytes(): UuidV7Bytes | UuidSlugError;
 export function generateUuidV7Bytes<Output extends Uint8Array>(
   output: Output,
@@ -65,11 +78,17 @@ export function generateUuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Arr
   return generate(out, offset);
 }
 
-/** Generate UUIDv7 text at a whole Unix millisecond in `0..2^48-1`. */
+/**
+ * Generate UUIDv7 text at a whole Unix millisecond in `0..2^48-1`. This does not change the
+ * current-time sequence, and it does not promise ordering within one millisecond.
+ */
 export const generateUuidV7At = (unixMs: number): UuidV7String | UuidSlugError =>
   v7().generateUuidV7At(unixMs);
 
-/** Generate explicit-time UUIDv7 bytes without changing current-time sequence state. */
+/**
+ * Generate UUIDv7 bytes at a whole Unix millisecond in `0..2^48-1` without changing current-time
+ * state. The output overload validates before writing and returns the exact supplied array.
+ */
 export function generateUuidV7BytesAt(unixMs: number): UuidV7Bytes | UuidSlugError;
 export function generateUuidV7BytesAt<Output extends Uint8Array>(
   unixMs: number,

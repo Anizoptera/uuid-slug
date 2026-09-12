@@ -279,7 +279,7 @@ export function createPortableUuidV7Generator(
   };
 }
 
-/*
+/**
  * Join optional native text generation with the portable generator that owns every other output.
  * The runtime hook stays live instead of being copied into a second cache: adapters already probe
  * host support once, and repeated all-runtime comparisons found that capturing it slowed Deno's

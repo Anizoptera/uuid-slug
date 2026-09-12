@@ -192,8 +192,11 @@ function createSentinels(
 }
 
 /**
- * Build an immutable UUIDv7 slug codec. The current mask writes and reads first; previous masks
- * only read in caller order. Invalid options and unexpected failures return package errors.
+ * Build an immutable UUIDv7 codec with an explicit writer mask. It reads the writer first, then
+ * `previousMasks` in caller order. Invalid masks, sentinels, options, or callbacks return
+ * `UuidSlugError`; no implicit public mask is selected.
+ *
+ * @returns The codec, or `UuidSlugError` when its configuration cannot form a valid codec.
  */
 export function createUuidV7SlugCodec(
   options: UuidV7SlugCodecOptions,
@@ -383,8 +386,8 @@ function buildUuidSlugCodec(
 
 /**
  * Return canonical UUIDv7 text when its timestamp is inside the inclusive symmetric window.
- * This checks timestamp sanity, not expiry, authentication, replay safety, or issuance.
- * TypeScript rejects known slug and UUIDv4 values; unbranded strings are validated when called.
+ * Return `timestamp_outside_window` when it is not. This checks clock plausibility, not expiry,
+ * authentication, replay, or issuance. TypeScript rejects known slug and UUIDv4 values.
  */
 export function validateUuidV7Timestamp<Input extends string>(
   uuid: UuidV7StringInput<Input>,
@@ -441,8 +444,8 @@ function validateTimestampBytes(
 
 /**
  * Return the same direct UUIDv7 slug when its timestamp is inside the inclusive symmetric window.
- * Use a codec method for masked or sentinel input. TypeScript rejects known UUID, masked, and
- * UUIDv4-slug values; unbranded strings are validated when called.
+ * Return `timestamp_outside_window` when it is not. Use a codec method for masked or sentinel
+ * input. TypeScript rejects known UUID text, masked slugs, and UUIDv4 slugs.
  */
 export function validateUuidV7SlugTimestamp<Input extends string>(
   slug: UuidV7SlugInput<Input>,

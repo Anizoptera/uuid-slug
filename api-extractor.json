@@ -33,7 +33,7 @@
     },
     "tsdocMessageReporting": {
       "default": {
-        "logLevel": "none"
+        "logLevel": "error"
       }
     }
   }

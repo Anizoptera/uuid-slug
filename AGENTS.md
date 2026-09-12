@@ -63,6 +63,24 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   Bun and development load published TypeScript; Node keeps its native-runtime build.
 - Public docs use caller-facing tokens such as `"base32hex"`, not internal symbol names.
   Documentation-alignment gates are ruled out; test the API behavior instead.
+- Give every root export, overload family, public type, interface, property, method, option, and
+  callback consumer-facing JSDoc in its owning source. Explain what changes the caller's decision:
+  valid input, defaults, result and ownership, expected errors or effects, ordering, important
+  limits, and realistic misuse. Document every configuration property at that property. Use TSDoc
+  tags only when they improve editor help, such as `@defaultValue`, `@returns`, `@throws`, or a short
+  `@remarks`; never add tags to restate the signature. Omit facts already clear from the type.
+  Non-public declarations may use TSDoc when editor help benefits maintainers.
+- Treat public JSDoc as part of every public-source change. Update or remove affected text in the
+  same edit; never leave stale documentation for a later pass. Before committing, build declarations,
+  query changed symbols through the TypeScript language service, and read every changed `.d.ts`
+  entry as a cold consumer. Presence checks catch omissions only; they do not prove the published
+  text is useful, correct, complete, or current.
+- Comments carry contracts and design decisions. Before deleting or rewriting one, list its useful
+  claims and verify each is still true. Keep caller-facing claims in JSDoc and move implementation
+  constraints, rejected alternatives, invalidating assumptions, and measurement triggers to the
+  nearest owning implementation comment. A rejected alternative must cite the symbol or evidence
+  that establishes why it loses. Delete only repetition, false claims, work history, or facts made
+  obvious by the code. Re-read every comment in a changed function after the edit.
 - Do not mention private source project names in public files, commits, tests, fixtures, or reports.
 
 ## Runtime boundaries and evidence
@@ -71,10 +89,12 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   ordinary code comments to state why the shape exists, the strongest live alternative it rejects,
   the boundary where the choice stops applying, and the change that requires remeasurement. Public
   JSDoc is only for external callers: accepted inputs, results, errors, effects, guarantees, and
-  usage decisions; it MUST NOT expose implementation choices or internal reasoning. Keep runtime
-  versions, numeric results, workloads, and statistical limits only in `bench/PERFORMANCE.md`; link
-  that owner from internal comments instead of copying volatile evidence. When behavior or dispatch
-  changes, re-read every comment in the changed frame and update or remove stale reasoning.
+  usage decisions; it MUST NOT expose implementation choices or internal reasoning. Non-public
+  declarations may use TSDoc and should explain maintainer-facing constraints when editor help is
+  useful. Keep runtime versions, numeric results, workloads, and statistical limits only in
+  `bench/PERFORMANCE.md`; link that owner from internal comments instead of copying volatile
+  evidence. When behavior or dispatch changes, re-read every comment in the changed frame and update
+  or remove stale reasoning.
 - Any runtime production-behavior change requires fresh behavior, resource, benchmark, and profile
   evidence for every affected runtime selection, output form, capability-present or capability-absent
   path, and native-success, native-fallback, or dual-failure branch. An aggregate route cannot stand

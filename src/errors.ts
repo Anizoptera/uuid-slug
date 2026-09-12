@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-/** Stable runtime vocabulary for branching on package failures. */
 const ERROR_CODES = [
   "aborted",
   "invalid_base32",
@@ -16,9 +15,10 @@ const ERROR_CODES = [
   "timestamp_outside_window",
 ] as const;
 
+/** All stable `UuidSlugError.code` values, for validation and exhaustive handlers. */
 export const UUID_SLUG_ERROR_CODES: typeof ERROR_CODES = Object.freeze(ERROR_CODES);
 
-/** A stable recovery code carried by every `UuidSlugError`. */
+/** One stable `UuidSlugError.code`; branch on this value and use `message` for diagnostics. */
 export type UuidSlugErrorCode = (typeof UUID_SLUG_ERROR_CODES)[number];
 
 const ERROR_CODE_SET: ReadonlySet<unknown> = new Set(UUID_SLUG_ERROR_CODES);
@@ -28,11 +28,15 @@ const typedArrayTagDescriptor = Object.getOwnPropertyDescriptor(
   Symbol.toStringTag,
 );
 
-/** Expected package failure with a stable code and an optional original cause. */
+/**
+ * An expected failure returned by package operations. Branch on `code`; `message` explains the
+ * failed input or operation, and `cause` retains an underlying runtime or callback failure.
+ */
 export class UuidSlugError extends Error {
   /** Stable recovery category; use `message` and `cause` for diagnostics. */
   readonly code: UuidSlugErrorCode;
 
+  /** Create an error with a stable recovery code and optional underlying cause. */
   constructor(code: UuidSlugErrorCode, message: string, options?: ErrorOptions) {
     super(message, options);
     this.name = "UuidSlugError";
@@ -40,7 +44,10 @@ export class UuidSlugError extends Error {
   }
 }
 
-/** Classify package errors across realms and duplicate copies; this does not authenticate input. */
+/**
+ * Narrow a returned value to `UuidSlugError`, including errors from another realm or package copy.
+ * This checks the public error shape and code; it does not authenticate untrusted data.
+ */
 export function isUuidSlugError(value: unknown): value is UuidSlugError {
   if (typeof value !== "object" || value === null) return false;
   try {
@@ -54,7 +61,10 @@ export function isUuidSlugError(value: unknown): value is UuidSlugError {
   }
 }
 
-/** Return the exact success value or throw a recognized package error unchanged. */
+/**
+ * Return the success value, or throw a recognized `UuidSlugError` unchanged.
+ * Use this only when the caller cannot recover locally; otherwise branch with `isUuidSlugError`.
+ */
 export function unwrapUuidSlug<Value>(value: Value): Exclude<Value, UuidSlugError> {
   if (isUuidSlugError(value)) throw value;
   return value as Exclude<Value, UuidSlugError>;
@@ -135,7 +145,7 @@ export function failedFallback(
   });
 }
 
-/*
+/**
  * Publish a valid native result without portable work; otherwise run the fallback exactly once.
  * Validation costs one predicate but prevents a fast host shortcut from weakening package output,
  * while aggregating dual failures preserves both causes without exception-driven success control.

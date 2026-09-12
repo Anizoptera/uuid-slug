@@ -53,6 +53,8 @@ function runCustom(
   transform: CustomUuidV7MaskOptions["mask"],
   input: Uint8Array,
 ): Uint8Array | UuidSlugError {
+  // Callbacks never receive package or caller storage. Copy their result at the codec boundary too,
+  // because a callback may retain and mutate the array it returns.
   const output = transform(input.slice());
   if (isUuidSlugError(output)) return output;
   if (!isUint8Array(output) || output.length !== 16)
@@ -64,9 +66,11 @@ function runCustom(
 }
 
 /**
- * Build an opaque handle for an arbitrary reversible 16-byte transform. Construction checks
- * result size and representative inversions; callers still own invertibility over all inputs.
- * Every invocation receives a distinct array, and callback results are copied into package storage.
+ * Build an immutable mask from reversible 16-byte callbacks. Each callback receives isolated bytes,
+ * so returning the same array is safe. Invalid results and thrown values return `UuidSlugError`.
+ * The caller must ensure `unmask(mask(bytes))` restores every possible 16-byte input.
+ *
+ * @returns The validated mask, or `UuidSlugError` for an invalid contract or callback result.
  */
 export function createCustomUuidV7Mask(
   options: CustomUuidV7MaskOptions,
@@ -78,6 +82,8 @@ export function createCustomUuidV7Mask(
         "invalid_mask_schema",
         "A custom UUIDv7 mask requires a string label plus mask and unmask functions.",
       );
+    // These probes reject common non-inverses cheaply; no finite sample can prove a bijection over
+    // 128 bits, so the public contract keeps full invertibility as the callback author's duty.
     for (const probe of [
       new Uint8Array(16),
       Uint8Array.from({ length: 16 }, (_, index) => index * 17),

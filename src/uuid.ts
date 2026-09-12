@@ -50,7 +50,7 @@ for (let i = 0; i < 6; i += 1) HEX_DECODE[97 + i] = 10 + i;
 const UUID_LENGTH = 36;
 const UUID_BYTE_OFFSETS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34] as const;
 
-/**
+/*
  * The alphabets a plain slug may be written in. base64url is the default and the shortest;
  * base32hex costs four more characters and buys the one property base64url cannot offer: its
  * characters are in ASCII order, so base32hex slugs of UUIDv7s sort chronologically as plain
@@ -59,14 +59,15 @@ const UUID_BYTE_OFFSETS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32
  * Masked output selects its alphabet independently: base32hex preserves case-insensitive filenames,
  * but sorting masked ciphertext does not recover chronological order.
  */
-/** Stable runtime vocabulary for slug alphabet selection. */
 const ALPHABETS = ["base64url", "base32hex"] as const;
 
+/** The accepted slug alphabets, for validation, schemas, and user-interface choices. */
 export const UUID_SLUG_ALPHABETS: typeof ALPHABETS = Object.freeze(ALPHABETS);
 
 /**
- * Select 22-character base64url or 26-character lowercase base32hex direct slugs. A closed choice
- * preserves canonical spelling and lets decoding infer the alphabet from the encoded length.
+ * Select direct-slug output: 22-character base64url, or 26-character lowercase base32hex.
+ * Base64url is shorter. Base32hex UUIDv7 slugs sort by timestamp as plain strings and are safe on
+ * case-insensitive filesystems. Decoders infer the alphabet from length.
  */
 export type SlugAlphabet = (typeof UUID_SLUG_ALPHABETS)[number];
 
@@ -119,8 +120,9 @@ function uuidByteAt(uuid: string, byteIndex: number): number {
 }
 
 /**
- * Convert one canonical lowercase UUID to 16 bytes; failure leaves caller storage unchanged.
- * Known slug values are rejected by TypeScript, while unbranded strings are validated when called.
+ * Parse canonical lowercase UUID text into a new 16-byte array or caller storage. The output
+ * overload validates everything before writing and returns the exact supplied array. Known slug
+ * values are rejected by TypeScript; invalid text or storage returns `UuidSlugError`.
  */
 export function uuidToBytes<Input extends string>(
   uuid: UuidStringInput<Input>,
@@ -155,7 +157,10 @@ export function uuidToBytes(
   return target;
 }
 
-/** Return canonical lowercase UUID text for 16 bytes starting at `byteOffset`. */
+/**
+ * Format 16 bytes at `byteOffset` as canonical lowercase UUID text without assigning a version.
+ * An invalid array or range returns `invalid_buffer`.
+ */
 export function bytesToUuid(bytes: Uint8Array, byteOffset = 0): UuidString | UuidSlugError {
   const badRange = checkByteRange(bytes, byteOffset, 16);
   if (badRange) return badRange;
@@ -188,7 +193,7 @@ export function isRfcVariant(bytes: Uint8Array, offset = 0): boolean {
 }
 
 // Predicates inspect the same hex table as parsing without allocating output bytes or Errors.
-/** Check canonical lowercase UUID syntax without checking version or RFC variant. */
+/** Check canonical lowercase UUID syntax without claiming a version, variant, or issuance. */
 export function isUuidString(value: unknown): value is UuidString {
   if (typeof value !== "string" || value.length !== UUID_LENGTH) return false;
   if (value[8] !== "-" || value[13] !== "-" || value[18] !== "-" || value[23] !== "-") return false;
@@ -258,7 +263,7 @@ export function isUuidV7String(value: unknown): value is UuidV7String {
   return hasUuidVersionAndVariant(value, "7") && isUuidString(value);
 }
 
-/** Check for exactly 16 UUID bytes without assigning a version. */
+/** Check for a 16-byte `Uint8Array` without claiming a UUID version or issuance. */
 export function isUuidBytes(value: unknown): value is UuidBytes {
   return isUint8Array(value) && value.length === 16;
 }
@@ -277,7 +282,10 @@ export function isUuidV7Bytes(value: unknown): value is UuidV7Bytes {
   return isUuidBytes(value) && uuidVersion(value) === 7 && isRfcVariant(value);
 }
 
-/** Encode exactly 16 bytes as a direct UUID slug; base64url is the default. */
+/**
+ * Encode 16 bytes as a direct slug, using base64url by default. The offset overload reads one
+ * 16-byte range; an invalid array, range, or alphabet returns `UuidSlugError`.
+ */
 export function bytesToSlug(bytes: Uint8Array, alphabet?: SlugAlphabet): UuidSlug | UuidSlugError;
 export function bytesToSlug(
   bytes: Uint8Array,
@@ -311,8 +319,9 @@ export function bytesToSlug(
 }
 
 /**
- * Parse either direct-slug length into 16 bytes; failure leaves caller storage unchanged.
- * TypeScript rejects known UUID and masked values; unbranded strings are validated when called.
+ * Decode a canonical direct slug into a new 16-byte array or caller storage. Its length selects
+ * base64url or base32hex. The output overload validates before writing and returns the exact array.
+ * Known UUID and masked values are rejected by TypeScript; invalid input returns `UuidSlugError`.
  */
 export function slugToBytes<Input extends string>(
   slug: DirectUuidSlugInput<Input>,
@@ -351,8 +360,9 @@ export function slugToBytes(
 }
 
 /**
- * Validate UUID text and encode the same 128-bit value as a direct slug. TypeScript rejects known
- * slug values; unbranded strings are validated when called.
+ * Encode canonical UUID text as a reversible direct slug, using base64url by default. A known UUID
+ * version is preserved in the result type. TypeScript rejects known slug values; invalid text or
+ * alphabet returns `UuidSlugError`.
  */
 export function uuidToSlug<Input extends string>(
   uuid: UuidStringInput<Input>,
@@ -371,8 +381,9 @@ export function uuidToSlug(
 }
 
 /**
- * Validate a direct slug, infer its alphabet from length, and return canonical UUID text.
- * TypeScript rejects known UUID and masked values; unbranded strings are validated when called.
+ * Decode a canonical direct slug to lowercase UUID text; its length selects base64url or base32hex.
+ * A known UUID version is preserved in the result type. TypeScript rejects known UUID and masked
+ * values; invalid input returns `UuidSlugError`.
  */
 export function slugToUuid<Input extends string>(
   slug: DirectUuidSlugInput<Input>,
@@ -417,10 +428,9 @@ export function isUuidV7Slug(value: unknown): value is UuidV7Slug {
 }
 
 /**
- * Read the 48-bit Unix millisecond from UUIDv7 bytes at `byteOffset`.
- * Other versions are rejected because their first six bytes are not a timestamp.
- * TypeScript rejects known UUIDv4 bytes; unbranded bytes are validated when called. Truncated
- * storage returns `invalid_buffer` rather than `invalid_uuid_version`.
+ * Read the 48-bit Unix millisecond from UUIDv7 bytes at `byteOffset`. Other versions return
+ * `invalid_uuid_version`; an invalid array or range returns `invalid_buffer`. TypeScript rejects
+ * known UUIDv4 bytes because their first six bytes are random, not a timestamp.
  */
 export function extractUuidV7Timestamp<Input extends Uint8Array>(
   bytes: UuidV7BytesInput<Input>,

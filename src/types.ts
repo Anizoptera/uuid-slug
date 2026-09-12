@@ -6,18 +6,18 @@ import type { SlugAlphabet } from "./uuid";
 declare const brand: unique symbol;
 declare const maskSchemaBrand: unique symbol;
 
-/* Brands accumulate validated value kinds without changing their runtime representation. */
+/** Accumulate validated value kinds without changing their runtime representation. */
 export type Brand<Value, Name extends string> = Value & {
   readonly [brand]: { [BrandName in Name]: true };
 };
 
-/** A canonical lowercase UUID string. This says nothing about issuance or ownership. */
+/** Canonical lowercase UUID text. This proves syntax only, not version or issuance. */
 export type UuidString = Brand<string, "UuidString">;
-/** A canonical RFC-variant UUIDv4 string. */
+/** Canonical lowercase UUIDv4 text with RFC variant bits. */
 export type UuidV4String = Brand<UuidString, "UuidV4String">;
-/** A canonical RFC-variant UUIDv7 string. */
+/** Canonical lowercase UUIDv7 text with RFC variant bits. */
 export type UuidV7String = Brand<UuidString, "UuidV7String">;
-/** A direct UUID encoding: 22 base64url or 26 lowercase base32hex characters. */
+/** A reversible direct UUID encoding: 22 base64url or 26 lowercase base32hex characters. */
 export type UuidSlug = Brand<string, "UuidSlug">;
 /** A direct slug whose decoded UUID is version 4 with the RFC variant. */
 export type UuidV4Slug = Brand<UuidSlug, "UuidV4Slug">;
@@ -25,11 +25,14 @@ export type UuidV4Slug = Brand<UuidSlug, "UuidV4Slug">;
 export type UuidV7Slug = Brand<UuidSlug, "UuidV7Slug">;
 /** A masked payload in either spelling; its check bits are not plain-encoding padding. */
 export type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
-/** A checked, keyed UUIDv7 payload: 22 base64url or 27 lowercase base32hex characters. */
+/**
+ * A checked, keyed UUIDv7 payload: 22 base64url or 27 lowercase base32hex characters.
+ * The check detects wrong keys and malformed values; it does not prove issuance or authorization.
+ */
 export type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
-/** A reserved UUIDv7 written as a raw 22- or 26-character direct slug. */
+/** A codec sentinel written as its raw 22- or 26-character direct UUIDv7 slug. */
 export type SentinelUuidV7Slug = Brand<UuidV7Slug, "SentinelUuidV7Slug">;
-/** The result of masked encoding: a 22/27-character payload or a 22/26-character sentinel. */
+/** A codec result: either a masked UUIDv7 or a registered raw sentinel. */
 export type UuidV7CodecSlug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 
 /*
@@ -62,31 +65,39 @@ type UuidV7ValueInput<Input extends string | Uint8Array> = RejectKnownInput<
   Input,
   UuidSlug | MaskedUuidSlug | UuidV4String | UuidV4Bytes
 >;
-/** One validated 16-byte UUID payload. Package-owned values are plain `Uint8Array`. */
+/** Exactly 16 validated UUID bytes. Package-owned values are plain `Uint8Array`. */
 export type UuidBytes = Brand<Uint8Array, "UuidBytes">;
 /** UUID bytes with version 4 and RFC variant bits. */
 export type UuidV4Bytes = Brand<UuidBytes, "UuidV4Bytes">;
 /** UUID bytes with version 7 and RFC variant bits. */
 export type UuidV7Bytes = Brand<UuidBytes, "UuidV7Bytes">;
 
-/** Configure a symmetric UUIDv7 timestamp check; this is not expiry, authentication, replay protection, or proof of issuance. */
+/**
+ * An inclusive timestamp window around `referenceUnixMs` or the current time.
+ * This checks clock plausibility, not expiry, authentication, replay, or issuance.
+ */
 export interface UuidV7TimestampWindow {
-  /** Maximum absolute difference from the reference time, inclusive. */
+  /** Maximum absolute difference from the reference time, inclusive. Must be finite and nonnegative. */
   readonly maxTimestampDeltaMs: number;
-  /** Finite Unix milliseconds used as the reference; defaults to one `Date.now()` reading. */
+  /**
+   * Finite Unix milliseconds used as the reference.
+   *
+   * @defaultValue One `Date.now()` reading per validation call.
+   */
   readonly referenceUnixMs?: number;
 }
 
 /**
- * Generate UUIDv7 values with one owned clock and sequence state. Methods may be detached and
- * called without binding.
+ * A stateful UUIDv7 sequence using one clock and platform cryptographic randomness. Methods may be
+ * detached. Expected clock and entropy failures return `UuidSlugError` without corrupting the next
+ * generation attempt.
  */
 export interface UuidV7Generator {
-  /** Generate a canonical UUIDv7 string for the current clock reading. */
+  /** Generate canonical UUIDv7 text for the current clock reading. */
   generateUuidV7(this: void): UuidV7String | UuidSlugError;
-  /** Generate package-owned UUIDv7 bytes for the current clock reading. */
+  /** Generate a new plain 16-byte `Uint8Array` for the current clock reading. */
   generateUuidV7Bytes(this: void): UuidV7Bytes | UuidSlugError;
-  /** Write one UUIDv7 into `output` atomically and return that exact array. */
+  /** Write 16 bytes at `outputOffset` only after success, then return the exact `output` array. */
   generateUuidV7Bytes<Output extends Uint8Array>(
     this: void,
     output: Output,
@@ -97,9 +108,9 @@ export interface UuidV7Generator {
    * state.
    */
   generateUuidV7At(this: void, unixMs: number): UuidV7String | UuidSlugError;
-  /** Generate package-owned bytes at an explicit millisecond without changing sequence state. */
+  /** Generate a new 16-byte array at an explicit millisecond without changing current-time state. */
   generateUuidV7BytesAt(this: void, unixMs: number): UuidV7Bytes | UuidSlugError;
-  /** Write one explicit-time UUIDv7 into `output` atomically and return that exact array. */
+  /** Write an explicit-time UUIDv7 only after success, then return the exact `output` array. */
   generateUuidV7BytesAt<Output extends Uint8Array>(
     this: void,
     unixMs: number,
@@ -108,29 +119,33 @@ export interface UuidV7Generator {
   ): Output | UuidSlugError;
 }
 
-/** A frozen package-produced masking handle whose transform and key material stay private. */
+/** An immutable mask handle accepted by codec construction; key material is not exposed. */
 export interface UuidV7Mask {
   /** Diagnostic label only; mask objects and caller order select decoding behavior. */
   readonly label: string;
   readonly [maskSchemaBrand]: true;
 }
 
-/** Adapt a reversible 16-byte transform into an opaque mask schema. */
+/** Define a reversible 16-byte transform for `createCustomUuidV7Mask`. */
 export interface CustomUuidV7MaskOptions {
   /** A diagnostic label; it does not select the mask during decoding. */
   readonly label: string;
-  /** Return the transformed 16-byte block or a package error; the input is isolated for this call. */
+  /** Transform an isolated 16-byte array; return exactly 16 bytes or `UuidSlugError`. */
   readonly mask: (bytes: Uint8Array) => Uint8Array | UuidSlugError;
-  /** Invert `mask` for every input; construction can check only representative values. */
+  /** Invert `mask` for every possible 16-byte input. */
   readonly unmask: (bytes: Uint8Array) => Uint8Array | UuidSlugError;
 }
 
 /**
- * Derive an immutable masking schema from stable key material. UUIDv7's constant bits leave the
- * 16-bit check used by this format; another reversible transform belongs in a custom schema.
+ * Options for deriving an immutable UUIDv7 mask from stable secret key material. Keep the seed and
+ * iteration count available while identifiers produced with this mask must remain readable.
  */
 export interface UuidV7MaskOptions {
-  /** Diagnostic label only; decoding uses the mask object and caller-specified order. */
+  /**
+   * Diagnostic label only; decoding uses the mask object and caller-specified order.
+   *
+   * @defaultValue `"seeded"`
+   */
   readonly label?: string;
   /**
    * Stable secret key material. Generate at least 16 bytes, keep it outside source control, and
@@ -138,16 +153,22 @@ export interface UuidV7MaskOptions {
    */
   readonly seed: string | Uint8Array;
   /**
-   * Key-derivation work factor, default `1`, paid at schema construction rather than per ID.
+   * Key-derivation work factor in `1..1000000`, paid at schema construction rather than per ID.
    * Changing it changes every derived key, so retain the old seed and count in `previousMasks`
    * when identifiers issued under them must remain readable.
+   *
+   * @defaultValue `1`
    */
   readonly keyDerivationIterations?: number;
 }
 
-/** The synchronous seed options plus cooperative cancellation; no scheduling knobs are required. */
+/** Mask derivation options with cooperative cancellation for expensive construction. */
 export interface AsyncUuidV7MaskOptions extends UuidV7MaskOptions {
-  /** Stop cooperative derivation and return an `aborted` error with `reason` as its cause. */
+  /**
+   * Stop cooperative derivation and return an `aborted` error with `reason` as its cause.
+   *
+   * @defaultValue No cancellation.
+   */
   readonly signal?: AbortSignal;
 }
 
@@ -155,7 +176,7 @@ export interface AsyncUuidV7MaskOptions extends UuidV7MaskOptions {
 export interface UuidV7SentinelConfig {
   /** Nonempty application-facing name, unique within the codec and exposed through `codec.sentinels`. */
   readonly name: string;
-  /** Canonical UUIDv7 text reserved by the codec. */
+  /** Canonical UUIDv7 text, unique within the codec, reserved for raw sentinel output. */
   readonly uuid: string;
 }
 
@@ -169,20 +190,28 @@ export interface UuidV7Sentinel {
   readonly uuid: UuidV7String;
 }
 
-/** Stable runtime vocabulary for selecting a migration decoder. */
 const MIGRATION_FORMATS = ["current-mask", "original-mask", "plain-slug"] as const;
 
+/** The migration formats accepted by `UuidSlugMigrationDecoder`. */
 export const UUID_SLUG_MIGRATION_FORMATS: typeof MIGRATION_FORMATS =
   Object.freeze(MIGRATION_FORMATS);
 
-/** Select a known encoding instead of guessing from overlapping slug text. */
+/** Select one enabled migration format when the input's original encoding is known. */
 export type UuidSlugMigrationFormat = (typeof UUID_SLUG_MIGRATION_FORMATS)[number];
 
 /** Enable only formats your application has issued; writers keep using the codec. */
 export interface UuidSlugMigrationOptions {
-  /** Accept the original fixed-mask format with its four-bit check. */
+  /**
+   * Accept the original fixed-mask format with its four-bit check.
+   *
+   * @defaultValue `false`
+   */
   readonly originalMask?: boolean;
-  /** Accept direct UUID slugs, including retained trailing-bit aliases. */
+  /**
+   * Accept direct UUID slugs of any version, including retained trailing-bit aliases.
+   *
+   * @defaultValue `false`
+   */
   readonly plainSlug?: boolean;
 }
 
@@ -191,19 +220,23 @@ type EnabledMigrationOption<
   Option extends keyof UuidSlugMigrationOptions,
 > = Option extends keyof Options ? (true extends Options[Option] ? Option : never) : never;
 
-// Projects enabled options into the only format selectors that decoder can accept.
+/** Project enabled options into the only format selectors that decoder can accept. */
 export type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
   | "current-mask"
   | (EnabledMigrationOption<Options, "originalMask"> extends never ? never : "original-mask")
   | (EnabledMigrationOption<Options, "plainSlug"> extends never ? never : "plain-slug");
 
-/** Read only the historical forms enabled at construction; this never changes codec writers. */
+/**
+ * Decode current and explicitly enabled old formats without changing codec output.
+ * Methods may be detached. A successful decode identifies a candidate UUID, not the issuing format
+ * or a stored record.
+ */
 export interface UuidSlugMigrationDecoder<
   in Format extends UuidSlugMigrationFormat = UuidSlugMigrationFormat,
 > {
   /**
-   * Return the first candidate: sentinel, current keys, original mask, then plain UUID. Known UUID
-   * text is rejected; slug brands remain accepted because overlapping spellings do not prove origin.
+   * Return the first candidate in this order: sentinel, current masks, original mask, plain slug.
+   * Pass `format` when its origin is known to avoid trying unrelated readers.
    */
   decodeSlug<Input extends string>(
     this: void,
@@ -211,8 +244,8 @@ export interface UuidSlugMigrationDecoder<
     format?: Format,
   ): UuidString | UuidSlugError;
   /**
-   * Return distinct candidates for one application lookup; an empty array means no match. Known
-   * UUID text is rejected, while every slug spelling must be resolved by the enabled decoders.
+   * Return every distinct candidate in decode order for one application lookup. An empty array
+   * means no enabled format matched; callback failure returns `UuidSlugError`, not a partial list.
    */
   decodeSlugCandidates<Input extends string>(
     this: void,
@@ -221,12 +254,14 @@ export interface UuidSlugMigrationDecoder<
   ): UuidString[] | UuidSlugError;
 }
 
-/** Configure one immutable owner for UUIDv7 slug encoding, rotation, and sentinels. */
+/** Configure one immutable UUIDv7 codec for writing, key rotation, and sentinels. */
 export interface UuidV7SlugCodecOptions {
   /**
    * Decode-only schemas tried after `mask`, in caller order. Each item accepts a mask handle or its
    * construction options. Keep the list short: every schema adds decoding work and another chance
    * for a random input to pass its 16-bit check.
+   *
+   * @defaultValue No previous masks.
    */
   readonly previousMasks?: readonly (UuidV7Mask | UuidV7MaskOptions)[];
   /**
@@ -234,61 +269,66 @@ export interface UuidV7SlugCodecOptions {
    * `UUID_V7_TEST_MASK` for public test data.
    */
   readonly mask: UuidV7Mask | UuidV7MaskOptions;
-  /** Reserved UUIDv7 values that bypass masking; defaults to none. */
+  /**
+   * Named UUIDv7 values emitted as raw direct slugs instead of masked payloads.
+   *
+   * @defaultValue No sentinels.
+   */
   readonly sentinels?: readonly UuidV7SentinelConfig[];
   /**
-   * Output spelling for masked IDs and sentinels; defaults to `"base64url"`.
+   * Output spelling for masked IDs and sentinels.
    * `"base32hex"` preserves the full masked payload in 27 lowercase characters (26 for raw
    * sentinels), suitable for case-insensitive filesystems. Masked output has no sort-order promise.
    * Readers accept both spellings regardless of this writer selection.
+   *
+   * @defaultValue `"base64url"`
    */
   readonly outputAlphabet?: SlugAlphabet;
 }
 
 /**
- * Own the keys, sentinels, writer spelling, and byte source used by masked operations. Methods may
- * be detached and called without binding.
+ * An immutable UUIDv7 codec that owns its masks, sentinels, output alphabet, and byte source.
+ * Methods may be detached. Decoding proves format integrity, not issuance or authorization.
  */
 export interface UuidV7SlugCodec {
-  /** Frozen reserved values in the codec's configured output alphabet. */
+  /** Frozen sentinel metadata in the codec's configured output alphabet. */
   readonly sentinels: readonly UuidV7Sentinel[];
   /**
-   * Create an opt-in reader without changing generation or ordinary decoding.
-   * Malformed option structure throws `TypeError`; enabled data failures return package errors.
+   * Create a reader for current and explicitly enabled old formats without changing this codec.
+   * Invalid JavaScript option shapes throw `TypeError`; decode failures return `UuidSlugError`.
    */
   createMigrationDecoder<const Options extends UuidSlugMigrationOptions = {}>(
     this: void,
     options?: Options,
   ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
-  /** Generate UUIDv7 bytes, then return a masked slug or the matching raw sentinel slug. */
+  /** Generate and encode a UUIDv7 as a masked slug or its registered raw sentinel slug. */
   generateSlug(this: void): UuidV7CodecSlug | UuidSlugError;
   /**
-   * Mask one UUIDv7 supplied as canonical text or 16 bytes, or return its raw sentinel slug. Byte
-   * input stays binary. Other UUID versions do not have the spare constant bits that keep this
-   * checked format at 22 base64url characters. TypeScript rejects known slug and UUIDv4 values;
-   * unbranded external values are validated when called.
+   * Encode canonical UUIDv7 text or 16 bytes as a masked slug, unless it is a registered sentinel.
+   * Other UUID versions return `invalid_uuid_version`. TypeScript rejects known slug and UUIDv4
+   * values; unbranded external values are validated when called.
    */
   encodeUuid<Input extends string | Uint8Array>(
     this: void,
     uuid: UuidV7ValueInput<Input>,
   ): UuidV7CodecSlug | UuidSlugError;
   /**
-   * Return the first sentinel or schema candidate in configured order; this does not prove issuance.
-   * TypeScript rejects known UUID text. Slug values remain accepted because overlapping spellings
-   * do not prove which encoder produced them.
+   * Decode the first passing sentinel or mask in configured order to canonical UUIDv7 text.
+   * Success proves format integrity, not issuance. TypeScript rejects known UUID text; slug values
+   * remain accepted because direct and masked spellings can overlap.
    */
   decodeSlug<Input extends string>(
     this: void,
     slug: SlugStringInput<Input>,
   ): UuidV7String | UuidSlugError;
   /**
-   * Decode to package-owned plain UUIDv7 bytes. Use this form when the caller needs binary output.
+   * Decode to a new plain 16-byte `Uint8Array`. Use this when the caller needs binary output.
    */
   decodeSlugToBytes<Input extends string>(
     this: void,
     slug: SlugStringInput<Input>,
   ): UuidV7Bytes | UuidSlugError;
-  /** Decode atomically into `output` and return that exact array. */
+  /** Decode and validate before writing 16 bytes at `outputOffset`; errors leave `output` unchanged. */
   decodeSlugToBytes<Input extends string, Output extends Uint8Array>(
     this: void,
     slug: SlugStringInput<Input>,
@@ -296,10 +336,9 @@ export interface UuidV7SlugCodec {
     outputOffset?: number,
   ): Output | UuidSlugError;
   /**
-   * Decode with this codec, apply the symmetric timestamp window, and return the same spelling.
-   * The check establishes timestamp sanity, not expiry, authentication, replay safety, or issuance.
-   * TypeScript rejects known UUID text. Slug values remain accepted because only decoding with this
-   * codec can resolve their overlapping spellings.
+   * Decode with this codec, check the symmetric timestamp window, and return the same slug.
+   * This checks clock plausibility, not expiry, authentication, replay, or issuance. TypeScript
+   * rejects known UUID text because only this codec can resolve overlapping slug spellings.
    */
   validateSlugTimestamp<Input extends string>(
     this: void,

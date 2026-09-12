@@ -141,8 +141,11 @@ function schemaFromKeys(label: string, keys: Int32Array): UuidV7Mask {
 }
 
 /**
- * Derive an immutable mask schema from stable seed options. Seed bytes and `keyDerivationIterations` define
- * the wire identity; changing either requires retaining the old options in `previousMasks`.
+ * Derive an immutable mask from a secret seed of at least 16 bytes. The seed and iteration count
+ * define the wire format; retain the old mask in `previousMasks` before changing either. Invalid
+ * options return `invalid_mask_schema`.
+ *
+ * @returns The mask, or `UuidSlugError` when an option or seed is invalid.
  */
 export function createUuidV7Mask(options: UuidV7MaskOptions): UuidV7Mask | UuidSlugError {
   try {
@@ -258,8 +261,11 @@ function* cooperativeKeys(
 }
 
 /**
- * Derive the same schema cooperatively. Options and byte seeds are captured before suspension;
- * cancellation stops work and returns `aborted` with the signal reason as its cause.
+ * Derive the same mask without monopolizing the host task. Later mutation of a byte seed does not
+ * affect the result. Cancellation returns `aborted` with `signal.reason` as its cause; invalid
+ * options return `invalid_mask_schema`. Construct once and reuse the result.
+ *
+ * @returns A promise for the mask or an expected construction error.
  */
 export async function createUuidV7MaskAsync(
   options: AsyncUuidV7MaskOptions,
@@ -313,5 +319,5 @@ const DEFAULT_SEED = "anizoptera.uuid-slug.default-mask.v1";
 // bad iteration count — checks on CALLER input that the literals here cannot fail. Routing through it would return
 // `UuidV7Mask | UuidSlugError` and force a cast that, at module scope, could only ever hide a real Error
 // behind a `UuidV7Mask` type at module scope.
-/** Schema with published key material for deterministic tests and examples; it provides no secrecy. */
+/** Public-key mask for deterministic tests and examples. Never use it to hide production IDs. */
 export const UUID_V7_TEST_MASK: UuidV7Mask = feistelSchema("default", seedBytes(DEFAULT_SEED), 1);
