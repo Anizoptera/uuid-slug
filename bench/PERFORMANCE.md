@@ -498,6 +498,13 @@ interval excluded parity in both replays. Node 24.20.0 was unresolved because bo
 the fallback. Remove native delegation only if a supported runtime reproduces a complete-route loss
 or changes the strict output contract.
 
+A Bun 1.4.2 and Chromium 153 recheck preserved that decision: Bun's fallback was 57–96% slower in
+both replays, while Chromium remained unresolved. Deno 2.9.6 reversed its earlier result and made
+the fallback 26–27% faster. Bun outranks Deno, and both consume the same capability-selected module;
+a Deno-only build branch would add a distribution contract solely for this speed difference. Keep
+the shared native path. Reopen if Deno becomes a higher-priority route, an existing package seam can
+select the fallback without a new public condition, or Bun no longer loses materially.
+
 ### Fixed-size portable base64url encoding
 
 Encode 16-byte base64url payloads in five 24-bit groups plus the final byte. Keep the generic bit

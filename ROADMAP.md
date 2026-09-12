@@ -41,7 +41,7 @@ unless the maintainer separately changes the HLD.
   separate shared V8 behavior from host API behavior.
 - [x] Probe each relevant capability's call shape, output, ownership, errors, limits, and scheduling
   on every installed runtime; make dispatch capability-based and exercise unavailable semantics.
-- [ ] Compare each viable native path and its compatible fallback twice through the complete public
+- [x] Compare each viable native path and its compatible fallback twice through the complete public
   route; preserve decision-changing evidence, rejected alternatives, limits, and reopening triggers.
 - [x] Add per-case page-fault, filesystem-I/O, and context-switch deltas from
   `process.resourceUsage`; existing timing, CPU, and heap data cannot infer them.
