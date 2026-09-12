@@ -464,6 +464,42 @@ The extra dispatch moved JIT cost among pool consumers instead of reducing the s
 
 ## Allocation and key rotation
 
+### Profiler capture boundary
+
+Corpus construction, outcome verification, case selection, and warm-up finish before native CPU and
+allocation sampling starts. Chromium publishes its runner only after that preparation; the driver
+waits for the published runner rather than elapsed time. Profiler start and stop remain outside each
+reported operation sample, but forced collection, reporting, host-task yields, and profiler sampling
+remain inside the wider native capture.
+
+A control-only native capture on 2026-09-12 used seven 2 ms samples after 20 ms of warm-up. The
+control returns a prepared string, so it retains the same dispatch, batching, sink, clock, and yield
+structure without exercising package logic:
+
+| Runtime | Timed control work | Native capture | Process CPU during row |
+| --- | ---: | ---: | ---: |
+| Node 24.20.0 | 13.66 ms | 30.58 ms | 16.46 ms |
+| Bun 1.4.1 | 13.68 ms | 50.86 ms | 17.26 ms |
+| Deno 2.9.6 | 14.14 ms | 30.60 ms | 16.07 ms |
+| Chromium 152 | 13.95 ms | 47.10 ms | unavailable |
+
+The capture-minus-work gap bounds combined profiler and harness self-noise; it does not isolate
+profiler start/stop cost. Eight direct captures after one discarded warm-up measured the median
+inspector command round trips around a 1 ms busy interval:
+
+| Runtime | Start | Stop |
+| --- | ---: | ---: |
+| Node 24.20.0 | 5.37 ms | 0.57 ms |
+| Bun 1.4.1 | 0.003 ms | 0.051 ms |
+| Deno 2.9.6 | 3.41 ms | 0.48 ms |
+| Chromium 152 | 1.01 ms | 0.35 ms |
+
+These are one local probe of command latency, not a stable runtime constant. Bun returned no sample
+in two of eight one-millisecond captures, and CPU attribution is too sparse to infer profiler cost:
+its control run emitted 39 samples, while Chromium attributed 16.70 ms to idle time. Use focused
+filters and operation timings for comparisons; use native profiles to locate work, not to infer
+per-call latency from capture duration.
+
 Node Inspector allocation sampling used a 1,024-byte interval with both `includeObjectsCollectedByMajorGC` and `includeObjectsCollectedByMinorGC` enabled. Each operation ran 32,768 calls (construction: 2,048), after warm-up. The empty control sampled approximately zero bytes per call. These are sampling estimates from one matched process pair, not exact allocation counts:
 
 | Operation | Before bytes/call | After bytes/call |

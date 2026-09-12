@@ -87,7 +87,7 @@ protection, and no default or fallback may select it.
   measure uninterrupted work separately from throughput and reject readiness sleeps.
 - [x] Keep smoke instrumentation within routine feedback budgets and put deeper sampling behind the
   same harness without giving slow evidence gating authority.
-- [ ] Keep corpus preparation outside native capture windows and start measurement only from an
+- [x] Keep corpus preparation outside native capture windows and start measurement only from an
   observed runtime-ready signal; quantify unavoidable profiler start/stop self-noise.
 
 ### Candidate map
