@@ -933,6 +933,14 @@ and the original decoded block remains available to later migration formats. A l
 replay measured 19% on Node 26.8.2, 21% on Bun 1.4.2, 44% on Deno 2.9.6, and 15% on Chromium 153;
 the Node JITless interval included no change.
 
+Keep linear candidate deduplication. Ordinary migration yields at most current, original, and plain
+interpretations; only deliberately overlapping custom schemas can produce dozens. Two all-runtime
+replays per candidate found that lazy `Set` promotion at 8, 16, or 32 candidates regressed its
+promotion boundary. The inline 32 threshold was 8–10% slower on Node, 8–9% on Bun, 5–6% on
+Chromium, and 5–9% on Deno, while 64 distinct candidates improved by 10–32%. Duplicate-heavy scans
+had no repeatable gain. Reconsider a `Set` only if observed workloads approach dozens of distinct
+candidates; tail-only speed does not justify a second structure on every call.
+
 Canonical UUID text packs directly into base64url only when `Uint8Array.prototype.toBase64` is
 absent. Node v24.20.0 took that fallback on 2026-09-12; Bun 1.4.2, Deno 2.9.6, and Chromium 151 used
 the native encoder. Two packed replays measured a 20–21% Node paired-median gain while every native

@@ -146,7 +146,7 @@ unless the maintainer separately changes the HLD.
   latency tails, and discarded bytes; choose no fixed size from throughput alone.
 - [x] Test a ring cursor over the random pool against copy-and-erase traversal. Preserve erasure and
   caller ownership; reject retained secret bytes or extra views even if average throughput improves.
-- [ ] Test thresholded migration-candidate deduplication with linear scan below crossover and `Set`
+- [x] Test thresholded migration-candidate deduplication with linear scan below crossover and `Set`
   above it; compare duplicate-heavy and distinct-heavy schema outputs before adding a second structure.
 - [ ] Test compact bitsets only for closed bounded validation sets now represented by `Set`; reject
   them where coercion, readability, or sparse domains erase the lookup benefit.
@@ -159,7 +159,7 @@ unless the maintainer separately changes the HLD.
 
 ### Workload-gated candidates
 
-- [ ] Measure candidate deduplication growth before replacing `Array.includes` with a `Set`. Vary
+- [x] Measure candidate deduplication growth before replacing `Array.includes` with a `Set`. Vary
   schemas that yield 0/1/many duplicate and distinct UUIDs; proceed only if realistic candidate
   counts make quadratic comparison material after charging the set allocation.
 - [ ] Measure fresh package import repeatedly before changing module topology. Separate parsing,
