@@ -602,6 +602,17 @@ Node/Bun CPU profiles and retained-heap profiles were also captured with the com
 
 The async constructor snapshots byte inputs before suspension, splits encoding/packing/hashing into checkpoints, and yields through ordinary host tasks. It preserves synchronous key material. A prioritized browser continuation failed to let an independently queued cancellation message run; ordinary message tasks passed the same installed-export test. Node/Bun use `setImmediate`.
 
+Keep synchronous and cooperative construction as separate public contracts. Repeated boundary
+profiles completed 16-byte seeds through 64 iterations and 4,097-byte seeds at one iteration with
+zero host tasks. At 4,096 iterations, Node and Chromium crossed the two-millisecond work deadline
+and yielded, while Bun and Deno completed without scheduling; at 65,536 iterations every runtime
+yielded. A seed-size or iteration threshold would therefore encode one runtime's speed as policy.
+The cooperative loop already selects from measured elapsed work: it returns without scheduling
+when work stays below the deadline and yields when it crosses. Replacing it with synchronous work
+would remove observed cancellation and host progress; replacing the synchronous API would change
+its return contract. Retest only if profiling shows generator checkpoints materially dominate a
+below-deadline workload or the scheduling contract changes.
+
 For a 19-byte seed at 65,536 iterations, completed construction matched the synchronous output.
 Independent host-task gaps measured 2.22 ms on Node 24.20.0, 4.29 ms on Bun 1.4.1,
 2.43 ms on Deno 2.9.6 and 2.30 ms in Chrome 152, with total construction between 6.6 and

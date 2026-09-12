@@ -211,7 +211,9 @@ protection, and no default or fallback may select it.
   unresolved everywhere. Singleton-only and grouped-word alternatives did not reproduce a primary gain.
 - [x] Replace the size-based cooperative-cancellation assertion with a controlled-clock slice oracle;
   it forces the production host yield without relying on seed size, CPU speed, or elapsed wall time.
-- [ ] Falsify synchronous derivation versus cooperative derivation at measured seed and iteration boundaries.
+- [x] Keep synchronous and cooperative derivation as separate contracts. Boundary profiles showed
+  the cooperative path schedules no host task below its measured deadline and yields by elapsed work,
+  while a size threshold would misclassify the same workload across runtimes.
 - [ ] Falsify current 256-call batches against geometric batch sizes for clock cost and event-loop blocking.
 - [ ] Falsify fixed warm-up against geometric warm-up durations using identical-code comparisons.
 - [x] Reject a duplicated fixed-eight-byte scalar HalfSipHash path: it improved Bun masking by 2–4%,
