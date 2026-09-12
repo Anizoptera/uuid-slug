@@ -941,6 +941,15 @@ and no view at 24 bytes, but one view at 256 bytes; lowering the boundary makes 
 fail. Reconsider 32 only when runtime primitives change or wider caller-buffer distributions justify
 a new measured crossover.
 
+A UUID parser table derived from the canonical byte offsets replaced four direct hyphen checks and
+16 byte-offset checks with one 36-character state walk. Two six-round packed replays on 2026-09-12
+measured valid parsing 8–27% slower on Node 26.8.2, 25–56% slower on Bun 1.4.2, 8–14% slower on
+Chromium 153, and 1–6% slower on Node JITless. Deno 2.9.6 had large process outliers, but paired
+medians were 3–19% slower. The table also added module initialization and retained state. Exact
+hex offsets, hyphen precedence, and atomic caller-owned writes remained covered, but invalid-path
+behavior cannot offset a repeated success-path regression. Keep direct structural checks and offset
+iteration; reconsider a table only if an engine can remove its lookup and full-text scan costs.
+
 Node v26.8.2 profiling combines process counters, `GCProfiler`, V8 heap/code/space state, Inspector
 CPU and allocation samples, heap snapshots, V8 ticks, and trace events. Each source answers a
 different question; correlation is evidence, while two APIs over the same V8 sampler are not

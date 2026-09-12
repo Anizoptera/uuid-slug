@@ -128,7 +128,7 @@ unless the maintainer separately changes the HLD.
   a repeated complete-route win without duplicating the formatter.
 - [x] Test packed 32-bit UUID equality against byte loops where exact 16-byte identity dominates.
   Vary aligned, offset, shared, and plain buffers; reject views, endian assumptions, or weaker checks.
-- [ ] Test a table-driven UUID parser state machine against offset iteration. Preserve exact error
+- [x] Test a table-driven UUID parser state machine against offset iteration. Preserve exact error
   positions, hyphen rules, version/variant checks, and atomic caller-owned writes.
 - [ ] Test branchless hexadecimal validation and decode tables against the current guarded parser.
   Separate valid-heavy from invalid-heavy workloads; reject slower diagnostics or opaque control flow.
