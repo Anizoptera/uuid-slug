@@ -229,6 +229,16 @@ Two secondary-runtime replays at 16 keys improved Deno last-key hits by 42–43%
 per-attempt allocation only if a supported schema can retain the package-owned outer block; the
 public custom-schema constructor deliberately prevents that capability.
 
+### Native base64url encoding
+
+Use `Uint8Array.prototype.toBase64` when the runtime provides it; probe once at module load and keep
+the fixed-size portable encoder as the fallback. Two 24-round comparisons on 2026-09-12 disabled
+only native encoding on the public plain-encode route. The portable path was 2.29–2.34 times slower
+on Bun 1.4.1, 13–15% slower on Deno 2.9.6, and 14–29% slower on Chromium 151; every 95% median
+interval excluded parity in both replays. Node 24.20.0 was unresolved because both revisions used
+the fallback. Remove native delegation only if a supported runtime reproduces a complete-route loss
+or changes the strict output contract.
+
 ### Portable UUIDv7 timestamp writes
 
 Select the fixed 48-bit timestamp writer once when the module loads. Bun keeps the six-byte loop;

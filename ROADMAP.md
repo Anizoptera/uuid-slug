@@ -108,7 +108,8 @@ protection, and no default or fallback may select it.
 - [x] Reuse owned UUID blocks for tagging and masking. Retain one shared guard path with a final
   direct ownership branch; duplicated closures and indirect dispatch slowed Bun's borrowed route.
 - [ ] Falsify general alphabet dispatch versus codec-construction specialization.
-- [ ] Falsify native base64url conversion versus portable fixed-size encoding per runtime.
+- [x] Keep capability-probed native base64url encoding with a portable fallback. Two public-route
+  replays rejected portable encoding on Bun, Deno, and Chromium; Node used the fallback in both.
 - [x] Mask the validated parser-owned block directly: repeated packed comparisons improved string
   encoding on every runtime while preserving the caller-owned byte path.
 - [ ] Falsify owned mask output versus caller-owned internal codec scratch under reentrancy constraints.
