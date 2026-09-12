@@ -156,6 +156,16 @@ put all masked median ratios within 3.3% of 1.0 under the same warm-up policy.
   be reused safely across varying caller buffers or target engines eliminate their whole-route cost.
 - Fixed-offset expansion of the four-word check-tag loop produced no consistent runtime win. Selected
   masked routes regressed by up to 4.9% on Node, 8.2% on Deno, and 13.9% on Chrome.
+- Passing four pre-read tagged words through an optional built-in-mask protocol removed Feistel's
+  second input read but added scalar dispatch and another transform shape. Two six-round packed
+  replays found no encode route that improved significantly twice. Bun string encoding improved
+  11-14% only in the second replay; Node byte encoding regressed 0.1-4.4% only in the first.
+  Keep the two compact reads. Retest only if a primary engine can inline the scalar protocol without
+  making the general transform polymorphic.
+- A tuple or scratch array could carry the same four words, but would replace four byte reads with
+  allocation or four stores. A callback would add per-word indirect calls. A mask-only Feistel copy
+  would avoid dispatch by duplicating the wire-format round core. These variants add more hot work or
+  a second cipher owner than the measured scalar protocol, so they do not warrant separate timing.
 - Inlining both compression rounds removed the counted loop but duplicated its arithmetic. Two
   24-round packed replays found no statistically distinct Bun route and no repeatable Node route;
   Chromium was also unresolved. The loop remains the smaller implementation.

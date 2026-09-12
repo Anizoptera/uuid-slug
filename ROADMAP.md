@@ -122,7 +122,8 @@ protection, and no default or fallback may select it.
   29–69% Bun, 6–14% Deno, and 47–110% Chromium regressions.
 - [x] Reject fixed-offset check-tag unrolling: it produced no cross-runtime win and regressed
   selected Node, Deno, and Chromium masked routes by 4.9%, 8.2%, and 13.9%, respectively.
-- [ ] Falsify a separate tag pass versus tag accumulation during the mandatory input read.
+- [x] Reject tag accumulation during the mandatory input read: a built-in scalar Feistel path had no
+  encode route improve significantly in both packed replays, while it added another transform shape.
 - [x] Reuse owned UUID blocks for tagging and masking. Retain one shared guard path with a final
   direct ownership branch; duplicated closures and indirect dispatch slowed Bun's borrowed route.
 - [x] Reject codec-construction alphabet wrappers: an eight-round packed screen found no
