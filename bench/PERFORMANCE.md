@@ -117,6 +117,9 @@ put all masked median ratios within 3.3% of 1.0 under the same warm-up policy.
 - Inlining both compression rounds removed the counted loop but duplicated its arithmetic. Two
   24-round packed replays found no statistically distinct Bun route and no repeatable Node route;
   Chromium was also unresolved. The loop remains the smaller implementation.
+- Preselecting Feistel key start and stride moved the direction choice outside the four-round loop.
+  Two 24-round packed replays found no statistically distinct Bun or Node route. A Deno byte-decode
+  improvement appeared only in the first replay, so the indexed direction expression remains.
 
 These measurements isolate shipped public routes, not each generated-machine-code difference. The
 fixed-length trial changed both message dispatch and argument shape, so it does not reject either

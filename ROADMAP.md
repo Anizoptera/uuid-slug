@@ -80,7 +80,8 @@ protection, and no default or fallback may select it.
 - [ ] Falsify `Int32Array` versus ordinary numeric scratch while preserving signed 32-bit coercion.
 - [ ] Falsify caller scratch versus module scratch versus closure-owned scratch for reentrancy and JIT locality.
 - [ ] Falsify indexed versus unrolled four-round Feistel traversal.
-- [ ] Falsify one direction branch per round versus preselected start and stride.
+- [x] Reject preselected Feistel key start and stride: two packed 24-round replays found no
+  statistically distinct Bun or Node route, and the extra loop state had no measured value.
 - [ ] Falsify shared reversible Feistel code versus separate mask and unmask loops.
 - [ ] Falsify indexed key reads versus construction-time scalar capture.
 - [ ] Falsify helper calls versus inlined big-endian reads and writes at the fixed offsets.
