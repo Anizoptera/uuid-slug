@@ -363,6 +363,18 @@ export function createProfileCases(
     "invalid.timestamp.version": () => api.validateUuidV7Timestamp(v4Uuid, timestampWindow),
     "invalid.timestamp.window": () =>
       api.validateUuidV7Timestamp(ids[0] as string, outsideTimestampWindow),
+    "invalid.construct.schema": () => api.createUuidV7Mask({ seed: "" }),
+    "invalid.construct.custom": () =>
+      api.createCustomUuidV7Mask({
+        label: "profile-invalid",
+        mask: () => new Uint8Array(15),
+        unmask: (input) => input,
+      }),
+    "invalid.construct.codec.sentinel": () =>
+      api.createUuidV7SlugCodec({
+        mask: current,
+        sentinels: [sentinelDefinitions[0]!, { ...sentinelDefinitions[1]!, name: "sentinel-0" }],
+      }),
     "error.classify": () => api.isUuidSlugError(api.uuidToBytes(badUuid)),
     "error.unwrap.success": (index) => api.unwrapUuidSlug(bytes[index & 255] as Uint8Array),
     "invalid.error.unwrap": () => {
@@ -375,6 +387,8 @@ export function createProfileCases(
     },
     "construct.codec": () => api.createUuidV7SlugCodec({ mask: current }),
     "construct.schema": () => api.createUuidV7Mask(current),
+    "construct.schema.bytes": () =>
+      api.createUuidV7Mask({ seed: new Uint8Array(16), keyDerivationIterations: 1 }),
     "construct.schema.iterated": () =>
       api.createUuidV7Mask({ ...current, keyDerivationIterations: 8 }),
     "construct.codec.rotation": () =>
@@ -389,6 +403,11 @@ export function createProfileCases(
       api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions.slice(0, 8) }),
     "construct.codec.sentinels16": () =>
       api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions }),
+    "construct.migration.current": () => codec.createMigrationDecoder(),
+    "construct.migration.plain": () => codec.createMigrationDecoder({ plainSlug: true }),
+    "construct.migration.original": () => codec.createMigrationDecoder({ originalMask: true }),
+    "construct.migration.all": () =>
+      codec.createMigrationDecoder({ originalMask: true, plainSlug: true }),
     "construct.custom": () =>
       api.createCustomUuidV7Mask({
         label: "profile-identity",
