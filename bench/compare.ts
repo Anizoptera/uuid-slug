@@ -12,6 +12,7 @@ import { medianConfidence95 } from "./statistics";
 
 type Revision = "baseline" | "candidate";
 type Runtime = "node" | "bun" | "deno" | "chromium";
+const RUNTIMES = ["node", "bun", "deno", "chromium"] as const satisfies readonly Runtime[];
 
 interface ArtifactSet {
   readonly api: Readonly<Record<Runtime, string>>;
@@ -33,11 +34,20 @@ const rounds = Number(process.env.UUID_SLUG_COMPARE_ROUNDS ?? (smoke ? 2 : 6));
 const duration = process.env.UUID_SLUG_PROFILE_MS ?? (smoke ? "1" : "5");
 const warmup = process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (smoke ? "2" : "20");
 const filter = process.env.UUID_SLUG_PROFILE_FILTER ?? "";
+const selectedRuntimes = (process.env.UUID_SLUG_COMPARE_RUNTIMES?.split(":").filter(Boolean) ?? [
+  ...RUNTIMES,
+]) as Runtime[];
 if (!Number.isSafeInteger(rounds) || rounds < 1)
   throw new Error("UUID_SLUG_COMPARE_ROUNDS must be a positive safe integer");
+if (
+  selectedRuntimes.length === 0 ||
+  new Set(selectedRuntimes).size !== selectedRuntimes.length ||
+  selectedRuntimes.some((runtime) => !RUNTIMES.includes(runtime))
+)
+  throw new Error("UUID_SLUG_COMPARE_RUNTIMES must list distinct node:bun:deno:chromium values");
 
 function shuffledRuntimes(seed: number): Runtime[] {
-  const values: Runtime[] = ["node", "bun", "deno", "chromium"];
+  const values = [...selectedRuntimes];
   let state = seed >>> 0;
   for (let index = values.length - 1; index > 0; index -= 1) {
     state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
@@ -223,7 +233,7 @@ function median(values: readonly number[]): number {
 }
 
 function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void {
-  for (const runtime of ["node", "bun", "deno", "chromium"] as const) {
+  for (const runtime of selectedRuntimes) {
     const prefix = `${runtime}\0baseline\0`;
     for (const [key, baseline] of observations) {
       if (!key.startsWith(prefix)) continue;

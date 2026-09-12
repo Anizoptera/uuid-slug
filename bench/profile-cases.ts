@@ -44,6 +44,9 @@ export function createProfileCases(
   const sentinelCodec4 = unwrap(
     api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions.slice(0, 4) }),
   );
+  const sentinelCodec8 = unwrap(
+    api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions.slice(0, 8) }),
+  );
   const sentinelCodec16 = unwrap(
     api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions }),
   );
@@ -223,16 +226,28 @@ export function createProfileCases(
     "sentinel.base32.decode": () => base32Codec.decodeSlug(base32Sentinel.slug),
     "sentinel.base32.decode.bytes": () => base32Codec.decodeSlugToBytes(base32Sentinel.slug),
     "sentinel.scan4.first": () => sentinelCodec4.encodeUuid(sentinelDefinitions[0]!.uuid),
+    "sentinel.scan4.middle": () => sentinelCodec4.encodeUuid(sentinelDefinitions[2]!.uuid),
     "sentinel.scan4.last": () => sentinelCodec4.encodeUuid(sentinelDefinitions[3]!.uuid),
     "sentinel.scan4.miss": () => sentinelCodec4.encodeUuid(ids[255] as string),
     "sentinel.scan4.bytes.first": () => sentinelCodec4.encodeUuid(sentinelBytes[0] as Uint8Array),
+    "sentinel.scan4.bytes.middle": () => sentinelCodec4.encodeUuid(sentinelBytes[2] as Uint8Array),
     "sentinel.scan4.bytes.last": () => sentinelCodec4.encodeUuid(sentinelBytes[3] as Uint8Array),
     "sentinel.scan4.bytes.miss": () => sentinelCodec4.encodeUuid(bytes[255] as Uint8Array),
+    "sentinel.scan8.first": () => sentinelCodec8.encodeUuid(sentinelDefinitions[0]!.uuid),
+    "sentinel.scan8.middle": () => sentinelCodec8.encodeUuid(sentinelDefinitions[4]!.uuid),
+    "sentinel.scan8.last": () => sentinelCodec8.encodeUuid(sentinelDefinitions[7]!.uuid),
+    "sentinel.scan8.miss": () => sentinelCodec8.encodeUuid(ids[255] as string),
+    "sentinel.scan8.bytes.first": () => sentinelCodec8.encodeUuid(sentinelBytes[0] as Uint8Array),
+    "sentinel.scan8.bytes.middle": () => sentinelCodec8.encodeUuid(sentinelBytes[4] as Uint8Array),
+    "sentinel.scan8.bytes.last": () => sentinelCodec8.encodeUuid(sentinelBytes[7] as Uint8Array),
+    "sentinel.scan8.bytes.miss": () => sentinelCodec8.encodeUuid(bytes[255] as Uint8Array),
     "sentinel.scan16.first": () => sentinelCodec16.encodeUuid(sentinelDefinitions[0]!.uuid),
     "sentinel.scan16.middle": () => sentinelCodec16.encodeUuid(sentinelDefinitions[8]!.uuid),
     "sentinel.scan16.last": () => sentinelCodec16.encodeUuid(sentinelDefinitions[15]!.uuid),
     "sentinel.scan16.miss": () => sentinelCodec16.encodeUuid(ids[255] as string),
     "sentinel.scan16.bytes.first": () => sentinelCodec16.encodeUuid(sentinelBytes[0] as Uint8Array),
+    "sentinel.scan16.bytes.middle": () =>
+      sentinelCodec16.encodeUuid(sentinelBytes[8] as Uint8Array),
     "sentinel.scan16.bytes.last": () => sentinelCodec16.encodeUuid(sentinelBytes[15] as Uint8Array),
     "sentinel.scan16.bytes.miss": () => sentinelCodec16.encodeUuid(bytes[255] as Uint8Array),
     "invalid.uuid": () => api.uuidToBytes(badUuid),
@@ -259,6 +274,12 @@ export function createProfileCases(
         previousMasks: [previous, { seed: "profile-third-seed" }],
       }),
     "construct.codec.sentinels": () => api.createUuidV7SlugCodec({ mask: current, sentinels }),
+    "construct.codec.sentinels4": () =>
+      api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions.slice(0, 4) }),
+    "construct.codec.sentinels8": () =>
+      api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions.slice(0, 8) }),
+    "construct.codec.sentinels16": () =>
+      api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions }),
     "construct.custom": () =>
       api.createCustomUuidV7Mask({
         label: "profile-identity",

@@ -92,3 +92,5 @@ driver packs each revision, alternates revision order in fresh processes,
 rotates runtime order, and emits JSON Lines containing raw samples and per-operation median ratios. A heap snapshot measures
 retention, not gross allocation; sampled profiles are estimates; forced GC changes the workload;
 `maxBatchMs` and `maxUninterruptedMs` are observations, not universal latency bounds.
+Set `UUID_SLUG_COMPARE_RUNTIMES` to a distinct colon-separated subset of
+`node:bun:deno:chromium` for a narrow comparison. Use all runtimes before retaining a change.
