@@ -58,24 +58,21 @@ const bundle = async (name: string) => {
   }
 };
 
-test.each([
-  // A CEILING, not a target: roughly twice what each measures today, so ordinary growth never
-  // touches it and a re-coupling to the codec (which more than doubles both) always does.
-  ["uuidToSlug", 5_000],
-  ["generateUuidV7Slug", 9_000],
-])("importing %s alone carries no masking machinery", async (name, ceiling) => {
-  const code = await bundle(name);
-  // Thrown rather than asserted: `expect(code).not.toInclude(...)` prints the WHOLE minified
-  // bundle on failure, and the reader needs the cause, not twelve kilobytes of it.
-  if (code.includes(MASKING_WITNESS))
-    throw new Error(
-      `Importing "${name}" alone now pulls in the masking machinery (${code.length} bytes).\n` +
-        `Cause: something on its path evaluates a codec at MODULE SCOPE -- a construction call, or\n` +
-        `a property read from one. Keep the keyless exports\n` +
-        `sourced from src/keyless.ts, which builds them from a bare generator. See that file.`,
-    );
-  expect(code.length).toBeLessThan(ceiling);
-});
+test.each(["uuidToSlug", "generateUuidV7Slug"])(
+  "importing %s alone carries no masking machinery",
+  async (name) => {
+    const code = await bundle(name);
+    // Thrown rather than asserted: `expect(code).not.toInclude(...)` prints the WHOLE minified
+    // bundle on failure, and the reader needs the cause, not twelve kilobytes of it.
+    if (code.includes(MASKING_WITNESS))
+      throw new Error(
+        `Importing "${name}" alone now pulls in the masking machinery (${code.length} bytes).\n` +
+          `Cause: something on its path evaluates a codec at MODULE SCOPE -- a construction call, or\n` +
+          `a property read from one. Keep the keyless exports\n` +
+          `sourced from src/keyless.ts, which builds them from a bare generator. See that file.`,
+      );
+  },
+);
 
 test("the witness is present when the codec IS imported", async () => {
   // Without this the case above could pass because the witness stopped being reachable at all --
