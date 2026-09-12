@@ -486,6 +486,13 @@ not prove its internal source. Bypassing native delegation failed the shared Nod
 tests on native output and dual-failure preservation. Retest delegation per output form if a host
 changes its native contract or a repeated complete-route comparison favors the portable path.
 
+Do not add another capability cache around generation. Each adapter already probes optional native
+APIs once at module evaluation and stores only supported hooks. Public calls perform one property
+dispatch through that selected runtime; this is not a repeated host-capability probe. Capturing a
+second copy inside each generator would duplicate state and hide later injected native failures from
+the same dispatcher used in production. Reconsider only if a profiler attributes material warm-route
+cost to the property dispatch rather than the native call, validation, fallback, or formatting.
+
 ### Portable UUIDv4 ownership paths
 
 Draw entropy directly into package-owned output. Keep caller-owned output on a separate path that

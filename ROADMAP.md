@@ -204,7 +204,8 @@ protection, and no default or fallback may select it.
   fallback implementation on every runtime regardless of native capability.
 - [x] Repeat packed comparisons for each changed portable UUIDv7 route and verify native-capability
   failure selects the optimized fallback on every runtime.
-- [ ] Falsify per-call capability lookup versus the current module-load probe and captured adapter.
+- [x] Reject a second capability cache: adapters already probe once at module load, and public calls
+  retain one runtime-property dispatch so injected native failures exercise the production seam.
 - [ ] Falsify construction-time TextEncoder and word packing versus runtime-specific UTF-8 primitives.
 - [ ] Falsify synchronous derivation versus cooperative derivation at measured seed and iteration boundaries.
 - [ ] Falsify current 256-call batches against geometric batch sizes for clock cost and event-loop blocking.
