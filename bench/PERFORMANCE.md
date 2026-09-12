@@ -435,6 +435,15 @@ statistically unresolved on both Node 24.20.0 and Bun 1.4.1; paired median ratio
 to 1.04 and every 95% interval crossed 1. Keep the direct call and its one alphabet branch. Retest
 only if a primary engine stops specializing the codec's captured alphabet across that call.
 
+Built-in mask exception bypass was rejected. Marking built-in schema handles as non-throwing added
+a protocol field and a per-call branch so only custom callbacks entered `try`/`catch`. Two
+eight-round packed screens found no repeatable built-in win. Node timestamp extraction regressed
+4.1–6.5% in both screens; one screen also regressed caller-owned decode by 9.3%. Custom Node decode
+regressed 7.7% in the second screen, showing that the shared branch moved cost onto the protected
+extension path. Existing Node and Bun tests failed when the custom catch was removed, proving they
+detect lost exception containment and original-cause preservation. Keep one contained path; retest
+only if an engine demonstrates material exception-region overhead without adding hot-path dispatch.
+
 ### Portable UUIDv4 ownership paths
 
 Draw entropy directly into package-owned output. Keep caller-owned output on a separate path that

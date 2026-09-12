@@ -156,7 +156,8 @@ protection, and no default or fallback may select it.
   screens found no repeated Node or Bun win, while the first regressed an eight-key Node hit.
 - [x] Reuse one restored private block across failed previous-key attempts. Geometric comparisons
   improved multi-key hits and failures without a repeated current-key regression.
-- [ ] Falsify exception containment on built-in masks versus a built-in non-throwing path and custom boundary.
+- [x] Reject built-in mask exception bypass: two packed screens found no repeatable built-in win,
+  while Node timestamp extraction regressed and custom decode also lost in the second screen.
 - [ ] Falsify generic schema callbacks versus a private built-in schema discriminant without exposing API state.
 - [ ] Falsify eager runtime adapter imports versus guarded lazy capability loading using cold and warm routes.
 - [ ] Falsify native UUID generation delegation versus portable generation by output form and entropy behavior.
