@@ -53,3 +53,17 @@ Make each consumer pay only for UUID generation, plain slugs, or masking that it
 - [x] Test every root use case with every optimizer; test focused entries with Node's loader, reject masking imports, and require fewer loaded modules than root.
 - [x] Re-run packed consumers, TypeScript 7 and 5.7, all retained optimizers, runtime tests, and the full repository gate.
 - [x] Inspect the final diff and packed artifact, then commit the smallest complete simplification.
+
+## Final tree-shaking audit
+
+- [ ] Compare the complete `6a01c48..HEAD` phase diff with its roadmap and public-contract owners.
+- [ ] Account for every changed, moved, added, and deleted source line and comment against the base tree.
+- [ ] Compare root and subpath runtime exports, type exports, declaration comments, package conditions, and targets against the base package.
+- [ ] Compare every moved implementation with its base bytes and prove shared helpers were neither duplicated nor lost.
+- [ ] Run base and current packed consumers for every unchanged API operation and compare observable results.
+- [ ] Falsify tree shaking for each root use case across every retained optimizer and inspect unexpected retained code.
+- [ ] Falsify focused subpaths through direct ESM loading, masking exclusion, combined v4/v7 use, and slug-only use.
+- [ ] Inspect tests, scripts, dependencies, docs, and comments for redundant proof, stale claims, orphaned files, and needless public surface.
+- [ ] Run TypeScript 7, the TypeScript 5.7 consumer floor, Node, Bun, package validation, and Rust parity gates.
+- [ ] Fix each material defect behind its smallest discriminating reproducer; remove audit work that adds no lasting protection.
+- [ ] Re-read the final diff, close every roadmap item with evidence, run the complete gate, and commit only audited changes.
