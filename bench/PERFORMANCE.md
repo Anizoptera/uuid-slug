@@ -1133,4 +1133,8 @@ The Bun test lane uses two isolated workers. Automatic parallelism increased con
 shortening the complete local check on 2026-09-11; change the cap only after measuring the complete
 lane with the same corpus and isolation.
 
+The benchmark harness runs only its independent child-process cases concurrently. On Bun 1.4.2,
+five-run medians fell from 655 ms to 266 ms for that file and from 889 ms to 693 ms for the complete
+Bun test lane. Keep parser and statistics cases serial; they do not wait and gain nothing from overlap.
+
 The gates do not prove all performance properties. Relative timing cannot detect a slowdown shared by both sides. Constructor counters cannot see every engine allocation. Latest-runtime CI complements pinned runs, but this study did not execute hosted CI or measure every OS/architecture. Keep these limits when interpreting a pass.

@@ -124,7 +124,9 @@ afterAll(async () => {
   await rm(directory, { recursive: true, force: true });
 });
 
-test("failed entropy instrumentation restores globals before returning the error", async () => {
+// These cases wait on independent child processes. Concurrency overlaps those waits; each child
+// owns its mutable files, while the shared fixture is read-only after beforeAll completes.
+test.concurrent("failed entropy instrumentation restores globals before returning the error", async () => {
   const module = join(import.meta.dir, "instrument.ts");
   const child = Bun.spawn(
     [
@@ -162,7 +164,7 @@ test("failed entropy instrumentation restores globals before returning the error
   expect({ status, stdout, stderr }).toEqual({ status: 0, stdout: "", stderr: "" });
 });
 
-test("profiling refuses failures after its initial success witness", async () => {
+test.concurrent("profiling refuses failures after its initial success witness", async () => {
   const api = join(import.meta.dir, "../src/index.ts");
   const subject = join(directory, "fails-after-witness.mjs");
   await Bun.write(
@@ -191,7 +193,7 @@ export function bytesToUuid(...args) {
   expect(stdout).not.toContain('"name":"format"');
 });
 
-test.each([
+test.concurrent.each([
   ["resources", 'new UuidSlugError("invalid_uuid", "discarded error");', "errors=1 exceeds 0"],
   [
     "latency",
@@ -256,7 +258,7 @@ async function matrix(mode: string, timeoutMs = 30_000) {
   return { stdout, stderr, status };
 }
 
-test.each([
+test.concurrent.each([
   ["missing", "could not run"],
   ["entries", "runtime changes between speed and entropy reports"],
   ["exit-after", "exited 7"],
@@ -270,7 +272,7 @@ test.each([
   if (mode === "exit-after") expect(result.stdout).toContain("Randomness — subject (fixture 1)");
 });
 
-test.each(["0", "-1", "1.5", "NaN", "Infinity"])(
+test.concurrent.each(["0", "-1", "1.5", "NaN", "Infinity"])(
   "benchmark rejects invalid counts %s",
   async (count) => {
     const results = await Promise.all(
@@ -301,7 +303,7 @@ test.each(["0", "-1", "1.5", "NaN", "Infinity"])(
 );
 
 // The timeout bounds a deliberately hung child; it does not decide readiness.
-test("hung runtime cannot hold the matrix indefinitely", async () => {
+test.concurrent("hung runtime cannot hold the matrix indefinitely", async () => {
   const result = await matrix("hang", 100);
   expect(result.status).toBe(1);
   expect(result.stderr).toContain("exited");
