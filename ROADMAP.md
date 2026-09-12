@@ -176,7 +176,7 @@ protection, and no default or fallback may select it.
   executes on Node, Bun, Deno, and Chromium without disabling each host's native public route.
 - [x] Falsify portable UUIDv4 alternatives for entropy reuse, owned and caller-owned writes,
   formatting, branches, and shared-pool interactions; retain only repeated public-route wins.
-- [ ] Falsify portable UUIDv7 alternatives for entropy draw size and reuse, state layout, byte
+- [x] Falsify portable UUIDv7 alternatives for entropy draw size and reuse, state layout, byte
   assembly, formatting, caller-owned writes, clock reads, branches, and runtime-specific primitives.
 - [x] Draw only the ten entropy bytes portable UUIDv7 consumes; two packed replays improved
   byte-oriented routes on Node and Bun without changing payload-bit coverage or atomic failure.
@@ -198,11 +198,11 @@ protection, and no default or fallback may select it.
   improved Node and Chromium while Bun retained its faster loop; per-call dispatch regressed Bun.
 - [x] Optimize retained portable UUIDv4 paths to the measured frontier without changing entropy,
   UUID layout, ownership, fallback, error, or wire contracts.
-- [ ] Optimize retained portable UUIDv7 paths to the measured frontier without changing entropy,
+- [x] Optimize retained portable UUIDv7 paths to the measured frontier without changing entropy,
   UUID layout, ordering, ownership, fallback, error, or wire contracts.
 - [x] Repeat packed comparisons for each changed portable UUIDv4 route and exercise the private
   fallback implementation on every runtime regardless of native capability.
-- [ ] Repeat packed comparisons for each changed portable UUIDv7 route and verify native-capability
+- [x] Repeat packed comparisons for each changed portable UUIDv7 route and verify native-capability
   failure selects the optimized fallback on every runtime.
 - [ ] Falsify per-call capability lookup versus the current module-load probe and captured adapter.
 - [ ] Falsify construction-time TextEncoder and word packing versus runtime-specific UTF-8 primitives.

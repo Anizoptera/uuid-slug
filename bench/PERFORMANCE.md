@@ -428,6 +428,16 @@ left every portable route statistically unresolved on Node, Bun, Deno, and Chrom
 candidate duplicated the invalid-clock error construction. Retest only if a primary engine changes
 its treatment of repeated `typeof` checks on monomorphic numeric values.
 
+The portable UUIDv7 frontier retains ten-byte initial draws, four-byte continuation draws, split
+sequence words, module-selected timestamp writes, direct caller-owned writes, and the shared UUID
+formatter. The measured alternatives covered draw size, refill reuse, packed sequence state, tail
+copy shapes, range branches, clock validation, and runtime-specific timestamp assembly. Each retained
+change had two packed replays on all four runtimes; the rejected shapes either lost a primary route
+or added code without a repeatable gain. Formatting remains shared because UUIDv7 has no distinct
+text contract that could remove its mandatory 16-byte state without duplicating byte assembly.
+Reopen this frontier only for a new mechanism that removes measured complete-route work while keeping
+entropy coverage, sequence transitions, atomic output, errors, and wire bytes unchanged.
+
 Codec-construction alphabet wrappers were rejected. Four literal-alphabet wrappers let the codec
 select base64url or base32hex masking once, but still called the shared implementation. An
 eight-round packed screen left base64url string and byte encoding and base32hex string encoding
