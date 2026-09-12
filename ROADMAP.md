@@ -113,7 +113,7 @@ protection, and no default or fallback may select it.
   encoding on every runtime while preserving the caller-owned byte path.
 - [ ] Falsify owned mask output versus caller-owned internal codec scratch under reentrancy constraints.
 - [ ] Falsify linear sentinel encode lookup versus a construction-time index at geometric
-  cardinalities, including first, middle, last, and miss positions.
+  cardinalities, including string and byte first, middle, last, and miss positions.
 - [ ] Falsify linear previous-key traversal versus caller-ordered precompiled decode operations.
 - [ ] Falsify exception containment on built-in masks versus a built-in non-throwing path and custom boundary.
 - [ ] Falsify generic schema callbacks versus a private built-in schema discriminant without exposing API state.

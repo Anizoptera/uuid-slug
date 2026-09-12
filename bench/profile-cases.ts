@@ -81,6 +81,7 @@ export function createProfileCases(
     return `${time.slice(0, 8)}-${time.slice(8)}-7${a}-${b}-${tail}${index.toString(16).padStart(4, "0")}`;
   });
   const bytes = ids.map((id) => unwrap(api.uuidToBytes(id)));
+  const sentinelBytes = sentinelDefinitions.map(({ uuid }) => unwrap(api.uuidToBytes(uuid)));
   const slugs = ids.map((id) => unwrap(api.uuidToSlug(id)));
   const base32 = ids.map((id) => unwrap(api.uuidToSlug(id, "base32hex")));
   const masked = ids.map((id) => unwrap(codec.encodeUuid(id)));
@@ -224,10 +225,16 @@ export function createProfileCases(
     "sentinel.scan4.first": () => sentinelCodec4.encodeUuid(sentinelDefinitions[0]!.uuid),
     "sentinel.scan4.last": () => sentinelCodec4.encodeUuid(sentinelDefinitions[3]!.uuid),
     "sentinel.scan4.miss": () => sentinelCodec4.encodeUuid(ids[255] as string),
+    "sentinel.scan4.bytes.first": () => sentinelCodec4.encodeUuid(sentinelBytes[0] as Uint8Array),
+    "sentinel.scan4.bytes.last": () => sentinelCodec4.encodeUuid(sentinelBytes[3] as Uint8Array),
+    "sentinel.scan4.bytes.miss": () => sentinelCodec4.encodeUuid(bytes[255] as Uint8Array),
     "sentinel.scan16.first": () => sentinelCodec16.encodeUuid(sentinelDefinitions[0]!.uuid),
     "sentinel.scan16.middle": () => sentinelCodec16.encodeUuid(sentinelDefinitions[8]!.uuid),
     "sentinel.scan16.last": () => sentinelCodec16.encodeUuid(sentinelDefinitions[15]!.uuid),
     "sentinel.scan16.miss": () => sentinelCodec16.encodeUuid(ids[255] as string),
+    "sentinel.scan16.bytes.first": () => sentinelCodec16.encodeUuid(sentinelBytes[0] as Uint8Array),
+    "sentinel.scan16.bytes.last": () => sentinelCodec16.encodeUuid(sentinelBytes[15] as Uint8Array),
+    "sentinel.scan16.bytes.miss": () => sentinelCodec16.encodeUuid(bytes[255] as Uint8Array),
     "invalid.uuid": () => api.uuidToBytes(badUuid),
     "invalid.slug": () => api.slugToBytes(badSlug),
     "invalid.mask": (index) => codec.decodeSlug(oldOnly[index % oldOnly.length] as string),
