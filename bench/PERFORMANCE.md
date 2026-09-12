@@ -727,6 +727,17 @@ A separate fixed-16 loop improved Node caller-owned UUIDv4 by 4.7–5.1% and Chr
 routes, but Bun gained nothing and Node portable-v7 caller output regressed by 5.3% in one replay.
 The extra dispatch moved JIT cost among pool consumers instead of reducing the shared work.
 
+Pool sizes of 2, 4, 16, 32, and 64 KiB were compared twice with the retained 8 KiB size on
+Node 26.8.2 and Bun 1.4.2; the 64 KiB endpoint was also compared twice on Deno 2.9.6 and
+Chromium 153. For 16-byte requests, 8 KiB makes one source call per 512 ids and retains at most
+8 KiB per runtime-module instance. Separate instances share no cursor or lock; larger pools only
+reduce calls into the potentially contended platform source. Two KiB regressed Node by 5.8–8.6%
+and Bun by 4.9–5.3%. Four KiB was unstable on Node. Sizes from 16 through 64 KiB did not produce
+a repeatable gain on every primary runtime; 64 KiB regressed Bun by 1.3% in one full-runtime replay
+and doubled Deno's worst observed batch from 0.051–0.078 ms to 0.107–0.110 ms in both tail replays.
+Larger pools also retain and can discard proportionally more unused random bytes. Keep 8 KiB unless
+a changed platform source moves both the primary-runtime crossover and complete-route latency.
+
 ## Allocation and key rotation
 
 ### Profiler batch size
