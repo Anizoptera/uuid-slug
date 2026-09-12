@@ -260,6 +260,11 @@ Four fixed tail assignments were rejected in favor of the compact four-iteration
 string generation regressed 1.3% with its 95% median interval above no change. Reconsider direct
 writes only if a primary runtime shows a complete-route gain without regressing another output form.
 
+`Uint8Array#set` was rejected for the same four-byte copy. One 24-round packed comparison regressed
+Node portable routes by 3–21% and Bun routes by 6–42%. Bun's unrelated UUIDv4 control also regressed
+8%, but every Bun v7 route lost more and Node independently showed the same direction. Reconsider
+bulk copy only if the copied region grows enough to amortize its call overhead.
+
 ### Portable UUIDv4 ownership paths
 
 Draw entropy directly into package-owned output. Keep caller-owned output on a separate path that
