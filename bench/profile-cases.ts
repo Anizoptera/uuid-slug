@@ -156,13 +156,14 @@ export function createProfileCases(
     const value = portable.generateUuidV7Bytes();
     return value instanceof Error ? value : api.bytesToSlug(value, alphabet);
   };
-  const ids = Array.from({ length: 256 }, (_, index) => {
+  const profileUuid = (index: number) => {
     const time = (instant + index).toString(16).padStart(12, "0");
     const a = ((index * 251) & 4095).toString(16).padStart(3, "0");
     const b = (0x8000 | ((index * 31337) & 16383)).toString(16);
     const tail = (Math.imul(index + 1, 0x9e3779b1) >>> 0).toString(16).padStart(8, "0");
     return `${time.slice(0, 8)}-${time.slice(8)}-7${a}-${b}-${tail}${index.toString(16).padStart(4, "0")}`;
-  });
+  };
+  const ids = Array.from({ length: 256 }, (_, index) => profileUuid(index));
   const bytes = ids.map((id) => unwrap(api.uuidToBytes(id)));
   const sentinelBytes = sentinelDefinitions.map(({ uuid }) => unwrap(api.uuidToBytes(uuid)));
   const collidingSentinelBytes = collidingSentinelDefinitions.map(({ uuid }) =>
@@ -170,6 +171,43 @@ export function createProfileCases(
   );
   const collidingSentinelMiss = unwrap(api.uuidToBytes("00000040-0000-7000-8000-0000deadbeef"));
   const slugs = ids.map((id) => unwrap(api.uuidToSlug(id)));
+  const identityMask = unwrap(
+    api.createCustomUuidV7Mask({
+      label: "profile-candidate-identity",
+      mask: (input) => input,
+      unmask: (input) => input,
+    }),
+  );
+  const identityCodec = unwrap(api.createUuidV7SlugCodec({ mask: identityMask }));
+  const overlapEntries: { uuid: string; slug: string }[] = [];
+  let overlapTail: string | undefined;
+  for (let index = 0; index < 4096 && overlapEntries.length < 64; index += 1) {
+    const uuid = profileUuid(index);
+    const slug = unwrap(identityCodec.encodeUuid(uuid));
+    overlapTail ??= slug.at(-1);
+    if (slug.at(-1) === overlapTail) overlapEntries.push({ uuid, slug });
+  }
+  if (overlapEntries.length !== 64) throw new Error("Insufficient migration overlap fixtures");
+  const base64url = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  // Clear the four external check bits so the public plain-slug decoder exposes each ciphertext.
+  const mixedBytes = (slug: string) => {
+    const last = base64url.indexOf(slug[21]!);
+    if (last < 0) throw new Error("Invalid migration overlap fixture");
+    return unwrap(api.slugToBytes(slug.slice(0, 21) + base64url[last & 0x30]));
+  };
+  const overlapSlug = overlapEntries[0]!.slug;
+  const overlapBytes = mixedBytes(overlapSlug);
+  const overlapMasks = overlapEntries.map(({ slug }, index) => {
+    const encoded = mixedBytes(slug);
+    const key = encoded.map((byte, offset) => byte ^ overlapBytes[offset]!);
+    return unwrap(
+      api.createCustomUuidV7Mask({
+        label: `profile-candidate-${index}`,
+        mask: (input) => input.map((byte, offset) => byte ^ key[offset]!),
+        unmask: (input) => input.map((byte, offset) => byte ^ key[offset]!),
+      }),
+    );
+  });
   if (
     privateAlphabetApi &&
     privateAlphabetApi.encodePortable(bytes[0] as Uint8Array, privateAlphabetApi.BASE64URL) !==
@@ -247,6 +285,21 @@ export function createProfileCases(
   const migration4 = migrationFixture(4);
   const migration8 = migrationFixture(8);
   const migration16 = migrationFixture(16);
+  const candidateFixtures = [1, 4, 8, 16, 32, 64].map((count) => {
+    const distinct = unwrap(
+      api.createUuidV7SlugCodec({
+        mask: overlapMasks[0]!,
+        previousMasks: overlapMasks.slice(1, count),
+      }),
+    ).createMigrationDecoder();
+    const duplicate = unwrap(
+      api.createUuidV7SlugCodec({
+        mask: overlapMasks[0]!,
+        previousMasks: Array.from({ length: count - 1 }, () => overlapMasks[0]!),
+      }),
+    ).createMigrationDecoder();
+    return { count, distinct, duplicate };
+  });
   const into = new Uint8Array(24);
   const portableDecodeInto = new Uint8Array(16);
   if (privateAlphabetApi) {
@@ -299,6 +352,23 @@ export function createProfileCases(
       fixture.reader.decodeSlug(fixture.miss);
     migrationScalingCases[`migration.schemas${count}.candidates`] = () =>
       fixture.reader.decodeSlugCandidates(fixture.first);
+  }
+  for (const { count, distinct, duplicate } of candidateFixtures) {
+    const distinctWitness = distinct.decodeSlugCandidates(overlapSlug);
+    const duplicateWitness = duplicate.decodeSlugCandidates(overlapSlug);
+    if (
+      distinctWitness instanceof Error ||
+      duplicateWitness instanceof Error ||
+      distinctWitness.length !== count ||
+      duplicateWitness.length !== 1
+    )
+      throw new Error(
+        `Migration candidate fixture did not yield ${count} distinct and one duplicate`,
+      );
+    migrationScalingCases[`migration.candidates${count}.distinct`] = () =>
+      distinct.decodeSlugCandidates(overlapSlug);
+    migrationScalingCases[`migration.candidates${count}.duplicate`] = () =>
+      duplicate.decodeSlugCandidates(overlapSlug);
   }
 
   const cases = {
