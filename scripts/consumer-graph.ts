@@ -321,6 +321,8 @@ export async function inspectConsumerGraph(
         await Bun.write(entry, consumerSource(job, packageName, "root"));
         const code = await compile(optimizer, entry, path.join(root, caseName));
         const text = new TextDecoder().decode(code);
+        // The masked case proves the witness remains observable; otherwise its removal or rename
+        // could make every keyless exclusion pass without testing masking at all.
         if (text.includes(MASKING_WITNESS) !== job.masked)
           throw new Error(`${caseName} ${job.masked ? "lost" : "retained"} masking code.`);
         await command("node", [path.join(root, caseName, "bundle.js")], consumerRoot);

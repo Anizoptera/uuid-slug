@@ -56,14 +56,14 @@ Make each consumer pay only for UUID generation, plain slugs, or masking that it
 
 ## Final tree-shaking audit
 
-- [ ] Compare the complete `6a01c48..HEAD` phase diff with its roadmap and public-contract owners.
-- [ ] Account for every changed, moved, added, and deleted source line and comment against the base tree.
-- [ ] Compare root and subpath runtime exports, type exports, declaration comments, package conditions, and targets against the base package.
-- [ ] Compare every moved implementation with its base bytes and prove shared helpers were neither duplicated nor lost.
-- [ ] Run base and current packed consumers for every unchanged API operation and compare observable results.
-- [ ] Falsify tree shaking for each root use case across every retained optimizer and inspect unexpected retained code.
-- [ ] Falsify focused subpaths through direct ESM loading, masking exclusion, combined v4/v7 use, and slug-only use.
-- [ ] Inspect tests, scripts, dependencies, docs, and comments for redundant proof, stale claims, orphaned files, and needless public surface.
-- [ ] Run TypeScript 7, the TypeScript 5.7 consumer floor, Node, Bun, package validation, and Rust parity gates.
-- [ ] Fix each material defect behind its smallest discriminating reproducer; remove audit work that adds no lasting protection.
-- [ ] Re-read the final diff, close every roadmap item with evidence, run the complete gate, and commit only audited changes.
+- [x] Compare the complete `6a01c48..HEAD` phase diff with its roadmap and public-contract owners.
+- [x] Account for every changed, moved, added, and deleted source line and comment against the base tree.
+- [x] Compare root and subpath runtime exports, type exports, declaration comments, package conditions, and targets against the base package.
+- [x] Compare every moved implementation with its base bytes and prove shared helpers were neither duplicated nor lost.
+- [x] Run base and current packed consumers for every unchanged API operation and compare observable results.
+- [x] Falsify tree shaking for each root use case across every retained optimizer and inspect unexpected retained code.
+- [x] Falsify focused subpaths through direct ESM loading, masking exclusion, combined v4/v7 use, and slug-only use.
+- [x] Inspect tests, scripts, dependencies, docs, and comments for redundant proof, stale claims, orphaned files, and needless public surface.
+- [x] Run TypeScript 7, the TypeScript 5.7 consumer floor, Node, Bun, package validation, and Rust parity gates.
+- [x] Fix each material defect behind its smallest discriminating reproducer; remove audit work that adds no lasting protection.
+- [x] Re-read the final diff, close every roadmap item with evidence, run the complete gate, and commit only audited changes.
