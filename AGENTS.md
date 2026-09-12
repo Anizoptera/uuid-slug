@@ -67,6 +67,12 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Runtime boundaries and evidence
 
+- Treat Bun and Node as independent co-primary performance targets: retain a material repeated win
+  in either when the other is unchanged, unless contract risk or lifetime cost outweighs it.
+- Benchmark every portable encoder and fallback directly on Node, Bun, Deno, and Chromium, even
+  where normal dispatch selects a native path. For that portable path, first rank runtimes where
+  normal dispatch uses it by the main runtime order; rank every runtime that shadows it with a native
+  implementation last. Shadowed runtimes verify portability but do not steer fallback trade-offs.
 - Never act on one performance run. Repeat the decision-relevant workload and retain an optimization
   only when the effect reproduces and its uncertainty excludes no material change; otherwise report
   the result as unresolved. A statistically detectable but negligible effect does not earn code.

@@ -22,6 +22,12 @@ protection, and no default or fallback may select it.
   distribution, CPU attribution, allocation evidence, and profiler limits.
 - Never act on one performance run. Repeat the decision-relevant workload and require a reproducible,
   statistically distinguishable, material effect; an unresolved or negligible result earns no code.
+- Treat Bun and Node as independent co-primary targets: a repeated material win in either survives
+  when the other is unchanged, unless contract risk or lifetime cost outweighs it.
+- Exercise every portable encoder and fallback directly on all four runtimes, including hosts whose
+  normal route selects a native implementation. For that portable path, first rank runtimes where
+  normal dispatch uses it by the main runtime order; rank every runtime that shadows it with a native
+  implementation last. Shadowed runtimes verify portability but do not steer fallback trade-offs.
 - Before each experiment, state the rival explanations and the result that would reject the change.
   Change one mechanism at a time; alternate baseline and candidate order.
 - Keep a change only when repeated measurements show a material win or remove proven wasted work
@@ -108,6 +114,8 @@ protection, and no default or fallback may select it.
 - [x] Reuse owned UUID blocks for tagging and masking. Retain one shared guard path with a final
   direct ownership branch; duplicated closures and indirect dispatch slowed Bun's borrowed route.
 - [ ] Falsify general alphabet dispatch versus codec-construction specialization.
+- [ ] Profile and optimize each portable alphabet encoder directly on Node, Bun, Deno, and Chromium,
+  including runtimes whose public route normally delegates to native encoding.
 - [x] Keep capability-probed native base64url encoding with a portable fallback. Two public-route
   replays rejected portable encoding on Bun, Deno, and Chromium; Node used the fallback in both.
 - [x] Mask the validated parser-owned block directly: repeated packed comparisons improved string
