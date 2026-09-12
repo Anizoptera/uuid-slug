@@ -466,6 +466,28 @@ screen regressed Node's eight-key last hit by 1.8%; its 95% median interval excl
 the regression did not repeat. Keep the separate current-key fast path and previous-key loop until a
 precompiled operation removes measured per-attempt work rather than only reshaping traversal.
 
+### Runtime capability review
+
+The 2026-09-12 review probed Node 26.8.2, Bun 1.4.2, Deno 2.9.6, and Chromium
+153 twice. Node and Bun expose `node:crypto.randomUUIDv7`; Deno does not. Bun also exposes
+`Bun.randomUUIDv7`: its buffer form is a `Buffer`, explicit zero is accepted, and NaN throws
+`ERR_OUT_OF_RANGE`. Keep runtime dispatch capability-based because shared Node API names do not
+imply shared implementation.
+
+All four runtimes mutate and return the supplied `getRandomValues` view, support `encodeInto`, and
+produce `AP8` from native base64url encoding. Node, Deno, and Chromium reject a 65,537-byte entropy
+request with `QuotaExceededError`; Bun 1.4.2 accepts it. This package requests only fixed 16-byte
+draws, so the limit difference changes no route. Deno's Node-compatible `resourceUsage` exposes the
+same counters used by the profiler. Re-run the review after either runtime changes and periodically
+before runtime performance work; release notes and property presence are candidate discovery, not
+semantic evidence.
+
+Two packed Bun comparisons tested native UUID-v7 against the portable generator, then tested the
+hybrid selected from that result. Keeping native hex while routing bytes and slugs through the
+portable generator cut byte and caller-owned generation by 53–63%, slug generation by 24–32%, and
+base32 generation by 21–28% across both hybrid replays. The canonical string route did not regress.
+The split preserves wire and validation contracts and must be remeasured after a Bun update.
+
 ### Native base64url encoding
 
 Use `Uint8Array.prototype.toBase64` when the runtime provides it; probe once at module load and keep

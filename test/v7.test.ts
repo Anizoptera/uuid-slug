@@ -126,8 +126,8 @@ describe("uuidv7 at a caller-supplied instant", () => {
 
   // 1.5 is the case that motivated the check: the write path truncates, so a fractional instant
   // silently became 1 while the error message promised a whole number of milliseconds. NaN and
-  // Infinity matter because a native generator need not reject them — measured 2026-08-12,
-  // `Bun.randomUUIDv7("hex", NaN)` returns the 1970 prefix rather than throwing.
+  // Infinity matter because runtime-native validation is not this portable contract. Bun 1.4.2
+  // rejects NaN, but runtime behavior is re-probed on update rather than assumed here.
   it.each([1.5, -1, NaN, Infinity, 2 ** 48])("rejects the instant %d", (ms) => {
     const generator = createUuidV7Generator({
       clock: fixedClock(1),

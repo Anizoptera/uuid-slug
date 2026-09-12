@@ -31,15 +31,15 @@ import {
 import { unwrap } from "../dev/unwrap";
 
 describe("bun runtime", () => {
-  test("exposes every supported native Bun UUIDv7 representation", () => {
+  test("uses native UUIDv7 only for the representation it improves", () => {
     const availability = typeof Bun.randomUUIDv7 === "function" ? "function" : "undefined";
     expect(typeof bunRuntime.uuidV7).toBe(availability);
-    expect(typeof bunRuntime.uuidV7Bytes).toBe(availability);
-    expect(typeof bunRuntime.uuidV7Slug).toBe(availability);
+    expect(bunRuntime.uuidV7Bytes).toBeUndefined();
+    expect(bunRuntime.uuidV7Slug).toBeUndefined();
   });
 
-  // The same list runs on Node's portable generator and Bun's native owned-byte adapter, so both
-  // runtime branches must preserve the public caller-buffer contract.
+  // The same list runs on Node and Bun's portable owned-byte generators, so both runtime branches
+  // must preserve the public caller-buffer contract.
   for (const entry of bufferContractCases) {
     test(entry.name, () => {
       expect(entry.run()).toBeUndefined();
@@ -47,14 +47,13 @@ describe("bun runtime", () => {
   }
 
   test("the keyless generateUuidV7Slug honours its alphabet argument, not the native generator", () => {
-    // Bun alone provides the native base64url hook. A branch gated only on that hook's presence
-    // would ignore the requested alphabet here while every Node case stayed green.
+    // Bun exposes native base64url generation, but the adapter omits that slower hook. A branch
+    // gated only on runtime capability would ignore the requested alphabet here.
     const sortable = unwrap(generateUuidV7Slug("base32hex"));
     expect(sortable).toHaveLength(26);
     expect<string>(sortable).toBe(sortable.toLowerCase());
     expect(isUuidV7String(slugToUuid(sortable) as string)).toBe(true);
-    // The default must still take the native path and still round-trip; a fix that gated the
-    // branch away entirely would pass the assertions above.
+    // The portable default must still round-trip; the native hex path is covered separately.
     expect(unwrap(generateUuidV7Slug())).toHaveLength(22);
     expect(unwrap(generateUuidV4Slug("base32hex"))).toHaveLength(26);
   });
@@ -66,8 +65,8 @@ describe("bun runtime", () => {
   });
 
   test("returns plain Uint8Array bytes, never a node Buffer", () => {
-    // Bun's native v7 hands back a Buffer; this is the gate that keeps it from reaching a
-    // consumer, where it would make `toString("hex")` and `JSON.stringify` runtime-dependent.
+    // Bun's native v7 can hand back a Buffer; this gate keeps that runtime-dependent subtype from
+    // reaching consumers even when adapter dispatch changes.
     for (const [name, generate] of byteGenerators) {
       const bytes = generate();
       expect([name, (bytes as Uint8Array).constructor.name]).toEqual([name, "Uint8Array"]);

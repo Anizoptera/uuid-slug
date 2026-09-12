@@ -8,8 +8,6 @@ export { encodeUtf8 } from "./web";
 /** Only untimestamped native generation satisfies this adapter's contract. */
 interface BunUuid {
   (format: "hex"): string;
-  (format: "base64url"): string;
-  (format: "buffer"): Uint8Array;
 }
 
 /**
@@ -28,11 +26,10 @@ const bunRuntime: Runtime = { fillRandom: webRuntime.fillRandom };
 if (webRuntime.uuidV4) bunRuntime.uuidV4 = webRuntime.uuidV4;
 
 if (nativeUuidV7) {
+  // Bun 1.4.2's native hex path avoids the portable formatter, but its Buffer and base64url
+  // forms cost more than generating into the package's caller-owned and native-base64 paths.
+  // Keep this split until a Bun update overturns the complete-route comparison.
   bunRuntime.uuidV7 = () => nativeUuidV7("hex");
-  bunRuntime.uuidV7Slug = () => nativeUuidV7("base64url");
-  // Native counter exhaustion advances even an explicit timestamp. Leave the At hooks absent
-  // so the shared portable generator writes the requested instant without native counter state.
-  bunRuntime.uuidV7Bytes = () => nativeUuidV7("buffer");
 }
 
 export const runtime = bunRuntime;
