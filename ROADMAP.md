@@ -138,7 +138,7 @@ unless the maintainer separately changes the HLD.
   alias; reject if fusion duplicates alphabet truth or modifies output before late failure.
 - [x] Test specialized fixed-length base64url and base32hex decoders against the generic accumulator.
   Keep the generic path only where variable length is public; require packed-route wins in both alphabets.
-- [ ] Test scalar UUID formatting from four words against byte indexing and native `toHex`. Preserve
+- [x] Test scalar UUID formatting from four words against byte indexing and native `toHex`. Preserve
   offset-buffer behavior and reject any primary-runtime regression or duplicated format inventory.
 - [ ] Test generator counter state as packed scalars versus the current split words. Vary rollover,
   clock rollback, reseed, native delegation, and caller-owned output before changing state shape.

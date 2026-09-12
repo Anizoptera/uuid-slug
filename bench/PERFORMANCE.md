@@ -946,6 +946,12 @@ and no view at 24 bytes, but one view at 256 bytes; lowering the boundary makes 
 fail. Reconsider 32 only when runtime primitives change or wider caller-buffer distributions justify
 a new measured crossover.
 
+Formatting four 32-bit words with `toString(16)`, padding, and slicing was slower than bounded native
+`toHex` in two 12-round replays on 2026-09-12. Direct formatting took 3.67–3.68 times baseline on
+Node 26.8.2 and 1.74–1.78 times on Bun 1.4.2; offset formatting took 3.76–3.77 and 1.90–1.91 times.
+Keep native `toHex` with the byte-pair fallback. Reconsider scalar formatting only if those runtime
+primitives change.
+
 A UUID parser table derived from the canonical byte offsets replaced four direct hyphen checks and
 16 byte-offset checks with one 36-character state walk. Two six-round packed replays on 2026-09-12
 measured valid parsing 8–27% slower on Node 26.8.2, 25–56% slower on Bun 1.4.2, 8–14% slower on
