@@ -69,13 +69,13 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 - Read `bench/README.md` before benchmark work. Scope exploratory comparisons with its maintained
   filters; run all applicable runtimes only after a candidate survives the focused mechanism test.
-- Choose the performance ladder from the path under test. For a primary public route, treat Bun and
-  Node as independent co-primary targets, then Chromium, then Deno: retain a material repeated win
-  in either co-primary runtime when the other is unchanged unless contract risk or lifetime cost
-  outweighs it.
+- Rank performance evidence by current user value: latest stable Node Current and Bun first, latest
+  Node LTS and Chromium second, latest Deno third. Older supported Node versions gate correctness
+  and compatibility, not performance trade-offs. Node Current JITless is the final rung: retain a
+  JITless-only win when every higher rung is unchanged and its lifetime cost is justified.
 - Benchmark every portable encoder and fallback directly on Node, Bun, Deno, and Chromium, even
   where normal dispatch selects a native path. For that portable path, first rank runtimes where
-  normal dispatch uses it by the primary-path order; rank every runtime that shadows it with a native
+  normal dispatch uses it by the priority above; rank every runtime that shadows it with a native
   implementation last, regardless of that runtime's primary-path rank. Shadowed runtimes verify
   portability but do not steer fallback trade-offs.
 - Never act on one performance run. Repeat the decision-relevant workload and retain an optimization

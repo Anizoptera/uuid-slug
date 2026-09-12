@@ -28,7 +28,8 @@ if (selected === "matrix") {
   versions[versions.length - 1] = "current-mask";
   console.log(`matrix=${JSON.stringify([...new Set([`${floor}.0.0`, ...versions])])}`);
 } else {
-  const node = selected === "floor" ? `${floor}.0.0` : selected;
+  const node =
+    selected === "floor" ? `${floor}.0.0` : selected === "current-mask" ? "current" : selected;
   const runner = await Bun.file(
     new URL("../node_modules/vitest/package.json", import.meta.url),
   ).json();
@@ -36,7 +37,7 @@ if (selected === "matrix") {
     new URL("../node_modules/vite/package.json", import.meta.url),
   ).json();
   const tooling =
-    node === "current-mask" ||
+    selected === "current-mask" ||
     [runner, compiler].every((tool) => Bun.semver.satisfies(node, tool.engines.node));
   console.log(`node=${node}\nvitest=${tooling}`);
 }

@@ -159,13 +159,13 @@ jobs:
       - if: steps.runtime.outputs.vitest == 'true'
         run: node node_modules/vitest/vitest.mjs run
       # Current engines exercise optional native paths that pinned runtimes cannot reach.
-      - if: matrix.node == 'current'
+      - if: matrix.node == 'current-mask'
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: latest
-      - if: matrix.node == 'current'
+      - if: matrix.node == 'current-mask'
         run: bun run build && bun test test/*.bun.test.ts && bun run perf:check
-      - if: matrix.node == 'current'
+      - if: matrix.node == 'current-mask'
         run: bun scripts/runtime-probe.ts runtime-reference.json
 
   # Packed browser/Deno consumers need external engines, so keep their setup outside local check.
