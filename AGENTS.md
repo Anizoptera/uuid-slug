@@ -76,6 +76,10 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Never act on one performance run. Repeat the decision-relevant workload and retain an optimization
   only when the effect reproduces and its uncertainty excludes no material change; otherwise report
   the result as unresolved. A statistically detectable but negligible effect does not earn code.
+- Correctness outranks every performance result. Before timing a candidate, map the contracts and
+  failure modes its changed mechanism can break, inspect whether existing tests distinguish them,
+  add the smallest missing falsifiers, and mutate the mechanism to prove those tests reach it. Run
+  the owning runtime tests before and after measurement; reject speedups with an unsecured invariant.
 - Before adding test infrastructure, search `test/`, `bench/`, and `scripts/` by capability and
   failure, then inspect callers and package-script routing. Extend the nearest owner. Split only for
   a different oracle, runtime, isolation, or feedback boundary.

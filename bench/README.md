@@ -7,6 +7,9 @@ Rules:
 - Keep direct runtime operations separate from composed pipeline operations.
 - Keep benchmark dependencies in `devDependencies`.
 - Run the same candidate set in smoke and full modes so CI detects adapter rot.
+- Before timing a candidate, name the contracts and failure modes its changed mechanism can affect.
+  Run their owning tests, add any missing direct falsifier, and mutate the mechanism to prove the
+  tests fail for the intended defect. A faster result has no standing until those tests pass again.
 - Competitor and randomness figures are informational. Process failures, empty output and
   malformed records fail the matrix while successful measurements remain visible.
 - Run `bun run bench:matrix --smoke` for a short comparison. Set `UUID_SLUG_BENCH_RUNTIMES` to

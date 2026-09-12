@@ -22,6 +22,10 @@ protection, and no default or fallback may select it.
   distribution, CPU attribution, allocation evidence, and profiler limits.
 - Never act on one performance run. Repeat the decision-relevant workload and require a reproducible,
   statistically distinguishable, material effect; an unresolved or negligible result earns no code.
+- Correctness gates measurement and acceptance. Before timing each candidate, map every contract and
+  failure mode its mechanism can change, audit the owning tests, add the smallest missing falsifiers,
+  and mutate the changed mechanism to prove those tests reach it. Run all affected runtime tests
+  before and after measurement; reject any speedup whose invariant remains unproved.
 - Treat Bun and Node as independent co-primary targets: a repeated material win in either survives
   when the other is unchanged, unless contract risk or lifetime cost outweighs it.
 - Exercise every portable encoder and fallback directly on all four runtimes, including hosts whose
