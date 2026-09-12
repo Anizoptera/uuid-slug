@@ -5,9 +5,9 @@
  * offset matrix.
  *
  * Shared by the vitest and the bun:test lanes for the reason `entropy-probe.ts` gives, and here the
- * split is not hypothetical: `generateUuidV7Bytes` reaches the portable generator under Node and the
- * native owned-byte adapter under Bun. Both must reject the same caller ranges before entropy is
- * consumed and commit only after generation succeeds.
+ * split is not hypothetical: Node and Bun use different runtime adapters, while UUIDv7 byte
+ * generation stays portable on both because Bun's native byte route measured slower. Every adapter
+ * must reject the same caller ranges before entropy is consumed and commit only after generation succeeds.
  *
  * The invariant is what makes the failure self-revealing, rather than the offsets: a rejected call
  * MUST report `invalid_buffer` AND leave the buffer byte-identical. Reporting alone would pass a
