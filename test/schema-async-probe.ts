@@ -111,16 +111,27 @@ export const asyncSchemaCases = [
     },
   },
   {
-    name: "large single-iteration seeds yield before construction finishes",
+    name: "a crossed work-slice deadline yields to the host before construction continues",
     async run(this: void) {
-      const controller = new AbortController();
-      const trigger = nextTask().then(() => controller.abort("large seed cancelled"));
-      const result = await createUuidV7MaskAsync({
-        seed: new Uint8Array(1 << 20).fill(29),
-        signal: controller.signal,
+      const ownNow = Object.getOwnPropertyDescriptor(performance, "now");
+      let clockReads = 0;
+      Object.defineProperty(performance, "now", {
+        configurable: true,
+        value: () => (clockReads++ === 0 ? 0 : 3),
       });
-      cancelled(result, "large seed cancelled");
-      await trigger;
+      const controller = new AbortController();
+      const trigger = nextTask().then(() => controller.abort("slice cancelled"));
+      try {
+        const result = await createUuidV7MaskAsync({
+          seed: new Uint8Array(4096).fill(29),
+          signal: controller.signal,
+        });
+        cancelled(result, "slice cancelled");
+      } finally {
+        if (ownNow) Object.defineProperty(performance, "now", ownNow);
+        else delete (performance as { now?: () => number }).now;
+        await trigger;
+      }
     },
   },
   {
