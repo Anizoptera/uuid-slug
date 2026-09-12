@@ -50,6 +50,28 @@ The current-runtime CI lane also runs it with the newest Node and Bun.
   must fail their respective gates. Timing samples deliberately run a short CPU burst; they are not
   a production batching API or a promise of event-loop responsiveness.
 
+## Capability review
+
+Run this review after every Bun or Deno version change and before periodic runtime performance work:
+
+1. Read the installed runtime's types and docs, its release notes since the last reviewed version,
+   and current upstream API docs. Search three sets separately: runtime-native APIs, Node-compatible
+   APIs, and web or Chromium-compatible APIs. Include additions, changed behavior, deprecations, and
+   removals relevant to package routes or benchmark evidence. Node and Chromium inventories are
+   candidate sources for Bun and Deno, not proof of support.
+2. Probe each candidate on every installed runtime and record the exact runtime version. Check the
+   callable shape, output, ownership, errors, limits, and sync or async behavior needed by this
+   package. A property check alone is insufficient; equal names can hide different semantics.
+3. Detect the capability, never the runtime name. Probe once at module load. Treat a missing method
+   and a method that rejects the required semantics as unavailable; neither may create repeated
+   exception-driven fallback.
+4. Run the selected path and compatible fallback through the same public-route corpus. Prove wire
+   results, errors, ownership, and resource behavior before comparing speed. Run decision-relevant
+   measurements twice and apply the runtime priority ladder above.
+5. Keep only decision-changing conclusions in `bench/PERFORMANCE.md`: observed versions and
+   behavior, selected path, rejected live alternatives, evidence limits, and the condition that
+   requires review again. Generated capability inventories and reports stay under `bench/reports/`.
+
 ## Profiling
 
 Run `bun bench/rust.ts` for optimized Rust calls and every native lane discovered from supported

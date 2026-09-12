@@ -73,6 +73,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   Node LTS and Chromium second, latest Deno third. Older supported Node versions gate correctness
   and compatibility, not performance trade-offs. Node Current JITless is the final rung: retain a
   JITless-only win when every higher rung is unchanged and its lifetime cost is justified.
+- After every Bun or Deno version change, and before each periodic runtime review, follow
+  `bench/README.md` §Capability review. Recheck native, Node-compatible, and web-compatible APIs;
+  prove semantics and both selected and fallback paths. Names and API presence prove nothing else.
 - Benchmark every portable encoder and fallback directly on Node, Bun, Deno, and Chromium, even
   where normal dispatch selects a native path. For that portable path, first rank runtimes where
   normal dispatch uses it by the priority above; rank every runtime that shadows it with a native

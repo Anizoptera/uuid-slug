@@ -33,6 +33,16 @@ unless the maintainer separately changes the HLD.
   capabilities against the harness; add only instruments with distinct decision value.
 - [x] Build one capability-join profile from counters, GC and heap state, sampled stacks, traces,
   and runtime-native reports; define a per-signal fallback ladder instead of choosing one profiler.
+- [ ] Rebuild Bun and Deno's runtime-native API inventory from installed documentation, release
+  deltas, and current upstream docs. Test each relevant addition, change, deprecation, or removal.
+- [ ] Rebuild Bun and Deno's Node-compatible API inventory from current Node API candidates;
+  reject runtime-name or property-presence claims that lack a semantic probe.
+- [ ] Rebuild Deno's web and Chromium-compatible API inventory from current Chromium API candidates;
+  separate shared V8 behavior from host API behavior.
+- [ ] Probe each relevant capability's call shape, output, ownership, errors, limits, and scheduling
+  on every installed runtime; make dispatch capability-based and exercise unavailable semantics.
+- [ ] Compare each viable native path and its compatible fallback twice through the complete public
+  route; preserve decision-changing evidence, rejected alternatives, limits, and reopening triggers.
 - [x] Add per-case page-fault, filesystem-I/O, and context-switch deltas from
   `process.resourceUsage`; existing timing, CPU, and heap data cannot infer them.
 - [x] Add per-GC cost and before/after heap state through `v8.GCProfiler`; trace events alone do
