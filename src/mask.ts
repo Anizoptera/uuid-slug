@@ -150,14 +150,14 @@ export function decodeMaskedSlug(
     OUTER_TAG_BITS,
   );
   if (outerTag instanceof Error) return outerTag;
-  // Every supported schema may mutate this private attempt block, but custom callbacks receive a
-  // separate inner copy. Restore one scratch between misses instead of allocating per key.
-  const scratch = previous.length ? mixed.slice() : mixed;
-  const primary = unmix(scratch, outerTag, schema);
+  const primary = unmix(previous.length ? mixed.slice() : mixed, outerTag, schema);
   if (primary instanceof Error) return primary;
   if (primary) return primary;
-  for (const older of previous) {
-    scratch.set(mixed);
+  // Allocate only after the primary miss: earlier placement regressed Bun's common string path.
+  // Previous schemas may mutate their private attempt, so restore one scratch between misses.
+  const scratch = previous.length ? mixed.slice() : mixed;
+  for (const [index, older] of previous.entries()) {
+    if (index) scratch.set(mixed);
     const decoded = unmix(scratch, outerTag, older);
     if (decoded instanceof Error) return decoded;
     if (decoded) return decoded;

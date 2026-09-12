@@ -221,7 +221,8 @@ describe("masked UUID slugs", () => {
   it("rejects a wrong schema unless the caller listed it as a previous one", () => {
     const first = createUuidV7Mask({ seed: "project-a-test-seed-0000" });
     const second = createUuidV7Mask({ seed: "project-b-test-seed-0000" });
-    if (first instanceof Error || second instanceof Error)
+    const third = createUuidV7Mask({ seed: "project-c-test-seed-0000" });
+    if (first instanceof Error || second instanceof Error || third instanceof Error)
       throw new Error("schema creation failed");
     const a = createUuidV7SlugCodec({ mask: first });
     const b = createUuidV7SlugCodec({ mask: second });
@@ -231,7 +232,7 @@ describe("masked UUID slugs", () => {
     expect(
       createUuidV7SlugCodec({
         mask: second,
-        previousMasks: [first],
+        previousMasks: [third, first],
       }).decodeSlug(slug),
     ).toBe(SAMPLE_V7_A);
   });

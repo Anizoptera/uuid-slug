@@ -10,6 +10,30 @@ Follow the package-import commands in [the benchmark guide](README.md#profiling)
 
 Build both revisions separately and select the baseline with `UUID_SLUG_PROFILE_MODULE` pointing to its absolute file URL: emitted `dist/node/index.js` on Node, `src/index.ts` on Bun. Keep the driver identical. A filter changes warm-up history, so an isolated measurement does not explain a mixed-workload result by itself.
 
+### Bun 1.4.2 retained-change replay
+
+Exact commit-boundary comparisons use the earlier revision's driver, so every measured operation
+exists on both sides. Two 24-round replays on 2026-09-12 supersede Bun 1.4.1 only where noted:
+
+- Sentinel indexing retained its large hit-path gains. Owned UUIDv4 output improved by 5–8%.
+- Fixed base32hex encoding improved its direct fallback by 4–5%; fixed base64url decoding improved
+  its direct fallback by 18–24%. Native-shadowed base64url encoding and fixed base32hex decoding
+  had no repeated Bun movement, so their cross-runtime evidence remains the retention basis.
+- The portable UUIDv7 timestamp split had no repeated Bun movement. Of the entropy changes, only
+  rollback caller-owned output repeated a Bun gain; Node and secondary-runtime evidence still owns
+  the other retained branches.
+- Borrowed masking scratch, codec-owned masking storage, and runtime-selected UTF-8 encoding had no
+  repeated Bun movement. Their deterministic resource reduction or other-runtime gains remain intact.
+- Moving previous-key scratch creation above the primary attempt regressed Bun's current-key string
+  path by 31–35%. Creating scratch only after that attempt misses restored the primary path and kept
+  an 8-key last-match gain of 3–9% over per-key allocation.
+- The original in-place mask change regressed isolated historical byte and base32hex encode routes,
+  but restoring a second output block in the current composed tree improved no encode route in two
+  replays. Keep the current single block; the interaction, not the old boundary alone, decides.
+
+Profiler warm-up and batch-size boundaries were measured directly on Bun 1.4.2. These replays do not
+replace Node, Chromium, Deno, resource, or correctness evidence and do not transfer Bun's result to them.
+
 ## Native development boundaries
 
 The development bridge matrix ran on the same Apple M4 Max through Node 22.23.2, Node 24.20.0,
@@ -252,6 +276,12 @@ Two secondary-runtime replays at 16 keys improved Deno last-key hits by 42–43%
 20–21%; Chromium improved by 15–18% and 9–10%. Current-key controls remained unresolved. Keep the
 per-attempt allocation only if a supported schema can retain the package-owned outer block; the
 public custom-schema constructor deliberately prevents that capability.
+
+Bun 1.4.2 invalidated the original scratch placement: current-key string decoding regressed by
+31–35% in both replays. Allocating scratch only after the primary attempt misses restored that path
+to parity. Against per-key allocation, the revised placement kept the 8-key last-match path 3–9%
+faster in both replays; 4-key, 16-key, and total-failure changes did not repeat. This makes the
+primary path independent of rotation storage while retaining a measured fallback benefit.
 
 A construction-time `[current, ...previous]` array with one uniform decode loop was rejected. Two
 eight-round packed screens covered current, previous, 4/8/16-key last-hit and miss routes plus codec

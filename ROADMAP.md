@@ -157,8 +157,8 @@ protection, and no default or fallback may select it.
   first, middle, last, miss, byte-path, and construction controls isolated the affected work.
 - [x] Reject a construction-time ordered schema array with one uniform decode loop: two packed
   screens found no repeated Node or Bun win, while the first regressed an eight-key Node hit.
-- [x] Reuse one restored private block across failed previous-key attempts. Geometric comparisons
-  improved multi-key hits and failures without a repeated current-key regression.
+- [x] Allocate one restored private block only after the primary schema misses. Bun 1.4.2 exposed
+  an earlier-placement regression; the revised boundary preserves the primary path and an 8-key win.
 - [x] Reject built-in mask exception bypass: two packed screens found no repeatable built-in win,
   while Node timestamp extraction regressed and custom decode also lost in the second screen.
 - [x] Reject a private built-in schema discriminant: two packed screens found no repeatable Node or
@@ -227,7 +227,7 @@ protection, and no default or fallback may select it.
 
 ### Baseline and attribution
 
-- [ ] Replay every retained Bun-sensitive optimization and harness boundary on Bun 1.4.2; preserve
+- [x] Replay every retained Bun-sensitive optimization and harness boundary on Bun 1.4.2; preserve
   prior 1.4.1 provenance and supersede any conclusion whose direction or boundary changes.
 - [x] Remove the untimed 2048-call post-warm-up priming batch from host and browser profiling; the
   measured 16 ms warm-up already reaches the stable tier, so the extra burst duplicated setup and
