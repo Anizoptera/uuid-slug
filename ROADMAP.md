@@ -120,12 +120,12 @@ protection, and no default or fallback may select it.
 - [ ] Falsify native UUID generation delegation versus portable generation by output form and entropy behavior.
 - [x] Map portable UUIDv4 independently across forced text fallback, owned and caller-owned bytes,
   entropy refill, and both slug alphabets; reuse public rows where those routes are always portable.
-- [ ] Complete the portable UUIDv7 map across string/bytes/slug, explicit time, same-millisecond
-  continuation, clock rollback, entropy refill, caller-owned output, and each alphabet.
+- [x] Map portable UUIDv7 across string, owned and caller-owned bytes, both slug alphabets,
+  explicit time, same-millisecond continuation, advancing and rollback clocks, and entropy refills.
 - [x] Force and profile portable UUIDv4 directly on Node, Bun, Deno, and Chromium, including hosts
   whose public text route delegates to native UUID generation.
-- [ ] Force and profile portable UUIDv7 directly on every runtime so native delegation cannot hide
-  fallback CPU, allocation, entropy, state-transition, or responsiveness costs.
+- [x] Force and profile portable UUIDv7 directly on Node, Bun, Deno, and Chromium; native and
+  routine captures cover CPU, allocation, entropy, state transitions, and uninterrupted duration.
 - [x] Route the exact private UUIDv4 text fallback into the shared profiler; its source-built case
   executes on Node, Bun, Deno, and Chromium without disabling each host's native public route.
 - [x] Falsify portable UUIDv4 alternatives for entropy reuse, owned and caller-owned writes,

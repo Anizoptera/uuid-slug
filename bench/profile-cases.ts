@@ -59,6 +59,10 @@ export function createProfileCases(
   const portableAdvancing = api.createUuidV7Generator({ clock: () => (advancingMs += 1) });
   let rollingBackMs = instant;
   const portableRollingBack = api.createUuidV7Generator({ clock: () => (rollingBackMs -= 1) });
+  const portableSlug = (alphabet: "base64url" | "base32hex") => {
+    const value = portable.generateUuidV7Bytes();
+    return value instanceof Error ? value : api.bytesToSlug(value, alphabet);
+  };
   const ids = Array.from({ length: 256 }, (_, index) => {
     const time = (instant + index).toString(16).padStart(12, "0");
     const a = ((index * 251) & 4095).toString(16).padStart(3, "0");
@@ -101,6 +105,8 @@ export function createProfileCases(
     "portable.at": (index) => portable.generateUuidV7At(instant + (index & 255)),
     "portable.at.bytes": (index) => portable.generateUuidV7BytesAt(instant + (index & 255)),
     "portable.at.into": (index) => portable.generateUuidV7BytesAt(instant + (index & 255), into, 4),
+    "portable.slug": () => portableSlug("base64url"),
+    "portable.base32": () => portableSlug("base32hex"),
     // Advancing and rollback clocks select opposite state-machine edges; a fixed clock covers only
     // same-millisecond continuation even though all three routes write the same UUID layout.
     "portable.advance.into": () => portableAdvancing.generateUuidV7Bytes(into, 4),

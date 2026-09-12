@@ -210,6 +210,21 @@ A universal word writer was rejected because Bun's advancing and rollback routes
 The module-selected function keeps one implementation per engine without recurring dispatch cost.
 Replace this split if JavaScriptCore no longer favors the loop or V8 no longer favors fixed writes.
 
+### Portable UUIDv7 profile coverage
+
+Profile the portable generator directly even when a runtime provides native UUIDv7 generation.
+The shared corpus covers strings, owned and caller-owned bytes, explicit timestamps, steady
+same-millisecond generation, advancing and rollback clocks, entropy-pool refills, and generation
+through both slug alphabets. The slug cases combine the forced portable generator with the package's
+production encoders, so native generation cannot hide fallback work.
+
+Routine and native-instrumented runs on 2026-09-12 each emitted every portable case on Node 24.20.0,
+Bun 1.4.1, Deno 2.9.6, and Chromium 151. The native run captured CPU, allocation, retained heap,
+runtime memory, and event-loop traces through each host's available instruments. Every synchronous
+portable case kept its longest measured batch below 1 ms and its longest uninterrupted interval
+below 2.5 ms. These profiles locate work and responsiveness boundaries; they do not rank candidate
+implementations without paired repeated comparisons.
+
 ### Portable UUIDv4 ownership paths
 
 Draw entropy directly into package-owned output. Keep caller-owned output on a separate path that
