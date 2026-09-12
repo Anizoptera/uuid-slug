@@ -315,10 +315,14 @@ export const runtimeBoundaryCases = [
     name: "preserves all portable v7 payload bits without merging input bits",
     run(this: void) {
       for (const explicit of [false, true]) {
-        const generate = (input: Uint8Array) => {
+        let entropyBytes = 0;
+        const generate = (input?: Uint8Array) => {
           const generator = createUuidV7Generator({
             clock: () => 0,
-            fillRandom: (bytes) => bytes.set(input),
+            fillRandom: (bytes) => {
+              entropyBytes = bytes.length;
+              if (input) bytes.set(input);
+            },
           });
           const bytes = explicit
             ? generator.generateUuidV7BytesAt(0)
@@ -326,10 +330,10 @@ export const runtimeBoundaryCases = [
           assert.ok(bytes instanceof Uint8Array);
           return bytes.reduce((bits, byte) => (bits << 8n) | BigInt(byte), 0n);
         };
-        const baseline = generate(new Uint8Array(16));
+        const baseline = generate();
         let seen = 0n;
-        for (let bit = 0; bit < 128; bit += 1) {
-          const input = new Uint8Array(16);
+        for (let bit = 0; bit < entropyBytes * 8; bit += 1) {
+          const input = new Uint8Array(entropyBytes);
           input[bit >> 3] = 1 << (bit & 7);
           const changed = generate(input) ^ baseline;
           assert.equal(changed & (changed - 1n), 0n, "one input bit changed multiple bits");

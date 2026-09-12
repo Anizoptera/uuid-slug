@@ -225,6 +225,23 @@ portable case kept its longest measured batch below 1 ms and its longest uninter
 below 2.5 ms. These profiles locate work and responsiveness boundaries; they do not rank candidate
 implementations without paired repeated comparisons.
 
+### Portable UUIDv7 entropy draw
+
+Draw the ten bytes the portable UUIDv7 layout consumes: six seed the 42-bit sequence and four fill
+the random tail. The timestamp, version, variant, and sequence fields replace the other six bytes of
+a 16-byte draw, so copying them from the entropy pool cannot affect the result. Change the draw size
+only if the portable layout starts consuming more entropy bits.
+
+Two packed comparisons on 2026-09-12 used 24 alternating rounds on Node 24.20.0, Bun 1.4.1,
+Deno 2.9.6, and Chromium 151. Node byte-oriented routes improved by 10–17%; Bun improved by 4–8%.
+Deno and Chromium byte-oriented routes improved by 4–19%. The corresponding 95% median intervals
+excluded no change in both replays. String and slug pipelines improved less because formatting
+dominates them. The unrelated portable UUIDv4 control was unresolved in the second replay.
+
+The 16-byte private draw was rejected because six copied bytes had no path to the UUID. The retained
+payload-bit test discovers the requested draw length and proves that its bits remain independent and
+cover every non-structural random payload bit instead of pinning an internal buffer size.
+
 ### Portable UUIDv4 ownership paths
 
 Draw entropy directly into package-owned output. Keep caller-owned output on a separate path that

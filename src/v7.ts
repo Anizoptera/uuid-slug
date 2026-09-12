@@ -132,7 +132,9 @@ export function createPortableUuidV7Generator(
   const fill = options.fillRandom;
   if (typeof clock !== "function") throw new TypeError("Generator clock must be a function.");
   if (typeof fill !== "function") throw new TypeError("Generator fillRandom must be a function.");
-  const random = new Uint8Array(16);
+  // The sequence seed consumes six bytes and the UUID tail consumes four. Drawing a full UUID
+  // block would copy six bytes that version, variant, timestamp, and sequence fields replace.
+  const random = new Uint8Array(10);
   /**
    * Below every timestamp the clock check admits, which is what makes it the uninitialised
    * sentinel rather than a value: `now > lastMs` alone therefore takes the reseed branch on the
@@ -164,7 +166,7 @@ export function createPortableUuidV7Generator(
   ) {
     writeTimestamp(target, ms, offset);
     writeCounter(target, sequenceHi, sequenceLo, offset);
-    for (let i = 12; i < 16; i += 1) target[offset + i] = random[i] as number;
+    for (let i = 12; i < 16; i += 1) target[offset + i] = random[i - 6] as number;
     return target;
   }
 

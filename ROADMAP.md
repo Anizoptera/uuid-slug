@@ -132,6 +132,8 @@ protection, and no default or fallback may select it.
   formatting, branches, and shared-pool interactions; retain only repeated public-route wins.
 - [ ] Falsify portable UUIDv7 alternatives for entropy draw size and reuse, state layout, byte
   assembly, formatting, caller-owned writes, clock reads, branches, and runtime-specific primitives.
+- [x] Draw only the ten entropy bytes portable UUIDv7 consumes; two packed replays improved
+  byte-oriented routes on Node and Bun without changing payload-bit coverage or atomic failure.
 - [x] Split portable UUIDv4 generation by output ownership: package-owned output draws directly into
   its result; caller-owned output retains private staging and shows no primary-runtime regression.
 - [x] Select the portable UUIDv7 timestamp writer once per module: fixed word writes repeatedly
