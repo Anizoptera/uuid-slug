@@ -286,6 +286,21 @@ Chromium in both replays; Node improved by 4–5%, but one interval included no 
 Retest the fixed decoder if UUID routes stop decoding exactly 16 bytes or use a tail width other than
 zero or four. The generic path remains responsible for every other supported shape.
 
+### Fixed-size portable base32hex decoding
+
+Decode a 16-byte base32hex payload as three complete eight-character groups plus the final byte.
+Reset the accumulator per complete group and keep the generic decoder for every other shape.
+
+Two 24-round packed comparisons on 2026-09-12 improved direct decoding by 12–14% on Bun 1.4.1,
+8–10% on Deno 2.9.6, and 7–9% on Chromium 151. Bun public decoding improved by 4.6–4.8%; every
+cited interval excluded no change in both replays. Node 24.20.0 stayed unresolved around parity.
+Masked and sentinel routes were unresolved; one 2.3% Node caller-owned masked regression appeared
+only in the first replay. Exact invalid offsets, canonical low bits, every tail value, and decoded
+bytes passed direct mutation-checked tests before measurement.
+
+Retest this grouping if UUID routes stop decoding exactly 16 bytes or use a tail width other than
+zero or two. The generic path remains responsible for every other supported shape.
+
 ### Portable UUIDv7 timestamp writes
 
 Select the fixed 48-bit timestamp writer once when the module loads. Bun keeps the six-byte loop;

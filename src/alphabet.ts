@@ -240,6 +240,39 @@ export function decodeInto(
     return 0;
   }
 
+  // UUID base32hex has three complete eight-character groups and one byte. Resetting the
+  // accumulator per group removes general length and output guards without changing bit packing.
+  if (alpha === BASE32HEX && byteLength === 16 && (tailBits === 0 || tailBits === 2)) {
+    let written = offset;
+    for (let start = 0; start < 24; start += 8) {
+      let block = 0;
+      let blockBits = 0;
+      for (let i = start; i < start + 8; i += 1) {
+        const charCode = value.charCodeAt(i);
+        const digit = charCode < 128 ? (table[charCode] as number) : -1;
+        if (digit < 0) return new UuidSlugError(code, `Invalid ${name} character at offset ${i}.`);
+        block = (block << 5) | digit;
+        blockBits += 5;
+        if (blockBits >= 8) {
+          blockBits -= 8;
+          out[written] = (block >>> blockBits) & 0xff;
+          written += 1;
+        }
+      }
+    }
+    const firstCode = value.charCodeAt(24);
+    const first = firstCode < 128 ? (table[firstCode] as number) : -1;
+    if (first < 0) return new UuidSlugError(code, `Invalid ${name} character at offset 24.`);
+    const lastCode = value.charCodeAt(25);
+    const last = lastCode < 128 ? (table[lastCode] as number) : -1;
+    if (last < 0) return new UuidSlugError(code, `Invalid ${name} character at offset 25.`);
+    out[written] = (first << 3) | (last >>> 2);
+    if (tailBits === 2) return last & 3;
+    if ((last & 3) !== 0)
+      return new UuidSlugError(code, `${name} value has non-canonical trailing bits.`);
+    return 0;
+  }
+
   let acc = 0;
   let bits = 0;
   let written = 0;

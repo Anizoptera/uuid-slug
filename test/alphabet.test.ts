@@ -9,6 +9,17 @@ import golden from "../rust/uuid-slug/tests/fixtures/fixtures-wire-format.json";
 const bytesFrom = (length: number) =>
   Uint8Array.from({ length }, (_, index) => (Math.imul(length + 1, 131) + index * 197) & 0xff);
 
+function encodeBase32Reference(bytes: Uint8Array): string {
+  let value = 0n;
+  for (const byte of bytes) value = (value << 8n) | BigInt(byte);
+  const chars = Math.ceil((bytes.length * 8) / 5);
+  value <<= BigInt(chars * 5 - bytes.length * 8);
+  let expected = "";
+  for (let i = chars - 1; i >= 0; i -= 1)
+    expected += BASE32HEX.chars[Number((value >> BigInt(i * 5)) & 31n)];
+  return expected;
+}
+
 describe("bit-packing codec", () => {
   // An oracle only has value when it can fail independently of the code under test. Comparing
   // against this package's own previous output would agree by construction; `Buffer` is a
@@ -23,14 +34,7 @@ describe("bit-packing codec", () => {
   it("encodes base32hex identically to a bit-level reference", () => {
     for (let length = 1; length <= 33; length += 1) {
       const bytes = bytesFrom(length);
-      let value = 0n;
-      for (const byte of bytes) value = (value << 8n) | BigInt(byte);
-      const chars = Math.ceil((length * 8) / 5);
-      value <<= BigInt(chars * 5 - length * 8);
-      let expected = "";
-      for (let i = chars - 1; i >= 0; i -= 1)
-        expected += BASE32HEX.chars[Number((value >> BigInt(i * 5)) & 31n)];
-      expect(encode(bytes, BASE32HEX)).toBe(expected);
+      expect(encode(bytes, BASE32HEX)).toBe(encodeBase32Reference(bytes));
     }
   });
 
@@ -75,6 +79,39 @@ describe("bit-packing codec", () => {
     }
     expect(decodeInto(`${"A".repeat(21)}B`, BASE64URL, new Uint8Array(16), 0, 16)).toMatchObject({
       message: "base64url value has non-canonical trailing bits.",
+    });
+  });
+
+  it("decodes varied 16-byte base32hex payloads from a bit-level reference", () => {
+    for (let seed = 0; seed < 256; seed += 1) {
+      const bytes = Uint8Array.from({ length: 16 }, (_, index) =>
+        Math.imul(seed + 1, index * 197 + 131),
+      );
+      const out = new Uint8Array(16);
+      expect(decodeInto(encodeBase32Reference(bytes), BASE32HEX, out, 0, 16)).toBe(0);
+      expect(out).toEqual(bytes);
+    }
+  });
+
+  it("reports every invalid base32hex character position on the fixed UUID path", () => {
+    const encoded = "0".repeat(26);
+    for (let index = 0; index < encoded.length; index += 1) {
+      const invalid = `${encoded.slice(0, index)}w${encoded.slice(index + 1)}`;
+      expect(decodeInto(invalid, BASE32HEX, new Uint8Array(16), 0, 16)).toMatchObject({
+        message: `Invalid base32hex character at offset ${index}.`,
+      });
+    }
+  });
+
+  it("preserves every base32hex UUID tail and rejects non-canonical plain tails", () => {
+    const bytes = bytesFrom(16);
+    for (let tail = 0; tail < 4; tail += 1) {
+      const out = new Uint8Array(16);
+      expect(decodeInto(encode(bytes, BASE32HEX, tail, 2), BASE32HEX, out, 0, 16, 2)).toBe(tail);
+      expect(out).toEqual(bytes);
+    }
+    expect(decodeInto(`${"0".repeat(25)}1`, BASE32HEX, new Uint8Array(16), 0, 16)).toMatchObject({
+      message: "base32hex value has non-canonical trailing bits.",
     });
   });
 
