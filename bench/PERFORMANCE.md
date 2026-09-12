@@ -271,6 +271,12 @@ caller-owned continuation by 7.4% and rollback by 11.7%; each cited interval exc
 Packing simplifies increment and overflow, but every output then pays division to recover the high
 word. Reconsider it only if Node removes that complete-route loss.
 
+Skipping `checkRange` for package-owned output at offset zero was rejected. In two 24-round packed
+comparisons, Bun ordinary owned bytes improved 7.8% in both replays. Node improved 5.2% once, then
+was unresolved, while Node explicit-time owned bytes regressed 5.1–5.4% in both replays. Both owned
+routes skipped the same check, so the conflicting Node result does not support a general mechanism
+win. Retain the shared direct check unless both Node routes improve without nested hot-path branches.
+
 ### Portable UUIDv4 ownership paths
 
 Draw entropy directly into package-owned output. Keep caller-owned output on a separate path that
