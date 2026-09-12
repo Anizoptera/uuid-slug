@@ -117,6 +117,9 @@ put all masked median ratios within 3.3% of 1.0 under the same warm-up policy.
 - Inlining both compression rounds removed the counted loop but duplicated its arithmetic. Two
   24-round packed replays found no statistically distinct Bun route and no repeatable Node route;
   Chromium was also unresolved. The loop remains the smaller implementation.
+- Inlining all four finalization rounds enlarged the hash core without a repeatable primary-runtime
+  gain. The first 24-round replay found no distinct route; the second isolated two Node byte-decode
+  gains that did not reproduce, so the finalization loop remains.
 - Preselecting Feistel key start and stride moved the direction choice outside the four-round loop.
   Two 24-round packed replays found no statistically distinct Bun or Node route. A Deno byte-decode
   improvement appeared only in the first replay, so the indexed direction expression remains.
