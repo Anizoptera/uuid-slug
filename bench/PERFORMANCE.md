@@ -54,14 +54,18 @@ profiling overrepresents rare errors and setup; sample share is not consumer fre
 
 No further TypeScript change has positive measured value at this frontier. Deleting schema attempts,
 reordering keys, or adding a wire key selector changes accepted identifiers or first-match behavior.
-Parallel attempts add coordination and cannot return before every earlier key has resolved. A decode
-cache adds mutable boundedness and invalidation policy without an observed repeated-input workload;
-an unbounded cache violates the resource contract. Construction-time uniform dispatch, direct
+Parallel attempts add coordination and cannot return before every earlier key has resolved. The
+repository has no caller trace or telemetry that establishes repeated identical decodes; its
+equal-duration synthetic profiles cannot supply consumer frequency. A synthetic cache-hit ratio
+would therefore encode an assumption, not measure locality. A bounded cache adds mutable capacity
+and invalidation policy without that workload evidence, while an unbounded cache violates the
+resource contract. Construction-time uniform dispatch, direct
 built-in dispatch, hash and Feistel specializations, alternate byte layouts, and platform delegates
 were measured separately above and either lost a primary route or produced no repeated gain.
 Sentinel construction already computes each required spelling once and builds the lookup structures
 that make repeated string hits constant-time. Reopen optimization only when a new mechanism removes
-complete-route work or a measured consumer workload changes the setup-versus-steady-state ranking.
+complete-route work or a measured consumer trace supplies reuse distance and frequency sufficient
+to choose capacity and invalidation, then shows total memory and latency benefit.
 
 ## Native development boundaries
 

@@ -165,7 +165,7 @@ unless the maintainer separately changes the HLD.
 - [x] Measure fresh package import repeatedly before changing module topology. Separate parsing,
   adapter probing, initialization, and filesystem cache state; alter exports only if startup is a
   demonstrated consumer bottleneck and the public synchronous API remains intact.
-- [ ] Measure repeated-decode locality before designing a bounded decode cache. Proceed only with a
+- [x] Measure repeated-decode locality before designing a bounded decode cache. Proceed only with a
   real reuse distribution, explicit capacity and invalidation, and total memory/latency benefit;
   unbounded storage and hidden mutable codec behavior remain forbidden.
 - [ ] Measure large cooperative string-seed peak memory before replacing chunk arrays with a bounded
