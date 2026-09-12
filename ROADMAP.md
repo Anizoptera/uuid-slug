@@ -132,7 +132,7 @@ unless the maintainer separately changes the HLD.
   positions, hyphen rules, version/variant checks, and atomic caller-owned writes.
 - [x] Test branchless hexadecimal validation and decode tables against the current guarded parser.
   Separate valid-heavy from invalid-heavy workloads; reject slower diagnostics or opaque control flow.
-- [ ] Test direct slug decode into four scalar words before materializing bytes. Retain only if it
+- [x] Test direct slug decode into four scalar words before materializing bytes. Retain only if it
   removes intermediate writes across validation, masking, and formatting without weakening errors.
 - [ ] Test fused alphabet decode and canonical-tail validation. Vary every invalid position and tail
   alias; reject if fusion duplicates alphabet truth or modifies output before late failure.

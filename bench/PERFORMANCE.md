@@ -958,6 +958,13 @@ but the strongest form repeatedly slowed late-invalid Node input by 29–42% and
 input by 3–17%. Keep the guarded two-pass parser and the early, middle, and late invalid probes;
 reconsider fusion when engine behavior changes or one pass avoids failure-position regressions.
 
+Staging fixed-length slug decode in four scalar words made late failures atomic without a separate
+validation pass, but added byte-to-word selection to every decoded byte. Two packed Node 26.8.2 and
+Bun 1.4.2 replays measured the core base64url decoder about 44–62% slower; public plain decode and
+masked byte routes also regressed. Keep the grouped byte decoder and caller-owned prevalidation.
+Reconsider scalar staging only when downstream masking or formatting can consume words directly;
+materializing the same bytes after staging cannot repay the extra branches.
+
 Node v26.8.2 profiling combines process counters, `GCProfiler`, V8 heap/code/space state, Inspector
 CPU and allocation samples, heap snapshots, V8 ticks, and trace events. Each source answers a
 different question; correlation is evidence, while two APIs over the same V8 sampler are not
