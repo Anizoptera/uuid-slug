@@ -30,7 +30,9 @@ const project = join(import.meta.dir, "..");
 const smoke = process.argv.includes("--smoke");
 const positional = process.argv.slice(2).filter((value) => value !== "--smoke");
 const baselineRef = positional[0] ?? "HEAD^";
-if (positional.length > 1) throw new Error("Usage: bun bench/compare.ts [baseline-ref] [--smoke]");
+const candidateRef = positional[1];
+if (positional.length > 2)
+  throw new Error("Usage: bun bench/compare.ts [baseline-ref] [candidate-ref] [--smoke]");
 const rounds = Number(process.env.UUID_SLUG_COMPARE_ROUNDS ?? (smoke ? 2 : 6));
 const duration = process.env.UUID_SLUG_PROFILE_MS ?? (smoke ? "1" : "5");
 const warmup = process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (smoke ? "2" : "16");
@@ -279,14 +281,19 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
 async function main(): Promise<void> {
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-compare-"));
   const baselineRoot = join(scratch, "baseline");
+  const candidateRoot = candidateRef ? join(scratch, "candidate") : project;
   try {
     await command("git", ["worktree", "add", "--detach", baselineRoot, baselineRef], project);
     await symlink(join(project, "node_modules"), join(baselineRoot, "node_modules"), "dir");
+    if (candidateRef) {
+      await command("git", ["worktree", "add", "--detach", candidateRoot, candidateRef], project);
+      await symlink(join(project, "node_modules"), join(candidateRoot, "node_modules"), "dir");
+    }
     const baselineOut = join(scratch, "baseline-artifacts");
     const candidateOut = join(scratch, "candidate-artifacts");
     const [baseline, candidate, driver] = await Promise.all([
       packArtifacts(baselineRoot, baselineOut),
-      packArtifacts(project, candidateOut),
+      packArtifacts(candidateRoot, candidateOut),
       buildHostDriver(scratch),
     ]);
     const [baselineBrowser, candidateBrowser] = await Promise.all([
@@ -349,9 +356,13 @@ async function main(): Promise<void> {
       await browser.close();
       await server.stop(true);
     }
-    console.error(`Compared ${baselineRef} with the current worktree.`);
+    console.error(`Compared ${baselineRef} with ${candidateRef ?? "the current worktree"}.`);
   } finally {
     await command("git", ["worktree", "remove", "--force", baselineRoot], project).catch(() => {});
+    if (candidateRef)
+      await command("git", ["worktree", "remove", "--force", candidateRoot], project).catch(
+        () => {},
+      );
     await rm(scratch, { recursive: true, force: true });
   }
 }
