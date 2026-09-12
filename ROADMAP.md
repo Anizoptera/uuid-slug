@@ -171,7 +171,7 @@ unless the maintainer separately changes the HLD.
 - [x] Measure large cooperative string-seed peak memory before replacing chunk arrays with a bounded
   reusable encoding buffer. Proceed only when retained/gross allocation evidence shows the chunks,
   rather than packed words or hashing, dominate.
-- [ ] Measure invalid-input frequency and `UuidSlugError` construction attribution before exploring
+- [x] Measure invalid-input frequency and `UuidSlugError` construction attribution before exploring
   cheaper error creation. Preserve `Error` identity, stack, cause, code, and diagnostics; no change
   is allowed if the proposed saving weakens an observable error contract.
 

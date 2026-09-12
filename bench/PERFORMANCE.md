@@ -969,7 +969,11 @@ Separate base32-only pairs measured 429 → 423, 347 → 338 and 194 → 185 ns 
 the encoder path is unchanged, so these small differences are not attributed to the optimization.
 Baseline CPU samples included encoding, parsing, hashing, GC and error construction. Equal-duration
 cases overrepresent rare errors relative to many applications; their sample shares are not a traffic
-model. Removing diagnostic errors or callback-owned buffers would change contracts, not remove waste.
+model, and the repository contains no caller trace or telemetry that supplies invalid-input
+frequency. Synthetic frequency would encode the result into the workload. Keep `UuidSlugError`
+construction until real traffic and complete-route attribution show material cost; `Error` identity,
+stack, cause, code, and diagnostics remain public behavior, not removable work. Removing diagnostic
+errors or callback-owned buffers would change contracts, not remove waste.
 
 Exhaustive current-mask candidate decoding allocates one private 16-byte block and restores it from
 four scalar ciphertext words between schemas. Keep first-match migration separate: sharing that
