@@ -255,6 +255,11 @@ Refilling all ten bytes on continuation was rejected because six newly copied se
 Restore it only if continuation begins consuming a new seed or a runtime makes the four-byte draw
 reproducibly slower on a complete affected route.
 
+Four fixed tail assignments were rejected in favor of the compact four-iteration copy loop. A
+24-round packed comparison on 2026-09-12 found no distinct Node or Bun byte-route gain, while Bun
+string generation regressed 1.3% with its 95% median interval above no change. Reconsider direct
+writes only if a primary runtime shows a complete-route gain without regressing another output form.
+
 ### Portable UUIDv4 ownership paths
 
 Draw entropy directly into package-owned output. Keep caller-owned output on a separate path that

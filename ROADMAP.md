@@ -136,6 +136,8 @@ protection, and no default or fallback may select it.
   byte-oriented routes on Node and Bun without changing payload-bit coverage or atomic failure.
 - [x] Refill only the four portable UUIDv7 tail bytes on same-millisecond and rollback continuation;
   two packed replays improved affected Node and Bun routes while advancing-time movement did not repeat.
+- [x] Reject four fixed portable UUIDv7 tail writes: primary byte routes were unresolved and Bun
+  string generation regressed in the packed screen, so unrolling added code without route value.
 - [x] Split portable UUIDv4 generation by output ownership: package-owned output draws directly into
   its result; caller-owned output retains private staging and shows no primary-runtime regression.
 - [x] Select the portable UUIDv7 timestamp writer once per module: fixed word writes repeatedly
