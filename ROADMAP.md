@@ -99,7 +99,7 @@ unless the maintainer separately changes the HLD.
 - [x] Test scalar scratch only in final KDF round-key expansion, isolated from the previously
   rejected polymorphic hot hash paths. Measure construction across seed forms and iteration
   boundaries; reject unless allocation and complete construction both improve repeatedly.
-- [ ] Test streaming UTF-8 packing for cooperative string seeds with `TextEncoder.encodeInto` where
+- [x] Test streaming UTF-8 packing for cooperative string seeds with `TextEncoder.encodeInto` where
   available and the current encoder as fallback. Vary ASCII, multibyte, surrogate boundaries, and
   geometric seed sizes; retain only if peak memory and elapsed work improve without extra ordinary
   seed cost or changed derived keys.

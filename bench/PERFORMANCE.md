@@ -243,6 +243,16 @@ within noise. Chromium byte-seed construction improved, but eight-iteration stri
 about 45% slower in both replays. Keep separate input and output arrays until complete construction
 improves across iteration boundaries; allocation count alone does not justify the browser loss.
 
+### Cooperative UTF-8 packing
+
+Direct `TextEncoder.encodeInto` packing was rejected. The candidate counted UTF-8 bytes in bounded
+slices, allocated exact word storage, then encoded into its byte view on little-endian hosts; the
+existing chunk encoder remained the fallback. Geometric probes covered ASCII strings from 16 bytes
+through 1 MiB, a 64 KiB multibyte string, and a surrogate pair crossing the chunk boundary. The
+candidate never improved elapsed work across Node 26.8.2, Bun 1.4.2, Deno 2.9.6, and Chromium 153.
+At 1 MiB it was about 35% slower on Node and 12% slower on Bun. Keep the one-pass chunk encoder;
+avoiding encoded chunk retention does not repay an extra Unicode scan.
+
 ### Owned masking blocks
 
 Mask UUID bytes in place only when the codec owns the block. UUID strings parse into a private
