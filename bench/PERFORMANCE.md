@@ -67,6 +67,14 @@ that make repeated string hits constant-time. Reopen optimization only when a ne
 complete-route work or a measured consumer trace supplies reuse distance and frequency sufficient
 to choose capacity and invalidation, then shows total memory and latency benefit.
 
+A wire key selector is not a decode optimization: it changes issued identifiers, exposes key
+selection, and cannot identify existing values that carry no marker. Automatic key reordering and
+parallel attempts likewise cannot preserve the caller-ordered first passing candidate. Ordinary
+synchronous operations complete below worker startup, messaging, transfer, and coordination costs;
+blocking for a worker would retain the synchronous call shape by adding latency, not by removing
+work. Keep direct synchronous execution unless a new public async contract is explicitly approved
+for a measured workload that exceeds those fixed costs.
+
 ## Native development boundaries
 
 The development bridge matrix ran on the same Apple M4 Max through Node 22.23.2, Node 24.20.0,

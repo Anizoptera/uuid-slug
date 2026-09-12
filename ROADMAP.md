@@ -186,22 +186,22 @@ unless the maintainer separately changes the HLD.
 - [x] Falsify worker-owned byte-seed snapshots against cross-runtime availability and end-to-end
   cost. Charge worker startup, messaging, transfer, cancellation, and fallback; close if preserving
   synchronous capture leaves the original main-thread copy in place.
-- [ ] Falsify fused validation and direct writes into caller-owned output against atomic failure.
+- [x] Falsify fused validation and direct writes into caller-owned output against atomic failure.
   Retain staging unless a single-pass design can prove no caller byte changes for every late invalid
   character, noncanonical tail, range failure, and runtime exception.
-- [ ] Falsify a second native-capability cache against the existing module-load probes and injected
+- [x] Falsify a second native-capability cache against the existing module-load probes and injected
   native-failure seam. Close unless attribution shows the one property dispatch is material and a
   cache preserves production fallback tests without duplicate state.
-- [ ] Falsify automatic previous-key reordering against caller-ordered first-match semantics. Do not
+- [x] Falsify automatic previous-key reordering against caller-ordered first-match semantics. Do not
   implement unless all observable ambiguous matches remain identical; otherwise record that the
   proposed speedup changes the contract.
-- [ ] Falsify parallel previous-key attempts against ordered completion and sub-microsecond task
+- [x] Falsify parallel previous-key attempts against ordered completion and sub-microsecond task
   costs. Charge scheduling, coordination, cancellation, and every earlier unresolved key; close if
   the earliest lawful return cannot beat sequential traversal.
-- [ ] Falsify adding a wire key selector against existing identifier compatibility and information
+- [x] Falsify adding a wire key selector against existing identifier compatibility and information
   exposure. Treat it as an HLD change, not an optimization, unless a backward-compatible spelling
   preserves every issued identifier and the maintainer explicitly approves the new observable.
-- [ ] Falsify worker offload for ordinary synchronous operations against transfer, scheduling, and
+- [x] Falsify worker offload for ordinary synchronous operations against transfer, scheduling, and
   synchronous API costs. Close if end-to-end latency exceeds direct execution or if preserving the
   call shape requires blocking coordination.
 - [ ] Recheck HalfSipHash round unrolling only after a retained upstream layout or engine change
