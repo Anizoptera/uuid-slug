@@ -19,10 +19,16 @@ const random = new Uint8Array(16);
 let generating = false;
 
 /**
- * Generate UUIDv4 bytes with platform randomness. Without storage, return a new plain 16-byte
- * `Uint8Array`. With storage, write only after success and return the exact supplied array.
+ * Generate UUIDv4 bytes with platform randomness in a new plain 16-byte `Uint8Array`.
  */
 export function generateUuidV4Bytes(): UuidV4Bytes | UuidSlugError;
+/**
+ * Write UUIDv4 bytes into caller-owned storage only after successful generation.
+ *
+ * @param output - Caller-owned array that receives the 16 UUID bytes.
+ * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
+ * outside the written range stay unchanged.
+ */
 export function generateUuidV4Bytes<Output extends Uint8Array>(
   output: Output,
   outputOffset?: number,

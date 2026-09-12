@@ -75,6 +75,10 @@ Keep UUID text/binary conversion directional and version-neutral:
   their offset, view, and ownership meanings would make the operation ambiguous. Preserve a
   caller-owned output subtype and write only after full validation; return plain `Uint8Array` for
   package-owned bytes.
+- Use `byteOffset` for the zero-based start of a 16-byte UUID read from a larger array, and
+  `outputOffset` for its write position in caller-owned storage. Omission means zero. Equivalent
+  read and write operations must explain this contract with the same terms in each overload's
+  declaration documentation.
 - Keep generic, v4, and v7 byte guards together. The generic guard proves only the 16-byte shape;
   version guards also prove their version and RFC variant bits.
 - Do not add aliases before a published contract needs a migration path. Before 1.0, make an
@@ -91,8 +95,9 @@ Keep UUID text/binary conversion directional and version-neutral:
   allocation. Codec generation uses that package-owned source; callers encode externally produced
   UUIDs through `encodeUuid` instead of replacing the codec's entropy source.
 - Name codec operations for both action and object: `generateSlug`, `encodeUuid`, `decodeSlug`,
-  `decodeSlugToBytes`, and `validateSlugTimestamp`. Name migration operations `decodeSlug` and
-  `decodeSlugCandidates` because detached readers must still identify their input.
+  `decodeSlugToBytes`, `extractSlugTimestamp`, and `validateSlugTimestamp`. Name migration
+  operations `decodeSlug` and `decodeSlugCandidates` because detached readers must still identify
+  their input.
 - Use `outputAlphabet` for the codec writer choice. It selects emitted slug spelling; it does not
   constrain readers, which infer and accept both supported spellings.
 - Require callers to provide `maxTimestampDeltaMs` for every timestamp-window check. Read the

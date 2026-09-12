@@ -93,6 +93,8 @@ const versionedUuid: UuidV7String = formattedUuid;
 const convertedSlug = uuidToSlug(checkedUuid);
 if (convertedSlug instanceof Error) throw convertedSlug;
 const versionedSlug: UuidV7Slug = convertedSlug;
+expectType<number | UuidSlugError>()(extractUuidV7Timestamp(checkedUuid));
+expectType<number | UuidSlugError>()(extractUuidV7Timestamp(versionedSlug));
 // @ts-expect-error Known slug text cannot enter a UUID text operation.
 uuidToBytes(versionedSlug);
 // @ts-expect-error UUID timestamp validation accepts UUID text, not known slug text.
@@ -103,6 +105,7 @@ const roundTripUuid: UuidV7String = convertedUuid;
 const parsedSlugBytes = slugToBytes(versionedSlug);
 if (parsedSlugBytes instanceof Error) throw parsedSlugBytes;
 const versionedSlugBytes: UuidV7Bytes = parsedSlugBytes;
+expectType<number | UuidSlugError>()(extractUuidV7Timestamp(versionedSlugBytes));
 // @ts-expect-error Known UUID text cannot enter a slug text operation.
 slugToBytes(checkedUuid);
 // @ts-expect-error Slug timestamp validation accepts slug text, not known UUID text.
@@ -113,6 +116,7 @@ if (formattedSlug instanceof Error) throw formattedSlug;
 const roundTripSlug: UuidV7Slug = formattedSlug;
 class ConsumerBuffer extends Uint8Array {}
 const destination = new ConsumerBuffer(32);
+expectType<number | UuidSlugError>()(extractUuidV7Timestamp(destination, 8));
 const externalBinary: unknown = versionedBytes;
 if (!isUuidBytes(externalBinary)) throw new Error("Expected UUID bytes.");
 const checkedBinary: UuidBytes = externalBinary;
@@ -172,6 +176,7 @@ expectType<UuidV7SlugCodec>()(codec);
 expectType<UuidV7CodecSlug | UuidSlugError>()(codec.generateSlug());
 expectType<UuidV7CodecSlug | UuidSlugError>()(codec.encodeUuid(versionedBytes));
 expectType<UuidV7String | UuidSlugError>()(codec.decodeSlug("AZ_xnLf5cACbG99xO9VWLw"));
+expectType<number | UuidSlugError>()(codec.extractSlugTimestamp("AZ_xnLf5cACbG99xO9VWLw"));
 expectType<UuidV7Bytes | UuidSlugError>()(codec.decodeSlugToBytes("AZ_xnLf5cACbG99xO9VWLw"));
 expectType<ConsumerBuffer | UuidSlugError>()(
   codec.decodeSlugToBytes("AZ_xnLf5cACbG99xO9VWLw", destination, 8),

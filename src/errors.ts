@@ -36,7 +36,13 @@ export class UuidSlugError extends Error {
   /** Stable recovery category; use `message` and `cause` for diagnostics. */
   readonly code: UuidSlugErrorCode;
 
-  /** Create an error with a stable recovery code and optional underlying cause. */
+  /**
+   * Create an expected package error.
+   *
+   * @param code - Stable recovery category.
+   * @param message - Input- or operation-specific diagnostic.
+   * @param options - Standard error options; use `cause` to retain the underlying failure.
+   */
   constructor(code: UuidSlugErrorCode, message: string, options?: ErrorOptions) {
     super(message, options);
     this.name = "UuidSlugError";
@@ -64,6 +70,9 @@ export function isUuidSlugError(value: unknown): value is UuidSlugError {
 /**
  * Return the success value, or throw a recognized `UuidSlugError` unchanged.
  * Use this only when the caller cannot recover locally; otherwise branch with `isUuidSlugError`.
+ *
+ * @param value - Package result to unwrap.
+ * @throws The same `UuidSlugError` when `value` is an expected package failure.
  */
 export function unwrapUuidSlug<Value>(value: Value): Exclude<Value, UuidSlugError> {
   if (isUuidSlugError(value)) throw value;

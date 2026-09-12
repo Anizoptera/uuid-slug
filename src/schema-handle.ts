@@ -70,6 +70,7 @@ function runCustom(
  * so returning the same array is safe. Invalid results and thrown values return `UuidSlugError`.
  * The caller must ensure `unmask(mask(bytes))` restores every possible 16-byte input.
  *
+ * @param options - Diagnostic label and mutually inverse 16-byte transforms.
  * @returns The validated mask, or `UuidSlugError` for an invalid contract or callback result.
  */
 export function createCustomUuidV7Mask(

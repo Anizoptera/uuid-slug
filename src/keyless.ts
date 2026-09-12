@@ -25,6 +25,7 @@ export interface UuidV7GeneratorOptions {
  * Create an independent UUIDv7 sequence with a caller-supplied clock and platform randomness.
  * Invalid JavaScript options throw `TypeError`; clock and entropy failures are returned by methods.
  *
+ * @param options - Clock used by this independent UUIDv7 sequence.
  * @throws `TypeError` if `options` is not an object or `clock` is not a function.
  */
 export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator {
@@ -44,6 +45,8 @@ const v7 = () => (generator ??= createRuntimeGenerator(runtime));
 /**
  * Generate a direct UUIDv4 slug with platform randomness, using base64url by default. base32hex is
  * filesystem-safe but cannot make random UUIDv4 values chronological.
+ *
+ * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
 export function generateUuidV4Slug(
   alphabet: SlugAlphabet = "base64url",
@@ -62,10 +65,16 @@ export function generateUuidV4Slug(
 export const generateUuidV7 = (): UuidV7String | UuidSlugError => v7().generateUuidV7();
 
 /**
- * Generate UUIDv7 bytes with platform randomness. Without storage, return a new plain 16-byte
- * `Uint8Array`. With storage, write only after success and return the exact supplied array.
+ * Generate UUIDv7 bytes with platform randomness in a new plain 16-byte `Uint8Array`.
  */
 export function generateUuidV7Bytes(): UuidV7Bytes | UuidSlugError;
+/**
+ * Write UUIDv7 bytes into caller-owned storage only after successful generation.
+ *
+ * @param output - Caller-owned array that receives the 16 UUID bytes.
+ * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
+ * outside the written range stay unchanged.
+ */
 export function generateUuidV7Bytes<Output extends Uint8Array>(
   output: Output,
   outputOffset?: number,
@@ -81,15 +90,27 @@ export function generateUuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Arr
 /**
  * Generate UUIDv7 text at a whole Unix millisecond in `0..2^48-1`. This does not change the
  * current-time sequence, and it does not promise ordering within one millisecond.
+ *
+ * @param unixMs - Whole Unix millisecond encoded into the UUID.
  */
 export const generateUuidV7At = (unixMs: number): UuidV7String | UuidSlugError =>
   v7().generateUuidV7At(unixMs);
 
 /**
- * Generate UUIDv7 bytes at a whole Unix millisecond in `0..2^48-1` without changing current-time
- * state. The output overload validates before writing and returns the exact supplied array.
+ * Generate UUIDv7 bytes at a whole Unix millisecond in `0..2^48-1` in a new plain 16-byte
+ * `Uint8Array`, without changing current-time state.
+ *
+ * @param unixMs - Whole Unix millisecond encoded into the UUID.
  */
 export function generateUuidV7BytesAt(unixMs: number): UuidV7Bytes | UuidSlugError;
+/**
+ * Write an explicit-time UUIDv7 into caller-owned storage only after successful generation.
+ *
+ * @param unixMs - Whole Unix millisecond encoded into the UUID.
+ * @param output - Caller-owned array that receives the 16 UUID bytes.
+ * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
+ * outside the written range stay unchanged.
+ */
 export function generateUuidV7BytesAt<Output extends Uint8Array>(
   unixMs: number,
   output: Output,
@@ -111,6 +132,8 @@ export function generateUuidV7BytesAt(
 /**
  * Generate a direct UUIDv7 slug. Lowercase base32hex sorts across different milliseconds;
  * base64url and values generated within one millisecond have no chronological sort guarantee.
+ *
+ * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
 export function generateUuidV7Slug(
   alphabet: SlugAlphabet = "base64url",

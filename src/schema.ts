@@ -145,6 +145,7 @@ function schemaFromKeys(label: string, keys: Int32Array): UuidV7Mask {
  * define the wire format; retain the old mask in `previousMasks` before changing either. Invalid
  * options return `invalid_mask_schema`.
  *
+ * @param options - Stable secret seed, optional diagnostic label, and derivation work factor.
  * @returns The mask, or `UuidSlugError` when an option or seed is invalid.
  */
 export function createUuidV7Mask(options: UuidV7MaskOptions): UuidV7Mask | UuidSlugError {
@@ -265,6 +266,7 @@ function* cooperativeKeys(
  * affect the result. Cancellation returns `aborted` with `signal.reason` as its cause; invalid
  * options return `invalid_mask_schema`. Construct once and reuse the result.
  *
+ * @param options - Synchronous mask options plus an optional cancellation signal.
  * @returns A promise for the mask or an expected construction error.
  */
 export async function createUuidV7MaskAsync(

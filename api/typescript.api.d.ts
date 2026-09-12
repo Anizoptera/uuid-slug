@@ -65,8 +65,11 @@ declare const ERROR_CODES: readonly [
   "rng_unavailable",
   "timestamp_outside_window",
 ];
+export declare function extractUuidV7Timestamp<Input extends string>(
+  value: UuidV7TimestampInput<Input>,
+): number | UuidSlugError;
 export declare function extractUuidV7Timestamp<Input extends Uint8Array>(
-  bytes: UuidV7BytesInput<Input>,
+  value: UuidV7BytesInput<Input>,
   byteOffset?: number,
 ): number | UuidSlugError;
 export declare function generateUuidV4(): UuidV4String | UuidSlugError;
@@ -246,6 +249,10 @@ export declare interface UuidV7SlugCodec {
     output: Output,
     outputOffset?: number,
   ): Output | UuidSlugError;
+  extractSlugTimestamp<Input extends string>(
+    this: void,
+    slug: SlugStringInput<Input>,
+  ): number | UuidSlugError;
   validateSlugTimestamp<Input extends string>(
     this: void,
     slug: SlugStringInput<Input>,
@@ -266,6 +273,10 @@ export declare type UuidV7String = Brand<UuidString, "UuidV7String">;
 declare type UuidV7StringInput<Input extends string> = RejectKnownInput<
   Input,
   UuidSlug | MaskedUuidSlug | UuidV4String
+>;
+declare type UuidV7TimestampInput<Input extends string> = RejectKnownInput<
+  Input,
+  MaskedUuidSlug | UuidV4String | UuidV4Slug
 >;
 export declare interface UuidV7TimestampWindow {
   readonly maxTimestampDeltaMs: number;

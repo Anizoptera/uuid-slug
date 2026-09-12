@@ -61,6 +61,10 @@ export type UuidV7SlugInput<Input extends string> = RejectKnownInput<
   Input,
   UuidString | MaskedUuidSlug | UuidV4Slug
 >;
+export type UuidV7TimestampInput<Input extends string> = RejectKnownInput<
+  Input,
+  MaskedUuidSlug | UuidV4String | UuidV4Slug
+>;
 export type UuidV7BytesInput<Input extends Uint8Array> = RejectKnownInput<Input, UuidV4Bytes>;
 type UuidV7ValueInput<Input extends string | Uint8Array> = RejectKnownInput<
   Input,
@@ -98,7 +102,13 @@ export interface UuidV7Generator {
   generateUuidV7(this: void): UuidV7String | UuidSlugError;
   /** Generate a new plain 16-byte `Uint8Array` for the current clock reading. */
   generateUuidV7Bytes(this: void): UuidV7Bytes | UuidSlugError;
-  /** Write 16 bytes at `outputOffset` only after success, then return the exact `output` array. */
+  /**
+   * Write 16 bytes only after success and return the exact supplied array.
+   *
+   * @param output - Caller-owned array that receives the 16 UUID bytes.
+   * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
+   * outside the written range stay unchanged.
+   */
   generateUuidV7Bytes<Output extends Uint8Array>(
     this: void,
     output: Output,
@@ -111,7 +121,14 @@ export interface UuidV7Generator {
   generateUuidV7At(this: void, unixMs: number): UuidV7String | UuidSlugError;
   /** Generate a new 16-byte array at an explicit millisecond without changing current-time state. */
   generateUuidV7BytesAt(this: void, unixMs: number): UuidV7Bytes | UuidSlugError;
-  /** Write an explicit-time UUIDv7 only after success, then return the exact `output` array. */
+  /**
+   * Write an explicit-time UUIDv7 only after success and return the exact supplied array.
+   *
+   * @param unixMs - Whole Unix millisecond encoded into the UUID.
+   * @param output - Caller-owned array that receives the 16 UUID bytes.
+   * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
+   * outside the written range stay unchanged.
+   */
   generateUuidV7BytesAt<Output extends Uint8Array>(
     this: void,
     unixMs: number,
@@ -238,6 +255,9 @@ export interface UuidSlugMigrationDecoder<
   /**
    * Return the first candidate in this order: sentinel, current masks, original mask, plain slug.
    * Pass `format` when its origin is known to avoid trying unrelated readers.
+   *
+   * @param slug - Identifier accepted by one enabled migration reader.
+   * @param format - Known source format. Omit to try enabled readers in documented order.
    */
   decodeSlug<Input extends string>(
     this: void,
@@ -247,6 +267,9 @@ export interface UuidSlugMigrationDecoder<
   /**
    * Return every distinct candidate in decode order for one application lookup. An empty array
    * means no enabled format matched; callback failure returns `UuidSlugError`, not a partial list.
+   *
+   * @param slug - Identifier accepted by one or more enabled migration readers.
+   * @param format - Known source format. Omit to try enabled readers in documented order.
    */
   decodeSlugCandidates<Input extends string>(
     this: void,
@@ -297,6 +320,8 @@ export interface UuidV7SlugCodec {
   /**
    * Create a reader for current and explicitly enabled old formats without changing this codec.
    * Invalid JavaScript option shapes throw `TypeError`; decode failures return `UuidSlugError`.
+   *
+   * @param options - Old formats this application has actually issued. Omit for current formats only.
    */
   createMigrationDecoder<const Options extends UuidSlugMigrationOptions = {}>(
     this: void,
@@ -308,6 +333,8 @@ export interface UuidV7SlugCodec {
    * Encode canonical UUIDv7 text or 16 bytes as a masked slug, unless it is a registered sentinel.
    * Other UUID versions return `invalid_uuid_version`. TypeScript rejects known slug and UUIDv4
    * values; unbranded external values are validated when called.
+   *
+   * @param uuid - Canonical UUIDv7 text or exactly 16 UUIDv7 bytes.
    */
   encodeUuid<Input extends string | Uint8Array>(
     this: void,
@@ -317,6 +344,8 @@ export interface UuidV7SlugCodec {
    * Decode the first passing sentinel or mask in configured order to canonical UUIDv7 text.
    * Success proves format integrity, not issuance. TypeScript rejects known UUID text; slug values
    * remain accepted because direct and masked spellings can overlap.
+   *
+   * @param slug - Masked slug or registered sentinel accepted by this codec.
    */
   decodeSlug<Input extends string>(
     this: void,
@@ -324,12 +353,22 @@ export interface UuidV7SlugCodec {
   ): UuidV7String | UuidSlugError;
   /**
    * Decode to a new plain 16-byte `Uint8Array`. Use this when the caller needs binary output.
+   *
+   * @param slug - Masked slug or registered sentinel accepted by this codec.
    */
   decodeSlugToBytes<Input extends string>(
     this: void,
     slug: SlugStringInput<Input>,
   ): UuidV7Bytes | UuidSlugError;
-  /** Decode and validate before writing 16 bytes at `outputOffset`; errors leave `output` unchanged. */
+  /**
+   * Decode and validate before writing 16 bytes. Return the exact supplied array; errors leave it
+   * unchanged.
+   *
+   * @param slug - Masked slug or registered sentinel accepted by this codec.
+   * @param output - Caller-owned array that receives the 16 UUID bytes.
+   * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
+   * outside the written range stay unchanged.
+   */
   decodeSlugToBytes<Input extends string, Output extends Uint8Array>(
     this: void,
     slug: SlugStringInput<Input>,
@@ -337,9 +376,22 @@ export interface UuidV7SlugCodec {
     outputOffset?: number,
   ): Output | UuidSlugError;
   /**
+   * Decode a masked slug or registered sentinel with this codec and return its UUIDv7 Unix
+   * timestamp in milliseconds. Success proves format integrity, not issuance or authorization.
+   *
+   * @param slug - Masked slug or registered sentinel accepted by this codec.
+   */
+  extractSlugTimestamp<Input extends string>(
+    this: void,
+    slug: SlugStringInput<Input>,
+  ): number | UuidSlugError;
+  /**
    * Decode with this codec, check the symmetric timestamp window, and return the same slug.
    * This checks clock plausibility, not expiry, authentication, replay, or issuance. TypeScript
    * rejects known UUID text because only this codec can resolve overlapping slug spellings.
+   *
+   * @param slug - Masked slug or registered sentinel accepted by this codec.
+   * @param window - Inclusive maximum distance from an explicit or current reference time.
    */
   validateSlugTimestamp<Input extends string>(
     this: void,

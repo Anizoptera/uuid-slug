@@ -301,12 +301,18 @@ without binding them first.
 | `generateSlug()`                                          | codec only | `UuidSlugError` or `UuidV7CodecSlug` | Generate a masked or sentinel slug. |
 | `encodeUuid(uuidOrBytes)` / `decodeSlug(slug)`            | codec only | `UuidSlugError \| ...` | Mask UUIDv7 text or bytes; decode to text. |
 | `decodeSlugToBytes(slug, out?, offset?)`                  | codec only | `UuidSlugError \| ...` | Decode without producing UUID text. |
+| `extractSlugTimestamp(slug)`                              | codec only | `UuidSlugError \| number` | Read time from a masked slug or sentinel. |
 | `validateSlugTimestamp(slug, window)`                     | codec only | `UuidSlugError \| ...` | Decode, then check the timestamp window. |
 | `sentinels`                                             | codec only        | array                         | The reserved values this codec knows.    |
 | `createMigrationDecoder(options?)`                       | codec only | migration reader | Read selected old formats without changing new output. |
 | `uuidToSlug(uuid, alphabet?)` / `slugToUuid(slug)`      | module only       | `UuidSlugError \| ...`        | Direct slug, both ways.                  |
 | `uuidToBytes(uuid, out?, offset?)` / `bytesToUuid(bytes, offset?)` | module only | `UuidSlugError \| ...` | Convert canonical UUID text and bytes. |
 | `slugToBytes` / `bytesToSlug`                      | module only       | `UuidSlugError \| ...`        | Slug to bytes and back.                  |
+| `extractUuidV7Timestamp(value, offset?)`            | module only       | `UuidSlugError \| number`     | Read time from UUIDv7 text, direct slug, or bytes. |
+
+A byte offset is the zero-based index where one 16-byte UUID starts inside a larger `Uint8Array`.
+Omit it for a standalone 16-byte array. Output offsets select where a method writes; input offsets
+select where it reads. Bytes outside that 16-byte range stay unchanged.
 
 There is no `uuidToMaskedSlug`: masking is defined for UUIDv7 only, because a v7 is the version
 that leaks a creation time and 22 characters have no room for a version tag as well as the check.
@@ -330,9 +336,10 @@ Also exported, all module-level:
 
 - Type guards: `isUuidString`, `isUuidV4String`, `isUuidV7String`, `isUuidSlug`, `isUuidV4Slug`,
   `isUuidV7Slug`, `isUuidBytes`, `isUuidV4Bytes`, and `isUuidV7Bytes`.
-- `extractUuidV7Timestamp` — the instant a v7 was minted at, and an error for anything that is
-  not a v7, because a v4's first six bytes are random and would otherwise read back as a
-  plausible date.
+- `extractUuidV7Timestamp` reads Unix milliseconds from UUIDv7 text, either direct-slug alphabet,
+  or bytes. Use `codec.extractSlugTimestamp` for masked slugs and sentinels because their decoding
+  keys belong to the codec. Both return an error for other UUID versions; a v4's first six bytes
+  are random and must not be presented as a timestamp.
 - `createUuidV7Mask` builds a schema from a seed; `createUuidV7MaskAsync` adds cooperative
   cancellation; `createCustomUuidV7Mask` adapts separate forward and reverse callbacks.
   `UUID_V7_TEST_MASK` is the explicit, published-key choice for deterministic examples.

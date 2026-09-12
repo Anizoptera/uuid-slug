@@ -480,6 +480,14 @@ export function createProfileCases(
       into.set(bytes[index & 255] as Uint8Array, 4);
       return api.extractUuidV7Timestamp(into, 4);
     },
+    "timestamp.extract.uuid": (index) => api.extractUuidV7Timestamp(ids[index & 255] as string),
+    "timestamp.extract.slug": (index) => api.extractUuidV7Timestamp(slugs[index & 255] as string),
+    "timestamp.extract.slug.base32": (index) =>
+      api.extractUuidV7Timestamp(base32[index & 255] as string),
+    "timestamp.extract.masked": (index) =>
+      codec.extractSlugTimestamp(masked[index & 255] as string),
+    "timestamp.extract.masked.base32": (index) =>
+      base32Codec.extractSlugTimestamp(maskedBase32[index & 255] as string),
     "timestamp.masked": (index) =>
       codec.validateSlugTimestamp(masked[index & 255] as string, timestampWindow),
     "timestamp.masked.base32": (index) =>

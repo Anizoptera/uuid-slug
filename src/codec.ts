@@ -196,6 +196,7 @@ function createSentinels(
  * `previousMasks` in caller order. Invalid masks, sentinels, options, or callbacks return
  * `UuidSlugError`; no implicit public mask is selected.
  *
+ * @param options - Writer mask plus optional reader masks, sentinels, and output spelling.
  * @returns The codec, or `UuidSlugError` when its configuration cannot form a valid codec.
  */
 export function createUuidV7SlugCodec(
@@ -353,6 +354,12 @@ function buildUuidSlugCodec(
     }
   }
 
+  function extractSlugTimestamp(slug: string): number | UuidSlugError {
+    const bytes =
+      sentinels.bySlug.get(slug)?.bytes ?? decodeMaskedSlug(slug, schema, previousMasks);
+    return bytes instanceof Error ? bytes : extractUuidV7Timestamp(bytes);
+  }
+
   function createMigrationDecoder<const Options extends UuidSlugMigrationOptions = {}>(
     migrationOptions?: Options,
   ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>> {
@@ -379,6 +386,7 @@ function buildUuidSlugCodec(
     encodeUuid,
     decodeSlug,
     decodeSlugToBytes,
+    extractSlugTimestamp,
     validateSlugTimestamp,
   };
   return Object.freeze(codec);
@@ -388,6 +396,9 @@ function buildUuidSlugCodec(
  * Return canonical UUIDv7 text when its timestamp is inside the inclusive symmetric window.
  * Return `timestamp_outside_window` when it is not. This checks clock plausibility, not expiry,
  * authentication, replay, or issuance. TypeScript rejects known slug and UUIDv4 values.
+ *
+ * @param uuid - Canonical UUIDv7 text to validate and return.
+ * @param window - Inclusive maximum distance from an explicit or current reference time.
  */
 export function validateUuidV7Timestamp<Input extends string>(
   uuid: UuidV7StringInput<Input>,
@@ -446,6 +457,9 @@ function validateTimestampBytes(
  * Return the same direct UUIDv7 slug when its timestamp is inside the inclusive symmetric window.
  * Return `timestamp_outside_window` when it is not. Use a codec method for masked or sentinel
  * input. TypeScript rejects known UUID text, masked slugs, and UUIDv4 slugs.
+ *
+ * @param slug - Canonical direct UUIDv7 slug to validate and return.
+ * @param window - Inclusive maximum distance from an explicit or current reference time.
  */
 export function validateUuidV7SlugTimestamp<Input extends string>(
   slug: UuidV7SlugInput<Input>,

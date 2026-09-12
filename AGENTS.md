@@ -70,9 +70,12 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Give every root export, overload family, public type, interface, property, method, option, and
   callback consumer-facing JSDoc in its owning source. Explain what changes the caller's decision:
   valid input, defaults, result and ownership, expected errors or effects, ordering, important
-  limits, and realistic misuse. Document every configuration property at that property. Use TSDoc
-  tags only when they improve editor help, such as `@defaultValue`, `@returns`, `@throws`, or a short
-  `@remarks`; never add tags to restate the signature. Omit facts already clear from the type.
+  limits, and realistic misuse. Equivalent operations MUST document equivalent facts with the same
+  terms, TSDoc fields, and order; vary the wording only where their contracts differ. Document every
+  configuration property at that property. Use the representation that serves each consumer: TSDoc
+  `@param`, `@defaultValue`, `@returns`, `@throws`, or short `@remarks` where structured editor help
+  adds information; prose, examples, or tables where they explain a workflow better. Never add tags
+  to restate the signature. Omit facts already clear from the type.
   Non-public declarations may use TSDoc when editor help benefits maintainers.
 - Treat public JSDoc as part of every public-source change. Update or remove affected text in the
   same edit; never leave stale documentation for a later pass. Before committing, build declarations,

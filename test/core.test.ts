@@ -112,6 +112,28 @@ describe("UUIDv7 timestamp extraction", () => {
     if (written instanceof Error) throw written;
     expect(extractUuidV7Timestamp(buffer, 16)).toBe(instant);
   });
+
+  it("reads the same instant from UUID text and both direct slug spellings", () => {
+    const instant = 1_700_000_000_123;
+    const uuid = unwrap(generateUuidV7BytesAt(instant));
+    const text = unwrap(bytesToUuid(uuid));
+    expect(extractUuidV7Timestamp(text)).toBe(instant);
+    expect(extractUuidV7Timestamp(unwrap(bytesToSlug(uuid)))).toBe(instant);
+    expect(extractUuidV7Timestamp(unwrap(bytesToSlug(uuid, "base32hex")))).toBe(instant);
+  });
+
+  it("uses the codec key to read masked and sentinel timestamps", () => {
+    const codec = createUuidV7SlugCodec({
+      mask: UUID_V7_TEST_MASK,
+      sentinels: TEST_SENTINELS,
+    });
+    const instant = unwrap(extractUuidV7Timestamp(TEST_SENTINELS[0].uuid));
+    const masked = unwrap(codec.encodeUuid(SAMPLE_V7_A));
+    const sentinel = codec.sentinels[0];
+    if (!sentinel) throw new Error("Expected configured sentinel");
+    expect(codec.extractSlugTimestamp(masked)).toBe(extractUuidV7Timestamp(SAMPLE_V7_A));
+    expect(codec.extractSlugTimestamp(sentinel.slug)).toBe(instant);
+  });
 });
 
 describe("direct UUID slugs", () => {
