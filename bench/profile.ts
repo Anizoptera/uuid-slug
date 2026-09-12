@@ -34,7 +34,9 @@ const privateAlphabetApi = process.env.UUID_SLUG_PROFILE_ALPHABET_MODULE
     ? await import("../src/alphabet")
     : undefined;
 const importMs = performance.now() - beforeImport;
-const cases = createProfileCases(api, originalFixtures.issued, privateV4Api, privateAlphabetApi);
+const suite = createProfileCases(api, originalFixtures.issued, privateV4Api, privateAlphabetApi);
+suite.verify();
+const { cases } = suite;
 let sink = 0;
 function batch(
   fn: (i: number) => ReturnType<(typeof cases)[string]>,

@@ -76,13 +76,14 @@ function selectProfileCases(options: BrowserProfileOptions): readonly [string, P
     throw new Error(
       "Profile samples must be positive, with positive duration and warm-up milliseconds",
     );
-  const cases = createProfileCases(
+  const suite = createProfileCases(
     api,
     originalFixtures.issued,
     options.privateImplementations ? privateV4Api : undefined,
     options.privateImplementations ? privateAlphabetApi : undefined,
   );
-  const selected = Object.entries(cases).filter(
+  suite.verify();
+  const selected = Object.entries(suite.cases).filter(
     ([name]) => !options.filter || name.includes(options.filter),
   );
   if (selected.length === 0) throw new Error("Profile filter selected no cases");

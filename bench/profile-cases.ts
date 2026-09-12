@@ -10,6 +10,11 @@ type PrivateAlphabetApi = Pick<
 export type ProfileValue = string | number | boolean | Uint8Array | Error | object;
 export type ProfileCase = (index: number) => ProfileValue;
 
+export interface ProfileSuite {
+  readonly cases: Record<string, ProfileCase>;
+  verify(): void;
+}
+
 /** Reject a corpus witness that does not reach its named success or failure path. */
 export function assertProfileOutcome(name: string, value: ProfileValue): boolean {
   const expectedError = name.startsWith("invalid.");
@@ -34,7 +39,7 @@ export function createProfileCases(
   originalFixtures: readonly OriginalFixture[],
   privateV4Api: PrivateV4Api | undefined,
   privateAlphabetApi?: PrivateAlphabetApi,
-): Record<string, ProfileCase> {
+): ProfileSuite {
   const instant = 1_725_000_000_000;
   const timestampWindow = { maxTimestampDeltaMs: 86_400_000, referenceUnixMs: instant };
   const sentinelTimestampWindow = { maxTimestampDeltaMs: 0, referenceUnixMs: 0 };
@@ -164,7 +169,7 @@ export function createProfileCases(
   const outsideTimestampWindow = { maxTimestampDeltaMs: 0, referenceUnixMs: instant + 1 };
   if (!base32Sentinel) throw new Error("Missing base32 sentinel fixture");
 
-  return {
+  const cases = {
     control: (index) => ids[index & 255] as string,
     "v4.string": () => api.generateUuidV4(),
     ...(privateV4Api ? { "portable.v4.string": () => privateV4Api.generatePortableUuidV4() } : {}),
@@ -421,4 +426,37 @@ export function createProfileCases(
         unmask: (input) => input,
       }),
   } satisfies Record<string, ProfileCase>;
+
+  function verify(): void {
+    for (const [name, operation] of Object.entries(cases)) {
+      for (const index of [0, 255]) {
+        into.fill(0x55);
+        const value = operation(index);
+        const expectedError = assertProfileOutcome(name, value);
+        if (expectedError) {
+          if (name.includes(".into.range") && into.some((byte) => byte !== 0x55))
+            throw new Error(`${name} modified caller storage before returning an error`);
+          continue;
+        }
+        if (typeof value === "string") {
+          const valid =
+            api.isUuidString(value) ||
+            api.isUuidSlug(value) ||
+            !(codec.decodeSlug(value) instanceof Error) ||
+            !(base32Codec.decodeSlug(value) instanceof Error) ||
+            !(customCodec.decodeSlug(value) instanceof Error);
+          if (!valid) throw new Error(`${name} returned malformed identifier text`);
+        } else if (value instanceof Uint8Array) {
+          if (name.endsWith(".into") && (value !== into || value[0] !== 0x55 || value[23] !== 0x55))
+            throw new Error(`${name} violated caller-owned output identity or boundaries`);
+          const payload = name.endsWith(".into") ? value.subarray(4, 20) : value;
+          if (!api.isUuidBytes(payload)) throw new Error(`${name} returned malformed UUID bytes`);
+        } else if (typeof value === "number" && !Number.isFinite(value)) {
+          throw new Error(`${name} returned a nonfinite number`);
+        }
+      }
+    }
+  }
+
+  return { cases, verify };
 }

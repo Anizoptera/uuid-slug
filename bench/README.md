@@ -86,6 +86,9 @@ The same command separately measures cooperative schema construction around byte
 chunk boundaries, geometric work factors, host-task progress, and cancellation. These promise-based
 rows stay outside the synchronous corpus so task scheduling cannot contaminate per-call throughput.
 
+Before warm-up, the shared corpus validates identifier shape, UUID bytes, caller-owned output
+identity and boundaries, and atomic invalid-range failure. These checks stay outside timed calls.
+
 Set `UUID_SLUG_PROFILE_FILTER` to a case-name substring before native profiling so startup and unrelated
 operations do not dominate attribution. `UUID_SLUG_PROFILE_WARMUP_MS`, `UUID_SLUG_PROFILE_SAMPLES`, and
 `UUID_SLUG_PROFILE_MS` control per-case warm-up and timing samples. Add `--smoke` to

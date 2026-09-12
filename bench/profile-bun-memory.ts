@@ -9,13 +9,13 @@ import { createProfileCases } from "./profile-cases";
 const reports = process.env.UUID_SLUG_PROFILE_NATIVE_DIR;
 if (!reports) throw new Error("UUID_SLUG_PROFILE_NATIVE_DIR is required");
 const filter = process.env.UUID_SLUG_PROFILE_FILTER;
-const cases = Object.entries(
-  createProfileCases(
-    api,
-    originalFixtures.issued,
-    process.env.UUID_SLUG_PROFILE_PRIVATE === "1" ? privateApi : undefined,
-  ),
-).filter(([name]) => !filter || name.includes(filter));
+const suite = createProfileCases(
+  api,
+  originalFixtures.issued,
+  process.env.UUID_SLUG_PROFILE_PRIVATE === "1" ? privateApi : undefined,
+);
+suite.verify();
+const cases = Object.entries(suite.cases).filter(([name]) => !filter || name.includes(filter));
 if (cases.length === 0) throw new Error("Profile filter selected no cases");
 
 /** Consume results so JavaScriptCore cannot discard the public calls under study. */
