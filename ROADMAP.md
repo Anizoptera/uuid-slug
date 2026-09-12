@@ -84,7 +84,8 @@ protection, and no default or fallback may select it.
   reproduced Bun and Chromium regressions because polymorphic hash dispatch outweighed removed stores.
 - [x] Reject a dedicated scalar hash entry over one shared round core: two packed 24-round replays
   reproduced 2.7–6.4% Node and 9–23% Chromium regressions across masked routes.
-- [ ] Falsify `Int32Array` versus ordinary numeric scratch while preserving signed 32-bit coercion.
+- [x] Reject ordinary numeric-array hash scratch: two packed 24-round replays reproduced 2.1–6.2%
+  Node and 22–50% Chromium regressions despite reducing packed code by 30 bytes.
 - [ ] Falsify caller scratch versus module scratch versus closure-owned scratch for reentrancy and JIT locality.
 - [ ] Falsify indexed versus unrolled four-round Feistel traversal.
 - [x] Reject preselected Feistel key start and stride: two packed 24-round replays found no
