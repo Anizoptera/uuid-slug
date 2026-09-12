@@ -1,7 +1,7 @@
 # @anizoptera/uuid-slug
 
-Generate, validate, convert, shorten, and optionally mask UUIDv4 and UUIDv7 identifiers without a
-runtime dependency.
+Generate UUIDv4 and UUIDv7 identifiers, store them as text or bytes, shorten them for URLs, and
+optionally hide the recognizable structure of UUIDv7 values. The package has no runtime dependencies.
 
 [![npm version](https://img.shields.io/npm/v/@anizoptera/uuid-slug?label=npm)](https://www.npmjs.com/package/@anizoptera/uuid-slug)
 [![CI](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml)
@@ -9,16 +9,37 @@ runtime dependency.
 [![Runtime deps](https://img.shields.io/badge/runtime_deps-0-2ea44f)](package.json)
 [![License](https://img.shields.io/github/license/Anizoptera/uuid-slug)](LICENSE)
 
-A UUID in a URL is 36 characters of hex and dashes. The same 16 bytes written as base64url
-are 22 characters, and nothing is lost: it is the same identifier in a shorter alphabet.
+A **UUID** is a 128-bit identifier. Its usual text form is 36 characters of hex and dashes. A
+**slug** here is the same identifier encoded as short URL-safe text. A direct base64url slug is 22
+characters and loses no information: it converts back to the original UUID.
 
-UUIDv7 adds a second problem. It begins with a millisecond timestamp, which is exactly
-what you want in a database index and rarely what you want in public. A v7 id tells anyone
-who reads it when the record was created, and two of them tell them how fast you are
-creating records. Masking removes that directly readable structure from public identifiers,
-then recovers the UUID for a lookup. It is obfuscation, not an authorization boundary.
+UUIDv7 adds a second problem. Its standard text and direct slugs expose a recognizable UUID layout,
+including version, variant, and millisecond timestamp fields. The timestamp is useful in a database
+index but can reveal when records were created and how quickly IDs are issued. Masking transforms
+the complete compact UUIDv7 payload into keyed, unstructured-looking text, then recovers the UUID
+for a lookup. It is obfuscation, not an authorization boundary.
 
-It defines no new identifier scheme. Everything here is a UUID underneath.
+This package defines no new identity scheme. UUID text, bytes, and direct slugs are reversible
+representations of the same value. Masked slugs also recover the same UUID through their codec.
+Only UUIDv7 can be masked. UUIDv4 remains available as UUID text, bytes, or a direct slug.
+
+## When to use it
+
+Use this package when you need more than UUID generation:
+
+| Need | Capability |
+| --- | --- |
+| Short UUIDs in URLs | Lossless 22-character base64url slugs |
+| Text keys ordered by UUIDv7 time | 26-character base32hex direct slugs that sort by encoded millisecond |
+| Binary database keys | Atomic conversion to and from 16-byte caller-owned storage |
+| Public IDs without recognizable UUIDv7 structure | Reversible keyed masking with a 16-bit wrong-key check |
+| Key rotation or old stored links | Ordered previous masks and opt-in migration readers |
+| Reserved IDs such as `anonymous` | Named sentinels that remain recognizable |
+| Strong TypeScript boundaries | Branded representations, version-aware results, and typed errors |
+
+Use a smaller UUID library when you only need to generate ordinary UUID text. This package earns
+its larger API when conversion, compact text, masking, migration, or cross-runtime behavior must
+share one checked contract.
 
 ## Install
 
@@ -87,6 +108,20 @@ Changing either derives different keys; retain the old settings in `previousMask
 rotation. `keyDerivationIterations` defaults to `1`; increasing it adds construction and guessing cost,
 but does not turn a human-chosen seed into a suitable secret.
 
+## Representations
+
+| Representation | Size | Use |
+| --- | ---: | --- |
+| UUID text | 36 characters | Standard interchange and logs |
+| UUID bytes | 16 bytes | Compact database or protocol storage |
+| Direct base64url slug | 22 characters | Shortest lossless URL-safe text |
+| Direct base32hex slug | 26 characters | Lowercase filenames and sortable UUIDv7 text |
+| Masked base64url UUIDv7 slug | 22 characters | Short public ID without recognizable UUID structure |
+| Masked base32hex UUIDv7 slug | 27 characters | Lowercase masked text for case-insensitive filesystems |
+
+Direct slugs need no key. Masked slugs require the codec configured with the matching mask. A
+sentinel is a reserved UUIDv7 that its codec writes as a direct slug instead of masking.
+
 ## Two kinds of slug
 
 **Direct slug.** The 16 UUID bytes as unpadded base64url, 22 characters. Pure re-encoding:
@@ -108,11 +143,17 @@ You never say which alphabet you are reading. The two lengths are different, 22 
 `slugToUuid` works out the encoding from the slug itself — which means switching alphabet leaves
 every slug you have already handed out working.
 
-**Masked slug.** A UUIDv7 payload and check passed through a small block cipher keyed by your
-seed, then encoded as 22 base64url characters by default, or 27 lowercase base32hex characters
-with `outputAlphabet: "base32hex"`. Both preserve the same payload and check. Use it when the identifier is public and you
-would rather not publish creation times. The exact steps are in
-[how masking works](https://github.com/Anizoptera/uuid-slug/blob/main/docs/design.md).
+**Masked slug.** Masking supports UUIDv7 only. Its compact payload and check pass through a small
+block cipher keyed by your seed, then encoded as 22 base64url characters by default, or 27
+lowercase base32hex characters with `outputAlphabet: "base32hex"`. Both preserve the same payload
+and check. Use it when the identifier is public and you want an opaque, hash-like spelling instead
+of recognizable UUID fields. Masked slugs are reversible and therefore are not hashes. The exact steps are in
+[how masking works](docs/design.md).
+
+The application creates one codec from a stable secret seed. Encoding compresses the UUIDv7's
+fixed fields, adds a 16-bit check, applies the keyed reversible transform, then writes the selected
+slug alphabet. Decoding reverses those steps and rejects a value when its check does not match.
+Create the codec once and reuse it; changing its seed changes the mapping.
 
 A supported UUIDv7 carries 116 bits that the masked format must preserve — the version and
 variant are fixed, and the top six bits of the timestamp stay zero until the year 2109. 22 base64url characters hold 132
@@ -160,8 +201,8 @@ a slug that would decode to the wrong sentinel.
 ## What masking is not
 
 Masking uses a four-round Feistel network with HalfSipHash-2-4 round functions and a
-seed-derived key schedule. It removes a directly readable timestamp; this package does not
-establish a confidentiality strength for that construction or resistance to known-pair attacks.
+seed-derived key schedule. It removes the directly recognizable UUIDv7 field layout; this package
+does not establish a confidentiality strength for that construction or resistance to known-pair attacks.
 A reference-vector test for the round function does not establish those properties for the
 whole construction. See [the mechanism and its limits](docs/design.md).
 

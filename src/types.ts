@@ -27,7 +27,8 @@ export type UuidV7Slug = Brand<UuidSlug, "UuidV7Slug">;
 export type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 /**
  * A checked, keyed UUIDv7 payload: 22 base64url or 27 lowercase base32hex characters.
- * The check detects wrong keys and malformed values; it does not prove issuance or authorization.
+ * Both spellings hide recognizable UUID field positions. The check detects wrong keys and
+ * malformed values; it does not prove issuance or authorization.
  */
 export type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
 /** A codec sentinel written as its raw 22- or 26-character direct UUIDv7 slug. */
@@ -119,7 +120,7 @@ export interface UuidV7Generator {
   ): Output | UuidSlugError;
 }
 
-/** An immutable mask handle accepted by codec construction; key material is not exposed. */
+/** An immutable handle for reversibly hiding recognizable UUIDv7 structure; key material is not exposed. */
 export interface UuidV7Mask {
   /** Diagnostic label only; mask objects and caller order select decoding behavior. */
   readonly label: string;

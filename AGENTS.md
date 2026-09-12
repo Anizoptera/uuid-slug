@@ -8,6 +8,10 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   default, error, runtime path, or performance characteristic; it owns interface shape and the
   declaration comments consumers see. A naming repair follows domain meaning through every
   dependent use; a compile failure never licenses restoring an opaque legacy term.
+- README owns the consumer model: define each term before first use, state when this package is
+  preferable to a UUID-only library, and keep its capability and representation maps consistent
+  with the public API. Update the owning explanation with every consumer-visible change; do not
+  copy implementation reasoning or create parallel inventories in other docs.
 - The externally visible API is reserved. Put any proposed public export, option, behavior, or
   feature change and its consumer consequences in the same pull request. Merging is the maintainer
   decision; no separate acceptance step exists.

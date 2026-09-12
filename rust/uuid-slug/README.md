@@ -28,10 +28,11 @@ Masked slugs hold the same 132-bit payload in 22 base64url or 27 base32hex chara
 Decoding infers the representation; nonzero padding is rejected. Sentinels remain raw UUIDs.
 Every decoder accepts every value that a supported matching encoder can produce.
 
-Masking is obfuscation, not authentication or encryption for secrets. Its 16-bit check can accept
-an unissued UUID; look up decoded candidates in your own store. Each configured key adds a possible
-candidate. Pass `public_mask_schema()` explicitly only for examples and wire fixtures because its
-seed is public. Keep your private seed and iteration count to read issued IDs.
+Masking supports UUIDv7 only. It replaces the recognizable UUIDv7 layout, including its timestamp,
+with a keyed reversible payload. It is obfuscation, not authentication or encryption for secrets.
+Its 16-bit check can accept an unissued UUID; look up decoded candidates in your own store. Each
+configured key adds a possible candidate. Pass `public_mask_schema()` explicitly only for examples
+and wire fixtures because its seed is public. Keep your private seed and iteration count to read issued IDs.
 Masking accepts UUIDv7 timestamps below 2^42 milliseconds; plain UUIDs have no such restriction.
 
 Keep previous keys while stored identifiers still need them. The current key writes new masks;
