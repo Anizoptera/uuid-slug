@@ -130,7 +130,7 @@ unless the maintainer separately changes the HLD.
   Vary aligned, offset, shared, and plain buffers; reject views, endian assumptions, or weaker checks.
 - [x] Test a table-driven UUID parser state machine against offset iteration. Preserve exact error
   positions, hyphen rules, version/variant checks, and atomic caller-owned writes.
-- [ ] Test branchless hexadecimal validation and decode tables against the current guarded parser.
+- [x] Test branchless hexadecimal validation and decode tables against the current guarded parser.
   Separate valid-heavy from invalid-heavy workloads; reject slower diagnostics or opaque control flow.
 - [ ] Test direct slug decode into four scalar words before materializing bytes. Retain only if it
   removes intermediate writes across validation, masking, and formatting without weakening errors.

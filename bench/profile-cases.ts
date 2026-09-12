@@ -262,6 +262,10 @@ export function createProfileCases(
   const sentinel = codec.sentinels[0];
   if (!sentinel) throw new Error("Missing sentinel fixture");
   const badUuid = "z".repeat(36);
+  const validUuid = ids[0] as string;
+  const invalidUuidHex = [0, 16, 35].map(
+    (position) => `${validUuid.slice(0, position)}!${validUuid.slice(position + 1)}`,
+  );
   const badSlug = "!".repeat(22);
   const v4Uuid = "3b12f1df-5232-4804-897e-917bf397618a";
   const v4Bytes = unwrap(api.uuidToBytes(v4Uuid));
@@ -515,6 +519,9 @@ export function createProfileCases(
     "sentinel.collision64.bytes.miss": () =>
       collidingSentinelCodec64.encodeUuid(collidingSentinelMiss),
     "invalid.uuid": () => api.uuidToBytes(badUuid),
+    "invalid.uuid.hex.early": () => api.uuidToBytes(invalidUuidHex[0] as string),
+    "invalid.uuid.hex.middle": () => api.uuidToBytes(invalidUuidHex[1] as string),
+    "invalid.uuid.hex.late": () => api.uuidToBytes(invalidUuidHex[2] as string),
     "invalid.uuid.slug": () => api.uuidToSlug(badUuid),
     "invalid.uuid.into.range": () => api.uuidToBytes(ids[0] as string, into, 9),
     "invalid.uuid.format.range": () => api.bytesToUuid(into, 9),

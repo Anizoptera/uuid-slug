@@ -950,6 +950,14 @@ hex offsets, hyphen precedence, and atomic caller-owned writes remained covered,
 behavior cannot offset a repeated success-path regression. Keep direct structural checks and offset
 iteration; reconsider a table only if an engine can remove its lookup and full-text scan costs.
 
+A four-word UUID decode cut valid-path table reads from 64 to 32 and improved two packed replays by
+20–25% on Node 26.8.2, 33–43% in stable Bun 1.4.2 rounds, 22–27% on Chromium 153, 22–25% on Deno
+2.9.6 caller-output parsing, and 36–40% on Node JITless. Whole-input and four-byte failure rescans,
+encoded invalid offsets, and fully inlined exits all preserved exact diagnostics and atomic writes,
+but the strongest form repeatedly slowed late-invalid Node input by 29–42% and middle or late Bun
+input by 3–17%. Keep the guarded two-pass parser and the early, middle, and late invalid probes;
+reconsider fusion when engine behavior changes or one pass avoids failure-position regressions.
+
 Node v26.8.2 profiling combines process counters, `GCProfiler`, V8 heap/code/space state, Inspector
 CPU and allocation samples, heap snapshots, V8 ticks, and trace events. Each source answers a
 different question; correlation is evidence, while two APIs over the same V8 sampler are not
