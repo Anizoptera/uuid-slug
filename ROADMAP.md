@@ -125,7 +125,8 @@ protection, and no default or fallback may select it.
 - [ ] Falsify a separate tag pass versus tag accumulation during the mandatory input read.
 - [x] Reuse owned UUID blocks for tagging and masking. Retain one shared guard path with a final
   direct ownership branch; duplicated closures and indirect dispatch slowed Bun's borrowed route.
-- [ ] Falsify general alphabet dispatch versus codec-construction specialization.
+- [x] Reject codec-construction alphabet wrappers: an eight-round packed screen found no
+  statistically distinct Node or Bun masked encode route, while four wrappers added indirection.
 - [x] Profile and optimize each portable alphabet encoder directly on Node, Bun, Deno, and Chromium,
   including runtimes whose public route normally delegates to native encoding.
 - [x] Profile and optimize portable base64url and base32hex decoding directly on Node, Bun, Deno,

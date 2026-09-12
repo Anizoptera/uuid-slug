@@ -397,6 +397,13 @@ left every portable route statistically unresolved on Node, Bun, Deno, and Chrom
 candidate duplicated the invalid-clock error construction. Retest only if a primary engine changes
 its treatment of repeated `typeof` checks on monomorphic numeric values.
 
+Codec-construction alphabet wrappers were rejected. Four literal-alphabet wrappers let the codec
+select base64url or base32hex masking once, but still called the shared implementation. An
+eight-round packed screen left base64url string and byte encoding and base32hex string encoding
+statistically unresolved on both Node 24.20.0 and Bun 1.4.1; paired median ratios ranged from 0.98
+to 1.04 and every 95% interval crossed 1. Keep the direct call and its one alphabet branch. Retest
+only if a primary engine stops specializing the codec's captured alphabet across that call.
+
 ### Portable UUIDv4 ownership paths
 
 Draw entropy directly into package-owned output. Keep caller-owned output on a separate path that
