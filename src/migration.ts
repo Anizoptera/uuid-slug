@@ -3,7 +3,7 @@
 import { BASE32HEX, BASE64URL, decodeInto, encode } from "./alphabet";
 import { UuidSlugError } from "./errors";
 import { decodeOriginalMask } from "./legacy-mask";
-import { decodeMaskedCandidates } from "./mask";
+import { decodeFirstMaskedCandidate, decodeMaskedCandidates } from "./mask";
 import type {
   UuidV7Mask,
   UuidSlugMigrationDecoder,
@@ -88,7 +88,9 @@ export function createMigration(
       return undefined;
     }
     if (useCurrent && !base32) {
-      const matches = decodeMaskedCandidates(bytes, tail, schemas, firstOnly, candidates);
+      const matches = firstOnly
+        ? decodeFirstMaskedCandidate(bytes, tail, schemas, candidates)
+        : decodeMaskedCandidates(bytes, tail, schemas, candidates);
       if (matches instanceof Error) return matches;
       if (firstOnly && candidates.length) return candidates;
     }

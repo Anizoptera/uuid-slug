@@ -19,11 +19,11 @@ the maintainer separately changes the HLD.
 
 ### Highest decision value
 
-- [ ] Replace per-schema `decodeMaskedCandidates` slices with one private working block restored
-  from four scalar ciphertext words. Prove caller input, callback isolation, schema order, first
-  match, all distinct candidates, and error causes are unchanged; measure 0/1/4/8/16 schemas across
-  first, middle, last, miss, and all-candidate routes. Reject unless allocations become O(1) and two
-  complete-route replays show no priority-runtime regression.
+- [x] Exhaustive migration candidates reuse one private block restored from four scalar ciphertext
+  words. A zero-schema behavior case and the 1/4/8/16-schema profile corpus separate first, middle,
+  last, miss, and exhaustive routes; two packed replays retained gains at 8 and 16 schemas on every
+  runtime with no repeated
+  first-match regression, while the resource probe reduced 16-schema slicing from 16 to one.
 - [ ] Test direct canonical UUID-string to base64url fallback encoding without an intermediate byte
   array. Preserve exact validation order and diagnostic offsets; compare against native encoding
   and the composed parser/encoder on every runtime. Reject unless repeated complete-route gains pay

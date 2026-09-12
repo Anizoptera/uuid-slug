@@ -194,24 +194,61 @@ export function decodeMaskedSlug(
   return new UuidSlugError("invalid_uuid_slug", "Masked UUID slug failed schema validation.");
 }
 
-/** Append distinct UUIDs directly to the result, before another callback can mutate their bytes. */
+/** Capture the first passing UUID before another callback can mutate its private bytes. */
+export function decodeFirstMaskedCandidate(
+  mixed: Uint8Array,
+  outerTag: number,
+  schemas: readonly UuidV7Mask[],
+  candidates: UuidString[] = [],
+): UuidString[] | UuidSlugError {
+  for (const schema of schemas) {
+    const decoded = unmix(mixed.slice(), outerTag, schema);
+    if (decoded instanceof Error) return decoded;
+    if (decoded) {
+      const uuid = bytesToUuid(decoded);
+      if (uuid instanceof Error) return uuid;
+      if (!candidates.includes(uuid)) candidates.push(uuid);
+      break;
+    }
+  }
+  return candidates;
+}
+
+/** Append every distinct candidate while allocating one callback-isolated block for the scan. */
 export function decodeMaskedCandidates(
   mixed: Uint8Array,
   outerTag: number,
   schemas: readonly UuidV7Mask[],
-  firstOnly = false,
   candidates: UuidString[] = [],
 ): UuidString[] | UuidSlugError {
-  for (const schema of schemas) {
+  if (!schemas.length) return candidates;
+  const working = mixed.slice();
+  const firstSchema = schemas[0];
+  if (!firstSchema) return candidates;
+  const firstDecoded = unmix(working, outerTag, firstSchema);
+  if (firstDecoded instanceof Error) return firstDecoded;
+  if (firstDecoded) {
+    const uuid = bytesToUuid(firstDecoded);
+    if (uuid instanceof Error) return uuid;
+    if (!candidates.includes(uuid)) candidates.push(uuid);
+  }
+  if (schemas.length === 1) return candidates;
+  const word0 = read32(mixed, 0);
+  const word1 = read32(mixed, 4);
+  const word2 = read32(mixed, 8);
+  const word3 = read32(mixed, 12);
+  for (let index = 1; index < schemas.length; index += 1) {
+    const schema = schemas[index];
+    if (!schema) continue;
     // Custom callbacks may mutate their input; no key may alter what the next one sees.
-    const decoded = unmix(mixed.slice(), outerTag, schema);
+    restoreCiphertext(working, word0, word1, word2, word3);
+    const decoded = unmix(working, outerTag, schema);
     // A failed callback means the candidate list is incomplete, not that its key mismatched.
     if (decoded instanceof Error) return decoded;
     if (decoded) {
       const uuid = bytesToUuid(decoded);
       if (uuid instanceof Error) return uuid;
       if (!candidates.includes(uuid)) candidates.push(uuid);
-      if (firstOnly) break;
     }
   }
   return candidates;

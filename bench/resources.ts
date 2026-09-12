@@ -4,7 +4,16 @@
 import { strict as assert } from "node:assert";
 import crypto from "node:crypto";
 
-const counts = { buffers: 0, errors: 0, views: 0, hex: 0, base64: 0, chars: 0, draws: 0 };
+const counts = {
+  buffers: 0,
+  slices: 0,
+  errors: 0,
+  views: 0,
+  hex: 0,
+  base64: 0,
+  chars: 0,
+  draws: 0,
+};
 const OriginalBytes = Uint8Array;
 const OriginalError = Error;
 const undo: (() => void)[] = [];
@@ -37,6 +46,7 @@ globalThis.Error = new Proxy(OriginalError, {
   },
 });
 assert.ok(wrapMethod(OriginalBytes.prototype, "subarray", "views"));
+assert.ok(wrapMethod(OriginalBytes.prototype, "slice", "slices"));
 const hasHex = wrapMethod(OriginalBytes.prototype, "toHex", "hex");
 const hasBase64 = wrapMethod(OriginalBytes.prototype, "toBase64", "base64");
 assert.ok(wrapMethod(String.prototype, "charCodeAt", "chars"));
@@ -61,14 +71,27 @@ try {
   });
   const rotated = api.createUuidV7SlugCodec({ mask: primary, previousMasks: [previous] });
   const older = api.createUuidV7SlugCodec({ mask: previous });
+  const migrationMasks = Array.from({ length: 16 }, (_, index) => ({
+    seed: `profile-migration-seed-${index}`,
+  }));
+  const migrationMany = api.createUuidV7SlugCodec({
+    mask: migrationMasks[0]!,
+    previousMasks: migrationMasks.slice(1),
+  });
+  const migrationLast = api.createUuidV7SlugCodec({ mask: migrationMasks[15]! });
   assert.ok(!(codec instanceof Error));
   assert.ok(!(rotated instanceof Error));
   assert.ok(!(older instanceof Error));
+  assert.ok(!(migrationMany instanceof Error));
+  assert.ok(!(migrationLast instanceof Error));
   const migration = rotated.createMigrationDecoder({ originalMask: true, plainSlug: true });
+  const migrationManyReader = migrationMany.createMigrationDecoder();
   const masked = codec.encodeUuid(id);
   const old = older.encodeUuid(id);
+  const migrationLastSlug = migrationLast.encodeUuid(id);
   assert.equal(typeof masked, "string");
   assert.equal(typeof old, "string");
+  assert.equal(typeof migrationLastSlug, "string");
   assert.ok(codec.decodeSlug(old as string) instanceof Error);
   const into = new Uint8Array(24);
   let clocks = 0;
@@ -83,11 +106,15 @@ try {
   };
   // Positive controls distinguish an absent operation from an instrument that never saw it.
   reset();
-  new Uint8Array(16).subarray();
+  new Uint8Array(16).subarray().slice();
   assert.ok(new api.UuidSlugError("invalid_uuid", "resource control") instanceof OriginalError);
   assert.ok(id.charCodeAt(process.pid % id.length) > 0);
   assert.ok(
-    counts.buffers > 0 && counts.views > 0 && counts.errors > 0 && counts.chars > 0,
+    counts.buffers > 0 &&
+      counts.slices > 0 &&
+      counts.views > 0 &&
+      counts.errors > 0 &&
+      counts.chars > 0,
     JSON.stringify(counts),
   );
   function check(name: string, call: () => unknown, budgets: Partial<typeof counts>) {
@@ -173,6 +200,11 @@ try {
     chars: 22,
     draws: 0,
   });
+  check(
+    "migration candidates with 16 schemas",
+    () => migrationManyReader.decodeSlugCandidates(migrationLastSlug as string),
+    { slices: 1, errors: 0, chars: 22, draws: 0 },
+  );
   check(
     "masked timestamp validation",
     () =>

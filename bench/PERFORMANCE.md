@@ -779,6 +779,14 @@ Baseline CPU samples included encoding, parsing, hashing, GC and error construct
 cases overrepresent rare errors relative to many applications; their sample shares are not a traffic
 model. Removing diagnostic errors or callback-owned buffers would change contracts, not remove waste.
 
+Exhaustive current-mask candidate decoding allocates one private 16-byte block and restores it from
+four scalar ciphertext words between schemas. Keep first-match migration separate: sharing that
+setup measurably slowed Chromium's common path. Two 12-round packed replays on 2026-09-12 measured
+8- and 16-schema candidate gains of 9.9–13.9% on Node, 7.6–15.5% on Bun, 38.0–44.9% on Deno, and
+7.1–12.8% on Chromium; one-schema first-match intervals included no change in both replays. The
+resource probe observed one slice at 16 schemas. Custom callbacks still receive isolated bytes,
+and the original decoded block remains available to later migration formats.
+
 ## Regression protection and limits
 
 `bun run perf:check` protects JavaScript-visible allocation, decoding, encoding and entropy work, plus coarse relative pipeline timings on both runtimes. Its injected result-preserving regressions must fail. Shared functional cases protect wire identity, ownership, invalid input and optional native branches. Async cases protect snapshots, UTF-8 chunk boundaries, cancellation and independent concurrent constructions; changing host yields to microtasks makes cancellation fail.

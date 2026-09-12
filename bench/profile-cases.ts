@@ -199,6 +199,40 @@ export function createProfileCases(
   const rotation4 = rotationFixture(4);
   const rotation8 = rotationFixture(8);
   const rotation16 = rotationFixture(16);
+  const migrationFixture = (count: 1 | 4 | 8 | 16) => {
+    const masks = rotationMasks.slice(0, count);
+    const migrationCodec = unwrap(
+      api.createUuidV7SlugCodec({ mask: masks[0]!, previousMasks: masks.slice(1) }),
+    );
+    const positions = [0, Math.floor(count / 2), count - 1];
+    const migrationSlugs = positions.map((position) => {
+      const writer = rotationWriters[position]!;
+      const slug = ids
+        .map((id) => unwrap(writer.encodeUuid(id)))
+        .find((value) =>
+          rotationWriters
+            .slice(0, position)
+            .every((earlier) => earlier.decodeSlug(value) instanceof Error),
+        );
+      if (!slug) throw new Error(`No migration fixture for schema ${position} of ${count}`);
+      return slug;
+    });
+    const miss = ids
+      .map((id) => unwrap(rotationWriters[16]!.encodeUuid(id)))
+      .find((value) => migrationCodec.decodeSlug(value) instanceof Error);
+    if (!miss) throw new Error(`No migration miss fixture for ${count} schemas`);
+    return {
+      reader: migrationCodec.createMigrationDecoder(),
+      first: migrationSlugs[0]!,
+      middle: migrationSlugs[1]!,
+      last: migrationSlugs[2]!,
+      miss,
+    };
+  };
+  const migration1 = migrationFixture(1);
+  const migration4 = migrationFixture(4);
+  const migration8 = migrationFixture(8);
+  const migration16 = migrationFixture(16);
   const into = new Uint8Array(24);
   const portableDecodeInto = new Uint8Array(16);
   if (privateAlphabetApi) {
@@ -222,7 +256,27 @@ export function createProfileCases(
   if (!base32Sentinel) throw new Error("Missing base32 sentinel fixture");
   customFailureEnabled = true;
 
+  const migrationScalingCases: Record<string, ProfileCase> = {};
+  for (const [count, fixture] of [
+    [1, migration1],
+    [4, migration4],
+    [8, migration8],
+    [16, migration16],
+  ] as const) {
+    migrationScalingCases[`migration.schemas${count}.first`] = () =>
+      fixture.reader.decodeSlug(fixture.first);
+    migrationScalingCases[`migration.schemas${count}.middle`] = () =>
+      fixture.reader.decodeSlug(fixture.middle);
+    migrationScalingCases[`migration.schemas${count}.last`] = () =>
+      fixture.reader.decodeSlug(fixture.last);
+    migrationScalingCases[`invalid.migration.schemas${count}.miss`] = () =>
+      fixture.reader.decodeSlug(fixture.miss);
+    migrationScalingCases[`migration.schemas${count}.candidates`] = () =>
+      fixture.reader.decodeSlugCandidates(fixture.first);
+  }
+
   const cases = {
+    ...migrationScalingCases,
     control: (index) => ids[index & 255] as string,
     "v4.string": () => api.generateUuidV4(),
     ...(privateV4Api ? { "portable.v4.string": () => privateV4Api.generatePortableUuidV4() } : {}),

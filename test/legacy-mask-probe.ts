@@ -11,7 +11,7 @@ import { bytesToUuid, slugToBytes, uuidToSlug } from "../src/uuid";
 import fixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
 import { unwrap } from "../dev/unwrap";
 import { uuidTailAliases } from "./uuid-tail-aliases";
-import type { UuidV7Mask } from "../src/types";
+import type { UuidString, UuidV7Mask } from "../src/types";
 import { NIL_TEST_SENTINEL } from "./sentinel-fixtures";
 
 function mix(schema: UuidV7Mask, input: Uint8Array, direction: "mask" | "unmask") {
@@ -269,6 +269,9 @@ export const legacyMaskCases = [
       const tail = decodeInto(slug, BASE64URL, mixed, 0, 16, 4);
       if (tail instanceof Error) throw tail;
       const original = mixed.slice();
+      const empty: UuidString[] = [];
+      assert.equal(decodeMaskedCandidates(mixed, tail, [], empty), empty);
+      assert.deepEqual(mixed, original);
       const mutating = schemas.map((schema) =>
         unwrap(
           createCustomUuidV7Mask({
