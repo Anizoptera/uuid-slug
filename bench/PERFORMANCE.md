@@ -549,7 +549,7 @@ The extra dispatch moved JIT cost among pool consumers instead of reducing the s
 
 ### Profiler batch size
 
-Keep 256 calls per timed batch. A geometric study on 2026-09-12 held the operation, warm-up,
+The initial study selected 256 calls per timed batch. A geometric study on 2026-09-12 held the operation, warm-up,
 five-millisecond sample, sink, and seven samples fixed while varying 1, 4, 16, 64, 256, 1024,
 and 2048 calls on Node 24.20.0, Bun 1.4.1, Deno 2.9.6, and Chromium 152. It covered a prepared-string
 control, ordinary UUID-to-slug conversion, and a 16-key last-hit decode.
@@ -557,15 +557,17 @@ control, ordinary UUID-to-slug conversion, and a 16-key last-hit decode.
 Batches of 1–16 made clock and loop cost dominate the control. Sizes 64–1024 gave similar operation
 throughput, but 256 kept the slow route below 0.95 ms per batch on every runtime. At 2048, that route
 blocked for 4.34–6.03 ms and stretched a nominal five-millisecond sample to 8.24–9.02 ms. A configurable
-batch-size surface was rejected because it would let unrelated runs silently use incomparable harnesses;
-retest the fixed value if a representative operation exceeds one millisecond per batch or clock cost
-becomes material at 256.
+batch-size surface was rejected because it would let unrelated runs silently use incomparable harnesses.
+The fixed value required retesting when representative work exceeded one millisecond per batch.
 
-Bun 1.4.2 triggered that retest. Two 14-sample, 20 ms replays compared 128, 256, and 512 calls after a
-geometric 16–2048 screen. Conversion and 16-key decode throughput did not improve above 128 calls;
-256 reduced control cost from 2.11–2.12 ns to 1.74–1.81 ns, while 512 only reduced it to 1.56–1.63 ns.
-The slow route reached 1.40–1.42 ms at 256 and 1.80–2.05 ms at 512; 2048 reached 4.72 ms. Keep 256 for
-lower harness cost than 128 without spending the responsiveness headroom that 512 and 2048 consume.
+Bun 1.4.2 and the complete construction inventory triggered another retest. Across three fresh
+20-route replays per candidate, fixed 64 kept the largest ordinary host batch near 1 ms; fixed 256
+reached 2.1–3.2 ms. Per-case geometric calibration matched fixed 64 on expensive routes but still
+selected 256 for cheaper Chromium routes that later paused for 3.8–6.3 ms. Fixed 64 is the simpler
+bound: it avoids calibration and its extra JIT state while retaining enough calls to amortize clocks.
+It does not claim to bound runtime scheduling or collection. Stalls migrated between cheap cases,
+and a native Chromium replay observed minor and major collection near 3.6 ms and microtask execution
+at 4.7 ms. Adaptive calibration was rejected because those pauses are not predicted by warm batch cost.
 Remove the separate untimed 2048-call burst that followed each completed warm-up: the 16/20/64 ms
 same-code study found no later stable tier, while the fixed burst duplicated setup and inherited the
 slow route's 4 ms violation. Host and browser profiling now enter measurement after the same elapsed

@@ -217,9 +217,9 @@ protection, and no default or fallback may select it.
 - [x] Keep synchronous and cooperative derivation as separate contracts. Boundary profiles showed
   the cooperative path schedules no host task below its measured deadline and yields by elapsed work,
   while a size threshold would misclassify the same workload across runtimes.
-- [x] Keep 256-call profiler batches. Geometric 1–2048-call profiles showed smaller batches expose
-  clock domination, while 2048 crossed the 4 ms blocking boundary on every runtime's slow route;
-  Bun 1.4.2 replays found no route-throughput gain at 512 to justify doubling batch exposure.
+- [x] Use 64-call profiler batches. Newly covered construction routes made 256-call bursts exceed
+  the ordinary work budget; three replays kept fixed-64 host batches near 1 ms without adaptive
+  calibration, while migrating Chromium/Deno stalls and native traces exposed separate runtime pauses.
 - [x] Use 16 ms profiler warm-up. Bun 1.4.2 reached the same measured tier at 16, 20, and 64 ms;
   identical-code comparisons found no bias, so longer setup had no reproduced decision value.
 - [x] Reject a duplicated fixed-eight-byte scalar HalfSipHash path: it improved Bun masking by 2–4%,

@@ -90,7 +90,7 @@ function selectProfileCases(options: BrowserProfileOptions): readonly [string, P
   for (const [name, operation] of selected) {
     const expectedError = assertProfileOutcome(name, operation(0));
     const started = performance.now();
-    do batch(operation, 256, expectedError);
+    do batch(operation, 64, expectedError);
     while (performance.now() - started < options.warmup);
   }
   return selected;
@@ -113,9 +113,9 @@ async function measureProfileCases(
       let elapsed = 0;
       do {
         const began = performance.now();
-        batch(operation, 256, expectedError);
+        batch(operation, 64, expectedError);
         maxBatchMs = Math.max(maxBatchMs, performance.now() - began);
-        count += 256;
+        count += 64;
         elapsed = performance.now() - start;
       } while (elapsed < options.duration);
       maxUninterruptedMs = Math.max(maxUninterruptedMs, elapsed);

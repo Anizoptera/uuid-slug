@@ -78,7 +78,7 @@ if (selected.length === 0) throw new Error("Profile filter selected no cases");
 for (const [name, fn] of selected) {
   const expectedError = assertProfileOutcome(name, fn(0));
   const started = performance.now();
-  do batch(fn, 256, expectedError);
+  do batch(fn, 64, expectedError);
   while (performance.now() - started < warmup);
 }
 if (session) {
@@ -124,9 +124,9 @@ for (const [name, fn] of selected) {
     let elapsed = 0;
     do {
       const began = performance.now();
-      batch(fn, 256, expectedError);
+      batch(fn, 64, expectedError);
       maxBatchMs = Math.max(maxBatchMs, performance.now() - began);
-      count += 256;
+      count += 64;
       elapsed = performance.now() - start;
     } while (elapsed < duration);
     maxUninterruptedMs = Math.max(maxUninterruptedMs, elapsed);
