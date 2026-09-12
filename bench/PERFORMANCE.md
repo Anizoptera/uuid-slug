@@ -288,6 +288,38 @@ movement but left that duplicate miss work. Restore a string scan only if sentin
 be canonical keys or repeated complete-route measurements show the map losing at supported
 cardinalities.
 
+Index byte sentinels only at 16 or more entries. Compare the first entry directly, then use a
+32-bit fingerprint to select the remaining candidate or collision bucket; full 16-byte equality
+still decides identity. Smaller sets keep the original inline scan. This avoids setup and helper
+dispatch where an index does not repay its cost, while deliberate hash collisions cannot select the
+wrong sentinel.
+
+Two six-round packed replays on 2026-09-12 used Node 26.8.2, Bun 1.4.2, Chromium 153, Deno 2.9.6,
+and Node 26.8.2 JITless. For 16 sentinels, middle hits improved by 53–56% on Node, 22–37% on Bun,
+61–63% on Chromium, 53–55% on Deno, and 58–59% under JITless; last hits improved by 59–77%.
+At 64 sentinels, middle and last hits improved by 54–87% and 74–92%, while misses improved by
+41–65%. Separate same-tail and full-fingerprint collision corpora retained middle, last, and miss
+gains in both replays on every runtime. First hits were faster or unresolved. No unchanged small-set
+or string row regressed in the same runtime and case in both complete replays.
+
+The index increases median retained codec memory by about 0.8 KiB at 16 sentinels and 2.9 KiB at
+64, roughly 8–9% or 49 bytes per indexed entry. Construction increased by 3–11% on the runtime and
+cardinality pairs whose intervals excluded no change. The steady route allocates no buffer or view,
+so repeated middle or last hits amortize setup; codecs with fewer than 16 sentinels retain neither
+cost. These measurements came from one Apple M4 Max and six paired rounds, so they establish this
+crossover for the tested engines and corpus, not a universal cardinality.
+
+A last-word map was rejected because same-tail inputs restored a linear collision chain and
+repeatedly slowed Bun and JITless middle, last, or miss routes by 4–7%. A lazy second map removed
+that failure but duplicated lookup state; one full fingerprint map produced the same bounded
+candidate set with less code. Thresholds of four and eight were rejected because setup was not
+repaid and Bun's eight-entry middle route regressed. A sorted fingerprint array reduced theoretical
+entry overhead but added binary-search branches and screened 9–12% slower on Bun first hits, with
+6–16% Node string or miss movements. Calling an indexed helper below the crossover also caused a
+repeatable 12–14% first-hit loss despite doing no indexed work, so the linear path stays inline.
+Reopen these shapes only when engine or workload evidence moves the crossover or retained memory
+becomes more valuable than the measured lookup loss.
+
 ### Previous-key attempt storage
 
 Preserve the decoded ciphertext as four scalar words, then restore the mutable block between failed

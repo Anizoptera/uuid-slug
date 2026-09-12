@@ -54,7 +54,7 @@ export function createProfileCases(
     ),
   );
   const rotationWriters = rotationMasks.map((mask) => unwrap(api.createUuidV7SlugCodec({ mask })));
-  const sentinelDefinitions = Array.from({ length: 16 }, (_, index) => ({
+  const sentinelDefinitions = Array.from({ length: 64 }, (_, index) => ({
     name: `sentinel-${index}`,
     uuid: `00000000-0000-7000-8000-${index.toString(16).padStart(12, "0")}`,
   }));
@@ -67,7 +67,17 @@ export function createProfileCases(
     api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions.slice(0, 8) }),
   );
   const sentinelCodec16 = unwrap(
+    api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions.slice(0, 16) }),
+  );
+  const sentinelCodec64 = unwrap(
     api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions }),
+  );
+  const collidingSentinelDefinitions = Array.from({ length: 64 }, (_, index) => ({
+    name: `colliding-sentinel-${index}`,
+    uuid: `${index.toString(16).padStart(8, "0")}-0000-7000-8000-0000deadbeef`,
+  }));
+  const collidingSentinelCodec64 = unwrap(
+    api.createUuidV7SlugCodec({ mask: current, sentinels: collidingSentinelDefinitions }),
   );
   const base32Codec = unwrap(
     api.createUuidV7SlugCodec({ mask: current, outputAlphabet: "base32hex", sentinels }),
@@ -155,6 +165,10 @@ export function createProfileCases(
   });
   const bytes = ids.map((id) => unwrap(api.uuidToBytes(id)));
   const sentinelBytes = sentinelDefinitions.map(({ uuid }) => unwrap(api.uuidToBytes(uuid)));
+  const collidingSentinelBytes = collidingSentinelDefinitions.map(({ uuid }) =>
+    unwrap(api.uuidToBytes(uuid)),
+  );
+  const collidingSentinelMiss = unwrap(api.uuidToBytes("00000040-0000-7000-8000-0000deadbeef"));
   const slugs = ids.map((id) => unwrap(api.uuidToSlug(id)));
   if (
     privateAlphabetApi &&
@@ -445,6 +459,8 @@ export function createProfileCases(
     "invalid.migration": () => maskedOnlyMigration.decodeSlug(badSlug),
     "invalid.migrationCandidates": () => maskedOnlyMigration.decodeSlugCandidates(badSlug),
     "sentinel.encode": () => codec.encodeUuid(sentinel.uuid),
+    "sentinel.encode.bytes": () => codec.encodeUuid(sentinelBytes[0] as Uint8Array),
+    "sentinel.encode.bytes.miss": () => codec.encodeUuid(bytes[255] as Uint8Array),
     "sentinel.decode": () => codec.decodeSlug(sentinel.slug),
     "sentinel.decode.bytes": () => codec.decodeSlugToBytes(sentinel.slug),
     "sentinel.decode.into": () => codec.decodeSlugToBytes(sentinel.slug, into, 4),
@@ -481,6 +497,23 @@ export function createProfileCases(
       sentinelCodec16.encodeUuid(sentinelBytes[8] as Uint8Array),
     "sentinel.scan16.bytes.last": () => sentinelCodec16.encodeUuid(sentinelBytes[15] as Uint8Array),
     "sentinel.scan16.bytes.miss": () => sentinelCodec16.encodeUuid(bytes[255] as Uint8Array),
+    "sentinel.scan64.first": () => sentinelCodec64.encodeUuid(sentinelDefinitions[0]!.uuid),
+    "sentinel.scan64.middle": () => sentinelCodec64.encodeUuid(sentinelDefinitions[32]!.uuid),
+    "sentinel.scan64.last": () => sentinelCodec64.encodeUuid(sentinelDefinitions[63]!.uuid),
+    "sentinel.scan64.miss": () => sentinelCodec64.encodeUuid(ids[255] as string),
+    "sentinel.scan64.bytes.first": () => sentinelCodec64.encodeUuid(sentinelBytes[0] as Uint8Array),
+    "sentinel.scan64.bytes.middle": () =>
+      sentinelCodec64.encodeUuid(sentinelBytes[32] as Uint8Array),
+    "sentinel.scan64.bytes.last": () => sentinelCodec64.encodeUuid(sentinelBytes[63] as Uint8Array),
+    "sentinel.scan64.bytes.miss": () => sentinelCodec64.encodeUuid(bytes[255] as Uint8Array),
+    "sentinel.collision64.bytes.first": () =>
+      collidingSentinelCodec64.encodeUuid(collidingSentinelBytes[0] as Uint8Array),
+    "sentinel.collision64.bytes.middle": () =>
+      collidingSentinelCodec64.encodeUuid(collidingSentinelBytes[32] as Uint8Array),
+    "sentinel.collision64.bytes.last": () =>
+      collidingSentinelCodec64.encodeUuid(collidingSentinelBytes[63] as Uint8Array),
+    "sentinel.collision64.bytes.miss": () =>
+      collidingSentinelCodec64.encodeUuid(collidingSentinelMiss),
     "invalid.uuid": () => api.uuidToBytes(badUuid),
     "invalid.uuid.slug": () => api.uuidToSlug(badUuid),
     "invalid.uuid.into.range": () => api.uuidToBytes(ids[0] as string, into, 9),
@@ -555,6 +588,8 @@ export function createProfileCases(
     "construct.codec.sentinels8": () =>
       api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions.slice(0, 8) }),
     "construct.codec.sentinels16": () =>
+      api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions.slice(0, 16) }),
+    "construct.codec.sentinels64": () =>
       api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions }),
     "construct.migration.current": () => codec.createMigrationDecoder(),
     "construct.migration.plain": () => codec.createMigrationDecoder({ plainSlug: true }),

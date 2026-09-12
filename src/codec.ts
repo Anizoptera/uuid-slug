@@ -35,22 +35,24 @@ import {
 import type { UuidV7TimestampWindow, UuidV7SentinelConfig } from "./types";
 import type { SlugAlphabet } from "./uuid";
 
+type EncodedSentinel = { bytes: Uint8Array; slug: SentinelUuidV7Slug };
+type EncodedSentinelIndexValue = EncodedSentinel | EncodedSentinel[];
+
 type SentinelState = {
   readonly bySlug: ReadonlyMap<string, { uuid: UuidV7String; bytes: Uint8Array }>;
   readonly byUuid: ReadonlyMap<string, SentinelUuidV7Slug>;
-  readonly encoded: readonly { bytes: Uint8Array; slug: SentinelUuidV7Slug }[];
+  readonly encoded: readonly EncodedSentinel[];
+  readonly encodedByFingerprint: ReadonlyMap<number, EncodedSentinelIndexValue> | undefined;
   readonly sentinels: readonly UuidV7Sentinel[];
 };
 
 const EMPTY_SENTINELS: readonly UuidV7Sentinel[] = Object.freeze([]);
-const EMPTY_ENCODED_SENTINELS: readonly {
-  bytes: Uint8Array;
-  slug: SentinelUuidV7Slug;
-}[] = Object.freeze([]);
+const EMPTY_ENCODED_SENTINELS: readonly EncodedSentinel[] = Object.freeze([]);
 const EMPTY_SENTINEL_STATE: SentinelState = Object.freeze({
   bySlug: new Map(),
   byUuid: new Map(),
   encoded: EMPTY_ENCODED_SENTINELS,
+  encodedByFingerprint: undefined,
   sentinels: EMPTY_SENTINELS,
 });
 
@@ -62,6 +64,34 @@ function schemaFromOption(mask: UuidV7Mask | UuidV7MaskOptions): UuidV7Mask | Uu
       "Pass a mask schema handle or mask options containing a private seed.",
     );
   return createUuidV7Mask(mask);
+}
+
+function sentinelFingerprint(bytes: Uint8Array): number {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < 16; index += 1)
+    hash = Math.imul(hash ^ (bytes[index] as number), 0x01000193);
+  return hash >>> 0;
+}
+
+// Fingerprints select candidates only. Full equality is mandatory because callers control sentinel
+// values and can produce collisions deliberately or accidentally.
+function findIndexedByteSentinel(
+  encodedByFingerprint: ReadonlyMap<number, EncodedSentinelIndexValue>,
+  bytes: Uint8Array,
+): SentinelUuidV7Slug | undefined {
+  const indexed = encodedByFingerprint.get(sentinelFingerprint(bytes));
+  if (!indexed) return undefined;
+  if (!Array.isArray(indexed)) {
+    let index = 0;
+    while (index < 16 && indexed.bytes[index] === bytes[index]) index += 1;
+    return index === 16 ? indexed.slug : undefined;
+  }
+  for (const sentinel of indexed) {
+    let index = 0;
+    while (index < 16 && sentinel.bytes[index] === bytes[index]) index += 1;
+    if (index === 16) return sentinel.slug;
+  }
+  return undefined;
 }
 
 function createSentinels(
@@ -127,7 +157,27 @@ function createSentinels(
     if (alternate instanceof Error) return alternate;
     bySlug.set(alternate, { uuid: sentinel.uuid, bytes });
   }
-  return { bySlug, byUuid, encoded, sentinels: Object.freeze(sentinels) };
+  let encodedByFingerprint: Map<number, EncodedSentinelIndexValue> | undefined;
+  // Small sets are faster and smaller as a linear scan. Larger sets amortize one immutable index;
+  // singleton values avoid a retained bucket array unless a fingerprint collision needs one.
+  if (encoded.length >= 16) {
+    encodedByFingerprint = new Map();
+    for (let index = 1; index < encoded.length; index += 1) {
+      const sentinel = encoded[index] as EncodedSentinel;
+      const key = sentinelFingerprint(sentinel.bytes);
+      const indexed = encodedByFingerprint.get(key);
+      if (!indexed) encodedByFingerprint.set(key, sentinel);
+      else if (Array.isArray(indexed)) indexed.push(sentinel);
+      else encodedByFingerprint.set(key, [indexed, sentinel]);
+    }
+  }
+  return {
+    bySlug,
+    byUuid,
+    encoded,
+    encodedByFingerprint,
+    sentinels: Object.freeze(sentinels),
+  };
 }
 
 /**
@@ -205,10 +255,19 @@ function buildUuidSlugCodec(
         "invalid_uuid_version",
         "Masked UUID slugs require 16 UUIDv7 bytes.",
       );
-    for (const sentinel of sentinels.encoded) {
+    if (sentinels.encodedByFingerprint) {
+      const first = sentinels.encoded[0] as EncodedSentinel;
       let index = 0;
-      while (index < 16 && sentinel.bytes[index] === bytes[index]) index += 1;
-      if (index === 16) return sentinel.slug;
+      while (index < 16 && first.bytes[index] === bytes[index]) index += 1;
+      if (index === 16) return first.slug;
+      const sentinel = findIndexedByteSentinel(sentinels.encodedByFingerprint, bytes);
+      if (sentinel) return sentinel;
+    } else {
+      for (const sentinel of sentinels.encoded) {
+        let index = 0;
+        while (index < 16 && sentinel.bytes[index] === bytes[index]) index += 1;
+        if (index === 16) return sentinel.slug;
+      }
     }
     // Branch after common validation so ordinary callers retain one direct borrowed-byte route.
     // Split guard helpers slowed that Bun route; reconsider only with packed mixed-workload evidence.

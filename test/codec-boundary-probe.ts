@@ -228,6 +228,26 @@ export const codecBoundaryCases = [
     },
   },
   {
+    name: "byte sentinel lookup preserves exact identity when index keys collide",
+    run() {
+      const definitions = [
+        ...Array.from({ length: 14 }, (_, index) => ({
+          name: `collision-${index}`,
+          uuid: `${index.toString(16).padStart(8, "0")}-0000-7000-8000-0000deadbeef`,
+        })),
+        { name: "fingerprint-a", uuid: "3645727c-8054-7057-8043-e9e1deadbeef" },
+        { name: "fingerprint-b", uuid: "2e3ee2c1-7549-70ed-8072-c29fdeadbeef" },
+      ];
+      const codec = unwrap(createCodec({ mask: UUID_V7_TEST_MASK, sentinels: definitions }));
+      for (let index = 0; index < definitions.length; index += 1) {
+        const definition = definitions[index];
+        const sentinel = codec.sentinels[index];
+        assert.ok(definition && sentinel);
+        assert.equal(codec.encodeUuid(unwrap(uuidToBytes(definition.uuid))), sentinel.slug);
+      }
+    },
+  },
+  {
     name: "codec masks and unmasks UUIDv7 bytes without a text round trip",
     run() {
       const codec = createUuidV7SlugCodec({

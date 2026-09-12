@@ -69,6 +69,14 @@ try {
     mask: primary,
     sentinels: [{ name: "nil", uuid: "00000000-0000-7000-8000-000000000000" }],
   });
+  const sentinelDefinitions = Array.from({ length: 16 }, (_, index) => ({
+    name: `sentinel-${index}`,
+    uuid: `00000000-0000-7000-8000-${index.toString(16).padStart(12, "0")}`,
+  }));
+  const indexedSentinelCodec = api.createUuidV7SlugCodec({
+    mask: primary,
+    sentinels: sentinelDefinitions,
+  });
   const rotated = api.createUuidV7SlugCodec({ mask: primary, previousMasks: [previous] });
   const older = api.createUuidV7SlugCodec({ mask: previous });
   const migrationMasks = Array.from({ length: 16 }, (_, index) => ({
@@ -80,6 +88,7 @@ try {
   });
   const migrationLast = api.createUuidV7SlugCodec({ mask: migrationMasks[15]! });
   assert.ok(!(codec instanceof Error));
+  assert.ok(!(indexedSentinelCodec instanceof Error));
   assert.ok(!(rotated instanceof Error));
   assert.ok(!(older instanceof Error));
   assert.ok(!(migrationMany instanceof Error));
@@ -236,6 +245,18 @@ try {
     hex: 0,
     chars: 22,
   });
+  const indexedSentinelBytes = api.uuidToBytes(sentinelDefinitions[15]!.uuid);
+  assert.ok(!(indexedSentinelBytes instanceof Error));
+  for (const [name, input] of [
+    ["indexed sentinel byte hit", indexedSentinelBytes],
+    ["indexed sentinel byte miss", bytes],
+  ] as const)
+    check(name, () => indexedSentinelCodec.encodeUuid(input), {
+      buffers: 0,
+      slices: 0,
+      views: 0,
+      errors: 0,
+    });
   check("masked string encode", () => codec.encodeUuid(id), {
     buffers: 1,
     base64: 1,

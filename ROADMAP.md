@@ -8,7 +8,8 @@ cancellation, or fallback semantics. Treat every candidate as a hypothesis to fa
 implementation commitment. Retain code only after two independent packed complete-route replays
 show a material win with no higher-priority regression and the relevant behavior/resource mutation
 fails its owning verifier. Record rejected mechanisms and their reopening condition in
-`bench/PERFORMANCE.md`; remove experimental code and generated evidence.
+`bench/PERFORMANCE.md`, including the tested workloads and runtimes, observed trade-off, statistical
+limits, and contract boundary; remove experimental code and generated captures.
 
 Rank latest stable Node Current and Bun first, latest Node LTS and Chromium second, and latest Deno
 third. Rank Node Current JITless after Deno; a JITless-only win may justify retention when every
@@ -66,10 +67,29 @@ unless the maintainer separately changes the HLD.
 
 ### Conditional implementation candidates
 
-- [ ] Test a construction-time byte-sentinel index against the current 16-byte linear comparison.
-  Vary 0/1/4/16/64 sentinels and first/middle/last/miss byte inputs; include construction, memory,
-  string encoding, and collision checks. Retain only if repeated byte-call savings repay the index
-  without slowing ordinary codecs or duplicating sentinel identity.
+- [x] Compare byte-sentinel identity structures at 0/1/4/16/64 entries under
+  first/middle/last/miss and forced-collision inputs. Charge construction, retained memory, string
+  encoding, and byte encoding; retain no index that slows ordinary codecs.
+- [x] Test linear sentinel scan as the small-set control and determine the measured crossover where
+  indexing repays setup and lookup work.
+- [x] Test an adaptive linear/indexed sentinel strategy so 0/1/small sets pay no index cost while
+  larger sets avoid full scans; derive its threshold from repeated complete-route measurements.
+- [x] Test first-sentinel specialization before indexed lookup because default sentinels can make
+  the first entry materially hotter than the remainder.
+- [x] Test a last-32-bit sentinel bucket map with full 16-byte equality inside each bucket; reject
+  if collisions change identity or four-byte key extraction costs more than the avoided scan.
+- [x] Test two-level sentinel buckets only if one 32-bit key leaves measured collision chains;
+  reject extra maps when one discriminating word already bounds the chain.
+- [x] Test a sorted sentinel-key table with binary search against hash lookup; include construction,
+  branch prediction, collision ranges, and exact-equality fallback.
+- [ ] Test compact open-addressed sentinel storage against built-in `Map`; reject owned hashing or
+  probing code unless retained memory and lookup both improve materially across primary runtimes.
+- [x] Test a compact fingerprint table before full sentinel equality; vary fingerprint width and
+  adversarial collisions, and retain only if fewer byte comparisons repay false-positive checks.
+- [ ] Test packed scalar sentinel words instead of retained byte arrays; charge conversion and code
+  size, and reject if it duplicates the canonical sentinel identity source.
+- [x] Test canonical UUID-string sentinel lookup for string inputs as an independent path; reject if
+  formatting bytes merely moves more work ahead of the existing exact byte comparison.
 - [ ] Test direct canonical base64url slug-to-UUID formatting without an intermediate byte array.
   Preserve canonical-tail rejection and exact invalid-character offsets; reject if native
   hexadecimal formatting or code duplication dominates the public route.
@@ -96,6 +116,36 @@ unless the maintainer separately changes the HLD.
 - [ ] Test a subarray-free offset byte-to-UUID formatter against native and portable formatting.
   Vary exact, offset, oversized, and caller-supplied buffers; reject unless removing the view yields
   a repeated complete-route win without duplicating the formatter.
+- [ ] Test packed 32-bit UUID equality against byte loops where exact 16-byte identity dominates.
+  Vary aligned, offset, shared, and plain buffers; reject views, endian assumptions, or weaker checks.
+- [ ] Test a table-driven UUID parser state machine against offset iteration. Preserve exact error
+  positions, hyphen rules, version/variant checks, and atomic caller-owned writes.
+- [ ] Test branchless hexadecimal validation and decode tables against the current guarded parser.
+  Separate valid-heavy from invalid-heavy workloads; reject slower diagnostics or opaque control flow.
+- [ ] Test direct slug decode into four scalar words before materializing bytes. Retain only if it
+  removes intermediate writes across validation, masking, and formatting without weakening errors.
+- [ ] Test fused alphabet decode and canonical-tail validation. Vary every invalid position and tail
+  alias; reject if fusion duplicates alphabet truth or modifies output before late failure.
+- [ ] Test specialized fixed-length base64url and base32hex decoders against the generic accumulator.
+  Keep the generic path only where variable length is public; require packed-route wins in both alphabets.
+- [ ] Test scalar UUID formatting from four words against byte indexing and native `toHex`. Preserve
+  offset-buffer behavior and reject any primary-runtime regression or duplicated format inventory.
+- [ ] Test generator counter state as packed scalars versus the current split words. Vary rollover,
+  clock rollback, reseed, native delegation, and caller-owned output before changing state shape.
+- [ ] Test random-pool refill size geometrically across syscall count, cache footprint, contention,
+  latency tails, and discarded bytes; choose no fixed size from throughput alone.
+- [ ] Test a ring cursor over the random pool against copy-and-erase traversal. Preserve erasure and
+  caller ownership; reject retained secret bytes or extra views even if average throughput improves.
+- [ ] Test thresholded migration-candidate deduplication with linear scan below crossover and `Set`
+  above it; compare duplicate-heavy and distinct-heavy schema outputs before adding a second structure.
+- [ ] Test compact bitsets only for closed bounded validation sets now represented by `Set`; reject
+  them where coercion, readability, or sparse domains erase the lookup benefit.
+- [ ] Test lazy construction of rare migration and sentinel structures against eager setup. Preserve
+  immutability and deterministic errors; reject hidden mutable initialization or first-call latency spikes.
+- [ ] Test reusable bounded scratch owned by synchronous codec closures where calls cannot overlap.
+  Reject it for reentrant callbacks, async paths, caller aliasing, or retained secrets.
+- [ ] Test chunked cooperative KDF state as a resumable iterator with one bounded buffer. Preserve
+  cancellation, call-time snapshots, progress, and exact frozen output before replacing chunk arrays.
 
 ### Workload-gated candidates
 
