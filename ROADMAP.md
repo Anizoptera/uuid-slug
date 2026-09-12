@@ -160,7 +160,8 @@ protection, and no default or fallback may select it.
   while Node timestamp extraction regressed and custom decode also lost in the second screen.
 - [x] Reject a private built-in schema discriminant: two packed screens found no repeatable Node or
   Bun gain, so its `WeakMap`, lookup, and second constructor did not earn their lifetime cost.
-- [ ] Falsify eager runtime adapter imports versus guarded lazy capability loading using cold and warm routes.
+- [x] Reject lazy runtime-adapter loading: conditional imports already evaluate one adapter, while
+  dynamic loading breaks synchronous calls and deferred probes move once-only work into warm routes.
 - [ ] Falsify native UUID generation delegation versus portable generation by output form and entropy behavior.
 - [x] Map portable UUIDv4 independently across forced text fallback, owned and caller-owned bytes,
   entropy refill, and both slug alphabets; reuse public rows where those routes are always portable.

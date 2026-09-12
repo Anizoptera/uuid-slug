@@ -453,6 +453,18 @@ second constructor. Reversing only the direct branch failed six frozen built-in 
 custom vectors passed. Keep the single callback protocol; retest only if direct dispatch produces a
 repeatable primary-runtime route gain large enough to exceed its compatibility machinery.
 
+Lazy runtime-adapter loading was rejected. The package import map already selects exactly one
+adapter before evaluation, and UUIDv7 generator state is created only on its first generation call.
+Dynamic adapter loading would make the synchronous public generators asynchronous; deferring the
+capability probes would instead move once-only work into warm calls. Replacing Node's adapter with
+Web Crypto would discard its native UUID hooks and synchronous entropy boundary, while removing
+Bun's web-adapter import would duplicate the portable entropy fallback. A smoke capture observed
+fresh import costs of 4.14 ms on Node 24.20.0, 1.81 ms on Bun 1.4.1, and 2.59 ms on Deno 2.9.6;
+the browser harness measured warm calls but not module import. These single samples do not rank
+startup performance. Keep conditional adapter selection, module-load capability probes, and lazy
+generator state; retest only if a synchronous runtime exposes deferred module evaluation or repeated
+cold-import evidence makes adapter evaluation a material startup bottleneck.
+
 ### Portable UUIDv4 ownership paths
 
 Draw entropy directly into package-owned output. Keep caller-owned output on a separate path that
