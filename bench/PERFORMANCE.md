@@ -34,6 +34,35 @@ exists on both sides. Two 24-round replays on 2026-09-12 supersede Bun 1.4.1 onl
 Profiler warm-up and batch-size boundaries were measured directly on Bun 1.4.2. These replays do not
 replace Node, Chromium, Deno, resource, or correctness evidence and do not transfer Bun's result to them.
 
+### Current TypeScript frontier
+
+The complete 183-operation corpus ran on Node 24.20.0, Bun 1.4.2, Deno 2.9.6, and Chromium 151 on
+2026-09-12. It covered generation, conversion, guards, masking, migration, construction, failures,
+both alphabets, caller-owned output, explicit time, rotation positions, and optional native paths.
+The same corpus then ran under each runtime's CPU, allocation, retained-heap, and responsiveness
+instruments. The prepared-value control cost 6.5–11.9 ns per call, below the material operation rows.
+
+Codec construction with 16 sentinels was the largest successful row at 7.1–21.7 microseconds per
+call; sentinel work scales with configured values and is paid once per codec. The largest repeated
+steady-state row was a last match among 16 previous keys at 2.5–3.0 microseconds. Caller order and
+first-match semantics require each preceding key to run because the wire format carries no key
+selector. Four scalar ciphertext words remove per-key outer allocation without charging codecs that
+have no previous keys.
+Bun's independent JSC samples attributed the mixed corpus chiefly to HalfSipHash, expected error
+construction, alphabet encoding, sentinel construction, and Feistel traversal. Equal-duration
+profiling overrepresents rare errors and setup; sample share is not consumer frequency.
+
+No further TypeScript change has positive measured value at this frontier. Deleting schema attempts,
+reordering keys, or adding a wire key selector changes accepted identifiers or first-match behavior.
+Parallel attempts add coordination and cannot return before every earlier key has resolved. A decode
+cache adds mutable boundedness and invalidation policy without an observed repeated-input workload;
+an unbounded cache violates the resource contract. Construction-time uniform dispatch, direct
+built-in dispatch, hash and Feistel specializations, alternate byte layouts, and platform delegates
+were measured separately above and either lost a primary route or produced no repeated gain.
+Sentinel construction already computes each required spelling once and builds the lookup structures
+that make repeated string hits constant-time. Reopen optimization only when a new mechanism removes
+complete-route work or a measured consumer workload changes the setup-versus-steady-state ranking.
+
 ## Native development boundaries
 
 The development bridge matrix ran on the same Apple M4 Max through Node 22.23.2, Node 24.20.0,
@@ -261,9 +290,9 @@ cardinalities.
 
 ### Previous-key attempt storage
 
-Restore one private 16-byte attempt block from the decoded ciphertext between failed schema checks.
-Package-created built-in schemas retain no input, and custom callbacks receive a separate inner
-copy, so failed attempts need isolation from each other but not a new outer allocation.
+Preserve the decoded ciphertext as four scalar words, then restore the mutable block between failed
+schema checks. Package-created built-in schemas retain no input, and custom callbacks receive a
+separate inner copy, so no outer attempt array is required.
 
 Two 24-round comparisons on 2026-09-12 covered 4, 8, and 16 previous keys on Node 24.20.0 and Bun
 1.4.1. At 8 keys, last-key hits improved by 10–11% on Node and 9–10% on Bun; total failures improved
@@ -273,15 +302,20 @@ replays. Current-key controls were unresolved. At 4 keys, Node last-key hits and
 improved, while Bun last-key hits were unresolved; one 8% Node failure regression did not repeat.
 
 Two secondary-runtime replays at 16 keys improved Deno last-key hits by 42–43% and failures by
-20–21%; Chromium improved by 15–18% and 9–10%. Current-key controls remained unresolved. Keep the
-per-attempt allocation only if a supported schema can retain the package-owned outer block; the
-public custom-schema constructor deliberately prevents that capability.
+20–21%; Chromium improved by 15–18% and 9–10%. Current-key controls remained unresolved. Those
+scratch results are historical evidence; the scalar result below supersedes their storage shape.
 
 Bun 1.4.2 invalidated the original scratch placement: current-key string decoding regressed by
-31–35% in both replays. Allocating scratch only after the primary attempt misses restored that path
-to parity. Against per-key allocation, the revised placement kept the 8-key last-match path 3–9%
-faster in both replays; 4-key, 16-key, and total-failure changes did not repeat. This makes the
-primary path independent of rotation storage while retaining a measured fallback benefit.
+31–35% in both replays. A first repair restored that path but allocated a second block on fallback
+and added iterator work; the complete matrix exposed 8–34% regressions on Node, Deno, and Chromium
+rotation routes. Preserve the ciphertext as four scalar words instead. One fixed-block write restores
+the mutable input before each previous-key attempt, so decoding allocates no outer scratch arrays.
+
+Two 24-round replays on 2026-09-12 covered current, previous, 4/8/16-key last-hit, miss, and byte
+routes on all four runtimes. No row regressed significantly. Previous-key byte decoding improved
+13–16% on Node, 10–16% on Bun, 38–42% on Deno, and 17–21% on Chromium; every interval excluded no
+change in both replays. Removing restoration made the owning tests reject two valid rotated slugs.
+Keep the scalar snapshot while the ciphertext remains one fixed 16-byte block.
 
 A construction-time `[current, ...previous]` array with one uniform decode loop was rejected. Two
 eight-round packed screens covered current, previous, 4/8/16-key last-hit and miss routes plus codec

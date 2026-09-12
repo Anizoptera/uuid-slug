@@ -232,35 +232,35 @@ protection, and no default or fallback may select it.
 - [x] Remove the untimed 2048-call post-warm-up priming batch from host and browser profiling; the
   measured 16 ms warm-up already reaches the stable tier, so the extra burst duplicated setup and
   could exceed the responsiveness budget on slow operations.
-- [ ] Capture alternating warm baselines for generation: v4/v7, string/bytes/slug, explicit time,
+- [x] Capture alternating warm baselines for generation: v4/v7, string/bytes/slug, explicit time,
   portable generator, native generator, caller-owned output, and both slug alphabets.
-- [ ] Capture alternating warm baselines for conversion and guards: UUID parse/format, direct slug
+- [x] Capture alternating warm baselines for conversion and guards: UUID parse/format, direct slug
   encode/decode, byte offsets, valid/invalid inputs, versions, and timestamp extraction/validation.
-- [ ] Capture alternating warm baselines for masking: construction, encode/decode, byte output,
+- [x] Capture alternating warm baselines for masking: construction, encode/decode, byte output,
   sentinels, current/previous keys, timestamp validation, both alphabets, and custom masks.
-- [ ] Capture alternating warm baselines for migration: current, previous, original-mask, plain,
+- [x] Capture alternating warm baselines for migration: current, previous, original-mask, plain,
   candidate enumeration, success position, and total failure.
-- [ ] Attribute CPU samples, allocations, entropy draws, text conversions, views, copies, errors,
+- [x] Attribute CPU samples, allocations, entropy draws, text conversions, views, copies, errors,
   clock reads, and schema attempts for each operation family on every applicable runtime.
-- [ ] Identify harness cost by measuring controls with the same dispatch, sink, batching, and yield
+- [x] Identify harness cost by measuring controls with the same dispatch, sink, batching, and yield
   structure; reject rows where harness cost prevents useful attribution.
 
 ### Optimization
 
-- [x] Reuse each schema attempt's isolated 16-byte block as transform output; preserve custom-mask
-  isolation while reducing ordinary masked encode and one-key decode from two allocations to one.
-- [ ] Rank proven bottlenecks by consumer frequency, avoidable work, cross-runtime reach, and change
+- [x] Preserve ciphertext as four scalar words while trying rotated keys; restore the caller-ordered
+  attempts in one fixed-block write and allocate no per-decode outer scratch arrays.
+- [x] Rank proven bottlenecks by consumer frequency, avoidable work, cross-runtime reach, and change
   risk; optimize the highest-value TypeScript mechanism first.
-- [ ] For each selected mechanism, evaluate deletion, platform primitive, fused pass, cached invariant,
+- [x] For each selected mechanism, evaluate deletion, platform primitive, fused pass, cached invariant,
   caller-owned storage, lookup structure, arithmetic/layout change, specialization, and runtime-specific
   delegation before adding abstraction.
-- [ ] Document every retained unusual syntax form at its code site with the performance reason,
+- [x] Document every retained unusual syntax form at its code site with the performance reason,
   semantic boundary, and evidence condition that would justify replacing it.
-- [ ] Implement each optimization as a focused change with unchanged public semantics and a direct
+- [x] Implement each optimization as a focused change with unchanged public semantics and a direct
   falsifier for the behavior or resource invariant it could break.
-- [ ] Re-profile every affected operation and its strongest regression rival on all applicable
+- [x] Re-profile every affected operation and its strongest regression rival on all applicable
   runtimes; revert changes that only move cost, win within noise, or regress a higher-priority axis.
-- [ ] Repeat attribution and optimization until no remaining measured hotspot has positive expected
+- [x] Repeat attribution and optimization until no remaining measured hotspot has positive expected
   value after correctness risk and lifetime maintenance cost.
 
 ### Closure

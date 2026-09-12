@@ -71,6 +71,26 @@ function restoreV7(bytes: Uint8Array) {
   bytes[0] = (bytes[0] ?? 0) & 0x03;
 }
 
+/** Restore the fixed ciphertext block without allocating views or per-key buffers. */
+function restoreCiphertext(bytes: Uint8Array, a: number, b: number, c: number, d: number) {
+  bytes[0] = a >>> 24;
+  bytes[1] = a >>> 16;
+  bytes[2] = a >>> 8;
+  bytes[3] = a;
+  bytes[4] = b >>> 24;
+  bytes[5] = b >>> 16;
+  bytes[6] = b >>> 8;
+  bytes[7] = b;
+  bytes[8] = c >>> 24;
+  bytes[9] = c >>> 16;
+  bytes[10] = c >>> 8;
+  bytes[11] = c;
+  bytes[12] = d >>> 24;
+  bytes[13] = d >>> 16;
+  bytes[14] = d >>> 8;
+  bytes[15] = d;
+}
+
 /** The 12 check bits that fit inside the block; the rest ride in the encoding's spare bits. */
 const INNER_TAG_BITS = 12;
 
@@ -150,15 +170,24 @@ export function decodeMaskedSlug(
     OUTER_TAG_BITS,
   );
   if (outerTag instanceof Error) return outerTag;
-  const primary = unmix(previous.length ? mixed.slice() : mixed, outerTag, schema);
+  if (!previous.length) {
+    const primary = unmix(mixed, outerTag, schema);
+    return (
+      primary ??
+      new UuidSlugError("invalid_uuid_slug", "Masked UUID slug failed schema validation.")
+    );
+  }
+  const word0 = read32(mixed, 0);
+  const word1 = read32(mixed, 4);
+  const word2 = read32(mixed, 8);
+  const word3 = read32(mixed, 12);
+  const primary = unmix(mixed, outerTag, schema);
   if (primary instanceof Error) return primary;
   if (primary) return primary;
-  // Allocate only after the primary miss: earlier placement regressed Bun's common string path.
-  // Previous schemas may mutate their private attempt, so restore one scratch between misses.
-  const scratch = previous.length ? mixed.slice() : mixed;
-  for (const [index, older] of previous.entries()) {
-    if (index) scratch.set(mixed);
-    const decoded = unmix(scratch, outerTag, older);
+  // Scalar ciphertext survives in-place attempts without allocating a block for every decode.
+  for (const older of previous) {
+    restoreCiphertext(mixed, word0, word1, word2, word3);
+    const decoded = unmix(mixed, outerTag, older);
     if (decoded instanceof Error) return decoded;
     if (decoded) return decoded;
   }
