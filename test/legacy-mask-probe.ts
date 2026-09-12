@@ -257,7 +257,7 @@ export const legacyMaskCases = [
     },
   },
   {
-    name: "enumerate matching rotation keys without input mutation or partial results",
+    name: "preserve caller order, input, and complete rotation candidates",
     run(this: void) {
       const { seeds, slug, uuids } = fixtures.keyOverlap;
       const schemas = seeds.map((seed) => {
@@ -286,6 +286,12 @@ export const legacyMaskCases = [
       if (candidates instanceof Error) throw candidates;
       assert.deepEqual(candidates, uuids);
       assert.deepEqual(mixed, original);
+      const unrelated = { seed: "unrelated-rotation-order-seed" };
+      assert.ok(
+        unwrap(createUuidV7SlugCodec({ mask: unrelated })).decodeSlug(slug) instanceof Error,
+      );
+      const ordered = unwrap(createUuidV7SlugCodec({ mask: unrelated, previousMasks: schemas }));
+      assert.equal(ordered.decodeSlug(slug), uuids[0]);
       const cause = new Error("key service unavailable");
       let fail = false;
       const unavailable = unwrap(

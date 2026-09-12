@@ -253,6 +253,13 @@ Two secondary-runtime replays at 16 keys improved Deno last-key hits by 42–43%
 per-attempt allocation only if a supported schema can retain the package-owned outer block; the
 public custom-schema constructor deliberately prevents that capability.
 
+A construction-time `[current, ...previous]` array with one uniform decode loop was rejected. Two
+eight-round packed screens covered current, previous, 4/8/16-key last-hit and miss routes plus codec
+construction on Node 24.20.0 and Bun 1.4.1. No row improved significantly in both screens. The first
+screen regressed Node's eight-key last hit by 1.8%; its 95% median interval excluded no change, but
+the regression did not repeat. Keep the separate current-key fast path and previous-key loop until a
+precompiled operation removes measured per-attempt work rather than only reshaping traversal.
+
 ### Native base64url encoding
 
 Use `Uint8Array.prototype.toBase64` when the runtime provides it; probe once at module load and keep

@@ -152,7 +152,8 @@ protection, and no default or fallback may select it.
   prove input isolation; two packed replays improved Node and Deno while Bun and Chromium stayed unresolved.
 - [x] Replace linear string-sentinel encoding scans with a construction-time UUID index. Geometric
   first, middle, last, miss, byte-path, and construction controls isolated the affected work.
-- [ ] Falsify linear previous-key traversal versus caller-ordered precompiled decode operations.
+- [x] Reject a construction-time ordered schema array with one uniform decode loop: two packed
+  screens found no repeated Node or Bun win, while the first regressed an eight-key Node hit.
 - [x] Reuse one restored private block across failed previous-key attempts. Geometric comparisons
   improved multi-key hits and failures without a repeated current-key regression.
 - [ ] Falsify exception containment on built-in masks versus a built-in non-throwing path and custom boundary.
