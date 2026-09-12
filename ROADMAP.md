@@ -162,7 +162,7 @@ unless the maintainer separately changes the HLD.
 - [x] Measure candidate deduplication growth before replacing `Array.includes` with a `Set`. Vary
   schemas that yield 0/1/many duplicate and distinct UUIDs; proceed only if realistic candidate
   counts make quadratic comparison material after charging the set allocation.
-- [ ] Measure fresh package import repeatedly before changing module topology. Separate parsing,
+- [x] Measure fresh package import repeatedly before changing module topology. Separate parsing,
   adapter probing, initialization, and filesystem cache state; alter exports only if startup is a
   demonstrated consumer bottleneck and the public synchronous API remains intact.
 - [ ] Measure repeated-decode locality before designing a bounded decode cache. Proceed only with a

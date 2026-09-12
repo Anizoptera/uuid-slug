@@ -681,17 +681,22 @@ optional method would expose no capability distinction and would add a property 
 these choices if a primary runtime changes its UTF-8 primitive or the complete construction route
 stops preserving the gains above.
 
-Lazy runtime-adapter loading was rejected. The package import map already selects exactly one
-adapter before evaluation, and UUIDv7 generator state is created only on its first generation call.
-Dynamic adapter loading would make the synchronous public generators asynchronous; deferring the
-capability probes would instead move once-only work into warm calls. Replacing Node's adapter with
-Web Crypto would discard its native UUID hooks and synchronous entropy boundary, while removing
-Bun's web-adapter import would duplicate the portable entropy fallback. A smoke capture observed
-fresh import costs of 4.14 ms on Node 24.20.0, 1.81 ms on Bun 1.4.1, and 2.59 ms on Deno 2.9.6;
-the browser harness measured warm calls but not module import. These single samples do not rank
-startup performance. Keep conditional adapter selection, module-load capability probes, and lazy
-generator state; retest only if a synchronous runtime exposes deferred module evaluation or repeated
-cold-import evidence makes adapter evaluation a material startup bottleneck.
+Lazy runtime-adapter loading was rejected. Two fresh-process profiles on 2026-09-12 measured root
+dynamic import at 5.23/4.13 ms on Node 26.8.2, 1.75/1.62 ms on Bun 1.4.2, and 2.57/2.58 ms on Deno
+2.9.6. Two browser launches measured 24 fresh-page imports at 3.10–3.80 ms in Chromium. These clocks
+exclude process or browser launch and use warm filesystem caches; they combine parsing with module
+evaluation, so they cannot rank either component alone. That finer attribution cannot turn the
+decision while total import remains low-single-digit milliseconds and no startup workload makes it
+material.
+
+The package import map selects exactly one adapter before evaluation. Its capability probes perform
+no entropy draw, and UUIDv7 generator state remains lazy until first generation. Dynamic adapter
+loading would therefore move evaluation into a warm synchronous call or change that call to async;
+it cannot remove the work. Replacing Node's adapter with Web Crypto would discard native UUID hooks
+and its synchronous entropy boundary, while removing Bun's web-adapter import would duplicate the
+portable entropy fallback. Keep conditional adapter selection, module-load probes, and lazy generator
+state. Retest only when a measured consumer startup budget makes import material or a synchronous
+runtime gains deferred module evaluation that can preserve the public call shape.
 
 Keep native UUID generation only for output forms the host produces directly. Bun supplies canonical
 text, base64url, and owned bytes, while Node supplies canonical text when its runtime exposes UUIDv7;
