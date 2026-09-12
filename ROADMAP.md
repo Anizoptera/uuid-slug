@@ -96,7 +96,8 @@ protection, and no default or fallback may select it.
   statistically distinct Bun or Node route, and the extra loop state had no measured value.
 - [x] Reject separate mask and unmask Feistel loops: two packed 24-round replays found no repeatable
   Bun or Node gain, while duplicating the round body added about 80 packed bytes.
-- [ ] Falsify indexed key reads versus construction-time scalar capture.
+- [x] Reject construction-time scalar key capture: two packed 24-round replays found no repeated
+  Bun or Node route gain, while scalar selection added about 170 packed bytes.
 - [ ] Falsify helper calls versus inlined big-endian reads and writes at the fixed offsets.
 - [ ] Falsify shifts versus `DataView` for big-endian word I/O on every runtime.
 - [x] Reject fixed-offset check-tag unrolling: it produced no cross-runtime win and regressed
