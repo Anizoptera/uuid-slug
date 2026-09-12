@@ -96,7 +96,7 @@ unless the maintainer separately changes the HLD.
 - [x] Test direct canonical base32hex slug-to-UUID formatting without an intermediate byte array.
   Preserve canonical-tail rejection and exact invalid-character offsets; reject if native
   hexadecimal formatting or code duplication dominates the public route.
-- [ ] Test scalar scratch only in final KDF round-key expansion, isolated from the previously
+- [x] Test scalar scratch only in final KDF round-key expansion, isolated from the previously
   rejected polymorphic hot hash paths. Measure construction across seed forms and iteration
   boundaries; reject unless allocation and complete construction both improve repeatedly.
 - [ ] Test streaming UTF-8 packing for cooperative string seeds with `TextEncoder.encodeInto` where

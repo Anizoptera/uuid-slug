@@ -233,6 +233,16 @@ These measurements isolate shipped public routes, not each generated-machine-cod
 fixed-length trial changed both message dispatch and argument shape, so it does not reject either
 mechanism independently; the roadmap keeps those axes separate.
 
+### Final KDF scratch reuse
+
+Reusing scratch inside final round-key expansion was rejected. Reusing each hash output as its own
+one-word input removed the index array but introduced aliasing. Reusing one output array with two
+scalar chain-A words removed that aliasing and one two-word allocation. In two 24-round packed
+replays, the non-aliasing variant improved Node construction by 1–4% and Deno by 5–9%; Bun stayed
+within noise. Chromium byte-seed construction improved, but eight-iteration string construction was
+about 45% slower in both replays. Keep separate input and output arrays until complete construction
+improves across iteration boundaries; allocation count alone does not justify the browser loss.
+
 ### Owned masking blocks
 
 Mask UUID bytes in place only when the codec owns the block. UUID strings parse into a private
