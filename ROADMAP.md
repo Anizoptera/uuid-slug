@@ -126,6 +126,8 @@ protection, and no default or fallback may select it.
   caller-owned routes on every runtime while exact offsets, canonical tails, and bytes stayed fixed.
 - [x] Specialize portable 16-byte base32hex decoding. Two packed replays improved Bun's direct and
   public routes while Node stayed unresolved and every runtime preserved exact decoding behavior.
+- [x] Reject regex prevalidation plus direct base32hex bit formulas: the screen regressed Node,
+  Deno, and Chromium direct decoding while Bun stayed unresolved.
 - [x] Specialize portable 16-byte base32hex encoding. Two packed replays improved Node's direct
   fallback and public conversion while Bun stayed improved or unresolved; all runtimes exercised
   the exact portable implementation.

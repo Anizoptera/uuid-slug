@@ -301,6 +301,10 @@ bytes passed direct mutation-checked tests before measurement.
 Retest this grouping if UUID routes stop decoding exactly 16 bytes or use a tail width other than
 zero or two. The generic path remains responsible for every other supported shape.
 
+Regex prevalidation followed by fixed bit formulas was rejected. An eight-round packed screen
+regressed direct decoding by 23% on Node, 31% on Deno, and 22% on Chromium; Bun was unresolved.
+Retest only if primary engines materially change regex or fixed-index string access.
+
 ### Portable UUIDv7 timestamp writes
 
 Select the fixed 48-bit timestamp writer once when the module loads. Bun keeps the six-byte loop;
