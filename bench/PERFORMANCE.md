@@ -785,7 +785,9 @@ setup measurably slowed Chromium's common path. Two 12-round packed replays on 2
 8- and 16-schema candidate gains of 9.9–13.9% on Node, 7.6–15.5% on Bun, 38.0–44.9% on Deno, and
 7.1–12.8% on Chromium; one-schema first-match intervals included no change in both replays. The
 resource probe observed one slice at 16 schemas. Custom callbacks still receive isolated bytes,
-and the original decoded block remains available to later migration formats.
+and the original decoded block remains available to later migration formats. A later six-round
+replay measured 19% on Node 26.8.2, 21% on Bun 1.4.2, 44% on Deno 2.9.6, and 15% on Chromium 153;
+the Node JITless interval included no change.
 
 Canonical UUID text packs directly into base64url only when `Uint8Array.prototype.toBase64` is
 absent. Node v24.20.0 took that fallback on 2026-09-12; Bun 1.4.2, Deno 2.9.6, and Chromium 151 used
@@ -793,6 +795,25 @@ the native encoder. Two packed replays measured a 20–21% Node paired-median ga
 interval included no change. The fallback allocates no byte buffer, preserves parser diagnostics,
 and matches the byte encoder while every byte position traverses all 256 values. Reconsider the
 split only when Node gains native base64url encoding or another runtime changes its capability.
+
+Canonical UUID text also packs directly into base32hex. Two packed replays on 2026-09-12 measured
+paired-median gains of 19–20% on Node 26.8.2, 9–13% on Bun 1.4.2, 39–42% on Deno 2.9.6, and 22–24%
+on Chromium 153. Node 24.21.0 improved by 22% in a separate replay. Byte and masked controls showed
+no repeated change. The direct route allocates no byte buffer and shares byte extraction, exhaustive
+byte-space comparison, and exact parser diagnostics with base64url. Reconsider it if a runtime adds
+native base32hex encoding.
+
+Node v26.8.2 profiling combines process counters, `GCProfiler`, V8 heap/code/space state, Inspector
+CPU and allocation samples, heap snapshots, V8 ticks, and trace events. Each source answers a
+different question; correlation is evidence, while two APIs over the same V8 sampler are not
+independent. Runtime-native evidence comes first, then Inspector, then portable counters and timing.
+Missing optional detail may fall back, but an evidence lane may not silently produce nothing.
+
+Two fresh Node v26.8.2 base32 profiles compared normal JIT with `--jitless`. JITless used 28% less
+RSS, but package import was 21–23% slower, the public encode route was 14.1–14.6 times slower, and
+CPU per operation was 13.9–14.2 times higher. Keep JIT as the performance default. JITless remains
+the final performance rung and a deployment fallback when executable-memory policy outweighs
+throughput and startup cost. A JITless-only win may justify code when every higher rung is unchanged.
 
 ## Regression protection and limits
 

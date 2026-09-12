@@ -2,7 +2,7 @@
 
 ## Goal and decision rule
 
-Find remaining avoidable TypeScript work on the existing Node, Bun 1.4.2, Deno, and Chromium
+Find remaining avoidable TypeScript work on the existing Node, Bun, Deno, and Chromium
 routes without changing public behavior, wire formats, ownership, diagnostics, ordering,
 cancellation, or fallback semantics. Treat every candidate as a hypothesis to falsify, not an
 implementation commitment. Retain code only after two independent packed complete-route replays
@@ -10,14 +10,45 @@ show a material win with no higher-priority regression and the relevant behavior
 fails its owning verifier. Record rejected mechanisms and their reopening condition in
 `bench/PERFORMANCE.md`; remove experimental code and generated evidence.
 
-Rank primary paths as Node and Bun co-primary, Chromium second, and Deno third. Rank a fallback by
-the runtimes whose normal dispatch reaches it; native-shadowed runtimes prove portability but do not
-steer its trade-offs. A contract-changing candidate is closed by identifying that boundary unless
-the maintainer separately changes the HLD.
+Rank latest stable Node Current and Bun first, latest Node LTS and Chromium second, and latest Deno
+third. Rank Node Current JITless after Deno; a JITless-only win may justify retention when every
+higher rung is unchanged. Supported older Node versions gate correctness and compatibility, not performance trade-offs.
+Rank fallbacks only by runtimes whose normal dispatch reaches them; native-shadowed runtimes prove
+portability but do not steer. A contract-changing candidate is closed by identifying that boundary
+unless the maintainer separately changes the HLD.
 
 ## Work
 
 ### Highest decision value
+
+- [x] Packed comparisons select a Node executable and record its observed version.
+- [x] Complete profiles select a Node executable, isolate its `NODE_OPTIONS`, and name timing
+  reports by its observed version.
+- [x] Run retained TypeScript candidates on latest Node Current before latest Node LTS; reopen any
+  candidate whose higher-priority result contradicts its retention basis.
+- [x] Verify CI runs latest Node Current and Bun first, latest Node LTS and Chromium second, and
+  latest Deno third while supported Node floors retain correctness coverage.
+- [x] Audit latest Node Current profiling, tracing, diagnostics, resource, syscall, and statistics
+  capabilities against the harness; add only instruments with distinct decision value.
+- [x] Build one capability-join profile from counters, GC and heap state, sampled stacks, traces,
+  and runtime-native reports; define a per-signal fallback ladder instead of choosing one profiler.
+- [x] Add per-case page-fault, filesystem-I/O, and context-switch deltas from
+  `process.resourceUsage`; existing timing, CPU, and heap data cannot infer them.
+- [x] Add per-GC cost and before/after heap state through `v8.GCProfiler`; trace events alone do
+  not preserve that state.
+- [x] Add Node filesystem and thread-pool trace categories; broad V8 and performance categories do
+  not expose these operations.
+- [x] Capture Node C++ heap, code metadata, and heap-space state around native profiles.
+- [x] Measure Node Current with and without JIT across cold start, throughput, CPU, and memory; keep
+  JITless only if a real workload tier values its resource win above its throughput cost.
+- [x] Reject duplicate `node:v8` CPU and heap handles: Inspector already scopes the same profilers
+  around the measured corpus and captures collected allocations.
+- [x] Reject `diagnostics_channel` spans for pure synchronous package calls: they add work but no
+  attribution missing from the scoped corpus.
+- [x] Reject Node-only histogram tests in the cross-runtime comparator: exact paired samples and
+  distribution-free median intervals stay portable and preserve more raw evidence.
+- [x] Reject per-iteration event-loop histograms here: direct batch and uninterrupted-block timing
+  already measures the relevant responsiveness boundary with less observer work.
 
 - [x] Exhaustive migration candidates reuse one private block restored from four scalar ciphertext
   words. A zero-schema behavior case and the 1/4/8/16-schema profile corpus separate first, middle,
@@ -28,10 +59,10 @@ the maintainer separately changes the HLD.
   encoder. Two packed replays retained a 20–21% Node fallback gain; Bun, Deno, and Chromium kept
   their native path without a repeated change. The resource probe observes zero fallback buffers,
   while byte-space and diagnostic mutations prove wire identity and parser-error preservation.
-- [ ] Test direct canonical UUID-string to base32hex encoding without an intermediate byte array.
-  Preserve exact validation order and diagnostic offsets; compare against the composed
-  parser/encoder on every runtime. Reject unless repeated complete-route gains pay for the
-  duplicated fixed-shape logic.
+- [x] Canonical UUID text packs directly into base32hex without an intermediate byte array. Two
+  packed replays retained public-route gains on every runtime while byte and masked controls stayed
+  unchanged. The shared byte-space and diagnostic falsifiers cover both direct alphabets; the
+  resource probe observes no temporary buffer.
 
 ### Conditional implementation candidates
 
@@ -139,7 +170,8 @@ the maintainer separately changes the HLD.
 - [ ] Pair every roadmap candidate with its source mechanism, consumer route, contract boundary,
   discriminating experiment, and explicit stop rule; delete duplicates or entries that cannot turn
   a decision.
-- [ ] Run affected Node, Bun 1.4.2, Deno, and Chromium behavior/resource lanes for every retained
+- [ ] Run affected Node Current, Bun, Node LTS, Chromium, Deno, and Node Current JITless
+  behavior/resource lanes for every retained
   change, including a deliberate mutation that proves each new verifier reaches its intended defect.
 - [ ] Run two independent packed comparisons for every retained candidate, then the complete profile
   corpus and `bun run check`; verify packaged TypeScript and Rust APIs are unchanged.

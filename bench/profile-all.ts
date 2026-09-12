@@ -14,6 +14,8 @@ const samples = process.env.UUID_SLUG_PROFILE_SAMPLES ?? (smoke ? "1" : "7");
 const duration = process.env.UUID_SLUG_PROFILE_MS ?? "2";
 const warmup = process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (smoke ? "2" : "16");
 const filter = process.env.UUID_SLUG_PROFILE_FILTER ?? "";
+const nodeExecutable = process.env.UUID_SLUG_PROFILE_NODE_EXECUTABLE ?? "node";
+const nodeOptions = process.env.UUID_SLUG_PROFILE_NODE_OPTIONS;
 const environment: Readonly<Record<string, string>> = {
   UUID_SLUG_PROFILE_FILTER: filter,
   UUID_SLUG_PROFILE_MS: duration,
@@ -21,14 +23,18 @@ const environment: Readonly<Record<string, string>> = {
   UUID_SLUG_PROFILE_WARMUP_MS: warmup,
   UUID_SLUG_PROFILE_PRIVATE: "1",
 };
+const nodeEnvironment = nodeOptions ? { ...environment, NODE_OPTIONS: nodeOptions } : environment;
 
 const nativeFiles = [
   "node-inspector.cpuprofile",
   "node-inspector.heapprofile",
   "node-inspector.heapsnapshot",
+  "node-inspector.gc.json",
+  "node-inspector.v8.json",
   "deno-inspector.cpuprofile",
   "deno-inspector.heapprofile",
   "deno-inspector.heapsnapshot",
+  "deno-inspector.gc.json",
   "deno-cli.cpuprofile",
   "deno-cli.md",
   "deno-cli.svg",
@@ -57,6 +63,10 @@ const nativeEnvironment = (name: string): Readonly<Record<string, string>> => ({
   UUID_SLUG_PROFILE_NATIVE_DIR: reports,
   UUID_SLUG_PROFILE_NATIVE_NAME: name,
 });
+const nodeNativeEnvironment = (name: string): Readonly<Record<string, string>> => ({
+  ...nativeEnvironment(name),
+  ...(nodeOptions ? { NODE_OPTIONS: nodeOptions } : {}),
+});
 
 async function resetNativeFiles(): Promise<void> {
   await Promise.all(nativeFiles.map((name) => rm(join(reports, name), { force: true })));
@@ -71,9 +81,12 @@ async function requireNativeFiles(): Promise<void> {
     "node-inspector.cpuprofile": ["nodes", "samples"],
     "node-inspector.heapprofile": ["head", "samples"],
     "node-inspector.heapsnapshot": ["snapshot", "nodes", "edges", "strings"],
+    "node-inspector.gc.json": ["startTime", "endTime", "statistics"],
+    "node-inspector.v8.json": ["before", "after"],
     "deno-inspector.cpuprofile": ["nodes", "samples"],
     "deno-inspector.heapprofile": ["head", "samples"],
     "deno-inspector.heapsnapshot": ["snapshot", "nodes", "edges", "strings"],
+    "deno-inspector.gc.json": ["startTime", "endTime", "statistics"],
     "deno-cli.cpuprofile": ["nodes", "samples"],
     "node-exit.cpuprofile": ["nodes", "samples"],
     "node-exit.heapprofile": ["head", "samples"],
@@ -235,7 +248,7 @@ async function runBrowser(entry: string, asyncEntry: string) {
 /** Capture process-exit formats that expose data absent from inspector sampling. */
 async function runExitProfiles(nodeEntry: string, denoEntry: string): Promise<void> {
   await command(
-    "node",
+    nodeExecutable,
     [
       "--cpu-prof",
       `--cpu-prof-dir=${reports}`,
@@ -246,23 +259,23 @@ async function runExitProfiles(nodeEntry: string, denoEntry: string): Promise<vo
       nodeEntry,
     ],
     project,
-    environment,
+    nodeEnvironment,
   );
   await command(
-    "node",
+    nodeExecutable,
     [
       "--prof",
       "--no-logfile-per-isolate",
       `--logfile=${join(reports, "node-v8.log")}`,
-      "--trace-event-categories=v8,v8.execute,node,node.perf",
+      "--trace-event-categories=v8,v8.execute,node,node.perf,node.fs.sync,node.fs.async,node.threadpoolwork.sync,node.threadpoolwork.async",
       `--trace-event-file-pattern=${join(reports, "node-trace.json")}`,
       nodeEntry,
     ],
     project,
-    environment,
+    nodeEnvironment,
   );
   const processedV8 = await command(
-    "node",
+    nodeExecutable,
     ["--prof-process", join(reports, "node-v8.log")],
     project,
   );
@@ -344,11 +357,13 @@ async function main() {
       build("profile-async", "node", ["deno"]),
       build("profile-async", "browser"),
     ]);
+  const nodeVersion = (await command(nodeExecutable, ["--version"], project)).trim();
+  const nodeReport = `node-${nodeVersion.replace(/[^0-9A-Za-z.-]/g, "-")}`;
   await runHost(
-    "node",
-    "node",
+    nodeReport,
+    nodeExecutable,
     ["--expose-gc", nodeEntry],
-    native ? nativeEnvironment("node-inspector") : environment,
+    native ? nodeNativeEnvironment("node-inspector") : nodeEnvironment,
   );
   await runHost("bun", "bun", ["--expose-gc", join(import.meta.dir, "profile.ts")]);
   await runHost(
@@ -367,7 +382,7 @@ async function main() {
     },
   );
   await runBrowser(browserEntry, asyncBrowserEntry);
-  await runHost("node-async", "node", [asyncNodeEntry], environment, 0);
+  await runHost(`${nodeReport}-async`, nodeExecutable, [asyncNodeEntry], nodeEnvironment, 0);
   await runHost("bun-async", "bun", [join(import.meta.dir, "profile-async.ts")], environment, 0);
   await runHost(
     "deno-async",

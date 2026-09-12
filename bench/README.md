@@ -4,6 +4,9 @@ Measure each runtime separately; a failed or missing measurement must fail the h
 
 Rules:
 
+- Measure latest stable Node Current and Bun first, latest Node LTS and Chromium second, and latest
+  Deno third. Measure Node Current JITless last; a JITless-only win may survive when every higher
+  rung is unchanged. Older supported Node versions prove compatibility, not performance priority.
 - Keep direct runtime operations separate from composed pipeline operations.
 - Keep benchmark dependencies in `devDependencies`.
 - Run the same candidate set in smoke and full modes so CI detects adapter rot.
@@ -74,13 +77,27 @@ bun run bench:profile
 UUID_SLUG_PROFILE_FILTER=plain.encode bun run bench:profile:native
 ```
 
-The ordinary command records timing, CPU, process-memory and responsiveness rows from Node, Bun,
-Deno and Chromium. `:native` adds each host's independent native evidence: inspector and exit CPU or
-allocation profiles, V8 native ticks and trace events, Deno Markdown and flamegraph reports, Bun
+Set `UUID_SLUG_PROFILE_NODE_EXECUTABLE` to profile a specific Node release. Each run records the
+observed version in its timing report name; run native profiles once per release because their
+engine-native artifact names are fixed.
+Set `UUID_SLUG_PROFILE_NODE_OPTIONS` to apply `NODE_OPTIONS` only to profiled Node processes, not
+the Bun-based build and orchestrator.
+
+The ordinary command records timing, CPU, process memory, page faults, filesystem I/O, context
+switches, and responsiveness from Node, Bun, Deno, and Chromium. `:native` adds each host's
+independent evidence: inspector and exit CPU or allocation profiles, per-GC heap state, V8 native
+ticks and trace events, Deno Markdown and flamegraph reports, Bun
 JavaScriptCore JIT samples and heap statistics, JSC and V8-format object graphs, paired mimalloc
 states, and Chromium CDP metrics and tracing. The lanes run sequentially to avoid profiler contention.
 Generated drivers and reports stay under ignored `bench/reports/`; malformed, empty or missing output
 fails the command.
+
+Treat these reports as a capability join. Use counters to locate resource cost, GC and heap state to
+separate allocation from retention, sampled stacks to attribute CPU and allocation, and traces to
+expose scheduling and I/O. Prefer each runtime's native source, then its inspector protocol, then
+portable process counters and timings. Missing optional detail may fall back; a requested lane that
+produces no evidence must fail. Correlate independent signals before changing code. Do not count two
+front ends to the same engine profiler as independent evidence.
 
 The same command separately measures cooperative schema construction around byte-packing and UTF-8
 chunk boundaries, geometric work factors, host-task progress, and cancellation. These promise-based
@@ -99,4 +116,8 @@ rotates runtime order, and emits JSON Lines containing raw samples and per-opera
 retention, not gross allocation; sampled profiles are estimates; forced GC changes the workload;
 `maxBatchMs` and `maxUninterruptedMs` are observations, not universal latency bounds.
 Set `UUID_SLUG_COMPARE_RUNTIMES` to a distinct colon-separated subset of
-`node:bun:deno:chromium` for a narrow comparison. Use all runtimes before retaining a change.
+`node:bun:chromium:deno:node-jitless` for a narrow comparison. Use all runtimes before retaining a change.
+Set `UUID_SLUG_COMPARE_NODE_EXECUTABLE` to compare with a specific Node release; the driver prints
+the observed version before measurement.
+The current worktree owns the comparison corpus and drivers; packed revisions supply only the code
+under test. A baseline must not remove the newer case intended to distinguish it.

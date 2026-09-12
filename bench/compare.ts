@@ -11,13 +11,20 @@ import { command } from "../scripts/command";
 import { medianConfidence95 } from "./statistics";
 
 type Revision = "baseline" | "candidate";
-type Runtime = "node" | "bun" | "deno" | "chromium";
-const RUNTIMES = ["node", "bun", "deno", "chromium"] as const satisfies readonly Runtime[];
+type Runtime = "node" | "bun" | "chromium" | "deno" | "node-jitless";
+type ArtifactRuntime = Exclude<Runtime, "node-jitless">;
+const RUNTIMES = [
+  "node",
+  "bun",
+  "chromium",
+  "deno",
+  "node-jitless",
+] as const satisfies readonly Runtime[];
 
 interface ArtifactSet {
-  readonly api: Readonly<Record<Runtime, string>>;
-  readonly privateAlphabetApi: Readonly<Record<Runtime, string>>;
-  readonly privateV4Api: Readonly<Record<Runtime, string>>;
+  readonly api: Readonly<Record<ArtifactRuntime, string>>;
+  readonly privateAlphabetApi: Readonly<Record<ArtifactRuntime, string>>;
+  readonly privateV4Api: Readonly<Record<ArtifactRuntime, string>>;
 }
 
 interface ProfileRow {
@@ -37,6 +44,7 @@ const rounds = Number(process.env.UUID_SLUG_COMPARE_ROUNDS ?? (smoke ? 2 : 6));
 const duration = process.env.UUID_SLUG_PROFILE_MS ?? (smoke ? "1" : "5");
 const warmup = process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (smoke ? "2" : "16");
 const filter = process.env.UUID_SLUG_PROFILE_FILTER ?? "";
+const nodeExecutable = process.env.UUID_SLUG_COMPARE_NODE_EXECUTABLE ?? "node";
 const selectedRuntimes = (process.env.UUID_SLUG_COMPARE_RUNTIMES?.split(":").filter(Boolean) ?? [
   ...RUNTIMES,
 ]) as Runtime[];
@@ -47,7 +55,9 @@ if (
   new Set(selectedRuntimes).size !== selectedRuntimes.length ||
   selectedRuntimes.some((runtime) => !RUNTIMES.includes(runtime))
 )
-  throw new Error("UUID_SLUG_COMPARE_RUNTIMES must list distinct node:bun:deno:chromium values");
+  throw new Error(
+    "UUID_SLUG_COMPARE_RUNTIMES must list distinct node:bun:chromium:deno:node-jitless values",
+  );
 
 function shuffledRuntimes(seed: number): Runtime[] {
   const values = [...selectedRuntimes];
@@ -63,6 +73,9 @@ function shuffledRuntimes(seed: number): Runtime[] {
   }
   return values;
 }
+
+const artifactRuntime = (runtime: Runtime): ArtifactRuntime =>
+  runtime === "node-jitless" ? "node" : runtime;
 
 async function packArtifacts(root: string, outdir: string): Promise<ArtifactSet> {
   await command("bun", [join(project, "node_modules/.bin/tsdown")], root);
@@ -189,26 +202,50 @@ async function runHost(
   privateAlphabetApi: string,
   privateV4Api: string,
 ) {
-  const args = runtime === "deno" ? ["run", "--allow-env", "--allow-read", driver] : [driver];
+  const args =
+    runtime === "deno"
+      ? ["run", "--allow-env", "--allow-read", driver]
+      : runtime === "node-jitless"
+        ? ["--jitless", driver]
+        : [driver];
   return parseHost(
-    await command(runtime, args, project, {
-      UUID_SLUG_PROFILE_FILTER: filter,
-      UUID_SLUG_PROFILE_ALPHABET_MODULE: pathToFileURL(privateAlphabetApi).href,
-      UUID_SLUG_PROFILE_MODULE: pathToFileURL(api).href,
-      UUID_SLUG_PROFILE_PRIVATE_MODULE: pathToFileURL(privateV4Api).href,
-      UUID_SLUG_PROFILE_MS: duration,
-      UUID_SLUG_PROFILE_SAMPLES: "1",
-      UUID_SLUG_PROFILE_WARMUP_MS: warmup,
-    }),
+    await command(
+      runtime === "node" || runtime === "node-jitless" ? nodeExecutable : runtime,
+      args,
+      project,
+      {
+        UUID_SLUG_PROFILE_FILTER: filter,
+        UUID_SLUG_PROFILE_ALPHABET_MODULE: pathToFileURL(privateAlphabetApi).href,
+        UUID_SLUG_PROFILE_MODULE: pathToFileURL(api).href,
+        UUID_SLUG_PROFILE_PRIVATE_MODULE: pathToFileURL(privateV4Api).href,
+        UUID_SLUG_PROFILE_MS: duration,
+        UUID_SLUG_PROFILE_SAMPLES: "1",
+        UUID_SLUG_PROFILE_WARMUP_MS: warmup,
+      },
+    ),
   );
 }
 
 async function runBrowser(page: Page, origin: string, revision: Revision): Promise<ProfileRow[]> {
+  const errors: Error[] = [];
+  const onPageError = (error: Error) => errors.push(error);
+  page.on("pageerror", onPageError);
   await page.goto(
     `${origin}?duration=${duration}&warmup=${warmup}&samples=1&private=1&filter=${encodeURIComponent(filter)}`,
   );
-  await page.addScriptTag({ type: "module", url: `/${revision}.mjs` });
-  await page.waitForFunction(() => "runUuidSlugProfile" in globalThis);
+  try {
+    await page.addScriptTag({ type: "module", url: `/${revision}.mjs` });
+    await page.waitForFunction(() => "runUuidSlugProfile" in globalThis, undefined, {
+      timeout: 5_000,
+    });
+  } catch (cause) {
+    const detail = errors.map((error) => error.message).join("\n");
+    throw new Error(`Browser ${revision} profile did not prepare${detail ? `:\n${detail}` : ""}`, {
+      cause,
+    });
+  } finally {
+    page.off("pageerror", onPageError);
+  }
   const rows: unknown = await page.evaluate(async () => {
     const run = (
       globalThis as typeof globalThis & {
@@ -280,6 +317,10 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
 }
 
 async function main(): Promise<void> {
+  if (selectedRuntimes.includes("node") || selectedRuntimes.includes("node-jitless"))
+    console.error(
+      `Node comparison runtime: ${await command(nodeExecutable, ["--version"], project)}`,
+    );
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-compare-"));
   const baselineRoot = join(scratch, "baseline");
   const candidateRoot = candidateRef ? join(scratch, "candidate") : project;
@@ -292,7 +333,7 @@ async function main(): Promise<void> {
     }
     const baselineOut = join(scratch, "baseline-artifacts");
     const candidateOut = join(scratch, "candidate-artifacts");
-    const driverRoot = baselineRoot;
+    const driverRoot = project;
     const [baseline, candidate, driver] = await Promise.all([
       packArtifacts(baselineRoot, baselineOut),
       packArtifacts(candidateRoot, candidateOut),
@@ -341,15 +382,17 @@ async function main(): Promise<void> {
           round % 2 ? ["candidate", "baseline"] : ["baseline", "candidate"];
         for (const [order, runtime] of runtimeOrder.entries()) {
           for (const revision of revisionOrder) {
+            const artifacts = revision === "baseline" ? baseline : candidate;
+            const target = artifactRuntime(runtime);
             const rows =
               runtime === "chromium"
                 ? await runBrowser(page, server.url.href, revision)
                 : await runHost(
                     runtime,
                     driver,
-                    (revision === "baseline" ? baseline : candidate).api[runtime],
-                    (revision === "baseline" ? baseline : candidate).privateAlphabetApi[runtime],
-                    (revision === "baseline" ? baseline : candidate).privateV4Api[runtime],
+                    artifacts.api[target],
+                    artifacts.privateAlphabetApi[target],
+                    artifacts.privateV4Api[target],
                   );
             emit(runtime, revision, round, order, rows, observations);
           }
