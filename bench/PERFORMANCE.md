@@ -150,6 +150,10 @@ put all masked median ratios within 3.3% of 1.0 under the same warm-up policy.
   about 200 packed bytes. Two 24-round replays found no Bun or Node gain; Chromium routes regressed
   in both runs. Keep the byte-order helpers. Retest only if generated code shows a primary engine no
   longer inlines or specializes these fixed-offset calls.
+- `DataView` replaced shift-based Feistel word I/O, creating one input view and reusing it for
+  in-place output or creating one output view. Two 24-round replays made Node routes 18–46%, Bun
+  29–69%, Deno 6–14%, and Chromium 47–110% slower. Keep shift-based helpers. Retest only if views can
+  be reused safely across varying caller buffers or target engines eliminate their whole-route cost.
 - Fixed-offset expansion of the four-word check-tag loop produced no consistent runtime win. Selected
   masked routes regressed by up to 4.9% on Node, 8.2% on Deno, and 13.9% on Chrome.
 - Inlining both compression rounds removed the counted loop but duplicated its arithmetic. Two

@@ -100,7 +100,8 @@ protection, and no default or fallback may select it.
   Bun or Node route gain, while scalar selection added about 170 packed bytes.
 - [x] Reject inlined fixed-offset big-endian I/O: two packed 24-round replays found no Bun or Node
   gain, while source duplication added about 200 packed bytes and Chromium regressions.
-- [ ] Falsify shifts versus `DataView` for big-endian word I/O on every runtime.
+- [x] Reject `DataView` big-endian I/O: two packed 24-round replays reproduced 18–46% Node,
+  29–69% Bun, 6–14% Deno, and 47–110% Chromium regressions.
 - [x] Reject fixed-offset check-tag unrolling: it produced no cross-runtime win and regressed
   selected Node, Deno, and Chromium masked routes by 4.9%, 8.2%, and 13.9%, respectively.
 - [ ] Falsify a separate tag pass versus tag accumulation during the mandatory input read.
