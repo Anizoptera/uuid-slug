@@ -62,9 +62,9 @@ Run this review after every Bun or Deno version change and before periodic runti
 2. Probe each candidate on every installed runtime and record the exact runtime version. Check the
    callable shape, output, ownership, errors, limits, and sync or async behavior needed by this
    package. A property check alone is insufficient; equal names can hide different semantics.
-3. Detect the capability, never the runtime name. Probe once at module load. Treat a missing method
-   and a method that rejects the required semantics as unavailable; neither may create repeated
-   exception-driven fallback.
+3. Detect capability first and probe once at module load. Use runtime identity only when repeated
+   public-route measurements show that equal semantics need different implementations. Treat a
+   missing or unsuitable method as unavailable; never use repeated exception-driven fallback.
 4. Run the selected path and compatible fallback through the same public-route corpus. Prove wire
    results, errors, ownership, and resource behavior before comparing speed. Run decision-relevant
    measurements twice and apply the runtime priority ladder above.
