@@ -217,7 +217,8 @@ protection, and no default or fallback may select it.
   the cooperative path schedules no host task below its measured deadline and yields by elapsed work,
   while a size threshold would misclassify the same workload across runtimes.
 - [x] Keep 256-call profiler batches. Geometric 1–2048-call profiles showed smaller batches expose
-  clock domination, while 2048 crossed the 4 ms blocking boundary on every runtime's slow route.
+  clock domination, while 2048 crossed the 4 ms blocking boundary on every runtime's slow route;
+  Bun 1.4.2 replays found no route-throughput gain at 512 to justify doubling batch exposure.
 - [x] Use 16 ms profiler warm-up. Bun 1.4.2 reached the same measured tier at 16, 20, and 64 ms;
   identical-code comparisons found no bias, so longer setup had no reproduced decision value.
 - [x] Reject a duplicated fixed-eight-byte scalar HalfSipHash path: it improved Bun masking by 2–4%,
@@ -227,6 +228,8 @@ protection, and no default or fallback may select it.
 
 - [ ] Replay every retained Bun-sensitive optimization and harness boundary on Bun 1.4.2; preserve
   prior 1.4.1 provenance and supersede any conclusion whose direction or boundary changes.
+- [ ] Falsify the untimed 2048-call post-warm-up priming batch in Node/Bun and Chromium profiling;
+  remove or reduce it if it adds no repeatable stability beyond the completed warm-up.
 - [ ] Capture alternating warm baselines for generation: v4/v7, string/bytes/slug, explicit time,
   portable generator, native generator, caller-owned output, and both slug alphabets.
 - [ ] Capture alternating warm baselines for conversion and guards: UUID parse/format, direct slug

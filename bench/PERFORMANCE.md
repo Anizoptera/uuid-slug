@@ -561,6 +561,12 @@ batch-size surface was rejected because it would let unrelated runs silently use
 retest the fixed value if a representative operation exceeds one millisecond per batch or clock cost
 becomes material at 256.
 
+Bun 1.4.2 triggered that retest. Two 14-sample, 20 ms replays compared 128, 256, and 512 calls after a
+geometric 16–2048 screen. Conversion and 16-key decode throughput did not improve above 128 calls;
+256 reduced control cost from 2.11–2.12 ns to 1.74–1.81 ns, while 512 only reduced it to 1.56–1.63 ns.
+The slow route reached 1.40–1.42 ms at 256 and 1.80–2.05 ms at 512; 2048 reached 4.72 ms. Keep 256 for
+lower harness cost than 128 without spending the responsiveness headroom that 512 and 2048 consume.
+
 ### Profiler warm-up
 
 Use a 16 ms per-case warm-up. Identical packed-code comparisons on 2026-09-12 varied warm-up through
