@@ -57,11 +57,15 @@ export const BASE32HEX: Alphabet = alphabet(
 
 // Native encoding is strict on output; decoding stays here because it must reject aliases,
 // whitespace and nonzero padding that platform decoders may accept.
-const nativeToBase64 = (
+const denoVersion = (globalThis as { Deno?: { version?: { deno?: string } } }).Deno?.version?.deno;
+const availableNativeToBase64 = (
   Uint8Array.prototype as {
     toBase64?: (options: { alphabet: "base64url"; omitPadding: boolean }) => string;
   }
 ).toBase64;
+// Deno 2.9.6 implements this capability but takes longer than the fixed 16-byte encoder. Treat
+// that implementation as unavailable until a Deno update overturns the repeated public-route result.
+const nativeToBase64 = denoVersion === undefined ? availableNativeToBase64 : undefined;
 export const hasNativeBase64urlEncoder: boolean = nativeToBase64 !== undefined;
 const BASE64_OPTIONS = { alphabet: "base64url", omitPadding: true } as const;
 

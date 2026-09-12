@@ -498,12 +498,11 @@ interval excluded parity in both replays. Node 24.20.0 was unresolved because bo
 the fallback. Remove native delegation only if a supported runtime reproduces a complete-route loss
 or changes the strict output contract.
 
-A Bun 1.4.2 and Chromium 153 recheck preserved that decision: Bun's fallback was 57–96% slower in
+A Bun 1.4.2 and Chromium 153 recheck preserved native selection: Bun's fallback was 57–96% slower in
 both replays, while Chromium remained unresolved. Deno 2.9.6 reversed its earlier result and made
-the fallback 26–27% faster. Bun outranks Deno, and both consume the same capability-selected module;
-a Deno-only build branch would add a distribution contract solely for this speed difference. Keep
-the shared native path. Reopen if Deno becomes a higher-priority route, an existing package seam can
-select the fallback without a new public condition, or Bun no longer loses materially.
+the fallback 26–27% faster. Detect Deno once at module load and treat its native method as
+unavailable; this preserves the default build and lets every other host select by capability.
+Recheck the exception after a Deno update and remove it when native no longer loses materially.
 
 ### Fixed-size portable base64url encoding
 
