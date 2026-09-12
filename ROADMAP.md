@@ -76,7 +76,8 @@ protection, and no default or fallback may select it.
   reproducible Bun or Node gain, while direct duplication increased the hash core.
 - [x] Reject unrolled HalfSipHash finalization rounds: two packed 24-round replays found no
   repeatable Bun or Node gain, while straight-line duplication enlarged the hash core.
-- [ ] Falsify fixed-length dispatch inside the existing hash function without scalar arguments.
+- [x] Reject fixed-length dispatch inside the existing hash function: two packed 24-round replays
+  reproduced 3–7% regressions across major Node masking routes.
 - [ ] Falsify scalar Feistel message arguments without duplicating hash rounds.
 - [ ] Falsify `Int32Array` versus ordinary numeric scratch while preserving signed 32-bit coercion.
 - [ ] Falsify caller scratch versus module scratch versus closure-owned scratch for reentrancy and JIT locality.

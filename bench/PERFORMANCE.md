@@ -112,6 +112,9 @@ put all masked median ratios within 3.3% of 1.0 under the same warm-up policy.
 - A separate fixed-eight-byte HalfSipHash function removed continuation, tail, length, and input-array
   handling from Feistel rounds. Bun improved by 2–4%; Node and Deno stayed near the control band;
   Chrome's built-in masked routes regressed by 8.7–19.9%. The function also duplicated the hash core.
+- A fixed-eight-byte branch inside the shared hash skipped tail, continuation, and block-limit setup
+  without changing its arguments or rounds. Two 24-round replays made major Node masking routes
+  3–7% slower; Deno and Chromium also regressed, so one setup path remains.
 - Fixed-offset expansion of the four-word check-tag loop produced no consistent runtime win. Selected
   masked routes regressed by up to 4.9% on Node, 8.2% on Deno, and 13.9% on Chrome.
 - Inlining both compression rounds removed the counted loop but duplicated its arithmetic. Two
