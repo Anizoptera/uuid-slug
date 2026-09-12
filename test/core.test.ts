@@ -7,7 +7,6 @@ import {
   createUuidV7Mask,
   createUuidV7SlugCodec as createCodec,
   extractUuidV7Timestamp,
-  isUuidSlug,
   isUuidSlugError,
   uuidToBytes,
   UUID_V7_TEST_MASK,
@@ -403,12 +402,8 @@ describe("plain-slug migration", () => {
   });
 
   it("returns a base32hex slug it accepted as itself, not as a base64url one", () => {
-    // `validateTimestamp` used to declare a masked v7 slug even though plain migration can
-    // while this path hands back a 26-character base32hex string, so the declared type was false
-    // and an exact base64url check on the result was `false`. The behaviour is correct:
-    // whose own alphabet is base32hex has exactly these legacy ids, which is what the flag is for.
-    // The signature is generic now, so the value is returned at the type it arrived as; `tsc` is
-    // what checks that half. This pins the behaviour the type had to be made honest about.
+    // Plain migration accepts both direct alphabets. Returning the original spelling preserves
+    // storage identity; the packed type fixture separately proves that the input type is retained.
     const legacy = String(uuidToSlug(SAMPLE_V7_A, "base32hex"));
     expect(legacy).toHaveLength(26);
     // `now` pinned to the sample's own instant, so the timestamp window is satisfied and the case
@@ -420,7 +415,6 @@ describe("plain-slug migration", () => {
         referenceUnixMs: minted,
       }),
     ).toBe(legacy);
-    expect(legacy.length === 22 && isUuidSlug(legacy)).toBe(false);
   });
 });
 

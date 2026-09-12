@@ -156,13 +156,13 @@ describe("bit-packing codec", () => {
   });
 
   it.each([
-    ["", false],
-    [null, false],
-    [undefined, false],
-    ["AAAA", false],
-    ["AAAAAAAAcACAAAAAAAAAAA", true],
-  ])("base64url UUID slug predicate rejects %o when expected=%s", (value, expected) => {
-    expect(typeof value === "string" && value.length === 22 && isUuidSlug(value)).toBe(expected);
+    ["rejects an empty string", "", false],
+    ["rejects null", null, false],
+    ["rejects undefined", undefined, false],
+    ["rejects the wrong length", "AAAA", false],
+    ["accepts a canonical slug", "AAAAAAAAcACAAAAAAAAAAA", true],
+  ])("base64url UUID slug predicate %s", (_case, value, expected) => {
+    expect(isUuidSlug(value)).toBe(expected);
   });
 });
 
