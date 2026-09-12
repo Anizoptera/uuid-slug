@@ -123,7 +123,7 @@ unless the maintainer separately changes the HLD.
 - [x] Isolate Node's unresolved mixed-workload parser slowdown by varying only preceding operation
   families and order. A product change requires a repeatable public workload mechanism, not a
   benchmark-order artifact; close the task if no code-shape candidate predicts and removes it.
-- [ ] Test a subarray-free offset byte-to-UUID formatter against native and portable formatting.
+- [x] Test a subarray-free offset byte-to-UUID formatter against native and portable formatting.
   Vary exact, offset, oversized, and caller-supplied buffers; reject unless removing the view yields
   a repeated complete-route win without duplicating the formatter.
 - [ ] Test packed 32-bit UUID equality against byte loops where exact 16-byte identity dominates.

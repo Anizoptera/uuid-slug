@@ -173,6 +173,21 @@ try {
     errors: 0,
   });
   if (hasHex) assert.equal(counts.hex, 1, "available native hex must be used once");
+  into.set(bytes, 4);
+  check("small offset UUID text conversion", () => api.bytesToUuid(into, 4), {
+    buffers: 0,
+    views: 0,
+    errors: 0,
+  });
+  if (hasHex) assert.equal(counts.hex, 1, "small offsets must use one bounded native hex call");
+  const oversized = new Uint8Array(256);
+  oversized.set(bytes, 120);
+  check("oversized offset UUID text conversion", () => api.bytesToUuid(oversized, 120), {
+    buffers: 0,
+    views: hasHex ? 1 : 0,
+    errors: 0,
+  });
+  if (hasHex) assert.equal(counts.hex, 1, "oversized offsets must convert only the UUID window");
   check("exact slug formatting", () => api.bytesToSlug(bytes), {
     buffers: 0,
     views: 0,

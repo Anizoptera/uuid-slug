@@ -920,6 +920,17 @@ replay was no faster than the precheck on Node and was slower on Bun. It duplica
 syntax loop while mixed-valid intervals still included no change. Keep one grammar validator and
 the cheap version/variant precheck; reconsider only if valid-heavy traffic regresses on a later engine.
 
+Native offset UUID formatting converts the whole buffer only through 32 bytes; larger buffers keep a
+16-byte view so work cannot scale with unrelated caller data. Direct byte formatting was 2.1–3.2
+times slower in Node 26.8.2 and Bun 1.4.2; allocating a view or copy kept the avoidable object, while
+unbounded whole-buffer conversion became 1.7–17 times slower at 256–4,096 bytes. Three packed
+replays measured the bounded offset route at 83–87% of baseline on Node, 80–87% on Bun, 83–86% on
+Chromium 153, and 81–82% on Deno 2.9.6. Two Node JITless replays measured 92–96%; a noisy third was
+unresolved. Exact-buffer intervals included no change. Resource probes observe one native hex call
+and no view at 24 bytes, but one view at 256 bytes; lowering the boundary makes the small-buffer probe
+fail. Reconsider 32 only when runtime primitives change or wider caller-buffer distributions justify
+a new measured crossover.
+
 Node v26.8.2 profiling combines process counters, `GCProfiler`, V8 heap/code/space state, Inspector
 CPU and allocation samples, heap snapshots, V8 ticks, and trace events. Each source answers a
 different question; correlation is evidence, while two APIs over the same V8 sampler are not

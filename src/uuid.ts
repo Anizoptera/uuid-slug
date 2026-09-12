@@ -162,10 +162,15 @@ export function bytesToUuid(bytes: Uint8Array, byteOffset = 0): UuidString | Uui
   const badRange = checkByteRange(bytes, byteOffset, 16);
   if (badRange) return badRange;
   if (nativeToHex) {
-    const hex = nativeToHex.call(
-      bytes.length === 16 ? bytes : bytes.subarray(byteOffset, byteOffset + 16),
-    );
-    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}` as UuidString;
+    let offset = 0;
+    let hex: string;
+    if (bytes.length <= 32) {
+      hex = nativeToHex.call(bytes);
+      offset = byteOffset * 2;
+    } else {
+      hex = nativeToHex.call(bytes.subarray(byteOffset, byteOffset + 16));
+    }
+    return `${hex.slice(offset, offset + 8)}-${hex.slice(offset + 8, offset + 12)}-${hex.slice(offset + 12, offset + 16)}-${hex.slice(offset + 16, offset + 20)}-${hex.slice(offset + 20, offset + 32)}` as UuidString;
   }
   let out = "";
   for (let i = 0; i < 16; i += 1) {
