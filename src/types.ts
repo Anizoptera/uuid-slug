@@ -6,7 +6,7 @@ import type { SlugAlphabet } from "./uuid";
 declare const brand: unique symbol;
 declare const maskSchemaBrand: unique symbol;
 
-/** Accumulate validated value kinds without changing their runtime representation. */
+/* Brands accumulate validated value kinds without changing their runtime representation. */
 export type Brand<Value, Name extends string> = Value & {
   readonly [brand]: { [BrandName in Name]: true };
 };
@@ -32,7 +32,7 @@ export type SentinelUuidV7Slug = Brand<UuidV7Slug, "SentinelUuidV7Slug">;
 /** The result of masked encoding: a 22/27-character payload or a 22/26-character sentinel. */
 export type UuidV7CodecSlug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 
-/**
+/*
  * Reject a captured brand that proves an input cannot satisfy an operation. Bare strings remain
  * valid because widening erases their child brand, leaving runtime validation as the only sound
  * judge; tuple wrapping makes one invalid member reject the entire known union.
@@ -78,8 +78,8 @@ export interface UuidV7TimestampWindow {
 }
 
 /**
- * Generate UUIDv7 values with one owned clock and sequence state. Methods use
- * `this: void` so callers can detach them safely and implementations cannot require receiver state.
+ * Generate UUIDv7 values with one owned clock and sequence state. Methods may be detached and
+ * called without binding.
  */
 export interface UuidV7Generator {
   /** Generate a canonical UUIDv7 string for the current clock reading. */
@@ -94,7 +94,7 @@ export interface UuidV7Generator {
   ): Output | UuidSlugError;
   /**
    * Generate at a whole Unix millisecond in `0..2^48-1` without changing current-time sequence
-   * state. The timestamp comes first so callback indices cannot become timestamps by accident.
+   * state.
    */
   generateUuidV7At(this: void, unixMs: number): UuidV7String | UuidSlugError;
   /** Generate package-owned bytes at an explicit millisecond without changing sequence state. */
@@ -191,7 +191,7 @@ type EnabledMigrationOption<
   Option extends keyof UuidSlugMigrationOptions,
 > = Option extends keyof Options ? (true extends Options[Option] ? Option : never) : never;
 
-/** Internal projection used to keep each migration reader's selector type honest. */
+// Projects enabled options into the only format selectors that decoder can accept.
 export type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
   | "current-mask"
   | (EnabledMigrationOption<Options, "originalMask"> extends never ? never : "original-mask")
@@ -224,14 +224,13 @@ export interface UuidSlugMigrationDecoder<
 /** Configure one immutable owner for UUIDv7 slug encoding, rotation, and sentinels. */
 export interface UuidV7SlugCodecOptions {
   /**
-   * Decode-only schemas tried after `mask`, in caller order. Seed options are accepted directly so
-   * ordinary key rotation needs no separate constructor or error branch. Keep the list short:
-   * every schema adds work and another chance for a random input to pass its 16-bit check.
+   * Decode-only schemas tried after `mask`, in caller order. Each item accepts a mask handle or its
+   * construction options. Keep the list short: every schema adds decoding work and another chance
+   * for a random input to pass its 16-bit check.
    */
   readonly previousMasks?: readonly (UuidV7Mask | UuidV7MaskOptions)[];
   /**
-   * The only writer schema and the first reader. Keeping it separate from `previousMasks` prevents
-   * rotation from leaving an old key as the writer. Supply a private seed or explicitly choose
+   * The writer schema and first reader. Supply a private seed or explicitly choose
    * `UUID_V7_TEST_MASK` for public test data.
    */
   readonly mask: UuidV7Mask | UuidV7MaskOptions;
@@ -247,9 +246,8 @@ export interface UuidV7SlugCodecOptions {
 }
 
 /**
- * Own the keys, sentinels, writer spelling, and byte source used by masked operations. Plain
- * conversions stay module-level because they need none of that state. Methods use `this: void` so
- * callers can detach them without binding and implementations cannot depend on a receiver.
+ * Own the keys, sentinels, writer spelling, and byte source used by masked operations. Methods may
+ * be detached and called without binding.
  */
 export interface UuidV7SlugCodec {
   /** Frozen reserved values in the codec's configured output alphabet. */
@@ -267,8 +265,8 @@ export interface UuidV7SlugCodec {
   /**
    * Mask one UUIDv7 supplied as canonical text or 16 bytes, or return its raw sentinel slug. Byte
    * input stays binary. Other UUID versions do not have the spare constant bits that keep this
-   * checked format at 22 base64url characters. Generic capture rejects known slug and UUIDv4
-   * brands; bare external values remain runtime-validated.
+   * checked format at 22 base64url characters. TypeScript rejects known slug and UUIDv4 values;
+   * unbranded external values are validated when called.
    */
   encodeUuid<Input extends string | Uint8Array>(
     this: void,
@@ -276,16 +274,15 @@ export interface UuidV7SlugCodec {
   ): UuidV7CodecSlug | UuidSlugError;
   /**
    * Return the first sentinel or schema candidate in configured order; this does not prove issuance.
-   * Generic capture rejects known UUID text; slug brands remain accepted because overlapping
-   * spellings do not prove which encoder produced them.
+   * TypeScript rejects known UUID text. Slug values remain accepted because overlapping spellings
+   * do not prove which encoder produced them.
    */
   decodeSlug<Input extends string>(
     this: void,
     slug: SlugStringInput<Input>,
   ): UuidV7String | UuidSlugError;
   /**
-   * Decode to package-owned plain UUIDv7 bytes without formatting intermediate UUID text.
-   * Use this form when the UUID remains binary; text decoding stays a separate unambiguous method.
+   * Decode to package-owned plain UUIDv7 bytes. Use this form when the caller needs binary output.
    */
   decodeSlugToBytes<Input extends string>(
     this: void,
@@ -301,8 +298,8 @@ export interface UuidV7SlugCodec {
   /**
    * Decode with this codec, apply the symmetric timestamp window, and return the same spelling.
    * The check establishes timestamp sanity, not expiry, authentication, replay safety, or issuance.
-   * Generic capture rejects known UUID text; slug brands remain accepted because only decoding with
-   * this codec can resolve their overlapping spellings.
+   * TypeScript rejects known UUID text. Slug values remain accepted because only decoding with this
+   * codec can resolve their overlapping spellings.
    */
   validateSlugTimestamp<Input extends string>(
     this: void,

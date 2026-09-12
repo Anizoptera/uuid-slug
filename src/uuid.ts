@@ -54,8 +54,7 @@ const UUID_BYTE_OFFSETS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32
  * The alphabets a plain slug may be written in. base64url is the default and the shortest;
  * base32hex costs four more characters and buys the one property base64url cannot offer: its
  * characters are in ASCII order, so base32hex slugs of UUIDv7s sort chronologically as plain
- * strings. Only the lowercase spelling decodes — the table is built from `chars` — so slugs have
- * no second spelling, as everywhere else in this format.
+ * strings. Only the lowercase spelling decodes, so every value has one canonical spelling.
  *
  * Masked output selects its alphabet independently: base32hex preserves case-insensitive filenames,
  * but sorting masked ciphertext does not recover chronological order.
@@ -121,8 +120,7 @@ function uuidByteAt(uuid: string, byteIndex: number): number {
 
 /**
  * Convert one canonical lowercase UUID to 16 bytes; failure leaves caller storage unchanged.
- * Generic capture rejects known slug brands, while bare strings stay open to runtime validation
- * because widening has erased their provenance.
+ * Known slug values are rejected by TypeScript, while unbranded strings are validated when called.
  */
 export function uuidToBytes<Input extends string>(
   uuid: UuidStringInput<Input>,
@@ -313,8 +311,8 @@ export function bytesToSlug(
 }
 
 /**
- * Parse either direct-slug length into 16 bytes; failure leaves caller storage unchanged. Generic
- * capture rejects known UUID and masked brands; bare strings still need runtime validation.
+ * Parse either direct-slug length into 16 bytes; failure leaves caller storage unchanged.
+ * TypeScript rejects known UUID and masked values; unbranded strings are validated when called.
  */
 export function slugToBytes<Input extends string>(
   slug: DirectUuidSlugInput<Input>,
@@ -353,8 +351,8 @@ export function slugToBytes(
 }
 
 /**
- * Validate UUID text and encode the same 128-bit value as a direct slug. Generic capture rejects a
- * known slug brand but accepts bare strings whose provenance only runtime parsing can establish.
+ * Validate UUID text and encode the same 128-bit value as a direct slug. TypeScript rejects known
+ * slug values; unbranded strings are validated when called.
  */
 export function uuidToSlug<Input extends string>(
   uuid: UuidStringInput<Input>,
@@ -373,8 +371,8 @@ export function uuidToSlug(
 }
 
 /**
- * Validate a direct slug, infer its alphabet from length, and return canonical UUID text. Generic
- * capture rejects known UUID and masked brands but accepts external strings whose origin is unknown.
+ * Validate a direct slug, infer its alphabet from length, and return canonical UUID text.
+ * TypeScript rejects known UUID and masked values; unbranded strings are validated when called.
  */
 export function slugToUuid<Input extends string>(
   slug: DirectUuidSlugInput<Input>,
@@ -421,9 +419,8 @@ export function isUuidV7Slug(value: unknown): value is UuidV7Slug {
 /**
  * Read the 48-bit Unix millisecond from UUIDv7 bytes at `byteOffset`.
  * Other versions are rejected because their first six bytes are not a timestamp.
- * Generic capture rejects known UUIDv4 bytes; unbranded bytes still require the runtime check.
- * The range check runs first so truncated storage reports `invalid_buffer`, not a fictitious UUID
- * version read from a missing byte.
+ * TypeScript rejects known UUIDv4 bytes; unbranded bytes are validated when called. Truncated
+ * storage returns `invalid_buffer` rather than `invalid_uuid_version`.
  */
 export function extractUuidV7Timestamp<Input extends Uint8Array>(
   bytes: UuidV7BytesInput<Input>,

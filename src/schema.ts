@@ -260,7 +260,6 @@ function* cooperativeKeys(
 /**
  * Derive the same schema cooperatively. Options and byte seeds are captured before suspension;
  * cancellation stops work and returns `aborted` with the signal reason as its cause.
- * Initial copying, allocation, GC, and host scheduling are outside the work-slice target.
  */
 export async function createUuidV7MaskAsync(
   options: AsyncUuidV7MaskOptions,

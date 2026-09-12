@@ -80,6 +80,9 @@ export function generatePortableUuidV4(): UuidV4String | UuidSlugError {
 
 /** Generate a canonical UUIDv4 string with platform cryptographic randomness. */
 export function generateUuidV4(): UuidV4String | UuidSlugError {
+  // Native generation is useful only for text, which the host returns directly. Byte and slug
+  // routes stay portable because parsing native text adds work and complicates atomic output.
+  // Recheck each output form when host APIs change; bench/PERFORMANCE.md owns the evidence.
   return runtime.uuidV4
     ? nativeOrFallback(
         runtime.uuidV4,

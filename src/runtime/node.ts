@@ -19,7 +19,8 @@ import type { Runtime } from "./types";
 const nativeUuidV7: (() => string) | undefined = (crypto as { randomUUIDv7?: () => string })
   .randomUUIDv7;
 
-/** Node's native UTF-8 encoder materially reduces string-seed construction; see the measured boundary in `bench/PERFORMANCE.md`. */
+// Node's native UTF-8 encoder materially reduces string-seed construction; the portable adapter
+// remains the compatibility boundary. bench/PERFORMANCE.md owns the measured runtime scope.
 export const encodeUtf8 = (text: string): Uint8Array => Buffer.from(text, "utf8");
 
 const nodeRuntime: Runtime = {
@@ -37,6 +38,11 @@ const nodeRuntime: Runtime = {
   },
 };
 
-if (nativeUuidV7) nodeRuntime.uuidV7 = () => nativeUuidV7.call(crypto);
+if (nativeUuidV7) {
+  // Native text avoids portable entropy and formatting work. Other representations stay portable
+  // because converting native text back to bytes or base32 adds work; remeasure by output form when
+  // Node changes this API. bench/PERFORMANCE.md owns the runtime versions and comparisons.
+  nodeRuntime.uuidV7 = () => nativeUuidV7.call(crypto);
+}
 
 export const runtime = nodeRuntime;

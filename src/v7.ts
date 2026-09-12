@@ -279,9 +279,18 @@ export function createPortableUuidV7Generator(
   };
 }
 
+/*
+ * Join optional native text generation with the portable generator that owns every other output.
+ * The runtime hook stays live instead of being copied into a second cache: adapters already probe
+ * host support once, and repeated all-runtime comparisons found that capturing it slowed Deno's
+ * portable route. Reconsider only when profiles attribute material cost to this property dispatch.
+ * bench/PERFORMANCE.md owns the measurements and runtime versions.
+ */
 export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
   const fallback = createPortableUuidV7Generator({ fillRandom: runtime.fillRandom });
   function generateUuidV7() {
+    // Missing capability goes directly to portable text; a present capability is validated below
+    // because native exceptions or malformed values must degrade without weakening the result.
     if (!runtime.uuidV7) return fallback.generateUuidV7();
     return nativeOrFallback(
       runtime.uuidV7,

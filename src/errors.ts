@@ -135,7 +135,11 @@ export function failedFallback(
   });
 }
 
-/** Publish a native result only after validating it, otherwise preserve portable fallback errors. */
+/*
+ * Publish a valid native result without portable work; otherwise run the fallback exactly once.
+ * Validation costs one predicate but prevents a fast host shortcut from weakening package output,
+ * while aggregating dual failures preserves both causes without exception-driven success control.
+ */
 export function nativeOrFallback<Native, Result>(
   native: () => unknown,
   accepts: (value: unknown) => value is Native,

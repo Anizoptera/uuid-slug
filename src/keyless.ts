@@ -92,8 +92,6 @@ export function generateUuidV7BytesAt(
 /**
  * Generate a direct UUIDv7 slug. Lowercase base32hex sorts across different milliseconds;
  * base64url and values generated within one millisecond have no chronological sort guarantee.
- * Taking the alphabet here keeps the sortable spelling available without constructing a keyed
- * codec, matching the representation argument on `uuidToSlug`.
  */
 export function generateUuidV7Slug(
   alphabet: SlugAlphabet = "base64url",

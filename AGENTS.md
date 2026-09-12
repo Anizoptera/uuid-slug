@@ -67,6 +67,19 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Runtime boundaries and evidence
 
+- Document every performance-motivated function and branch inside its owning implementation. Use
+  ordinary code comments to state why the shape exists, the strongest live alternative it rejects,
+  the boundary where the choice stops applying, and the change that requires remeasurement. Public
+  JSDoc is only for external callers: accepted inputs, results, errors, effects, guarantees, and
+  usage decisions; it MUST NOT expose implementation choices or internal reasoning. Keep runtime
+  versions, numeric results, workloads, and statistical limits only in `bench/PERFORMANCE.md`; link
+  that owner from internal comments instead of copying volatile evidence. When behavior or dispatch
+  changes, re-read every comment in the changed frame and update or remove stale reasoning.
+- Any runtime production-behavior change requires fresh behavior, resource, benchmark, and profile
+  evidence for every affected runtime selection, output form, capability-present or capability-absent
+  path, and native-success, native-fallback, or dual-failure branch. An aggregate route cannot stand
+  in for a branch it does not prove. Extend the nearest injectable harness when an affected branch
+  cannot be selected directly; never infer its cost or coverage from another path.
 - Read `bench/README.md` before benchmark work. Scope exploratory comparisons with its maintained
   filters; run all applicable runtimes only after a candidate survives the focused mechanism test.
 - Rank performance evidence by current user value: latest stable Node Current and Bun first, latest

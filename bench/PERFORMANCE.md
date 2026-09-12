@@ -772,8 +772,11 @@ Do not add another capability cache around generation. Each adapter already prob
 APIs once at module evaluation and stores only supported hooks. Public calls perform one property
 dispatch through that selected runtime; this is not a repeated host-capability probe. Capturing a
 second copy inside each generator would duplicate state and hide later injected native failures from
-the same dispatcher used in production. Reconsider only if a profiler attributes material warm-route
-cost to the property dispatch rather than the native call, validation, fallback, or formatting.
+the same dispatcher used in production. Two six-round all-runtime comparisons on 2026-09-12 also
+measured the captured form 4.8% and 11.7% slower on Deno's portable string route; both 95% intervals
+excluded parity, while Node, Bun, Chromium, and Node JITless remained unresolved. Reconsider only if
+a profiler attributes material warm-route cost to the property dispatch rather than the native call,
+validation, fallback, or formatting.
 
 ### Portable UUIDv4 ownership paths
 
