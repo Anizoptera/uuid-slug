@@ -140,7 +140,7 @@ unless the maintainer separately changes the HLD.
   Keep the generic path only where variable length is public; require packed-route wins in both alphabets.
 - [x] Test scalar UUID formatting from four words against byte indexing and native `toHex`. Preserve
   offset-buffer behavior and reject any primary-runtime regression or duplicated format inventory.
-- [ ] Test generator counter state as packed scalars versus the current split words. Vary rollover,
+- [x] Test generator counter state as packed scalars versus the current split words. Vary rollover,
   clock rollback, reseed, native delegation, and caller-owned output before changing state shape.
 - [ ] Test random-pool refill size geometrically across syscall count, cache footprint, contention,
   latency tails, and discarded bytes; choose no fixed size from throughput alone.

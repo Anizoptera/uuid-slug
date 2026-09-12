@@ -591,11 +591,13 @@ Node portable routes by 3–21% and Bun routes by 6–42%. Bun's unrelated UUIDv
 8%, but every Bun v7 route lost more and Node independently showed the same direction. Reconsider
 bulk copy only if the copied region grows enough to amortize its call overhead.
 
-A single safe-integer sequence state was rejected in favor of separate 10-bit and 32-bit words. One
-24-round packed comparison improved Bun continuation byte routes by 3.5–4.3%, but regressed Node
-caller-owned continuation by 7.4% and rollback by 11.7%; each cited interval excluded no change.
-Packing simplifies increment and overflow, but every output then pays division to recover the high
-word. Reconsider it only if Node removes that complete-route loss.
+A single safe-integer sequence state was rejected in favor of separate 10-bit and 32-bit words.
+Two 12-round replays on 2026-09-12 made Bun continuation bytes 16–20% slower, advancing reseeds
+18–19% slower, rollback 17–19% slower, and explicit-time byte routes 36–47% slower. Node advancing
+reseeds improved 5–6%, but explicit-time byte routes regressed 5–8%. Packing simplifies increment
+and overflow, but every output pays division to recover the high word. Rollover, rollback, reseed,
+caller-owned output, and native fallback contracts passed their focused lanes. Reconsider only if
+primary engines remove the complete-route losses.
 
 Skipping `checkRange` for package-owned output at offset zero was rejected. In two 24-round packed
 comparisons, Bun ordinary owned bytes improved 7.8% in both replays. Node improved 5.2% once, then
