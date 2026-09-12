@@ -174,6 +174,8 @@ protection, and no default or fallback may select it.
   regressed Node caller-owned and rollback routes because every write had to split the 42-bit value.
 - [x] Reject bypassing range validation for owned UUIDv7 output at default offset: Bun improved,
   but Node's ordinary gain did not repeat and explicit-time owned output repeatedly regressed.
+- [x] Reject hoisting non-number clock rejection before truncation: every portable route stayed
+  statistically unresolved on all four runtimes, while the branch duplicated error construction.
 - [x] Split portable UUIDv4 generation by output ownership: package-owned output draws directly into
   its result; caller-owned output retains private staging and shows no primary-runtime regression.
 - [x] Select the portable UUIDv7 timestamp writer once per module: fixed word writes repeatedly

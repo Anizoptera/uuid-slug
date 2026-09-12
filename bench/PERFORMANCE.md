@@ -392,6 +392,11 @@ was unresolved, while Node explicit-time owned bytes regressed 5.1–5.4% in bot
 routes skipped the same check, so the conflicting Node result does not support a general mechanism
 win. Retain the shared direct check unless both Node routes improve without nested hot-path branches.
 
+Hoisting non-number clock rejection before truncation was rejected. An eight-round packed screen
+left every portable route statistically unresolved on Node, Bun, Deno, and Chromium, while the
+candidate duplicated the invalid-clock error construction. Retest only if a primary engine changes
+its treatment of repeated `typeof` checks on monomorphic numeric values.
+
 ### Portable UUIDv4 ownership paths
 
 Draw entropy directly into package-owned output. Keep caller-owned output on a separate path that
