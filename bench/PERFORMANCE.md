@@ -687,15 +687,13 @@ left every portable route statistically unresolved on Node, Bun, Deno, and Chrom
 candidate duplicated the invalid-clock error construction. Retest only if a primary engine changes
 its treatment of repeated `typeof` checks on monomorphic numeric values.
 
-The portable UUIDv7 frontier retains ten-byte initial draws, four-byte continuation draws, split
-sequence words, module-selected timestamp writes, direct caller-owned writes, and the shared UUID
-formatter. The measured alternatives covered draw size, refill reuse, packed sequence state, tail
-copy shapes, range branches, clock validation, and runtime-specific timestamp assembly. Each retained
-change had two packed replays on all four runtimes; the rejected shapes either lost a primary route
-or added code without a repeatable gain. Formatting remains shared because UUIDv7 has no distinct
-text contract that could remove its mandatory 16-byte state without duplicating byte assembly.
-Reopen this frontier only for a new mechanism that removes measured complete-route work while keeping
-entropy coverage, sequence transitions, atomic output, errors, and wire bytes unchanged.
+Portable UUIDv7 keeps ten-byte initial draws, four-byte continuation draws, split sequence words,
+module-selected timestamp writes, and direct caller-owned writes. These choices preserve its 42-bit
+randomized sequence, fresh 32-bit continuation tail, atomic failure, and caller-buffer contract.
+They do not establish an implementation frontier: the original candidate set omitted direct-string
+competitor designs and treated an earlier formatter result as independent of later hot-path changes.
+Re-run formatter and dispatch candidates after material surrounding changes, with the platform and
+fastest live competitor as external floors.
 
 Codec-construction alphabet wrappers were rejected. Four literal-alphabet wrappers let the codec
 select base64url or base32hex masking once, but still called the shared implementation. An
@@ -768,15 +766,11 @@ not prove its internal source. Bypassing native delegation failed the shared Nod
 tests on native output and dual-failure preservation. Retest delegation per output form if a host
 changes its native contract or a repeated complete-route comparison favors the portable path.
 
-Do not add another capability cache around generation. Each adapter already probes optional native
-APIs once at module evaluation and stores only supported hooks. Public calls perform one property
-dispatch through that selected runtime; this is not a repeated host-capability probe. Capturing a
-second copy inside each generator would duplicate state and hide later injected native failures from
-the same dispatcher used in production. Two six-round all-runtime comparisons on 2026-09-12 also
-measured the captured form 4.8% and 11.7% slower on Deno's portable string route; both 95% intervals
-excluded parity, while Node, Bun, Chromium, and Node JITless remained unresolved. Reconsider only if
-a profiler attributes material warm-route cost to the property dispatch rather than the native call,
-validation, fallback, or formatting.
+Validate each newly observed native generator once, then trust it while its function identity stays
+stable. This removes repeated canonical-text validation without hiding replacement adapters; native
+throws still enter the portable fallback on every call. The earlier captured-hook experiment retained
+per-call output validation, so it did not test this mechanism. Revalidate every output only if a host
+can intermittently violate its UUID contract without replacing the function.
 
 ### Portable UUIDv4 ownership paths
 
@@ -800,11 +794,11 @@ regressed Bun by 3.6–5.7%. The retained split duplicates the short guard and d
 both hot paths branch-free. Merge it if a primary runtime no longer improves owned output or if
 caller-owned output regresses reproducibly.
 
-An internal unchecked formatter removed range validation from the exact fallback but produced no
-distinguishable gain in a 24-round screen on any runtime. Keep one validated formatter until a
-string-assembly change improves the complete fallback rather than only removing its boundary check.
-A fixed template using the same byte-pair table produced no formatter win and made Node offset
-formatting 2.3% slower with its 95% median interval above no change; retain the compact loop.
+Use the unchecked formatter only behind the generator-owned 16-byte text buffer. The earlier isolated
+screen found no gain, but it omitted the allocation removal and direct competitor floor; the combined
+public route was retained after the competitor matrix exposed that interaction. A direct byte-pair
+formatter was re-screened after that discovery and lost on Chromium without closing Node or Deno, so
+engines with `Uint8Array.toHex` keep the native intermediate string.
 Replacing the entropy pool's copy-and-erase loop with `set(subarray)` plus ranged `fill` regressed
 UUIDv4 byte routes by 57–88% on Node, 60–95% on Bun, 20–108% on Deno, and 65–87% on Chromium.
 The allocated view and two native calls cost more than one 16-byte JavaScript loop.
@@ -1136,5 +1130,47 @@ lane with the same corpus and isolation.
 The benchmark harness runs only its independent child-process cases concurrently. On Bun 1.4.2,
 five-run medians fell from 655 ms to 266 ms for that file and from 889 ms to 693 ms for the complete
 Bun test lane. Keep parser and statistics cases serial; they do not wait and gain nothing from overlap.
+
+## UUID competitor audit
+
+Use `bun run bench:competitors` to compare the package's JavaScript paths with current npm
+alternatives. Each case validates its output before warm-up, rotates measurement order, yields
+between bounded samples, and fails on duplicate, missing, malformed, empty, or non-finite results.
+
+The retained set covers the most-downloaded packages and every distinct relevant strategy found:
+`uuid`, `@smithy/uuid`, `@lukeed/uuid`, `uuidv7`, `crypto-randomuuid`, `uuid-random`, `uniku`,
+`@kripod/uuidv7`, `uuidv7-js`, and `fastv7`. Official npm downloads for 2026-09-05 through
+2026-09-11 ranged from 206,849,086 for `uuid` to 293 for `fastv7`; low-download packages remain
+only where their strategy or API differs. The deprecated `uuidv4` wrapper and older duplicate
+generators add no independent implementation evidence.
+
+| Capability | Strongest retained alternatives | This package |
+| --- | --- | --- |
+| v4 generation | `uuid` and `uniku`: text and caller buffer; smaller packages: text or owned bytes | Text, owned bytes, caller buffer, direct slug |
+| v7 generation | `uuid` and `uniku`: text and caller buffer; `uuidv7`: text and owned object bytes | Text, owned bytes, caller buffer, direct or masked slug |
+| Controlled generation | `uuid`: entropy, timestamp, sequence; `uuidv7`: isolated generator and rollback policy | Injectable entropy and clock, isolated generator, explicit timestamp |
+| Inspection | `uuid`: validate/version; `uniku`: validate/convert/timestamp; `uuidv7`: parse/format/version/variant | Typed guards, parse/format, slug conversion, timestamp and window checks |
+| Timestamp extraction | `uuidv7-js`: validated v7 text; `uniku`: canonical text without v7 rejection | Validated v7 UUID text, bytes with offset, direct slugs, and codec-owned masked slugs |
+
+No measured gap justifies another public API. Batch helpers are a loop over generation and would add
+surface without new capability. NIL/MAX constants and permissive UUID spellings do not support this
+package's strict v4/v7 slug contract. `uuidv7` exposes finer clock-rollback policy; add such policy
+only if a consumer needs behavior other than the current monotonic generator contract.
+
+A full local run on 2026-09-12 used Node 24.21.0, Bun 1.4.2, Deno 2.9.6, and Chromium, with nine
+20 ms samples after 32 ms warm-up per case. The package led every measured allocated-byte and
+caller-buffer group except Deno v7 allocation, where `uuidv7` was about 3% faster. Native v4 text
+was within 1% of Node's platform primitive; Deno paid about 34% over its primitive for the package's
+validation and error-value boundary; Chromium's portable text was about 4% behind `@lukeed/uuid`.
+The package led v7 text on Bun. `fastv7` led by about 9% on Deno, 15% on Node, and 9% on Chromium,
+but has a 12-bit zero-based sequence, bounded rollback policy, no caller-controlled clock, and no
+error-value or reentrancy boundary; adopting those omissions would weaken this package's contract.
+Validated text timestamp extraction was within about 3% of `uuidv7-js` on Node and Deno and 15% on
+Chromium. `uniku` timestamp results are not ranked because its call accepts non-v7 UUID text.
+
+These are single-machine warm-throughput observations, not universal rankings. Process startup,
+bundle size, memory, operating-system entropy quality, other hardware, and other engine versions
+were not measured. Platform rows expose wrapper cost; they are floors, not APIs that satisfy the
+package's failure contract.
 
 The gates do not prove all performance properties. Relative timing cannot detect a slowdown shared by both sides. Constructor counters cannot see every engine allocation. Latest-runtime CI complements pinned runs, but this study did not execute hosted CI or measure every OS/architecture. Keep these limits when interpreting a pass.

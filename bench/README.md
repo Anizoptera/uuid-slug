@@ -9,6 +9,9 @@ Rules:
   rung is unchanged. Older supported Node versions prove compatibility, not performance priority.
 - Keep direct runtime operations separate from composed pipeline operations.
 - Keep benchmark dependencies in `devDependencies`.
+- Before calling an implementation frontier complete, measure the same public result against the
+  direct platform primitive and the fastest live competitor, then read every faster mechanism.
+  Local candidate comparisons can select the best candidate offered while missing a better design.
 - Run the same candidate set in smoke and full modes so CI detects adapter rot.
 - Before timing a candidate, name the contracts and failure modes its changed mechanism can affect.
   Run their owning tests, add any missing direct falsifier, and mutate the mechanism to prove the
@@ -24,6 +27,18 @@ Rules:
   the comparison. These measurements do not establish the cost of an installed package import.
 - Do not publish benchmark reports as package claims.
 - Use smoke runs in CI and heavy runs manually.
+
+Run `bun run bench:competitors --smoke` to validate the competitor matrix, or
+`bun run bench:competitors` for repeated measurements. The matrix compares equal v4/v7 text,
+allocated-byte, caller-buffer, and timestamp-extraction calls on Node, Bun, Deno, and Chromium.
+It reports unsupported runtime rows instead of dropping them. Each comparable group emits the
+fastest package route, fastest external or platform reference, and their median ratio so a local
+optimum cannot hide in raw rows.
+
+Re-run the full matrix for each release candidate and after changing a competitor or runtime
+version. Upgrade benchmark packages only in `devDependencies`, inspect changed public calls and
+source mechanisms, update the shared case inventory when capabilities change, then run smoke before
+the full matrix. A version change never inherits an earlier performance or compatibility verdict.
 
 
 ## Regression protection
