@@ -265,6 +265,12 @@ Node portable routes by 3–21% and Bun routes by 6–42%. Bun's unrelated UUIDv
 8%, but every Bun v7 route lost more and Node independently showed the same direction. Reconsider
 bulk copy only if the copied region grows enough to amortize its call overhead.
 
+A single safe-integer sequence state was rejected in favor of separate 10-bit and 32-bit words. One
+24-round packed comparison improved Bun continuation byte routes by 3.5–4.3%, but regressed Node
+caller-owned continuation by 7.4% and rollback by 11.7%; each cited interval excluded no change.
+Packing simplifies increment and overflow, but every output then pays division to recover the high
+word. Reconsider it only if Node removes that complete-route loss.
+
 ### Portable UUIDv4 ownership paths
 
 Draw entropy directly into package-owned output. Keep caller-owned output on a separate path that

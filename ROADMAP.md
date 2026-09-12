@@ -140,6 +140,8 @@ protection, and no default or fallback may select it.
   string generation regressed in the packed screen, so unrolling added code without route value.
 - [x] Reject `Uint8Array#set` for the four-byte portable UUIDv7 tail: complete Node and Bun routes
   regressed beyond the unrelated control, so intrinsic call overhead exceeds the tiny copy.
+- [x] Reject one safe-integer portable UUIDv7 sequence state: it improved Bun continuation but
+  regressed Node caller-owned and rollback routes because every write had to split the 42-bit value.
 - [x] Split portable UUIDv4 generation by output ownership: package-owned output draws directly into
   its result; caller-owned output retains private staging and shows no primary-runtime regression.
 - [x] Select the portable UUIDv7 timestamp writer once per module: fixed word writes repeatedly
