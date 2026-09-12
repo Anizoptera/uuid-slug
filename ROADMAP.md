@@ -115,6 +115,8 @@ protection, and no default or fallback may select it.
 - [x] Replace linear string-sentinel encoding scans with a construction-time UUID index. Geometric
   first, middle, last, miss, byte-path, and construction controls isolated the affected work.
 - [ ] Falsify linear previous-key traversal versus caller-ordered precompiled decode operations.
+- [x] Reuse one restored private block across failed previous-key attempts. Geometric comparisons
+  improved multi-key hits and failures without a repeated current-key regression.
 - [ ] Falsify exception containment on built-in masks versus a built-in non-throwing path and custom boundary.
 - [ ] Falsify generic schema callbacks versus a private built-in schema discriminant without exposing API state.
 - [ ] Falsify eager runtime adapter imports versus guarded lazy capability loading using cold and warm routes.

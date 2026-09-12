@@ -150,13 +150,15 @@ export function decodeMaskedSlug(
     OUTER_TAG_BITS,
   );
   if (outerTag instanceof Error) return outerTag;
-  // A callback may mutate or retain its input. Each attempted key must receive fresh original
-  // ciphertext, as it would when decoding the text again; only the text validation is shared.
-  const primary = unmix(previous.length ? mixed.slice() : mixed, outerTag, schema);
+  // Every supported schema may mutate this private attempt block, but custom callbacks receive a
+  // separate inner copy. Restore one scratch between misses instead of allocating per key.
+  const scratch = previous.length ? mixed.slice() : mixed;
+  const primary = unmix(scratch, outerTag, schema);
   if (primary instanceof Error) return primary;
   if (primary) return primary;
   for (const older of previous) {
-    const decoded = unmix(mixed.slice(), outerTag, older);
+    scratch.set(mixed);
+    const decoded = unmix(scratch, outerTag, older);
     if (decoded instanceof Error) return decoded;
     if (decoded) return decoded;
   }

@@ -211,6 +211,24 @@ movement but left that duplicate miss work. Restore a string scan only if sentin
 be canonical keys or repeated complete-route measurements show the map losing at supported
 cardinalities.
 
+### Previous-key attempt storage
+
+Restore one private 16-byte attempt block from the decoded ciphertext between failed schema checks.
+Package-created built-in schemas retain no input, and custom callbacks receive a separate inner
+copy, so failed attempts need isolation from each other but not a new outer allocation.
+
+Two 24-round comparisons on 2026-09-12 covered 4, 8, and 16 previous keys on Node 24.20.0 and Bun
+1.4.1. At 8 keys, last-key hits improved by 10–11% on Node and 9–10% on Bun; total failures improved
+by 4% and 7%, respectively. At 16 keys, last-key hits improved by 12–13% on Node and 11–13% on Bun;
+total failures improved by 6–7% on both. Every cited 95% median interval excluded no change in both
+replays. Current-key controls were unresolved. At 4 keys, Node last-key hits and Bun failures
+improved, while Bun last-key hits were unresolved; one 8% Node failure regression did not repeat.
+
+Two secondary-runtime replays at 16 keys improved Deno last-key hits by 42–43% and failures by
+20–21%; Chromium improved by 15–18% and 9–10%. Current-key controls remained unresolved. Keep the
+per-attempt allocation only if a supported schema can retain the package-owned outer block; the
+public custom-schema constructor deliberately prevents that capability.
+
 ### Portable UUIDv7 timestamp writes
 
 Select the fixed 48-bit timestamp writer once when the module loads. Bun keeps the six-byte loop;

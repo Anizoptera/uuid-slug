@@ -35,6 +35,15 @@ export function createProfileCases(
   const sentinelTimestampWindow = { maxTimestampDeltaMs: 0, referenceUnixMs: 0 };
   const current = { seed: "profile-current-seed" };
   const previous = { seed: "profile-previous-seed" };
+  const rotationMasks = Array.from({ length: 17 }, (_, index) =>
+    unwrap(
+      api.createUuidV7Mask({
+        keyDerivationIterations: 1,
+        seed: `profile-rotation-seed-${index}`,
+      }),
+    ),
+  );
+  const rotationWriters = rotationMasks.map((mask) => unwrap(api.createUuidV7SlugCodec({ mask })));
   const sentinelDefinitions = Array.from({ length: 16 }, (_, index) => ({
     name: `sentinel-${index}`,
     uuid: `00000000-0000-7000-8000-${index.toString(16).padStart(12, "0")}`,
@@ -94,6 +103,29 @@ export function createProfileCases(
     .map((id) => unwrap(older.encodeUuid(id)))
     .filter((slug) => codec.decodeSlug(slug) instanceof Error);
   if (oldOnly.length === 0) throw new Error("No previous-key-only fixtures");
+  const rotationFixture = (count: number) => {
+    const masks = rotationMasks.slice(0, count);
+    const reader = unwrap(api.createUuidV7SlugCodec({ mask: current, previousMasks: masks }));
+    const lastWriter = rotationWriters[count - 1]!;
+    const missWriter = rotationWriters[16]!;
+    const last = ids
+      .map((id) => unwrap(lastWriter.encodeUuid(id)))
+      .find((slug) => {
+        return [codec, ...rotationWriters.slice(0, count - 1)].every(
+          (candidate) => candidate.decodeSlug(slug) instanceof Error,
+        );
+      });
+    const miss = ids
+      .map((id) => unwrap(missWriter.encodeUuid(id)))
+      .find((slug) => {
+        return reader.decodeSlug(slug) instanceof Error;
+      });
+    if (!last || !miss) throw new Error(`No rotation fixture for ${count} previous keys`);
+    return { reader, last, miss };
+  };
+  const rotation4 = rotationFixture(4);
+  const rotation8 = rotationFixture(8);
+  const rotation16 = rotationFixture(16);
   const into = new Uint8Array(24);
   const sentinel = codec.sentinels[0];
   if (!sentinel) throw new Error("Missing sentinel fixture");
@@ -200,6 +232,15 @@ export function createProfileCases(
     "rotation.current.bytes": (index) => rotated.decodeSlugToBytes(masked[index & 255] as string),
     "rotation.previous.bytes": (index) =>
       rotated.decodeSlugToBytes(oldOnly[index % oldOnly.length] as string),
+    "rotation4.current": (index) => rotation4.reader.decodeSlug(masked[index & 255] as string),
+    "rotation4.last": () => rotation4.reader.decodeSlug(rotation4.last),
+    "invalid.rotation4.miss": () => rotation4.reader.decodeSlug(rotation4.miss),
+    "rotation8.current": (index) => rotation8.reader.decodeSlug(masked[index & 255] as string),
+    "rotation8.last": () => rotation8.reader.decodeSlug(rotation8.last),
+    "invalid.rotation8.miss": () => rotation8.reader.decodeSlug(rotation8.miss),
+    "rotation16.current": (index) => rotation16.reader.decodeSlug(masked[index & 255] as string),
+    "rotation16.last": () => rotation16.reader.decodeSlug(rotation16.last),
+    "invalid.rotation16.miss": () => rotation16.reader.decodeSlug(rotation16.miss),
     "migration.current": (index) => migration.decodeSlug(masked[index & 255] as string),
     "migration.previous": (index) =>
       migration.decodeSlug(oldOnly[index % oldOnly.length] as string),
