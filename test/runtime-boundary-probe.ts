@@ -24,6 +24,9 @@ import {
   uuidToSlug,
   generateUuidV4,
   generateUuidV4Bytes,
+  generateUuidV4Slug,
+  generateUuidV7,
+  generateUuidV7At,
   validateUuidV7Timestamp,
   validateUuidV7SlugTimestamp,
   generateUuidV7Bytes,
@@ -40,6 +43,10 @@ const timestamp = 1_234_567_890_000;
 const uuid = "011f71fb-0450-7121-8848-484a12121212";
 const makeGenerator = () =>
   createUuidV7Generator({ clock: () => timestamp, fillRandom: (bytes) => bytes.fill(0x12) });
+const hasCause = (value: unknown, target: unknown): boolean =>
+  value === target ||
+  (value instanceof AggregateError && value.errors.some((cause) => hasCause(cause, target))) ||
+  (value instanceof Error && hasCause(value.cause, target));
 
 export const runtimeBoundaryCases = [
   {
@@ -84,6 +91,113 @@ export const runtimeBoundaryCases = [
         assert.deepEqual(out, new Uint8Array(24).fill(0xa5));
       } finally {
         runtime.fillRandom = originalFill;
+      }
+    },
+  },
+  {
+    name: "distinguishes native success, portable success and dual failure by output route",
+    run(this: void) {
+      const saved = { ...runtime };
+      const portableCause = new Error("portable route failed");
+      const nativeCause = new Error("native route failed");
+      let failPortable = false;
+      const nativeCalls = { v4: 0, v7: 0, v7At: 0, v7Bytes: 0, v7BytesAt: 0, v7Slug: 0 };
+      const expectedNativeCalls = {
+        ...nativeCalls,
+        v4: 1,
+        v7: 1,
+        v7At: 1,
+        v7Bytes: 3,
+        v7BytesAt: 2,
+        v7Slug: 1,
+      };
+      const v7Bytes = unwrap(uuidToBytes(uuid));
+      const v7Slug = unwrap(bytesToSlug(v7Bytes));
+      runtime.fillRandom = (bytes) => {
+        if (failPortable) throw portableCause;
+        saved.fillRandom(bytes);
+      };
+      const native =
+        <Result>(key: keyof typeof nativeCalls, value: Result) =>
+        () => {
+          nativeCalls[key] += 1;
+          return value;
+        };
+      const assertDualFailure = (result: unknown) => {
+        assert.ok(result instanceof UuidSlugError);
+        assert.equal(hasCause(result, nativeCause), true);
+        assert.equal(hasCause(result, portableCause), true);
+      };
+      try {
+        runtime.uuidV4 = native("v4", "123e4567-e89b-42d3-a456-426614174000");
+        runtime.uuidV7 = native("v7", uuid);
+        runtime.uuidV7At = native("v7At", uuid);
+        runtime.uuidV7Bytes = native("v7Bytes", v7Bytes);
+        runtime.uuidV7BytesAt = native("v7BytesAt", v7Bytes);
+        runtime.uuidV7Slug = native("v7Slug", v7Slug);
+        assert.equal(generateUuidV4(), "123e4567-e89b-42d3-a456-426614174000");
+        assert.equal(isUuidV4String(bytesToUuid(unwrap(generateUuidV4Bytes()))), true);
+        assert.equal(typeof generateUuidV4Slug(), "string");
+        assert.equal(generateUuidV7(), uuid);
+        assert.equal(generateUuidV7At(timestamp), uuid);
+        assert.deepEqual(generateUuidV7Bytes(), v7Bytes);
+        assert.deepEqual(generateUuidV7BytesAt(timestamp), v7Bytes);
+        const currentOut = new Uint8Array(24).fill(0x55);
+        const explicitOut = new Uint8Array(24).fill(0x55);
+        assert.equal(generateUuidV7Bytes(currentOut, 4), currentOut);
+        assert.equal(generateUuidV7BytesAt(timestamp, explicitOut, 4), explicitOut);
+        assert.equal(generateUuidV7Slug(), v7Slug);
+        assert.equal(unwrap(generateUuidV7Slug("base32hex")).length, 26);
+        assert.deepEqual(nativeCalls, expectedNativeCalls);
+
+        delete runtime.uuidV4;
+        delete runtime.uuidV7;
+        delete runtime.uuidV7At;
+        delete runtime.uuidV7Bytes;
+        delete runtime.uuidV7BytesAt;
+        delete runtime.uuidV7Slug;
+        assert.equal(isUuidV4String(generateUuidV4()), true);
+        assert.equal(isUuidV7String(generateUuidV7()), true);
+        assert.equal(isUuidV7String(generateUuidV7At(timestamp)), true);
+        assert.equal(isUuidV7Bytes(generateUuidV7Bytes()), true);
+        assert.equal(isUuidV7Bytes(generateUuidV7BytesAt(timestamp)), true);
+        assert.equal(isUuidV7Slug(generateUuidV7Slug()), true);
+        assert.equal(unwrap(generateUuidV7Slug("base32hex")).length, 26);
+        assert.deepEqual(nativeCalls, expectedNativeCalls);
+
+        const throwNative = (): never => {
+          throw nativeCause;
+        };
+        runtime.uuidV4 = throwNative;
+        runtime.uuidV7 = throwNative;
+        runtime.uuidV7At = throwNative;
+        runtime.uuidV7Bytes = throwNative;
+        runtime.uuidV7BytesAt = throwNative;
+        runtime.uuidV7Slug = throwNative;
+        failPortable = true;
+        assertDualFailure(generateUuidV4());
+        const v4BytesFailure = generateUuidV4Bytes();
+        const v4SlugFailure = generateUuidV4Slug();
+        assert.ok(v4BytesFailure instanceof UuidSlugError);
+        assert.equal(v4BytesFailure.cause, portableCause);
+        assert.ok(v4SlugFailure instanceof UuidSlugError);
+        assert.equal(v4SlugFailure.cause, portableCause);
+        assertDualFailure(generateUuidV7());
+        assertDualFailure(generateUuidV7At(timestamp));
+        assertDualFailure(generateUuidV7Bytes());
+        assertDualFailure(generateUuidV7BytesAt(timestamp));
+        assertDualFailure(generateUuidV7Slug());
+        assertDualFailure(generateUuidV7Slug("base32hex"));
+        const failedCurrentOut = new Uint8Array(24).fill(0x55);
+        const failedExplicitOut = new Uint8Array(24).fill(0x55);
+        assertDualFailure(generateUuidV7Bytes(failedCurrentOut, 4));
+        assertDualFailure(generateUuidV7BytesAt(timestamp, failedExplicitOut, 4));
+        assert.ok(failedCurrentOut.every((byte) => byte === 0x55));
+        assert.ok(failedExplicitOut.every((byte) => byte === 0x55));
+      } finally {
+        failPortable = false;
+        for (const key of Object.keys(runtime) as (keyof typeof runtime)[]) delete runtime[key];
+        Object.assign(runtime, saved);
       }
     },
   },

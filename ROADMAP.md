@@ -52,8 +52,8 @@ protection, and no default or fallback may select it.
   option, migration-option combination, and sentinel-collision rows.
 - [x] Verify every overload and caller-owned row preserves output identity and atomic failure before
   its timing result can rank an implementation.
-- [ ] Verify each native success, native malformed-result, native throw, portable success, and
-  dual-failure route independently for v4 and v7 string, byte, and slug output.
+- [x] Verify native success, malformed result, throw, portable success, and dual failure by v4 and
+  v7 string, byte, caller-owned byte, and slug route; per-capability counts expose wrong delegation.
 - [x] Profile cooperative mask derivation separately from synchronous calls across seed type, UTF-8
   boundaries, iteration count, chunk boundaries, cancellation phase, scheduling delay, and runtime.
 - [x] Map and execute the packed routes: Node loads `dist/node` with its adapter, Bun loads published
