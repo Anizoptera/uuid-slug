@@ -175,6 +175,11 @@ try {
     views: 0,
     errors: 0,
   });
+  check("UUID text to base32hex slug", () => api.uuidToSlug(id, "base32hex"), {
+    buffers: 0,
+    views: 0,
+    errors: 0,
+  });
   check("previous-key decode", () => rotated.decodeSlug(old as string), {
     errors: 0,
     chars: 22,

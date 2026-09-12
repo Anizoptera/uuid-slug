@@ -128,7 +128,9 @@ describe("direct UUID slugs", () => {
     for (let sample = 0; sample < 256; sample += 1) {
       for (let position = 0; position < bytes.length; position += 1)
         bytes[position] = (sample + position * 17) & 255;
-      expect(uuidToSlug(unwrap(bytesToUuid(bytes)))).toBe(bytesToSlug(bytes));
+      const uuid = unwrap(bytesToUuid(bytes));
+      for (const alphabet of ["base64url", "base32hex"] as const)
+        expect(uuidToSlug(uuid, alphabet)).toBe(bytesToSlug(bytes, alphabet));
     }
   });
 
@@ -140,7 +142,8 @@ describe("direct UUID slugs", () => {
     for (let index = 0; index < SAMPLE_V7_A.length; index += 1) {
       if (SAMPLE_V7_A[index] === "-") continue;
       const invalid = `${SAMPLE_V7_A.slice(0, index)}!${SAMPLE_V7_A.slice(index + 1)}`;
-      expect(uuidToSlug(invalid)).toEqual(uuidToBytes(invalid));
+      for (const alphabet of ["base64url", "base32hex"] as const)
+        expect(uuidToSlug(invalid, alphabet)).toEqual(uuidToBytes(invalid));
     }
   });
 

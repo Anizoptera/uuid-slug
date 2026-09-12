@@ -220,6 +220,30 @@ function uuidStringToBase64url(uuid: string): UuidSlug {
   return (encoded + BASE64URL.chars[last >>> 2] + BASE64URL.chars[(last & 3) << 4]) as UuidSlug;
 }
 
+/** Encode validated canonical UUID text directly into its fixed 26-character base32hex shape. */
+function uuidStringToBase32hex(uuid: string): UuidSlug {
+  let encoded = "";
+  const chars = BASE32HEX.chars;
+  for (let byteIndex = 0; byteIndex < 15; byteIndex += 5) {
+    const a = uuidByteAt(uuid, byteIndex);
+    const b = uuidByteAt(uuid, byteIndex + 1);
+    const c = uuidByteAt(uuid, byteIndex + 2);
+    const d = uuidByteAt(uuid, byteIndex + 3);
+    const e = uuidByteAt(uuid, byteIndex + 4);
+    encoded +=
+      (chars[a >>> 3] as string) +
+      (chars[((a & 7) << 2) | (b >>> 6)] as string) +
+      (chars[(b >>> 1) & 31] as string) +
+      (chars[((b & 1) << 4) | (c >>> 4)] as string) +
+      (chars[((c & 15) << 1) | (d >>> 7)] as string) +
+      (chars[(d >>> 2) & 31] as string) +
+      (chars[((d & 3) << 3) | (e >>> 5)] as string) +
+      (chars[e & 31] as string);
+  }
+  const last = uuidByteAt(uuid, 15);
+  return (encoded + chars[last >>> 3] + chars[(last & 7) << 2]) as UuidSlug;
+}
+
 /** Check canonical UUID text with version 4 and RFC variant bits. */
 export function isUuidV4String(value: unknown): value is UuidV4String {
   return isUuidString(value) && value[14] === "4" && stringHasRfcVariant(value);
@@ -336,6 +360,7 @@ export function uuidToSlug(
 ): UuidSlug | UuidSlugError {
   if (!hasNativeBase64urlEncoder && alphabet === "base64url" && isUuidString(uuid))
     return uuidStringToBase64url(uuid);
+  if (alphabet === "base32hex" && isUuidString(uuid)) return uuidStringToBase32hex(uuid);
   const bytes = uuidToBytes(uuid);
   if (bytes instanceof Error) return bytes;
   return bytesToSlug(bytes, alphabet);
