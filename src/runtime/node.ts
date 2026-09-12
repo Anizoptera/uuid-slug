@@ -16,8 +16,7 @@ import type { Runtime } from "./types";
 // non-optional and the guard below reads as always-true to the compiler — the type would license a
 // refactor that drops the check and breaks any supported Node where the value is `undefined`.
 // A narrow cast is the only spelling that makes the optionality the code relies on visible.
-const nativeUuidV7: (() => string) | undefined = (crypto as { randomUUIDv7?: () => string })
-  .randomUUIDv7;
+const nativeUuidV7 = (crypto as { randomUUIDv7?: () => string }).randomUUIDv7?.bind(crypto);
 
 /**
  * Node's native UTF-8 encoder materially reduces string-seed construction; the portable adapter
@@ -36,16 +35,14 @@ const nodeRuntime: Runtime = {
     crypto.randomFillSync(into);
     return undefined;
   }),
-  uuidV4() {
-    return crypto.randomUUID();
-  },
+  uuidV4: crypto.randomUUID.bind(crypto),
 };
 
 if (nativeUuidV7) {
   // Native text avoids portable entropy and formatting work. Other representations stay portable
   // because converting native text back to bytes or base32 adds work; remeasure by output form when
   // Node changes this API. bench/PERFORMANCE.md owns the runtime versions and comparisons.
-  nodeRuntime.uuidV7 = () => nativeUuidV7.call(crypto);
+  nodeRuntime.uuidV7 = nativeUuidV7;
 }
 
 export const runtime = nodeRuntime;

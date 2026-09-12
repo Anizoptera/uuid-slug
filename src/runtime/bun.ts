@@ -23,7 +23,10 @@ const nativeUuidV7 = bun?.randomUUIDv7?.bind(bun);
 
 const bunRuntime: Runtime = { fillRandom: webRuntime.fillRandom };
 
-if (webRuntime.uuidV4) bunRuntime.uuidV4 = webRuntime.uuidV4;
+// Bun's native v4 text is materially faster than the pooled portable formatter; browsers show the
+// opposite result, so this capability belongs to Bun rather than the shared web adapter.
+if (globalThis.crypto.randomUUID)
+  bunRuntime.uuidV4 = globalThis.crypto.randomUUID.bind(globalThis.crypto);
 
 if (nativeUuidV7) {
   // Bun 1.4.2's native hex path avoids the portable formatter, but its Buffer and base64url

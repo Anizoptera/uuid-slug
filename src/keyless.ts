@@ -52,6 +52,7 @@ export function createUuidV7Generator(
 /** Delay generator setup so conversion-only imports draw no entropy and bundle no generator. */
 let generator: UuidV7Generator | undefined;
 const v7 = () => (generator ??= createRuntimeGenerator(runtime));
+let generateDefaultUuidV7: UuidV7Generator["generateUuidV7"] | undefined;
 
 /**
  * Generate a direct UUIDv4 slug with platform randomness, using base64url by default. base32hex is
@@ -73,7 +74,8 @@ export function generateUuidV4Slug(
  * mismatch into a compile error at the one site that is wrong.
  */
 /** Generate canonical UUIDv7 text for the current clock reading and platform randomness. */
-export const generateUuidV7 = (): UuidV7String | UuidSlugError => v7().generateUuidV7();
+export const generateUuidV7 = (): UuidV7String | UuidSlugError =>
+  (generateDefaultUuidV7 ??= v7().generateUuidV7)();
 
 /**
  * Generate UUIDv7 bytes with platform randomness in a new plain 16-byte `Uint8Array`.

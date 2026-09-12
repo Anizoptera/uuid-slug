@@ -3,13 +3,14 @@
 import {
   checkByteRange,
   checkRange,
+  failedFallback,
   fillRandomBytes,
   nativeOrFallback,
   readClock,
   UuidSlugError,
 } from "./errors";
 import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types";
-import { bytesToUuid, isUuidV7String } from "./uuid";
+import { formatUuidBytesUnchecked, isUuidV7String } from "./uuid";
 import type { Runtime } from "./runtime/types";
 
 /** Internal controls for exercising the portable UUIDv7 state machine. */
@@ -91,7 +92,7 @@ const rejectInstant = (ms: number): undefined | UuidSlugError =>
  * bytes, not by anything the formatter can check.
  */
 const formatUuidV7 = (result: Uint8Array | UuidSlugError): UuidV7String | UuidSlugError =>
-  result instanceof Error ? result : (bytesToUuid(result) as UuidV7String | UuidSlugError);
+  result instanceof Error ? result : (formatUuidBytesUnchecked(result) as UuidV7String);
 
 const reenteredGeneration = () =>
   new UuidSlugError(
@@ -141,6 +142,7 @@ export function createPortableUuidV7Generator(
   let counterHi = 0;
   let counterLo = 0;
   let generating = false;
+  const textBytes = new Uint8Array(16);
 
   function reseed(ms: number) {
     const failed = fillRandomBytes(fill, random);
@@ -170,7 +172,11 @@ export function createPortableUuidV7Generator(
     try {
       const target = out ?? new Uint8Array(16);
       const badRange =
-        out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
+        target === textBytes
+          ? undefined
+          : out === undefined
+            ? checkRange(16, offset, 16)
+            : checkByteRange(out, offset, 16);
       if (badRange) return badRange;
       // Truncated THEN validated, in that order and not the other. A clock is allowed to be
       // fractional — `performance.timeOrigin + performance.now()` is, and is a perfectly good one —
@@ -268,8 +274,11 @@ export function createPortableUuidV7Generator(
   }
 
   return {
-    generateUuidV7: () => formatUuidV7(bytes()),
-    generateUuidV7At: (timestamp) => formatUuidV7(bytesAt(timestamp)),
+    // Text formatting consumes bytes synchronously, so one generator-owned buffer removes an
+    // allocation without exposing mutable storage. The reentrancy guard protects it while clock
+    // and entropy callbacks run.
+    generateUuidV7: () => formatUuidV7(bytes(textBytes)),
+    generateUuidV7At: (timestamp) => formatUuidV7(bytesAt(timestamp, textBytes)),
     generateUuidV7Bytes,
     generateUuidV7BytesAt,
   };
@@ -277,24 +286,38 @@ export function createPortableUuidV7Generator(
 
 /**
  * Join optional native text generation with the portable generator that owns every other output.
- * The runtime hook stays live instead of being copied into a second cache: adapters already probe
- * host support once, and repeated all-runtime comparisons found that capturing it slowed Deno's
- * portable route. Reconsider only when profiles attribute material cost to this property dispatch.
- * bench/PERFORMANCE.md owns the measurements and runtime versions.
+ * A new hook is validated once, then trusted while its function identity stays stable. This keeps
+ * malformed replacement adapters behind the fallback without paying full UUID validation on every
+ * native call. Revalidate each call if a host can return intermittent malformed output from one
+ * stable function; current platform UUID contracts do not.
  */
 export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
   const fallback = createPortableUuidV7Generator({ fillRandom: runtime.fillRandom });
+  let trustedNativeUuidV7: (() => string) | undefined;
   function generateUuidV7() {
     // Missing capability goes directly to portable text; a present capability is validated below
     // because native exceptions or malformed values must degrade without weakening the result.
-    if (!runtime.uuidV7) return fallback.generateUuidV7();
-    return nativeOrFallback(
-      runtime.uuidV7,
-      isUuidV7String,
-      (value) => value,
-      fallback.generateUuidV7,
-      "UUIDv7 generation",
-    );
+    const native = runtime.uuidV7;
+    if (!native) return fallback.generateUuidV7();
+    if (native !== trustedNativeUuidV7) {
+      const result = nativeOrFallback(
+        native,
+        isUuidV7String,
+        (value) => value,
+        fallback.generateUuidV7,
+        "UUIDv7 generation",
+      );
+      if (!(result instanceof Error)) trustedNativeUuidV7 = native;
+      return result;
+    }
+    try {
+      return native() as UuidV7String;
+    } catch (nativeCause) {
+      const result = fallback.generateUuidV7();
+      return result instanceof Error
+        ? failedFallback(nativeCause, result, "Native and portable UUIDv7 generation failed.")
+        : result;
+    }
   }
   return { ...fallback, generateUuidV7 };
 }

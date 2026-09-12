@@ -44,12 +44,16 @@ const HEX_BYTES = nativeToHex
       { length: 256 },
       (_, byte) => (HEX[byte >>> 4] as string) + (HEX[byte & 15] as string),
     );
+const hexByte = (byte: number) => HEX_BYTES[byte] ?? "";
 const HEX_DECODE = new Int8Array(128).fill(-1);
 for (let i = 0; i < 10; i += 1) HEX_DECODE[48 + i] = i;
 for (let i = 0; i < 6; i += 1) HEX_DECODE[97 + i] = 10 + i;
 
 const UUID_LENGTH = 36;
 const UUID_BYTE_OFFSETS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34] as const;
+
+const hyphenateHex = (hex: string, offset: number): UuidString =>
+  `${hex.slice(offset, offset + 8)}-${hex.slice(offset + 8, offset + 12)}-${hex.slice(offset + 12, offset + 16)}-${hex.slice(offset + 16, offset + 20)}-${hex.slice(offset + 20, offset + 32)}` as UuidString;
 
 /*
  * The alphabets a plain slug may be written in. base64url is the default and the shortest;
@@ -186,15 +190,34 @@ export function bytesToUuid(bytes: Uint8Array, byteOffset = 0): UuidString | Uui
     } else {
       hex = nativeToHex.call(bytes.subarray(byteOffset, byteOffset + 16));
     }
-    return `${hex.slice(offset, offset + 8)}-${hex.slice(offset + 8, offset + 12)}-${hex.slice(offset + 12, offset + 16)}-${hex.slice(offset + 16, offset + 20)}-${hex.slice(offset + 20, offset + 32)}` as UuidString;
+    return hyphenateHex(hex, offset);
   }
-  let out = "";
-  for (let i = 0; i < 16; i += 1) {
-    if (i === 4 || i === 6 || i === 8 || i === 10) out += "-";
-    const byte = bytes[byteOffset + i] ?? 0;
-    out += HEX_BYTES[byte];
-  }
-  return out as UuidString;
+  return formatUuidBytesUnchecked(bytes, byteOffset);
+}
+
+/** Format a UUID range already proved writable by its caller. */
+export function formatUuidBytesUnchecked(bytes: Uint8Array, offset = 0): UuidString {
+  if (nativeToHex) return hyphenateHex(nativeToHex.call(bytes), offset * 2);
+  return (hexByte(bytes[offset] as number) +
+    hexByte(bytes[offset + 1] as number) +
+    hexByte(bytes[offset + 2] as number) +
+    hexByte(bytes[offset + 3] as number) +
+    "-" +
+    hexByte(bytes[offset + 4] as number) +
+    hexByte(bytes[offset + 5] as number) +
+    "-" +
+    hexByte(bytes[offset + 6] as number) +
+    hexByte(bytes[offset + 7] as number) +
+    "-" +
+    hexByte(bytes[offset + 8] as number) +
+    hexByte(bytes[offset + 9] as number) +
+    "-" +
+    hexByte(bytes[offset + 10] as number) +
+    hexByte(bytes[offset + 11] as number) +
+    hexByte(bytes[offset + 12] as number) +
+    hexByte(bytes[offset + 13] as number) +
+    hexByte(bytes[offset + 14] as number) +
+    hexByte(bytes[offset + 15] as number)) as UuidString;
 }
 
 export function uuidVersion(bytes: Uint8Array, offset = 0): number {
@@ -218,11 +241,8 @@ export function isUuidString(value: unknown): value is UuidString {
   return true;
 }
 
-function hasUuidVersionAndVariant(value: unknown, version: "4" | "7"): value is string {
-  return (
-    typeof value === "string" && value[14] === version && hexValue(value.charCodeAt(19)) >>> 2 === 2
-  );
-}
+const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const UUID_V7_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 /** Encode validated canonical UUID text directly into its fixed 22-character base64url shape. */
 function uuidStringToBase64url(uuid: string): UuidSlug {
@@ -268,12 +288,12 @@ function uuidStringToBase32hex(uuid: string): UuidSlug {
 
 /** Check canonical UUID text with version 4 and RFC variant bits. */
 export function isUuidV4String(value: unknown): value is UuidV4String {
-  return hasUuidVersionAndVariant(value, "4") && isUuidString(value);
+  return typeof value === "string" && UUID_V4_RE.test(value);
 }
 
 /** Check canonical UUID text with version 7 and RFC variant bits. */
 export function isUuidV7String(value: unknown): value is UuidV7String {
-  return hasUuidVersionAndVariant(value, "7") && isUuidString(value);
+  return typeof value === "string" && UUID_V7_RE.test(value);
 }
 
 /** Check for a 16-byte `Uint8Array` without claiming a UUID version or issuance. */
@@ -474,10 +494,8 @@ function timestampFromBytes(bytes: Uint8Array, byteOffset: number): number {
 
 function extractStringTimestamp(value: string): number | UuidSlugError {
   let timestamp = 0;
-  if (isUuidV7String(value)) {
-    for (let index = 0; index < 6; index += 1)
-      timestamp = timestamp * 256 + uuidByteAt(value, index);
-    return timestamp;
+  if (UUID_V7_RE.test(value)) {
+    return parseInt(value.slice(0, 8) + value.slice(9, 13), 16);
   }
   if (isUuidV7Slug(value)) {
     const alpha = SLUG_ALPHABET_BY_LENGTH[value.length] as Alphabet;

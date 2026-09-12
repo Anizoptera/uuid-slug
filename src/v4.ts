@@ -4,6 +4,7 @@ import { runtime } from "#runtime";
 import {
   checkByteRange,
   checkRange,
+  failedFallback,
   fillRandomBytes,
   nativeOrFallback,
   UuidSlugError,
@@ -17,6 +18,7 @@ import { bytesToUuid, isUuidV4String } from "./uuid";
  */
 const random = new Uint8Array(16);
 let generating = false;
+let trustedNativeUuidV4: (() => string) | undefined;
 
 /**
  * Generate UUIDv4 bytes with platform randomness in a new plain 16-byte `Uint8Array`.
@@ -92,13 +94,29 @@ export function generateUuidV4(): UuidV4String | UuidSlugError {
   // Native generation is useful only for text, which the host returns directly. Byte and slug
   // routes stay portable because parsing native text adds work and complicates atomic output.
   // Recheck each output form when host APIs change; bench/PERFORMANCE.md owns the evidence.
-  return runtime.uuidV4
-    ? nativeOrFallback(
-        runtime.uuidV4,
-        isUuidV4String,
-        (value) => value,
-        generatePortableUuidV4,
-        "UUIDv4 generation",
-      )
-    : generatePortableUuidV4();
+  const native = runtime.uuidV4;
+  if (!native) return generatePortableUuidV4();
+  // Validate a new adapter once, then trust that stable host contract on its hot path. Retaining
+  // per-call validation made native UUIDv4 slower than direct wrappers. Function identity keeps
+  // injected or replaced adapters behind validation; revalidate every call if a host method can
+  // return malformed values intermittently without changing identity.
+  if (native !== trustedNativeUuidV4) {
+    const result = nativeOrFallback(
+      native,
+      isUuidV4String,
+      (value) => value,
+      generatePortableUuidV4,
+      "UUIDv4 generation",
+    );
+    if (!(result instanceof Error)) trustedNativeUuidV4 = native;
+    return result;
+  }
+  try {
+    return native() as UuidV4String;
+  } catch (nativeCause) {
+    const fallback = generatePortableUuidV4();
+    return fallback instanceof Error
+      ? failedFallback(nativeCause, fallback, "Native and portable UUIDv4 generation failed.")
+      : fallback;
+  }
 }

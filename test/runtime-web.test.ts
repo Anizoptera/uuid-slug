@@ -5,14 +5,9 @@
  * consequence of its own `#runtime` condition — vitest resolves `node`, `bun test` resolves `bun`.
  * It is imported directly here for that reason.
  *
- * What is asserted is the rule `AGENTS.md` states and `runtime/node.ts` already follows: a method
- * is defined only where the platform provides it, so ABSENCE IS REPRESENTABLE. A method that
- * exists and throws is not the same thing — it makes the caller catch and fall back on every call,
- * and `keyless.ts` delegates to `runtime.uuidV4`, so a throwing adapter reaches consumers.
- *
- * The two capabilities are separable in real browsers, which is why this is not hypothetical:
- * `crypto.randomUUID` is restricted to secure contexts and `crypto.getRandomValues` is not, so an
- * insecure page has exactly the stub built below.
+ * These cases protect the browser adapter's selected path, not merely host capability presence.
+ * Browser UUIDv4 text stays on the faster pooled byte path even where `randomUUID` exists;
+ * `getRandomValues` remains independently available on insecure contexts.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -22,8 +17,9 @@ const fill = (bytes: Uint8Array) => {
 };
 
 /** Re-imported per case: the probe runs once at module load, so the stub must precede it. */
-async function adapterWith(cryptoStub: unknown) {
+async function adapterWith(cryptoStub: unknown, deno?: unknown) {
   vi.stubGlobal("crypto", cryptoStub);
+  if (deno !== undefined) vi.stubGlobal("Deno", deno);
   vi.resetModules();
   return (await import("../src/runtime/web")).runtime;
 }
@@ -50,9 +46,15 @@ describe("web runtime capability probe", () => {
     expect(bytes.every((byte) => byte === 0x7f)).toBe(true);
   });
 
-  it("defines uuidV4 when the page has randomUUID", async () => {
-    const uuid = "3a1d2f4e-5b6c-4d7e-8f90-a1b2c3d4e5f6";
-    const runtime = await adapterWith({ getRandomValues: fill, randomUUID: () => uuid });
-    expect(runtime.uuidV4?.()).toBe(uuid);
+  it("keeps the faster portable v4 route when randomUUID exists", async () => {
+    const runtime = await adapterWith({ getRandomValues: fill, randomUUID: vi.fn() });
+    expect(runtime.uuidV4).toBeUndefined();
+  });
+
+  it("selects Deno's faster native v4 route without changing browser selection", async () => {
+    const randomUUID = vi.fn(() => "00000000-0000-4000-8000-000000000000");
+    const runtime = await adapterWith({ getRandomValues: fill, randomUUID }, {});
+    expect(runtime.uuidV4?.()).toBe("00000000-0000-4000-8000-000000000000");
+    expect(randomUUID).toHaveBeenCalledOnce();
   });
 });
