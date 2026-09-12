@@ -150,7 +150,7 @@ unless the maintainer separately changes the HLD.
   above it; compare duplicate-heavy and distinct-heavy schema outputs before adding a second structure.
 - [x] Test compact bitsets only for closed bounded validation sets now represented by `Set`; reject
   them where coercion, readability, or sparse domains erase the lookup benefit.
-- [ ] Test lazy construction of rare migration and sentinel structures against eager setup. Preserve
+- [x] Test lazy construction of rare migration and sentinel structures against eager setup. Preserve
   immutability and deterministic errors; reject hidden mutable initialization or first-call latency spikes.
 - [ ] Test reusable bounded scratch owned by synchronous codec closures where calls cannot overlap.
   Reject it for reentrant callbacks, async paths, caller aliasing, or retained secrets.

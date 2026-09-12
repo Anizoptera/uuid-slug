@@ -753,6 +753,12 @@ arrive as strings, so a bitset still needs a string-to-index classifier and dupl
 runtime vocabulary. Sentinel names and UUIDs are caller-defined, sparse, and unbounded. Keep Sets
 for both domains; reconsider a bitset only when the lookup key is already a bounded integer.
 
+Migration state is already constructed only by the explicit `createMigrationDecoder` call.
+Sentinel construction validates every definition and freezes the public list before returning the
+codec; its maps serve ordinary string encode and decode, and its large byte index serves byte encode.
+Deferring any remaining structure would add hidden mutable initialization and move eager work into
+an unpredictable first call. Keep sentinel state eager and immutable.
+
 ## Allocation and key rotation
 
 ### Profiler batch size
