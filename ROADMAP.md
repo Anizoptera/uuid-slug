@@ -86,7 +86,9 @@ protection, and no default or fallback may select it.
   reproduced 2.7–6.4% Node and 9–23% Chromium regressions across masked routes.
 - [x] Reject ordinary numeric-array hash scratch: two packed 24-round replays reproduced 2.1–6.2%
   Node and 22–50% Chromium regressions despite reducing packed code by 30 bytes.
-- [ ] Falsify caller scratch versus module scratch versus closure-owned scratch for reentrancy and JIT locality.
+- [x] Reject per-call hash scratch: two packed 24-round replays reproduced 7.4–20.6% Node and
+  4.1–6.7% Bun regressions because the runtime did not eliminate the two allocations.
+- [ ] Falsify module scratch versus codec-closure scratch for allocation-free isolation and JIT locality.
 - [ ] Falsify indexed versus unrolled four-round Feistel traversal.
 - [x] Reject preselected Feistel key start and stride: two packed 24-round replays found no
   statistically distinct Bun or Node route, and the extra loop state had no measured value.

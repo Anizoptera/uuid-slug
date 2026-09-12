@@ -127,6 +127,10 @@ put all masked median ratios within 3.3% of 1.0 under the same warm-up policy.
   retained typed arrays. Two 24-round replays made Node masked routes 2.1–6.2% slower and Chromium
   routes 22–50% slower; Deno also regressed. Keep fixed signed 32-bit storage despite its 30-byte
   packed cost. Retest only if every target engine changes numeric-array or polymorphic indexed access.
+- Moving both typed scratch buffers into each Feistel call made scratch naturally reentrant but added
+  two allocations. Two 24-round replays made Node masked routes 7.4–20.6% slower and Bun routes
+  4.1–6.7% slower; Deno and Chromium also regressed. Keep allocation-free ownership. Retest only if
+  target engines demonstrate escape analysis for these arrays on the packed public routes.
 - Fixed-offset expansion of the four-word check-tag loop produced no consistent runtime win. Selected
   masked routes regressed by up to 4.9% on Node, 8.2% on Deno, and 13.9% on Chrome.
 - Inlining both compression rounds removed the counted loop but duplicated its arithmetic. Two
