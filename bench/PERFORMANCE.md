@@ -444,6 +444,15 @@ extension path. Existing Node and Bun tests failed when the custom catch was rem
 detect lost exception containment and original-cause preservation. Keep one contained path; retest
 only if an engine demonstrates material exception-region overhead without adding hot-path dispatch.
 
+Private built-in schema dispatch was rejected. A local `WeakMap` associated built-in handles with
+their Feistel keys, preserving the existing callback protocol for custom and duplicate-copy handles
+while dispatching local built-ins directly. Two eight-round packed screens found no statistically
+distinct built-in route on Node 24.20.0 or Bun 1.4.1. The first screen regressed Node custom decode
+by 2.7–9.8%; that loss did not repeat, but no built-in gain emerged to pay for the map, lookup, and
+second constructor. Reversing only the direct branch failed six frozen built-in wire vectors while
+custom vectors passed. Keep the single callback protocol; retest only if direct dispatch produces a
+repeatable primary-runtime route gain large enough to exceed its compatibility machinery.
+
 ### Portable UUIDv4 ownership paths
 
 Draw entropy directly into package-owned output. Keep caller-owned output on a separate path that

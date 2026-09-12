@@ -158,7 +158,8 @@ protection, and no default or fallback may select it.
   improved multi-key hits and failures without a repeated current-key regression.
 - [x] Reject built-in mask exception bypass: two packed screens found no repeatable built-in win,
   while Node timestamp extraction regressed and custom decode also lost in the second screen.
-- [ ] Falsify generic schema callbacks versus a private built-in schema discriminant without exposing API state.
+- [x] Reject a private built-in schema discriminant: two packed screens found no repeatable Node or
+  Bun gain, so its `WeakMap`, lookup, and second constructor did not earn their lifetime cost.
 - [ ] Falsify eager runtime adapter imports versus guarded lazy capability loading using cold and warm routes.
 - [ ] Falsify native UUID generation delegation versus portable generation by output form and entropy behavior.
 - [x] Map portable UUIDv4 independently across forced text fallback, owned and caller-owned bytes,
