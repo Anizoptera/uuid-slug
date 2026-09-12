@@ -93,7 +93,7 @@ unless the maintainer separately changes the HLD.
 - [x] Test direct canonical base64url slug-to-UUID formatting without an intermediate byte array.
   Preserve canonical-tail rejection and exact invalid-character offsets; reject if native
   hexadecimal formatting or code duplication dominates the public route.
-- [ ] Test direct canonical base32hex slug-to-UUID formatting without an intermediate byte array.
+- [x] Test direct canonical base32hex slug-to-UUID formatting without an intermediate byte array.
   Preserve canonical-tail rejection and exact invalid-character offsets; reject if native
   hexadecimal formatting or code duplication dominates the public route.
 - [ ] Test scalar scratch only in final KDF round-key expansion, isolated from the previously

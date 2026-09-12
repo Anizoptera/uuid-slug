@@ -463,6 +463,15 @@ hex assembly; the current byte decoder plus runtime-selected formatter remains s
 Reconsider only if the native formatter disappears or a direct string primitive replaces JavaScript
 concatenation.
 
+### Direct base32hex slug-to-UUID formatting
+
+Direct JavaScript decoding into canonical UUID text was rejected. One six-round packed comparison
+made `slugToUuid` 28–29% slower on Node 26.8.2 and about 115% slower on Bun 1.4.2 while adding about
+0.44 KiB to the minified UUID module. Avoiding one 16-byte array did not repay bit accumulation and
+hex assembly; the current fixed decoder plus runtime-selected formatter remains smaller and faster.
+Reconsider only if the native formatter disappears or a direct string primitive replaces JavaScript
+concatenation.
+
 ### Portable UUIDv7 timestamp writes
 
 Select the fixed 48-bit timestamp writer once when the module loads. Bun keeps the six-byte loop;
