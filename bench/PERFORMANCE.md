@@ -289,6 +289,10 @@ per call. Built-in transforms are synchronous and callback-free. Custom transfor
 copy before user code runs, so a nested call cannot mutate the outer callback input. If either boundary
 changes, the scratch must become call-local or use explicit reentrancy isolation.
 
+The retained block ends as the masked payload returned by the call; it never holds a mask key or
+pooled entropy. Decode callbacks and asynchronous derivation can overlap, so their mutable storage
+remains call-local. Feistel's callback-free module scratch is measured separately above.
+
 Two six-round packed replays on 2026-09-12 measured `masked.encode.bytes` on Node 24.20.0, Bun 1.4.1,
 Deno 2.9.6, and Chromium 151. Node improved by 5.0–5.8% with both 95% median intervals below 1.0.
 Deno improved by 25.4–25.5%. Bun and Chromium remained unresolved. The resource probe measured zero
