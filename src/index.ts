@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
-export {
-  createUuidV7SlugCodec,
-  validateUuidV7Timestamp,
-  validateUuidV7SlugTimestamp,
-} from "./codec";
+export { createUuidV7SlugCodec } from "./codec";
+export { validateUuidV7Timestamp } from "./timestamp";
 export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError } from "./errors";
 /** Export the code type so consumers can write exhaustive handlers without copying its literals. */
 export type { UuidSlugErrorCode } from "./errors";
@@ -40,24 +37,27 @@ export type {
 } from "./types";
 export {
   bytesToUuid,
-  extractUuidV7Timestamp,
-  bytesToSlug,
-  isUuidSlug,
   isUuidBytes,
   isUuidV4Bytes,
-  isUuidV4Slug,
   isUuidV4String,
   isUuidV7Bytes,
-  isUuidV7Slug,
   isUuidV7String,
   isUuidString,
+  uuidToBytes,
+} from "./uuid";
+export {
   UUID_SLUG_ALPHABETS,
+  bytesToSlug,
+  extractUuidV7Timestamp,
+  isUuidSlug,
+  isUuidV4Slug,
+  isUuidV7Slug,
   slugToBytes,
   slugToUuid,
   uuidToSlug,
-  uuidToBytes,
-} from "./uuid";
-export type { SlugAlphabet } from "./uuid";
+  validateUuidV7SlugTimestamp,
+} from "./slug";
+export type { SlugAlphabet } from "./slug";
 export { createUuidV7Generator } from "./keyless";
 export type { UuidV7GeneratorOptions } from "./keyless";
 

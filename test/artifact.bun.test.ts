@@ -20,16 +20,7 @@ const manifest = {
   name: "@anizoptera/uuid-slug",
   version: "0.0.0",
   type: "module",
-  exports: {
-    ".": {
-      types: "./dist/index.d.ts",
-      bun: "./src/index.ts",
-      development: "./src/index.ts",
-      node: "./dist/node/index.js",
-      default: "./dist/index.js",
-    },
-    "./package.json": "./package.json",
-  },
+  exports: (await Bun.file(new URL("../package.json", import.meta.url)).json()).exports,
 };
 const base = {
   "package/package.json": JSON.stringify(manifest),

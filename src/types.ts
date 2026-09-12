@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { UuidSlugError } from "./errors";
-import type { SlugAlphabet } from "./uuid";
+import type { SlugAlphabet } from "./slug";
 
 declare const brand: unique symbol;
 declare const maskSchemaBrand: unique symbol;
@@ -23,6 +23,14 @@ export type UuidSlug = Brand<string, "UuidSlug">;
 export type UuidV4Slug = Brand<UuidSlug, "UuidV4Slug">;
 /** A direct slug whose decoded UUID is version 7 with the RFC variant. */
 export type UuidV7Slug = Brand<UuidSlug, "UuidV7Slug">;
+/** Carry a validated UUID version through lossless representation changes. */
+export type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> = Input extends
+  | UuidV4String
+  | UuidV4Slug
+  ? Version4
+  : Input extends UuidV7String | UuidV7Slug
+    ? Version7
+    : UnknownVersion;
 /** A masked payload in either spelling; its check bits are not plain-encoding padding. */
 export type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 /**

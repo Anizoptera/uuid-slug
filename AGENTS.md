@@ -65,6 +65,12 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   `docs/cross-language.md`. Benchmark dependencies stay dev-only and outside published artifacts.
 - Order root export conditions as `types`, `bun`, `development`, `node`, then `default`.
   Bun and development load published TypeScript; Node keeps its native-runtime build.
+- Read `docs/public-api.md` §Package entries before changing exports or bundling. Keep each export
+  path aligned with its owning source and built module. Use a facade only to hide internal exports
+  or join owners. Retain a subpath only while packed measurements show lower consumer work.
+- Tree-shaking checks start from named root imports for each distinct consumer job. Execute every
+  result, require unrelated heavy code to be absent, and compare independent optimizer families;
+  subpaths are the direct-ESM alternative, not a substitute for a removable root graph.
 - Public docs use caller-facing tokens such as `"base32hex"`, not internal symbol names.
   Documentation-alignment gates are ruled out; test the API behavior instead.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Never add a throwing
@@ -91,10 +97,16 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   nearest owning implementation comment. A rejected alternative must cite the symbol or evidence
   that establishes why it loses. Delete only repetition, false claims, work history, or facts made
   obvious by the code. Re-read every comment in a changed function after the edit.
+- When moving or extracting code, copy the complete source span byte-for-byte, including every
+  comment and blank line. Prove the copy identical before editing it, read the final destination,
+  then remove the source last. A token or syntax diff cannot prove comment preservation.
 - Do not mention private source project names in public files, commits, tests, fixtures, or reports.
 
 ## Runtime boundaries and evidence
 
+- Use the `typescript` package for project checking; TypeScript 7 is the main compiler.
+  `typescript-floor` is limited to the TypeScript 5.7 packed-consumer check and the release scripts
+  that require its legacy in-process parser and printer API.
 - Document every performance-motivated function and branch inside its owning implementation. Use
   ordinary code comments to state why the shape exists, the strongest live alternative it rejects,
   the boundary where the choice stops applying, and the change that requires remeasurement. Public

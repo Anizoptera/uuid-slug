@@ -34,6 +34,20 @@ non-JSDoc comments; keep exploration transient.
 
 ## Shape
 
+### Package entries
+
+- Keep the root entry as the complete API.
+- `/uuid` owns UUID text/byte conversion; `/slug` owns plain-slug conversion; `/v4` and `/v7` own
+  UUID generation and inspection without slug code; `/slug/v4` and `/slug/v7` own one-call plain-slug
+  generation. Masking stays on the root because a separate entry removes no consumer work.
+- Point a subpath at its owning module when that module has exactly the promised exports. Use a
+  facade when internal exports would otherwise become public or one path joins several owners.
+  `/slug/v4` and `/slug/v7` need neither, so a wrapper would add a file and one direct load.
+- Add a subpath only when a packed direct-ESM consumer loads fewer modules or the optimized bundle
+  ships fewer bytes. Remove it when neither remains true.
+- Preserve native ESM and module seams. Consumer bundlers already remove unused root exports;
+  bundling this package first would hide those seams from them.
+
 - Name every public and internal operation for the domain action it performs. Use one term for one
   behavior and one behavior for one term; encode direction, unit, and ownership where callers or
   maintainers otherwise have to remember them. Names MUST NOT claim visibility, safety, security,

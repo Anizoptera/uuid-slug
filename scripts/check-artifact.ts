@@ -3,6 +3,7 @@ import { isBuiltin } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { command } from "./command";
+import { formatConsumerGraph, inspectConsumerGraph } from "./consumer-graph";
 
 // Scan all shipped files: extensions must not hide machine paths or development material.
 const BUILD_PATH_LEAK = /(?:\/Users\/|\/home\/[a-z]|[A-Z]:\\Users\\)/;
@@ -107,22 +108,21 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
     ])
       if (Object.keys(manifest[field] ?? {}).length)
         throw new Error(`${field} must be empty in the artifact.`);
-    const keys = new Set(Object.keys(manifest.exports ?? {}));
-    if (keys.size !== 2 || !keys.has(".") || !keys.has("./package.json"))
-      throw new Error('Packed exports must expose only "." and "./package.json".');
-    const expectedRootExport = [
-      ["types", "./dist/index.d.ts"],
-      ["bun", "./src/index.ts"],
-      ["development", "./src/index.ts"],
-      ["node", "./dist/node/index.js"],
-      ["default", "./dist/index.js"],
-    ];
-    if (
-      JSON.stringify(Object.entries(manifest.exports["."] ?? {})) !==
-      JSON.stringify(expectedRootExport)
-    )
+    const repositoryManifest = await Bun.file(path.join(project, "package.json")).json();
+    const conditionOrder = Object.keys(repositoryManifest.exports["."]);
+    for (const [subpath, target] of Object.entries(manifest.exports ?? {})) {
+      if (subpath === "./package.json" || typeof target !== "object" || target === null) continue;
+      if (JSON.stringify(Object.keys(target)) !== JSON.stringify(conditionOrder))
+        throw new Error(
+          `${subpath} export conditions must be ordered ${conditionOrder
+            .slice(0, -1)
+            .map((condition: string) => JSON.stringify(condition))
+            .join(", ")}, then ${JSON.stringify(conditionOrder.at(-1))}.`,
+        );
+    }
+    if (JSON.stringify(manifest.exports) !== JSON.stringify(repositoryManifest.exports))
       throw new Error(
-        'Packed root exports must be ordered "types", "bun", "development", "node", then "default" and use the repository targets declared in package.json.',
+        `Packed exports are wrong.\nExpected: ${JSON.stringify(repositoryManifest.exports)}\nReceived: ${JSON.stringify(manifest.exports)}`,
       );
     if (manifest.name !== "@anizoptera/uuid-slug") throw new Error("Unexpected package name.");
     await Bun.write(
@@ -236,6 +236,11 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       runner,
       'import * as api from "@anizoptera/uuid-slug";\nimport * as foreign from "./foreign/package/dist/index.js";\nimport { probeConsumer } from "./probe.mjs";\nawait probeConsumer(api);\nconst mask = foreign.createUuidV7Mask({ seed: "same-version-foreign-schema" });\nif (mask instanceof Error) throw mask;\nconst codec = api.createUuidV7SlugCodec({ mask });\nif (codec instanceof Error) throw codec;\nconst uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";\nconst slug = codec.encodeUuid(uuid);\nif (slug instanceof Error) throw slug;\nif (codec.decodeSlug(slug) !== uuid) throw new Error("A same-version schema from another loaded copy did not round-trip.");\n',
     );
+    const subpathRunner = path.join(root, "subpaths.mjs");
+    await Bun.write(
+      subpathRunner,
+      'import * as root from "@anizoptera/uuid-slug";\nimport { uuidToBytes } from "@anizoptera/uuid-slug/uuid";\nimport { uuidToSlug } from "@anizoptera/uuid-slug/slug";\nimport { generateUuidV4 } from "@anizoptera/uuid-slug/v4";\nimport { generateUuidV7 } from "@anizoptera/uuid-slug/v7";\nimport { generateUuidV4Slug } from "@anizoptera/uuid-slug/slug/v4";\nimport { generateUuidV7Slug } from "@anizoptera/uuid-slug/slug/v7";\nif (uuidToBytes !== root.uuidToBytes) throw new Error("/uuid does not export the root uuidToBytes implementation.");\nif (uuidToSlug !== root.uuidToSlug) throw new Error("/slug does not export the root uuidToSlug implementation.");\nif (generateUuidV4 !== root.generateUuidV4) throw new Error("/v4 does not export the root generateUuidV4 implementation.");\nif (generateUuidV7 !== root.generateUuidV7) throw new Error("/v7 does not export the root generateUuidV7 implementation.");\nif (generateUuidV4Slug !== root.generateUuidV4Slug) throw new Error("/slug/v4 does not export the root generateUuidV4Slug implementation.");\nif (generateUuidV7Slug !== root.generateUuidV7Slug) throw new Error("/slug/v7 does not export the root generateUuidV7Slug implementation.");\n',
+    );
     const consumers = await Promise.allSettled([
       command(
         "node",
@@ -245,6 +250,8 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       command("node", [path.join(project, "node_modules/typescript/bin/tsc"), "-p", root], project),
       command("node", [runner], root),
       command("bun", [runner], root),
+      command("node", [subpathRunner], root),
+      command("bun", [subpathRunner], root),
       command(
         path.join(project, "node_modules/.bin/publint"),
         [extracted, "--pack", "false"],
@@ -254,6 +261,9 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
         path.join(project, "node_modules/.bin/attw"),
         [tarball, "--profile", "esm-only"],
         project,
+      ),
+      inspectConsumerGraph(root, manifest.name).then((results) =>
+        console.log(formatConsumerGraph(results)),
       ),
     ]);
     const failures = consumers

@@ -49,13 +49,22 @@ const banner = { js: stamp, dts: stamp };
  * what this asks the compiler to prove.
  */
 const common = {
-  entry: { index: "src/index.ts" },
+  entry: {
+    index: "src/index.ts",
+    "entries/slug": "src/entries/slug.ts",
+    "entries/uuid": "src/entries/uuid.ts",
+    "entries/v4": "src/entries/v4.ts",
+    "entries/v7": "src/entries/v7.ts",
+    "v4-slug": "src/v4-slug.ts",
+    "v7-slug": "src/v7-slug.ts",
+  },
   format: ["esm"],
   outExtensions: () => ({ js: ".js" }),
   banner,
   minify: true,
   sourcemap: true,
-  // Preserve module seams so downstream bundlers can exclude masking from keyless imports.
+  // Consumer bundlers need these ESM seams to remove masking from keyless imports. A pre-bundled
+  // package made the same import appear removable while hiding the graph users actually receive.
   unbundle: true,
 } satisfies UserConfig;
 

@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { checkByteRange, isUuidSlugError, UuidSlugError } from "./errors";
-import { generateUuidV7Bytes as generateDefaultUuidV7Bytes } from "./keyless";
+import { generateUuidV7Bytes as generateDefaultUuidV7Bytes } from "./v7-keyless";
 import { ownedUuidV7BytesToMaskedSlug, decodeMaskedSlug } from "./mask";
 import { createMigration } from "./migration";
 import { isMaskSchema } from "./schema-handle";
 import { createUuidV7Mask } from "./schema";
+import { validateTimestampBytes } from "./timestamp";
 import type {
   EnabledMigrationFormat,
   UuidV7Mask,
@@ -17,23 +18,13 @@ import type {
   UuidV7SlugCodec,
   UuidV7SlugCodecOptions,
   UuidV7Bytes,
-  UuidV7Slug,
-  UuidV7SlugInput,
   UuidV7Sentinel,
   UuidV7String,
-  UuidV7StringInput,
 } from "./types";
-import {
-  isUuidV7Bytes,
-  resolveSlugAlphabet,
-  uuidToBytes,
-  slugToBytes,
-  bytesToUuid,
-  bytesToSlug,
-  extractUuidV7Timestamp,
-} from "./uuid";
+import { resolveSlugAlphabet, bytesToSlug, extractUuidV7Timestamp } from "./slug";
+import { bytesToUuid, isUuidV7Bytes, uuidToBytes } from "./uuid";
 import type { UuidV7TimestampWindow, UuidV7SentinelConfig } from "./types";
-import type { SlugAlphabet } from "./uuid";
+import type { SlugAlphabet } from "./slug";
 
 type EncodedSentinel = { bytes: Uint8Array; slug: SentinelUuidV7Slug };
 type EncodedSentinelIndex = {
@@ -393,84 +384,4 @@ function buildUuidSlugCodec(
     validateSlugTimestamp,
   };
   return Object.freeze(codec);
-}
-
-/**
- * Return canonical UUIDv7 text when its timestamp is inside the inclusive symmetric window.
- * Return `timestamp_outside_window` when it is not. This checks clock plausibility, not expiry,
- * authentication, replay, or issuance. TypeScript rejects known slug and UUIDv4 values.
- *
- * @param uuid - Canonical UUIDv7 text to validate and return.
- * @param window - Inclusive maximum distance from an explicit or current reference time.
- */
-export function validateUuidV7Timestamp<Input extends string>(
-  uuid: UuidV7StringInput<Input>,
-  window: UuidV7TimestampWindow,
-): (Input & UuidV7String) | UuidSlugError {
-  const uuidText: string = uuid;
-  const bytes = uuidToBytes(uuidText);
-  if (bytes instanceof Error)
-    return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
-  const valid = validateTimestampBytes(bytes, window);
-  return valid instanceof Error ? valid : (uuidText as Input & UuidV7String);
-}
-
-/** Decode before reading the reference time so validation performs one clock observation. */
-function validateTimestampBytes(
-  bytes: Uint8Array,
-  window: UuidV7TimestampWindow,
-): undefined | UuidSlugError {
-  if (!isUuidV7Bytes(bytes)) return new UuidSlugError("invalid_uuid_version", "Expected UUIDv7.");
-  const timestamp = extractUuidV7Timestamp(bytes);
-  if (timestamp instanceof Error) return timestamp;
-  let maxTimestampDeltaMs: number;
-  let referenceUnixMs: number;
-  try {
-    if (typeof window !== "object" || window === null || Array.isArray(window))
-      return new UuidSlugError("invalid_timestamp", "Timestamp window must be an object.");
-    maxTimestampDeltaMs = window.maxTimestampDeltaMs;
-    referenceUnixMs = window.referenceUnixMs ?? Date.now();
-  } catch (cause) {
-    return new UuidSlugError("invalid_timestamp", "Timestamp window could not be read.", {
-      cause,
-    });
-  }
-  if (!Number.isFinite(maxTimestampDeltaMs) || maxTimestampDeltaMs < 0)
-    return new UuidSlugError(
-      "invalid_timestamp",
-      "maxTimestampDeltaMs must be a finite, nonnegative number of milliseconds.",
-    );
-  if (!Number.isFinite(referenceUnixMs))
-    return new UuidSlugError(
-      "invalid_timestamp",
-      "referenceUnixMs must be a finite number of Unix milliseconds.",
-    );
-  if (
-    timestamp < referenceUnixMs - maxTimestampDeltaMs ||
-    timestamp > referenceUnixMs + maxTimestampDeltaMs
-  )
-    return new UuidSlugError(
-      "timestamp_outside_window",
-      "UUIDv7 timestamp is outside the accepted window.",
-    );
-  return undefined;
-}
-
-/**
- * Return the same direct UUIDv7 slug when its timestamp is inside the inclusive symmetric window.
- * Return `timestamp_outside_window` when it is not. Use a codec method for masked or sentinel
- * input. TypeScript rejects known UUID text, masked slugs, and UUIDv4 slugs.
- *
- * @param slug - Canonical direct UUIDv7 slug to validate and return.
- * @param window - Inclusive maximum distance from an explicit or current reference time.
- */
-export function validateUuidV7SlugTimestamp<Input extends string>(
-  slug: UuidV7SlugInput<Input>,
-  window: UuidV7TimestampWindow,
-): (Input & UuidV7Slug) | UuidSlugError {
-  const directSlug: string = slug;
-  const bytes = slugToBytes(directSlug);
-  if (bytes instanceof Error) return bytes;
-  const valid = validateTimestampBytes(bytes, window);
-  return valid instanceof Error ? valid : (directSlug as Input & UuidV7Slug);
 }

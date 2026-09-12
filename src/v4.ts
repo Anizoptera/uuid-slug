@@ -12,6 +12,12 @@ import {
 import type { UuidV4Bytes, UuidV4String } from "./types";
 import { bytesToUuid, isUuidV4String } from "./uuid";
 
+export { UUID_SLUG_ERROR_CODES, isUuidSlugError } from "./errors";
+export { UuidSlugError };
+export type { UuidSlugErrorCode } from "./errors";
+export type { UuidV4Bytes, UuidV4String } from "./types";
+export { isUuidV4Bytes, isUuidV4String } from "./uuid";
+
 /**
  * Randomness is drawn into private storage before copying to caller storage. Web Crypto rejects
  * SharedArrayBuffer views, so the runtime cannot safely fill an arbitrary caller buffer directly.

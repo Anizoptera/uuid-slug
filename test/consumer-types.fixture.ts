@@ -18,6 +18,7 @@ import {
   uuidToSlug,
   generateUuidV4Bytes,
   generateUuidV4Slug,
+  generateUuidV7,
   generateUuidV7Bytes,
   generateUuidV7BytesAt,
   generateUuidV7Slug,
@@ -43,6 +44,12 @@ import type {
   UuidString,
   UuidSlugMigrationDecoder,
 } from "@anizoptera/uuid-slug";
+import { uuidToBytes as uuidToBytesEntry } from "@anizoptera/uuid-slug/uuid";
+import { uuidToSlug as uuidToSlugEntry } from "@anizoptera/uuid-slug/slug";
+import { generateUuidV4 as generateUuidV4Entry } from "@anizoptera/uuid-slug/v4";
+import { generateUuidV7 as generateUuidV7Entry } from "@anizoptera/uuid-slug/v7";
+import { generateUuidV4Slug as generateUuidV4SlugEntry } from "@anizoptera/uuid-slug/slug/v4";
+import { generateUuidV7Slug as generateUuidV7SlugEntry } from "@anizoptera/uuid-slug/slug/v7";
 
 type IsAny<Type> = 0 extends 1 & Type ? true : false;
 type IsExact<Actual, Expected> =
@@ -59,6 +66,12 @@ declare function expectType<Expected>(): <Actual>(
   actual: IsExact<Actual, Expected> extends true ? Actual : never,
 ) => void;
 declare const untypedValue: ReturnType<typeof JSON.parse>;
+expectType<typeof uuidToSlug>()(uuidToSlugEntry);
+expectType<typeof uuidToBytes>()(uuidToBytesEntry);
+expectType<typeof generateUuidV4>()(generateUuidV4Entry);
+expectType<typeof generateUuidV7>()(generateUuidV7Entry);
+expectType<typeof generateUuidV4Slug>()(generateUuidV4SlugEntry);
+expectType<typeof generateUuidV7Slug>()(generateUuidV7SlugEntry);
 // @ts-expect-error Exact assertions must reject `any` or every inferred result can pass unchecked.
 expectType<string>()(untypedValue);
 

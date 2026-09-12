@@ -1121,6 +1121,23 @@ throughput and startup cost. A JITless-only win may justify code when every high
 
 ## Regression protection and limits
 
+### Consumer graph
+
+Packed browser production builds on 2026-09-12 gave Bun, esbuild, Parcel, Rollup, Rolldown, Rspack,
+and webpack effectively the same optimized bytes from root and focused imports. The root therefore
+remains the simple bundled API. Direct Node ESM loaded 23 package modules from root, versus 3 for `/uuid`, 6 for
+`/slug` and `/v4`, 8 for `/v7`, 9 for `/slug/v4`, and 10 for `/slug/v7`. Importing `/v4` and `/v7`
+together loaded 10 unique modules, proving that their shared runtime and UUID modules were reused.
+
+The `/slug/v4` and `/slug/v7` one-call routes loaded one fewer module than composing their version
+generator with `/slug`; they preserve the simple call without loading the full root. They
+point directly at exact public owners. `/uuid`, `/slug`, and `/v4` use facades because their owners
+also export internal helpers; direct publication would silently add those helpers to the API.
+
+The packed probes execute every optimized bundle and require the masking seed only in the masked
+case. A 2026-08-12 Bun-only predecessor measured 13,082 bytes for `uuidToSlug` before masking was
+made removable and 2,229 after; the current cross-bundler check replaces that narrower proof.
+
 `bun run perf:check` protects JavaScript-visible allocation, decoding, encoding and entropy work, plus coarse relative pipeline timings on both runtimes. Its injected result-preserving regressions must fail. Shared functional cases protect wire identity, ownership, invalid input and optional native branches. Async cases protect snapshots, UTF-8 chunk boundaries, cancellation and independent concurrent constructions; changing host yields to microtasks makes cancellation fail.
 
 The Bun test lane uses two isolated workers. Automatic parallelism increased contention without

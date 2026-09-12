@@ -57,6 +57,48 @@
       "node": "./dist/node/index.js",
       "default": "./dist/index.js"
     },
+    "./uuid": {
+      "types": "./dist/entries/uuid.d.ts",
+      "bun": "./src/entries/uuid.ts",
+      "development": "./src/entries/uuid.ts",
+      "node": "./dist/node/entries/uuid.js",
+      "default": "./dist/entries/uuid.js"
+    },
+    "./slug": {
+      "types": "./dist/entries/slug.d.ts",
+      "bun": "./src/entries/slug.ts",
+      "development": "./src/entries/slug.ts",
+      "node": "./dist/node/entries/slug.js",
+      "default": "./dist/entries/slug.js"
+    },
+    "./slug/v4": {
+      "types": "./dist/v4-slug.d.ts",
+      "bun": "./src/v4-slug.ts",
+      "development": "./src/v4-slug.ts",
+      "node": "./dist/node/v4-slug.js",
+      "default": "./dist/v4-slug.js"
+    },
+    "./slug/v7": {
+      "types": "./dist/v7-slug.d.ts",
+      "bun": "./src/v7-slug.ts",
+      "development": "./src/v7-slug.ts",
+      "node": "./dist/node/v7-slug.js",
+      "default": "./dist/v7-slug.js"
+    },
+    "./v4": {
+      "types": "./dist/entries/v4.d.ts",
+      "bun": "./src/entries/v4.ts",
+      "development": "./src/entries/v4.ts",
+      "node": "./dist/node/entries/v4.js",
+      "default": "./dist/entries/v4.js"
+    },
+    "./v7": {
+      "types": "./dist/entries/v7.d.ts",
+      "bun": "./src/entries/v7.ts",
+      "development": "./src/entries/v7.ts",
+      "node": "./dist/node/entries/v7.js",
+      "default": "./dist/entries/v7.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -112,19 +154,24 @@
     "@kripod/uuidv7": "^0.3.4",
     "@lukeed/uuid": "2.0.1",
     "@microsoft/api-extractor": "7.59.1",
+    "@rollup/plugin-node-resolve": "16.0.3",
+    "@rspack/core": "2.2.3",
     "@smithy/uuid": "1.4.2",
     "@types/bun": "^1.3.14",
     "@types/node": "^26.2.0",
     "crypto-randomuuid": "1.0.0",
+    "esbuild": "0.28.2",
     "fastv7": "^1.0.2",
     "git-cliff": "^2.13.1",
     "mdast-util-from-markdown": "^2.0.3",
     "oxfmt": "^0.63.0",
     "oxlint": "^1.78.0",
     "oxlint-tsgolint": "^7.0.2001",
+    "parcel": "2.16.4",
     "playwright": "^1.63.0",
     "pnpm": "^11.21.0",
     "publint": "^0.3.23",
+    "rollup": "4.63.2",
     "tsdown": "^0.22.14",
     "typescript": "^7.0.2",
     "typescript-floor": "npm:typescript@5.7.3",
@@ -133,7 +180,8 @@
     "uuid-random": "1.3.2",
     "uuidv7": "^1.2.1",
     "uuidv7-js": "^2.0.0",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "webpack": "5.110.3"
   },
   "engines": {
     "node": ">=20"

@@ -6,7 +6,7 @@ import { mix32, read32 } from "./feistel";
 import { applyMaskSchema } from "./schema-handle";
 import { bytesToUuid } from "./uuid";
 import type { UuidV7Mask, MaskedUuidV7Slug, UuidString } from "./types";
-import type { SlugAlphabet } from "./uuid";
+import type { SlugAlphabet } from "./slug";
 
 /** Custom callbacks can fail after construction; preserve their cause in the public error contract. */
 function applyMix(

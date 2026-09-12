@@ -49,6 +49,20 @@ pnpm add @anizoptera/uuid-slug
 
 Requires TypeScript 5.7 or newer for `Uint8Array<ArrayBuffer>` declarations.
 
+Direct ESM consumers can avoid loading unrelated modules:
+
+```ts
+import { uuidToBytes } from "@anizoptera/uuid-slug/uuid";
+import { uuidToSlug } from "@anizoptera/uuid-slug/slug";
+import { generateUuidV4 } from "@anizoptera/uuid-slug/v4";
+import { generateUuidV7 } from "@anizoptera/uuid-slug/v7";
+import { generateUuidV4Slug } from "@anizoptera/uuid-slug/slug/v4";
+import { generateUuidV7Slug } from "@anizoptera/uuid-slug/slug/v7";
+```
+
+Use the root import when you need masking or several groups together. Bundlers remove unused root
+exports; the subpaths mainly reduce module loading when no bundler runs.
+
 The native Rust crate implements the same wire contract and lives in [`rust/uuid-slug`](rust/uuid-slug).
 The npm package remains TypeScript/JavaScript-only.
 
@@ -565,10 +579,9 @@ See [security boundaries](docs/security.md) for entropy failures and masking lim
 - **Atomic identifier parsing.** `uuidToBytes` and `slugToBytes` validate the complete identifier
   before writing. Invalid text or destination ranges return an error and leave caller storage
   unchanged.
-- **You pay for masking only if you mask.** The keyless operations — generating an id, converting
-  between a UUID and a plain slug — reach no codec, so a bundle that imports only those carries
-  none of the cipher, key derivation, or sentinel table. Use named imports with a tree-shaking
-  bundler; loading the complete module namespace does not promise that removal.
+- **You pay for masking only if you mask.** Named keyless imports let supported bundlers remove the
+  cipher, key derivation, and sentinel table. Direct ESM consumers can select UUID conversion,
+  plain-slug conversion, UUIDv4, UUIDv7, or one-call slug generation through the matching subpath.
 - **Masking is explicit.** A codec requires private mask options or a package-produced schema
   handle. The published-key schema is available only as `UUID_V7_TEST_MASK`; omission never
   selects it.
