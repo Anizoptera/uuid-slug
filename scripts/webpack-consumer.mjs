@@ -1,8 +1,9 @@
 import webpack from "webpack";
+import path from "node:path";
 
 const [entry, outdir] = process.argv.slice(2);
 const compiler = webpack({
-  context: entry.slice(0, entry.lastIndexOf("/")),
+  context: path.dirname(entry),
   entry,
   mode: "production",
   target: "web",
@@ -12,12 +13,14 @@ const compiler = webpack({
 
 await new Promise((resolve, reject) => {
   compiler.run((error, stats) => {
-    compiler.close(() => {});
-    if (error) reject(error);
-    else if (!stats || stats.hasErrors())
-      reject(
-        new Error(stats?.toString({ all: false, errors: true }) ?? "Webpack returned no stats."),
-      );
-    else resolve();
+    compiler.close((closeError) => {
+      if (error) reject(error);
+      else if (!stats || stats.hasErrors())
+        reject(
+          new Error(stats?.toString({ all: false, errors: true }) ?? "Webpack returned no stats."),
+        );
+      else if (closeError) reject(closeError);
+      else resolve();
+    });
   });
 });
