@@ -131,6 +131,9 @@ put all masked median ratios within 3.3% of 1.0 under the same warm-up policy.
   two allocations. Two 24-round replays made Node masked routes 7.4–20.6% slower and Bun routes
   4.1–6.7% slower; Deno and Chromium also regressed. Keep allocation-free ownership. Retest only if
   target engines demonstrate escape analysis for these arrays on the packed public routes.
+- Binding typed scratch once per codec added a factory and shared transform core. The first 24-round
+  replay found no distinct route; the second found only two Bun regressions. Keep module scratch while
+  the transform stays synchronous and callback-free. Reopen closure ownership if that assumption changes.
 - Fixed-offset expansion of the four-word check-tag loop produced no consistent runtime win. Selected
   masked routes regressed by up to 4.9% on Node, 8.2% on Deno, and 13.9% on Chrome.
 - Inlining both compression rounds removed the counted loop but duplicated its arithmetic. Two

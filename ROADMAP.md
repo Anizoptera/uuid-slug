@@ -88,7 +88,8 @@ protection, and no default or fallback may select it.
   Node and 22–50% Chromium regressions despite reducing packed code by 30 bytes.
 - [x] Reject per-call hash scratch: two packed 24-round replays reproduced 7.4–20.6% Node and
   4.1–6.7% Bun regressions because the runtime did not eliminate the two allocations.
-- [ ] Falsify module scratch versus codec-closure scratch for allocation-free isolation and JIT locality.
+- [x] Reject codec-closure hash scratch: two packed 24-round replays found no repeatable runtime
+  gain, while the factory and shared-core seam added code and the second replay regressed Bun routes.
 - [ ] Falsify indexed versus unrolled four-round Feistel traversal.
 - [x] Reject preselected Feistel key start and stride: two packed 24-round replays found no
   statistically distinct Bun or Node route, and the extra loop state had no measured value.
