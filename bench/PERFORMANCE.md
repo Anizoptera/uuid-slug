@@ -200,6 +200,20 @@ slower in two mixed-workload runs. Indirect function dispatch and split guard he
 primary borrowed route in exploratory trials; one shared guard path with a final direct ownership
 branch avoided that cost. Revisit the branch if a runtime changes either primary result.
 
+### Borrowed masking scratch
+
+Copy caller-owned UUID bytes into one codec-local block before masking instead of allocating a block
+per call. Built-in transforms are synchronous and callback-free. Custom transforms receive their own
+copy before user code runs, so a nested call cannot mutate the outer callback input. If either boundary
+changes, the scratch must become call-local or use explicit reentrancy isolation.
+
+Two six-round packed replays on 2026-09-12 measured `masked.encode.bytes` on Node 24.20.0, Bun 1.4.1,
+Deno 2.9.6, and Chromium 151. Node improved by 5.0–5.8% with both 95% median intervals below 1.0.
+Deno improved by 25.4–25.5%. Bun and Chromium remained unresolved. The resource probe measured zero
+per-call buffers instead of one; restoring the copying helper made that probe fail at the exact row.
+The retained change therefore improves a co-primary runtime, leaves the other unresolved, and removes
+proven work without changing caller ownership.
+
 ### Sentinel encode lookup
 
 Index canonical sentinel UUID strings when constructing a codec. String encoding checks that map

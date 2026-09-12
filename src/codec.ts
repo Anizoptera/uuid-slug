@@ -2,7 +2,7 @@
 
 import { checkByteRange, isUuidSlugError, UuidSlugError } from "./errors";
 import { generateUuidV7Bytes as generateDefaultUuidV7Bytes } from "./keyless";
-import { uuidV7BytesToMaskedSlug, ownedUuidV7BytesToMaskedSlug, decodeMaskedSlug } from "./mask";
+import { ownedUuidV7BytesToMaskedSlug, decodeMaskedSlug } from "./mask";
 import { createMigration } from "./migration";
 import { isMaskSchema } from "./schema-handle";
 import { createUuidV7Mask } from "./schema";
@@ -195,6 +195,9 @@ function buildUuidSlugCodec(
       : createSentinels(sentinelDefinitions, outputAlphabet);
   if (isUuidSlugError(sentinelState)) return sentinelState;
   const sentinels = sentinelState;
+  // Borrowed-byte encoding is synchronous. Built-in masks call no user code, and custom masks
+  // isolate callbacks with an input copy, so nested codec calls cannot observe this shared block.
+  const encodeScratch = new Uint8Array(16);
 
   function encodeMasked(bytes: Uint8Array, owned = false): UuidV7CodecSlug | UuidSlugError {
     if (!isUuidV7Bytes(bytes))
@@ -210,7 +213,8 @@ function buildUuidSlugCodec(
     // Branch after common validation so ordinary callers retain one direct borrowed-byte route.
     // Split guard helpers slowed that Bun route; reconsider only with packed mixed-workload evidence.
     if (owned) return ownedUuidV7BytesToMaskedSlug(bytes, schema, outputAlphabet, sentinels.bySlug);
-    return uuidV7BytesToMaskedSlug(bytes, schema, outputAlphabet, sentinels.bySlug);
+    encodeScratch.set(bytes);
+    return ownedUuidV7BytesToMaskedSlug(encodeScratch, schema, outputAlphabet, sentinels.bySlug);
   }
 
   function encodeString(uuid: string): UuidV7CodecSlug | UuidSlugError {

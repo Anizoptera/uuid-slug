@@ -148,7 +148,8 @@ protection, and no default or fallback may select it.
   replays rejected portable encoding on Bun, Deno, and Chromium; Node used the fallback in both.
 - [x] Mask the validated parser-owned block directly: repeated packed comparisons improved string
   encoding on every runtime while preserving the caller-owned byte path.
-- [ ] Falsify owned mask output versus caller-owned internal codec scratch under reentrancy constraints.
+- [x] Reuse one codec-local block for borrowed masked-byte encoding. Nested custom-callback tests
+  prove input isolation; two packed replays improved Node and Deno while Bun and Chromium stayed unresolved.
 - [x] Replace linear string-sentinel encoding scans with a construction-time UUID index. Geometric
   first, middle, last, miss, byte-path, and construction controls isolated the affected work.
 - [ ] Falsify linear previous-key traversal versus caller-ordered precompiled decode operations.

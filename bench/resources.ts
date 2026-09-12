@@ -188,7 +188,7 @@ try {
     },
   );
   check("masked byte encode", () => codec.encodeUuid(bytes), {
-    buffers: 1,
+    buffers: 0,
     base64: 1,
     errors: 0,
     hex: 0,

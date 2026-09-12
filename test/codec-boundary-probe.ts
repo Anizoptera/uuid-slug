@@ -28,7 +28,12 @@ import {
 } from "../src/index";
 import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
 import { createUuidV7SlugCodecWithGenerator } from "../src/codec";
-import type { UuidV7Mask, UuidV7SlugCodecOptions } from "../src/types";
+import type {
+  UuidV7CodecSlug,
+  UuidV7Mask,
+  UuidV7SlugCodec,
+  UuidV7SlugCodecOptions,
+} from "../src/types";
 import { unwrap } from "../dev/unwrap";
 import { uuidVariants } from "./uuid-variants";
 
@@ -694,6 +699,36 @@ export const codecBoundaryCases = [
         assert.equal(result.code, "invalid_mask_schema");
         assert.equal(result.cause, cause);
       }
+    },
+  },
+  {
+    name: "isolates nested custom-mask calls",
+    run() {
+      const first = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
+      const second = "019ff19b-58b8-7000-9b1b-df713bd5562c";
+      const firstBytes = unwrap(uuidToBytes(first));
+      const secondBytes = unwrap(uuidToBytes(second));
+      let codec: UuidV7SlugCodec | undefined;
+      let nested: UuidV7CodecSlug | UuidSlugError | undefined;
+      let entered = false;
+      const transform = (input: Uint8Array) => {
+        const before = input.slice();
+        if (codec && !entered) {
+          entered = true;
+          nested = codec.encodeUuid(secondBytes);
+          entered = false;
+          assert.deepEqual(input, before);
+        }
+        return input.map((byte) => byte ^ 0x5a);
+      };
+      const mask = unwrap(
+        createCustomUuidV7Mask({ label: "nested", mask: transform, unmask: transform }),
+      );
+      codec = createUuidV7SlugCodec({ mask });
+      const outer = unwrap(codec.encodeUuid(firstBytes));
+      assert.equal(codec.decodeSlug(outer), first);
+      if (typeof nested !== "string") assert.fail("nested encoding must return a slug");
+      assert.equal(codec.decodeSlug(nested), second);
     },
   },
   ...["constructor", "toString", "__proto__"].map((slugAlphabet) => ({
