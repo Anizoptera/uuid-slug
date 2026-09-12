@@ -154,7 +154,7 @@ unless the maintainer separately changes the HLD.
   immutability and deterministic errors; reject hidden mutable initialization or first-call latency spikes.
 - [x] Test reusable bounded scratch owned by synchronous codec closures where calls cannot overlap.
   Reject it for reentrant callbacks, async paths, caller aliasing, or retained secrets.
-- [ ] Test chunked cooperative KDF state as a resumable iterator with one bounded buffer. Preserve
+- [x] Test chunked cooperative KDF state as a resumable iterator with one bounded buffer. Preserve
   cancellation, call-time snapshots, progress, and exact frozen output before replacing chunk arrays.
 
 ### Workload-gated candidates

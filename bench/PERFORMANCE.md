@@ -262,6 +262,20 @@ candidate never improved elapsed work across Node 26.8.2, Bun 1.4.2, Deno 2.9.6,
 At 1 MiB it was about 35% slower on Node and 12% slower on Bun. Keep the one-pass chunk encoder;
 avoiding encoded chunk retention does not repay an extra Unicode scan.
 
+### Cooperative KDF state
+
+Keep the call-local generator and hash continuation. They already resume packing, absorption, and
+iteration without shared mutable state; cancellation discards only that call, and concurrent calls
+advance independently. A manual iterator would change bookkeeping, not the seed storage each chain
+must replay for every iteration.
+
+One fixed buffer cannot replace the packed seed without re-encoding or otherwise replaying its
+source. The bounded `encodeInto` replay was slower in both geometric comparisons above, while the
+aligned byte view removes the second seed-sized allocation where byte order permits. Keep the
+string chunk array until the separate large-string memory task proves that its temporary retention,
+rather than packed words or hashing, is material. Changing the KDF to avoid replay would change all
+issued identifiers.
+
 ### Owned masking blocks
 
 Mask UUID bytes in place only when the codec owns the block. UUID strings parse into a private
