@@ -136,7 +136,7 @@ unless the maintainer separately changes the HLD.
   removes intermediate writes across validation, masking, and formatting without weakening errors.
 - [x] Test fused alphabet decode and canonical-tail validation. Vary every invalid position and tail
   alias; reject if fusion duplicates alphabet truth or modifies output before late failure.
-- [ ] Test specialized fixed-length base64url and base32hex decoders against the generic accumulator.
+- [x] Test specialized fixed-length base64url and base32hex decoders against the generic accumulator.
   Keep the generic path only where variable length is public; require packed-route wins in both alphabets.
 - [ ] Test scalar UUID formatting from four words against byte indexing and native `toHex`. Preserve
   offset-buffer behavior and reject any primary-runtime regression or duplicated format inventory.

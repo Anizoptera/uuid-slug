@@ -486,6 +486,11 @@ Masked and sentinel routes were unresolved; one 2.3% Node caller-owned masked re
 only in the first replay. Exact invalid offsets, canonical low bits, every tail value, and decoded
 bytes passed direct mutation-checked tests before measurement.
 
+Two later 24-round packed replays on Node 26.8.2 and Bun 1.4.2 tested deleting this specialization.
+The generic decoder was 12–17% slower on direct base32hex decoding in both runs and both runtimes;
+public and masked routes were smaller or unresolved. Keep the specialization while fixed 16-byte
+decode remains a public hot path; runtime evolution strengthened rather than erased its value.
+
 Retest this grouping if UUID routes stop decoding exactly 16 bytes or use a tail width other than
 zero or two. The generic path remains responsible for every other supported shape.
 
