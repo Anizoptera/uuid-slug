@@ -177,13 +177,13 @@ unless the maintainer separately changes the HLD.
 
 ### Contract-boundary falsification
 
-- [ ] Falsify deferred byte-seed copying against the async constructor's call-time snapshot
+- [x] Falsify deferred byte-seed copying against the async constructor's call-time snapshot
   contract. Close without implementation if caller mutation can change derived keys; otherwise
   measure the lawful design's call-time blocking and total allocation.
-- [ ] Falsify transferring the caller's byte-seed buffer against caller ownership. Test only a
+- [x] Falsify transferring the caller's byte-seed buffer against caller ownership. Test only a
   design that leaves caller storage usable and preserves synchronous capture; close if transfer
   detaches observable storage or an extra copy merely moves the same work.
-- [ ] Falsify worker-owned byte-seed snapshots against cross-runtime availability and end-to-end
+- [x] Falsify worker-owned byte-seed snapshots against cross-runtime availability and end-to-end
   cost. Charge worker startup, messaging, transfer, cancellation, and fallback; close if preserving
   synchronous capture leaves the original main-thread copy in place.
 - [ ] Falsify fused validation and direct writes into caller-owned output against atomic failure.

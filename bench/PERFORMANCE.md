@@ -284,11 +284,20 @@ advance independently. A manual iterator would change bookkeeping, not the seed 
 must replay for every iteration.
 
 One fixed buffer cannot replace the packed seed without re-encoding or otherwise replaying its
-  source. The bounded `encodeInto` replay was slower in both geometric comparisons above. Live peak
-  sampling found chunks and packed words to be peer seed-sized owners, not chunk domination, while
-  the aligned byte view removes the second allocation for eligible byte seeds. Keep the string chunk
-  array unless a real large-seed workload values its peak-memory saving above the measured elapsed
-  loss. Changing the KDF to avoid replay would change all issued identifiers.
+source. The bounded `encodeInto` replay was slower in both geometric comparisons above. Live peak
+sampling found chunks and packed words to be peer seed-sized owners, not chunk domination, while
+the aligned byte view removes the second allocation for eligible byte seeds. Keep the string chunk
+array unless a real large-seed workload values its peak-memory saving above the measured elapsed
+loss. Changing the KDF to avoid replay would change all issued identifiers.
+
+Byte-seed capture must finish before the async constructor returns its promise. The mutation
+regression changes caller bytes and options immediately after the call and requires the original
+label, work factor, and derived key. Deferring the copy therefore changes observable keys.
+Transferring the caller buffer would detach caller-owned storage; copying before transfer preserves
+ownership but removes no main-thread work. A worker has the same boundary: messaging can move the
+snapshot only after the synchronous copy already required by the contract, then adds startup,
+scheduling, cancellation, and fallback. Reconsider off-thread byte capture only if a new host
+primitive can preserve caller storage and synchronously snapshot it without that copy.
 
 ### Owned masking blocks
 
