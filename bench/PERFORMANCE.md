@@ -566,6 +566,10 @@ geometric 16–2048 screen. Conversion and 16-key decode throughput did not impr
 256 reduced control cost from 2.11–2.12 ns to 1.74–1.81 ns, while 512 only reduced it to 1.56–1.63 ns.
 The slow route reached 1.40–1.42 ms at 256 and 1.80–2.05 ms at 512; 2048 reached 4.72 ms. Keep 256 for
 lower harness cost than 128 without spending the responsiveness headroom that 512 and 2048 consume.
+Remove the separate untimed 2048-call burst that followed each completed warm-up: the 16/20/64 ms
+same-code study found no later stable tier, while the fixed burst duplicated setup and inherited the
+slow route's 4 ms violation. Host and browser profiling now enter measurement after the same elapsed
+warm-up rule instead of adding operation-count-dependent work.
 
 ### Profiler warm-up
 

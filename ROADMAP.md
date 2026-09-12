@@ -228,8 +228,9 @@ protection, and no default or fallback may select it.
 
 - [ ] Replay every retained Bun-sensitive optimization and harness boundary on Bun 1.4.2; preserve
   prior 1.4.1 provenance and supersede any conclusion whose direction or boundary changes.
-- [ ] Falsify the untimed 2048-call post-warm-up priming batch in Node/Bun and Chromium profiling;
-  remove or reduce it if it adds no repeatable stability beyond the completed warm-up.
+- [x] Remove the untimed 2048-call post-warm-up priming batch from host and browser profiling; the
+  measured 16 ms warm-up already reaches the stable tier, so the extra burst duplicated setup and
+  could exceed the responsiveness budget on slow operations.
 - [ ] Capture alternating warm baselines for generation: v4/v7, string/bytes/slug, explicit time,
   portable generator, native generator, caller-owned output, and both slug alphabets.
 - [ ] Capture alternating warm baselines for conversion and guards: UUID parse/format, direct slug

@@ -103,7 +103,6 @@ async function measureProfileCases(
   const rows: BrowserProfileRow[] = [];
   for (const [name, operation] of selected) {
     const expectedError = name.startsWith("invalid.");
-    batch(operation, 2048, expectedError);
     const ns: number[] = [];
     let maxBatchMs = 0;
     let maxUninterruptedMs = 0;

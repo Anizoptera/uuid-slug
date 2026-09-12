@@ -111,7 +111,6 @@ console.log(
 for (const [name, fn] of selected) {
   const witness = fn(0);
   const expectedError = assertProfileOutcome(name, witness);
-  if (!session) batch(fn, 2048, expectedError);
   gc?.();
   const heapBefore = process.memoryUsage();
   const cpuBefore = process.cpuUsage();
