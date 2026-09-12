@@ -37,6 +37,7 @@ import type { SlugAlphabet } from "./uuid";
 
 type SentinelState = {
   readonly bySlug: ReadonlyMap<string, { uuid: UuidV7String; bytes: Uint8Array }>;
+  readonly byUuid: ReadonlyMap<string, SentinelUuidV7Slug>;
   readonly encoded: readonly { bytes: Uint8Array; slug: SentinelUuidV7Slug }[];
   readonly sentinels: readonly UuidV7Sentinel[];
 };
@@ -48,6 +49,7 @@ const EMPTY_ENCODED_SENTINELS: readonly {
 }[] = Object.freeze([]);
 const EMPTY_SENTINEL_STATE: SentinelState = Object.freeze({
   bySlug: new Map(),
+  byUuid: new Map(),
   encoded: EMPTY_ENCODED_SENTINELS,
   sentinels: EMPTY_SENTINELS,
 });
@@ -68,7 +70,7 @@ function createSentinels(
 ): SentinelState | UuidSlugError {
   const sentinels: UuidV7Sentinel[] = [];
   const names = new Set<string>();
-  const byUuid = new Set<string>();
+  const byUuid = new Map<string, SentinelUuidV7Slug>();
   const encoded: { bytes: Uint8Array; slug: SentinelUuidV7Slug }[] = [];
   const bySlug = new Map<string, { uuid: UuidV7String; bytes: Uint8Array }>();
   for (const definition of definitions) {
@@ -118,14 +120,14 @@ function createSentinels(
     });
     sentinels.push(sentinel);
     names.add(definition.name);
-    byUuid.add(definition.uuid);
+    byUuid.set(definition.uuid, sentinel.slug);
     encoded.push({ bytes, slug: sentinel.slug });
     bySlug.set(sentinel.slug, { uuid: sentinel.uuid, bytes });
     const alternate = bytesToSlug(bytes, alphabet === "base64url" ? "base32hex" : "base64url");
     if (alternate instanceof Error) return alternate;
     bySlug.set(alternate, { uuid: sentinel.uuid, bytes });
   }
-  return { bySlug, encoded, sentinels: Object.freeze(sentinels) };
+  return { bySlug, byUuid, encoded, sentinels: Object.freeze(sentinels) };
 }
 
 /**
@@ -211,10 +213,23 @@ function buildUuidSlugCodec(
     return uuidV7BytesToMaskedSlug(bytes, schema, outputAlphabet, sentinels.bySlug);
   }
 
-  function encodeUuid(uuid: string | Uint8Array): UuidV7CodecSlug | UuidSlugError {
-    if (typeof uuid !== "string") return encodeMasked(uuid);
+  function encodeString(uuid: string): UuidV7CodecSlug | UuidSlugError {
+    // A canonical string miss cannot match the same sentinel set after parsing, so a second byte scan
+    // adds only work. Keep byte inputs on the scan because their identity has no canonical map key.
+    const sentinel = sentinels.byUuid.get(uuid);
+    if (sentinel) return sentinel;
     const bytes = uuidToBytes(uuid);
-    return bytes instanceof Error ? bytes : encodeMasked(bytes, true);
+    if (bytes instanceof Error) return bytes;
+    if (!isUuidV7Bytes(bytes))
+      return new UuidSlugError(
+        "invalid_uuid_version",
+        "Masked UUID slugs require 16 UUIDv7 bytes.",
+      );
+    return ownedUuidV7BytesToMaskedSlug(bytes, schema, outputAlphabet, sentinels.bySlug);
+  }
+
+  function encodeUuid(uuid: string | Uint8Array): UuidV7CodecSlug | UuidSlugError {
+    return typeof uuid === "string" ? encodeString(uuid) : encodeMasked(uuid);
   }
 
   function decodeSlug(slug: string): UuidV7String | UuidSlugError {

@@ -190,6 +190,27 @@ slower in two mixed-workload runs. Indirect function dispatch and split guard he
 primary borrowed route in exploratory trials; one shared guard path with a final direct ownership
 branch avoided that cost. Revisit the branch if a runtime changes either primary result.
 
+### Sentinel encode lookup
+
+Index canonical sentinel UUID strings when constructing a codec. String encoding checks that map
+once, then parses a miss without repeating the same lookup as a byte scan. Byte input retains the
+linear scan because it has no canonical string key and sentinel lists are expected to stay small.
+
+Two 24-round comparisons on 2026-09-12 covered 4, 8, and 16 sentinels on Node 24.20.0, Bun 1.4.1,
+Deno 2.9.6, and Chromium 151. At 16 sentinels, first, middle, and last string hits improved by
+86–97%, while misses improved by 8–28%; every 95% median interval excluded no change in both
+replays. Byte controls were unresolved on the focused replay. Codec construction was unresolved at
+1, 4, 8, and 16 sentinels on most runtime/cardinality pairs. A focused third Bun replay at 16
+sentinels improved construction by 4.1%; its interval excluded no change, so the earlier isolated
+4.5% regression did not reproduce.
+
+A map lookup followed by the original string-to-byte scan was rejected. At eight sentinels, misses
+regressed by 4.6% on Node, 5.7% on Bun, 1.8% on Deno, and 2.0% on Chromium, with every interval
+above no change. Splitting string encoding from byte encoding removed an incidental Bun byte-path
+movement but left that duplicate miss work. Restore a string scan only if sentinel strings cease to
+be canonical keys or repeated complete-route measurements show the map losing at supported
+cardinalities.
+
 ### Portable UUIDv7 timestamp writes
 
 Select the fixed 48-bit timestamp writer once when the module loads. Bun keeps the six-byte loop;
