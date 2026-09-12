@@ -317,6 +317,11 @@ routes on all four runtimes. No row regressed significantly. Previous-key byte d
 change in both replays. Removing restoration made the owning tests reject two valid rotated slugs.
 Keep the scalar snapshot while the ciphertext remains one fixed 16-byte block.
 
+The final resource lane observed one buffer per previous-key decode: the returned decoded block,
+with no outer scratch buffer, views, or discarded errors. A post-change native profile ran 14
+rotation rows per runtime; its largest measured 64-call batch was 0.90 ms and its largest
+uninterrupted sample was 2.44 ms. These local maxima show what the run reached, not a latency bound.
+
 A construction-time `[current, ...previous]` array with one uniform decode loop was rejected. Two
 eight-round packed screens covered current, previous, 4/8/16-key last-hit and miss routes plus codec
 construction on Node 24.20.0 and Bun 1.4.1. No row improved significantly in both screens. The first
