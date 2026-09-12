@@ -538,11 +538,10 @@ These are API contracts. Runtime measurements and their exercised conditions bel
 See [security boundaries](docs/security.md) for entropy failures and masking limits.
 
 - **Conformance.** Generated ids have RFC 9562 version and variant bits.
-- **Secure entropy by default.** Every built-in generator uses only cryptographically secure
-  entropy provided by the active runtime, whether it takes a native UUID shortcut or the portable
-  path. It never substitutes `Math.random`, caller-provided bytes, or another weaker source when
-  secure entropy is unavailable; generation returns `rng_unavailable` instead. Collisions are not
-  expected in practice. If they occur, the generator or its entropy source is broken.
+- **Secure entropy by default.** Built-in generators use the runtime's cryptographically secure
+  random source. They never fall back to weaker randomness. If secure randomness is unavailable,
+  generation returns `rng_unavailable`. With a working runtime, collision risk is negligible.
+  Treat any collision as a generator or entropy failure.
 - **Native generation degrades safely.** Optional native generation is a shortcut, not a second
   behavior: if it throws or returns a malformed UUID, slug, or byte array, the matching portable
   generator is tried. If both fail, the returned error retains both causes.
