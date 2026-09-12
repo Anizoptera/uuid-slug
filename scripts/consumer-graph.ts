@@ -18,6 +18,17 @@ import { command } from "./command";
  */
 const MASKING_WITNESS = "anizoptera.uuid-slug.default-mask.v1";
 
+const MASKING_MODULE_FILES = new Set([
+  "codec.js",
+  "feistel.js",
+  "legacy-mask.js",
+  "mask.js",
+  "migration.js",
+  "schema-handle.js",
+  "schema.js",
+  "siphash.js",
+]);
+
 const jobs = [
   {
     name: "uuid",
@@ -292,7 +303,7 @@ export async function inspectConsumerGraph(
               );
               if (entry === "subpath") {
                 const maskingModules = modules.filter((url) =>
-                  /\/(?:codec|mask|migration|schema(?:-handle)?)\.js$/.test(url),
+                  MASKING_MODULE_FILES.has(path.basename(new URL(url).pathname)),
                 );
                 if (maskingModules.length > 0)
                   throw new Error(
