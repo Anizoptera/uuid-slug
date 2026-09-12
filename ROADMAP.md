@@ -82,8 +82,8 @@ protection, and no default or fallback may select it.
   reproduced 3–7% regressions across major Node masking routes.
 - [x] Reject union-discriminated scalar Feistel message arguments: two packed 24-round replays
   reproduced Bun and Chromium regressions because polymorphic hash dispatch outweighed removed stores.
-- [ ] Falsify a dedicated scalar hash entry over one shared round core; do not treat union dispatch
-  as evidence for its distinct JIT call shape.
+- [x] Reject a dedicated scalar hash entry over one shared round core: two packed 24-round replays
+  reproduced 2.7–6.4% Node and 9–23% Chromium regressions across masked routes.
 - [ ] Falsify `Int32Array` versus ordinary numeric scratch while preserving signed 32-bit coercion.
 - [ ] Falsify caller scratch versus module scratch versus closure-owned scratch for reentrancy and JIT locality.
 - [ ] Falsify indexed versus unrolled four-round Feistel traversal.

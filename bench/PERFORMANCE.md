@@ -119,6 +119,10 @@ put all masked median ratios within 3.3% of 1.0 under the same warm-up policy.
   typed-array stores per masked block. Two 24-round replays made Bun byte-decode routes 3–8% slower
   and Chromium routes 9–21% slower. Keep the monomorphic typed-array input; retest scalar input only
   through a distinct entry that does not make the general hash call polymorphic.
+- Separate monomorphic array and scalar entries fed one shared union core. Two 24-round replays made
+  Node masked routes 2.7–6.4% slower and Chromium routes 9–23% slower. Isolated Bun decode gains did
+  not offset the primary Node loss, so direct typed-array calls remain. Retest only after an engine
+  change to wrapper inlining or union-core specialization.
 - Fixed-offset expansion of the four-word check-tag loop produced no consistent runtime win. Selected
   masked routes regressed by up to 4.9% on Node, 8.2% on Deno, and 13.9% on Chrome.
 - Inlining both compression rounds removed the counted loop but duplicated its arithmetic. Two
