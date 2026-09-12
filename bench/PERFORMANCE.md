@@ -328,6 +328,15 @@ table uses power-of-two capacity at most half full; exact equality and continued
 full-fingerprint collisions. One Apple M4 Max and six paired rounds bound these results to the tested
 engines and corpus. Reconsider `Map` if an engine reverses either primary-runtime result.
 
+Packed scalar sentinel words were rejected. One six-round Node/Bun replay improved ordinary indexed
+middle and last hits by 6–12% on Node and 6–8% on Bun; forced-collision hits improved by 11–18% and
+26%. The flat four-word table could not replace canonical bytes because slug decoding returns those
+bytes. It therefore doubled index ArrayBuffer storage from 256 to 512 bytes at 16 sentinels and from
+1,024 to 2,048 bytes at 64, added about 0.24 KiB to the minified codec, slowed Node construction by
+3–5%, and repeated a 3–6% Bun miss loss. Keep one canonical identity source; reconsider scalar
+equality only if decode no longer requires retained bytes or an engine can compare them without a
+second representation.
+
 ### Previous-key attempt storage
 
 Preserve the decoded ciphertext as four scalar words, then restore the mutable block between failed

@@ -86,7 +86,7 @@ unless the maintainer separately changes the HLD.
   probing code unless retained memory and lookup both improve materially across primary runtimes.
 - [x] Test a compact fingerprint table before full sentinel equality; vary fingerprint width and
   adversarial collisions, and retain only if fewer byte comparisons repay false-positive checks.
-- [ ] Test packed scalar sentinel words instead of retained byte arrays; charge conversion and code
+- [x] Test packed scalar sentinel words instead of retained byte arrays; charge conversion and code
   size, and reject if it duplicates the canonical sentinel identity source.
 - [x] Test canonical UUID-string sentinel lookup for string inputs as an independent path; reject if
   formatting bytes merely moves more work ahead of the existing exact byte comparison.
