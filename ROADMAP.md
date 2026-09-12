@@ -204,25 +204,25 @@ unless the maintainer separately changes the HLD.
 - [x] Falsify worker offload for ordinary synchronous operations against transfer, scheduling, and
   synchronous API costs. Close if end-to-end latency exceeds direct execution or if preserving the
   call shape requires blocking coordination.
-- [ ] Recheck HalfSipHash round unrolling only after a retained upstream layout or engine change
+- [x] Recheck HalfSipHash round unrolling only after a retained upstream layout or engine change
   invalidates its two-replay rejection; otherwise close from existing evidence without rerunning it.
-- [ ] Recheck scalar HalfSipHash message protocols only after a retained upstream call-shape or
+- [x] Recheck scalar HalfSipHash message protocols only after a retained upstream call-shape or
   engine change invalidates their two-replay rejection; keep the general call monomorphic.
-- [ ] Recheck alternate ordinary-array Feistel scratch only after an engine change invalidates its
+- [x] Recheck alternate ordinary-array Feistel scratch only after an engine change invalidates its
   two-replay rejection; do not substitute a new array shape without complete-route evidence.
-- [ ] Recheck `DataView` Feistel word access only after engines can eliminate its view cost or one
+- [x] Recheck `DataView` Feistel word access only after engines can eliminate its view cost or one
   safely reusable view can serve varying caller buffers; otherwise retain shift-based helpers.
-- [ ] Recheck private direct built-in mask dispatch only after attribution predicts a material
+- [x] Recheck private direct built-in mask dispatch only after attribution predicts a material
   callback-dispatch win that repays the extra registry and constructor.
-- [ ] Recheck codec-closure Feistel scratch only if transforms stop being synchronous and
+- [x] Recheck codec-closure Feistel scratch only if transforms stop being synchronous and
   callback-free or an engine demonstrates a repeated closure-locality gain.
-- [ ] Recheck fixed four-round Feistel unrolling only after a primary engine stops optimizing the
+- [x] Recheck fixed four-round Feistel unrolling only after a primary engine stops optimizing the
   constant trip count; reject any secondary-only gain that does not repay duplicated cipher code.
-- [ ] Recheck separate mask and unmask Feistel loops only after direction selection becomes an
+- [x] Recheck separate mask and unmask Feistel loops only after direction selection becomes an
   attributed bottleneck; preserve one reversible wire-format implementation otherwise.
-- [ ] Recheck construction-time scalar key capture only after typed-array indexing becomes an
+- [x] Recheck construction-time scalar key capture only after typed-array indexing becomes an
   attributed primary-runtime bottleneck; charge its branches and packed-code growth.
-- [ ] Recheck fixed-offset big-endian read/write inlining only after generated code shows the shared
+- [x] Recheck fixed-offset big-endian read/write inlining only after generated code shows the shared
   helpers are no longer inlined or specialized by a primary engine.
 
 ### Closure
