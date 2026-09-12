@@ -162,7 +162,8 @@ protection, and no default or fallback may select it.
   Bun gain, so its `WeakMap`, lookup, and second constructor did not earn their lifetime cost.
 - [x] Reject lazy runtime-adapter loading: conditional imports already evaluate one adapter, while
   dynamic loading breaks synchronous calls and deferred probes move once-only work into warm routes.
-- [ ] Falsify native UUID generation delegation versus portable generation by output form and entropy behavior.
+- [x] Keep native UUID delegation per directly supported output form; portable generation owns
+  unsupported forms and fallback, while route tests secure validation, atomic writes, and failures.
 - [x] Map portable UUIDv4 independently across forced text fallback, owned and caller-owned bytes,
   entropy refill, and both slug alphabets; reuse public rows where those routes are always portable.
 - [x] Map portable UUIDv7 across string, owned and caller-owned bytes, both slug alphabets,

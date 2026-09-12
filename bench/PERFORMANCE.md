@@ -465,6 +465,17 @@ startup performance. Keep conditional adapter selection, module-load capability 
 generator state; retest only if a synchronous runtime exposes deferred module evaluation or repeated
 cold-import evidence makes adapter evaluation a material startup bottleneck.
 
+Keep native UUID generation only for output forms the host produces directly. Bun supplies canonical
+text, base64url, and owned bytes, while Node supplies canonical text when its runtime exposes UUIDv7;
+base32hex and unsupported explicit-time forms stay portable rather than parse or coerce a native
+result. Existing throughput captures show Node's native UUIDv7 more than doubled the package text
+route and cached native UUID generation avoided several-fold entropy-call cost. The 2026-09-12 Bun
+entropy replay produced 200,000 distinct conforming package values and matched the native generator's
+observed 12-bit progression; native entropy remained below JavaScript instrumentation, so this does
+not prove its internal source. Bypassing native delegation failed the shared Node and Bun runtime
+tests on native output and dual-failure preservation. Retest delegation per output form if a host
+changes its native contract or a repeated complete-route comparison favors the portable path.
+
 ### Portable UUIDv4 ownership paths
 
 Draw entropy directly into package-owned output. Keep caller-owned output on a separate path that
