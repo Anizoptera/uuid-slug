@@ -126,7 +126,7 @@ unless the maintainer separately changes the HLD.
 - [x] Test a subarray-free offset byte-to-UUID formatter against native and portable formatting.
   Vary exact, offset, oversized, and caller-supplied buffers; reject unless removing the view yields
   a repeated complete-route win without duplicating the formatter.
-- [ ] Test packed 32-bit UUID equality against byte loops where exact 16-byte identity dominates.
+- [x] Test packed 32-bit UUID equality against byte loops where exact 16-byte identity dominates.
   Vary aligned, offset, shared, and plain buffers; reject views, endian assumptions, or weaker checks.
 - [ ] Test a table-driven UUID parser state machine against offset iteration. Preserve exact error
   positions, hyphen rules, version/variant checks, and atomic caller-owned writes.

@@ -366,6 +366,16 @@ bytes. It therefore doubled index ArrayBuffer storage from 256 to 512 bytes at 1
 equality only if decode no longer requires retained bytes or an engine can compare them without a
 second representation.
 
+Packed 32-bit comparison without retained words was also rejected. Two isolated replays across
+plain, aligned, unaligned, and shared buffers made exact matches 15% faster on Bun 1.4.2 and 25%
+faster on Node 26.8.2 with a compact endian-neutral loop, but early mismatches lost 6–8%. Restricting
+it to fingerprint matches preserved the byte loop for ordinary misses. Two packed public-route
+replays then improved Bun indexed hits by 8–28%, while Node, Chromium 153, and Deno 2.9.6 were
+smaller or unresolved; every Node JITless indexed middle and last hit regressed by 12–17% in both
+replays. `DataView` comparison was 5–15 times slower because it created two views per call. Keep the
+early-exit byte loop. Reopen packed equality only if an engine supplies allocation-free unaligned
+loads or JITless no longer pays for the required word assembly.
+
 ### Previous-key attempt storage
 
 Preserve the decoded ciphertext as four scalar words, then restore the mutable block between failed
