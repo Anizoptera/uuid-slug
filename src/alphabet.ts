@@ -117,8 +117,8 @@ export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 
 
 /** Encode without runtime-native delegation so fallback performance can be measured directly. */
 export function encodePortable(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {
-  // UUID routes always encode one 16-byte block. Fixed groups remove the generic accumulator from
-  // Node's active fallback; keep the generic path for every other supported shape and alphabet.
+  // UUID routes always encode one 16-byte block. Fixed groups remove the generic accumulator;
+  // keep the generic path for every other supported shape and tail width.
   if (alpha === BASE64URL && bytes.length === 16 && (tailBits === 0 || tailBits === 4)) {
     let encoded = "";
     for (let offset = 0; offset < 15; offset += 3) {
@@ -138,6 +138,28 @@ export function encodePortable(bytes: Uint8Array, alpha: Alphabet, tail = 0, tai
       (alpha.chars[last >>> 2] as string) +
       (alpha.chars[((last & 3) << 4) | (tail & 15)] as string)
     );
+  }
+  if (alpha === BASE32HEX && bytes.length === 16 && (tailBits === 0 || tailBits === 2)) {
+    let encoded = "";
+    const chars = alpha.chars;
+    for (let offset = 0; offset < 15; offset += 5) {
+      const a = bytes[offset] as number;
+      const b = bytes[offset + 1] as number;
+      const c = bytes[offset + 2] as number;
+      const d = bytes[offset + 3] as number;
+      const e = bytes[offset + 4] as number;
+      encoded +=
+        (chars[a >>> 3] as string) +
+        (chars[((a & 7) << 2) | (b >>> 6)] as string) +
+        (chars[(b >>> 1) & 31] as string) +
+        (chars[((b & 1) << 4) | (c >>> 4)] as string) +
+        (chars[((c & 15) << 1) | (d >>> 7)] as string) +
+        (chars[(d >>> 2) & 31] as string) +
+        (chars[((d & 3) << 3) | (e >>> 5)] as string) +
+        (chars[e & 31] as string);
+    }
+    const last = bytes[15] as number;
+    return encoded + chars[last >>> 3] + chars[((last & 7) << 2) | (tail & 3)];
   }
   const { bitsPerChar, chars } = alpha;
   const mask = (1 << bitsPerChar) - 1;

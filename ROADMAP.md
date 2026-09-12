@@ -114,8 +114,11 @@ protection, and no default or fallback may select it.
 - [x] Reuse owned UUID blocks for tagging and masking. Retain one shared guard path with a final
   direct ownership branch; duplicated closures and indirect dispatch slowed Bun's borrowed route.
 - [ ] Falsify general alphabet dispatch versus codec-construction specialization.
-- [ ] Profile and optimize each portable alphabet encoder directly on Node, Bun, Deno, and Chromium,
+- [x] Profile and optimize each portable alphabet encoder directly on Node, Bun, Deno, and Chromium,
   including runtimes whose public route normally delegates to native encoding.
+- [x] Specialize portable 16-byte base32hex encoding. Two packed replays improved Node's direct
+  fallback and public conversion while Bun stayed improved or unresolved; all runtimes exercised
+  the exact portable implementation.
 - [x] Specialize portable 16-byte base64url encoding and expose it to the shared profiler. Two
   packed replays improved Node plain and masked routes while native-shadowed Bun stayed unchanged;
   direct profiles reached the fallback on all four runtimes.

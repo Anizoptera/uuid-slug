@@ -255,6 +255,22 @@ Those absolute runs prove reachability and scale only; they do not rank algorith
 Retest the fixed specialization if Node gains a native encoder or if UUID routes stop owning exactly
 16 bytes. The generic path remains the contract owner for every other supported input shape.
 
+### Fixed-size portable base32hex encoding
+
+Encode 16-byte base32hex payloads in three five-byte groups plus the final byte. Keep the generic
+bit accumulator for other lengths and tail widths. Base32hex has no native delegate, so every
+runtime normally consumes this portable path.
+
+Two 24-round packed comparisons on 2026-09-12 improved Node 24.20.0 direct portable encoding by
+11–13% and public UUID-to-base32 conversion by 7–10%. Bun 1.4.1 was improved or unresolved on those
+routes; no Bun route regressed. Deno 2.9.6 and Chromium 151 also improved on direct and public
+conversion. Masked and sentinel encode routes were unresolved on every runtime; the complete-route
+measurements could not distinguish the changed encoder there. Every cited improvement's 95% median
+interval excluded no change in both replays.
+
+Retest the fixed groups if UUID routes stop owning exactly 16 bytes or a runtime adds native
+base32hex encoding. The generic path still owns all other input shapes.
+
 ### Portable UUIDv7 timestamp writes
 
 Select the fixed 48-bit timestamp writer once when the module loads. Bun keeps the six-byte loop;
