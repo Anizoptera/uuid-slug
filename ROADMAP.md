@@ -90,7 +90,8 @@ protection, and no default or fallback may select it.
   4.1–6.7% Bun regressions because the runtime did not eliminate the two allocations.
 - [x] Reject codec-closure hash scratch: two packed 24-round replays found no repeatable runtime
   gain, while the factory and shared-core seam added code and the second replay regressed Bun routes.
-- [ ] Falsify indexed versus unrolled four-round Feistel traversal.
+- [x] Reject unrolled four-round Feistel traversal: two packed 24-round replays found no Bun or Node
+  gain; a repeated 2.2% Deno byte-encode gain did not justify 230 extra packed bytes.
 - [x] Reject preselected Feistel key start and stride: two packed 24-round replays found no
   statistically distinct Bun or Node route, and the extra loop state had no measured value.
 - [ ] Falsify shared reversible Feistel code versus separate mask and unmask loops.

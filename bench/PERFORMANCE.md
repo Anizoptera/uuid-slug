@@ -134,6 +134,10 @@ put all masked median ratios within 3.3% of 1.0 under the same warm-up policy.
 - Binding typed scratch once per codec added a factory and shared transform core. The first 24-round
   replay found no distinct route; the second found only two Bun regressions. Keep module scratch while
   the transform stays synchronous and callback-free. Reopen closure ownership if that assumption changes.
+- Expanding the fixed four-round Feistel loop into four literal round bodies removed loop control and
+  added 230 packed bytes. Two 24-round replays found no distinct Bun or Node route. A 2.2% Deno
+  byte-encode gain repeated, while the second replay also regressed Chromium decode. Keep the compact
+  loop; retest only if a primary engine stops optimizing this constant trip count.
 - Fixed-offset expansion of the four-word check-tag loop produced no consistent runtime win. Selected
   masked routes regressed by up to 4.9% on Node, 8.2% on Deno, and 13.9% on Chrome.
 - Inlining both compression rounds removed the counted loop but duplicated its arithmetic. Two
