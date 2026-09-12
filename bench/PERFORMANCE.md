@@ -242,6 +242,19 @@ The 16-byte private draw was rejected because six copied bytes had no path to th
 payload-bit test discovers the requested draw length and proves that its bits remain independent and
 cover every non-structural random payload bit instead of pinning an internal buffer size.
 
+On same-millisecond and rollback continuation, refill only the four random tail bytes. The six-byte
+sequence seed remains live state and is not read from the entropy buffer again. Two 24-round packed
+comparisons on 2026-09-12 improved Node owned and caller-owned byte routes by 8.1–12.5% and
+11.6–17.8%; Bun improved them by 6.7–7.4% and 7.4–8.2%. Rollback improved by 11.3–14.9% on Node
+and 8.5–8.8% on Bun. Every interval excluded no change in both replays. Bun advancing-time and
+explicit-time controls were unresolved; Node explicit-time caller output moved despite using the
+unchanged full draw, so it is not evidence for this mechanism. The portable UUIDv4 control was
+unresolved in both replays.
+
+Refilling all ten bytes on continuation was rejected because six newly copied seed bytes are ignored.
+Restore it only if continuation begins consuming a new seed or a runtime makes the four-byte draw
+reproducibly slower on a complete affected route.
+
 ### Portable UUIDv4 ownership paths
 
 Draw entropy directly into package-owned output. Keep caller-owned output on a separate path that

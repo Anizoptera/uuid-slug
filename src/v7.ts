@@ -135,6 +135,8 @@ export function createPortableUuidV7Generator(
   // The sequence seed consumes six bytes and the UUID tail consumes four. Drawing a full UUID
   // block would copy six bytes that version, variant, timestamp, and sequence fields replace.
   const random = new Uint8Array(10);
+  // Continuations retain the sequence seed, so expose only the four bytes their UUID tail consumes.
+  const randomTail = random.subarray(6);
   /**
    * Below every timestamp the clock check admits, which is what makes it the uninitialised
    * sentinel rather than a value: `now > lastMs` alone therefore takes the reseed branch on the
@@ -166,7 +168,7 @@ export function createPortableUuidV7Generator(
   ) {
     writeTimestamp(target, ms, offset);
     writeCounter(target, sequenceHi, sequenceLo, offset);
-    for (let i = 12; i < 16; i += 1) target[offset + i] = random[i - 6] as number;
+    for (let i = 12; i < 16; i += 1) target[offset + i] = randomTail[i - 12] as number;
     return target;
   }
 
@@ -218,7 +220,7 @@ export function createPortableUuidV7Generator(
           const failed = reseed(lastMs + 1);
           if (failed) return failed;
         } else {
-          const failed = fillRandomBytes(fill, random);
+          const failed = fillRandomBytes(fill, randomTail);
           if (failed) return failed;
           // Commit only after entropy succeeds; a failed draw must not consume sequence state.
           counterLo = nextLo;
