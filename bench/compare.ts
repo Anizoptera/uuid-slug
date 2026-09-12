@@ -33,7 +33,7 @@ const baselineRef = positional[0] ?? "HEAD^";
 if (positional.length > 1) throw new Error("Usage: bun bench/compare.ts [baseline-ref] [--smoke]");
 const rounds = Number(process.env.UUID_SLUG_COMPARE_ROUNDS ?? (smoke ? 2 : 6));
 const duration = process.env.UUID_SLUG_PROFILE_MS ?? (smoke ? "1" : "5");
-const warmup = process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (smoke ? "2" : "20");
+const warmup = process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (smoke ? "2" : "16");
 const filter = process.env.UUID_SLUG_PROFILE_FILTER ?? "";
 const selectedRuntimes = (process.env.UUID_SLUG_COMPARE_RUNTIMES?.split(":").filter(Boolean) ?? [
   ...RUNTIMES,

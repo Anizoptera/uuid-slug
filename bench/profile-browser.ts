@@ -142,7 +142,7 @@ const filter = parameters.get("filter");
 const options = {
   duration: Number(parameters.get("duration") ?? 2),
   samples: Number(parameters.get("samples") ?? 7),
-  warmup: Number(parameters.get("warmup") ?? 20),
+  warmup: Number(parameters.get("warmup") ?? 16),
   privateImplementations: parameters.get("private") === "1",
   ...(filter === null ? {} : { filter }),
 };

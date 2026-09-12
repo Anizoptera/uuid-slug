@@ -61,7 +61,7 @@ const gc = (globalThis as { gc?: () => void }).gc;
 const filter = process.env.UUID_SLUG_PROFILE_FILTER;
 const samples = Number(process.env.UUID_SLUG_PROFILE_SAMPLES ?? 7);
 const duration = Number(process.env.UUID_SLUG_PROFILE_MS ?? 20);
-const warmup = Number(process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? 20);
+const warmup = Number(process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? 16);
 if (
   !Number.isSafeInteger(samples) ||
   samples < 1 ||

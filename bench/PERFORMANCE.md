@@ -561,6 +561,20 @@ batch-size surface was rejected because it would let unrelated runs silently use
 retest the fixed value if a representative operation exceeds one millisecond per batch or clock cost
 becomes material at 256.
 
+### Profiler warm-up
+
+Use a 16 ms per-case warm-up. Identical packed-code comparisons on 2026-09-12 varied warm-up through
+1, 4, 8, 16, 20, and 64 ms with 16 alternating rounds on Node 24.20.0, Bun 1.4.2, Deno 2.9.6,
+and Chromium 152. They covered conversion, portable generation, and a 16-key decode. Bun 1.4.2
+conversion reached the same measured tier at 16, 20, and 64 ms, and same-code comparisons at 16 ms
+remained unresolved for all three routes. Longer warm-up therefore added setup without reproduced
+stability value. This supersedes the Bun 1.4.1 probe, where 16 ms appeared to stop before a slower tier.
+
+One 20 ms Deno run reported a false 3.3% same-code improvement; a 24-round replay was unresolved
+with a 95% median interval of 0.965–1.027. This is why one significant interval cannot retain a
+candidate: two independent full replays remain mandatory. Retest the warm-up boundary when a primary
+runtime changes JIT tiers or when identical-code replays repeatedly report the same false direction.
+
 ### Profiler capture boundary
 
 Corpus construction, outcome verification, case selection, and warm-up finish before native CPU and

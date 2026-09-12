@@ -218,12 +218,15 @@ protection, and no default or fallback may select it.
   while a size threshold would misclassify the same workload across runtimes.
 - [x] Keep 256-call profiler batches. Geometric 1–2048-call profiles showed smaller batches expose
   clock domination, while 2048 crossed the 4 ms blocking boundary on every runtime's slow route.
-- [ ] Falsify fixed warm-up against geometric warm-up durations using identical-code comparisons.
+- [x] Use 16 ms profiler warm-up. Bun 1.4.2 reached the same measured tier at 16, 20, and 64 ms;
+  identical-code comparisons found no bias, so longer setup had no reproduced decision value.
 - [x] Reject a duplicated fixed-eight-byte scalar HalfSipHash path: it improved Bun masking by 2–4%,
   stayed within noise on Node and Deno, and regressed Chromium built-in masking by 8.7–19.9%.
 
 ### Baseline and attribution
 
+- [ ] Replay every retained Bun-sensitive optimization and harness boundary on Bun 1.4.2; preserve
+  prior 1.4.1 provenance and supersede any conclusion whose direction or boundary changes.
 - [ ] Capture alternating warm baselines for generation: v4/v7, string/bytes/slug, explicit time,
   portable generator, native generator, caller-owned output, and both slug alphabets.
 - [ ] Capture alternating warm baselines for conversion and guards: UUID parse/format, direct slug
