@@ -266,6 +266,16 @@ candidate never improved elapsed work across Node 26.8.2, Bun 1.4.2, Deno 2.9.6,
 At 1 MiB it was about 35% slower on Node and 12% slower on Bun. Keep the one-pass chunk encoder;
 avoiding encoded chunk retention does not repay an extra Unicode scan.
 
+Live checkpoint sampling on 2026-09-12 covered 1, 4, and 16 MiB ASCII seeds twice. Node 26.8.2
+added 2.36, 9.38, and 37.44 MB of `ArrayBuffer` storage: encoded chunks and packed words remain two
+seed-sized owners, so neither dominates. Bun 1.4.2's native allocator reproduced 9.3–9.45 MB at
+4 MiB and 31.1–31.3 MB at 16 MiB; its 1 MiB result included a fixed allocator jump and was not
+attributable. The probes sample live storage only at cooperative checkpoints; they do not measure
+gross allocation, string storage, or browser and Deno heaps. The bounded candidate removes one
+seed-sized owner but adds the slower second Unicode pass, and no consumer workload establishes such
+large secret seeds. Reopen only with a real large-seed workload whose peak-memory budget outweighs
+the measured elapsed loss.
+
 ### Cooperative KDF state
 
 Keep the call-local generator and hash continuation. They already resume packing, absorption, and
@@ -274,11 +284,11 @@ advance independently. A manual iterator would change bookkeeping, not the seed 
 must replay for every iteration.
 
 One fixed buffer cannot replace the packed seed without re-encoding or otherwise replaying its
-source. The bounded `encodeInto` replay was slower in both geometric comparisons above, while the
-aligned byte view removes the second seed-sized allocation where byte order permits. Keep the
-string chunk array until the separate large-string memory task proves that its temporary retention,
-rather than packed words or hashing, is material. Changing the KDF to avoid replay would change all
-issued identifiers.
+  source. The bounded `encodeInto` replay was slower in both geometric comparisons above. Live peak
+  sampling found chunks and packed words to be peer seed-sized owners, not chunk domination, while
+  the aligned byte view removes the second allocation for eligible byte seeds. Keep the string chunk
+  array unless a real large-seed workload values its peak-memory saving above the measured elapsed
+  loss. Changing the KDF to avoid replay would change all issued identifiers.
 
 ### Owned masking blocks
 

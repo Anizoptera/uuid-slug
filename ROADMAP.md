@@ -168,7 +168,7 @@ unless the maintainer separately changes the HLD.
 - [x] Measure repeated-decode locality before designing a bounded decode cache. Proceed only with a
   real reuse distribution, explicit capacity and invalidation, and total memory/latency benefit;
   unbounded storage and hidden mutable codec behavior remain forbidden.
-- [ ] Measure large cooperative string-seed peak memory before replacing chunk arrays with a bounded
+- [x] Measure large cooperative string-seed peak memory before replacing chunk arrays with a bounded
   reusable encoding buffer. Proceed only when retained/gross allocation evidence shows the chunks,
   rather than packed words or hashing, dominate.
 - [ ] Measure invalid-input frequency and `UuidSlugError` construction attribution before exploring
