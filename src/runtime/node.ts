@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import crypto from "node:crypto";
+import { Buffer } from "node:buffer";
 import { pooledFill } from "./pool";
 import type { Runtime } from "./types";
 
@@ -17,6 +18,9 @@ import type { Runtime } from "./types";
 // A narrow cast is the only spelling that makes the optionality the code relies on visible.
 const nativeUuidV7: (() => string) | undefined = (crypto as { randomUUIDv7?: () => string })
   .randomUUIDv7;
+
+/** Node's native UTF-8 encoder materially reduces string-seed construction; see the measured boundary in `bench/PERFORMANCE.md`. */
+export const encodeUtf8 = (text: string): Uint8Array => Buffer.from(text, "utf8");
 
 const nodeRuntime: Runtime = {
   /**

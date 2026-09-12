@@ -206,7 +206,11 @@ protection, and no default or fallback may select it.
   failure selects the optimized fallback on every runtime.
 - [x] Reject a second capability cache: adapters already probe once at module load, and public calls
   retain one runtime-property dispatch so injected native failures exercise the production seam.
-- [ ] Falsify construction-time TextEncoder and word packing versus runtime-specific UTF-8 primitives.
+- [x] Select UTF-8 encoding by runtime module. Two packed replays improved Node string construction
+  by 16% and its iterated route by 9%; Chromium gained 15–18% and 10–12%, while byte seeds stayed
+  unresolved everywhere. Singleton-only and grouped-word alternatives did not reproduce a primary gain.
+- [ ] Replace the size-based cooperative-cancellation assertion with a deterministic slice oracle
+  that distinguishes required host yields from completion before the cancellation signal can run.
 - [ ] Falsify synchronous derivation versus cooperative derivation at measured seed and iteration boundaries.
 - [ ] Falsify current 256-call batches against geometric batch sizes for clock cost and event-loop blocking.
 - [ ] Falsify fixed warm-up against geometric warm-up durations using identical-code comparisons.

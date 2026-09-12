@@ -4,6 +4,11 @@ import { UuidSlugError } from "../errors";
 import { pooledFill } from "./pool";
 import type { Runtime } from "./types";
 
+const utf8Encoder = new TextEncoder();
+
+/** Reuse the platform encoder because schema construction owns no state that requires a fresh instance. */
+export const encodeUtf8 = (text: string): Uint8Array => utf8Encoder.encode(text);
+
 /**
  * Resolve Web Crypto per draw so instrumentation installed after import can observe the source.
  * Binding it at module load would bypass `test/instrument.ts` and hide those calls from the gate.

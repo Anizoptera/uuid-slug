@@ -67,6 +67,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Runtime boundaries and evidence
 
+- Read `bench/README.md` before benchmark work. Scope exploratory comparisons with its maintained
+  filters; run all applicable runtimes only after a candidate survives the focused mechanism test.
 - Treat Bun and Node as independent co-primary performance targets: retain a material repeated win
   in either when the other is unchanged, unless contract risk or lifetime cost outweighs it.
 - Benchmark every portable encoder and fallback directly on Node, Bun, Deno, and Chromium, even

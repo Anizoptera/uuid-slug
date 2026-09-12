@@ -3,6 +3,8 @@
 import { runtime as webRuntime } from "./web";
 import type { Runtime } from "./types";
 
+export { encodeUtf8 } from "./web";
+
 /** Only untimestamped native generation satisfies this adapter's contract. */
 interface BunUuid {
   (format: "hex"): string;

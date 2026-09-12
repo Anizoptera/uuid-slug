@@ -463,6 +463,24 @@ second constructor. Reversing only the direct branch failed six frozen built-in 
 custom vectors passed. Keep the single callback protocol; retest only if direct dispatch produces a
 repeatable primary-runtime route gain large enough to exceed its compatibility machinery.
 
+Schema seed encoding is selected by the runtime module. Node uses `Buffer.from`; Bun, Deno, and
+Chromium reuse one `TextEncoder`. Two 24-round packed comparisons on 2026-09-12 improved Node string
+construction by 16.2–16.4% and its iterated route by 9.0–9.1%. Chromium improved the same routes by
+15.4–16.0% and 9.8–11.6%. Bun was unresolved in the first replay and improved string construction
+4.0% in the second; Deno stayed unresolved. Byte-seed construction stayed unresolved on every
+runtime in both replays, so the gain did not move work onto the no-encoding route. Node and Bun
+functional tests covered synchronous and cooperative UTF-8 boundaries, and a result-changing
+encoding mutation failed that oracle before timing.
+
+Constructing a fresh `TextEncoder` per seed was retained in neither adapter. Reusing one encoder
+alone did not produce a repeated primary-runtime gain. Packing each four encoded bytes into one
+word reduced loop iterations in an initial screen, but two 24-round replays did not reproduce the
+gain; the extra tail path therefore had no measured value. Adding encoding to the `Runtime` object
+was also rejected: conditional module resolution already selects exactly one implementation, so an
+optional method would expose no capability distinction and would add a property dispatch. Retest
+these choices if a primary runtime changes its UTF-8 primitive or the complete construction route
+stops preserving the gains above.
+
 Lazy runtime-adapter loading was rejected. The package import map already selects exactly one
 adapter before evaluation, and UUIDv7 generator state is created only on its first generation call.
 Dynamic adapter loading would make the synchronous public generators asynchronous; deferring the

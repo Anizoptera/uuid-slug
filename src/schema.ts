@@ -5,6 +5,7 @@ import { FEISTEL_KEY_WORDS, feistel16 } from "./feistel";
 import { createSchemaHandle } from "./schema-handle";
 import { halfSipHash } from "./siphash";
 import type { HashContinuation } from "./siphash";
+import { encodeUtf8 } from "#runtime";
 import { yieldToHost } from "./yield";
 import type { AsyncUuidV7MaskOptions, UuidV7Mask, UuidV7MaskOptions } from "./types";
 
@@ -27,7 +28,7 @@ const CHAIN_KEY0 = 0x64697575;
 
 function seedBytes(seed: string | Uint8Array) {
   if (typeof seed !== "string") return new Uint8Array(seed);
-  return new TextEncoder().encode(seed);
+  return encodeUtf8(seed);
 }
 
 /** Reject coercible JavaScript values before they can allocate storage or become key material. */
@@ -206,7 +207,6 @@ function* cooperativeKeys(
   const chunks: Uint8Array[] = [];
   let length = 0;
   if (typeof seed === "string") {
-    const encoder = new TextEncoder();
     for (let start = 0; start < seed.length;) {
       let end = Math.min(seed.length, start + CHUNK_BYTES);
       // Do not split a surrogate pair: encoding either half alone would substitute U+FFFD.
@@ -214,7 +214,7 @@ function* cooperativeKeys(
       const next = seed.charCodeAt(end);
       if (end < seed.length && last >= 0xd800 && last <= 0xdbff && next >= 0xdc00 && next <= 0xdfff)
         end -= 1;
-      const bytes = encoder.encode(seed.slice(start, end));
+      const bytes = encodeUtf8(seed.slice(start, end));
       chunks.push(bytes);
       length += bytes.length;
       start = end;
