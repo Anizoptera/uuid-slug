@@ -62,6 +62,7 @@ const nativeToBase64 = (
     toBase64?: (options: { alphabet: "base64url"; omitPadding: boolean }) => string;
   }
 ).toBase64;
+export const hasNativeBase64urlEncoder: boolean = nativeToBase64 !== undefined;
 const BASE64_OPTIONS = { alphabet: "base64url", omitPadding: true } as const;
 
 /**

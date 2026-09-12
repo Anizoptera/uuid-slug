@@ -787,6 +787,13 @@ setup measurably slowed Chromium's common path. Two 12-round packed replays on 2
 resource probe observed one slice at 16 schemas. Custom callbacks still receive isolated bytes,
 and the original decoded block remains available to later migration formats.
 
+Canonical UUID text packs directly into base64url only when `Uint8Array.prototype.toBase64` is
+absent. Node v24.20.0 took that fallback on 2026-09-12; Bun 1.4.2, Deno 2.9.6, and Chromium 151 used
+the native encoder. Two packed replays measured a 20–21% Node paired-median gain while every native
+interval included no change. The fallback allocates no byte buffer, preserves parser diagnostics,
+and matches the byte encoder while every byte position traverses all 256 values. Reconsider the
+split only when Node gains native base64url encoding or another runtime changes its capability.
+
 ## Regression protection and limits
 
 `bun run perf:check` protects JavaScript-visible allocation, decoding, encoding and entropy work, plus coarse relative pipeline timings on both runtimes. Its injected result-preserving regressions must fail. Shared functional cases protect wire identity, ownership, invalid input and optional native branches. Async cases protect snapshots, UTF-8 chunk boundaries, cancellation and independent concurrent constructions; changing host yields to microtasks makes cancellation fail.

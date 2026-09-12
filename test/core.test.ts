@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { runInNewContext } from "node:vm";
 import {
+  bytesToSlug,
+  bytesToUuid,
   createCustomUuidV7Mask,
   createUuidV7Mask,
   createUuidV7SlugCodec as createCodec,
@@ -121,8 +123,25 @@ describe("direct UUID slugs", () => {
     expect(slugToUuid("sbpZnUhES7Ch7qwK64h19Q")).toBe(SAMPLE_V4);
   });
 
+  it("preserves every byte value at every UUID position", () => {
+    const bytes = new Uint8Array(16);
+    for (let sample = 0; sample < 256; sample += 1) {
+      for (let position = 0; position < bytes.length; position += 1)
+        bytes[position] = (sample + position * 17) & 255;
+      expect(uuidToSlug(unwrap(bytesToUuid(bytes)))).toBe(bytesToSlug(bytes));
+    }
+  });
+
   it("rejects uppercase UUIDs instead of silently canonicalizing external input", () => {
     expect(uuidToBytes(SAMPLE_V7_A.toUpperCase())).toBeInstanceOf(Error);
+  });
+
+  it("keeps parser diagnostics on every invalid UUID hex position", () => {
+    for (let index = 0; index < SAMPLE_V7_A.length; index += 1) {
+      if (SAMPLE_V7_A[index] === "-") continue;
+      const invalid = `${SAMPLE_V7_A.slice(0, index)}!${SAMPLE_V7_A.slice(index + 1)}`;
+      expect(uuidToSlug(invalid)).toEqual(uuidToBytes(invalid));
+    }
   });
 
   // A UUIDv7 leads with its 48-bit timestamp, so slugs sort by creation time exactly when the

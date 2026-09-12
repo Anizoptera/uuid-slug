@@ -170,6 +170,11 @@ try {
     errors: 0,
   });
   if (hasBase64) assert.equal(counts.base64, 1, "available native base64 must be used once");
+  check("UUID text to slug", () => api.uuidToSlug(id), {
+    buffers: hasBase64 ? 1 : 0,
+    views: 0,
+    errors: 0,
+  });
   check("previous-key decode", () => rotated.decodeSlug(old as string), {
     errors: 0,
     chars: 22,

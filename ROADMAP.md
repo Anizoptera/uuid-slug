@@ -22,12 +22,12 @@ the maintainer separately changes the HLD.
 - [x] Exhaustive migration candidates reuse one private block restored from four scalar ciphertext
   words. A zero-schema behavior case and the 1/4/8/16-schema profile corpus separate first, middle,
   last, miss, and exhaustive routes; two packed replays retained gains at 8 and 16 schemas on every
-  runtime with no repeated
-  first-match regression, while the resource probe reduced 16-schema slicing from 16 to one.
-- [ ] Test direct canonical UUID-string to base64url fallback encoding without an intermediate byte
-  array. Preserve exact validation order and diagnostic offsets; compare against native encoding
-  and the composed parser/encoder on every runtime. Reject unless repeated complete-route gains pay
-  for the duplicated fixed-shape logic.
+  runtime with no repeated first-match regression, while the resource probe reduced 16-schema
+  slicing from 16 to one.
+- [x] Canonical UUID text now packs directly into base64url only when the runtime lacks the native
+  encoder. Two packed replays retained a 20–21% Node fallback gain; Bun, Deno, and Chromium kept
+  their native path without a repeated change. The resource probe observes zero fallback buffers,
+  while byte-space and diagnostic mutations prove wire identity and parser-error preservation.
 - [ ] Test direct canonical UUID-string to base32hex encoding without an intermediate byte array.
   Preserve exact validation order and diagnostic offsets; compare against the composed
   parser/encoder on every runtime. Reject unless repeated complete-route gains pay for the

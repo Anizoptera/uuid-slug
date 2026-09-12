@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { BASE32HEX, BASE64URL, decodeInto, encode, isEncoded } from "./alphabet";
+import {
+  BASE32HEX,
+  BASE64URL,
+  decodeInto,
+  encode,
+  hasNativeBase64urlEncoder,
+  isEncoded,
+} from "./alphabet";
 import type { Alphabet } from "./alphabet";
 import { checkByteRange, checkRange, isUint8Array, UuidSlugError } from "./errors";
 import type {
@@ -107,6 +114,11 @@ function hexValue(code: number) {
   return HEX_DECODE[code] ?? -1;
 }
 
+function uuidByteAt(uuid: string, byteIndex: number): number {
+  const offset = UUID_BYTE_OFFSETS[byteIndex] as number;
+  return (hexValue(uuid.charCodeAt(offset)) << 4) | hexValue(uuid.charCodeAt(offset + 1));
+}
+
 /**
  * Convert one canonical lowercase UUID to 16 bytes; failure leaves caller storage unchanged.
  * Generic capture rejects known slug brands, while bare strings stay open to runtime validation
@@ -140,10 +152,7 @@ export function uuidToBytes(
   }
   const target = out ?? new Uint8Array(16);
   for (let byteIndex = 0; byteIndex < UUID_BYTE_OFFSETS.length; byteIndex += 1) {
-    const textOffset = UUID_BYTE_OFFSETS[byteIndex] as number;
-    const high = hexValue(uuid.charCodeAt(textOffset));
-    const low = hexValue(uuid.charCodeAt(textOffset + 1));
-    target[offset + byteIndex] = (high << 4) | low;
+    target[offset + byteIndex] = uuidByteAt(uuid, byteIndex);
   }
   return target;
 }
@@ -191,6 +200,24 @@ export function isUuidString(value: unknown): value is UuidString {
 /** The string has already passed canonical validation, so the variant digit is a known hex value. */
 function stringHasRfcVariant(uuid: string): boolean {
   return (HEX_DECODE[uuid.charCodeAt(19)] as number) >>> 2 === 2;
+}
+
+/** Encode validated canonical UUID text directly into its fixed 22-character base64url shape. */
+function uuidStringToBase64url(uuid: string): UuidSlug {
+  let encoded = "";
+  for (let byteIndex = 0; byteIndex < 15; byteIndex += 3) {
+    const block =
+      (uuidByteAt(uuid, byteIndex) << 16) |
+      (uuidByteAt(uuid, byteIndex + 1) << 8) |
+      uuidByteAt(uuid, byteIndex + 2);
+    encoded +=
+      (BASE64URL.chars[(block >>> 18) & 63] as string) +
+      (BASE64URL.chars[(block >>> 12) & 63] as string) +
+      (BASE64URL.chars[(block >>> 6) & 63] as string) +
+      (BASE64URL.chars[block & 63] as string);
+  }
+  const last = uuidByteAt(uuid, 15);
+  return (encoded + BASE64URL.chars[last >>> 2] + BASE64URL.chars[(last & 3) << 4]) as UuidSlug;
 }
 
 /** Check canonical UUID text with version 4 and RFC variant bits. */
@@ -307,6 +334,8 @@ export function uuidToSlug(
   uuid: string,
   alphabet: SlugAlphabet = "base64url",
 ): UuidSlug | UuidSlugError {
+  if (!hasNativeBase64urlEncoder && alphabet === "base64url" && isUuidString(uuid))
+    return uuidStringToBase64url(uuid);
   const bytes = uuidToBytes(uuid);
   if (bytes instanceof Error) return bytes;
   return bytesToSlug(bytes, alphabet);
