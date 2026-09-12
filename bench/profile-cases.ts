@@ -35,8 +35,18 @@ export function createProfileCases(
   const sentinelTimestampWindow = { maxTimestampDeltaMs: 0, referenceUnixMs: 0 };
   const current = { seed: "profile-current-seed" };
   const previous = { seed: "profile-previous-seed" };
-  const sentinels = [{ name: "nil", uuid: "00000000-0000-7000-8000-000000000000" }];
+  const sentinelDefinitions = Array.from({ length: 16 }, (_, index) => ({
+    name: `sentinel-${index}`,
+    uuid: `00000000-0000-7000-8000-${index.toString(16).padStart(12, "0")}`,
+  }));
+  const sentinels = sentinelDefinitions.slice(0, 1);
   const codec = unwrap(api.createUuidV7SlugCodec({ mask: current, sentinels }));
+  const sentinelCodec4 = unwrap(
+    api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions.slice(0, 4) }),
+  );
+  const sentinelCodec16 = unwrap(
+    api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions }),
+  );
   const base32Codec = unwrap(
     api.createUuidV7SlugCodec({ mask: current, outputAlphabet: "base32hex", sentinels }),
   );
@@ -211,6 +221,13 @@ export function createProfileCases(
     "sentinel.base32.encode": () => base32Codec.encodeUuid(base32Sentinel.uuid),
     "sentinel.base32.decode": () => base32Codec.decodeSlug(base32Sentinel.slug),
     "sentinel.base32.decode.bytes": () => base32Codec.decodeSlugToBytes(base32Sentinel.slug),
+    "sentinel.scan4.first": () => sentinelCodec4.encodeUuid(sentinelDefinitions[0]!.uuid),
+    "sentinel.scan4.last": () => sentinelCodec4.encodeUuid(sentinelDefinitions[3]!.uuid),
+    "sentinel.scan4.miss": () => sentinelCodec4.encodeUuid(ids[255] as string),
+    "sentinel.scan16.first": () => sentinelCodec16.encodeUuid(sentinelDefinitions[0]!.uuid),
+    "sentinel.scan16.middle": () => sentinelCodec16.encodeUuid(sentinelDefinitions[8]!.uuid),
+    "sentinel.scan16.last": () => sentinelCodec16.encodeUuid(sentinelDefinitions[15]!.uuid),
+    "sentinel.scan16.miss": () => sentinelCodec16.encodeUuid(ids[255] as string),
     "invalid.uuid": () => api.uuidToBytes(badUuid),
     "invalid.slug": () => api.slugToBytes(badSlug),
     "invalid.mask": (index) => codec.decodeSlug(oldOnly[index % oldOnly.length] as string),
