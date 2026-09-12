@@ -6,9 +6,11 @@ Preserve every published TypeScript contract, wire format, accepted input, outpu
 fallback, ownership rule, and supported runtime. Optimize Node, Bun, Deno, and browser TypeScript
 paths only. Do not change the Rust implementation or use it to hide TypeScript cost.
 
-Prioritize performance decisions in this order: Bun and Node first, Chromium second, Deno third.
-A Deno-only regression does not veto a clear primary-runtime improvement; quantify it and preserve
-all Deno contracts.
+Select the performance ladder by dispatch context. For a primary public route, Bun and Node are
+independent co-primary targets, Chromium is second, and Deno is third. For a portable fallback,
+rank only runtimes whose normal dispatch reaches it by that same order; runtimes whose native path
+shadows it are last regardless of their primary-path rank and provide portability evidence rather
+than steering fallback trade-offs. Quantify lower-priority regressions and preserve every contract.
 
 Safe APIs remain the default. A substantially faster unsafe public variant is permitted only when
 consumer value justifies its explicit misuse risk; its name and declaration must state the lost
