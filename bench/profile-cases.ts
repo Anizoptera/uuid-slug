@@ -3,7 +3,10 @@
 import { unwrap } from "../dev/unwrap";
 type Api = typeof import("../src/index");
 type PrivateV4Api = Pick<typeof import("../src/v4"), "generatePortableUuidV4">;
-type PrivateAlphabetApi = Pick<typeof import("../src/alphabet"), "BASE64URL" | "encodePortable">;
+type PrivateAlphabetApi = Pick<
+  typeof import("../src/alphabet"),
+  "BASE32HEX" | "BASE64URL" | "encodePortable"
+>;
 export type ProfileValue = string | number | boolean | Uint8Array | Error | object;
 export type ProfileCase = (index: number) => ProfileValue;
 
@@ -104,6 +107,12 @@ export function createProfileCases(
   )
     throw new Error("Portable base64url encoding differs from the public canonical spelling");
   const base32 = ids.map((id) => unwrap(api.uuidToSlug(id, "base32hex")));
+  if (
+    privateAlphabetApi &&
+    privateAlphabetApi.encodePortable(bytes[0] as Uint8Array, privateAlphabetApi.BASE32HEX) !==
+      base32[0]
+  )
+    throw new Error("Portable base32hex encoding differs from the public canonical spelling");
   const masked = ids.map((id) => unwrap(codec.encodeUuid(id)));
   const maskedBase32 = ids.map((id) => unwrap(base32Codec.encodeUuid(id)));
   const maskedCustom = bytes.map((value) => unwrap(customCodec.encodeUuid(value)));
@@ -152,6 +161,11 @@ export function createProfileCases(
             privateAlphabetApi.encodePortable(
               bytes[index & 255] as Uint8Array,
               privateAlphabetApi.BASE64URL,
+            ),
+          "portable.base32.encode": (index: number) =>
+            privateAlphabetApi.encodePortable(
+              bytes[index & 255] as Uint8Array,
+              privateAlphabetApi.BASE32HEX,
             ),
         }
       : {}),
