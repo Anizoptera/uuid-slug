@@ -833,6 +833,16 @@ to 3.79 MB, then settled near 1.72 MB. Three fresh Deno processes retained 168.6
 to all cancelled inputs in those runs. Heap-after-GC deltas do not measure gross allocation or prove
 that every application is leak-free.
 
+Large aligned byte seeds reuse their owned snapshot as little-endian hash words; smaller, unaligned,
+odd-length, string, and big-endian inputs keep the packing path. Two packed replays on 2026-09-12
+measured 4 KiB construction at 59–80% of baseline and 64 KiB at 59–77% across Node 26.8.2, Bun
+1.4.2, Deno 2.9.6, Chromium 153, and Node JITless. The 16-byte, 4,095-byte, and 4,097-byte controls
+had no repeated difference. A 64 KiB resource probe reduced newly allocated `Int32Array` storage
+from 65,732 to 192 bytes by replacing the packed seed with one view. Cooperative 64 KiB settlement
+improved on Node, Bun, and Deno; at 1 MiB it improved without increasing the observed host-task gap.
+These local timings do not establish a cross-device crossover. Keep the portable packer as the
+fallback and remeasure the threshold when an engine changes typed-array or hash-loop behavior.
+
 ## Migration decoding
 
 Migration parses each input once and stops at the first match for `decode`; `candidates` tries

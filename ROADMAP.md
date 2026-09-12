@@ -103,7 +103,7 @@ unless the maintainer separately changes the HLD.
   available and the current encoder as fallback. Vary ASCII, multibyte, surrogate boundaries, and
   geometric seed sizes; retain only if peak memory and elapsed work improve without extra ordinary
   seed cost or changed derived keys.
-- [ ] Test streaming byte-seed hashing that avoids the full packed-word allocation while preserving
+- [x] Test streaming byte-seed hashing that avoids the full packed-word allocation while preserving
   the frozen HalfSipHash byte stream. Compare synchronous and cooperative construction over
   geometric seed sizes; reject unless large-input resource savings justify the additional state
   machine and ordinary seeds remain unaffected.

@@ -15,6 +15,14 @@ const SEED_MIN_BYTES = 16;
 /** Bound accidental work-factor typos; construction cost still depends on the runtime and seed. */
 const MAX_KEY_ITERATIONS = 1 << 24;
 
+/** Large aligned byte seeds can share their owned buffer without changing HalfSipHash's byte order. */
+const LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
+const SEED_WORD_VIEW_MIN_BYTES = 4096;
+
+function canViewSeedWords(seed: Uint8Array) {
+  return LITTLE_ENDIAN && (seed.byteOffset & 3) === 0 && (seed.length & 3) === 0;
+}
+
 /**
  * Initial keys for the two derivation chains, nothing-up-my-sleeve: the little-endian ASCII of
  * "uuid" with "slgA" and "slgB", so a reader can check they conceal no chosen structure.
@@ -59,6 +67,8 @@ function validateOptions(options: unknown) {
 
 /** Repack bytes as the little-endian 32-bit words `halfSipHash` absorbs. */
 function seedWords(seed: Uint8Array) {
+  if (seed.length >= SEED_WORD_VIEW_MIN_BYTES && canViewSeedWords(seed))
+    return new Int32Array(seed.buffer, seed.byteOffset, seed.length >>> 2);
   const words = new Int32Array(Math.ceil(seed.length / 4) + 1);
   writeSeedWords(seed, words);
   return words;
@@ -226,14 +236,20 @@ function* cooperativeKeys(
   }
   const short = invalidSeedLength(length);
   if (short) return short;
-  const words = new Int32Array(Math.ceil(length / 4) + 1);
-  let offset = 0;
-  for (const bytes of chunks) {
-    for (let start = 0; start < bytes.length; start += CHUNK_BYTES) {
-      writeSeedWords(bytes, words, offset, start, Math.min(bytes.length, start + CHUNK_BYTES));
-      yield;
+  const viewBytes =
+    typeof seed !== "string" && seed.length >= SEED_WORD_VIEW_MIN_BYTES && canViewSeedWords(seed);
+  const words = viewBytes
+    ? new Int32Array(seed.buffer, seed.byteOffset, seed.length >>> 2)
+    : new Int32Array(Math.ceil(length / 4) + 1);
+  if (!viewBytes) {
+    let offset = 0;
+    for (const bytes of chunks) {
+      for (let start = 0; start < bytes.length; start += CHUNK_BYTES) {
+        writeSeedWords(bytes, words, offset, start, Math.min(bytes.length, start + CHUNK_BYTES));
+        yield;
+      }
+      offset += bytes.length;
     }
-    offset += bytes.length;
   }
   chunks.length = 0;
   const chainA = yield* cooperativeChain(CHAIN_KEY0, CHAIN_A_KEY1, words, length, iterations);
