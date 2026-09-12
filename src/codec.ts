@@ -36,13 +36,17 @@ import type { UuidV7TimestampWindow, UuidV7SentinelConfig } from "./types";
 import type { SlugAlphabet } from "./uuid";
 
 type EncodedSentinel = { bytes: Uint8Array; slug: SentinelUuidV7Slug };
-type EncodedSentinelIndexValue = EncodedSentinel | EncodedSentinel[];
+type EncodedSentinelIndex = {
+  readonly fingerprints: Uint32Array;
+  readonly positions: Uint32Array;
+  readonly mask: number;
+};
 
 type SentinelState = {
   readonly bySlug: ReadonlyMap<string, { uuid: UuidV7String; bytes: Uint8Array }>;
   readonly byUuid: ReadonlyMap<string, SentinelUuidV7Slug>;
   readonly encoded: readonly EncodedSentinel[];
-  readonly encodedByFingerprint: ReadonlyMap<number, EncodedSentinelIndexValue> | undefined;
+  readonly encodedByFingerprint: EncodedSentinelIndex | undefined;
   readonly sentinels: readonly UuidV7Sentinel[];
 };
 
@@ -76,20 +80,22 @@ function sentinelFingerprint(bytes: Uint8Array): number {
 // Fingerprints select candidates only. Full equality is mandatory because callers control sentinel
 // values and can produce collisions deliberately or accidentally.
 function findIndexedByteSentinel(
-  encodedByFingerprint: ReadonlyMap<number, EncodedSentinelIndexValue>,
+  encoded: readonly EncodedSentinel[],
+  encodedByFingerprint: EncodedSentinelIndex,
   bytes: Uint8Array,
 ): SentinelUuidV7Slug | undefined {
-  const indexed = encodedByFingerprint.get(sentinelFingerprint(bytes));
-  if (!indexed) return undefined;
-  if (!Array.isArray(indexed)) {
-    let index = 0;
-    while (index < 16 && indexed.bytes[index] === bytes[index]) index += 1;
-    return index === 16 ? indexed.slug : undefined;
-  }
-  for (const sentinel of indexed) {
-    let index = 0;
-    while (index < 16 && sentinel.bytes[index] === bytes[index]) index += 1;
-    if (index === 16) return sentinel.slug;
+  const fingerprint = sentinelFingerprint(bytes);
+  let slot = fingerprint & encodedByFingerprint.mask;
+  let position = encodedByFingerprint.positions[slot] as number;
+  while (position !== 0) {
+    if (encodedByFingerprint.fingerprints[slot] === fingerprint) {
+      const indexed = encoded[position] as EncodedSentinel;
+      let index = 0;
+      while (index < 16 && indexed.bytes[index] === bytes[index]) index += 1;
+      if (index === 16) return indexed.slug;
+    }
+    slot = (slot + 1) & encodedByFingerprint.mask;
+    position = encodedByFingerprint.positions[slot] as number;
   }
   return undefined;
 }
@@ -157,19 +163,24 @@ function createSentinels(
     if (alternate instanceof Error) return alternate;
     bySlug.set(alternate, { uuid: sentinel.uuid, bytes });
   }
-  let encodedByFingerprint: Map<number, EncodedSentinelIndexValue> | undefined;
+  let encodedByFingerprint: EncodedSentinelIndex | undefined;
   // Small sets are faster and smaller as a linear scan. Larger sets amortize one immutable index;
-  // singleton values avoid a retained bucket array unless a fingerprint collision needs one.
+  // excluding the first entry reserves zero as the empty-slot marker without another bitmap.
   if (encoded.length >= 16) {
-    encodedByFingerprint = new Map();
+    let capacity = 1;
+    while (capacity < (encoded.length - 1) * 2) capacity *= 2;
+    const fingerprints = new Uint32Array(capacity);
+    const positions = new Uint32Array(capacity);
+    const mask = capacity - 1;
     for (let index = 1; index < encoded.length; index += 1) {
       const sentinel = encoded[index] as EncodedSentinel;
-      const key = sentinelFingerprint(sentinel.bytes);
-      const indexed = encodedByFingerprint.get(key);
-      if (!indexed) encodedByFingerprint.set(key, sentinel);
-      else if (Array.isArray(indexed)) indexed.push(sentinel);
-      else encodedByFingerprint.set(key, [indexed, sentinel]);
+      const fingerprint = sentinelFingerprint(sentinel.bytes);
+      let slot = fingerprint & mask;
+      while (positions[slot] !== 0) slot = (slot + 1) & mask;
+      fingerprints[slot] = fingerprint;
+      positions[slot] = index;
     }
+    encodedByFingerprint = { fingerprints, positions, mask };
   }
   return {
     bySlug,
@@ -260,7 +271,11 @@ function buildUuidSlugCodec(
       let index = 0;
       while (index < 16 && first.bytes[index] === bytes[index]) index += 1;
       if (index === 16) return first.slug;
-      const sentinel = findIndexedByteSentinel(sentinels.encodedByFingerprint, bytes);
+      const sentinel = findIndexedByteSentinel(
+        sentinels.encoded,
+        sentinels.encodedByFingerprint,
+        bytes,
+      );
       if (sentinel) return sentinel;
     } else {
       for (const sentinel of sentinels.encoded) {

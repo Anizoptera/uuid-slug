@@ -82,7 +82,7 @@ unless the maintainer separately changes the HLD.
   reject extra maps when one discriminating word already bounds the chain.
 - [x] Test a sorted sentinel-key table with binary search against hash lookup; include construction,
   branch prediction, collision ranges, and exact-equality fallback.
-- [ ] Test compact open-addressed sentinel storage against built-in `Map`; reject owned hashing or
+- [x] Test compact open-addressed sentinel storage against built-in `Map`; reject owned hashing or
   probing code unless retained memory and lookup both improve materially across primary runtimes.
 - [x] Test a compact fingerprint table before full sentinel equality; vary fingerprint width and
   adversarial collisions, and retain only if fewer byte comparisons repay false-positive checks.
