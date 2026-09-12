@@ -748,6 +748,11 @@ to one per 510. The cursor's gains therefore did not isolate tail reuse and do n
 allocation and failure state. Keep the one-buffer linear cursor; reconsider only if discarded-byte
 measurement, not unrelated JIT movement, becomes material.
 
+Compact bitsets do not fit the package's production Sets. Error codes form a closed vocabulary but
+arrive as strings, so a bitset still needs a string-to-index classifier and duplicates the existing
+runtime vocabulary. Sentinel names and UUIDs are caller-defined, sparse, and unbounded. Keep Sets
+for both domains; reconsider a bitset only when the lookup key is already a bounded integer.
+
 ## Allocation and key rotation
 
 ### Profiler batch size

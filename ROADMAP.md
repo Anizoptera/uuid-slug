@@ -148,7 +148,7 @@ unless the maintainer separately changes the HLD.
   caller ownership; reject retained secret bytes or extra views even if average throughput improves.
 - [x] Test thresholded migration-candidate deduplication with linear scan below crossover and `Set`
   above it; compare duplicate-heavy and distinct-heavy schema outputs before adding a second structure.
-- [ ] Test compact bitsets only for closed bounded validation sets now represented by `Set`; reject
+- [x] Test compact bitsets only for closed bounded validation sets now represented by `Set`; reject
   them where coercion, readability, or sparse domains erase the lookup benefit.
 - [ ] Test lazy construction of rare migration and sentinel structures against eager setup. Preserve
   immutability and deterministic errors; reject hidden mutable initialization or first-call latency spikes.
