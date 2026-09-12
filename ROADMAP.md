@@ -72,7 +72,8 @@ protection, and no default or fallback may select it.
 
 ### Candidate map
 
-- [ ] Falsify looped versus unrolled HalfSipHash compression rounds without changing message shape.
+- [x] Reject unrolled HalfSipHash compression rounds: two packed 24-round replays found no
+  reproducible Bun or Node gain, while direct duplication increased the hash core.
 - [ ] Falsify looped versus unrolled HalfSipHash finalization rounds without changing message shape.
 - [ ] Falsify fixed-length dispatch inside the existing hash function without scalar arguments.
 - [ ] Falsify scalar Feistel message arguments without duplicating hash rounds.

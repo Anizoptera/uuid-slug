@@ -114,6 +114,9 @@ put all masked median ratios within 3.3% of 1.0 under the same warm-up policy.
   Chrome's built-in masked routes regressed by 8.7–19.9%. The function also duplicated the hash core.
 - Fixed-offset expansion of the four-word check-tag loop produced no consistent runtime win. Selected
   masked routes regressed by up to 4.9% on Node, 8.2% on Deno, and 13.9% on Chrome.
+- Inlining both compression rounds removed the counted loop but duplicated its arithmetic. Two
+  24-round packed replays found no statistically distinct Bun route and no repeatable Node route;
+  Chromium was also unresolved. The loop remains the smaller implementation.
 
 These measurements isolate shipped public routes, not each generated-machine-code difference. The
 fixed-length trial changed both message dispatch and argument shape, so it does not reject either
