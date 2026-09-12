@@ -965,6 +965,12 @@ masked byte routes also regressed. Keep the grouped byte decoder and caller-owne
 Reconsider scalar staging only when downstream masking or formatting can consume words directly;
 materializing the same bytes after staging cannot repay the extra branches.
 
+Decoding caller-owned slugs once into a private 16-byte block fused character and canonical-tail
+validation with decoding, then committed only successful output. Two packed public-route replays
+made Bun 1.4.2 about 11–12% faster but Node 26.8.2 about 6–8% slower. Early, middle, late, and tail
+failures showed no repeated compensating gain. Keep caller-owned prevalidation; a temporary block
+is useful only when allocation and commit are cheaper than the primary runtime's second scan.
+
 Node v26.8.2 profiling combines process counters, `GCProfiler`, V8 heap/code/space state, Inspector
 CPU and allocation samples, heap snapshots, V8 ticks, and trace events. Each source answers a
 different question; correlation is evidence, while two APIs over the same V8 sampler are not

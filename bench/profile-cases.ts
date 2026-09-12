@@ -267,6 +267,14 @@ export function createProfileCases(
     (position) => `${validUuid.slice(0, position)}!${validUuid.slice(position + 1)}`,
   );
   const badSlug = "!".repeat(22);
+  const invalidBase64Slugs = [0, 11, 21].map(
+    (position) => `${slugs[0]!.slice(0, position)}!${slugs[0]!.slice(position + 1)}`,
+  );
+  const invalidBase32Slugs = [0, 13, 25].map(
+    (position) => `${base32[0]!.slice(0, position)}w${base32[0]!.slice(position + 1)}`,
+  );
+  const invalidBase64Tail = `${slugs[0]!.slice(0, 21)}${privateAlphabetApi?.BASE64URL.chars[1] ?? "B"}`;
+  const invalidBase32Tail = `${base32[0]!.slice(0, 25)}1`;
   const v4Uuid = "3b12f1df-5232-4804-897e-917bf397618a";
   const v4Bytes = unwrap(api.uuidToBytes(v4Uuid));
   const v4Slug = unwrap(api.uuidToSlug(v4Uuid));
@@ -528,6 +536,14 @@ export function createProfileCases(
     "invalid.slug.format.range": () => api.bytesToSlug(into, 9),
     "invalid.timestamp.extract.range": () => api.extractUuidV7Timestamp(into, 9),
     "invalid.slug": () => api.slugToBytes(badSlug),
+    "invalid.slug.base64.early": () => api.slugToBytes(invalidBase64Slugs[0] as string),
+    "invalid.slug.base64.middle": () => api.slugToBytes(invalidBase64Slugs[1] as string),
+    "invalid.slug.base64.late": () => api.slugToBytes(invalidBase64Slugs[2] as string),
+    "invalid.slug.base64.tail": () => api.slugToBytes(invalidBase64Tail),
+    "invalid.slug.base32.early": () => api.slugToBytes(invalidBase32Slugs[0] as string),
+    "invalid.slug.base32.middle": () => api.slugToBytes(invalidBase32Slugs[1] as string),
+    "invalid.slug.base32.late": () => api.slugToBytes(invalidBase32Slugs[2] as string),
+    "invalid.slug.base32.tail": () => api.slugToBytes(invalidBase32Tail),
     "invalid.slug.uuid": () => api.slugToUuid(badSlug),
     "invalid.slug.into.range": () => api.slugToBytes(slugs[0] as string, into, 9),
     "invalid.mask.into.range": () => codec.decodeSlugToBytes(masked[0] as string, into, 9),

@@ -134,7 +134,7 @@ unless the maintainer separately changes the HLD.
   Separate valid-heavy from invalid-heavy workloads; reject slower diagnostics or opaque control flow.
 - [x] Test direct slug decode into four scalar words before materializing bytes. Retain only if it
   removes intermediate writes across validation, masking, and formatting without weakening errors.
-- [ ] Test fused alphabet decode and canonical-tail validation. Vary every invalid position and tail
+- [x] Test fused alphabet decode and canonical-tail validation. Vary every invalid position and tail
   alias; reject if fusion duplicates alphabet truth or modifies output before late failure.
 - [ ] Test specialized fixed-length base64url and base32hex decoders against the generic accumulator.
   Keep the generic path only where variable length is public; require packed-route wins in both alphabets.
