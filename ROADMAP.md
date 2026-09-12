@@ -98,7 +98,8 @@ protection, and no default or fallback may select it.
   Bun or Node gain, while duplicating the round body added about 80 packed bytes.
 - [x] Reject construction-time scalar key capture: two packed 24-round replays found no repeated
   Bun or Node route gain, while scalar selection added about 170 packed bytes.
-- [ ] Falsify helper calls versus inlined big-endian reads and writes at the fixed offsets.
+- [x] Reject inlined fixed-offset big-endian I/O: two packed 24-round replays found no Bun or Node
+  gain, while source duplication added about 200 packed bytes and Chromium regressions.
 - [ ] Falsify shifts versus `DataView` for big-endian word I/O on every runtime.
 - [x] Reject fixed-offset check-tag unrolling: it produced no cross-runtime win and regressed
   selected Node, Deno, and Chromium masked routes by 4.9%, 8.2%, and 13.9%, respectively.

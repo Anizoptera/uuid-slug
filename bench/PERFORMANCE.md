@@ -146,6 +146,10 @@ put all masked median ratios within 3.3% of 1.0 under the same warm-up policy.
   branches, removing every hot key-array read. Two 24-round replays found no repeated Bun or Node
   route gain; the distinct improvements moved between routes. Keep indexed keys and avoid about
   170 packed bytes. Retest only if a primary engine changes typed-array indexing or scalar-call cost.
+- Inlining all four big-endian reads and writes into Feistel exposed constant offsets but duplicated
+  about 200 packed bytes. Two 24-round replays found no Bun or Node gain; Chromium routes regressed
+  in both runs. Keep the byte-order helpers. Retest only if generated code shows a primary engine no
+  longer inlines or specializes these fixed-offset calls.
 - Fixed-offset expansion of the four-word check-tag loop produced no consistent runtime win. Selected
   masked routes regressed by up to 4.9% on Node, 8.2% on Deno, and 13.9% on Chrome.
 - Inlining both compression rounds removed the counted loop but duplicated its arithmetic. Two
