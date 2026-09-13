@@ -1,53 +1,102 @@
 # @anizoptera/uuid-slug
 
-Generate and validate UUIDv4 and UUIDv7. Encode any UUID as a reversible 22-character base64url or
-26-character base32hex slug. UUIDv7 also supports keyed masking that removes its recognizable
-layout. The package has no runtime dependencies.
-
 [![npm version](https://img.shields.io/npm/v/@anizoptera/uuid-slug?label=npm)](https://www.npmjs.com/package/@anizoptera/uuid-slug)
 [![CI](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml)
 [![Node >=20](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](package.json)
 [![Runtime deps](https://img.shields.io/badge/runtime_deps-0-2ea44f)](package.json)
 [![License](https://img.shields.io/github/license/Anizoptera/uuid-slug)](LICENSE)
 
-Built to be the fastest and cheapest option on every runtime it supports without giving up
-correctness or secure entropy. Every operation is timed as a whole call on Node, Bun, Deno, and
-Chromium against the runtime's own primitive and the fastest package that keeps the same
-guarantees. A change stays only if its gain repeats. [Measured performance](#measured-performance)
-says where the package still trails.
+UUIDv4 and UUIDv7 generation, validation, and conversion. Any UUID as a reversible 22-character
+base64url or 26-character base32hex slug. Keyed masking that hides a UUIDv7's layout. No runtime
+dependencies, errors as values, branded types, and a Rust crate on the same wire format.
 
-A **UUID** is a 128-bit identifier. Its usual text form is 36 characters of hex and dashes. A
-**slug** here is the same identifier encoded as short URL-safe text. A direct base64url slug is 22
-characters and loses no information: it converts back to the original UUID.
+## TL;DR
 
-Every UUID version exposes a standardized bit layout in UUID text, bytes, and direct slugs. UUIDv7
-also exposes its millisecond timestamp. This package masks UUIDv7: it transforms the compact payload
-into keyed, unstructured-looking text and recovers the UUID for lookup. Masking is obfuscation, not
-an authorization boundary.
+A UUID is a 128-bit identifier, 36 characters as text. A slug here is that same value as short
+URL-safe text: convert either way and nothing is lost. A masked slug is a UUIDv7 payload plus a
+16-bit check, passed through a keyed reversible transform, so a public ID stops looking like a
+UUID. Masking is obfuscation, not authorization.
 
-This package defines no new identity scheme. UUID text, bytes, and direct slugs are reversible
-representations of the same value. Masked slugs also recover the same UUID through their codec.
-Direct conversion accepts every UUID version; built-in generation covers UUIDv4 and UUIDv7. This
-package masks only UUIDv7.
+```mermaid
+flowchart LR
+  T["UUID text<br>36 characters"] <--> B["UUID bytes<br>16 bytes"]
+  T <--> S["Direct slug<br>22 base64url or 26 base32hex<br>any UUID version, no key"]
+  B <--> S
+  B -- "codec(seed), UUIDv7 only" --> M["Masked slug<br>22 base64url or 27 base32hex"]
+  M -- "codec, check must pass" --> B
+  N["Sentinel<br>reserved UUIDv7 the codec leaves unmasked"] -.- M
+```
 
-## When to use it
+What holds everywhere:
 
-Use this package when you need more than UUID generation:
+- Every fallible call returns `T | UuidSlugError`. Nothing throws. Narrow with `isUuidSlugError`.
+- Brands and guards prove format, never issuance. A decoded masked slug is a candidate; look it up.
+- Entropy is the runtime's secure source or the error `rng_unavailable`. There is no weaker fallback.
+- Seed, `keyDerivationIterations`, and sentinels are wire format: change one and old slugs stop
+  decoding. Rotate through `previousMasks`; read retired formats through a migration decoder.
+- The target is the fastest route on Node, Bun, Deno, and Chromium with the guarantees intact.
+  Each change is timed as a whole call against the runtime primitive and the fastest package that
+  keeps the same guarantees, and stays only if the gain repeats. Where the package still trails,
+  [Measured performance](#measured-performance) says so.
 
-| Need | Capability |
+Where to start:
+
+| You need | Call | Read |
+| --- | --- | --- |
+| Shorter UUIDs in URLs | `generateUuidV7Slug()`, `uuidToSlug`, `slugToUuid` | [Two kinds of slug](#two-kinds-of-slug) |
+| Text keys or filenames that sort by UUIDv7 time | the same calls with `"base32hex"` | [Two kinds of slug](#two-kinds-of-slug) |
+| Binary keys written into your own buffer | `generateUuidV7Bytes(out, offset)`, `uuidToBytes`, `bytesToUuid` | [Quick start](#quick-start) |
+| Public IDs without visible UUID structure | `createUuidV7SlugCodec({ mask: { seed } })`, then `generateSlug`, `encodeUuid`, `decodeSlug` | [What masking is not](#what-masking-is-not) |
+| Seed rotation, old links still working | `previousMasks`, `codec.createMigrationDecoder` | [Reading original slugs during migration](#reading-original-slugs-during-migration) |
+| Reserved IDs such as `anonymous` | `sentinels` | [Two kinds of slug](#two-kinds-of-slug) |
+| Reject stale or future IDs | `validateUuidV7Timestamp`, `codec.validateSlugTimestamp` | [Validating timestamp windows](#validating-timestamp-windows) |
+| The same IDs from a Rust service | the `rust/uuid-slug` crate, same seed | [Cross-language contract](docs/cross-language.md) |
+| Plain UUID text only | `generateUuidV4()`, `generateUuidV7()`; bundlers drop the rest | [Measured performance](#measured-performance) |
+
+Traps:
+
+| Assumption | Fact |
 | --- | --- |
-| Short UUIDs in URLs | Lossless 22-character base64url slugs |
-| Text keys ordered by UUIDv7 time | 26-character base32hex direct slugs that sort by encoded millisecond |
-| Binary database keys | Atomic conversion to and from 16-byte caller-owned storage |
-| Public UUIDv7 IDs without recognizable UUID structure | Reversible keyed masking with a 16-bit wrong-key check |
-| Key rotation or old stored links | Ordered previous masks and opt-in migration readers |
-| Reserved IDs such as `anonymous` | Named sentinels that remain recognizable |
-| Strong TypeScript boundaries | Branded representations, version-aware results, and typed errors |
+| A base64url slug sorts by time | No. Only base32hex sorts, only for UUIDv7, only across milliseconds. |
+| Two IDs from one millisecond sort in creation order | Not promised on any runtime. Use a sequence column. |
+| A masked slug is a token | It is reversible with a 16-bit check: per schema tried, about one random string in 65,536 decodes to a well-formed, unissued UUID. Authorize separately. |
+| Any UUID can be masked | UUIDv7 only. A timestamp at or past 2^42 ms, year 2109, is refused, never truncated. |
+| A guard passed, so the value is mine | Some masked slugs pass direct-slug guards by chance. Decode with the owning API, then look it up. |
+| A codec works without a mask | Construction fails. `UUID_V7_TEST_MASK` is a published key; anyone can decode what it issues. |
+| A memorable seed is fine | Seeds under 16 bytes are rejected, and length is not the point: one known UUID and slug pair allows offline guesses. Generate the seed. |
+| `bytesToSlug` is a base64url helper | It accepts exactly one 16-byte UUID or one canonical slug. Every other length is an error. |
+| Successful legacy decodes count legacy traffic | They cannot. The original check has four bits, and one slug can decode under several formats. |
 
-You do not need a smaller library for plain UUID text: generation here is measured against the
-popular UUID-only packages on every supported runtime, and bundlers drop the parts you do not
-import. The larger API is the reason to choose this package when conversion, compact text, masking,
-migration, or cross-runtime behavior must share one checked contract.
+| Runtime | Loads | Generation |
+| --- | --- | --- |
+| Node 20 and newer | compiled JavaScript | native `crypto.randomUUID`, and `crypto.randomUUIDv7` where the version has it |
+| Bun | published TypeScript | `Bun.randomUUIDv7` for current-time UUIDv7 |
+| Deno | published TypeScript | portable adapter, no resolver flag or import map |
+| Browsers, other runtimes | compiled JavaScript | portable adapter over Web Crypto |
+
+CI runs every published Node major from 20 with the newest unpinned, the latest Bun and Deno, and
+the packed consumer on Node, Bun, Deno, Chromium, Firefox, and WebKit. The Rust crate builds and
+tests on Linux, macOS, and Windows for x86-64 and Arm64, and its WebAssembly build runs in the
+same three browser engines.
+
+## Contents
+
+- [Install](#install)
+- [Quick start](#quick-start)
+- [Representations](#representations)
+- [Two kinds of slug](#two-kinds-of-slug)
+- [What masking is not](#what-masking-is-not)
+- [Handling errors](#handling-errors)
+- [Types](#types)
+- [API](#api)
+  - [Codec options](#codec-options)
+  - [Changing an existing ID format](#changing-an-existing-id-format)
+  - [Reading original slugs during migration](#reading-original-slugs-during-migration)
+  - [Validating timestamp windows](#validating-timestamp-windows)
+- [Measured performance](#measured-performance)
+- [Guarantees](#guarantees)
+- [Runtime](#runtime)
+- [License](#license)
 
 ## Install
 
