@@ -12,9 +12,10 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   preferable to a UUID-only library, and keep its capability and representation maps consistent
   with the public API. Update the owning explanation with every consumer-visible change; do not
   copy implementation reasoning or create parallel inventories in other docs.
-- Position the package by the complete consumer contract: compact reversible representations,
-  caller-owned storage, UUIDv7 masking and migration, typed failures, and adaptive runtime paths.
-  Generation alone is not distinctive. State measured losses as gaps, never hide them with hype.
+- Position the package by the complete consumer contract: base64url and base32hex direct slugs for
+  any UUID, caller-owned storage, UUIDv7 masking and migration, typed failures, and adaptive runtime
+  paths. Keep version-neutral encoding separate from UUIDv7-only masking. Generation alone is not
+  distinctive. State measured losses as gaps, never hide them with hype.
 - The externally visible API is reserved. Put any proposed public export, option, behavior, or
   feature change and its consumer consequences in the same pull request. Merging is the maintainer
   decision; no separate acceptance step exists.

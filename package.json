@@ -1,7 +1,7 @@
 {
   "name": "@anizoptera/uuid-slug",
   "version": "0.4.0-dev",
-  "description": "Fast UUIDv4 and UUIDv7 generation, compact URL-safe encodings, and reversible UUIDv7 masking. Zero dependencies.",
+  "description": "Fast UUIDv4/v7 generation; encode any UUID as 22-character base64url or 26-character base32hex; reversible UUIDv7 masking. Zero dependencies.",
   "keywords": [
     "base64url",
     "browser",

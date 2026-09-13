@@ -1,8 +1,8 @@
 # @anizoptera/uuid-slug
 
-Generate, validate, store, shorten, and inspect UUIDv4 and UUIDv7 identifiers. For public UUIDv7
-IDs, reversible keyed masking removes their recognizable UUID layout. The package has no runtime
-dependencies.
+Generate and validate UUIDv4 and UUIDv7. Encode any UUID as a reversible 22-character base64url or
+26-character base32hex slug. UUIDv7 also supports keyed masking that removes its recognizable
+layout. The package has no runtime dependencies.
 
 [![npm version](https://img.shields.io/npm/v/@anizoptera/uuid-slug?label=npm)](https://www.npmjs.com/package/@anizoptera/uuid-slug)
 [![CI](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml)
