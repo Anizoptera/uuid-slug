@@ -199,7 +199,7 @@ export function evaluate(request: Request): Outcome {
     );
     switch (request.op) {
       case "mask":
-        return result(codec.uuidStringToSlug(input));
+        return result(codec.uuidToSlug(input));
       case "unmask":
         return result(
           request.acceptDirect === true

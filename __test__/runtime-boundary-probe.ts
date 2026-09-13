@@ -244,7 +244,7 @@ export const runtimeBoundaryCases = [
       });
       assert.ok(!(handle instanceof Error));
       const codec = unwrap(createUuidV7SlugCodec({ mask: handle }));
-      const slug = unwrap(codec.uuidStringToSlug(uuid));
+      const slug = unwrap(codec.uuidToSlug(uuid));
       assert.equal(codec.uuidSlugToString(slug), uuid);
     },
   },

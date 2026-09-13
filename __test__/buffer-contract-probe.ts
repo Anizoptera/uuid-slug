@@ -39,7 +39,7 @@ const FILL = 0xee;
 const BUFFER_BYTES = 32;
 const codec = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK });
 if (codec instanceof Error) throw codec;
-const MASKED_SLUG = codec.uuidStringToSlug(UUID);
+const MASKED_SLUG = codec.uuidToSlug(UUID);
 if (MASKED_SLUG instanceof Error) throw MASKED_SLUG;
 
 /**

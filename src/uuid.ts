@@ -4,7 +4,7 @@ import {
   checkByteRange,
   checkRange,
   invalidByteInput,
-  isUuidSlugError,
+  invalidUuidStringInput,
   isUint8Array,
   UuidSlugError,
 } from "./errors.ts";
@@ -24,6 +24,7 @@ export { UuidSlugError };
 export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidBytes, UuidString } from "./types.ts";
 
+const INVALID_UUID = "invalid_uuid";
 const HEX = "0123456789abcdef";
 // Probe once and allocate the byte-pair fallback only on engines that need it.
 const nativeToHex = (Uint8Array.prototype as { toHex?: () => string }).toHex;
@@ -85,11 +86,11 @@ export function uuidStringToBytes(
   out?: Uint8Array,
   offset = 0,
 ): Uint8Array | UuidSlugError {
-  if (isUuidSlugError(uuid)) return uuid;
-  if (typeof uuid !== "string" || uuid.length !== UUID_LENGTH)
-    return new UuidSlugError("invalid_uuid", "UUID must be 36 characters.");
+  if (typeof uuid !== "string") return invalidUuidStringInput(uuid);
+  if (uuid.length !== UUID_LENGTH)
+    return new UuidSlugError(INVALID_UUID, "UUID must be 36 characters.");
   if (uuid[8] !== "-" || uuid[13] !== "-" || uuid[18] !== "-" || uuid[23] !== "-") {
-    return new UuidSlugError("invalid_uuid", "UUID hyphen positions are invalid.");
+    return new UuidSlugError(INVALID_UUID, "UUID hyphen positions are invalid.");
   }
 
   const badRange = out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
@@ -98,7 +99,7 @@ export function uuidStringToBytes(
   for (const textOffset of UUID_BYTE_OFFSETS) {
     if (hexValue(uuid.charCodeAt(textOffset)) < 0 || hexValue(uuid.charCodeAt(textOffset + 1)) < 0)
       return new UuidSlugError(
-        "invalid_uuid",
+        INVALID_UUID,
         `Invalid UUID hex at offset ${textOffset}; only lowercase 0-9a-f is accepted.`,
       );
   }

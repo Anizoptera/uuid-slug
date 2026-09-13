@@ -72,8 +72,7 @@ describe("error classification", () => {
     if (isUuidSlugError(codec)) throw codec;
     expect(createCodec({ mask: failure })).toBe(failure);
     expect(createCodec({ mask: UUID_V7_TEST_MASK, previousMasks: [failure] })).toBe(failure);
-    expect(codec.uuidStringToSlug(failure)).toBe(failure);
-    expect(codec.uuidBytesToSlug(failure)).toBe(failure);
+    expect(codec.uuidToSlug(failure)).toBe(failure);
     expect(codec.uuidSlugToString(failure)).toBe(failure);
     expect(codec.uuidSlugToBytes(failure, output, 8)).toBe(failure);
     expect(codec.extractUuidSlugTimestamp(failure)).toBe(failure);
@@ -81,6 +80,17 @@ describe("error classification", () => {
     expect(codec.createMigrationDecoder().uuidSlugToString(failure)).toBe(failure);
     expect(codec.createMigrationDecoder().uuidSlugToStringCandidates(failure)).toBe(failure);
     expect(output.every((byte) => byte === 0x5a)).toBe(true);
+  });
+
+  it("does not inspect the error marker on a valid byte input", () => {
+    const bytes = unwrap(uuidStringToBytes(SAMPLE_V7_A));
+    Object.defineProperty(bytes, "__failure", {
+      get() {
+        throw new Error("success reached the error detector");
+      },
+    });
+    const codec = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK });
+    expect(codec.uuidToSlug(bytes)).toBe(codec.uuidToSlug(SAMPLE_V7_A));
   });
 });
 
@@ -144,7 +154,7 @@ describe("UUIDv7 timestamp extraction", () => {
       sentinels: TEST_SENTINELS,
     });
     const instant = unwrap(extractUuidV7Timestamp(TEST_SENTINELS[0].uuid));
-    const masked = unwrap(codec.uuidStringToSlug(SAMPLE_V7_A));
+    const masked = unwrap(codec.uuidToSlug(SAMPLE_V7_A));
     const sentinel = codec.sentinels[0];
     if (!sentinel) throw new Error("Expected configured sentinel");
     expect(codec.extractUuidSlugTimestamp(masked)).toBe(extractUuidV7Timestamp(SAMPLE_V7_A));
@@ -273,7 +283,7 @@ describe("masked UUID slugs", () => {
       "AAAAAAABcACAAAAAAAAAAA",
       "AAAAAAACcACAAAAAAAAAAA",
     ]);
-    expect(codec.uuidStringToSlug(anonymousUser.uuid)).toBe("AAAAAAABcACAAAAAAAAAAA");
+    expect(codec.uuidToSlug(anonymousUser.uuid)).toBe("AAAAAAABcACAAAAAAAAAAA");
     expect(codec.uuidSlugToString("AAAAAAACcACAAAAAAAAAAA")).toBe(unknownUser.uuid);
   });
 
@@ -285,7 +295,7 @@ describe("masked UUID slugs", () => {
       throw new Error("mask creation failed");
     const a = createUuidV7SlugCodec({ mask: first });
     const b = createUuidV7SlugCodec({ mask: second });
-    const slug = a.uuidStringToSlug(SAMPLE_V7_A);
+    const slug = a.uuidToSlug(SAMPLE_V7_A);
     if (slug instanceof Error) throw slug;
     expect(b.uuidSlugToString(slug)).toBeInstanceOf(Error);
     expect(
@@ -299,7 +309,7 @@ describe("masked UUID slugs", () => {
   it("validates timestamps against the codec's OWN key, not the package's published one", () => {
     // This case fails if timestamp validation uses any mask other than the codec's selected key.
     const ids = createUuidV7SlugCodec({ mask: { seed: "not-the-published-one-test-seed-0000" } });
-    const slug = ids.uuidStringToSlug(SAMPLE_V7_A);
+    const slug = ids.uuidToSlug(SAMPLE_V7_A);
     if (slug instanceof Error) throw slug;
     // `now` is pinned to the sample's own instant so the window, not the clock, decides.
     const at = extractUuidV7Timestamp(uuidStringToBytes(SAMPLE_V7_A) as Uint8Array) as number;
@@ -334,7 +344,7 @@ describe("masked UUID slugs", () => {
     // Rotation is the whole reason the list exists, so listing a previous SEED must cost what
     // naming the current one costs. It used to demand a constructor and an error branch.
     const before = createUuidV7SlugCodec({ mask: { seed: "key-v1-test-seed-0000" } });
-    const slug = before.uuidStringToSlug(SAMPLE_V7_A);
+    const slug = before.uuidToSlug(SAMPLE_V7_A);
     if (slug instanceof Error) throw slug;
     const after = createUuidV7SlugCodec({
       mask: { seed: "key-v2-test-seed-0000" },
@@ -342,7 +352,7 @@ describe("masked UUID slugs", () => {
     });
     expect(after.uuidSlugToString(slug)).toBe(SAMPLE_V7_A);
     // And the rotation actually rotated: new ids are issued under v2, not v1.
-    expect(after.uuidStringToSlug(SAMPLE_V7_A)).not.toBe(slug);
+    expect(after.uuidToSlug(SAMPLE_V7_A)).not.toBe(slug);
   });
 
   it("refuses a caller's mask that does not reverse its own mixing step", () => {
@@ -395,7 +405,7 @@ describe("masked UUID slugs", () => {
         keyDerivationIterations,
       });
       if (handle instanceof Error) throw handle;
-      return createUuidV7SlugCodec({ mask: handle }).uuidStringToSlug(uuid);
+      return createUuidV7SlugCodec({ mask: handle }).uuidToSlug(uuid);
     };
     expect(slugAt(1)).not.toBe(slugAt(2));
     expect(slugAt(3)).toBe(slugAt(3));
@@ -428,7 +438,7 @@ describe("direct-slug migration", () => {
     });
     if (mine instanceof Error) throw mine;
     if (theirs instanceof Error) throw theirs;
-    const foreign = String(createUuidV7SlugCodec({ mask: theirs }).uuidStringToSlug(SAMPLE_V7_A));
+    const foreign = String(createUuidV7SlugCodec({ mask: theirs }).uuidToSlug(SAMPLE_V7_A));
 
     const codec = createUuidV7SlugCodec({ mask: mine });
     const failure = codec.uuidSlugToString(foreign);

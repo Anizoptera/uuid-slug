@@ -6,7 +6,6 @@ import {
   checkRange,
   failedFallback,
   fillRandomBytes,
-  isUuidSlugError,
   nativeOrFallback,
   UuidSlugError,
 } from "./errors.ts";
@@ -18,6 +17,10 @@ export { UuidSlugError };
 export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidV4Bytes, UuidV4String } from "./types.ts";
 export { isUuidV4Bytes, isUuidV4String } from "./uuid.ts";
+
+const REENTRANT_GENERATION_MESSAGE =
+  "UUIDv4 generation cannot be reentered from its entropy source.";
+const RNG_UNAVAILABLE = "rng_unavailable";
 
 /**
  * Randomness is drawn into private storage before copying to caller storage. Web Crypto rejects
@@ -47,11 +50,7 @@ export function generateUuidV4Bytes(
   outputOffset = 0,
 ): Uint8Array | UuidSlugError {
   if (output === undefined) return generateOwnedUuidV4Bytes(outputOffset);
-  if (generating)
-    return new UuidSlugError(
-      "rng_unavailable",
-      "UUIDv4 generation cannot be reentered from its entropy source.",
-    );
+  if (generating) return new UuidSlugError(RNG_UNAVAILABLE, REENTRANT_GENERATION_MESSAGE);
   const badRange = checkByteRange(output, outputOffset, 16);
   if (badRange) return badRange;
   generating = true;
@@ -70,11 +69,7 @@ export function generateUuidV4Bytes(
 // Keep owned output separate so it can draw directly into its result without adding a post-draw
 // ownership branch to caller-buffer writes. Merge the paths if either primary runtime loses this win.
 function generateOwnedUuidV4Bytes(outputOffset: number): UuidV4Bytes | UuidSlugError {
-  if (generating)
-    return new UuidSlugError(
-      "rng_unavailable",
-      "UUIDv4 generation cannot be reentered from its entropy source.",
-    );
+  if (generating) return new UuidSlugError(RNG_UNAVAILABLE, REENTRANT_GENERATION_MESSAGE);
   const badRange = checkRange(16, outputOffset, 16);
   if (badRange) return badRange;
   const output = new Uint8Array(16);
@@ -93,7 +88,7 @@ function generateOwnedUuidV4Bytes(outputOffset: number): UuidV4Bytes | UuidSlugE
 /** Generate UUIDv4 text through the portable implementation, even on native-capable hosts. */
 export function generatePortableUuidV4(): UuidV4String | UuidSlugError {
   const bytes = generateUuidV4Bytes();
-  return isUuidSlugError(bytes)
+  return bytes instanceof Error
     ? bytes
     : (bytesToUuidString(bytes) as UuidV4String | UuidSlugError);
 }
@@ -117,14 +112,14 @@ export function generateUuidV4(): UuidV4String | UuidSlugError {
       generatePortableUuidV4,
       "UUIDv4 generation",
     );
-    if (!isUuidSlugError(result)) trustedNativeUuidV4 = native;
+    if (!(result instanceof Error)) trustedNativeUuidV4 = native;
     return result;
   }
   try {
     return native() as UuidV4String;
   } catch (nativeCause) {
     const fallback = generatePortableUuidV4();
-    return isUuidSlugError(fallback)
+    return fallback instanceof Error
       ? failedFallback(nativeCause, fallback, "Native and portable UUIDv4 generation failed.")
       : fallback;
   }

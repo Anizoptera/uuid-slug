@@ -13,6 +13,8 @@ import {
   checkByteRange,
   checkRange,
   invalidByteInput,
+  invalidUuidSlugInput,
+  invalidUuidStringInput,
   isUuidSlugError,
   isUint8Array,
   UuidSlugError,
@@ -53,6 +55,11 @@ export { UuidSlugError };
 export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidSlug, UuidV4Slug, UuidV7Slug } from "./types.ts";
 
+const BASE32HEX_NAME = "base32hex";
+const BASE64URL_NAME = "base64url";
+const INVALID_OPTIONS = "invalid_options";
+const INVALID_UUID_VERSION = "invalid_uuid_version";
+
 /*
  * The alphabets a direct slug may be written in. base64url is the default and the shortest;
  * base32hex costs four more characters and buys the one property base64url cannot offer: its
@@ -62,10 +69,11 @@ export type { UuidSlug, UuidV4Slug, UuidV7Slug } from "./types.ts";
  * Masked output selects its alphabet independently: base32hex preserves case-insensitive filenames,
  * but sorting masked ciphertext does not recover chronological order.
  */
-const ALPHABETS = ["base64url", "base32hex"] as const;
+const ALPHABETS = [BASE64URL_NAME, BASE32HEX_NAME] as const;
 
 /** The accepted slug alphabets, for configuration validation and user-interface choices. */
-export const UUID_SLUG_ALPHABETS: typeof ALPHABETS = /*#__PURE__*/ Object.freeze(ALPHABETS);
+export const UUID_SLUG_ALPHABETS: readonly ["base64url", "base32hex"] =
+  /*#__PURE__*/ Object.freeze(ALPHABETS);
 
 /**
  * Select direct-slug output: 22-character base64url, or 26-character lowercase base32hex.
@@ -88,7 +96,7 @@ export function resolveSlugAlphabet(alphabet: SlugAlphabet): Alphabet | UuidSlug
   )
     return SLUG_ALPHABET_CODECS[alphabet];
   return new UuidSlugError(
-    "invalid_options",
+    INVALID_OPTIONS,
     `Unknown slug alphabet; expected ${UUID_SLUG_ALPHABETS.join(" or ")}.`,
   );
 }
@@ -196,15 +204,15 @@ export function bytesToUuidSlug(
   if (badRange) return badRange;
   if (alphabetIsSecond && alphabet !== undefined)
     return new UuidSlugError(
-      "invalid_options",
+      INVALID_OPTIONS,
       "Pass the alphabet once: second for a whole UUID, or third after a numeric offset.",
     );
   // Unreachable from TypeScript, where the name is a two-member union. Reached from JavaScript,
   // which is why it answers rather than indexing into `undefined`.
   const alpha = resolveSlugAlphabet(
-    alphabetIsSecond ? offsetOrAlphabet : (alphabet ?? "base64url"),
+    alphabetIsSecond ? offsetOrAlphabet : (alphabet ?? BASE64URL_NAME),
   );
-  if (isUuidSlugError(alpha)) return alpha;
+  if (alpha instanceof Error) return alpha;
   return encode(
     bytes.length === 16 ? bytes : bytes.subarray(offset, offset + 16),
     alpha,
@@ -240,9 +248,7 @@ export function uuidSlugToBytes(
   out?: Uint8Array,
   offset = 0,
 ): Uint8Array | UuidSlugError {
-  if (isUuidSlugError(slug)) return slug;
-  if (typeof slug !== "string")
-    return new UuidSlugError("invalid_uuid_slug", `UUID slug must be ${SLUG_LENGTHS} characters.`);
+  if (typeof slug !== "string") return invalidUuidSlugInput(slug);
   const alpha = SLUG_ALPHABET_BY_LENGTH[slug.length];
   if (!alpha)
     return new UuidSlugError(
@@ -263,7 +269,7 @@ export function uuidSlugToBytes(
     return new UuidSlugError(alpha.code, `${alpha.name} value has non-canonical trailing bits.`);
   }
   const result = decodeInto(slug, alpha, target, offset, 16);
-  return isUuidSlugError(result) ? result : target;
+  return result instanceof Error ? result : target;
 }
 
 /**
@@ -281,14 +287,14 @@ export function uuidStringToSlug<Input extends string | UuidSlugError>(
 /*#__NO_SIDE_EFFECTS__*/
 export function uuidStringToSlug(
   uuid: string | UuidSlugError,
-  alphabet: SlugAlphabet = "base64url",
+  alphabet: SlugAlphabet = BASE64URL_NAME,
 ): UuidSlug | UuidSlugError {
-  if (isUuidSlugError(uuid)) return uuid;
-  if (!hasNativeBase64urlEncoder && alphabet === "base64url" && isUuidString(uuid))
+  if (typeof uuid !== "string") return invalidUuidStringInput(uuid);
+  if (!hasNativeBase64urlEncoder && alphabet === BASE64URL_NAME && isUuidString(uuid))
     return uuidStringToBase64url(uuid);
-  if (alphabet === "base32hex" && isUuidString(uuid)) return uuidStringToBase32hex(uuid);
+  if (alphabet === BASE32HEX_NAME && isUuidString(uuid)) return uuidStringToBase32hex(uuid);
   const bytes = uuidStringToBytes(uuid);
-  if (isUuidSlugError(bytes)) return bytes;
+  if (bytes instanceof Error) return bytes;
   return bytesToUuidSlug(bytes, alphabet);
 }
 
@@ -304,9 +310,8 @@ export function uuidSlugToString<Input extends string | UuidSlugError>(
 ): PreserveUuidVersion<Input, UuidString, UuidV4String, UuidV7String> | UuidSlugError;
 /*#__NO_SIDE_EFFECTS__*/
 export function uuidSlugToString(slug: string | UuidSlugError): UuidString | UuidSlugError {
-  if (isUuidSlugError(slug)) return slug;
   const bytes = uuidSlugToBytes(slug);
-  if (isUuidSlugError(bytes)) return bytes;
+  if (bytes instanceof Error) return bytes;
   return bytesToUuidString(bytes);
 }
 
@@ -361,7 +366,7 @@ function extractStringTimestamp(value: string): number | UuidSlugError {
     return timestamp;
   }
   return new UuidSlugError(
-    isUuidString(value) || isUuidSlug(value) ? "invalid_uuid_version" : "invalid_uuid",
+    isUuidString(value) || isUuidSlug(value) ? INVALID_UUID_VERSION : "invalid_uuid",
     "Expected canonical UUIDv7 text or a direct UUIDv7 slug.",
   );
 }
@@ -397,7 +402,7 @@ export function extractUuidV7Timestamp(
   const badRange = checkByteRange(value, byteOffset, 16);
   if (badRange) return badRange;
   if (uuidVersion(value, byteOffset) !== 7 || !isRfcVariant(value, byteOffset))
-    return new UuidSlugError("invalid_uuid_version", "Timestamp is only defined for UUIDv7.");
+    return new UuidSlugError(INVALID_UUID_VERSION, "Timestamp is only defined for UUIDv7.");
   return uuidTimestampFromBytesUnchecked(value, byteOffset);
 }
 
@@ -414,10 +419,10 @@ export function validateUuidV7SlugTimestamp<Input extends string | UuidSlugError
   slug: UuidV7SlugInput<Input>,
   window: UuidV7TimestampWindow,
 ): (Input & UuidV7Slug) | UuidSlugError {
-  if (isUuidSlugError(slug)) return slug;
+  if (typeof slug !== "string") return invalidUuidSlugInput(slug);
   const directSlug: string = slug;
   const bytes = uuidSlugToBytes(directSlug);
-  if (isUuidSlugError(bytes)) return bytes;
+  if (bytes instanceof Error) return bytes;
   const valid = validateTimestampBytes(bytes, window);
-  return isUuidSlugError(valid) ? valid : (directSlug as Input & UuidV7Slug);
+  return valid instanceof Error ? valid : (directSlug as Input & UuidV7Slug);
 }

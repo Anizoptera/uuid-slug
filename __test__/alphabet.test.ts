@@ -174,7 +174,7 @@ describe("wire format compatibility", () => {
   it.each(golden)("$mask $uuid encodes and decodes unchanged", (vector) => {
     const codec = codecs[vector.mask as keyof typeof codecs];
     expect(uuidStringToSlug(vector.uuid)).toBe(vector.direct);
-    expect(codec.uuidStringToSlug(vector.uuid)).toBe(vector.masked);
+    expect(codec.uuidToSlug(vector.uuid)).toBe(vector.masked);
     expect(codec.uuidSlugToString(vector.masked)).toBe(vector.uuid);
     // Length is part of the wire format, not a by-product of it: 22 characters is what makes the
     // check exactly 16 bits, so a slug that round-trips at some other length has changed format.

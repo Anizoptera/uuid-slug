@@ -107,11 +107,11 @@ Keep UUID text/binary conversion directional and version-neutral:
   method remains self-explanatory.
 - Create the default generator lazily so a codec used only to encode or decode pays no generator
   allocation. Codec generation uses that package-owned source; callers encode externally produced
-  UUIDs through `uuidStringToSlug` instead of replacing the codec's entropy source.
-- Name codec operations by source and destination: `generateUuidSlug`, `uuidStringToSlug`,
-  `uuidBytesToSlug`, `uuidSlugToString`, `uuidSlugToBytes`, `extractUuidSlugTimestamp`, and
-  `validateUuidSlugTimestamp`. Keep text and byte inputs separate so each name and input type state
-  the representation and the successful route avoids representation dispatch. Name migration
+  UUIDs through `uuidToSlug` instead of replacing the codec's entropy source.
+- Name codec operations by source and destination: `generateUuidSlug`, `uuidToSlug`,
+  `uuidSlugToString`, `uuidSlugToBytes`, `extractUuidSlugTimestamp`, and
+  `validateUuidSlugTimestamp`. Let `uuidToSlug` accept UUID text or bytes because both represent
+  the same domain value and one shape dispatch removes caller branching. Name migration
   operations `uuidSlugToString` and `uuidSlugToStringCandidates` because detached readers must still identify
   their input.
 - Use `outputAlphabet` for the codec writer choice. It selects emitted slug spelling; it does not
@@ -155,6 +155,10 @@ Keep UUID text/binary conversion directional and version-neutral:
   object and its diagnostics; a failed input must skip the receiving operation's conversion,
   callbacks, entropy draws, and output writes. Caller argument expressions still run before a
   JavaScript function receives them.
+- Separate cross-boundary recognition from local intermediate narrowing. Composable inputs use the
+  marker and cross-realm ladder; results created by a package-local primitive use `instanceof Error`
+  after the input seam has already returned foreign failures. Do not make successful local bytes pay
+  the general protocol detector again.
 - Prove composition in both JavaScript execution and TypeScript types. Exercise successful chains,
   unchanged error identity, and skipped downstream work; compile compatible calls without casts
   or intermediate guards and reject incompatible representations and UUID versions. TypeScript
@@ -177,10 +181,11 @@ Keep UUID text/binary conversion directional and version-neutral:
   repetitions, and failure controls; a predicate microbenchmark cannot establish total call cost.
 - Mark every `UuidSlugError` through one immutable prototype property named `__failure`. Test that
   marker first with `=== true`; its meaning is package failure routing, not authentication. For an
-  unmarked value, use `Error.isError` when available and the cross-realm intrinsic Error tag
-  otherwise, then require the package error name and a known code. Do not add `instanceof` to
-  package-owned result handling. Remeasure the marker when supported engines change Error layout
-  or recognition capabilities.
+  unmarked value, test local `instanceof Error` first, then use `Error.isError` when available or the
+  cross-realm intrinsic Error tag otherwise; finally require the package error name and a known code. Put a
+  successful operation's existing string or byte check before this general detector so ordinary
+  calls pay no marker or Error-brand read. Remeasure when supported engines change Error layout or
+  recognition capabilities.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Package-owned interfaces
   carry failures as values; adapt and contain exception-based dependencies at their boundary.
 - Keep one error class with stable, actionable codes. Codes guide different recovery actions without

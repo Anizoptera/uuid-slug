@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { isUuidSlugError, UuidSlugError } from "./errors.ts";
+import { invalidUuidStringInput, UuidSlugError } from "./errors.ts";
 import type { UuidV7String, UuidV7StringInput, UuidV7TimestampWindow } from "./types.ts";
 import { isUuidV7Bytes, uuidTimestampFromBytesUnchecked, uuidStringToBytes } from "./uuid.ts";
+
+const INVALID_TIMESTAMP = "invalid_timestamp";
 
 /** Decode before reading the reference time so validation performs one clock observation. */
 export function validateTimestampBytes(
@@ -15,20 +17,20 @@ export function validateTimestampBytes(
   let referenceUnixMs: number;
   try {
     if (typeof window !== "object" || window === null || Array.isArray(window))
-      return new UuidSlugError("invalid_timestamp", "Timestamp window must be an object.");
+      return new UuidSlugError(INVALID_TIMESTAMP, "Timestamp window must be an object.");
     maxTimestampDeltaMs = window.maxTimestampDeltaMs;
     referenceUnixMs = window.referenceUnixMs ?? Date.now();
   } catch (cause) {
-    return new UuidSlugError("invalid_timestamp", "Timestamp window could not be read.", { cause });
+    return new UuidSlugError(INVALID_TIMESTAMP, "Timestamp window could not be read.", { cause });
   }
   if (!Number.isFinite(maxTimestampDeltaMs) || maxTimestampDeltaMs < 0)
     return new UuidSlugError(
-      "invalid_timestamp",
+      INVALID_TIMESTAMP,
       "maxTimestampDeltaMs must be a finite, nonnegative number of milliseconds.",
     );
   if (!Number.isFinite(referenceUnixMs))
     return new UuidSlugError(
-      "invalid_timestamp",
+      INVALID_TIMESTAMP,
       "referenceUnixMs must be a finite number of Unix milliseconds.",
     );
   if (
@@ -55,10 +57,10 @@ export function validateUuidV7Timestamp<Input extends string | UuidSlugError>(
   uuid: UuidV7StringInput<Input>,
   window: UuidV7TimestampWindow,
 ): (Input & UuidV7String) | UuidSlugError {
-  if (isUuidSlugError(uuid)) return uuid;
+  if (typeof uuid !== "string") return invalidUuidStringInput(uuid);
   const uuidText: string = uuid;
   const bytes = uuidStringToBytes(uuidText);
-  if (isUuidSlugError(bytes)) return bytes;
+  if (bytes instanceof Error) return bytes;
   const valid = validateTimestampBytes(bytes, window);
-  return isUuidSlugError(valid) ? valid : (uuidText as Input & UuidV7String);
+  return valid instanceof Error ? valid : (uuidText as Input & UuidV7String);
 }

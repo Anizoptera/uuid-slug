@@ -76,7 +76,7 @@ export const legacyMaskCases = [
       const identity = unwrap(
         createUuidV7SlugCodec({ mask: identityMask, sentinels: NIL_TEST_SENTINEL }),
       );
-      identity.uuidStringToSlug(uuid);
+      identity.uuidToSlug(uuid);
       const sentinel = identity.sentinels[0];
       assert.ok(sentinel);
       const raw = uuidSlugToBytes(sentinel.slug);
@@ -96,7 +96,7 @@ export const legacyMaskCases = [
       const codec = unwrap(
         createUuidV7SlugCodec({ mask: aliasMask, sentinels: NIL_TEST_SENTINEL }),
       );
-      const slug = codec.uuidStringToSlug(uuid);
+      const slug = codec.uuidToSlug(uuid);
       if (slug instanceof Error) throw slug;
       assert.notEqual(slug, sentinel.slug);
       assert.equal(codec.uuidSlugToString(slug), uuid);
@@ -198,7 +198,7 @@ export const legacyMaskCases = [
         Reflect.apply(currentReader.uuidSlugToString, undefined, [slug, "direct-slug"]) instanceof
           Error,
       );
-      assert.equal(codec.uuidStringToSlug(currentUuid), slug);
+      assert.equal(codec.uuidToSlug(currentUuid), slug);
       assert.equal(codec.uuidSlugToString(slug), currentUuid);
       for (const invalid of ["", "!".repeat(22), "A".repeat(21), "A".repeat(23)]) {
         assert.ok(reader.uuidSlugToString(invalid) instanceof Error);
@@ -332,7 +332,7 @@ export const legacyMaskCases = [
     run(this: void) {
       const { slug, seed, currentUuid, originalUuid, directUuid } = fixtures.overlap;
       const codec = unwrap(createUuidV7SlugCodec({ mask: { seed } }));
-      assert.equal(codec.uuidStringToSlug(currentUuid), slug);
+      assert.equal(codec.uuidToSlug(currentUuid), slug);
       assert.equal(codec.uuidSlugToString(slug), currentUuid);
       assert.deepEqual(
         codec

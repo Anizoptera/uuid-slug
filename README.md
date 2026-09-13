@@ -482,7 +482,7 @@ rejected before it runs, with or without an output buffer:
 | Value typed as | Rejected by | Why |
 | --- | --- | --- |
 | Masked or possibly masked (`MaskedUuidV7Slug`, `UuidV7CodecSlug`) | Direct-slug decoding and timestamp operations | Its key belongs to the codec; decode there. |
-| UUID text (`UuidString` and its versions) | Slug parsers, codec slug readers, and migration readers | UUID text is not a slug; use `codec.uuidStringToSlug` to mask it. |
+| UUID text (`UuidString` and its versions) | Slug parsers, codec slug readers, and migration readers | UUID text is not a slug; use `codec.uuidToSlug` to mask it. |
 | Known v4 (`UuidV4String`, `UuidV4Slug`, `UuidV4Bytes`) | v7-only timestamp validation, masking, and codec byte masking | A v4 has no timestamp. |
 
 Parsers accept ordinary strings and validate them at runtime. Choose the decoder from your ID
@@ -544,7 +544,7 @@ readers also try its configured previous masks.
 | Member | Successful result |
 | --- | --- |
 | `generateUuidSlug()` | A new `UuidV7CodecSlug`: masked or a reserved sentinel. |
-| `uuidStringToSlug(uuid)` / `uuidBytesToSlug(bytes)` | A `UuidV7CodecSlug` from UUIDv7 text or bytes. |
+| `uuidToSlug(uuid)` | A `UuidV7CodecSlug` from UUIDv7 text or bytes. |
 | `uuidSlugToString(slug)` | The original `UuidV7String`. |
 | `uuidSlugToBytes(slug, out?, offset?)` | New `UuidV7Bytes` or your output array; no UUID text is created. |
 | `extractUuidSlugTimestamp(slug)` | Unix milliseconds from a masked slug or sentinel. |
@@ -775,7 +775,7 @@ function replaceOriginalSlug(
 ) {
   const uuid = reader.uuidSlugToString(oldSlug, "original-mask");
   if (isUuidSlugError(uuid)) return uuid;
-  const replacement = ids.uuidStringToSlug(uuid);
+  const replacement = ids.uuidToSlug(uuid);
   if (isUuidSlugError(replacement)) return replacement;
   return { uuid, replacement }; // Keep uuid in the database; use replacement in new links.
 }

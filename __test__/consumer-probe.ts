@@ -80,8 +80,8 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   if (synchronous instanceof Error) throw synchronous;
   if (asynchronous instanceof Error) throw asynchronous;
   equal(
-    unwrap(api.createUuidV7SlugCodec({ mask: asynchronous })).uuidStringToSlug(uuid),
-    unwrap(api.createUuidV7SlugCodec({ mask: synchronous })).uuidStringToSlug(uuid),
+    unwrap(api.createUuidV7SlugCodec({ mask: asynchronous })).uuidToSlug(uuid),
+    unwrap(api.createUuidV7SlugCodec({ mask: synchronous })).uuidToSlug(uuid),
     "async mask wire identity",
   );
   // An independent host task must be able to cancel real derivation through the installed export.
@@ -131,7 +131,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     JSON.stringify([currentUuid, directUuid]),
     "original-mask migration retirement",
   );
-  equal(codec.uuidStringToSlug(uuid), "uqgITQGagyxsoNARAd_pxu", "masked wire vector");
+  equal(codec.uuidToSlug(uuid), "uqgITQGagyxsoNARAd_pxu", "masked wire vector");
   equal(codec.uuidSlugToString("uqgITQGagyxsoNARAd_pxu"), uuid, "masked inverse");
   const sentinelCodec = unwrap(
     api.createUuidV7SlugCodec({
@@ -140,7 +140,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     }),
   );
   const sentinel = api.uuidStringToSlug(uuid);
-  equal(sentinelCodec.uuidStringToSlug(uuid), sentinel, "custom sentinel encoding");
+  equal(sentinelCodec.uuidToSlug(uuid), sentinel, "custom sentinel encoding");
   equal(sentinelCodec.uuidSlugToString(String(sentinel)), uuid, "custom sentinel decoding");
   const bytes = api.generateUuidV7BytesAt(1234567890000);
   if (bytes instanceof Error) throw bytes;

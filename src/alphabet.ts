@@ -3,6 +3,8 @@
 import { checkRange, UuidSlugError } from "./errors.ts";
 import type { UuidSlugErrorCode } from "./errors.ts";
 
+const BASE64URL_NAME = "base64url";
+
 /**
  * A power-of-two alphabet plus its reverse lookup. Encoding is pure bit packing, so the only
  * thing that varies between base64url and base32 is the character set and how many bits each
@@ -34,7 +36,7 @@ function alphabet(name: string, chars: string, code: UuidSlugErrorCode): Alphabe
 }
 
 export const BASE64URL: Alphabet = /*#__PURE__*/ alphabet(
-  "base64url",
+  BASE64URL_NAME,
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_",
   "invalid_base64url",
 );
@@ -60,14 +62,14 @@ export const BASE32HEX: Alphabet = /*#__PURE__*/ alphabet(
 const denoVersion = (globalThis as { Deno?: { version?: { deno?: string } } }).Deno?.version?.deno;
 const availableNativeToBase64 = (
   Uint8Array.prototype as {
-    toBase64?: (options: { alphabet: "base64url"; omitPadding: boolean }) => string;
+    toBase64?: (options: { alphabet: typeof BASE64URL_NAME; omitPadding: boolean }) => string;
   }
 ).toBase64;
 // Deno 2.9.6 implements this capability but takes longer than the fixed 16-byte encoder. Treat
 // that implementation as unavailable until a Deno update overturns the repeated public-route result.
 const nativeToBase64 = denoVersion === undefined ? availableNativeToBase64 : undefined;
 export const hasNativeBase64urlEncoder: boolean = nativeToBase64 !== undefined;
-const BASE64_OPTIONS = { alphabet: "base64url", omitPadding: true } as const;
+const BASE64_OPTIONS = { alphabet: BASE64URL_NAME, omitPadding: true } as const;
 
 /**
  * Bits left over when `byteLength` bytes are written in this alphabet. A slug rounds up to whole

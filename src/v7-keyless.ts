@@ -6,6 +6,8 @@ import { UuidSlugError } from "./errors.ts";
 import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types.ts";
 import { createPortableUuidV7Generator, createRuntimeGenerator } from "./v7.ts";
 
+const INVALID_OPTIONS = "invalid_options";
+
 /** Configure one UUIDv7 sequence. Entropy always comes from the package runtime. */
 export interface UuidV7GeneratorOptions {
   /**
@@ -31,15 +33,15 @@ export function createUuidV7Generator(
   options: UuidV7GeneratorOptions = {},
 ): UuidV7Generator | UuidSlugError {
   if (options === null || typeof options !== "object" || Array.isArray(options))
-    return new UuidSlugError("invalid_options", "Generator options must be an object.");
+    return new UuidSlugError(INVALID_OPTIONS, "Generator options must be an object.");
   let clock: UuidV7GeneratorOptions["clock"];
   try {
     clock = options.clock;
   } catch (cause) {
-    return new UuidSlugError("invalid_options", "Reading generator options failed.", { cause });
+    return new UuidSlugError(INVALID_OPTIONS, "Reading generator options failed.", { cause });
   }
   if (clock !== undefined && typeof clock !== "function")
-    return new UuidSlugError("invalid_options", "Generator clock must be a function.");
+    return new UuidSlugError(INVALID_OPTIONS, "Generator clock must be a function.");
   return createPortableUuidV7Generator({
     ...(clock === undefined ? {} : { clock }),
     fillRandom: runtime.fillRandom,

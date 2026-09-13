@@ -1133,15 +1133,18 @@ throughput and startup cost. A JITless-only win may justify code when every high
 ### Error recognition
 
 Repeated profiles on 2026-09-13 used Node 26.8.2, Node 24.21.0, Bun 1.4.2, Deno 2.9.6, and
-Chromium with nine 30 ms samples after warm-up. Own and prototype string, short-string, and symbol
-markers all overlapped within single-digit nanoseconds; shortening `__failure` did not reproduce a
-win. The inherited `__failure === true` check cost about 6–8 ns, while successful non-error
-classification cost about 6–9 ns. Native `Error.isError` was materially slower on Node, Deno, and
-Chromium and only tied the marker family on Bun. Keep one immutable prototype `__failure` marker:
-it avoids per-instance storage, remains readable across realms and package copies, and leaves native
-recognition for unmarked compatibility errors only. Remeasure when a supported engine changes
-Error layout or native error recognition; these warm microbenchmarks do not establish cold-start,
-other hardware, or adversarial-proxy cost.
+Chromium with seven or nine 30 ms samples after warm-up. Short, long, string, and symbol markers
+did not produce a repeatable winner. For unmarked local package errors, marker then `instanceof`
+then native recognition led marker then native recognition on Node, Deno, and Chromium and was
+effectively tied on Bun. Successful strings cost about 4–9 ns because their primitive check exits
+before every Error operation. Successful byte inputs were much slower when sent through the general
+detector, so public operations now validate their expected string or byte shape first and use local
+`instanceof Error` for package-created intermediate results. The native `Error.isError` benchmark
+row exists only when that capability is callable; an unavailable capability is never timed as a
+constant result. Keep the immutable prototype `__failure` marker first, then local `instanceof`,
+then native or intrinsic cross-realm recognition. Remeasure when an engine changes Error layout or
+recognition; these warm measurements do not establish cold-start, other hardware, or hostile-proxy
+cost.
 
 ### Consumer graph
 

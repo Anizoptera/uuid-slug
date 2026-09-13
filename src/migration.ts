@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BASE32HEX, BASE64URL, decodeInto, encode } from "./alphabet.ts";
-import { isUuidSlugError, UuidSlugError } from "./errors.ts";
+import { invalidUuidSlugInput, isUuidSlugError, UuidSlugError } from "./errors.ts";
 import { decodeFirstMaskedCandidate, decodeMaskedCandidates } from "./payload.ts";
 import type {
   UuidV7Mask,
@@ -13,6 +13,11 @@ import type {
 } from "./types.ts";
 import { UUID_SLUG_MIGRATION_FORMATS } from "./types.ts";
 import { bytesToUuidString } from "./uuid.ts";
+
+const DIRECT_SLUG_FORMAT = "direct-slug";
+const INVALID_OPTIONS = "invalid_options";
+const INVALID_UUID_SLUG = "invalid_uuid_slug";
+const ORIGINAL_MASK_FORMAT = "original-mask";
 
 // These tables and the four-bit checksum define the original wire format.
 // Changing them would change the UUID recovered from an existing slug.
@@ -45,19 +50,19 @@ export function createMigration(
     options !== undefined &&
     (typeof options !== "object" || options === null || Array.isArray(options))
   )
-    return new UuidSlugError("invalid_options", "Migration options must be an object.");
+    return new UuidSlugError(INVALID_OPTIONS, "Migration options must be an object.");
   let originalOption: boolean | undefined;
   let directOption: boolean | undefined;
   try {
     originalOption = options?.originalMask;
     directOption = options?.directSlug;
   } catch (cause) {
-    return new UuidSlugError("invalid_options", "Reading migration options failed.", { cause });
+    return new UuidSlugError(INVALID_OPTIONS, "Reading migration options failed.", { cause });
   }
   if (originalOption !== undefined && typeof originalOption !== "boolean")
-    return new UuidSlugError("invalid_options", "Migration originalMask option must be a boolean.");
+    return new UuidSlugError(INVALID_OPTIONS, "Migration originalMask option must be a boolean.");
   if (directOption !== undefined && typeof directOption !== "boolean")
-    return new UuidSlugError("invalid_options", "Migration directSlug option must be a boolean.");
+    return new UuidSlugError(INVALID_OPTIONS, "Migration directSlug option must be a boolean.");
   const original = originalOption === true;
   const direct = directOption === true;
 
@@ -66,25 +71,23 @@ export function createMigration(
     format: UuidSlugMigrationFormat | undefined,
     firstOnly: boolean,
   ) {
-    if (isUuidSlugError(slug)) return slug;
-    if (typeof slug !== "string")
-      return new UuidSlugError("invalid_uuid_slug", "Migration slug must be a string.");
+    if (typeof slug !== "string") return invalidUuidSlugInput(slug);
     if (
       (format !== undefined &&
         !UUID_SLUG_MIGRATION_FORMATS.some((candidate) => candidate === format)) ||
-      (format === "original-mask" && !original) ||
-      (format === "direct-slug" && !direct)
+      (format === ORIGINAL_MASK_FORMAT && !original) ||
+      (format === DIRECT_SLUG_FORMAT && !direct)
     )
       return new UuidSlugError(
-        "invalid_uuid_slug",
+        INVALID_UUID_SLUG,
         "Enable the requested format when creating the migration reader.",
       );
 
     const sentinel = sentinels.get(slug);
     if (sentinel) return [sentinel.uuid];
     const useCurrent = format === undefined || format === "current-mask";
-    const useOriginal = original && (format === undefined || format === "original-mask");
-    const useDirect = direct && (format === undefined || format === "direct-slug");
+    const useOriginal = original && (format === undefined || format === ORIGINAL_MASK_FORMAT);
+    const useDirect = direct && (format === undefined || format === DIRECT_SLUG_FORMAT);
     const bytes = new Uint8Array(16);
     // Original readers ignored the four trailing bits. Keep those aliases confined to migration.
     const base32 = slug.length === 26 && useDirect;
@@ -97,7 +100,7 @@ export function createMigration(
       16,
       base32 ? 0 : 4,
     );
-    if (isUuidSlugError(tail)) return tail;
+    if (tail instanceof Error) return tail;
     // A base64 alias differs only in its final four bits; reuse the validated text instead of
     // encoding all sixteen bytes again. Base32 input still needs the sentinel's base64 spelling.
     const reserved =
@@ -114,7 +117,7 @@ export function createMigration(
     const candidates: UuidString[] = reserved ? [reserved.uuid] : [];
     function add(value: Uint8Array) {
       const uuid = bytesToUuidString(value);
-      if (isUuidSlugError(uuid)) return uuid;
+      if (uuid instanceof Error) return uuid;
       if (!candidates.includes(uuid)) candidates.push(uuid);
       return undefined;
     }
@@ -148,7 +151,7 @@ export function createMigration(
       return isUuidSlugError(result)
         ? result
         : (result[0] ??
-            new UuidSlugError("invalid_uuid_slug", "Slug does not match an enabled format."));
+            new UuidSlugError(INVALID_UUID_SLUG, "Slug does not match an enabled format."));
     },
     uuidSlugToStringCandidates(slug, format) {
       return read(slug, format, false);

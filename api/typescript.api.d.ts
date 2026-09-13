@@ -1,6 +1,5 @@
 // Generated consumer-visible declarations; update with `bun run api:update` instead of editing.
 
-declare const ALPHABETS: readonly ["base64url", "base32hex"];
 export declare interface AsyncUuidV7MaskOptions extends UuidV7MaskOptions {
   readonly signal?: AbortSignal;
 }
@@ -51,21 +50,6 @@ declare type EnabledMigrationOption<
   Options,
   Option extends keyof UuidSlugMigrationOptions,
 > = Option extends keyof Options ? (true extends Options[Option] ? Option : never) : never;
-declare const ERROR_CODES: readonly [
-  "aborted",
-  "invalid_base32hex",
-  "invalid_base64url",
-  "invalid_buffer",
-  "invalid_mask",
-  "invalid_options",
-  "invalid_sentinel",
-  "invalid_timestamp",
-  "invalid_uuid",
-  "invalid_uuid_slug",
-  "invalid_uuid_version",
-  "rng_unavailable",
-  "timestamp_outside_window",
-];
 export declare function extractUuidV7Timestamp<Input extends string | UuidSlugError>(
   value: UuidV7TimestampInput<Input>,
 ): number | UuidSlugError;
@@ -126,8 +110,22 @@ declare type SlugStringInput<Input extends string | UuidSlugError> = RejectKnown
   Input,
   UuidString
 >;
-export declare const UUID_SLUG_ALPHABETS: typeof ALPHABETS;
-export declare const UUID_SLUG_ERROR_CODES: typeof ERROR_CODES;
+export declare const UUID_SLUG_ALPHABETS: readonly ["base64url", "base32hex"];
+export declare const UUID_SLUG_ERROR_CODES: readonly [
+  "aborted",
+  "invalid_base32hex",
+  "invalid_base64url",
+  "invalid_buffer",
+  "invalid_mask",
+  "invalid_options",
+  "invalid_sentinel",
+  "invalid_timestamp",
+  "invalid_uuid",
+  "invalid_uuid_slug",
+  "invalid_uuid_version",
+  "rng_unavailable",
+  "timestamp_outside_window",
+];
 export declare const UUID_SLUG_MIGRATION_FORMATS: typeof MIGRATION_FORMATS;
 export declare const UUID_V7_TEST_MASK: UuidV7Mask;
 export declare type UuidBytes = Brand<Uint8Array, "UuidBytes">;
@@ -239,13 +237,9 @@ export declare interface UuidV7SlugCodec {
     options?: Options,
   ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
   generateUuidSlug(this: void): UuidV7CodecSlug | UuidSlugError;
-  uuidStringToSlug<Input extends string | UuidSlugError>(
+  uuidToSlug<Input extends string | Uint8Array | UuidSlugError>(
     this: void,
-    uuid: UuidV7StringInput<Input>,
-  ): UuidV7CodecSlug | UuidSlugError;
-  uuidBytesToSlug<Input extends Uint8Array | UuidSlugError>(
-    this: void,
-    uuid: UuidV7BytesInput<Input>,
+    uuid: UuidV7ValueInput<Input>,
   ): UuidV7CodecSlug | UuidSlugError;
   uuidSlugToString<Input extends string | UuidSlugError>(
     this: void,
@@ -294,6 +288,10 @@ export declare interface UuidV7TimestampWindow {
   readonly maxTimestampDeltaMs: number;
   readonly referenceUnixMs?: number;
 }
+declare type UuidV7ValueInput<Input extends string | Uint8Array | UuidSlugError> = RejectKnownInput<
+  Input,
+  UuidSlug | MaskedUuidSlug | UuidV4String | UuidV4Bytes
+>;
 export declare function validateUuidV7SlugTimestamp<Input extends string | UuidSlugError>(
   slug: UuidV7SlugInput<Input>,
   window: UuidV7TimestampWindow,

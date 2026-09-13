@@ -65,7 +65,7 @@ const jobs = [
     name: "masked",
     imports: "createUuidV7SlugCodec, UUID_V7_TEST_MASK",
     probe:
-      'const codec = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }); if (codec instanceof Error || codec.uuidStringToSlug("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051") instanceof Error) throw new Error("masked codec failed");',
+      'const codec = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }); if (codec instanceof Error || codec.uuidToSlug("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051") instanceof Error) throw new Error("masked codec failed");',
     masked: true,
     versions: [7],
   },

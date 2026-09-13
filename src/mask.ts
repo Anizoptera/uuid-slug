@@ -8,6 +8,10 @@ import type { HashContinuation } from "./siphash.ts";
 import { encodeUtf8 } from "#runtime";
 import type { AsyncUuidV7MaskOptions, UuidV7Mask, UuidV7MaskOptions } from "./types.ts";
 
+const INVALID_MASK = "invalid_mask";
+const MASK_CONSTRUCTION_FAILURE_MESSAGE = "Mask construction failed.";
+const SEED_PROPERTY = "seed";
+
 /** Reject short seeds early; length alone cannot make a chosen secret unpredictable. */
 const SEED_MIN_BYTES = 16;
 
@@ -43,7 +47,7 @@ function seedBytes(seed: string | Uint8Array) {
 function validateOptions(options: unknown) {
   if (typeof options !== "object" || options === null)
     return new UuidSlugError(
-      "invalid_mask",
+      INVALID_MASK,
       "Mask options must contain a string or Uint8Array seed.",
     );
   const input = options as {
@@ -53,11 +57,11 @@ function validateOptions(options: unknown) {
   };
   const seed = input.seed;
   if (typeof seed !== "string" && !isUint8Array(seed))
-    return new UuidSlugError("invalid_mask", "Mask seed must be a string or Uint8Array.");
+    return new UuidSlugError(INVALID_MASK, "Mask seed must be a string or Uint8Array.");
   const givenLabel = input.label;
   const label = givenLabel === undefined ? "seeded" : givenLabel;
   if (typeof label !== "string")
-    return new UuidSlugError("invalid_mask", "Mask label must be a string.");
+    return new UuidSlugError(INVALID_MASK, "Mask label must be a string.");
   const givenIterations = input.keyDerivationIterations;
   const keyDerivationIterations = givenIterations === undefined ? 1 : givenIterations;
   const iterations = validatedIterations(keyDerivationIterations);
@@ -157,12 +161,12 @@ function maskFromKeys(label: string, keys: Int32Array): UuidV7Mask {
 export function createUuidV7Mask(options: UuidV7MaskOptions): UuidV7Mask | UuidSlugError {
   try {
     const validated = validateOptions(options);
-    if (!("seed" in validated)) return validated;
+    if (!(SEED_PROPERTY in validated)) return validated;
     const seed = seedBytes(validated.seed);
     const short = invalidSeedLength(seed.length);
     return short ?? feistelMask(validated.label, seed, validated.iterations);
   } catch (cause) {
-    return new UuidSlugError("invalid_mask", "Mask construction failed.", { cause });
+    return new UuidSlugError(INVALID_MASK, MASK_CONSTRUCTION_FAILURE_MESSAGE, { cause });
   }
 }
 
@@ -170,7 +174,7 @@ export function createUuidV7Mask(options: UuidV7MaskOptions): UuidV7Mask | UuidS
 function invalidSeedLength(length: number): undefined | UuidSlugError {
   if (length < SEED_MIN_BYTES)
     return new UuidSlugError(
-      "invalid_mask",
+      INVALID_MASK,
       `Mask seed must be at least ${SEED_MIN_BYTES} bytes, got ${length}. Generate one with \`openssl rand -base64 32\` rather than choosing it; a guessable seed hides nothing however long it is.`,
     );
   return undefined;
@@ -184,7 +188,7 @@ function validatedIterations(iterations: unknown): number | UuidSlugError {
     iterations > MAX_KEY_ITERATIONS
   )
     return new UuidSlugError(
-      "invalid_mask",
+      INVALID_MASK,
       `Mask keyDerivationIterations must be a whole number in 1..${MAX_KEY_ITERATIONS}, got ${String(iterations)}.`,
     );
   return iterations;
@@ -306,7 +310,7 @@ export async function createUuidV7MaskAsync(
       });
     if (signal?.aborted) return aborted();
     const validated = validateOptions(options);
-    if (!("seed" in validated)) return validated;
+    if (!(SEED_PROPERTY in validated)) return validated;
     const seed =
       typeof validated.seed === "string" ? validated.seed : new Uint8Array(validated.seed);
     const steps = cooperativeKeys(seed, validated.iterations);
@@ -329,7 +333,7 @@ export async function createUuidV7MaskAsync(
       }
     }
   } catch (cause) {
-    return new UuidSlugError("invalid_mask", "Mask construction failed.", { cause });
+    return new UuidSlugError(INVALID_MASK, MASK_CONSTRUCTION_FAILURE_MESSAGE, { cause });
   }
 }
 

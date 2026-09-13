@@ -95,9 +95,9 @@ try {
   assert.ok(!(migrationLast instanceof Error));
   const migration = rotated.createMigrationDecoder({ originalMask: true, directSlug: true });
   const migrationManyReader = migrationMany.createMigrationDecoder();
-  const masked = codec.uuidStringToSlug(id);
-  const old = older.uuidStringToSlug(id);
-  const migrationLastSlug = migrationLast.uuidStringToSlug(id);
+  const masked = codec.uuidToSlug(id);
+  const old = older.uuidToSlug(id);
+  const migrationLastSlug = migrationLast.uuidToSlug(id);
   assert.equal(typeof masked, "string");
   assert.equal(typeof old, "string");
   assert.equal(typeof migrationLastSlug, "string");
@@ -254,7 +254,7 @@ try {
       chars: 22,
     },
   );
-  check("masked byte encode", () => codec.uuidBytesToSlug(bytes), {
+  check("masked byte encode", () => codec.uuidToSlug(bytes), {
     buffers: 0,
     base64: 1,
     errors: 0,
@@ -267,13 +267,13 @@ try {
     ["indexed sentinel byte hit", indexedSentinelBytes],
     ["indexed sentinel byte miss", bytes],
   ] as const)
-    check(name, () => indexedSentinelCodec.uuidBytesToSlug(input), {
+    check(name, () => indexedSentinelCodec.uuidToSlug(input), {
       buffers: 0,
       slices: 0,
       views: 0,
       errors: 0,
     });
-  check("masked string encode", () => codec.uuidStringToSlug(id), {
+  check("masked string encode", () => codec.uuidToSlug(id), {
     buffers: 1,
     base64: 1,
     errors: 0,

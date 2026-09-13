@@ -95,12 +95,12 @@ const timestampCodecBase32 = unwrap(
   createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK, outputAlphabet: "base32hex" }),
 );
 const maskedTimestampSlugs = [
-  unwrap(timestampCodec.uuidStringToSlug(timestampUuids[0])),
-  unwrap(timestampCodec.uuidStringToSlug(timestampUuids[1])),
+  unwrap(timestampCodec.uuidToSlug(timestampUuids[0])),
+  unwrap(timestampCodec.uuidToSlug(timestampUuids[1])),
 ] as const;
 const maskedTimestampSlugsBase32 = [
-  unwrap(timestampCodecBase32.uuidStringToSlug(timestampUuids[0])),
-  unwrap(timestampCodecBase32.uuidStringToSlug(timestampUuids[1])),
+  unwrap(timestampCodecBase32.uuidToSlug(timestampUuids[0])),
+  unwrap(timestampCodecBase32.uuidToSlug(timestampUuids[1])),
 ] as const;
 
 function alternating<Input, Output>(

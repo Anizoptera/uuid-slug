@@ -23,9 +23,9 @@ const rotated = unwrap(
     previousMasks: [{ seed: "profile-previous-seed" }],
   }),
 );
-const masked = ids.map((id) => unwrap(codec.uuidStringToSlug(id)));
+const masked = ids.map((id) => unwrap(codec.uuidToSlug(id)));
 const old = ids
-  .map((id) => unwrap(older.uuidStringToSlug(id)))
+  .map((id) => unwrap(older.uuidToSlug(id)))
   .filter((slug) => codec.uuidSlugToString(slug) instanceof Error);
 assert.ok(old.length > 0);
 const timestampWindow = {

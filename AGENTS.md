@@ -98,6 +98,14 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   source-owned `PURE` and `NO_SIDE_EFFECTS` annotation.
 - Public docs use caller-facing tokens such as `"base32hex"`, not internal symbol names.
   Documentation-alignment gates are ruled out; test the API behavior instead.
+- Hoist every repeated semantic runtime string in a file, including alphabet names and diagnostics, to
+  one named scalar constant in its narrowest semantic owner. Build public tuples and sets from those
+  names; never recover meaning through numeric indexes such as `ERROR_CODES[3]`. Reuse that owner
+  across files only when the value is genuinely one shared concept and the import does not retain
+  unrelated code; otherwise keep a private file-local constant. Never build a root string catalog
+  or runtime lookup object: both retain unrelated values and weaken tree shaking. Keep `typeof`
+  operands literal because TypeScript narrows from the literal but not an equivalent constant;
+  do not trade type safety or a hot-path helper call for textual deduplication.
 - Keep repository-only docs, benchmarks, and Rust sources out of the npm tarball when the package
   does not need them at runtime; README links do not require shipping their targets.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Never add a throwing
@@ -106,7 +114,10 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Make compatible calls compose without intermediate error unwrapping. Read
   `docs/public-api.md` §Failures and effects when designing or changing composition, error
   propagation, markers, recognition checks, or result types; it owns the required behavior and
-  verification. Read §Capabilities and runtime work before selecting checks or fallback order.
+  verification. Never apply one universal detector blindly: check the expected successful input
+  shape first, use local `instanceof Error` for package-created intermediate results, and reserve
+  marker plus cross-realm recognition for composable inputs or uncontrolled callbacks. Read
+  §Capabilities and runtime work before selecting checks or fallback order.
 - Give every root export, overload family, public type, interface, property, method, option, and
   callback consumer-facing JSDoc in its owning source. Explain what changes the caller's decision:
   valid input, defaults, result and ownership, expected errors or effects, ordering, important

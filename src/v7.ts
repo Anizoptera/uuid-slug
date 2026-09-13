@@ -14,6 +14,8 @@ import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types.ts";
 import { formatUuidBytesUnchecked, isUuidV7String } from "./uuid.ts";
 import type { Runtime } from "./runtime/types.ts";
 
+const INVALID_TIMESTAMP = "invalid_timestamp";
+
 /** Internal controls for exercising the portable UUIDv7 state machine. */
 interface PortableUuidV7GeneratorOptions {
   /** Return Unix milliseconds; finite fractional readings are truncated. Defaults to `Date.now`. */
@@ -82,7 +84,7 @@ const rejectInstant = /* @__NO_SIDE_EFFECTS__ */ (ms: number): undefined | UuidS
   isValidUuidV7Timestamp(ms)
     ? undefined
     : new UuidSlugError(
-        "invalid_timestamp",
+        INVALID_TIMESTAMP,
         `UUIDv7 timestamp must be a whole number of milliseconds in 0..${MAX_TIMESTAMP}.`,
       );
 
@@ -95,7 +97,7 @@ const rejectInstant = /* @__NO_SIDE_EFFECTS__ */ (ms: number): undefined | UuidS
 const formatUuidV7 = /* @__NO_SIDE_EFFECTS__ */ (
   result: Uint8Array | UuidSlugError,
 ): UuidV7String | UuidSlugError =>
-  isUuidSlugError(result) ? result : (formatUuidBytesUnchecked(result) as UuidV7String);
+  result instanceof Error ? result : (formatUuidBytesUnchecked(result) as UuidV7String);
 
 const reenteredGeneration = /* @__NO_SIDE_EFFECTS__ */ () =>
   new UuidSlugError(
@@ -196,7 +198,7 @@ export function createPortableUuidV7Generator(
       const now = typeof reading === "number" ? Math.trunc(reading) : NaN;
       if (typeof reading !== "number" || reading < 0 || !isValidUuidV7Timestamp(now))
         return new UuidSlugError(
-          "invalid_timestamp",
+          INVALID_TIMESTAMP,
           `Clock returned ${String(reading)}, which is not a millisecond in 0..${MAX_TIMESTAMP}.`,
         );
       if (now > lastMs) {
@@ -216,7 +218,7 @@ export function createPortableUuidV7Generator(
           // is why refusing is not theoretical.
           if (lastMs >= MAX_TIMESTAMP)
             return new UuidSlugError(
-              "invalid_timestamp",
+              INVALID_TIMESTAMP,
               `Sequence exhausted at the last representable millisecond (${MAX_TIMESTAMP}).`,
             );
           const failed = reseed(lastMs + 1);
@@ -311,14 +313,14 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
         fallback.generateUuidV7,
         "UUIDv7 generation",
       );
-      if (!isUuidSlugError(result)) trustedNativeUuidV7 = native;
+      if (!(result instanceof Error)) trustedNativeUuidV7 = native;
       return result;
     }
     try {
       return native() as UuidV7String;
     } catch (nativeCause) {
       const result = fallback.generateUuidV7();
-      return isUuidSlugError(result)
+      return result instanceof Error
         ? failedFallback(nativeCause, result, "Native and portable UUIDv7 generation failed.")
         : result;
     }

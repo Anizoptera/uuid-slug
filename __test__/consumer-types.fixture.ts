@@ -190,16 +190,16 @@ if (codecResult instanceof Error) throw codecResult;
 const codec = codecResult;
 expectType<UuidV7SlugCodec>()(codec);
 expectType<UuidV7CodecSlug | UuidSlugError>()(codec.generateUuidSlug());
-expectType<UuidV7CodecSlug | UuidSlugError>()(codec.uuidBytesToSlug(versionedBytes));
-expectType<UuidV7CodecSlug | UuidSlugError>()(codec.uuidBytesToSlug(generateUuidV7Bytes()));
+expectType<UuidV7CodecSlug | UuidSlugError>()(codec.uuidToSlug(versionedBytes));
+expectType<UuidV7CodecSlug | UuidSlugError>()(codec.uuidToSlug(generateUuidV7Bytes()));
 expectType<UuidV7String | UuidSlugError>()(
-  codec.uuidSlugToString(codec.uuidStringToSlug(generateUuidV7())),
+  codec.uuidSlugToString(codec.uuidToSlug(generateUuidV7())),
 );
 expectType<UuidV7Bytes | UuidSlugError>()(
-  codec.uuidSlugToBytes(codec.uuidStringToSlug(generateUuidV7())),
+  codec.uuidSlugToBytes(codec.uuidToSlug(generateUuidV7())),
 );
 expectType<number | UuidSlugError>()(
-  codec.extractUuidSlugTimestamp(codec.uuidStringToSlug(generateUuidV7())),
+  codec.extractUuidSlugTimestamp(codec.uuidToSlug(generateUuidV7())),
 );
 expectType<UuidV7String | UuidSlugError>()(codec.uuidSlugToString("AZ_xnLf5cACbG99xO9VWLw"));
 expectType<number | UuidSlugError>()(codec.extractUuidSlugTimestamp("AZ_xnLf5cACbG99xO9VWLw"));
@@ -224,24 +224,23 @@ createUuidV7SlugCodec({
   // @ts-expect-error The writer-only option names its output effect.
   slugAlphabet: "base32hex",
 });
-const maskedFromBytes = codec.uuidBytesToSlug(versionedBytes);
+const maskedFromBytes = codec.uuidToSlug(versionedBytes);
 expectType<UuidV7CodecSlug | UuidSlugError>()(maskedFromBytes);
 const uuidTextOrBytes = (true as boolean) ? "019ff19b-58b8-7000-9b1b-df713bd5562c" : versionedBytes;
-// @ts-expect-error A mixed representation must be narrowed to select the matching operation.
-codec.uuidStringToSlug(uuidTextOrBytes);
+codec.uuidToSlug(uuidTextOrBytes);
 const decodedMaskedBytes = codec.uuidSlugToBytes("AZ_xnLf5cACbG99xO9VWLw");
 expectType<UuidV7Bytes | UuidSlugError>()(decodedMaskedBytes);
 const decodedMaskedInto = codec.uuidSlugToBytes("AZ_xnLf5cACbG99xO9VWLw", destination, 8);
 expectType<ConsumerBuffer | UuidSlugError>()(decodedMaskedInto);
 // @ts-expect-error UUIDv4 cannot enter UUIDv7-only masking.
-codec.uuidStringToSlug(generatedV4);
+codec.uuidToSlug(generatedV4);
 // @ts-expect-error Known UUIDv4 bytes cannot enter UUIDv7-only masking.
-codec.uuidBytesToSlug(ownedV4);
+codec.uuidToSlug(ownedV4);
 const knownV4TextOrBytes = (true as boolean) ? generatedV4 : ownedV4;
 // @ts-expect-error One known UUIDv4 member makes the whole input union invalid.
-codec.uuidStringToSlug(knownV4TextOrBytes);
+codec.uuidToSlug(knownV4TextOrBytes);
 // @ts-expect-error UUID text masking accepts UUID text, not known slug text.
-codec.uuidStringToSlug(versionedSlug);
+codec.uuidToSlug(versionedSlug);
 // @ts-expect-error Masked decoding accepts slug text, not known UUID text.
 codec.uuidSlugToString(checkedUuid);
 // @ts-expect-error Masked timestamp validation accepts slug text, not known UUID text.
@@ -328,7 +327,7 @@ const checkedPublicSlugResult = codec.validateUuidSlugTimestamp(uncheckedPublicS
 expectType<UuidV7CodecSlug | UuidSlugError>()(checkedPublicSlugResult);
 if (checkedPublicSlugResult instanceof Error) throw checkedPublicSlugResult;
 const checkedPublicSlug: UuidV7CodecSlug = checkedPublicSlugResult;
-codec.uuidStringToSlug("019ff19b-58b8-7000-9b1b-df713bd5562c");
+codec.uuidToSlug("019ff19b-58b8-7000-9b1b-df713bd5562c");
 // @ts-expect-error A plain slug does not carry the masked brand.
 const masked: MaskedUuidV7Slug = plain;
 // @ts-expect-error A v7 slug is not a v4 slug.

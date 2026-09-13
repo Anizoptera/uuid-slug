@@ -4,17 +4,28 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 
 ## Error handling design
 
+- [x] Correct the error-recognition design against complete public calls.
+  - [x] Restore one codec UUID-to-slug method for text, bytes, and preceding failures; reject the
+        split surface and verify mixed-input inference and runtime dispatch.
+  - [x] Put successful input-shape checks before failure recognition wherever the operation already
+        validates that shape, so ordinary calls do not pay the general detector ladder.
+  - [x] Compare semantically equivalent marker, local `instanceof`, native cross-realm, and portable
+        fallback orders on success values, marked failures, unmarked failures, and hostile values.
+  - [x] Remove benchmark rows that silently substitute constants for unavailable capabilities;
+        require every named capability row to prove that capability executed.
+  - [x] Run focused behavior, type, packed, resource, profile, and full checks; retain only reproduced
+        wins and replace unsupported performance claims.
 - [x] Implement composable `UuidSlugError` values without intermediate unwrapping.
-  - [x] Rename conversions and codec methods by source and destination representation; split codec
-        text and byte inputs so names, types, and runtime paths agree without aliases.
+  - [x] Rename conversions by source and destination representation; keep one codec UUID-to-slug
+        method because text and bytes are two forms of the same accepted UUID value.
   - [x] Pin direct TypeScript chains, exact successful brands, wrong-representation rejection, and
         error-union retention in source and packed-consumer fixtures.
   - [x] Pin JavaScript chains, unchanged error identity, skipped output writes and callbacks,
         duplicate-package and cross-realm recognition, and malformed marker behavior.
   - [x] Compare marker-only keys, values, and property placement on actual error layouts across
         Node Current, Bun, Node LTS, Chromium, and Deno; measure recognition and complete chains.
-  - [x] Implement the measured marker and ordered compatibility checks with no `instanceof` in
-        package-owned result handling; preserve the fastest successful path per input shape.
+  - [x] Implement the measured marker and ordered compatibility checks; preserve the fastest
+        successful path per input shape and use local identity only where provenance permits it.
   - [x] Profile decision-relevant complete calls and retain only reproduced, material wins.
   - [x] Update public JSDoc, declarations, README examples, design evidence, and benchmark evidence.
   - [x] Run source, built, packed, browser, Bun, Node, Deno, resource, profile, and full checks; mutate

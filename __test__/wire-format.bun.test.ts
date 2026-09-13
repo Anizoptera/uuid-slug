@@ -30,7 +30,7 @@ describe("wire format is identical across runtimes", () => {
     test(`${vector.mask} ${vector.uuid}`, () => {
       const codec = codecs[vector.mask as keyof typeof codecs];
       expect(String(uuidStringToSlug(vector.uuid))).toBe(vector.direct);
-      expect(String(codec.uuidStringToSlug(vector.uuid))).toBe(vector.masked);
+      expect(String(codec.uuidToSlug(vector.uuid))).toBe(vector.masked);
       expect(String(codec.uuidSlugToString(vector.masked))).toBe(vector.uuid);
       expect(vector.masked).toHaveLength(22);
     });

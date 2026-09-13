@@ -87,10 +87,8 @@ const previous = { id: "previous", seed: "benchmark-previous-key" };
 const masked = unwrap(createUuidV7SlugCodec({ mask: current }));
 const rotated = unwrap(createUuidV7SlugCodec({ mask: current, previousMasks: [previous] }));
 const inputBytes = unwrap(uuidStringToBytes(input));
-const maskedSlug = unwrap(masked.uuidStringToSlug(input));
-const previousSlug = unwrap(
-  unwrap(createUuidV7SlugCodec({ mask: previous })).uuidStringToSlug(input),
-);
+const maskedSlug = unwrap(masked.uuidToSlug(input));
+const previousSlug = unwrap(unwrap(createUuidV7SlugCodec({ mask: previous })).uuidToSlug(input));
 // A short mask check can accept another key's output; prove this fixture reaches the older key.
 if (
   !(masked.uuidSlugToString(previousSlug) instanceof Error) ||
@@ -99,8 +97,8 @@ if (
   throw new Error(
     "Rotation benchmark fixture must reject the current key and resolve through the previous key",
   );
-measure("package.masked.encode", () => unwrap(masked.uuidStringToSlug(input)));
-measure("package.masked.encode.bytes", () => unwrap(masked.uuidBytesToSlug(inputBytes)));
+measure("package.masked.encode", () => unwrap(masked.uuidToSlug(input)));
+measure("package.masked.encode.bytes", () => unwrap(masked.uuidToSlug(inputBytes)));
 measure("package.masked.decode", () => unwrap(masked.uuidSlugToString(maskedSlug)));
 measure("package.rotation.current", () => unwrap(rotated.uuidSlugToString(maskedSlug)));
 measure("package.rotation.previous", () => unwrap(rotated.uuidSlugToString(previousSlug)));

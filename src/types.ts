@@ -88,6 +88,11 @@ export type UuidV7BytesInput<Input extends Uint8Array | UuidSlugError> = RejectK
   Input,
   UuidV4Bytes
 >;
+/** Reject known slugs and UUIDv4 values; a codec masks UUIDv7 text or bytes. */
+type UuidV7ValueInput<Input extends string | Uint8Array | UuidSlugError> = RejectKnownInput<
+  Input,
+  UuidSlug | MaskedUuidSlug | UuidV4String | UuidV4Bytes
+>;
 /** Exactly 16 validated UUID bytes. Package-owned values are plain `Uint8Array`. */
 export type UuidBytes = Brand<Uint8Array, "UuidBytes">;
 /** UUID bytes with version 4 and RFC variant bits. */
@@ -357,27 +362,16 @@ export interface UuidV7SlugCodec {
   /** Generate and encode a UUIDv7 as a masked slug or its registered raw sentinel slug. */
   generateUuidSlug(this: void): UuidV7CodecSlug | UuidSlugError;
   /**
-   * Encode canonical UUIDv7 text as a masked slug, unless it is a registered sentinel.
-   * Other UUID versions return `invalid_uuid_version`. TypeScript rejects known slug and UUIDv4
-   * values; unbranded external values are validated when called. A preceding `UuidSlugError` is
-   * returned unchanged.
+   * Encode canonical UUIDv7 text or 16 UUIDv7 bytes as a masked slug, unless it is a registered
+   * sentinel. Other UUID versions return `invalid_uuid_version`. TypeScript rejects known slug and
+   * UUIDv4 values; unbranded external values are validated when called. A preceding
+   * `UuidSlugError` is returned unchanged.
    *
-   * @param uuid - Canonical UUIDv7 text.
+   * @param uuid - Canonical UUIDv7 text or exactly 16 UUIDv7 bytes.
    */
-  uuidStringToSlug<Input extends string | UuidSlugError>(
+  uuidToSlug<Input extends string | Uint8Array | UuidSlugError>(
     this: void,
-    uuid: UuidV7StringInput<Input>,
-  ): UuidV7CodecSlug | UuidSlugError;
-  /**
-   * Encode exactly 16 UUIDv7 bytes as a masked slug, unless they identify a registered sentinel.
-   * Other UUID versions return `invalid_uuid_version`. A preceding `UuidSlugError` is returned
-   * unchanged.
-   *
-   * @param uuid - Exactly 16 UUIDv7 bytes.
-   */
-  uuidBytesToSlug<Input extends Uint8Array | UuidSlugError>(
-    this: void,
-    uuid: UuidV7BytesInput<Input>,
+    uuid: UuidV7ValueInput<Input>,
   ): UuidV7CodecSlug | UuidSlugError;
   /**
    * Decode the first passing sentinel or mask in configured order to canonical UUIDv7 text.
