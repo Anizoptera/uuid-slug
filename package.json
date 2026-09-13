@@ -3,6 +3,7 @@
   "version": "0.4.0-dev",
   "description": "Fast UUIDv4/v7 generation; encode any UUID as 22-character base64url or 26-character base32hex; reversible UUIDv7 masking. Zero dependencies.",
   "keywords": [
+    "base32hex",
     "base64url",
     "browser",
     "bun",
@@ -11,8 +12,10 @@
     "node",
     "short-uuid",
     "slug",
+    "typescript",
     "url-safe",
     "uuid",
+    "uuidv4",
     "uuidv7",
     "zero-dependencies"
   ],

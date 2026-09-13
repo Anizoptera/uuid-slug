@@ -34,7 +34,8 @@ notes: the section for a version is published verbatim when its tag is pushed.
   `UuidV7CodecSlug`. The version-neutral `MaskedUuidSlug` export is removed.
 - Replace `parseUuid`/`formatUuid` with `uuidToBytes`/`bytesToUuid`, and
   `parseUuidSlug`/`formatUuidSlug` with `slugToBytes`/`bytesToSlug`. Remove the generic base64url
-  helpers and `Base64UrlString`.
+  helpers `encodeBase64Url`, `decodeBase64Url`, and `isBase64Url` together with `Base64UrlString`;
+  `bytesToSlug`, `slugToBytes`, and `isUuidSlug` accept the 16-byte UUID payload only.
 - Migration readers expose `decodeSlug` and `decodeSlugCandidates`. Options and format names are
   now `originalMask`, `plainSlug`, `current-mask`, `original-mask`, and `plain-slug`.
 - Replace `validateUuidV7Fresh` and `validateUuidV7SlugFresh` with `validateUuidV7Timestamp` and
@@ -60,6 +61,22 @@ notes: the section for a version is published verbatim when its tag is pushed.
   codec method for masked slugs and sentinels.
 - Export `UUID_SLUG_ALPHABETS`, `UUID_SLUG_MIGRATION_FORMATS`, their union types, and byte guards for
   runtime validation and narrowing.
+
+### Performance
+
+- Encode and decode the 16-byte UUID payload with fixed-size base64url and base32hex routines, and
+  delegate to native `toBase64` and `toHex` where a runtime provides them and measures faster.
+- Convert canonical UUID text straight to either slug alphabet, without an intermediate byte
+  array, where no native encoder exists.
+- On Bun, generate UUIDv7 bytes and slugs through the portable generator; it measured faster than
+  converting the native result. Native text generation is kept.
+- Index sentinels at codec construction so string and byte lookups no longer scan the list.
+- Restore the decoded block between previous-key attempts instead of allocating scratch per key,
+  and mask codec-owned bytes in place.
+- Draw only the entropy bytes the portable UUIDv7 layout consumes, and refill only the random tail
+  within one millisecond.
+- Reject a wrong UUID version or variant before scanning canonical syntax in the versioned guards.
+- Encode string seeds with each runtime's native UTF-8 primitive.
 
 ### Fixed
 
