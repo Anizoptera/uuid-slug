@@ -213,6 +213,42 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Owned byte outputs must be plain `Uint8Array`, not native `Buffer` subclasses. Adapt at the
   runtime boundary and verify constructors in both runners; preserve caller-supplied buffers.
 
+## Writing public documentation
+
+README, CHANGELOG, `docs/`, and the bench docs are read by someone who installs the package and
+never opens `src/` or `bench/`. Each rule below names a failure that has already shipped here.
+
+- Use only words the reader already has: generator, seed, key, codec, slug, alphabet, buffer.
+  Words from source and bench files do not reach a consumer: route, primitive, adapter, seam,
+  headline, domain, page, or "schema" for a mask. They leak after hours in those files, so before
+  committing consumer text, grep it for them.
+- Every sentence has a subject and a verb. A list of noun phrases ("generation, validation, and
+  conversion") is a feature blurb; it is longer than the sentence it replaced and says less.
+- A rewrite touches only lines with a named defect. Copy sound lines byte for byte. Afterwards,
+  compare each replaced line with its original: equal or greater length with fewer verbs is a
+  regression, revert it.
+- Numbers, dates, runtime versions, and percentages live only in `bench/PERFORMANCE.md`. README
+  gives direction: leads, trails, or unresolved, and against which package. A number in README is
+  stale at the next runtime release and nothing regenerates it.
+- Every claim has an owner. A guarantee cites a test that fails without it and needs a maintainer
+  ruling before it enters README §Guarantees; `docs/security.md` outranks README where they
+  disagree. A performance claim cites `bench/PERFORMANCE.md`. A "cannot" or "never" about a
+  runtime or another package cites the probe that showed it. A claim with no possible owner is
+  deleted, not softened.
+- Every term is defined before first use and every referent exists. "The responsiveness target"
+  with no definition anywhere is a defect, however plausible it reads.
+- Delete test: remove the sentence; if the reader loses nothing, it stays deleted. "Optimized",
+  "robust", "seamless", "powerful", and "simply" never survive it.
+- Shapes that read as machine-written and hide missing content: em-dashes, bold-label lists
+  ("**Speed:** ..."), "not only ... but", a trailing "-ing" clause that adds a consequence, groups
+  of three for rhythm, Title Case headings. Reject them on sight.
+- The TL;DR is a report, not a second body: definitions, a diagram, the rules that hold
+  everywhere, a need-to-call-to-section table, a traps table, the runtime table, then contents.
+  Every row links to a heading that exists; every trap restates a body fact and never introduces
+  one. Check that each `](#anchor)` resolves before committing README.
+- Prose about the writer's actions ("this pass", "was rewritten", "now supports") never enters a
+  doc; git holds that. State the fact.
+
 ## Release
 
 - Remote writes require explicit maintainer authorization for each exact operation. Do not push,
