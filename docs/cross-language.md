@@ -1,13 +1,11 @@
 # TypeScript and Rust contracts
 
-Maintain the same functionality and semantics in TypeScript and Rust from the first Rust implementation increment.
+Keep TypeScript and Rust identifiers interchangeable without losing either language's ownership and error guarantees.
 
 ## Parity
 
 Every feature, fix, and contract change must update both implementations and their shared contract
-cases before it is complete. During initial construction, missing Rust capabilities remain explicit
-unfinished work; a partial port is not a completed equivalent. Any semantic exception requires the
-maintainer's explicit ruling before shipping.
+cases. Any semantic exception requires the maintainer's explicit ruling before shipping.
 
 README §Guarantees owns consumer promises; [design.md](design.md) owns masking and wire semantics.
 Neither implementation becomes correct merely by agreeing with the other: expected results must
@@ -96,7 +94,7 @@ This is an alternate spelling, not a new masking scheme; retain the 16-bit check
 Safe sentinels remain raw UUID slugs: 26 base32hex characters, readable by the direct-slug decoder.
 Padding them to 27 adds a spelling that the direct-slug decoder rejects, with no identity benefit.
 Their length cannot collide with 27-character masked output. Keep old base64url reads and defaults.
-Masking has no chronological ordering. These extensions are implemented, not yet published.
+Masking has no chronological ordering.
 
 ## Distribution and dependencies
 

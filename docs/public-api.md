@@ -13,18 +13,18 @@ and wrong turn becomes work at every call site for the life of the API.
 
 Apply these rules in order. A later rule MUST NOT weaken an earlier one.
 
-1. **Tell the truth.** Names, types, results, and errors state only what the code enforces. Otherwise
+1. Names, types, results, and errors must state only what the code enforces. Otherwise
    callers build on a false promise.
-2. **Prevent misuse.** Let types reject invalid combinations. Validate external data once at the
+2. Let types reject invalid combinations. Validate external data once at the
    public boundary. Expose state and side effects so failures stay local and predictable.
-3. **Keep promises.** Preserve every visible behavior after release, or provide a migration. Hiding
+3. Preserve every visible behavior after release, or provide a migration. Hiding
    an implementation detail now is cheaper than supporting it forever.
-4. **Keep the API small.** Provide the fewest independent operations that cover real caller jobs.
+4. Provide the fewest independent operations that cover real caller jobs.
    Remove any part that adds no capability. The obvious call must be correct, and a simple job must
    need one simple call.
-5. **Do only requested work.** Use the best available host capability behind one result, with a
+5. Use the best available host capability behind one result, with a
    compatible fallback. Hidden parsing, allocation, or fallback work compounds across every call.
-6. **Prove behavior from outside.** Compile caller code, run failure paths, inspect the packed
+6. Compile caller code, run failure paths, inspect the packed
    package, and measure real operations. Reading the implementation proves none of these.
 
 Before selecting a shape, map independent caller-visible axes and the interactions that change
