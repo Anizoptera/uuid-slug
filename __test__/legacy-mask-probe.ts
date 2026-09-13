@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { BASE64URL, decodeInto } from "../src/alphabet";
 import { createUuidV7SlugCodec } from "../src/codec";
-import { decodeOriginalMask } from "../src/legacy-mask";
+import { decodeOriginalMask } from "../src/migration";
 import { decodeMaskedCandidates } from "../src/mask";
 import { applyMaskSchema, createCustomUuidV7Mask } from "../src/schema-handle";
 import { createUuidV7Mask, UUID_V7_TEST_MASK } from "../src/schema";

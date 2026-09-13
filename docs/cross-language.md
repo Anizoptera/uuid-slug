@@ -118,6 +118,9 @@ normal source selection does not waive this path. Keep one compiled implementati
 
 Keep ESM modules unbundled and `sideEffects: false`. This lets consumers remove features they do
 not import. Every shipped module must therefore remain free of required import-time effects.
+Each private file boundary must enable independent loading, removal, runtime selection, or an
+externally exercised implementation seam. Merge a leaf into its sole production importer when none
+applies; do not pre-bundle unrelated modules merely to lower the archive's file count.
 Probe stable optional capabilities once in the smallest module that owns them; never repeat the
 probe per call. Defer an allocation when imports that do not need it share that module.
 

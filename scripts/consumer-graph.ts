@@ -14,7 +14,6 @@ const VERSION_MODULES = {
 const MASKING_MODULE_FILES = new Set([
   "codec.ts",
   "feistel.ts",
-  "legacy-mask.ts",
   "mask.ts",
   "migration.ts",
   "schema-handle.ts",
@@ -22,7 +21,6 @@ const MASKING_MODULE_FILES = new Set([
   "siphash.ts",
   "codec.js",
   "feistel.js",
-  "legacy-mask.js",
   "mask.js",
   "migration.js",
   "schema-handle.js",
