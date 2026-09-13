@@ -4,6 +4,7 @@ import path from "node:path";
 const [entry, outdir] = process.argv.slice(2);
 const compiler = webpack({
   context: path.dirname(entry),
+  devtool: "source-map",
   entry,
   mode: "production",
   target: "web",

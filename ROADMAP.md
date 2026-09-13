@@ -80,3 +80,14 @@ Make each consumer pay only for UUID generation, plain slugs, or masking that it
 - [x] Audit fixtures, probes, fakes, models, snapshots, randomized inputs, cleanup, diagnostics, and concurrency for false evidence.
 - [x] Fix each material defect with the smallest proof that fails before the fix and passes after it.
 - [x] Re-read every changed line and comment, run the complete gate, inspect the final diff, and leave no open audit task.
+
+## Verification oracle audit
+
+- [x] Map each routine command to the exact production artifact, defect class, oracle, and overlapping verifier.
+- [x] Mutate tree-shaking witnesses independently from retained code and reject any oracle that fails on harmless implementation text.
+- [x] Mutate resource and performance expectations and require each gate to fail for its claimed defect.
+- [x] Trace packed-artifact checks for repeated builds, tests, installs, and compiler passes that add no independent evidence.
+- [x] Inspect every test double and reference implementation for an independently anchored oracle or remove it.
+- [x] Measure per-file and per-lane runtime, setup, cleanup, isolation, and parallel behavior; redesign every slow or mode-sensitive verifier.
+- [x] Audit every TypeScript test artifact for `__test__` placement, discovery, and non-duplication.
+- [x] Fix each material defect behind the smallest discriminating reproducer, then run the complete gate and inspect the final diff.
