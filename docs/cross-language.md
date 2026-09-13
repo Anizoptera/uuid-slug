@@ -111,6 +111,8 @@ condition is available. Ship source maps whose inputs resolve inside the package
 
 Keep ESM modules unbundled and `sideEffects: false`. This lets consumers remove features they do
 not import. Every shipped module must therefore remain free of required import-time effects.
+Probe stable optional capabilities once in the smallest module that owns them; never repeat the
+probe per call. Defer an allocation when imports that do not need it share that module.
 
 Use `/*#__PURE__*/` only on removable construction. Annotate nested calls separately because a
 bundler may still evaluate arguments. Use `/*#__NO_SIDE_EFFECTS__*/` only on functions that are

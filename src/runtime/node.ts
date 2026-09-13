@@ -31,7 +31,7 @@ const nodeRuntime: Runtime = {
    * material on the heap for the collector to get to whenever it does. Pooled because the
    * per-call cost dominates at 16 bytes; see `pool.ts`.
    */
-  fillRandom: pooledFill((into) => {
+  fillRandom: /*#__PURE__*/ pooledFill((into) => {
     crypto.randomFillSync(into);
     return undefined;
   }),

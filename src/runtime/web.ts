@@ -4,17 +4,18 @@ import { UuidSlugError } from "../errors";
 import { pooledFill } from "./pool";
 import type { Runtime } from "./types";
 
-const utf8Encoder = new TextEncoder();
+let utf8Encoder: TextEncoder | undefined;
 
-/** Reuse the platform encoder because schema construction owns no state that requires a fresh instance. */
-export const encodeUtf8 = (text: string): Uint8Array => utf8Encoder.encode(text);
+/** Create the shared encoder only when mask construction needs it; generation imports this adapter too. */
+export const encodeUtf8 = (text: string): Uint8Array =>
+  (utf8Encoder ??= new TextEncoder()).encode(text);
 
 const runtimeCapabilities: Runtime = {
   /**
    * Pooled for the same reason as Node's: `getRandomValues` costs far more per call than per
    * byte, and a v7 id needs 16. Bun draws this path too, where pooling measured 16x.
    */
-  fillRandom: pooledFill((into) => {
+  fillRandom: /*#__PURE__*/ pooledFill((into) => {
     // Resolve per draw so instrumentation installed after import observes the source.
     const crypto = globalThis.crypto;
     if (!crypto?.getRandomValues)

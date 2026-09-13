@@ -109,3 +109,11 @@ Make each consumer pay only for UUID generation, plain slugs, or masking that it
 - [x] Add one root guidance trigger for changes to bundling, minification, source maps, package side effects, or optimizer annotations.
 - [x] Document the annotation safety boundary and the tsdown settings that preserve tree shaking, stack traces, and useful source maps.
 - [x] Remove duplicated or consumer-irrelevant wording, verify every durable claim against config and artifact checks, run the complete gate, and commit with a clean tree.
+
+## Import-time capability audit
+
+- [x] Inventory every source-owned module initializer and classify it as constant construction, capability detection, state allocation, or observable effect.
+- [x] Measure which initializers execute for each packed public operation under direct ESM loading and every retained consumer optimizer.
+- [x] Compare eager module detection, pure annotated construction, lazy memoization, and capability-specific module boundaries on startup work, hot-path work, bundle bytes, stack quality, and runtime correctness.
+- [x] Make only changes that reduce consumer work without weakening capability fallback, instrumentation, security, or tree shaking; add a regression check only for a material defect not already detected.
+- [x] Update the owning maintenance guidance, run the complete gate, inspect emitted artifacts, and commit with a clean tree.

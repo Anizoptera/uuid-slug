@@ -26,10 +26,11 @@ const POOL_BYTES = 8192;
  * Node's process model because a new process gets a fresh heap; it would NOT be safe under a
  * POSIX `fork` that copies the heap, where parent and child would issue identical bytes.
  */
+/*#__NO_SIDE_EFFECTS__*/
 export function pooledFill(
   fill: (into: Uint8Array<ArrayBuffer>) => unknown,
 ): (bytes: Uint8Array<ArrayBuffer>) => undefined | UuidSlugError {
-  const pool = new Uint8Array(POOL_BYTES);
+  let pool: Uint8Array<ArrayBuffer> | undefined;
   // STARTS EMPTY, and must. Pre-filling here would move the first call's syscall off the hot path,
   // which looks like a free win and is the one change that breaks heap-snapshot safety: a snapshot
   // taken at import time (V8 or JavaScriptCore startup snapshots, and the serverless platforms
@@ -44,7 +45,8 @@ export function pooledFill(
     if (length > POOL_BYTES) {
       return randomFailure(fill(bytes));
     }
-    if (offset + length > POOL_BYTES) {
+    if (pool === undefined || offset + length > POOL_BYTES) {
+      pool ??= new Uint8Array(POOL_BYTES);
       const failed = randomFailure(fill(pool));
       if (failed) return failed;
       offset = 0;

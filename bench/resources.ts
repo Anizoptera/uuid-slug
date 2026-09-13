@@ -138,6 +138,7 @@ try {
       );
     console.log(JSON.stringify({ name, ...measured }));
   }
+  assert.equal(api.generateUuidV4Bytes(into, 4), into, "initialize the entropy pool");
   check(
     "pooled v4 generation",
     () => {
