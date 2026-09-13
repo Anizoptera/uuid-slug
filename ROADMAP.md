@@ -8,6 +8,10 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
       performance evidence, plus separate TypeScript inference and misuse checks. Preserve
       composition without intermediate error unwrapping as required by `docs/public-api.md`
       §Failures and effects. Runtime implementation awaits design selection.
+- [ ] Compare marker-only detectors and actual property layouts, including `__failure`, without
+      compulsory native verification. Measure standalone recognition and composed calls separately;
+      specify and verify any required capability fallback using `docs/public-api.md`
+      §Capabilities and runtime work before selecting an implementation.
 
 ## Generated benchmark reports
 

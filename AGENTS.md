@@ -105,7 +105,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   exception-based dependencies at their boundary.
 - Make compatible calls compose without intermediate error unwrapping. Read
   `docs/public-api.md` §Failures and effects when designing or changing composition, error
-  propagation, or result types; it owns the required behavior and verification.
+  propagation, markers, recognition checks, or result types; it owns the required behavior and
+  verification. Read §Capabilities and runtime work before selecting checks or fallback order.
 - Give every root export, overload family, public type, interface, property, method, option, and
   callback consumer-facing JSDoc in its owning source. Explain what changes the caller's decision:
   valid input, defaults, result and ownership, expected errors or effects, ordering, important

@@ -158,6 +158,22 @@ Keep UUID text/binary conversion directional and version-neutral:
   or intermediate guards and reject incompatible representations and UUID versions. TypeScript
   brands and overloads do not remove JavaScript validation or runtime work. Keep error
   representation and recognition open to measured alternatives that preserve these criteria.
+- Select error checks for the values callers actually pass, and minimize their cost when no error
+  is present. Compare error recognition directly; input validation is a separate operation and
+  cannot substitute for that comparison. For package-produced values, evaluate marker-only
+  recognition without adding native-error, name, or code checks. Add a check only for a stated
+  consumer requirement; spoof resistance is not an assumed requirement for composition.
+- Compare marker key, marker value, property placement, and read operation independently. Include
+  a reserved-looking string such as `__failure`, a package-specific string, and a shared symbol;
+  compare own and prototype properties. Neither a short key nor an unusual spelling proves speed
+  or uniqueness. Keep the selected spelling and meaning consistent across package copies, and
+  expose narrowing without requiring callers to know the marker's storage details.
+- Benchmark the actual candidate error layouts and standalone detectors, then their complete
+  composed calls. Keep marker-only checks separate from marker-plus-verification checks. State
+  any difference in accepted values before comparing performance; compatibility checks are a
+  separate cost, not an automatic addition. Preserve diagnostics and error identity, and test
+  inference separately from JavaScript behavior. Follow `bench/README.md` for runtime coverage,
+  repetitions, and failure controls; a predicate microbenchmark cannot establish total call cost.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Package-owned interfaces
   carry failures as values; adapt and contain exception-based dependencies at their boundary.
 - Keep one error class with stable, actionable codes. Codes guide different recovery actions without
@@ -190,6 +206,19 @@ Keep UUID text/binary conversion directional and version-neutral:
   same result and error meaning.
 - A fallback may lose only a property the public contract explicitly leaves unpromised. Expose a
   material capability difference instead of silently reducing every runtime to the weakest host.
+- Specify the full fallback order for each capability-dependent operation before implementing it:
+  each alternative names its availability condition, accepted inputs, result and error meaning,
+  fallback trigger, and terminal outcome when no alternative works. Combine complementary
+  capabilities where that satisfies the caller's job with less work; use alternatives only where
+  capabilities overlap. A portable implementation may be the first choice when measurements favor
+  it. Native availability alone does not make an operation preferable.
+- Select available implementations once where possible, and test each selected and fallback
+  implementation directly. Distinguish unavailable capability, recoverable execution failure,
+  and invalid caller input; retry only the failures the operation's contract permits. Never turn
+  an ordinary negative error check into a search through progressively broader detectors unless
+  the accepted-error contract requires that search. A marker check needing no optional capability
+  needs no capability fallback. Keep useful stronger capabilities available without forcing
+  callers to configure runtime selection or pay for capabilities their operation does not use.
 - Do not perform work merely because configuration or an implementation makes it available. Each
   parse, allocation, copy, entropy draw, hash, mask attempt, import, and system call must serve
   the selected operation and must be reused when one result satisfies several checks.
