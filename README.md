@@ -8,37 +8,40 @@
 
 ## TL;DR
 
-**Fastest UUIDv7 text generation** in our [benchmarks](#measured-performance), zero runtime
-dependencies, UUIDv4 generation, and lossless short slugs for databases, URLs, and files.
-Encode any UUID as short base64url or lowercase base32hex. Optional reversible masking makes
-slugs opaque and supports only UUIDv7. Keep one ID across representations, with no lost bits or
-mapping table. Write directly into your buffers without intermediate text or new output arrays,
-and read UUIDv7 timestamps instead of storing them twice. One API uses native fast paths and portable fallbacks across
-Node, Bun, Deno, and browsers, with cross-runtime correctness tests and performance measurements.
-Generation uses secure randomness; failures return typed errors instead of throwing or falling
-back to weaker randomness. Unused features tree-shake away. Rust reads the same ID formats.
+**Fastest zero-deps UUIDv7/v4 generation and handling + optionally opaque short UUID slugs for databases, URLs, and files.**
+
+- Encode any UUID as short `base64url` or lowercase `base32hex`.
+- Adopt optional reversible seeded masking makes slugs opaque (supports only UUIDv7).
+- Keep one ID across all representations, with no lost bits or mapping table.
+- Write directly into your buffers without intermediate text or new output arrays (performance optimized or API).
+- Read UUIDv7 timestamps instead of duplicating them twice.
+- Use native fastest paths and portable fallbacks across Node, Bun, Deno, and browsers.
+- Benefit from cross-runtime correctness tested and performance optimized.
+- Generation uses only secure randomness with enough entropy.
+- Failures return typed errors instead of throwing or falling back to weaker randomness.
+- Unused features tree-shake away with any modern bundler.
 
 [Install](#install) · [Quick start](#quick-start) · [Contents](#contents) · [API](#api) · [Performance](#measured-performance)
 
-The same UUIDv7 in each format (16 bytes in binary):
+The same UUIDv7 in each format (**16 bytes in binary**):
 
 | Format (characters) | Example | Choose it for |
 | --- | --- | --- |
-| UUIDv7 (36) | `0198abcd-1234-7abc-9def-0123456789ab` | Standard UUID storage; time sorting |
-| Base64url (22) | `AZirzRI0eryd7wEjRWeJqw` | Shortest URLs; case-sensitive |
-| Base32hex (26) | `06canj8i6htbp7ff04hkaps9lc` | Lowercase filenames; time sorting |
+| UUIDv7 (32-36) | `0198abcd-1234-7abc-9def-0123456789ab` | Standard UUID storage; time sorting |
+| Base64url (22) | `AZirzRI0eryd7wEjRWeJqw` | Short URLs; case-sensitive; 10-14 chars saved |
+| Base32hex (26) | `06canj8i6htbp7ff04hkaps9lc` | Lowercase filenames; time sorting; 6-10 chars saved |
 | Masked base64url (22) | `ap225Qa_y6wN5LQCJgwH0z` | Random-looking, short, case-sensitive |
 | Masked base32hex (27) | `daerdp86nv5qo3f4mg12c307qco` | Random-looking, lowercase filenames |
 
-All four slugs recover the same UUIDv7. Masking hides the UUID layout, making it look like a random
-string; encoding and decoding require your secret. Direct base64url keeps time grouping, not sort
-order. [Time sorting](#ordering-and-key-distribution) requires bytewise comparison; masked slugs
-have no time order.
+All slugs recover the same UUIDv7. Masking hides the UUID layout, making it look like a random string; encoding and decoding require your secret. Direct base64url keeps time grouping, not sort order. [Time sorting](#ordering-and-key-distribution) requires bytewise comparison; masked slugs
+have no time order and are closer to random distribution.
 
-## Install
+## Install (use your favorite package manager)
 
 ```bash
+bun add @anizoptera/uuid-slug
 pnpm add @anizoptera/uuid-slug
+npm add @anizoptera/uuid-slug
 ```
 
 ## Quick start
