@@ -37,7 +37,7 @@ notes: the section for a version is published verbatim when its tag is pushed.
   helpers `encodeBase64Url`, `decodeBase64Url`, and `isBase64Url` together with `Base64UrlString`;
   `bytesToSlug`, `slugToBytes`, and `isUuidSlug` accept the 16-byte UUID payload only.
 - Migration readers expose `decodeSlug` and `decodeSlugCandidates`. Options and format names are
-  now `originalMask`, `plainSlug`, `current-mask`, `original-mask`, and `plain-slug`.
+  now `originalMask`, `directSlug`, `current-mask`, `original-mask`, and `direct-slug`.
 - Replace `validateUuidV7Fresh` and `validateUuidV7SlugFresh` with `validateUuidV7Timestamp` and
   `validateUuidV7SlugTimestamp`. Validation requires `maxTimestampDeltaMs`; only
   `referenceUnixMs` defaults to the current clock. `hasUuidV7Entropy` is removed.

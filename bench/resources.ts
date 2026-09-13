@@ -93,7 +93,7 @@ try {
   assert.ok(!(older instanceof Error));
   assert.ok(!(migrationMany instanceof Error));
   assert.ok(!(migrationLast instanceof Error));
-  const migration = rotated.createMigrationDecoder({ originalMask: true, plainSlug: true });
+  const migration = rotated.createMigrationDecoder({ originalMask: true, directSlug: true });
   const migrationManyReader = migrationMany.createMigrationDecoder();
   const masked = codec.encodeUuid(id);
   const old = older.encodeUuid(id);

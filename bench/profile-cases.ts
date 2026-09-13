@@ -144,7 +144,7 @@ export function createProfileCases(
     }),
   );
   const rotated = unwrap(api.createUuidV7SlugCodec({ mask: current, previousMasks: [previous] }));
-  const migration = rotated.createMigrationDecoder({ originalMask: true, plainSlug: true });
+  const migration = rotated.createMigrationDecoder({ originalMask: true, directSlug: true });
   const maskedOnlyMigration = codec.createMigrationDecoder();
   const originals = originalFixtures.filter(({ slug, raw }) => slug !== raw);
   const portable = api.createUuidV7Generator({ clock: () => instant });
@@ -189,7 +189,7 @@ export function createProfileCases(
   }
   if (overlapEntries.length !== 64) throw new Error("Insufficient migration overlap fixtures");
   const base64url = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-  // Clear the four external check bits so the public plain-slug decoder exposes each ciphertext.
+  // Clear the four external check bits so the public direct-slug decoder exposes each ciphertext.
   const mixedBytes = (slug: string) => {
     const last = base64url.indexOf(slug[21]!);
     if (last < 0) throw new Error("Invalid migration overlap fixture");
@@ -535,15 +535,15 @@ export function createProfileCases(
       migration.decodeSlugCandidates(masked[index & 255] as string),
     "migration.previousCandidates": (index) =>
       migration.decodeSlugCandidates(oldOnly[index % oldOnly.length] as string),
-    "migration.plain": (index) => migration.decodeSlug(slugs[index & 255] as string, "plain-slug"),
+    "migration.plain": (index) => migration.decodeSlug(slugs[index & 255] as string, "direct-slug"),
     "migration.base32": (index) =>
-      migration.decodeSlug(base32[index & 255] as string, "plain-slug"),
+      migration.decodeSlug(base32[index & 255] as string, "direct-slug"),
     "migration.base32Candidates": (index) =>
-      migration.decodeSlugCandidates(base32[index & 255] as string, "plain-slug"),
+      migration.decodeSlugCandidates(base32[index & 255] as string, "direct-slug"),
     "migration.original": (index) =>
       migration.decodeSlug(originals[index % originals.length]!.slug, "original-mask"),
     "migration.plainCandidates": (index) =>
-      migration.decodeSlugCandidates(slugs[index & 255] as string, "plain-slug"),
+      migration.decodeSlugCandidates(slugs[index & 255] as string, "direct-slug"),
     "migration.originalCandidates": (index) =>
       migration.decodeSlugCandidates(originals[index % originals.length]!.slug, "original-mask"),
     "invalid.migration": () => maskedOnlyMigration.decodeSlug(badSlug),
@@ -678,10 +678,10 @@ export function createProfileCases(
     "construct.codec.sentinels64": () =>
       api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions }),
     "construct.migration.current": () => codec.createMigrationDecoder(),
-    "construct.migration.plain": () => codec.createMigrationDecoder({ plainSlug: true }),
+    "construct.migration.plain": () => codec.createMigrationDecoder({ directSlug: true }),
     "construct.migration.original": () => codec.createMigrationDecoder({ originalMask: true }),
     "construct.migration.all": () =>
-      codec.createMigrationDecoder({ originalMask: true, plainSlug: true }),
+      codec.createMigrationDecoder({ originalMask: true, directSlug: true }),
     "construct.custom": () =>
       api.createCustomUuidV7Mask({
         label: "profile-identity",

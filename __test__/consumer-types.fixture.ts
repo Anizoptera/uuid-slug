@@ -68,7 +68,7 @@ declare const generator: UuidV7Generator;
 const plainResult = generateUuidV7Slug();
 expectType<UuidV7Slug | UuidSlugError>()(plainResult);
 if (plainResult instanceof Error) throw plainResult;
-const plainSlug: UuidV7Slug = plainResult;
+const directSlug: UuidV7Slug = plainResult;
 // @ts-expect-error Unchecked bytes are not a validated UUID payload.
 const uncheckedBytes: UuidBytes = new Uint8Array(16);
 // @ts-expect-error Unchecked text is not a validated UUIDv7 string.
@@ -127,7 +127,7 @@ expectType<UuidString | UuidSlugError>()(bytesToUuid(versionedBytes));
 expectType<ConsumerBuffer | UuidSlugError>()(generator.generateUuidV7Bytes(destination, 8));
 expectType<ConsumerBuffer | UuidSlugError>()(generator.generateUuidV7BytesAt(0, destination, 8));
 const parsedInto: ConsumerBuffer | UuidSlugError = uuidToBytes(checkedUuid, destination, 8);
-const parsedSlugInto: ConsumerBuffer | UuidSlugError = slugToBytes(plainSlug, destination, 8);
+const parsedSlugInto: ConsumerBuffer | UuidSlugError = slugToBytes(directSlug, destination, 8);
 // @ts-expect-error Supplying storage must not let known slug text enter a UUID text operation.
 uuidToBytes(versionedSlug, destination);
 // @ts-expect-error Supplying storage must not let known UUID text enter a slug text operation.
@@ -232,7 +232,7 @@ createUuidV7SlugCodec({
 });
 const migrationResult = codec.createMigrationDecoder({
   originalMask: true,
-  plainSlug: true,
+  directSlug: true,
 });
 if (migrationResult instanceof Error) throw migrationResult;
 const migration: UuidSlugMigrationDecoder = migrationResult;
@@ -245,15 +245,15 @@ const candidates: UuidString[] | UuidSlugError = migration.decodeSlugCandidates(
   "AAAAAAABcACAAAAAAAAAAA",
   "original-mask",
 );
-const plainOnlyMigration = codec.createMigrationDecoder({ plainSlug: true });
+const plainOnlyMigration = codec.createMigrationDecoder({ directSlug: true });
 if (plainOnlyMigration instanceof Error) throw plainOnlyMigration;
-plainOnlyMigration.decodeSlug("AAAAAAAAcACAAAAAAAAAAA", "plain-slug");
+plainOnlyMigration.decodeSlug("AAAAAAAAcACAAAAAAAAAAA", "direct-slug");
 // @ts-expect-error This reader was not configured to accept the original masked format.
 plainOnlyMigration.decodeSlug("AAAAAAAAcACAAAAAAAAAAA", "original-mask");
 const currentOnlyMigration = codec.createMigrationDecoder();
 if (currentOnlyMigration instanceof Error) throw currentOnlyMigration;
 // @ts-expect-error A current-only reader cannot select a disabled historical format.
-currentOnlyMigration.decodeSlug("AAAAAAAAcACAAAAAAAAAAA", "plain-slug");
+currentOnlyMigration.decodeSlug("AAAAAAAAcACAAAAAAAAAAA", "direct-slug");
 void [
   uncheckedBytes,
   uncheckedUuid,

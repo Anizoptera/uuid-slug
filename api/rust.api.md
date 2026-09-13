@@ -36,8 +36,8 @@ impl core::panic::unwind_safe::UnwindSafe for uuid_slug::alphabet::Alphabet
 pub mod uuid_slug::codec
 pub enum uuid_slug::codec::MigrationFormat
 pub uuid_slug::codec::MigrationFormat::Current
+pub uuid_slug::codec::MigrationFormat::Direct
 pub uuid_slug::codec::MigrationFormat::Original
-pub uuid_slug::codec::MigrationFormat::Plain
 impl core::clone::Clone for uuid_slug::codec::MigrationFormat
 pub fn uuid_slug::codec::MigrationFormat::clone(&self) -> uuid_slug::codec::MigrationFormat
 impl core::cmp::Eq for uuid_slug::codec::MigrationFormat
@@ -95,8 +95,8 @@ impl<'a> core::marker::UnsafeUnpin for uuid_slug::codec::MigrationDecoder<'a>
 impl<'a> !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
 impl<'a> !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
 pub struct uuid_slug::codec::MigrationOptions
+pub uuid_slug::codec::MigrationOptions::direct: bool
 pub uuid_slug::codec::MigrationOptions::original: bool
-pub uuid_slug::codec::MigrationOptions::plain: bool
 impl core::clone::Clone for uuid_slug::codec::MigrationOptions
 pub fn uuid_slug::codec::MigrationOptions::clone(&self) -> uuid_slug::codec::MigrationOptions
 impl core::default::Default for uuid_slug::codec::MigrationOptions
@@ -360,8 +360,8 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::error::ErrorCode
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::error::ErrorCode
 pub enum uuid_slug::MigrationFormat
 pub uuid_slug::MigrationFormat::Current
+pub uuid_slug::MigrationFormat::Direct
 pub uuid_slug::MigrationFormat::Original
-pub uuid_slug::MigrationFormat::Plain
 impl core::clone::Clone for uuid_slug::codec::MigrationFormat
 pub fn uuid_slug::codec::MigrationFormat::clone(&self) -> uuid_slug::codec::MigrationFormat
 impl core::cmp::Eq for uuid_slug::codec::MigrationFormat
@@ -452,8 +452,8 @@ impl<'a> core::marker::UnsafeUnpin for uuid_slug::codec::MigrationDecoder<'a>
 impl<'a> !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
 impl<'a> !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
 pub struct uuid_slug::MigrationOptions
+pub uuid_slug::MigrationOptions::direct: bool
 pub uuid_slug::MigrationOptions::original: bool
-pub uuid_slug::MigrationOptions::plain: bool
 impl core::clone::Clone for uuid_slug::codec::MigrationOptions
 pub fn uuid_slug::codec::MigrationOptions::clone(&self) -> uuid_slug::codec::MigrationOptions
 impl core::default::Default for uuid_slug::codec::MigrationOptions
@@ -580,8 +580,8 @@ impl core::panic::unwind_safe::UnwindSafe for uuid_slug::alphabet::Alphabet
 pub mod uuid_slug::codec
 pub enum uuid_slug::codec::MigrationFormat
 pub uuid_slug::codec::MigrationFormat::Current
+pub uuid_slug::codec::MigrationFormat::Direct
 pub uuid_slug::codec::MigrationFormat::Original
-pub uuid_slug::codec::MigrationFormat::Plain
 impl core::clone::Clone for uuid_slug::codec::MigrationFormat
 pub fn uuid_slug::codec::MigrationFormat::clone(&self) -> uuid_slug::codec::MigrationFormat
 impl core::cmp::Eq for uuid_slug::codec::MigrationFormat
@@ -639,8 +639,8 @@ impl<'a> core::marker::UnsafeUnpin for uuid_slug::codec::MigrationDecoder<'a>
 impl<'a> !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
 impl<'a> !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
 pub struct uuid_slug::codec::MigrationOptions
+pub uuid_slug::codec::MigrationOptions::direct: bool
 pub uuid_slug::codec::MigrationOptions::original: bool
-pub uuid_slug::codec::MigrationOptions::plain: bool
 impl core::clone::Clone for uuid_slug::codec::MigrationOptions
 pub fn uuid_slug::codec::MigrationOptions::clone(&self) -> uuid_slug::codec::MigrationOptions
 impl core::default::Default for uuid_slug::codec::MigrationOptions
@@ -900,8 +900,8 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::error::ErrorCode
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::error::ErrorCode
 pub enum uuid_slug::MigrationFormat
 pub uuid_slug::MigrationFormat::Current
+pub uuid_slug::MigrationFormat::Direct
 pub uuid_slug::MigrationFormat::Original
-pub uuid_slug::MigrationFormat::Plain
 impl core::clone::Clone for uuid_slug::codec::MigrationFormat
 pub fn uuid_slug::codec::MigrationFormat::clone(&self) -> uuid_slug::codec::MigrationFormat
 impl core::cmp::Eq for uuid_slug::codec::MigrationFormat
@@ -992,8 +992,8 @@ impl<'a> core::marker::UnsafeUnpin for uuid_slug::codec::MigrationDecoder<'a>
 impl<'a> !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
 impl<'a> !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
 pub struct uuid_slug::MigrationOptions
+pub uuid_slug::MigrationOptions::direct: bool
 pub uuid_slug::MigrationOptions::original: bool
-pub uuid_slug::MigrationOptions::plain: bool
 impl core::clone::Clone for uuid_slug::codec::MigrationOptions
 pub fn uuid_slug::codec::MigrationOptions::clone(&self) -> uuid_slug::codec::MigrationOptions
 impl core::default::Default for uuid_slug::codec::MigrationOptions

@@ -372,7 +372,7 @@ describe("masked UUID slugs", () => {
   });
 });
 
-describe("plain-slug migration", () => {
+describe("direct-slug migration", () => {
   // Nothing pinned this flag before, which is how a decode path got deleted as a "duplicate"
   // and how a schema combination that silently returns WRONG uuids went unnoticed. The cases
   // below are chosen to fail loudly if either recurs.
@@ -381,7 +381,7 @@ describe("plain-slug migration", () => {
     // `decode` rejecting them is correct; something has to accept them.
     const codec = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK });
     const slug = uuidToSlug(SAMPLE_V4);
-    expect(codec.createMigrationDecoder({ plainSlug: true }).decodeSlug(String(slug))).toBe(
+    expect(codec.createMigrationDecoder({ directSlug: true }).decodeSlug(String(slug))).toBe(
       SAMPLE_V4,
     );
     expect(codec.decodeSlug(String(slug))).toBeInstanceOf(Error);
@@ -389,7 +389,7 @@ describe("plain-slug migration", () => {
 
   it("keeps wrong-key diagnosis out of an explicitly enabled plain migration", () => {
     // Ordinary decoding owns current masked identifiers and must report the wrong key. A separate
-    // migration reader with `plainSlug: true` deliberately adds the overlapping direct interpretation;
+    // migration reader with `directSlug: true` deliberately adds the overlapping direct interpretation;
     // it must return that candidate instead of changing ordinary codec behavior.
     const mine = createUuidV7Mask({ label: "feistel-only", seed: "the-key-in-use-test-seed-0000" });
     const theirs = createUuidV7Mask({
@@ -404,7 +404,7 @@ describe("plain-slug migration", () => {
     const failure = codec.decodeSlug(foreign);
     expect(failure).toBeInstanceOf(UuidSlugError);
     expect((failure as UuidSlugError).code).toBe("invalid_uuid_slug");
-    expect(codec.createMigrationDecoder({ plainSlug: true }).decodeSlug(foreign)).toBe(
+    expect(codec.createMigrationDecoder({ directSlug: true }).decodeSlug(foreign)).toBe(
       "1f04e7f5-c0c6-4044-b5a3-6278bb77ffb4",
     );
   });

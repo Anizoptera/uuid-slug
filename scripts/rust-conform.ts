@@ -202,8 +202,8 @@ export function evaluate(request: Request): Outcome {
         return result(codec.encodeUuid(input));
       case "unmask":
         return result(
-          request.acceptPlain === true
-            ? codec.createMigrationDecoder({ plainSlug: true }).decodeSlug(input)
+          request.acceptDirect === true
+            ? codec.createMigrationDecoder({ directSlug: true }).decodeSlug(input)
             : codec.decodeSlug(input),
         );
       case "unmaskV7":
@@ -222,7 +222,7 @@ export function evaluate(request: Request): Outcome {
           codec
             .createMigrationDecoder({
               originalMask: request.original === true,
-              plainSlug: request.plain === true,
+              directSlug: request.direct === true,
             })
             .decodeSlug(input, request.format as UuidSlugMigrationFormat | undefined),
         );
@@ -231,7 +231,7 @@ export function evaluate(request: Request): Outcome {
           codec
             .createMigrationDecoder({
               originalMask: request.original === true,
-              plainSlug: request.plain === true,
+              directSlug: request.direct === true,
             })
             .decodeSlugCandidates(input, request.format as UuidSlugMigrationFormat | undefined),
         );
@@ -429,10 +429,10 @@ export async function contractRequests(): Promise<Request[]> {
     for (const slug of [vector.slug, vector.raw])
       for (const input of uuidTailAliases(slug))
         for (const op of ["migration", "candidates"]) {
-          for (const plain of [false, true])
+          for (const direct of [false, true])
             for (const enabled of [false, true])
-              for (const format of [undefined, "plain-slug", "current-mask", "original-mask"])
-                requests.push({ op, input, plain, original: enabled, format });
+              for (const format of [undefined, "direct-slug", "current-mask", "original-mask"])
+                requests.push({ op, input, direct, original: enabled, format });
         }
   }
   const masks = [
@@ -499,15 +499,15 @@ export async function contractRequests(): Promise<Request[]> {
     }
   }
   for (const input of [ordinary.direct, first.direct, "AAAAAAAAQACAAAAAAAAAAA"])
-    for (const acceptPlain of [false, true])
+    for (const acceptDirect of [false, true])
       for (const op of ["unmask", "unmaskV7", "validateMaskedTimestamp"])
-        requests.push({ op, input, acceptPlain, now: instant, window: 1 });
+        requests.push({ op, input, acceptDirect, now: instant, window: 1 });
   requests.push({
     op: "candidates",
     input: original.overlap.slug,
     mask: { seed: original.overlap.seed },
     original: true,
-    plain: true,
+    direct: true,
   });
   requests.push({
     op: "candidates",

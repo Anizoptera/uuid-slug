@@ -257,11 +257,11 @@ fn run(request: &Value) -> Result<Value, Error> {
         "mask" => Ok(json!(codec(request)?.encode_uuid(Uuid::parse(input)?)?)),
         "unmask" => {
             let codec = codec(request)?;
-            let uuid = if request["acceptPlain"] == true {
+            let uuid = if request["acceptDirect"] == true {
                 codec
                     .migration_decoder(MigrationOptions {
                         original: false,
-                        plain: true,
+                        direct: true,
                     })
                     .decode(input, None)?
             } else {
@@ -288,13 +288,13 @@ fn run(request: &Value) -> Result<Value, Error> {
             let codec = codec(request)?;
             let migration = codec.migration_decoder(MigrationOptions {
                 original: request["original"] == true,
-                plain: request["plain"] == true,
+                direct: request["direct"] == true,
             });
             let format = match request["format"].as_str() {
                 None => None,
                 Some("current-mask") => Some(MigrationFormat::Current),
                 Some("original-mask") => Some(MigrationFormat::Original),
-                Some("plain-slug") => Some(MigrationFormat::Plain),
+                Some("direct-slug") => Some(MigrationFormat::Direct),
                 _ => return Err(Error::new(ErrorCode::InvalidUuidSlug)),
             };
             if request["op"] == "migration" {

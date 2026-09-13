@@ -64,7 +64,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
       }),
     );
     equal(
-      unwrap(codec.createMigrationDecoder({ plainSlug: true })).decodeSlug(slug, "plain-slug"),
+      unwrap(codec.createMigrationDecoder({ directSlug: true })).decodeSlug(slug, "direct-slug"),
       uuid,
       `${alphabet} migration`,
     );
@@ -112,10 +112,10 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   const codec = unwrap(api.createUuidV7SlugCodec({ mask: api.UUID_V7_TEST_MASK }));
   const { seed, slug: overlap, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
   const migrating = unwrap(api.createUuidV7SlugCodec({ mask: { seed } }));
-  const reader = unwrap(migrating.createMigrationDecoder({ originalMask: true, plainSlug: true }));
+  const reader = unwrap(migrating.createMigrationDecoder({ originalMask: true, directSlug: true }));
   equal(reader.decodeSlug(overlap), currentUuid, "migration default");
   equal(reader.decodeSlug(overlap, "original-mask"), originalUuid, "original migration");
-  equal(reader.decodeSlug(overlap, "plain-slug"), plainUuid, "plain migration");
+  equal(reader.decodeSlug(overlap, "direct-slug"), plainUuid, "plain migration");
   equal(
     JSON.stringify(reader.decodeSlugCandidates(overlap)),
     JSON.stringify([currentUuid, originalUuid, plainUuid]),
@@ -123,7 +123,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   );
   equal(
     JSON.stringify(
-      migrating.createMigrationDecoder({ plainSlug: true }).decodeSlugCandidates(overlap),
+      migrating.createMigrationDecoder({ directSlug: true }).decodeSlugCandidates(overlap),
     ),
     JSON.stringify([currentUuid, plainUuid]),
     "original-mask migration retirement",

@@ -46,7 +46,7 @@ declare type DirectUuidSlugInput<Input extends string> = RejectKnownInput<
 declare type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
   | "current-mask"
   | (EnabledMigrationOption<Options, "originalMask"> extends never ? never : "original-mask")
-  | (EnabledMigrationOption<Options, "plainSlug"> extends never ? never : "plain-slug");
+  | (EnabledMigrationOption<Options, "directSlug"> extends never ? never : "direct-slug");
 declare type EnabledMigrationOption<
   Options,
   Option extends keyof UuidSlugMigrationOptions,
@@ -106,7 +106,7 @@ export declare function isUuidV7Slug(value: unknown): value is UuidV7Slug;
 export declare function isUuidV7String(value: unknown): value is UuidV7String;
 declare type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 export declare type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
-declare const MIGRATION_FORMATS: readonly ["current-mask", "original-mask", "plain-slug"];
+declare const MIGRATION_FORMATS: readonly ["current-mask", "original-mask", "direct-slug"];
 declare type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> = Input extends
   | UuidV4String
   | UuidV4Slug
@@ -159,7 +159,7 @@ export declare interface UuidSlugMigrationDecoder<
 export declare type UuidSlugMigrationFormat = (typeof UUID_SLUG_MIGRATION_FORMATS)[number];
 export declare interface UuidSlugMigrationOptions {
   readonly originalMask?: boolean;
-  readonly plainSlug?: boolean;
+  readonly directSlug?: boolean;
 }
 export declare type UuidString = Brand<string, "UuidString">;
 declare type UuidStringInput<Input extends string> = RejectKnownInput<

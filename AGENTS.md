@@ -41,12 +41,12 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   masked payloads are UUIDv7-only, with a 16-bit check and timestamps below 2^42 milliseconds.
   Preserve both their 22-character base64url and lossless 27-character base32hex spellings.
   Reject overflow rather than truncate. Base64url helpers accept exactly one 16-byte UUID payload
-  or its canonical 22-character spelling; reject every other length. Preserve plain-slug padding rejection.
+  or its canonical 22-character spelling; reject every other length. Preserve direct-slug padding rejection.
 - Explain masking without confusing problem and scope: every UUID version exposes standardized
   fields, while this package deliberately defines a masked wire format only for UUIDv7.
 - Read `docs/cross-language.md` before Rust work or changes shared with TypeScript. It owns
   parity, approved filesystem-safe output and distribution boundaries. Keep base64url defaults;
-  select filesystem-safe masked output independently from the plain-slug alphabet.
+  select filesystem-safe masked output independently from the direct-slug alphabet.
   Preserve length-based alphabet inference for plain decoding.
 - Masked slugs and sentinels are core functionality. Sentinels use precomputed raw slugs per
   codec. Decode returns the first passing candidate in caller-specified key order, never proof

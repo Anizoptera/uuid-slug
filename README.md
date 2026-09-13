@@ -620,20 +620,20 @@ Create a migration reader from your codec. Enable only the old formats your appl
 import type { UuidV7SlugCodec } from "@anizoptera/uuid-slug";
 
 function readLegacySlug(ids: UuidV7SlugCodec, incomingSlug: string) {
-  const reader = ids.createMigrationDecoder({ originalMask: true, plainSlug: true });
+  const reader = ids.createMigrationDecoder({ originalMask: true, directSlug: true });
   return reader.decodeSlug(incomingSlug);
 }
 ```
 
 `originalMask` accepts the original fixed permutation/XOR format with its 4-bit checksum.
 It does **not** accept the different masked format from package version 0.2.0.
-`plainSlug` accepts direct UUID slugs of any version, including old base64url spellings whose
+`directSlug` accepts direct UUID slugs of any version, including old base64url spellings whose
 last four bits were ignored. Ordinary `slugToUuid` remains strict about those trailing bits.
 Both options must be booleans; untyped malformed reader configuration returns `invalid_options`.
 Neither option changes generation, ordinary codec methods, keys or sentinels.
 
 `decodeSlug` returns one UUID or `UuidSlugError`: sentinels first, then current keys, then enabled
-original and plain formats. A successful decode still needs a record lookup. The same slug can
+original and direct formats. A successful decode still needs a record lookup. The same slug can
 decode to different UUIDs in different formats; the original check has only four bits.
 
 When you know the input format, name it to avoid trying unrelated formats:
@@ -656,7 +656,7 @@ function replaceOriginalSlug(
 ```
 
 Enable an old format before selecting it. Recognized sentinels always return their reserved UUID,
-including old trailing-bit aliases when reading original or plain slugs.
+including old trailing-bit aliases when reading original or direct slugs.
 With literal options, TypeScript offers only `"current-mask"` and the formats enabled with `true`;
 options whose values are dynamic remain selectable because they may be enabled at runtime.
 
@@ -687,8 +687,8 @@ successful but incomplete list.
 An old sentinel alias can also be a current masked ID. `decodeSlugCandidates` retains both UUIDs;
 `decodeSlug` keeps sentinel priority.
 
-Keep this reader while old inputs must work. Replace it with `ids.createMigrationDecoder({ plainSlug: true })`
-to stop trying the original mask, or `ids.createMigrationDecoder({ originalMask: true })` to stop plain decoding.
+Keep this reader while old inputs must work. Replace it with `ids.createMigrationDecoder({ directSlug: true })`
+to stop trying the original mask, or `ids.createMigrationDecoder({ originalMask: true })` to stop direct-slug decoding.
 `ids.createMigrationDecoder()` tries only current keys and sentinels. Removing the migration reader entirely
 leaves ordinary codec decoding unchanged. Neither method can identify the issuing format from
 the slug alone, so successful decoding is not a reliable count of legacy traffic.
@@ -709,7 +709,7 @@ nonnegative; zero and finite fractions are valid. `referenceUnixMs` defaults to 
 reading and must be finite when supplied. Invalid settings return an error instead of disabling
 the check.
 
-`validateUuidV7SlugTimestamp` starts from a plain slug; `codec.validateSlugTimestamp` starts from
+`validateUuidV7SlugTimestamp` starts from a direct slug; `codec.validateSlugTimestamp` starts from
 a slug decoded with that codec. Successful validation returns the same spelling with its validated
 plain or public masked-slug type. This is a symmetric timestamp sanity check, not past-only expiry,
 authentication, or replay prevention. Use ordinary decoding for permanent identifiers. For links

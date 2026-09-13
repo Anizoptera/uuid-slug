@@ -317,7 +317,7 @@ pub struct MigrationOptions {
     /// Read the original fixed permutation/XOR format, never the unsupported 0.2.0 format.
     pub original: bool,
     /// Read raw UUID slugs, including historical trailing-bit aliases.
-    pub plain: bool,
+    pub direct: bool,
 }
 
 /// A known stored format avoids ambiguity between unrelated decoders.
@@ -328,7 +328,7 @@ pub enum MigrationFormat {
     /// Original fixed permutation/XOR format.
     Original,
     /// Unmasked UUID.
-    Plain,
+    Direct,
 }
 
 /// A reader borrowing its codec, so keys and sentinel definitions cannot drift.
@@ -338,7 +338,7 @@ pub struct MigrationDecoder<'a> {
 }
 
 impl MigrationDecoder<'_> {
-    /// Decode with sentinel/current/original/plain priority, stopping at the first candidate.
+    /// Decode with sentinel/current/original/direct priority, stopping at the first candidate.
     pub fn decode(&self, slug: &str, format: Option<MigrationFormat>) -> Result<Uuid, Error> {
         let mut result = None;
         self.read(slug, format, |uuid| {
@@ -371,9 +371,9 @@ impl MigrationDecoder<'_> {
         format: Option<MigrationFormat>,
         mut stop: impl FnMut(Uuid) -> bool,
     ) -> Result<(), Error> {
-        use MigrationFormat::{Current, Original, Plain};
+        use MigrationFormat::{Current, Direct, Original};
         if (format == Some(Original) && !self.options.original)
-            || (format == Some(Plain) && !self.options.plain)
+            || (format == Some(Direct) && !self.options.direct)
         {
             return Err(Error::new(ErrorCode::InvalidUuidSlug));
         }
@@ -383,19 +383,19 @@ impl MigrationDecoder<'_> {
         }
         let current = format.is_none() || format == Some(Current);
         let original = self.options.original && (format.is_none() || format == Some(Original));
-        let plain = self.options.plain && (format.is_none() || format == Some(Plain));
+        let direct = self.options.direct && (format.is_none() || format == Some(Direct));
         let length = crate::uuid::utf16_len(slug);
-        let base32_plain = length == 26 && plain;
+        let base32_direct = length == 26 && direct;
         let safe_masked = length == 27 && current;
-        let alpha = if base32_plain || safe_masked {
+        let alpha = if base32_direct || safe_masked {
             Alphabet::Base32Hex
         } else {
             Alphabet::Base64Url
         };
         let mut bytes = [0; 16];
-        let tail = alpha.decode_into(slug, &mut bytes, if base32_plain { 0 } else { 4 })?;
+        let tail = alpha.decode_into(slug, &mut bytes, if base32_direct { 0 } else { 4 })?;
         let raw = Uuid::from_bytes(bytes);
-        let reserved = if (original || plain) && length != 27 {
+        let reserved = if (original || direct) && length != 27 {
             self.codec.sentinel(&raw.slug(Alphabet::Base64Url))
         } else {
             None
@@ -403,7 +403,7 @@ impl MigrationDecoder<'_> {
         if reserved.is_some_and(&mut stop) {
             return Ok(());
         }
-        if current && !base32_plain {
+        if current && !base32_direct {
             for schema in &self.codec.schemas {
                 if let Some(value) = crate::mask::candidate(bytes, tail, schema)? {
                     let uuid = Uuid::from_bytes(value);
@@ -423,7 +423,7 @@ impl MigrationDecoder<'_> {
         {
             return Ok(());
         }
-        if plain && length != 27 {
+        if direct && length != 27 {
             stop(raw);
         }
         Ok(())

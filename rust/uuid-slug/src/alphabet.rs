@@ -11,7 +11,7 @@ static BASE32HEX: LazyLock<Encoding> = LazyLock::new(|| {
     spec.encoding().expect("fixed base32hex alphabet is valid")
 });
 
-/// Supported output representations; decoding plain UUIDs infers this from length.
+/// Supported output representations; decoding direct slugs infers this from length.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Alphabet {
     /// Shortest representation; case-sensitive.

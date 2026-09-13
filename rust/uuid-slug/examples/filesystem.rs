@@ -1,4 +1,4 @@
-//! Store lowercase UUID filenames and recover their plain, masked and sentinel identities.
+//! Store lowercase UUID filenames and recover their direct, masked and sentinel identities.
 use std::{fs, io};
 use uuid_slug::{
     Alphabet, Codec, CodecOptions, MigrationFormat, MigrationOptions, Uuid, generation,
@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cleanup = fs::remove_dir_all(&directory);
     result?;
     cleanup?;
-    println!("Plain, masked and sentinel filenames retained their spelling and identity");
+    println!("Direct, masked and sentinel filenames retained their spelling and identity");
     Ok(())
 }
 
@@ -45,11 +45,11 @@ fn exercise(directory: &std::path::Path) -> Result<(), Box<dyn std::error::Error
         fs::write(directory.join(name), expected.to_string())?;
     }
     let reader = codec.migration_decoder(MigrationOptions {
-        plain: true,
+        direct: true,
         ..MigrationOptions::default()
     });
     let mut read = 0;
-    let mut plain_names = Vec::new();
+    let mut direct_names = Vec::new();
     for entry in fs::read_dir(directory)? {
         let entry = entry?;
         let name = entry
@@ -58,10 +58,10 @@ fn exercise(directory: &std::path::Path) -> Result<(), Box<dyn std::error::Error
             .map_err(|_| io::Error::other("Filename is not UTF-8"))?;
         let stored = Uuid::parse(&fs::read_to_string(entry.path())?)?;
         if chronological.contains(&name) {
-            plain_names.push(name.clone());
+            direct_names.push(name.clone());
         }
         let format = if name.len() == 26 {
-            MigrationFormat::Plain
+            MigrationFormat::Direct
         } else {
             MigrationFormat::Current
         };
@@ -77,9 +77,9 @@ fn exercise(directory: &std::path::Path) -> Result<(), Box<dyn std::error::Error
     if read != cases.len() {
         return Err(io::Error::other("The filesystem lost or merged an identifier").into());
     }
-    plain_names.sort();
-    if plain_names != chronological {
-        return Err(io::Error::other("Plain filenames lost timestamp order").into());
+    direct_names.sort();
+    if direct_names != chronological {
+        return Err(io::Error::other("Direct filenames lost timestamp order").into());
     }
     Ok(())
 }

@@ -11,8 +11,8 @@ most sensitive field, but it is not the only structure being hidden.
 
 ## Representations and bit budget
 
-A UUID is 16 bytes. Plain slugs encode those bytes directly as 22 base64url or 26 base32hex
-characters. Plain decoding rejects nonzero padding bits, so a UUID has one canonical spelling
+A UUID is 16 bytes. Direct slugs encode those bytes as 22 base64url or 26 base32hex
+characters. Direct decoding rejects nonzero padding bits, so a UUID has one canonical spelling
 per alphabet.
 
 Masking accepts UUIDv7 and preserves 116 payload bits:
@@ -26,7 +26,7 @@ Masking accepts UUIDv7 and preserves 116 payload bits:
 
 The masked payload is fixed: 22 base64url characters hold 132 bits, leaving `132 - 116 = 16`
 check bits. Twelve replace the constant bits inside the 128-bit block; four occupy the encoding's
-spare bits. All 132 encoded bits have a role. Plain-slug padding rejection does not apply to these
+spare bits. All 132 encoded bits have a role. Direct-slug padding rejection does not apply to these
 four check bits.
 
 A timestamp at or past 2^42 milliseconds is rejected before masking. Truncating it would allow
@@ -122,7 +122,7 @@ of their individual rates. The codec must not append masks on the caller's behal
 Masked decoding always accepts both alphabets, sentinels, and current or previous mask outputs.
 Migration adds only the old formats the caller enables. Other forms are invalid.
 
-Only `codec.createMigrationDecoder({ plainSlug: true })` enables direct-slug decoding. A direct slug may
+Only `codec.createMigrationDecoder({ directSlug: true })` enables direct-slug decoding. A direct slug may
 accidentally pass an earlier mask check and return a different candidate; migration cannot make
 the two representations distinguishable. Confirm candidates against the issuing store.
 

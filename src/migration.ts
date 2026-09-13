@@ -47,19 +47,19 @@ export function createMigration(
   )
     return new UuidSlugError("invalid_options", "Migration options must be an object.");
   let originalOption: boolean | undefined;
-  let plainOption: boolean | undefined;
+  let directOption: boolean | undefined;
   try {
     originalOption = options?.originalMask;
-    plainOption = options?.plainSlug;
+    directOption = options?.directSlug;
   } catch (cause) {
     return new UuidSlugError("invalid_options", "Reading migration options failed.", { cause });
   }
   if (originalOption !== undefined && typeof originalOption !== "boolean")
     return new UuidSlugError("invalid_options", "Migration originalMask option must be a boolean.");
-  if (plainOption !== undefined && typeof plainOption !== "boolean")
-    return new UuidSlugError("invalid_options", "Migration plainSlug option must be a boolean.");
+  if (directOption !== undefined && typeof directOption !== "boolean")
+    return new UuidSlugError("invalid_options", "Migration directSlug option must be a boolean.");
   const original = originalOption === true;
-  const plain = plainOption === true;
+  const direct = directOption === true;
 
   function read(slug: string, format: UuidSlugMigrationFormat | undefined, firstOnly: boolean) {
     if (typeof slug !== "string")
@@ -68,7 +68,7 @@ export function createMigration(
       (format !== undefined &&
         !UUID_SLUG_MIGRATION_FORMATS.some((candidate) => candidate === format)) ||
       (format === "original-mask" && !original) ||
-      (format === "plain-slug" && !plain)
+      (format === "direct-slug" && !direct)
     )
       return new UuidSlugError(
         "invalid_uuid_slug",
@@ -79,10 +79,10 @@ export function createMigration(
     if (sentinel) return [sentinel.uuid];
     const useCurrent = format === undefined || format === "current-mask";
     const useOriginal = original && (format === undefined || format === "original-mask");
-    const usePlain = plain && (format === undefined || format === "plain-slug");
+    const useDirect = direct && (format === undefined || format === "direct-slug");
     const bytes = new Uint8Array(16);
     // Original readers ignored the four trailing bits. Keep those aliases confined to migration.
-    const base32 = slug.length === 26 && usePlain;
+    const base32 = slug.length === 26 && useDirect;
     const safeMasked = slug.length === 27 && useCurrent;
     const tail = decodeInto(
       slug,
@@ -97,7 +97,7 @@ export function createMigration(
     // encoding all sixteen bytes again. Base32 input still needs the sentinel's base64 spelling.
     const reserved =
       !safeMasked &&
-      (useOriginal || usePlain) &&
+      (useOriginal || useDirect) &&
       sentinels.get(
         base32
           ? encode(bytes, BASE64URL)
@@ -130,7 +130,7 @@ export function createMigration(
         if (firstOnly) return candidates;
       }
     }
-    if (usePlain && !safeMasked) {
+    if (useDirect && !safeMasked) {
       const failed = add(bytes);
       if (failed) return failed;
     }

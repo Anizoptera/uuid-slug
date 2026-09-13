@@ -220,7 +220,7 @@ export interface UuidV7Sentinel {
   readonly uuid: UuidV7String;
 }
 
-const MIGRATION_FORMATS = ["current-mask", "original-mask", "plain-slug"] as const;
+const MIGRATION_FORMATS = ["current-mask", "original-mask", "direct-slug"] as const;
 
 /** The migration formats accepted by `UuidSlugMigrationDecoder`. */
 export const UUID_SLUG_MIGRATION_FORMATS: typeof MIGRATION_FORMATS =
@@ -242,7 +242,7 @@ export interface UuidSlugMigrationOptions {
    *
    * @defaultValue `false`
    */
-  readonly plainSlug?: boolean;
+  readonly directSlug?: boolean;
 }
 
 type EnabledMigrationOption<
@@ -254,7 +254,7 @@ type EnabledMigrationOption<
 export type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
   | "current-mask"
   | (EnabledMigrationOption<Options, "originalMask"> extends never ? never : "original-mask")
-  | (EnabledMigrationOption<Options, "plainSlug"> extends never ? never : "plain-slug");
+  | (EnabledMigrationOption<Options, "directSlug"> extends never ? never : "direct-slug");
 
 /**
  * Decode current and explicitly enabled old formats without changing codec output.
@@ -265,7 +265,7 @@ export interface UuidSlugMigrationDecoder<
   in Format extends UuidSlugMigrationFormat = UuidSlugMigrationFormat,
 > {
   /**
-   * Return the first candidate in this order: sentinel, current masks, original mask, plain slug.
+   * Return the first candidate in this order: sentinel, current masks, original mask, direct slug.
    * Pass `format` when its origin is known to avoid trying unrelated readers.
    *
    * @param slug - Identifier accepted by one enabled migration reader.
