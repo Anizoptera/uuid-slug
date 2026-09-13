@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * The Node half of the buffer-offset contract. `test/runtime.bun.test.ts` runs the identical list
+ * The Node half of the buffer-offset contract. `__test__/runtime.bun.test.ts` runs the identical list
  * against Bun's adapter; `buffer-contract-probe.ts` explains why one lane cannot stand for both.
  */
 import { describe, expect, it } from "vitest";

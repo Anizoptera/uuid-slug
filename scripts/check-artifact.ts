@@ -181,7 +181,7 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
     for (const graph of graphs) if (graph.status === "rejected") throw graph.reason;
 
     const probe = await Bun.build({
-      entrypoints: [path.join(project, "test/consumer-probe.ts")],
+      entrypoints: [path.join(project, "__test__/consumer-probe.ts")],
       target: "browser",
       outdir: root,
       naming: "probe.mjs",
@@ -214,7 +214,7 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       );
     await Bun.write(
       path.join(root, "consumer.ts"),
-      Bun.file(path.join(project, "test/consumer-types.fixture.ts")),
+      Bun.file(path.join(project, "__test__/consumer-types.fixture.ts")),
     );
     await Bun.write(
       path.join(root, "tsconfig.json"),

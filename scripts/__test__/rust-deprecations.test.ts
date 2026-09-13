@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { annotateRustApi, rustDeprecations } from "./rust-deprecations";
-import type { Rustdoc } from "./rust-deprecations";
+import { annotateRustApi, rustDeprecations } from "../rust-deprecations";
+import type { Rustdoc } from "../rust-deprecations";
 
 const item = (name: string | null, deprecated = false, inner = {}) => ({
   name,

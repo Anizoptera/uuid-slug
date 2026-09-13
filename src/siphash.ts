@@ -12,7 +12,7 @@
  * Chosen over full SipHash-2-4 because that is defined over 64-bit words, which JavaScript has only
  * as `BigInt` or as hand-emulated 32-bit pairs — the first far too slow for a hot path, the second a
  * re-implementation whose errors nothing would catch. HalfSipHash is 32-bit BY SPECIFICATION, so
- * this is a transcription, and `test/siphash.test.ts` holds it to all 64 published vectors. That
+ * this is a transcription, and `__test__/siphash.test.ts` holds it to all 64 published vectors. That
  * external check is the whole reason a standard primitive beat anything tuned here: nothing in this
  * repository can grade a mixing function (see `feistel.ts` — every instrument here passes a
  * two-round network), so agreement with a specification somebody else wrote is the only evidence

@@ -8,10 +8,10 @@
  *
  * Ordering is measured only between consecutive values sharing a timestamp. Counter width
  * is reported with its observed agreement rate, never translated into unguessable bits.
- * Package correctness gates live in test/; this report also includes third-party candidates.
+ * Package correctness gates live in __test__/; this report also includes third-party candidates.
  */
 import { candidates, runtimeName, type BenchCandidate } from "./candidates";
-import { instrument } from "../test/instrument";
+import { instrument } from "../__test__/instrument";
 
 const smoke = process.argv.includes("--smoke");
 const samples = Number(process.env.UUID_SLUG_ENTROPY_SAMPLES ?? (smoke ? 20_000 : 200_000));

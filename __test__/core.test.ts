@@ -449,8 +449,8 @@ describe("sentinel definitions", () => {
   });
 });
 
-// The v7 generator is pinned from several directions — `test/v7.test.ts` for the bit layout and
-// the buffer bounds, `test/entropy.test.ts` for conformance across 2000 draws. The v4 path shares
+// The v7 generator is pinned from several directions — `__test__/v7.test.ts` for the bit layout and
+// the buffer bounds, `__test__/entropy.test.ts` for conformance across 2000 draws. The v4 path shares
 // neither, and had no case of its own: measured 2026-08-12 by mutation, moving its version stamp
 // to byte 7, its variant stamp to byte 9, or relaxing its bounds guard to `&&` each left the whole
 // suite green.

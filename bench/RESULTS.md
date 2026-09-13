@@ -74,7 +74,7 @@ Node's entropy cache is worth 4.2–5.9×. This package batches too — `src/run
 this file claiming otherwise was already false when written.
 
 `Bun.randomUUIDv7("base64url")` produces the same 22-character encoding this package does. That
-agreement is a gate rather than a bench figure: `test/alphabet.test.ts` compares this package's
+agreement is a gate rather than a bench figure: `__test__/alphabet.test.ts` compares this package's
 encoder against `Buffer.toString("base64url")` across every length boundary. At 16.32M against
 this package's 14.83M the two are within a factor the run-to-run spread below does not let anyone
 call a finding.
@@ -126,7 +126,7 @@ is why README §Guarantees scopes the cryptographic-randomness promise to this p
 The 22-character base64url form is **not** lexicographically sortable, independent of any
 generator. The alphabet is ordered `A–Z a–z 0–9 - _` while ASCII orders `- 0–9 A–Z _ a–z`, so
 string comparison does not track byte order. base32hex has no such gap — it runs `0–9 a–v`, which
-is ASCII order — which is the whole reason it is offered. `test/alphabet.test.ts` gates both
+is ASCII order — which is the whole reason it is offered. `__test__/alphabet.test.ts` gates both
 halves against strictly increasing inputs: zero inversions in base32hex, some in base64url.
 
 The README's design already directs the UUID to the database index and the slug to public URLs, so

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { compare } from "./rust-conform";
+import { compare } from "../rust-conform";
 
 test("parity failures identify the capability, both outcomes, input, and required repair", () => {
   expect(() => compare([{ op: "parse", input: "invalid" }], [{ value: [] }])).toThrow(

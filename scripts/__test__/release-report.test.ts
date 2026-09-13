@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { rejects } from "node:assert/strict";
-import { apiDiff, minimumRelease, satisfiesMinimum, sizeDelta } from "./release-comparison";
-import { verifyCrateIdentity, verifyNpmIdentity } from "./release-report";
+import { apiDiff, minimumRelease, satisfiesMinimum, sizeDelta } from "../release-comparison";
+import { verifyCrateIdentity, verifyNpmIdentity } from "../release-report";
 
 test("release API diff exposes removals and additions without restating unchanged lines", () => {
   expect(

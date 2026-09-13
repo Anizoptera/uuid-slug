@@ -143,14 +143,16 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   failure modes its changed mechanism can break, inspect whether existing tests distinguish them,
   add the smallest missing falsifiers, and mutate the mechanism to prove those tests reach it. Run
   the owning runtime tests before and after measurement; reject speedups with an unsecured invariant.
-- Before adding test infrastructure, search `test/`, `bench/`, and `scripts/` by capability and
+- Before adding test infrastructure, search `__test__/`, `bench/`, and `scripts/` by capability and
   failure, then inspect callers and package-script routing. Extend the nearest owner. Split only for
   a different oracle, runtime, isolation, or feedback boundary.
+- Keep TypeScript tests and their fixtures in the nearest `__test__/` directory so production and
+  verification code remain distinct without a second naming convention.
 - Keep routine verification in `.github/workflows/check.yml`. Add another workflow only when it
   needs a different trigger or permission boundary.
 - Gate every runtime-dependent change in both Node Vitest and Bun tests, including branches
   outside `src/runtime/` that use optional capabilities. Neither runner covers the other's
-  adapter. Share entropy cases in `test/entropy-probe.ts`.
+  adapter. Share entropy cases in `__test__/entropy-probe.ts`.
 - Keep development native interop as one discovered research matrix across supported installed
   Node, Bun and Deno Node-API/FFI boundaries. Run one corpus with nonzero evidence per lane; use
   measurements to improve the adapters, never to discard one from a volatile machine snapshot.

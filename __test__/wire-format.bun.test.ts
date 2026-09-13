@@ -2,7 +2,7 @@
 
 /**
  * The wire format must be byte-identical on every runtime, and nothing else proves it. Vitest
- * runs on Node; these same vectors are asserted there by `test/alphabet.test.ts`, so the two
+ * runs on Node; these same vectors are asserted there by `__test__/alphabet.test.ts`, so the two
  * suites agreeing on one shared fixture file is what makes cross-runtime identity checkable
  * rather than assumed.
  *

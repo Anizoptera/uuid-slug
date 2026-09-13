@@ -4,16 +4,19 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { expect, test } from "bun:test";
-import { command } from "./command";
-import { preflightRelease } from "./release-notes";
-import { checkReleaseVersion, setDevelopmentVersion } from "./release-version";
+import { command } from "../command";
+import { preflightRelease } from "../release-notes";
+import { checkReleaseVersion, setDevelopmentVersion } from "../release-version";
 
 test("one command updates every development version owner", async () => {
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-version-set-"));
   const names = ["uuid-slug", "uuid-slug-bridge"];
   try {
     await Promise.all([
-      Bun.write(join(root, ".tool-versions"), Bun.file(join(import.meta.dir, "../.tool-versions"))),
+      Bun.write(
+        join(root, ".tool-versions"),
+        Bun.file(join(import.meta.dir, "../../.tool-versions")),
+      ),
       Bun.write(join(root, "package.json"), '{\n  "name": "test",\n  "version": "0.4.1-dev"\n}\n'),
       Bun.write(
         join(root, "rust/Cargo.toml"),
@@ -83,7 +86,10 @@ test("the version hook synchronizes Cargo and rejects missing notes before mutat
   const names = ["uuid-slug", "uuid-slug-bridge"];
   try {
     await Promise.all([
-      Bun.write(join(root, ".tool-versions"), Bun.file(join(import.meta.dir, "../.tool-versions"))),
+      Bun.write(
+        join(root, ".tool-versions"),
+        Bun.file(join(import.meta.dir, "../../.tool-versions")),
+      ),
       Bun.write(join(root, "package.json"), JSON.stringify({ name: "test", version: "1.2.3" })),
       Bun.write(join(root, "CHANGELOG.md"), "## [1.2.3]\n- Change.\n"),
       Bun.write(

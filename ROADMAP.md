@@ -75,7 +75,7 @@ Make each consumer pay only for UUID generation, plain slugs, or masking that it
 - [ ] Prove representative high-risk verifiers fail for the intended defect instead of an unrelated error.
 - [ ] Find duplicate, implementation-restating, always-green, skipped, timing-based, flaky, and unstable-internal checks.
 - [ ] Compare Node, Bun, compiler, packed-package, optimizer, Rust, benchmark, hook, and CI coverage for gaps and repeated work.
-- [ ] Audit test layout and naming against runner discovery, import boundaries, developer use, and the requested `__test__` policy.
+- [x] Audit test layout and naming against runner discovery, import boundaries, developer use, and the requested `__test__` policy.
 - [ ] Measure isolated tests, routine lanes, the commit hook, and the complete gate; remove or redesign work that misses its feedback loop.
 - [ ] Audit fixtures, probes, fakes, models, snapshots, randomized inputs, cleanup, diagnostics, and concurrency for false evidence.
 - [ ] Fix each material defect with the smallest proof that fails before the fix and passes after it.

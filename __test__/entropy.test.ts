@@ -2,10 +2,10 @@
 
 /**
  * Where this package's randomness comes from, on the runtime vitest resolves — Node.
- * `test/runtime.bun.test.ts` proves the same of Bun's adapter; see `entropy-probe.ts` for why
+ * `__test__/runtime.bun.test.ts` proves the same of Bun's adapter; see `entropy-probe.ts` for why
  * neither run substitutes for the other.
  *
- * `test/v7.test.ts` drives the generator with `fillRandom` supplied by the test, which is what
+ * `__test__/v7.test.ts` drives the generator with `fillRandom` supplied by the test, which is what
  * makes its cases deterministic — and means it never touches the real entropy source at all.
  * That gap is this file. The regression it exists for is small, plausible and severe: someone
  * adds a `Math.random()` fallback to a runtime adapter "for environments without Web Crypto",

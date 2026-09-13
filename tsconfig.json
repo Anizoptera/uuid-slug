@@ -21,7 +21,7 @@
   },
   "include": [
     "src/**/*.ts",
-    "test/**/*.ts",
+    "__test__/**/*.ts",
     "bench/**/*.ts",
     "scripts/**/*.ts",
     "tsdown.config.ts",

@@ -164,7 +164,7 @@ jobs:
         with:
           bun-version: latest
       - if: matrix.node == 'current-mask'
-        run: bun run build && bun test test/*.bun.test.ts && bun run perf:check
+        run: bun run build && bun test __test__/*.bun.test.ts && bun run perf:check
       - if: matrix.node == 'current-mask'
         run: bun scripts/runtime-probe.ts runtime-reference.json
 

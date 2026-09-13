@@ -2,7 +2,7 @@
 import { readFile } from "node:fs/promises";
 import { deepStrictEqual } from "node:assert";
 import * as api from "@anizoptera/uuid-slug";
-import { probeConsumer } from "../test/consumer-probe";
+import { probeConsumer } from "../__test__/consumer-probe";
 import { contractRequests, evaluate } from "./rust-conform";
 
 const requests = await contractRequests();

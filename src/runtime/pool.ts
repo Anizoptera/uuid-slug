@@ -35,7 +35,7 @@ export function pooledFill(
   // taken at import time (V8 or JavaScriptCore startup snapshots, and the serverless platforms
   // built on them) would capture drawn randomness, and every process restored from it would issue
   // the SAME identifiers. Nothing else would notice — the bytes stay perfectly random within any
-  // one process, so every other case in this suite passes. `test/entropy.test.ts` gates it by
+  // one process, so every other case in this suite passes. `__test__/entropy.test.ts` gates it by
   // importing the package under the instrument and requiring that no source was touched.
   let offset = POOL_BYTES;
   return (bytes) => {

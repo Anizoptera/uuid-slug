@@ -6,9 +6,9 @@ export default defineConfig({
   resolve: { conditions: [runtime] },
   ssr: { resolve: { conditions: [runtime] } },
   test: {
-    setupFiles: ["./test/runtime-host.ts"],
+    setupFiles: ["./__test__/runtime-host.ts"],
     // Bun-specific files run under `bun test`; Node cannot resolve their `bun:test` imports.
-    exclude: ["test/**/*.bun.test.ts"],
-    include: ["test/**/*.test.ts"],
+    exclude: ["__test__/**/*.bun.test.ts"],
+    include: ["__test__/**/*.test.ts"],
   },
 });

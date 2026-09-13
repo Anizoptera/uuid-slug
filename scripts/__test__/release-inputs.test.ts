@@ -4,10 +4,10 @@ import { createHash } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { tagReleaseFixture } from "../test/release-fixture";
-import { command } from "./command";
-import { collectReleaseInputs } from "./release-inputs";
-import { readRetainedArchive, registryVersion } from "./release-inputs";
+import { tagReleaseFixture } from "../../__test__/release-fixture";
+import { command } from "../command";
+import { collectReleaseInputs } from "../release-inputs";
+import { readRetainedArchive, registryVersion } from "../release-inputs";
 
 test("retained archive consumers reject changed bytes and unsupported digests", async () => {
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-retained-"));

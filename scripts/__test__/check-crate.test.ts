@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "bun:test";
 import { rejects } from "node:assert/strict";
-import { inspectCrate } from "./check-crate";
+import { inspectCrate } from "../check-crate";
 
 const version = "1.2.3";
 const root = `uuid-slug-${version}/`;

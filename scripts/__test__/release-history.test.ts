@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { latestRelease, selectReleaseComparisons } from "./release-history";
+import { latestRelease, selectReleaseComparisons } from "../release-history";
 
 describe("release comparison selection", () => {
   test("selects the latest release and can exclude the tag at HEAD", () => {

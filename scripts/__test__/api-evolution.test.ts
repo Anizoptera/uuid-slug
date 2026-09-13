@@ -4,7 +4,7 @@ import {
   typescriptDeclarations,
   validateVersion,
   verifyEvolution,
-} from "./api-evolution";
+} from "../api-evolution";
 
 function reports(ts: string, rust: string, rustDeprecated = "(none)", minimalRust = rust) {
   return {

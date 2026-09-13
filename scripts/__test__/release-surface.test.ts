@@ -5,8 +5,8 @@ import {
   cargoSurfaceDifference,
   npmReleaseSurface,
   npmSurfaceDifference,
-} from "./release-surface";
-import type { CargoReleaseSurface } from "./release-surface";
+} from "../release-surface";
+import type { CargoReleaseSurface } from "../release-surface";
 
 test("Cargo release comparison excludes extraction-local metadata", () => {
   const libTarget = {

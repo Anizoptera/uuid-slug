@@ -4,7 +4,7 @@
  * Bun's adapter, which is the one most consumers of this package actually run: the `bun` export
  * condition resolves to `src/index.ts`, so Bun executes this TypeScript directly.
  *
- * The entropy cases here mirror `test/entropy.test.ts` deliberately. Vitest runs on Node and
+ * The entropy cases here mirror `__test__/entropy.test.ts` deliberately. Vitest runs on Node and
  * resolves `#runtime` to `runtime/node.ts`, so nothing it asserts constrains `runtime/bun.ts`
  * or the `runtime/web.ts` it draws `fillRandom` from — measured 2026-08-11, a `Math.random`
  * rewritten into `runtime/web.ts` left the entire vitest suite green.

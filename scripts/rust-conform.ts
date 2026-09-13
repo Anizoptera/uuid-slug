@@ -10,9 +10,9 @@ import type {
   UuidSlugMigrationFormat,
   SlugAlphabet,
 } from "../src/index";
-import { bytePatterns } from "../test/byte-patterns";
-import { uuidTailAliases } from "../test/uuid-tail-aliases";
-import { uuidVariants } from "../test/uuid-variants";
+import { bytePatterns } from "../__test__/byte-patterns";
+import { uuidTailAliases } from "../__test__/uuid-tail-aliases";
+import { uuidVariants } from "../__test__/uuid-variants";
 import { loadRustBridge } from "./rust-bridge";
 
 type Request = Record<string, unknown> & { op: string; input?: string };
