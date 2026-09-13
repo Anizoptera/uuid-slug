@@ -51,34 +51,22 @@ jobs:
           package-manager-cache: false
       - if: steps.evidence.outputs.found != 'true'
         run: bun install --frozen-lockfile
-      - name: Install the repository Rust toolchain
-        if: steps.evidence.outputs.found != 'true'
-        run: rustc --version && rustup show active-toolchain
-      - if: steps.evidence.outputs.found != 'true'
-        run: cargo install cargo-public-api --version 0.52.0 --locked
-      - if: steps.evidence.outputs.found != 'true'
-        run: cargo install cargo-semver-checks --version 0.50.0 --locked
       - if: steps.evidence.outputs.found != 'true'
         run: bun run build
       - if: steps.evidence.outputs.found != 'true'
         run: bun scripts/release-package.ts prepare
-      - if: steps.evidence.outputs.found != 'true'
-        run: bun scripts/release-crate.ts prepare
       - name: Bind Git history to reviewed registry archives
         if: steps.evidence.outputs.found != 'true'
         run: |
           npm_archive=(release-artifacts/reviewed-npm/*.tgz)
-          crate_archive=(rust/target/reviewed-crate/*.crate)
-          test "${#npm_archive[@]}" -eq 1 && test "${#crate_archive[@]}" -eq 1
-          bun scripts/release-inputs.ts "$GITHUB_REF_NAME" release-artifacts/history "${npm_archive[0]}" "${crate_archive[0]}"
+          test "${#npm_archive[@]}" -eq 1
+          bun scripts/release-inputs.ts "$GITHUB_REF_NAME" release-artifacts/history "${npm_archive[0]}"
           bun scripts/release-report.ts
       # Publish jobs read artifacts from this workflow run, so restored evidence must be handed on again.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-evidence
-          path: |
-            release-artifacts
-            rust/target/reviewed-crate
+          path: release-artifacts
           if-no-files-found: error
 
   publish-npm:
@@ -108,42 +96,8 @@ jobs:
       - run: bun run build
       - run: bun scripts/release-package.ts publish
 
-  publish-crate:
-    needs: prepare
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      id-token: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version-file: .tool-versions
-      - run: bun install --frozen-lockfile
-      - name: Install the repository Rust toolchain
-        run: rustc --version && rustup show active-toolchain
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: release-evidence
-          path: .
-      - id: preflight
-        run: bun scripts/release-crate.ts check
-      - id: bootstrap
-        env:
-          BOOTSTRAP_TOKEN: ${{ secrets.CRATES_IO_BOOTSTRAP_TOKEN }}
-        run: test -z "$BOOTSTRAP_TOKEN" || echo "available=true" >> "$GITHUB_OUTPUT"
-      - id: auth
-        if: steps.preflight.outputs.published != 'true' && steps.bootstrap.outputs.available != 'true'
-        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
-      - run: bun scripts/release-crate.ts publish
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token || secrets.CRATES_IO_BOOTSTRAP_TOKEN }}
-
   finalize:
-    needs: [publish-npm, publish-crate]
+    needs: publish-npm
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -165,9 +119,7 @@ jobs:
           path: .
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: |
-            release-artifacts/reviewed-npm/*.tgz
-            rust/target/reviewed-crate/*.crate
+          subject-path: release-artifacts/reviewed-npm/*.tgz
       - run: bun scripts/release-finalize.ts
         env:
           GH_TOKEN: ${{ github.token }}
