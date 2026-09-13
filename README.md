@@ -21,7 +21,8 @@ an authorization boundary.
 
 This package defines no new identity scheme. UUID text, bytes, and direct slugs are reversible
 representations of the same value. Masked slugs also recover the same UUID through their codec.
-This package masks only UUIDv7. UUIDv4 remains available as UUID text, bytes, or a direct slug.
+Direct conversion accepts every UUID version; built-in generation covers UUIDv4 and UUIDv7. This
+package masks only UUIDv7.
 
 ## When to use it
 

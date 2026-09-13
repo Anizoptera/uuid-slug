@@ -1,6 +1,7 @@
 # uuid-slug
 
-Convert UUIDs to compact slugs, with optional reversible UUIDv7 masking and lowercase filenames.
+Encode any UUID as a 22-character base64url or 26-character base32hex slug. UUIDv7 also supports
+reversible masking and 27-character lowercase masked filenames.
 
 Install the crate from crates.io or this repository.
 

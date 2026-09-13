@@ -1,4 +1,5 @@
-//! Compact UUIDs preserve their bytes across plain and reversible masked representations.
+//! Any UUID encodes losslessly as a base64url or base32hex slug. UUIDv7 additionally supports
+//! reversible masking.
 //!
 //! Masking hides structure; its 16-bit check is not authentication. Match decoded candidates
 //! against your own store. Select private key material explicitly for real identifiers.
