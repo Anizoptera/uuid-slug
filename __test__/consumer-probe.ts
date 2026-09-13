@@ -38,6 +38,9 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   const revoked = Proxy.revocable({}, {});
   revoked.revoke();
   equal(api.isUuidSlugError(revoked.proxy), false, "revoked error candidate");
+  equal(api.isUuidBytes(revoked.proxy), false, "revoked UUID byte candidate");
+  equal(api.isUuidV4Bytes(revoked.proxy), false, "revoked UUIDv4 byte candidate");
+  equal(api.isUuidV7Bytes(revoked.proxy), false, "revoked UUIDv7 byte candidate");
   const inaccessible = new Proxy(
     {},
     {

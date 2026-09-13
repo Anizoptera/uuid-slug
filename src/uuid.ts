@@ -26,7 +26,7 @@ const HEX_BYTES = nativeToHex
       { length: 256 },
       (_, byte) => (HEX[byte >>> 4] as string) + (HEX[byte & 15] as string),
     );
-const hexByte = (byte: number) => HEX_BYTES[byte] ?? "";
+const hexByte = /* @__NO_SIDE_EFFECTS__ */ (byte: number) => HEX_BYTES[byte] ?? "";
 const HEX_DECODE = new Int8Array(128).fill(-1);
 for (let i = 0; i < 10; i += 1) HEX_DECODE[48 + i] = i;
 for (let i = 0; i < 6; i += 1) HEX_DECODE[97 + i] = 10 + i;
@@ -34,14 +34,16 @@ for (let i = 0; i < 6; i += 1) HEX_DECODE[97 + i] = 10 + i;
 const UUID_LENGTH = 36;
 const UUID_BYTE_OFFSETS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34] as const;
 
-const hyphenateHex = (hex: string, offset: number): UuidString =>
+const hyphenateHex = /* @__NO_SIDE_EFFECTS__ */ (hex: string, offset: number): UuidString =>
   `${hex.slice(offset, offset + 8)}-${hex.slice(offset + 8, offset + 12)}-${hex.slice(offset + 12, offset + 16)}-${hex.slice(offset + 16, offset + 20)}-${hex.slice(offset + 20, offset + 32)}` as UuidString;
 
+/*#__NO_SIDE_EFFECTS__*/
 function hexValue(code: number) {
   return HEX_DECODE[code] ?? -1;
 }
 
 /** Read one byte from canonical UUID text already validated by the caller. */
+/*#__NO_SIDE_EFFECTS__*/
 export function uuidByteAtUnchecked(uuid: string, byteIndex: number): number {
   const offset = UUID_BYTE_OFFSETS[byteIndex] as number;
   return (hexValue(uuid.charCodeAt(offset)) << 4) | hexValue(uuid.charCodeAt(offset + 1));
@@ -101,6 +103,7 @@ export function uuidToBytes(
  * @param bytes - An array containing at least one complete 16-byte UUID.
  * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
  */
+/*#__NO_SIDE_EFFECTS__*/
 export function bytesToUuid(bytes: Uint8Array, byteOffset = 0): UuidString | UuidSlugError {
   const badRange = checkByteRange(bytes, byteOffset, 16);
   if (badRange) return badRange;
@@ -119,6 +122,7 @@ export function bytesToUuid(bytes: Uint8Array, byteOffset = 0): UuidString | Uui
 }
 
 /** Format a UUID range already proved writable by its caller. */
+/*#__NO_SIDE_EFFECTS__*/
 export function formatUuidBytesUnchecked(bytes: Uint8Array, offset = 0): UuidString {
   if (nativeToHex) return hyphenateHex(nativeToHex.call(bytes), offset * 2);
   return (hexByte(bytes[offset] as number) +
@@ -143,10 +147,12 @@ export function formatUuidBytesUnchecked(bytes: Uint8Array, offset = 0): UuidStr
     hexByte(bytes[offset + 15] as number)) as UuidString;
 }
 
+/*#__NO_SIDE_EFFECTS__*/
 export function uuidVersion(bytes: Uint8Array, offset = 0): number {
   return (bytes[offset + 6] ?? 0) >>> 4;
 }
 
+/*#__NO_SIDE_EFFECTS__*/
 export function isRfcVariant(bytes: Uint8Array, offset = 0): boolean {
   return (bytes[offset + 8] ?? 0) >>> 6 === 0b10;
 }
@@ -181,11 +187,13 @@ export function isUuidV7String(value: unknown): value is UuidV7String {
 }
 
 /** Check for a 16-byte `Uint8Array` without claiming a UUID version or issuance. */
+/*#__NO_SIDE_EFFECTS__*/
 export function isUuidBytes(value: unknown): value is UuidBytes {
   return isUint8Array(value) && value.length === 16;
 }
 
 /** Check for exactly 16 UUIDv4 bytes with the RFC variant required by generation. */
+/*#__NO_SIDE_EFFECTS__*/
 export function isUuidV4Bytes(value: unknown): value is UuidV4Bytes {
   return isUuidBytes(value) && uuidVersion(value) === 4 && isRfcVariant(value);
 }
@@ -195,11 +203,13 @@ export function isUuidV4Bytes(value: unknown): value is UuidV4Bytes {
  * General byte input can use `bytesToUuid`; this narrower predicate proves the version those
  * v7-only operations require.
  */
+/*#__NO_SIDE_EFFECTS__*/
 export function isUuidV7Bytes(value: unknown): value is UuidV7Bytes {
   return isUuidBytes(value) && uuidVersion(value) === 7 && isRfcVariant(value);
 }
 
 /** Read one 48-bit big-endian timestamp without allocating an intermediate representation. */
+/*#__NO_SIDE_EFFECTS__*/
 export function uuidTimestampFromBytesUnchecked(bytes: Uint8Array, byteOffset: number): number {
   let timestamp = 0;
   for (let i = 0; i < 6; i += 1) timestamp = timestamp * 256 + (bytes[byteOffset + i] ?? 0);

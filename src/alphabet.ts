@@ -18,6 +18,7 @@ export interface Alphabet {
   readonly invalidChars: RegExp;
 }
 
+/*#__NO_SIDE_EFFECTS__*/
 function alphabet(name: string, chars: string, code: UuidSlugErrorCode): Alphabet {
   const bitsPerChar = Math.log2(chars.length);
   const decode = new Int16Array(128).fill(-1);
@@ -74,12 +75,14 @@ const BASE64_OPTIONS = { alphabet: "base64url", omitPadding: true } as const;
  * base64url (22 chars = 132 bits), 2 in base32hex (26 chars = 130 bits). Callers may spend them
  * on a trailing value at zero cost in length — see `encode`.
  */
+/*#__NO_SIDE_EFFECTS__*/
 export function spareBits(alpha: Alphabet, byteLength: number): number {
   const bits = byteLength * 8;
   return (alpha.bitsPerChar - (bits % alpha.bitsPerChar)) % alpha.bitsPerChar;
 }
 
 /** Boolean validation needs no output buffer or diagnostic allocation. */
+/*#__NO_SIDE_EFFECTS__*/
 export function isEncoded(value: string, alpha: Alphabet, byteLength: number): boolean {
   if (
     value.length !== Math.ceil((byteLength * 8) / alpha.bitsPerChar) ||
@@ -100,6 +103,7 @@ export function isEncoded(value: string, alpha: Alphabet, byteLength: number): b
  * `tail = 0` reproduces a plain encoding byte for byte, which is what keeps identifiers issued
  * before the tail existed valid afterwards.
  */
+/*#__NO_SIDE_EFFECTS__*/
 export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {
   if (
     nativeToBase64 &&
@@ -120,6 +124,7 @@ export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 
 }
 
 /** Encode without runtime-native delegation so fallback performance can be measured directly. */
+/*#__NO_SIDE_EFFECTS__*/
 export function encodePortable(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {
   // UUID routes always encode one 16-byte block. Fixed groups remove the generic accumulator;
   // keep the generic path for every other supported shape and tail width.

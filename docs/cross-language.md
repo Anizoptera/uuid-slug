@@ -116,8 +116,10 @@ probe per call. Defer an allocation when imports that do not need it share that 
 
 Use `/*#__PURE__*/` only on removable construction. Annotate nested calls separately because a
 bundler may still evaluate arguments. Use `/*#__NO_SIDE_EFFECTS__*/` only on functions that are
-safe to discard for every accepted runtime input. Never apply either promise to generation,
-caller callbacks, mutable state, or caller-owned output.
+safe to discard for every accepted runtime input. Apply that rule to public and internal functions;
+visibility does not prove that downstream optimizers can infer it. Property access on untrusted
+objects can run proxy traps or getters and is not side-effect-free. Never apply either promise to
+generation, caller callbacks, clock or entropy reads, mutable state, or caller-owned output.
 
 Preserve optimizer annotations in emitted JavaScript. Keep whitespace when removing it strips
 them; retain compression and ordinary identifier mangling. Keep function and class names in both

@@ -22,7 +22,8 @@ const nativeUuidV7 = (crypto as { randomUUIDv7?: () => string }).randomUUIDv7?.b
  * Node's native UTF-8 encoder materially reduces string-seed construction; the portable adapter
  * remains the compatibility boundary. bench/PERFORMANCE.md owns the measured runtime scope.
  */
-export const encodeUtf8 = (text: string): Uint8Array => Buffer.from(text, "utf8");
+export const encodeUtf8 = /* @__NO_SIDE_EFFECTS__ */ (text: string): Uint8Array =>
+  Buffer.from(text, "utf8");
 
 const nodeRuntime: Runtime = {
   /**

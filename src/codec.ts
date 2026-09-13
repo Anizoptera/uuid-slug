@@ -61,6 +61,7 @@ function schemaFromOption(mask: UuidV7Mask | UuidV7MaskOptions): UuidV7Mask | Uu
   return createUuidV7Mask(mask);
 }
 
+/*#__NO_SIDE_EFFECTS__*/
 function sentinelFingerprint(bytes: Uint8Array): number {
   let hash = 0x811c9dc5;
   for (let index = 0; index < 16; index += 1)
@@ -70,6 +71,7 @@ function sentinelFingerprint(bytes: Uint8Array): number {
 
 // Fingerprints select candidates only. Full equality is mandatory because callers control sentinel
 // values and can produce collisions deliberately or accidentally.
+/*#__NO_SIDE_EFFECTS__*/
 function findIndexedByteSentinel(
   encoded: readonly EncodedSentinel[],
   encodedByFingerprint: EncodedSentinelIndex,

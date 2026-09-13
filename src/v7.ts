@@ -69,7 +69,7 @@ function writeCounter(bytes: Uint8Array, hi: number, lo: number, offset: number)
 const MAX_TIMESTAMP = 0xffff_ffff_ffff;
 
 /** Reject fractions and out-of-range values before runtime-specific generators can coerce them. */
-const isValidUuidV7Timestamp = (ms: number): boolean =>
+const isValidUuidV7Timestamp = /* @__NO_SIDE_EFFECTS__ */ (ms: number): boolean =>
   Number.isInteger(ms) && ms >= 0 && ms <= MAX_TIMESTAMP;
 
 /**
@@ -77,7 +77,7 @@ const isValidUuidV7Timestamp = (ms: number): boolean =>
  * the runtime-backed one call it, and the runtime-backed one calls it BEFORE delegating: a native
  * generator may accept what we reject and answer wrongly rather than fail.
  */
-const rejectInstant = (ms: number): undefined | UuidSlugError =>
+const rejectInstant = /* @__NO_SIDE_EFFECTS__ */ (ms: number): undefined | UuidSlugError =>
   isValidUuidV7Timestamp(ms)
     ? undefined
     : new UuidSlugError(
@@ -91,10 +91,12 @@ const rejectInstant = (ms: number): undefined | UuidSlugError =>
  * `bytesToUuid` is version-agnostic: the v7-ness is established by the caller having produced the
  * bytes, not by anything the formatter can check.
  */
-const formatUuidV7 = (result: Uint8Array | UuidSlugError): UuidV7String | UuidSlugError =>
+const formatUuidV7 = /* @__NO_SIDE_EFFECTS__ */ (
+  result: Uint8Array | UuidSlugError,
+): UuidV7String | UuidSlugError =>
   result instanceof Error ? result : (formatUuidBytesUnchecked(result) as UuidV7String);
 
-const reenteredGeneration = () =>
+const reenteredGeneration = /* @__NO_SIDE_EFFECTS__ */ () =>
   new UuidSlugError(
     "rng_unavailable",
     "UUIDv7 generation cannot be reentered from its clock or entropy callback.",
@@ -106,9 +108,10 @@ const reenteredGeneration = () =>
  * low half. Starting each millisecond at a random point rather than zero is what stops the
  * sequence leaking how many ids were issued in the previous millisecond.
  */
-const seedHi = (bytes: Uint8Array) => (((bytes[0] ?? 0) << 2) | ((bytes[1] ?? 0) >>> 6)) & 0x3ff;
+const seedHi = /* @__NO_SIDE_EFFECTS__ */ (bytes: Uint8Array) =>
+  (((bytes[0] ?? 0) << 2) | ((bytes[1] ?? 0) >>> 6)) & 0x3ff;
 
-const seedLo = (bytes: Uint8Array) =>
+const seedLo = /* @__NO_SIDE_EFFECTS__ */ (bytes: Uint8Array) =>
   ((((bytes[1] ?? 0) & 0x3f) << 26) |
     ((bytes[2] ?? 0) << 18) |
     ((bytes[3] ?? 0) << 10) |

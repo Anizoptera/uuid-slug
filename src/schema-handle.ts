@@ -20,6 +20,7 @@ type MaskSchemaHandle = UuidV7Mask & { readonly [MASK_SCHEMA_PROTOCOL]: MaskSche
  * The versioned global symbol lets genuine handles cross duplicate same-version package copies.
  * The protocol is internal representation, not an authenticity boundary for trusted codec options.
  */
+/*#__NO_SIDE_EFFECTS__*/
 export function createSchemaHandle(label: string, mix: MaskSchemaProtocol["mix"]): UuidV7Mask {
   const schema = { label } as MaskSchemaHandle;
   Object.defineProperty(schema, MASK_SCHEMA_PROTOCOL, {

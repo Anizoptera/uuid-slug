@@ -73,6 +73,7 @@ const SLUG_ALPHABET_CODECS = {
 } as const satisfies Record<SlugAlphabet, Alphabet>;
 
 /** Reject values outside the public alphabet union when untyped JavaScript bypasses TypeScript. */
+/*#__NO_SIDE_EFFECTS__*/
 export function resolveSlugAlphabet(alphabet: SlugAlphabet): Alphabet | UuidSlugError {
   if (
     typeof alphabet === "string" &&
@@ -86,6 +87,7 @@ export function resolveSlugAlphabet(alphabet: SlugAlphabet): Alphabet | UuidSlug
 }
 
 /** Characters needed for 16 bytes: 22 in base64url, 26 in base32hex. */
+/*#__NO_SIDE_EFFECTS__*/
 function slugLength(alpha: Alphabet) {
   return Math.ceil(128 / alpha.bitsPerChar);
 }
@@ -107,6 +109,7 @@ const SLUG_LENGTHS = /*#__PURE__*/ Object.values(SLUG_ALPHABET_CODECS)
   .join(" or ");
 
 /** Encode validated canonical UUID text directly into its fixed 22-character base64url shape. */
+/*#__NO_SIDE_EFFECTS__*/
 function uuidStringToBase64url(uuid: string): UuidSlug {
   let encoded = "";
   for (let byteIndex = 0; byteIndex < 15; byteIndex += 3) {
@@ -125,6 +128,7 @@ function uuidStringToBase64url(uuid: string): UuidSlug {
 }
 
 /** Encode validated canonical UUID text directly into its fixed 26-character base32hex shape. */
+/*#__NO_SIDE_EFFECTS__*/
 function uuidStringToBase32hex(uuid: string): UuidSlug {
   let encoded = "";
   const chars = BASE32HEX.chars;
@@ -168,6 +172,7 @@ export function bytesToSlug(
   byteOffset: number,
   alphabet?: SlugAlphabet,
 ): UuidSlug | UuidSlugError;
+/*#__NO_SIDE_EFFECTS__*/
 export function bytesToSlug(
   bytes: Uint8Array,
   offsetOrAlphabet: number | SlugAlphabet = 0,
@@ -257,6 +262,7 @@ export function uuidToSlug<Input extends string>(
   uuid: UuidStringInput<Input>,
   alphabet?: SlugAlphabet,
 ): PreserveUuidVersion<Input, UuidSlug, UuidV4Slug, UuidV7Slug> | UuidSlugError;
+/*#__NO_SIDE_EFFECTS__*/
 export function uuidToSlug(
   uuid: string,
   alphabet: SlugAlphabet = "base64url",
@@ -279,6 +285,7 @@ export function uuidToSlug(
 export function slugToUuid<Input extends string>(
   slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidString, UuidV4String, UuidV7String> | UuidSlugError;
+/*#__NO_SIDE_EFFECTS__*/
 export function slugToUuid(slug: string): UuidString | UuidSlugError {
   const bytes = slugToBytes(slug);
   if (bytes instanceof Error) return bytes;
@@ -294,6 +301,7 @@ export function isUuidSlug(value: unknown): value is UuidSlug {
 }
 
 /** Read only the version/variant bytes after canonical validation, without decoding a whole UUID. */
+/*#__NO_SIDE_EFFECTS__*/
 function slugByte(slug: string, alpha: Alphabet, offset: number): number {
   const start = Math.floor((offset * 8) / alpha.bitsPerChar);
   const end = Math.floor((offset * 8 + 7) / alpha.bitsPerChar);
@@ -303,6 +311,7 @@ function slugByte(slug: string, alpha: Alphabet, offset: number): number {
   return (value >>> ((end + 1) * alpha.bitsPerChar - (offset + 1) * 8)) & 255;
 }
 
+/*#__NO_SIDE_EFFECTS__*/
 function isVersionedSlug(slug: unknown, version: number): slug is UuidSlug {
   if (!isUuidSlug(slug)) return false;
   const alpha = SLUG_ALPHABET_BY_LENGTH[slug.length] as Alphabet;
@@ -321,6 +330,7 @@ export function isUuidV7Slug(value: unknown): value is UuidV7Slug {
   return isVersionedSlug(value, 7);
 }
 
+/*#__NO_SIDE_EFFECTS__*/
 function extractStringTimestamp(value: string): number | UuidSlugError {
   let timestamp = 0;
   if (isUuidV7String(value)) {
@@ -359,6 +369,7 @@ export function extractUuidV7Timestamp<Input extends Uint8Array>(
   value: UuidV7BytesInput<Input>,
   byteOffset?: number,
 ): number | UuidSlugError;
+/*#__NO_SIDE_EFFECTS__*/
 export function extractUuidV7Timestamp(
   value: string | Uint8Array,
   byteOffset = 0,

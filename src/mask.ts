@@ -40,6 +40,7 @@ function applyMix(
  *
  * Taken from the TOP so that widening the check never renumbers the bits below it.
  */
+/*#__NO_SIDE_EFFECTS__*/
 function tagFor(bytes: Uint8Array, width: number) {
   let acc = 0;
   for (let offset = 0; offset < 16; offset += 4) acc = mix32(acc ^ read32(bytes, offset));
@@ -60,6 +61,7 @@ function injectTag(bytes: Uint8Array, tag: number) {
   bytes[0] = (((tag >>> 6) & 0x3f) << 2) | ((bytes[0] ?? 0) & 0x03);
 }
 
+/*#__NO_SIDE_EFFECTS__*/
 function extractTag(bytes: Uint8Array) {
   return ((bytes[6] ?? 0) >>> 4) | (((bytes[8] ?? 0) >>> 6) << 4) | (((bytes[0] ?? 0) >>> 2) << 6);
 }

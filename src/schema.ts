@@ -19,6 +19,7 @@ const MAX_KEY_ITERATIONS = 1 << 24;
 const LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
 const SEED_WORD_VIEW_MIN_BYTES = 4096;
 
+/*#__NO_SIDE_EFFECTS__*/
 function canViewSeedWords(seed: Uint8Array) {
   return LITTLE_ENDIAN && (seed.byteOffset & 3) === 0 && (seed.length & 3) === 0;
 }
@@ -66,6 +67,7 @@ function validateOptions(options: unknown) {
 }
 
 /** Repack bytes as the little-endian 32-bit words `halfSipHash` absorbs. */
+/*#__NO_SIDE_EFFECTS__*/
 function seedWords(seed: Uint8Array) {
   if (seed.length >= SEED_WORD_VIEW_MIN_BYTES && canViewSeedWords(seed))
     return new Int32Array(seed.buffer, seed.byteOffset, seed.length >>> 2);
@@ -94,6 +96,7 @@ function writeSeedWords(
  * at construction, never per id. The count changes key material and must remain stable for
  * issued slugs; retain the old count with its seed when rotating schemas.
  */
+/*#__NO_SIDE_EFFECTS__*/
 function chain(key0: number, key1: number, words: Int32Array, length: number, iterations: number) {
   const out = new Int32Array(2);
   halfSipHash(key0, key1, words, length, out);
@@ -107,6 +110,7 @@ function chain(key0: number, key1: number, words: Int32Array, length: number, it
  * state is 128 bits; that representation does not establish 128-bit security. Chain constants,
  * word indices and byte order are frozen by the issued wire format.
  */
+/*#__NO_SIDE_EFFECTS__*/
 function derivedKeys(seed: Uint8Array, iterations: number) {
   const words = seedWords(seed);
   const chainA = chain(CHAIN_KEY0, CHAIN_A_KEY1, words, seed.length, iterations);
@@ -115,6 +119,7 @@ function derivedKeys(seed: Uint8Array, iterations: number) {
 }
 
 /** The same final key expansion follows synchronous and cooperative derivation. */
+/*#__NO_SIDE_EFFECTS__*/
 function roundKeys(chainA: Int32Array, chainB: Int32Array) {
   const keys = new Int32Array(FEISTEL_KEY_WORDS);
   const index = new Int32Array(1);
@@ -130,10 +135,12 @@ function roundKeys(chainA: Int32Array, chainB: Int32Array) {
   return keys;
 }
 
+/*#__NO_SIDE_EFFECTS__*/
 function feistelSchema(label: string, seed: Uint8Array, iterations: number): UuidV7Mask {
   return schemaFromKeys(label, derivedKeys(seed, iterations));
 }
 
+/*#__NO_SIDE_EFFECTS__*/
 function schemaFromKeys(label: string, keys: Int32Array): UuidV7Mask {
   return createSchemaHandle(label, (input, output, direction) => {
     feistel16(input, 0, keys, direction, output, 0);
@@ -160,6 +167,7 @@ export function createUuidV7Mask(options: UuidV7MaskOptions): UuidV7Mask | UuidS
   }
 }
 
+/*#__NO_SIDE_EFFECTS__*/
 function invalidSeedLength(length: number): undefined | UuidSlugError {
   if (length < SEED_MIN_BYTES)
     return new UuidSlugError(

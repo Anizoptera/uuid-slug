@@ -69,6 +69,7 @@ export function isUuidSlugError(value: unknown): value is UuidSlugError {
 }
 
 /** Use fast local identity, then an unspoofable intrinsic brand for cross-realm Uint8Array values. */
+/*#__NO_SIDE_EFFECTS__*/
 export function isUint8Array(value: unknown): value is Uint8Array {
   return (
     ArrayBuffer.isView(value) &&
@@ -90,6 +91,7 @@ export function isUint8Array(value: unknown): value is Uint8Array {
  * Seven near-identical copies of that test existed across this package and not one checked
  * integrality — the copying is why. One copy is what stops the class returning.
  */
+/*#__NO_SIDE_EFFECTS__*/
 export function checkRange(
   capacity: number,
   offset: number,
@@ -109,6 +111,7 @@ export function checkRange(
 }
 
 /** Reject alien views and objects before range checks can mistake them for byte storage. */
+/*#__NO_SIDE_EFFECTS__*/
 export function checkByteRange(
   bytes: unknown,
   offset: number,
@@ -120,7 +123,9 @@ export function checkByteRange(
 }
 
 /** Preserve failures from an injected or platform entropy source without changing successful draws. */
-export const randomFailure = (value: unknown): undefined | UuidSlugError => {
+export const randomFailure = /* @__NO_SIDE_EFFECTS__ */ (
+  value: unknown,
+): undefined | UuidSlugError => {
   if (value instanceof UuidSlugError) return value;
   return value instanceof Error
     ? new UuidSlugError("rng_unavailable", "Random byte generation failed.", { cause: value })
@@ -139,6 +144,7 @@ export function fillRandomBytes(
 }
 
 /** Keep both failed implementations inspectable when an optional native shortcut also fails. */
+/*#__NO_SIDE_EFFECTS__*/
 export function failedFallback(
   nativeCause: unknown,
   fallback: UuidSlugError,

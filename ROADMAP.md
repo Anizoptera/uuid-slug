@@ -110,6 +110,13 @@ Make each consumer pay only for UUID generation, plain slugs, or masking that it
 - [x] Document the annotation safety boundary and the tsdown settings that preserve tree shaking, stack traces, and useful source maps.
 - [x] Remove duplicated or consumer-irrelevant wording, verify every durable claim against config and artifact checks, run the complete gate, and commit with a clean tree.
 
+## Optimizer annotation audit
+
+- [x] Classify every TypeScript function by observable effects, including internal declarations and hostile runtime inputs.
+- [x] Apply the strongest sound annotation and remove any annotation falsified by callbacks, mutation, clocks, entropy, getters, proxy traps, or caller-owned writes.
+- [x] Measure discarded calls with Bun and independent consumer bundlers; verify packed annotation preservation and runtime behavior.
+- [x] Run the complete gate and inspect the archive and diff.
+
 ## Import-time capability audit
 
 - [x] Inventory every source-owned module initializer and classify it as constant construction, capability detection, state allocation, or observable effect.

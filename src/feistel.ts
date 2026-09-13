@@ -22,6 +22,7 @@ export const FEISTEL_KEY_WORDS = ROUNDS * 2;
  * round function — see above — but still what `mask.ts` derives its check tag with, where the input
  * is public and an unkeyed mixer is the right tool.
  */
+/*#__NO_SIDE_EFFECTS__*/
 export function mix32(value: number): number {
   let x = (value ^ (value >>> 16)) >>> 0;
   x = Math.imul(x, 0x7feb352d);
@@ -31,6 +32,7 @@ export function mix32(value: number): number {
 }
 
 /** Big-endian on purpose: the wire format must not depend on the host's byte order. */
+/*#__NO_SIDE_EFFECTS__*/
 export function read32(bytes: Uint8Array, offset: number): number {
   return (
     ((bytes[offset] as number) << 24) |
