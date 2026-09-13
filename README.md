@@ -60,9 +60,9 @@ import { generateUuidV7Slug } from "@anizoptera/uuid-slug/slug/v7";
 ```
 
 Tested bundlers produce the same optimized bytes from root and focused imports. The focused paths
-are optional: repeated cold-process measurements found lower startup cost across Node, Bun, and
-Deno because they load only the relevant modules. Use them for unbundled CLIs, functions, or
-workers where startup matters; otherwise prefer the root.
+are optional: repeated cold-process measurements found lower startup cost for `/v4` and `/v7`
+across Node, Bun, and Deno. Use focused paths for unbundled CLIs, functions, or workers where
+startup matters; otherwise prefer the root.
 
 The native Rust crate implements the same wire contract and lives in [`rust/uuid-slug`](rust/uuid-slug).
 The npm package remains TypeScript/JavaScript-only.
