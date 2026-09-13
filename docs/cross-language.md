@@ -52,8 +52,8 @@ Use validated `Uuid` values between operations; parse text once rather than at e
 | v7 generation, explicit time and caller storage | `UuidV7Generator::generate`, `at`, and their `_with`/`_into_with` forms |
 | Generated direct or masked slugs | Generate a `Uuid`, then call `slug` or the keyed codec |
 | UUIDv7 timestamp | `Uuid::timestamp` |
-| Sync/async masks and custom transforms | `create_mask_schema`, `create_mask_schema_async`, `MaskSchema::custom(label, mask, unmask)` |
-| Explicit public mask | `UUID_V7_TEST_MASK`; `public_mask_schema()` |
+| Sync/async masks and custom transforms | `create_mask`, `create_mask_async`, `Mask::custom(label, mask, unmask)` |
+| Explicit public mask | `UUID_V7_TEST_MASK`; `public_mask()` |
 | Key rotation, masked text/byte conversion and sentinels | `CodecOptions::new`, `Codec::encode_uuid`, `decode_slug`, `Uuid::as_bytes`, `write_into`, `sentinels` |
 | Known/mixed-format migration and candidates | `Codec::migration_decoder`, `MigrationDecoder::decode`, `candidates`, `MigrationOptions` |
 | Direct timestamp window | Parse UUID or direct slug, then `UuidV7TimestampWindow::validate`; retain the original text if needed |

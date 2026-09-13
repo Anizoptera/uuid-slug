@@ -11,8 +11,8 @@ pub mod alphabet;
 pub mod codec;
 pub mod error;
 pub mod generation;
-mod mask;
-pub mod schema;
+pub mod mask;
+mod payload;
 mod siphash;
 pub mod uuid;
 
@@ -22,5 +22,5 @@ pub use codec::{
     UuidV7TimestampWindow,
 };
 pub use error::{Error, ErrorCode};
-pub use schema::{MaskSchema, create_mask_schema, create_mask_schema_async, public_mask_schema};
+pub use mask::{Mask, create_mask, create_mask_async, public_mask};
 pub use uuid::Uuid;

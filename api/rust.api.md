@@ -70,12 +70,12 @@ impl core::marker::UnsafeUnpin for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Codec
 pub struct uuid_slug::codec::CodecOptions
-pub uuid_slug::codec::CodecOptions::mask: uuid_slug::schema::MaskSchema
-pub uuid_slug::codec::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::schema::MaskSchema>
+pub uuid_slug::codec::CodecOptions::mask: uuid_slug::mask::Mask
+pub uuid_slug::codec::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::mask::Mask>
 pub uuid_slug::codec::CodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
 pub uuid_slug::codec::CodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
 impl uuid_slug::codec::CodecOptions
-pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::schema::MaskSchema) -> Self
+pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::mask::Mask) -> Self
 impl core::marker::Freeze for uuid_slug::codec::CodecOptions
 impl core::marker::Send for uuid_slug::codec::CodecOptions
 impl core::marker::Sync for uuid_slug::codec::CodecOptions
@@ -221,42 +221,42 @@ pub fn uuid_slug::generation::fill_os_random(out: &mut [u8]) -> core::result::Re
 pub fn uuid_slug::generation::uuid_v4() -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
 pub fn uuid_slug::generation::uuid_v4_into_with(out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::error::Error>) -> core::result::Result<(), uuid_slug::error::Error>
 pub fn uuid_slug::generation::uuid_v4_with(fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::error::Error>) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
-pub mod uuid_slug::schema
-pub struct uuid_slug::schema::Cancellation(_)
-impl uuid_slug::schema::Cancellation
-pub fn uuid_slug::schema::Cancellation::cancel(&self)
-pub fn uuid_slug::schema::Cancellation::is_cancelled(&self) -> bool
-impl core::clone::Clone for uuid_slug::schema::Cancellation
-pub fn uuid_slug::schema::Cancellation::clone(&self) -> uuid_slug::schema::Cancellation
-impl core::default::Default for uuid_slug::schema::Cancellation
-pub fn uuid_slug::schema::Cancellation::default() -> uuid_slug::schema::Cancellation
-impl core::fmt::Debug for uuid_slug::schema::Cancellation
-pub fn uuid_slug::schema::Cancellation::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Freeze for uuid_slug::schema::Cancellation
-impl core::marker::Send for uuid_slug::schema::Cancellation
-impl core::marker::Sync for uuid_slug::schema::Cancellation
-impl core::marker::Unpin for uuid_slug::schema::Cancellation
-impl core::marker::UnsafeUnpin for uuid_slug::schema::Cancellation
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::schema::Cancellation
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::schema::Cancellation
-pub struct uuid_slug::schema::MaskSchema
-impl uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::custom(id: impl core::convert::Into<alloc::string::String>, mask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static, unmask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
-pub fn uuid_slug::schema::MaskSchema::id(&self) -> &str
-impl core::clone::Clone for uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::clone(&self) -> uuid_slug::schema::MaskSchema
-impl core::fmt::Debug for uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Freeze for uuid_slug::schema::MaskSchema
-impl core::marker::Send for uuid_slug::schema::MaskSchema
-impl core::marker::Sync for uuid_slug::schema::MaskSchema
-impl core::marker::Unpin for uuid_slug::schema::MaskSchema
-impl core::marker::UnsafeUnpin for uuid_slug::schema::MaskSchema
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::schema::MaskSchema
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::create_mask_schema(seed: &[u8], iterations: u32, id: &str) -> core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>
-pub fn uuid_slug::schema::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>> + core::marker::Send + use<>
-pub fn uuid_slug::schema::public_mask_schema() -> uuid_slug::schema::MaskSchema
+pub mod uuid_slug::mask
+pub struct uuid_slug::mask::Cancellation(_)
+impl uuid_slug::mask::Cancellation
+pub fn uuid_slug::mask::Cancellation::cancel(&self)
+pub fn uuid_slug::mask::Cancellation::is_cancelled(&self) -> bool
+impl core::clone::Clone for uuid_slug::mask::Cancellation
+pub fn uuid_slug::mask::Cancellation::clone(&self) -> uuid_slug::mask::Cancellation
+impl core::default::Default for uuid_slug::mask::Cancellation
+pub fn uuid_slug::mask::Cancellation::default() -> uuid_slug::mask::Cancellation
+impl core::fmt::Debug for uuid_slug::mask::Cancellation
+pub fn uuid_slug::mask::Cancellation::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for uuid_slug::mask::Cancellation
+impl core::marker::Send for uuid_slug::mask::Cancellation
+impl core::marker::Sync for uuid_slug::mask::Cancellation
+impl core::marker::Unpin for uuid_slug::mask::Cancellation
+impl core::marker::UnsafeUnpin for uuid_slug::mask::Cancellation
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::mask::Cancellation
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::mask::Cancellation
+pub struct uuid_slug::mask::Mask
+impl uuid_slug::mask::Mask
+pub fn uuid_slug::mask::Mask::custom(label: impl core::convert::Into<alloc::string::String>, mask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static, unmask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
+pub fn uuid_slug::mask::Mask::label(&self) -> &str
+impl core::clone::Clone for uuid_slug::mask::Mask
+pub fn uuid_slug::mask::Mask::clone(&self) -> uuid_slug::mask::Mask
+impl core::fmt::Debug for uuid_slug::mask::Mask
+pub fn uuid_slug::mask::Mask::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for uuid_slug::mask::Mask
+impl core::marker::Send for uuid_slug::mask::Mask
+impl core::marker::Sync for uuid_slug::mask::Mask
+impl core::marker::Unpin for uuid_slug::mask::Mask
+impl core::marker::UnsafeUnpin for uuid_slug::mask::Mask
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::mask::Mask
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::mask::Mask
+pub fn uuid_slug::mask::create_mask(seed: &[u8], iterations: u32, label: &str) -> core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>
+pub fn uuid_slug::mask::create_mask_async(seed: &[u8], iterations: u32, label: &str, cancellation: uuid_slug::mask::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>> + core::marker::Send + use<>
+pub fn uuid_slug::mask::public_mask() -> uuid_slug::mask::Mask
 pub mod uuid_slug::uuid
 pub struct uuid_slug::uuid::Uuid(_)
 impl uuid_slug::uuid::Uuid
@@ -394,12 +394,12 @@ impl core::marker::UnsafeUnpin for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Codec
 pub struct uuid_slug::CodecOptions
-pub uuid_slug::CodecOptions::mask: uuid_slug::schema::MaskSchema
-pub uuid_slug::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::schema::MaskSchema>
+pub uuid_slug::CodecOptions::mask: uuid_slug::mask::Mask
+pub uuid_slug::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::mask::Mask>
 pub uuid_slug::CodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
 pub uuid_slug::CodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
 impl uuid_slug::codec::CodecOptions
-pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::schema::MaskSchema) -> Self
+pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::mask::Mask) -> Self
 impl core::marker::Freeze for uuid_slug::codec::CodecOptions
 impl core::marker::Send for uuid_slug::codec::CodecOptions
 impl core::marker::Sync for uuid_slug::codec::CodecOptions
@@ -425,21 +425,21 @@ impl core::marker::Unpin for uuid_slug::error::Error
 impl core::marker::UnsafeUnpin for uuid_slug::error::Error
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::error::Error
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::error::Error
-pub struct uuid_slug::MaskSchema
-impl uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::custom(id: impl core::convert::Into<alloc::string::String>, mask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static, unmask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
-pub fn uuid_slug::schema::MaskSchema::id(&self) -> &str
-impl core::clone::Clone for uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::clone(&self) -> uuid_slug::schema::MaskSchema
-impl core::fmt::Debug for uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Freeze for uuid_slug::schema::MaskSchema
-impl core::marker::Send for uuid_slug::schema::MaskSchema
-impl core::marker::Sync for uuid_slug::schema::MaskSchema
-impl core::marker::Unpin for uuid_slug::schema::MaskSchema
-impl core::marker::UnsafeUnpin for uuid_slug::schema::MaskSchema
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::schema::MaskSchema
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::schema::MaskSchema
+pub struct uuid_slug::Mask
+impl uuid_slug::mask::Mask
+pub fn uuid_slug::mask::Mask::custom(label: impl core::convert::Into<alloc::string::String>, mask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static, unmask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
+pub fn uuid_slug::mask::Mask::label(&self) -> &str
+impl core::clone::Clone for uuid_slug::mask::Mask
+pub fn uuid_slug::mask::Mask::clone(&self) -> uuid_slug::mask::Mask
+impl core::fmt::Debug for uuid_slug::mask::Mask
+pub fn uuid_slug::mask::Mask::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for uuid_slug::mask::Mask
+impl core::marker::Send for uuid_slug::mask::Mask
+impl core::marker::Sync for uuid_slug::mask::Mask
+impl core::marker::Unpin for uuid_slug::mask::Mask
+impl core::marker::UnsafeUnpin for uuid_slug::mask::Mask
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::mask::Mask
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::mask::Mask
 pub struct uuid_slug::MigrationDecoder<'a>
 impl uuid_slug::codec::MigrationDecoder<'_>
 pub fn uuid_slug::codec::MigrationDecoder<'_>::candidates(&self, slug: &str, format: core::option::Option<uuid_slug::codec::MigrationFormat>) -> core::result::Result<alloc::vec::Vec<uuid_slug::uuid::Uuid>, uuid_slug::error::Error>
@@ -541,9 +541,9 @@ impl core::marker::Unpin for uuid_slug::codec::UuidV7TimestampWindow
 impl core::marker::UnsafeUnpin for uuid_slug::codec::UuidV7TimestampWindow
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
-pub fn uuid_slug::create_mask_schema(seed: &[u8], iterations: u32, id: &str) -> core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>
-pub fn uuid_slug::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>> + core::marker::Send + use<>
-pub fn uuid_slug::public_mask_schema() -> uuid_slug::schema::MaskSchema
+pub fn uuid_slug::create_mask(seed: &[u8], iterations: u32, label: &str) -> core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>
+pub fn uuid_slug::create_mask_async(seed: &[u8], iterations: u32, label: &str, cancellation: uuid_slug::mask::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>> + core::marker::Send + use<>
+pub fn uuid_slug::public_mask() -> uuid_slug::mask::Mask
 ```
 
 ## No default features
@@ -614,12 +614,12 @@ impl core::marker::UnsafeUnpin for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Codec
 pub struct uuid_slug::codec::CodecOptions
-pub uuid_slug::codec::CodecOptions::mask: uuid_slug::schema::MaskSchema
-pub uuid_slug::codec::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::schema::MaskSchema>
+pub uuid_slug::codec::CodecOptions::mask: uuid_slug::mask::Mask
+pub uuid_slug::codec::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::mask::Mask>
 pub uuid_slug::codec::CodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
 pub uuid_slug::codec::CodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
 impl uuid_slug::codec::CodecOptions
-pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::schema::MaskSchema) -> Self
+pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::mask::Mask) -> Self
 impl core::marker::Freeze for uuid_slug::codec::CodecOptions
 impl core::marker::Send for uuid_slug::codec::CodecOptions
 impl core::marker::Sync for uuid_slug::codec::CodecOptions
@@ -761,42 +761,42 @@ impl core::panic::unwind_safe::UnwindSafe for uuid_slug::generation::UuidV7Gener
 pub const uuid_slug::generation::MAX_TIMESTAMP: u64
 pub fn uuid_slug::generation::uuid_v4_into_with(out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::error::Error>) -> core::result::Result<(), uuid_slug::error::Error>
 pub fn uuid_slug::generation::uuid_v4_with(fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::error::Error>) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
-pub mod uuid_slug::schema
-pub struct uuid_slug::schema::Cancellation(_)
-impl uuid_slug::schema::Cancellation
-pub fn uuid_slug::schema::Cancellation::cancel(&self)
-pub fn uuid_slug::schema::Cancellation::is_cancelled(&self) -> bool
-impl core::clone::Clone for uuid_slug::schema::Cancellation
-pub fn uuid_slug::schema::Cancellation::clone(&self) -> uuid_slug::schema::Cancellation
-impl core::default::Default for uuid_slug::schema::Cancellation
-pub fn uuid_slug::schema::Cancellation::default() -> uuid_slug::schema::Cancellation
-impl core::fmt::Debug for uuid_slug::schema::Cancellation
-pub fn uuid_slug::schema::Cancellation::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Freeze for uuid_slug::schema::Cancellation
-impl core::marker::Send for uuid_slug::schema::Cancellation
-impl core::marker::Sync for uuid_slug::schema::Cancellation
-impl core::marker::Unpin for uuid_slug::schema::Cancellation
-impl core::marker::UnsafeUnpin for uuid_slug::schema::Cancellation
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::schema::Cancellation
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::schema::Cancellation
-pub struct uuid_slug::schema::MaskSchema
-impl uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::custom(id: impl core::convert::Into<alloc::string::String>, mask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static, unmask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
-pub fn uuid_slug::schema::MaskSchema::id(&self) -> &str
-impl core::clone::Clone for uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::clone(&self) -> uuid_slug::schema::MaskSchema
-impl core::fmt::Debug for uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Freeze for uuid_slug::schema::MaskSchema
-impl core::marker::Send for uuid_slug::schema::MaskSchema
-impl core::marker::Sync for uuid_slug::schema::MaskSchema
-impl core::marker::Unpin for uuid_slug::schema::MaskSchema
-impl core::marker::UnsafeUnpin for uuid_slug::schema::MaskSchema
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::schema::MaskSchema
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::create_mask_schema(seed: &[u8], iterations: u32, id: &str) -> core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>
-pub fn uuid_slug::schema::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>> + core::marker::Send + use<>
-pub fn uuid_slug::schema::public_mask_schema() -> uuid_slug::schema::MaskSchema
+pub mod uuid_slug::mask
+pub struct uuid_slug::mask::Cancellation(_)
+impl uuid_slug::mask::Cancellation
+pub fn uuid_slug::mask::Cancellation::cancel(&self)
+pub fn uuid_slug::mask::Cancellation::is_cancelled(&self) -> bool
+impl core::clone::Clone for uuid_slug::mask::Cancellation
+pub fn uuid_slug::mask::Cancellation::clone(&self) -> uuid_slug::mask::Cancellation
+impl core::default::Default for uuid_slug::mask::Cancellation
+pub fn uuid_slug::mask::Cancellation::default() -> uuid_slug::mask::Cancellation
+impl core::fmt::Debug for uuid_slug::mask::Cancellation
+pub fn uuid_slug::mask::Cancellation::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for uuid_slug::mask::Cancellation
+impl core::marker::Send for uuid_slug::mask::Cancellation
+impl core::marker::Sync for uuid_slug::mask::Cancellation
+impl core::marker::Unpin for uuid_slug::mask::Cancellation
+impl core::marker::UnsafeUnpin for uuid_slug::mask::Cancellation
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::mask::Cancellation
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::mask::Cancellation
+pub struct uuid_slug::mask::Mask
+impl uuid_slug::mask::Mask
+pub fn uuid_slug::mask::Mask::custom(label: impl core::convert::Into<alloc::string::String>, mask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static, unmask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
+pub fn uuid_slug::mask::Mask::label(&self) -> &str
+impl core::clone::Clone for uuid_slug::mask::Mask
+pub fn uuid_slug::mask::Mask::clone(&self) -> uuid_slug::mask::Mask
+impl core::fmt::Debug for uuid_slug::mask::Mask
+pub fn uuid_slug::mask::Mask::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for uuid_slug::mask::Mask
+impl core::marker::Send for uuid_slug::mask::Mask
+impl core::marker::Sync for uuid_slug::mask::Mask
+impl core::marker::Unpin for uuid_slug::mask::Mask
+impl core::marker::UnsafeUnpin for uuid_slug::mask::Mask
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::mask::Mask
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::mask::Mask
+pub fn uuid_slug::mask::create_mask(seed: &[u8], iterations: u32, label: &str) -> core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>
+pub fn uuid_slug::mask::create_mask_async(seed: &[u8], iterations: u32, label: &str, cancellation: uuid_slug::mask::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>> + core::marker::Send + use<>
+pub fn uuid_slug::mask::public_mask() -> uuid_slug::mask::Mask
 pub mod uuid_slug::uuid
 pub struct uuid_slug::uuid::Uuid(_)
 impl uuid_slug::uuid::Uuid
@@ -934,12 +934,12 @@ impl core::marker::UnsafeUnpin for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Codec
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Codec
 pub struct uuid_slug::CodecOptions
-pub uuid_slug::CodecOptions::mask: uuid_slug::schema::MaskSchema
-pub uuid_slug::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::schema::MaskSchema>
+pub uuid_slug::CodecOptions::mask: uuid_slug::mask::Mask
+pub uuid_slug::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::mask::Mask>
 pub uuid_slug::CodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
 pub uuid_slug::CodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
 impl uuid_slug::codec::CodecOptions
-pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::schema::MaskSchema) -> Self
+pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::mask::Mask) -> Self
 impl core::marker::Freeze for uuid_slug::codec::CodecOptions
 impl core::marker::Send for uuid_slug::codec::CodecOptions
 impl core::marker::Sync for uuid_slug::codec::CodecOptions
@@ -965,21 +965,21 @@ impl core::marker::Unpin for uuid_slug::error::Error
 impl core::marker::UnsafeUnpin for uuid_slug::error::Error
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::error::Error
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::error::Error
-pub struct uuid_slug::MaskSchema
-impl uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::custom(id: impl core::convert::Into<alloc::string::String>, mask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static, unmask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
-pub fn uuid_slug::schema::MaskSchema::id(&self) -> &str
-impl core::clone::Clone for uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::clone(&self) -> uuid_slug::schema::MaskSchema
-impl core::fmt::Debug for uuid_slug::schema::MaskSchema
-pub fn uuid_slug::schema::MaskSchema::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Freeze for uuid_slug::schema::MaskSchema
-impl core::marker::Send for uuid_slug::schema::MaskSchema
-impl core::marker::Sync for uuid_slug::schema::MaskSchema
-impl core::marker::Unpin for uuid_slug::schema::MaskSchema
-impl core::marker::UnsafeUnpin for uuid_slug::schema::MaskSchema
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::schema::MaskSchema
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::schema::MaskSchema
+pub struct uuid_slug::Mask
+impl uuid_slug::mask::Mask
+pub fn uuid_slug::mask::Mask::custom(label: impl core::convert::Into<alloc::string::String>, mask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static, unmask: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::error::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::error::Error>
+pub fn uuid_slug::mask::Mask::label(&self) -> &str
+impl core::clone::Clone for uuid_slug::mask::Mask
+pub fn uuid_slug::mask::Mask::clone(&self) -> uuid_slug::mask::Mask
+impl core::fmt::Debug for uuid_slug::mask::Mask
+pub fn uuid_slug::mask::Mask::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for uuid_slug::mask::Mask
+impl core::marker::Send for uuid_slug::mask::Mask
+impl core::marker::Sync for uuid_slug::mask::Mask
+impl core::marker::Unpin for uuid_slug::mask::Mask
+impl core::marker::UnsafeUnpin for uuid_slug::mask::Mask
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::mask::Mask
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::mask::Mask
 pub struct uuid_slug::MigrationDecoder<'a>
 impl uuid_slug::codec::MigrationDecoder<'_>
 pub fn uuid_slug::codec::MigrationDecoder<'_>::candidates(&self, slug: &str, format: core::option::Option<uuid_slug::codec::MigrationFormat>) -> core::result::Result<alloc::vec::Vec<uuid_slug::uuid::Uuid>, uuid_slug::error::Error>
@@ -1081,7 +1081,7 @@ impl core::marker::Unpin for uuid_slug::codec::UuidV7TimestampWindow
 impl core::marker::UnsafeUnpin for uuid_slug::codec::UuidV7TimestampWindow
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
-pub fn uuid_slug::create_mask_schema(seed: &[u8], iterations: u32, id: &str) -> core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>
-pub fn uuid_slug::create_mask_schema_async(seed: &[u8], iterations: u32, id: &str, cancellation: uuid_slug::schema::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::schema::MaskSchema, uuid_slug::error::Error>> + core::marker::Send + use<>
-pub fn uuid_slug::public_mask_schema() -> uuid_slug::schema::MaskSchema
+pub fn uuid_slug::create_mask(seed: &[u8], iterations: u32, label: &str) -> core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>
+pub fn uuid_slug::create_mask_async(seed: &[u8], iterations: u32, label: &str, cancellation: uuid_slug::mask::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>> + core::marker::Send + use<>
+pub fn uuid_slug::public_mask() -> uuid_slug::mask::Mask
 ```

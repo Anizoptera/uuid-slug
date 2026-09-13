@@ -1,8 +1,7 @@
 //! Store lowercase UUID filenames and recover their direct, masked and sentinel identities.
 use std::{fs, io};
 use uuid_slug::{
-    Alphabet, Codec, CodecOptions, MigrationFormat, MigrationOptions, Uuid, generation,
-    public_mask_schema,
+    Alphabet, Codec, CodecOptions, MigrationFormat, MigrationOptions, Uuid, generation, public_mask,
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -19,7 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn exercise(directory: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
     let codec = Codec::new(CodecOptions {
         slug_alphabet: Alphabet::Base32Hex,
-        ..CodecOptions::new(public_mask_schema())
+        ..CodecOptions::new(public_mask())
     })?;
     let mut generator = generation::UuidV7Generator::new();
     let uuid = generator.generate()?;

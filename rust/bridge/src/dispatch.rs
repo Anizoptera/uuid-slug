@@ -2,8 +2,8 @@
 
 use serde_json::{Value, json};
 use uuid_slug::{
-    Alphabet, Codec, CodecOptions, Error, ErrorCode, MaskSchema, MigrationFormat, MigrationOptions,
-    Uuid, UuidV7TimestampWindow, create_mask_schema, public_mask_schema,
+    Alphabet, Codec, CodecOptions, Error, ErrorCode, Mask, MigrationFormat, MigrationOptions, Uuid,
+    UuidV7TimestampWindow, create_mask, public_mask,
 };
 
 fn text<'a>(value: &'a Value, key: &str) -> Result<&'a str, Error> {
@@ -47,12 +47,12 @@ fn custom_mix_reverse(input: [u8; 16]) -> Result<[u8; 16], Error> {
     Ok(output)
 }
 
-fn schema(value: &Value) -> Result<MaskSchema, Error> {
+fn mask(value: &Value) -> Result<Mask, Error> {
     if value.is_null() {
-        return Ok(public_mask_schema());
+        return Ok(public_mask());
     }
     if value == "custom-mix" {
-        return MaskSchema::custom("custom-mix", custom_mix_forward, custom_mix_reverse);
+        return Mask::custom("custom-mix", custom_mix_forward, custom_mix_reverse);
     }
     let bytes = if let Some(units) = value["utf16"].as_array() {
         // JSON strings cannot preserve lone UTF-16 surrogates in serde_json; explicit units do.
@@ -88,16 +88,16 @@ fn schema(value: &Value) -> Result<MaskSchema, Error> {
     {
         return Err(Error::new(ErrorCode::InvalidMask));
     }
-    create_mask_schema(&bytes, iterations as u32, "seeded")
+    create_mask(&bytes, iterations as u32, "seeded")
 }
 
 fn codec(request: &Value) -> Result<Codec, Error> {
     let mut options = CodecOptions {
         slug_alphabet: alphabet(&request["maskedAlphabet"])?,
-        ..CodecOptions::new(schema(&request["mask"])?)
+        ..CodecOptions::new(mask(&request["mask"])?)
     };
     if let Some(previous) = request["previous"].as_array() {
-        options.previous_masks = previous.iter().map(schema).collect::<Result<_, _>>()?;
+        options.previous_masks = previous.iter().map(mask).collect::<Result<_, _>>()?;
     }
     if let Some(definitions) = request["sentinels"].as_array() {
         options.sentinels = definitions

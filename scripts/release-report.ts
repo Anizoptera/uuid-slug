@@ -95,7 +95,7 @@ async function measureLinkedSizes(
     ),
     Bun.write(
       join(driver, "src/main.rs"),
-      `use std::hint::black_box;\nuse uuid_slug::{public_mask_schema, Codec, CodecOptions, Uuid};\nfn main() {\n let uuid = Uuid::parse("01890f3e-93b8-7cc6-a76b-b2a67b746c2a").unwrap();\n black_box(Codec::new(CodecOptions::new(public_mask_schema())).unwrap().encode_uuid(uuid));\n}\n`,
+      `use std::hint::black_box;\nuse uuid_slug::{public_mask, Codec, CodecOptions, Uuid};\nfn main() {\n let uuid = Uuid::parse("01890f3e-93b8-7cc6-a76b-b2a67b746c2a").unwrap();\n black_box(Codec::new(CodecOptions::new(public_mask())).unwrap().encode_uuid(uuid));\n}\n`,
     ),
   ]);
   const manifest = join(driver, "Cargo.toml");

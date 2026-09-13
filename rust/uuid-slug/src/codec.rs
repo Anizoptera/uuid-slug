@@ -1,6 +1,6 @@
 //! A codec owns its keys and reserved identities so keyed operations cannot use another codec's key.
 
-use crate::{Alphabet, Error, ErrorCode, MaskSchema, Uuid};
+use crate::{Alphabet, Error, ErrorCode, Mask, Uuid};
 
 /// A named UUID emitted directly instead of through the mask.
 #[derive(Clone, Debug)]
@@ -59,7 +59,7 @@ mod tests {
         ] {
             let error = Codec::new(CodecOptions {
                 sentinels,
-                ..CodecOptions::new(crate::public_mask_schema())
+                ..CodecOptions::new(crate::public_mask())
             })
             .err()
             .expect("invalid sentinel names must fail codec construction");
@@ -72,17 +72,17 @@ mod tests {
     fn ciphertext_cannot_alias_a_reserved_identity() -> Result<(), Error> {
         let uuid = Uuid::parse("019ff19b-58b8-7000-9b1b-df713bd55607")?;
         let reserved = Uuid::parse("00000000-0000-7000-8000-000000000000")?;
-        let identity = MaskSchema::custom("identity", Ok, Ok)?;
-        let (tagged, tail) = crate::mask::mask_bytes(uuid.as_bytes(), &identity)?;
+        let identity = Mask::custom("identity", Ok, Ok)?;
+        let (tagged, tail) = crate::payload::mask_bytes(uuid.as_bytes(), &identity)?;
         assert_eq!(
             tail, 0,
             "The collision must pass the earlier padding condition"
         );
         let delta: [u8; 16] = std::array::from_fn(|i| tagged[i] ^ reserved.as_bytes()[i]);
         let transform = move |input: [u8; 16]| Ok(std::array::from_fn(|i| input[i] ^ delta[i]));
-        let collision = MaskSchema::custom("collision", transform, transform)?;
+        let collision = Mask::custom("collision", transform, transform)?;
         assert_eq!(
-            crate::mask::mask_bytes(uuid.as_bytes(), &collision)?,
+            crate::payload::mask_bytes(uuid.as_bytes(), &collision)?,
             (*reserved.as_bytes(), 0)
         );
         for alphabet in [Alphabet::Base64Url, Alphabet::Base32Hex] {
@@ -102,10 +102,9 @@ mod tests {
 
     #[test]
     fn callback_failure_respects_first_result_and_atomic_candidates() -> Result<(), Error> {
-        assert!(MaskSchema::custom("not-an-inverse", |_| Ok([1; 16]), |_| Ok([1; 16])).is_err());
+        assert!(Mask::custom("not-an-inverse", |_| Ok([1; 16]), |_| Ok([1; 16])).is_err());
         assert!(
-            MaskSchema::custom("failed", |_| Err(Error::new(ErrorCode::InvalidBuffer)), Ok,)
-                .is_err()
+            Mask::custom("failed", |_| Err(Error::new(ErrorCode::InvalidBuffer)), Ok,).is_err()
         );
         let failing = Arc::new(AtomicBool::new(false));
         let flag = failing.clone();
@@ -116,10 +115,10 @@ mod tests {
                 Ok(input)
             }
         };
-        let custom = MaskSchema::custom("fallible", fallible.clone(), fallible)?;
+        let custom = Mask::custom("fallible", fallible.clone(), fallible)?;
         let uuid = Uuid::parse("01234567-89ab-7cde-8fab-0123456789ab")?;
-        let good = crate::public_mask_schema();
-        let writer = Codec::new(CodecOptions::new(crate::public_mask_schema()))?;
+        let good = crate::public_mask();
+        let writer = Codec::new(CodecOptions::new(crate::public_mask()))?;
         let slug = writer.encode_uuid(uuid)?;
         let fallback = Codec::new(CodecOptions {
             previous_masks: vec![good.clone()],
@@ -151,9 +150,9 @@ mod tests {
 /// Codec construction options. Existing output stays base64url unless explicitly changed.
 pub struct CodecOptions {
     /// Current write key; decoding tries this before previous keys.
-    pub mask: MaskSchema,
+    pub mask: Mask,
     /// Older read keys, in caller-specified order. No keys are added implicitly.
-    pub previous_masks: Vec<MaskSchema>,
+    pub previous_masks: Vec<Mask>,
     /// Alphabet used by masked output and sentinel presentation.
     pub slug_alphabet: Alphabet,
     /// Reserved identities; an empty list disables sentinels.
@@ -162,7 +161,7 @@ pub struct CodecOptions {
 
 impl CodecOptions {
     /// Start codec configuration from an explicitly selected current mask.
-    pub fn new(mask: MaskSchema) -> Self {
+    pub fn new(mask: Mask) -> Self {
         Self {
             mask,
             previous_masks: Vec::new(),
@@ -174,7 +173,7 @@ impl CodecOptions {
 
 /// Immutable keys and precomputed sentinels. Generation state is independently owned.
 pub struct Codec {
-    schemas: Vec<MaskSchema>,
+    masks: Vec<Mask>,
     sentinels: Vec<Sentinel>,
     reserved: Vec<(String, Uuid)>,
     masked: Alphabet,
@@ -198,10 +197,10 @@ impl Codec {
             reserved.push((uuid.slug(Alphabet::Base32Hex), uuid));
             sentinels.push(Sentinel { name, uuid, slug });
         }
-        let mut schemas = vec![options.mask];
-        schemas.extend(options.previous_masks);
+        let mut masks = vec![options.mask];
+        masks.extend(options.previous_masks);
         Ok(Self {
-            schemas,
+            masks,
             sentinels,
             reserved,
             masked: options.slug_alphabet,
@@ -226,7 +225,7 @@ impl Codec {
         if let Some(sentinel) = self.sentinels.iter().find(|entry| entry.uuid == uuid) {
             return Ok(sentinel.slug.clone());
         }
-        let (bytes, tail) = crate::mask::mask_bytes(uuid.as_bytes(), &self.schemas[0])?;
+        let (bytes, tail) = crate::payload::mask_bytes(uuid.as_bytes(), &self.masks[0])?;
         // Raw sentinel padding is zero, so a nonzero tag cannot collide with an old spelling.
         if self.masked == Alphabet::Base64Url || (tail == 0 && !self.reserved.is_empty()) {
             let base64 = Alphabet::Base64Url.encode_tail(&bytes, tail, 4)?;
@@ -251,9 +250,9 @@ impl Codec {
     }
 
     fn decode_masked(&self, slug: &str) -> Result<Uuid, Error> {
-        let (bytes, tail) = crate::mask::normalize(slug)?;
-        for schema in &self.schemas {
-            match crate::mask::candidate(bytes, tail, schema) {
+        let (bytes, tail) = crate::payload::normalize(slug)?;
+        for mask in &self.masks {
+            match crate::payload::candidate(bytes, tail, mask) {
                 Ok(Some(uuid)) => return Ok(Uuid::from_bytes(uuid)),
                 Ok(None) => {}
                 Err(error) => return Err(error),
@@ -404,8 +403,8 @@ impl MigrationDecoder<'_> {
             return Ok(());
         }
         if current && !base32_direct {
-            for schema in &self.codec.schemas {
-                if let Some(value) = crate::mask::candidate(bytes, tail, schema)? {
+            for mask in &self.codec.masks {
+                if let Some(value) = crate::payload::candidate(bytes, tail, mask)? {
                     let uuid = Uuid::from_bytes(value);
                     if stop(uuid) {
                         return Ok(());

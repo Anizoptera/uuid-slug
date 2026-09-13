@@ -187,12 +187,9 @@ pub fn evaluate(input: &str) -> Result<String, wasm_bindgen::JsValue> {
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub struct Derivation {
     future: std::pin::Pin<
-        Box<
-            dyn std::future::Future<Output = Result<uuid_slug::MaskSchema, uuid_slug::Error>>
-                + Send,
-        >,
+        Box<dyn std::future::Future<Output = Result<uuid_slug::Mask, uuid_slug::Error>> + Send>,
     >,
-    cancellation: uuid_slug::schema::Cancellation,
+    cancellation: uuid_slug::mask::Cancellation,
     uuid: uuid_slug::Uuid,
 }
 
@@ -207,9 +204,9 @@ impl Derivation {
             .map_err(|error| wasm_bindgen::JsValue::from_str(error.code().as_str()))?;
         uuid.timestamp()
             .map_err(|error| wasm_bindgen::JsValue::from_str(error.code().as_str()))?;
-        let cancellation = uuid_slug::schema::Cancellation::default();
+        let cancellation = uuid_slug::mask::Cancellation::default();
         Ok(Self {
-            future: Box::pin(uuid_slug::create_mask_schema_async(
+            future: Box::pin(uuid_slug::create_mask_async(
                 seed,
                 iterations,
                 "browser",

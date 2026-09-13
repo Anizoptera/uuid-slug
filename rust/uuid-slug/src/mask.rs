@@ -1,125 +1,311 @@
-//! Store a fixed 16-bit check beside UUIDv7 content without losing timestamp or random bits.
-use crate::{Error, ErrorCode, alphabet::Alphabet, schema::MaskSchema, uuid::utf16_len};
+//! Derive immutable masking keys; issued identifiers fix the derivation constants and round count.
 
-fn mix32(mut value: u32) -> u32 {
-    value ^= value >> 16;
-    value = value.wrapping_mul(0x7feb_352d);
-    value ^= value >> 15;
-    value = value.wrapping_mul(0x846c_a68b);
-    value ^ (value >> 16)
+use crate::{
+    Error, ErrorCode,
+    siphash::{HashState, hash_bytes, hash_words, tail_word},
+};
+use std::{
+    fmt,
+    future::Future,
+    pin::Pin,
+    sync::{
+        Arc, LazyLock,
+        atomic::{AtomicBool, Ordering},
+    },
+    task::{Context, Poll},
+};
+
+// Changing these keys, four rounds, or word indices changes every issued identifier.
+const CHAIN_A: [u32; 2] = [0x6469_7575, 0x4167_6c73];
+const CHAIN_B: [u32; 2] = [0x6469_7575, 0x4267_6c73];
+const PUBLIC_SEED: &[u8] = b"anizoptera.uuid-slug.default-mask.v1";
+#[derive(Clone, Copy)]
+enum Direction {
+    Mask,
+    Unmask,
 }
 
-fn tag(bytes: &[u8; 16]) -> u16 {
-    let mut acc = 0;
-    for chunk in bytes.as_chunks::<4>().0 {
-        acc = mix32(acc ^ u32::from_be_bytes(*chunk));
-    }
-    (acc >> 16) as u16
+type Mixer = dyn Fn([u8; 16], Direction) -> Result<[u8; 16], Error> + Send + Sync;
+
+#[derive(Clone)]
+enum Implementation {
+    Feistel([u32; 8]),
+    Custom(Arc<Mixer>),
 }
 
-/// Mix once before formatting or checking reserved output spellings in either alphabet.
-pub(crate) fn mask_bytes(raw: &[u8; 16], schema: &MaskSchema) -> Result<([u8; 16], u8), Error> {
-    if raw[6] >> 4 != 7 || raw[8] >> 6 != 2 {
-        return Err(Error::new(ErrorCode::InvalidUuidVersion));
-    }
-    if raw[0] > 3 {
-        return Err(Error::new(ErrorCode::InvalidTimestamp));
-    }
-    let check = tag(raw);
-    let inner = check >> 4;
-    let mut tagged = *raw;
-    tagged[6] = ((inner as u8 & 15) << 4) | (raw[6] & 15);
-    tagged[8] = ((inner as u8 & 48) << 2) | (raw[8] & 63);
-    tagged[0] = (((inner >> 6) as u8 & 63) << 2) | (raw[0] & 3);
-    Ok((schema.mask(tagged)?, (check & 15) as u8))
+/// A keyed reversible block transform; it provides obfuscation, not authenticated encryption.
+#[derive(Clone)]
+pub struct Mask {
+    label: String,
+    implementation: Implementation,
 }
 
-/// Parse text once before trying keys; canonical padding is checked in either alphabet.
-pub(crate) fn normalize(slug: &str) -> Result<([u8; 16], u8), Error> {
-    let alphabet = if utf16_len(slug) == 27 {
-        Alphabet::Base32Hex
+impl fmt::Debug for Mask {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Debug must not disclose keys captured by either implementation.
+        f.debug_struct("Mask")
+            .field("label", &self.label)
+            .finish_non_exhaustive()
+    }
+}
+
+impl Mask {
+    /// Mask labels are diagnostic metadata, not wire-format markers.
+    pub fn label(&self) -> &str {
+        &self.label
+    }
+
+    /// Build a fallible custom permutation and reject failures on representative inverse probes.
+    /// Input and output are owned arrays: callbacks cannot retain aliases to another key's input.
+    /// The caller must supply an inverse for every block; finite probes cannot prove that property.
+    pub fn custom(
+        label: impl Into<String>,
+        mask: impl Fn([u8; 16]) -> Result<[u8; 16], Error> + Send + Sync + 'static,
+        unmask: impl Fn([u8; 16]) -> Result<[u8; 16], Error> + Send + Sync + 'static,
+    ) -> Result<Self, Error> {
+        let built = Self {
+            label: label.into(),
+            implementation: Implementation::Custom(Arc::new(
+                move |input, direction| match direction {
+                    Direction::Mask => mask(input),
+                    Direction::Unmask => unmask(input),
+                },
+            )),
+        };
+        for probe in [[0; 16], std::array::from_fn(|index| (index * 17) as u8)] {
+            if built.unmask(built.mask(probe)?)? != probe {
+                return Err(Error::new(ErrorCode::InvalidMask));
+            }
+        }
+        Ok(built)
+    }
+
+    pub(crate) fn mask(&self, input: [u8; 16]) -> Result<[u8; 16], Error> {
+        self.transform(input, Direction::Mask)
+    }
+
+    pub(crate) fn unmask(&self, input: [u8; 16]) -> Result<[u8; 16], Error> {
+        self.transform(input, Direction::Unmask)
+    }
+
+    fn transform(&self, input: [u8; 16], direction: Direction) -> Result<[u8; 16], Error> {
+        match &self.implementation {
+            Implementation::Feistel(keys) => Ok(feistel(input, keys, direction)),
+            Implementation::Custom(mix) => mix(input, direction)
+                .map_err(|cause| Error::new(ErrorCode::InvalidMask).with_source(cause)),
+        }
+    }
+}
+
+/// Return the published mask for examples and wire fixtures; it conceals nothing from users.
+pub fn public_mask() -> Mask {
+    static KEYS: LazyLock<[u32; 8]> = LazyLock::new(|| derive(PUBLIC_SEED, 1));
+    from_keys("default".into(), *KEYS)
+}
+
+fn validate(seed: &[u8], iterations: u32) -> Result<(), Error> {
+    if seed.len() < 16 || !(1..=1 << 24).contains(&iterations) {
+        return Err(Error::new(ErrorCode::InvalidMask));
+    }
+    Ok(())
+}
+
+/// Derive a mask from exact seed bytes; pass `text.as_bytes()` for TypeScript UTF-8 string parity.
+/// Keep the same iteration count when reading issued IDs: it is key material, not a tuning hint.
+pub fn create_mask(seed: &[u8], iterations: u32, label: &str) -> Result<Mask, Error> {
+    validate(seed, iterations)?;
+    Ok(from_keys(label.into(), derive(seed, iterations)))
+}
+
+fn derive(seed: &[u8], iterations: u32) -> [u32; 8] {
+    let mut a = CHAIN_A;
+    let mut b = CHAIN_B;
+    for _ in 0..iterations {
+        a = hash_bytes(a, seed);
+    }
+    for _ in 0..iterations {
+        b = hash_bytes(b, seed);
+    }
+    expand(a, b)
+}
+
+fn expand(a: [u32; 2], b: [u32; 2]) -> [u32; 8] {
+    let mut keys = [0; 8];
+    for word in (0..8).step_by(2) {
+        let aa = hash_words(a, &[word as u32]);
+        let bb = hash_words(b, &[word as u32]);
+        keys[word] = aa[0] ^ bb[0];
+        keys[word + 1] = aa[1] ^ bb[1];
+    }
+    keys
+}
+
+fn from_keys(label: String, keys: [u32; 8]) -> Mask {
+    Mask {
+        label,
+        implementation: Implementation::Feistel(keys),
+    }
+}
+
+fn feistel(bytes: [u8; 16], keys: &[u32; 8], direction: Direction) -> [u8; 16] {
+    let mut words = [0; 4];
+    for (word, bytes) in words.iter_mut().zip(bytes.as_chunks::<4>().0) {
+        *word = u32::from_be_bytes(*bytes);
+    }
+    let [mut l0, mut l1, mut r0, mut r1] = words;
+    for round in 0..4 {
+        let index = match direction {
+            Direction::Mask => round,
+            Direction::Unmask => 3 - round,
+        } * 2;
+        let [f0, f1] = hash_words([keys[index], keys[index + 1]], &[r0, r1]);
+        (l0, l1, r0, r1) = (r0, r1, l0 ^ f0, l1 ^ f1);
+    }
+    let mut out = [0; 16];
+    for (chunk, word) in out.as_chunks_mut::<4>().0.iter_mut().zip([r0, r1, l0, l1]) {
+        chunk.copy_from_slice(&word.to_be_bytes());
+    }
+    out
+}
+
+/// Shared cancellation for cooperative derivation; dropping the future also stops all work.
+#[derive(Clone, Default, Debug)]
+pub struct Cancellation(Arc<AtomicBool>);
+impl Cancellation {
+    /// Stop computation at its next bounded checkpoint.
+    pub fn cancel(&self) {
+        self.0.store(true, Ordering::Relaxed);
+    }
+    /// Observe whether cancellation has been requested.
+    pub fn is_cancelled(&self) -> bool {
+        self.0.load(Ordering::Relaxed)
+    }
+}
+
+/// Runtime-independent derivation with bounded absorption per poll and no background tasks.
+/// An executor must yield fairly between polls; browser adapters must schedule host tasks.
+struct MaskDerivation {
+    seed: Vec<u8>,
+    label: String,
+    iterations: u32,
+    cancellation: Cancellation,
+    chains: [[u32; 2]; 2],
+    chain: usize,
+    iteration: u32,
+    cursor: usize,
+    state: HashState,
+    failure: Option<Error>,
+    finished: bool,
+}
+
+/// Capture options and seed bytes now, before the returned future is first polled.
+/// Allocation and this input snapshot are outside the bounded computation slice.
+pub fn create_mask_async(
+    seed: &[u8],
+    iterations: u32,
+    label: &str,
+    cancellation: Cancellation,
+) -> impl Future<Output = Result<Mask, Error>> + Send + use<> {
+    let failure = if cancellation.is_cancelled() {
+        Some(Error::new(ErrorCode::Aborted))
     } else {
-        Alphabet::Base64Url
+        validate(seed, iterations).err()
     };
-    let mut mixed = [0; 16];
-    let outer = alphabet.decode_into(slug, &mut mixed, 4)?;
-    Ok((mixed, outer))
+    MaskDerivation {
+        seed: if failure.is_none() {
+            seed.to_vec()
+        } else {
+            Vec::new()
+        },
+        label: label.into(),
+        iterations,
+        cancellation,
+        chains: [CHAIN_A, CHAIN_B],
+        chain: 0,
+        iteration: 0,
+        cursor: 0,
+        state: HashState::new(CHAIN_A),
+        failure,
+        finished: false,
+    }
 }
 
-/// A passing check yields a candidate, never proof of issuance; wrong keys return `None`.
-/// Owned block copies prevent one custom callback from changing another key's ciphertext.
-pub(crate) fn candidate(
-    mixed: [u8; 16],
-    outer: u8,
-    schema: &MaskSchema,
-) -> Result<Option<[u8; 16]>, Error> {
-    let mut raw = schema.unmask(mixed)?;
-    let inner = (raw[6] >> 4) as u16 | ((raw[8] >> 6) as u16) << 4 | ((raw[0] >> 2) as u16) << 6;
-    raw[6] = (raw[6] & 15) | 0x70;
-    raw[8] = (raw[8] & 63) | 0x80;
-    raw[0] &= 3;
-    Ok((tag(&raw) == (inner << 4) | outer as u16).then_some(raw))
+impl Future for MaskDerivation {
+    type Output = Result<Mask, Error>;
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let this = self.get_mut();
+        if this.cancellation.is_cancelled() {
+            this.finished = true;
+            return Poll::Ready(Err(Error::new(ErrorCode::Aborted)));
+        }
+        if let Some(failure) = this.failure.take() {
+            this.finished = true;
+            return Poll::Ready(Err(failure));
+        }
+        if this.finished {
+            return Poll::Ready(Err(Error::new(ErrorCode::InvalidMask)));
+        }
+        // Budget includes finalization, so tiny seeds with many iterations cannot monopolize a poll.
+        for _ in 0..256 {
+            if this.cursor + 4 <= this.seed.len() {
+                let bytes = &this.seed[this.cursor..this.cursor + 4];
+                this.state
+                    .absorb(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]));
+                this.cursor += 4;
+                continue;
+            }
+            this.chains[this.chain] = this
+                .state
+                .finish(tail_word(&this.seed[this.cursor..]), this.seed.len());
+            this.iteration += 1;
+            this.cursor = 0;
+            if this.iteration == this.iterations {
+                this.chain += 1;
+                this.iteration = 0;
+                if this.chain == 2 {
+                    this.finished = true;
+                    return Poll::Ready(Ok(from_keys(
+                        std::mem::take(&mut this.label),
+                        expand(this.chains[0], this.chains[1]),
+                    )));
+                }
+            }
+            this.state = HashState::new(this.chains[this.chain]);
+        }
+        cx.waker().wake_by_ref();
+        Poll::Pending
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::schema::create_mask_schema;
     #[test]
-    fn retained_wire_vectors_and_safe_spelling_preserve_all_check_bits() {
-        let fixture: serde_json::Value =
-            serde_json::from_str(include_str!("../tests/fixtures/fixtures-wire-format.json"))
+    fn cooperative_derivation_matches_direct_work_across_block_and_iteration_boundaries() {
+        for (length, iterations) in [(16, 1), (17, 513), (1023, 2), (1024, 2), (16385, 3)] {
+            let mut seed: Vec<u8> = (0..length).map(|index| index as u8).collect();
+            let expected = create_mask(&seed, iterations, "probe")
+                .unwrap()
+                .mask([19; 16])
                 .unwrap();
-        let custom = MaskSchema::custom(
-            "custom-mix",
-            |input| {
-                let mut out = [0; 16];
-                for (index, byte) in out.iter_mut().enumerate() {
-                    let target = (index * 5 + 3) % 16;
-                    *byte = input[target] ^ (index * 17) as u8;
+            let mut future = create_mask_async(&seed, iterations, "probe", Cancellation::default());
+            seed.fill(0); // A lazy borrow would now derive a different key.
+            let mut cx = Context::from_waker(std::task::Waker::noop());
+            let actual = loop {
+                if let Poll::Ready(result) = Pin::new(&mut future).poll(&mut cx) {
+                    break result.unwrap();
                 }
-                Ok(out)
-            },
-            |input| {
-                let mut out = [0; 16];
-                for (index, byte) in input.into_iter().enumerate() {
-                    let target = (index * 5 + 3) % 16;
-                    out[target] = byte ^ (index * 17) as u8;
-                }
-                Ok(out)
-            },
-        )
-        .unwrap();
-        let seeded = create_mask_schema(b"golden-vector-seed-v3", 1, "seeded-v2").unwrap();
-        let default = crate::public_mask_schema();
-        for case in fixture.as_array().unwrap() {
-            // Codec-level sentinel bypass is deliberately not exercised by this block-level test.
-            if case["uuid"] == "00000000-0000-7000-8000-000000000000" {
-                continue;
-            }
-            let schema = match case["schema"].as_str().unwrap() {
-                "default" => &default,
-                "custom-mix" => &custom,
-                _ => &seeded,
             };
-            let mut raw = [0; 16];
-            Alphabet::Base64Url
-                .decode_into(case["direct"].as_str().unwrap(), &mut raw, 0)
-                .unwrap();
-            let (mixed, tail) = mask_bytes(&raw, schema).unwrap();
-            assert_eq!(
-                Alphabet::Base64Url.encode_tail(&mixed, tail, 4).unwrap(),
-                case["masked"].as_str().unwrap()
-            );
-            let safe = Alphabet::Base32Hex.encode_tail(&mixed, tail, 4).unwrap();
-            assert_eq!(safe.len(), 27);
-            let (parsed, tag) = normalize(&safe).unwrap();
-            assert_eq!(candidate(parsed, tag, schema).unwrap(), Some(raw));
-            for different in 0..16 {
-                if different != tail {
-                    assert!(candidate(parsed, different, schema).unwrap().is_none());
-                }
-            }
+            assert_eq!(actual.mask([19; 16]).unwrap(), expected);
         }
+        let cancellation = Cancellation::default();
+        let mut future = create_mask_async(&[3; 32], 4096, "cancel", cancellation.clone());
+        let mut cx = Context::from_waker(std::task::Waker::noop());
+        assert!(Pin::new(&mut future).poll(&mut cx).is_pending());
+        cancellation.cancel();
+        assert!(matches!(
+            Pin::new(&mut future).poll(&mut cx),
+            Poll::Ready(Err(error)) if error.code() == ErrorCode::Aborted
+        ));
     }
 }

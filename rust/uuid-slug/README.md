@@ -6,14 +6,14 @@ reversible masking and 27-character lowercase masked filenames.
 Install the crate from crates.io or this repository.
 
 ```rust
-use uuid_slug::{Alphabet, Codec, CodecOptions, Uuid, create_mask_schema};
+use uuid_slug::{Alphabet, Codec, CodecOptions, Uuid, create_mask};
 
 # fn main() -> Result<(), uuid_slug::Error> {
 let uuid = Uuid::parse("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")?;
 let filename = uuid.slug(Alphabet::Base32Hex);
 assert_eq!(Uuid::parse_slug(&filename)?, uuid);
 
-let mask = create_mask_schema(b"replace-with-your-own-secret-seed", 1, "current")?;
+let mask = create_mask(b"replace-with-your-own-secret-seed", 1, "current")?;
 let codec = Codec::new(CodecOptions {
     slug_alphabet: Alphabet::Base32Hex,
     ..CodecOptions::new(mask)
@@ -32,7 +32,7 @@ Every decoder accepts every value that a supported matching encoder can produce.
 Masking supports UUIDv7 only. It replaces the recognizable UUIDv7 layout, including its timestamp,
 with a keyed reversible payload. It is obfuscation, not authentication or encryption for secrets.
 Its 16-bit check can accept an unissued UUID; look up decoded candidates in your own store. Each
-configured key adds a possible candidate. Pass `public_mask_schema()` explicitly only for examples
+configured key adds a possible candidate. Pass `public_mask()` explicitly only for examples
 and wire fixtures because its seed is public. Keep your private seed and iteration count to read issued IDs.
 Masking accepts UUIDv7 timestamps below 2^42 milliseconds; direct slugs have no such restriction.
 
@@ -42,11 +42,11 @@ switching writers. A rollback must retain those readers or it can strand newly i
 Here, `stored` is an existing slug written with the previous key.
 
 ```rust
-use uuid_slug::{Codec, CodecOptions, MigrationOptions, create_mask_schema};
+use uuid_slug::{Codec, CodecOptions, MigrationOptions, create_mask};
 
 # fn main() -> Result<(), uuid_slug::Error> {
-let old_key = create_mask_schema(b"previous-private-seed", 1, "previous")?;
-let new_key = create_mask_schema(b"replacement-private-seed", 1, "current")?;
+let old_key = create_mask(b"previous-private-seed", 1, "previous")?;
+let new_key = create_mask(b"replacement-private-seed", 1, "current")?;
 # let uuid = uuid_slug::Uuid::parse("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")?;
 # let stored = Codec::new(CodecOptions::new(old_key.clone()))?.encode_uuid(uuid)?;
 let reader = Codec::new(CodecOptions {
@@ -78,7 +78,7 @@ spelling. Within-millisecond ordering is not a cross-language guarantee. IDs are
 
 Default feature `os-rng` provides platform entropy. Disable default features for pure conversion,
 masking, or caller-supplied entropy. Browser generation additionally requires `wasm-js`.
-`schema::create_mask_schema_async` returns an opaque, cancelable, bounded-work future without an
+`mask::create_mask_async` returns an opaque, cancelable, bounded-work future without an
 executor dependency; its executor must schedule unrelated host tasks between polls. The concrete
 derivation state is private so scheduling internals do not become caller obligations.
 
