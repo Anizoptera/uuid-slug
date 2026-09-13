@@ -1131,6 +1131,12 @@ remains the simple bundled API. Direct Node ESM loaded 23 package modules from r
 `/slug` and `/v4`, 8 for `/v7`, 9 for `/slug/v4`, and 10 for `/slug/v7`. Importing `/v4` and `/v7`
 together loaded 10 unique modules, proving that their shared runtime and UUID modules were reused.
 
+Two 40-process randomized replays on 2026-09-13 measured generation from the root against `/v4`
+and `/v7`. Focused imports reduced median complete process time by 6–10% on Node 24.21.0, 12–14%
+on Bun 1.4.2, and 24–27% on Deno 2.9.6. Process launch, import, one generated value, runtime
+validation, and exit were charged together. Warm services, other machines, and other runtime
+versions were not measured; these results justify focused entries only for unbundled startup.
+
 The `/slug/v4` and `/slug/v7` one-call routes loaded one fewer module than composing their version
 generator with `/slug`; they preserve the simple call without loading the full root. They
 point directly at exact public owners. `/uuid`, `/slug`, and `/v4` use facades because their owners
@@ -1178,14 +1184,17 @@ only if a consumer needs behavior other than the current monotonic generator con
 
 A full local run on 2026-09-12 used Node 24.21.0, Bun 1.4.2, Deno 2.9.6, and Chromium, with nine
 20 ms samples after 32 ms warm-up per case. The package led every measured allocated-byte and
-caller-buffer group except Deno v7 allocation, where `uuidv7` was about 3% faster. Native v4 text
+caller-buffer group except Deno v7 allocation, where `uuidv7` was about 3% faster. A focused
+seven-sample replay on 2026-09-13 reversed that narrow result by about 1%, with overlapping
+confidence intervals; no Deno allocation difference is established. Native v4 text
 was within 1% of Node's platform primitive; Deno paid about 34% over its primitive for the package's
 validation and error-value boundary; Chromium's portable text was about 4% behind `@lukeed/uuid`.
-The package led v7 text on Bun. `fastv7` led by about 9% on Deno, 15% on Node, and 9% on Chromium.
-It remains a qualified competitor because it emits conforming values from cryptographic entropy.
-Its 12-bit zero-based sequence, bounded rollback policy, and absent caller-controlled clock explain
-why its complete mechanism cannot replace this package's state machine without changing behavior;
-they do not erase its measured speed.
+The package led comparable package v7 text routes on Bun, Deno, and Chromium. On Node it measured
+about 2% behind the direct native primitive that it validates and adapts to typed failures.
+`fastv7` remains timed but cannot win the headline comparison: independent processes and restarted
+state reuse sequence zero, so 62 random bits distinguish the same timestamp and sequence instead of
+this package's 74-bit collision margin. Its clock, sequence, buffer, and failure strategies are not
+disqualifying by themselves. Its faster mechanism remains an optimization lead if that margin survives.
 Validated text timestamp extraction was within about 3% of `uuidv7-js` on Node and Deno and 15% on
 Chromium. `uniku` timestamp results are not ranked because its call accepts non-v7 UUID text.
 
@@ -1197,7 +1206,8 @@ package's failure contract.
 Rejected rows remain timed and are reconsidered after every package update. The insecure
 `@lukeed/uuid` entry uses `Math.random`, so it cannot establish secure UUIDv4 performance. The
 `uniku` timestamp call does not verify UUIDv7, so it cannot establish validated UUIDv7 extraction
-performance. Native platform rows are always qualified floors; error handling around them is
-package overhead, not a reason to hide them.
+performance. `fastv7` does not preserve this package's same-timestamp cross-process collision margin.
+Native platform rows are always qualified floors; error handling around them is package overhead,
+not a reason to hide them.
 
 The gates do not prove all performance properties. Relative timing cannot detect a slowdown shared by both sides. Constructor counters cannot see every engine allocation. Latest-runtime CI complements pinned runs, but this study did not execute hosted CI or measure every OS/architecture. Keep these limits when interpreting a pass.

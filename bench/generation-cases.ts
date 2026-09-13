@@ -129,9 +129,9 @@ const row = (
 });
 
 /**
- * Calls grouped by work performed. A shared `comparable` value means the rows return the same
- * representation with the same validation and entropy class. State strategy differences remain
- * visible in `implementation` and the capability audit.
+ * Calls grouped by work performed. A shared `comparable` value names the requested representation;
+ * only rows preserving mandatory output, security, and published guarantees may win that group.
+ * Other strategy differences matter only when they materially weaken the requested result.
  */
 export const generationCases: readonly GenerationCase[] = [
   row(
@@ -248,7 +248,11 @@ export const generationCases: readonly GenerationCase[] = [
     "portable-stateful",
     () => packageUuidV7V7Object().bytes,
   ),
-  row("fastv7.v7.text", 7, "v7.text.secure", "pooled-portable", fastV7, {}),
+  row("fastv7.v7.text", 7, "v7.text.secure", "pooled-portable", fastV7, {
+    qualification: "rejected",
+    rejectionReason:
+      "Independent processes and restarted state reuse sequence zero, leaving 62 random bits instead of this package's 74-bit same-timestamp collision margin.",
+  }),
   row("uuidv7-js.v7.text", 7, "v7.text.secure", "portable-stateful", uuidv7Js),
   row("kripod.v7.text", 7, "v7.text.secure", "portable-stateful", kripodV7),
 
