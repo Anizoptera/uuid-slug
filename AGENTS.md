@@ -95,6 +95,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   source-owned `PURE` and `NO_SIDE_EFFECTS` annotation.
 - Public docs use caller-facing tokens such as `"base32hex"`, not internal symbol names.
   Documentation-alignment gates are ruled out; test the API behavior instead.
+- Keep repository-only docs, benchmarks, and Rust sources out of the npm tarball when the package
+  does not need them at runtime; README links do not require shipping their targets.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Never add a throwing
   convenience API. Package-owned interfaces carry failures as values; adapt and contain
   exception-based dependencies at their boundary.
