@@ -172,6 +172,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   verification code remain distinct without a second naming convention.
 - Keep routine verification in `.github/workflows/check.yml`. Add another workflow only when it
   needs a different trigger or permission boundary.
+- Execute packed browser code and both WebAssembly profiles in every browser engine selected by the
+  workflow. Build once per profile; do not multiply equivalent compilation by browser count.
 - Gate every runtime-dependent change in both Node Vitest and Bun tests, including branches
   outside `src/runtime/` that use optional capabilities. Neither runner covers the other's
   adapter. Share entropy cases in `__test__/entropy-probe.ts`.

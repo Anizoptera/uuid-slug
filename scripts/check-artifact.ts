@@ -3,6 +3,7 @@ import { isBuiltin } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { command } from "./command";
+import { browserEngines } from "./browser-engines";
 import { formatConsumerGraph, inspectConsumerGraph } from "./consumer-graph";
 
 // Scan all shipped files: extensions must not hide machine paths or development material.
@@ -300,6 +301,11 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       runner,
       'import * as api from "@anizoptera/uuid-slug";\nimport * as foreign from "./foreign/package/dist/index.js";\nimport { probeConsumer } from "./probe.mjs";\nawait probeConsumer(api);\nconst mask = foreign.createUuidV7Mask({ seed: "same-version-foreign-schema" });\nif (mask instanceof Error) throw mask;\nconst codec = api.createUuidV7SlugCodec({ mask });\nif (codec instanceof Error) throw codec;\nconst uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";\nconst slug = codec.encodeUuid(uuid);\nif (slug instanceof Error) throw slug;\nif (codec.decodeSlug(slug) !== uuid) throw new Error("A same-version schema from another loaded copy did not round-trip.");\n',
     );
+    const builtRunner = path.join(root, "built-consumer.mjs");
+    await Bun.write(
+      builtRunner,
+      'import * as api from "./package/dist/index.js";\nimport { probeConsumer } from "./probe.mjs";\nawait probeConsumer(api);\n',
+    );
     const subpathRunner = path.join(root, "subpaths.mjs");
     await Bun.write(
       subpathRunner,
@@ -314,6 +320,7 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       command("node", [path.join(project, "node_modules/typescript/bin/tsc"), "-p", root], project),
       command("node", [runner], root),
       command("bun", [runner], root),
+      command("bun", [builtRunner], root),
       command("node", [subpathRunner], root),
       command("bun", [subpathRunner], root),
       command(
@@ -335,16 +342,17 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       .map((result) => result.reason);
     if (failures.length) throw new AggregateError(failures, "Packed consumers failed.");
     if (web) {
-      const denoArgs = ["--node-modules-dir=manual", "--cached-only", "--allow-read", runner];
+      const denoOptions = ["--node-modules-dir=manual", "--cached-only", "--allow-read"];
       await Promise.all([
-        command("deno", ["run", ...denoArgs], root),
-        command("deno", ["run", "--conditions", "development", ...denoArgs], root),
+        command("deno", ["run", ...denoOptions, runner], root),
+        command("deno", ["run", "--conditions", "development", ...denoOptions, runner], root),
+        command("deno", ["run", ...denoOptions, builtRunner], root),
+        command("deno", ["run", ...denoOptions, subpathRunner], root),
       ]);
       const built = await Bun.build({ entrypoints: [runner], target: "browser" });
       const output = built.outputs[0];
       if (!built.success || !output)
         throw new AggregateError(built.logs, "Browser consumer compilation failed.");
-      const { chromium } = await import("playwright");
       const server = Bun.serve({
         port: 0,
         fetch: () =>
@@ -353,28 +361,31 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
           }),
       });
       try {
-        const browser = await chromium.launch({ headless: true });
-        try {
-          const page = await browser.newPage();
-          await page.goto(server.url.href);
-          await page.evaluate(
-            (code) => {
-              if (typeof globalThis.process !== "undefined")
-                throw new Error("Expected a real browser without process.");
-              // Await module completion, including any future asynchronous consumer assertions.
-              return import(URL.createObjectURL(new Blob([code], { type: "text/javascript" })));
-            },
-            await output.text(),
-          );
-        } finally {
-          await browser.close();
+        for (const [name, engine] of Object.entries(browserEngines)) {
+          const browser = await engine.launch({ headless: true });
+          try {
+            const page = await browser.newPage();
+            await page.goto(server.url.href);
+            await page.evaluate(
+              (code) => {
+                if (typeof globalThis.process !== "undefined")
+                  throw new Error("Expected a real browser without process.");
+                // Await module completion, including any future asynchronous consumer assertions.
+                return import(URL.createObjectURL(new Blob([code], { type: "text/javascript" })));
+              },
+              await output.text(),
+            );
+            console.log(`${name}: packed browser consumer passed`);
+          } finally {
+            await browser.close();
+          }
         }
       } finally {
         await server.stop(true);
       }
     }
     console.log(
-      `Validated ${path.basename(tarball)} through extracted package exports${web ? " on Node, Bun, Deno and Chromium" : " on Node and Bun"}.`,
+      `Validated ${path.basename(tarball)} through extracted package exports${web ? " on Node, Bun, Deno, Chromium, Firefox and WebKit" : " on Node and Bun"}.`,
     );
   } finally {
     await rm(root, { recursive: true, force: true });

@@ -158,8 +158,9 @@ payloads. Keep the Rust crate installable from this Git repository and crates.io
 Maintainer policy requires matching Rust/TypeScript versions and common CPU architecture support from the first
 Rust release, including WebAssembly. Preserve portable behavior under architecture-specific tuning.
 Support x86-64 and Arm64 on Linux, macOS and Windows with native execution; compile-check i686 and
-ARMv7 Linux, and execute `wasm32-unknown-unknown` in a browser. The check workflow owns the concrete
-runner labels and target triples so routine CI changes cannot make this contract stale.
+ARMv7 Linux, and execute `wasm32-unknown-unknown` in every browser engine selected by the check
+workflow. The workflow owns the concrete engines, runner labels, and target triples so this contract
+does not copy a volatile matrix.
 Build and test natively in GitHub CI from the first Rust increment; cross-compilation alone does
 not validate runtime behavior. Report any target lacking native execution rather than implying it ran.
 Rust may use a small set of justified dependencies. Compare contract fit, failure behavior,
@@ -172,7 +173,8 @@ doctests, and benchmark compilation with each distinct supported feature selecti
 locally executable combination and retain the full supported target matrix in CI. Report
 compile-only and unexecuted combinations explicitly; a configured CI job is not execution evidence.
 Use `bun run check:rust` for native profiles. Run `scripts/rust-wasm.ts` with
-`UUID_SLUG_RUST_PROFILE=debug` and `UUID_SLUG_RUST_PROFILE=release` for browser profiles.
+`UUID_SLUG_RUST_PROFILE=debug` and `UUID_SLUG_RUST_PROFILE=release`; each profile must execute the
+same browser-engine matrix.
 
 Verify TypeScript functionality on every supported Node major and on the latest Bun and Deno.
 Derive Node majors from the published release index and the package's engine floor; include the

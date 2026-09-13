@@ -237,7 +237,8 @@ applicable links:
 
 - declaration inference for current names and options, plus compiler rejection of removed ones;
 - direct behavior and each construction invariant or failure path in Node and Bun;
-- actual adapter selection in Deno and a browser when that path can differ;
+- actual adapter selection in Deno and every browser engine selected by the check workflow when that
+  path can differ;
 - packed export resolution and use from an extracted consumer;
 - shared TypeScript and Rust contract cases for cross-language behavior;
 - allocation, operation, and latency measurements for performance claims;

@@ -199,7 +199,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - if: matrix.profile == 'release'
         run: bun run build
-      - run: bunx playwright install --with-deps chromium
+      - run: bun scripts/browser-engines.ts
       - name: Install the matching wasm-bindgen CLI
         shell: bash
         run: |
@@ -228,6 +228,8 @@ jobs:
         with:
           node-version-file: .tool-versions
           package-manager-cache: false
+      - if: matrix.profile == 'release'
+        run: bun run bench:competitors:smoke
       - if: matrix.profile == 'release'
         run: bun run artifact:web
       - run: bun scripts/rust-wasm.ts

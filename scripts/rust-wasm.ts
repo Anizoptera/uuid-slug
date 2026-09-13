@@ -2,7 +2,7 @@
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { chromium } from "playwright";
+import { browserEngines } from "./browser-engines";
 import { compare, contractRequests, evaluate } from "./rust-conform";
 
 const profile = process.env.UUID_SLUG_RUST_PROFILE ?? "release";
@@ -101,190 +101,203 @@ try {
     },
   });
   try {
-    const browser = await chromium.launch({ headless: true });
-    try {
-      const requests = await contractRequests();
-      for (const failEntropy of [false, true]) {
-        const context = await browser.newContext();
-        try {
-          const page = await context.newPage();
-          page.setDefaultTimeout(30_000);
-          await page.goto(server.url.toString());
-          const observation = await bounded(
-            page.evaluate(
-              async ({ requests: inputs, failEntropy: rejectEntropy }) => {
-                const demand = (condition: boolean, message: string) => {
-                  if (!condition)
-                    throw new Error(
-                      `${rejectEntropy ? "Failed" : "Secure"} entropy context: ${message}`,
-                    );
-                };
-                let draws = 0;
-                const native = crypto.getRandomValues.bind(crypto);
-                Object.defineProperty(crypto, "getRandomValues", {
-                  value: (output: Uint8Array) => {
-                    draws++;
-                    if (rejectEntropy) {
-                      output.fill(0xaa, 0, Math.floor(output.length / 2));
-                      throw new Error("Deliberate partial host entropy failure");
-                    }
-                    return native(output);
-                  },
-                });
-                const moduleUrl = "/bridge.js";
-                const wasm = await import(moduleUrl);
-                await wasm.default();
-                const contracts = JSON.parse(wasm.evaluate(JSON.stringify(inputs)));
-                demand(draws === 0, "Deterministic contracts unexpectedly requested entropy");
-                const generated = [4, 7].map((uuidVersion) => {
-                  const before = draws;
-                  const outcomes = JSON.parse(
-                    wasm.evaluate(JSON.stringify([{ op: "hostGenerate", version: uuidVersion }])),
-                  );
-                  demand(
-                    draws > before,
-                    `UUIDv${uuidVersion} did not reach browser crypto.getRandomValues`,
-                  );
-                  demand(
-                    outcomes.length === 1,
-                    `UUIDv${uuidVersion} returned an incomplete result`,
-                  );
-                  return outcomes[0];
-                });
-                if (rejectEntropy)
-                  return {
-                    contracts,
-                    generated,
-                    draws,
-                    polls: 0,
-                    hostTasks: 0,
-                    longestPollMs: 0,
-                    derived: null,
+    for (const [browserName, browserEngine] of Object.entries(browserEngines)) {
+      const browser = await browserEngine.launch({ headless: true });
+      try {
+        const requests = await contractRequests();
+        for (const failEntropy of [false, true]) {
+          const context = await browser.newContext();
+          try {
+            const page = await context.newPage();
+            page.setDefaultTimeout(30_000);
+            await page.goto(server.url.toString());
+            const observation = await bounded(
+              page.evaluate(
+                async ({ requests: inputs, failEntropy: rejectEntropy }) => {
+                  const demand = (condition: boolean, message: string) => {
+                    if (!condition)
+                      throw new Error(
+                        `${rejectEntropy ? "Failed" : "Secure"} entropy context: ${message}`,
+                      );
                   };
-                const uuid = "018f1234-5678-7abc-9def-0123456789ab";
-                const seed = new TextEncoder().encode("browser-conformance-seed");
-                const aborted = new wasm.Derivation(seed, 4096, uuid);
-                try {
-                  aborted.cancel();
-                  let code: string | undefined;
-                  try {
-                    aborted.poll();
-                  } catch (error) {
-                    code = String(error);
-                  }
-                  demand(code === "aborted", "Abort before first poll did not report aborted");
-                } finally {
-                  aborted.free();
-                }
-                const midway = new wasm.Derivation(seed, 4096, uuid);
-                try {
-                  demand(
-                    midway.poll() === undefined,
-                    "Cancellation case completed before its first checkpoint",
-                  );
-                  midway.cancel();
-                  let code: string | undefined;
-                  try {
-                    midway.poll();
-                  } catch (error) {
-                    code = String(error);
-                  }
-                  demand(code === "aborted", "Mid-work cancellation did not report aborted");
-                } finally {
-                  midway.free();
-                }
-                const dropped = new wasm.Derivation(seed, 4096, uuid);
-                demand(dropped.poll() === undefined, "Drop case did not reach pending state");
-                dropped.free();
-                const pending = new wasm.Derivation(seed, 4096, uuid);
-                seed.fill(0); // The Rust constructor must already own the original seed.
-                const channel = new MessageChannel();
-                let hostTasks = 0;
-                let polls = 0;
-                let longestPollMs = 0;
-                const hostTask = () =>
-                  new Promise<void>((resolve) => {
-                    channel.port1.addEventListener(
-                      "message",
-                      () => {
-                        hostTasks++;
-                        resolve();
-                      },
-                      { once: true },
-                    );
-                    channel.port1.start();
-                    channel.port2.postMessage(null);
+                  let draws = 0;
+                  const native = crypto.getRandomValues.bind(crypto);
+                  Object.defineProperty(crypto, "getRandomValues", {
+                    value: (output: Uint8Array) => {
+                      draws++;
+                      if (rejectEntropy) {
+                        output.fill(0xaa, 0, Math.floor(output.length / 2));
+                        throw new Error("Deliberate partial host entropy failure");
+                      }
+                      return native(output);
+                    },
                   });
-                try {
-                  let derived: string | undefined;
-                  do {
-                    await hostTask();
-                    const start = performance.now();
-                    derived = pending.poll();
-                    longestPollMs = Math.max(longestPollMs, performance.now() - start);
-                    polls++;
-                  } while (derived === undefined);
-                  demand(
-                    polls > 1 && hostTasks === polls,
-                    "Derivation did not yield to real host tasks",
-                  );
-                  demand(longestPollMs <= 32, "A derivation poll blocked the browser beyond 32 ms");
-                  return { contracts, generated, draws, polls, hostTasks, longestPollMs, derived };
-                } finally {
-                  pending.free();
-                  channel.port1.close();
-                  channel.port2.close();
-                }
-              },
-              { requests, failEntropy },
-            ),
-          );
-          compare(requests, observation.contracts);
-          if (failEntropy)
-            deepStrictEqual(observation.generated, [
-              { error: "rng_unavailable" },
-              { error: "rng_unavailable" },
-            ]);
-          else {
-            strictEqual(observation.generated.length, 2);
-            const v4 = observation.generated[0].value as string;
-            const v7 = observation.generated[1].value as string;
-            if (!v4 || !v7) throw new Error("Host generation omitted a UUID");
-            deepStrictEqual(evaluate({ op: "guards", input: v4 }), {
-              value: [true, true, false, false, false, false],
-            });
-            deepStrictEqual(evaluate({ op: "guards", input: v7 }), {
-              value: [true, false, true, false, false, false],
-            });
-            deepStrictEqual(
-              { value: observation.derived },
-              evaluate({
-                op: "mask",
-                input: "018f1234-5678-7abc-9def-0123456789ab",
-                mask: { seed: "browser-conformance-seed", iterations: 4096 },
+                  const moduleUrl = "/bridge.js";
+                  const wasm = await import(moduleUrl);
+                  await wasm.default();
+                  const contracts = JSON.parse(wasm.evaluate(JSON.stringify(inputs)));
+                  demand(draws === 0, "Deterministic contracts unexpectedly requested entropy");
+                  const generated = [4, 7].map((uuidVersion) => {
+                    const before = draws;
+                    const outcomes = JSON.parse(
+                      wasm.evaluate(JSON.stringify([{ op: "hostGenerate", version: uuidVersion }])),
+                    );
+                    demand(
+                      draws > before,
+                      `UUIDv${uuidVersion} did not reach browser crypto.getRandomValues`,
+                    );
+                    demand(
+                      outcomes.length === 1,
+                      `UUIDv${uuidVersion} returned an incomplete result`,
+                    );
+                    return outcomes[0];
+                  });
+                  if (rejectEntropy)
+                    return {
+                      contracts,
+                      generated,
+                      draws,
+                      polls: 0,
+                      hostTasks: 0,
+                      longestPollMs: 0,
+                      derived: null,
+                    };
+                  const uuid = "018f1234-5678-7abc-9def-0123456789ab";
+                  const seed = new TextEncoder().encode("browser-conformance-seed");
+                  const aborted = new wasm.Derivation(seed, 4096, uuid);
+                  try {
+                    aborted.cancel();
+                    let code: string | undefined;
+                    try {
+                      aborted.poll();
+                    } catch (error) {
+                      code = String(error);
+                    }
+                    demand(code === "aborted", "Abort before first poll did not report aborted");
+                  } finally {
+                    aborted.free();
+                  }
+                  const midway = new wasm.Derivation(seed, 4096, uuid);
+                  try {
+                    demand(
+                      midway.poll() === undefined,
+                      "Cancellation case completed before its first checkpoint",
+                    );
+                    midway.cancel();
+                    let code: string | undefined;
+                    try {
+                      midway.poll();
+                    } catch (error) {
+                      code = String(error);
+                    }
+                    demand(code === "aborted", "Mid-work cancellation did not report aborted");
+                  } finally {
+                    midway.free();
+                  }
+                  const dropped = new wasm.Derivation(seed, 4096, uuid);
+                  demand(dropped.poll() === undefined, "Drop case did not reach pending state");
+                  dropped.free();
+                  const pending = new wasm.Derivation(seed, 4096, uuid);
+                  seed.fill(0); // The Rust constructor must already own the original seed.
+                  const channel = new MessageChannel();
+                  let hostTasks = 0;
+                  let polls = 0;
+                  let longestPollMs = 0;
+                  const hostTask = () =>
+                    new Promise<void>((resolve) => {
+                      channel.port1.addEventListener(
+                        "message",
+                        () => {
+                          hostTasks++;
+                          resolve();
+                        },
+                        { once: true },
+                      );
+                      channel.port1.start();
+                      channel.port2.postMessage(null);
+                    });
+                  try {
+                    let derived: string | undefined;
+                    do {
+                      await hostTask();
+                      const start = performance.now();
+                      derived = pending.poll();
+                      longestPollMs = Math.max(longestPollMs, performance.now() - start);
+                      polls++;
+                    } while (derived === undefined);
+                    demand(
+                      polls > 1 && hostTasks === polls,
+                      "Derivation did not yield to real host tasks",
+                    );
+                    demand(
+                      longestPollMs <= 32,
+                      "A derivation poll blocked the browser beyond 32 ms",
+                    );
+                    return {
+                      contracts,
+                      generated,
+                      draws,
+                      polls,
+                      hostTasks,
+                      longestPollMs,
+                      derived,
+                    };
+                  } finally {
+                    pending.free();
+                    channel.port1.close();
+                    channel.port2.close();
+                  }
+                },
+                { requests, failEntropy },
+              ),
+            );
+            compare(requests, observation.contracts);
+            if (failEntropy)
+              deepStrictEqual(observation.generated, [
+                { error: "rng_unavailable" },
+                { error: "rng_unavailable" },
+              ]);
+            else {
+              strictEqual(observation.generated.length, 2);
+              const v4 = observation.generated[0].value as string;
+              const v7 = observation.generated[1].value as string;
+              if (!v4 || !v7) throw new Error("Host generation omitted a UUID");
+              deepStrictEqual(evaluate({ op: "guards", input: v4 }), {
+                value: [true, true, false, false, false, false],
+              });
+              deepStrictEqual(evaluate({ op: "guards", input: v7 }), {
+                value: [true, false, true, false, false, false],
+              });
+              deepStrictEqual(
+                { value: observation.derived },
+                evaluate({
+                  op: "mask",
+                  input: "018f1234-5678-7abc-9def-0123456789ab",
+                  mask: { seed: "browser-conformance-seed", iterations: 4096 },
+                }),
+              );
+            }
+            console.log(
+              JSON.stringify({
+                adapter: `${browserName} Wasm`,
+                profile,
+                entropyFailure: failEntropy,
+                contracts: requests.length,
+                draws: observation.draws,
+                polls: observation.polls,
+                hostTasks: observation.hostTasks,
+                longestPollMs: observation.longestPollMs,
               }),
             );
+            if (observation.longestPollMs > 8)
+              console.warn("Wasm derivation poll exceeded the 8 ms warning budget");
+          } finally {
+            await context.close();
           }
-          console.log(
-            JSON.stringify({
-              adapter: "browser Wasm",
-              profile,
-              entropyFailure: failEntropy,
-              contracts: requests.length,
-              draws: observation.draws,
-              polls: observation.polls,
-              hostTasks: observation.hostTasks,
-              longestPollMs: observation.longestPollMs,
-            }),
-          );
-          if (observation.longestPollMs > 8)
-            console.warn("Wasm derivation poll exceeded the 8 ms warning budget");
-        } finally {
-          await context.close();
         }
+      } finally {
+        await browser.close();
       }
-    } finally {
-      await browser.close();
     }
   } finally {
     await server.stop(true);
