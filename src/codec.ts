@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { checkByteRange, isUuidSlugError, UuidSlugError } from "./errors";
-import { generateUuidV7Bytes as generateDefaultUuidV7Bytes } from "./v7-keyless";
-import { ownedUuidV7BytesToMaskedSlug, decodeMaskedSlug } from "./mask";
-import { createMigration } from "./migration";
-import { isMaskSchema } from "./schema-handle";
-import { createUuidV7Mask } from "./schema";
-import { validateTimestampBytes } from "./timestamp";
+import { checkByteRange, isUuidSlugError, UuidSlugError } from "./errors.ts";
+import { generateUuidV7Bytes as generateDefaultUuidV7Bytes } from "./v7-keyless.ts";
+import { ownedUuidV7BytesToMaskedSlug, decodeMaskedSlug } from "./mask.ts";
+import { createMigration } from "./migration.ts";
+import { isMaskSchema } from "./schema-handle.ts";
+import { createUuidV7Mask } from "./schema.ts";
+import { validateTimestampBytes } from "./timestamp.ts";
 import type {
   EnabledMigrationFormat,
   UuidV7Mask,
@@ -20,11 +20,11 @@ import type {
   UuidV7Bytes,
   UuidV7Sentinel,
   UuidV7String,
-} from "./types";
-import { resolveSlugAlphabet, bytesToSlug, extractUuidV7Timestamp } from "./slug";
-import { bytesToUuid, isUuidV7Bytes, uuidToBytes } from "./uuid";
-import type { UuidV7TimestampWindow, UuidV7SentinelConfig } from "./types";
-import type { SlugAlphabet } from "./slug";
+} from "./types.ts";
+import { resolveSlugAlphabet, bytesToSlug, extractUuidV7Timestamp } from "./slug.ts";
+import { bytesToUuid, isUuidV7Bytes, uuidToBytes } from "./uuid.ts";
+import type { UuidV7TimestampWindow, UuidV7SentinelConfig } from "./types.ts";
+import type { SlugAlphabet } from "./slug.ts";
 
 type EncodedSentinel = { bytes: Uint8Array; slug: SentinelUuidV7Slug };
 type EncodedSentinelIndex = {

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { UuidSlugError } from "./errors";
-import type { UuidV7String, UuidV7StringInput, UuidV7TimestampWindow } from "./types";
-import { isUuidV7Bytes, uuidTimestampFromBytesUnchecked, uuidToBytes } from "./uuid";
+import { UuidSlugError } from "./errors.ts";
+import type { UuidV7String, UuidV7StringInput, UuidV7TimestampWindow } from "./types.ts";
+import { isUuidV7Bytes, uuidTimestampFromBytesUnchecked, uuidToBytes } from "./uuid.ts";
 
 /** Decode before reading the reference time so validation performs one clock observation. */
 export function validateTimestampBytes(

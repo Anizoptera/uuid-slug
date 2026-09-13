@@ -8,15 +8,15 @@ import {
   fillRandomBytes,
   nativeOrFallback,
   UuidSlugError,
-} from "./errors";
-import type { UuidV4Bytes, UuidV4String } from "./types";
-import { bytesToUuid, isUuidV4String } from "./uuid";
+} from "./errors.ts";
+import type { UuidV4Bytes, UuidV4String } from "./types.ts";
+import { bytesToUuid, isUuidV4String } from "./uuid.ts";
 
-export { UUID_SLUG_ERROR_CODES, isUuidSlugError } from "./errors";
+export { UUID_SLUG_ERROR_CODES, isUuidSlugError } from "./errors.ts";
 export { UuidSlugError };
-export type { UuidSlugErrorCode } from "./errors";
-export type { UuidV4Bytes, UuidV4String } from "./types";
-export { isUuidV4Bytes, isUuidV4String } from "./uuid";
+export type { UuidSlugErrorCode } from "./errors.ts";
+export type { UuidV4Bytes, UuidV4String } from "./types.ts";
+export { isUuidV4Bytes, isUuidV4String } from "./uuid.ts";
 
 /**
  * Randomness is drawn into private storage before copying to caller storage. Web Crypto rejects

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-export { createUuidV7SlugCodec } from "./codec";
-export { validateUuidV7Timestamp } from "./timestamp";
-export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError } from "./errors";
+export { createUuidV7SlugCodec } from "./codec.ts";
+export { validateUuidV7Timestamp } from "./timestamp.ts";
+export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError } from "./errors.ts";
 /** Export the code type so consumers can write exhaustive handlers without copying its literals. */
-export type { UuidSlugErrorCode } from "./errors";
-export { UUID_V7_TEST_MASK, createUuidV7Mask, createUuidV7MaskAsync } from "./schema";
-export { createCustomUuidV7Mask } from "./schema-handle";
-export { UUID_SLUG_MIGRATION_FORMATS } from "./types";
+export type { UuidSlugErrorCode } from "./errors.ts";
+export { UUID_V7_TEST_MASK, createUuidV7Mask, createUuidV7MaskAsync } from "./schema.ts";
+export { createCustomUuidV7Mask } from "./schema-handle.ts";
+export { UUID_SLUG_MIGRATION_FORMATS } from "./types.ts";
 export type {
   AsyncUuidV7MaskOptions,
   CustomUuidV7MaskOptions,
@@ -34,7 +34,7 @@ export type {
   UuidV7SentinelConfig,
   UuidV7Slug,
   UuidV7String,
-} from "./types";
+} from "./types.ts";
 export {
   bytesToUuid,
   isUuidBytes,
@@ -44,7 +44,7 @@ export {
   isUuidV7String,
   isUuidString,
   uuidToBytes,
-} from "./uuid";
+} from "./uuid.ts";
 export {
   UUID_SLUG_ALPHABETS,
   bytesToSlug,
@@ -56,10 +56,10 @@ export {
   slugToUuid,
   uuidToSlug,
   validateUuidV7SlugTimestamp,
-} from "./slug";
-export type { SlugAlphabet } from "./slug";
-export { createUuidV7Generator } from "./keyless";
-export type { UuidV7GeneratorOptions } from "./keyless";
+} from "./slug.ts";
+export type { SlugAlphabet } from "./slug.ts";
+export { createUuidV7Generator } from "./keyless.ts";
+export type { UuidV7GeneratorOptions } from "./keyless.ts";
 
 /* Keyless operations stay module-level and avoid codec setup. Masking and sentinels stay on the
  * codec because their meaning depends on its seed and sentinel table. */
@@ -72,4 +72,4 @@ export {
   generateUuidV7Bytes,
   generateUuidV7BytesAt,
   generateUuidV7Slug,
-} from "./keyless";
+} from "./keyless.ts";

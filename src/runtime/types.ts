@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import type { UuidSlugError } from "../errors";
+import type { UuidSlugError } from "../errors.ts";
 
 export interface Runtime {
   /**

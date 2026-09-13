@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { BASE32HEX, BASE64URL, decodeInto, encode } from "./alphabet";
-import { UuidSlugError } from "./errors";
-import { decodeFirstMaskedCandidate, decodeMaskedCandidates } from "./mask";
+import { BASE32HEX, BASE64URL, decodeInto, encode } from "./alphabet.ts";
+import { UuidSlugError } from "./errors.ts";
+import { decodeFirstMaskedCandidate, decodeMaskedCandidates } from "./mask.ts";
 import type {
   UuidV7Mask,
   UuidSlugMigrationDecoder,
@@ -10,9 +10,9 @@ import type {
   UuidSlugMigrationOptions,
   UuidString,
   UuidV7String,
-} from "./types";
-import { UUID_SLUG_MIGRATION_FORMATS } from "./types";
-import { bytesToUuid } from "./uuid";
+} from "./types.ts";
+import { UUID_SLUG_MIGRATION_FORMATS } from "./types.ts";
+import { bytesToUuid } from "./uuid.ts";
 
 // These tables and the four-bit checksum define the original wire format.
 // Changing them would change the UUID recovered from an existing slug.

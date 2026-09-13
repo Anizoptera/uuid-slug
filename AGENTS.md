@@ -71,7 +71,7 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   `docs/cross-language.md`. Benchmark dependencies stay dev-only and outside published artifacts.
 - Order public export conditions as `types`, `bun`, `deno`, `development`, then `default`. Add a
   condition only when it selects different output or guards an incompatible lower condition. The
-  private `#runtime` map selects Bun source, Deno portable code, or Node native code while built
+  private `#runtime` map selects Bun source, Deno portable source, or Node native code while built
   hosts share one implementation graph.
 - Treat shipped `src` as executable package code, not source-map support. Bun MUST resolve public
   entries and `#runtime` to TypeScript. Route another TypeScript-capable runtime to source unless a

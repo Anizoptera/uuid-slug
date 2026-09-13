@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { isUint8Array, UuidSlugError } from "./errors";
-import { FEISTEL_KEY_WORDS, feistel16 } from "./feistel";
-import { createSchemaHandle } from "./schema-handle";
-import { halfSipHash } from "./siphash";
-import type { HashContinuation } from "./siphash";
+import { isUint8Array, UuidSlugError } from "./errors.ts";
+import { FEISTEL_KEY_WORDS, feistel16 } from "./feistel.ts";
+import { createSchemaHandle } from "./schema-handle.ts";
+import { halfSipHash } from "./siphash.ts";
+import type { HashContinuation } from "./siphash.ts";
 import { encodeUtf8 } from "#runtime";
-import type { AsyncUuidV7MaskOptions, UuidV7Mask, UuidV7MaskOptions } from "./types";
+import type { AsyncUuidV7MaskOptions, UuidV7Mask, UuidV7MaskOptions } from "./types.ts";
 
 /** Reject short seeds early; length alone cannot make a chosen secret unpredictable. */
 const SEED_MIN_BYTES = 16;

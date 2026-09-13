@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { randomFailure } from "../errors";
-import type { UuidSlugError } from "../errors";
+import { randomFailure } from "../errors.ts";
+import type { UuidSlugError } from "../errors.ts";
 
 /**
  * Draws cryptographic randomness a page at a time instead of per id.

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import type { UuidSlugError } from "./errors";
-import type { UuidV7Slug } from "./types";
-import { generateUuidV7Bytes } from "./v7-keyless";
-import { bytesToSlug } from "./slug";
-import type { SlugAlphabet } from "./slug";
+import type { UuidSlugError } from "./errors.ts";
+import type { UuidV7Slug } from "./types.ts";
+import { generateUuidV7Bytes } from "./v7-keyless.ts";
+import { bytesToSlug } from "./slug.ts";
+import type { SlugAlphabet } from "./slug.ts";
 
-export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError } from "./errors";
-export type { UuidSlugErrorCode } from "./errors";
-export type { UuidV7Slug } from "./types";
-export type { SlugAlphabet } from "./slug";
+export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError } from "./errors.ts";
+export type { UuidSlugErrorCode } from "./errors.ts";
+export type { UuidV7Slug } from "./types.ts";
+export type { SlugAlphabet } from "./slug.ts";
 
 /**
  * Generate a direct UUIDv7 slug. Lowercase base32hex sorts across different milliseconds;

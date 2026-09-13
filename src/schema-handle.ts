@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { isUint8Array, isUuidSlugError, UuidSlugError } from "./errors";
-import type { CustomUuidV7MaskOptions, UuidV7Mask } from "./types";
+import { isUint8Array, isUuidSlugError, UuidSlugError } from "./errors.ts";
+import type { CustomUuidV7MaskOptions, UuidV7Mask } from "./types.ts";
 
 const MASK_SCHEMA_PROTOCOL = Symbol.for("@anizoptera/uuid-slug/mask-schema/1");
 

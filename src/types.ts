@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import type { UuidSlugError } from "./errors";
-import type { SlugAlphabet } from "./slug";
+import type { UuidSlugError } from "./errors.ts";
+import type { SlugAlphabet } from "./slug.ts";
 
 declare const brand: unique symbol;
 declare const maskSchemaBrand: unique symbol;

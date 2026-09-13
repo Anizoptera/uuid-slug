@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "./alphabet";
-import { UuidSlugError } from "./errors";
-import { mix32, read32 } from "./feistel";
-import { applyMaskSchema } from "./schema-handle";
-import { bytesToUuid } from "./uuid";
-import type { UuidV7Mask, MaskedUuidV7Slug, UuidString } from "./types";
-import type { SlugAlphabet } from "./slug";
+import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "./alphabet.ts";
+import { UuidSlugError } from "./errors.ts";
+import { mix32, read32 } from "./feistel.ts";
+import { applyMaskSchema } from "./schema-handle.ts";
+import { bytesToUuid } from "./uuid.ts";
+import type { UuidV7Mask, MaskedUuidV7Slug, UuidString } from "./types.ts";
+import type { SlugAlphabet } from "./slug.ts";
 
 /** Custom callbacks can fail after construction; preserve their cause in the public error contract. */
 function applyMix(

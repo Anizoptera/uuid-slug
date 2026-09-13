@@ -616,8 +616,8 @@ No runtime dependencies, on any platform.
   native primitives. Tooling that opts into the `development` condition loads the same source.
 - **Node** uses native `crypto.randomUUID`, and native `crypto.randomUUIDv7` where the
   version provides it, otherwise the bundled v7 generator.
-- **Deno** uses optimized portable JavaScript because its default resolver rejects this package's
-  extensionless TypeScript imports. Consumers need no resolver flag or import map.
+- **Deno** loads the published TypeScript source and uses the optimized portable runtime adapter.
+  Consumers need no resolver flag or import map.
 - **Browsers and other compatible runtimes** use optimized portable JavaScript and Web Crypto.
 
 ## License

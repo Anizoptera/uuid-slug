@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { checkByteRange, checkRange, isUint8Array, UuidSlugError } from "./errors";
+import { checkByteRange, checkRange, isUint8Array, UuidSlugError } from "./errors.ts";
 import type {
   PreserveUuidVersion,
   UuidBytes,
@@ -10,12 +10,12 @@ import type {
   UuidStringInput,
   UuidV4String,
   UuidV7String,
-} from "./types";
+} from "./types.ts";
 
-export { UUID_SLUG_ERROR_CODES, isUuidSlugError } from "./errors";
+export { UUID_SLUG_ERROR_CODES, isUuidSlugError } from "./errors.ts";
 export { UuidSlugError };
-export type { UuidSlugErrorCode } from "./errors";
-export type { UuidBytes, UuidString } from "./types";
+export type { UuidSlugErrorCode } from "./errors.ts";
+export type { UuidBytes, UuidString } from "./types.ts";
 
 const HEX = "0123456789abcdef";
 // Probe once and allocate the byte-pair fallback only on engines that need it.

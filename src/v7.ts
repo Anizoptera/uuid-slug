@@ -8,10 +8,10 @@ import {
   nativeOrFallback,
   readClock,
   UuidSlugError,
-} from "./errors";
-import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types";
-import { formatUuidBytesUnchecked, isUuidV7String } from "./uuid";
-import type { Runtime } from "./runtime/types";
+} from "./errors.ts";
+import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types.ts";
+import { formatUuidBytesUnchecked, isUuidV7String } from "./uuid.ts";
+import type { Runtime } from "./runtime/types.ts";
 
 /** Internal controls for exercising the portable UUIDv7 state machine. */
 interface PortableUuidV7GeneratorOptions {

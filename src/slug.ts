@@ -7,9 +7,9 @@ import {
   encode,
   hasNativeBase64urlEncoder,
   isEncoded,
-} from "./alphabet";
-import type { Alphabet } from "./alphabet";
-import { checkByteRange, checkRange, UuidSlugError } from "./errors";
+} from "./alphabet.ts";
+import type { Alphabet } from "./alphabet.ts";
+import { checkByteRange, checkRange, UuidSlugError } from "./errors.ts";
 import type {
   DirectUuidSlugInput,
   PreserveUuidVersion,
@@ -27,9 +27,9 @@ import type {
   UuidV7BytesInput,
   UuidV7TimestampInput,
   UuidV7TimestampWindow,
-} from "./types";
+} from "./types.ts";
 
-import { validateTimestampBytes } from "./timestamp";
+import { validateTimestampBytes } from "./timestamp.ts";
 import {
   bytesToUuid,
   isRfcVariant,
@@ -39,12 +39,12 @@ import {
   uuidTimestampFromBytesUnchecked,
   uuidToBytes,
   uuidVersion,
-} from "./uuid";
+} from "./uuid.ts";
 
-export { UUID_SLUG_ERROR_CODES, isUuidSlugError } from "./errors";
+export { UUID_SLUG_ERROR_CODES, isUuidSlugError } from "./errors.ts";
 export { UuidSlugError };
-export type { UuidSlugErrorCode } from "./errors";
-export type { UuidSlug, UuidV4Slug, UuidV7Slug } from "./types";
+export type { UuidSlugErrorCode } from "./errors.ts";
+export type { UuidSlug, UuidV4Slug, UuidV7Slug } from "./types.ts";
 
 /*
  * The alphabets a plain slug may be written in. base64url is the default and the shortest;

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError } from "../errors";
-export type { UuidSlugErrorCode } from "../errors";
-export type { UuidBytes, UuidString } from "../types";
+export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError } from "../errors.ts";
+export type { UuidSlugErrorCode } from "../errors.ts";
+export type { UuidBytes, UuidString } from "../types.ts";
 export {
   bytesToUuid,
   isUuidBytes,
@@ -12,4 +12,4 @@ export {
   isUuidV7Bytes,
   isUuidV7String,
   uuidToBytes,
-} from "../uuid";
+} from "../uuid.ts";

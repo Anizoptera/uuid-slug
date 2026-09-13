@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { runtime as portableRuntime } from "./portable";
-import type { Runtime } from "./types";
+import { runtime as portableRuntime } from "./portable.ts";
+import type { Runtime } from "./types.ts";
 
-export { encodeUtf8 } from "./portable";
+export { encodeUtf8 } from "./portable.ts";
 
 /** Only untimestamped native generation satisfies this adapter's contract. */
 interface BunUuid {

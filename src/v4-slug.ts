@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import type { UuidSlugError } from "./errors";
-import type { UuidV4Slug } from "./types";
-import { generateUuidV4Bytes } from "./v4";
-import { bytesToSlug } from "./slug";
-import type { SlugAlphabet } from "./slug";
+import type { UuidSlugError } from "./errors.ts";
+import type { UuidV4Slug } from "./types.ts";
+import { generateUuidV4Bytes } from "./v4.ts";
+import { bytesToSlug } from "./slug.ts";
+import type { SlugAlphabet } from "./slug.ts";
 
-export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError } from "./errors";
-export type { UuidSlugErrorCode } from "./errors";
-export type { UuidV4Slug } from "./types";
-export type { SlugAlphabet } from "./slug";
+export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError } from "./errors.ts";
+export type { UuidSlugErrorCode } from "./errors.ts";
+export type { UuidV4Slug } from "./types.ts";
+export type { SlugAlphabet } from "./slug.ts";
 
 /**
  * Generate a direct UUIDv4 slug with platform randomness, using base64url by default. base32hex is

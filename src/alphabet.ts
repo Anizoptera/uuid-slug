@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { checkRange, UuidSlugError } from "./errors";
-import type { UuidSlugErrorCode } from "./errors";
+import { checkRange, UuidSlugError } from "./errors.ts";
+import type { UuidSlugErrorCode } from "./errors.ts";
 
 /**
  * A power-of-two alphabet plus its reverse lookup. Encoding is pure bit packing, so the only

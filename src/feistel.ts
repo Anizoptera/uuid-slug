@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { halfSipHash } from "./siphash";
+import { halfSipHash } from "./siphash.ts";
 
 /**
  * A four-round Feistel network gives masking an exact inverse while spreading each UUID change

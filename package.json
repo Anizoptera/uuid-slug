@@ -43,7 +43,7 @@
   "imports": {
     "#runtime": {
       "bun": "./src/runtime/bun.ts",
-      "deno": "./dist/runtime/portable.js",
+      "deno": "./src/runtime/portable.ts",
       "development": {
         "node": "./src/runtime/node.ts",
         "default": "./src/runtime/portable.ts"
@@ -56,49 +56,49 @@
     ".": {
       "types": "./dist/index.d.ts",
       "bun": "./src/index.ts",
-      "deno": "./dist/index.js",
+      "deno": "./src/index.ts",
       "development": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./uuid": {
       "types": "./dist/entries/uuid.d.ts",
       "bun": "./src/entries/uuid.ts",
-      "deno": "./dist/entries/uuid.js",
+      "deno": "./src/entries/uuid.ts",
       "development": "./src/entries/uuid.ts",
       "default": "./dist/entries/uuid.js"
     },
     "./slug": {
       "types": "./dist/entries/slug.d.ts",
       "bun": "./src/entries/slug.ts",
-      "deno": "./dist/entries/slug.js",
+      "deno": "./src/entries/slug.ts",
       "development": "./src/entries/slug.ts",
       "default": "./dist/entries/slug.js"
     },
     "./slug/v4": {
       "types": "./dist/v4-slug.d.ts",
       "bun": "./src/v4-slug.ts",
-      "deno": "./dist/v4-slug.js",
+      "deno": "./src/v4-slug.ts",
       "development": "./src/v4-slug.ts",
       "default": "./dist/v4-slug.js"
     },
     "./slug/v7": {
       "types": "./dist/v7-slug.d.ts",
       "bun": "./src/v7-slug.ts",
-      "deno": "./dist/v7-slug.js",
+      "deno": "./src/v7-slug.ts",
       "development": "./src/v7-slug.ts",
       "default": "./dist/v7-slug.js"
     },
     "./v4": {
       "types": "./dist/entries/v4.d.ts",
       "bun": "./src/entries/v4.ts",
-      "deno": "./dist/entries/v4.js",
+      "deno": "./src/entries/v4.ts",
       "development": "./src/entries/v4.ts",
       "default": "./dist/entries/v4.js"
     },
     "./v7": {
       "types": "./dist/entries/v7.d.ts",
       "bun": "./src/entries/v7.ts",
-      "deno": "./dist/entries/v7.js",
+      "deno": "./src/entries/v7.ts",
       "development": "./src/entries/v7.ts",
       "default": "./dist/entries/v7.js"
     },

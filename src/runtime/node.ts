@@ -2,8 +2,8 @@
 
 import crypto from "node:crypto";
 import { Buffer } from "node:buffer";
-import { pooledFill } from "./pool";
-import type { Runtime } from "./types";
+import { pooledFill } from "./pool.ts";
+import type { Runtime } from "./types.ts";
 
 /**
  * Node releases without `crypto.randomUUIDv7` expose `undefined`, so the capability is simply

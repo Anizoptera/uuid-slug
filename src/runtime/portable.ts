@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { UuidSlugError } from "../errors";
-import { pooledFill } from "./pool";
-import type { Runtime } from "./types";
+import { UuidSlugError } from "../errors.ts";
+import { pooledFill } from "./pool.ts";
+import type { Runtime } from "./types.ts";
 
 let utf8Encoder: TextEncoder | undefined;
 

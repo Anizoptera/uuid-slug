@@ -229,6 +229,7 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
     await Promise.all([
       expectRuntimeRoute("node", "/dist/node/runtime.js"),
       expectRuntimeRoute("bun", "/src/runtime/bun.ts"),
+      expectRuntimeRoute("deno", "/src/runtime/portable.ts"),
     ]);
 
     const probe = await Bun.build({
@@ -322,7 +323,6 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       .map((result) => result.reason);
     if (failures.length) throw new AggregateError(failures, "Packed consumers failed.");
     if (web) {
-      await expectRuntimeRoute("deno", "/dist/runtime/portable.js");
       const denoArgs = ["--node-modules-dir=manual", "--cached-only", "--allow-read", runner];
       await Promise.all([
         command("deno", ["run", ...denoArgs], root),
