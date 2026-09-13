@@ -5,8 +5,8 @@ export { validateUuidV7Timestamp } from "./timestamp.ts";
 export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError } from "./errors.ts";
 /** Export the code type so consumers can write exhaustive handlers without copying its literals. */
 export type { UuidSlugErrorCode } from "./errors.ts";
-export { UUID_V7_TEST_MASK, createUuidV7Mask, createUuidV7MaskAsync } from "./schema.ts";
-export { createCustomUuidV7Mask } from "./schema-handle.ts";
+export { UUID_V7_TEST_MASK, createUuidV7Mask, createUuidV7MaskAsync } from "./mask.ts";
+export { createCustomUuidV7Mask } from "./mask-handle.ts";
 export { UUID_SLUG_MIGRATION_FORMATS } from "./types.ts";
 export type {
   AsyncUuidV7MaskOptions,

@@ -116,7 +116,7 @@ describe("bit-packing codec", () => {
     });
   });
 
-  // The spare bits are what let a schema id ride along at no cost in length. If this ever stops
+  // The spare bits are what let a mask label ride along at no cost in length. If this ever stops
   // holding, the masked slug silently grows a character.
   it("leaves exactly 4 spare bits in base64url and 2 in base32hex for 16 bytes", () => {
     expect(spareBits(BASE64URL, 16)).toBe(4);
@@ -171,8 +171,8 @@ describe("bit-packing codec", () => {
 // layer. The vectors were generated from the shipped implementation, so this fails loudly the
 // moment the wire format moves, whether or not the move was intentional.
 describe("wire format compatibility", () => {
-  it.each(golden)("$schema $uuid encodes and decodes unchanged", (vector) => {
-    const codec = codecs[vector.schema as keyof typeof codecs];
+  it.each(golden)("$mask $uuid encodes and decodes unchanged", (vector) => {
+    const codec = codecs[vector.mask as keyof typeof codecs];
     expect(uuidToSlug(vector.uuid)).toBe(vector.direct);
     expect(codec.encodeUuid(vector.uuid)).toBe(vector.masked);
     expect(codec.decodeSlug(vector.masked)).toBe(vector.uuid);

@@ -13,9 +13,9 @@ import type { UuidV7Mask } from "../src/index";
 import { unwrap } from "../dev/unwrap";
 
 const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
-function encoded(schema: UuidV7Mask | UuidSlugError): string {
-  assert.ok(!(schema instanceof Error));
-  const result = unwrap(createUuidV7SlugCodec({ mask: schema })).encodeUuid(uuid);
+function encoded(handle: UuidV7Mask | UuidSlugError): string {
+  assert.ok(!(handle instanceof Error));
+  const result = unwrap(createUuidV7SlugCodec({ mask: handle })).encodeUuid(uuid);
   assert.equal(typeof result, "string");
   return result as string;
 }
@@ -24,12 +24,12 @@ function cancelled(value: UuidV7Mask | UuidSlugError, reason: unknown): void {
   assert.equal(value.code, "aborted");
   assert.equal(value.cause, reason);
 }
-export const asyncSchemaCases = [
+export const asyncMaskCases = [
   {
     name: "async derivation preserves byte tails, UTF-8 boundaries and iteration counts",
     async run(this: void) {
       const strings = [
-        "async-schema-seed",
+        "an-async-mask-seed",
         "x".repeat(4095) + "😀" + "尾".repeat(1500),
         "x".repeat(4095) + "\ud800x\udfff",
         "🌍".repeat(2049),
@@ -93,19 +93,19 @@ export const asyncSchemaCases = [
       const reason = new Error("cancel one construction");
       const trigger = nextTask().then(() => controller.abort(reason));
       const pending = createUuidV7MaskAsync({
-        seed: "async-schema-seed",
+        seed: "an-async-mask-seed",
         keyDerivationIterations: 1 << 24,
         signal: controller.signal,
       });
       const sibling = createUuidV7MaskAsync({
-        seed: "sibling-schema-seed",
+        seed: "sibling-mask-seed",
         keyDerivationIterations: 8192,
       });
       const [result, independent] = await Promise.all([pending, sibling]);
       cancelled(result, reason);
       assert.equal(
         encoded(independent),
-        encoded(createUuidV7Mask({ seed: "sibling-schema-seed", keyDerivationIterations: 8192 })),
+        encoded(createUuidV7Mask({ seed: "sibling-mask-seed", keyDerivationIterations: 8192 })),
       );
       await trigger;
     },
@@ -140,7 +140,7 @@ export const asyncSchemaCases = [
       await Promise.all(
         [0, -1, 0.5, NaN, Infinity, (1 << 24) + 1].map(async (keyDerivationIterations) => {
           const result = await createUuidV7MaskAsync({
-            seed: "async-schema-seed",
+            seed: "an-async-mask-seed",
             keyDerivationIterations,
           });
           assert.ok(result instanceof UuidSlugError);

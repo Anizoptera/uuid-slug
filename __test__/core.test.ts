@@ -247,12 +247,12 @@ describe("masked UUID slugs", () => {
     expect(codec.decodeSlug("AAAAAAACcACAAAAAAAAAAA")).toBe(unknownUser.uuid);
   });
 
-  it("rejects a wrong schema unless the caller listed it as a previous one", () => {
+  it("rejects a wrong mask unless the caller listed it as a previous one", () => {
     const first = createUuidV7Mask({ seed: "project-a-test-seed-0000" });
     const second = createUuidV7Mask({ seed: "project-b-test-seed-0000" });
     const third = createUuidV7Mask({ seed: "project-c-test-seed-0000" });
     if (first instanceof Error || second instanceof Error || third instanceof Error)
-      throw new Error("schema creation failed");
+      throw new Error("mask creation failed");
     const a = createUuidV7SlugCodec({ mask: first });
     const b = createUuidV7SlugCodec({ mask: second });
     const slug = a.encodeUuid(SAMPLE_V7_A);
@@ -267,7 +267,7 @@ describe("masked UUID slugs", () => {
   });
 
   it("validates timestamps against the codec's OWN key, not the package's published one", () => {
-    // This case fails if timestamp validation uses any schema other than the codec's selected key.
+    // This case fails if timestamp validation uses any mask other than the codec's selected key.
     const ids = createUuidV7SlugCodec({ mask: { seed: "not-the-published-one-test-seed-0000" } });
     const slug = ids.encodeUuid(SAMPLE_V7_A);
     if (slug instanceof Error) throw slug;
@@ -300,7 +300,7 @@ describe("masked UUID slugs", () => {
     ).toBe(slug);
   });
 
-  it("rotates a seed without making the caller build a schema for the old one", () => {
+  it("rotates a seed without making the caller build a mask for the old one", () => {
     // Rotation is the whole reason the list exists, so listing a previous SEED must cost what
     // naming the current one costs. It used to demand a constructor and an error branch.
     const before = createUuidV7SlugCodec({ mask: { seed: "key-v1-test-seed-0000" } });
@@ -315,8 +315,8 @@ describe("masked UUID slugs", () => {
     expect(after.encodeUuid(SAMPLE_V7_A)).not.toBe(slug);
   });
 
-  it("refuses a caller's schema that does not reverse its own mixing step", () => {
-    // A custom schema is the only extension point, and getting the inverse wrong is silent: encoding still
+  it("refuses a caller's mask that does not reverse its own mixing step", () => {
+    // A custom mask is the only extension point, and getting the inverse wrong is silent: encoding still
     // produces a slug, and every id issued under it is unreadable forever. So it must fail at
     // construction. Two distinct ways to get it wrong, because one probe cannot see both.
     const ignoresDirection = createCustomUuidV7Mask({
@@ -360,12 +360,12 @@ describe("masked UUID slugs", () => {
     // warning on it true rather than merely cautious.
     const uuid = "019ff19b-58b8-7000-9b1b-df713bd5562c";
     const slugAt = (keyDerivationIterations: number) => {
-      const schema = createUuidV7Mask({
+      const handle = createUuidV7Mask({
         seed: "rotation-seed-long-enough",
         keyDerivationIterations,
       });
-      if (schema instanceof Error) throw schema;
-      return createUuidV7SlugCodec({ mask: schema }).encodeUuid(uuid);
+      if (handle instanceof Error) throw handle;
+      return createUuidV7SlugCodec({ mask: handle }).encodeUuid(uuid);
     };
     expect(slugAt(1)).not.toBe(slugAt(2));
     expect(slugAt(3)).toBe(slugAt(3));
@@ -374,7 +374,7 @@ describe("masked UUID slugs", () => {
 
 describe("direct-slug migration", () => {
   // Nothing pinned this flag before, which is how a decode path got deleted as a "duplicate"
-  // and how a schema combination that silently returns WRONG uuids went unnoticed. The cases
+  // and how a mask combination that silently returns WRONG uuids went unnoticed. The cases
   // below are chosen to fail loudly if either recurs.
   it("decodes a plain UUIDv4 slug, which the v7 form cannot", () => {
     // The flag exists to migrate off unmasked ids, and those predate any decision to use v7.

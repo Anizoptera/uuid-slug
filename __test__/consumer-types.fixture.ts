@@ -320,14 +320,14 @@ const timestampWindow: UuidV7TimestampWindow = { maxTimestampDeltaMs: 0 };
 // @ts-expect-error Validation options are captured input, not mutable package state.
 timestampWindow.maxTimestampDeltaMs = 1;
 
-const schemaOptions: AsyncUuidV7MaskOptions = {
-  seed: "consumer-schema-seed",
+const maskOptions: AsyncUuidV7MaskOptions = {
+  seed: "consumer-mask-seed",
   signal: new AbortController().signal,
 };
-const pendingSchema: Promise<UuidV7Mask | UuidSlugError> = createUuidV7MaskAsync(schemaOptions);
-// @ts-expect-error A pending schema cannot be used as a codec key before awaiting its result.
-createUuidV7SlugCodec({ mask: pendingSchema });
-void pendingSchema;
+const pendingMask: Promise<UuidV7Mask | UuidSlugError> = createUuidV7MaskAsync(maskOptions);
+// @ts-expect-error A pending mask cannot be used as a codec key before awaiting its result.
+createUuidV7SlugCodec({ mask: pendingMask });
+void pendingMask;
 
 // @ts-expect-error Public generators always use the package's cryptographic runtime source.
 createUuidV7Generator({ fillRandom: (bytes: Uint8Array) => bytes.fill(0) });

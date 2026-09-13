@@ -97,7 +97,7 @@ mod tests {
             if case["uuid"] == "00000000-0000-7000-8000-000000000000" {
                 continue;
             }
-            let mask = match case["schema"].as_str().unwrap() {
+            let mask = match case["mask"].as_str().unwrap() {
                 "default" => &default,
                 "custom-mix" => &custom,
                 _ => &seeded,

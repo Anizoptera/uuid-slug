@@ -237,13 +237,13 @@ export const runtimeBoundaryCases = [
       const copy = vm.runInNewContext("(input) => new Uint8Array(input)") as (
         input: Uint8Array,
       ) => Uint8Array;
-      const schema = createCustomUuidV7Mask({
+      const handle = createCustomUuidV7Mask({
         label: "cross-realm-output",
         mask: copy,
         unmask: copy,
       });
-      assert.ok(!(schema instanceof Error));
-      const codec = unwrap(createUuidV7SlugCodec({ mask: schema }));
+      assert.ok(!(handle instanceof Error));
+      const codec = unwrap(createUuidV7SlugCodec({ mask: handle }));
       const slug = unwrap(codec.encodeUuid(uuid));
       assert.equal(codec.decodeSlug(slug), uuid);
     },

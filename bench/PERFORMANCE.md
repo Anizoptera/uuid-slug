@@ -36,7 +36,7 @@ exists on both sides. Two 24-round replays on 2026-09-12 supersede Bun 1.4.1 onl
 Profiler warm-up and batch-size boundaries were measured directly on Bun 1.4.2. These replays do not
 replace Node, Chromium, Deno, resource, or correctness evidence and do not transfer Bun's result to them.
 
-### Current TypeScript frontier
+### Remaining TypeScript costs
 
 The complete 183-operation corpus ran on Node 24.20.0, Bun 1.4.2, Deno 2.9.6, and Chromium 151 on
 2026-09-12. It covered generation, conversion, guards, masking, migration, construction, failures,
@@ -54,7 +54,7 @@ Bun's independent JSC samples attributed the mixed corpus chiefly to HalfSipHash
 construction, alphabet encoding, sentinel construction, and Feistel traversal. Equal-duration
 profiling overrepresents rare errors and setup; sample share is not consumer frequency.
 
-No further TypeScript change has positive measured value at this frontier. Deleting schema attempts,
+The tested alternatives below showed no further repeatable benefit. Deleting mask attempts,
 reordering keys, or adding a wire key selector changes accepted identifiers or first-match behavior.
 Parallel attempts add coordination and cannot return before every earlier key has resolved. The
 repository has no caller trace or telemetry that establishes repeated identical decodes; its
@@ -151,7 +151,7 @@ workloads, and they do not turn development bridges into npm distribution candid
 | `invalid.slug` | 3862 | 3817 | 174 | 183 |
 | `invalid.mask` | 4025 | 4027 | 308 | 320 |
 | `construct.codec` | 1990 | 1510 | 1912 | 1028 |
-| `construct.schema` | 523 | 463 | 402 | 297 |
+| `construct.mask` | 523 | 463 | 402 | 297 |
 
 ## Costs removed and alternatives rejected
 
@@ -218,7 +218,7 @@ put all masked median ratios within 3.3% of 1.0 under the same warm-up policy.
   but duplicated the round body and added about 80 packed bytes. Two 24-round replays found no
   repeatable Bun or Node gain. Keep one reversible loop; retest only if a target engine makes its
   per-round direction selection measurably dominant.
-- A schema-bound transform captured all eight keys as numbers and selected them through scalar
+- A mask-bound transform captured all eight keys as numbers and selected them through scalar
   branches, removing every hot key-array read. Two 24-round replays found no repeated Bun or Node
   route gain; the distinct improvements moved between routes. Keep indexed keys and avoid about
   170 packed bytes. Retest only if a primary engine changes typed-array indexing or scalar-call cost.
@@ -344,7 +344,7 @@ Two six-round packed replays on 2026-09-12 measured `masked.encode.bytes` on Nod
 Deno 2.9.6, and Chromium 151. Node improved by 5.0–5.8% with both 95% median intervals below 1.0.
 Deno improved by 25.4–25.5%. Bun and Chromium remained unresolved. The resource probe measured zero
 per-call buffers instead of one; restoring the copying helper made that probe fail at the exact row.
-The retained change therefore improves a co-primary runtime, leaves the other unresolved, and removes
+The retained change therefore improves Node and Deno, leaves Bun and Chromium unresolved, and removes
 proven work without changing caller ownership.
 
 ### Sentinel encode lookup
@@ -430,7 +430,7 @@ loads or JITless no longer pays for the required word assembly.
 ### Previous-key attempt storage
 
 Preserve the decoded ciphertext as four scalar words, then restore the mutable block between failed
-schema checks. Package-created built-in schemas retain no input, and custom callbacks receive a
+mask checks. Package-created built-in masks retain no input, and custom callbacks receive a
 separate inner copy, so no outer attempt array is required.
 
 Two 24-round comparisons on 2026-09-12 covered 4, 8, and 16 previous keys on Node 24.20.0 and Bun
@@ -717,7 +717,7 @@ extension path. Existing Node and Bun tests failed when the custom catch was rem
 detect lost exception containment and original-cause preservation. Keep one contained path; retest
 only if an engine demonstrates material exception-region overhead without adding hot-path dispatch.
 
-Private built-in schema dispatch was rejected. A local `WeakMap` associated built-in handles with
+Private built-in mask dispatch was rejected. A local `WeakMap` associated built-in handles with
 their Feistel keys, preserving the existing callback protocol for custom and duplicate-copy handles
 while dispatching local built-ins directly. Two eight-round packed screens found no statistically
 distinct built-in route on Node 24.20.0 or Bun 1.4.1. The first screen regressed Node custom decode
@@ -726,7 +726,7 @@ second constructor. Reversing only the direct branch failed six frozen built-in 
 custom vectors passed. Keep the single callback protocol; retest only if direct dispatch produces a
 repeatable primary-runtime route gain large enough to exceed its compatibility machinery.
 
-Schema seed encoding is selected by the runtime module. Node uses `Buffer.from`; Bun, Deno, and
+Mask seed encoding is selected by the runtime module. Node uses `Buffer.from`; Bun, Deno, and
 Chromium reuse one `TextEncoder`. Two 24-round packed comparisons on 2026-09-12 improved Node string
 construction by 16.2–16.4% and its iterated route by 9.0–9.1%. Chromium improved the same routes by
 15.4–16.0% and 9.8–11.6%. Bun was unresolved in the first replay and improved string construction
@@ -1027,17 +1027,17 @@ stack, cause, code, and diagnostics remain public behavior, not removable work. 
 errors or callback-owned buffers would change contracts, not remove waste.
 
 Exhaustive current-mask candidate decoding allocates one private 16-byte block and restores it from
-four scalar ciphertext words between schemas. Keep first-match migration separate: sharing that
+four scalar ciphertext words between masks. Keep first-match migration separate: sharing that
 setup measurably slowed Chromium's common path. Two 12-round packed replays on 2026-09-12 measured
-8- and 16-schema candidate gains of 9.9–13.9% on Node, 7.6–15.5% on Bun, 38.0–44.9% on Deno, and
-7.1–12.8% on Chromium; one-schema first-match intervals included no change in both replays. The
-resource probe observed one slice at 16 schemas. Custom callbacks still receive isolated bytes,
+8- and 16-mask candidate gains of 9.9–13.9% on Node, 7.6–15.5% on Bun, 38.0–44.9% on Deno, and
+7.1–12.8% on Chromium; one-mask first-match intervals included no change in both replays. The
+resource probe observed one slice at 16 masks. Custom callbacks still receive isolated bytes,
 and the original decoded block remains available to later migration formats. A later six-round
 replay measured 19% on Node 26.8.2, 21% on Bun 1.4.2, 44% on Deno 2.9.6, and 15% on Chromium 153;
 the Node JITless interval included no change.
 
 Keep linear candidate deduplication. Ordinary migration yields at most current, original, and plain
-interpretations; only deliberately overlapping custom schemas can produce dozens. Two all-runtime
+interpretations; only deliberately overlapping custom masks can produce dozens. Two all-runtime
 replays per candidate found that lazy `Set` promotion at 8, 16, or 32 candidates regressed its
 promotion boundary. The inline 32 threshold was 8–10% slower on Node, 8–9% on Bun, 5–6% on
 Chromium, and 5–9% on Deno, while 64 distinct candidates improved by 10–32%. Duplicate-heavy scans
@@ -1167,14 +1167,14 @@ generators add no independent implementation evidence.
 | --- | --- | --- |
 | v4 generation | `uuid` and `uniku`: text and caller buffer; smaller packages: text or owned bytes | Text, owned bytes, caller buffer, direct slug |
 | v7 generation | `uuid` and `uniku`: text and caller buffer; `uuidv7`: text and owned object bytes | Text, owned bytes, caller buffer, direct or masked slug |
-| Controlled generation | `uuid`: entropy, timestamp, sequence; `uuidv7`: isolated generator and rollback policy | Injectable entropy and clock, isolated generator, explicit timestamp |
+| Controlled generation | `uuid`: entropy, timestamp, sequence; `uuidv7`: isolated generator and rollback policy | Caller-supplied clock, isolated generator, explicit timestamp; entropy stays runtime-owned |
 | Inspection | `uuid`: validate/version; `uniku`: validate/convert/timestamp; `uuidv7`: parse/format/version/variant | Typed guards, parse/format, slug conversion, timestamp and window checks |
 | Timestamp extraction | `uuidv7-js`: validated v7 text; `uniku`: canonical text without v7 rejection | Validated v7 UUID text, bytes with offset, direct slugs, and codec-owned masked slugs |
 
-No measured gap justifies another public API. Batch helpers are a loop over generation and would add
-surface without new capability. NIL/MAX constants and permissive UUID spellings do not support this
-package's strict v4/v7 slug contract. `uuidv7` exposes finer clock-rollback policy; add such policy
-only if a consumer needs behavior other than the current monotonic generator contract.
+The measured gaps concern the cost of existing calls. They do not establish demand for batch
+helpers, NIL/MAX constants, permissive UUID spelling, or caller-selected rollback policies.
+`uuidv7` exposes finer clock-rollback control; this package does not promise generation order
+within a millisecond. Direct encoding accepts every UUID version, independently of v4/v7 generation.
 
 Two full local runs on 2026-09-13 used Node 24.21.0, Bun 1.4.2, Deno 2.9.6, and Chromium, with nine
 20 ms samples after 32 ms warm-up per case. Both runs agreed on every direction below. A `--smoke`

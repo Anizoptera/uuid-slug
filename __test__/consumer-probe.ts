@@ -71,15 +71,15 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     const generated = unwrap(generator.generateUuidV7());
     equal(generated.slice(0, 13), "011f71fb-0450", `${alphabet} custom clock`);
   }
-  const schemaOptions = { seed: "consumer-schema-seed", keyDerivationIterations: 1024 };
-  const synchronous = api.createUuidV7Mask(schemaOptions);
-  const asynchronous = await api.createUuidV7MaskAsync(schemaOptions);
+  const maskOptions = { seed: "consumer-mask-seed", keyDerivationIterations: 1024 };
+  const synchronous = api.createUuidV7Mask(maskOptions);
+  const asynchronous = await api.createUuidV7MaskAsync(maskOptions);
   if (synchronous instanceof Error) throw synchronous;
   if (asynchronous instanceof Error) throw asynchronous;
   equal(
     unwrap(api.createUuidV7SlugCodec({ mask: asynchronous })).encodeUuid(uuid),
     unwrap(api.createUuidV7SlugCodec({ mask: synchronous })).encodeUuid(uuid),
-    "async schema wire identity",
+    "async mask wire identity",
   );
   // An independent host task must be able to cancel real derivation through the installed export.
   const controller = new AbortController();
@@ -91,7 +91,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   channel.port2.postMessage(null);
   try {
     const cancelled = await api.createUuidV7MaskAsync({
-      seed: schemaOptions.seed,
+      seed: maskOptions.seed,
       keyDerivationIterations: 1 << 24,
       signal: controller.signal,
     });

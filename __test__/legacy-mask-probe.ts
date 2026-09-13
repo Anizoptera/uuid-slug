@@ -3,9 +3,9 @@
 import assert from "node:assert/strict";
 import { BASE64URL, decodeInto } from "../src/alphabet";
 import { createUuidV7SlugCodec } from "../src/codec";
-import { decodeMaskedCandidates } from "../src/mask";
-import { applyMaskSchema, createCustomUuidV7Mask } from "../src/schema-handle";
-import { createUuidV7Mask, UUID_V7_TEST_MASK } from "../src/schema";
+import { decodeMaskedCandidates } from "../src/payload";
+import { applyMask, createCustomUuidV7Mask } from "../src/mask-handle";
+import { createUuidV7Mask, UUID_V7_TEST_MASK } from "../src/mask";
 import { UuidSlugError } from "../src/errors";
 import { slugToBytes, uuidToSlug } from "../src/slug";
 import fixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
@@ -14,9 +14,9 @@ import { uuidTailAliases } from "./uuid-tail-aliases";
 import type { UuidString, UuidV7Mask } from "../src/types";
 import { NIL_TEST_SENTINEL } from "./sentinel-fixtures";
 
-function mix(schema: UuidV7Mask, input: Uint8Array, direction: "mask" | "unmask") {
+function mix(mask: UuidV7Mask, input: Uint8Array, direction: "mask" | "unmask") {
   const output = new Uint8Array(16);
-  return applyMaskSchema(schema, input, output, direction) ?? output;
+  return applyMask(mask, input, output, direction) ?? output;
 }
 
 export const legacyMaskCases = [
@@ -27,21 +27,21 @@ export const legacyMaskCases = [
       let enabled = false;
       let retained: Uint8Array | undefined;
       const masks = seeds.map((seed) => {
-        const schema = createUuidV7Mask({ seed });
-        if (schema instanceof Error) throw schema;
+        const handle = createUuidV7Mask({ seed });
+        if (handle instanceof Error) throw handle;
         return unwrap(
           createCustomUuidV7Mask({
-            label: schema.label,
+            label: handle.label,
             mask(input) {
               if (enabled) retained?.fill(0);
-              const output = mix(schema, input, "mask");
+              const output = mix(handle, input, "mask");
               if (output instanceof Error) return output;
               if (enabled) retained = output;
               return output;
             },
             unmask(input) {
               if (enabled) retained?.fill(0);
-              const output = mix(schema, input, "unmask");
+              const output = mix(handle, input, "unmask");
               if (output instanceof Error) return output;
               if (enabled) retained = output;
               return output;
@@ -198,24 +198,24 @@ export const legacyMaskCases = [
       const noMatch = "A".repeat(22);
       assert.deepEqual(codec.createMigrationDecoder().decodeSlugCandidates(noMatch), []);
       assert.ok(codec.createMigrationDecoder().decodeSlug(noMatch) instanceof Error);
-      const schema = createUuidV7Mask({ seed });
-      if (schema instanceof Error) throw schema;
+      const handle = createUuidV7Mask({ seed });
+      if (handle instanceof Error) throw handle;
       let fail = false;
       const cause = new Error("custom mask failed");
-      const failingSchema = unwrap(
+      const failingMask = unwrap(
         createCustomUuidV7Mask({
           label: "failing-current",
           mask(input) {
             if (fail) throw cause;
-            return mix(schema, input, "mask");
+            return mix(handle, input, "mask");
           },
           unmask(input) {
             if (fail) throw cause;
-            return mix(schema, input, "unmask");
+            return mix(handle, input, "unmask");
           },
         }),
       );
-      const custom = unwrap(createUuidV7SlugCodec({ mask: failingSchema })).createMigrationDecoder({
+      const custom = unwrap(createUuidV7SlugCodec({ mask: failingMask })).createMigrationDecoder({
         originalMask: true,
         directSlug: true,
       });
@@ -259,10 +259,10 @@ export const legacyMaskCases = [
     name: "preserve caller order, input, and complete rotation candidates",
     run(this: void) {
       const { seeds, slug, uuids } = fixtures.keyOverlap;
-      const schemas = seeds.map((seed) => {
-        const schema = createUuidV7Mask({ seed });
-        if (schema instanceof Error) throw schema;
-        return schema;
+      const masks = seeds.map((seed) => {
+        const mask = createUuidV7Mask({ seed });
+        if (mask instanceof Error) throw mask;
+        return mask;
       });
       const mixed = new Uint8Array(16);
       const tail = decodeInto(slug, BASE64URL, mixed, 0, 16, 4);
@@ -271,15 +271,15 @@ export const legacyMaskCases = [
       const empty: UuidString[] = [];
       assert.equal(decodeMaskedCandidates(mixed, tail, [], empty), empty);
       assert.deepEqual(mixed, original);
-      const mutating = schemas.map((schema) =>
+      const mutating = masks.map((handle) =>
         unwrap(
           createCustomUuidV7Mask({
-            label: schema.label,
+            label: handle.label,
             mask(input) {
-              return mix(schema, input, "mask");
+              return mix(handle, input, "mask");
             },
             unmask(input) {
-              return mix(schema, input, "unmask");
+              return mix(handle, input, "unmask");
             },
           }),
         ),
@@ -292,7 +292,7 @@ export const legacyMaskCases = [
       assert.ok(
         unwrap(createUuidV7SlugCodec({ mask: unrelated })).decodeSlug(slug) instanceof Error,
       );
-      const ordered = unwrap(createUuidV7SlugCodec({ mask: unrelated, previousMasks: schemas }));
+      const ordered = unwrap(createUuidV7SlugCodec({ mask: unrelated, previousMasks: masks }));
       assert.equal(ordered.decodeSlug(slug), uuids[0]);
       const cause = new Error("key service unavailable");
       let fail = false;
@@ -310,7 +310,7 @@ export const legacyMaskCases = [
         }),
       );
       fail = true;
-      const failed = decodeMaskedCandidates(mixed, tail, [...schemas, unavailable]);
+      const failed = decodeMaskedCandidates(mixed, tail, [...masks, unavailable]);
       assert.ok(failed instanceof Error);
       assert.equal(failed.cause, cause);
     },

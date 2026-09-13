@@ -7,14 +7,14 @@
  */
 import { describe, expect, it } from "vitest";
 import { createUuidV7SlugCodec } from "../src/codec";
-import { createUuidV7Mask } from "../src/schema";
+import { createUuidV7Mask } from "../src/mask";
 import { unwrap } from "../dev/unwrap";
 
 /** Pads to the 16-byte seed floor, so cases can keep naming their key after what it tests. */
-const schemaOrThrow = (seed: string) => {
-  const schema = createUuidV7Mask({ label: seed, seed: seed.padEnd(16, ".") });
-  if (schema instanceof Error) throw schema;
-  return schema;
+const maskOrThrow = (seed: string) => {
+  const mask = createUuidV7Mask({ label: seed, seed: seed.padEnd(16, ".") });
+  if (mask instanceof Error) throw mask;
+  return mask;
 };
 
 /** The last instant this format can carry, and the first it cannot. Both are valid UUIDv7s. */
@@ -22,8 +22,8 @@ const LAST_MASKABLE = "03ffffff-ffff-7fff-bfff-ffffffffffff";
 const FIRST_REFUSED = "04000000-0000-7000-8000-000000000000";
 
 describe("the maskable range", () => {
-  const schema = schemaOrThrow("range");
-  const codec = unwrap(createUuidV7SlugCodec({ mask: schema, sentinels: [] }));
+  const handle = maskOrThrow("range");
+  const codec = unwrap(createUuidV7SlugCodec({ mask: handle, sentinels: [] }));
 
   it("masks the last instant before 2^42 ms and refuses the first one at or past it", () => {
     expect(codec.encodeUuid(LAST_MASKABLE)).toHaveLength(22);

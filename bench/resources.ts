@@ -236,7 +236,7 @@ try {
     draws: 0,
   });
   check(
-    "migration candidates with 16 schemas",
+    "migration candidates with 16 masks",
     () => migrationManyReader.decodeSlugCandidates(migrationLastSlug as string),
     { slices: 1, errors: 0, chars: 22, draws: 0 },
   );

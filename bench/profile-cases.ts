@@ -266,13 +266,13 @@ export function createProfileCases(
             .slice(0, position)
             .every((earlier) => earlier.decodeSlug(value) instanceof Error),
         );
-      if (!slug) throw new Error(`No migration fixture for schema ${position} of ${count}`);
+      if (!slug) throw new Error(`No migration fixture for mask ${position} of ${count}`);
       return slug;
     });
     const miss = ids
       .map((id) => unwrap(rotationWriters[16]!.encodeUuid(id)))
       .find((value) => migrationCodec.decodeSlug(value) instanceof Error);
-    if (!miss) throw new Error(`No migration miss fixture for ${count} schemas`);
+    if (!miss) throw new Error(`No migration miss fixture for ${count} masks`);
     return {
       reader: migrationCodec.createMigrationDecoder(),
       first: migrationSlugs[0]!,
@@ -342,15 +342,15 @@ export function createProfileCases(
     [8, migration8],
     [16, migration16],
   ] as const) {
-    migrationScalingCases[`migration.schemas${count}.first`] = () =>
+    migrationScalingCases[`migration.masks${count}.first`] = () =>
       fixture.reader.decodeSlug(fixture.first);
-    migrationScalingCases[`migration.schemas${count}.middle`] = () =>
+    migrationScalingCases[`migration.masks${count}.middle`] = () =>
       fixture.reader.decodeSlug(fixture.middle);
-    migrationScalingCases[`migration.schemas${count}.last`] = () =>
+    migrationScalingCases[`migration.masks${count}.last`] = () =>
       fixture.reader.decodeSlug(fixture.last);
-    migrationScalingCases[`invalid.migration.schemas${count}.miss`] = () =>
+    migrationScalingCases[`invalid.migration.masks${count}.miss`] = () =>
       fixture.reader.decodeSlug(fixture.miss);
-    migrationScalingCases[`migration.schemas${count}.candidates`] = () =>
+    migrationScalingCases[`migration.masks${count}.candidates`] = () =>
       fixture.reader.decodeSlugCandidates(fixture.first);
   }
   for (const { count, distinct, duplicate } of candidateFixtures) {
@@ -643,7 +643,7 @@ export function createProfileCases(
       api.validateUuidV7SlugTimestamp(v4Slug, timestampWindow),
     "invalid.timestamp.slug.window": () =>
       api.validateUuidV7SlugTimestamp(slugs[0] as string, outsideTimestampWindow),
-    "invalid.construct.schema": () => api.createUuidV7Mask({ seed: "" }),
+    "invalid.construct.mask": () => api.createUuidV7Mask({ seed: "" }),
     "invalid.construct.custom": () =>
       api.createCustomUuidV7Mask({
         label: "profile-invalid",
@@ -659,10 +659,10 @@ export function createProfileCases(
       }),
     "error.classify": () => api.isUuidSlugError(api.uuidToBytes(badUuid)),
     "construct.codec": () => api.createUuidV7SlugCodec({ mask: current }),
-    "construct.schema": () => api.createUuidV7Mask(current),
-    "construct.schema.bytes": () =>
+    "construct.mask": () => api.createUuidV7Mask(current),
+    "construct.mask.bytes": () =>
       api.createUuidV7Mask({ seed: new Uint8Array(16), keyDerivationIterations: 1 }),
-    "construct.schema.iterated": () =>
+    "construct.mask.iterated": () =>
       api.createUuidV7Mask({ ...current, keyDerivationIterations: 8 }),
     "construct.codec.rotation": () =>
       api.createUuidV7SlugCodec({

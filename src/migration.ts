@@ -2,7 +2,7 @@
 
 import { BASE32HEX, BASE64URL, decodeInto, encode } from "./alphabet.ts";
 import { UuidSlugError } from "./errors.ts";
-import { decodeFirstMaskedCandidate, decodeMaskedCandidates } from "./mask.ts";
+import { decodeFirstMaskedCandidate, decodeMaskedCandidates } from "./payload.ts";
 import type {
   UuidV7Mask,
   UuidSlugMigrationDecoder,
@@ -37,7 +37,7 @@ function decodeOriginalMask(mixed: Uint8Array): Uint8Array | undefined {
 
 /** Read old IDs with the codec's keys and sentinels; never change how new IDs are written. */
 export function createMigration(
-  schemas: readonly UuidV7Mask[],
+  masks: readonly UuidV7Mask[],
   sentinels: ReadonlyMap<string, { uuid: UuidV7String }>,
   options?: UuidSlugMigrationOptions,
 ): UuidSlugMigrationDecoder | UuidSlugError {
@@ -115,8 +115,8 @@ export function createMigration(
     }
     if (useCurrent && !base32) {
       const matches = firstOnly
-        ? decodeFirstMaskedCandidate(bytes, tail, schemas, candidates)
-        : decodeMaskedCandidates(bytes, tail, schemas, candidates);
+        ? decodeFirstMaskedCandidate(bytes, tail, masks, candidates)
+        : decodeMaskedCandidates(bytes, tail, masks, candidates);
       if (matches instanceof Error) return matches;
       if (firstOnly && candidates.length) return candidates;
     }

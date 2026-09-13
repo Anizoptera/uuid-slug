@@ -3,9 +3,9 @@
 import { isUint8Array, isUuidSlugError, UuidSlugError } from "./errors.ts";
 import type { CustomUuidV7MaskOptions, UuidV7Mask } from "./types.ts";
 
-const MASK_SCHEMA_PROTOCOL = Symbol.for("@anizoptera/uuid-slug/mask-schema/1");
+const MASK_PROTOCOL = Symbol.for("@anizoptera/uuid-slug/mask/1");
 
-interface MaskSchemaProtocol {
+interface MaskProtocol {
   readonly version: 1;
   readonly mix: (
     input: Uint8Array,
@@ -14,38 +14,38 @@ interface MaskSchemaProtocol {
   ) => undefined | UuidSlugError;
 }
 
-type MaskSchemaHandle = UuidV7Mask & { readonly [MASK_SCHEMA_PROTOCOL]: MaskSchemaProtocol };
+type MaskHandle = UuidV7Mask & { readonly [MASK_PROTOCOL]: MaskProtocol };
 
 /**
  * The versioned global symbol lets genuine handles cross duplicate same-version package copies.
  * The protocol is internal representation, not an authenticity boundary for trusted codec options.
  */
 /*#__NO_SIDE_EFFECTS__*/
-export function createSchemaHandle(label: string, mix: MaskSchemaProtocol["mix"]): UuidV7Mask {
-  const schema = { label } as MaskSchemaHandle;
-  Object.defineProperty(schema, MASK_SCHEMA_PROTOCOL, {
-    value: Object.freeze<MaskSchemaProtocol>({ version: 1, mix }),
+export function createMaskHandle(label: string, mix: MaskProtocol["mix"]): UuidV7Mask {
+  const mask = { label } as MaskHandle;
+  Object.defineProperty(mask, MASK_PROTOCOL, {
+    value: Object.freeze<MaskProtocol>({ version: 1, mix }),
   });
-  return Object.freeze(schema);
+  return Object.freeze(mask);
 }
 
-function schemaProtocol(schema: UuidV7Mask): MaskSchemaProtocol | undefined {
-  if (typeof schema !== "object" || schema === null) return undefined;
-  const protocol = (schema as Partial<MaskSchemaHandle>)[MASK_SCHEMA_PROTOCOL];
+function maskProtocol(mask: UuidV7Mask): MaskProtocol | undefined {
+  if (typeof mask !== "object" || mask === null) return undefined;
+  const protocol = (mask as Partial<MaskHandle>)[MASK_PROTOCOL];
   return protocol?.version === 1 && typeof protocol.mix === "function" ? protocol : undefined;
 }
 
-export function isMaskSchema(schema: unknown): schema is UuidV7Mask {
-  return schemaProtocol(schema as UuidV7Mask) !== undefined;
+export function isMaskHandle(mask: unknown): mask is UuidV7Mask {
+  return maskProtocol(mask as UuidV7Mask) !== undefined;
 }
 
-export function applyMaskSchema(
-  schema: UuidV7Mask,
+export function applyMask(
+  mask: UuidV7Mask,
   input: Uint8Array,
   output: Uint8Array,
   direction: "mask" | "unmask",
 ): undefined | UuidSlugError {
-  const protocol = schemaProtocol(schema);
+  const protocol = maskProtocol(mask);
   if (!protocol)
     return new UuidSlugError("invalid_mask", "Mask handle is invalid or incompatible.");
   return protocol.mix(input, output, direction);
@@ -107,7 +107,7 @@ export function createCustomUuidV7Mask(
           `UUIDv7 mask "${label}" does not unmask its own masked output.`,
         );
     }
-    return createSchemaHandle(label, (input, output, direction) => {
+    return createMaskHandle(label, (input, output, direction) => {
       const mixed = runCustom(direction === "mask" ? mask : unmask, input);
       if (isUuidSlugError(mixed)) return mixed;
       output.set(mixed);

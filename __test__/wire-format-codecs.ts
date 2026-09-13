@@ -2,7 +2,7 @@
 
 /**
  * The codecs the golden vectors in `fixtures-wire-format.json` were produced by, keyed by that
- * file's `schema` field.
+ * file's `mask` field.
  *
  * They live here rather than in each suite because the Bun and Node suites exist ONLY to run the
  * same comparison on two runtimes. If each declared its own map and the two drifted to

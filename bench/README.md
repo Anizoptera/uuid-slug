@@ -9,8 +9,8 @@ Rules:
   rung is unchanged. Older supported Node versions prove compatibility, not performance priority.
 - Keep direct runtime operations separate from composed pipeline operations.
 - Keep benchmark dependencies in `devDependencies`.
-- Before calling an implementation frontier complete, measure the same public result against the
-  direct platform primitive and the fastest live competitor, then read every faster mechanism.
+- Before concluding that no further optimization is justified, measure the same public result against
+  the native function and the fastest live competitor, then inspect each faster implementation.
   Local candidate comparisons can select the best candidate offered while missing a better design.
 - Run the same candidate set in smoke and full modes so CI detects adapter rot.
 - Before timing a candidate, name the contracts and failure modes its changed mechanism can affect.
@@ -20,7 +20,7 @@ Rules:
   malformed records fail the matrix while successful measurements remain visible.
 - Compare consumer outcomes, not implementation choices. Correct wire output, secure entropy, and
   published guarantees are mandatory; weigh other differences by measured consumer harm. Keep a
-  materially weaker result out of the headline ranking, but inspect any faster mechanism that could
+  materially weaker result out of the comparable ranking, but inspect any faster mechanism that could
   preserve our guarantees. Record the exact mismatch and recheck it after updates.
 - Run `bun run bench:matrix --smoke` for a short comparison. Set `UUID_SLUG_BENCH_RUNTIMES` to
   colon-separated executable paths to add runtimes. Each requested runtime must produce both reports.
@@ -141,7 +141,7 @@ states, and Chromium CDP metrics and tracing. The lanes run sequentially to avoi
 Generated drivers and reports stay under ignored `bench/reports/`; malformed, empty or missing output
 fails the command.
 
-Treat these reports as a capability join. Use counters to locate resource cost, GC and heap state to
+Read the reports together. Use counters to locate resource cost, GC and heap state to
 separate allocation from retention, sampled stacks to attribute CPU and allocation, and traces to
 expose scheduling and I/O. Prefer each runtime's native source, then its inspector protocol, then
 portable process counters and timings. Missing optional detail may fall back; a requested lane that

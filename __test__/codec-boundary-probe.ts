@@ -104,7 +104,7 @@ export const codecBoundaryCases = [
     },
   },
   {
-    name: "schema factories reject untyped coercions before deriving keys",
+    name: "mask factories reject untyped coercions before deriving keys",
     async run() {
       let readsAfterInvalidSeed = 0;
       const options = [
@@ -113,9 +113,9 @@ export const codecBoundaryCases = [
         {},
         { seed: Array.from({ length: 16 }, () => 1) },
         { seed: new ArrayBuffer(16) },
-        { seed: "valid-schema-seed", label: 7 },
-        { seed: "valid-schema-seed", label: null },
-        { seed: "valid-schema-seed", keyDerivationIterations: null },
+        { seed: "a-valid-mask-seed", label: 7 },
+        { seed: "a-valid-mask-seed", label: null },
+        { seed: "a-valid-mask-seed", keyDerivationIterations: null },
         {
           seed: [],
           get id() {
@@ -282,11 +282,11 @@ export const codecBoundaryCases = [
     },
   },
   {
-    name: "custom schema construction isolates mutating reversible transforms",
+    name: "custom mask construction isolates mutating reversible transforms",
     run() {
       const cause = new Error("forward unavailable");
       let fail = false;
-      const schema = createCustomUuidV7Mask({
+      const handle = createCustomUuidV7Mask({
         label: "xor",
         mask(input) {
           if (fail) throw cause;
@@ -296,10 +296,10 @@ export const codecBoundaryCases = [
           return input.map((byte) => byte ^ 0xa5);
         },
       });
-      assert.ok(!(schema instanceof Error));
-      assert.ok(Object.isFrozen(schema));
-      assert.deepEqual(Object.keys(schema), ["label"]);
-      const codec = unwrap(createCodec({ mask: schema }));
+      assert.ok(!(handle instanceof Error));
+      assert.ok(Object.isFrozen(handle));
+      assert.deepEqual(Object.keys(handle), ["label"]);
+      const codec = unwrap(createCodec({ mask: handle }));
       const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
       const slug = unwrap(codec.encodeUuid(uuid));
       assert.equal(codec.decodeSlug(slug), uuid);
@@ -679,7 +679,7 @@ export const codecBoundaryCases = [
       assert.ok(Object.isFrozen(UUID_SLUG_ERROR_CODES));
 
       const mutable = {
-        label: "stable-schema-reference",
+        label: "stable-mask-reference",
         mask: (input: Uint8Array) => input,
         unmask: (input: Uint8Array) => input,
       };
@@ -694,11 +694,11 @@ export const codecBoundaryCases = [
     },
   },
   {
-    name: "returns schema failures after construction with their original cause",
+    name: "returns mask failures after construction with their original cause",
     run() {
-      const cause = new UuidSlugError("invalid_mask", "schema unavailable");
+      const cause = new UuidSlugError("invalid_mask", "mask unavailable");
       let fail = false;
-      const schema = unwrap(
+      const handle = unwrap(
         createCustomUuidV7Mask({
           label: "changes",
           mask(input) {
@@ -709,7 +709,7 @@ export const codecBoundaryCases = [
           },
         }),
       );
-      const codec = createUuidV7SlugCodec({ mask: schema });
+      const codec = createUuidV7SlugCodec({ mask: handle });
       const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
       const slug = codec.encodeUuid(uuid);
       assert.equal(typeof slug, "string");

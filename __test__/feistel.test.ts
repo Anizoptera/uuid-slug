@@ -56,7 +56,7 @@ describe("feistel mixing", () => {
   });
 
   // Safe in place because every round reads all four words into locals before writing any back.
-  // The schema contract still forbids aliasing, since a permuting scheme has no such property.
+  // The mask contract still forbids aliasing, since a permuting scheme has no such property.
   it("works in place", () => {
     const source = blockFrom(0x1234);
     const scratch = new Uint8Array(source);

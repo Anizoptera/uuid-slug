@@ -27,8 +27,8 @@ import { WIRE_FORMAT_CODECS as codecs } from "./wire-format-codecs";
 
 describe("wire format is identical across runtimes", () => {
   for (const vector of golden) {
-    test(`${vector.schema} ${vector.uuid}`, () => {
-      const codec = codecs[vector.schema as keyof typeof codecs];
+    test(`${vector.mask} ${vector.uuid}`, () => {
+      const codec = codecs[vector.mask as keyof typeof codecs];
       expect(String(uuidToSlug(vector.uuid))).toBe(vector.direct);
       expect(String(codec.encodeUuid(vector.uuid))).toBe(vector.masked);
       expect(String(codec.decodeSlug(vector.masked))).toBe(vector.uuid);

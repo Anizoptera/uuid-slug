@@ -7,7 +7,7 @@
  * fixed, public, unkeyed bijection — could never be, and the reason it replaced it.
  *
  * One primitive serves both callers that need one: the Feistel round function (`feistel.ts`) and the
- * key derivation (`schema.ts`). Neither justifies its own.
+ * key derivation (`mask.ts`). Neither justifies its own.
  *
  * Chosen over full SipHash-2-4 because that is defined over 64-bit words, which JavaScript has only
  * as `BigInt` or as hand-emulated 32-bit pairs — the first far too slow for a hot path, the second a
@@ -18,7 +18,7 @@
  * two-round network), so agreement with a specification somebody else wrote is the only evidence
  * available that can actually fail.
  *
- * Its key is 64 bits. `schema.ts` runs two independently keyed instances and XORs them, the standard
+ * Its key is 64 bits. `mask.ts` runs two independently keyed instances and XORs them, the standard
  * cascade for widening a PRF's key; see there.
  */
 

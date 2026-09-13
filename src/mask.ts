@@ -1,271 +1,355 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "./alphabet.ts";
-import { UuidSlugError } from "./errors.ts";
-import { mix32, read32 } from "./feistel.ts";
-import { applyMaskSchema } from "./schema-handle.ts";
-import { bytesToUuid } from "./uuid.ts";
-import type { UuidV7Mask, MaskedUuidV7Slug, UuidString } from "./types.ts";
-import type { SlugAlphabet } from "./slug.ts";
+import { isUint8Array, UuidSlugError } from "./errors.ts";
+import { FEISTEL_KEY_WORDS, feistel16 } from "./feistel.ts";
+import { createMaskHandle } from "./mask-handle.ts";
+import { halfSipHash } from "./siphash.ts";
+import type { HashContinuation } from "./siphash.ts";
+import { encodeUtf8 } from "#runtime";
+import type { AsyncUuidV7MaskOptions, UuidV7Mask, UuidV7MaskOptions } from "./types.ts";
 
-/** Custom callbacks can fail after construction; preserve their cause in the public error contract. */
-function applyMix(
-  schema: UuidV7Mask,
-  input: Uint8Array,
-  output: Uint8Array,
-  direction: "mask" | "unmask",
-): undefined | UuidSlugError {
+/** Reject short seeds early; length alone cannot make a chosen secret unpredictable. */
+const SEED_MIN_BYTES = 16;
+
+/** Bound accidental work-factor typos; construction cost still depends on the runtime and seed. */
+const MAX_KEY_ITERATIONS = 1 << 24;
+
+/** Large aligned byte seeds can share their owned buffer without changing HalfSipHash's byte order. */
+const LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
+const SEED_WORD_VIEW_MIN_BYTES = 4096;
+
+/*#__NO_SIDE_EFFECTS__*/
+function canViewSeedWords(seed: Uint8Array) {
+  return LITTLE_ENDIAN && (seed.byteOffset & 3) === 0 && (seed.length & 3) === 0;
+}
+
+/**
+ * Initial keys for the two derivation chains, nothing-up-my-sleeve: the little-endian ASCII of
+ * "uuid" with "slgA" and "slgB", so a reader can check they conceal no chosen structure.
+ *
+ * Their VALUES are arbitrary. Their STABILITY is wire-format-bearing — any other numbers give every
+ * seed different round keys and make every masked slug ever issued undecodable.
+ */
+const CHAIN_A_KEY1 = 0x41676c73;
+const CHAIN_B_KEY1 = 0x42676c73;
+const CHAIN_KEY0 = 0x64697575;
+
+function seedBytes(seed: string | Uint8Array) {
+  if (typeof seed !== "string") return new Uint8Array(seed);
+  return encodeUtf8(seed);
+}
+
+/** Reject coercible JavaScript values before they can allocate storage or become key material. */
+function validateOptions(options: unknown) {
+  if (typeof options !== "object" || options === null)
+    return new UuidSlugError(
+      "invalid_mask",
+      "Mask options must contain a string or Uint8Array seed.",
+    );
+  const input = options as {
+    readonly label?: unknown;
+    readonly keyDerivationIterations?: unknown;
+    readonly seed?: unknown;
+  };
+  const seed = input.seed;
+  if (typeof seed !== "string" && !isUint8Array(seed))
+    return new UuidSlugError("invalid_mask", "Mask seed must be a string or Uint8Array.");
+  const givenLabel = input.label;
+  const label = givenLabel === undefined ? "seeded" : givenLabel;
+  if (typeof label !== "string")
+    return new UuidSlugError("invalid_mask", "Mask label must be a string.");
+  const givenIterations = input.keyDerivationIterations;
+  const keyDerivationIterations = givenIterations === undefined ? 1 : givenIterations;
+  const iterations = validatedIterations(keyDerivationIterations);
+  if (typeof iterations !== "number") return iterations;
+  return { label, iterations, seed };
+}
+
+/** Repack bytes as the little-endian 32-bit words `halfSipHash` absorbs. */
+/*#__NO_SIDE_EFFECTS__*/
+function seedWords(seed: Uint8Array) {
+  if (seed.length >= SEED_WORD_VIEW_MIN_BYTES && canViewSeedWords(seed))
+    return new Int32Array(seed.buffer, seed.byteOffset, seed.length >>> 2);
+  const words = new Int32Array(Math.ceil(seed.length / 4) + 1);
+  writeSeedWords(seed, words);
+  return words;
+}
+
+/** Pack one byte range; a running byte offset also handles UTF-8 chunks ending mid-word. */
+function writeSeedWords(
+  seed: Uint8Array,
+  words: Int32Array,
+  offset = 0,
+  start = 0,
+  end = seed.length,
+) {
+  for (let index = start; index < end; index += 1) {
+    const absolute = offset + index;
+    words[absolute >>> 2] =
+      (words[absolute >>> 2] as number) | ((seed[index] as number) << ((absolute & 3) * 8));
+  }
+}
+
+/**
+ * Hash the seed under successive outputs, for `iterations` total hashes. This work is paid
+ * at construction, never per id. The count changes key material and must remain stable for
+ * issued slugs; retain the old count with its seed when rotating masks.
+ */
+/*#__NO_SIDE_EFFECTS__*/
+function chain(key0: number, key1: number, words: Int32Array, length: number, iterations: number) {
+  const out = new Int32Array(2);
+  halfSipHash(key0, key1, words, length, out);
+  for (let i = 1; i < iterations; i += 1)
+    halfSipHash(out[0] as number, out[1] as number, words, length, out);
+  return out;
+}
+
+/**
+ * Derive each round key by XORing outputs from two fixed derivation chains. Their combined
+ * state is 128 bits; that representation does not establish 128-bit security. Chain constants,
+ * word indices and byte order are frozen by the issued wire format.
+ */
+/*#__NO_SIDE_EFFECTS__*/
+function derivedKeys(seed: Uint8Array, iterations: number) {
+  const words = seedWords(seed);
+  const chainA = chain(CHAIN_KEY0, CHAIN_A_KEY1, words, seed.length, iterations);
+  const chainB = chain(CHAIN_KEY0, CHAIN_B_KEY1, words, seed.length, iterations);
+  return roundKeys(chainA, chainB);
+}
+
+/** The same final key expansion follows synchronous and cooperative derivation. */
+/*#__NO_SIDE_EFFECTS__*/
+function roundKeys(chainA: Int32Array, chainB: Int32Array) {
+  const keys = new Int32Array(FEISTEL_KEY_WORDS);
+  const index = new Int32Array(1);
+  const fromA = new Int32Array(2);
+  const fromB = new Int32Array(2);
+  for (let word = 0; word < FEISTEL_KEY_WORDS; word += 2) {
+    index[0] = word;
+    halfSipHash(chainA[0] as number, chainA[1] as number, index, 4, fromA);
+    halfSipHash(chainB[0] as number, chainB[1] as number, index, 4, fromB);
+    keys[word] = (fromA[0] as number) ^ (fromB[0] as number);
+    keys[word + 1] = (fromA[1] as number) ^ (fromB[1] as number);
+  }
+  return keys;
+}
+
+/*#__NO_SIDE_EFFECTS__*/
+function feistelMask(label: string, seed: Uint8Array, iterations: number): UuidV7Mask {
+  return maskFromKeys(label, derivedKeys(seed, iterations));
+}
+
+/*#__NO_SIDE_EFFECTS__*/
+function maskFromKeys(label: string, keys: Int32Array): UuidV7Mask {
+  return createMaskHandle(label, (input, output, direction) => {
+    feistel16(input, 0, keys, direction, output, 0);
+  });
+}
+
+/**
+ * Derive an immutable mask from a secret seed of at least 16 bytes. The seed and iteration count
+ * define the wire format; retain the old mask in `previousMasks` before changing either. Invalid
+ * options return `invalid_mask`.
+ *
+ * @param options - Stable secret seed, optional diagnostic label, and derivation work factor.
+ * @returns The mask, or `UuidSlugError` when an option or seed is invalid.
+ */
+export function createUuidV7Mask(options: UuidV7MaskOptions): UuidV7Mask | UuidSlugError {
   try {
-    const cause = applyMaskSchema(schema, input, output, direction);
-    return cause
-      ? new UuidSlugError(
-          "invalid_mask",
-          `UUIDv7 mask "${schema.label}" failed while ${direction === "mask" ? "masking" : "unmasking"}.`,
-          { cause },
-        )
-      : undefined;
+    const validated = validateOptions(options);
+    if (!("seed" in validated)) return validated;
+    const seed = seedBytes(validated.seed);
+    const short = invalidSeedLength(seed.length);
+    return short ?? feistelMask(validated.label, seed, validated.iterations);
   } catch (cause) {
-    return new UuidSlugError(
-      "invalid_mask",
-      `UUIDv7 mask "${schema.label}" failed while ${direction === "mask" ? "masking" : "unmasking"}.`,
-      { cause },
-    );
+    return new UuidSlugError("invalid_mask", "Mask construction failed.", { cause });
   }
-}
-
-/**
- * Spread every input word across the check so structured UUID fields do not collapse into a sum.
- * This avalanche mixer supplies error detection, not authentication or a cryptographic-strength
- * claim; `docs/security.md` defines that boundary.
- *
- * Taken from the TOP so that widening the check never renumbers the bits below it.
- */
-/*#__NO_SIDE_EFFECTS__*/
-function tagFor(bytes: Uint8Array, width: number) {
-  let acc = 0;
-  for (let offset = 0; offset < 16; offset += 4) acc = mix32(acc ^ read32(bytes, offset));
-  return acc >>> (32 - width);
-}
-
-/**
- * The 12 check bits a UUIDv7 can hold inside the block, because it spends them on nothing: bits
- * 0-3 in byte 6's version nibble, 4-5 in byte 8's variant bits, 6-11 in byte 0's top six — the
- * high end of the 48-bit timestamp, zero for every instant before 2109. The rest of the check
- * rides outside the block, in whatever the encoding has spare.
- *
- * Claiming byte 0 is why encoding must REFUSE an instant at or past 2^42 ms rather than truncate.
- */
-function injectTag(bytes: Uint8Array, tag: number) {
-  bytes[6] = ((tag & 0x0f) << 4) | ((bytes[6] ?? 0) & 0x0f);
-  bytes[8] = ((tag & 0x30) << 2) | ((bytes[8] ?? 0) & 0x3f);
-  bytes[0] = (((tag >>> 6) & 0x3f) << 2) | ((bytes[0] ?? 0) & 0x03);
 }
 
 /*#__NO_SIDE_EFFECTS__*/
-function extractTag(bytes: Uint8Array) {
-  return ((bytes[6] ?? 0) >>> 4) | (((bytes[8] ?? 0) >>> 6) << 4) | (((bytes[0] ?? 0) >>> 2) << 6);
-}
-
-/** Puts back the constants the tag displaced, so the block equals the UUID the caller handed in. */
-function restoreV7(bytes: Uint8Array) {
-  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x70;
-  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
-  bytes[0] = (bytes[0] ?? 0) & 0x03;
-}
-
-/** Restore the fixed ciphertext block without allocating views or per-key buffers. */
-function restoreCiphertext(bytes: Uint8Array, a: number, b: number, c: number, d: number) {
-  bytes[0] = a >>> 24;
-  bytes[1] = a >>> 16;
-  bytes[2] = a >>> 8;
-  bytes[3] = a;
-  bytes[4] = b >>> 24;
-  bytes[5] = b >>> 16;
-  bytes[6] = b >>> 8;
-  bytes[7] = b;
-  bytes[8] = c >>> 24;
-  bytes[9] = c >>> 16;
-  bytes[10] = c >>> 8;
-  bytes[11] = c;
-  bytes[12] = d >>> 24;
-  bytes[13] = d >>> 16;
-  bytes[14] = d >>> 8;
-  bytes[15] = d;
-}
-
-/** The 12 check bits that fit inside the block; the rest ride in the encoding's spare bits. */
-const INNER_TAG_BITS = 12;
-
-/**
- * The existing base64url wire format fixes four outer check bits. Alternate spellings preserve
- * all 132 bits; the safe base32hex spelling adds three zero padding bits, not more check bits.
- */
-const OUTER_TAG_BITS = spareBits(BASE64URL, 16);
-const TAG_BITS = INNER_TAG_BITS + OUTER_TAG_BITS;
-
-/**
- * Mask a private block in place. Callers must own `raw`: tag injection destroys its UUID bytes.
- * This separate entry keeps mutation impossible on the ordinary caller-owned byte path while a
- * freshly parsed UUID string can avoid an otherwise redundant copy.
- */
-export function ownedUuidV7BytesToMaskedSlug(
-  raw: Uint8Array,
-  schema: UuidV7Mask,
-  alphabet: SlugAlphabet = "base64url",
-  reserved?: { readonly size: number; has(slug: string): boolean },
-): MaskedUuidV7Slug | UuidSlugError {
-  // Truncating instead would make encoding non-injective — two UUIDs would share one slug, and no
-  // decoder could ever tell which was meant. Refusing is the only recoverable answer.
-  if ((raw[0] ?? 0) > 0x03)
-    return new UuidSlugError(
-      "invalid_timestamp",
-      "Masking requires a UUIDv7 timestamped before 2^42 ms (year 2109); its top six bits carry the check.",
-    );
-  const tag = tagFor(raw, TAG_BITS);
-  injectTag(raw, tag >>> OUTER_TAG_BITS);
-  // Every mask receives an isolated block. Reusing that block as output removes a second
-  // allocation; built-in transforms read all words before writing and custom transforms copy input.
-  const failed = applyMix(schema, raw, raw, "mask");
-  if (failed) return failed;
-  const tail = tag & ((1 << OUTER_TAG_BITS) - 1);
-  // Raw sentinels have zero outer bits. Only that tail can collide with retained base64 reads;
-  // other safe writes need no second encoding to check a collision that cannot occur.
-  const canonical =
-    alphabet === "base64url" || (tail === 0 && reserved?.size)
-      ? encode(raw, BASE64URL, tail, OUTER_TAG_BITS)
-      : undefined;
-  if (canonical !== undefined && reserved?.has(canonical))
+function invalidSeedLength(length: number): undefined | UuidSlugError {
+  if (length < SEED_MIN_BYTES)
     return new UuidSlugError(
       "invalid_mask",
-      "Masked output collides with a reserved sentinel. Configure a different mask or sentinel set.",
+      `Mask seed must be at least ${SEED_MIN_BYTES} bytes, got ${length}. Generate one with \`openssl rand -base64 32\` rather than choosing it; a guessable seed hides nothing however long it is.`,
     );
-  return (
-    canonical !== undefined && alphabet === "base64url"
-      ? canonical
-      : encode(raw, BASE32HEX, tail, OUTER_TAG_BITS)
-  ) as MaskedUuidV7Slug;
+  return undefined;
 }
 
-export function decodeMaskedSlug(
-  slug: string,
-  schema: UuidV7Mask,
-  previous: readonly UuidV7Mask[] = [],
-): Uint8Array | UuidSlugError {
-  if (typeof slug !== "string")
-    return new UuidSlugError("invalid_uuid_slug", "Masked UUID slug must be a string.");
-  const mixed = new Uint8Array(16);
-  const outerTag = decodeInto(
-    slug,
-    slug.length === 27 ? BASE32HEX : BASE64URL,
-    mixed,
-    0,
-    16,
-    OUTER_TAG_BITS,
-  );
-  if (outerTag instanceof Error) return outerTag;
-  if (!previous.length) {
-    const primary = unmix(mixed, outerTag, schema);
-    return (
-      primary ??
-      new UuidSlugError(
-        "invalid_uuid_slug",
-        "No configured mask decodes this slug: its check fails under every key.",
-      )
+function validatedIterations(iterations: unknown): number | UuidSlugError {
+  if (
+    typeof iterations !== "number" ||
+    !Number.isInteger(iterations) ||
+    iterations < 1 ||
+    iterations > MAX_KEY_ITERATIONS
+  )
+    return new UuidSlugError(
+      "invalid_mask",
+      `Mask keyDerivationIterations must be a whole number in 1..${MAX_KEY_ITERATIONS}, got ${String(iterations)}.`,
     );
-  }
-  const word0 = read32(mixed, 0);
-  const word1 = read32(mixed, 4);
-  const word2 = read32(mixed, 8);
-  const word3 = read32(mixed, 12);
-  const primary = unmix(mixed, outerTag, schema);
-  if (primary instanceof Error) return primary;
-  if (primary) return primary;
-  // Scalar ciphertext survives in-place attempts without allocating a block for every decode.
-  for (const older of previous) {
-    restoreCiphertext(mixed, word0, word1, word2, word3);
-    const decoded = unmix(mixed, outerTag, older);
-    if (decoded instanceof Error) return decoded;
-    if (decoded) return decoded;
-  }
-  return new UuidSlugError(
-    "invalid_uuid_slug",
-    "No configured mask decodes this slug: its check fails under every key.",
-  );
+  return iterations;
 }
 
-/** Capture the first passing UUID before another callback can mutate its private bytes. */
-export function decodeFirstMaskedCandidate(
-  mixed: Uint8Array,
-  outerTag: number,
-  schemas: readonly UuidV7Mask[],
-  candidates: UuidString[] = [],
-): UuidString[] | UuidSlugError {
-  for (const schema of schemas) {
-    const decoded = unmix(mixed.slice(), outerTag, schema);
-    if (decoded instanceof Error) return decoded;
-    if (decoded) {
-      const uuid = bytesToUuid(decoded);
-      if (uuid instanceof Error) return uuid;
-      if (!candidates.includes(uuid)) candidates.push(uuid);
-      break;
+/** Bounded byte work between checkpoints, independent of total seed size or iteration count. */
+const CHUNK_BYTES = 4096;
+
+const host = globalThis as { setImmediate?: (callback: () => void) => void };
+const immediate = host.setImmediate?.bind(host);
+
+/** Yield to a host task so timers, input and cancellation can run; a microtask would starve them. */
+function yieldToHost(): Promise<void> {
+  // Prioritized scheduler continuations can overtake queued cancellation tasks in browsers.
+  if (immediate) return new Promise((resolve) => immediate(resolve));
+  return new Promise((resolve) => {
+    const channel = new MessageChannel();
+    // eslint-disable-next-line unicorn/prefer-add-event-listener -- this private port has one handler; assignment also starts delivery
+    channel.port1.onmessage = () => {
+      channel.port1.close();
+      channel.port2.close();
+      resolve();
+    };
+    channel.port2.postMessage(null);
+  });
+}
+
+function* cooperativeChain(
+  key0: number,
+  key1: number,
+  words: Int32Array,
+  length: number,
+  iterations: number,
+): Generator<void, Int32Array, void> {
+  const out = new Int32Array(2);
+  out[0] = key0;
+  out[1] = key1;
+  const hashesPerChunk = Math.max(1, Math.floor(CHUNK_BYTES / (length + 4)));
+  let sinceCheckpoint = 0;
+  for (let i = 0; i < iterations; i += 1) {
+    let continuation: HashContinuation | undefined;
+    do {
+      continuation = halfSipHash(out[0], out[1], words, length, out, continuation, CHUNK_BYTES / 4);
+      if (continuation) yield;
+    } while (continuation);
+    sinceCheckpoint += 1;
+    if (sinceCheckpoint >= hashesPerChunk) {
+      sinceCheckpoint = 0;
+      yield;
     }
   }
-  return candidates;
+  return out;
 }
 
-/** Append every distinct candidate while allocating one callback-isolated block for the scan. */
-export function decodeMaskedCandidates(
-  mixed: Uint8Array,
-  outerTag: number,
-  schemas: readonly UuidV7Mask[],
-  candidates: UuidString[] = [],
-): UuidString[] | UuidSlugError {
-  if (!schemas.length) return candidates;
-  const working = mixed.slice();
-  const firstSchema = schemas[0];
-  if (!firstSchema) return candidates;
-  const firstDecoded = unmix(working, outerTag, firstSchema);
-  if (firstDecoded instanceof Error) return firstDecoded;
-  if (firstDecoded) {
-    const uuid = bytesToUuid(firstDecoded);
-    if (uuid instanceof Error) return uuid;
-    if (!candidates.includes(uuid)) candidates.push(uuid);
+function* cooperativeKeys(
+  seed: string | Uint8Array,
+  iterations: number,
+): Generator<void, Int32Array | UuidSlugError, void> {
+  // Byte seeds were snapshotted before suspension. Strings are immutable, so encoding can yield.
+  const chunks: Uint8Array[] = [];
+  let length = 0;
+  if (typeof seed === "string") {
+    for (let start = 0; start < seed.length;) {
+      let end = Math.min(seed.length, start + CHUNK_BYTES);
+      // Do not split a surrogate pair: encoding either half alone would substitute U+FFFD.
+      const last = seed.charCodeAt(end - 1);
+      const next = seed.charCodeAt(end);
+      if (end < seed.length && last >= 0xd800 && last <= 0xdbff && next >= 0xdc00 && next <= 0xdfff)
+        end -= 1;
+      const bytes = encodeUtf8(seed.slice(start, end));
+      chunks.push(bytes);
+      length += bytes.length;
+      start = end;
+      yield;
+    }
+  } else {
+    chunks.push(seed);
+    length = seed.length;
   }
-  if (schemas.length === 1) return candidates;
-  const word0 = read32(mixed, 0);
-  const word1 = read32(mixed, 4);
-  const word2 = read32(mixed, 8);
-  const word3 = read32(mixed, 12);
-  for (let index = 1; index < schemas.length; index += 1) {
-    const schema = schemas[index];
-    if (!schema) continue;
-    // Custom callbacks may mutate their input; no key may alter what the next one sees.
-    restoreCiphertext(working, word0, word1, word2, word3);
-    const decoded = unmix(working, outerTag, schema);
-    // A failed callback means the candidate list is incomplete, not that its key mismatched.
-    if (decoded instanceof Error) return decoded;
-    if (decoded) {
-      const uuid = bytesToUuid(decoded);
-      if (uuid instanceof Error) return uuid;
-      if (!candidates.includes(uuid)) candidates.push(uuid);
+  const short = invalidSeedLength(length);
+  if (short) return short;
+  const viewBytes =
+    typeof seed !== "string" && seed.length >= SEED_WORD_VIEW_MIN_BYTES && canViewSeedWords(seed);
+  const words = viewBytes
+    ? new Int32Array(seed.buffer, seed.byteOffset, seed.length >>> 2)
+    : new Int32Array(Math.ceil(length / 4) + 1);
+  if (!viewBytes) {
+    let offset = 0;
+    for (const bytes of chunks) {
+      for (let start = 0; start < bytes.length; start += CHUNK_BYTES) {
+        writeSeedWords(bytes, words, offset, start, Math.min(bytes.length, start + CHUNK_BYTES));
+        yield;
+      }
+      offset += bytes.length;
     }
   }
-  return candidates;
+  chunks.length = 0;
+  const chainA = yield* cooperativeChain(CHAIN_KEY0, CHAIN_A_KEY1, words, length, iterations);
+  const chainB = yield* cooperativeChain(CHAIN_KEY0, CHAIN_B_KEY1, words, length, iterations);
+  return roundKeys(chainA, chainB);
 }
 
-function unmix(
-  mixed: Uint8Array,
-  outerTag: number,
-  schema: UuidV7Mask,
-): Uint8Array | undefined | UuidSlugError {
-  // `mixed` is already private to this mask attempt, so the same alias-safe transform contract
-  // can write back into it instead of allocating another block.
-  const failed = applyMix(schema, mixed, mixed, "unmask");
-  if (failed) return failed;
-  // Both halves come out of the same decryption, so a wrong key garbles the observed check as
-  // thoroughly as the payload: the tag needs no key of its own to tell keys apart.
-  const foundTag = (extractTag(mixed) << OUTER_TAG_BITS) | outerTag;
-  restoreV7(mixed);
-  if (tagFor(mixed, TAG_BITS) !== foundTag) return undefined;
-  return mixed;
+/**
+ * Derive the same mask without monopolizing the host task. Later mutation of a byte seed does not
+ * affect the result. Cancellation returns `aborted` with `signal.reason` as its cause; invalid
+ * options return `invalid_mask`. Construct once and reuse the result.
+ *
+ * @param options - Synchronous mask options plus an optional cancellation signal.
+ * @returns A promise for the mask or an expected construction error.
+ */
+export async function createUuidV7MaskAsync(
+  options: AsyncUuidV7MaskOptions,
+): Promise<UuidV7Mask | UuidSlugError> {
+  try {
+    const signal = options?.signal;
+    const aborted = () =>
+      new UuidSlugError("aborted", "Mask construction was aborted.", {
+        cause: signal?.reason,
+      });
+    if (signal?.aborted) return aborted();
+    const validated = validateOptions(options);
+    if (!("seed" in validated)) return validated;
+    const seed =
+      typeof validated.seed === "string" ? validated.seed : new Uint8Array(validated.seed);
+    const steps = cooperativeKeys(seed, validated.iterations);
+    let deadline = performance.now() + 2;
+    while (true) {
+      if (signal?.aborted) {
+        const failure = aborted();
+        steps.return(failure);
+        return failure;
+      }
+      const step = steps.next();
+      if (step.done)
+        return ArrayBuffer.isView(step.value)
+          ? maskFromKeys(validated.label, step.value)
+          : step.value;
+      if (performance.now() >= deadline) {
+        // eslint-disable-next-line no-await-in-loop -- each slice must yield before continuing the dependent derivation
+        await yieldToHost();
+        deadline = performance.now() + 2;
+      }
+    }
+  } catch (cause) {
+    return new UuidSlugError("invalid_mask", "Mask construction failed.", { cause });
+  }
 }
+
+/**
+ * A PUBLIC key. It ships in the tarball, so every masked slug produced under it is decodable by
+ * anyone who installed this package, and it therefore provides none of the obscurity masking
+ * exists for.
+ *
+ * It is exported so a deterministic test or example can opt in visibly with
+ * `mask: UUID_V7_TEST_MASK`; codec construction never selects it by omission.
+ */
+const DEFAULT_SEED = "anizoptera.uuid-slug.default-mask.v1";
+
+// Built from `feistelMask` rather than through `createUuidV7Mask`, whose failures are a short seed and a
+// bad iteration count — checks on CALLER input that the literals here cannot fail. Routing through it would return
+// `UuidV7Mask | UuidSlugError` and force a cast that, at module scope, could only ever hide a real Error
+// behind a `UuidV7Mask` type at module scope.
+/** Public-key mask for deterministic tests and examples. Never use it to hide production IDs. */
+export const UUID_V7_TEST_MASK: UuidV7Mask = /*#__PURE__*/ feistelMask(
+  "default",
+  /*#__PURE__*/ seedBytes(DEFAULT_SEED),
+  1,
+);

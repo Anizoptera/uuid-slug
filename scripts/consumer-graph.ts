@@ -14,17 +14,17 @@ const VERSION_MODULES = {
 const MASKING_MODULE_FILES = new Set([
   "codec.ts",
   "feistel.ts",
-  "mask.ts",
+  "payload.ts",
   "migration.ts",
-  "schema-handle.ts",
-  "schema.ts",
+  "mask-handle.ts",
+  "mask.ts",
   "siphash.ts",
   "codec.js",
   "feistel.js",
-  "mask.js",
+  "payload.js",
   "migration.js",
-  "schema-handle.js",
-  "schema.js",
+  "mask-handle.js",
+  "mask.js",
   "siphash.js",
 ]);
 

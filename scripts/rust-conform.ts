@@ -245,7 +245,7 @@ export function evaluate(request: Request): Outcome {
 }
 
 export async function contractRequests(): Promise<Request[]> {
-  const wire: { uuid: string; direct: string; masked: string; schema: string }[] = JSON.parse(
+  const wire: { uuid: string; direct: string; masked: string; mask: string }[] = JSON.parse(
     await readFile("rust/uuid-slug/tests/fixtures/fixtures-wire-format.json", "utf8"),
   );
   const original: {
@@ -310,9 +310,9 @@ export async function contractRequests(): Promise<Request[]> {
     });
   for (const vector of wire) {
     const key =
-      vector.schema === "custom-mix"
+      vector.mask === "custom-mix"
         ? "custom-mix"
-        : vector.schema === "default"
+        : vector.mask === "default"
           ? undefined
           : { seed: "golden-vector-seed-v3" };
     const encode: Request = {
