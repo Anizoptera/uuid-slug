@@ -471,7 +471,11 @@ precompiled operation removes measured per-attempt work rather than only reshapi
 ### Runtime capability review
 
 The 2026-09-12 review probed Node 26.8.2, Bun 1.4.2, Deno 2.9.6, and Chromium
-153 twice. Node and Bun expose `node:crypto.randomUUIDv7`; Deno does not. Bun also exposes
+153 twice. Node and Bun expose `node:crypto.randomUUIDv7`; Deno does not. Node's native UUIDv7
+re-randomizes all 74 random bits on every call, so consecutive same-millisecond values order by
+chance, while Bun's advances a 12-bit counter (50,000-sample entropy probe of 2026-08-12 on Node
+26.7.0 and Bun 1.3.14). README §Guarantees promises no ordering within a millisecond, so neither
+behavior changes adapter selection. Bun also exposes
 `Bun.randomUUIDv7`: its buffer form is a `Buffer`, explicit zero is accepted, and NaN throws
 `ERR_OUT_OF_RANGE`. Keep runtime dispatch capability-based because shared Node API names do not
 imply shared implementation.
@@ -1169,21 +1173,25 @@ surface without new capability. NIL/MAX constants and permissive UUID spellings 
 package's strict v4/v7 slug contract. `uuidv7` exposes finer clock-rollback policy; add such policy
 only if a consumer needs behavior other than the current monotonic generator contract.
 
-A full local run on 2026-09-12 used Node 24.21.0, Bun 1.4.2, Deno 2.9.6, and Chromium, with nine
-20 ms samples after 32 ms warm-up per case. The package led every measured allocated-byte and
-caller-buffer group except Deno v7 allocation, where `uuidv7` was about 3% faster. A focused
-seven-sample replay on 2026-09-13 reversed that narrow result by about 1%, with overlapping
-confidence intervals; no Deno allocation difference is established. Native v4 text
-was within 1% of Node's platform primitive; Deno paid about 34% over its primitive for the package's
-validation and error-value boundary; Chromium's portable text was about 4% behind `@lukeed/uuid`.
-The package led comparable package v7 text routes on Bun, Deno, and Chromium. On Node it measured
-about 2% behind the direct native primitive that it validates and adapts to typed failures.
+Two full local runs on 2026-09-13 used Node 24.21.0, Bun 1.4.2, Deno 2.9.6, and Chromium, with nine
+20 ms samples after 32 ms warm-up per case. Both runs agreed on every direction below. A `--smoke`
+run taken first disagreed with them on Bun byte routes by 30–70%, so smoke output validates the
+harness and ranks nothing. The package led every allocated-byte and caller-buffer group on Node,
+Chromium, and Deno, and Bun's owned-byte groups. Bun's UUIDv4 caller-buffer write trailed `uuid`
+by about 10% in both runs. Deno's owned UUIDv7 bytes were unresolved against `uuidv7`: 12% behind,
+then 2% ahead. UUIDv7 text led every package on all four runtimes and sat within 1–6% of the native
+primitive on Node and Bun. UUIDv4 text matched Node's platform primitive within 1%; on Bun it
+trailed `crypto-randomuuid` by about 10% and the primitive by 5%; on Deno it trailed `uniku` by
+about 30% and paid 34% over the primitive for validation and the error-value boundary; on Chromium
+it trailed the pooled portable generator in `@lukeed/uuid` by 13–15%. A single 2026-09-12 run had
+put the Chromium gap at about 4% and found no Bun caller-buffer loss; the paired runs supersede it.
 `fastv7` remains timed but cannot win the headline comparison: independent processes and restarted
 state reuse sequence zero, so 62 random bits distinguish the same timestamp and sequence instead of
 this package's 74-bit collision margin. Its clock, sequence, buffer, and failure strategies are not
 disqualifying by themselves. Its faster mechanism remains an optimization lead if that margin survives.
-Validated text timestamp extraction was within about 3% of `uuidv7-js` on Node and Deno and 15% on
-Chromium. `uniku` timestamp results are not ranked because its call accepts non-v7 UUID text.
+Validated text timestamp extraction trailed `uuidv7-js` by 3–8% on Node, Bun, and Deno and by
+14–15% on Chromium in both runs. `uniku` timestamp results are not ranked because its call accepts
+non-v7 UUID text.
 
 These are single-machine warm-throughput observations, not universal rankings. Process startup,
 bundle size, memory, operating-system entropy quality, other hardware, and other engine versions
