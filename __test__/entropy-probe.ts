@@ -50,7 +50,7 @@ export const generators: readonly (readonly [string, () => unknown])[] = [
   ["generateUuidV7At", () => generateUuidV7At(INSTANT)],
   ["generateUuidV7BytesAt", () => generateUuidV7BytesAt(INSTANT)],
   ["generateUuidV4Slug", generateUuidV4Slug],
-  ["generate", () => codec.generateSlug()],
+  ["generate", () => codec.generateUuidSlug()],
 ];
 
 /**

@@ -584,7 +584,7 @@ Retest only if primary engines materially change regex or fixed-index string acc
 ### Direct base64url slug-to-UUID formatting
 
 Direct JavaScript decoding into canonical UUID text was rejected. One six-round packed comparison
-made `slugToUuid` 46–47% slower on Node 26.8.2 and about 100% slower on Bun 1.4.2 while adding about
+made `uuidSlugToString` 46–47% slower on Node 26.8.2 and about 100% slower on Bun 1.4.2 while adding about
 0.77 KiB to the minified UUID module. Avoiding one 16-byte array did not repay fixed-block decode and
 hex assembly; the current byte decoder plus runtime-selected formatter remains smaller and faster.
 Reconsider only if the native formatter disappears or a direct string primitive replaces JavaScript
@@ -593,7 +593,7 @@ concatenation.
 ### Direct base32hex slug-to-UUID formatting
 
 Direct JavaScript decoding into canonical UUID text was rejected. One six-round packed comparison
-made `slugToUuid` 28–29% slower on Node 26.8.2 and about 115% slower on Bun 1.4.2 while adding about
+made `uuidSlugToString` 28–29% slower on Node 26.8.2 and about 115% slower on Bun 1.4.2 while adding about
 0.44 KiB to the minified UUID module. Avoiding one 16-byte array did not repay bit accumulation and
 hex assembly; the current fixed decoder plus runtime-selected formatter remains smaller and faster.
 Reconsider only if the native formatter disappears or a direct string primitive replaces JavaScript
@@ -1130,6 +1130,19 @@ throughput and startup cost. A JITless-only win may justify code when every high
 
 ## Regression protection and limits
 
+### Error recognition
+
+Repeated profiles on 2026-09-13 used Node 26.8.2, Node 24.21.0, Bun 1.4.2, Deno 2.9.6, and
+Chromium with nine 30 ms samples after warm-up. Own and prototype string, short-string, and symbol
+markers all overlapped within single-digit nanoseconds; shortening `__failure` did not reproduce a
+win. The inherited `__failure === true` check cost about 6–8 ns, while successful non-error
+classification cost about 6–9 ns. Native `Error.isError` was materially slower on Node, Deno, and
+Chromium and only tied the marker family on Bun. Keep one immutable prototype `__failure` marker:
+it avoids per-instance storage, remains readable across realms and package copies, and leaves native
+recognition for unmarked compatibility errors only. Remeasure when a supported engine changes
+Error layout or native error recognition; these warm microbenchmarks do not establish cold-start,
+other hardware, or adversarial-proxy cost.
+
 ### Consumer graph
 
 Packed browser production builds on 2026-09-12 gave Bun, esbuild, Parcel, Rollup, Rolldown, Rspack,
@@ -1137,7 +1150,7 @@ and webpack job-sized output from named root imports. Focused imports produced e
 optimized bytes, so they did not provide additional tree shaking and do not justify public entries.
 
 The packed probes execute every optimized bundle and require the masking seed only in the masked
-case. A 2026-08-12 Bun-only predecessor measured 13,082 bytes for `uuidToSlug` before masking was
+case. A 2026-08-12 Bun-only predecessor measured 13,082 bytes for `uuidStringToSlug` before masking was
 made removable and 2,229 after; the current cross-bundler check replaces that narrower proof.
 
 `bun run perf:check` protects JavaScript-visible allocation, decoding, encoding and entropy work, plus coarse relative pipeline timings on both runtimes. Its injected result-preserving regressions must fail. Shared functional cases protect wire identity, ownership, invalid input and optional native branches. Async cases protect snapshots, UTF-8 chunk boundaries, cancellation and independent concurrent constructions; changing host yields to microtasks makes cancellation fail.

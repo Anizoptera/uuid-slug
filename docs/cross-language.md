@@ -41,7 +41,7 @@ Use validated `Uuid` values between operations; parse text once rather than at e
 
 | TypeScript capability | Rust entry point or composition |
 | --- | --- |
-| `uuidToBytes` / `bytesToUuid`; bytes and offsets | `Uuid::parse`, `from_slice`, `as_bytes`, `write_into`, `Display` |
+| `uuidStringToBytes` / `bytesToUuidString`; bytes and offsets | `Uuid::parse`, `from_slice`, `as_bytes`, `write_into`, `Display` |
 | Direct slug conversion | `Uuid::slug`, `Uuid::parse_slug` |
 | UUID/string/slug and generic/v4/v7 byte guards | Parse once, then `Uuid::is_v4`, `is_v7`, `is_rfc_variant` |
 | Base64url UUID payload | `Alphabet::Base64Url.encode(&[u8; 16])`, `decode`, `decode_to` |

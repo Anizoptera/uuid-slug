@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BASE32HEX, BASE64URL, decodeInto, encode } from "./alphabet.ts";
-import { UuidSlugError } from "./errors.ts";
+import { isUuidSlugError, UuidSlugError } from "./errors.ts";
 import { decodeFirstMaskedCandidate, decodeMaskedCandidates } from "./payload.ts";
 import type {
   UuidV7Mask,
@@ -12,7 +12,7 @@ import type {
   UuidV7String,
 } from "./types.ts";
 import { UUID_SLUG_MIGRATION_FORMATS } from "./types.ts";
-import { bytesToUuid } from "./uuid.ts";
+import { bytesToUuidString } from "./uuid.ts";
 
 // These tables and the four-bit checksum define the original wire format.
 // Changing them would change the UUID recovered from an existing slug.
@@ -61,7 +61,12 @@ export function createMigration(
   const original = originalOption === true;
   const direct = directOption === true;
 
-  function read(slug: string, format: UuidSlugMigrationFormat | undefined, firstOnly: boolean) {
+  function read(
+    slug: string | UuidSlugError,
+    format: UuidSlugMigrationFormat | undefined,
+    firstOnly: boolean,
+  ) {
+    if (isUuidSlugError(slug)) return slug;
     if (typeof slug !== "string")
       return new UuidSlugError("invalid_uuid_slug", "Migration slug must be a string.");
     if (
@@ -92,7 +97,7 @@ export function createMigration(
       16,
       base32 ? 0 : 4,
     );
-    if (tail instanceof Error) return tail;
+    if (isUuidSlugError(tail)) return tail;
     // A base64 alias differs only in its final four bits; reuse the validated text instead of
     // encoding all sixteen bytes again. Base32 input still needs the sentinel's base64 spelling.
     const reserved =
@@ -108,8 +113,8 @@ export function createMigration(
     if (reserved && firstOnly) return [reserved.uuid];
     const candidates: UuidString[] = reserved ? [reserved.uuid] : [];
     function add(value: Uint8Array) {
-      const uuid = bytesToUuid(value);
-      if (uuid instanceof Error) return uuid;
+      const uuid = bytesToUuidString(value);
+      if (isUuidSlugError(uuid)) return uuid;
       if (!candidates.includes(uuid)) candidates.push(uuid);
       return undefined;
     }
@@ -117,7 +122,7 @@ export function createMigration(
       const matches = firstOnly
         ? decodeFirstMaskedCandidate(bytes, tail, masks, candidates)
         : decodeMaskedCandidates(bytes, tail, masks, candidates);
-      if (matches instanceof Error) return matches;
+      if (isUuidSlugError(matches)) return matches;
       if (firstOnly && candidates.length) return candidates;
     }
     // Legacy aliases reserve the raw identity, but their check bits can also encode a current ID.
@@ -138,14 +143,14 @@ export function createMigration(
   }
 
   return {
-    decodeSlug(slug, format) {
+    uuidSlugToString(slug, format) {
       const result = read(slug, format, true);
-      return result instanceof Error
+      return isUuidSlugError(result)
         ? result
         : (result[0] ??
             new UuidSlugError("invalid_uuid_slug", "Slug does not match an enabled format."));
     },
-    decodeSlugCandidates(slug, format) {
+    uuidSlugToStringCandidates(slug, format) {
       return read(slug, format, false);
     },
   };

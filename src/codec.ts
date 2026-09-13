@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { checkByteRange, isUuidSlugError, UuidSlugError } from "./errors.ts";
+import { checkByteRange, isUuidSlugError, isUint8Array, UuidSlugError } from "./errors.ts";
 import { generateUuidV7Bytes as generateDefaultUuidV7Bytes } from "./v7-keyless.ts";
 import { ownedUuidV7BytesToMaskedSlug, decodeMaskedSlug } from "./payload.ts";
 import { createMigration } from "./migration.ts";
@@ -21,8 +21,8 @@ import type {
   UuidV7Sentinel,
   UuidV7String,
 } from "./types.ts";
-import { resolveSlugAlphabet, bytesToSlug, extractUuidV7Timestamp } from "./slug.ts";
-import { bytesToUuid, isUuidV7Bytes, uuidToBytes } from "./uuid.ts";
+import { resolveSlugAlphabet, bytesToUuidSlug, extractUuidV7Timestamp } from "./slug.ts";
+import { bytesToUuidString, isUuidV7Bytes, uuidStringToBytes } from "./uuid.ts";
 import type { UuidV7TimestampWindow, UuidV7SentinelConfig } from "./types.ts";
 import type { SlugAlphabet } from "./slug.ts";
 
@@ -51,7 +51,10 @@ const EMPTY_SENTINEL_STATE: SentinelState = Object.freeze({
   sentinels: EMPTY_SENTINELS,
 });
 
-function maskFromOption(mask: UuidV7Mask | UuidV7MaskOptions): UuidV7Mask | UuidSlugError {
+function maskFromOption(
+  mask: UuidV7Mask | UuidV7MaskOptions | UuidSlugError,
+): UuidV7Mask | UuidSlugError {
+  if (isUuidSlugError(mask)) return mask;
   if (isMaskHandle(mask)) return mask;
   if (typeof mask !== "object" || mask === null)
     return new UuidSlugError(
@@ -123,8 +126,8 @@ function createSentinels(
     // Sentinel configuration accepts raw strings so callers do not need casts before reaching the
     // validating seam. Check each value here, while a bad definition is still a constructor error
     // rather than a codec that fails on every later decode.
-    const bytes = uuidToBytes(definition.uuid);
-    if (bytes instanceof Error) return bytes;
+    const bytes = uuidStringToBytes(definition.uuid);
+    if (isUuidSlugError(bytes)) return bytes;
     if (!isUuidV7Bytes(bytes))
       return new UuidSlugError(
         "invalid_uuid_version",
@@ -138,11 +141,11 @@ function createSentinels(
         `Sentinel "${definition.name}" repeats the UUID of an earlier sentinel.`,
       );
     // Sentinels remain raw UUIDs; only their writer follows the masked alphabet selection.
-    const slug = bytesToSlug(bytes, alphabet);
-    if (slug instanceof Error) return slug;
+    const slug = bytesToUuidSlug(bytes, alphabet);
+    if (isUuidSlugError(slug)) return slug;
     const sentinel = Object.freeze({
       name: definition.name,
-      // `bytesToSlug` returns the version-agnostic brand; the v7-ness comes
+      // `bytesToUuidSlug` returns the version-agnostic brand; the v7-ness comes
       // from the check above.
       slug: slug as SentinelUuidV7Slug,
       uuid: definition.uuid as UuidV7String,
@@ -152,8 +155,8 @@ function createSentinels(
     byUuid.set(definition.uuid, sentinel.slug);
     encoded.push({ bytes, slug: sentinel.slug });
     bySlug.set(sentinel.slug, { uuid: sentinel.uuid, bytes });
-    const alternate = bytesToSlug(bytes, alphabet === "base64url" ? "base32hex" : "base64url");
-    if (alternate instanceof Error) return alternate;
+    const alternate = bytesToUuidSlug(bytes, alphabet === "base64url" ? "base32hex" : "base64url");
+    if (isUuidSlugError(alternate)) return alternate;
     bySlug.set(alternate, { uuid: sentinel.uuid, bytes });
   }
   let encodedByFingerprint: EncodedSentinelIndex | undefined;
@@ -296,8 +299,8 @@ function buildUuidSlugCodec(
     // adds only work. Keep byte inputs on the scan because their identity has no canonical map key.
     const sentinel = sentinels.byUuid.get(uuid);
     if (sentinel) return sentinel;
-    const bytes = uuidToBytes(uuid);
-    if (bytes instanceof Error) return bytes;
+    const bytes = uuidStringToBytes(uuid);
+    if (isUuidSlugError(bytes)) return bytes;
     if (!isUuidV7Bytes(bytes))
       return new UuidSlugError(
         "invalid_uuid_version",
@@ -306,34 +309,44 @@ function buildUuidSlugCodec(
     return ownedUuidV7BytesToMaskedSlug(bytes, handle, outputAlphabet, sentinels.bySlug);
   }
 
-  function encodeUuid(uuid: string | Uint8Array): UuidV7CodecSlug | UuidSlugError {
-    return typeof uuid === "string" ? encodeString(uuid) : encodeMasked(uuid);
+  function uuidStringToSlug(uuid: string | UuidSlugError): UuidV7CodecSlug | UuidSlugError {
+    return isUuidSlugError(uuid) ? uuid : encodeString(uuid);
   }
 
-  function decodeSlug(slug: string): UuidV7String | UuidSlugError {
+  function uuidBytesToSlug(uuid: Uint8Array | UuidSlugError): UuidV7CodecSlug | UuidSlugError {
+    return isUint8Array(uuid)
+      ? encodeMasked(uuid)
+      : isUuidSlugError(uuid)
+        ? uuid
+        : new UuidSlugError("invalid_buffer", "UUID bytes must be a Uint8Array.");
+  }
+
+  function uuidSlugToString(slug: string | UuidSlugError): UuidV7String | UuidSlugError {
+    if (isUuidSlugError(slug)) return slug;
     const sentinel = sentinels.bySlug.get(slug);
     if (sentinel) return sentinel.uuid;
     const decoded = decodeMaskedSlug(slug, handle, previousMasks);
-    if (decoded instanceof Error) return decoded;
-    return bytesToUuid(decoded) as UuidV7String | UuidSlugError;
+    if (isUuidSlugError(decoded)) return decoded;
+    return bytesToUuidString(decoded) as UuidV7String | UuidSlugError;
   }
 
-  function decodeSlugToBytes(slug: string): UuidV7Bytes | UuidSlugError;
-  function decodeSlugToBytes<Output extends Uint8Array>(
-    slug: string,
+  function uuidSlugToBytes(slug: string | UuidSlugError): UuidV7Bytes | UuidSlugError;
+  function uuidSlugToBytes<Output extends Uint8Array>(
+    slug: string | UuidSlugError,
     output: Output,
     outputOffset?: number,
   ): Output | UuidSlugError;
-  function decodeSlugToBytes(
-    slug: string,
+  function uuidSlugToBytes(
+    slug: string | UuidSlugError,
     output?: Uint8Array,
     outputOffset = 0,
   ): Uint8Array | UuidSlugError {
+    if (isUuidSlugError(slug)) return slug;
     const badRange = output === undefined ? undefined : checkByteRange(output, outputOffset, 16);
     if (badRange) return badRange;
     const sentinelBytes = sentinels.bySlug.get(slug)?.bytes;
     const decoded = sentinelBytes ?? decodeMaskedSlug(slug, handle, previousMasks);
-    if (decoded instanceof Error) return decoded;
+    if (isUuidSlugError(decoded)) return decoded;
     if (output) {
       output.set(decoded, outputOffset);
       return output;
@@ -341,7 +354,7 @@ function buildUuidSlugCodec(
     return sentinelBytes ? new Uint8Array(sentinelBytes) : decoded;
   }
 
-  function generateSlug(): UuidV7CodecSlug | UuidSlugError {
+  function generateUuidSlug(): UuidV7CodecSlug | UuidSlugError {
     try {
       const bytes = generateBytes();
       return isUuidSlugError(bytes) ? bytes : encodeMasked(bytes, true);
@@ -350,10 +363,11 @@ function buildUuidSlugCodec(
     }
   }
 
-  function extractSlugTimestamp(slug: string): number | UuidSlugError {
+  function extractUuidSlugTimestamp(slug: string | UuidSlugError): number | UuidSlugError {
+    if (isUuidSlugError(slug)) return slug;
     const bytes =
       sentinels.bySlug.get(slug)?.bytes ?? decodeMaskedSlug(slug, handle, previousMasks);
-    return bytes instanceof Error ? bytes : extractUuidV7Timestamp(bytes);
+    return isUuidSlugError(bytes) ? bytes : extractUuidV7Timestamp(bytes);
   }
 
   function createMigrationDecoder<const Options extends UuidSlugMigrationOptions = {}>(
@@ -365,28 +379,30 @@ function buildUuidSlugCodec(
     return createMigration([handle, ...previousMasks], sentinels.bySlug, migrationOptions);
   }
 
-  function validateSlugTimestamp<Input extends string>(
+  function validateUuidSlugTimestamp<Input extends string | UuidSlugError>(
     slug: Input,
     window: UuidV7TimestampWindow,
   ): (Input & UuidV7CodecSlug) | UuidSlugError {
+    if (isUuidSlugError(slug)) return slug;
     const bytes =
       sentinels.bySlug.get(slug)?.bytes ?? decodeMaskedSlug(slug, handle, previousMasks);
-    if (bytes instanceof Error) return bytes;
+    if (isUuidSlugError(bytes)) return bytes;
     if (!isUuidV7Bytes(bytes))
       return new UuidSlugError("invalid_uuid_version", "Decoded UUID is not UUIDv7.");
     const valid = validateTimestampBytes(bytes, window);
-    return valid instanceof Error ? valid : (slug as Input & UuidV7CodecSlug);
+    return isUuidSlugError(valid) ? valid : (slug as Input & UuidV7CodecSlug);
   }
 
   const codec: UuidV7SlugCodec = {
     sentinels: sentinels.sentinels,
     createMigrationDecoder,
-    generateSlug,
-    encodeUuid,
-    decodeSlug,
-    decodeSlugToBytes,
-    extractSlugTimestamp,
-    validateSlugTimestamp,
+    generateUuidSlug,
+    uuidStringToSlug,
+    uuidBytesToSlug,
+    uuidSlugToString,
+    uuidSlugToBytes,
+    extractUuidSlugTimestamp,
+    validateUuidSlugTimestamp,
   };
   return Object.freeze(codec);
 }

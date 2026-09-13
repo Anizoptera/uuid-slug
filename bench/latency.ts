@@ -14,7 +14,7 @@ const ids = Array.from(
   { length: 256 },
   (_, i) => `0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f${i.toString(16).padStart(4, "0")}`,
 );
-const slugs = ids.map((id) => unwrap(api.uuidToSlug(id)));
+const slugs = ids.map((id) => unwrap(api.uuidStringToSlug(id)));
 const codec = unwrap(api.createUuidV7SlugCodec({ mask: { seed: "profile-current-seed" } }));
 const older = unwrap(api.createUuidV7SlugCodec({ mask: { seed: "profile-previous-seed" } }));
 const rotated = unwrap(
@@ -23,10 +23,10 @@ const rotated = unwrap(
     previousMasks: [{ seed: "profile-previous-seed" }],
   }),
 );
-const masked = ids.map((id) => unwrap(codec.encodeUuid(id)));
+const masked = ids.map((id) => unwrap(codec.uuidStringToSlug(id)));
 const old = ids
-  .map((id) => unwrap(older.encodeUuid(id)))
-  .filter((slug) => codec.decodeSlug(slug) instanceof Error);
+  .map((id) => unwrap(older.uuidStringToSlug(id)))
+  .filter((slug) => codec.uuidSlugToString(slug) instanceof Error);
 assert.ok(old.length > 0);
 const timestampWindow = {
   maxTimestampDeltaMs: 86_400_000,
@@ -39,31 +39,31 @@ const pairs: { name: string; subject: Operation; reference: Operation; limit: nu
   {
     name: "UUID guard / parsing",
     subject: (i) => api.isUuidV7String(ids[i & 255]),
-    reference: (i) => api.uuidToBytes(ids[i & 255] as string),
+    reference: (i) => api.uuidStringToBytes(ids[i & 255] as string),
     limit: 1.5,
   },
   {
     name: "slug guard / decoding",
     subject: (i) => api.isUuidV7Slug(slugs[i & 255]),
-    reference: (i) => api.slugToBytes(slugs[i & 255] as string),
+    reference: (i) => api.uuidSlugToBytes(slugs[i & 255] as string),
     limit: 1.5,
   },
   {
     name: "plain timestamp validation / decoding",
     subject: (i) => api.validateUuidV7SlugTimestamp(slugs[i & 255] as string, timestampWindow),
-    reference: (i) => api.slugToBytes(slugs[i & 255] as string),
+    reference: (i) => api.uuidSlugToBytes(slugs[i & 255] as string),
     limit: 3,
   },
   {
     name: "masked timestamp validation / decoding",
-    subject: (i) => codec.validateSlugTimestamp(masked[i & 255] as string, timestampWindow),
-    reference: (i) => codec.decodeSlug(masked[i & 255] as string),
+    subject: (i) => codec.validateUuidSlugTimestamp(masked[i & 255] as string, timestampWindow),
+    reference: (i) => codec.uuidSlugToString(masked[i & 255] as string),
     limit: 1.5,
   },
   {
     name: "previous key / current key",
-    subject: (i) => rotated.decodeSlug(old[i % old.length] as string),
-    reference: (i) => rotated.decodeSlug(masked[i & 255] as string),
+    subject: (i) => rotated.uuidSlugToString(old[i % old.length] as string),
+    reference: (i) => rotated.uuidSlugToString(masked[i & 255] as string),
     limit: 3,
   },
 ];

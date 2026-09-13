@@ -10,18 +10,18 @@ import {
   createUuidV7SlugCodec,
   createCustomUuidV7Mask,
   extractUuidV7Timestamp,
-  bytesToUuid,
-  bytesToSlug,
+  bytesToUuidString,
+  bytesToUuidSlug,
   isUuidV4String,
   isUuidV7Bytes,
   isUuidV7Slug,
   isUuidV7String,
   isUuidSlugError,
-  uuidToBytes,
-  slugToBytes,
-  slugToUuid,
+  uuidStringToBytes,
+  uuidSlugToBytes,
+  uuidSlugToString,
   UuidSlugError,
-  uuidToSlug,
+  uuidStringToSlug,
   generateUuidV4,
   generateUuidV4Bytes,
   generateUuidV4Slug,
@@ -125,7 +125,7 @@ export const runtimeBoundaryCases = [
         runtime.uuidV4 = native("v4", "123e4567-e89b-42d3-a456-426614174000");
         runtime.uuidV7 = native("v7", uuid);
         assert.equal(generateUuidV4(), "123e4567-e89b-42d3-a456-426614174000");
-        assert.equal(isUuidV4String(bytesToUuid(unwrap(generateUuidV4Bytes()))), true);
+        assert.equal(isUuidV4String(bytesToUuidString(unwrap(generateUuidV4Bytes()))), true);
         assert.equal(typeof generateUuidV4Slug(), "string");
         assert.equal(generateUuidV7(), uuid);
         assert.equal(isUuidV7String(generateUuidV7At(timestamp)), true);
@@ -228,7 +228,7 @@ export const runtimeBoundaryCases = [
     name: "accepts cross-realm Uint8Array inputs",
     run(this: void) {
       const bytes = vm.runInNewContext("new Uint8Array(16)") as Uint8Array;
-      assert.equal(bytesToUuid(bytes), "00000000-0000-0000-0000-000000000000");
+      assert.equal(bytesToUuidString(bytes), "00000000-0000-0000-0000-000000000000");
     },
   },
   {
@@ -244,8 +244,8 @@ export const runtimeBoundaryCases = [
       });
       assert.ok(!(handle instanceof Error));
       const codec = unwrap(createUuidV7SlugCodec({ mask: handle }));
-      const slug = unwrap(codec.encodeUuid(uuid));
-      assert.equal(codec.decodeSlug(slug), uuid);
+      const slug = unwrap(codec.uuidStringToSlug(uuid));
+      assert.equal(codec.uuidSlugToString(slug), uuid);
     },
   },
   {
@@ -254,11 +254,11 @@ export const runtimeBoundaryCases = [
       const slug = "AR9x-wRQcSGISEhKEhISEg";
       const generator = makeGenerator();
       const calls = [
-        (value: unknown) => Reflect.apply(bytesToUuid, undefined, [value]),
-        (value: unknown) => Reflect.apply(bytesToSlug, undefined, [value]),
+        (value: unknown) => Reflect.apply(bytesToUuidString, undefined, [value]),
+        (value: unknown) => Reflect.apply(bytesToUuidSlug, undefined, [value]),
         (value: unknown) => Reflect.apply(extractUuidV7Timestamp, undefined, [value]),
-        (value: unknown) => Reflect.apply(uuidToBytes, undefined, [uuid, value]),
-        (value: unknown) => Reflect.apply(slugToBytes, undefined, [slug, value]),
+        (value: unknown) => Reflect.apply(uuidStringToBytes, undefined, [uuid, value]),
+        (value: unknown) => Reflect.apply(uuidSlugToBytes, undefined, [slug, value]),
         (value: unknown) => Reflect.apply(generateUuidV4Bytes, undefined, [value]),
         (value: unknown) => Reflect.apply(generator.generateUuidV7Bytes, undefined, [value]),
         (value: unknown) =>
@@ -279,14 +279,20 @@ export const runtimeBoundaryCases = [
     },
   },
   {
-    name: "classifies only local errors with a published code",
+    name: "uses the marker protocol before validating unmarked legacy errors",
     run(this: void) {
       const invalid = Reflect.construct(UuidSlugError, ["unknown_code", "invalid code"]);
-      assert.equal(isUuidSlugError(invalid), false);
+      assert.equal(isUuidSlugError(invalid), true);
 
       const mutated = new UuidSlugError("invalid_uuid", "mutated code");
       Reflect.set(mutated, "code", "unknown_code");
-      assert.equal(isUuidSlugError(mutated), false);
+      assert.equal(isUuidSlugError(mutated), true);
+
+      const unmarked = Object.assign(new Error("unmarked"), {
+        name: "UuidSlugError",
+        code: "unknown_code",
+      });
+      assert.equal(isUuidSlugError(unmarked), false);
     },
   },
   {
@@ -312,7 +318,7 @@ export const runtimeBoundaryCases = [
         generator.generateUuidV7Bytes,
       );
       assert.ok(!(codec instanceof Error));
-      assert.equal(codec.generateSlug(), foreignError);
+      assert.equal(codec.generateUuidSlug(), foreignError);
     },
   },
   {
@@ -406,7 +412,7 @@ export const runtimeBoundaryCases = [
     name: `uses the supplied generator for ${slugAlphabet}`,
     run(this: void) {
       const generated = unwrap(makeGenerator().generateUuidV7());
-      assert.equal(slugToUuid(unwrap(uuidToSlug(generated, slugAlphabet))), uuid);
+      assert.equal(uuidSlugToString(unwrap(uuidStringToSlug(generated, slugAlphabet))), uuid);
     },
   })),
   {
@@ -641,7 +647,7 @@ export const runtimeBoundaryCases = [
   {
     name: "rejects collision on generated ciphertext as well as explicit conversion",
     run(this: void) {
-      const bytes = uuidToBytes("019ff19b-58b8-7000-9b1b-df713bd55607");
+      const bytes = uuidStringToBytes("019ff19b-58b8-7000-9b1b-df713bd55607");
       assert.ok(!(bytes instanceof Error));
       const xor = Uint8Array.from(Buffer.from("c99ff19b58b890005b1bdf713bd55607", "hex"));
       const mask = unwrap(
@@ -658,7 +664,7 @@ export const runtimeBoundaryCases = [
       const codec = unwrap(
         createUuidV7SlugCodecWithGenerator({ mask, sentinels: NIL_TEST_SENTINEL }, () => bytes),
       );
-      const failure = codec.generateSlug();
+      const failure = codec.generateUuidSlug();
       assert.ok(failure instanceof UuidSlugError);
       assert.equal(failure.code, "invalid_mask");
     },

@@ -241,8 +241,8 @@ fn run(request: &Value) -> Result<Value, Error> {
                 <[u8; 16]>::try_from(bytes).map_err(|_| Error::new(ErrorCode::InvalidBuffer))?;
             Ok(json!(Alphabet::Base64Url.encode(&bytes)))
         }
-        "validateUuidTimestamp" | "validateSlugTimestamp" => {
-            let uuid = if request["op"] == "validateSlugTimestamp" {
+        "validateUuidTimestamp" | "validateUuidSlugTimestamp" => {
+            let uuid = if request["op"] == "validateUuidSlugTimestamp" {
                 Uuid::parse_slug(input)?
             } else {
                 Uuid::parse(input)?

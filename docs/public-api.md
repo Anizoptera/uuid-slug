@@ -82,7 +82,7 @@ non-JSDoc comments; keep exploration transient.
 
 Keep UUID text/binary conversion directional and version-neutral:
 
-- `uuidToBytes` converts canonical UUID text to 16-byte storage; `bytesToUuid` converts 16 bytes to
+- `uuidStringToBytes` converts canonical UUID text to 16-byte storage; `bytesToUuidString` converts 16 bytes to
   canonical UUID text. Source and destination names remove the parse/format ambiguity, while
   version-neutral names remain correct for every UUID version.
 - Accept `Uint8Array` and its subtypes. Exclude `ArrayBuffer`, `DataView`, and array-like values:
@@ -107,10 +107,12 @@ Keep UUID text/binary conversion directional and version-neutral:
   method remains self-explanatory.
 - Create the default generator lazily so a codec used only to encode or decode pays no generator
   allocation. Codec generation uses that package-owned source; callers encode externally produced
-  UUIDs through `encodeUuid` instead of replacing the codec's entropy source.
-- Name codec operations for both action and object: `generateSlug`, `encodeUuid`, `decodeSlug`,
-  `decodeSlugToBytes`, `extractSlugTimestamp`, and `validateSlugTimestamp`. Name migration
-  operations `decodeSlug` and `decodeSlugCandidates` because detached readers must still identify
+  UUIDs through `uuidStringToSlug` instead of replacing the codec's entropy source.
+- Name codec operations by source and destination: `generateUuidSlug`, `uuidStringToSlug`,
+  `uuidBytesToSlug`, `uuidSlugToString`, `uuidSlugToBytes`, `extractUuidSlugTimestamp`, and
+  `validateUuidSlugTimestamp`. Keep text and byte inputs separate so each name and input type state
+  the representation and the successful route avoids representation dispatch. Name migration
+  operations `uuidSlugToString` and `uuidSlugToStringCandidates` because detached readers must still identify
   their input.
 - Use `outputAlphabet` for the codec writer choice. It selects emitted slug spelling; it does not
   constrain readers, which infer and accept both supported spellings.
@@ -156,8 +158,7 @@ Keep UUID text/binary conversion directional and version-neutral:
 - Prove composition in both JavaScript execution and TypeScript types. Exercise successful chains,
   unchanged error identity, and skipped downstream work; compile compatible calls without casts
   or intermediate guards and reject incompatible representations and UUID versions. TypeScript
-  brands and overloads do not remove JavaScript validation or runtime work. Keep error
-  representation and recognition open to measured alternatives that preserve these criteria.
+  brands and overloads do not remove JavaScript validation or runtime work.
 - Select error checks for the values callers actually pass, and minimize their cost when no error
   is present. Compare error recognition directly; input validation is a separate operation and
   cannot substitute for that comparison. For package-produced values, evaluate marker-only
@@ -174,6 +175,12 @@ Keep UUID text/binary conversion directional and version-neutral:
   separate cost, not an automatic addition. Preserve diagnostics and error identity, and test
   inference separately from JavaScript behavior. Follow `bench/README.md` for runtime coverage,
   repetitions, and failure controls; a predicate microbenchmark cannot establish total call cost.
+- Mark every `UuidSlugError` through one immutable prototype property named `__failure`. Test that
+  marker first with `=== true`; its meaning is package failure routing, not authentication. For an
+  unmarked value, use `Error.isError` when available and the cross-realm intrinsic Error tag
+  otherwise, then require the package error name and a known code. Do not add `instanceof` to
+  package-owned result handling. Remeasure the marker when supported engines change Error layout
+  or recognition capabilities.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Package-owned interfaces
   carry failures as values; adapt and contain exception-based dependencies at their boundary.
 - Keep one error class with stable, actionable codes. Codes guide different recovery actions without

@@ -2,7 +2,7 @@
 
 import { strict as assert } from "node:assert";
 import {
-  bytesToUuid,
+  bytesToUuidString,
   createCustomUuidV7Mask,
   createUuidV7Mask,
   createUuidV7MaskAsync,
@@ -19,10 +19,10 @@ import {
   isUuidSlug,
   isUuidV4Slug,
   isUuidV7Slug,
-  uuidToBytes,
-  uuidToSlug,
+  uuidStringToBytes,
+  uuidStringToSlug,
   generateUuidV7Slug,
-  slugToUuid,
+  uuidSlugToString,
   UUID_SLUG_ERROR_CODES,
   UuidSlugError,
 } from "../src/index";
@@ -58,18 +58,18 @@ export const codecBoundaryCases = [
     run() {
       const codec = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK });
       const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
-      const slug = unwrap(codec.encodeUuid(uuid));
-      const timestamp = unwrap(extractUuidV7Timestamp(unwrap(uuidToBytes(uuid))));
-      assert.equal(codec.decodeSlug(slug), uuid);
-      assert.deepEqual(codec.decodeSlugToBytes(slug), unwrap(uuidToBytes(uuid)));
+      const slug = unwrap(codec.uuidStringToSlug(uuid));
+      const timestamp = unwrap(extractUuidV7Timestamp(unwrap(uuidStringToBytes(uuid))));
+      assert.equal(codec.uuidSlugToString(slug), uuid);
+      assert.deepEqual(codec.uuidSlugToBytes(slug), unwrap(uuidStringToBytes(uuid)));
       assert.equal(
-        codec.validateSlugTimestamp(slug, {
+        codec.validateUuidSlugTimestamp(slug, {
           maxTimestampDeltaMs: 86_400_000,
           referenceUnixMs: timestamp,
         }),
         slug,
       );
-      assert.ok(!(codec.generateSlug() instanceof Error));
+      assert.ok(!(codec.generateUuidSlug() instanceof Error));
       assert.equal(Object.isFrozen(codec), true);
       assert.equal("uuidV7MaskedSlug" in codec, false);
     },
@@ -81,25 +81,25 @@ export const codecBoundaryCases = [
         "550e8400-e29b-41d4-a716-446655440000",
         "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051",
       ]) {
-        const bytes = unwrap(uuidToBytes(uuid));
+        const bytes = unwrap(uuidStringToBytes(uuid));
         assert.equal(isUuidBytes(bytes), true);
         assert.equal(bytes.constructor, Uint8Array);
-        assert.equal(bytesToUuid(bytes), uuid);
+        assert.equal(bytesToUuidString(bytes), uuid);
 
         const destination = new Uint8Array(24).fill(0xee);
-        assert.equal(uuidToBytes(uuid, destination, 4), destination);
-        assert.equal(bytesToUuid(destination, 4), uuid);
+        assert.equal(uuidStringToBytes(uuid, destination, 4), destination);
+        assert.equal(bytesToUuidString(destination, 4), uuid);
       }
       assert.equal(
-        isUuidV4Bytes(unwrap(uuidToBytes("550e8400-e29b-41d4-a716-446655440000"))),
+        isUuidV4Bytes(unwrap(uuidStringToBytes("550e8400-e29b-41d4-a716-446655440000"))),
         true,
       );
       assert.equal(
-        isUuidV4Bytes(unwrap(uuidToBytes("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051"))),
+        isUuidV4Bytes(unwrap(uuidStringToBytes("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051"))),
         false,
       );
-      assert.ok(uuidToBytes("not a UUID") instanceof UuidSlugError);
-      assert.ok(bytesToUuid(new Uint8Array(15)) instanceof UuidSlugError);
+      assert.ok(uuidStringToBytes("not a UUID") instanceof UuidSlugError);
+      assert.ok(bytesToUuidString(new Uint8Array(15)) instanceof UuidSlugError);
       assert.equal(isUuidBytes(new Uint8Array(15)), false);
     },
   },
@@ -178,7 +178,7 @@ export const codecBoundaryCases = [
       };
       const codec = Reflect.apply(createCodec, undefined, [options]);
       assert.ok(!(codec instanceof Error));
-      assert.equal(typeof codec.generateSlug(), "string");
+      assert.equal(typeof codec.generateUuidSlug(), "string");
     },
   },
   {
@@ -243,7 +243,10 @@ export const codecBoundaryCases = [
         const definition = definitions[index];
         const sentinel = codec.sentinels[index];
         assert.ok(definition && sentinel);
-        assert.equal(codec.encodeUuid(unwrap(uuidToBytes(definition.uuid))), sentinel.slug);
+        assert.equal(
+          codec.uuidBytesToSlug(unwrap(uuidStringToBytes(definition.uuid))),
+          sentinel.slug,
+        );
       }
     },
   },
@@ -255,27 +258,27 @@ export const codecBoundaryCases = [
         sentinels: [TEST_SENTINELS[0]],
       });
       const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
-      const bytes = unwrap(uuidToBytes(uuid));
-      const v4 = unwrap(uuidToBytes("550e8400-e29b-41d4-a716-446655440000"));
-      const refused = codec.encodeUuid(v4);
+      const bytes = unwrap(uuidStringToBytes(uuid));
+      const v4 = unwrap(uuidStringToBytes("550e8400-e29b-41d4-a716-446655440000"));
+      const refused = codec.uuidBytesToSlug(v4);
       assert.ok(refused instanceof UuidSlugError);
       assert.equal(refused.code, "invalid_uuid_version");
-      const slug = unwrap(codec.encodeUuid(bytes));
-      const owned = unwrap(codec.decodeSlugToBytes(slug));
+      const slug = unwrap(codec.uuidBytesToSlug(bytes));
+      const owned = unwrap(codec.uuidSlugToBytes(slug));
       assert.equal(owned.constructor, Uint8Array);
       assert.deepEqual(owned, bytes);
       const destination = new Uint8Array(24).fill(0xee);
-      const returned = unwrap(codec.decodeSlugToBytes(slug, destination, 4));
+      const returned = unwrap(codec.uuidSlugToBytes(slug, destination, 4));
       assert.equal(returned, destination);
       assert.deepEqual(destination.subarray(4, 20), bytes);
       assert.deepEqual(destination.subarray(0, 4), new Uint8Array(4).fill(0xee));
       assert.deepEqual(destination.subarray(20), new Uint8Array(4).fill(0xee));
       const sentinel = codec.sentinels[0];
       assert.ok(sentinel);
-      const firstSentinelBytes = unwrap(codec.decodeSlugToBytes(sentinel.slug));
+      const firstSentinelBytes = unwrap(codec.uuidSlugToBytes(sentinel.slug));
       firstSentinelBytes.fill(0xff);
       assert.equal(
-        codec.decodeSlug(sentinel.slug),
+        codec.uuidSlugToString(sentinel.slug),
         sentinel.uuid,
         "owned bytes must not expose mutable sentinel storage",
       );
@@ -301,10 +304,10 @@ export const codecBoundaryCases = [
       assert.deepEqual(Object.keys(handle), ["label"]);
       const codec = unwrap(createCodec({ mask: handle }));
       const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
-      const slug = unwrap(codec.encodeUuid(uuid));
-      assert.equal(codec.decodeSlug(slug), uuid);
+      const slug = unwrap(codec.uuidStringToSlug(uuid));
+      assert.equal(codec.uuidSlugToString(slug), uuid);
       fail = true;
-      const refused = codec.encodeUuid(uuid);
+      const refused = codec.uuidStringToSlug(uuid);
       assert.ok(refused instanceof UuidSlugError);
       assert.equal(refused.cause, cause);
     },
@@ -330,61 +333,66 @@ export const codecBoundaryCases = [
         "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051",
         "03ffffff-ffff-7fff-bfff-ffffffffffff",
       ]) {
-        const bytes = unwrap(uuidToBytes(uuid));
-        const legacy = old.encodeUuid(uuid);
-        const encoded = safe.encodeUuid(uuid);
+        const bytes = unwrap(uuidStringToBytes(uuid));
+        const legacy = old.uuidStringToSlug(uuid);
+        const encoded = safe.uuidStringToSlug(uuid);
         assert.equal(typeof legacy, "string");
         assert.equal(typeof encoded, "string");
-        assert.equal(old.encodeUuid(bytes), legacy);
-        assert.equal(safe.encodeUuid(bytes), encoded);
+        assert.equal(old.uuidBytesToSlug(bytes), legacy);
+        assert.equal(safe.uuidBytesToSlug(bytes), encoded);
         const text = encoded as string;
         assert.equal(text.length, 27);
         assert.equal(bits(text, alphabet32, 5), bits(legacy as string, alphabet64, 6) + "000");
         for (const reader of [old, safe, rotated]) {
-          assert.equal(reader.decodeSlug(text), uuid);
-          assert.equal(reader.decodeSlug(legacy as string), uuid);
-          assert.deepEqual(reader.decodeSlugToBytes(text), bytes);
-          assert.deepEqual(reader.decodeSlugToBytes(legacy as string), bytes);
+          assert.equal(reader.uuidSlugToString(text), uuid);
+          assert.equal(reader.uuidSlugToString(legacy as string), uuid);
+          assert.deepEqual(reader.uuidSlugToBytes(text), bytes);
+          assert.deepEqual(reader.uuidSlugToBytes(legacy as string), bytes);
           assert.deepEqual(
             reader
               .createMigrationDecoder({ directSlug: true })
-              .decodeSlugCandidates(text, "current-mask"),
+              .uuidSlugToStringCandidates(text, "current-mask"),
             [uuid],
           );
           assert.deepEqual(
             reader
               .createMigrationDecoder({ directSlug: true, originalMask: true })
-              .decodeSlugCandidates(text),
+              .uuidSlugToStringCandidates(text),
             [uuid],
           );
           for (let padding = 1; padding < 8; padding += 1) {
             const alias =
               text.slice(0, 26) + alphabet32[alphabet32.indexOf(text[26] as string) | padding];
-            assert.ok(reader.decodeSlug(alias) instanceof Error);
+            assert.ok(reader.uuidSlugToString(alias) instanceof Error);
             assert.ok(
               reader
                 .createMigrationDecoder({ directSlug: true, originalMask: true })
-                .decodeSlugCandidates(alias) instanceof Error,
+                .uuidSlugToStringCandidates(alias) instanceof Error,
             );
           }
         }
-        assert.ok(safe.decodeSlug(text.toUpperCase()) instanceof Error);
-        assert.ok(old.decodeSlug(uuidToSlug(uuid, "base32hex") as string) instanceof Error);
+        assert.ok(safe.uuidSlugToString(text.toUpperCase()) instanceof Error);
+        assert.ok(
+          old.uuidSlugToString(uuidStringToSlug(uuid, "base32hex") as string) instanceof Error,
+        );
       }
       for (const sentinel of safe.sentinels) {
         assert.equal(sentinel.slug.length, 26);
-        assert.equal(slugToUuid(sentinel.slug), sentinel.uuid);
+        assert.equal(uuidSlugToString(sentinel.slug), sentinel.uuid);
         for (const reader of [old, safe]) {
-          assert.equal(reader.decodeSlug(sentinel.slug), sentinel.uuid);
+          assert.equal(reader.uuidSlugToString(sentinel.slug), sentinel.uuid);
           assert.equal(
-            reader.createMigrationDecoder({ directSlug: true }).decodeSlug(sentinel.slug),
+            reader.createMigrationDecoder({ directSlug: true }).uuidSlugToString(sentinel.slug),
             sentinel.uuid,
           );
-          assert.equal(reader.decodeSlug(uuidToSlug(sentinel.uuid) as string), sentinel.uuid);
+          assert.equal(
+            reader.uuidSlugToString(uuidStringToSlug(sentinel.uuid) as string),
+            sentinel.uuid,
+          );
         }
       }
       assert.equal(unwrap(generateUuidV7Slug("base32hex")).length, 26);
-      const plainSafe = createUuidV7SlugCodec({ mask }).encodeUuid(
+      const plainSafe = createUuidV7SlugCodec({ mask }).uuidStringToSlug(
         "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051",
       );
       assert.equal(typeof plainSafe, "string");
@@ -419,7 +427,7 @@ export const codecBoundaryCases = [
         assert.equal(isUuidV7String(value), v7);
         assert.equal(isUuidV7String(value.toUpperCase()), false);
         for (const alphabet of ["base64url", "base32hex"] as const) {
-          const slug = uuidToSlug(value, alphabet);
+          const slug = uuidStringToSlug(value, alphabet);
           assert.equal(typeof slug, "string");
           assert.equal(isUuidV4Slug(slug as string), v4);
           assert.equal(isUuidV7Slug(slug as string), v7);
@@ -429,7 +437,7 @@ export const codecBoundaryCases = [
         ["base64url", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_", 16],
         ["base32hex", "0123456789abcdefghijklmnopqrstuv", 4],
       ] as const) {
-        const slug = uuidToSlug(uuid, alphabet) as string;
+        const slug = uuidStringToSlug(uuid, alphabet) as string;
         for (let offset = 0; offset < slug.length; offset += 1) {
           for (let code = 0; code < 128; code += 1) {
             const char = String.fromCharCode(code);
@@ -447,7 +455,7 @@ export const codecBoundaryCases = [
   {
     name: "unknown runtime alphabet values return a package error",
     run() {
-      const result = Reflect.apply(uuidToSlug, undefined, [
+      const result = Reflect.apply(uuidStringToSlug, undefined, [
         "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051",
         Symbol("unknown"),
       ]);
@@ -462,11 +470,11 @@ export const codecBoundaryCases = [
       const migration = codec.createMigrationDecoder({ originalMask: true, directSlug: true });
       for (const value of [null, 1, Symbol("slug"), { length: 22 }]) {
         for (const decode of [
-          codec.decodeSlug,
-          codec.decodeSlugToBytes,
-          codec.validateSlugTimestamp,
-          migration.decodeSlug,
-          migration.decodeSlugCandidates,
+          codec.uuidSlugToString,
+          codec.uuidSlugToBytes,
+          codec.validateUuidSlugTimestamp,
+          migration.uuidSlugToString,
+          migration.uuidSlugToStringCandidates,
         ]) {
           const result = Reflect.apply(decode, undefined, [value]);
           assert.ok(result instanceof UuidSlugError);
@@ -505,11 +513,11 @@ export const codecBoundaryCases = [
           },
         }),
       );
-      const slug = unwrap(createUuidV7SlugCodec({ mask: previous }).encodeUuid(uuid));
+      const slug = unwrap(createUuidV7SlugCodec({ mask: previous }).uuidStringToSlug(uuid));
       const codec = createUuidV7SlugCodec({ mask: mutating, previousMasks: [previous] });
-      assert.equal(codec.decodeSlug(slug), uuid);
+      assert.equal(codec.uuidSlugToString(slug), uuid);
       fail = true;
-      const refused = codec.decodeSlug(slug);
+      const refused = codec.uuidSlugToString(slug);
       assert.ok(refused instanceof UuidSlugError);
       assert.equal(refused.code, "invalid_mask");
       assert.equal(refused.cause, cause);
@@ -536,11 +544,11 @@ export const codecBoundaryCases = [
           sentinels: [TEST_SENTINELS[0]],
           outputAlphabet: slugAlphabet,
         });
-        const result = codec.encodeUuid("019ff19b-58b8-7000-9b1b-df713bd55607");
+        const result = codec.uuidStringToSlug("019ff19b-58b8-7000-9b1b-df713bd55607");
         assert.ok(result instanceof UuidSlugError);
         assert.equal(result.code, "invalid_mask");
         assert.equal(
-          codec.decodeSlug("AAAAAAAAcACAAAAAAAAAAA"),
+          codec.uuidSlugToString("AAAAAAAAcACAAAAAAAAAAA"),
           "00000000-0000-7000-8000-000000000000",
         );
       }
@@ -585,7 +593,7 @@ export const codecBoundaryCases = [
           generator.generateUuidV7Bytes,
         ),
       );
-      assert.equal(codec.generateSlug(), "AAAAAAAAcACAAAAAAAAAAA");
+      assert.equal(codec.generateUuidSlug(), "AAAAAAAAcACAAAAAAAAAAA");
     },
   },
   {
@@ -597,7 +605,7 @@ export const codecBoundaryCases = [
           throw cause;
         }),
       );
-      const thrown = throwing.generateSlug();
+      const thrown = throwing.generateUuidSlug();
       assert.ok(isUuidSlugError(thrown));
       assert.equal(thrown.code, "rng_unavailable");
       assert.equal(thrown.cause, cause);
@@ -608,7 +616,7 @@ export const codecBoundaryCases = [
             { mask: UUID_V7_TEST_MASK },
             () => value as unknown as Uint8Array,
           ),
-        ).generateSlug();
+        ).generateUuidSlug();
         assert.ok(isUuidSlugError(malformed));
         assert.equal(malformed.code, "invalid_uuid_version");
       }
@@ -671,7 +679,7 @@ export const codecBoundaryCases = [
       } = { mask: UUID_V7_TEST_MASK, outputAlphabet: "base64url" };
       const codec = createUuidV7SlugCodec({ ...options, sentinels: TEST_SENTINELS });
       options.outputAlphabet = "base32hex";
-      assert.ok(codec.decodeSlug("AAAAAAAAQACAAAAAAAAAAA") instanceof UuidSlugError);
+      assert.ok(codec.uuidSlugToString("AAAAAAAAQACAAAAAAAAAAA") instanceof UuidSlugError);
       assert.ok(Object.isFrozen(codec));
       assert.ok(Object.isFrozen(codec.sentinels));
       assert.ok(codec.sentinels.every(Object.isFrozen));
@@ -687,10 +695,10 @@ export const codecBoundaryCases = [
       assert.ok(!(built instanceof Error));
       const stable = createUuidV7SlugCodec({ mask: built });
       const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
-      const slug = stable.encodeUuid(uuid);
+      const slug = stable.uuidStringToSlug(uuid);
       assert.equal(typeof slug, "string");
       mutable.unmask = (input) => input.fill(0);
-      assert.equal(stable.decodeSlug(slug as string), uuid);
+      assert.equal(stable.uuidSlugToString(slug as string), uuid);
     },
   },
   {
@@ -711,10 +719,10 @@ export const codecBoundaryCases = [
       );
       const codec = createUuidV7SlugCodec({ mask: handle });
       const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
-      const slug = codec.encodeUuid(uuid);
+      const slug = codec.uuidStringToSlug(uuid);
       assert.equal(typeof slug, "string");
       fail = true;
-      for (const result of [codec.encodeUuid(uuid), codec.decodeSlug(slug as string)]) {
+      for (const result of [codec.uuidStringToSlug(uuid), codec.uuidSlugToString(slug as string)]) {
         assert.ok(result instanceof UuidSlugError);
         assert.equal(result.code, "invalid_mask");
         assert.equal(result.cause, cause);
@@ -726,8 +734,8 @@ export const codecBoundaryCases = [
     run() {
       const first = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
       const second = "019ff19b-58b8-7000-9b1b-df713bd5562c";
-      const firstBytes = unwrap(uuidToBytes(first));
-      const secondBytes = unwrap(uuidToBytes(second));
+      const firstBytes = unwrap(uuidStringToBytes(first));
+      const secondBytes = unwrap(uuidStringToBytes(second));
       let codec: UuidV7SlugCodec | undefined;
       let nested: UuidV7CodecSlug | UuidSlugError | undefined;
       let entered = false;
@@ -735,7 +743,7 @@ export const codecBoundaryCases = [
         const before = input.slice();
         if (codec && !entered) {
           entered = true;
-          nested = codec.encodeUuid(secondBytes);
+          nested = codec.uuidBytesToSlug(secondBytes);
           entered = false;
           assert.deepEqual(input, before);
         }
@@ -745,10 +753,10 @@ export const codecBoundaryCases = [
         createCustomUuidV7Mask({ label: "nested", mask: transform, unmask: transform }),
       );
       codec = createUuidV7SlugCodec({ mask });
-      const outer = unwrap(codec.encodeUuid(firstBytes));
-      assert.equal(codec.decodeSlug(outer), first);
+      const outer = unwrap(codec.uuidBytesToSlug(firstBytes));
+      assert.equal(codec.uuidSlugToString(outer), first);
       if (typeof nested !== "string") assert.fail("nested encoding must return a slug");
-      assert.equal(codec.decodeSlug(nested), second);
+      assert.equal(codec.uuidSlugToString(nested), second);
     },
   },
   ...["constructor", "toString", "__proto__"].map((slugAlphabet) => ({

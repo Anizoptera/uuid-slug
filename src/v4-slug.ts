@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import { isUuidSlugError } from "./errors.ts";
 import type { UuidSlugError } from "./errors.ts";
 import type { UuidV4Slug } from "./types.ts";
 import { generateUuidV4Bytes } from "./v4.ts";
-import { bytesToSlug } from "./slug.ts";
+import { bytesToUuidSlug } from "./slug.ts";
 import type { SlugAlphabet } from "./slug.ts";
 
 /**
@@ -16,6 +17,6 @@ export function generateUuidV4Slug(
   alphabet: SlugAlphabet = "base64url",
 ): UuidV4Slug | UuidSlugError {
   const bytes = generateUuidV4Bytes();
-  if (bytes instanceof Error) return bytes;
-  return bytesToSlug(bytes, alphabet) as UuidV4Slug | UuidSlugError;
+  if (isUuidSlugError(bytes)) return bytes;
+  return bytesToUuidSlug(bytes, alphabet) as UuidV4Slug | UuidSlugError;
 }

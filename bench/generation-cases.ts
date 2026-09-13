@@ -21,14 +21,14 @@ import { unwrap } from "../dev/unwrap";
 import {
   createUuidV7Generator,
   createUuidV7SlugCodec,
-  bytesToSlug,
+  bytesToUuidSlug,
   extractUuidV7Timestamp,
   generateUuidV4,
   generateUuidV4Bytes,
   generateUuidV7,
   generateUuidV7Bytes,
   UUID_V7_TEST_MASK,
-  uuidToBytes,
+  uuidStringToBytes,
 } from "../src/index";
 import { generatePortableUuidV4 } from "../src/v4";
 
@@ -75,32 +75,32 @@ const timestampUuids = [
   "01990d4d-e601-7000-8000-000000000000",
 ] as const;
 const timestampBytes = [
-  unwrap(uuidToBytes(timestampUuids[0])),
-  unwrap(uuidToBytes(timestampUuids[1])),
+  unwrap(uuidStringToBytes(timestampUuids[0])),
+  unwrap(uuidStringToBytes(timestampUuids[1])),
 ] as const;
 const offsetTimestampBytes = new Uint8Array(24);
 const offsetTimestampBytesSecond = new Uint8Array(24);
 offsetTimestampBytes.set(timestampBytes[0], 4);
 offsetTimestampBytesSecond.set(timestampBytes[1], 4);
 const timestampSlugs = [
-  unwrap(bytesToSlug(timestampBytes[0])),
-  unwrap(bytesToSlug(timestampBytes[1])),
+  unwrap(bytesToUuidSlug(timestampBytes[0])),
+  unwrap(bytesToUuidSlug(timestampBytes[1])),
 ] as const;
 const timestampSlugsBase32 = [
-  unwrap(bytesToSlug(timestampBytes[0], "base32hex")),
-  unwrap(bytesToSlug(timestampBytes[1], "base32hex")),
+  unwrap(bytesToUuidSlug(timestampBytes[0], "base32hex")),
+  unwrap(bytesToUuidSlug(timestampBytes[1], "base32hex")),
 ] as const;
 const timestampCodec = unwrap(createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }));
 const timestampCodecBase32 = unwrap(
   createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK, outputAlphabet: "base32hex" }),
 );
 const maskedTimestampSlugs = [
-  unwrap(timestampCodec.encodeUuid(timestampUuids[0])),
-  unwrap(timestampCodec.encodeUuid(timestampUuids[1])),
+  unwrap(timestampCodec.uuidStringToSlug(timestampUuids[0])),
+  unwrap(timestampCodec.uuidStringToSlug(timestampUuids[1])),
 ] as const;
 const maskedTimestampSlugsBase32 = [
-  unwrap(timestampCodecBase32.encodeUuid(timestampUuids[0])),
-  unwrap(timestampCodecBase32.encodeUuid(timestampUuids[1])),
+  unwrap(timestampCodecBase32.uuidStringToSlug(timestampUuids[0])),
+  unwrap(timestampCodecBase32.uuidStringToSlug(timestampUuids[1])),
 ] as const;
 
 function alternating<Input, Output>(
@@ -304,7 +304,7 @@ export const generationCases: readonly GenerationCase[] = [
     "v7.timestamp.masked",
     "authenticated-base64url",
     alternating(maskedTimestampSlugs, (value) =>
-      unwrap(timestampCodec.extractSlugTimestamp(value)),
+      unwrap(timestampCodec.extractUuidSlugTimestamp(value)),
     ),
     { expectedTimestamps: timestamps },
   ),
@@ -314,7 +314,7 @@ export const generationCases: readonly GenerationCase[] = [
     "v7.timestamp.masked",
     "authenticated-base32hex",
     alternating(maskedTimestampSlugsBase32, (value) =>
-      unwrap(timestampCodecBase32.extractSlugTimestamp(value)),
+      unwrap(timestampCodecBase32.extractUuidSlugTimestamp(value)),
     ),
     { expectedTimestamps: timestamps },
   ),

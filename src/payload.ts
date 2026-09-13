@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "./alphabet.ts";
-import { UuidSlugError } from "./errors.ts";
+import { isUuidSlugError, UuidSlugError } from "./errors.ts";
 import { mix32, read32 } from "./feistel.ts";
 import { applyMask } from "./mask-handle.ts";
-import { bytesToUuid } from "./uuid.ts";
+import { bytesToUuidString } from "./uuid.ts";
 import type { UuidV7Mask, MaskedUuidV7Slug, UuidString } from "./types.ts";
 import type { SlugAlphabet } from "./slug.ts";
 
@@ -162,7 +162,7 @@ export function decodeMaskedSlug(
     16,
     OUTER_TAG_BITS,
   );
-  if (outerTag instanceof Error) return outerTag;
+  if (isUuidSlugError(outerTag)) return outerTag;
   if (!previous.length) {
     const primary = unmix(mixed, outerTag, mask);
     return (
@@ -178,13 +178,13 @@ export function decodeMaskedSlug(
   const word2 = read32(mixed, 8);
   const word3 = read32(mixed, 12);
   const primary = unmix(mixed, outerTag, mask);
-  if (primary instanceof Error) return primary;
+  if (isUuidSlugError(primary)) return primary;
   if (primary) return primary;
   // Scalar ciphertext survives in-place attempts without allocating a block for every decode.
   for (const older of previous) {
     restoreCiphertext(mixed, word0, word1, word2, word3);
     const decoded = unmix(mixed, outerTag, older);
-    if (decoded instanceof Error) return decoded;
+    if (isUuidSlugError(decoded)) return decoded;
     if (decoded) return decoded;
   }
   return new UuidSlugError(
@@ -202,10 +202,10 @@ export function decodeFirstMaskedCandidate(
 ): UuidString[] | UuidSlugError {
   for (const mask of masks) {
     const decoded = unmix(mixed.slice(), outerTag, mask);
-    if (decoded instanceof Error) return decoded;
+    if (isUuidSlugError(decoded)) return decoded;
     if (decoded) {
-      const uuid = bytesToUuid(decoded);
-      if (uuid instanceof Error) return uuid;
+      const uuid = bytesToUuidString(decoded);
+      if (isUuidSlugError(uuid)) return uuid;
       if (!candidates.includes(uuid)) candidates.push(uuid);
       break;
     }
@@ -225,10 +225,10 @@ export function decodeMaskedCandidates(
   const firstMask = masks[0];
   if (!firstMask) return candidates;
   const firstDecoded = unmix(working, outerTag, firstMask);
-  if (firstDecoded instanceof Error) return firstDecoded;
+  if (isUuidSlugError(firstDecoded)) return firstDecoded;
   if (firstDecoded) {
-    const uuid = bytesToUuid(firstDecoded);
-    if (uuid instanceof Error) return uuid;
+    const uuid = bytesToUuidString(firstDecoded);
+    if (isUuidSlugError(uuid)) return uuid;
     if (!candidates.includes(uuid)) candidates.push(uuid);
   }
   if (masks.length === 1) return candidates;
@@ -243,10 +243,10 @@ export function decodeMaskedCandidates(
     restoreCiphertext(working, word0, word1, word2, word3);
     const decoded = unmix(working, outerTag, mask);
     // A failed callback means the candidate list is incomplete, not that its key mismatched.
-    if (decoded instanceof Error) return decoded;
+    if (isUuidSlugError(decoded)) return decoded;
     if (decoded) {
-      const uuid = bytesToUuid(decoded);
-      if (uuid instanceof Error) return uuid;
+      const uuid = bytesToUuidString(decoded);
+      if (isUuidSlugError(uuid)) return uuid;
       if (!candidates.includes(uuid)) candidates.push(uuid);
     }
   }

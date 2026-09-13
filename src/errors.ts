@@ -23,6 +23,7 @@ export const UUID_SLUG_ERROR_CODES: typeof ERROR_CODES = /*#__PURE__*/ Object.fr
 export type UuidSlugErrorCode = (typeof UUID_SLUG_ERROR_CODES)[number];
 
 const ERROR_CODE_SET: ReadonlySet<unknown> = /*#__PURE__*/ new Set(UUID_SLUG_ERROR_CODES);
+const nativeIsError = (Error as { isError?: (value: unknown) => boolean }).isError;
 
 const typedArrayTagDescriptor = /*#__PURE__*/ Object.getOwnPropertyDescriptor(
   Object.getPrototypeOf(Uint8Array.prototype) as object,
@@ -34,6 +35,8 @@ const typedArrayTagDescriptor = /*#__PURE__*/ Object.getOwnPropertyDescriptor(
  * failed input or operation, and `cause` retains an underlying runtime or callback failure.
  */
 export class UuidSlugError extends Error {
+  /** Stable cross-realm marker used by `isUuidSlugError` and composable package operations. */
+  declare readonly __failure: true;
   /** Stable recovery category; use `message` and `cause` for diagnostics. */
   readonly code: UuidSlugErrorCode;
 
@@ -51,18 +54,42 @@ export class UuidSlugError extends Error {
   }
 }
 
+// One immutable prototype property avoids adding storage to every error while preserving the same
+// marker across realms and duplicate package copies. Remeasure if supported engines change their
+// prototype-property access or Error layout; benchmark evidence belongs in bench/PERFORMANCE.md.
+Object.defineProperty(UuidSlugError.prototype, "__failure", { value: true });
+
 /**
  * Narrow a returned value to `UuidSlugError`, including errors from another realm or package copy.
- * This checks the public error shape and code; it does not authenticate untrusted data.
+ * The package marker is the primary protocol. Existing unmarked package errors use native Error
+ * recognition when available, then the portable Error shape. This does not authenticate data.
  */
+/*#__NO_SIDE_EFFECTS__*/
 export function isUuidSlugError(value: unknown): value is UuidSlugError {
   if (typeof value !== "object" || value === null) return false;
   try {
+    if ((value as { readonly __failure?: unknown })["__failure"] === true) return true;
+    const recognizedError = nativeIsError
+      ? nativeIsError(value)
+      : Object.prototype.toString.call(value) === "[object Error]";
     return (
-      Object.prototype.toString.call(value) === "[object Error]" &&
+      recognizedError &&
       Reflect.get(value, "name") === "UuidSlugError" &&
       ERROR_CODE_SET.has(Reflect.get(value, "code"))
     );
+  } catch {
+    return false;
+  }
+}
+
+/** Recognize a native Error across realms, using the portable intrinsic shape when unavailable. */
+/*#__NO_SIDE_EFFECTS__*/
+export function isError(value: unknown): value is Error {
+  if (typeof value !== "object" || value === null) return false;
+  try {
+    return nativeIsError
+      ? nativeIsError(value)
+      : Object.prototype.toString.call(value) === "[object Error]";
   } catch {
     return false;
   }
@@ -117,17 +144,27 @@ export function checkByteRange(
   offset: number,
   need: number,
 ): undefined | UuidSlugError {
-  if (!isUint8Array(bytes))
+  if (!isUint8Array(bytes)) {
+    if (isUuidSlugError(bytes)) return bytes;
     return new UuidSlugError("invalid_buffer", "Buffer must be a Uint8Array.");
+  }
   return checkRange(bytes.length, offset, need);
+}
+
+/** Return an existing package failure or explain why a value cannot be used as byte storage. */
+/*#__NO_SIDE_EFFECTS__*/
+export function invalidByteInput(value: unknown): UuidSlugError {
+  return isUuidSlugError(value)
+    ? value
+    : new UuidSlugError("invalid_buffer", "Buffer must be a Uint8Array.");
 }
 
 /** Preserve failures from an injected or platform entropy source without changing successful draws. */
 export const randomFailure = /* @__NO_SIDE_EFFECTS__ */ (
   value: unknown,
 ): undefined | UuidSlugError => {
-  if (value instanceof UuidSlugError) return value;
-  return value instanceof Error
+  if (isUuidSlugError(value)) return value;
+  return isError(value)
     ? new UuidSlugError("rng_unavailable", "Random byte generation failed.", { cause: value })
     : undefined;
 };
@@ -176,7 +213,7 @@ export function nativeOrFallback<Native, Result>(
     nativeCause = cause;
   }
   const result = fallback();
-  return result instanceof Error
+  return isUuidSlugError(result)
     ? failedFallback(nativeCause, result, `Native and portable ${operation} failed.`)
     : result;
 }

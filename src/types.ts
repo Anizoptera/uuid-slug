@@ -24,13 +24,14 @@ export type UuidV4Slug = Brand<UuidSlug, "UuidV4Slug">;
 /** A direct slug whose decoded UUID is version 7 with the RFC variant. */
 export type UuidV7Slug = Brand<UuidSlug, "UuidV7Slug">;
 /** Carry a validated UUID version through lossless representation changes. */
-export type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> = Input extends
-  | UuidV4String
-  | UuidV4Slug
-  ? Version4
-  : Input extends UuidV7String | UuidV7Slug
-    ? Version7
-    : UnknownVersion;
+export type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> =
+  Input extends UuidSlugError
+    ? never
+    : Input extends UuidV4String | UuidV4Slug
+      ? Version4
+      : Input extends UuidV7String | UuidV7Slug
+        ? Version7
+        : UnknownVersion;
 /** A masked payload in either spelling; its check bits are not plain-encoding padding. */
 type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 /**
@@ -49,41 +50,43 @@ export type UuidV7CodecSlug = MaskedUuidV7Slug | SentinelUuidV7Slug;
  * valid because widening erases their child brand, leaving runtime validation as the only sound
  * judge; tuple wrapping makes one invalid member reject the entire known union.
  */
-type RejectKnownInput<Input, Invalid> = [Extract<Input, Invalid>] extends [never] ? Input : never;
+type RejectKnownInput<Input, Invalid> = [Extract<Exclude<Input, UuidSlugError>, Invalid>] extends [
+  never,
+]
+  ? Input
+  : never;
 
 /** Reject a known slug; the operation parses UUID text. A bare string is validated at runtime. */
-export type UuidStringInput<Input extends string> = RejectKnownInput<
+export type UuidStringInput<Input extends string | UuidSlugError> = RejectKnownInput<
   Input,
   UuidSlug | MaskedUuidSlug
 >;
 /** Reject known UUID text and masked slugs; only a direct slug decodes without a key. */
-export type DirectUuidSlugInput<Input extends string> = RejectKnownInput<
+export type DirectUuidSlugInput<Input extends string | UuidSlugError> = RejectKnownInput<
   Input,
   UuidString | MaskedUuidSlug
 >;
 /** Reject known UUID text; slug brands stay accepted because direct and masked spellings overlap. */
-type SlugStringInput<Input extends string> = RejectKnownInput<Input, UuidString>;
+type SlugStringInput<Input extends string | UuidSlugError> = RejectKnownInput<Input, UuidString>;
 /** Reject known slugs and UUIDv4 text; the operation reads a UUIDv7 timestamp from text. */
-export type UuidV7StringInput<Input extends string> = RejectKnownInput<
+export type UuidV7StringInput<Input extends string | UuidSlugError> = RejectKnownInput<
   Input,
   UuidSlug | MaskedUuidSlug | UuidV4String
 >;
 /** Reject known UUID text, masked slugs, and UUIDv4 slugs; the operation needs a direct UUIDv7 slug. */
-export type UuidV7SlugInput<Input extends string> = RejectKnownInput<
+export type UuidV7SlugInput<Input extends string | UuidSlugError> = RejectKnownInput<
   Input,
   UuidString | MaskedUuidSlug | UuidV4Slug
 >;
 /** Reject masked slugs and known UUIDv4 values; only UUIDv7 text or a direct UUIDv7 slug carries a timestamp. */
-export type UuidV7TimestampInput<Input extends string> = RejectKnownInput<
+export type UuidV7TimestampInput<Input extends string | UuidSlugError> = RejectKnownInput<
   Input,
   MaskedUuidSlug | UuidV4String | UuidV4Slug
 >;
 /** Reject known UUIDv4 bytes; the operation needs UUIDv7 bytes. */
-export type UuidV7BytesInput<Input extends Uint8Array> = RejectKnownInput<Input, UuidV4Bytes>;
-/** Reject known slugs and UUIDv4 values; a codec masks UUIDv7 text or bytes. */
-type UuidV7ValueInput<Input extends string | Uint8Array> = RejectKnownInput<
+export type UuidV7BytesInput<Input extends Uint8Array | UuidSlugError> = RejectKnownInput<
   Input,
-  UuidSlug | MaskedUuidSlug | UuidV4String | UuidV4Bytes
+  UuidV4Bytes
 >;
 /** Exactly 16 validated UUID bytes. Package-owned values are plain `Uint8Array`. */
 export type UuidBytes = Brand<Uint8Array, "UuidBytes">;
@@ -268,7 +271,7 @@ export type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
 /**
  * Decode current and explicitly enabled old formats without changing codec output.
  * Methods may be detached. A successful decode identifies a candidate UUID, not the issuing format
- * or a stored record.
+ * or a stored record. A preceding `UuidSlugError` is returned unchanged.
  */
 export interface UuidSlugMigrationDecoder<
   in Format extends UuidSlugMigrationFormat = UuidSlugMigrationFormat,
@@ -280,7 +283,7 @@ export interface UuidSlugMigrationDecoder<
    * @param slug - Identifier accepted by one enabled migration reader.
    * @param format - Known source format. Omit to try enabled readers in documented order.
    */
-  decodeSlug<Input extends string>(
+  uuidSlugToString<Input extends string | UuidSlugError>(
     this: void,
     slug: SlugStringInput<Input>,
     format?: Format,
@@ -288,11 +291,12 @@ export interface UuidSlugMigrationDecoder<
   /**
    * Return every distinct candidate in decode order for one application lookup. An empty array
    * means no enabled format matched; callback failure returns `UuidSlugError`, not a partial list.
+   * A preceding `UuidSlugError` is returned unchanged.
    *
    * @param slug - Identifier accepted by one or more enabled migration readers.
    * @param format - Known source format. Omit to try enabled readers in documented order.
    */
-  decodeSlugCandidates<Input extends string>(
+  uuidSlugToStringCandidates<Input extends string | UuidSlugError>(
     this: void,
     slug: SlugStringInput<Input>,
     format?: Format,
@@ -303,17 +307,18 @@ export interface UuidSlugMigrationDecoder<
 export interface UuidV7SlugCodecOptions {
   /**
    * The writer mask and first reader. Supply a private seed or explicitly choose
-   * `UUID_V7_TEST_MASK` for public test data.
+   * `UUID_V7_TEST_MASK` for public test data. A returned `UuidSlugError` passes through unchanged.
    */
-  readonly mask: UuidV7Mask | UuidV7MaskOptions;
+  readonly mask: UuidV7Mask | UuidV7MaskOptions | UuidSlugError;
   /**
    * Decode-only masks tried after `mask`, in caller order. Each item accepts a mask or its
-   * construction options. Keep the list short: every mask adds decoding work and another chance
-   * for a random input to pass its 16-bit check.
+   * construction options. A returned `UuidSlugError` passes through unchanged. Keep the list
+   * short: every mask adds decoding work and another chance for a random input to pass its 16-bit
+   * check.
    *
    * @defaultValue No previous masks.
    */
-  readonly previousMasks?: readonly (UuidV7Mask | UuidV7MaskOptions)[];
+  readonly previousMasks?: readonly (UuidV7Mask | UuidV7MaskOptions | UuidSlugError)[];
   /**
    * Named UUIDv7 values emitted as raw direct slugs instead of masked payloads.
    *
@@ -350,48 +355,62 @@ export interface UuidV7SlugCodec {
     options?: Options,
   ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
   /** Generate and encode a UUIDv7 as a masked slug or its registered raw sentinel slug. */
-  generateSlug(this: void): UuidV7CodecSlug | UuidSlugError;
+  generateUuidSlug(this: void): UuidV7CodecSlug | UuidSlugError;
   /**
-   * Encode canonical UUIDv7 text or 16 bytes as a masked slug, unless it is a registered sentinel.
+   * Encode canonical UUIDv7 text as a masked slug, unless it is a registered sentinel.
    * Other UUID versions return `invalid_uuid_version`. TypeScript rejects known slug and UUIDv4
-   * values; unbranded external values are validated when called.
+   * values; unbranded external values are validated when called. A preceding `UuidSlugError` is
+   * returned unchanged.
    *
-   * @param uuid - Canonical UUIDv7 text or exactly 16 UUIDv7 bytes.
+   * @param uuid - Canonical UUIDv7 text.
    */
-  encodeUuid<Input extends string | Uint8Array>(
+  uuidStringToSlug<Input extends string | UuidSlugError>(
     this: void,
-    uuid: UuidV7ValueInput<Input>,
+    uuid: UuidV7StringInput<Input>,
+  ): UuidV7CodecSlug | UuidSlugError;
+  /**
+   * Encode exactly 16 UUIDv7 bytes as a masked slug, unless they identify a registered sentinel.
+   * Other UUID versions return `invalid_uuid_version`. A preceding `UuidSlugError` is returned
+   * unchanged.
+   *
+   * @param uuid - Exactly 16 UUIDv7 bytes.
+   */
+  uuidBytesToSlug<Input extends Uint8Array | UuidSlugError>(
+    this: void,
+    uuid: UuidV7BytesInput<Input>,
   ): UuidV7CodecSlug | UuidSlugError;
   /**
    * Decode the first passing sentinel or mask in configured order to canonical UUIDv7 text.
    * Success proves format integrity, not issuance. TypeScript rejects known UUID text; slug values
-   * remain accepted because direct and masked spellings can overlap.
+   * remain accepted because direct and masked spellings can overlap. A preceding `UuidSlugError`
+   * is returned unchanged.
    *
    * @param slug - Masked slug or registered sentinel accepted by this codec.
    */
-  decodeSlug<Input extends string>(
+  uuidSlugToString<Input extends string | UuidSlugError>(
     this: void,
     slug: SlugStringInput<Input>,
   ): UuidV7String | UuidSlugError;
   /**
-   * Decode to a new plain 16-byte `Uint8Array`. Use this when the caller needs binary output.
+   * Decode to a new plain 16-byte `Uint8Array`. Use this when the caller needs binary output. A
+   * preceding `UuidSlugError` is returned unchanged.
    *
    * @param slug - Masked slug or registered sentinel accepted by this codec.
    */
-  decodeSlugToBytes<Input extends string>(
+  uuidSlugToBytes<Input extends string | UuidSlugError>(
     this: void,
     slug: SlugStringInput<Input>,
   ): UuidV7Bytes | UuidSlugError;
   /**
    * Decode and validate before writing 16 bytes. Return the exact supplied array; errors leave it
-   * unchanged.
+   * unchanged. A preceding `UuidSlugError` is returned unchanged without writing.
    *
    * @param slug - Masked slug or registered sentinel accepted by this codec.
    * @param output - Caller-owned array that receives the 16 UUID bytes.
    * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
    * outside the written range stay unchanged.
    */
-  decodeSlugToBytes<Input extends string, Output extends Uint8Array>(
+  uuidSlugToBytes<Input extends string | UuidSlugError, Output extends Uint8Array>(
     this: void,
     slug: SlugStringInput<Input>,
     output: Output,
@@ -399,23 +418,25 @@ export interface UuidV7SlugCodec {
   ): Output | UuidSlugError;
   /**
    * Decode a masked slug or registered sentinel with this codec and return its UUIDv7 Unix
-   * timestamp in milliseconds. Success proves format integrity, not issuance or authorization.
+   * timestamp in milliseconds. Success proves format integrity, not issuance or authorization. A
+   * preceding `UuidSlugError` is returned unchanged.
    *
    * @param slug - Masked slug or registered sentinel accepted by this codec.
    */
-  extractSlugTimestamp<Input extends string>(
+  extractUuidSlugTimestamp<Input extends string | UuidSlugError>(
     this: void,
     slug: SlugStringInput<Input>,
   ): number | UuidSlugError;
   /**
    * Decode with this codec, check the symmetric timestamp window, and return the same slug.
    * This checks clock plausibility, not expiry, authentication, replay, or issuance. TypeScript
-   * rejects known UUID text because only this codec can resolve overlapping slug spellings.
+   * rejects known UUID text because only this codec can resolve overlapping slug spellings. A
+   * preceding `UuidSlugError` is returned unchanged.
    *
    * @param slug - Masked slug or registered sentinel accepted by this codec.
    * @param window - Inclusive maximum distance from an explicit or current reference time.
    */
-  validateSlugTimestamp<Input extends string>(
+  validateUuidSlugTimestamp<Input extends string | UuidSlugError>(
     this: void,
     slug: SlugStringInput<Input>,
     window: UuidV7TimestampWindow,

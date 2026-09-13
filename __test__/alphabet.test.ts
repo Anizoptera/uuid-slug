@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "../src/alphabet";
-import { bytesToSlug, isUuidSlug, slugToBytes, uuidToSlug } from "../src/index";
+import { bytesToUuidSlug, isUuidSlug, uuidSlugToBytes, uuidStringToSlug } from "../src/index";
 import { WIRE_FORMAT_CODECS as codecs } from "./wire-format-codecs";
 import golden from "../rust/uuid-slug/tests/fixtures/fixtures-wire-format.json";
 
@@ -26,7 +26,7 @@ describe("bit-packing codec", () => {
   // separate implementation of the same RFC 4648 alphabet.
   it("encodes a UUID payload identically to node Buffer", () => {
     const bytes = bytesFrom(16);
-    expect(bytesToSlug(bytes)).toBe(Buffer.from(bytes).toString("base64url"));
+    expect(bytesToUuidSlug(bytes)).toBe(Buffer.from(bytes).toString("base64url"));
   });
 
   // No platform ships base32, so the independent channel is the definition itself: the bytes as
@@ -153,7 +153,7 @@ describe("bit-packing codec", () => {
     ["non-zero padding bits", "AAAAAAAAAAAAAAAAAAAAAB"],
     ["a non-ascii character", "AAÿA"],
   ])("rejects %s", (_what, value) => {
-    expect(slugToBytes(value)).toBeInstanceOf(Error);
+    expect(uuidSlugToBytes(value)).toBeInstanceOf(Error);
   });
 
   it.each([
@@ -173,9 +173,9 @@ describe("bit-packing codec", () => {
 describe("wire format compatibility", () => {
   it.each(golden)("$mask $uuid encodes and decodes unchanged", (vector) => {
     const codec = codecs[vector.mask as keyof typeof codecs];
-    expect(uuidToSlug(vector.uuid)).toBe(vector.direct);
-    expect(codec.encodeUuid(vector.uuid)).toBe(vector.masked);
-    expect(codec.decodeSlug(vector.masked)).toBe(vector.uuid);
+    expect(uuidStringToSlug(vector.uuid)).toBe(vector.direct);
+    expect(codec.uuidStringToSlug(vector.uuid)).toBe(vector.masked);
+    expect(codec.uuidSlugToString(vector.masked)).toBe(vector.uuid);
     // Length is part of the wire format, not a by-product of it: 22 characters is what makes the
     // check exactly 16 bits, so a slug that round-trips at some other length has changed format.
     expect(vector.masked).toHaveLength(22);

@@ -173,9 +173,9 @@ test.concurrent("profiling refuses failures after its initial success witness", 
     subject,
     `
 export * from ${JSON.stringify(api)};
-import { bytesToUuid as original, UuidSlugError } from ${JSON.stringify(api)};
+import { bytesToUuidString as original, UuidSlugError } from ${JSON.stringify(api)};
 let calls = 0;
-export function bytesToUuid(...args) {
+export function bytesToUuidString(...args) {
   return calls++ === 0 ? original(...args) : new UuidSlugError("invalid_uuid", "injected profiling failure");
 }
 `,
@@ -199,7 +199,7 @@ test.concurrent.each([
   ["resources", 'new UuidSlugError("invalid_uuid", "discarded error");', "errors=1 exceeds 0"],
   [
     "latency",
-    "for (let i = 0; i < 64; i += 1) { const result = uuidToBytes(value); if (result instanceof Error) throw result; }",
+    "for (let i = 0; i < 64; i += 1) { const result = uuidStringToBytes(value); if (result instanceof Error) throw result; }",
     "median ratio",
   ],
 ])("%s gate rejects a result-preserving regression", async (probe, extraWork, diagnostic) => {
@@ -209,7 +209,7 @@ test.concurrent.each([
     subject,
     `
 export * from ${JSON.stringify(api)};
-import { isUuidV7String as original, uuidToBytes, UuidSlugError } from ${JSON.stringify(api)};
+import { isUuidV7String as original, uuidStringToBytes, UuidSlugError } from ${JSON.stringify(api)};
 export function isUuidV7String(value) { ${extraWork} return original(value); }
 `,
   );

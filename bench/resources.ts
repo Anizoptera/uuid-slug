@@ -59,9 +59,9 @@ try {
   );
   const id = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
   const time = 0x0190a1b2c3d4;
-  const bytes = api.uuidToBytes(id);
+  const bytes = api.uuidStringToBytes(id);
   assert.ok(!(bytes instanceof Error));
-  const slug = api.uuidToSlug(id);
+  const slug = api.uuidStringToSlug(id);
   assert.equal(typeof slug, "string");
   const primary = { seed: "profile-current-seed" };
   const previous = { seed: "profile-previous-seed" };
@@ -95,13 +95,13 @@ try {
   assert.ok(!(migrationLast instanceof Error));
   const migration = rotated.createMigrationDecoder({ originalMask: true, directSlug: true });
   const migrationManyReader = migrationMany.createMigrationDecoder();
-  const masked = codec.encodeUuid(id);
-  const old = older.encodeUuid(id);
-  const migrationLastSlug = migrationLast.encodeUuid(id);
+  const masked = codec.uuidStringToSlug(id);
+  const old = older.uuidStringToSlug(id);
+  const migrationLastSlug = migrationLast.uuidStringToSlug(id);
   assert.equal(typeof masked, "string");
   assert.equal(typeof old, "string");
   assert.equal(typeof migrationLastSlug, "string");
-  assert.ok(codec.decodeSlug(old as string) instanceof Error);
+  assert.ok(codec.uuidSlugToString(old as string) instanceof Error);
   const into = new Uint8Array(24);
   let clocks = 0;
   const portable = api.createUuidV7Generator({
@@ -151,7 +151,7 @@ try {
     check("UUID predicate", () => api.isUuidV7String(value), { buffers: 0, errors: 0, views: 0 });
   for (const value of [slug as string, (slug as string).slice(0, -1) + "B", "!".repeat(22)])
     check("slug predicate", () => api.isUuidV7Slug(value), { buffers: 0, errors: 0, views: 0 });
-  check("caller-owned UUID conversion", () => api.uuidToBytes(id, into, 4), {
+  check("caller-owned UUID conversion", () => api.uuidStringToBytes(id, into, 4), {
     buffers: 0,
     views: 0,
     errors: 0,
@@ -168,14 +168,14 @@ try {
     views: 0,
     errors: 0,
   });
-  check("exact UUID text conversion", () => api.bytesToUuid(bytes), {
+  check("exact UUID text conversion", () => api.bytesToUuidString(bytes), {
     buffers: 0,
     views: 0,
     errors: 0,
   });
   if (hasHex) assert.equal(counts.hex, 1, "available native hex must be used once");
   into.set(bytes, 4);
-  check("small offset UUID text conversion", () => api.bytesToUuid(into, 4), {
+  check("small offset UUID text conversion", () => api.bytesToUuidString(into, 4), {
     buffers: 0,
     views: 0,
     errors: 0,
@@ -183,29 +183,29 @@ try {
   if (hasHex) assert.equal(counts.hex, 1, "small offsets must use one bounded native hex call");
   const oversized = new Uint8Array(256);
   oversized.set(bytes, 120);
-  check("oversized offset UUID text conversion", () => api.bytesToUuid(oversized, 120), {
+  check("oversized offset UUID text conversion", () => api.bytesToUuidString(oversized, 120), {
     buffers: 0,
     views: hasHex ? 1 : 0,
     errors: 0,
   });
   if (hasHex) assert.equal(counts.hex, 1, "oversized offsets must convert only the UUID window");
-  check("exact slug formatting", () => api.bytesToSlug(bytes), {
+  check("exact slug formatting", () => api.bytesToUuidSlug(bytes), {
     buffers: 0,
     views: 0,
     errors: 0,
   });
   if (hasBase64) assert.equal(counts.base64, 1, "available native base64 must be used once");
-  check("UUID text to slug", () => api.uuidToSlug(id), {
+  check("UUID text to slug", () => api.uuidStringToSlug(id), {
     buffers: hasBase64 ? 1 : 0,
     views: 0,
     errors: 0,
   });
-  check("UUID text to base32hex slug", () => api.uuidToSlug(id, "base32hex"), {
+  check("UUID text to base32hex slug", () => api.uuidStringToSlug(id, "base32hex"), {
     buffers: 0,
     views: 0,
     errors: 0,
   });
-  check("previous-key decode", () => rotated.decodeSlug(old as string), {
+  check("previous-key decode", () => rotated.uuidSlugToString(old as string), {
     errors: 0,
     chars: 22,
   });
@@ -223,13 +223,13 @@ try {
       chars: 22,
     },
   );
-  check("migration first match", () => migration.decodeSlug(old as string), {
+  check("migration first match", () => migration.uuidSlugToString(old as string), {
     base64: 0,
     errors: 0,
     chars: 22,
     draws: 0,
   });
-  check("migration candidates", () => migration.decodeSlugCandidates(old as string), {
+  check("migration candidates", () => migration.uuidSlugToStringCandidates(old as string), {
     base64: 0,
     errors: 0,
     chars: 22,
@@ -237,13 +237,13 @@ try {
   });
   check(
     "migration candidates with 16 masks",
-    () => migrationManyReader.decodeSlugCandidates(migrationLastSlug as string),
+    () => migrationManyReader.uuidSlugToStringCandidates(migrationLastSlug as string),
     { slices: 1, errors: 0, chars: 22, draws: 0 },
   );
   check(
     "masked timestamp validation",
     () =>
-      codec.validateSlugTimestamp(masked as string, {
+      codec.validateUuidSlugTimestamp(masked as string, {
         maxTimestampDeltaMs: 86_400_000,
         referenceUnixMs: time,
       }),
@@ -254,32 +254,32 @@ try {
       chars: 22,
     },
   );
-  check("masked byte encode", () => codec.encodeUuid(bytes), {
+  check("masked byte encode", () => codec.uuidBytesToSlug(bytes), {
     buffers: 0,
     base64: 1,
     errors: 0,
     hex: 0,
     chars: 22,
   });
-  const indexedSentinelBytes = api.uuidToBytes(sentinelDefinitions[15]!.uuid);
+  const indexedSentinelBytes = api.uuidStringToBytes(sentinelDefinitions[15]!.uuid);
   assert.ok(!(indexedSentinelBytes instanceof Error));
   for (const [name, input] of [
     ["indexed sentinel byte hit", indexedSentinelBytes],
     ["indexed sentinel byte miss", bytes],
   ] as const)
-    check(name, () => indexedSentinelCodec.encodeUuid(input), {
+    check(name, () => indexedSentinelCodec.uuidBytesToSlug(input), {
       buffers: 0,
       slices: 0,
       views: 0,
       errors: 0,
     });
-  check("masked string encode", () => codec.encodeUuid(id), {
+  check("masked string encode", () => codec.uuidStringToSlug(id), {
     buffers: 1,
     base64: 1,
     errors: 0,
     hex: 0,
   });
-  check("masked byte decode", () => codec.decodeSlugToBytes(masked as string), {
+  check("masked byte decode", () => codec.uuidSlugToBytes(masked as string), {
     buffers: 1,
     errors: 0,
     hex: 0,
@@ -287,7 +287,7 @@ try {
   });
   const sentinel = codec.sentinels[0];
   assert.ok(sentinel);
-  check("cached sentinel", () => codec.decodeSlug(sentinel.slug), {
+  check("cached sentinel", () => codec.uuidSlugToString(sentinel.slug), {
     buffers: 0,
     errors: 0,
     hex: 0,

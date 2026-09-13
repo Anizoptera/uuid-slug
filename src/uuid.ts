@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { checkByteRange, checkRange, isUint8Array, UuidSlugError } from "./errors.ts";
+import {
+  checkByteRange,
+  checkRange,
+  invalidByteInput,
+  isUuidSlugError,
+  isUint8Array,
+  UuidSlugError,
+} from "./errors.ts";
 import type {
   PreserveUuidVersion,
   UuidBytes,
@@ -51,31 +58,34 @@ export function uuidByteAtUnchecked(uuid: string, byteIndex: number): number {
 
 /**
  * Parse canonical lowercase UUID text into a new plain 16-byte `Uint8Array`. Known slug values are
- * rejected by TypeScript; invalid text returns `UuidSlugError`.
+ * rejected by TypeScript; invalid text returns `UuidSlugError`. A preceding `UuidSlugError` is
+ * returned unchanged.
  *
  * @param uuid - Canonical lowercase UUID text.
  */
-export function uuidToBytes<Input extends string>(
+export function uuidStringToBytes<Input extends string | UuidSlugError>(
   uuid: UuidStringInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
 /**
  * Parse canonical lowercase UUID text into caller-owned storage after validating the full input.
+ * A preceding `UuidSlugError` is returned unchanged without writing.
  *
  * @param uuid - Canonical lowercase UUID text.
  * @param output - Caller-owned array that receives the 16 UUID bytes.
  * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
  * outside the written range stay unchanged.
  */
-export function uuidToBytes<Input extends string, Output extends Uint8Array>(
+export function uuidStringToBytes<Input extends string | UuidSlugError, Output extends Uint8Array>(
   uuid: UuidStringInput<Input>,
   output: Output,
   outputOffset?: number,
 ): Output | UuidSlugError;
-export function uuidToBytes(
-  uuid: string,
+export function uuidStringToBytes(
+  uuid: string | UuidSlugError,
   out?: Uint8Array,
   offset = 0,
 ): Uint8Array | UuidSlugError {
+  if (isUuidSlugError(uuid)) return uuid;
   if (typeof uuid !== "string" || uuid.length !== UUID_LENGTH)
     return new UuidSlugError("invalid_uuid", "UUID must be 36 characters.");
   if (uuid[8] !== "-" || uuid[13] !== "-" || uuid[18] !== "-" || uuid[23] !== "-") {
@@ -101,14 +111,19 @@ export function uuidToBytes(
 
 /**
  * Format 16 bytes at `byteOffset` as canonical lowercase UUID text without assigning a version.
- * An invalid array or range returns `invalid_buffer`.
+ * An invalid array or range returns `invalid_buffer`. A preceding `UuidSlugError` is returned
+ * unchanged.
  *
  * @param bytes - An array containing at least one complete 16-byte UUID.
  * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
  */
 /*#__NO_SIDE_EFFECTS__*/
-export function bytesToUuid(bytes: Uint8Array, byteOffset = 0): UuidString | UuidSlugError {
-  const badRange = checkByteRange(bytes, byteOffset, 16);
+export function bytesToUuidString(
+  bytes: Uint8Array | UuidSlugError,
+  byteOffset = 0,
+): UuidString | UuidSlugError {
+  if (!isUint8Array(bytes)) return invalidByteInput(bytes);
+  const badRange = checkRange(bytes.length, byteOffset, 16);
   if (badRange) return badRange;
   if (nativeToHex) {
     let offset = 0;
@@ -203,7 +218,7 @@ export function isUuidV4Bytes(value: unknown): value is UuidV4Bytes {
 
 /**
  * Check for exactly 16 UUIDv7 bytes with the RFC variant required by masking and timestamps.
- * General byte input can use `bytesToUuid`; this narrower predicate proves the version those
+ * General byte input can use `bytesToUuidString`; this narrower predicate proves the version those
  * v7-only operations require.
  */
 /*#__NO_SIDE_EFFECTS__*/

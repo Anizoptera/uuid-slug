@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { UuidSlugError } from "./errors.ts";
+import { isUuidSlugError, UuidSlugError } from "./errors.ts";
 import type { UuidV7String, UuidV7StringInput, UuidV7TimestampWindow } from "./types.ts";
-import { isUuidV7Bytes, uuidTimestampFromBytesUnchecked, uuidToBytes } from "./uuid.ts";
+import { isUuidV7Bytes, uuidTimestampFromBytesUnchecked, uuidStringToBytes } from "./uuid.ts";
 
 /** Decode before reading the reference time so validation performs one clock observation. */
 export function validateTimestampBytes(
@@ -45,18 +45,20 @@ export function validateTimestampBytes(
 /**
  * Return canonical UUIDv7 text when its timestamp is inside the inclusive symmetric window.
  * Return `timestamp_outside_window` when it is not. This checks clock plausibility, not expiry,
- * authentication, replay, or issuance. TypeScript rejects known slug and UUIDv4 values.
+ * authentication, replay, or issuance. TypeScript rejects known slug and UUIDv4 values. A
+ * preceding `UuidSlugError` is returned unchanged.
  *
  * @param uuid - Canonical UUIDv7 text to validate and return.
  * @param window - Inclusive maximum distance from an explicit or current reference time.
  */
-export function validateUuidV7Timestamp<Input extends string>(
+export function validateUuidV7Timestamp<Input extends string | UuidSlugError>(
   uuid: UuidV7StringInput<Input>,
   window: UuidV7TimestampWindow,
 ): (Input & UuidV7String) | UuidSlugError {
+  if (isUuidSlugError(uuid)) return uuid;
   const uuidText: string = uuid;
-  const bytes = uuidToBytes(uuidText);
-  if (bytes instanceof Error) return bytes;
+  const bytes = uuidStringToBytes(uuidText);
+  if (isUuidSlugError(bytes)) return bytes;
   const valid = validateTimestampBytes(bytes, window);
-  return valid instanceof Error ? valid : (uuidText as Input & UuidV7String);
+  return isUuidSlugError(valid) ? valid : (uuidText as Input & UuidV7String);
 }

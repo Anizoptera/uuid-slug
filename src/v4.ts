@@ -6,11 +6,12 @@ import {
   checkRange,
   failedFallback,
   fillRandomBytes,
+  isUuidSlugError,
   nativeOrFallback,
   UuidSlugError,
 } from "./errors.ts";
 import type { UuidV4Bytes, UuidV4String } from "./types.ts";
-import { bytesToUuid, isUuidV4String } from "./uuid.ts";
+import { bytesToUuidString, isUuidV4String } from "./uuid.ts";
 
 export { UUID_SLUG_ERROR_CODES, isUuidSlugError } from "./errors.ts";
 export { UuidSlugError };
@@ -92,7 +93,9 @@ function generateOwnedUuidV4Bytes(outputOffset: number): UuidV4Bytes | UuidSlugE
 /** Generate UUIDv4 text through the portable implementation, even on native-capable hosts. */
 export function generatePortableUuidV4(): UuidV4String | UuidSlugError {
   const bytes = generateUuidV4Bytes();
-  return bytes instanceof Error ? bytes : (bytesToUuid(bytes) as UuidV4String | UuidSlugError);
+  return isUuidSlugError(bytes)
+    ? bytes
+    : (bytesToUuidString(bytes) as UuidV4String | UuidSlugError);
 }
 
 /** Generate canonical UUIDv4 text with platform cryptographic randomness. */
@@ -114,14 +117,14 @@ export function generateUuidV4(): UuidV4String | UuidSlugError {
       generatePortableUuidV4,
       "UUIDv4 generation",
     );
-    if (!(result instanceof Error)) trustedNativeUuidV4 = native;
+    if (!isUuidSlugError(result)) trustedNativeUuidV4 = native;
     return result;
   }
   try {
     return native() as UuidV4String;
   } catch (nativeCause) {
     const fallback = generatePortableUuidV4();
-    return fallback instanceof Error
+    return isUuidSlugError(fallback)
       ? failedFallback(nativeCause, fallback, "Native and portable UUIDv4 generation failed.")
       : fallback;
   }

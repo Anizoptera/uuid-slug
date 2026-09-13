@@ -31,17 +31,17 @@ const MASKING_MODULE_FILES = new Set([
 const jobs = [
   {
     name: "uuid",
-    imports: "uuidToBytes",
+    imports: "uuidStringToBytes",
     probe:
-      'const value = uuidToBytes("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5"); if (value instanceof Error || value.length !== 16) throw new Error("uuidToBytes failed");',
+      'const value = uuidStringToBytes("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5"); if (value instanceof Error || value.length !== 16) throw new Error("uuidStringToBytes failed");',
     masked: false,
     versions: [],
   },
   {
     name: "slug",
-    imports: "uuidToSlug",
+    imports: "uuidStringToSlug",
     probe:
-      'if (uuidToSlug("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5") !== "sbpZnUhES7Ch7qwK64h19Q") throw new Error("uuidToSlug failed");',
+      'if (uuidStringToSlug("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5") !== "sbpZnUhES7Ch7qwK64h19Q") throw new Error("uuidStringToSlug failed");',
     masked: false,
     versions: [],
   },
@@ -65,7 +65,7 @@ const jobs = [
     name: "masked",
     imports: "createUuidV7SlugCodec, UUID_V7_TEST_MASK",
     probe:
-      'const codec = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }); if (codec instanceof Error || codec.encodeUuid("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051") instanceof Error) throw new Error("masked codec failed");',
+      'const codec = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }); if (codec instanceof Error || codec.uuidStringToSlug("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051") instanceof Error) throw new Error("masked codec failed");',
     masked: true,
     versions: [7],
   },

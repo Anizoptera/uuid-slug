@@ -154,7 +154,7 @@ export function createProfileCases(
   const portableRollingBack = api.createUuidV7Generator({ clock: () => (rollingBackMs -= 1) });
   const portableSlug = (alphabet: "base64url" | "base32hex") => {
     const value = portable.generateUuidV7Bytes();
-    return value instanceof Error ? value : api.bytesToSlug(value, alphabet);
+    return value instanceof Error ? value : api.bytesToUuidSlug(value, alphabet);
   };
   const profileUuid = (index: number) => {
     const time = (instant + index).toString(16).padStart(12, "0");
@@ -164,13 +164,26 @@ export function createProfileCases(
     return `${time.slice(0, 8)}-${time.slice(8)}-7${a}-${b}-${tail}${index.toString(16).padStart(4, "0")}`;
   };
   const ids = Array.from({ length: 256 }, (_, index) => profileUuid(index));
-  const bytes = ids.map((id) => unwrap(api.uuidToBytes(id)));
-  const sentinelBytes = sentinelDefinitions.map(({ uuid }) => unwrap(api.uuidToBytes(uuid)));
+  const bytes = ids.map((id) => unwrap(api.uuidStringToBytes(id)));
+  const packageFailure = api.uuidStringToBytes("invalid");
+  if (!(packageFailure instanceof Error)) throw new Error("Error profile fixture did not fail");
+  const ownLongMarker: { __failure: unknown } = { __failure: true };
+  const ownShortMarker: { _: unknown } = { _: true };
+  const longMarkerPrototype = { __failure: true };
+  const shortMarkerPrototype = { _: true };
+  const prototypeLongMarker = Object.create(longMarkerPrototype) as { __failure: unknown };
+  const prototypeShortMarker = Object.create(shortMarkerPrototype) as { _: unknown };
+  const markerSymbol = Symbol("failure");
+  const ownSymbolMarker: Record<symbol, unknown> = { [markerSymbol]: true };
+  const prototypeSymbolMarker = Object.create({ [markerSymbol]: true }) as Record<symbol, unknown>;
+  const sentinelBytes = sentinelDefinitions.map(({ uuid }) => unwrap(api.uuidStringToBytes(uuid)));
   const collidingSentinelBytes = collidingSentinelDefinitions.map(({ uuid }) =>
-    unwrap(api.uuidToBytes(uuid)),
+    unwrap(api.uuidStringToBytes(uuid)),
   );
-  const collidingSentinelMiss = unwrap(api.uuidToBytes("00000040-0000-7000-8000-0000deadbeef"));
-  const slugs = ids.map((id) => unwrap(api.uuidToSlug(id)));
+  const collidingSentinelMiss = unwrap(
+    api.uuidStringToBytes("00000040-0000-7000-8000-0000deadbeef"),
+  );
+  const slugs = ids.map((id) => unwrap(api.uuidStringToSlug(id)));
   const identityMask = unwrap(
     api.createCustomUuidV7Mask({
       label: "profile-candidate-identity",
@@ -183,7 +196,7 @@ export function createProfileCases(
   let overlapTail: string | undefined;
   for (let index = 0; index < 4096 && overlapEntries.length < 64; index += 1) {
     const uuid = profileUuid(index);
-    const slug = unwrap(identityCodec.encodeUuid(uuid));
+    const slug = unwrap(identityCodec.uuidStringToSlug(uuid));
     overlapTail ??= slug.at(-1);
     if (slug.at(-1) === overlapTail) overlapEntries.push({ uuid, slug });
   }
@@ -193,7 +206,7 @@ export function createProfileCases(
   const mixedBytes = (slug: string) => {
     const last = base64url.indexOf(slug[21]!);
     if (last < 0) throw new Error("Invalid migration overlap fixture");
-    return unwrap(api.slugToBytes(slug.slice(0, 21) + base64url[last & 0x30]));
+    return unwrap(api.uuidSlugToBytes(slug.slice(0, 21) + base64url[last & 0x30]));
   };
   const overlapSlug = overlapEntries[0]!.slug;
   const overlapBytes = mixedBytes(overlapSlug);
@@ -214,19 +227,19 @@ export function createProfileCases(
       slugs[0]
   )
     throw new Error("Portable base64url encoding differs from the public canonical spelling");
-  const base32 = ids.map((id) => unwrap(api.uuidToSlug(id, "base32hex")));
+  const base32 = ids.map((id) => unwrap(api.uuidStringToSlug(id, "base32hex")));
   if (
     privateAlphabetApi &&
     privateAlphabetApi.encodePortable(bytes[0] as Uint8Array, privateAlphabetApi.BASE32HEX) !==
       base32[0]
   )
     throw new Error("Portable base32hex encoding differs from the public canonical spelling");
-  const masked = ids.map((id) => unwrap(codec.encodeUuid(id)));
-  const maskedBase32 = ids.map((id) => unwrap(base32Codec.encodeUuid(id)));
-  const maskedCustom = bytes.map((value) => unwrap(customCodec.encodeUuid(value)));
+  const masked = ids.map((id) => unwrap(codec.uuidStringToSlug(id)));
+  const maskedBase32 = ids.map((id) => unwrap(base32Codec.uuidStringToSlug(id)));
+  const maskedCustom = bytes.map((value) => unwrap(customCodec.uuidBytesToSlug(value)));
   const oldOnly = ids
-    .map((id) => unwrap(older.encodeUuid(id)))
-    .filter((slug) => codec.decodeSlug(slug) instanceof Error);
+    .map((id) => unwrap(older.uuidStringToSlug(id)))
+    .filter((slug) => codec.uuidSlugToString(slug) instanceof Error);
   if (oldOnly.length === 0) throw new Error("No previous-key-only fixtures");
   const rotationFixture = (count: number) => {
     const masks = rotationMasks.slice(0, count);
@@ -234,16 +247,16 @@ export function createProfileCases(
     const lastWriter = rotationWriters[count - 1]!;
     const missWriter = rotationWriters[16]!;
     const last = ids
-      .map((id) => unwrap(lastWriter.encodeUuid(id)))
+      .map((id) => unwrap(lastWriter.uuidStringToSlug(id)))
       .find((slug) => {
         return [codec, ...rotationWriters.slice(0, count - 1)].every(
-          (candidate) => candidate.decodeSlug(slug) instanceof Error,
+          (candidate) => candidate.uuidSlugToString(slug) instanceof Error,
         );
       });
     const miss = ids
-      .map((id) => unwrap(missWriter.encodeUuid(id)))
+      .map((id) => unwrap(missWriter.uuidStringToSlug(id)))
       .find((slug) => {
-        return reader.decodeSlug(slug) instanceof Error;
+        return reader.uuidSlugToString(slug) instanceof Error;
       });
     if (!last || !miss) throw new Error(`No rotation fixture for ${count} previous keys`);
     return { reader, last, miss };
@@ -260,18 +273,18 @@ export function createProfileCases(
     const migrationSlugs = positions.map((position) => {
       const writer = rotationWriters[position]!;
       const slug = ids
-        .map((id) => unwrap(writer.encodeUuid(id)))
+        .map((id) => unwrap(writer.uuidStringToSlug(id)))
         .find((value) =>
           rotationWriters
             .slice(0, position)
-            .every((earlier) => earlier.decodeSlug(value) instanceof Error),
+            .every((earlier) => earlier.uuidSlugToString(value) instanceof Error),
         );
       if (!slug) throw new Error(`No migration fixture for mask ${position} of ${count}`);
       return slug;
     });
     const miss = ids
-      .map((id) => unwrap(rotationWriters[16]!.encodeUuid(id)))
-      .find((value) => migrationCodec.decodeSlug(value) instanceof Error);
+      .map((id) => unwrap(rotationWriters[16]!.uuidStringToSlug(id)))
+      .find((value) => migrationCodec.uuidSlugToString(value) instanceof Error);
     if (!miss) throw new Error(`No migration miss fixture for ${count} masks`);
     return {
       reader: migrationCodec.createMigrationDecoder(),
@@ -329,8 +342,8 @@ export function createProfileCases(
   const invalidBase64Tail = `${slugs[0]!.slice(0, 21)}${privateAlphabetApi?.BASE64URL.chars[1] ?? "B"}`;
   const invalidBase32Tail = `${base32[0]!.slice(0, 25)}1`;
   const v4Uuid = "3b12f1df-5232-4804-897e-917bf397618a";
-  const v4Bytes = unwrap(api.uuidToBytes(v4Uuid));
-  const v4Slug = unwrap(api.uuidToSlug(v4Uuid));
+  const v4Bytes = unwrap(api.uuidStringToBytes(v4Uuid));
+  const v4Slug = unwrap(api.uuidStringToSlug(v4Uuid));
   const outsideTimestampWindow = { maxTimestampDeltaMs: 0, referenceUnixMs: instant + 1 };
   if (!base32Sentinel) throw new Error("Missing base32 sentinel fixture");
   customFailureEnabled = true;
@@ -343,19 +356,19 @@ export function createProfileCases(
     [16, migration16],
   ] as const) {
     migrationScalingCases[`migration.masks${count}.first`] = () =>
-      fixture.reader.decodeSlug(fixture.first);
+      fixture.reader.uuidSlugToString(fixture.first);
     migrationScalingCases[`migration.masks${count}.middle`] = () =>
-      fixture.reader.decodeSlug(fixture.middle);
+      fixture.reader.uuidSlugToString(fixture.middle);
     migrationScalingCases[`migration.masks${count}.last`] = () =>
-      fixture.reader.decodeSlug(fixture.last);
+      fixture.reader.uuidSlugToString(fixture.last);
     migrationScalingCases[`invalid.migration.masks${count}.miss`] = () =>
-      fixture.reader.decodeSlug(fixture.miss);
+      fixture.reader.uuidSlugToString(fixture.miss);
     migrationScalingCases[`migration.masks${count}.candidates`] = () =>
-      fixture.reader.decodeSlugCandidates(fixture.first);
+      fixture.reader.uuidSlugToStringCandidates(fixture.first);
   }
   for (const { count, distinct, duplicate } of candidateFixtures) {
-    const distinctWitness = distinct.decodeSlugCandidates(overlapSlug);
-    const duplicateWitness = duplicate.decodeSlugCandidates(overlapSlug);
+    const distinctWitness = distinct.uuidSlugToStringCandidates(overlapSlug);
+    const duplicateWitness = duplicate.uuidSlugToStringCandidates(overlapSlug);
     if (
       distinctWitness instanceof Error ||
       duplicateWitness instanceof Error ||
@@ -366,9 +379,9 @@ export function createProfileCases(
         `Migration candidate fixture did not yield ${count} distinct and one duplicate`,
       );
     migrationScalingCases[`migration.candidates${count}.distinct`] = () =>
-      distinct.decodeSlugCandidates(overlapSlug);
+      distinct.uuidSlugToStringCandidates(overlapSlug);
     migrationScalingCases[`migration.candidates${count}.duplicate`] = () =>
-      duplicate.decodeSlugCandidates(overlapSlug);
+      duplicate.uuidSlugToStringCandidates(overlapSlug);
   }
 
   const cases = {
@@ -432,31 +445,31 @@ export function createProfileCases(
     "v4.base32": () => api.generateUuidV4Slug("base32hex"),
     "v7.slug": () => api.generateUuidV7Slug(),
     "v7.base32": () => api.generateUuidV7Slug("base32hex"),
-    parse: (index) => api.uuidToBytes(ids[index & 255] as string),
-    "parse.into": (index) => api.uuidToBytes(ids[index & 255] as string, into, 4),
-    format: (index) => api.bytesToUuid(bytes[index & 255] as Uint8Array),
+    parse: (index) => api.uuidStringToBytes(ids[index & 255] as string),
+    "parse.into": (index) => api.uuidStringToBytes(ids[index & 255] as string, into, 4),
+    format: (index) => api.bytesToUuidString(bytes[index & 255] as Uint8Array),
     "format.offset": (index) => {
       into.set(bytes[index & 255] as Uint8Array, 4);
-      return api.bytesToUuid(into, 4);
+      return api.bytesToUuidString(into, 4);
     },
-    "bytes.base64": (index) => api.bytesToSlug(bytes[index & 255] as Uint8Array),
-    "bytes.base32": (index) => api.bytesToSlug(bytes[index & 255] as Uint8Array, "base32hex"),
+    "bytes.base64": (index) => api.bytesToUuidSlug(bytes[index & 255] as Uint8Array),
+    "bytes.base32": (index) => api.bytesToUuidSlug(bytes[index & 255] as Uint8Array, "base32hex"),
     "bytes.offset.base64": (index) => {
       into.set(bytes[index & 255] as Uint8Array, 4);
-      return api.bytesToSlug(into, 4);
+      return api.bytesToUuidSlug(into, 4);
     },
     "bytes.offset.base32": (index) => {
       into.set(bytes[index & 255] as Uint8Array, 4);
-      return api.bytesToSlug(into, 4, "base32hex");
+      return api.bytesToUuidSlug(into, 4, "base32hex");
     },
-    "direct.encode": (index) => api.uuidToSlug(ids[index & 255] as string),
-    "direct.decode": (index) => api.slugToUuid(slugs[index & 255] as string),
-    "base32.encode": (index) => api.uuidToSlug(ids[index & 255] as string, "base32hex"),
-    "base32.decode": (index) => api.slugToUuid(base32[index & 255] as string),
-    "slug.bytes": (index) => api.slugToBytes(slugs[index & 255] as string),
-    "slug.base32.bytes": (index) => api.slugToBytes(base32[index & 255] as string),
-    "slug.into": (index) => api.slugToBytes(slugs[index & 255] as string, into, 4),
-    "slug.base32.into": (index) => api.slugToBytes(base32[index & 255] as string, into, 4),
+    "direct.encode": (index) => api.uuidStringToSlug(ids[index & 255] as string),
+    "direct.decode": (index) => api.uuidSlugToString(slugs[index & 255] as string),
+    "base32.encode": (index) => api.uuidStringToSlug(ids[index & 255] as string, "base32hex"),
+    "base32.decode": (index) => api.uuidSlugToString(base32[index & 255] as string),
+    "slug.bytes": (index) => api.uuidSlugToBytes(slugs[index & 255] as string),
+    "slug.base32.bytes": (index) => api.uuidSlugToBytes(base32[index & 255] as string),
+    "slug.into": (index) => api.uuidSlugToBytes(slugs[index & 255] as string, into, 4),
+    "slug.base32.into": (index) => api.uuidSlugToBytes(base32[index & 255] as string, into, 4),
     "guard.uuid.any": (index) => api.isUuidString(ids[index & 255]),
     "guard.uuid.v4": () => api.isUuidV4String(v4Uuid),
     "guard.invalid.uuid": () => api.isUuidV7String(badUuid),
@@ -485,157 +498,177 @@ export function createProfileCases(
     "timestamp.extract.slug.base32": (index) =>
       api.extractUuidV7Timestamp(base32[index & 255] as string),
     "timestamp.extract.masked": (index) =>
-      codec.extractSlugTimestamp(masked[index & 255] as string),
+      codec.extractUuidSlugTimestamp(masked[index & 255] as string),
     "timestamp.extract.masked.base32": (index) =>
-      base32Codec.extractSlugTimestamp(maskedBase32[index & 255] as string),
+      base32Codec.extractUuidSlugTimestamp(maskedBase32[index & 255] as string),
     "timestamp.masked": (index) =>
-      codec.validateSlugTimestamp(masked[index & 255] as string, timestampWindow),
+      codec.validateUuidSlugTimestamp(masked[index & 255] as string, timestampWindow),
     "timestamp.masked.base32": (index) =>
-      base32Codec.validateSlugTimestamp(maskedBase32[index & 255] as string, timestampWindow),
-    "masked.generate": () => codec.generateSlug(),
-    "masked.base32.generate": () => base32Codec.generateSlug(),
-    "masked.encode": (index) => codec.encodeUuid(ids[index & 255] as string),
-    "masked.encode.bytes": (index) => codec.encodeUuid(bytes[index & 255] as Uint8Array),
-    "masked.decode": (index) => codec.decodeSlug(masked[index & 255] as string),
-    "masked.decode.bytes": (index) => codec.decodeSlugToBytes(masked[index & 255] as string),
-    "masked.decode.into": (index) =>
-      codec.decodeSlugToBytes(masked[index & 255] as string, into, 4),
-    "masked.base32.encode": (index) => base32Codec.encodeUuid(ids[index & 255] as string),
+      base32Codec.validateUuidSlugTimestamp(maskedBase32[index & 255] as string, timestampWindow),
+    "masked.generate": () => codec.generateUuidSlug(),
+    "masked.base32.generate": () => base32Codec.generateUuidSlug(),
+    "masked.encode": (index) => codec.uuidStringToSlug(ids[index & 255] as string),
+    "masked.encode.bytes": (index) => codec.uuidBytesToSlug(bytes[index & 255] as Uint8Array),
+    "masked.decode": (index) => codec.uuidSlugToString(masked[index & 255] as string),
+    "masked.decode.bytes": (index) => codec.uuidSlugToBytes(masked[index & 255] as string),
+    "masked.decode.into": (index) => codec.uuidSlugToBytes(masked[index & 255] as string, into, 4),
+    "masked.base32.encode": (index) => base32Codec.uuidStringToSlug(ids[index & 255] as string),
     "masked.base32.encode.bytes": (index) =>
-      base32Codec.encodeUuid(bytes[index & 255] as Uint8Array),
-    "masked.base32.decode": (index) => base32Codec.decodeSlug(maskedBase32[index & 255] as string),
+      base32Codec.uuidBytesToSlug(bytes[index & 255] as Uint8Array),
+    "masked.base32.decode": (index) =>
+      base32Codec.uuidSlugToString(maskedBase32[index & 255] as string),
     "masked.base32.decode.bytes": (index) =>
-      base32Codec.decodeSlugToBytes(maskedBase32[index & 255] as string),
+      base32Codec.uuidSlugToBytes(maskedBase32[index & 255] as string),
     "masked.base32.decode.into": (index) =>
-      base32Codec.decodeSlugToBytes(maskedBase32[index & 255] as string, into, 4),
-    "masked.custom.encode": (index) => customCodec.encodeUuid(bytes[index & 255] as Uint8Array),
-    "masked.custom.decode": (index) => customCodec.decodeSlug(maskedCustom[index & 255] as string),
+      base32Codec.uuidSlugToBytes(maskedBase32[index & 255] as string, into, 4),
+    "masked.custom.encode": (index) =>
+      customCodec.uuidBytesToSlug(bytes[index & 255] as Uint8Array),
+    "masked.custom.decode": (index) =>
+      customCodec.uuidSlugToString(maskedCustom[index & 255] as string),
     "masked.custom.decode.bytes": (index) =>
-      customCodec.decodeSlugToBytes(maskedCustom[index & 255] as string),
+      customCodec.uuidSlugToBytes(maskedCustom[index & 255] as string),
     "masked.custom.decode.into": (index) =>
-      customCodec.decodeSlugToBytes(maskedCustom[index & 255] as string, into, 4),
-    "rotation.current": (index) => rotated.decodeSlug(masked[index & 255] as string),
-    "rotation.previous": (index) => rotated.decodeSlug(oldOnly[index % oldOnly.length] as string),
-    "rotation.current.bytes": (index) => rotated.decodeSlugToBytes(masked[index & 255] as string),
+      customCodec.uuidSlugToBytes(maskedCustom[index & 255] as string, into, 4),
+    "rotation.current": (index) => rotated.uuidSlugToString(masked[index & 255] as string),
+    "rotation.previous": (index) =>
+      rotated.uuidSlugToString(oldOnly[index % oldOnly.length] as string),
+    "rotation.current.bytes": (index) => rotated.uuidSlugToBytes(masked[index & 255] as string),
     "rotation.previous.bytes": (index) =>
-      rotated.decodeSlugToBytes(oldOnly[index % oldOnly.length] as string),
-    "rotation4.current": (index) => rotation4.reader.decodeSlug(masked[index & 255] as string),
-    "rotation4.last": () => rotation4.reader.decodeSlug(rotation4.last),
-    "invalid.rotation4.miss": () => rotation4.reader.decodeSlug(rotation4.miss),
-    "rotation8.current": (index) => rotation8.reader.decodeSlug(masked[index & 255] as string),
-    "rotation8.last": () => rotation8.reader.decodeSlug(rotation8.last),
-    "invalid.rotation8.miss": () => rotation8.reader.decodeSlug(rotation8.miss),
-    "rotation16.current": (index) => rotation16.reader.decodeSlug(masked[index & 255] as string),
-    "rotation16.last": () => rotation16.reader.decodeSlug(rotation16.last),
-    "invalid.rotation16.miss": () => rotation16.reader.decodeSlug(rotation16.miss),
-    "migration.current": (index) => migration.decodeSlug(masked[index & 255] as string),
+      rotated.uuidSlugToBytes(oldOnly[index % oldOnly.length] as string),
+    "rotation4.current": (index) =>
+      rotation4.reader.uuidSlugToString(masked[index & 255] as string),
+    "rotation4.last": () => rotation4.reader.uuidSlugToString(rotation4.last),
+    "invalid.rotation4.miss": () => rotation4.reader.uuidSlugToString(rotation4.miss),
+    "rotation8.current": (index) =>
+      rotation8.reader.uuidSlugToString(masked[index & 255] as string),
+    "rotation8.last": () => rotation8.reader.uuidSlugToString(rotation8.last),
+    "invalid.rotation8.miss": () => rotation8.reader.uuidSlugToString(rotation8.miss),
+    "rotation16.current": (index) =>
+      rotation16.reader.uuidSlugToString(masked[index & 255] as string),
+    "rotation16.last": () => rotation16.reader.uuidSlugToString(rotation16.last),
+    "invalid.rotation16.miss": () => rotation16.reader.uuidSlugToString(rotation16.miss),
+    "migration.current": (index) => migration.uuidSlugToString(masked[index & 255] as string),
     "migration.previous": (index) =>
-      migration.decodeSlug(oldOnly[index % oldOnly.length] as string),
+      migration.uuidSlugToString(oldOnly[index % oldOnly.length] as string),
     "migration.decodeCandidates": (index) =>
-      migration.decodeSlugCandidates(masked[index & 255] as string),
+      migration.uuidSlugToStringCandidates(masked[index & 255] as string),
     "migration.previousCandidates": (index) =>
-      migration.decodeSlugCandidates(oldOnly[index % oldOnly.length] as string),
+      migration.uuidSlugToStringCandidates(oldOnly[index % oldOnly.length] as string),
     "migration.direct": (index) =>
-      migration.decodeSlug(slugs[index & 255] as string, "direct-slug"),
+      migration.uuidSlugToString(slugs[index & 255] as string, "direct-slug"),
     "migration.base32": (index) =>
-      migration.decodeSlug(base32[index & 255] as string, "direct-slug"),
+      migration.uuidSlugToString(base32[index & 255] as string, "direct-slug"),
     "migration.base32Candidates": (index) =>
-      migration.decodeSlugCandidates(base32[index & 255] as string, "direct-slug"),
+      migration.uuidSlugToStringCandidates(base32[index & 255] as string, "direct-slug"),
     "migration.original": (index) =>
-      migration.decodeSlug(originals[index % originals.length]!.slug, "original-mask"),
+      migration.uuidSlugToString(originals[index % originals.length]!.slug, "original-mask"),
     "migration.directCandidates": (index) =>
-      migration.decodeSlugCandidates(slugs[index & 255] as string, "direct-slug"),
+      migration.uuidSlugToStringCandidates(slugs[index & 255] as string, "direct-slug"),
     "migration.originalCandidates": (index) =>
-      migration.decodeSlugCandidates(originals[index % originals.length]!.slug, "original-mask"),
-    "invalid.migration": () => maskedOnlyMigration.decodeSlug(badSlug),
-    "invalid.migrationCandidates": () => maskedOnlyMigration.decodeSlugCandidates(badSlug),
-    "sentinel.encode": () => codec.encodeUuid(sentinel.uuid),
-    "sentinel.encode.bytes": () => codec.encodeUuid(sentinelBytes[0] as Uint8Array),
-    "sentinel.encode.bytes.miss": () => codec.encodeUuid(bytes[255] as Uint8Array),
-    "sentinel.decode": () => codec.decodeSlug(sentinel.slug),
-    "sentinel.decode.bytes": () => codec.decodeSlugToBytes(sentinel.slug),
-    "sentinel.decode.into": () => codec.decodeSlugToBytes(sentinel.slug, into, 4),
-    "sentinel.timestamp": () => codec.validateSlugTimestamp(sentinel.slug, sentinelTimestampWindow),
-    "sentinel.base32.encode": () => base32Codec.encodeUuid(base32Sentinel.uuid),
-    "sentinel.base32.decode": () => base32Codec.decodeSlug(base32Sentinel.slug),
-    "sentinel.base32.decode.bytes": () => base32Codec.decodeSlugToBytes(base32Sentinel.slug),
-    "sentinel.base32.decode.into": () =>
-      base32Codec.decodeSlugToBytes(base32Sentinel.slug, into, 4),
+      migration.uuidSlugToStringCandidates(
+        originals[index % originals.length]!.slug,
+        "original-mask",
+      ),
+    "invalid.migration": () => maskedOnlyMigration.uuidSlugToString(badSlug),
+    "invalid.migrationCandidates": () => maskedOnlyMigration.uuidSlugToStringCandidates(badSlug),
+    "sentinel.encode": () => codec.uuidStringToSlug(sentinel.uuid),
+    "sentinel.encode.bytes": () => codec.uuidBytesToSlug(sentinelBytes[0] as Uint8Array),
+    "sentinel.encode.bytes.miss": () => codec.uuidBytesToSlug(bytes[255] as Uint8Array),
+    "sentinel.decode": () => codec.uuidSlugToString(sentinel.slug),
+    "sentinel.decode.bytes": () => codec.uuidSlugToBytes(sentinel.slug),
+    "sentinel.decode.into": () => codec.uuidSlugToBytes(sentinel.slug, into, 4),
+    "sentinel.timestamp": () =>
+      codec.validateUuidSlugTimestamp(sentinel.slug, sentinelTimestampWindow),
+    "sentinel.base32.encode": () => base32Codec.uuidStringToSlug(base32Sentinel.uuid),
+    "sentinel.base32.decode": () => base32Codec.uuidSlugToString(base32Sentinel.slug),
+    "sentinel.base32.decode.bytes": () => base32Codec.uuidSlugToBytes(base32Sentinel.slug),
+    "sentinel.base32.decode.into": () => base32Codec.uuidSlugToBytes(base32Sentinel.slug, into, 4),
     "sentinel.base32.timestamp": () =>
-      base32Codec.validateSlugTimestamp(base32Sentinel.slug, sentinelTimestampWindow),
-    "sentinel.scan4.first": () => sentinelCodec4.encodeUuid(sentinelDefinitions[0]!.uuid),
-    "sentinel.scan4.middle": () => sentinelCodec4.encodeUuid(sentinelDefinitions[2]!.uuid),
-    "sentinel.scan4.last": () => sentinelCodec4.encodeUuid(sentinelDefinitions[3]!.uuid),
-    "sentinel.scan4.miss": () => sentinelCodec4.encodeUuid(ids[255] as string),
-    "sentinel.scan4.bytes.first": () => sentinelCodec4.encodeUuid(sentinelBytes[0] as Uint8Array),
-    "sentinel.scan4.bytes.middle": () => sentinelCodec4.encodeUuid(sentinelBytes[2] as Uint8Array),
-    "sentinel.scan4.bytes.last": () => sentinelCodec4.encodeUuid(sentinelBytes[3] as Uint8Array),
-    "sentinel.scan4.bytes.miss": () => sentinelCodec4.encodeUuid(bytes[255] as Uint8Array),
-    "sentinel.scan8.first": () => sentinelCodec8.encodeUuid(sentinelDefinitions[0]!.uuid),
-    "sentinel.scan8.middle": () => sentinelCodec8.encodeUuid(sentinelDefinitions[4]!.uuid),
-    "sentinel.scan8.last": () => sentinelCodec8.encodeUuid(sentinelDefinitions[7]!.uuid),
-    "sentinel.scan8.miss": () => sentinelCodec8.encodeUuid(ids[255] as string),
-    "sentinel.scan8.bytes.first": () => sentinelCodec8.encodeUuid(sentinelBytes[0] as Uint8Array),
-    "sentinel.scan8.bytes.middle": () => sentinelCodec8.encodeUuid(sentinelBytes[4] as Uint8Array),
-    "sentinel.scan8.bytes.last": () => sentinelCodec8.encodeUuid(sentinelBytes[7] as Uint8Array),
-    "sentinel.scan8.bytes.miss": () => sentinelCodec8.encodeUuid(bytes[255] as Uint8Array),
-    "sentinel.scan16.first": () => sentinelCodec16.encodeUuid(sentinelDefinitions[0]!.uuid),
-    "sentinel.scan16.middle": () => sentinelCodec16.encodeUuid(sentinelDefinitions[8]!.uuid),
-    "sentinel.scan16.last": () => sentinelCodec16.encodeUuid(sentinelDefinitions[15]!.uuid),
-    "sentinel.scan16.miss": () => sentinelCodec16.encodeUuid(ids[255] as string),
-    "sentinel.scan16.bytes.first": () => sentinelCodec16.encodeUuid(sentinelBytes[0] as Uint8Array),
+      base32Codec.validateUuidSlugTimestamp(base32Sentinel.slug, sentinelTimestampWindow),
+    "sentinel.scan4.first": () => sentinelCodec4.uuidStringToSlug(sentinelDefinitions[0]!.uuid),
+    "sentinel.scan4.middle": () => sentinelCodec4.uuidStringToSlug(sentinelDefinitions[2]!.uuid),
+    "sentinel.scan4.last": () => sentinelCodec4.uuidStringToSlug(sentinelDefinitions[3]!.uuid),
+    "sentinel.scan4.miss": () => sentinelCodec4.uuidStringToSlug(ids[255] as string),
+    "sentinel.scan4.bytes.first": () =>
+      sentinelCodec4.uuidBytesToSlug(sentinelBytes[0] as Uint8Array),
+    "sentinel.scan4.bytes.middle": () =>
+      sentinelCodec4.uuidBytesToSlug(sentinelBytes[2] as Uint8Array),
+    "sentinel.scan4.bytes.last": () =>
+      sentinelCodec4.uuidBytesToSlug(sentinelBytes[3] as Uint8Array),
+    "sentinel.scan4.bytes.miss": () => sentinelCodec4.uuidBytesToSlug(bytes[255] as Uint8Array),
+    "sentinel.scan8.first": () => sentinelCodec8.uuidStringToSlug(sentinelDefinitions[0]!.uuid),
+    "sentinel.scan8.middle": () => sentinelCodec8.uuidStringToSlug(sentinelDefinitions[4]!.uuid),
+    "sentinel.scan8.last": () => sentinelCodec8.uuidStringToSlug(sentinelDefinitions[7]!.uuid),
+    "sentinel.scan8.miss": () => sentinelCodec8.uuidStringToSlug(ids[255] as string),
+    "sentinel.scan8.bytes.first": () =>
+      sentinelCodec8.uuidBytesToSlug(sentinelBytes[0] as Uint8Array),
+    "sentinel.scan8.bytes.middle": () =>
+      sentinelCodec8.uuidBytesToSlug(sentinelBytes[4] as Uint8Array),
+    "sentinel.scan8.bytes.last": () =>
+      sentinelCodec8.uuidBytesToSlug(sentinelBytes[7] as Uint8Array),
+    "sentinel.scan8.bytes.miss": () => sentinelCodec8.uuidBytesToSlug(bytes[255] as Uint8Array),
+    "sentinel.scan16.first": () => sentinelCodec16.uuidStringToSlug(sentinelDefinitions[0]!.uuid),
+    "sentinel.scan16.middle": () => sentinelCodec16.uuidStringToSlug(sentinelDefinitions[8]!.uuid),
+    "sentinel.scan16.last": () => sentinelCodec16.uuidStringToSlug(sentinelDefinitions[15]!.uuid),
+    "sentinel.scan16.miss": () => sentinelCodec16.uuidStringToSlug(ids[255] as string),
+    "sentinel.scan16.bytes.first": () =>
+      sentinelCodec16.uuidBytesToSlug(sentinelBytes[0] as Uint8Array),
     "sentinel.scan16.bytes.middle": () =>
-      sentinelCodec16.encodeUuid(sentinelBytes[8] as Uint8Array),
-    "sentinel.scan16.bytes.last": () => sentinelCodec16.encodeUuid(sentinelBytes[15] as Uint8Array),
-    "sentinel.scan16.bytes.miss": () => sentinelCodec16.encodeUuid(bytes[255] as Uint8Array),
-    "sentinel.scan64.first": () => sentinelCodec64.encodeUuid(sentinelDefinitions[0]!.uuid),
-    "sentinel.scan64.middle": () => sentinelCodec64.encodeUuid(sentinelDefinitions[32]!.uuid),
-    "sentinel.scan64.last": () => sentinelCodec64.encodeUuid(sentinelDefinitions[63]!.uuid),
-    "sentinel.scan64.miss": () => sentinelCodec64.encodeUuid(ids[255] as string),
-    "sentinel.scan64.bytes.first": () => sentinelCodec64.encodeUuid(sentinelBytes[0] as Uint8Array),
+      sentinelCodec16.uuidBytesToSlug(sentinelBytes[8] as Uint8Array),
+    "sentinel.scan16.bytes.last": () =>
+      sentinelCodec16.uuidBytesToSlug(sentinelBytes[15] as Uint8Array),
+    "sentinel.scan16.bytes.miss": () => sentinelCodec16.uuidBytesToSlug(bytes[255] as Uint8Array),
+    "sentinel.scan64.first": () => sentinelCodec64.uuidStringToSlug(sentinelDefinitions[0]!.uuid),
+    "sentinel.scan64.middle": () => sentinelCodec64.uuidStringToSlug(sentinelDefinitions[32]!.uuid),
+    "sentinel.scan64.last": () => sentinelCodec64.uuidStringToSlug(sentinelDefinitions[63]!.uuid),
+    "sentinel.scan64.miss": () => sentinelCodec64.uuidStringToSlug(ids[255] as string),
+    "sentinel.scan64.bytes.first": () =>
+      sentinelCodec64.uuidBytesToSlug(sentinelBytes[0] as Uint8Array),
     "sentinel.scan64.bytes.middle": () =>
-      sentinelCodec64.encodeUuid(sentinelBytes[32] as Uint8Array),
-    "sentinel.scan64.bytes.last": () => sentinelCodec64.encodeUuid(sentinelBytes[63] as Uint8Array),
-    "sentinel.scan64.bytes.miss": () => sentinelCodec64.encodeUuid(bytes[255] as Uint8Array),
+      sentinelCodec64.uuidBytesToSlug(sentinelBytes[32] as Uint8Array),
+    "sentinel.scan64.bytes.last": () =>
+      sentinelCodec64.uuidBytesToSlug(sentinelBytes[63] as Uint8Array),
+    "sentinel.scan64.bytes.miss": () => sentinelCodec64.uuidBytesToSlug(bytes[255] as Uint8Array),
     "sentinel.collision64.bytes.first": () =>
-      collidingSentinelCodec64.encodeUuid(collidingSentinelBytes[0] as Uint8Array),
+      collidingSentinelCodec64.uuidBytesToSlug(collidingSentinelBytes[0] as Uint8Array),
     "sentinel.collision64.bytes.middle": () =>
-      collidingSentinelCodec64.encodeUuid(collidingSentinelBytes[32] as Uint8Array),
+      collidingSentinelCodec64.uuidBytesToSlug(collidingSentinelBytes[32] as Uint8Array),
     "sentinel.collision64.bytes.last": () =>
-      collidingSentinelCodec64.encodeUuid(collidingSentinelBytes[63] as Uint8Array),
+      collidingSentinelCodec64.uuidBytesToSlug(collidingSentinelBytes[63] as Uint8Array),
     "sentinel.collision64.bytes.miss": () =>
-      collidingSentinelCodec64.encodeUuid(collidingSentinelMiss),
-    "invalid.uuid": () => api.uuidToBytes(badUuid),
-    "invalid.uuid.hex.early": () => api.uuidToBytes(invalidUuidHex[0] as string),
-    "invalid.uuid.hex.middle": () => api.uuidToBytes(invalidUuidHex[1] as string),
-    "invalid.uuid.hex.late": () => api.uuidToBytes(invalidUuidHex[2] as string),
-    "invalid.uuid.slug": () => api.uuidToSlug(badUuid),
-    "invalid.uuid.into.range": () => api.uuidToBytes(ids[0] as string, into, 9),
-    "invalid.uuid.format.range": () => api.bytesToUuid(into, 9),
-    "invalid.slug.format.range": () => api.bytesToSlug(into, 9),
+      collidingSentinelCodec64.uuidBytesToSlug(collidingSentinelMiss),
+    "invalid.uuid": () => api.uuidStringToBytes(badUuid),
+    "invalid.uuid.hex.early": () => api.uuidStringToBytes(invalidUuidHex[0] as string),
+    "invalid.uuid.hex.middle": () => api.uuidStringToBytes(invalidUuidHex[1] as string),
+    "invalid.uuid.hex.late": () => api.uuidStringToBytes(invalidUuidHex[2] as string),
+    "invalid.uuid.slug": () => api.uuidStringToSlug(badUuid),
+    "invalid.uuid.into.range": () => api.uuidStringToBytes(ids[0] as string, into, 9),
+    "invalid.uuid.format.range": () => api.bytesToUuidString(into, 9),
+    "invalid.slug.format.range": () => api.bytesToUuidSlug(into, 9),
     "invalid.timestamp.extract.range": () => api.extractUuidV7Timestamp(into, 9),
-    "invalid.slug": () => api.slugToBytes(badSlug),
-    "invalid.slug.base64.early": () => api.slugToBytes(invalidBase64Slugs[0] as string),
-    "invalid.slug.base64.middle": () => api.slugToBytes(invalidBase64Slugs[1] as string),
-    "invalid.slug.base64.late": () => api.slugToBytes(invalidBase64Slugs[2] as string),
-    "invalid.slug.base64.tail": () => api.slugToBytes(invalidBase64Tail),
-    "invalid.slug.base32.early": () => api.slugToBytes(invalidBase32Slugs[0] as string),
-    "invalid.slug.base32.middle": () => api.slugToBytes(invalidBase32Slugs[1] as string),
-    "invalid.slug.base32.late": () => api.slugToBytes(invalidBase32Slugs[2] as string),
-    "invalid.slug.base32.tail": () => api.slugToBytes(invalidBase32Tail),
-    "invalid.slug.uuid": () => api.slugToUuid(badSlug),
-    "invalid.slug.into.range": () => api.slugToBytes(slugs[0] as string, into, 9),
-    "invalid.mask.into.range": () => codec.decodeSlugToBytes(masked[0] as string, into, 9),
+    "invalid.slug": () => api.uuidSlugToBytes(badSlug),
+    "invalid.slug.base64.early": () => api.uuidSlugToBytes(invalidBase64Slugs[0] as string),
+    "invalid.slug.base64.middle": () => api.uuidSlugToBytes(invalidBase64Slugs[1] as string),
+    "invalid.slug.base64.late": () => api.uuidSlugToBytes(invalidBase64Slugs[2] as string),
+    "invalid.slug.base64.tail": () => api.uuidSlugToBytes(invalidBase64Tail),
+    "invalid.slug.base32.early": () => api.uuidSlugToBytes(invalidBase32Slugs[0] as string),
+    "invalid.slug.base32.middle": () => api.uuidSlugToBytes(invalidBase32Slugs[1] as string),
+    "invalid.slug.base32.late": () => api.uuidSlugToBytes(invalidBase32Slugs[2] as string),
+    "invalid.slug.base32.tail": () => api.uuidSlugToBytes(invalidBase32Tail),
+    "invalid.slug.uuid": () => api.uuidSlugToString(badSlug),
+    "invalid.slug.into.range": () => api.uuidSlugToBytes(slugs[0] as string, into, 9),
+    "invalid.mask.into.range": () => codec.uuidSlugToBytes(masked[0] as string, into, 9),
     "invalid.alphabet": () =>
-      Reflect.apply(api.uuidToSlug, undefined, [ids[0] as string, "invalid-alphabet"]),
+      Reflect.apply(api.uuidStringToSlug, undefined, [ids[0] as string, "invalid-alphabet"]),
     "invalid.v4.into.range": () => api.generateUuidV4Bytes(into, 9),
     "invalid.v7.into.range": () => api.generateUuidV7Bytes(into, 9),
     "invalid.v7.at.into.range": () => api.generateUuidV7BytesAt(instant, into, 9),
-    "invalid.mask": (index) => codec.decodeSlug(oldOnly[index % oldOnly.length] as string),
-    "invalid.mask.version": () => codec.encodeUuid(v4Bytes),
-    "invalid.mask.custom": () => failingCustomCodec.encodeUuid(bytes[0] as Uint8Array),
-    "invalid.mask.sentinel-collision": () => collisionCodec.encodeUuid(collisionInput),
-    "invalid.mask.sentinel-collision.base32": () => collisionBase32Codec.encodeUuid(collisionInput),
+    "invalid.mask": (index) => codec.uuidSlugToString(oldOnly[index % oldOnly.length] as string),
+    "invalid.mask.version": () => codec.uuidBytesToSlug(v4Bytes),
+    "invalid.mask.custom": () => failingCustomCodec.uuidBytesToSlug(bytes[0] as Uint8Array),
+    "invalid.mask.sentinel-collision": () => collisionCodec.uuidStringToSlug(collisionInput),
+    "invalid.mask.sentinel-collision.base32": () =>
+      collisionBase32Codec.uuidStringToSlug(collisionInput),
     "invalid.timestamp.version": () => api.validateUuidV7Timestamp(v4Uuid, timestampWindow),
     "invalid.timestamp.window": () =>
       api.validateUuidV7Timestamp(ids[0] as string, outsideTimestampWindow),
@@ -657,7 +690,18 @@ export function createProfileCases(
         mask: current,
         sentinels: [sentinelDefinitions[0]!, { ...sentinelDefinitions[1]!, name: "sentinel-0" }],
       }),
-    "error.classify": () => api.isUuidSlugError(api.uuidToBytes(badUuid)),
+    "error.classify.success": (index) => api.isUuidSlugError(ids[index & 255]),
+    "error.classify.failure": () => api.isUuidSlugError(packageFailure),
+    "error.marker.own.long": () => ownLongMarker["__failure"] === true,
+    "error.marker.own.short": () => ownShortMarker._ === true,
+    "error.marker.prototype.long": () => prototypeLongMarker["__failure"] === true,
+    "error.marker.prototype.short": () => prototypeShortMarker._ === true,
+    "error.marker.own.symbol": () => ownSymbolMarker[markerSymbol] === true,
+    "error.marker.prototype.symbol": () => prototypeSymbolMarker[markerSymbol] === true,
+    "error.native.instanceof": () => packageFailure instanceof Error,
+    "error.native.isError": () =>
+      (Error as { isError?: (value: unknown) => boolean }).isError?.(packageFailure) ?? true,
+    "invalid.error.propagate": () => api.uuidStringToSlug(packageFailure),
     "construct.codec": () => api.createUuidV7SlugCodec({ mask: current }),
     "construct.mask": () => api.createUuidV7Mask(current),
     "construct.mask.bytes": () =>
@@ -706,9 +750,9 @@ export function createProfileCases(
           const valid =
             api.isUuidString(value) ||
             api.isUuidSlug(value) ||
-            !(codec.decodeSlug(value) instanceof Error) ||
-            !(base32Codec.decodeSlug(value) instanceof Error) ||
-            !(customCodec.decodeSlug(value) instanceof Error);
+            !(codec.uuidSlugToString(value) instanceof Error) ||
+            !(base32Codec.uuidSlugToString(value) instanceof Error) ||
+            !(customCodec.uuidSlugToString(value) instanceof Error);
           if (!valid) throw new Error(`${name} returned malformed identifier text`);
         } else if (value instanceof Uint8Array) {
           if (name.endsWith(".into") && (value !== into || value[0] !== 0x55 || value[23] !== 0x55))

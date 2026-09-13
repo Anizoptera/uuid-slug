@@ -5,6 +5,7 @@ import {
   checkRange,
   failedFallback,
   fillRandomBytes,
+  isUuidSlugError,
   nativeOrFallback,
   readClock,
   UuidSlugError,
@@ -88,13 +89,13 @@ const rejectInstant = /* @__NO_SIDE_EFFECTS__ */ (ms: number): undefined | UuidS
 /**
  * Both string forms differ only in where the instant comes from, so the byte-or-error result is
  * carried through here rather than unwrapped twice. The narrowing is an assertion because
- * `bytesToUuid` is version-agnostic: the v7-ness is established by the caller having produced the
+ * `bytesToUuidString` is version-agnostic: the v7-ness is established by the caller having produced the
  * bytes, not by anything the formatter can check.
  */
 const formatUuidV7 = /* @__NO_SIDE_EFFECTS__ */ (
   result: Uint8Array | UuidSlugError,
 ): UuidV7String | UuidSlugError =>
-  result instanceof Error ? result : (formatUuidBytesUnchecked(result) as UuidV7String);
+  isUuidSlugError(result) ? result : (formatUuidBytesUnchecked(result) as UuidV7String);
 
 const reenteredGeneration = /* @__NO_SIDE_EFFECTS__ */ () =>
   new UuidSlugError(
@@ -191,7 +192,7 @@ export function createPortableUuidV7Generator(
       // The raw reading is kept for the message rather than calling `clock()` again: a second call
       // is a second reading, and the message would name a value other than the one refused.
       const reading = readClock(clock);
-      if (reading instanceof Error) return reading;
+      if (isUuidSlugError(reading)) return reading;
       const now = typeof reading === "number" ? Math.trunc(reading) : NaN;
       if (typeof reading !== "number" || reading < 0 || !isValidUuidV7Timestamp(now))
         return new UuidSlugError(
@@ -310,14 +311,14 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
         fallback.generateUuidV7,
         "UUIDv7 generation",
       );
-      if (!(result instanceof Error)) trustedNativeUuidV7 = native;
+      if (!isUuidSlugError(result)) trustedNativeUuidV7 = native;
       return result;
     }
     try {
       return native() as UuidV7String;
     } catch (nativeCause) {
       const result = fallback.generateUuidV7();
-      return result instanceof Error
+      return isUuidSlugError(result)
         ? failedFallback(nativeCause, result, "Native and portable UUIDv7 generation failed.")
         : result;
     }

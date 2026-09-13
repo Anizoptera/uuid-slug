@@ -26,11 +26,11 @@ describe("the maskable range", () => {
   const codec = unwrap(createUuidV7SlugCodec({ mask: handle, sentinels: [] }));
 
   it("masks the last instant before 2^42 ms and refuses the first one at or past it", () => {
-    expect(codec.encodeUuid(LAST_MASKABLE)).toHaveLength(22);
+    expect(codec.uuidStringToSlug(LAST_MASKABLE)).toHaveLength(22);
     // Version 7 and the RFC variant are both set here on purpose. Those are checked FIRST, so an
     // input built to reach the timestamp guard has to satisfy them or the earlier guard answers
     // and this case silently stops testing the boundary it names.
-    const refused = codec.encodeUuid(FIRST_REFUSED);
+    const refused = codec.uuidStringToSlug(FIRST_REFUSED);
     expect(refused).toBeInstanceOf(Error);
     expect((refused as { code?: string }).code).toBe("invalid_timestamp");
   });
@@ -38,8 +38,8 @@ describe("the maskable range", () => {
   it("refuses anything that is not a UUIDv7, rather than stamping one on at decode", () => {
     // Decoding restores v7 constants, so accepting another version or variant changes identity.
     // Both inputs fit the timestamp range; its guard must not hide a missing version check.
-    expect(codec.encodeUuid("0198abcd-1234-4abc-9def-000000000001")).toBeInstanceOf(Error);
-    expect(codec.encodeUuid("03ffffff-ffff-7fff-0fff-ffffffffffff")).toBeInstanceOf(Error);
+    expect(codec.uuidStringToSlug("0198abcd-1234-4abc-9def-000000000001")).toBeInstanceOf(Error);
+    expect(codec.uuidStringToSlug("03ffffff-ffff-7fff-0fff-ffffffffffff")).toBeInstanceOf(Error);
   });
 
   it("round-trips under the RIGHT key at both ends of the range", () => {
@@ -48,10 +48,10 @@ describe("the maskable range", () => {
     // ends because byte 0 is the byte the tag borrows: all-ones there is the case a sloppy
     // mask-and-restore corrupts, and all-zero is the case that hides it.
     for (const uuid of [LAST_MASKABLE, "00000000-0000-7000-8000-000000000000"]) {
-      const slug = codec.encodeUuid(uuid);
+      const slug = codec.uuidStringToSlug(uuid);
       if (slug instanceof Error) throw slug;
       expect(slug).toHaveLength(22);
-      expect(codec.decodeSlug(slug)).toBe(uuid);
+      expect(codec.uuidSlugToString(slug)).toBe(uuid);
     }
   });
 });

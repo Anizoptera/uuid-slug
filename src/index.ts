@@ -36,25 +36,25 @@ export type {
   UuidV7String,
 } from "./types.ts";
 export {
-  bytesToUuid,
+  bytesToUuidString,
   isUuidBytes,
   isUuidV4Bytes,
   isUuidV4String,
   isUuidV7Bytes,
   isUuidV7String,
   isUuidString,
-  uuidToBytes,
+  uuidStringToBytes,
 } from "./uuid.ts";
 export {
   UUID_SLUG_ALPHABETS,
-  bytesToSlug,
+  bytesToUuidSlug,
   extractUuidV7Timestamp,
   isUuidSlug,
   isUuidV4Slug,
   isUuidV7Slug,
-  slugToBytes,
-  slugToUuid,
-  uuidToSlug,
+  uuidSlugToBytes,
+  uuidSlugToString,
+  uuidStringToSlug,
   validateUuidV7SlugTimestamp,
 } from "./slug.ts";
 export type { SlugAlphabet } from "./slug.ts";
