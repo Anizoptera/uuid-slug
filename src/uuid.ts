@@ -5,6 +5,7 @@ import {
   checkRange,
   invalidByteInput,
   invalidUuidStringInput,
+  INVALID_UUID,
   isUint8Array,
   UuidSlugError,
 } from "./errors.ts";
@@ -24,8 +25,8 @@ export { UuidSlugError };
 export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidBytes, UuidString } from "./types.ts";
 
-const INVALID_UUID = "invalid_uuid";
 const HEX = "0123456789abcdef";
+const UUID_SEPARATOR = "-";
 // Probe once and allocate the byte-pair fallback only on engines that need it.
 const nativeToHex = (Uint8Array.prototype as { toHex?: () => string }).toHex;
 const HEX_BYTES = nativeToHex
@@ -89,7 +90,12 @@ export function uuidStringToBytes(
   if (typeof uuid !== "string") return invalidUuidStringInput(uuid);
   if (uuid.length !== UUID_LENGTH)
     return new UuidSlugError(INVALID_UUID, "UUID must be 36 characters.");
-  if (uuid[8] !== "-" || uuid[13] !== "-" || uuid[18] !== "-" || uuid[23] !== "-") {
+  if (
+    uuid[8] !== UUID_SEPARATOR ||
+    uuid[13] !== UUID_SEPARATOR ||
+    uuid[18] !== UUID_SEPARATOR ||
+    uuid[23] !== UUID_SEPARATOR
+  ) {
     return new UuidSlugError(INVALID_UUID, "UUID hyphen positions are invalid.");
   }
 
@@ -148,16 +154,16 @@ export function formatUuidBytesUnchecked(bytes: Uint8Array, offset = 0): UuidStr
     hexByte(bytes[offset + 1] as number) +
     hexByte(bytes[offset + 2] as number) +
     hexByte(bytes[offset + 3] as number) +
-    "-" +
+    UUID_SEPARATOR +
     hexByte(bytes[offset + 4] as number) +
     hexByte(bytes[offset + 5] as number) +
-    "-" +
+    UUID_SEPARATOR +
     hexByte(bytes[offset + 6] as number) +
     hexByte(bytes[offset + 7] as number) +
-    "-" +
+    UUID_SEPARATOR +
     hexByte(bytes[offset + 8] as number) +
     hexByte(bytes[offset + 9] as number) +
-    "-" +
+    UUID_SEPARATOR +
     hexByte(bytes[offset + 10] as number) +
     hexByte(bytes[offset + 11] as number) +
     hexByte(bytes[offset + 12] as number) +
@@ -181,7 +187,13 @@ export function isRfcVariant(bytes: Uint8Array, offset = 0): boolean {
 /*#__NO_SIDE_EFFECTS__*/
 export function isUuidString(value: unknown): value is UuidString {
   if (typeof value !== "string" || value.length !== UUID_LENGTH) return false;
-  if (value[8] !== "-" || value[13] !== "-" || value[18] !== "-" || value[23] !== "-") return false;
+  if (
+    value[8] !== UUID_SEPARATOR ||
+    value[13] !== UUID_SEPARATOR ||
+    value[18] !== UUID_SEPARATOR ||
+    value[23] !== UUID_SEPARATOR
+  )
+    return false;
   for (let i = 0; i < UUID_BYTE_OFFSETS.length; i += 1) {
     const offset = UUID_BYTE_OFFSETS[i] as number;
     if (hexValue(value.charCodeAt(offset)) < 0 || hexValue(value.charCodeAt(offset + 1)) < 0)

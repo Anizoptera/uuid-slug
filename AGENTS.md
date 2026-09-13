@@ -105,7 +105,10 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   unrelated code; otherwise keep a private file-local constant. Never build a root string catalog
   or runtime lookup object: both retain unrelated values and weaken tree shaking. Keep `typeof`
   operands literal because TypeScript narrows from the literal but not an equivalent constant;
-  do not trade type safety or a hot-path helper call for textual deduplication.
+  do not trade type safety, a stable emitted declaration, or a hot-path helper call for textual
+  deduplication. Before claiming completion, search all `src` runtime expressions for every moved
+  literal, inspect each hit, and run the declaration/API and packed tree-shaking checks; type-only
+  literals may repeat only when the published type cannot reference the private runtime owner.
 - Keep repository-only docs, benchmarks, and Rust sources out of the npm tarball when the package
   does not need them at runtime; README links do not require shipping their targets.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Never add a throwing

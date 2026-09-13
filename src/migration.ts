@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BASE32HEX, BASE64URL, decodeInto, encode } from "./alphabet.ts";
-import { invalidUuidSlugInput, isUuidSlugError, UuidSlugError } from "./errors.ts";
+import {
+  INVALID_OPTIONS,
+  INVALID_UUID_SLUG,
+  invalidUuidSlugInput,
+  isUuidSlugError,
+  UuidSlugError,
+} from "./errors.ts";
 import { decodeFirstMaskedCandidate, decodeMaskedCandidates } from "./payload.ts";
 import type {
   UuidV7Mask,
@@ -15,8 +21,6 @@ import { UUID_SLUG_MIGRATION_FORMATS } from "./types.ts";
 import { bytesToUuidString } from "./uuid.ts";
 
 const DIRECT_SLUG_FORMAT = "direct-slug";
-const INVALID_OPTIONS = "invalid_options";
-const INVALID_UUID_SLUG = "invalid_uuid_slug";
 const ORIGINAL_MASK_FORMAT = "original-mask";
 
 // These tables and the four-bit checksum define the original wire format.

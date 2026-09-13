@@ -1,17 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { invalidUuidStringInput, UuidSlugError } from "./errors.ts";
+import {
+  INVALID_TIMESTAMP,
+  INVALID_UUID_VERSION,
+  TIMESTAMP_OUTSIDE_WINDOW,
+  invalidUuidStringInput,
+  UuidSlugError,
+} from "./errors.ts";
 import type { UuidV7String, UuidV7StringInput, UuidV7TimestampWindow } from "./types.ts";
 import { isUuidV7Bytes, uuidTimestampFromBytesUnchecked, uuidStringToBytes } from "./uuid.ts";
-
-const INVALID_TIMESTAMP = "invalid_timestamp";
 
 /** Decode before reading the reference time so validation performs one clock observation. */
 export function validateTimestampBytes(
   bytes: Uint8Array,
   window: UuidV7TimestampWindow,
 ): undefined | UuidSlugError {
-  if (!isUuidV7Bytes(bytes)) return new UuidSlugError("invalid_uuid_version", "Expected UUIDv7.");
+  if (!isUuidV7Bytes(bytes)) return new UuidSlugError(INVALID_UUID_VERSION, "Expected UUIDv7.");
   const timestamp = uuidTimestampFromBytesUnchecked(bytes, 0);
   let maxTimestampDeltaMs: number;
   let referenceUnixMs: number;
@@ -38,7 +42,7 @@ export function validateTimestampBytes(
     timestamp > referenceUnixMs + maxTimestampDeltaMs
   )
     return new UuidSlugError(
-      "timestamp_outside_window",
+      TIMESTAMP_OUTSIDE_WINDOW,
       "UUIDv7 timestamp is outside the accepted window.",
     );
   return undefined;

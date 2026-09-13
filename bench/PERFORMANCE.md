@@ -1146,6 +1146,19 @@ then native or intrinsic cross-realm recognition. Remeasure when an engine chang
 recognition; these warm measurements do not establish cold-start, other hardware, or hostile-proxy
 cost.
 
+A 2026-09-13 packed-revision replay isolated each fallible recognition rung so an inaccessible
+marker cannot suppress local or cross-realm Error recognition. Six alternating samples on Node
+26.8.2, Bun 1.4.2, Chromium, Deno 2.9.6, and Node JITless found no statistically distinct regression
+in successful-value or marked-failure classification. One Deno run showed a 6% successful-value
+gain; the immediate repeat overlapped no change, so no Deno improvement is established. These
+measurements cover the existing ordinary success and marked-failure corpus, not hostile proxies;
+the hostile-marker regression test establishes correctness but not its cost.
+
+The same date's six-sample packed replay replaced repeated UUID separators with one module-local
+constant. Direct encode and decode showed no statistically distinct change on Node 26.8.2, Bun
+1.4.2, Chromium, Deno 2.9.6, or Node JITless. This covers warm complete direct conversions; it does
+not establish cold module initialization cost.
+
 ### Consumer graph
 
 Packed browser production builds on 2026-09-12 gave Bun, esbuild, Parcel, Rollup, Rolldown, Rspack,

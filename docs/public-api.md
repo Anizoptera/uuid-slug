@@ -158,7 +158,8 @@ Keep UUID text/binary conversion directional and version-neutral:
 - Separate cross-boundary recognition from local intermediate narrowing. Composable inputs use the
   marker and cross-realm ladder; results created by a package-local primitive use `instanceof Error`
   after the input seam has already returned foreign failures. Do not make successful local bytes pay
-  the general protocol detector again.
+  the general protocol detector again. Isolate each compatibility rung so an inaccessible marker or
+  hostile proxy cannot suppress a later independent recognition path.
 - Prove composition in both JavaScript execution and TypeScript types. Exercise successful chains,
   unchanged error identity, and skipped downstream work; compile compatible calls without casts
   or intermediate guards and reject incompatible representations and UUID versions. TypeScript

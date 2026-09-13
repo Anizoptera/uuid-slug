@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { isUint8Array, UuidSlugError } from "./errors.ts";
+import { ABORTED, INVALID_MASK, isUint8Array, UuidSlugError } from "./errors.ts";
 import { FEISTEL_KEY_WORDS, feistel16 } from "./feistel.ts";
 import { createMaskHandle } from "./mask-handle.ts";
 import { halfSipHash } from "./siphash.ts";
@@ -8,7 +8,6 @@ import type { HashContinuation } from "./siphash.ts";
 import { encodeUtf8 } from "#runtime";
 import type { AsyncUuidV7MaskOptions, UuidV7Mask, UuidV7MaskOptions } from "./types.ts";
 
-const INVALID_MASK = "invalid_mask";
 const MASK_CONSTRUCTION_FAILURE_MESSAGE = "Mask construction failed.";
 const SEED_PROPERTY = "seed";
 
@@ -305,7 +304,7 @@ export async function createUuidV7MaskAsync(
   try {
     const signal = options?.signal;
     const aborted = () =>
-      new UuidSlugError("aborted", "Mask construction was aborted.", {
+      new UuidSlugError(ABORTED, "Mask construction was aborted.", {
         cause: signal?.reason,
       });
     if (signal?.aborted) return aborted();

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { checkRange, UuidSlugError } from "./errors.ts";
+import { checkRange, INVALID_BASE32HEX, INVALID_BASE64URL, UuidSlugError } from "./errors.ts";
 import type { UuidSlugErrorCode } from "./errors.ts";
 
-const BASE64URL_NAME = "base64url";
+export const BASE32HEX_NAME = "base32hex";
+export const BASE64URL_NAME = "base64url";
 
 /**
  * A power-of-two alphabet plus its reverse lookup. Encoding is pure bit packing, so the only
@@ -38,7 +39,7 @@ function alphabet(name: string, chars: string, code: UuidSlugErrorCode): Alphabe
 export const BASE64URL: Alphabet = /*#__PURE__*/ alphabet(
   BASE64URL_NAME,
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_",
-  "invalid_base64url",
+  INVALID_BASE64URL,
 );
 
 /**
@@ -52,9 +53,9 @@ export const BASE64URL: Alphabet = /*#__PURE__*/ alphabet(
  * `casefold=True`. Upper-case them at the boundary if a strict RFC decoder has to read them.
  */
 export const BASE32HEX: Alphabet = /*#__PURE__*/ alphabet(
-  "base32hex",
+  BASE32HEX_NAME,
   "0123456789abcdefghijklmnopqrstuv",
-  "invalid_base32hex",
+  INVALID_BASE32HEX,
 );
 
 // Native encoding is strict on output; decoding stays here because it must reject aliases,

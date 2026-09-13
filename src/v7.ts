@@ -5,6 +5,8 @@ import {
   checkRange,
   failedFallback,
   fillRandomBytes,
+  INVALID_TIMESTAMP,
+  RNG_UNAVAILABLE,
   isUuidSlugError,
   nativeOrFallback,
   readClock,
@@ -13,8 +15,6 @@ import {
 import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types.ts";
 import { formatUuidBytesUnchecked, isUuidV7String } from "./uuid.ts";
 import type { Runtime } from "./runtime/types.ts";
-
-const INVALID_TIMESTAMP = "invalid_timestamp";
 
 /** Internal controls for exercising the portable UUIDv7 state machine. */
 interface PortableUuidV7GeneratorOptions {
@@ -101,7 +101,7 @@ const formatUuidV7 = /* @__NO_SIDE_EFFECTS__ */ (
 
 const reenteredGeneration = /* @__NO_SIDE_EFFECTS__ */ () =>
   new UuidSlugError(
-    "rng_unavailable",
+    RNG_UNAVAILABLE,
     "UUIDv7 generation cannot be reentered from its clock or entropy callback.",
   );
 

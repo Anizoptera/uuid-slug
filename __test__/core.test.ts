@@ -37,6 +37,13 @@ describe("error classification", () => {
     ) as UuidSlugError;
     expect(isUuidSlugError(new UuidSlugError("invalid_uuid", "bad UUID"))).toBe(true);
     expect(isUuidSlugError(foreign)).toBe(true);
+    const shadowed = new UuidSlugError("invalid_uuid", "shadowed marker");
+    Object.defineProperty(shadowed, "__failure", {
+      get() {
+        throw new Error("marker blocked");
+      },
+    });
+    expect(isUuidSlugError(shadowed)).toBe(true);
     expect(
       isUuidSlugError(
         Object.assign(new Error("legacy"), { name: "UuidRuntimeError", code: "invalid_uuid" }),

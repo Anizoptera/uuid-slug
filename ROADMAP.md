@@ -4,6 +4,11 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 
 ## Error handling design
 
+- [x] Close the hostile audit of error recognition and semantic string ownership.
+  - [x] Give each repeated runtime error code and alphabet name one directly imported semantic owner;
+        retain no positional aliases or duplicate runtime declarations.
+  - [x] Preserve later recognition paths when an earlier compatibility probe throws.
+  - [x] Prove source behavior, declarations, packed exports, tree shaking, runtime cost, and the full gate.
 - [x] Correct the error-recognition design against complete public calls.
   - [x] Restore one codec UUID-to-slug method for text, bytes, and preceding failures; reject the
         split surface and verify mixed-input inference and runtime dispatch.

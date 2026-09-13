@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { isUint8Array, isUuidSlugError, UuidSlugError } from "./errors.ts";
+import { INVALID_MASK, isUint8Array, isUuidSlugError, UuidSlugError } from "./errors.ts";
 import type { CustomUuidV7MaskOptions, UuidV7Mask } from "./types.ts";
 
 const MASK_PROTOCOL = Symbol.for("@anizoptera/uuid-slug/mask/1");
 const CUSTOM_MASK_FAILURE_MESSAGE = "Custom mask construction failed.";
-const INVALID_MASK = "invalid_mask";
 
 interface MaskProtocol {
   readonly version: 1;

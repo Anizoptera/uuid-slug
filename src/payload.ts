@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { BASE32HEX, BASE64URL, decodeInto, encode, spareBits } from "./alphabet.ts";
-import { isUuidSlugError, UuidSlugError } from "./errors.ts";
+import { BASE32HEX, BASE64URL, BASE64URL_NAME, decodeInto, encode, spareBits } from "./alphabet.ts";
+import {
+  INVALID_MASK,
+  INVALID_TIMESTAMP,
+  INVALID_UUID_SLUG,
+  isUuidSlugError,
+  UuidSlugError,
+} from "./errors.ts";
 import { mix32, read32 } from "./feistel.ts";
 import { applyMask } from "./mask-handle.ts";
 import { bytesToUuidString } from "./uuid.ts";
 import type { UuidV7Mask, MaskedUuidV7Slug, UuidString } from "./types.ts";
 import type { SlugAlphabet } from "./slug.ts";
 
-const BASE64URL_NAME = "base64url";
-const INVALID_MASK = "invalid_mask";
-const INVALID_UUID_SLUG = "invalid_uuid_slug";
 const MASK_DIRECTION = "mask";
 const MASKING = "masking";
 const NO_MASK_MATCH_MESSAGE =
@@ -128,7 +131,7 @@ export function ownedUuidV7BytesToMaskedSlug(
   // decoder could ever tell which was meant. Refusing is the only recoverable answer.
   if ((raw[0] ?? 0) > 0x03)
     return new UuidSlugError(
-      "invalid_timestamp",
+      INVALID_TIMESTAMP,
       "Masking requires a UUIDv7 timestamped before 2^42 ms (year 2109); its top six bits carry the check.",
     );
   const tag = tagFor(raw, TAG_BITS);

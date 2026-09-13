@@ -2,11 +2,18 @@
 
 import {
   checkByteRange,
+  INVALID_BUFFER,
+  INVALID_MASK,
+  INVALID_SENTINEL,
+  INVALID_UUID,
+  INVALID_UUID_VERSION,
+  RNG_UNAVAILABLE,
   invalidUuidSlugInput,
   isUuidSlugError,
   isUint8Array,
   UuidSlugError,
 } from "./errors.ts";
+import { BASE32HEX_NAME, BASE64URL_NAME } from "./alphabet.ts";
 import { generateUuidV7Bytes as generateDefaultUuidV7Bytes } from "./v7-keyless.ts";
 import { ownedUuidV7BytesToMaskedSlug, decodeMaskedSlug } from "./payload.ts";
 import { createMigration } from "./migration.ts";
@@ -34,10 +41,6 @@ import type { SlugAlphabet } from "./slug.ts";
 
 type EncodedSentinel = { bytes: Uint8Array; slug: SentinelUuidV7Slug };
 
-const BASE64URL_ALPHABET = "base64url";
-const INVALID_MASK = "invalid_mask";
-const INVALID_SENTINEL = "invalid_sentinel";
-const INVALID_UUID_VERSION = "invalid_uuid_version";
 const CODEC_CONSTRUCTION_FAILED = "Codec construction failed.";
 const INVALID_MASKED_UUID_BYTES = "Masked UUID slugs require 16 UUIDv7 bytes.";
 type EncodedSentinelIndex = {
@@ -150,7 +153,7 @@ function createSentinels(
     // sentinel owns the reserved value.
     if (byUuid.has(definition.uuid))
       return new UuidSlugError(
-        "invalid_uuid",
+        INVALID_UUID,
         `Sentinel "${definition.name}" repeats the UUID of an earlier sentinel.`,
       );
     // Sentinels remain raw UUIDs; only their writer follows the masked alphabet selection.
@@ -170,7 +173,7 @@ function createSentinels(
     bySlug.set(sentinel.slug, { uuid: sentinel.uuid, bytes });
     const alternate = bytesToUuidSlug(
       bytes,
-      alphabet === BASE64URL_ALPHABET ? "base32hex" : BASE64URL_ALPHABET,
+      alphabet === BASE64URL_NAME ? BASE32HEX_NAME : BASE64URL_NAME,
     );
     if (alternate instanceof Error) return alternate;
     bySlug.set(alternate, { uuid: sentinel.uuid, bytes });
@@ -260,7 +263,7 @@ function buildUuidSlugCodec(
     if (isUuidSlugError(previous)) return previous;
     previousMasks.push(previous);
   }
-  const outputAlphabet = options.outputAlphabet ?? BASE64URL_ALPHABET;
+  const outputAlphabet = options.outputAlphabet ?? BASE64URL_NAME;
   const outputAlphabetResult = resolveSlugAlphabet(outputAlphabet);
   if (outputAlphabetResult instanceof Error) return outputAlphabetResult;
   const sentinelDefinitions = options.sentinels ?? EMPTY_SENTINELS;
@@ -324,7 +327,7 @@ function buildUuidSlugCodec(
     if (isUint8Array(uuid)) return encodeMasked(uuid);
     return isUuidSlugError(uuid)
       ? uuid
-      : new UuidSlugError("invalid_buffer", "UUID must be canonical text or 16 UUIDv7 bytes.");
+      : new UuidSlugError(INVALID_BUFFER, "UUID must be canonical text or 16 UUIDv7 bytes.");
   }
 
   function uuidSlugToString(slug: string | UuidSlugError): UuidV7String | UuidSlugError {
@@ -367,7 +370,7 @@ function buildUuidSlugCodec(
       if (isUuidSlugError(bytes)) return bytes;
       return new UuidSlugError(INVALID_UUID_VERSION, INVALID_MASKED_UUID_BYTES);
     } catch (cause) {
-      return new UuidSlugError("rng_unavailable", "UUIDv7 byte generation failed.", { cause });
+      return new UuidSlugError(RNG_UNAVAILABLE, "UUIDv7 byte generation failed.", { cause });
     }
   }
 

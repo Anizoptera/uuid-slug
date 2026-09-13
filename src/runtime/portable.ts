@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { UuidSlugError } from "../errors.ts";
+import { RNG_UNAVAILABLE, UuidSlugError } from "../errors.ts";
 import { pooledFill } from "./pool.ts";
 import type { Runtime } from "./types.ts";
 
@@ -19,7 +19,7 @@ const runtimeCapabilities: Runtime = {
     // Resolve per draw so instrumentation installed after import observes the source.
     const crypto = globalThis.crypto;
     if (!crypto?.getRandomValues)
-      return new UuidSlugError("rng_unavailable", "Web Crypto getRandomValues is unavailable.");
+      return new UuidSlugError(RNG_UNAVAILABLE, "Web Crypto getRandomValues is unavailable.");
     crypto.getRandomValues(into);
     return undefined;
   }),

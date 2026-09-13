@@ -6,6 +6,7 @@ import {
   checkRange,
   failedFallback,
   fillRandomBytes,
+  RNG_UNAVAILABLE,
   nativeOrFallback,
   UuidSlugError,
 } from "./errors.ts";
@@ -20,7 +21,6 @@ export { isUuidV4Bytes, isUuidV4String } from "./uuid.ts";
 
 const REENTRANT_GENERATION_MESSAGE =
   "UUIDv4 generation cannot be reentered from its entropy source.";
-const RNG_UNAVAILABLE = "rng_unavailable";
 
 /**
  * Randomness is drawn into private storage before copying to caller storage. Web Crypto rejects

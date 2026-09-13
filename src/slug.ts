@@ -2,7 +2,9 @@
 
 import {
   BASE32HEX,
+  BASE32HEX_NAME,
   BASE64URL,
+  BASE64URL_NAME,
   decodeInto,
   encode,
   hasNativeBase64urlEncoder,
@@ -12,6 +14,10 @@ import type { Alphabet } from "./alphabet.ts";
 import {
   checkByteRange,
   checkRange,
+  INVALID_OPTIONS,
+  INVALID_UUID,
+  INVALID_UUID_SLUG,
+  INVALID_UUID_VERSION,
   invalidByteInput,
   invalidUuidSlugInput,
   invalidUuidStringInput,
@@ -55,11 +61,6 @@ export { UuidSlugError };
 export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidSlug, UuidV4Slug, UuidV7Slug } from "./types.ts";
 
-const BASE32HEX_NAME = "base32hex";
-const BASE64URL_NAME = "base64url";
-const INVALID_OPTIONS = "invalid_options";
-const INVALID_UUID_VERSION = "invalid_uuid_version";
-
 /*
  * The alphabets a direct slug may be written in. base64url is the default and the shortest;
  * base32hex costs four more characters and buys the one property base64url cannot offer: its
@@ -70,6 +71,7 @@ const INVALID_UUID_VERSION = "invalid_uuid_version";
  * but sorting masked ciphertext does not recover chronological order.
  */
 const ALPHABETS = [BASE64URL_NAME, BASE32HEX_NAME] as const;
+const ALTERNATIVE_SEPARATOR = " or ";
 
 /** The accepted slug alphabets, for configuration validation and user-interface choices. */
 export const UUID_SLUG_ALPHABETS: readonly ["base64url", "base32hex"] =
@@ -97,7 +99,7 @@ export function resolveSlugAlphabet(alphabet: SlugAlphabet): Alphabet | UuidSlug
     return SLUG_ALPHABET_CODECS[alphabet];
   return new UuidSlugError(
     INVALID_OPTIONS,
-    `Unknown slug alphabet; expected ${UUID_SLUG_ALPHABETS.join(" or ")}.`,
+    `Unknown slug alphabet; expected ${UUID_SLUG_ALPHABETS.join(ALTERNATIVE_SEPARATOR)}.`,
   );
 }
 
@@ -121,7 +123,7 @@ const SLUG_ALPHABET_BY_LENGTH: readonly (Alphabet | undefined)[] = /*#__PURE__*/
 
 const SLUG_LENGTHS = /*#__PURE__*/ Object.values(SLUG_ALPHABET_CODECS)
   .map((alpha) => `${slugLength(alpha)} (${alpha.name})`)
-  .join(" or ");
+  .join(ALTERNATIVE_SEPARATOR);
 
 /** Encode validated canonical UUID text directly into its fixed 22-character base64url shape. */
 /*#__NO_SIDE_EFFECTS__*/
@@ -252,7 +254,7 @@ export function uuidSlugToBytes(
   const alpha = SLUG_ALPHABET_BY_LENGTH[slug.length];
   if (!alpha)
     return new UuidSlugError(
-      "invalid_uuid_slug",
+      INVALID_UUID_SLUG,
       slug.length === 27
         ? "27 characters is a masked base32hex slug; decode it with the codec that issued it."
         : `UUID slug must be ${SLUG_LENGTHS} characters, got ${slug.length}.`,
@@ -366,7 +368,7 @@ function extractStringTimestamp(value: string): number | UuidSlugError {
     return timestamp;
   }
   return new UuidSlugError(
-    isUuidString(value) || isUuidSlug(value) ? INVALID_UUID_VERSION : "invalid_uuid",
+    isUuidString(value) || isUuidSlug(value) ? INVALID_UUID_VERSION : INVALID_UUID,
     "Expected canonical UUIDv7 text or a direct UUIDv7 slug.",
   );
 }

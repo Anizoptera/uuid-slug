@@ -2,11 +2,9 @@
 
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
-import { UuidSlugError } from "./errors.ts";
+import { INVALID_OPTIONS, UuidSlugError } from "./errors.ts";
 import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types.ts";
 import { createPortableUuidV7Generator, createRuntimeGenerator } from "./v7.ts";
-
-const INVALID_OPTIONS = "invalid_options";
 
 /** Configure one UUIDv7 sequence. Entropy always comes from the package runtime. */
 export interface UuidV7GeneratorOptions {

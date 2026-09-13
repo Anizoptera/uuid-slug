@@ -1,34 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
-const ABORTED = "aborted";
-const INVALID_BASE32HEX = "invalid_base32hex";
-const INVALID_BASE64URL = "invalid_base64url";
-const INVALID_BUFFER = "invalid_buffer";
-const INVALID_MASK = "invalid_mask";
-const INVALID_OPTIONS = "invalid_options";
-const INVALID_SENTINEL = "invalid_sentinel";
-const INVALID_TIMESTAMP = "invalid_timestamp";
-const INVALID_UUID = "invalid_uuid";
-const INVALID_UUID_SLUG = "invalid_uuid_slug";
-const INVALID_UUID_VERSION = "invalid_uuid_version";
-const RNG_UNAVAILABLE = "rng_unavailable";
-const TIMESTAMP_OUTSIDE_WINDOW = "timestamp_outside_window";
-
-const ERROR_CODES = [
-  ABORTED,
-  INVALID_BASE32HEX,
-  INVALID_BASE64URL,
-  INVALID_BUFFER,
-  INVALID_MASK,
-  INVALID_OPTIONS,
-  INVALID_SENTINEL,
-  INVALID_TIMESTAMP,
-  INVALID_UUID,
-  INVALID_UUID_SLUG,
-  INVALID_UUID_VERSION,
-  RNG_UNAVAILABLE,
-  TIMESTAMP_OUTSIDE_WINDOW,
-] as const;
+export const ABORTED = "aborted";
+export const INVALID_BASE32HEX = "invalid_base32hex";
+export const INVALID_BASE64URL = "invalid_base64url";
+export const INVALID_BUFFER = "invalid_buffer";
+export const INVALID_MASK = "invalid_mask";
+export const INVALID_OPTIONS = "invalid_options";
+export const INVALID_SENTINEL = "invalid_sentinel";
+export const INVALID_TIMESTAMP = "invalid_timestamp";
+export const INVALID_UUID = "invalid_uuid";
+export const INVALID_UUID_SLUG = "invalid_uuid_slug";
+export const INVALID_UUID_VERSION = "invalid_uuid_version";
+export const RNG_UNAVAILABLE = "rng_unavailable";
+export const TIMESTAMP_OUTSIDE_WINDOW = "timestamp_outside_window";
 
 /** All stable `UuidSlugError.code` values, for validation and exhaustive handlers. */
 export const UUID_SLUG_ERROR_CODES: readonly [
@@ -45,7 +29,21 @@ export const UUID_SLUG_ERROR_CODES: readonly [
   "invalid_uuid_version",
   "rng_unavailable",
   "timestamp_outside_window",
-] = /*#__PURE__*/ Object.freeze(ERROR_CODES);
+] = /*#__PURE__*/ Object.freeze([
+  ABORTED,
+  INVALID_BASE32HEX,
+  INVALID_BASE64URL,
+  INVALID_BUFFER,
+  INVALID_MASK,
+  INVALID_OPTIONS,
+  INVALID_SENTINEL,
+  INVALID_TIMESTAMP,
+  INVALID_UUID,
+  INVALID_UUID_SLUG,
+  INVALID_UUID_VERSION,
+  RNG_UNAVAILABLE,
+  TIMESTAMP_OUTSIDE_WINDOW,
+]);
 
 /** One stable `UuidSlugError.code`; branch on this value and use `message` for diagnostics. */
 export type UuidSlugErrorCode = (typeof UUID_SLUG_ERROR_CODES)[number];
@@ -93,6 +91,25 @@ export class UuidSlugError extends Error {
 // prototype-property access or Error layout; benchmark evidence belongs in bench/PERFORMANCE.md.
 Object.defineProperty(UuidSlugError.prototype, ERROR_MARKER, { value: true });
 
+// Keep local identity before the costlier cross-realm capability, but isolate the probes: a proxy
+// that blocks one operation must not suppress a later independent one. Remeasure if Error branding
+// or inlining changes in a supported engine; results and statistical limits live in PERFORMANCE.md.
+/*#__NO_SIDE_EFFECTS__*/
+function hasErrorBrand(candidate: object): boolean {
+  try {
+    if (candidate instanceof Error) return true;
+  } catch {
+    // A proxy may block local identity while a native cross-realm check can still recognize it.
+  }
+  try {
+    return nativeIsError
+      ? nativeIsError(candidate)
+      : Object.prototype.toString.call(candidate) === ERROR_TAG;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Narrow a returned value to `UuidSlugError`, including errors from another realm or package copy.
  * The package marker is the primary protocol. Existing unmarked package errors use local Error
@@ -104,15 +121,12 @@ export function isUuidSlugError(value: unknown): value is UuidSlugError {
   const candidate = value as object;
   try {
     if ((candidate as { readonly __failure?: unknown })[ERROR_MARKER] === true) return true;
-    // Local identity avoids the costlier cross-realm primitive for the common unmarked Error case;
-    // the second branch retains duplicate-package and realm compatibility.
-    const recognizedError =
-      candidate instanceof Error ||
-      (nativeIsError
-        ? nativeIsError(candidate)
-        : Object.prototype.toString.call(candidate) === ERROR_TAG);
+  } catch {
+    // A hostile marker does not suppress the independent Error-brand fallback.
+  }
+  if (!hasErrorBrand(candidate)) return false;
+  try {
     return (
-      recognizedError &&
       Reflect.get(candidate, "name") === ERROR_NAME &&
       ERROR_CODE_SET.has(Reflect.get(candidate, "code"))
     );
@@ -125,17 +139,7 @@ export function isUuidSlugError(value: unknown): value is UuidSlugError {
 /*#__NO_SIDE_EFFECTS__*/
 export function isError(value: unknown): value is Error {
   if (typeof value !== OBJECT_TYPE || value === null) return false;
-  const candidate = value as object;
-  try {
-    return (
-      candidate instanceof Error ||
-      (nativeIsError
-        ? nativeIsError(candidate)
-        : Object.prototype.toString.call(candidate) === ERROR_TAG)
-    );
-  } catch {
-    return false;
-  }
+  return hasErrorBrand(value as object);
 }
 
 /** Use fast local identity, then an unspoofable intrinsic brand for cross-realm Uint8Array values. */

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { UuidSlugError } from "./errors.ts";
+import { BASE64URL_NAME } from "./alphabet.ts";
 import type { UuidV4Slug } from "./types.ts";
 import { generateUuidV4Bytes } from "./v4.ts";
 import { bytesToUuidSlug } from "./slug.ts";
@@ -13,7 +14,7 @@ import type { SlugAlphabet } from "./slug.ts";
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
 export function generateUuidV4Slug(
-  alphabet: SlugAlphabet = "base64url",
+  alphabet: SlugAlphabet = BASE64URL_NAME,
 ): UuidV4Slug | UuidSlugError {
   const bytes = generateUuidV4Bytes();
   if (bytes instanceof Error) return bytes;
