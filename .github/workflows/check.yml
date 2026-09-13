@@ -102,9 +102,12 @@ jobs:
       - name: Install the packaged API extractor
         if: matrix.runner == 'ubuntu-24.04'
         run: cargo install cargo-public-api --version 0.52.0 --locked
-      - name: Install the Rust compatibility checker
+      - name: Install the Rust compatibility checker from its release archive
         if: matrix.runner == 'ubuntu-24.04'
-        run: cargo install cargo-semver-checks --version 0.50.0 --locked
+        uses: taiki-e/install-action@3f74d7c16a4242f1c95561e98edc25d36adb4375 # v2
+        with:
+          tool: cargo-semver-checks@0.50.0
+          fallback: none
       - name: Check the packaged API baseline
         if: matrix.runner == 'ubuntu-24.04'
         run: bun run api:check
