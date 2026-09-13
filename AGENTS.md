@@ -244,10 +244,10 @@ never opens `src/` or `bench/`. Each rule below names a failure that has already
 - Shapes that read as machine-written and hide missing content: em-dashes, bold-label lists
   ("**Speed:** ..."), "not only ... but", a trailing "-ing" clause that adds a consequence, groups
   of three for rhythm, Title Case headings. Reject them on sight.
-- The TL;DR is a report, not a second body: definitions, a diagram, the rules that hold
-  everywhere, a need-to-call-to-section table, a traps table, the runtime table, then contents.
-  Every row links to a heading that exists; every trap restates a body fact and never introduces
-  one. Check that each `](#anchor)` resolves before committing README.
+- Put the TL;DR first: the consumer benefit, a concrete UUID/slug comparison, strongest supported claims,
+  and navigation. Install and the primary quick-start follow immediately. Keep detailed diagrams,
+  limits, runtime tables, and advanced examples with their owning sections. Use emphasis to help
+  scanning; check the rendered first screen and every local heading link before committing.
 - Prose about the writer's actions ("this pass", "was rewritten", "now supports") never enters a
   doc; git holds that. State the fact.
 
