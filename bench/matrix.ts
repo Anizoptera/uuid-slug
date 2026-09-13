@@ -229,7 +229,7 @@ export async function runMatrix(
     );
 
   for (const { version, records } of entropy) {
-    console.log(`\n## Randomness — ${version}\n`);
+    console.log(`\n## Randomness: ${version}\n`);
     console.log(
       `${"candidate".padEnd(16)}${"entropy source".padEnd(25)}${"distinct".padStart(9)}${"in-tick".padStart(9)}${"peak/ms".padStart(9)}${"counter".padStart(16)}${"P(1) range".padStart(15)}`,
     );
@@ -258,7 +258,7 @@ export async function runMatrix(
 }
 
 const millions = (value: number | undefined) =>
-  value === undefined ? "—" : `${(value / 1_000_000).toFixed(2)}M`;
+  value === undefined ? "n/a" : `${(value / 1_000_000).toFixed(2)}M`;
 
 if (import.meta.main) {
   const reports = await mkdtemp(join(tmpdir(), "uuid-slug-bench-"));

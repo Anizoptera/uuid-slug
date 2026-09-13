@@ -6,6 +6,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterAll, beforeAll, expect, test } from "bun:test";
+import { renderGenerationReport, verdict } from "../bench/generation-report";
+import type { ReportRecord } from "../bench/generation-report";
 import { parseReport } from "../bench/matrix";
 import { medianConfidence95 } from "../bench/statistics";
 
@@ -268,8 +270,8 @@ test.concurrent.each([
   expect(result.stderr).toContain(diagnostic);
   expect(result.stdout).toContain("control (fixture 1)");
   expect(result.stdout).toContain("measured");
-  expect(result.stdout).toContain("Randomness — control (fixture 1)");
-  if (mode === "exit-after") expect(result.stdout).toContain("Randomness — subject (fixture 1)");
+  expect(result.stdout).toContain("Randomness: control (fixture 1)");
+  if (mode === "exit-after") expect(result.stdout).toContain("Randomness: subject (fixture 1)");
 });
 
 test.concurrent.each(["0", "-1", "1.5", "NaN", "Infinity"])(
@@ -307,5 +309,86 @@ test.concurrent("hung runtime cannot hold the matrix indefinitely", async () => 
   const result = await matrix("hang", 100);
   expect(result.status).toBe(1);
   expect(result.stderr).toContain("exited");
-  expect(result.stdout).toContain("Randomness — control (fixture 1)");
+  expect(result.stdout).toContain("Randomness: control (fixture 1)");
+});
+
+const row = (medianNs: number, median95?: readonly [number, number]) =>
+  ({
+    comparable: "v7.text",
+    implementation: "x",
+    kind: "measurement",
+    ...(median95 ? { median95 } : {}),
+    medianNs,
+    name: "package.v7.text",
+    qualification: "qualified",
+    runtime: "node",
+  }) as const;
+
+const measurement = (
+  name: string,
+  medianNs: number,
+  median95: readonly [number, number],
+): ReportRecord => ({
+  comparable: "v7.text",
+  implementation: name,
+  kind: "measurement",
+  median95,
+  medianNs,
+  name,
+  qualification: "qualified",
+  runtime: "node",
+});
+
+// Verdicts must come from interval overlap alone, never from which median is smaller.
+test("generation report verdicts come from interval overlap", () => {
+  expect(verdict(row(10, [9, 11]), row(20, [19, 21]))).toBe("leads");
+  expect(verdict(row(20, [19, 21]), row(10, [9, 11]))).toBe("trails");
+  expect(verdict(row(10, [9, 15]), row(12, [11, 20]))).toBe("unresolved");
+  expect(verdict(row(10), row(20, [19, 21]))).toBe("unresolved");
+});
+
+test("generation report ranks the fastest package route against the fastest rival", () => {
+  const records: ReportRecord[] = [
+    measurement("package.v7.text", 100, [95, 105]),
+    measurement("package.v7.text.slow", 300, [290, 310]),
+    measurement("uuid.v7.text", 200, [190, 210]),
+    measurement("platform.v7.text", 90, [85, 95]),
+    { kind: "comparison", runtime: "node" },
+    { kind: "rejection", name: "fastv7.v7.text", reason: "sequence reuse", runtime: "node" },
+    {
+      kind: "unsupported",
+      name: "crypto-randomuuid.v4.text",
+      reason: "no browser export",
+      runtime: "chromium",
+    },
+  ];
+  const options = {
+    durationMs: 20,
+    generatedOn: "2026-01-01",
+    machine: "fixture",
+    samples: 9,
+    warmupMs: 32,
+  };
+  const report = renderGenerationReport(records, options);
+  expect(report).toContain("## node");
+  expect(report).toContain(
+    "| `v7.text` | `package.v7.text` | `uuid.v7.text` | 0.50 | leads | 1.11 |",
+  );
+  expect(report).toContain("leads 1, trails 0, unresolved 0");
+  expect(report).toContain("| `fastv7.v7.text` | sequence reuse | node |");
+  expect(report).toContain("| `crypto-randomuuid.v4.text` | no browser export | chromium |");
+  expect(() => renderGenerationReport([records[4] as ReportRecord], options)).toThrow(
+    "No measurements",
+  );
+});
+
+// The refusal must fire before any driver starts, or a smoke run could still write a file.
+test.concurrent("bench:results refuses smoke settings", async () => {
+  const child = Bun.spawn(
+    [process.execPath, join(import.meta.dir, "..", "bench", "results.ts"), "--smoke"],
+    { stdout: "pipe", stderr: "pipe" },
+  );
+  const [stderr, status] = await Promise.all([new Response(child.stderr).text(), child.exited]);
+  expect(status).not.toBe(0);
+  expect(stderr).toContain("full runs only");
 });

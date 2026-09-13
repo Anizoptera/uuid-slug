@@ -34,7 +34,7 @@ interface Report {
   /**
    * The engine's own name, as IT reported it. Without this field `bench/matrix.ts` falls back to
    * the label it guessed from the executable path, so two Node versions both printed
-   * `## Randomness — node` — in the one section where they differ most, since a native v7 that
+   * `## Randomness: node`, in the one section where they differ most, since a native v7 that
    * exists on only one of them changes the row completely.
    */
   runtime: string;
