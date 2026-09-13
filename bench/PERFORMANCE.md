@@ -1180,15 +1180,15 @@ harness and ranks nothing. The package led every allocated-byte and caller-buffe
 Chromium, and Deno, and Bun's owned-byte groups. Bun's UUIDv4 caller-buffer write trailed `uuid`
 by about 10% in both runs. Deno's owned UUIDv7 bytes were unresolved against `uuidv7`: 12% behind,
 then 2% ahead. UUIDv7 text led every package on all four runtimes and sat within 1–6% of the native
-primitive on Node and Bun. UUIDv4 text matched Node's platform primitive within 1%; on Bun it
-trailed `crypto-randomuuid` by about 10% and the primitive by 5%; on Deno it trailed `uniku` by
-about 30% and paid 34% over the primitive for validation and the error-value boundary; on Chromium
+generator on Node and Bun. UUIDv4 text matched Node's native generator within 1%; on Bun it
+trailed `crypto-randomuuid` by about 10% and the native generator by 5%; on Deno it trailed `uniku`
+by about 30% and paid 34% over the native generator for validation and the error-value boundary; on Chromium
 it trailed the pooled portable generator in `@lukeed/uuid` by 13–15%. A single 2026-09-12 run had
 put the Chromium gap at about 4% and found no Bun caller-buffer loss; the paired runs supersede it.
-`fastv7` remains timed but cannot win the headline comparison: independent processes and restarted
-state reuse sequence zero, so 62 random bits distinguish the same timestamp and sequence instead of
+`fastv7` remains timed but cannot be the reference: independent processes and restarted state
+reuse sequence zero, so 62 random bits distinguish the same timestamp and sequence instead of
 this package's 74-bit collision margin. Its clock, sequence, buffer, and failure strategies are not
-disqualifying by themselves. Its faster mechanism remains an optimization lead if that margin survives.
+disqualifying by themselves. Its faster mechanism is worth adopting only if that margin survives.
 Validated text timestamp extraction trailed `uuidv7-js` by 3–8% on Node, Bun, and Deno and by
 14–15% on Chromium in both runs. `uniku` timestamp results are not ranked because its call accepts
 non-v7 UUID text.

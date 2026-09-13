@@ -13,9 +13,9 @@ layout. The package has no runtime dependencies.
 ## TL;DR
 
 A UUID is a 128-bit identifier, 36 characters as text. A slug here is that same value as short
-URL-safe text: convert either way and nothing is lost. A masked slug is a UUIDv7 payload plus a
-16-bit check, passed through a keyed reversible transform, so a public ID stops looking like a
-UUID. Masking is obfuscation, not authorization.
+URL-safe text: convert either way and nothing is lost. A masked slug is a UUIDv7 scrambled with a
+secret seed plus a 16-bit check, so a public ID does not look like a UUID. The codec holding the
+seed reverses it. Masking is obfuscation, not authorization.
 
 ```mermaid
 flowchart LR
@@ -24,20 +24,22 @@ flowchart LR
   B <--> S
   B -- "codec(seed), UUIDv7 only" --> M["Masked slug<br>22 base64url or 27 base32hex"]
   M -- "codec, check must pass" --> B
-  N["Sentinel<br>reserved UUIDv7 the codec leaves unmasked"] -.- M
+  N["Sentinel<br>a reserved UUIDv7"] -- "codec writes it as a direct slug" --> S
 ```
 
-What holds everywhere:
+Always true:
 
-- Every fallible call returns `T | UuidSlugError`. Nothing throws. Narrow with `isUuidSlugError`.
-- Brands and guards prove format, never issuance. A decoded masked slug is a candidate; look it up.
-- Entropy is the runtime's secure source or the error `rng_unavailable`. There is no weaker fallback.
-- Seed, `keyDerivationIterations`, and sentinels are wire format: change one and old slugs stop
-  decoding. Rotate through `previousMasks`; read retired formats through a migration decoder.
-- The target is the fastest route on Node, Bun, Deno, and Chromium with the guarantees intact.
-  Each change is timed as a whole call against the runtime primitive and the fastest package that
-  keeps the same guarantees, and stays only if the gain repeats. Where the package still trails,
-  [Measured performance](#measured-performance) says so.
+- Failures come back as `UuidSlugError` values, not exceptions. Check with `isUuidSlugError`.
+- Types and guards prove a value is well formed, not that you issued it. Look every decoded ID up
+  in your store.
+- Random bits come from the runtime's secure source. If it is missing you get `rng_unavailable`,
+  never `Math.random`.
+- The seed, `keyDerivationIterations`, and the sentinel list are part of the wire format: change
+  any of them and slugs already handed out stop decoding. Rotate seeds through `previousMasks`.
+- Goal: the fastest UUID package on Node, Bun, Deno, and Chromium without dropping a guarantee.
+  Every change is timed as a whole call against the runtime's own generator and the fastest package
+  with the same guarantees, and stays only if the gain repeats.
+  [Measured performance](#measured-performance) lists where the package still loses.
 
 Where to start:
 
@@ -45,9 +47,10 @@ Where to start:
 | --- | --- | --- |
 | Shorter UUIDs in URLs | `generateUuidV7Slug()`, `uuidToSlug`, `slugToUuid` | [Two kinds of slug](#two-kinds-of-slug) |
 | Text keys or filenames that sort by UUIDv7 time | the same calls with `"base32hex"` | [Two kinds of slug](#two-kinds-of-slug) |
-| Binary keys written into your own buffer | `generateUuidV7Bytes(out, offset)`, `uuidToBytes`, `bytesToUuid` | [Quick start](#quick-start) |
-| Public IDs without visible UUID structure | `createUuidV7SlugCodec({ mask: { seed } })`, then `generateSlug`, `encodeUuid`, `decodeSlug` | [What masking is not](#what-masking-is-not) |
-| Seed rotation, old links still working | `previousMasks`, `codec.createMigrationDecoder` | [Reading original slugs during migration](#reading-original-slugs-during-migration) |
+| Binary keys, written into a buffer you own if you pass one | `generateUuidV7Bytes(out, offset)`, `uuidToBytes`, `bytesToUuid` | [Quick start](#quick-start) |
+| Public IDs that do not look like UUIDs | `createUuidV7SlugCodec({ mask: { seed } })`, then `generateSlug`, `encodeUuid`, `decodeSlug` | [Two kinds of slug](#two-kinds-of-slug), [What masking is not](#what-masking-is-not) |
+| Rotate the seed without breaking old links | `previousMasks` | [Codec options](#codec-options) |
+| Read slugs issued by older package formats | `codec.createMigrationDecoder` | [Reading original slugs during migration](#reading-original-slugs-during-migration) |
 | Reserved IDs such as `anonymous` | `sentinels` | [Two kinds of slug](#two-kinds-of-slug) |
 | Reject stale or future IDs | `validateUuidV7Timestamp`, `codec.validateSlugTimestamp` | [Validating timestamp windows](#validating-timestamp-windows) |
 | The same IDs from a Rust service | the `rust/uuid-slug` crate, same seed | [Cross-language contract](docs/cross-language.md) |
@@ -59,23 +62,23 @@ Traps:
 | --- | --- |
 | A base64url slug sorts by time | No. Only base32hex sorts, only for UUIDv7, only across milliseconds. |
 | Two IDs from one millisecond sort in creation order | Not promised on any runtime. Use a sequence column. |
-| A masked slug is a token | It is reversible with a 16-bit check: per schema tried, about one random string in 65,536 decodes to a well-formed, unissued UUID. Authorize separately. |
+| A masked slug is a token | It is reversible, and its check is 16 bits: per key tried, about one random string in 65,536 decodes to a well-formed UUID you never issued. Check authorization on the record, not the slug. |
 | Any UUID can be masked | UUIDv7 only. A timestamp at or past 2^42 ms, year 2109, is refused, never truncated. |
-| A guard passed, so the value is mine | Some masked slugs pass direct-slug guards by chance. Decode with the owning API, then look it up. |
+| A guard passed, so the value is mine | A guard says well formed, nothing more: some masked slugs pass direct-slug guards by chance. Decode with the codec, then look the UUID up. |
 | A codec works without a mask | Construction fails. `UUID_V7_TEST_MASK` is a published key; anyone can decode what it issues. |
-| A memorable seed is fine | Seeds under 16 bytes are rejected, and length is not the point: one known UUID and slug pair allows offline guesses. Generate the seed. |
+| A seed a human chose is fine | Seeds under 16 bytes are rejected, and length is not the point: one known UUID and slug pair allows offline guesses. Generate the seed. |
 | `bytesToSlug` is a base64url helper | It accepts exactly one 16-byte UUID or one canonical slug. Every other length is an error. |
-| Successful legacy decodes count legacy traffic | They cannot. The original check has four bits, and one slug can decode under several formats. |
+| A migration decoder's successes count old-format traffic | No. The old format's check is only four bits, so one slug can decode under several formats. |
 
 | Runtime | Loads | Generation |
 | --- | --- | --- |
 | Node 20 and newer | compiled JavaScript | native `crypto.randomUUID`, and `crypto.randomUUIDv7` where the version has it |
 | Bun | published TypeScript | `Bun.randomUUIDv7` for current-time UUIDv7 |
-| Deno | published TypeScript | portable adapter, no resolver flag or import map |
-| Browsers, other runtimes | compiled JavaScript | portable adapter over Web Crypto |
+| Deno | published TypeScript | the package's own generator over Web Crypto; no flag or import map needed |
+| Browsers, other runtimes | compiled JavaScript | the package's own generator over Web Crypto |
 
 CI runs every published Node major from 20 with the newest unpinned, the latest Bun and Deno, and
-the packed consumer on Node, Bun, Deno, Chromium, Firefox, and WebKit. The Rust crate builds and
+the packed tarball as a consumer on Node, Bun, Deno, Chromium, Firefox, and WebKit. The Rust crate builds and
 tests on Linux, macOS, and Windows for x86-64 and Arm64, and its WebAssembly build runs in the
 same three browser engines.
 
@@ -699,20 +702,20 @@ with expiration or one-time use, check the stored expiry and consumption state a
 
 ## Measured performance
 
-The target is to lead every comparable operation on every supported engine while keeping every
-guarantee below. Native UUID generation is used where it preserves the public contract; otherwise
-the package's own portable path runs. What a change has to pass:
+The goal is to be fastest at every comparable operation on every supported runtime without
+dropping a guarantee below. Native UUID generation is used where its output meets the contract;
+otherwise the package's own generator runs. A change stays only if it passes all of this:
 
 - Timed as the whole public call on Node, Bun, Deno, and Chromium, against the runtime's own
-  primitive and the fastest package that keeps the same guarantees.
-- Kept only when two separate runs both show the gain and their confidence intervals rule out zero.
-  Node and Bun outrank Chromium, and Chromium outranks Deno, so a gain on a lower runtime does not
-  pay for a loss on a higher one. Rejected variants stay recorded with their evidence.
+  function and the fastest package that keeps the same guarantees.
+- Kept only when two separate runs both show the gain and their confidence intervals rule out no
+  change. Node and Bun outrank Chromium, and Chromium outranks Deno, so a gain on a lower runtime
+  does not pay for a loss on a higher one. Rejected variants stay recorded with their evidence.
 - CI counts JavaScript-visible allocations and platform calls on Node and Bun: guards allocate no
-  decoded arrays or errors, caller-owned writes create no temporary views, key rotation decodes
-  text once, and repeated draws stay pooled. CI also compares each operation's cost with its
-  related primitive.
-- Packages that beat a route by giving something up stay timed but do not set the headline:
+  decoded arrays or errors, writes into caller buffers create no temporary views, key rotation
+  decodes text once, and repeated random draws come from one pool. CI also compares each
+  operation's cost with the runtime function it builds on.
+- A package that wins by giving something up is still timed but cannot be the reference:
   `Math.random` entropy, a smaller same-millisecond collision margin, or a timestamp read that skips
   the version check.
 
@@ -721,12 +724,12 @@ engine versions; read the direction of each gap, not its size.
 
 | Evidence | Scope | Current result |
 | --- | --- | --- |
-| Generation | Node, Bun, Deno, Chromium; v4/v7 text, owned bytes, caller buffers, direct slugs | Byte routes lead on every runtime, owned and caller-owned, except Bun's UUIDv4 caller-buffer write, which trails `uuid`, and Deno's owned UUIDv7 bytes, which are unresolved against `uuidv7`. UUIDv7 text leads every package and sits at the native primitive on Node and Bun. UUIDv4 text matches Node's primitive but trails the fastest package on Bun, Deno, and Chromium. |
+| Generation | Node, Bun, Deno, Chromium; v4/v7 text, owned bytes, caller buffers, direct slugs | Byte output leads on every runtime, into a new array or a caller buffer, except Bun's UUIDv4 write into a caller buffer, which trails `uuid`, and Deno's UUIDv7 new array, which is unresolved against `uuidv7`. UUIDv7 text leads every package and matches the native generator on Node and Bun. UUIDv4 text matches Node's native generator but trails the fastest package on Bun, Deno, and Chromium. |
 | Conversion | UUID text, bytes, both direct-slug alphabets, timestamp extraction | Complete validated calls are measured. UUIDv7 timestamp extraction from text trails `uuidv7-js` on every runtime; extraction from bytes and slugs has no comparable package. |
 | Bundling | Bun, esbuild, Parcel, Rollup, Rolldown, Rspack, webpack | Named root imports retain only the requested domains. |
 
-[Methods, competitors, results, limitations, and rejected optimizations](bench/PERFORMANCE.md) are
-kept with the benchmark evidence so this summary cannot become a second result ledger.
+[Methods, competitors, results, limitations, and rejected optimizations](bench/PERFORMANCE.md) hold
+the numbers. This table only names the gaps.
 
 ## Guarantees
 
@@ -738,11 +741,11 @@ See [security boundaries](docs/security.md) for entropy failures and masking lim
 - **Secure entropy by default.** Built-in generators use the runtime's cryptographically secure
   random source. They never fall back to weaker randomness. If secure randomness is unavailable,
   generation returns `rng_unavailable`. With a working runtime, collision risk is negligible.
-  Treat any collision as a generator or entropy failure. The package's own entropy pool draws a
-  page at a time and zeroes each byte as it is consumed, so the pool never retains the random half
-  of identifiers already handed out; native runtime generators keep their own caches. Importing
-  the package draws no randomness, so a startup snapshot taken after import holds nothing for
-  restored processes to repeat.
+  Treat any collision as a generator or entropy failure. The package's own entropy pool zeroes
+  each byte as it is used, so a memory dump does not show the random bits of IDs already handed
+  out; native runtime generators keep their own caches, outside this package's control. Importing
+  the package draws no randomness, so a process snapshot taken after import cannot make restored
+  copies repeat IDs.
 - **Native generation degrades safely.** Optional native generation is a shortcut, not a second
   behavior: if it throws or returns a malformed UUID, slug, or byte array, the matching portable
   generator is tried. If both fail, the returned error retains both causes.
