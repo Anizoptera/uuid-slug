@@ -57,6 +57,7 @@ Where to start:
 | --- | --- | --- |
 | Shorter UUIDs in URLs | `generateUuidV7Slug()`, `uuidToSlug`, `slugToUuid` | [Two kinds of slug](#two-kinds-of-slug) |
 | Keep existing database IDs and foreign keys | `uuidToSlug`, or `codec.encodeUuid` for UUIDv7 masking | [Keep your existing UUIDs](#keep-your-existing-uuids) |
+| Assign IDs before a save or offline sync | `generateUuidV4`, `generateUuidV7`, or direct-slug generators | [Keep your existing UUIDs](#keep-your-existing-uuids) |
 | Text keys or filenames that sort by UUIDv7 time | the same calls with `"base32hex"` | [Two kinds of slug](#two-kinds-of-slug) |
 | IDs without UUIDv7's timestamp grouping | `codec.encodeUuid`, `codec.generateSlug` | [Ordering and key distribution](#ordering-and-key-distribution) |
 | Write binary IDs into your own buffer | `generateUuidV7Bytes(out, offset)`, `uuidToBytes`, `bytesToUuid` | [Quick start](#quick-start) |
@@ -69,6 +70,7 @@ Where to start:
 | Reject stale or future IDs | `validateUuidV7Timestamp`, `validateUuidV7SlugTimestamp`, `codec.validateSlugTimestamp` | [Validating timestamp windows](#validating-timestamp-windows) |
 | The same IDs from a Rust service | the `rust/uuid-slug` crate, same seed | [Cross-language contract](docs/cross-language.md) |
 | Plain UUID text only | `generateUuidV4()`, `generateUuidV7()`; bundlers drop the rest | [Measured performance](#measured-performance) |
+| Convert existing IDs without an entropy source | `uuidToSlug`, `slugToUuid`, or codec conversion methods | [Runtime](#runtime) |
 
 Traps:
 
@@ -141,22 +143,25 @@ corpus runs against both implementations in CI. The npm package remains TypeScri
 
 ## Quick start
 
+When you need both a database UUID and a public slug, generate the UUID once and encode it:
+
 ```ts
 import {
-  generateUuidV7Slug,
+  generateUuidV7,
   isUuidSlugError,
-  slugToUuid,
+  uuidToSlug,
 } from "@anizoptera/uuid-slug";
 
 function createShortId() {
-  const slug = generateUuidV7Slug();
-  if (isUuidSlugError(slug)) return slug;
-
-  const uuid = slugToUuid(slug);
+  const uuid = generateUuidV7();
   if (isUuidSlugError(uuid)) return uuid;
+  const slug = uuidToSlug(uuid);
+  if (isUuidSlugError(slug)) return slug;
   return { slug, uuid };
 }
 ```
+
+If you only need the slug, call `generateUuidV7Slug()` directly.
 
 Use a codec only when IDs must hide their UUIDv7 layout:
 
@@ -166,16 +171,15 @@ import {
   isUuidSlugError,
 } from "@anizoptera/uuid-slug";
 
-function createPublicId(seed: string) {
-  // Reuse the codec in real code: the seed is expanded once, at construction.
+function createPublicIdGenerator(seed: string) {
   const ids = createUuidV7SlugCodec({ mask: { seed } });
   if (isUuidSlugError(ids)) return ids;
-
-  const publicId = ids.generateSlug();
-  if (isUuidSlugError(publicId)) return publicId;
-  return { ids, publicId };
+  return ids.generateSlug;
 }
 ```
+
+Call `createPublicIdGenerator(seed)` at startup and check its result. Keep the returned function
+and call it for each new ID; key derivation runs once. Codec methods need no `bind`.
 
 Keep binary database keys binary through the same codec:
 
@@ -239,6 +243,11 @@ recover the original UUID, but need the matching codec.
 
 Use UUIDv4 for random IDs without a timestamp, or UUIDv7 when its timestamp is useful.
 Neither requires masking. Anyone can decode a direct slug, including its UUIDv7 timestamp.
+
+Create IDs before saving records, including in an offline client. Related records can refer to
+those UUIDs before a database round trip, then keep the same IDs when synchronized. No central
+ID allocator or worker number is required. Validate client-supplied IDs and check ownership on
+the server; generating a valid UUID does not grant permission to create or replace a record.
 
 If you only need UUID text from one runtime, its native UUID function may be enough. Use this
 package when you also need shorter spellings, binary storage, validation with typed errors, or
@@ -384,6 +393,11 @@ function createIds(seed: string) {
 
 Each sentinel name must be nonempty and unique within the codec. Each sentinel UUID must also be
 unique, canonical UUIDv7 text.
+
+Sentinels keep their spelling across seed rotation when the alphabet and reserved UUIDs stay the
+same. This lets reserved identities remain recognizable while ordinary IDs use the new mask.
+The example named `nil` is an application sentinel, not the all-zero UUID; that UUID
+is not UUIDv7 and cannot be a codec sentinel.
 
 Keep sentinel definitions stable while their slugs are in use. Decoding checks sentinels first, so they
 are reserved even if a mask could produce the same text. Encoding rejects a non-sentinel UUID
@@ -533,20 +547,21 @@ The **Where** column tells you whether to import a function or call a codec meth
 
 - **codec only.** Uses your configured keys or sentinels.
 - **module only.** Import these functions directly. Codec settings do not affect them.
+- **module or generator.** UUIDv7 text and byte generation also work through a generator with
+  its own clock and sequence state. UUIDv4 and direct-slug generators remain module-only.
 
-The state split keeps each caller responsible for one thing. A generator owns its clock and mutable
-UUIDv7 sequence; the package runtime owns cryptographic entropy. A codec owns immutable masking
-keys, sentinels, rotation, and writer settings.
+A generator owns its clock and mutable UUIDv7 sequence; the runtime supplies secure randomness.
+A codec owns immutable masking keys, sentinels, rotation, and writer settings.
 Generator, codec, and migration methods do not depend on `this`; they can be passed as callbacks
 without binding them first. Each export's full contract, accepted input, result, and errors, is in
 its declaration comment; your editor shows it on hover. This table only says where each call lives.
 
 | Method                                                  | Where             | Returns                       | What it does                             |
 | ------------------------------------------------------- | ----------------- | ----------------------------- | ---------------------------------------- |
-| `generateUuidV4()` / `generateUuidV7()`                   | module only | `UuidSlugError` or UUID string | Generate. |
-| `generateUuidV4Bytes()` / `generateUuidV7Bytes()`         | module only | `UuidSlugError` or typed 16 bytes | Generate owned UUID bytes. |
-| `generateUuidV4Bytes(out, offset?)` / `generateUuidV7Bytes(...)` | module only | `UuidSlugError` or the exact `out` type | Generate into caller storage. |
-| `generateUuidV7At(ms)` / `generateUuidV7BytesAt(ms, out?, offset?)` | module only | `UuidSlugError` or UUIDv7 string; bytes as in the two rows above | Generate at an explicit instant. |
+| `generateUuidV4()` / `generateUuidV7()`                   | module; v7 also on generator | `UuidSlugError` or UUID string | Generate. |
+| `generateUuidV4Bytes()` / `generateUuidV7Bytes()`         | module; v7 also on generator | `UuidSlugError` or typed 16 bytes | Generate owned UUID bytes. |
+| `generateUuidV4Bytes(out, offset?)` / `generateUuidV7Bytes(...)` | module; v7 also on generator | `UuidSlugError` or the exact `out` type | Generate into caller storage. |
+| `generateUuidV7At(ms)` / `generateUuidV7BytesAt(ms, out?, offset?)` | module or generator | `UuidSlugError` or UUIDv7 string; bytes as in the two rows above | Generate at an explicit instant. |
 | `generateUuidV4Slug(alphabet?)` / `generateUuidV7Slug(alphabet?)` | module only | `UuidSlugError` or direct slug | Generate and encode. |
 | `generateSlug()`                                          | codec only | `UuidSlugError` or `UuidV7CodecSlug` | Generate a masked or sentinel slug. |
 | `encodeUuid(uuidOrBytes)` / `decodeSlug(slug)`            | codec only | `UuidSlugError` or `UuidV7CodecSlug`; `UuidSlugError` or `UuidV7String` | Mask UUIDv7 text or bytes; decode to text. |
@@ -921,7 +936,7 @@ and masking limits.
 
 ## Runtime
 
-No runtime dependencies, on any platform.
+The npm package has no runtime dependencies or native addons to install.
 
 - Bun loads the published TypeScript source and uses `Bun.randomUUIDv7` for current-time
   UUIDv7 text. Bytes and direct UUIDv7 slugs use the package's own generator over Web Crypto.
@@ -938,6 +953,10 @@ Capabilities are probed once when the module loads. A missing method is left und
 pays for a throw and a retry. Native base64url and hex encoders are used where a runtime provides
 them and they measured faster; on Deno the portable encoder measured faster, so it is kept there.
 The UUIDv7 generator is created on first use, so conversion-only imports draw no entropy.
+
+Convert stored UUIDs, decode slugs, and extract timestamps without an entropy source. This suits
+read-only tools and static builds that never generate IDs. Generation needs secure randomness;
+conversion does not. The npm package does not load the Rust crate or a WebAssembly module.
 
 Every change runs in CI on each published Node major from 20 upward, with the newest left unpinned
 so a new native API cannot change behavior unnoticed; on the latest Bun and Deno; and as a packed

@@ -227,6 +227,8 @@ never opens `src/` or `bench/`. Each rule below names a failure that has already
 - A rewrite touches only lines with a named defect. Copy sound lines byte for byte. Afterwards,
   compare each replaced line with its original: equal or greater length with fewer verbs is a
   regression, revert it.
+- Examples must construct reusable codecs and masks outside per-ID calls. Show setup and repeated
+  use separately; a comment saying to reuse a codec does not repair an example that rebuilds it.
 - Numbers, dates, runtime versions, and percentages live only in `bench/PERFORMANCE.md`. README
   gives direction: leads, trails, or unresolved, and against which package. A number in README is
   stale at the next runtime release and nothing regenerates it.
