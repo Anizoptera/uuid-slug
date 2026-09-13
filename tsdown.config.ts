@@ -59,6 +59,8 @@ const common = {
   },
   format: ["esm"],
   failOnWarn: true,
+  publint: true,
+  attw: { profile: "esm-only", level: "error" },
   // Keep the browser and Node artifacts stable when the manifest's Node floor changes.
   target: "es2022",
   outExtensions: () => ({ js: ".js" }),
