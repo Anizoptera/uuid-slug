@@ -13,8 +13,5 @@ if (import.meta.main) {
   const output = process.env.GITHUB_OUTPUT;
   if (!output) throw new Error("GITHUB_OUTPUT is required.");
   const selected = releaseSelection(process.argv[2]);
-  await appendFile(
-    output,
-    `selected=${selected}\nnpm=${selected !== "crate"}\ncrate=${selected !== "npm"}\n`,
-  );
+  await appendFile(output, `selected=${selected}\n`);
 }

@@ -30,8 +30,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      crate: ${{ steps.packages.outputs.crate }}
-      npm: ${{ steps.packages.outputs.npm }}
       selected: ${{ steps.packages.outputs.selected }}
     permissions:
       actions: read
@@ -98,7 +96,7 @@ jobs:
           if-no-files-found: error
 
   publish-npm:
-    if: needs.prepare.outputs.npm == 'true'
+    if: needs.prepare.outputs.selected != 'crate'
     needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -126,7 +124,7 @@ jobs:
       - run: bun scripts/release-package.ts publish
 
   publish-crate:
-    if: needs.prepare.outputs.crate == 'true'
+    if: needs.prepare.outputs.selected != 'npm'
     needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -186,11 +184,11 @@ jobs:
         with:
           name: release-evidence
           path: .
-      - if: needs.prepare.outputs.npm == 'true'
+      - if: needs.prepare.outputs.selected != 'crate'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: release-artifacts/reviewed-npm/*.tgz
-      - if: needs.prepare.outputs.crate == 'true'
+      - if: needs.prepare.outputs.selected != 'npm'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: rust/target/reviewed-crate/*.crate
