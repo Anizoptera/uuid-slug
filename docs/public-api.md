@@ -36,20 +36,12 @@ non-JSDoc comments; keep exploration transient.
 
 ### Package entries
 
-- Keep the root entry as the complete API.
-- `/uuid` owns UUID text/byte conversion; `/slug` owns plain-slug conversion; `/v4` and `/v7` own
-  UUID generation and inspection without slug code; `/slug/v4` and `/slug/v7` own one-call plain-slug
-  generation. Masking stays on the root because a separate entry removes no consumer work.
-- Point a subpath at its owning module when that module has exactly the promised exports. Use a
-  facade when internal exports would otherwise become public or one path joins several owners.
-  `/slug/v4` and `/slug/v7` need neither, so a wrapper would add a file and one direct load.
-- Add a subpath only when packed consumers show a material bundle, startup, or resource reduction
-  for a distinct job. A lower module count is a mechanism clue, not sufficient evidence. Remove the
-  path when its measured consumer value no longer pays for a permanent public entry.
+- Keep the root entry as the complete API. Named imports must tree-shake to the requested domain
+  across supported bundlers.
+- Add a subpath only when packed consumers prove that it enables useful tree shaking the root cannot
+  provide. Startup timing or a lower direct module count alone does not justify permanent API surface.
 - Preserve native ESM and module seams. Consumer bundlers already remove unused root exports;
   bundling this package first would hide those seams from them.
-- Recommend the root by default. Focused entries exist for unbundled startup-sensitive consumers;
-  they must not make ordinary callers choose a package topology.
 - A public condition must select different output or guard an incompatible lower condition. Put
   `deno` before `development` and `node`: Deno activates `node` and may activate `development`.
   Deno loads the published TypeScript graph directly, so do not route it through compiled ESM.

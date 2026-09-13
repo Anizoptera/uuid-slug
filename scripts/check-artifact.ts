@@ -305,11 +305,6 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       builtRunner,
       'import * as api from "./package/dist/index.js";\nimport { probeConsumer } from "./probe.mjs";\nawait probeConsumer(api);\n',
     );
-    const subpathRunner = path.join(root, "subpaths.mjs");
-    await Bun.write(
-      subpathRunner,
-      'import * as root from "@anizoptera/uuid-slug";\nimport { uuidToBytes } from "@anizoptera/uuid-slug/uuid";\nimport { uuidToSlug } from "@anizoptera/uuid-slug/slug";\nimport { generateUuidV4 } from "@anizoptera/uuid-slug/v4";\nimport { generateUuidV7 } from "@anizoptera/uuid-slug/v7";\nimport { generateUuidV4Slug } from "@anizoptera/uuid-slug/slug/v4";\nimport { generateUuidV7Slug } from "@anizoptera/uuid-slug/slug/v7";\nif (uuidToBytes !== root.uuidToBytes) throw new Error("/uuid does not export the root uuidToBytes implementation.");\nif (uuidToSlug !== root.uuidToSlug) throw new Error("/slug does not export the root uuidToSlug implementation.");\nif (generateUuidV4 !== root.generateUuidV4) throw new Error("/v4 does not export the root generateUuidV4 implementation.");\nif (generateUuidV7 !== root.generateUuidV7) throw new Error("/v7 does not export the root generateUuidV7 implementation.");\nif (generateUuidV4Slug !== root.generateUuidV4Slug) throw new Error("/slug/v4 does not export the root generateUuidV4Slug implementation.");\nif (generateUuidV7Slug !== root.generateUuidV7Slug) throw new Error("/slug/v7 does not export the root generateUuidV7Slug implementation.");\n',
-    );
     const consumers = await Promise.allSettled([
       command(
         "node",
@@ -320,8 +315,6 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       command("node", [runner], root),
       command("bun", [runner], root),
       command("bun", [builtRunner], root),
-      command("node", [subpathRunner], root),
-      command("bun", [subpathRunner], root),
       command(
         path.join(project, "node_modules/.bin/publint"),
         [extracted, "--pack", "false"],
@@ -346,7 +339,6 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
         command("deno", ["run", ...denoOptions, runner], root),
         command("deno", ["run", "--conditions", "development", ...denoOptions, runner], root),
         command("deno", ["run", ...denoOptions, builtRunner], root),
-        command("deno", ["run", ...denoOptions, subpathRunner], root),
       ]);
       const built = await Bun.build({ entrypoints: [runner], target: "browser" });
       const output = built.outputs[0];

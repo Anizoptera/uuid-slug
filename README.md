@@ -48,19 +48,10 @@ share one checked contract.
 pnpm add @anizoptera/uuid-slug
 ```
 
-Import from the package root unless direct ESM startup is important:
+Import from the package root:
 
 ```ts
 import { generateUuidV7Slug, slugToUuid } from "@anizoptera/uuid-slug";
-```
-
-Tested bundlers produce the same optimized bytes from root and focused imports. The focused paths
-are optional: repeated cold-process measurements found lower startup cost for `/v4` and `/v7`
-across Node, Bun, and Deno. Use focused paths for unbundled CLIs, functions, or workers where
-startup matters; otherwise prefer the root.
-
-```ts
-import { generateUuidV7Slug } from "@anizoptera/uuid-slug/slug/v7";
 ```
 
 The native Rust crate implements the same wire contract and lives in [`rust/uuid-slug`](rust/uuid-slug).
@@ -659,8 +650,7 @@ supported engine; the table states where current measurements still miss that ta
 | --- | --- | --- |
 | Generation | Node, Bun, Deno, Chromium; v4/v7 text, owned bytes, caller buffers, direct slugs | Byte routes usually lead; v4 text and one Bun caller-buffer comparison still have measured gaps. Native calls remain visible as implementation floors. |
 | Conversion | UUID text, bytes, both direct-slug alphabets, timestamp extraction | Complete validated calls are measured; v7 text timestamp extraction still trails its fastest comparable package. |
-| Bundling | Bun, esbuild, Parcel, Rollup, Rolldown, Rspack, webpack | Named root imports and focused imports produced effectively equal optimized bytes. |
-| Direct ESM startup | Node, Bun, Deno; root versus `/v4` and `/v7` | Focused generation imports repeatedly started faster; use them only when unbundled startup matters. |
+| Bundling | Bun, esbuild, Parcel, Rollup, Rolldown, Rspack, webpack | Named root imports retain only the requested domains. |
 
 [Methods, competitors, results, limitations, and rejected optimizations](bench/PERFORMANCE.md) are
 kept with the benchmark evidence so this summary cannot become a second result ledger.
@@ -699,9 +689,8 @@ See [security boundaries](docs/security.md) for entropy failures and masking lim
 - **Atomic identifier parsing.** `uuidToBytes` and `slugToBytes` validate the complete identifier
   before writing. Invalid text or destination ranges return an error and leave caller storage
   unchanged.
-- **You pay for masking only if you mask.** Named keyless imports let supported bundlers remove the
-  cipher, key derivation, and sentinel table. Direct ESM consumers can select UUID conversion,
-  plain-slug conversion, UUIDv4, UUIDv7, or one-call slug generation through the matching subpath.
+- **You pay for masking only if you mask.** Named root imports let supported bundlers remove the
+  cipher, key derivation, sentinel table, and unrelated generation code.
 - **Masking is explicit.** A codec requires private mask options or a package-produced schema
   handle. The published-key schema is available only as `UUID_V7_TEST_MASK`; omission never
   selects it.

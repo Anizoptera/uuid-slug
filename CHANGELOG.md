@@ -54,8 +54,6 @@ notes: the section for a version is published verbatim when its tag is pushed.
 - Use `createCustomUuidV7Mask` to adapt a reversible byte transform into an opaque mask handle.
 - Set `outputAlphabet: "base32hex"` for lowercase masked filenames. Writers emit 27-character
   masked slugs and 26-character sentinels; readers continue to accept base64url spellings.
-- Import focused APIs from `/uuid`, `/slug`, `/v4`, `/v7`, `/slug/v4`, or `/slug/v7` when direct ESM
-  startup matters. Root imports remain the default.
 - Bun, Deno, and the `development` condition load the published TypeScript source. Other consumers
   load compiled ESM.
 - Read UUIDv7 timestamps from text, direct slugs, or bytes with `extractUuidV7Timestamp`; use the

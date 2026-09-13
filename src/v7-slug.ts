@@ -6,11 +6,6 @@ import { generateUuidV7Bytes } from "./v7-keyless.ts";
 import { bytesToSlug } from "./slug.ts";
 import type { SlugAlphabet } from "./slug.ts";
 
-export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError } from "./errors.ts";
-export type { UuidSlugErrorCode } from "./errors.ts";
-export type { UuidV7Slug } from "./types.ts";
-export type { SlugAlphabet } from "./slug.ts";
-
 /**
  * Generate a direct UUIDv7 slug. Lowercase base32hex sorts across different milliseconds;
  * base64url and values generated within one millisecond have no chronological sort guarantee.

@@ -1126,21 +1126,8 @@ throughput and startup cost. A JITless-only win may justify code when every high
 ### Consumer graph
 
 Packed browser production builds on 2026-09-12 gave Bun, esbuild, Parcel, Rollup, Rolldown, Rspack,
-and webpack effectively the same optimized bytes from root and focused imports. The root therefore
-remains the simple bundled API. Direct Node ESM loaded 23 package modules from root, versus 3 for `/uuid`, 6 for
-`/slug` and `/v4`, 8 for `/v7`, 9 for `/slug/v4`, and 10 for `/slug/v7`. Importing `/v4` and `/v7`
-together loaded 10 unique modules, proving that their shared runtime and UUID modules were reused.
-
-Two 40-process randomized replays on 2026-09-13 measured generation from the root against `/v4`
-and `/v7`. Focused imports reduced median complete process time by 6–10% on Node 24.21.0, 12–14%
-on Bun 1.4.2, and 24–27% on Deno 2.9.6. Process launch, import, one generated value, runtime
-validation, and exit were charged together. Warm services, other machines, and other runtime
-versions were not measured; these results justify focused entries only for unbundled startup.
-
-The `/slug/v4` and `/slug/v7` one-call routes loaded one fewer module than composing their version
-generator with `/slug`; they preserve the simple call without loading the full root. They
-point directly at exact public owners. `/uuid`, `/slug`, and `/v4` use facades because their owners
-also export internal helpers; direct publication would silently add those helpers to the API.
+and webpack job-sized output from named root imports. Focused imports produced effectively the same
+optimized bytes, so they did not provide additional tree shaking and do not justify public entries.
 
 The packed probes execute every optimized bundle and require the masking seed only in the masked
 case. A 2026-08-12 Bun-only predecessor measured 13,082 bytes for `uuidToSlug` before masking was

@@ -69,6 +69,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   weakening ordinary strict decoding. Writers and accepted old formats remain independent.
 - npm runtime dependencies are forbidden. Rust dependencies require the evidence described in
   `docs/cross-language.md`. Benchmark dependencies stay dev-only and outside published artifacts.
+- Keep one public code entry while named root imports tree-shake correctly. Add a subpath only when
+  packed consumers prove useful tree shaking that the root cannot provide; startup timing alone is
+  insufficient.
 - Order public export conditions as `types`, `bun`, `deno`, `development`, then `default`. Add a
   condition only when it selects different output or guards an incompatible lower condition. The
   private `#runtime` map selects Bun source, Deno portable source, or Node native code while built

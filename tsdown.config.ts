@@ -40,20 +40,9 @@ const stamp = [
 // installed and read on their own exactly as the JavaScript is.
 const banner = { js: stamp, dts: stamp };
 
-/** Public entries also own declaration output; runtime-only entries emit JavaScript and maps. */
-const publicEntries = {
-  index: "src/index.ts",
-  "entries/slug": "src/entries/slug.ts",
-  "entries/uuid": "src/entries/uuid.ts",
-  "entries/v4": "src/entries/v4.ts",
-  "entries/v7": "src/entries/v7.ts",
-  "v4-slug": "src/v4-slug.ts",
-  "v7-slug": "src/v7-slug.ts",
-} as const;
-
 const common = {
   entry: {
-    ...publicEntries,
+    index: "src/index.ts",
     "node/runtime": "src/runtime/node.ts",
     "runtime/portable": "src/runtime/portable.ts",
   },
@@ -93,7 +82,7 @@ export default defineConfig([
     ...common,
     dts: {
       generator: "oxc",
-      entry: Object.values(publicEntries),
+      entry: ["src/index.ts"],
     },
     clean: true,
     inputOptions: { external: ["#runtime", "node:buffer", "node:crypto"] },
