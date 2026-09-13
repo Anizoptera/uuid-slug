@@ -103,17 +103,21 @@ async function packArtifacts(root: string, outdir: string): Promise<ArtifactSet>
   await command("tar", ["-xzf", join(outdir, archive), "-C", extracted], project);
   const packed = join(extracted, "package");
   const manifest = JSON.parse(await readFile(join(packed, "package.json"), "utf8")) as {
-    exports: { ".": { default: string; node?: string } };
-    imports: { "#runtime": { default: string } };
+    exports: { ".": { bun: string; default: string; deno: string; node?: string } };
+    imports: { "#runtime": { default: string; deno: string } };
   };
   const nodeApi = join(packed, manifest.exports["."].node ?? manifest.exports["."].default);
+  const bunApi = join(packed, manifest.exports["."].bun);
+  const denoApi = join(packed, manifest.exports["."].deno);
   const nodeModules = dirname(nodeApi);
+  const bunModules = dirname(bunApi);
+  const denoModules = dirname(denoApi);
   const denoImportMap = join(outdir, "deno-import-map.json");
   await Bun.write(
     denoImportMap,
     JSON.stringify({
       imports: {
-        "#runtime": pathToFileURL(join(packed, manifest.imports["#runtime"].default)).href,
+        "#runtime": pathToFileURL(join(packed, manifest.imports["#runtime"].deno)).href,
       },
     }),
   );
@@ -121,20 +125,20 @@ async function packArtifacts(root: string, outdir: string): Promise<ArtifactSet>
     denoImportMap,
     api: {
       node: nodeApi,
-      bun: join(packed, "src/index.ts"),
-      deno: join(packed, "dist/index.js"),
+      bun: bunApi,
+      deno: denoApi,
       chromium: join(packed, "dist/index.js"),
     },
     privateAlphabetApi: {
       node: join(nodeModules, "alphabet.js"),
-      bun: join(packed, "src/alphabet.ts"),
-      deno: join(packed, "dist/alphabet.js"),
+      bun: join(bunModules, "alphabet.ts"),
+      deno: join(denoModules, "alphabet.ts"),
       chromium: join(packed, "dist/alphabet.js"),
     },
     privateV4Api: {
       node: join(nodeModules, "v4.js"),
-      bun: join(packed, "src/v4.ts"),
-      deno: join(packed, "dist/v4.js"),
+      bun: join(bunModules, "v4.ts"),
+      deno: join(denoModules, "v4.ts"),
       chromium: join(packed, "dist/v4.js"),
     },
   };
