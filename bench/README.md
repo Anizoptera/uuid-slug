@@ -44,6 +44,14 @@ version. Upgrade benchmark packages only in `devDependencies`, inspect changed p
 source mechanisms, update the shared case inventory when capabilities change, then run smoke before
 the full matrix. A version change never inherits an earlier performance or compatibility verdict.
 
+Run `bun run bench:results` to refresh the tracked reports in `bench/results/`: `matrix.md` with
+package throughput and randomness per runtime, and `competitors.md` with its raw
+`competitors.jsonl`. They are tracked, unlike the profiling artifacts under ignored
+`bench/reports/`, because a report git tracks shows its own date and can be diffed between runs,
+while a hand-pasted snapshot rots behind a date that looks fresh. Nothing in them is typed in.
+They are evidence for `bench/PERFORMANCE.md`, which owns conclusions; a figure in them is one
+machine's and moves between runs, so read the direction of a difference, not its digits. The
+command runs full settings only.
 
 ## Regression protection
 

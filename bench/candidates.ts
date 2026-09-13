@@ -62,7 +62,7 @@ interface BunGlobal {
 // `.tool-versions` and declares `randomUUIDv7` unconditionally, so an intersection keeps it
 // non-optional and every `nodeUuidV7 ? ... : []` below reads as always-true to the compiler — while
 // the value is genuinely `undefined` on Node before 26, which is why those rows are absent from
-// the Node 24 column of `RESULTS.md`. A narrow shape is what makes the optionality checkable.
+// the Node 24 column of `bench/results/matrix.md`. A narrow shape is what makes the optionality checkable.
 type NodeCryptoWithV7 = {
   randomUUIDv7?: (options?: { disableEntropyCache?: boolean }) => string;
 };

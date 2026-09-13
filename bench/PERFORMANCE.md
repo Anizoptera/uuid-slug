@@ -886,6 +886,9 @@ with a 95% median interval of 0.965–1.027. This is why one significant interva
 candidate: two independent full replays remain mandatory. Retest the warm-up boundary when a primary
 runtime changes JIT tiers or when identical-code replays repeatedly report the same false direction.
 
+The throughput driver `bench/run.ts` warms each operation for 1,000 iterations. On 2026-08-12,
+raising that to 100,000 moved Node by under 2%, so longer warm-up buys nothing there.
+
 ### Profiler capture boundary
 
 Corpus construction, outcome verification, case selection, and warm-up finish before native CPU and

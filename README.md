@@ -744,7 +744,8 @@ engine versions; read the direction of each gap, not its size.
 | Bundling | Bun, esbuild, Parcel, Rollup, Rolldown, Rspack, webpack | A named root import keeps only the code it needs. |
 
 [Methods, competitors, results, limitations, and rejected optimizations](bench/PERFORMANCE.md) hold
-the numbers. This table only names the gaps.
+the numbers. This table only names the gaps. The latest full run on one machine is tracked as
+[competitors.md](bench/results/competitors.md) and [matrix.md](bench/results/matrix.md).
 
 ## Guarantees
 
