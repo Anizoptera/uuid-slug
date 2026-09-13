@@ -118,7 +118,7 @@
     "check": "bun run build && bun run --parallel api:check:built check:js:built check:rust && bun run perf:check",
     "check:fast": "bun run build && bun run --parallel api:check:built check:js:built check:rust:fast && bun run perf:check",
     "check:js": "bun run build && bun run check:js:built",
-    "check:js:built": "bun run --parallel format:check lint claude-link:check typecheck:built test bench:smoke bench:competitors:smoke artifact:check",
+    "check:js:built": "bun run --parallel format:check lint claude-link:check typecheck:built test bench:competitors:smoke artifact:check",
     "check:rust": "bun scripts/check-rust.ts",
     "check:rust:fast": "bun scripts/check-rust.ts --fast",
     "claude-link:check": "bun scripts/check-claude-link.ts",

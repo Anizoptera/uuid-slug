@@ -17,6 +17,10 @@ import { command } from "./command";
  * sentinel table came with it.
  */
 const MASKING_WITNESS = "anizoptera.uuid-slug.default-mask.v1";
+const VERSION_WITNESSES = {
+  4: "UUIDv4 generation cannot be reentered",
+  7: "UUIDv7 generation cannot be reentered",
+} as const;
 
 const MASKING_MODULE_FILES = new Set([
   "codec.js",
@@ -37,6 +41,7 @@ const jobs = [
     probe:
       'const value = uuidToBytes("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5"); if (value instanceof Error || value.length !== 16) throw new Error("uuidToBytes failed");',
     masked: false,
+    versions: [],
   },
   {
     name: "slug",
@@ -45,6 +50,7 @@ const jobs = [
     probe:
       'if (uuidToSlug("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5") !== "sbpZnUhES7Ch7qwK64h19Q") throw new Error("uuidToSlug failed");',
     masked: false,
+    versions: [],
   },
   {
     name: "slug-v4",
@@ -53,6 +59,7 @@ const jobs = [
     probe:
       'const value = generateUuidV4Slug(); if (value instanceof Error || value.length !== 22) throw new Error("generateUuidV4Slug failed");',
     masked: false,
+    versions: [4],
   },
   {
     name: "slug-v7",
@@ -61,6 +68,7 @@ const jobs = [
     probe:
       'const value = generateUuidV7Slug(); if (value instanceof Error || value.length !== 22) throw new Error("generateUuidV7Slug failed");',
     masked: false,
+    versions: [7],
   },
   {
     name: "v4",
@@ -69,6 +77,7 @@ const jobs = [
     probe:
       'const value = generateUuidV4(); if (value instanceof Error || !/^[0-9a-f-]{36}$/.test(value)) throw new Error("generateUuidV4 failed");',
     masked: false,
+    versions: [4],
   },
   {
     name: "v7",
@@ -77,6 +86,7 @@ const jobs = [
     probe:
       'const value = generateUuidV7(); if (value instanceof Error || value[14] !== "7") throw new Error("generateUuidV7 failed");',
     masked: false,
+    versions: [7],
   },
   {
     name: "v4-v7",
@@ -85,6 +95,7 @@ const jobs = [
     probe:
       'const a = generateUuidV4(); const b = generateUuidV7(); if (a instanceof Error || b instanceof Error) throw new Error("combined UUID generation failed");',
     masked: false,
+    versions: [4, 7],
   },
   {
     name: "slug-v4-compose",
@@ -93,6 +104,7 @@ const jobs = [
     probe:
       'const bytes = generateUuidV4Bytes(); if (bytes instanceof Error || bytesToSlug(bytes) instanceof Error) throw new Error("composed UUIDv4 slug generation failed");',
     masked: false,
+    versions: [4],
   },
   {
     name: "slug-v7-compose",
@@ -101,6 +113,7 @@ const jobs = [
     probe:
       'const bytes = generateUuidV7Bytes(); if (bytes instanceof Error || bytesToSlug(bytes) instanceof Error) throw new Error("composed UUIDv7 slug generation failed");',
     masked: false,
+    versions: [7],
   },
   {
     name: "masked",
@@ -109,6 +122,7 @@ const jobs = [
     probe:
       'const codec = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }); if (codec instanceof Error || codec.encodeUuid("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051") instanceof Error) throw new Error("masked codec failed");',
     masked: true,
+    versions: [7],
   },
 ] as const;
 
@@ -130,6 +144,7 @@ function consumerSource(
 }
 
 interface ConsumerGraphResult {
+  readonly entry: "root" | "subpath";
   readonly job: (typeof jobs)[number]["name"];
   readonly optimizer: Optimizer;
   readonly rawBytes: number;
@@ -149,12 +164,28 @@ interface ConsumerGraphReport {
   readonly direct: readonly DirectConsumerResult[];
 }
 
+async function settleAll<Value>(promises: readonly Promise<Value>[]): Promise<Awaited<Value>[]> {
+  // The scratch tree is shared by every compiler and removed by the caller. Wait for every child
+  // before surfacing failures so one rejection cannot delete files beneath siblings still running.
+  const results = await Promise.allSettled(promises);
+  const failures: unknown[] = [];
+  const values: Awaited<Value>[] = [];
+  for (const result of results)
+    if (result.status === "rejected") failures.push(result.reason);
+    else values.push(result.value);
+  if (failures.length > 0) throw new AggregateError(failures, "Consumer graph checks failed.");
+  return values;
+}
+
+const includesVersion = (versions: readonly (4 | 7)[], version: 4 | 7): boolean =>
+  versions.includes(version);
+
 export function formatConsumerGraph(report: ConsumerGraphReport): string {
   return [
-    "job optimizer raw gzip brotli zstd",
+    "job entry optimizer raw gzip brotli zstd",
     ...report.bundled.map(
       (result) =>
-        `${result.job} ${result.optimizer} ` +
+        `${result.job} ${result.entry} ${result.optimizer} ` +
         `${result.rawBytes} ${result.gzipBytes} ${result.brotliBytes} ${result.zstdBytes}`,
     ),
     "",
@@ -265,7 +296,7 @@ async function compile(optimizer: Optimizer, entry: string, outdir: string): Pro
   return readFile(outfile);
 }
 
-/** Prove root imports retain masking only when requested and focused entries bypass it directly. */
+/** Prove root and focused imports retain only their requested generation and masking domains. */
 export async function inspectConsumerGraph(
   consumerRoot: string,
   packageName: string,
@@ -290,7 +321,7 @@ export async function inspectConsumerGraph(
       path.join(root, "module-loader.mjs"),
       'import { appendFileSync } from "node:fs";\nconst log = process.env.UUID_SLUG_MODULE_LOG;\nexport async function load(url, context, nextLoad) {\n  if (log && url.includes("/package/dist/")) appendFileSync(log, url + "\\n");\n  return nextLoad(url, context);\n}\n',
     );
-    const direct = await Promise.all(
+    const direct = await settleAll(
       jobs.flatMap((job) =>
         job.subpath === null
           ? []
@@ -315,28 +346,40 @@ export async function inspectConsumerGraph(
       ),
     );
     const cases = jobs.flatMap((job) =>
-      optimizers.map(async (optimizer): Promise<ConsumerGraphResult> => {
-        const caseName = `${job.name}-${optimizer}`;
-        const entry = path.join(root, `${caseName}.js`);
-        await Bun.write(entry, consumerSource(job, packageName, "root"));
-        const code = await compile(optimizer, entry, path.join(root, caseName));
-        const text = new TextDecoder().decode(code);
-        // The masked case proves the witness remains observable; otherwise its removal or rename
-        // could make every keyless exclusion pass without testing masking at all.
-        if (text.includes(MASKING_WITNESS) !== job.masked)
-          throw new Error(`${caseName} ${job.masked ? "lost" : "retained"} masking code.`);
-        await command("node", [path.join(root, caseName, "bundle.js")], consumerRoot);
-        return {
-          job: job.name,
-          optimizer,
-          rawBytes: code.byteLength,
-          gzipBytes: gzipSync(code).byteLength,
-          brotliBytes: brotliCompressSync(code).byteLength,
-          zstdBytes: zstdCompressSync(code).byteLength,
-        };
-      }),
+      optimizers.flatMap((optimizer) =>
+        (job.subpath === null ? (["root"] as const) : (["root", "subpath"] as const)).map(
+          async (entry): Promise<ConsumerGraphResult> => {
+            const caseName = `${job.name}-${entry}-${optimizer}`;
+            const entryFile = path.join(root, `${caseName}.js`);
+            await Bun.write(entryFile, consumerSource(job, packageName, entry));
+            const code = await compile(optimizer, entryFile, path.join(root, caseName));
+            const text = new TextDecoder().decode(code);
+            // The masked case proves the witness remains observable; otherwise its removal or rename
+            // could make every keyless exclusion pass without testing masking at all.
+            if (text.includes(MASKING_WITNESS) !== job.masked)
+              throw new Error(`${caseName} ${job.masked ? "lost" : "retained"} masking code.`);
+            for (const version of [4, 7] as const) {
+              const retainsVersion = includesVersion(job.versions, version);
+              if (text.includes(VERSION_WITNESSES[version]) !== retainsVersion)
+                throw new Error(
+                  `${caseName} ${retainsVersion ? "lost" : "retained"} UUIDv${version} generation code.`,
+                );
+            }
+            await command("node", [path.join(root, caseName, "bundle.js")], consumerRoot);
+            return {
+              entry,
+              job: job.name,
+              optimizer,
+              rawBytes: code.byteLength,
+              gzipBytes: gzipSync(code).byteLength,
+              brotliBytes: brotliCompressSync(code).byteLength,
+              zstdBytes: zstdCompressSync(code).byteLength,
+            };
+          },
+        ),
+      ),
     );
-    const bundled = await Promise.all(cases);
+    const bundled = await settleAll(cases);
     for (const subpath of direct.filter((result) => result.entry === "subpath")) {
       const rootResult = direct.find(
         (result) => result.entry === "root" && result.job === subpath.job,
