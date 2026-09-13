@@ -3,7 +3,6 @@ import { isBuiltin } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { command } from "./command";
-import { browserEngines } from "./browser-engines";
 import { formatConsumerGraph, inspectConsumerGraph } from "./consumer-graph";
 
 // Scan all shipped files: extensions must not hide machine paths or development material.
@@ -353,36 +352,13 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       const output = built.outputs[0];
       if (!built.success || !output)
         throw new AggregateError(built.logs, "Browser consumer compilation failed.");
-      const server = Bun.serve({
-        port: 0,
-        fetch: () =>
-          new Response("<!doctype html><title>Consumer probe</title>", {
-            headers: { "content-type": "text/html" },
-          }),
-      });
-      try {
-        for (const [name, engine] of Object.entries(browserEngines)) {
-          const browser = await engine.launch({ headless: true });
-          try {
-            const page = await browser.newPage();
-            await page.goto(server.url.href);
-            await page.evaluate(
-              (code) => {
-                if (typeof globalThis.process !== "undefined")
-                  throw new Error("Expected a real browser without process.");
-                // Await module completion, including any future asynchronous consumer assertions.
-                return import(URL.createObjectURL(new Blob([code], { type: "text/javascript" })));
-              },
-              await output.text(),
-            );
-            console.log(`${name}: packed browser consumer passed`);
-          } finally {
-            await browser.close();
-          }
-        }
-      } finally {
-        await server.stop(true);
-      }
+      const browserBundle = path.join(root, "browser-consumer.mjs");
+      await Bun.write(browserBundle, output);
+      await command(
+        "bun",
+        [path.join(project, "scripts/check-browser-consumer.ts"), browserBundle],
+        project,
+      );
     }
     console.log(
       `Validated ${path.basename(tarball)} through extracted package exports${web ? " on Node, Bun, Deno, Chromium, Firefox and WebKit" : " on Node and Bun"}.`,
