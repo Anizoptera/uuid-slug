@@ -241,6 +241,14 @@ export async function inspectConsumerGraph(
                 consumerSource(job, packageName, entry),
                 `${job.name}-${entry}`,
               );
+              if (job.versions.length > 0) {
+                if (!modules.some((url) => url.endsWith("/dist/node/runtime.js")))
+                  throw new Error(`${job.name} ${entry} did not load the Node runtime adapter.`);
+                if (modules.some((url) => url.endsWith("/dist/runtime/portable.js")))
+                  throw new Error(
+                    `${job.name} ${entry} loaded the portable runtime adapter on Node.`,
+                  );
+              }
               if (entry === "subpath") {
                 const maskingModules = modules.filter((url) =>
                   MASKING_MODULE_FILES.has(path.basename(new URL(url).pathname)),
@@ -261,11 +269,21 @@ export async function inspectConsumerGraph(
             const caseName = `${job.name}-${entry}-${optimizer}`;
             const entryFile = path.join(root, `${caseName}.js`);
             await Bun.write(entryFile, consumerSource(job, packageName, entry));
-            const { code, modules } = await compileConsumer(
+            const { code, modules, sources } = await compileConsumer(
               optimizer,
               entryFile,
               path.join(root, caseName),
             );
+            if (job.versions.length > 0) {
+              if (![...sources].some((source) => /(?:^|\/)runtime\/portable\.[jt]s$/.test(source)))
+                throw new Error(`${caseName} did not bundle the portable runtime adapter.`);
+              if (
+                [...sources].some((source) =>
+                  /(?:^|\/)(?:node\/runtime|runtime\/node)\.[jt]s$/.test(source),
+                )
+              )
+                throw new Error(`${caseName} bundled the Node runtime adapter for a browser.`);
+            }
             const retainsMasking = [...modules].some((module) => MASKING_MODULE_FILES.has(module));
             if (retainsMasking !== job.masked)
               throw new Error(`${caseName} ${job.masked ? "lost" : "retained"} masking code.`);

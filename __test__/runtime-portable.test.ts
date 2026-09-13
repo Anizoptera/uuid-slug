@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * `runtime/web.ts` is the adapter browsers and Deno resolve, and the one no lane executes as a
+ * `runtime/portable.ts` is the adapter browsers and Deno resolve, and the one no lane executes as a
  * consequence of its own `#runtime` condition — vitest resolves `node`, `bun test` resolves `bun`.
  * It is imported directly here for that reason.
  *
- * These cases protect the browser adapter's selected path, not merely host capability presence.
+ * These cases protect the portable adapter's selected path, not merely host capability presence.
  * Browser UUIDv4 text stays on the faster pooled byte path even where `randomUUID` exists;
  * `getRandomValues` remains independently available on insecure contexts.
  */
@@ -21,7 +21,7 @@ async function adapterWith(cryptoStub: unknown, deno?: unknown) {
   vi.stubGlobal("crypto", cryptoStub);
   if (deno !== undefined) vi.stubGlobal("Deno", deno);
   vi.resetModules();
-  return (await import("../src/runtime/web")).runtime;
+  return (await import("../src/runtime/portable")).runtime;
 }
 
 afterEach(() => {
@@ -29,11 +29,16 @@ afterEach(() => {
   vi.resetModules();
 });
 
-describe("web runtime capability probe", () => {
+describe("portable runtime capability probe", () => {
   it("returns rng_unavailable when Web Crypto entropy is absent", async () => {
     const runtime = await adapterWith(undefined);
     const failure = runtime.fillRandom(new Uint8Array(16));
     expect(failure).toMatchObject({ code: "rng_unavailable" });
+  });
+
+  it("loads without Web Crypto when another runtime exposes a Deno-shaped global", async () => {
+    const runtime = await adapterWith(undefined, {});
+    expect(runtime.fillRandom(new Uint8Array(16))).toMatchObject({ code: "rng_unavailable" });
   });
 
   it("leaves uuidV4 undefined when the page has getRandomValues but not randomUUID", async () => {

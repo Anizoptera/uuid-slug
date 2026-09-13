@@ -47,6 +47,10 @@ non-JSDoc comments; keep exploration transient.
   ships fewer bytes. Remove it when neither remains true.
 - Preserve native ESM and module seams. Consumer bundlers already remove unused root exports;
   bundling this package first would hide those seams from them.
+- A public condition must select different output or guard an incompatible lower condition. Put
+  `deno` before `development` and `node`: Deno activates `node` and may activate `development`.
+  Its strict resolver rejects this source graph's extensionless imports, so serve compiled ESM to
+  Deno. Use the private `#runtime` map for adapters.
 
 - Name every public and internal operation for the domain action it performs. Use one term for one
   behavior and one behavior for one term; encode direction, unit, and ownership where callers or

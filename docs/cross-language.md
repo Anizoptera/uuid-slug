@@ -104,8 +104,9 @@ Publish one npm package and one Rust crate. Keep JavaScript chunks internal and 
 one release identity. Add prebuilt Rust artifacts only when a measured consumer need justifies them.
 Publish the TypeScript source for Bun and the opt-in `development` condition. Condition-selected
 runtime adapters keep one public source entry while using each host's capabilities. The optimized
-default build is browser-safe and Node-compatible; Node uses its native-runtime build when its
-condition is available. Ship source maps whose inputs resolve inside the package.
+build is portable and Node-compatible. Keep one compiled implementation graph; resolve its private
+`#runtime` import to Bun source, Deno portable code, or Node native code. Deno also activates the
+`node` condition, so its condition must come first. Ship source maps whose inputs resolve inside the package.
 
 ### JavaScript packaging
 

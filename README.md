@@ -596,7 +596,7 @@ No runtime dependencies, on any platform.
   the `development` condition loads the same source.
 - **Node** uses native `crypto.randomUUID`, and native `crypto.randomUUIDv7` where the
   version provides it, otherwise the bundled v7 generator.
-- **Browsers and Deno** use optimized browser-safe JavaScript and Web Crypto.
+- **Browsers, Deno, and other compatible runtimes** use optimized portable JavaScript and Web Crypto.
 
 ## License
 

@@ -117,6 +117,11 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
           name.split("/").some((part) => part === ".." || FORBIDDEN_PATHS.has(part))
         )
           throw new Error(`Forbidden artifact path: ${name}`);
+        if (
+          name.startsWith("package/dist/node/") &&
+          !/^package\/dist\/node\/runtime\.js(?:\.map)?$/.test(name)
+        )
+          throw new Error(`Only the Node runtime adapter belongs in dist/node: ${name}`);
         // Module graphs cannot see unreferenced native build outputs in an allowed directory.
         if (/\.(?:node|wasm|dll|dylib|so(?:\.\d+)*|a|lib|rlib|o|obj|exe)$/i.test(name))
           throw new Error(`Native payload is forbidden in the npm package: ${name}`);
@@ -155,6 +160,10 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       throw new Error(
         `Packed exports are wrong.\nExpected: ${JSON.stringify(repositoryManifest.exports)}\nReceived: ${JSON.stringify(manifest.exports)}`,
       );
+    if (JSON.stringify(manifest.imports) !== JSON.stringify(repositoryManifest.imports))
+      throw new Error(
+        `Packed imports are wrong.\nExpected: ${JSON.stringify(repositoryManifest.imports)}\nReceived: ${JSON.stringify(manifest.imports)}`,
+      );
     if (manifest.name !== "@anizoptera/uuid-slug") throw new Error("Unexpected package name.");
     await Bun.write(
       path.join(root, "package.json"),
@@ -168,12 +177,7 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
     // catches a dependency in a currently unreferenced module, without parsing JS by regex.
     const graphs = await Promise.allSettled(
       (["browser", "node", "bun"] as const).map(async (target) => {
-        const prefix =
-          target === "bun"
-            ? "package/src/"
-            : target === "node"
-              ? "package/dist/node/"
-              : "package/dist/";
+        const prefix = target === "bun" ? "package/src/" : "package/dist/";
         const entrypoints = [...entries.keys()]
           .filter(
             (name) =>
@@ -210,6 +214,19 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
     );
 
     for (const graph of graphs) if (graph.status === "rejected") throw graph.reason;
+
+    const runtimeProbe = path.join(extracted, "runtime-route.mjs");
+    await Bun.write(runtimeProbe, 'console.log(import.meta.resolve("#runtime"));\n');
+    const expectRuntimeRoute = async (runtime: "bun" | "deno" | "node", expectedSuffix: string) => {
+      const args = runtime === "deno" ? ["run", "--cached-only", runtimeProbe] : [runtimeProbe];
+      const resolved = (await command(runtime, args, extracted)).trim();
+      if (!resolved.endsWith(expectedSuffix))
+        throw new Error(`${runtime} resolved #runtime to ${resolved}; expected ${expectedSuffix}.`);
+    };
+    await Promise.all([
+      expectRuntimeRoute("node", "/dist/node/runtime.js"),
+      expectRuntimeRoute("bun", "/src/runtime/bun.ts"),
+    ]);
 
     const probe = await Bun.build({
       entrypoints: [path.join(project, "__test__/consumer-probe.ts")],
@@ -302,11 +319,12 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       .map((result) => result.reason);
     if (failures.length) throw new AggregateError(failures, "Packed consumers failed.");
     if (web) {
-      await command(
-        "deno",
-        ["run", "--node-modules-dir=manual", "--cached-only", "--allow-read", runner],
-        root,
-      );
+      await expectRuntimeRoute("deno", "/dist/runtime/portable.js");
+      const denoArgs = ["--node-modules-dir=manual", "--cached-only", "--allow-read", runner];
+      await Promise.all([
+        command("deno", ["run", ...denoArgs], root),
+        command("deno", ["run", "--conditions", "development", ...denoArgs], root),
+      ]);
       const built = await Bun.build({ entrypoints: [runner], target: "browser" });
       const output = built.outputs[0];
       if (!built.success || !output)

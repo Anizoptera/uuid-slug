@@ -2,7 +2,7 @@
 
 import { mkdir, mkdtemp, readFile, readdir, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { chromium } from "playwright";
 import type { Page } from "playwright";
@@ -22,6 +22,7 @@ const RUNTIMES = [
 ] as const satisfies readonly Runtime[];
 
 interface ArtifactSet {
+  readonly denoImportMap: string;
   readonly api: Readonly<Record<ArtifactRuntime, string>>;
   readonly privateAlphabetApi: Readonly<Record<ArtifactRuntime, string>>;
   readonly privateV4Api: Readonly<Record<ArtifactRuntime, string>>;
@@ -101,21 +102,37 @@ async function packArtifacts(root: string, outdir: string): Promise<ArtifactSet>
   await mkdir(extracted);
   await command("tar", ["-xzf", join(outdir, archive), "-C", extracted], project);
   const packed = join(extracted, "package");
+  const manifest = JSON.parse(await readFile(join(packed, "package.json"), "utf8")) as {
+    exports: { ".": { default: string; node?: string } };
+    imports: { "#runtime": { default: string } };
+  };
+  const nodeApi = join(packed, manifest.exports["."].node ?? manifest.exports["."].default);
+  const nodeModules = dirname(nodeApi);
+  const denoImportMap = join(outdir, "deno-import-map.json");
+  await Bun.write(
+    denoImportMap,
+    JSON.stringify({
+      imports: {
+        "#runtime": pathToFileURL(join(packed, manifest.imports["#runtime"].default)).href,
+      },
+    }),
+  );
   return {
+    denoImportMap,
     api: {
-      node: join(packed, "dist/node/index.js"),
+      node: nodeApi,
       bun: join(packed, "src/index.ts"),
       deno: join(packed, "dist/index.js"),
       chromium: join(packed, "dist/index.js"),
     },
     privateAlphabetApi: {
-      node: join(packed, "dist/node/alphabet.js"),
+      node: join(nodeModules, "alphabet.js"),
       bun: join(packed, "src/alphabet.ts"),
       deno: join(packed, "dist/alphabet.js"),
       chromium: join(packed, "dist/alphabet.js"),
     },
     privateV4Api: {
-      node: join(packed, "dist/node/v4.js"),
+      node: join(nodeModules, "v4.js"),
       bun: join(packed, "src/v4.ts"),
       deno: join(packed, "dist/v4.js"),
       chromium: join(packed, "dist/v4.js"),
@@ -201,10 +218,11 @@ async function runHost(
   api: string,
   privateAlphabetApi: string,
   privateV4Api: string,
+  denoImportMap: string,
 ) {
   const args =
     runtime === "deno"
-      ? ["run", "--allow-env", "--allow-read", driver]
+      ? ["run", "--import-map", denoImportMap, "--allow-env", "--allow-read", driver]
       : runtime === "node-jitless"
         ? ["--jitless", driver]
         : [driver];
@@ -393,6 +411,7 @@ async function main(): Promise<void> {
                     artifacts.api[target],
                     artifacts.privateAlphabetApi[target],
                     artifacts.privateV4Api[target],
+                    artifacts.denoImportMap,
                   );
             emit(runtime, revision, round, order, rows, observations);
           }

@@ -6,7 +6,7 @@
  *
  * Vitest runs on Node, so `#runtime` resolves to `runtime/node.ts`; `bun test` resolves the
  * `bun` condition to `runtime/bun.ts`. Neither run says anything about the other's adapter —
- * measured 2026-08-11, a `Math.random` rewritten into `runtime/web.ts` (Bun's `fillRandom`)
+ * measured 2026-08-11, a `Math.random` rewritten into `runtime/portable.ts` (Bun's `fillRandom`)
  * left the whole vitest suite green. One list, called from both, is what keeps a rule from
  * holding on the runtime that happens to be checked and not on the one consumers use.
  */

@@ -14,15 +14,18 @@ export type Optimizer = "bun" | "esbuild" | "parcel" | "rollup" | "rolldown" | "
 export interface CompiledBundle {
   readonly code: Uint8Array;
   readonly modules: ReadonlySet<string>;
+  readonly sources: ReadonlySet<string>;
 }
 
 async function readCompiledBundle(outfile: string): Promise<CompiledBundle> {
   const map = (await Bun.file(`${outfile}.map`).json()) as { sources?: unknown };
   if (!Array.isArray(map.sources) || !map.sources.every((source) => typeof source === "string"))
     throw new Error(`Invalid consumer source map: ${outfile}.map`);
+  const sources = new Set(map.sources);
   return {
     code: await readFile(outfile),
-    modules: new Set(map.sources.map((source) => path.basename(source))),
+    modules: new Set([...sources].map((source) => path.basename(source))),
+    sources,
   };
 }
 

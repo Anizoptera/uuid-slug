@@ -16,16 +16,18 @@ async function rejected(files: Record<string, string>, message: string): Promise
     await rm(root, { recursive: true, force: true });
   }
 }
+const repositoryManifest = await Bun.file(new URL("../package.json", import.meta.url)).json();
 const manifest = {
   name: "@anizoptera/uuid-slug",
   version: "0.0.0",
   type: "module",
-  exports: (await Bun.file(new URL("../package.json", import.meta.url)).json()).exports,
+  exports: repositoryManifest.exports,
+  imports: repositoryManifest.imports,
 };
 const base = {
   "package/package.json": JSON.stringify(manifest),
   "package/dist/index.js": "export {};",
-  "package/dist/node/index.js": "export {};",
+  "package/dist/node/runtime.js": "export {};",
   "package/src/index.ts": "export {};",
 };
 
@@ -59,6 +61,14 @@ test("refuses a wildcard export", () =>
     },
     "Packed exports",
   ));
+test("refuses a changed private runtime map", () =>
+  rejected(
+    {
+      ...base,
+      "package/package.json": JSON.stringify({ ...manifest, imports: {} }),
+    },
+    "Packed imports are wrong",
+  ));
 test("refuses runtime conditions before source conditions", () =>
   rejected(
     {
@@ -77,7 +87,7 @@ test("refuses runtime conditions before source conditions", () =>
         },
       }),
     },
-    'must be ordered "types", "bun", "development", "node", then "default"',
+    'must be ordered "types", "bun", "deno", "development", then "default"',
   ));
 test("finds machine paths in extensionless files", () =>
   rejected({ ...base, "package/leak": "/Users/builder/private" }, "Build-machine path"));
@@ -134,6 +144,11 @@ test("refuses optimizer annotations stripped from JavaScript", () =>
   ));
 test("refuses development files", () =>
   rejected({ ...base, "package/test/hidden.js": "" }, "Forbidden artifact path"));
+test("refuses a duplicated Node implementation tree", () =>
+  rejected(
+    { ...base, "package/dist/node/index.js": "export {};" },
+    "Only the Node runtime adapter belongs in dist/node",
+  ));
 for (const code of [
   'import "unknown-package";',
   'export { value } from "unknown-package/subpath";',

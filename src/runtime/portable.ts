@@ -28,7 +28,7 @@ const runtimeCapabilities: Runtime = {
 // Deno's Web Crypto UUID method is faster than the portable formatter; Chromium's is slower.
 // Runtime identity decides only this measured performance split—the entropy and UUID contracts
 // are the same, and both paths remain covered by the shared runtime corpus.
-if (typeof (globalThis as { Deno?: unknown }).Deno !== "undefined" && globalThis.crypto.randomUUID)
+if (typeof (globalThis as { Deno?: unknown }).Deno !== "undefined" && globalThis.crypto?.randomUUID)
   runtimeCapabilities.uuidV4 = globalThis.crypto.randomUUID.bind(globalThis.crypto);
 
 /**

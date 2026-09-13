@@ -8,7 +8,9 @@ This measurement compares performance baseline `37f6258` with `2c5ba55` on an Ap
 
 Follow the package-import commands in [the benchmark guide](README.md#profiling). For this replay set `UUID_SLUG_PROFILE_MS=5`; retain the default seven samples. Use three fresh process pairs per runtime, alternate before/after order, and run CPU measurements sequentially. Each process exercises the same 256 deterministic inputs and all cases. The table gives the median of the three per-process medians in nanoseconds per call, including driver consumption and error classification. Small differences can reflect JIT state, scheduler noise and clock overhead; these are not confidence intervals.
 
-Build both revisions separately and select the baseline with `UUID_SLUG_PROFILE_MODULE` pointing to its absolute file URL: emitted `dist/node/index.js` on Node, `src/index.ts` on Bun. Keep the driver identical. A filter changes warm-up history, so an isolated measurement does not explain a mixed-workload result by itself.
+Build both revisions separately and point `UUID_SLUG_PROFILE_MODULE` at the absolute built file
+selected on Node, or at `src/index.ts` on Bun. Keep the driver identical. A filter
+changes warm-up history, so an isolated measurement does not explain a mixed-workload result by itself.
 
 ### Bun 1.4.2 retained-change replay
 

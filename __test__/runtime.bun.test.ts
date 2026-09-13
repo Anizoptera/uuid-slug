@@ -6,8 +6,8 @@
  *
  * The entropy cases here mirror `__test__/entropy.test.ts` deliberately. Vitest runs on Node and
  * resolves `#runtime` to `runtime/node.ts`, so nothing it asserts constrains `runtime/bun.ts`
- * or the `runtime/web.ts` it draws `fillRandom` from — measured 2026-08-11, a `Math.random`
- * rewritten into `runtime/web.ts` left the entire vitest suite green.
+ * or the `runtime/portable.ts` it draws `fillRandom` from — measured 2026-08-11, a `Math.random`
+ * rewritten into `runtime/portable.ts` left the entire vitest suite green.
  */
 import { describe, expect, test } from "bun:test";
 
@@ -53,7 +53,7 @@ describe("bun runtime", () => {
   });
 
   test("leaves every v4 bit random except the six the RFC fixes", () => {
-    // Bun draws `fillRandom` from `runtime/web.ts`, which vitest never loads, so a bit pinned
+    // Bun draws `fillRandom` from `runtime/portable.ts`, which vitest never loads, so a bit pinned
     // there is invisible on the Node lane — the same asymmetry as the cases above.
     expect(constantBitCount(generateUuidV4Bytes)).toBe(6);
   });

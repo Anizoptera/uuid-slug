@@ -124,3 +124,13 @@ Make each consumer pay only for UUID generation, plain slugs, or masking that it
 - [x] Compare eager module detection, pure annotated construction, lazy memoization, and capability-specific module boundaries on startup work, hot-path work, bundle bytes, stack quality, and runtime correctness.
 - [x] Make only changes that reduce consumer work without weakening capability fallback, instrumentation, security, or tree shaking; add a regression check only for a material defect not already detected.
 - [x] Update the owning maintenance guidance, run the complete gate, inspect emitted artifacts, and commit with a clean tree.
+
+## Conditional-build duplication audit
+
+- [x] Measure archive, installed, compressed, mapped, and shared bytes in the default and Node builds by module.
+- [x] Trace the exact Node-only capability edges and test whether one portable build preserves supported runtime behavior and performance.
+- [x] Compare live layouts: current dual build, one portable build, shared core plus Node adapter, and any smaller condition-safe composition supported by package resolution.
+- [x] Run packed direct consumers and Bun, Rolldown, esbuild, Rollup, Parcel, Rspack, and webpack bundles against each viable layout; execute every output.
+- [x] Reject layouts that weaken native paths, module identity, source maps, declarations, annotations, tree shaking, runtime floors, or diagnostics.
+- [x] Implement only a measured net reduction in package liability; update owning guidance and the artifact check for the retained invariant.
+- [x] Run the complete gate, inspect the packed archive and diff, then commit the self-contained result with a clean tree.

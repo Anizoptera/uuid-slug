@@ -63,8 +63,10 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   weakening ordinary strict decoding. Writers and accepted old formats remain independent.
 - npm runtime dependencies are forbidden. Rust dependencies require the evidence described in
   `docs/cross-language.md`. Benchmark dependencies stay dev-only and outside published artifacts.
-- Order root export conditions as `types`, `bun`, `development`, `node`, then `default`.
-  Bun and development load published TypeScript; Node keeps its native-runtime build.
+- Order public export conditions as `types`, `bun`, `deno`, `development`, then `default`. Add a
+  condition only when it selects different output or guards an incompatible lower condition. The
+  private `#runtime` map selects Bun source, Deno portable code, or Node native code while built
+  hosts share one implementation graph.
 - Read `docs/public-api.md` §Package entries before changing exports or bundling. Keep each export
   path aligned with its owning source and built module. Use a facade only to hide internal exports
   or join owners. Retain a subpath only while packed measurements show lower consumer work.

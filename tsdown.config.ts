@@ -4,9 +4,7 @@ import type { UserConfig } from "tsdown";
 import { defineConfig } from "tsdown";
 
 /**
- * Two lines on every built file, because each one is installed and read on its own: a
- * consumer resolves exactly one of `dist/index.js` or `dist/node/index.js` by condition, and may
- * never see the other.
+ * Two lines on every built file because each module is installed and can be read on its own.
  *
  * The licence line is the SPDX short-form identifier, the entire standard for declaring a
  * file's licence to a scanner that sees the file and nothing around it. REUSE 3.3 terminates
@@ -43,10 +41,8 @@ const stamp = [
 const banner = { js: stamp, dts: stamp };
 
 /**
- * Identical across the two builds; only the platform and destination differ. `satisfies`
- * rather than a plain literal, so the union-typed fields are checked here and widen the way
- * the spread needs — an annotation would erase the literal types, and a cast would assert
- * what this asks the compiler to prove.
+ * Shared settings for the implementation graph and the runtime adapters. `satisfies` preserves
+ * literal types for the spreads while making the compiler prove every option.
  */
 const common = {
   entry: {
@@ -86,9 +82,25 @@ const common = {
 } satisfies UserConfig;
 
 export default defineConfig([
-  // main/module and browser/deno/default exports share the browser-safe build. Explicit platform
-  // prevents Node builtins leaking into it. A separate web build would duplicate these bytes;
-  // only Node needs a different build to use its native adapter.
-  { ...common, dts: { generator: "oxc" }, clean: true, outDir: "dist", platform: "browser" },
-  { ...common, dts: false, outDir: "dist/node", platform: "node" },
+  // Keep the runtime import unresolved: package conditions select one tiny adapter while every
+  // host shares the same compiled implementation modules.
+  {
+    ...common,
+    dts: { generator: "oxc" },
+    clean: true,
+    inputOptions: { external: ["#runtime"] },
+    outDir: "dist",
+    platform: "browser",
+  },
+  {
+    ...common,
+    clean: false,
+    dts: false,
+    entry: {
+      "node/runtime": "src/runtime/node.ts",
+      "runtime/portable": "src/runtime/portable.ts",
+    },
+    outDir: "dist",
+    platform: "node",
+  },
 ]);
