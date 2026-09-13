@@ -6,7 +6,16 @@ import { join, resolve } from "node:path";
 import { expect, test } from "bun:test";
 import { command } from "../command";
 import { preflightRelease } from "../release-notes";
+import { releaseSelection } from "../release-selection";
 import { checkReleaseVersion, setDevelopmentVersion } from "../release-version";
+
+test("release publication defaults to both packages and rejects invalid selections", () => {
+  expect(releaseSelection(undefined)).toBe("both");
+  expect(releaseSelection("both")).toBe("both");
+  expect(releaseSelection("npm")).toBe("npm");
+  expect(releaseSelection("crate")).toBe("crate");
+  expect(() => releaseSelection("other")).toThrow("both, npm, crate");
+});
 
 test("one command updates every development version owner", async () => {
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-version-set-"));

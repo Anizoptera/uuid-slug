@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { rejects } from "node:assert/strict";
 import { apiDiff, minimumRelease, satisfiesMinimum, sizeDelta } from "../release-comparison";
-import { verifyNpmIdentity } from "../release-report";
+import { verifyCrateIdentity, verifyNpmIdentity } from "../release-report";
 
 test("release API diff exposes removals and additions without restating unchanged lines", () => {
   expect(
@@ -9,7 +9,6 @@ test("release API diff exposes removals and additions without restating unchange
   ).toBe("- `export declare function old(): void;`\n- `export type New = 1;` (added)");
   expect(apiDiff("same\n", "same\n")).toBe("No packaged TypeScript declaration changes.");
 });
-
 test("stable version distance must satisfy the derived release level", () => {
   expect(satisfiesMinimum("0.3.0", "0.4.0", "minor")).toBe(true);
   expect(satisfiesMinimum("1.3.0", "1.3.1", "minor")).toBe(false);
@@ -54,10 +53,24 @@ test("release classification ignores changelog headings inside examples", () => 
   expect(minimumRelease("2.0.0", "### Breaking changes\n\n- Public behavior.\n", [])).toBe("major");
 });
 
-test("retained npm archives identify the selected package version", async () => {
+test("retained archives identify the selected package version and Git source", async () => {
   const npm = new Map([
     ["package/package.json", new Blob([JSON.stringify({ name: "pkg", version: "1.2.3" })])],
   ]);
+  const crate = new Map([
+    ["uuid-slug-1.2.3/Cargo.toml", new Blob(['[package]\nversion = "1.2.3"\n'])],
+    ["uuid-slug-1.2.3/.cargo_vcs_info.json", new Blob([JSON.stringify({ git: { sha1: "abc" } })])],
+  ]);
   expect(await verifyNpmIdentity(npm, "pkg", "1.2.3")).toMatchObject({ version: "1.2.3" });
+  await verifyCrateIdentity(crate, "1.2.3", "abc");
   await rejects(verifyNpmIdentity(npm, "pkg", "1.2.4"), /does not identify/);
+  await rejects(verifyCrateIdentity(crate, "1.2.3", "def"), /does not identify/);
+  await rejects(
+    verifyCrateIdentity(
+      new Map([...crate, ["uuid-slug-1.2.3/../escape", new Blob()]]),
+      "1.2.3",
+      "abc",
+    ),
+    /outside/,
+  );
 });

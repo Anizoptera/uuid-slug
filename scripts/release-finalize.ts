@@ -2,7 +2,9 @@ import { createHash } from "node:crypto";
 import { basename, join, resolve } from "node:path";
 import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
 import { readRetainedArchive } from "./release-inputs";
+import { crateChecksum, verifyCrateChecksum } from "./release-crate";
 import { preflightRelease } from "./release-notes";
+import { releaseSelection } from "./release-selection";
 import { registryIntegrity, verifyIntegrity } from "./registry-integrity";
 
 interface Asset {
@@ -21,6 +23,12 @@ interface Release {
 interface FinalizeOptions {
   readonly repository: string;
   readonly token: string;
+}
+
+interface FinalArchive {
+  readonly archive: RetainedArchive;
+  readonly bytes: Uint8Array;
+  readonly sha256: string;
 }
 
 function object(value: unknown, context: string): Record<string, unknown> {
@@ -79,7 +87,7 @@ async function jsonResponse(response: Response, context: string): Promise<unknow
   return response.json();
 }
 
-/** Publish a draft only after npm and GitHub expose the retained bytes and notes. */
+/** Publish a draft only after selected registries and GitHub expose the retained bytes and notes. */
 async function finalizeRelease(cwd: string, options: FinalizeOptions): Promise<void> {
   const root = resolve(cwd);
   const artifacts = resolve(root, "release-artifacts");
@@ -97,14 +105,32 @@ async function finalizeRelease(cwd: string, options: FinalizeOptions): Promise<v
   if (!notes.startsWith(checked.notes))
     throw new Error("Retained release notes differ from the changelog.");
   const npmArchive = { ...inputs.candidate.npm, file: resolve(root, inputs.candidate.npm.file) };
-  const [npmBytes, npmPublished] = await Promise.all([
-    digest(npmArchive),
-    registryIntegrity(
-      `https://registry.npmjs.org/${encodeURIComponent(inputs.name)}/${inputs.version}`,
-    ),
-  ]);
-  if (!npmPublished) throw new Error("npm must expose the version.");
-  verifyIntegrity(npmBytes.bytes, npmPublished);
+  const crateArchive = {
+    ...inputs.candidate.crate,
+    file: resolve(root, inputs.candidate.crate.file),
+  };
+  const selected = releaseSelection(process.env.UUID_SLUG_RELEASE_PACKAGES);
+  const archives: FinalArchive[] = [];
+  if (selected !== "crate") {
+    const [npmBytes, npmPublished] = await Promise.all([
+      digest(npmArchive),
+      registryIntegrity(
+        `https://registry.npmjs.org/${encodeURIComponent(inputs.name)}/${inputs.version}`,
+      ),
+    ]);
+    if (!npmPublished) throw new Error("npm must expose the selected version.");
+    verifyIntegrity(npmBytes.bytes, npmPublished);
+    archives.push({ archive: npmArchive, ...npmBytes });
+  }
+  if (selected !== "npm") {
+    const [crateBytes, cratePublished] = await Promise.all([
+      digest(crateArchive),
+      crateChecksum(inputs.version),
+    ]);
+    if (!cratePublished) throw new Error("crates.io must expose the selected version.");
+    verifyCrateChecksum(crateBytes.bytes, cratePublished);
+    archives.push({ archive: crateArchive, ...crateBytes });
+  }
 
   const api = "https://api.github.com";
   const byTag = `${api}/repos/${options.repository}/releases/tags/${encodeURIComponent(inputs.tag)}`;
@@ -131,7 +157,6 @@ async function finalizeRelease(cwd: string, options: FinalizeOptions): Promise<v
     current = release(await jsonResponse(edited, "Repair draft notes"));
   }
 
-  const archives = [{ archive: npmArchive, ...npmBytes }];
   for (const item of archives) {
     const name = basename(item.archive.file);
     const existing = current.assets.find((asset) => asset.name === name);
@@ -140,7 +165,6 @@ async function finalizeRelease(cwd: string, options: FinalizeOptions): Promise<v
         throw new Error(`GitHub asset ${name} differs from retained bytes.`);
       continue;
     }
-    if (!current.draft) throw new Error(`Final release is missing ${name}.`);
     const uploadUrl = new URL(current.upload_url.replace(/\{.*$/, ""));
     uploadUrl.searchParams.set("name", name);
     await jsonResponse(
@@ -152,14 +176,16 @@ async function finalizeRelease(cwd: string, options: FinalizeOptions): Promise<v
       `Upload ${name}`,
     );
   }
-  if (!current.draft) return;
-  const refreshed = release(await jsonResponse(await github(byTag, options.token), "Verify draft"));
+  const refreshed = release(
+    await jsonResponse(await github(byTag, options.token), "Verify release"),
+  );
   for (const item of archives) {
     const asset = refreshed.assets.find(({ name }) => name === basename(item.archive.file));
     if (asset?.digest !== `sha256:${item.sha256}`)
       throw new Error(`GitHub did not retain ${basename(item.archive.file)} exactly.`);
   }
   if (refreshed.body !== notes) throw new Error("GitHub did not retain the generated notes.");
+  if (!refreshed.draft) return;
   await jsonResponse(
     await github(`${api}/repos/${options.repository}/releases/${refreshed.id}`, options.token, {
       method: "PATCH",

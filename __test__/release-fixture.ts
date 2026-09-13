@@ -7,7 +7,7 @@ export async function tagReleaseFixture(root: string, version: string): Promise<
   await git(["config", "user.name", "Release test"]);
   await git(["config", "user.email", "test@example.invalid"]);
   await git(["add", "."]);
-  await git(["-c", "commit.gpgsign=false", "commit", "-m", "Release fixture"]);
-  await git(["-c", "tag.gpgsign=false", "tag", "-a", `v${version}`, "-m", "Release fixture"]);
+  await git(["-c", "commit.gpgsign=false", "commit", "-m", version]);
+  await git(["-c", "tag.gpgsign=false", "tag", "-a", `v${version}`, "-m", version]);
   return (await git(["rev-parse", "HEAD"])).trim();
 }

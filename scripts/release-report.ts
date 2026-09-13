@@ -1,6 +1,6 @@
-import { mkdtemp, rm, stat } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { command } from "./command";
 import {
   apiDifference,
@@ -10,16 +10,29 @@ import {
   satisfiesMinimum,
   sizeDelta,
 } from "./release-comparison";
-import type { ReleaseLevel } from "./release-comparison";
+import type { ApiDifference, ReleaseLevel } from "./release-comparison";
 import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
 import { readRetainedArchive } from "./release-inputs";
 import { preflightRelease } from "./release-notes";
 import { taggedVersionGuidance } from "./release-version";
-import { npmReleaseSurface, npmSurfaceDifference } from "./release-surface";
-import type { NpmReleaseSurface } from "./release-surface";
+import {
+  cargoSurfaceDifference,
+  npmReleaseSurface,
+  npmSurfaceDifference,
+  rustReleaseSurface,
+} from "./release-surface";
+import type { CargoReleaseSurface, NpmReleaseSurface } from "./release-surface";
 
 interface Sizes {
   readonly npm?: number;
+  readonly crate?: number;
+  readonly native?: number;
+  readonly wasm?: number;
+}
+
+interface CommandResult {
+  readonly output: string;
+  readonly status: number;
 }
 
 type ArchiveFiles = ReadonlyMap<string, Blob>;
@@ -36,6 +49,22 @@ function verifyArchiveRoot(files: ArchiveFiles, prefix: string): void {
   }
 }
 
+export async function verifyCrateIdentity(
+  files: ArchiveFiles,
+  version: string,
+  commit: string,
+): Promise<void> {
+  const prefix = `uuid-slug-${version}/`;
+  verifyArchiveRoot(files, prefix);
+  const cargo = files.get(`${prefix}Cargo.toml`);
+  const vcs = files.get(`${prefix}.cargo_vcs_info.json`);
+  if (!cargo || !vcs) throw new Error("Crate has no identity metadata.");
+  const manifest = Bun.TOML.parse(await cargo.text()) as { package?: { version?: unknown } };
+  const source = (await vcs.json()) as { git?: { sha1?: unknown } };
+  if (manifest.package?.version !== version || source.git?.sha1 !== commit)
+    throw new Error(`Crate does not identify ${version} at ${commit}.`);
+}
+
 export async function verifyNpmIdentity(
   files: ArchiveFiles,
   name: string,
@@ -48,6 +77,51 @@ export async function verifyNpmIdentity(
   if (metadata.name !== name || metadata.version !== version)
     throw new Error(`npm archive does not identify ${name}@${version}.`);
   return metadata;
+}
+
+async function measureLinkedSizes(
+  cwd: string,
+  crate: string,
+  work: string,
+  label: string,
+): Promise<Pick<Sizes, "native" | "wasm">> {
+  const driver = join(work, `driver-${label}`);
+  const target = join(work, `target-${label}`);
+  await mkdir(join(driver, "src"), { recursive: true });
+  await Promise.all([
+    Bun.write(
+      join(driver, "Cargo.toml"),
+      `[package]\nname = "uuid-slug-linked-probe"\nversion = "0.0.0"\nedition = "2021"\n\n[dependencies]\nuuid-slug = { path = ${JSON.stringify(crate)}, default-features = false }\n`,
+    ),
+    Bun.write(
+      join(driver, "src/main.rs"),
+      `use std::hint::black_box;\nuse uuid_slug::{public_mask_schema, Codec, CodecOptions, Uuid};\nfn main() {\n let uuid = Uuid::parse("01890f3e-93b8-7cc6-a76b-b2a67b746c2a").unwrap();\n black_box(Codec::new(CodecOptions::new(public_mask_schema())).unwrap().encode_uuid(uuid));\n}\n`,
+    ),
+  ]);
+  const manifest = join(driver, "Cargo.toml");
+  const base = ["build", "--release", "--manifest-path", manifest];
+  const env = { CARGO_TARGET_DIR: target };
+  await command("cargo", base, cwd, env);
+  await command("cargo", [...base, "--target", "wasm32-unknown-unknown"], cwd, env);
+  return {
+    native: (await stat(join(target, "release/uuid-slug-linked-probe"))).size,
+    wasm: (await stat(join(target, "wasm32-unknown-unknown/release/uuid-slug-linked-probe.wasm")))
+      .size,
+  };
+}
+
+async function extractArchive(
+  root: string,
+  archive: RetainedArchive,
+  destination: string,
+  version: string,
+  commit: string,
+): Promise<string> {
+  const contents = new Bun.Archive(await readRetainedArchive(root, archive));
+  const files = await contents.files();
+  await verifyCrateIdentity(files, version, commit);
+  await contents.extract(destination);
+  return dirname(join(destination, `uuid-slug-${version}/Cargo.toml`));
 }
 
 async function declaration(
@@ -85,27 +159,120 @@ async function declaration(
   };
 }
 
+async function rustApi(
+  cwd: string,
+  manifest: string,
+): Promise<{ declarations: string; package: CargoReleaseSurface }> {
+  const base = ["public-api", "--manifest-path", manifest, "--color=never", "--simplified"];
+  const all = await command("cargo", [...base, "--all-features"], cwd);
+  const minimal = await command("cargo", [...base, "--no-default-features"], cwd);
+  const manifestSurface = await rustReleaseSurface(cwd, manifest);
+  return {
+    package: manifestSurface,
+    declarations: `${all
+      .trim()
+      .split("\n")
+      .map((line) => `all: ${line}`)
+      .join("\n")}\n${minimal
+      .trim()
+      .split("\n")
+      .map((line) => `minimal: ${line}`)
+      .join("\n")}\n`,
+  };
+}
+
+async function runSemver(args: string[], cwd: string, target: string): Promise<CommandResult> {
+  const child = Bun.spawn(["cargo", "semver-checks", ...args], {
+    cwd,
+    env: { ...process.env, CARGO_TARGET_DIR: target },
+    signal: AbortSignal.timeout(30_000),
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [stdout, stderr, status] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ]);
+  return { output: `${stdout}${stderr}`.trim(), status };
+}
+
+export async function rustSemverDifference(
+  cwd: string,
+  current: string,
+  baseline: string,
+  work: string,
+): Promise<ApiDifference> {
+  const failures: string[] = [];
+  for (const feature of ["--all-features", "--only-explicit-features"] as const) {
+    const result = await runSemver(
+      [
+        "--manifest-path",
+        join(current, "Cargo.toml"),
+        "--baseline-root",
+        baseline,
+        "--release-type",
+        "minor",
+        feature,
+        "--color",
+        "never",
+      ],
+      cwd,
+      join(work, feature.slice(2)),
+    );
+    if (result.status === 100) failures.push(result.output);
+    else if (result.status !== 0)
+      throw new Error(`cargo-semver-checks failed (${result.status}): ${result.output}`);
+  }
+  return failures.length
+    ? { report: failures.join("\n\n"), level: "major" }
+    : { report: "No Rust semantic compatibility violations.", level: "patch" };
+}
+
 function sizeTable(current: Sizes, previous: Sizes): string {
   return [
     "| Artifact | Current | Change |",
     "| --- | ---: | ---: |",
-    `| npm | ${current.npm ?? "unavailable"} | ${sizeDelta(current.npm, previous.npm)} |`,
+    ...(["npm", "crate", "native", "wasm"] as const).map(
+      (key) =>
+        `| ${key} | ${current[key] ?? "unavailable"} | ${sizeDelta(current[key], previous[key])} |`,
+    ),
   ].join("\n");
 }
 
 async function historicalEvidence(
   root: string,
+  work: string,
   comparison: ReleaseInputs["comparisons"][number],
-): Promise<Sizes> {
+): Promise<{ sizes: Sizes; crateRoot?: string }> {
+  const { npm, crate } = comparison;
+  if (!crate)
+    return { sizes: { ...(npm ? { npm: (await stat(resolve(root, npm.file))).size } : {}) } };
+  const extracted = join(work, basename(crate.file, ".crate"));
+  const crateRoot = await extractArchive(
+    root,
+    crate,
+    extracted,
+    comparison.tag.slice(1),
+    comparison.commit,
+  );
   return {
-    ...(comparison.npm ? { npm: (await stat(resolve(root, comparison.npm.file))).size } : {}),
+    crateRoot,
+    sizes: {
+      ...(npm ? { npm: (await stat(resolve(root, npm.file))).size } : {}),
+      crate: (await stat(resolve(root, crate.file))).size,
+      ...(await measureLinkedSizes(root, crateRoot, work, basename(crate.file, ".crate"))),
+    },
   };
 }
 
-/** Generate retry-stable notes from retained npm archives. */
+/** Generate retry-stable notes from retained bytes and final linked caller outputs. */
 async function releaseReport(cwd: string, artifacts = "release-artifacts"): Promise<void> {
   const root = resolve(cwd);
   const directory = resolve(root, artifacts);
+  const semverVersion = (await command("cargo", ["semver-checks", "--version"], root)).trim();
+  if (semverVersion !== "cargo-semver-checks 0.50.0")
+    throw new Error(`cargo-semver-checks 0.50.0 is required; found ${semverVersion}.`);
   const inputs = (await Bun.file(
     join(directory, "history/release-inputs.json"),
   ).json()) as ReleaseInputs;
@@ -113,8 +280,16 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
   if (inputs.name !== name || inputs.version !== version || inputs.commit !== commit)
     throw new Error("Retained release inputs do not identify the checked package and commit.");
   const npm = resolve(root, inputs.candidate.npm.file);
+  const crate = resolve(root, inputs.candidate.crate.file);
   const work = await mkdtemp(join(tmpdir(), "uuid-slug-release-report-"));
   try {
+    const crateRoot = await extractArchive(
+      root,
+      inputs.candidate.crate,
+      join(work, "current-crate"),
+      inputs.version,
+      inputs.commit,
+    );
     const currentDeclaration = await declaration(
       root,
       inputs.candidate.npm,
@@ -123,11 +298,17 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
       inputs.name,
       inputs.version,
     );
-    const current: Sizes = { npm: (await stat(npm)).size };
+    const currentRust = await rustApi(root, join(crateRoot, "Cargo.toml"));
+    const current: Sizes = {
+      npm: (await stat(npm)).size,
+      crate: (await stat(crate)).size,
+      ...(await measureLinkedSizes(root, crateRoot, work, "current-mask")),
+    };
     const sections = await Promise.all(
       inputs.comparisons.map(async (comparison) => {
-        const previous = await historicalEvidence(root, comparison);
+        const previous = await historicalEvidence(root, work, comparison);
         const npmArchive = comparison.npm;
+        const previousCrateRoot = previous.crateRoot;
         const typescript = npmArchive
           ? await (async () => {
               const previousTypeScript = await declaration(
@@ -150,18 +331,44 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
               return combineDifferences(declarations, metadata);
             })()
           : undefined;
+        const rust = previousCrateRoot
+          ? await (async () => {
+              const previousRust = await rustApi(root, join(previousCrateRoot, "Cargo.toml"));
+              const declarations = apiDifference(
+                previousRust.declarations,
+                currentRust.declarations,
+                "Rust declaration",
+              );
+              const metadata = cargoSurfaceDifference(previousRust.package, currentRust.package);
+              return combineDifferences(declarations, metadata);
+            })()
+          : undefined;
+        const rustSemver = previous.crateRoot
+          ? await rustSemverDifference(
+              root,
+              crateRoot,
+              previous.crateRoot,
+              join(work, `semver-${comparison.tag}`),
+            )
+          : undefined;
         const minimum = minimumRelease(
           inputs.version,
           notes,
-          [typescript?.level].filter((level): level is ReleaseLevel => !!level),
+          [typescript?.level, rust?.level, rustSemver?.level].filter(
+            (level): level is ReleaseLevel => !!level,
+          ),
         );
         if (!satisfiesMinimum(comparison.tag.slice(1), inputs.version, minimum))
           throw new Error(
             `${inputs.version} is below the ${minimum} release required from ${comparison.tag}. Option 1: return to development and remove the incompatible consumer changes while keeping the changelog accurate. Option 2: ${taggedVersionGuidance}`,
           );
+        const api = [
+          `#### TypeScript\n\n${typescript?.report ?? "Unavailable because npm has no release history."}`,
+          `#### Rust\n\n${rust?.report ?? "Unavailable because crates.io has no release history."}${rustSemver ? `\n\n${rustSemver.report}` : ""}`,
+        ].join("\n\n");
         return {
           minimum,
-          text: `## ${comparison.role === "immediate" ? "Previous release" : "Previous release line"}: ${comparison.tag}\n\n### Minimum compatible release\n\n${minimum}\n\n### Packaged TypeScript API\n\n${typescript?.report ?? "Unavailable because npm has no release history."}\n\n### Size\n\n${sizeTable(current, previous)}`,
+          text: `## ${comparison.role === "immediate" ? "Previous release" : "Previous release line"}: ${comparison.tag}\n\n### Minimum compatible release\n\n${minimum}\n\n### Packaged API\n\n${api}\n\n### Size\n\n${sizeTable(current, previous.sizes)}`,
         };
       }),
     );

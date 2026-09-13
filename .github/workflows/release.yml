@@ -1,8 +1,15 @@
 name: Release
 
-# Tags select immutable release history. Dispatch repairs the selected tag without changing inputs.
+# Tag pushes publish both packages unless RELEASE_PACKAGES_ON_TAG selects one recovery destination.
 on:
   workflow_dispatch:
+    inputs:
+      packages:
+        description: Packages to publish from the selected release tag
+        type: choice
+        options: [both, npm, crate]
+        default: both
+        required: true
   push:
     tags: ["v*"]
 
@@ -22,6 +29,10 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      crate: ${{ steps.packages.outputs.crate }}
+      npm: ${{ steps.packages.outputs.npm }}
+      selected: ${{ steps.packages.outputs.selected }}
     permissions:
       actions: read
       contents: read
@@ -33,6 +44,8 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
+      - id: packages
+        run: bun scripts/release-selection.ts "${{ inputs.packages || vars.RELEASE_PACKAGES_ON_TAG }}"
       - id: evidence
         run: bun scripts/release-evidence.ts
         env:
@@ -51,25 +64,41 @@ jobs:
           package-manager-cache: false
       - if: steps.evidence.outputs.found != 'true'
         run: bun install --frozen-lockfile
+      - name: Install the repository Rust toolchain
+        if: steps.evidence.outputs.found != 'true'
+        run: rustc --version && rustup show active-toolchain
+      - if: steps.evidence.outputs.found != 'true'
+        run: cargo install cargo-public-api --version 0.52.0 --locked
+      - if: steps.evidence.outputs.found != 'true'
+        uses: taiki-e/install-action@3f74d7c16a4242f1c95561e98edc25d36adb4375 # v2
+        with:
+          tool: cargo-semver-checks@0.50.0
+          fallback: none
       - if: steps.evidence.outputs.found != 'true'
         run: bun run build
       - if: steps.evidence.outputs.found != 'true'
         run: bun scripts/release-package.ts prepare
+      - if: steps.evidence.outputs.found != 'true'
+        run: bun scripts/release-crate.ts prepare
       - name: Bind Git history to reviewed registry archives
         if: steps.evidence.outputs.found != 'true'
         run: |
           npm_archive=(release-artifacts/reviewed-npm/*.tgz)
-          test "${#npm_archive[@]}" -eq 1
-          bun scripts/release-inputs.ts "$GITHUB_REF_NAME" release-artifacts/history "${npm_archive[0]}"
+          crate_archive=(rust/target/reviewed-crate/*.crate)
+          test "${#npm_archive[@]}" -eq 1 && test "${#crate_archive[@]}" -eq 1
+          bun scripts/release-inputs.ts "$GITHUB_REF_NAME" release-artifacts/history "${npm_archive[0]}" "${crate_archive[0]}"
           bun scripts/release-report.ts
       # Publish jobs read artifacts from this workflow run, so restored evidence must be handed on again.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-evidence
-          path: release-artifacts
+          path: |
+            release-artifacts
+            rust/target/reviewed-crate
           if-no-files-found: error
 
   publish-npm:
+    if: needs.prepare.outputs.npm == 'true'
     needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -96,8 +125,48 @@ jobs:
       - run: bun run build
       - run: bun scripts/release-package.ts publish
 
+  publish-crate:
+    if: needs.prepare.outputs.crate == 'true'
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: .tool-versions
+      - run: bun install --frozen-lockfile
+      - name: Install the repository Rust toolchain
+        run: rustc --version && rustup show active-toolchain
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-evidence
+          path: .
+      - id: preflight
+        run: bun scripts/release-crate.ts check
+      - id: bootstrap
+        env:
+          BOOTSTRAP_TOKEN: ${{ secrets.CRATES_IO_BOOTSTRAP_TOKEN }}
+        run: test -z "$BOOTSTRAP_TOKEN" || echo "available=true" >> "$GITHUB_OUTPUT"
+      - id: auth
+        if: steps.preflight.outputs.published != 'true' && steps.bootstrap.outputs.available != 'true'
+        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18 # v1.0.5
+      - run: bun scripts/release-crate.ts publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token || secrets.CRATES_IO_BOOTSTRAP_TOKEN }}
+
   finalize:
-    needs: publish-npm
+    needs: [prepare, publish-npm, publish-crate]
+    if: >-
+      always() &&
+      needs.prepare.result == 'success' &&
+      (needs.publish-npm.result == 'success' || needs.publish-npm.result == 'skipped') &&
+      (needs.publish-crate.result == 'success' || needs.publish-crate.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -117,9 +186,15 @@ jobs:
         with:
           name: release-evidence
           path: .
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+      - if: needs.prepare.outputs.npm == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: release-artifacts/reviewed-npm/*.tgz
+      - if: needs.prepare.outputs.crate == 'true'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: rust/target/reviewed-crate/*.crate
       - run: bun scripts/release-finalize.ts
         env:
           GH_TOKEN: ${{ github.token }}
+          UUID_SLUG_RELEASE_PACKAGES: ${{ needs.prepare.outputs.selected }}

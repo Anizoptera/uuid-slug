@@ -1,6 +1,6 @@
 # Release integrity and recovery
 
-A release uses Git tags to select history, publishes one verified npm archive, and becomes final only after npm and GitHub expose those exact bytes.
+A release tag publishes both verified packages by default, may select only npm or only the Rust crate, and becomes final after every selected destination exposes its exact bytes.
 
 ## Comparison releases
 
@@ -14,22 +14,25 @@ The comparisons must be distinct. If both rules select the same version, walk ba
 release line. If none exists, report one comparison instead of repeating it. A first publication has
 no predecessor.
 
-npm provides the selected release bytes; it does not select history. A registry with no
+npm and crates.io provide the selected release bytes; they do not select history. A registry with no
 package history is a first publication and has no predecessor comparison. Once that registry has a
 published version, a missing selected version, outage, unreadable metadata, or disagreement between
 the tag and published artifact makes the comparison unavailable and stops publication. Retain
 selected versions and registry integrity in the release inputs so a retry cannot silently change its
 comparison basis.
 
-On retry, verify and reuse the retained inputs without selecting history again. If npm
+On retry, verify and reuse the retained inputs without selecting history again. If either registry
 already contains the candidate but those inputs are missing, restore the original evidence before
 proceeding; the first publication must not become its own new history.
+Tag pushes publish both packages unless the repository variable `RELEASE_PACKAGES_ON_TAG` is set to
+`npm` or `crate`. Manual dispatch selects `both`, `npm`, or `crate` directly. Selection never changes
+the tag, version, history, or retained evidence.
 
 ## Evidence and notes
 
-Prepare the npm archive without publishing credentials. Verify version and tag agreement, packaged
-API and behavior, minimum compatible version, archive integrity, and licenses before publication.
-Publication must reuse the verified archive; if a registry client must
+Prepare both archives once without publishing credentials, even when publishing only one. Verify version and tag agreement, packaged
+APIs, shared behavior, language parity, minimum compatible version, archive integrity, and licenses
+before any publication step. Publication must reuse the verified archives; if a registry client must
 repack, require byte identity with the verified artifact.
 
 Require the candidate's annotated tag to resolve to the checked-out commit before preparation or
@@ -37,7 +40,8 @@ publication. Preserve tag objects in release checkouts; a matching version strin
 the source that verification exercised. This does not change historical lightweight-tag selection.
 
 Release notes contain the committed `CHANGELOG.md` section verbatim, followed by generated API and
-size differences against each selected comparison. State absolute changes; state percentages
+size differences against each selected comparison. Report npm and crate compressed bytes separately
+from matched linked native and WebAssembly caller probes. State absolute changes; state percentages
 only for nonzero denominators. Generated tables do not belong in the changelog.
 
 Version the full consumer effect. A fix with no new public behavior is patch. Backward-compatible
@@ -68,13 +72,17 @@ Use v0.4.0 as the first release-history baseline because older tags do not conta
 API reports. An API must be deprecated in one published release before removal. Remove it only in a
 later major release, or a later minor release while the major version is zero.
 
-The npm manifest owns package metadata. Routine checks compare its public settings with the latest
-release. `publish-clean` validates the exact npm tarball. Declaration reports contain no manifest copy.
+Package manifests are the only owners of package metadata. Routine checks compare their public
+settings with the latest release. `publish-clean` validates the exact npm tarball. The Cargo release
+path validates the exact `.crate` after `cargo package`. Declaration reports contain no manifest
+copy.
 
 ## Publication and recovery
 
 Draft notes with `bun run changelog v<next>`, edit `CHANGELOG.md` for consumers, and commit the
-draft before `bun run release <next>`; versioning requires a clean tree. Do not add a release bot.
+draft before `bun run release <next>`; versioning requires a clean tree. The release commit and
+annotated tag message are the version number only. Do not encode publication selection in tags or
+add a release bot.
 The release command must reject a tag that differs from the manifest or lacks a nonempty changelog
 section. Publication copies that section verbatim.
 
@@ -84,13 +92,13 @@ tagged commit runs without publication credentials; only a dependent publication
 them. Validate the cleaned archive, publish with public access and provenance, and derive the npm
 dist-tag from the Git tag: prereleases use `next`; stable releases use `latest`.
 
-Create or update one draft GitHub release. Publish a missing npm artifact only after
+Create or update one draft GitHub release. Publish missing npm or crates.io artifacts only after
 checking whether that exact version already exists. Existing versions must match the retained bytes;
 never overwrite or attest different content. Attach only registry-matching archives and reproducible
 notes.
 
-Keep the GitHub release as a draft until npm, the attached archive, and the generated notes are
-verified. Verify the attachment by GitHub's SHA-256 digest, and create provenance before
+Keep the GitHub release as a draft until every selected registry and attached archive, plus the
+generated notes, are verified. Verify each attachment by GitHub's SHA-256 digest, and create provenance before
 making the draft public. A rerun repairs only missing publication, attachment, or note work. Finalize
 the release once every required result is observable and matches the retained release inputs.
 

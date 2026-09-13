@@ -38,7 +38,6 @@ test("retained archive consumers reject changed bytes and unsupported digests", 
     await rm(root, { recursive: true, force: true });
   }
 });
-
 test("input retries preserve their comparison basis and reject changed candidate bytes", async () => {
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-input-retry-"));
   try {
@@ -52,8 +51,11 @@ test("input retries preserve their comparison basis and reject changed candidate
       ),
     ]);
     await tagReleaseFixture(root, "1.2.3");
-    const candidate = "candidate.tgz";
-    await Bun.write(join(root, candidate), "npm bytes");
+    const candidate = { npm: "candidate.tgz", crate: "candidate.crate" };
+    await Promise.all([
+      Bun.write(join(root, candidate.npm), "npm bytes"),
+      Bun.write(join(root, candidate.crate), "crate bytes"),
+    ]);
     const commit = (await command("git", ["rev-list", "-n", "1", "v1.2.3"], root)).trim();
     const initial = {
       name: "test",
@@ -62,8 +64,12 @@ test("input retries preserve their comparison basis and reject changed candidate
       commit,
       candidate: {
         npm: {
-          file: candidate,
+          file: candidate.npm,
           integrity: `sha512-${createHash("sha512").update("npm bytes").digest("base64")}`,
+        },
+        crate: {
+          file: candidate.crate,
+          integrity: `sha256-${createHash("sha256").update("crate bytes").digest("hex")}`,
         },
       },
       comparisons: [],
@@ -75,7 +81,7 @@ test("input retries preserve their comparison basis and reject changed candidate
     await Bun.write(record, JSON.stringify({ ...initial, commit: "different commit" }));
     await rejects(collect(), /different package, version, tag, or commit/);
     await Bun.write(record, JSON.stringify(initial));
-    await Bun.write(join(root, candidate), "different npm bytes");
+    await Bun.write(join(root, candidate.npm), "different npm bytes");
     await rejects(collect(), /differs from release inputs/);
   } finally {
     await rm(root, { recursive: true, force: true });
