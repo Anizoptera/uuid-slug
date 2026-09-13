@@ -452,7 +452,7 @@ export const codecBoundaryCases = [
         Symbol("unknown"),
       ]);
       assert.ok(result instanceof UuidSlugError);
-      assert.equal(result.code, "invalid_uuid_slug");
+      assert.equal(result.code, "invalid_options");
     },
   },
   {
@@ -759,7 +759,7 @@ export const codecBoundaryCases = [
         outputAlphabet: slugAlphabet,
       } as UuidV7SlugCodecOptions);
       assert.ok(error instanceof UuidSlugError);
-      assert.equal(error.code, "invalid_uuid_slug");
+      assert.equal(error.code, "invalid_options");
     },
   })),
 ] as const;

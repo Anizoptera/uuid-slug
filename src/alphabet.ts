@@ -244,8 +244,13 @@ export function decodeInto(
     if (last < 0) return new UuidSlugError(code, `Invalid ${name} character at offset 21.`);
     out[written] = (first << 2) | (last >>> 4);
     if (tailBits === 4) return last & 15;
+    // A masked base64url slug has the same length and carries check bits here, so this is the
+    // error a caller sees after feeding a masked slug to the direct decoder. Say so.
     if ((last & 15) !== 0)
-      return new UuidSlugError(code, `${name} value has non-canonical trailing bits.`);
+      return new UuidSlugError(
+        code,
+        `${name} value has non-canonical trailing bits; a masked slug of this length decodes only through its codec.`,
+      );
     return 0;
   }
 

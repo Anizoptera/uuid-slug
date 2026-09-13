@@ -18,16 +18,17 @@ export interface UuidV7GeneratorOptions {
 }
 
 /**
- * Create an independent UUIDv7 sequence with a caller-supplied clock and platform randomness.
- * Untyped calls with invalid options return `UuidSlugError`; valid TypeScript calls create the
- * generator directly. Clock and entropy failures are returned by generator methods.
+ * Create a UUIDv7 sequence with its own state, platform randomness, and optionally a caller-supplied
+ * clock. Untyped calls with invalid options return `UuidSlugError`; valid TypeScript calls create
+ * the generator directly. Clock and entropy failures are returned by generator methods.
  *
- * @param options - Clock used by this independent UUIDv7 sequence.
+ * @param options - Clock used by this sequence. Omit to read `Date.now`; the sequence state is
+ * still separate from the module-level generator.
  * @returns An independent generator.
  */
-export function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator;
+export function createUuidV7Generator(options?: UuidV7GeneratorOptions): UuidV7Generator;
 export function createUuidV7Generator(
-  options: UuidV7GeneratorOptions,
+  options: UuidV7GeneratorOptions = {},
 ): UuidV7Generator | UuidSlugError {
   if (options === null || typeof options !== "object" || Array.isArray(options))
     return new UuidSlugError("invalid_options", "Generator options must be an object.");

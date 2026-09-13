@@ -43,6 +43,9 @@ notes: the section for a version is published verbatim when its tag is pushed.
   `referenceUnixMs` defaults to the current clock. `hasUuidV7Entropy` is removed.
 - Expected generation, conversion, masking, and configuration failures return `UuidSlugError | T`.
   Use `isUuidSlugError` instead of relying on `instanceof` or `UuidRuntimeError`.
+- Error codes `invalid_mask_schema` and `invalid_base32` are now `invalid_mask` and
+  `invalid_base32hex`. An unknown alphabet name returns `invalid_options` instead of
+  `invalid_uuid_slug`.
 - UUID and slug brands now reject known wrong representations and UUID versions. Owned byte results
   use version-specific brands; writes preserve the caller's `Uint8Array` subtype.
 - Replace codec `slugAlphabet` with `outputAlphabet`; it controls masked output and sentinels rather

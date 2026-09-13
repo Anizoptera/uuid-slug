@@ -47,7 +47,7 @@ export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidSlug, UuidV4Slug, UuidV7Slug } from "./types.ts";
 
 /*
- * The alphabets a plain slug may be written in. base64url is the default and the shortest;
+ * The alphabets a direct slug may be written in. base64url is the default and the shortest;
  * base32hex costs four more characters and buys the one property base64url cannot offer: its
  * characters are in ASCII order, so base32hex slugs of UUIDv7s sort chronologically as plain
  * strings. Only the lowercase spelling decodes, so every value has one canonical spelling.
@@ -81,7 +81,7 @@ export function resolveSlugAlphabet(alphabet: SlugAlphabet): Alphabet | UuidSlug
   )
     return SLUG_ALPHABET_CODECS[alphabet];
   return new UuidSlugError(
-    "invalid_uuid_slug",
+    "invalid_options",
     `Unknown slug alphabet; expected ${UUID_SLUG_ALPHABETS.join(" or ")}.`,
   );
 }
@@ -184,7 +184,7 @@ export function bytesToSlug(
   if (badRange) return badRange;
   if (alphabetIsSecond && alphabet !== undefined)
     return new UuidSlugError(
-      "invalid_uuid_slug",
+      "invalid_options",
       "Pass the alphabet once: second for a whole UUID, or third after a numeric offset.",
     );
   // Unreachable from TypeScript, where the name is a two-member union. Reached from JavaScript,
@@ -233,7 +233,9 @@ export function slugToBytes(
   if (!alpha)
     return new UuidSlugError(
       "invalid_uuid_slug",
-      `UUID slug must be ${SLUG_LENGTHS} characters, got ${slug.length}.`,
+      slug.length === 27
+        ? "27 characters is a masked base32hex slug; decode it with the codec that issued it."
+        : `UUID slug must be ${SLUG_LENGTHS} characters, got ${slug.length}.`,
     );
   const target = out ?? new Uint8Array(16);
   const badRange = out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);

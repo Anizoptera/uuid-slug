@@ -51,29 +51,36 @@ export type UuidV7CodecSlug = MaskedUuidV7Slug | SentinelUuidV7Slug;
  */
 type RejectKnownInput<Input, Invalid> = [Extract<Input, Invalid>] extends [never] ? Input : never;
 
-/** Reject values whose known representation or UUID version cannot satisfy the target operation. */
+/** Reject a known slug; the operation parses UUID text. A bare string is validated at runtime. */
 export type UuidStringInput<Input extends string> = RejectKnownInput<
   Input,
   UuidSlug | MaskedUuidSlug
 >;
+/** Reject known UUID text and masked slugs; only a direct slug decodes without a key. */
 export type DirectUuidSlugInput<Input extends string> = RejectKnownInput<
   Input,
   UuidString | MaskedUuidSlug
 >;
+/** Reject known UUID text; slug brands stay accepted because direct and masked spellings overlap. */
 type SlugStringInput<Input extends string> = RejectKnownInput<Input, UuidString>;
+/** Reject known slugs and UUIDv4 text; the operation reads a UUIDv7 timestamp from text. */
 export type UuidV7StringInput<Input extends string> = RejectKnownInput<
   Input,
   UuidSlug | MaskedUuidSlug | UuidV4String
 >;
+/** Reject known UUID text, masked slugs, and UUIDv4 slugs; the operation needs a direct UUIDv7 slug. */
 export type UuidV7SlugInput<Input extends string> = RejectKnownInput<
   Input,
   UuidString | MaskedUuidSlug | UuidV4Slug
 >;
+/** Reject masked slugs and known UUIDv4 values; only UUIDv7 text or a direct UUIDv7 slug carries a timestamp. */
 export type UuidV7TimestampInput<Input extends string> = RejectKnownInput<
   Input,
   MaskedUuidSlug | UuidV4String | UuidV4Slug
 >;
+/** Reject known UUIDv4 bytes; the operation needs UUIDv7 bytes. */
 export type UuidV7BytesInput<Input extends Uint8Array> = RejectKnownInput<Input, UuidV4Bytes>;
+/** Reject known slugs and UUIDv4 values; a codec masks UUIDv7 text or bytes. */
 type UuidV7ValueInput<Input extends string | Uint8Array> = RejectKnownInput<
   Input,
   UuidSlug | MaskedUuidSlug | UuidV4String | UuidV4Bytes
@@ -232,7 +239,9 @@ export type UuidSlugMigrationFormat = (typeof UUID_SLUG_MIGRATION_FORMATS)[numbe
 /** Enable only formats your application has issued; writers keep using the codec. */
 export interface UuidSlugMigrationOptions {
   /**
-   * Accept the original fixed-mask format with its four-bit check.
+   * Accept the fixed-key format with a four-bit check that predates seeded masking, from before
+   * package 0.2.0. Releases from 0.2.0 on write different formats, so enable it only for slugs
+   * issued under that earlier scheme.
    *
    * @defaultValue `false`
    */

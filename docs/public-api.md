@@ -154,6 +154,12 @@ Keep UUID text/binary conversion directional and version-neutral:
   when they add no data or behavior and would make a newly reachable code a source break. Validate
   configuration at construction when possible; preserve the original cause when an external
   capability fails.
+- Put `UuidSlugError` in a return type only when a well-typed call can fail. Codec construction
+  can fail on valid TypeScript input, such as a short seed or a duplicate sentinel, so its type
+  carries the union. `createUuidV7Generator` and `createMigrationDecoder` cannot, so their types
+  do not; malformed untyped input still gets a returned error, stated at the declaration. Forcing
+  every TypeScript caller to narrow a value that is never an error is the worse trade, and
+  widening a return type later breaks every caller, so settle this before the call ships.
 - Classify sentinel-list shape and name identity as `invalid_sentinel`. Keep malformed UUID text as
   `invalid_uuid`, a wrong UUID version as `invalid_uuid_version`, and duplicate UUID compatibility
   unchanged; these failures require different caller repairs.

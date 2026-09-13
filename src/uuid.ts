@@ -87,7 +87,10 @@ export function uuidToBytes(
 
   for (const textOffset of UUID_BYTE_OFFSETS) {
     if (hexValue(uuid.charCodeAt(textOffset)) < 0 || hexValue(uuid.charCodeAt(textOffset + 1)) < 0)
-      return new UuidSlugError("invalid_uuid", `Invalid UUID hex at offset ${textOffset}.`);
+      return new UuidSlugError(
+        "invalid_uuid",
+        `Invalid UUID hex at offset ${textOffset}; only lowercase 0-9a-f is accepted.`,
+      );
   }
   const target = out ?? new Uint8Array(16);
   for (let byteIndex = 0; byteIndex < UUID_BYTE_OFFSETS.length; byteIndex += 1) {

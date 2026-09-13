@@ -56,8 +56,7 @@ export function validateUuidV7Timestamp<Input extends string>(
 ): (Input & UuidV7String) | UuidSlugError {
   const uuidText: string = uuid;
   const bytes = uuidToBytes(uuidText);
-  if (bytes instanceof Error)
-    return new UuidSlugError("invalid_uuid", "Expected canonical UUIDv7 string.");
+  if (bytes instanceof Error) return bytes;
   const valid = validateTimestampBytes(bytes, window);
   return valid instanceof Error ? valid : (uuidText as Input & UuidV7String);
 }

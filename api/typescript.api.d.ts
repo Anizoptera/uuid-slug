@@ -26,7 +26,7 @@ export declare function bytesToUuid(
 export declare function createCustomUuidV7Mask(
   options: CustomUuidV7MaskOptions,
 ): UuidV7Mask | UuidSlugError;
-export declare function createUuidV7Generator(options: UuidV7GeneratorOptions): UuidV7Generator;
+export declare function createUuidV7Generator(options?: UuidV7GeneratorOptions): UuidV7Generator;
 export declare function createUuidV7Mask(options: UuidV7MaskOptions): UuidV7Mask | UuidSlugError;
 export declare function createUuidV7MaskAsync(
   options: AsyncUuidV7MaskOptions,

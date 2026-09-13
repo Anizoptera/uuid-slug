@@ -78,7 +78,8 @@ describe("bit-packing codec", () => {
       expect(out).toEqual(bytes);
     }
     expect(decodeInto(`${"A".repeat(21)}B`, BASE64URL, new Uint8Array(16), 0, 16)).toMatchObject({
-      message: "base64url value has non-canonical trailing bits.",
+      message:
+        "base64url value has non-canonical trailing bits; a masked slug of this length decodes only through its codec.",
     });
   });
 
