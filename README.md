@@ -70,6 +70,13 @@ Traps:
 | `bytesToSlug` is a base64url helper | It accepts exactly one 16-byte UUID or one canonical slug. Every other length is an error. |
 | A migration decoder's successes count old-format traffic | No. The old format's check is only four bits, so one slug can decode under several formats. |
 
+Two ways to see the package: a complete UUID library on its own, or a wrapper around the best UUID
+implementation each JavaScript runtime provides. It calls the fastest native API that meets the
+contract and runs its own code only where none does. Node and Bun generate through their native
+UUID functions, base64url and hex use native encoders where they measured faster, and Deno and
+browsers run the package's generator over Web Crypto. Every native result is checked before it is
+returned.
+
 | Runtime | Loads | Generation |
 | --- | --- | --- |
 | Node 20 and newer | compiled JavaScript | native `crypto.randomUUID`, and `crypto.randomUUIDv7` where the version has it |
