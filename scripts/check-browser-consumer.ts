@@ -6,10 +6,17 @@ export async function checkBrowserConsumer(bundle: string): Promise<void> {
   const code = await Bun.file(bundle).text();
   const server = Bun.serve({
     port: 0,
-    fetch: () =>
-      new Response("<!doctype html><title>Consumer probe</title>", {
-        headers: { "content-type": "text/html" },
-      }),
+    fetch: (request) => {
+      if (new URL(request.url).pathname === "/consumer.mjs")
+        return new Response(
+          `if (typeof globalThis.process !== "undefined") throw new Error("Expected a real browser without process.");\n${code}`,
+          { headers: { "content-type": "text/javascript" } },
+        );
+      return new Response(
+        '<!doctype html><title>Consumer probe</title><script type="module">import "/consumer.mjs"; document.documentElement.dataset.consumer = "passed";</script>',
+        { headers: { "content-type": "text/html" } },
+      );
+    },
   });
   try {
     for (const [name, engine] of Object.entries(browserEngines)) {
@@ -17,12 +24,8 @@ export async function checkBrowserConsumer(bundle: string): Promise<void> {
       try {
         const page = await browser.newPage();
         await page.goto(server.url.href);
-        await page.evaluate((source) => {
-          if (typeof globalThis.process !== "undefined")
-            throw new Error("Expected a real browser without process.");
-          // Await module completion, including any future asynchronous consumer assertions.
-          return import(URL.createObjectURL(new Blob([source], { type: "text/javascript" })));
-        }, code);
+        if ((await page.getAttribute("html", "data-consumer")) !== "passed")
+          throw new Error(`${name}: packed browser consumer did not complete.`);
         console.log(`${name}: packed browser consumer passed`);
       } finally {
         await browser.close();
