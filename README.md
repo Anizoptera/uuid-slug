@@ -6,9 +6,9 @@
 [![Runtime deps](https://img.shields.io/badge/runtime_deps-0-2ea44f)](package.json)
 [![License](https://img.shields.io/github/license/Anizoptera/uuid-slug)](LICENSE)
 
-UUIDv4 and UUIDv7 generation, validation, and conversion. Any UUID as a reversible 22-character
-base64url or 26-character base32hex slug. Keyed masking that hides a UUIDv7's layout. No runtime
-dependencies, errors as values, branded types, and a Rust crate on the same wire format.
+Generate and validate UUIDv4 and UUIDv7. Encode any UUID as a reversible 22-character base64url or
+26-character base32hex slug. UUIDv7 also supports keyed masking that removes its recognizable
+layout. The package has no runtime dependencies.
 
 ## TL;DR
 
