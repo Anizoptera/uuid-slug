@@ -379,7 +379,7 @@ async function main(): Promise<void> {
   if (web) process.env.UUID_SLUG_ARTIFACT_WEB = "1";
   await command(
     "bun",
-    [path.join(project, "node_modules/.bin/publish-clean"), "--guard-only", "--no-git-checks"],
+    [path.join(project, "node_modules/.bin/publish-clean"), "verify", "--no-git-checks"],
     project,
   );
 }

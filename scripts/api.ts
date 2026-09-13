@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { mkdir, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { checkReleasedApi, typescriptDeclarations } from "./api-evolution";
 import { command } from "./command";
@@ -8,7 +8,6 @@ import { annotateRustApi, rustDeprecations } from "./rust-deprecations";
 import type { Rustdoc } from "./rust-deprecations";
 
 const root = resolve(import.meta.dir, "..");
-const work = join(root, ".api-work");
 const apiDirectory = join(root, "api");
 const mode = process.argv[2];
 const useExistingBuild = process.argv[3] === "--built" && process.argv.length === 4;
@@ -20,6 +19,8 @@ type PackageManifest = {
 if ((mode !== "check" && mode !== "update") || (process.argv.length > 3 && !useExistingBuild)) {
   throw new Error("Usage: bun scripts/api.ts <check|update> [--built]");
 }
+
+const work = await mkdtemp(join(root, `node_modules/.uuid-slug-api-${process.pid}-`));
 
 async function checkCargoPublicApiVersion(): Promise<void> {
   const expected = "0.52.0";
@@ -135,15 +136,24 @@ async function readRustDeprecations(target: string): Promise<string[]> {
   return rustDeprecations(rustdoc);
 }
 
-await rm(work, { recursive: true, force: true });
-await mkdir(work, { recursive: true });
 let changed = false;
 try {
   const packageManifest = (await Bun.file(join(root, "package.json")).json()) as PackageManifest;
   await checkApiExtractorVersion(packageManifest);
   await checkCargoPublicApiVersion();
   if (!useExistingBuild) await command("bun", ["run", "build"], root);
-  await command("api-extractor", ["run", "--local", "--config", "api-extractor.json"], root);
+  const extractorConfig = join(work, "api-extractor.json");
+  await Bun.write(
+    extractorConfig,
+    JSON.stringify({
+      extends: join(root, "api-extractor.json"),
+      projectFolder: root,
+      mainEntryPointFilePath: join(root, "dist/index.d.ts"),
+      compiler: { tsconfigFilePath: join(root, "tsconfig.json") },
+      dtsRollup: { enabled: true, untrimmedFilePath: join(work, "typescript.d.ts") },
+    }),
+  );
+  await command("api-extractor", ["run", "--local", "--config", extractorConfig], root);
 
   const declarationRollup = typescriptDeclarations(
     await readFile(join(work, "typescript.d.ts"), "utf8"),

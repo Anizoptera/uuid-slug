@@ -93,7 +93,9 @@ export async function measureGenerationCases(
     }
   }
 
-  return candidates.map(({ operation: _, expectedTimestamps: __, ...candidate }) => {
+  return candidates.map(({ operation, expectedTimestamps, ...candidate }) => {
+    void operation;
+    void expectedTimestamps;
     const ns = observations.get(candidate.name);
     const count = operations.get(candidate.name);
     if (!ns || ns.length !== options.samples || !count)

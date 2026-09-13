@@ -6,4 +6,3 @@ release-artifacts/
 *.tgz
 .DS_Store
 rust/target/
-.api-work/
