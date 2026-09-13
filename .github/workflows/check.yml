@@ -197,7 +197,8 @@ jobs:
           key: rust-browser-${{ matrix.profile }}-${{ hashFiles('rust-toolchain.toml', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-${{ github.sha }}
           restore-keys: rust-browser-${{ matrix.profile }}-${{ hashFiles('rust-toolchain.toml', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-
       - run: bun install --frozen-lockfile
-      - run: bun run build
+      - if: matrix.profile == 'release'
+        run: bun run build
       - run: bunx playwright install --with-deps chromium
       - name: Install the matching wasm-bindgen CLI
         shell: bash
@@ -210,6 +211,7 @@ jobs:
           curl --fail --silent --show-error --location --remote-name "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/$version/$archive.sha256sum"
           sha256sum --check "$archive.sha256sum" && tar -xzf "gh-release/$archive" --strip-components=1 && echo "$directory" >> "$GITHUB_PATH"
       - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        if: matrix.profile == 'release'
         with:
           deno-version: latest
       - if: matrix.profile == 'release'
@@ -222,6 +224,7 @@ jobs:
           bun runtime-probe.mjs > runtime-reference.json
           deno run --allow-read --cached-only runtime-probe.mjs runtime-reference.json
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: matrix.profile == 'release'
         with:
           node-version-file: .tool-versions
           package-manager-cache: false
