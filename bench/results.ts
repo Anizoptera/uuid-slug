@@ -90,18 +90,14 @@ function matrixReport(output: string): string {
     "Not covered: memory and allocation, multi-core contention, cold start, megamorphic call sites,",
     "and randomness quality beyond these measures; that needs a battery such as PractRand.",
   ];
-  let fenced = false;
+  const sections: { heading: string; rows: string[] }[] = [];
   for (const line of output.split("\n")) {
-    if (line.startsWith("## ")) {
-      if (fenced) lines.push("```");
-      lines.push("", line, "", "```text");
-      fenced = true;
-    } else if (line.trim() !== "" || fenced) {
-      lines.push(line);
-    }
+    if (line.startsWith("## ")) sections.push({ heading: line, rows: [] });
+    else sections.at(-1)?.rows.push(line);
   }
-  if (fenced) lines.push("```");
-  return `${lines.join("\n").replace(/\n+```$/, "\n```")}\n`;
+  for (const { heading, rows } of sections)
+    lines.push("", heading, "", "```text", rows.join("\n").trim(), "```");
+  return `${lines.join("\n")}\n`;
 }
 
 await mkdir(results, { recursive: true });
