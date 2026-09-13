@@ -106,7 +106,8 @@ Publish `src` as executable package code for Bun and the opt-in `development` co
 resolution is a second use, not its reason to exist. Prefer source for a runtime that normally loads
 TypeScript. Use compiled output only when a packed consumer proves that the runtime's default
 resolver cannot load this source graph. Do not shift resolution cost to consumers through a flag or
-false `.js` specifiers. Condition-selected
+false `.js` specifiers. Every relative source import names its real `.ts` file; the compiler rewrites
+emitted imports to `.js`. Condition-selected
 runtime adapters keep one public source entry while using each host's capabilities. The optimized
 build must remain executable in Bun as well as Deno, browsers, and Node-compatible hosts. When Bun
 loads that compiled graph, `#runtime` must still select its TypeScript adapter and native primitives;

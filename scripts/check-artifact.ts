@@ -16,6 +16,17 @@ const OPTIMIZER_ANNOTATIONS = [
   "/*@__NO_SIDE_EFFECTS__*/",
 ] as const;
 const project = path.resolve(import.meta.dir, "..");
+const typescriptScanner = new Bun.Transpiler({ loader: "ts" });
+
+/** Source-loaded runtimes need specifiers that name the files actually shipped. */
+function validateTypeScriptSpecifiers(name: string, text: string): void {
+  if (!name.startsWith("package/src/") || !name.endsWith(".ts")) return;
+  for (const imported of typescriptScanner.scanImports(text))
+    if (/^\.\.?\//.test(imported.path) && !imported.path.endsWith(".ts"))
+      throw new Error(
+        `Published TypeScript relative import must end in .ts: ${name} -> ${imported.path}`,
+      );
+}
 
 /** Require every source-map input to be supplied by the archive rather than a build machine. */
 async function validateSourceMap(
@@ -127,6 +138,7 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
           throw new Error(`Native payload is forbidden in the npm package: ${name}`);
         const text = await file.text();
         if (BUILD_PATH_LEAK.test(text)) throw new Error(`Build-machine path leaked in ${name}`);
+        validateTypeScriptSpecifiers(name, text);
         if (name.endsWith(".map")) await validateSourceMap(name, text, entries);
       }),
     );

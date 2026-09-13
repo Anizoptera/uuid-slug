@@ -91,6 +91,15 @@ test("refuses runtime conditions before source conditions", () =>
   ));
 test("finds machine paths in extensionless files", () =>
   rejected({ ...base, "package/leak": "/Users/builder/private" }, "Build-machine path"));
+test("refuses extensionless imports in published TypeScript", () =>
+  rejected(
+    {
+      ...base,
+      "package/src/index.ts": 'export * from "./internal";',
+      "package/src/internal.ts": "export {};",
+    },
+    "package/src/index.ts -> ./internal",
+  ));
 test.each([
   ["absolute POSIX input", { sources: ["/opt/build/src/index.ts"] }],
   ["file URL input", { sources: ["file:///private/var/build/src/index.ts"] }],

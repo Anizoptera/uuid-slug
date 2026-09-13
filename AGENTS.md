@@ -77,6 +77,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   entries and `#runtime` to TypeScript. Route another TypeScript-capable runtime to source unless a
   packed consumer proves that its normal resolver cannot load this graph; document and test that
   fallback at the package boundary.
+- Every relative import in `src` MUST name its real `.ts` file. The build rewrites emitted imports
+  to `.js`; never omit the extension or write `.js` in TypeScript.
 - Keep compiled public JavaScript executable under Bun even though Bun normally selects source.
   Its `#runtime` import MUST still select the Bun TypeScript adapter and native primitives; test
   source selection and direct compiled execution separately because one does not prove the other.
