@@ -8,7 +8,7 @@ fn evaluate_caught(input: &str) -> Result<String, &'static str> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn plain_caught(input: &str) -> Result<String, &'static str> {
+fn direct_caught(input: &str) -> Result<String, &'static str> {
     std::panic::catch_unwind(|| {
         uuid_slug::Uuid::parse(input)
             .map(|uuid| uuid.slug(uuid_slug::Alphabet::Base64Url))
@@ -29,8 +29,8 @@ pub fn evaluate(input: String) -> napi::Result<String> {
 #[cfg(not(target_arch = "wasm32"))]
 #[allow(unsafe_code)]
 #[napi_derive::napi]
-pub fn plain(input: String) -> napi::Result<String> {
-    plain_caught(&input).map_err(napi::Error::from_reason)
+pub fn direct(input: String) -> napi::Result<String> {
+    direct_caught(&input).map_err(napi::Error::from_reason)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -98,14 +98,14 @@ pub unsafe extern "C" fn uuid_slug_evaluate_into(
 #[cfg(not(target_arch = "wasm32"))]
 #[allow(unsafe_code)]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn uuid_slug_plain_into(
+pub unsafe extern "C" fn uuid_slug_direct_into(
     input: *const u8,
     input_length: usize,
     output: *mut u8,
     capacity: usize,
 ) -> usize {
     // SAFETY: this export forwards the caller's buffer contract unchanged.
-    unsafe { write_into(input, input_length, output, capacity, plain_caught) }
+    unsafe { write_into(input, input_length, output, capacity, direct_caught) }
 }
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
@@ -113,7 +113,7 @@ pub unsafe extern "C" fn uuid_slug_plain_into(
 mod ffi_tests {
     #[test]
     fn output_is_atomic_and_invalid_utf8_is_rejected() {
-        let input = br#"[{"op":"plain","input":"0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f0000"}]"#;
+        let input = br#"[{"op":"direct","input":"0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f0000"}]"#;
         let mut short = [0xa5; 4];
         // SAFETY: both slices remain live and non-overlapping for the call.
         let required = unsafe {
@@ -147,15 +147,15 @@ mod ffi_tests {
 
         let uuid = b"0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f0000";
         // SAFETY: both slices remain live and non-overlapping for the call.
-        let plain_length = unsafe {
-            super::uuid_slug_plain_into(
+        let direct_length = unsafe {
+            super::uuid_slug_direct_into(
                 uuid.as_ptr(),
                 uuid.len(),
                 output.as_mut_ptr(),
                 output.len(),
             )
         };
-        assert_eq!(&output[..plain_length], b"AZChssPUfl-KmwwdLj8AAA");
+        assert_eq!(&output[..direct_length], b"AZChssPUfl-KmwwdLj8AAA");
 
         let invalid = [0xff];
         // SAFETY: both slices remain live and non-overlapping for the call.

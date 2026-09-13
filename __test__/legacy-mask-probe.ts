@@ -120,14 +120,14 @@ export const legacyMaskCases = [
           assert.equal(reader.decodeSlug(alias, format), uuid);
         }
       }
-      for (const { uuid, slug } of fixtures.plain)
+      for (const { uuid, slug } of fixtures.direct)
         assert.equal(reader.decodeSlug(slug, "direct-slug"), uuid);
-      const plainUuid = fixtures.plain[0]?.uuid;
-      assert.ok(plainUuid);
-      const base32 = uuidToSlug(plainUuid, "base32hex");
+      const directUuid = fixtures.direct[0]?.uuid;
+      assert.ok(directUuid);
+      const base32 = uuidToSlug(directUuid, "base32hex");
       if (base32 instanceof Error) throw base32;
-      assert.equal(reader.decodeSlug(base32), plainUuid);
-      assert.equal(reader.decodeSlug(base32, "direct-slug"), plainUuid);
+      assert.equal(reader.decodeSlug(base32), directUuid);
+      assert.equal(reader.decodeSlug(base32, "direct-slug"), directUuid);
       assert.ok(reader.decodeSlug(base32, "original-mask") instanceof Error);
       for (const sentinel of codec.sentinels) {
         assert.deepEqual(reader.decodeSlugCandidates(sentinel.slug), [sentinel.uuid]);
@@ -138,13 +138,13 @@ export const legacyMaskCases = [
   {
     name: "migration returns one default candidate and all distinct lookup candidates",
     run(this: void) {
-      const { seed, slug, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
+      const { seed, slug, currentUuid, originalUuid, directUuid } = fixtures.overlap;
       const codec = unwrap(createUuidV7SlugCodec({ mask: { seed }, previousMasks: [{ seed }] }));
       const reader = codec.createMigrationDecoder({ originalMask: true, directSlug: true });
       assert.equal(reader.decodeSlug(slug), currentUuid);
-      assert.deepEqual(reader.decodeSlugCandidates(slug), [currentUuid, originalUuid, plainUuid]);
+      assert.deepEqual(reader.decodeSlugCandidates(slug), [currentUuid, originalUuid, directUuid]);
       assert.equal(reader.decodeSlug(slug, "original-mask"), originalUuid);
-      assert.equal(reader.decodeSlug(slug, "direct-slug"), plainUuid);
+      assert.equal(reader.decodeSlug(slug, "direct-slug"), directUuid);
       assert.deepEqual(reader.decodeSlugCandidates(slug, "current-mask"), [currentUuid]);
       const custom = unwrap(
         createUuidV7SlugCodec({
@@ -165,20 +165,20 @@ export const legacyMaskCases = [
   {
     name: "migration configuration is captured and old formats can be retired independently",
     run(this: void) {
-      const { seed, slug, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
+      const { seed, slug, currentUuid, originalUuid, directUuid } = fixtures.overlap;
       const codec = unwrap(createUuidV7SlugCodec({ mask: { seed } }));
       const options = { originalMask: true, directSlug: true };
       const reader = codec.createMigrationDecoder(options);
       options.originalMask = false;
       options.directSlug = false;
-      assert.deepEqual(reader.decodeSlugCandidates(slug), [currentUuid, originalUuid, plainUuid]);
+      assert.deepEqual(reader.decodeSlugCandidates(slug), [currentUuid, originalUuid, directUuid]);
       assert.deepEqual(
         codec.createMigrationDecoder({ originalMask: true }).decodeSlugCandidates(slug),
         [currentUuid, originalUuid],
       );
       assert.deepEqual(
         codec.createMigrationDecoder({ directSlug: true }).decodeSlugCandidates(slug),
-        [currentUuid, plainUuid],
+        [currentUuid, directUuid],
       );
       const currentReader = codec.createMigrationDecoder();
       assert.deepEqual(currentReader.decodeSlugCandidates(slug), [currentUuid]);
@@ -224,7 +224,7 @@ export const legacyMaskCases = [
         assert.ok(result instanceof UuidSlugError);
         assert.equal(result.cause, cause);
       }
-      assert.equal(custom.decodeSlug(slug, "direct-slug"), plainUuid);
+      assert.equal(custom.decodeSlug(slug, "direct-slug"), directUuid);
     },
   },
   {
@@ -318,7 +318,7 @@ export const legacyMaskCases = [
   {
     name: "one slug can carry three distinct UUID interpretations",
     run(this: void) {
-      const { slug, seed, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
+      const { slug, seed, currentUuid, originalUuid, directUuid } = fixtures.overlap;
       const codec = unwrap(createUuidV7SlugCodec({ mask: { seed } }));
       assert.equal(codec.encodeUuid(currentUuid), slug);
       assert.equal(codec.decodeSlug(slug), currentUuid);
@@ -326,9 +326,9 @@ export const legacyMaskCases = [
         codec
           .createMigrationDecoder({ originalMask: true, directSlug: true })
           .decodeSlugCandidates(slug),
-        [currentUuid, originalUuid, plainUuid],
+        [currentUuid, originalUuid, directUuid],
       );
-      assert.equal(new Set([currentUuid, originalUuid, plainUuid]).size, 3);
+      assert.equal(new Set([currentUuid, originalUuid, directUuid]).size, 3);
     },
   },
   {
@@ -340,7 +340,7 @@ export const legacyMaskCases = [
         directSlug: true,
       });
       for (const vector of [
-        ...fixtures.plain,
+        ...fixtures.direct,
         ...fixtures.issued.map(({ uuid, raw }) => ({ uuid, slug: raw })),
       ]) {
         for (const alias of uuidTailAliases(vector.slug)) {

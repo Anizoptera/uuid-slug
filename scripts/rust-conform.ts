@@ -109,9 +109,9 @@ export function evaluate(request: Request): Outcome {
           v7: ts.isUuidV7Bytes(bytes),
         });
       }
-      case "plain":
+      case "direct":
         return result(ts.uuidToSlug(input, request.alphabet as SlugAlphabet | undefined));
-      case "unplain":
+      case "undirect":
         return result(ts.slugToUuid(input));
       case "timestamp": {
         const bytes = ts.uuidToBytes(input);
@@ -250,7 +250,7 @@ export async function contractRequests(): Promise<Request[]> {
   );
   const original: {
     issued: { uuid: string; slug: string; raw: string }[];
-    plain: { uuid: string; slug: string }[];
+    direct: { uuid: string; slug: string }[];
     overlap: { slug: string; seed: string };
     keyOverlap: { slug: string; seeds: string[] };
   } = JSON.parse(
@@ -323,7 +323,7 @@ export async function contractRequests(): Promise<Request[]> {
     };
     // Retained producer bytes constrain both implementations; mutual agreement alone cannot.
     deepStrictEqual(evaluate(encode), { value: vector.masked });
-    deepStrictEqual(evaluate({ op: "plain", input: vector.uuid }), { value: vector.direct });
+    deepStrictEqual(evaluate({ op: "direct", input: vector.uuid }), { value: vector.direct });
     requests.push(encode, {
       op: "unmask",
       input: vector.masked,
@@ -357,18 +357,18 @@ export async function contractRequests(): Promise<Request[]> {
     "x",
     "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF",
     ...wire.map((v) => v.uuid),
-    ...original.plain.map((v) => v.uuid),
+    ...original.direct.map((v) => v.uuid),
   ]) {
     for (const op of ["parse", "timestamp", "guards"]) requests.push({ op, input });
     for (const alphabet of ["base64url", "base32hex"]) {
-      requests.push({ op: "plain", input, alphabet });
-      const encoded = evaluate({ op: "plain", input, alphabet });
+      requests.push({ op: "direct", input, alphabet });
+      const encoded = evaluate({ op: "direct", input, alphabet });
       if ("value" in encoded && typeof encoded.value === "string")
-        for (const op of ["unplain", "guards"]) requests.push({ op, input: encoded.value });
+        for (const op of ["undirect", "guards"]) requests.push({ op, input: encoded.value });
     }
   }
   for (const input of ["", "A", "Zg", "Zh", "Zg=", "Zg\n", "é", ...wire.map((v) => v.direct)]) {
-    for (const op of ["base64Decode", "base64Guard", "unplain", "guards"])
+    for (const op of ["base64Decode", "base64Guard", "undirect", "guards"])
       requests.push({ op, input });
   }
   for (const input of [
@@ -412,7 +412,7 @@ export async function contractRequests(): Promise<Request[]> {
     const last = symbols.indexOf(canonical.at(-1) as string);
     for (let bits = 1; bits < (alphabet === "base64url" ? 16 : 4); bits++) {
       const input = canonical.slice(0, -1) + symbols[last | bits];
-      const decode: Request = { op: "unplain", input };
+      const decode: Request = { op: "undirect", input };
       const guards: Request = { op: "guards", input };
       deepStrictEqual(evaluate(decode), {
         error: alphabet === "base64url" ? "invalid_base64url" : "invalid_base32hex",
@@ -516,7 +516,7 @@ export async function contractRequests(): Promise<Request[]> {
     previous: [{ seed: original.keyOverlap.seeds[1] }],
   });
   for (const input of ["é" + "A".repeat(21), "😀" + "A".repeat(20)])
-    requests.push({ op: "unplain", input });
+    requests.push({ op: "undirect", input });
   for (const input of ["é" + "0".repeat(26), "😀" + "0".repeat(25)]) {
     requests.push({ op: "unmask", input }, { op: "candidates", input });
   }
@@ -549,8 +549,8 @@ if (import.meta.main) {
   const bridge = await loadRustBridge();
   try {
     compare(requests, JSON.parse(bridge.evaluate(JSON.stringify(requests))));
-    if (bridge.plain("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f0000") !== "AZChssPUfl-KmwwdLj8AAA")
-      throw new Error(`${bridge.transport} direct plain conversion diverged from its wire vector`);
+    if (bridge.direct("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f0000") !== "AZChssPUfl-KmwwdLj8AAA")
+      throw new Error(`${bridge.transport} direct direct conversion diverged from its wire vector`);
     console.log(`${bridge.transport}: ${requests.length} shared contract observations passed`);
   } finally {
     bridge.close();

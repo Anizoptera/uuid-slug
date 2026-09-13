@@ -128,8 +128,8 @@ workloads, and they do not turn development bridges into npm distribution candid
 | `parse` | 68 | 82 | 39 | 34 |
 | `parse.into` | 49 | 62 | 31 | 31 |
 | `format` | 204 | 99 | 211 | 69 |
-| `plain.encode` | 317 | 181 | 245 | 71 |
-| `plain.decode` | 296 | 166 | 246 | 106 |
+| `direct.encode` | 317 | 181 | 245 | 71 |
+| `direct.decode` | 296 | 166 | 246 | 106 |
 | `base32.encode` | 338 | 268 | 259 | 188 |
 | `base32.decode` | 297 | 190 | 240 | 110 |
 | `slug.into` | 67 | 55 | 34 | 34 |

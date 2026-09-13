@@ -180,10 +180,10 @@ fn run(request: &Value) -> Result<Value, Error> {
                 "v7": bytes.len() == 16 && Uuid::from_slice(&bytes, 0).is_ok_and(|u| u.is_v7())
             }))
         }
-        "plain" => Ok(json!(
+        "direct" => Ok(json!(
             Uuid::parse(input)?.slug(alphabet(&request["alphabet"])?)
         )),
-        "unplain" => Ok(json!(Uuid::parse_slug(input)?.to_string())),
+        "undirect" => Ok(json!(Uuid::parse_slug(input)?.to_string())),
         "timestamp" => Ok(json!(Uuid::parse(input)?.timestamp()?)),
         "guards" => {
             let uuid = Uuid::parse(input).ok();

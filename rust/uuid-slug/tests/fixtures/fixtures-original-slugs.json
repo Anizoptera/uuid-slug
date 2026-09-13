@@ -131,7 +131,7 @@
       "raw": "AAAAAAAEeryd7wAAAAAABQ"
     }
   ],
-  "plain": [
+  "direct": [
     {
       "uuid": "550e8400-e29b-41d4-a716-446655440000",
       "slug": "VQ6EAOKbQdSnFkRmVUQAAA"
@@ -148,7 +148,7 @@
   "overlap": {
     "currentUuid": "0198abcd-1234-7abc-9def-000000000104",
     "originalUuid": "590bf737-d552-7224-96af-37455f0c8f44",
-    "plainUuid": "0d7c05e9-17e1-de7a-892d-f2c361abdd61",
+    "directUuid": "0d7c05e9-17e1-de7a-892d-f2c361abdd61",
     "slug": "DXwF6Rfh3nqJLfLDYavdYQ",
     "seed": "original migration overlap fixture"
   },

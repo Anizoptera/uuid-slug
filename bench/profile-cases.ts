@@ -449,8 +449,8 @@ export function createProfileCases(
       into.set(bytes[index & 255] as Uint8Array, 4);
       return api.bytesToSlug(into, 4, "base32hex");
     },
-    "plain.encode": (index) => api.uuidToSlug(ids[index & 255] as string),
-    "plain.decode": (index) => api.slugToUuid(slugs[index & 255] as string),
+    "direct.encode": (index) => api.uuidToSlug(ids[index & 255] as string),
+    "direct.decode": (index) => api.slugToUuid(slugs[index & 255] as string),
     "base32.encode": (index) => api.uuidToSlug(ids[index & 255] as string, "base32hex"),
     "base32.decode": (index) => api.slugToUuid(base32[index & 255] as string),
     "slug.bytes": (index) => api.slugToBytes(slugs[index & 255] as string),
@@ -535,14 +535,15 @@ export function createProfileCases(
       migration.decodeSlugCandidates(masked[index & 255] as string),
     "migration.previousCandidates": (index) =>
       migration.decodeSlugCandidates(oldOnly[index % oldOnly.length] as string),
-    "migration.plain": (index) => migration.decodeSlug(slugs[index & 255] as string, "direct-slug"),
+    "migration.direct": (index) =>
+      migration.decodeSlug(slugs[index & 255] as string, "direct-slug"),
     "migration.base32": (index) =>
       migration.decodeSlug(base32[index & 255] as string, "direct-slug"),
     "migration.base32Candidates": (index) =>
       migration.decodeSlugCandidates(base32[index & 255] as string, "direct-slug"),
     "migration.original": (index) =>
       migration.decodeSlug(originals[index % originals.length]!.slug, "original-mask"),
-    "migration.plainCandidates": (index) =>
+    "migration.directCandidates": (index) =>
       migration.decodeSlugCandidates(slugs[index & 255] as string, "direct-slug"),
     "migration.originalCandidates": (index) =>
       migration.decodeSlugCandidates(originals[index % originals.length]!.slug, "original-mask"),
@@ -678,7 +679,7 @@ export function createProfileCases(
     "construct.codec.sentinels64": () =>
       api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions }),
     "construct.migration.current": () => codec.createMigrationDecoder(),
-    "construct.migration.plain": () => codec.createMigrationDecoder({ directSlug: true }),
+    "construct.migration.direct": () => codec.createMigrationDecoder({ directSlug: true }),
     "construct.migration.original": () => codec.createMigrationDecoder({ originalMask: true }),
     "construct.migration.all": () =>
       codec.createMigrationDecoder({ originalMask: true, directSlug: true }),

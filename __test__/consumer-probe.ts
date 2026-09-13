@@ -110,22 +110,22 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     channel.port2.close();
   }
   const codec = unwrap(api.createUuidV7SlugCodec({ mask: api.UUID_V7_TEST_MASK }));
-  const { seed, slug: overlap, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
+  const { seed, slug: overlap, currentUuid, originalUuid, directUuid } = fixtures.overlap;
   const migrating = unwrap(api.createUuidV7SlugCodec({ mask: { seed } }));
   const reader = unwrap(migrating.createMigrationDecoder({ originalMask: true, directSlug: true }));
   equal(reader.decodeSlug(overlap), currentUuid, "migration default");
   equal(reader.decodeSlug(overlap, "original-mask"), originalUuid, "original migration");
-  equal(reader.decodeSlug(overlap, "direct-slug"), plainUuid, "plain migration");
+  equal(reader.decodeSlug(overlap, "direct-slug"), directUuid, "direct migration");
   equal(
     JSON.stringify(reader.decodeSlugCandidates(overlap)),
-    JSON.stringify([currentUuid, originalUuid, plainUuid]),
+    JSON.stringify([currentUuid, originalUuid, directUuid]),
     "migration candidates",
   );
   equal(
     JSON.stringify(
       migrating.createMigrationDecoder({ directSlug: true }).decodeSlugCandidates(overlap),
     ),
-    JSON.stringify([currentUuid, plainUuid]),
+    JSON.stringify([currentUuid, directUuid]),
     "original-mask migration retirement",
   );
   equal(codec.encodeUuid(uuid), "uqgITQGagyxsoNARAd_pxu", "masked wire vector");
