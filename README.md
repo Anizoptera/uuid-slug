@@ -51,18 +51,17 @@ pnpm add @anizoptera/uuid-slug
 Import from the package root unless direct ESM startup is important:
 
 ```ts
-import { uuidToBytes } from "@anizoptera/uuid-slug/uuid";
-import { uuidToSlug } from "@anizoptera/uuid-slug/slug";
-import { generateUuidV4 } from "@anizoptera/uuid-slug/v4";
-import { generateUuidV7 } from "@anizoptera/uuid-slug/v7";
-import { generateUuidV4Slug } from "@anizoptera/uuid-slug/slug/v4";
-import { generateUuidV7Slug } from "@anizoptera/uuid-slug/slug/v7";
+import { generateUuidV7Slug, slugToUuid } from "@anizoptera/uuid-slug";
 ```
 
 Tested bundlers produce the same optimized bytes from root and focused imports. The focused paths
 are optional: repeated cold-process measurements found lower startup cost for `/v4` and `/v7`
 across Node, Bun, and Deno. Use focused paths for unbundled CLIs, functions, or workers where
 startup matters; otherwise prefer the root.
+
+```ts
+import { generateUuidV7Slug } from "@anizoptera/uuid-slug/slug/v7";
+```
 
 The native Rust crate implements the same wire contract and lives in [`rust/uuid-slug`](rust/uuid-slug).
 The npm package remains TypeScript/JavaScript-only.
@@ -71,17 +70,36 @@ The npm package remains TypeScript/JavaScript-only.
 
 ```ts
 import {
+  generateUuidV7Slug,
+  isUuidSlugError,
+  slugToUuid,
+} from "@anizoptera/uuid-slug";
+
+function createShortId() {
+  const slug = generateUuidV7Slug();
+  if (isUuidSlugError(slug)) return slug;
+
+  const uuid = slugToUuid(slug);
+  if (isUuidSlugError(uuid)) return uuid;
+  return { slug, uuid };
+}
+```
+
+Use a codec only when IDs must hide their UUIDv7 layout:
+
+```ts
+import {
   createUuidV7SlugCodec,
-  generateUuidV7Bytes,
+  isUuidSlugError,
 } from "@anizoptera/uuid-slug";
 
 function createPublicId(seed: string) {
   // Reuse the codec in real code: the seed is expanded once, at construction.
   const ids = createUuidV7SlugCodec({ mask: { seed } });
-  if (ids instanceof Error) return ids;
+  if (isUuidSlugError(ids)) return ids;
 
   const publicId = ids.generateSlug();
-  if (publicId instanceof Error) return publicId;
+  if (isUuidSlugError(publicId)) return publicId;
   return { ids, publicId };
 }
 ```
@@ -89,28 +107,33 @@ function createPublicId(seed: string) {
 Keep binary database keys binary across the same codec seam:
 
 ```ts
-const inputBytes = generateUuidV7Bytes();
-if (inputBytes instanceof Error) return inputBytes;
-const publicId = ids.encodeUuid(inputBytes);
-if (publicId instanceof Error) return publicId;
-const decodedBytes = ids.decodeSlugToBytes(publicId);
-if (decodedBytes instanceof Error) return decodedBytes;
+import { generateUuidV7Bytes, isUuidSlugError } from "@anizoptera/uuid-slug";
+import type { UuidV7SlugCodec } from "@anizoptera/uuid-slug";
+
+function roundTripBytes(ids: UuidV7SlugCodec) {
+  const inputBytes = generateUuidV7Bytes();
+  if (isUuidSlugError(inputBytes)) return inputBytes;
+  const publicId = ids.encodeUuid(inputBytes);
+  if (isUuidSlugError(publicId)) return publicId;
+  return ids.decodeSlugToBytes(publicId);
+}
 ```
 
 Convert canonical UUID text and binary storage with names that state the direction:
 
 ```ts
-import { bytesToUuid, uuidToBytes } from "@anizoptera/uuid-slug";
+import { bytesToUuid, isUuidSlugError, uuidToBytes } from "@anizoptera/uuid-slug";
 
-const bytes = uuidToBytes("01990d4d-e600-7000-8000-000000000000");
-if (bytes instanceof Error) return bytes;
-const uuid = bytesToUuid(bytes);
-if (uuid instanceof Error) return uuid;
+function convertUuid() {
+  const bytes = uuidToBytes("01990d4d-e600-7000-8000-000000000000");
+  if (isUuidSlugError(bytes)) return bytes;
+  const uuid = bytesToUuid(bytes);
+  if (isUuidSlugError(uuid)) return uuid;
 
-// Convert atomically into storage you already own.
-const record = new Uint8Array(32);
-const written = uuidToBytes(uuid, record, 8);
-if (written instanceof Error) return written;
+  // Convert atomically into storage you already own.
+  const record = new Uint8Array(32);
+  return uuidToBytes(uuid, record, 8);
+}
 ```
 
 `uuidToBytes` accepts one canonical lowercase UUID and either allocates a plain `Uint8Array` or
@@ -202,13 +225,15 @@ your application has reserved:
 Read the validated names, UUIDs, and slugs from `codec.sentinels`:
 
 ```ts
-const ids = createUuidV7SlugCodec({
-  mask: { seed },
-  sentinels: [{ name: "unknownUser", uuid: "00000000-0002-7000-8000-000000000000" }],
-});
-if (ids instanceof Error) return ids;
-const codec = ids;
-console.table(codec.sentinels);
+import { createUuidV7SlugCodec, isUuidSlugError } from "@anizoptera/uuid-slug";
+
+function createIds(seed: string) {
+  const ids = createUuidV7SlugCodec({
+    mask: { seed },
+    sentinels: [{ name: "unknownUser", uuid: "00000000-0002-7000-8000-000000000000" }],
+  });
+  return isUuidSlugError(ids) ? ids : ids.sentinels;
+}
 ```
 
 Each sentinel name must be nonempty and unique within the codec. Each sentinel UUID must also be
@@ -232,6 +257,23 @@ decodes; it is not a message authentication code. Confirm decoded candidates aga
 and enforce authorization separately. Supplying a custom transform still leaves the same short check
 and does not turn the API into an authenticated-token system.
 
+```ts
+import { isUuidSlugError } from "@anizoptera/uuid-slug";
+import type { UuidV7SlugCodec, UuidV7String } from "@anizoptera/uuid-slug";
+
+async function findAuthorizedRecord<Record>(
+  ids: UuidV7SlugCodec,
+  slug: string,
+  findByUuid: (uuid: UuidV7String) => Promise<Record | undefined>,
+  canRead: (record: Record) => boolean,
+) {
+  const uuid = ids.decodeSlug(slug);
+  if (isUuidSlugError(uuid)) return uuid;
+  const record = await findByUuid(uuid);
+  return record !== undefined && canRead(record) ? record : undefined;
+}
+```
+
 **Supply your own secret seed for real identifiers.** Codec construction fails with
 `invalid_mask_schema` when `mask` is missing. For tests and demos that need stable public bytes,
 select `UUID_V7_TEST_MASK` explicitly; anyone can decode identifiers produced with it.
@@ -248,14 +290,15 @@ Use the error's `code` for handling and its `message` for diagnostics. `UuidSlug
 `UUID_SLUG_ERROR_CODES` are the exported type and runtime list of codes. Errors wrapping failed
 entropy draws, clock readings, and custom transform calls preserve the original exception as `cause`.
 
-Replace the removed generic base64url helpers with the UUID operations that own the same exact
-16-byte contract:
+Replace `encodeBase64Url` with `bytesToSlug`, `decodeBase64Url` with `slugToBytes`, and
+`isBase64Url` with `isUuidSlug`. These operations enforce the UUID-sized 16-byte contract:
 
 ```ts
-bytesToSlug(bytes); // replaces encodeBase64Url(bytes)
-bytesToSlug(bytes, "base32hex"); // select the filesystem-safe spelling directly
-slugToBytes(slug, output, offset); // replaces decodeBase64Url(slug, output, offset)
-slug.length === 22 && isUuidSlug(slug); // replaces isBase64Url(slug)
+import { bytesToSlug } from "@anizoptera/uuid-slug";
+
+function encodeStoredUuid(bytes: Uint8Array) {
+  return bytesToSlug(bytes, "base32hex");
+}
 ```
 
 ## Types
@@ -340,6 +383,16 @@ The `At` pair supports backfilling with a known timestamp. It takes the instant 
 an error unless it is a whole number of Unix milliseconds in 0..2^48-1. Its interaction with
 current-time generation is runtime-specific; within-millisecond ordering is not promised.
 
+Use an independent generator when the application owns the clock:
+
+```ts
+import { createUuidV7Generator } from "@anizoptera/uuid-slug";
+
+function createEventGenerator(readUnixMs: () => number) {
+  return createUuidV7Generator({ clock: readUnixMs });
+}
+```
+
 Both masking entry points return a raw sentinel slug when the UUID is registered as a sentinel.
 Their result type is `UuidV7CodecSlug`, the union of masked and sentinel slugs.
 
@@ -369,16 +422,22 @@ Also exported, all module-level:
 - `UuidSlugError`, including code `rng_unavailable` when the runtime has no usable randomness.
   `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes package errors across
   JavaScript realms and duplicate package copies.
+- `UUID_SLUG_ALPHABETS` and `UUID_SLUG_MIGRATION_FORMATS` are the runtime values for schema,
+  configuration, and user-interface validation. Their TypeScript unions derive from the same lists.
 
 ### Codec options
 
 ```ts
-createUuidV7SlugCodec({
-  mask: { seed: "…", keyDerivationIterations: 1 }, // required
-  sentinels: [{ name: "nil", uuid: "…" }],
-  previousMasks: [{ seed: "…previous seed…" }],
-  outputAlphabet: "base32hex", // masked output and sentinel presentation
-});
+import { createUuidV7SlugCodec } from "@anizoptera/uuid-slug";
+
+function configureCodec(seed: string, previousSeed: string) {
+  return createUuidV7SlugCodec({
+    mask: { seed, keyDerivationIterations: 1 },
+    sentinels: [{ name: "nil", uuid: "00000000-0000-7000-8000-000000000000" }],
+    previousMasks: [{ seed: previousSeed }],
+    outputAlphabet: "base32hex",
+  });
+}
 ```
 
 The masked payload is fixed at 132 bits, including a 16-bit check. `outputAlphabet` defaults to
@@ -394,21 +453,25 @@ and failed round-trip probes. Unexpected throws become errors with the thrown va
 Finite probes cannot prove invertibility, so the caller remains responsible for the complete domain.
 
 ```ts
-const custom = createCustomUuidV7Mask({
-  label: "existing-scheme",
-  mask(input) {
+import {
+  createCustomUuidV7Mask,
+  createUuidV7SlugCodec,
+  isUuidSlugError,
+} from "@anizoptera/uuid-slug";
+
+function adaptMask(mix: (input: Uint8Array, output: Uint8Array, forward: boolean) => void) {
+  const transform = (direction: "mask" | "unmask") => (input: Uint8Array) => {
     const output = new Uint8Array(16);
-    oldSchema.mix(input, output, true);
+    mix(input, output, direction === "mask");
     return output;
-  },
-  unmask(input) {
-    const output = new Uint8Array(16);
-    oldSchema.mix(input, output, false);
-    return output;
-  },
-});
-if (custom instanceof Error) return custom;
-const ids = createUuidV7SlugCodec({ mask: custom });
+  };
+  const mask = createCustomUuidV7Mask({
+    label: "existing-scheme",
+    mask: transform("mask"),
+    unmask: transform("unmask"),
+  });
+  return isUuidSlugError(mask) ? mask : createUuidV7SlugCodec({ mask });
+}
 ```
 
 `createUuidV7Mask({ seed, keyDerivationIterations })` returns an error for invalid seed options.
@@ -418,17 +481,20 @@ passing them; an arbitrary object is not a schema.
 For expensive derivation, await `createUuidV7MaskAsync` and pass the completed schema to the codec:
 
 ```ts
-import { createUuidV7MaskAsync, createUuidV7SlugCodec } from "@anizoptera/uuid-slug";
+import {
+  createUuidV7MaskAsync,
+  createUuidV7SlugCodec,
+  isUuidSlugError,
+} from "@anizoptera/uuid-slug";
 
-const controller = new AbortController();
-const schema = await createUuidV7MaskAsync({
-  seed, // the same stored secret used by the synchronous constructor
-  keyDerivationIterations, // preserve the setting used for issued slugs
-  signal: controller.signal, // optional; call controller.abort(reason) to stop
-});
-if (schema instanceof Error) return schema;
-const codec = createUuidV7SlugCodec({ mask: schema });
-if (codec instanceof Error) return codec;
+async function createResponsiveCodec(
+  seed: string,
+  keyDerivationIterations: number,
+  signal: AbortSignal,
+) {
+  const mask = await createUuidV7MaskAsync({ seed, keyDerivationIterations, signal });
+  return isUuidSlugError(mask) ? mask : createUuidV7SlugCodec({ mask });
+}
 ```
 
 The async form derives the same keys and accepts the same seed settings. It splits encoding,
@@ -447,6 +513,20 @@ passing seed options to each new codec would repeat derivation.
 order you list them, and the first whose check passes wins — so put the newest first, and keep
 the list short. Nothing else is ever tried: a codec decodes with the schemas you gave it and no
 others.
+
+```ts
+import { createUuidV7SlugCodec } from "@anizoptera/uuid-slug";
+
+function createRotatedCodec(currentSeed: string, previousSeed: string) {
+  return createUuidV7SlugCodec({
+    mask: { seed: currentSeed },
+    previousMasks: [{ seed: previousSeed }],
+  });
+}
+```
+
+Writers use `currentSeed`; readers also accept `previousSeed`. Remove the old seed only after its
+IDs no longer need to decode.
 
 ### Changing an existing ID format
 
@@ -471,10 +551,12 @@ or direct slugs. Never truncate the timestamp or substitute a new identity to ma
 Create a migration reader from your codec. Enable only the old formats your application issued:
 
 ```ts
-const reader = ids.createMigrationDecoder({ originalMask: true, plainSlug: true });
-const uuid = reader.decodeSlug(incomingSlug);
-if (uuid instanceof Error) return uuid;
-// Look up uuid and check the caller's access to the record.
+import type { UuidV7SlugCodec } from "@anizoptera/uuid-slug";
+
+function readLegacySlug(ids: UuidV7SlugCodec, incomingSlug: string) {
+  const reader = ids.createMigrationDecoder({ originalMask: true, plainSlug: true });
+  return reader.decodeSlug(incomingSlug);
+}
 ```
 
 `originalMask` accepts the original fixed permutation/XOR format with its 4-bit checksum.
@@ -491,11 +573,20 @@ decode to different UUIDs in different formats; the original check has only four
 When you know the input format, name it to avoid trying unrelated formats:
 
 ```ts
-const uuid = reader.decodeSlug(oldSlug, "original-mask"); // "plain-slug" or "current-mask" also works
-if (uuid instanceof Error) return uuid;
-const replacement = ids.encodeUuid(uuid);
-if (replacement instanceof Error) return replacement;
-// Keep uuid in the database; use replacement in new links.
+import { isUuidSlugError } from "@anizoptera/uuid-slug";
+import type { UuidSlugMigrationDecoder, UuidV7SlugCodec } from "@anizoptera/uuid-slug";
+
+function replaceOriginalSlug(
+  ids: UuidV7SlugCodec,
+  reader: UuidSlugMigrationDecoder<"original-mask">,
+  oldSlug: string,
+) {
+  const uuid = reader.decodeSlug(oldSlug, "original-mask");
+  if (isUuidSlugError(uuid)) return uuid;
+  const replacement = ids.encodeUuid(uuid);
+  if (isUuidSlugError(replacement)) return replacement;
+  return { uuid, replacement }; // Keep uuid in the database; use replacement in new links.
+}
 ```
 
 Enable an old format before selecting it. Recognized sentinels always return their reserved UUID,
@@ -506,14 +597,21 @@ options whose values are dynamic remain selectable because they may be enabled a
 For unknown formats, use `decodeSlugCandidates` to find the matching record without guessing:
 
 ```ts
-const candidates = reader.decodeSlugCandidates(incomingSlug);
-if (candidates instanceof Error) return candidates;
-const matches = candidates.length ? await findRecordsByUuids(candidates) : [];
-if (matches.length === 0) return new Error("ID not found");
-if (matches.length !== 1)
-  return new Error("ID matches multiple records; supply its original format");
-const record = matches[0];
-// Check access to record before returning it.
+import { isUuidSlugError } from "@anizoptera/uuid-slug";
+import type { UuidSlugMigrationDecoder, UuidString } from "@anizoptera/uuid-slug";
+
+async function findMigratedRecord(
+  reader: UuidSlugMigrationDecoder,
+  incomingSlug: string,
+  findRecordsByUuids: (uuids: readonly UuidString[]) => Promise<readonly unknown[]>,
+) {
+  const candidates = reader.decodeSlugCandidates(incomingSlug);
+  if (isUuidSlugError(candidates)) return candidates;
+  const matches = candidates.length ? await findRecordsByUuids(candidates) : [];
+  if (matches.length !== 1)
+    return new Error(matches.length ? "ID matches multiple records" : "ID not found");
+  return matches[0]; // Check access before returning the record to the caller.
+}
 ```
 
 `findRecordsByUuids` is your database query. Return distinct records by UUID. `decodeSlugCandidates`
@@ -534,7 +632,9 @@ the slug alone, so successful decoding is not a reliable count of legacy traffic
 ```ts
 import { validateUuidV7Timestamp } from "@anizoptera/uuid-slug";
 
-const ok = validateUuidV7Timestamp(uuid, { maxTimestampDeltaMs: 60_000 });
+function validateRecentUuid(uuid: string) {
+  return validateUuidV7Timestamp(uuid, { maxTimestampDeltaMs: 60_000 });
+}
 ```
 
 The timestamp must be inside the inclusive interval `referenceUnixMs - maxTimestampDeltaMs`
