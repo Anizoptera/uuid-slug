@@ -91,3 +91,15 @@ Make each consumer pay only for UUID generation, plain slugs, or masking that it
 - [x] Measure per-file and per-lane runtime, setup, cleanup, isolation, and parallel behavior; redesign every slow or mode-sensitive verifier.
 - [x] Audit every TypeScript test artifact for `__test__` placement, discovery, and non-duplication.
 - [x] Fix each material defect behind the smallest discriminating reproducer, then run the complete gate and inspect the final diff.
+
+## Distribution efficiency audit
+
+- [ ] Inventory every packed JavaScript, declaration, source map, source file, manifest field, and repeated byte range; map each retained byte class to a consumer need.
+- [ ] Read the public-contract owners and current tsdown/Rolldown documentation before changing any observable package output or optimizer setting.
+- [ ] Compare tsdown minification, tree-shaking, unbundling, declaration generation, source-map content, target, platform, and annotation-preservation options with isolated builds.
+- [ ] Verify `sideEffects` metadata against every shipped module and prove consumer bundlers can remove unused modules without dropping required initialization.
+- [ ] Inventory pure call candidates, distinguish removable construction from required validation or state changes, and verify emitted `/* @__PURE__ */` annotations survive packaging and downstream minification.
+- [ ] Measure raw, gzip, Brotli, and source-map bytes by entry and module; detect duplicated implementation, embedded sources, absolute paths, private data, and redundant mappings.
+- [ ] Inspect generated declarations for duplicated types, private implementation leakage, avoidable imports, stale comments, and differences between source and packed public contracts.
+- [ ] Falsify the chosen settings with packed consumers across every retained optimizer and execute each output; add only the smallest lasting checks that catch material regressions.
+- [ ] Re-read every changed line and comment, run the complete repository gate, inspect the final archive and diff, and commit each self-contained correction with a clean tree.

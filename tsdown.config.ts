@@ -63,6 +63,9 @@ const common = {
   banner,
   minify: true,
   sourcemap: true,
+  // The published archive already carries `src/`; embedding the same source in every browser and
+  // Node map duplicates it without improving stack mapping or editor navigation.
+  outputOptions: { sourcemapExcludeSources: true },
   // Consumer bundlers need these ESM seams to remove masking from keyless imports. A pre-bundled
   // package made the same import appear removable while hiding the graph users actually receive.
   unbundle: true,

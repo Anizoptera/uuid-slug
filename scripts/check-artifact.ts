@@ -35,6 +35,10 @@ function validateSourceMap(name: string, text: string, entries: ReadonlyMap<stri
   )
     throw new Error(`Invalid source map: ${name}`);
   const embedded = Array.isArray(map.sourcesContent) ? map.sourcesContent : [];
+  if (embedded.length > 0)
+    throw new Error(
+      `Source map duplicates source already shipped in the package: ${name}. Exclude sourcesContent from the build.`,
+    );
   for (const [index, source] of map.sources.entries()) {
     if (typeof source !== "string") throw new Error(`Invalid source map: ${name}`);
     const input = path.posix.join(root, source);
