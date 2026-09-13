@@ -8,7 +8,16 @@
 
 Generate and validate UUIDv4 and UUIDv7. Encode any UUID as a reversible 22-character base64url or
 26-character base32hex slug. UUIDv7 also supports keyed masking that removes its recognizable
-layout. The package has no runtime dependencies.
+layout.
+
+See it as a complete UUID library, or as a wrapper around the best UUID implementation each
+JavaScript runtime provides: Node and Bun generate through their native functions, Deno and
+browsers through the package's own generator over Web Crypto, and every change is timed against
+both the runtime's function and the fastest competing package. No runtime dependencies. Random
+bits come from a secure source or generation fails; there is no fallback to `Math.random`. Failures
+are returned as values, never thrown. Validated UUIDs and slugs carry branded TypeScript types. A
+Rust crate implements the same wire format, so a slug issued by Node decodes in Rust with the same
+seed.
 
 ## TL;DR
 
@@ -70,11 +79,9 @@ Traps:
 | `bytesToSlug` is a base64url helper | It accepts exactly one 16-byte UUID or one canonical slug. Every other length is an error. |
 | A migration decoder's successes count old-format traffic | No. The old format's check is only four bits, so one slug can decode under several formats. |
 
-Two ways to see the package: a complete UUID library on its own, or a wrapper around the best UUID
-implementation each JavaScript runtime provides. It calls the fastest native API that meets the
-contract and runs its own code only where none does. Node and Bun generate through their native
-UUID functions, base64url and hex use native encoders where they measured faster, and Deno and
-browsers run the package's generator over Web Crypto. Every native result is checked before it is
+Native APIs are used where they meet the contract and measured faster, the package's own code
+everywhere else. base64url and hex use the native encoders on Node and Bun; Deno keeps the
+package's encoder because it measured faster there. Every native result is checked before it is
 returned.
 
 | Runtime | Loads | Generation |
