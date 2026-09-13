@@ -105,7 +105,27 @@ one release identity. Add prebuilt Rust artifacts only when a measured consumer 
 Publish the TypeScript source for Bun and the opt-in `development` condition. Condition-selected
 runtime adapters keep one public source entry while using each host's capabilities. The optimized
 default build is browser-safe and Node-compatible; Node uses its native-runtime build when its
-condition is available. Ship self-contained source maps for usable diagnostics.
+condition is available. Ship source maps whose inputs resolve inside the package.
+
+### JavaScript packaging
+
+Keep ESM modules unbundled and `sideEffects: false`. This lets consumers remove features they do
+not import. Every shipped module must therefore remain free of required import-time effects.
+
+Use `/*#__PURE__*/` only on removable construction. Annotate nested calls separately because a
+bundler may still evaluate arguments. Use `/*#__NO_SIDE_EFFECTS__*/` only on functions that are
+safe to discard for every accepted runtime input. Never apply either promise to generation,
+caller callbacks, mutable state, or caller-owned output.
+
+Preserve optimizer annotations in emitted JavaScript. Keep whitespace when removing it strips
+them; retain compression and ordinary identifier mangling. Keep function and class names in both
+compression and mangling so stack frames remain useful. Do not mangle properties without a private,
+reserved namespace proven safe across every consumer bundler.
+
+Ship JavaScript and declaration maps, but exclude embedded source text because the package already
+ships `src/`. Keep the JavaScript target explicit and fail on build warnings so runtime support
+cannot drift through manifest or tool defaults. The packed-artifact check must reject missing map
+inputs, embedded sources, machine paths, and lost source-owned optimizer annotations.
 
 The JavaScript target floor defines the unguarded baseline, not a ban on newer platform APIs. A
 newer standard or host capability may be selected when it measurably reduces runtime or resource

@@ -103,3 +103,9 @@ Make each consumer pay only for UUID generation, plain slugs, or masking that it
 - [x] Inspect generated declarations for duplicated types, private implementation leakage, avoidable imports, stale comments, and differences between source and packed public contracts.
 - [x] Falsify the chosen settings with packed consumers across every retained optimizer and execute each output; add only the smallest lasting checks that catch material regressions.
 - [x] Re-read every changed line and comment, run the complete repository gate, inspect the final archive and diff, and commit each self-contained correction with a clean tree.
+
+## Distribution maintenance guidance
+
+- [x] Add one root guidance trigger for changes to bundling, minification, source maps, package side effects, or optimizer annotations.
+- [x] Document the annotation safety boundary and the tsdown settings that preserve tree shaking, stack traces, and useful source maps.
+- [x] Remove duplicated or consumer-irrelevant wording, verify every durable claim against config and artifact checks, run the complete gate, and commit with a clean tree.

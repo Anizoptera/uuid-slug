@@ -71,6 +71,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Tree-shaking checks start from named root imports for each distinct consumer job. Execute every
   result, require unrelated heavy code to be absent, and compare independent optimizer families;
   subpaths are the direct-ESM alternative, not a substitute for a removable root graph.
+- Read `docs/cross-language.md` §JavaScript packaging before changing tsdown, minification,
+  source maps, `sideEffects`, or optimizer annotations. The packed-artifact check MUST preserve
+  every source-owned `PURE` and `NO_SIDE_EFFECTS` annotation.
 - Public docs use caller-facing tokens such as `"base32hex"`, not internal symbol names.
   Documentation-alignment gates are ruled out; test the API behavior instead.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Never add a throwing
