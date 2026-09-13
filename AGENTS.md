@@ -37,7 +37,7 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   New guarantees require a maintainer ruling before code or tests impose them. Intra-millisecond ordering
   is explicitly not guaranteed: do not gate it or reject a native generator for lacking it.
   Measure implementation differences in `bench/`, where results inform rather than gate.
-- Read `docs/design.md` before changing masking, schemas, or sentinels. Preserve its wire layout:
+- Read `docs/design.md` before changing masking, mask derivation, or sentinels. Preserve its wire layout:
   masked payloads are UUIDv7-only, with a 16-bit check and timestamps below 2^42 milliseconds.
   Preserve both their 22-character base64url and lossless 27-character base32hex spellings.
   Reject overflow rather than truncate. Base64url helpers accept exactly one 16-byte UUID payload
@@ -50,7 +50,7 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   Preserve length-based alphabet inference for plain decoding.
 - Masked slugs and sentinels are core functionality. Sentinels use precomputed raw slugs per
   codec. Decode returns the first passing candidate in caller-specified key order, never proof
-  of issuance. Do not reject multiple matches or append fallback schemas on the caller's behalf.
+  of issuance. Do not reject multiple matches or append fallback masks on the caller's behalf.
 - Every decoder must accept every value that a supported matching encoder can produce. Options
   may add accepted forms; they must not remove existing ones. Reject forms no encoder produces.
 - Keyed operations belong only on the codec holding the key, including masked timestamp
@@ -190,7 +190,7 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   compatible fallback, and exercise both paths in their owning runtime lanes.
 - Prove a test reaches its target. Inputs for a later rejection must pass earlier guards;
   removing the intended guard must fail its regression. Isolate a component before attributing
-  an aggregate result to it, especially when decoding tries multiple schemas.
+  an aggregate result to it, especially when decoding tries multiple masks.
 - Entropy probes must exercise the package's portable draw path as well as native delegation.
   String generation can bypass `fillRandom`; inspect the selected path instead of assuming a
   method name identifies the code under test. Compare byte keys with `join(",")` or hex,
