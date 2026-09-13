@@ -90,7 +90,7 @@ async function measureCancellation(): Promise<AsyncProfileRow> {
 }
 
 /** Measure cooperative construction at packing, UTF-8, iteration and cancellation boundaries. */
-export async function runAsyncProfile(): Promise<readonly AsyncProfileRow[]> {
+async function runAsyncProfile(): Promise<readonly AsyncProfileRow[]> {
   if (encoder.encode(cases[5].seed).length !== 4100)
     throw new Error("UTF-8 boundary fixture changed length");
   const rows: AsyncProfileRow[] = [];

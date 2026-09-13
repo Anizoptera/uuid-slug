@@ -7,7 +7,7 @@ import * as privateV4Api from "../src/v4";
 import { assertProfileOutcome, createProfileCases } from "./profile-cases";
 import type { ProfileCase, ProfileValue } from "./profile-cases";
 
-export interface BrowserProfileOptions {
+interface BrowserProfileOptions {
   readonly duration: number;
   readonly filter?: string;
   readonly samples: number;
@@ -15,7 +15,7 @@ export interface BrowserProfileOptions {
   readonly privateImplementations?: boolean;
 }
 
-export interface BrowserProfileRow {
+interface BrowserProfileRow {
   readonly maxBatchMs: number;
   readonly maxUninterruptedMs: number;
   readonly name: string;
@@ -127,13 +127,6 @@ async function measureProfileCases(
     rows.push({ name, ns, operations, maxBatchMs, maxUninterruptedMs, sink });
   }
   return rows;
-}
-
-/** Measure the browser artifact with the same operation corpus used by server runtimes. */
-export function runBrowserProfile(
-  options: BrowserProfileOptions,
-): Promise<readonly BrowserProfileRow[]> {
-  return measureProfileCases(selectProfileCases(options), options);
 }
 
 const parameters = new URL(location.href).searchParams;

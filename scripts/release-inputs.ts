@@ -18,7 +18,7 @@ interface CrateVersion {
   readonly download: string;
 }
 
-export interface RegistryHistory<T> {
+interface RegistryHistory<T> {
   readonly versions: ReadonlyMap<string, T>;
 }
 
@@ -44,7 +44,7 @@ export async function readRetainedArchive(
   return bytes;
 }
 
-export interface ComparisonInput {
+interface ComparisonInput {
   readonly role: "immediate" | "releaseLine";
   readonly tag: string;
   readonly commit: string;
@@ -81,10 +81,7 @@ async function json(url: string, headers?: HeadersInit): Promise<unknown> {
 }
 
 /** Read npm's complete version index once so absence cannot be confused with an omitted lookup. */
-export async function npmHistory(
-  registry: string,
-  name: string,
-): Promise<RegistryHistory<NpmVersion>> {
+async function npmHistory(registry: string, name: string): Promise<RegistryHistory<NpmVersion>> {
   const metadata = await json(`${registry}/${encodeURIComponent(name)}`);
   if (metadata === undefined) return { versions: new Map() };
   const versions = object(object(metadata, "npm metadata").versions, "npm versions");
@@ -100,7 +97,7 @@ export async function npmHistory(
 }
 
 /** Read crates.io history once; an explicit missing package is a first publication, not an outage. */
-export async function crateHistory(
+async function crateHistory(
   registry: string,
   name: string,
 ): Promise<RegistryHistory<CrateVersion>> {

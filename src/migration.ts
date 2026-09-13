@@ -23,9 +23,7 @@ const XOR = [
 
 /** Return a matching candidate or undefined; callers resolve sentinels before trying masks. */
 /*#__NO_SIDE_EFFECTS__*/
-export function decodeOriginalMask(mixed: Uint8Array): Uint8Array | undefined | UuidSlugError {
-  if (mixed.length !== 16)
-    return new UuidSlugError("invalid_buffer", "Original masked slugs require 16 decoded bytes.");
+function decodeOriginalMask(mixed: Uint8Array): Uint8Array | undefined {
   const bytes = new Uint8Array(16);
   for (let i = 0; i < 16; i++)
     bytes[PERMUTE[i] as number] = (mixed[i] as number) ^ (XOR[i] as number);
@@ -126,7 +124,6 @@ export function createMigration(
     if (reserved) return candidates;
     if (useOriginal && slug.length === 22) {
       const match = decodeOriginalMask(bytes);
-      if (match instanceof Error) return match;
       if (match) {
         const failed = add(match);
         if (failed) return failed;

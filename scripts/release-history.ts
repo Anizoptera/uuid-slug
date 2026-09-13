@@ -7,7 +7,7 @@ interface Version {
   readonly minor: bigint;
 }
 
-export interface ReleaseComparisons {
+interface ReleaseComparisons {
   readonly immediate?: string;
   readonly releaseLine?: string;
 }

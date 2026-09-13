@@ -3,14 +3,14 @@
 import type { GenerationCase, GenerationValue } from "./generation-cases";
 import { verifyGenerationCase } from "./generation-cases";
 
-export interface GenerationMeasureOptions {
+interface GenerationMeasureOptions {
   readonly durationMs: number;
   readonly samples: number;
   readonly warmupMs: number;
   readonly yieldControl: () => Promise<void>;
 }
 
-export interface GenerationMeasurement {
+interface GenerationMeasurement {
   readonly comparable: string;
   readonly implementation: string;
   readonly name: string;

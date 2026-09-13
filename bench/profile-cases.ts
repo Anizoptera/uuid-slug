@@ -10,7 +10,7 @@ type PrivateAlphabetApi = Pick<
 export type ProfileValue = string | number | boolean | Uint8Array | Error | object;
 export type ProfileCase = (index: number) => ProfileValue;
 
-export interface ProfileSuite {
+interface ProfileSuite {
   readonly cases: Record<string, ProfileCase>;
   verify(): void;
 }

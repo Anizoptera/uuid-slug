@@ -121,6 +121,11 @@ not import. Every shipped module must therefore remain free of required import-t
 Each private file boundary must enable independent loading, removal, runtime selection, or an
 externally exercised implementation seam. Merge a leaf into its sole production importer when none
 applies; do not pre-bundle unrelated modules merely to lower the archive's file count.
+Keep a declaration private unless a package contract, production import, tool protocol, or
+independently exercised test seam requires module access. Tests must use the owning interface after
+logic moves into its sole production consumer; remove the obsolete export and direct test import.
+Before deleting a moved file, compare its implementation and comments with the destination, account
+for every difference, and verify every former consumer now reaches the destination.
 Probe stable optional capabilities once in the smallest module that owns them; never repeat the
 probe per call. Defer an allocation when imports that do not need it share that module.
 

@@ -103,15 +103,6 @@ const INNER_TAG_BITS = 12;
 const OUTER_TAG_BITS = spareBits(BASE64URL, 16);
 const TAG_BITS = INNER_TAG_BITS + OUTER_TAG_BITS;
 
-export function uuidV7BytesToMaskedSlug(
-  raw: Uint8Array,
-  schema: UuidV7Mask,
-  alphabet: SlugAlphabet = "base64url",
-  reserved?: { readonly size: number; has(slug: string): boolean },
-): MaskedUuidV7Slug | UuidSlugError {
-  return ownedUuidV7BytesToMaskedSlug(new Uint8Array(raw), schema, alphabet, reserved);
-}
-
 /**
  * Mask a private block in place. Callers must own `raw`: tag injection destroys its UUID bytes.
  * This separate entry keeps mutation impossible on the ordinary caller-owned byte path while a

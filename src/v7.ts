@@ -14,7 +14,7 @@ import { formatUuidBytesUnchecked, isUuidV7String } from "./uuid";
 import type { Runtime } from "./runtime/types";
 
 /** Internal controls for exercising the portable UUIDv7 state machine. */
-export interface PortableUuidV7GeneratorOptions {
+interface PortableUuidV7GeneratorOptions {
   /** Return Unix milliseconds; finite fractional readings are truncated. Defaults to `Date.now`. */
   readonly clock?: () => number;
   /** Fill every byte. Returned or thrown failures are contained by generation. */

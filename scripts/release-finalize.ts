@@ -81,7 +81,7 @@ async function jsonResponse(response: Response, context: string): Promise<unknow
 }
 
 /** Publish a draft only after both registries and GitHub expose the retained bytes and notes. */
-export async function finalizeRelease(cwd: string, options: FinalizeOptions): Promise<void> {
+async function finalizeRelease(cwd: string, options: FinalizeOptions): Promise<void> {
   const root = resolve(cwd);
   const artifacts = resolve(root, "release-artifacts");
   const inputs = (await Bun.file(

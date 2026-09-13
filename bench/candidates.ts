@@ -32,7 +32,7 @@ export interface BenchCandidate {
  * A runtime surface measured for cost alone. `bytes` rows return the raw 16 bytes, so they are
  * timed by a loop that never touches a string — the whole point of asking for that encoding.
  */
-export interface NativeVariant {
+interface NativeVariant {
   readonly name: string;
   readonly note: string;
   readonly text?: () => string;

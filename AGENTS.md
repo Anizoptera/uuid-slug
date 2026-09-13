@@ -81,9 +81,10 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   result, require unrelated heavy code to be absent, and compare independent optimizer families;
   subpaths are the direct-ESM alternative, not a substitute for a removable root graph.
 - Read `docs/cross-language.md` §JavaScript packaging before changing emitted module boundaries,
-  import-time initialization, tsdown, minification, source maps, `sideEffects`, or optimizer
-  annotations. The packed-artifact check MUST preserve every source-owned `PURE` and
-  `NO_SIDE_EFFECTS` annotation.
+  internal exports, moved code, import-time initialization, tsdown, minification, source maps,
+  `sideEffects`, or optimizer annotations. Before deleting a moved file, account for every original
+  implementation line, comment, and consumer. The packed-artifact check MUST preserve every
+  source-owned `PURE` and `NO_SIDE_EFFECTS` annotation.
 - Public docs use caller-facing tokens such as `"base32hex"`, not internal symbol names.
   Documentation-alignment gates are ruled out; test the API behavior instead.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Never add a throwing

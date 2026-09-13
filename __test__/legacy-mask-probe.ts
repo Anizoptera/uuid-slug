@@ -3,13 +3,11 @@
 import assert from "node:assert/strict";
 import { BASE64URL, decodeInto } from "../src/alphabet";
 import { createUuidV7SlugCodec } from "../src/codec";
-import { decodeOriginalMask } from "../src/migration";
 import { decodeMaskedCandidates } from "../src/mask";
 import { applyMaskSchema, createCustomUuidV7Mask } from "../src/schema-handle";
 import { createUuidV7Mask, UUID_V7_TEST_MASK } from "../src/schema";
 import { UuidSlugError } from "../src/errors";
 import { slugToBytes, uuidToSlug } from "../src/slug";
-import { bytesToUuid } from "../src/uuid";
 import fixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
 import { unwrap } from "../dev/unwrap";
 import { uuidTailAliases } from "./uuid-tail-aliases";
@@ -324,13 +322,12 @@ export const legacyMaskCases = [
       const codec = unwrap(createUuidV7SlugCodec({ mask: { seed } }));
       assert.equal(codec.encodeUuid(currentUuid), slug);
       assert.equal(codec.decodeSlug(slug), currentUuid);
-      const raw = slugToBytes(slug);
-      if (raw instanceof Error) throw raw;
-      assert.equal(bytesToUuid(raw), plainUuid);
-      const original = decodeOriginalMask(raw);
-      if (original instanceof Error) throw original;
-      assert.ok(original);
-      assert.equal(bytesToUuid(original), originalUuid);
+      assert.deepEqual(
+        codec
+          .createMigrationDecoder({ originalMask: true, plainSlug: true })
+          .decodeSlugCandidates(slug),
+        [currentUuid, originalUuid, plainUuid],
+      );
       assert.equal(new Set([currentUuid, originalUuid, plainUuid]).size, 3);
     },
   },
@@ -364,29 +361,36 @@ export const legacyMaskCases = [
   {
     name: "recover exact UUIDs from original masked producer outputs",
     run(this: void) {
+      const reader = unwrap(
+        createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }),
+      ).createMigrationDecoder({ originalMask: true });
       let checked = 0;
       for (const vector of fixtures.issued) {
         if (vector.slug === vector.raw) continue;
-        const mixed = new Uint8Array(16);
-        assert.equal(decodeInto(vector.slug, BASE64URL, mixed, 0, 16), 0);
-        const decoded = decodeOriginalMask(mixed);
-        if (decoded instanceof Error) throw decoded;
-        assert.ok(decoded);
-        assert.equal(bytesToUuid(decoded), vector.uuid);
-        assert.equal(Buffer.from(mixed).toString("base64url"), vector.slug);
+        assert.equal(reader.decodeSlug(vector.slug, "original-mask"), vector.uuid);
         checked++;
       }
       assert.ok(checked > 0);
     },
   },
   {
-    name: "reject damaged original checksum and incomplete bytes",
+    name: "reject a damaged original checksum",
     run(this: void) {
+      const reader = unwrap(
+        createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }),
+      ).createMigrationDecoder({ originalMask: true });
       const mixed = new Uint8Array(Buffer.from("TRf_4hG5uOKhvh0EPc3rew", "base64url"));
-      assert.ok(decodeOriginalMask(mixed) instanceof Uint8Array);
+      assert.ok(
+        !(
+          reader.decodeSlug(Buffer.from(mixed).toString("base64url"), "original-mask") instanceof
+          Error
+        ),
+      );
       mixed[0] = (mixed[0] as number) ^ 1;
-      assert.equal(decodeOriginalMask(mixed), undefined);
-      assert.ok(decodeOriginalMask(mixed.subarray(1)) instanceof Error);
+      assert.ok(
+        reader.decodeSlug(Buffer.from(mixed).toString("base64url"), "original-mask") instanceof
+          Error,
+      );
     },
   },
 ];

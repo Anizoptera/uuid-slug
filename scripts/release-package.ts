@@ -45,7 +45,7 @@ async function pack(
 }
 
 /** Prepare without credentials, or publish only bytes identical to that reviewed archive. */
-export async function releasePackage(
+async function releasePackage(
   cwd: string,
   tag: string,
   mode: "prepare" | "publish",

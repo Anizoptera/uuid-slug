@@ -7,7 +7,7 @@ declare const brand: unique symbol;
 declare const maskSchemaBrand: unique symbol;
 
 /** Accumulate validated value kinds without changing their runtime representation. */
-export type Brand<Value, Name extends string> = Value & {
+type Brand<Value, Name extends string> = Value & {
   readonly [brand]: { [BrandName in Name]: true };
 };
 
@@ -32,7 +32,7 @@ export type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> = Inp
     ? Version7
     : UnknownVersion;
 /** A masked payload in either spelling; its check bits are not plain-encoding padding. */
-export type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
+type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 /**
  * A checked, keyed UUIDv7 payload: 22 base64url or 27 lowercase base32hex characters.
  * Both spellings hide recognizable UUID field positions. The check detects wrong keys and
@@ -60,7 +60,7 @@ export type DirectUuidSlugInput<Input extends string> = RejectKnownInput<
   Input,
   UuidString | MaskedUuidSlug
 >;
-export type SlugStringInput<Input extends string> = RejectKnownInput<Input, UuidString>;
+type SlugStringInput<Input extends string> = RejectKnownInput<Input, UuidString>;
 export type UuidV7StringInput<Input extends string> = RejectKnownInput<
   Input,
   UuidSlug | MaskedUuidSlug | UuidV4String

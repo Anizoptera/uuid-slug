@@ -79,7 +79,7 @@ export async function verifyNpmIdentity(
   return metadata;
 }
 
-export async function measureLinkedSizes(
+async function measureLinkedSizes(
   cwd: string,
   crate: string,
   work: string,
@@ -267,7 +267,7 @@ async function historicalEvidence(
 }
 
 /** Generate retry-stable notes from retained bytes and final linked caller outputs. */
-export async function releaseReport(cwd: string, artifacts = "release-artifacts"): Promise<void> {
+async function releaseReport(cwd: string, artifacts = "release-artifacts"): Promise<void> {
   const root = resolve(cwd);
   const directory = resolve(root, artifacts);
   const semverVersion = (await command("cargo", ["semver-checks", "--version"], root)).trim();

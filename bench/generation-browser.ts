@@ -20,7 +20,7 @@ const yieldControl = () =>
     channel.port2.close();
   });
 
-export async function runGenerationBenchmark(search: string) {
+async function runGenerationBenchmark(search: string) {
   const parameters = new URLSearchParams(search);
   const filter = parameters.get("filter");
   const selected = generationCases.filter(

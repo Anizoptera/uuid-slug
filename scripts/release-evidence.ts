@@ -38,7 +38,7 @@ function artifactPage(value: unknown): ArtifactPage {
 }
 
 /** Find retained evidence by immutable release commit so a fresh dispatch can repair the release. */
-export async function releaseEvidenceRun(
+async function releaseEvidenceRun(
   repository: string,
   commit: string,
   token: string,

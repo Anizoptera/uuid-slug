@@ -37,7 +37,7 @@ async function cargo(args: string[], manifest = "rust/Cargo.toml"): Promise<void
   if ((await child.exited) !== 0) throw new Error(`cargo ${args[0]} failed.`);
 }
 
-export async function releaseCrate(mode: string): Promise<void> {
+async function releaseCrate(mode: string): Promise<void> {
   if (!["prepare", "check", "publish"].includes(mode))
     throw new Error("Usage: release-crate.ts prepare|check|publish");
   const tag = process.env.GITHUB_REF_NAME;

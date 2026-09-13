@@ -97,7 +97,7 @@ const readers: readonly (readonly [
   ],
 ];
 
-export interface ProbeCase {
+interface ProbeCase {
   readonly name: string;
   /** The failure, or `undefined` when the entry point honoured the contract. */
   readonly run: () => string | undefined;

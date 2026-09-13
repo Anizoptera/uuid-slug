@@ -11,7 +11,7 @@ import { command } from "./command";
 
 export type Optimizer = "bun" | "esbuild" | "parcel" | "rollup" | "rolldown" | "rspack" | "webpack";
 
-export interface CompiledBundle {
+interface CompiledBundle {
   readonly code: Uint8Array;
   readonly modules: ReadonlySet<string>;
   readonly sources: ReadonlySet<string>;

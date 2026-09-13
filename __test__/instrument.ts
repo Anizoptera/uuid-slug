@@ -22,7 +22,7 @@
  */
 import nodeCrypto from "node:crypto";
 
-export interface EntropyInstrument {
+interface EntropyInstrument {
   /** Sources this runtime would not let us wrap; absent from every result. */
   readonly unavailable: readonly string[];
   /** Zero the counters before measuring one implementation. */

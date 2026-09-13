@@ -1,7 +1,7 @@
 // Derive research lanes from installed hosts so conformance and benchmarks cannot drift apart.
-export type NativeTransport = "ffi" | "napi";
+type NativeTransport = "ffi" | "napi";
 
-export interface NativeLane {
+interface NativeLane {
   readonly command: readonly string[];
   readonly env: Readonly<Record<string, string>>;
   readonly expectedTransport:
