@@ -74,7 +74,7 @@ impl MaskSchema {
         };
         for probe in [[0; 16], std::array::from_fn(|index| (index * 17) as u8)] {
             if schema.unmask(schema.mask(probe)?)? != probe {
-                return Err(Error::new(ErrorCode::InvalidMaskSchema));
+                return Err(Error::new(ErrorCode::InvalidMask));
             }
         }
         Ok(schema)
@@ -92,7 +92,7 @@ impl MaskSchema {
         match &self.implementation {
             Implementation::Feistel(keys) => Ok(feistel(input, keys, direction)),
             Implementation::Custom(mix) => mix(input, direction)
-                .map_err(|cause| Error::new(ErrorCode::InvalidMaskSchema).with_source(cause)),
+                .map_err(|cause| Error::new(ErrorCode::InvalidMask).with_source(cause)),
         }
     }
 }
@@ -105,7 +105,7 @@ pub fn public_mask_schema() -> MaskSchema {
 
 fn validate(seed: &[u8], iterations: u32) -> Result<(), Error> {
     if seed.len() < 16 || !(1..=1 << 24).contains(&iterations) {
-        return Err(Error::new(ErrorCode::InvalidMaskSchema));
+        return Err(Error::new(ErrorCode::InvalidMask));
     }
     Ok(())
 }
@@ -243,7 +243,7 @@ impl Future for SchemaDerivation {
             return Poll::Ready(Err(failure));
         }
         if this.finished {
-            return Poll::Ready(Err(Error::new(ErrorCode::InvalidMaskSchema)));
+            return Poll::Ready(Err(Error::new(ErrorCode::InvalidMask)));
         }
         // Budget includes finalization, so tiny seeds with many iterations cannot monopolize a poll.
         for _ in 0..256 {

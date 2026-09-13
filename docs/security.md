@@ -37,7 +37,7 @@ duplicate-free sample can establish that its generating process was cryptographi
 Every UUID version exposes standardized fields. This package masks UUIDv7, replacing its layout,
 including timestamp, version, and variant positions, with a keyed reversible payload. It is obfuscation, not
 authenticated encryption. Use a private random seed and retain its exact bytes and iteration count
-to read issued values. The exported public schema is for explicit tests and examples; codec
+to read issued values. The exported public mask is for explicit tests and examples; codec
 construction never selects it by omission.
 The 16-bit check filters candidates; look up the intended record and check authorization separately.
 More read keys add possible candidates. Base32 changes the spelling, not the masking strength.

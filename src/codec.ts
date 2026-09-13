@@ -55,8 +55,8 @@ function schemaFromOption(mask: UuidV7Mask | UuidV7MaskOptions): UuidV7Mask | Uu
   if (isMaskSchema(mask)) return mask;
   if (typeof mask !== "object" || mask === null)
     return new UuidSlugError(
-      "invalid_mask_schema",
-      "Pass a mask schema handle or mask options containing a private seed.",
+      "invalid_mask",
+      "Pass a mask from createUuidV7Mask or mask options containing a private seed.",
     );
   return createUuidV7Mask(mask);
 }
@@ -198,7 +198,7 @@ export function createUuidV7SlugCodec(
   try {
     return buildUuidSlugCodec(options, generateDefaultUuidV7Bytes);
   } catch (cause) {
-    return new UuidSlugError("invalid_mask_schema", "Codec construction failed.", { cause });
+    return new UuidSlugError("invalid_mask", "Codec construction failed.", { cause });
   }
 }
 
@@ -210,7 +210,7 @@ export function createUuidV7SlugCodecWithGenerator(
   try {
     return buildUuidSlugCodec(options, generateUuidV7Bytes);
   } catch (cause) {
-    return new UuidSlugError("invalid_mask_schema", "Codec construction failed.", { cause });
+    return new UuidSlugError("invalid_mask", "Codec construction failed.", { cause });
   }
 }
 
@@ -221,18 +221,21 @@ function buildUuidSlugCodec(
   const mask = typeof options === "object" && options !== null ? options.mask : undefined;
   if (mask === undefined || mask === null)
     return new UuidSlugError(
-      "invalid_mask_schema",
+      "invalid_mask",
       "Pass { mask: { seed } } for private masking or { mask: UUID_V7_TEST_MASK } for public examples.",
     );
   const schemaResult = schemaFromOption(mask);
   if (isUuidSlugError(schemaResult)) return schemaResult;
   const schema = schemaResult;
-  // Decode tries exactly the caller's schemas in order. Every added schema increases false
-  // acceptance, and the first passing schema decides the result, so no fallback is added here.
+  // Decode tries exactly the caller's masks in order. Every added mask increases false
+  // acceptance, and the first passing mask decides the result, so no fallback is added here.
   const previousMasks: UuidV7Mask[] = [];
   const previousMaskOptions = options.previousMasks ?? [];
   if (!Array.isArray(previousMaskOptions))
-    return new UuidSlugError("invalid_mask_schema", "previousMasks must be an array of schemas.");
+    return new UuidSlugError(
+      "invalid_mask",
+      "previousMasks must be an array of masks or mask options.",
+    );
   for (const previousOption of previousMaskOptions) {
     const previous = schemaFromOption(previousOption);
     if (isUuidSlugError(previous)) return previous;

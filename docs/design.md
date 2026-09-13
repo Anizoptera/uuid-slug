@@ -34,7 +34,7 @@ different UUIDs to share a slug. The full masked payload uses 27 base32hex chara
 forcing it into 26 would lose bits. Its three padding bits must be zero. Masked output
 has no useful chronological ordering in either alphabet.
 
-## Deriving a schema from a seed
+## Deriving a mask from a seed
 
 `createUuidV7Mask({ seed, keyDerivationIterations })` derives round keys deterministically:
 
@@ -46,7 +46,7 @@ has no useful chronological ordering in either alphabet.
    outputs to obtain that round's key pair.
 
 The fixed chain keys, round count, byte order, index convention, and iteration count affect every
-issued slug. They are wire-format constants, not opportunities for tuning an existing schema.
+issued slug. They are wire-format constants, not opportunities for tuning an existing mask.
 Retain old seed and iteration settings in `previousMasks` when rotating.
 
 The chains carry 128 bits of state together; this is a description of their representation,
@@ -109,17 +109,17 @@ version, variant, and zero timestamp bits. It recomputes the tag from the restor
 compares both parts. A mismatch returns `invalid_uuid_slug`.
 
 The short tag rejects many incorrect decodes, but it is not authentication. About one random
-22-character string in 65,536 passes one schema's check. A passing result is a candidate for a
+22-character string in 65,536 passes one mask's check. A passing result is a candidate for a
 store lookup; it does not establish that anyone issued the UUID.
 
-## Schema selection and sentinels
+## Mask selection and sentinels
 
-No marker identifies the producing schema. Decode with the current mask first, then each
+No marker identifies the producing mask. Decode with the current mask first, then each
 `previousMasks` entry in caller order, returning the first candidate whose check passes. More
-schemas create more opportunities for false acceptance; the combined rate is bounded by the sum
-of their individual rates. The codec must not append schemas on the caller's behalf.
+masks create more opportunities for false acceptance; the combined rate is bounded by the sum
+of their individual rates. The codec must not append masks on the caller's behalf.
 
-Masked decoding always accepts both alphabets, sentinels, and current or previous schema outputs.
+Masked decoding always accepts both alphabets, sentinels, and current or previous mask outputs.
 Migration adds only the old formats the caller enables. Other forms are invalid.
 
 Only `codec.createMigrationDecoder({ plainSlug: true })` enables direct-slug decoding. A direct slug may

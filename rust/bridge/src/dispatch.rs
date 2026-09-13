@@ -61,7 +61,7 @@ fn schema(value: &Value) -> Result<MaskSchema, Error> {
             .map(|v| {
                 v.as_u64()
                     .and_then(|n| u16::try_from(n).ok())
-                    .ok_or_else(|| Error::new(ErrorCode::InvalidMaskSchema))
+                    .ok_or_else(|| Error::new(ErrorCode::InvalidMask))
             })
             .collect();
         String::from_utf16_lossy(&units?).into_bytes()
@@ -71,7 +71,7 @@ fn schema(value: &Value) -> Result<MaskSchema, Error> {
             .map(|v| {
                 v.as_u64()
                     .and_then(|n| u8::try_from(n).ok())
-                    .ok_or_else(|| Error::new(ErrorCode::InvalidMaskSchema))
+                    .ok_or_else(|| Error::new(ErrorCode::InvalidMask))
             })
             .collect::<Result<Vec<_>, _>>()?
     } else {
@@ -86,7 +86,7 @@ fn schema(value: &Value) -> Result<MaskSchema, Error> {
         || iterations.fract() != 0.0
         || !(1.0..=16_777_216.0).contains(&iterations)
     {
-        return Err(Error::new(ErrorCode::InvalidMaskSchema));
+        return Err(Error::new(ErrorCode::InvalidMask));
     }
     create_mask_schema(&bytes, iterations as u32, "seeded")
 }

@@ -415,7 +415,7 @@ export async function contractRequests(): Promise<Request[]> {
       const decode: Request = { op: "unplain", input };
       const guards: Request = { op: "guards", input };
       deepStrictEqual(evaluate(decode), {
-        error: alphabet === "base64url" ? "invalid_base64url" : "invalid_base32",
+        error: alphabet === "base64url" ? "invalid_base64url" : "invalid_base32hex",
       });
       deepStrictEqual(evaluate(guards), { value: [false, false, false, false, false, false] });
       requests.push(decode, guards);

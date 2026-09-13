@@ -57,7 +57,7 @@ export type { UuidSlug, UuidV4Slug, UuidV7Slug } from "./types.ts";
  */
 const ALPHABETS = ["base64url", "base32hex"] as const;
 
-/** The accepted slug alphabets, for validation, schemas, and user-interface choices. */
+/** The accepted slug alphabets, for configuration validation and user-interface choices. */
 export const UUID_SLUG_ALPHABETS: typeof ALPHABETS = /*#__PURE__*/ Object.freeze(ALPHABETS);
 
 /**

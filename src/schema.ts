@@ -43,8 +43,8 @@ function seedBytes(seed: string | Uint8Array) {
 function validateOptions(options: unknown) {
   if (typeof options !== "object" || options === null)
     return new UuidSlugError(
-      "invalid_mask_schema",
-      "Mask schema options must contain a string or Uint8Array seed.",
+      "invalid_mask",
+      "Mask options must contain a string or Uint8Array seed.",
     );
   const input = options as {
     readonly label?: unknown;
@@ -53,11 +53,11 @@ function validateOptions(options: unknown) {
   };
   const seed = input.seed;
   if (typeof seed !== "string" && !isUint8Array(seed))
-    return new UuidSlugError("invalid_mask_schema", "Mask seed must be a string or Uint8Array.");
+    return new UuidSlugError("invalid_mask", "Mask seed must be a string or Uint8Array.");
   const givenLabel = input.label;
   const label = givenLabel === undefined ? "seeded" : givenLabel;
   if (typeof label !== "string")
-    return new UuidSlugError("invalid_mask_schema", "Mask label must be a string.");
+    return new UuidSlugError("invalid_mask", "Mask label must be a string.");
   const givenIterations = input.keyDerivationIterations;
   const keyDerivationIterations = givenIterations === undefined ? 1 : givenIterations;
   const iterations = validatedIterations(keyDerivationIterations);
@@ -93,7 +93,7 @@ function writeSeedWords(
 /**
  * Hash the seed under successive outputs, for `iterations` total hashes. This work is paid
  * at construction, never per id. The count changes key material and must remain stable for
- * issued slugs; retain the old count with its seed when rotating schemas.
+ * issued slugs; retain the old count with its seed when rotating masks.
  */
 /*#__NO_SIDE_EFFECTS__*/
 function chain(key0: number, key1: number, words: Int32Array, length: number, iterations: number) {
@@ -149,7 +149,7 @@ function schemaFromKeys(label: string, keys: Int32Array): UuidV7Mask {
 /**
  * Derive an immutable mask from a secret seed of at least 16 bytes. The seed and iteration count
  * define the wire format; retain the old mask in `previousMasks` before changing either. Invalid
- * options return `invalid_mask_schema`.
+ * options return `invalid_mask`.
  *
  * @param options - Stable secret seed, optional diagnostic label, and derivation work factor.
  * @returns The mask, or `UuidSlugError` when an option or seed is invalid.
@@ -162,7 +162,7 @@ export function createUuidV7Mask(options: UuidV7MaskOptions): UuidV7Mask | UuidS
     const short = invalidSeedLength(seed.length);
     return short ?? feistelSchema(validated.label, seed, validated.iterations);
   } catch (cause) {
-    return new UuidSlugError("invalid_mask_schema", "Mask schema construction failed.", { cause });
+    return new UuidSlugError("invalid_mask", "Mask construction failed.", { cause });
   }
 }
 
@@ -170,7 +170,7 @@ export function createUuidV7Mask(options: UuidV7MaskOptions): UuidV7Mask | UuidS
 function invalidSeedLength(length: number): undefined | UuidSlugError {
   if (length < SEED_MIN_BYTES)
     return new UuidSlugError(
-      "invalid_mask_schema",
+      "invalid_mask",
       `Mask seed must be at least ${SEED_MIN_BYTES} bytes, got ${length}. Generate one with \`openssl rand -base64 32\` rather than choosing it; a guessable seed hides nothing however long it is.`,
     );
   return undefined;
@@ -184,7 +184,7 @@ function validatedIterations(iterations: unknown): number | UuidSlugError {
     iterations > MAX_KEY_ITERATIONS
   )
     return new UuidSlugError(
-      "invalid_mask_schema",
+      "invalid_mask",
       `Mask keyDerivationIterations must be a whole number in 1..${MAX_KEY_ITERATIONS}, got ${String(iterations)}.`,
     );
   return iterations;
@@ -290,7 +290,7 @@ function* cooperativeKeys(
 /**
  * Derive the same mask without monopolizing the host task. Later mutation of a byte seed does not
  * affect the result. Cancellation returns `aborted` with `signal.reason` as its cause; invalid
- * options return `invalid_mask_schema`. Construct once and reuse the result.
+ * options return `invalid_mask`. Construct once and reuse the result.
  *
  * @param options - Synchronous mask options plus an optional cancellation signal.
  * @returns A promise for the mask or an expected construction error.
@@ -301,7 +301,7 @@ export async function createUuidV7MaskAsync(
   try {
     const signal = options?.signal;
     const aborted = () =>
-      new UuidSlugError("aborted", "Mask schema construction was aborted.", {
+      new UuidSlugError("aborted", "Mask construction was aborted.", {
         cause: signal?.reason,
       });
     if (signal?.aborted) return aborted();
@@ -329,7 +329,7 @@ export async function createUuidV7MaskAsync(
       }
     }
   } catch (cause) {
-    return new UuidSlugError("invalid_mask_schema", "Mask schema construction failed.", { cause });
+    return new UuidSlugError("invalid_mask", "Mask construction failed.", { cause });
   }
 }
 

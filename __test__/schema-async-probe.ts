@@ -144,12 +144,12 @@ export const asyncSchemaCases = [
             keyDerivationIterations,
           });
           assert.ok(result instanceof UuidSlugError);
-          assert.equal(result.code, "invalid_mask_schema");
+          assert.equal(result.code, "invalid_mask");
         }),
       );
       const short = await createUuidV7MaskAsync({ seed: "short" });
       assert.ok(short instanceof UuidSlugError);
-      assert.equal(short.code, "invalid_mask_schema");
+      assert.equal(short.code, "invalid_mask");
       const cause = new Error("seed unavailable");
       const result = await createUuidV7MaskAsync({
         get seed(): string {

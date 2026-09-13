@@ -148,7 +148,7 @@ portable process counters and timings. Missing optional detail may fall back; a 
 produces no evidence must fail. Correlate independent signals before changing code. Do not count two
 front ends to the same engine profiler as independent evidence.
 
-The same command separately measures cooperative schema construction around byte-packing and UTF-8
+The same command separately measures cooperative mask construction around byte-packing and UTF-8
 chunk boundaries, geometric work factors, host-task progress, and cancellation. These promise-based
 rows stay outside the synchronous corpus so task scheduling cannot contaminate per-call throughput.
 

@@ -47,10 +47,7 @@ export function applyMaskSchema(
 ): undefined | UuidSlugError {
   const protocol = schemaProtocol(schema);
   if (!protocol)
-    return new UuidSlugError(
-      "invalid_mask_schema",
-      "Mask schema handle is invalid or incompatible.",
-    );
+    return new UuidSlugError("invalid_mask", "Mask handle is invalid or incompatible.");
   return protocol.mix(input, output, direction);
 }
 
@@ -64,7 +61,7 @@ function runCustom(
   if (isUuidSlugError(output)) return output;
   if (!isUint8Array(output) || output.length !== 16)
     return new UuidSlugError(
-      "invalid_mask_schema",
+      "invalid_mask",
       "A custom mask transform must return exactly 16 bytes.",
     );
   return output;
@@ -85,7 +82,7 @@ export function createCustomUuidV7Mask(
     const { label, mask, unmask } = options;
     if (typeof label !== "string" || typeof mask !== "function" || typeof unmask !== "function")
       return new UuidSlugError(
-        "invalid_mask_schema",
+        "invalid_mask",
         "A custom UUIDv7 mask requires a string label plus mask and unmask functions.",
       );
     // These probes reject common non-inverses cheaply; no finite sample can prove a bijection over
@@ -96,17 +93,17 @@ export function createCustomUuidV7Mask(
     ]) {
       const mixed = runCustom(mask, probe);
       if (isUuidSlugError(mixed))
-        return new UuidSlugError("invalid_mask_schema", "Custom mask schema construction failed.", {
+        return new UuidSlugError("invalid_mask", "Custom mask construction failed.", {
           cause: mixed,
         });
       const restored = runCustom(unmask, mixed);
       if (isUuidSlugError(restored))
-        return new UuidSlugError("invalid_mask_schema", "Custom mask schema construction failed.", {
+        return new UuidSlugError("invalid_mask", "Custom mask construction failed.", {
           cause: restored,
         });
       if (restored.some((byte, index) => byte !== probe[index]))
         return new UuidSlugError(
-          "invalid_mask_schema",
+          "invalid_mask",
           `UUIDv7 mask "${label}" does not unmask its own masked output.`,
         );
     }
@@ -117,7 +114,7 @@ export function createCustomUuidV7Mask(
       return undefined;
     });
   } catch (cause) {
-    return new UuidSlugError("invalid_mask_schema", "Custom mask schema construction failed.", {
+    return new UuidSlugError("invalid_mask", "Custom mask construction failed.", {
       cause,
     });
   }

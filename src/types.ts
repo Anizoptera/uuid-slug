@@ -4,7 +4,7 @@ import type { UuidSlugError } from "./errors.ts";
 import type { SlugAlphabet } from "./slug.ts";
 
 declare const brand: unique symbol;
-declare const maskSchemaBrand: unique symbol;
+declare const uuidV7MaskBrand: unique symbol;
 
 /** Accumulate validated value kinds without changing their runtime representation. */
 type Brand<Value, Name extends string> = Value & {
@@ -149,12 +149,16 @@ export interface UuidV7Generator {
 export interface UuidV7Mask {
   /** Diagnostic label only; mask objects and caller order select decoding behavior. */
   readonly label: string;
-  readonly [maskSchemaBrand]: true;
+  readonly [uuidV7MaskBrand]: true;
 }
 
 /** Define a reversible 16-byte transform for `createCustomUuidV7Mask`. */
 export interface CustomUuidV7MaskOptions {
-  /** A diagnostic label; it does not select the mask during decoding. */
+  /**
+   * Names this mask in the error returned when a callback fails after construction, which is why
+   * it is required here and optional for seeded masks, whose transform cannot fail. It does not
+   * select the mask during decoding.
+   */
   readonly label: string;
   /** Transform an isolated 16-byte array; return exactly 16 bytes or `UuidSlugError`. */
   readonly mask: (bytes: Uint8Array) => Uint8Array | UuidSlugError;
@@ -179,7 +183,7 @@ export interface UuidV7MaskOptions {
    */
   readonly seed: string | Uint8Array;
   /**
-   * Key-derivation work factor in `1..1000000`, paid at schema construction rather than per ID.
+   * Key-derivation work factor in `1..16777216` (2^24), paid at mask construction rather than per ID.
    * Changing it changes every derived key, so retain the old seed and count in `previousMasks`
    * when identifiers issued under them must remain readable.
    *
@@ -289,18 +293,18 @@ export interface UuidSlugMigrationDecoder<
 /** Configure one immutable UUIDv7 codec for writing, key rotation, and sentinels. */
 export interface UuidV7SlugCodecOptions {
   /**
-   * Decode-only schemas tried after `mask`, in caller order. Each item accepts a mask handle or its
-   * construction options. Keep the list short: every schema adds decoding work and another chance
+   * The writer mask and first reader. Supply a private seed or explicitly choose
+   * `UUID_V7_TEST_MASK` for public test data.
+   */
+  readonly mask: UuidV7Mask | UuidV7MaskOptions;
+  /**
+   * Decode-only masks tried after `mask`, in caller order. Each item accepts a mask or its
+   * construction options. Keep the list short: every mask adds decoding work and another chance
    * for a random input to pass its 16-bit check.
    *
    * @defaultValue No previous masks.
    */
   readonly previousMasks?: readonly (UuidV7Mask | UuidV7MaskOptions)[];
-  /**
-   * The writer schema and first reader. Supply a private seed or explicitly choose
-   * `UUID_V7_TEST_MASK` for public test data.
-   */
-  readonly mask: UuidV7Mask | UuidV7MaskOptions;
   /**
    * Named UUIDv7 values emitted as raw direct slugs instead of masked payloads.
    *

@@ -331,8 +331,8 @@ describe("masked UUID slugs", () => {
       mask: (input) => input.map((_, i) => input[(i + 5) % 16] as number),
       unmask: (input) => input.map((_, i) => input[(i + 5) % 16] as number),
     });
-    expect(ignoresDirection).toMatchObject({ code: "invalid_mask_schema" });
-    expect(reordersBothWays).toMatchObject({ code: "invalid_mask_schema" });
+    expect(ignoresDirection).toMatchObject({ code: "invalid_mask" });
+    expect(reordersBothWays).toMatchObject({ code: "invalid_mask" });
     expect(createCodec({ mask: { seed: "fine-test-seed-0000" } })).not.toBeInstanceOf(Error);
   });
 

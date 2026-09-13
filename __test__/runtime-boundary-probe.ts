@@ -660,7 +660,7 @@ export const runtimeBoundaryCases = [
       );
       const failure = codec.generateSlug();
       assert.ok(failure instanceof UuidSlugError);
-      assert.equal(failure.code, "invalid_mask_schema");
+      assert.equal(failure.code, "invalid_mask");
     },
   },
 ];

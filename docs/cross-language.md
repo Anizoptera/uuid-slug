@@ -52,8 +52,8 @@ Use validated `Uuid` values between operations; parse text once rather than at e
 | v7 generation, explicit time and caller storage | `UuidV7Generator::generate`, `at`, and their `_with`/`_into_with` forms |
 | Generated plain or masked slugs | Generate a `Uuid`, then call `slug` or the keyed codec |
 | UUIDv7 timestamp | `Uuid::timestamp` |
-| Sync/async schemas and custom transforms | `create_mask_schema`, `create_mask_schema_async`, `MaskSchema::custom(label, mask, unmask)` |
-| Explicit public schema | `UUID_V7_TEST_MASK`; `public_mask_schema()` |
+| Sync/async masks and custom transforms | `create_mask_schema`, `create_mask_schema_async`, `MaskSchema::custom(label, mask, unmask)` |
+| Explicit public mask | `UUID_V7_TEST_MASK`; `public_mask_schema()` |
 | Key rotation, masked text/byte conversion and sentinels | `CodecOptions::new`, `Codec::encode_uuid`, `decode_slug`, `Uuid::as_bytes`, `write_into`, `sentinels` |
 | Known/mixed-format migration and candidates | `Codec::migration_decoder`, `MigrationDecoder::decode`, `candidates`, `MigrationOptions` |
 | Plain timestamp window | Parse UUID or plain slug, then `UuidV7TimestampWindow::validate`; retain the original text if needed |
@@ -67,7 +67,7 @@ a diagnostic source does not change how callers match a failure; bridges seriali
 error names and codes. It is a classifier, not an authenticity boundary for untrusted objects.
 
 Generators own mutable sequence state; codecs own immutable keys. Both languages require callers
-to select private key material or the published schema explicitly. Keeping generation separate allows
+to select private key material or the published mask explicitly. Keeping generation separate allows
 shared codecs without a hidden generator lock. Default generators use platform entropy; custom
 `_with` callbacks must fill the entire destination or fail. Pass `generation::fill_os_random` to
 caller-buffer operations for the same platform source. Invalid destination ranges draw no entropy.
@@ -77,7 +77,7 @@ version and variant checks belong to UUID guards.
 `decode_to`, UUID text and slug parsing validate the complete identifier before writing; all
 fixed-size decoding, parsing and generation commit caller storage only on success.
 
-Async schema derivation returns an opaque `Send` future and a separate public `Cancellation`
+Async mask derivation returns an opaque `Send` future and a separate public `Cancellation`
 handle. Callers can schedule and cancel work without depending on the derivation state's fields,
 layout, or incidental auto-traits.
 

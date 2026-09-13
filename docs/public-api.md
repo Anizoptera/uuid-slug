@@ -174,9 +174,9 @@ Keep UUID text/binary conversion directional and version-neutral:
 - A fallback may lose only a property the public contract explicitly leaves unpromised. Expose a
   material capability difference instead of silently reducing every runtime to the weakest host.
 - Do not perform work merely because configuration or an implementation makes it available. Each
-  parse, allocation, copy, entropy draw, hash, schema attempt, import, and system call must serve
+  parse, allocation, copy, entropy draw, hash, mask attempt, import, and system call must serve
   the selected operation and must be reused when one result satisfies several checks.
-- Keep successful common paths free of exception-driven capability detection, repeated schema
+- Keep successful common paths free of exception-driven capability detection, repeated mask
   derivation, duplicate validation, unnecessary allocation, runtime dependencies, and work for
   opt-in features.
 - Keep the safe operation as the default. Add an explicitly named unsafe variant only when repeated

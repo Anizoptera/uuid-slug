@@ -53,10 +53,10 @@ declare type EnabledMigrationOption<
 > = Option extends keyof Options ? (true extends Options[Option] ? Option : never) : never;
 declare const ERROR_CODES: readonly [
   "aborted",
-  "invalid_base32",
+  "invalid_base32hex",
   "invalid_base64url",
   "invalid_buffer",
-  "invalid_mask_schema",
+  "invalid_mask",
   "invalid_options",
   "invalid_sentinel",
   "invalid_timestamp",
@@ -106,7 +106,6 @@ export declare function isUuidV7Slug(value: unknown): value is UuidV7Slug;
 export declare function isUuidV7String(value: unknown): value is UuidV7String;
 declare type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 export declare type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
-declare const maskSchemaBrand: unique symbol;
 declare const MIGRATION_FORMATS: readonly ["current-mask", "original-mask", "plain-slug"];
 declare type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> = Input extends
   | UuidV4String
@@ -207,8 +206,9 @@ export declare interface UuidV7GeneratorOptions {
 }
 export declare interface UuidV7Mask {
   readonly label: string;
-  readonly [maskSchemaBrand]: true;
+  readonly [uuidV7MaskBrand]: true;
 }
+declare const uuidV7MaskBrand: unique symbol;
 export declare interface UuidV7MaskOptions {
   readonly label?: string;
   readonly seed: string | Uint8Array;
@@ -260,8 +260,8 @@ export declare interface UuidV7SlugCodec {
   ): (Input & UuidV7CodecSlug) | UuidSlugError;
 }
 export declare interface UuidV7SlugCodecOptions {
-  readonly previousMasks?: readonly (UuidV7Mask | UuidV7MaskOptions)[];
   readonly mask: UuidV7Mask | UuidV7MaskOptions;
+  readonly previousMasks?: readonly (UuidV7Mask | UuidV7MaskOptions)[];
   readonly sentinels?: readonly UuidV7SentinelConfig[];
   readonly outputAlphabet?: SlugAlphabet;
 }

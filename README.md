@@ -270,7 +270,7 @@ and both are part of the contract rather than implementation detail:
 - **A decoded slug is a candidate, not a proof.** Roughly one random 22-character string in
   65,536 passes the check and decodes to a well-formed, possibly unissued UUID. Look the result
   up in your own store; a wrong candidate is then a miss rather than a wrong answer. Every extra
-  distinct schema you try adds another opportunity for false acceptance; the combined rate is
+  mask you try adds another opportunity for false acceptance; the combined rate is
   at most the sum of the individual rates. Keep the rotation list short.
 - **Masking refuses a timestamp at or past 2^42 ms**, which arrives in the year 2109. It returns
   `invalid_timestamp` because those six bits are spent on the check. Truncating instead would let
@@ -305,7 +305,7 @@ unique, canonical UUIDv7 text.
 
 Keep sentinel definitions stable while their slugs are in use. Decoding checks sentinels first, so they
 are reserved even if a mask could produce the same text. Encoding rejects a non-sentinel UUID
-whose masked output collides with a reserved slug, using `invalid_mask_schema`; it never returns
+whose masked output collides with a reserved slug, using `invalid_mask`; it never returns
 a slug that would decode to the wrong sentinel.
 
 ## What masking is not
@@ -339,7 +339,7 @@ async function findAuthorizedRecord<Record>(
 ```
 
 **Supply your own secret seed for real identifiers.** Codec construction fails with
-`invalid_mask_schema` when `mask` is missing. For tests and demos that need stable public bytes,
+`invalid_mask` when `mask` is missing. For tests and demos that need stable public bytes,
 select `UUID_V7_TEST_MASK` explicitly; anyone can decode identifiers produced with it.
 
 ## Handling errors
@@ -466,7 +466,7 @@ When storage is supplied, it validates and decodes before writing, then returns 
 an error leaves the array unchanged.
 
 Each decoder accepts every value that a supported matching encoder can produce. Masked decoding
-always accepts both alphabets, sentinels, and current or previous mask schemas. Migration adds only
+always accepts both alphabets, sentinels, and current or previous masks. Migration adds only
 the old formats you enable. Forms no supported encoder produces are invalid.
 
 Also exported, all module-level:
@@ -477,7 +477,7 @@ Also exported, all module-level:
   or bytes. Use `codec.extractSlugTimestamp` for masked slugs and sentinels because their decoding
   keys belong to the codec. Both return an error for other UUID versions; a v4's first six bytes
   are random and must not be presented as a timestamp.
-- `createUuidV7Mask` builds a schema from a seed; `createUuidV7MaskAsync` adds cooperative
+- `createUuidV7Mask` builds a mask from a seed; `createUuidV7MaskAsync` adds cooperative
   cancellation; `createCustomUuidV7Mask` adapts separate forward and reverse callbacks.
   `UUID_V7_TEST_MASK` is the explicit, published-key choice for deterministic examples.
 - `createUuidV7Generator(options)` builds a full generator with your `clock` and the package's
@@ -487,8 +487,8 @@ Also exported, all module-level:
 - `UuidSlugError`, including code `rng_unavailable` when the runtime has no usable randomness.
   `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes package errors across
   JavaScript realms and duplicate package copies.
-- `UUID_SLUG_ALPHABETS` and `UUID_SLUG_MIGRATION_FORMATS` are the runtime values for schema,
-  configuration, and user-interface validation. Their TypeScript unions derive from the same lists.
+- `UUID_SLUG_ALPHABETS` and `UUID_SLUG_MIGRATION_FORMATS` are the runtime values for
+  configuration and user-interface validation. Their TypeScript unions derive from the same lists.
 
 ### Codec options
 
@@ -542,9 +542,9 @@ function adaptMask(mix: (input: Uint8Array, output: Uint8Array, forward: boolean
 
 `createUuidV7Mask({ seed, keyDerivationIterations })` returns an error for invalid seed options.
 `createUuidV7SlugCodec(options)` returns an error for invalid options. Create custom handles before
-passing them; an arbitrary object is not a schema.
+passing them; an arbitrary object is not a mask.
 
-For expensive derivation, await `createUuidV7MaskAsync` and pass the completed schema to the codec:
+For expensive derivation, await `createUuidV7MaskAsync` and pass the completed mask to the codec:
 
 ```ts
 import {
@@ -566,18 +566,18 @@ async function createResponsiveCodec(
 The async form derives the same keys and accepts the same seed settings. It splits encoding,
 packing and hashing into cooperative work slices, allowing host tasks to run during long
 construction. Cancellation stops derivation and returns `UuidSlugError` with code `aborted` and
-`signal.reason` as its cause. Invalid options return `invalid_mask_schema`; unexpected construction
-failures retain their cause. No partially derived schema is returned.
+`signal.reason` as its cause. Invalid options return `invalid_mask`; unexpected construction
+failures retain their cause. No partially derived mask is returned.
 
 Options are captured when called. Byte seeds are copied before the first suspension, so later
 caller mutation cannot change the key; synchronize concurrent writes to shared backing memory.
 Copying a very large byte seed, plus allocation, GC, and host scheduling, can still block longer
-than one work slice. Small derivations need no host yield. Construct once and reuse the schema;
+than one work slice. Small derivations need no host yield. Construct once and reuse the mask;
 passing seed options to each new codec would repeat derivation.
 
 `previousMasks` is how you rotate a seed. Decoding tries `mask` first, then each entry in the
 order you list them, and the first whose check passes wins. Put the newest first, and keep the
-list short. Nothing else is ever tried: a codec decodes with the schemas you gave it and no
+list short. Nothing else is ever tried: a codec decodes with the masks you gave it and no
 others.
 
 ```ts
@@ -783,8 +783,8 @@ and masking limits.
   unchanged.
 - **You pay for masking only if you mask.** Named root imports let supported bundlers remove the
   cipher, key derivation, sentinel table, and unrelated generation code.
-- **Masking is explicit.** A codec requires private mask options or a package-produced schema
-  handle. The published-key schema is available only as `UUID_V7_TEST_MASK`; omission never
+- **Masking is explicit.** A codec requires private mask options or a package-produced mask.
+  The published-key mask is available only as `UUID_V7_TEST_MASK`; omission never
   selects it.
 
 ## Runtime

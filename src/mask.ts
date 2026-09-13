@@ -19,14 +19,14 @@ function applyMix(
     const cause = applyMaskSchema(schema, input, output, direction);
     return cause
       ? new UuidSlugError(
-          "invalid_mask_schema",
+          "invalid_mask",
           `UUIDv7 mask "${schema.label}" failed while ${direction === "mask" ? "masking" : "unmasking"}.`,
           { cause },
         )
       : undefined;
   } catch (cause) {
     return new UuidSlugError(
-      "invalid_mask_schema",
+      "invalid_mask",
       `UUIDv7 mask "${schema.label}" failed while ${direction === "mask" ? "masking" : "unmasking"}.`,
       { cause },
     );
@@ -123,7 +123,7 @@ export function ownedUuidV7BytesToMaskedSlug(
     );
   const tag = tagFor(raw, TAG_BITS);
   injectTag(raw, tag >>> OUTER_TAG_BITS);
-  // Every schema receives an isolated block. Reusing that block as output removes a second
+  // Every mask receives an isolated block. Reusing that block as output removes a second
   // allocation; built-in transforms read all words before writing and custom transforms copy input.
   const failed = applyMix(schema, raw, raw, "mask");
   if (failed) return failed;
@@ -136,7 +136,7 @@ export function ownedUuidV7BytesToMaskedSlug(
       : undefined;
   if (canonical !== undefined && reserved?.has(canonical))
     return new UuidSlugError(
-      "invalid_mask_schema",
+      "invalid_mask",
       "Masked output collides with a reserved sentinel. Configure a different mask or sentinel set.",
     );
   return (
@@ -167,7 +167,10 @@ export function decodeMaskedSlug(
     const primary = unmix(mixed, outerTag, schema);
     return (
       primary ??
-      new UuidSlugError("invalid_uuid_slug", "Masked UUID slug failed schema validation.")
+      new UuidSlugError(
+        "invalid_uuid_slug",
+        "No configured mask decodes this slug: its check fails under every key.",
+      )
     );
   }
   const word0 = read32(mixed, 0);
@@ -184,7 +187,10 @@ export function decodeMaskedSlug(
     if (decoded instanceof Error) return decoded;
     if (decoded) return decoded;
   }
-  return new UuidSlugError("invalid_uuid_slug", "Masked UUID slug failed schema validation.");
+  return new UuidSlugError(
+    "invalid_uuid_slug",
+    "No configured mask decodes this slug: its check fails under every key.",
+  );
 }
 
 /** Capture the first passing UUID before another callback can mutate its private bytes. */
@@ -252,7 +258,7 @@ function unmix(
   outerTag: number,
   schema: UuidV7Mask,
 ): Uint8Array | undefined | UuidSlugError {
-  // `mixed` is already private to this schema attempt, so the same alias-safe transform contract
+  // `mixed` is already private to this mask attempt, so the same alias-safe transform contract
   // can write back into it instead of allocating another block.
   const failed = applyMix(schema, mixed, mixed, "unmask");
   if (failed) return failed;

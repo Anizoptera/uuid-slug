@@ -136,7 +136,7 @@ export const codecBoundaryCases = [
       );
       for (const result of results) {
         assert.ok(result instanceof UuidSlugError);
-        assert.equal(result.code, "invalid_mask_schema");
+        assert.equal(result.code, "invalid_mask");
       }
       assert.equal(readsAfterInvalidSeed, 0);
     },
@@ -197,12 +197,12 @@ export const codecBoundaryCases = [
               });
         const result = Reflect.apply(createCodec, undefined, [options]);
         assert.ok(result instanceof UuidSlugError);
-        assert.equal(result.code, "invalid_mask_schema");
+        assert.equal(result.code, "invalid_mask");
         assert.equal(observed, false);
       }
       const forged = Reflect.apply(createCodec, undefined, [{ mask: { label: "forged" } }]);
       assert.ok(forged instanceof UuidSlugError);
-      assert.equal(forged.code, "invalid_mask_schema");
+      assert.equal(forged.code, "invalid_mask");
       assert.ok(!(createCodec({ mask: UUID_V7_TEST_MASK }) instanceof Error));
     },
   },
@@ -511,7 +511,7 @@ export const codecBoundaryCases = [
       fail = true;
       const refused = codec.decodeSlug(slug);
       assert.ok(refused instanceof UuidSlugError);
-      assert.equal(refused.code, "invalid_mask_schema");
+      assert.equal(refused.code, "invalid_mask");
       assert.equal(refused.cause, cause);
     },
   },
@@ -538,7 +538,7 @@ export const codecBoundaryCases = [
         });
         const result = codec.encodeUuid("019ff19b-58b8-7000-9b1b-df713bd55607");
         assert.ok(result instanceof UuidSlugError);
-        assert.equal(result.code, "invalid_mask_schema");
+        assert.equal(result.code, "invalid_mask");
         assert.equal(
           codec.decodeSlug("AAAAAAAAcACAAAAAAAAAAA"),
           "00000000-0000-7000-8000-000000000000",
@@ -633,7 +633,7 @@ export const codecBoundaryCases = [
       });
       for (const error of [malformed, notInverse]) {
         assert.ok(error instanceof UuidSlugError);
-        assert.equal(error.code, "invalid_mask_schema");
+        assert.equal(error.code, "invalid_mask");
       }
     },
   },
@@ -657,7 +657,7 @@ export const codecBoundaryCases = [
           unmask: (input) => input,
         });
         assert.ok(error instanceof UuidSlugError);
-        assert.equal(error.code, "invalid_mask_schema");
+        assert.equal(error.code, "invalid_mask");
         assert.equal(error.cause, cause);
       }
     },
@@ -696,7 +696,7 @@ export const codecBoundaryCases = [
   {
     name: "returns schema failures after construction with their original cause",
     run() {
-      const cause = new UuidSlugError("invalid_mask_schema", "schema unavailable");
+      const cause = new UuidSlugError("invalid_mask", "schema unavailable");
       let fail = false;
       const schema = unwrap(
         createCustomUuidV7Mask({
@@ -716,7 +716,7 @@ export const codecBoundaryCases = [
       fail = true;
       for (const result of [codec.encodeUuid(uuid), codec.decodeSlug(slug as string)]) {
         assert.ok(result instanceof UuidSlugError);
-        assert.equal(result.code, "invalid_mask_schema");
+        assert.equal(result.code, "invalid_mask");
         assert.equal(result.cause, cause);
       }
     },

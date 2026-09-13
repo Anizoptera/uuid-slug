@@ -93,7 +93,7 @@ mod tests {
             })?;
             assert_eq!(
                 codec.encode_uuid(uuid).unwrap_err().code(),
-                ErrorCode::InvalidMaskSchema
+                ErrorCode::InvalidMask
             );
             assert_eq!(codec.decode_slug(&reserved.slug(alphabet))?, reserved);
         }
@@ -131,7 +131,7 @@ mod tests {
         })?;
         failing.store(true, Ordering::Relaxed);
         let error = fallback.decode_slug(&slug).unwrap_err();
-        assert_eq!(error.code(), ErrorCode::InvalidMaskSchema);
+        assert_eq!(error.code(), ErrorCode::InvalidMask);
         assert!(std::error::Error::source(&error).is_some());
         let migration = first.migration_decoder(MigrationOptions::default());
         assert_eq!(
@@ -142,7 +142,7 @@ mod tests {
         let error = migration
             .candidates(&slug, Some(MigrationFormat::Current))
             .unwrap_err();
-        assert_eq!(error.code(), ErrorCode::InvalidMaskSchema);
+        assert_eq!(error.code(), ErrorCode::InvalidMask);
         assert!(std::error::Error::source(&error).is_some());
         Ok(())
     }
@@ -231,7 +231,7 @@ impl Codec {
         if self.masked == Alphabet::Base64Url || (tail == 0 && !self.reserved.is_empty()) {
             let base64 = Alphabet::Base64Url.encode_tail(&bytes, tail, 4)?;
             if self.sentinel(&base64).is_some() {
-                return Err(Error::new(ErrorCode::InvalidMaskSchema));
+                return Err(Error::new(ErrorCode::InvalidMask));
             }
             if self.masked == Alphabet::Base64Url {
                 return Ok(base64);

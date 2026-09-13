@@ -146,10 +146,10 @@ impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::UuidV7TimestampW
 pub mod uuid_slug::error
 #[non_exhaustive] pub enum uuid_slug::error::ErrorCode
 pub uuid_slug::error::ErrorCode::Aborted
-pub uuid_slug::error::ErrorCode::InvalidBase32
+pub uuid_slug::error::ErrorCode::InvalidBase32Hex
 pub uuid_slug::error::ErrorCode::InvalidBase64Url
 pub uuid_slug::error::ErrorCode::InvalidBuffer
-pub uuid_slug::error::ErrorCode::InvalidMaskSchema
+pub uuid_slug::error::ErrorCode::InvalidMask
 pub uuid_slug::error::ErrorCode::InvalidSentinel
 pub uuid_slug::error::ErrorCode::InvalidTimestamp
 pub uuid_slug::error::ErrorCode::InvalidUuid
@@ -327,10 +327,10 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::alphabet::Alphabet
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::alphabet::Alphabet
 #[non_exhaustive] pub enum uuid_slug::ErrorCode
 pub uuid_slug::ErrorCode::Aborted
-pub uuid_slug::ErrorCode::InvalidBase32
+pub uuid_slug::ErrorCode::InvalidBase32Hex
 pub uuid_slug::ErrorCode::InvalidBase64Url
 pub uuid_slug::ErrorCode::InvalidBuffer
-pub uuid_slug::ErrorCode::InvalidMaskSchema
+pub uuid_slug::ErrorCode::InvalidMask
 pub uuid_slug::ErrorCode::InvalidSentinel
 pub uuid_slug::ErrorCode::InvalidTimestamp
 pub uuid_slug::ErrorCode::InvalidUuid
@@ -690,10 +690,10 @@ impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::UuidV7TimestampW
 pub mod uuid_slug::error
 #[non_exhaustive] pub enum uuid_slug::error::ErrorCode
 pub uuid_slug::error::ErrorCode::Aborted
-pub uuid_slug::error::ErrorCode::InvalidBase32
+pub uuid_slug::error::ErrorCode::InvalidBase32Hex
 pub uuid_slug::error::ErrorCode::InvalidBase64Url
 pub uuid_slug::error::ErrorCode::InvalidBuffer
-pub uuid_slug::error::ErrorCode::InvalidMaskSchema
+pub uuid_slug::error::ErrorCode::InvalidMask
 pub uuid_slug::error::ErrorCode::InvalidSentinel
 pub uuid_slug::error::ErrorCode::InvalidTimestamp
 pub uuid_slug::error::ErrorCode::InvalidUuid
@@ -867,10 +867,10 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::alphabet::Alphabet
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::alphabet::Alphabet
 #[non_exhaustive] pub enum uuid_slug::ErrorCode
 pub uuid_slug::ErrorCode::Aborted
-pub uuid_slug::ErrorCode::InvalidBase32
+pub uuid_slug::ErrorCode::InvalidBase32Hex
 pub uuid_slug::ErrorCode::InvalidBase64Url
 pub uuid_slug::ErrorCode::InvalidBuffer
-pub uuid_slug::ErrorCode::InvalidMaskSchema
+pub uuid_slug::ErrorCode::InvalidMask
 pub uuid_slug::ErrorCode::InvalidSentinel
 pub uuid_slug::ErrorCode::InvalidTimestamp
 pub uuid_slug::ErrorCode::InvalidUuid

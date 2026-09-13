@@ -37,7 +37,7 @@ impl Alphabet {
     fn error(self) -> Error {
         match self {
             Self::Base64Url => Error::new(ErrorCode::InvalidBase64Url),
-            Self::Base32Hex => Error::new(ErrorCode::InvalidBase32),
+            Self::Base32Hex => Error::new(ErrorCode::InvalidBase32Hex),
         }
     }
     fn encode_raw(self, bytes: &[u8]) -> String {

@@ -52,7 +52,7 @@ export const BASE64URL: Alphabet = /*#__PURE__*/ alphabet(
 export const BASE32HEX: Alphabet = /*#__PURE__*/ alphabet(
   "base32hex",
   "0123456789abcdefghijklmnopqrstuv",
-  "invalid_base32",
+  "invalid_base32hex",
 );
 
 // Native encoding is strict on output; decoding stays here because it must reject aliases,

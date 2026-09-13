@@ -2,10 +2,10 @@
 
 const ERROR_CODES = [
   "aborted",
-  "invalid_base32",
+  "invalid_base32hex",
   "invalid_base64url",
   "invalid_buffer",
-  "invalid_mask_schema",
+  "invalid_mask",
   "invalid_options",
   "invalid_sentinel",
   "invalid_timestamp",

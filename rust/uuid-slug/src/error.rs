@@ -8,20 +8,20 @@ pub enum ErrorCode {
     /// Work was cancelled before completion.
     Aborted,
     /// Invalid lowercase base32hex text or nonzero padding.
-    InvalidBase32,
+    InvalidBase32Hex,
     /// Invalid base64url text or nonzero padding.
     InvalidBase64Url,
     /// The requested byte range does not fit the buffer.
     InvalidBuffer,
     /// The mask configuration violates its contract.
-    InvalidMaskSchema,
+    InvalidMask,
     /// A sentinel name is empty or repeats within one codec.
     InvalidSentinel,
     /// A timestamp is nonfinite, negative, fractional or outside its allowed range.
     InvalidTimestamp,
     /// UUID text is not canonical lowercase hexadecimal with hyphens.
     InvalidUuid,
-    /// A slug has an invalid length or cannot be decoded under the configured schemas.
+    /// A slug has an invalid length or cannot be decoded under the configured masks.
     InvalidUuidSlug,
     /// The operation requires an RFC-variant UUIDv7.
     InvalidUuidVersion,
@@ -36,10 +36,10 @@ impl ErrorCode {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Aborted => "aborted",
-            Self::InvalidBase32 => "invalid_base32",
+            Self::InvalidBase32Hex => "invalid_base32hex",
             Self::InvalidBase64Url => "invalid_base64url",
             Self::InvalidBuffer => "invalid_buffer",
-            Self::InvalidMaskSchema => "invalid_mask_schema",
+            Self::InvalidMask => "invalid_mask",
             Self::InvalidSentinel => "invalid_sentinel",
             Self::InvalidTimestamp => "invalid_timestamp",
             Self::InvalidUuid => "invalid_uuid",
@@ -53,14 +53,14 @@ impl ErrorCode {
     const fn message(self) -> &'static str {
         match self {
             Self::Aborted => "Operation aborted.",
-            Self::InvalidBase32 => {
+            Self::InvalidBase32Hex => {
                 "Expected canonical lowercase base32hex with zero trailing bits."
             }
             Self::InvalidBase64Url => {
                 "Expected canonical 22-character unpadded base64url with zero trailing bits."
             }
             Self::InvalidBuffer => "The requested byte range does not fit the buffer.",
-            Self::InvalidMaskSchema => "Invalid mask schema or key parameters.",
+            Self::InvalidMask => "Invalid mask or key parameters.",
             Self::InvalidSentinel => "Sentinel names must be nonempty and unique within a codec.",
             Self::InvalidTimestamp => "Timestamp must fit the operation's millisecond range.",
             Self::InvalidUuid => "Expected a lowercase UUID with canonical hyphens.",

@@ -708,7 +708,7 @@ statistically unresolved on both Node 24.20.0 and Bun 1.4.1; paired median ratio
 to 1.04 and every 95% interval crossed 1. Keep the direct call and its one alphabet branch. Retest
 only if a primary engine stops specializing the codec's captured alphabet across that call.
 
-Built-in mask exception bypass was rejected. Marking built-in schema handles as non-throwing added
+Built-in mask exception bypass was rejected. Marking built-in mask handles as non-throwing added
 a protocol field and a per-call branch so only custom callbacks entered `try`/`catch`. Two
 eight-round packed screens found no repeatable built-in win. Node timestamp extraction regressed
 4.1–6.5% in both screens; one screen also regressed caller-owned decode by 9.3%. Custom Node decode
