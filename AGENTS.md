@@ -12,6 +12,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   preferable to a UUID-only library, and keep its capability and representation maps consistent
   with the public API. Update the owning explanation with every consumer-visible change; do not
   copy implementation reasoning or create parallel inventories in other docs.
+- Position the package by the complete consumer contract: compact reversible representations,
+  caller-owned storage, UUIDv7 masking and migration, typed failures, and adaptive runtime paths.
+  Generation alone is not distinctive. State measured losses as gaps, never hide them with hype.
 - The externally visible API is reserved. Put any proposed public export, option, behavior, or
   feature change and its consumer consequences in the same pull request. Merging is the maintainer
   decision; no separate acceptance step exists.
@@ -38,6 +41,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   Preserve both their 22-character base64url and lossless 27-character base32hex spellings.
   Reject overflow rather than truncate. Base64url helpers accept exactly one 16-byte UUID payload
   or its canonical 22-character spelling; reject every other length. Preserve plain-slug padding rejection.
+- Explain masking without confusing problem and scope: every UUID version exposes standardized
+  fields, while this package deliberately defines a masked wire format only for UUIDv7.
 - Read `docs/cross-language.md` before Rust work or changes shared with TypeScript. It owns
   parity, approved filesystem-safe output and distribution boundaries. Keep base64url defaults;
   select filesystem-safe masked output independently from the plain-slug alphabet.
@@ -119,8 +124,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 ## Runtime boundaries and evidence
 
 - Use the `typescript` package for project checking; TypeScript 7 is the main compiler.
-  `typescript-floor` is limited to the TypeScript 5.7 packed-consumer check and the release scripts
-  that require its legacy in-process parser and printer API.
+  `typescript-floor` is limited to the TypeScript 5.0 packed-consumer check and tooling that needs
+  legacy in-process compiler APIs such as the parser, printer, or language service.
 - Document every performance-motivated function and branch inside its owning implementation. Use
   ordinary code comments to state why the shape exists, the strongest live alternative it rejects,
   the boundary where the choice stops applying, and the change that requires remeasurement. Public
@@ -181,11 +186,11 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   method name identifies the code under test. Compare byte keys with `join(",")` or hex,
   never platform-dependent string coercion or UTF-8 decoding.
 - Preserve an unpinned newest-Node CI lane: pinned runtimes cannot expose newly added native APIs.
-- Rank native platform primitives and every competitor that produces the requested standards-compliant
-  result with cryptographic entropy. Different API shape or internal policy is not grounds for
-  exclusion unless it causes a material correctness, entropy, uniqueness, or timestamp failure in
-  the measured operation. Keep rejected rows timed but out of winner selection, store the concrete
-  reason in the case inventory, and recheck every rejection when that package version changes.
+- Rank apples-to-apples consumer outcomes, not identical internals. Correct wire output, secure
+  entropy, and published guarantees are mandatory; weigh other differences by measured consumer
+  harm. Clock rollback, sequence, buffer, ownership, validation, and failure strategies remain
+  comparable unless their effect materially weakens the requested result. Keep weaker rows timed
+  and inspect faster mechanisms that could preserve our guarantees; keep native primitives as floors.
 - Probe optional capabilities once at module load; absent methods remain undefined. A defined
   method that throws for an absent capability creates exception-driven fallback on every call.
 - Cast probes to narrow optional capability shapes, not intersections with ambient types that

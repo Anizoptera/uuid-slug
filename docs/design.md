@@ -5,9 +5,9 @@ Preserve the wire layout when changing masking so previously issued slugs remain
 Read [README.md](../README.md) for the consumer contract. This document explains the byte layout,
 key schedule, and limits needed to audit or reimplement the built-in scheme.
 
-The transform covers the complete compact UUIDv7 payload so its public spelling exposes no fixed
-UUID field positions. The timestamp is the most sensitive field, but it is not the only structure
-being hidden.
+Every UUID version has standardized fields. This wire format covers the complete compact UUIDv7
+payload so its public spelling exposes none of those fixed positions. UUIDv7's timestamp is the
+most sensitive field, but it is not the only structure being hidden.
 
 ## Representations and bit budget
 

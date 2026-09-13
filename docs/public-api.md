@@ -43,10 +43,13 @@ non-JSDoc comments; keep exploration transient.
 - Point a subpath at its owning module when that module has exactly the promised exports. Use a
   facade when internal exports would otherwise become public or one path joins several owners.
   `/slug/v4` and `/slug/v7` need neither, so a wrapper would add a file and one direct load.
-- Add a subpath only when a packed direct-ESM consumer loads fewer modules or the optimized bundle
-  ships fewer bytes. Remove it when neither remains true.
+- Add a subpath only when packed consumers show a material bundle, startup, or resource reduction
+  for a distinct job. A lower module count is a mechanism clue, not sufficient evidence. Remove the
+  path when its measured consumer value no longer pays for a permanent public entry.
 - Preserve native ESM and module seams. Consumer bundlers already remove unused root exports;
   bundling this package first would hide those seams from them.
+- Recommend the root by default. Focused entries exist for unbundled startup-sensitive consumers;
+  they must not make ordinary callers choose a package topology.
 - A public condition must select different output or guard an incompatible lower condition. Put
   `deno` before `development` and `node`: Deno activates `node` and may activate `development`.
   Its strict resolver rejects this source graph's extensionless imports, so serve compiled ESM to

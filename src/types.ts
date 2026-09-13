@@ -145,7 +145,7 @@ export interface UuidV7Generator {
   ): Output | UuidSlugError;
 }
 
-/** An immutable handle for reversibly hiding recognizable UUIDv7 structure; key material is not exposed. */
+/** An immutable handle for masking the recognizable fields of a UUIDv7; key material is not exposed. */
 export interface UuidV7Mask {
   /** Diagnostic label only; mask objects and caller order select decoding behavior. */
   readonly label: string;

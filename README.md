@@ -1,7 +1,8 @@
 # @anizoptera/uuid-slug
 
-Generate UUIDv4 and UUIDv7 identifiers, store them as text or bytes, shorten them for URLs, and
-optionally hide the recognizable structure of UUIDv7 values. The package has no runtime dependencies.
+Generate, validate, store, shorten, and inspect UUIDv4 and UUIDv7 identifiers. For public UUIDv7
+IDs, reversible keyed masking removes their recognizable UUID layout. The package has no runtime
+dependencies.
 
 [![npm version](https://img.shields.io/npm/v/@anizoptera/uuid-slug?label=npm)](https://www.npmjs.com/package/@anizoptera/uuid-slug)
 [![CI](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml)
@@ -13,15 +14,14 @@ A **UUID** is a 128-bit identifier. Its usual text form is 36 characters of hex 
 **slug** here is the same identifier encoded as short URL-safe text. A direct base64url slug is 22
 characters and loses no information: it converts back to the original UUID.
 
-UUIDv7 adds a second problem. Its standard text and direct slugs expose a recognizable UUID layout,
-including version, variant, and millisecond timestamp fields. The timestamp is useful in a database
-index but can reveal when records were created and how quickly IDs are issued. Masking transforms
-the complete compact UUIDv7 payload into keyed, unstructured-looking text, then recovers the UUID
-for a lookup. It is obfuscation, not an authorization boundary.
+Every UUID version exposes a standardized bit layout in UUID text, bytes, and direct slugs. UUIDv7
+also exposes its millisecond timestamp. This package masks UUIDv7: it transforms the compact payload
+into keyed, unstructured-looking text and recovers the UUID for lookup. Masking is obfuscation, not
+an authorization boundary.
 
 This package defines no new identity scheme. UUID text, bytes, and direct slugs are reversible
 representations of the same value. Masked slugs also recover the same UUID through their codec.
-Only UUIDv7 can be masked. UUIDv4 remains available as UUID text, bytes, or a direct slug.
+This package masks only UUIDv7. UUIDv4 remains available as UUID text, bytes, or a direct slug.
 
 ## When to use it
 
@@ -32,7 +32,7 @@ Use this package when you need more than UUID generation:
 | Short UUIDs in URLs | Lossless 22-character base64url slugs |
 | Text keys ordered by UUIDv7 time | 26-character base32hex direct slugs that sort by encoded millisecond |
 | Binary database keys | Atomic conversion to and from 16-byte caller-owned storage |
-| Public IDs without recognizable UUIDv7 structure | Reversible keyed masking with a 16-bit wrong-key check |
+| Public UUIDv7 IDs without recognizable UUID structure | Reversible keyed masking with a 16-bit wrong-key check |
 | Key rotation or old stored links | Ordered previous masks and opt-in migration readers |
 | Reserved IDs such as `anonymous` | Named sentinels that remain recognizable |
 | Strong TypeScript boundaries | Branded representations, version-aware results, and typed errors |
@@ -47,9 +47,7 @@ share one checked contract.
 pnpm add @anizoptera/uuid-slug
 ```
 
-Requires TypeScript 5.7 or newer for `Uint8Array<ArrayBuffer>` declarations.
-
-Direct ESM consumers can avoid loading unrelated modules:
+Import from the package root unless direct ESM startup is important:
 
 ```ts
 import { uuidToBytes } from "@anizoptera/uuid-slug/uuid";
@@ -60,8 +58,10 @@ import { generateUuidV4Slug } from "@anizoptera/uuid-slug/slug/v4";
 import { generateUuidV7Slug } from "@anizoptera/uuid-slug/slug/v7";
 ```
 
-Use the root import when you need masking or several groups together. Bundlers remove unused root
-exports; the subpaths mainly reduce module loading when no bundler runs.
+Tested bundlers produce the same optimized bytes from root and focused imports. The focused paths
+are optional: repeated cold-process measurements found lower startup cost across Node, Bun, and
+Deno because they load only the relevant modules. Use them for unbundled CLIs, functions, or
+workers where startup matters; otherwise prefer the root.
 
 The native Rust crate implements the same wire contract and lives in [`rust/uuid-slug`](rust/uuid-slug).
 The npm package remains TypeScript/JavaScript-only.
@@ -262,6 +262,8 @@ slug.length === 22 && isUuidSlug(slug); // replaces isBase64Url(slug)
 Branded types distinguish values this library has validated or produced. Plain strings and byte
 arrays are not assignable to them; pass raw input directly to package operations or use a guard when
 you need to retain the narrowed type. A brand proves format, not issuance: check your store for that.
+JavaScript consumers do not need TypeScript. The shipped declarations compile with TypeScript 5.0
+and newer.
 
 - Strings: `UuidString`, `UuidV4String`, `UuidV7String`.
 - Direct slugs: `UuidSlug` (either alphabet), `UuidV4Slug`, and `UuidV7Slug`. Masked types stay
@@ -329,8 +331,9 @@ A byte offset is the zero-based index where one 16-byte UUID starts inside a lar
 Omit it for a standalone 16-byte array. Output offsets select where a method writes; input offsets
 select where it reads. Bytes outside that 16-byte range stay unchanged.
 
-There is no `uuidToMaskedSlug`: masking is defined for UUIDv7 only, because a v7 is the version
-that leaks a creation time and 22 characters have no room for a version tag as well as the check.
+There is no version-neutral `uuidToMaskedSlug`. Every UUID version has recognizable fields, but
+this package defines one masked wire format for UUIDv7. Its fixed version, variant, and timestamp
+range leave room for the format's 16-bit check without lengthening the default 22-character slug.
 
 The `At` pair supports backfilling with a known timestamp. It takes the instant first and returns
 an error unless it is a whole number of Unix milliseconds in 0..2^48-1. Its interaction with
@@ -544,6 +547,22 @@ a slug decoded with that codec. Successful validation returns the same spelling 
 plain or public masked-slug type. This is a symmetric timestamp sanity check, not past-only expiry,
 authentication, or replay prevention. Use ordinary decoding for permanent identifiers. For links
 with expiration or one-time use, check the stored expiry and consumption state as well.
+
+## Measured performance
+
+The package selects native UUID generation when it preserves the public contract and otherwise uses
+its optimized portable path. The performance target is to lead every comparable operation on every
+supported engine; the table states where current measurements still miss that target.
+
+| Evidence | Scope | Result that changes a consumer decision |
+| --- | --- | --- |
+| Generation | Node, Bun, Deno, Chromium; v4/v7 text, owned bytes, caller buffers, direct slugs | Byte routes usually lead; v4 text and one Bun caller-buffer comparison still have measured gaps. Native calls remain visible as implementation floors. |
+| Conversion | UUID text, bytes, both direct-slug alphabets, timestamp extraction | Complete validated calls are measured; v7 text timestamp extraction still trails its fastest comparable package. |
+| Bundling | Bun, esbuild, Parcel, Rollup, Rolldown, Rspack, webpack | Named root imports and focused imports produced effectively equal optimized bytes. |
+| Direct ESM startup | Node, Bun, Deno; root versus `/v4` and `/v7` | Focused generation imports repeatedly started faster; use them only when unbundled startup matters. |
+
+[Methods, competitors, results, limitations, and rejected optimizations](bench/PERFORMANCE.md) are
+kept with the benchmark evidence so this summary cannot become a second result ledger.
 
 ## Guarantees
 
