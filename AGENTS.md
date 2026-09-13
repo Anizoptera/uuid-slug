@@ -67,6 +67,13 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   condition only when it selects different output or guards an incompatible lower condition. The
   private `#runtime` map selects Bun source, Deno portable code, or Node native code while built
   hosts share one implementation graph.
+- Treat shipped `src` as executable package code, not source-map support. Bun MUST resolve public
+  entries and `#runtime` to TypeScript. Route another TypeScript-capable runtime to source unless a
+  packed consumer proves that its normal resolver cannot load this graph; document and test that
+  fallback at the package boundary.
+- Keep compiled public JavaScript executable under Bun even though Bun normally selects source.
+  Its `#runtime` import MUST still select the Bun TypeScript adapter and native primitives; test
+  source selection and direct compiled execution separately because one does not prove the other.
 - Read `docs/public-api.md` §Package entries before changing exports or bundling. Keep each export
   path aligned with its owning source and built module. Use a facade only to hide internal exports
   or join owners. Retain a subpath only while packed measurements show lower consumer work.

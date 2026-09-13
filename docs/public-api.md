@@ -50,7 +50,9 @@ non-JSDoc comments; keep exploration transient.
 - A public condition must select different output or guard an incompatible lower condition. Put
   `deno` before `development` and `node`: Deno activates `node` and may activate `development`.
   Its strict resolver rejects this source graph's extensionless imports, so serve compiled ESM to
-  Deno. Use the private `#runtime` map for adapters.
+  Deno until the source graph becomes directly loadable without consumer flags or false specifiers.
+  Bun MUST load TypeScript normally. If it loads compiled public JavaScript directly, `#runtime`
+  MUST still select the Bun TypeScript adapter and native primitives. Use the private map for adapters.
 
 - Name every public and internal operation for the domain action it performs. Use one term for one
   behavior and one behavior for one term; encode direction, unit, and ownership where callers or

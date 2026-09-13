@@ -592,11 +592,13 @@ No runtime dependencies, on any platform.
 
 - **Bun** loads the published TypeScript source and uses `Bun.randomUUIDv7` for current-time
   generation. Explicit timestamps use the portable generator to preserve the requested instant.
-  Tooling that opts into
-  the `development` condition loads the same source.
+  If Bun loads compiled public JavaScript directly, it still selects the Bun TypeScript adapter and
+  native primitives. Tooling that opts into the `development` condition loads the same source.
 - **Node** uses native `crypto.randomUUID`, and native `crypto.randomUUIDv7` where the
   version provides it, otherwise the bundled v7 generator.
-- **Browsers, Deno, and other compatible runtimes** use optimized portable JavaScript and Web Crypto.
+- **Deno** uses optimized portable JavaScript because its default resolver rejects this package's
+  extensionless TypeScript imports. Consumers need no resolver flag or import map.
+- **Browsers and other compatible runtimes** use optimized portable JavaScript and Web Crypto.
 
 ## License
 

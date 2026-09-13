@@ -102,9 +102,15 @@ Masking has no chronological ordering. These extensions are implemented, not yet
 
 Publish one npm package and one Rust crate. Keep JavaScript chunks internal and Rust targets under
 one release identity. Add prebuilt Rust artifacts only when a measured consumer need justifies them.
-Publish the TypeScript source for Bun and the opt-in `development` condition. Condition-selected
+Publish `src` as executable package code for Bun and the opt-in `development` condition; source-map
+resolution is a second use, not its reason to exist. Prefer source for a runtime that normally loads
+TypeScript. Use compiled output only when a packed consumer proves that the runtime's default
+resolver cannot load this source graph. Deno currently rejects its extensionless internal imports;
+do not shift that cost to consumers through a flag or false `.js` specifiers. Condition-selected
 runtime adapters keep one public source entry while using each host's capabilities. The optimized
-build is portable and Node-compatible. Keep one compiled implementation graph; resolve its private
+build must remain executable in Bun as well as Deno, browsers, and Node-compatible hosts. When Bun
+loads that compiled graph, `#runtime` must still select its TypeScript adapter and native primitives;
+normal source selection does not waive this path. Keep one compiled implementation graph; resolve its private
 `#runtime` import to Bun source, Deno portable code, or Node native code. Deno also activates the
 `node` condition, so its condition must come first. Ship source maps whose inputs resolve inside the package.
 

@@ -216,7 +216,10 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
     for (const graph of graphs) if (graph.status === "rejected") throw graph.reason;
 
     const runtimeProbe = path.join(extracted, "runtime-route.mjs");
-    await Bun.write(runtimeProbe, 'console.log(import.meta.resolve("#runtime"));\n');
+    await Bun.write(
+      runtimeProbe,
+      'await import("./dist/index.js");\nconsole.log(import.meta.resolve("#runtime"));\n',
+    );
     const expectRuntimeRoute = async (runtime: "bun" | "deno" | "node", expectedSuffix: string) => {
       const args = runtime === "deno" ? ["run", "--cached-only", runtimeProbe] : [runtimeProbe];
       const resolved = (await command(runtime, args, extracted)).trim();

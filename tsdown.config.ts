@@ -40,19 +40,22 @@ const stamp = [
 // installed and read on their own exactly as the JavaScript is.
 const banner = { js: stamp, dts: stamp };
 
-/**
- * Shared settings for the implementation graph and the runtime adapters. `satisfies` preserves
- * literal types for the spreads while making the compiler prove every option.
- */
+/** Public entries also own declaration output; runtime-only entries emit JavaScript and maps. */
+const publicEntries = {
+  index: "src/index.ts",
+  "entries/slug": "src/entries/slug.ts",
+  "entries/uuid": "src/entries/uuid.ts",
+  "entries/v4": "src/entries/v4.ts",
+  "entries/v7": "src/entries/v7.ts",
+  "v4-slug": "src/v4-slug.ts",
+  "v7-slug": "src/v7-slug.ts",
+} as const;
+
 const common = {
   entry: {
-    index: "src/index.ts",
-    "entries/slug": "src/entries/slug.ts",
-    "entries/uuid": "src/entries/uuid.ts",
-    "entries/v4": "src/entries/v4.ts",
-    "entries/v7": "src/entries/v7.ts",
-    "v4-slug": "src/v4-slug.ts",
-    "v7-slug": "src/v7-slug.ts",
+    ...publicEntries,
+    "node/runtime": "src/runtime/node.ts",
+    "runtime/portable": "src/runtime/portable.ts",
   },
   format: ["esm"],
   failOnWarn: true,
@@ -82,25 +85,17 @@ const common = {
 } satisfies UserConfig;
 
 export default defineConfig([
-  // Keep the runtime import unresolved: package conditions select one tiny adapter while every
-  // host shares the same compiled implementation modules.
+  // One graph gives every output one producer. Separate concurrent builds can both emit shared
+  // dependencies, making final bytes depend on which writer finishes last.
   {
     ...common,
-    dts: { generator: "oxc" },
-    clean: true,
-    inputOptions: { external: ["#runtime"] },
-    outDir: "dist",
-    platform: "browser",
-  },
-  {
-    ...common,
-    clean: false,
-    dts: false,
-    entry: {
-      "node/runtime": "src/runtime/node.ts",
-      "runtime/portable": "src/runtime/portable.ts",
+    dts: {
+      generator: "oxc",
+      entry: Object.values(publicEntries),
     },
+    clean: true,
+    inputOptions: { external: ["#runtime", "node:buffer", "node:crypto"] },
     outDir: "dist",
-    platform: "node",
+    platform: "neutral",
   },
 ]);
