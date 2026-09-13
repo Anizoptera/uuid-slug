@@ -103,6 +103,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Never add a throwing
   convenience API. Package-owned interfaces carry failures as values; adapt and contain
   exception-based dependencies at their boundary.
+- Make compatible calls compose without intermediate error unwrapping. Read
+  `docs/public-api.md` §Failures and effects when designing or changing composition, error
+  propagation, or result types; it owns the required behavior and verification.
 - Give every root export, overload family, public type, interface, property, method, option, and
   callback consumer-facing JSDoc in its owning source. Explain what changes the caller's decision:
   valid input, defaults, result and ownership, expected errors or effects, ordering, important

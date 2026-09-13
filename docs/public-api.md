@@ -147,6 +147,17 @@ Keep UUID text/binary conversion directional and version-neutral:
 
 ## Failures and effects
 
+- Make compatible calls compose without intermediate error unwrapping. Design each composition
+  to accept the preceding call's success or failure and propagate an existing failure unchanged,
+  so callers handle it where they choose to recover or report it. Preserve the original error
+  object and its diagnostics; a failed input must skip the receiving operation's conversion,
+  callbacks, entropy draws, and output writes. Caller argument expressions still run before a
+  JavaScript function receives them.
+- Prove composition in both JavaScript execution and TypeScript types. Exercise successful chains,
+  unchanged error identity, and skipped downstream work; compile compatible calls without casts
+  or intermediate guards and reject incompatible representations and UUID versions. TypeScript
+  brands and overloads do not remove JavaScript validation or runtime work. Keep error
+  representation and recognition open to measured alternatives that preserve these criteria.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Package-owned interfaces
   carry failures as values; adapt and contain exception-based dependencies at their boundary.
 - Keep one error class with stable, actionable codes. Codes guide different recovery actions without
