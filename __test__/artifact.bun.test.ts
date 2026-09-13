@@ -117,6 +117,21 @@ test("refuses source text duplicated inside a source map", () =>
     },
     "Source map duplicates source already shipped",
   ));
+test("refuses optimizer annotations stripped from JavaScript", () =>
+  rejected(
+    {
+      ...base,
+      "package/src/index.ts":
+        "export const first = /*#__PURE__*/ factory(); export const second = /*#__PURE__*/ factory();",
+      "package/dist/index.js": "const first = /*#__PURE__*/ factory(); export { first };",
+      "package/dist/index.js.map": JSON.stringify({
+        version: 3,
+        mappings: "",
+        sources: ["../src/index.ts"],
+      }),
+    },
+    "Optimizer annotation /*#__PURE__*/ was stripped",
+  ));
 test("refuses development files", () =>
   rejected({ ...base, "package/test/hidden.js": "" }, "Forbidden artifact path"));
 for (const code of [

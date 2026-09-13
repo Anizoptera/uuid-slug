@@ -17,14 +17,14 @@ const ERROR_CODES = [
 ] as const;
 
 /** All stable `UuidSlugError.code` values, for validation and exhaustive handlers. */
-export const UUID_SLUG_ERROR_CODES: typeof ERROR_CODES = Object.freeze(ERROR_CODES);
+export const UUID_SLUG_ERROR_CODES: typeof ERROR_CODES = /*#__PURE__*/ Object.freeze(ERROR_CODES);
 
 /** One stable `UuidSlugError.code`; branch on this value and use `message` for diagnostics. */
 export type UuidSlugErrorCode = (typeof UUID_SLUG_ERROR_CODES)[number];
 
-const ERROR_CODE_SET: ReadonlySet<unknown> = new Set(UUID_SLUG_ERROR_CODES);
+const ERROR_CODE_SET: ReadonlySet<unknown> = /*#__PURE__*/ new Set(UUID_SLUG_ERROR_CODES);
 
-const typedArrayTagDescriptor = Object.getOwnPropertyDescriptor(
+const typedArrayTagDescriptor = /*#__PURE__*/ Object.getOwnPropertyDescriptor(
   Object.getPrototypeOf(Uint8Array.prototype) as object,
   Symbol.toStringTag,
 );

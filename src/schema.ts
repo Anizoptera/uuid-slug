@@ -322,4 +322,8 @@ const DEFAULT_SEED = "anizoptera.uuid-slug.default-mask.v1";
 // `UuidV7Mask | UuidSlugError` and force a cast that, at module scope, could only ever hide a real Error
 // behind a `UuidV7Mask` type at module scope.
 /** Public-key mask for deterministic tests and examples. Never use it to hide production IDs. */
-export const UUID_V7_TEST_MASK: UuidV7Mask = feistelSchema("default", seedBytes(DEFAULT_SEED), 1);
+export const UUID_V7_TEST_MASK: UuidV7Mask = /*#__PURE__*/ feistelSchema(
+  "default",
+  /*#__PURE__*/ seedBytes(DEFAULT_SEED),
+  1,
+);

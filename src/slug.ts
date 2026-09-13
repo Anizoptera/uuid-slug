@@ -58,7 +58,7 @@ export type { UuidSlug, UuidV4Slug, UuidV7Slug } from "./types";
 const ALPHABETS = ["base64url", "base32hex"] as const;
 
 /** The accepted slug alphabets, for validation, schemas, and user-interface choices. */
-export const UUID_SLUG_ALPHABETS: typeof ALPHABETS = Object.freeze(ALPHABETS);
+export const UUID_SLUG_ALPHABETS: typeof ALPHABETS = /*#__PURE__*/ Object.freeze(ALPHABETS);
 
 /**
  * Select direct-slug output: 22-character base64url, or 26-character lowercase base32hex.
@@ -95,14 +95,14 @@ function slugLength(alpha: Alphabet) {
  * disjoint, so a slug names its own encoding and a caller cannot pick the wrong one. Indexed
  * rather than searched because every decode and every type guard pays this lookup.
  */
-const SLUG_ALPHABET_BY_LENGTH: readonly (Alphabet | undefined)[] = Object.values(
+const SLUG_ALPHABET_BY_LENGTH: readonly (Alphabet | undefined)[] = /*#__PURE__*/ Object.values(
   SLUG_ALPHABET_CODECS,
 ).reduce<(Alphabet | undefined)[]>((table, alpha) => {
   table[slugLength(alpha)] = alpha;
   return table;
 }, []);
 
-const SLUG_LENGTHS = Object.values(SLUG_ALPHABET_CODECS)
+const SLUG_LENGTHS = /*#__PURE__*/ Object.values(SLUG_ALPHABET_CODECS)
   .map((alpha) => `${slugLength(alpha)} (${alpha.name})`)
   .join(" or ");
 
@@ -286,6 +286,7 @@ export function slugToUuid(slug: string): UuidString | UuidSlugError {
 }
 
 /** Check a canonical 22-character base64url or 26-character lowercase base32hex direct slug. */
+/*#__NO_SIDE_EFFECTS__*/
 export function isUuidSlug(value: unknown): value is UuidSlug {
   if (typeof value !== "string" || !value) return false;
   const alpha = SLUG_ALPHABET_BY_LENGTH[value.length];
@@ -309,11 +310,13 @@ function isVersionedSlug(slug: unknown, version: number): slug is UuidSlug {
 }
 
 /** Check a canonical direct slug whose payload is an RFC-variant UUIDv4. */
+/*#__NO_SIDE_EFFECTS__*/
 export function isUuidV4Slug(value: unknown): value is UuidV4Slug {
   return isVersionedSlug(value, 4);
 }
 
 /** Check a canonical direct slug whose payload is an RFC-variant UUIDv7. */
+/*#__NO_SIDE_EFFECTS__*/
 export function isUuidV7Slug(value: unknown): value is UuidV7Slug {
   return isVersionedSlug(value, 7);
 }

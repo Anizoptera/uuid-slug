@@ -153,6 +153,7 @@ export function isRfcVariant(bytes: Uint8Array, offset = 0): boolean {
 
 // Predicates inspect the same hex table as parsing without allocating output bytes or Errors.
 /** Check canonical lowercase UUID syntax without claiming a version, variant, or issuance. */
+/*#__NO_SIDE_EFFECTS__*/
 export function isUuidString(value: unknown): value is UuidString {
   if (typeof value !== "string" || value.length !== UUID_LENGTH) return false;
   if (value[8] !== "-" || value[13] !== "-" || value[18] !== "-" || value[23] !== "-") return false;
@@ -168,11 +169,13 @@ const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9
 const UUID_V7_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 /** Check canonical UUID text with version 4 and RFC variant bits. */
+/*#__NO_SIDE_EFFECTS__*/
 export function isUuidV4String(value: unknown): value is UuidV4String {
   return typeof value === "string" && UUID_V4_RE.test(value);
 }
 
 /** Check canonical UUID text with version 7 and RFC variant bits. */
+/*#__NO_SIDE_EFFECTS__*/
 export function isUuidV7String(value: unknown): value is UuidV7String {
   return typeof value === "string" && UUID_V7_RE.test(value);
 }

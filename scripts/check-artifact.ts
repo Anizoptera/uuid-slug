@@ -8,10 +8,21 @@ import { formatConsumerGraph, inspectConsumerGraph } from "./consumer-graph";
 // Scan all shipped files: extensions must not hide machine paths or development material.
 const BUILD_PATH_LEAK = /(?:\/Users\/|\/home\/[a-z]|[A-Z]:\\Users\\)/;
 const FORBIDDEN_PATHS = new Set(["bench", "test", ".github", "scripts", "AGENTS.md", "NOTICE"]);
+// Exact spellings distinguish source-owned promises from annotations the optimizer may add itself.
+const OPTIMIZER_ANNOTATIONS = [
+  "/*#__PURE__*/",
+  "/*@__PURE__*/",
+  "/*#__NO_SIDE_EFFECTS__*/",
+  "/*@__NO_SIDE_EFFECTS__*/",
+] as const;
 const project = path.resolve(import.meta.dir, "..");
 
 /** Require every source-map input to be supplied by the archive rather than a build machine. */
-function validateSourceMap(name: string, text: string, entries: ReadonlyMap<string, Blob>): void {
+async function validateSourceMap(
+  name: string,
+  text: string,
+  entries: ReadonlyMap<string, Blob>,
+): Promise<void> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -39,6 +50,7 @@ function validateSourceMap(name: string, text: string, entries: ReadonlyMap<stri
     throw new Error(
       `Source map duplicates source already shipped in the package: ${name}. Exclude sourcesContent from the build.`,
     );
+  const sourceAnnotations = new Map<string, number>();
   for (const [index, source] of map.sources.entries()) {
     if (typeof source !== "string") throw new Error(`Invalid source map: ${name}`);
     const input = path.posix.join(root, source);
@@ -53,6 +65,21 @@ function validateSourceMap(name: string, text: string, entries: ReadonlyMap<stri
       (!entries.has(resolved) && typeof embedded[index] !== "string")
     )
       throw new Error(`Source map input must stay inside the package: ${name} -> ${input}`);
+    if (name.endsWith(".js.map")) {
+      const sourceText = (await entries.get(resolved)?.text()) ?? "";
+      for (const annotation of OPTIMIZER_ANNOTATIONS)
+        sourceAnnotations.set(
+          annotation,
+          (sourceAnnotations.get(annotation) ?? 0) + sourceText.split(annotation).length - 1,
+        );
+    }
+  }
+  if (name.endsWith(".js.map")) {
+    const output = name.slice(0, -4);
+    const outputText = (await entries.get(output)?.text()) ?? "";
+    for (const [annotation, count] of sourceAnnotations)
+      if (outputText.split(annotation).length - 1 < count)
+        throw new Error(`Optimizer annotation ${annotation} was stripped from ${output}.`);
   }
 }
 
@@ -95,7 +122,7 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
           throw new Error(`Native payload is forbidden in the npm package: ${name}`);
         const text = await file.text();
         if (BUILD_PATH_LEAK.test(text)) throw new Error(`Build-machine path leaked in ${name}`);
-        if (name.endsWith(".map")) validateSourceMap(name, text, entries);
+        if (name.endsWith(".map")) await validateSourceMap(name, text, entries);
       }),
     );
     await archive.extract(root);

@@ -94,12 +94,12 @@ Make each consumer pay only for UUID generation, plain slugs, or masking that it
 
 ## Distribution efficiency audit
 
-- [ ] Inventory every packed JavaScript, declaration, source map, source file, manifest field, and repeated byte range; map each retained byte class to a consumer need.
-- [ ] Read the public-contract owners and current tsdown/Rolldown documentation before changing any observable package output or optimizer setting.
-- [ ] Compare tsdown minification, tree-shaking, unbundling, declaration generation, source-map content, target, platform, and annotation-preservation options with isolated builds.
-- [ ] Verify `sideEffects` metadata against every shipped module and prove consumer bundlers can remove unused modules without dropping required initialization.
-- [ ] Inventory pure call candidates, distinguish removable construction from required validation or state changes, and verify emitted `/* @__PURE__ */` annotations survive packaging and downstream minification.
-- [ ] Measure raw, gzip, Brotli, and source-map bytes by entry and module; detect duplicated implementation, embedded sources, absolute paths, private data, and redundant mappings.
-- [ ] Inspect generated declarations for duplicated types, private implementation leakage, avoidable imports, stale comments, and differences between source and packed public contracts.
-- [ ] Falsify the chosen settings with packed consumers across every retained optimizer and execute each output; add only the smallest lasting checks that catch material regressions.
-- [ ] Re-read every changed line and comment, run the complete repository gate, inspect the final archive and diff, and commit each self-contained correction with a clean tree.
+- [x] Inventory every packed JavaScript, declaration, source map, source file, manifest field, and repeated byte range; map each retained byte class to a consumer need.
+- [x] Read the public-contract owners and current tsdown/Rolldown documentation before changing any observable package output or optimizer setting.
+- [x] Compare tsdown minification, tree-shaking, unbundling, declaration generation, source-map content, target, platform, and annotation-preservation options with isolated builds.
+- [x] Verify `sideEffects` metadata against every shipped module and prove consumer bundlers can remove unused modules without dropping required initialization.
+- [x] Inventory pure call candidates, distinguish removable construction from required validation or state changes, and verify emitted `/* @__PURE__ */` annotations survive packaging and downstream minification.
+- [x] Measure raw, gzip, Brotli, and source-map bytes by entry and module; detect duplicated implementation, embedded sources, absolute paths, private data, and redundant mappings.
+- [x] Inspect generated declarations for duplicated types, private implementation leakage, avoidable imports, stale comments, and differences between source and packed public contracts.
+- [x] Falsify the chosen settings with packed consumers across every retained optimizer and execute each output; add only the smallest lasting checks that catch material regressions.
+- [x] Re-read every changed line and comment, run the complete repository gate, inspect the final archive and diff, and commit each self-contained correction with a clean tree.

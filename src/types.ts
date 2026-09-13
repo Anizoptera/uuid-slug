@@ -220,7 +220,7 @@ const MIGRATION_FORMATS = ["current-mask", "original-mask", "plain-slug"] as con
 
 /** The migration formats accepted by `UuidSlugMigrationDecoder`. */
 export const UUID_SLUG_MIGRATION_FORMATS: typeof MIGRATION_FORMATS =
-  Object.freeze(MIGRATION_FORMATS);
+  /*#__PURE__*/ Object.freeze(MIGRATION_FORMATS);
 
 /** Select one enabled migration format when the input's original encoding is known. */
 export type UuidSlugMigrationFormat = (typeof UUID_SLUG_MIGRATION_FORMATS)[number];

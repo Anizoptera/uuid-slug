@@ -59,13 +59,27 @@ const common = {
     "v7-slug": "src/v7-slug.ts",
   },
   format: ["esm"],
+  failOnWarn: true,
+  // Keep the browser and Node artifacts stable when the manifest's Node floor changes.
+  target: "es2022",
   outExtensions: () => ({ js: ".js" }),
   banner,
-  minify: true,
+  // Whitespace removal currently strips optimizer annotations from unbundled modules. Compression
+  // and mangling retain nearly all size savings while leaving those consumer-facing hints intact.
+  minify: {
+    codegen: { removeWhitespace: false },
+    // Source maps restore source locations, not readable frame names. Preserve both kinds of name;
+    // method property keys are already untouched because property mangling is not enabled.
+    compress: { keepNames: { function: true, class: true } },
+    mangle: { keepNames: { function: true, class: true } },
+  },
   sourcemap: true,
   // The published archive already carries `src/`; embedding the same source in every browser and
   // Node map duplicates it without improving stack mapping or editor navigation.
-  outputOptions: { sourcemapExcludeSources: true },
+  outputOptions: {
+    comments: { annotation: true, jsdoc: false, legal: false },
+    sourcemapExcludeSources: true,
+  },
   // Consumer bundlers need these ESM seams to remove masking from keyless imports. A pre-bundled
   // package made the same import appear removable while hiding the graph users actually receive.
   unbundle: true,
