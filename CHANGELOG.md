@@ -3,70 +3,73 @@
 Notable changes per release, newest first. This file is the source of the GitHub Release
 notes: the section for a version is published verbatim when its tag is pushed.
 
+## Unpublished
+
+### Rust crate
+
+- `uuid-slug` implements the same generation, encoding, masking, sentinel, rotation, migration,
+  and timestamp contracts as the npm package. It is not published with 0.4.0.
+
 ## [0.4.0]
 
 ### Breaking changes
 
-- Rename TypeScript generation around the produced value: use `generateUuidV4`,
-  `generateUuidV4Bytes`, `generateUuidV4Slug`, `generateUuidV7`, `generateUuidV7Bytes`,
-  `generateUuidV7At`, `generateUuidV7BytesAt`, and `generateUuidV7Slug`.
-- Replace `createUuidSlugCodec` with `createUuidV7SlugCodec`. Codec operations are now
-  `generateSlug`, `encodeUuid`, `decodeSlug`, `decodeSlugToBytes`, `validateSlugTimestamp`, and
-  `createMigrationDecoder`; migration readers expose `decodeSlug` and `decodeSlugCandidates`.
-- Replace `parseUuid` and `formatUuid` with directional `uuidToBytes` and `bytesToUuid`, and replace
-  `parseUuidSlug` and `formatUuidSlug` with `slugToBytes` and `bytesToSlug`.
-- Rename mask, sentinel, alphabet, derivation, migration, and timestamp-window types and options to
-  state their UUIDv7 domain and effect. Timestamp validation now requires
-  `maxTimestampDeltaMs`; only `referenceUnixMs` defaults to the current clock reading.
-- Codecs default to no sentinels. Applications must explicitly configure every UUID that should
-  bypass masking.
-- Rust codecs use `encode_uuid`, `decode_slug`, `validate_slug_timestamp`, and
-  `migration_decoder`; migration readers are represented by `MigrationDecoder`.
-- Codec construction requires an explicit private mask or `UUID_V7_TEST_MASK`; implicit public
-  masking, `defaultCodec`, and `DEFAULT_MASK_SCHEMA` are removed.
-- UUID and slug brands reject unchecked strings and bytes. Guards accept unknown input, owned byte
-  operations return version-specific types, and caller-buffer operations preserve the supplied
-  array subtype while rejecting offsets without a destination.
-- UUID generation, conversion, parsing, formatting, and codec construction return
-  `UuidSlugError | T` for expected failures. Rust alphabet helpers accept and return fixed 16-byte
-  UUID payloads.
-- Remove generic base64url helpers and `Base64UrlString`; use `bytesToSlug`, `slugToBytes`, and the
-  exact 22-character `isUuidSlug` case.
+- Rename UUID generation to `generateUuidV4`, `generateUuidV4Bytes`, `generateUuidV4Slug`,
+  `generateUuidV7`, `generateUuidV7Bytes`, `generateUuidV7At`, `generateUuidV7BytesAt`, and
+  `generateUuidV7Slug`.
+- Replace `createUuidSlugCodec` with `createUuidV7SlugCodec`. Codec methods are now `generateSlug`,
+  `encodeUuid`, `decodeSlug`, `decodeSlugToBytes`, `extractSlugTimestamp`,
+  `validateSlugTimestamp`, and `createMigrationDecoder`.
+- Codecs no longer accept a generator or expose keyless generation. Use the module generation
+  functions, or `createUuidV7Generator` when the application supplies a clock; entropy stays owned
+  by the package.
+- Codecs require an explicit private mask or `UUID_V7_TEST_MASK` and default to no sentinels.
+  `defaultCodec`, `DEFAULT_MASK_SCHEMA`, and `UUID_V7_SENTINEL_DEFINITIONS` are removed.
+- Replace `createMaskSchema` and `createMaskSchemaAsync` with `createUuidV7Mask` and
+  `createUuidV7MaskAsync`. Rename `keyIterations` to `keyDerivationIterations`.
+- Rename public shapes to their domain: `MaskSchema*` to `UuidV7Mask*`, `UuidSlugCodec*` to
+  `UuidV7SlugCodec*`, `UuidSlugMigration` to `UuidSlugMigrationDecoder`, `MigrationFormat` to
+  `UuidSlugMigrationFormat`, `FreshValidationOptions` to `UuidV7TimestampWindow`,
+  `UuidV7SentinelDefinition` to `UuidV7SentinelConfig`, and `PublicUuidV7Slug` to
+  `UuidV7CodecSlug`. The version-neutral `MaskedUuidSlug` export is removed.
+- Replace `parseUuid`/`formatUuid` with `uuidToBytes`/`bytesToUuid`, and
+  `parseUuidSlug`/`formatUuidSlug` with `slugToBytes`/`bytesToSlug`. Remove the generic base64url
+  helpers and `Base64UrlString`.
+- Migration readers expose `decodeSlug` and `decodeSlugCandidates`. Options and format names are
+  now `originalMask`, `plainSlug`, `current-mask`, `original-mask`, and `plain-slug`.
+- Replace `validateUuidV7Fresh` and `validateUuidV7SlugFresh` with `validateUuidV7Timestamp` and
+  `validateUuidV7SlugTimestamp`. Validation requires `maxTimestampDeltaMs`; only
+  `referenceUnixMs` defaults to the current clock. `hasUuidV7Entropy` is removed.
+- Expected generation, conversion, masking, and configuration failures return `UuidSlugError | T`.
+  Use `isUuidSlugError` instead of relying on `instanceof` or `UuidRuntimeError`.
+- UUID and slug brands now reject known wrong representations and UUID versions. Owned byte results
+  use version-specific brands; writes preserve the caller's `Uint8Array` subtype.
+- Replace codec `slugAlphabet` with `outputAlphabet`; it controls masked output and sentinels rather
+  than keyless direct slugs.
 
 ### Added
 
-- Export the closed TypeScript migration-format vocabulary as `UUID_SLUG_MIGRATION_FORMATS` and
-  derive `UuidSlugMigrationFormat` from it.
-- Let a codec accept one detached `generateUuidV7Bytes` callback instead of requiring a source
-  object, while retaining validation of every generated payload.
-- Convert canonical UUID text and binary storage with `uuidToBytes` and `bytesToUuid`, while the
-  former preserves UUIDv4/v7 brands and caller-owned array subtypes. Narrow unknown binary input
-  with `isUuidBytes`, `isUuidV4Bytes`, or `isUuidV7Bytes`.
-- Pass UUIDv7 text or bytes to `encodeUuid`, and decode directly to bytes with `decodeSlugToBytes`.
-  Owned decode results are plain `Uint8Array` values; caller storage is written atomically and
-  returned with its exact subtype.
-- `createCustomUuidV7Mask` adapts caller-defined reversible transforms into opaque TypeScript mask
-  handles. Each callback returns transformed bytes or a package error instead of managing a
-  destination buffer. Rust callers use separate forward and reverse callbacks with
-  `MaskSchema::custom`, or select the deterministic published schema with `public_mask_schema()`.
-- Classify TypeScript errors across realms and duplicate package copies with `isUuidSlugError`; Rust schema derivation now returns an opaque future so callers do not depend on scheduler state.
-- Publish TypeScript source for Bun and opt-in development tooling; other runtimes receive minified JavaScript with self-contained source maps.
-- Use the Rust `uuid-slug` crate for UUID generation, direct encoding, keyed masking, sentinels,
-  key rotation, migration, and timestamp validation. Browser generation uses the optional `wasm-js`
-  feature; pure conversion and masking can run without platform entropy.
-- Select `slugAlphabet: "base32hex"` for lowercase masked filenames: 27 characters for masked
-  values and 26 for raw sentinels. Decoding retains existing base64url spellings and key material.
-  Masked output has no chronological ordering guarantee.
-- Rust callers can decode base64url into caller-owned storage and use first-result migration without allocating a candidate list.
+- Encode UUIDv7 text or bytes through a codec and decode directly into new or caller-owned bytes.
+  Failed writes leave caller storage unchanged.
+- Use `createCustomUuidV7Mask` to adapt a reversible byte transform into an opaque mask handle.
+- Set `outputAlphabet: "base32hex"` for lowercase masked filenames. Writers emit 27-character
+  masked slugs and 26-character sentinels; readers continue to accept base64url spellings.
+- Import focused APIs from `/uuid`, `/slug`, `/v4`, `/v7`, `/slug/v4`, or `/slug/v7` when direct ESM
+  startup matters. Root imports remain the default.
+- Bun, Deno, and the `development` condition load the published TypeScript source. Other consumers
+  load compiled ESM.
+- Read UUIDv7 timestamps from text, direct slugs, or bytes with `extractUuidV7Timestamp`; use the
+  codec method for masked slugs and sentinels.
+- Export `UUID_SLUG_ALPHABETS`, `UUID_SLUG_MIGRATION_FORMATS`, their union types, and byte guards for
+  runtime validation and narrowing.
 
 ### Fixed
 
-- Fall back to matching portable UUID generation when an optional native string, slug, or byte
-  generator fails or returns malformed data, while preserving both causes if the fallback also
-  fails and leaving caller storage unchanged.
-- Leave portable UUIDv7 sequence state unchanged when entropy fails, so a failed attempt cannot corrupt retry state.
-- Restrict direct-slug byte helpers to one 16-byte UUID payload and reject every other length.
-- Leave caller-owned storage unchanged when UUID or plain-slug parsing rejects invalid input.
+- Fall back to portable UUID generation when an optional native generator fails or returns invalid
+  data. Preserve both causes if fallback also fails.
+- Preserve UUIDv7 sequence state and caller-owned storage after failed entropy, generation, or
+  parsing.
+- Reject direct-slug byte input unless it contains exactly one 16-byte UUID.
 
 ## [0.3.0] - 2026-09-08
 
