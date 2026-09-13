@@ -18,8 +18,8 @@ Generation selects secure sources separately for text and byte output:
 - Deno uses Web Crypto `randomUUID()` for UUIDv4 text and pooled `getRandomValues()` for byte
   output and UUIDv7. Browsers use pooled `getRandomValues()` for both UUID versions.
 
-These choices follow the [measured complete-call costs](../bench/PERFORMANCE.md), while all
-selected sources must preserve the same entropy and failure requirements.
+These choices reflect [measured call costs](../bench/PERFORMANCE.md). Each source must supply
+secure randomness or report failure.
 
 The platform source choices are documented by [Node](https://nodejs.org/api/crypto.html#cryptorandomfillsyncbuffer-offset-size),
 [Web Crypto](https://www.w3.org/TR/webcrypto/#Crypto-method-getRandomValues),
@@ -51,8 +51,8 @@ This diagnostic difference does not permit a failed draw to produce an identifie
 
 UUID slug formatting and parsing encode and decode one 16-byte payload. TypeScript byte-offset
 overloads select that payload from a larger array; other payload sizes and noncanonical text are
-rejected. Invalid parsing leaves caller storage unchanged. These
-operations preserve all 16-byte values; use UUID guards when the version or variant matters.
+rejected. Invalid parsing leaves caller storage unchanged. Conversion preserves all 16-byte
+values; use UUID guards when the version or variant matters.
 
 TypeScript pools platform randomness without expanding it. Refills become usable only after the
 source returns successfully; a partial write followed by failure must be retried, never consumed.

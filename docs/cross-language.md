@@ -1,6 +1,6 @@
 # TypeScript and Rust contracts
 
-Keep TypeScript and Rust identifiers interchangeable without losing either language's ownership and error guarantees.
+Keep the same IDs readable in TypeScript and Rust, with matching validation, errors, and buffer ownership rules.
 
 ## Parity
 
