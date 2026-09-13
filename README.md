@@ -169,7 +169,7 @@ function createPublicId(seed: string) {
 }
 ```
 
-Keep binary database keys binary across the same codec seam:
+Keep binary database keys binary through the same codec:
 
 ```ts
 import { generateUuidV7Bytes, isUuidSlugError } from "@anizoptera/uuid-slug";
@@ -312,10 +312,10 @@ a slug that would decode to the wrong sentinel.
 ## What masking is not
 
 Masking uses a four-round Feistel network with HalfSipHash-2-4 round functions and a
-seed-derived key schedule. It removes the directly recognizable UUIDv7 field layout; this package
-does not establish a confidentiality strength for that construction or resistance to known-pair attacks.
-A reference-vector test for the round function does not establish those properties for the
-whole construction. See [the mechanism and its limits](docs/design.md).
+seed-derived key schedule. It removes the directly recognizable UUIDv7 field layout. The package makes no
+claim about how hard the mask is to break, with or without known UUID and slug pairs. The round
+function is tested against reference vectors; that says nothing about the whole construction. See
+[the mechanism and its limits](docs/design.md).
 
 Masked slugs are not authentication tokens or capabilities. The check detects many incorrect
 decodes; it is not a message authentication code. Confirm decoded candidates against your store
@@ -345,11 +345,11 @@ select `UUID_V7_TEST_MASK` explicitly; anyone can decode identifiers produced wi
 
 ## Handling errors
 
-Parsing, decoding, formatting, conversion, byte generation, and explicit-timestamp generation
-return `T | UuidSlugError`. Use `isUuidSlugError` to narrow the union reliably across realms and
-duplicate package copies. The guard recognizes the package's error name and code vocabulary; it
-classifies data and does not authenticate untrusted input. Codec construction returns the same
-union and requires an explicit mask.
+Every operation that can fail, including generation and codec construction, returns
+`T | UuidSlugError`. Use `isUuidSlugError` to narrow the union. It checks the error's name and
+code rather than its class, so it works across realms and duplicate package copies; by the same
+token any object can be shaped to pass it, so it proves nothing about where a value came from.
+Codec construction also requires an explicit mask.
 
 Use the error's `code` for handling and its `message` for diagnostics. `UuidSlugErrorCode` and
 `UUID_SLUG_ERROR_CODES` are the exported type and runtime list of codes. Errors wrapping failed
@@ -506,8 +506,9 @@ function configureCodec(seed: string, previousSeed: string) {
 ```
 
 The masked payload is fixed at 132 bits, including a 16-bit check. `outputAlphabet` defaults to
-`"base64url"`. Readers accept either masked spelling without an alphabet argument. Safe
-sentinels use 26-character raw base32hex slugs; old 22-character sentinels remain readable.
+`"base64url"`. Readers accept either masked spelling without an alphabet argument. With
+`outputAlphabet: "base32hex"`, sentinels are written as 26-character base32hex slugs; their
+22-character base64url spelling still decodes.
 
 To supply a different mixing implementation, call
 `createCustomUuidV7Mask({ label, mask, unmask })`. Each callback receives distinct 16-byte input
@@ -570,8 +571,8 @@ failures retain their cause. No partially derived schema is returned.
 
 Options are captured when called. Byte seeds are copied before the first suspension, so later
 caller mutation cannot change the key; synchronize concurrent writes to shared backing memory.
-The initial copy of a very large byte seed, allocation, GC and host scheduling can exceed the
-responsiveness target. Small derivations need no host yield. Construct once and reuse the schema;
+Copying a very large byte seed, plus allocation, GC, and host scheduling, can still block longer
+than one work slice. Small derivations need no host yield. Construct once and reuse the schema;
 passing seed options to each new codec would repeat derivation.
 
 `previousMasks` is how you rotate a seed. Decoding tries `mask` first, then each entry in the
@@ -740,16 +741,16 @@ engine versions; read the direction of each gap, not its size.
 | --- | --- | --- |
 | Generation | Node, Bun, Deno, Chromium; v4/v7 text, owned bytes, caller buffers, direct slugs | Byte output leads on every runtime, into a new array or a caller buffer, except Bun's UUIDv4 write into a caller buffer, which trails `uuid`, and Deno's UUIDv7 new array, which is unresolved against `uuidv7`. UUIDv7 text leads every package and matches the native generator on Node and Bun. UUIDv4 text matches Node's native generator but trails the fastest package on Bun, Deno, and Chromium. |
 | Conversion | UUID text, bytes, both direct-slug alphabets, timestamp extraction | Complete validated calls are measured. UUIDv7 timestamp extraction from text trails `uuidv7-js` on every runtime; extraction from bytes and slugs has no comparable package. |
-| Bundling | Bun, esbuild, Parcel, Rollup, Rolldown, Rspack, webpack | Named root imports retain only the requested domains. |
+| Bundling | Bun, esbuild, Parcel, Rollup, Rolldown, Rspack, webpack | A named root import keeps only the code it needs. |
 
 [Methods, competitors, results, limitations, and rejected optimizations](bench/PERFORMANCE.md) hold
 the numbers. This table only names the gaps.
 
 ## Guarantees
 
-These are API contracts. Runtime measurements and their exercised conditions belong in
-[`bench/README.md`](bench/README.md); a benchmark pass is not proof of every guarantee.
-See [security boundaries](docs/security.md) for entropy failures and masking limits.
+These are API contracts. The benchmarks in [`bench/README.md`](bench/README.md) measure cost;
+passing them proves none of this. See [security boundaries](docs/security.md) for entropy failures
+and masking limits.
 
 - **Conformance.** Generated ids have RFC 9562 version and variant bits.
 - **Secure entropy by default.** Built-in generators use the runtime's cryptographically secure
@@ -795,15 +796,15 @@ No runtime dependencies, on any platform.
 
 - **Bun** loads the published TypeScript source and uses `Bun.randomUUIDv7` for current-time
   generation. Explicit timestamps use the portable generator to preserve the requested instant.
-  If Bun loads compiled public JavaScript directly, it still selects the Bun TypeScript adapter and
-  native primitives. Tooling that opts into the `development` condition loads the same source.
+  If Bun loads the compiled JavaScript directly, it still uses the Bun-specific source and native
+  functions. Tooling that opts into the `development` condition loads the same source.
 - **Node** uses native `crypto.randomUUID`, and native `crypto.randomUUIDv7` where the
   version provides it, otherwise the bundled v7 generator.
-- **Deno** loads the published TypeScript source and uses the optimized portable runtime adapter.
-  Consumers need no resolver flag or import map.
-- **Browsers and other compatible runtimes** use optimized portable JavaScript and Web Crypto.
+- **Deno** loads the published TypeScript source and runs the package's own generator over Web
+  Crypto. No resolver flag or import map is needed.
+- **Browsers and other compatible runtimes** run the package's own generator over Web Crypto.
 
-Capabilities are probed once when the module loads. A missing method is simply absent, so no call
+Capabilities are probed once when the module loads. A missing method is left undefined, so no call
 pays for a throw and a retry. Native base64url and hex encoders are used where a runtime provides
 them and they measured faster; on Deno the portable encoder measured faster, so it is kept there.
 The UUIDv7 generator is created on first use, so conversion-only imports draw no entropy.
