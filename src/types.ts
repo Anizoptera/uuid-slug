@@ -393,12 +393,14 @@ export interface UuidV7SlugCodec {
   ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
   /**
    * Generate and encode a UUIDv7 as a masked slug or its registered raw sentinel slug.
-   * Returns `invalid_timestamp` at timestamps after `MAX_MASKED_UUID_V7_UNIX_MS`.
+   * Returns `invalid_timestamp` after `MAX_MASKED_UUID_V7_UNIX_MS` unless the generated UUID is a
+   * registered sentinel, which is returned as a direct slug without masking.
    */
   generateUuidV7CodecSlug(this: void): UuidV7CodecSlug | UuidSlugError;
   /**
    * Generate canonical UUIDv7 text and its masked or sentinel slug from one random byte draw.
-   * Returns `invalid_timestamp` at timestamps after `MAX_MASKED_UUID_V7_UNIX_MS`.
+   * Returns `invalid_timestamp` after `MAX_MASKED_UUID_V7_UNIX_MS` unless the generated UUID is a
+   * registered sentinel, which is returned as a direct slug without masking.
    */
   generateUuidV7WithCodecSlug(this: void): GeneratedUuidV7<UuidV7CodecSlug> | UuidSlugError;
   /**
@@ -406,7 +408,8 @@ export interface UuidV7SlugCodec {
    * unless it is a registered
    * sentinel. Other UUID versions return `invalid_uuid_version`. TypeScript rejects known slug and
    * UUIDv4 values; unbranded external values are validated when called. Timestamps after
-   * `MAX_MASKED_UUID_V7_UNIX_MS` return `invalid_timestamp`. A preceding
+   * `MAX_MASKED_UUID_V7_UNIX_MS` return `invalid_timestamp`; registered sentinels are always
+   * returned as direct slugs without masking and retain the full UUIDv7 timestamp range. A preceding
    * `UuidSlugError` is returned unchanged.
    *
    * @param uuid - Hyphenated or compact UUIDv7 text, or exactly 16 UUIDv7 bytes.

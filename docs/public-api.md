@@ -77,7 +77,8 @@ interface is complete, useful, or clear.
 - Keep keyless transformations and generation as module functions. Put keys, sentinels, rotation,
   masked timestamp validation, and migration on the codec that owns that configuration.
 - Masked UUIDv7 writers accept Unix milliseconds through `MAX_MASKED_UUID_V7_UNIX_MS` and return
-  `invalid_timestamp` above it. Direct UUID text and slugs retain the full 48-bit UUIDv7 range.
+  `invalid_timestamp` above it. Registered sentinels are never masked; like every direct UUID slug,
+  they retain the full 48-bit UUIDv7 range.
 - Keep mutable sequence state in generators and immutable configuration in codecs. Keep
   cryptographic entropy behind the package runtime so public generation cannot accept weaker bytes.
 - Use `this: void` when a public method has no receiver semantics. This lets callers detach the

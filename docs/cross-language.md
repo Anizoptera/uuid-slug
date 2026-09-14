@@ -17,6 +17,8 @@ Parity includes accepted and rejected inputs, defaults, error conditions, sentin
 order, migration controls, timestamp windows, cancellation, and ownership of returned data.
 Sentinel names are nonempty and unique within one codec; both languages report name violations as
 `invalid_sentinel` without relabeling malformed UUID text or UUID-version failures.
+Both languages always write registered sentinels as direct slugs without masking, so the masked
+timestamp limit does not apply to them.
 Every decoder must accept every value that a supported matching encoder can produce. Options may
 add accepted forms; they must not remove existing ones. Forms no supported encoder produces are invalid.
 Generated identifiers must meet the same promises; random draws, scheduling, allocation strategy,

@@ -58,8 +58,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   parity, approved filesystem-safe output and distribution boundaries. Keep base64url defaults;
   select filesystem-safe masked output independently from the direct-slug alphabet.
   Preserve length-based alphabet inference for plain decoding.
-- Masked slugs and sentinels are core functionality. Sentinels use precomputed raw slugs per
-  codec. Decode returns the first passing candidate in caller-specified key order, never proof
+- Masked slugs and sentinels are core functionality. Sentinels use precomputed direct slugs per
+  codec and are never masked; registered sentinels retain the full UUIDv7 timestamp range. Decode
+  returns the first passing candidate in caller-specified key order, never proof
   of issuance. Do not reject multiple matches or append fallback masks on the caller's behalf.
 - Every decoder must accept every value that a supported matching encoder can produce. Options
   may add accepted forms; they must not remove existing ones. Reject forms no encoder produces.

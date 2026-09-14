@@ -258,7 +258,8 @@ impl Codec {
             .map(|(_, uuid)| *uuid)
     }
 
-    /// Encode a v7 through [`crate::MAX_MASKED_UUID_V7_UNIX_MS`], preserving sentinels and rejecting collisions.
+    /// Encode a v7 through [`crate::MAX_MASKED_UUID_V7_UNIX_MS`], rejecting later timestamps unless
+    /// the UUID is a registered sentinel; sentinels are returned as direct slugs without masking.
     pub fn encode_uuid(&self, uuid: Uuid) -> Result<String, Error> {
         uuid.timestamp()?;
         if let Some(sentinel) = self.sentinels.iter().find(|entry| entry.uuid == uuid) {

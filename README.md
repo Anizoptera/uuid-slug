@@ -303,11 +303,12 @@ and both are part of the contract rather than implementation detail:
 - **Masking accepts timestamps through `MAX_MASKED_UUID_V7_UNIX_MS` (`2^42 - 1`) and refuses the
   next millisecond**, which arrives in the year 2109. It returns
   `invalid_timestamp` because those six bits are spent on the check. Truncating instead would let
-  two UUIDs share one slug, which nothing could recover from. Direct slugs have no such limit.
+  two UUIDs share one slug, which nothing could recover from. Direct slugs have no such limit;
+  registered sentinels are always direct slugs and therefore retain the full UUIDv7 timestamp range.
 
 ### Sentinels
 
-Sentinels are application-selected UUIDv7 values that skip masking on purpose, so they stay
+Sentinels are application-selected UUIDv7 values that are never masked, so they stay
 recognisable in logs and support tickets. Codecs default to no sentinels; configure only identities
 your application has reserved:
 
