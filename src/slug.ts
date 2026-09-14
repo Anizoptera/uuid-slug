@@ -40,6 +40,8 @@ import type {
   UuidV7BytesInput,
   UuidV7TimestampInput,
   UuidV7TimestampWindow,
+  UuidV7Payload,
+  UuidV7PayloadLayout,
   UuidStringFor,
   UuidInput,
   UuidStringResult,
@@ -51,6 +53,7 @@ import type {
   UuidVersion,
 } from "./types.ts";
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
+import { extractPayloadFields } from "./v7-payload.ts";
 
 import { validateTimestampBytes } from "./timestamp.ts";
 import {
@@ -532,6 +535,57 @@ export function extractUuidV7UnixMs(
   if (uuidVersion(bytes, byteOffset) !== 7 || !isRfcVariant(bytes, byteOffset))
     return new UuidSlugError(INVALID_UUID_VERSION, UUID_V7_TIMESTAMP_ONLY);
   return uuidTimestampFromBytesUnchecked(bytes, byteOffset);
+}
+
+/**
+ * Decode the UUIDv7 payload under a layout supplied by the caller. The UUID does not identify its
+ * generator or payload layout, so this operation never guesses. Fraction bits follow RFC 9562
+ * Method 3; counter bits immediately follow them as in Method 1. All other bits remain uninterpreted.
+ *
+ * @param value - UUIDv7 text in an accepted spelling, or a plain UUIDv7 slug in either alphabet.
+ * @param layout - Known leading fraction and fixed-counter widths.
+ * @returns The millisecond timestamp, declared fields, and every undeclared low payload bit; or a
+ * `UuidSlugError` for an invalid UUID, byte range, or layout.
+ * @remarks A fraction value `n` in `b` bits identifies the half-open interval
+ * `[unixMs + n / 2**b, unixMs + (n + 1) / 2**b)` milliseconds, not an exact instant.
+ */
+export function extractUuidV7Payload<Input extends string | UuidSlugError>(
+  value: UuidV7TimestampInput<Input>,
+  layout: UuidV7PayloadLayout,
+): UuidV7Payload | UuidSlugError;
+/** Decode a UUIDv7 byte source under the same caller-supplied payload layout. */
+export function extractUuidV7Payload<Input extends UuidByteInput | UuidSlugError>(
+  value: UuidV7BytesInput<Input>,
+  layout: UuidV7PayloadLayout,
+  byteOffset?: number,
+): UuidV7Payload | UuidSlugError;
+/*#__NO_SIDE_EFFECTS__*/
+export function extractUuidV7Payload(
+  value: string | UuidByteInput | UuidSlugError,
+  layout: UuidV7PayloadLayout,
+  byteOffset = 0,
+): UuidV7Payload | UuidSlugError {
+  let bytes: Uint8Array | UuidSlugError;
+  let offset = byteOffset;
+  if (typeof value === "string") {
+    bytes = uuidToBytes(value);
+    offset = 0;
+  } else if (isUuidSlugError(value)) {
+    return value;
+  } else {
+    bytes = isUint8Array(value) ? value : exactUuidByteView(value);
+  }
+  if (bytes instanceof Error) return bytes;
+  const badRange = checkRange(bytes.length, offset, 16);
+  if (badRange) return badRange;
+  if (uuidVersion(bytes, offset) !== 7 || !isRfcVariant(bytes, offset))
+    return new UuidSlugError(INVALID_UUID_VERSION, UUID_V7_TIMESTAMP_ONLY);
+  return extractPayloadFields(
+    bytes,
+    offset,
+    uuidTimestampFromBytesUnchecked(bytes, offset),
+    layout,
+  );
 }
 
 /**

@@ -46,6 +46,10 @@ Use validated `Uuid` values between operations; parse text once rather than at e
 Both languages generate UUIDv4 and UUIDv7 only. Generic parsing, version inspection, and plain
 conversion preserve other UUID versions without version-specific APIs.
 
+Any high-resolution generation mode must expose the same fraction width and counter layout in both
+languages. TypeScript must not carry epoch nanoseconds in a `number`; use split fields or `bigint`.
+Runtime clock selection may differ, but one generator configuration must keep one wire layout.
+
 | TypeScript capability | Rust entry point or composition |
 | --- | --- |
 | `uuidStringToBytes` / `bytesToUuidString`; bytes and offsets | `Uuid::from_uuid_string`, `from_uuid_bytes`, `as_uuid_bytes`, `write_uuid_bytes`, `Display` |
@@ -58,6 +62,7 @@ conversion preserve other UUID versions without version-specific APIs.
 | v7 generation, rollback, explicit time and caller storage | `UuidV7Generator`, `UuidV7ClockRollbackPolicy`, and its platform-random, explicit random-fill, explicit-time, and caller-output forms |
 | Generated plain or masked slugs | Generate a `Uuid`, then call `to_plain_uuid_slug` or `uuid_to_masked_slug` |
 | UUIDv7 timestamp | `Uuid::extract_uuid_v7_unix_ms` |
+| Caller-known UUIDv7 payload layout | `UuidV7PayloadLayout::new`, `Uuid::extract_uuid_v7_payload`, `UuidV7MaskingCodec::extract_masked_uuid_v7_payload` |
 | Inclusive UUIDv7 timestamp bounds | `uuid_v7_bounds` |
 | Maskable timestamps | A `2^42`-millisecond inclusive range starting at the codec's configured Unix millisecond; the default start is `0` |
 | Sync/async masks and custom transforms | `derive_uuid_v7_mask`, `derive_uuid_v7_mask_async`, `UuidV7Mask::from_permutation_functions` |

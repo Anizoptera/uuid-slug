@@ -51,6 +51,8 @@ import type {
   PlainUuidSlugResult,
   UuidTextCase,
   UuidV7StringFor,
+  UuidV7Payload,
+  UuidV7PayloadLayout,
 } from "./types.ts";
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
 import {
@@ -58,6 +60,7 @@ import {
   plainSlugToUuidBytes as decodePlainSlugToBytes,
   uuidBytesToPlainSlug,
   extractUuidV7UnixMs,
+  extractUuidV7Payload,
 } from "./slug.ts";
 import {
   formatUuidBytesUnchecked,
@@ -626,6 +629,17 @@ function buildUuidSlugCodec(
     return bytes instanceof Error ? bytes : extractUuidV7UnixMs(bytes);
   }
 
+  function extractMaskedUuidV7Payload(
+    maskedUuidSlug: string | UuidSlugError,
+    layout: UuidV7PayloadLayout,
+  ): UuidV7Payload | UuidSlugError {
+    if (typeof maskedUuidSlug !== "string") return invalidUuidSlugInput(maskedUuidSlug);
+    const bytes =
+      sentinels.bySlug.get(maskedUuidSlug)?.bytes ??
+      decodeMaskedSlug(maskedUuidSlug, current, previousMasks);
+    return bytes instanceof Error ? bytes : extractUuidV7Payload(bytes, layout);
+  }
+
   function createUuidSlugMigrationDecoder<const Options extends UuidSlugMigrationOptions = {}>(
     migrationOptions?: Options,
   ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
@@ -667,6 +681,7 @@ function buildUuidSlugCodec(
     maskedSlugToUuidString,
     maskedSlugToUuidBytes,
     extractMaskedUuidV7UnixMs,
+    extractMaskedUuidV7Payload,
     validateMaskedUuidV7SlugUnixMs,
   };
   return Object.freeze(maskingCodec);

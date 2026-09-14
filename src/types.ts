@@ -117,6 +117,26 @@ export interface UuidV7Bounds<Value extends UuidV7StringFor<UuidTextCase> | Uuid
   readonly endInclusive: Value;
 }
 
+/** Describe the leading UUIDv7 payload fields that the caller already knows were encoded. */
+export interface UuidV7PayloadLayout {
+  /** Number of leading `rand_a` bits holding an RFC 9562 Method 3 fraction; `0` means absent. */
+  readonly subMillisecondFractionBits: number;
+  /** Number of following bits holding an RFC 9562 Method 1 fixed counter; `0` means absent. */
+  readonly counterBits: number;
+}
+
+/** UUIDv7 payload decoded under a caller-supplied layout. */
+export interface UuidV7Payload {
+  /** Standard 48-bit Unix millisecond timestamp. */
+  readonly unixMs: number;
+  /** Method 3 fraction bucket, or `undefined` when the layout assigns no fraction bits. */
+  readonly subMillisecondFraction: { readonly value: number; readonly bits: number } | undefined;
+  /** Method 1 counter, or `undefined` when the layout assigns no counter bits. */
+  readonly counter: { readonly value: bigint; readonly bits: number } | undefined;
+  /** Least-significant payload bits whose meaning the layout does not declare. */
+  readonly remaining: { readonly value: bigint; readonly bits: number };
+}
+
 /*
  * Reject a captured brand that proves an input cannot satisfy an operation. Bare strings remain
  * valid because widening erases their child brand, leaving runtime validation as the only sound
@@ -652,6 +672,20 @@ export interface UuidV7MaskingCodec {
     this: void,
     maskedUuidSlug: SlugStringInput<Input>,
   ): number | UuidSlugError;
+  /**
+   * Decode with this codec, then interpret the UUIDv7 payload under the layout the caller supplies.
+   * The slug cannot identify its generator or layout, so this method never guesses.
+   *
+   * @param maskedUuidSlug - Masked slug or registered sentinel accepted by this masking codec.
+   * @param layout - Known leading fraction and fixed-counter widths.
+   * @returns The decoded millisecond timestamp, declared fields, and undeclared low payload bits;
+   * or a `UuidSlugError` when the slug, mask match, UUID, or layout is invalid.
+   */
+  extractMaskedUuidV7Payload<Input extends string | UuidSlugError>(
+    this: void,
+    maskedUuidSlug: SlugStringInput<Input>,
+    layout: UuidV7PayloadLayout,
+  ): UuidV7Payload | UuidSlugError;
   /**
    * Decode with this codec, check the symmetric timestamp window, and return the same slug.
    * This checks clock plausibility, not expiry, authentication, replay, or issuance. TypeScript

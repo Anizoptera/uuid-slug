@@ -15,6 +15,8 @@ pub enum ErrorCode {
     InvalidBuffer,
     /// The mask configuration violates its contract.
     InvalidMask,
+    /// Operation options are missing, unknown, or outside their accepted range.
+    InvalidOptions,
     /// A sentinel name or UUID is empty, invalid, or repeats within one masking codec.
     InvalidSentinel,
     /// A timestamp does not satisfy the requested operation's range or precision.
@@ -40,6 +42,7 @@ impl ErrorCode {
             Self::InvalidBase64Url => "invalid_base64url",
             Self::InvalidBuffer => "invalid_buffer",
             Self::InvalidMask => "invalid_mask",
+            Self::InvalidOptions => "invalid_options",
             Self::InvalidSentinel => "invalid_sentinel",
             Self::InvalidTimestamp => "invalid_timestamp",
             Self::InvalidUuid => "invalid_uuid",
@@ -59,6 +62,7 @@ impl ErrorCode {
             }
             Self::InvalidBuffer => "The requested byte range does not fit the buffer.",
             Self::InvalidMask => "Invalid mask or key parameters.",
+            Self::InvalidOptions => "Invalid operation options.",
             Self::InvalidSentinel => {
                 "Sentinel names must be nonempty and unique within a UUIDv7 masking codec."
             }

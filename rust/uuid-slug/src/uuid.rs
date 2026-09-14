@@ -168,6 +168,66 @@ pub struct Uuid([u8; 16]);
 pub const NIL_UUID: Uuid = Uuid::from_uuid_bytes_array([0; 16]);
 /// The all-one UUID value, without a version or issuance claim.
 pub const MAX_UUID: Uuid = Uuid::from_uuid_bytes_array([u8::MAX; 16]);
+
+/// Known leading fields in a UUIDv7 generator's 74-bit payload.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct UuidV7PayloadLayout {
+    sub_millisecond_fraction_bits: u8,
+    counter_bits: u8,
+}
+
+impl UuidV7PayloadLayout {
+    /// Validate an RFC 9562 Method 3 fraction width followed by a Method 1 counter width.
+    pub fn new(sub_millisecond_fraction_bits: u8, counter_bits: u8) -> Result<Self, Error> {
+        if sub_millisecond_fraction_bits > 12 {
+            return Err(Error::new(ErrorCode::InvalidOptions).with_message(format!(
+                "sub_millisecond_fraction_bits must be from 0 through 12; got {sub_millisecond_fraction_bits}."
+            )));
+        }
+        let maximum_counter_bits = 74 - sub_millisecond_fraction_bits;
+        if counter_bits > maximum_counter_bits {
+            return Err(Error::new(ErrorCode::InvalidOptions).with_message(format!(
+                "counter_bits must be from 0 through {maximum_counter_bits} when sub_millisecond_fraction_bits is {sub_millisecond_fraction_bits}; got {counter_bits}."
+            )));
+        }
+        Ok(Self {
+            sub_millisecond_fraction_bits,
+            counter_bits,
+        })
+    }
+
+    /// Number of leading payload bits interpreted as a Method 3 fraction.
+    pub const fn sub_millisecond_fraction_bits(self) -> u8 {
+        self.sub_millisecond_fraction_bits
+    }
+    /// Number of following payload bits interpreted as a Method 1 counter.
+    pub const fn counter_bits(self) -> u8 {
+        self.counter_bits
+    }
+}
+
+/// One exact field extracted from a UUIDv7 payload.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct UuidV7PayloadField<Value> {
+    /// Unsigned field value.
+    pub value: Value,
+    /// Number of bits used by the field.
+    pub bits: u8,
+}
+
+/// UUIDv7 payload decoded under a caller-known layout.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct UuidV7Payload {
+    /// Standard 48-bit Unix millisecond timestamp.
+    pub unix_ms: u64,
+    /// Method 3 fraction value and width, or `None` when absent.
+    pub sub_millisecond_fraction: Option<UuidV7PayloadField<u16>>,
+    /// Method 1 counter value and width, or `None` when absent.
+    pub counter: Option<UuidV7PayloadField<u128>>,
+    /// Uninterpreted least-significant payload value and width.
+    pub remaining: UuidV7PayloadField<u128>,
+}
+
 impl Uuid {
     /// Take owned bytes without imposing a version restriction.
     pub const fn from_uuid_bytes_array(bytes: [u8; 16]) -> Self {
@@ -238,6 +298,38 @@ impl Uuid {
         Ok(self.0[..6]
             .iter()
             .fold(0u64, |value, &byte| (value << 8) | u64::from(byte)))
+    }
+
+    /// Interpret preserved payload bits only under the caller's known generator layout.
+    pub fn extract_uuid_v7_payload(
+        &self,
+        layout: UuidV7PayloadLayout,
+    ) -> Result<UuidV7Payload, Error> {
+        let unix_ms = self.extract_uuid_v7_unix_ms()?;
+        let payload = (u128::from(self.0[6] & 0x0f) << 70)
+            | (u128::from(self.0[7]) << 62)
+            | (u128::from(self.0[8] & 0x3f) << 56)
+            | self.0[9..]
+                .iter()
+                .fold(0u128, |value, &byte| (value << 8) | u128::from(byte));
+        let fraction_bits = layout.sub_millisecond_fraction_bits;
+        let remaining_bits = 74 - fraction_bits - layout.counter_bits;
+        let low_bits = |bits: u8| if bits == 0 { 0 } else { (1u128 << bits) - 1 };
+        Ok(UuidV7Payload {
+            unix_ms,
+            sub_millisecond_fraction: (fraction_bits != 0).then(|| UuidV7PayloadField {
+                value: (payload >> (74 - fraction_bits)) as u16,
+                bits: fraction_bits,
+            }),
+            counter: (layout.counter_bits != 0).then(|| UuidV7PayloadField {
+                value: (payload >> remaining_bits) & low_bits(layout.counter_bits),
+                bits: layout.counter_bits,
+            }),
+            remaining: UuidV7PayloadField {
+                value: payload & low_bits(remaining_bits),
+                bits: remaining_bits,
+            },
+        })
     }
 }
 pub(crate) fn range(capacity: usize, offset: usize) -> Result<std::ops::Range<usize>, Error> {
@@ -334,6 +426,72 @@ mod tests {
         id.write_uuid_bytes(&mut out, 16)?;
         assert_eq!(Uuid::from_uuid_bytes(&out, 16)?, id);
         assert_eq!(&out[..16], &[23; 16]);
+        Ok(())
+    }
+
+    #[test]
+    fn payload_layout_controls_interpretation_without_losing_tail_bits() -> Result<(), Error> {
+        let fraction = 0xa5bu128;
+        let counter = 0x2a55u128;
+        let remaining = 0x1234_5678_9abcu128;
+        let payload = (fraction << 62) | (counter << 48) | remaining;
+        let mut bytes = [0u8; 16];
+        bytes[..6].copy_from_slice(&1_700_000_000_123u64.to_be_bytes()[2..]);
+        bytes[6] = 0x70 | ((payload >> 70) as u8 & 0x0f);
+        bytes[7] = (payload >> 62) as u8;
+        bytes[8] = 0x80 | ((payload >> 56) as u8 & 0x3f);
+        bytes[9..].copy_from_slice(&(payload as u64).to_be_bytes()[1..]);
+        let uuid = Uuid::from_uuid_bytes_array(bytes);
+
+        assert_eq!(
+            uuid.extract_uuid_v7_payload(UuidV7PayloadLayout::new(12, 14)?)?,
+            UuidV7Payload {
+                unix_ms: 1_700_000_000_123,
+                sub_millisecond_fraction: Some(UuidV7PayloadField {
+                    value: 0xa5b,
+                    bits: 12
+                }),
+                counter: Some(UuidV7PayloadField {
+                    value: 0x2a55,
+                    bits: 14
+                }),
+                remaining: UuidV7PayloadField {
+                    value: remaining,
+                    bits: 48
+                },
+            }
+        );
+        assert_eq!(
+            uuid.extract_uuid_v7_payload(UuidV7PayloadLayout::new(0, 0)?)?
+                .remaining,
+            UuidV7PayloadField {
+                value: payload,
+                bits: 74
+            }
+        );
+        assert_eq!(
+            UuidV7PayloadLayout::new(13, 0).unwrap_err().code(),
+            ErrorCode::InvalidOptions
+        );
+        assert_eq!(
+            UuidV7PayloadLayout::new(12, 63).unwrap_err().code(),
+            ErrorCode::InvalidOptions
+        );
+        for bit in 0..74 {
+            let one_bit = 1u128 << bit;
+            let mut bytes = [0u8; 16];
+            bytes[6] = 0x70 | ((one_bit >> 70) as u8 & 0x0f);
+            bytes[7] = (one_bit >> 62) as u8;
+            bytes[8] = 0x80 | ((one_bit >> 56) as u8 & 0x3f);
+            bytes[9..].copy_from_slice(&(one_bit as u64).to_be_bytes()[1..]);
+            assert_eq!(
+                Uuid::from_uuid_bytes_array(bytes)
+                    .extract_uuid_v7_payload(UuidV7PayloadLayout::new(0, 0)?)?
+                    .remaining
+                    .value,
+                one_bit
+            );
+        }
         Ok(())
     }
 

@@ -15,6 +15,7 @@ import {
   createUuidV7MaskingCodec,
   SEEDED_MASK_FORMAT,
   PLAIN_SLUG_FORMAT,
+  extractUuidV7Payload,
   extractUuidV7UnixMs,
   extractUuidVersion,
   uuidBytesToPlainSlug,
@@ -87,6 +88,8 @@ import type {
   UuidV7Text,
   UuidV7Generator,
   UuidV7MaskingCodec,
+  UuidV7Payload,
+  UuidV7PayloadLayout,
   UuidString,
   UuidVersion,
   UuidSlugMigrationDecoder,
@@ -183,6 +186,11 @@ expectType<UppercaseUuidV7String | UuidSlugError>()(
   uuidToString(versionedSlug, UUID_TEXT_UPPERCASE),
 );
 expectType<number | UuidSlugError>()(extractUuidV7UnixMs(checkedUuid));
+const payloadLayout: UuidV7PayloadLayout = {
+  subMillisecondFractionBits: 12,
+  counterBits: 30,
+};
+expectType<UuidV7Payload | UuidSlugError>()(extractUuidV7Payload(checkedUuid, payloadLayout));
 expectType<number | UuidSlugError>()(extractUuidV7UnixMs(versionedSlug));
 // @ts-expect-error Known slug text cannot enter a UUID text operation.
 uuidStringToBytes(versionedSlug);
@@ -376,6 +384,9 @@ createUuidV7MaskingCodec({
 });
 const maskedFromBytes = codec.uuidToMaskedSlug(versionedBytes);
 expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(maskedFromBytes);
+expectType<UuidV7Payload | UuidSlugError>()(
+  codec.extractMaskedUuidV7Payload("AZ_xnLf5cACbG99xO9VWLw", payloadLayout),
+);
 const uuidTextOrBytes = (true as boolean) ? "019ff19b-58b8-7000-9b1b-df713bd5562c" : versionedBytes;
 codec.uuidToMaskedSlug(uuidTextOrBytes);
 const decodedMaskedBytes = codec.uuidToBytes("AZ_xnLf5cACbG99xO9VWLw");

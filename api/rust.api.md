@@ -12,6 +12,7 @@ pub uuid_slug::ErrorCode::InvalidBase32Hex
 pub uuid_slug::ErrorCode::InvalidBase64Url
 pub uuid_slug::ErrorCode::InvalidBuffer
 pub uuid_slug::ErrorCode::InvalidMask
+pub uuid_slug::ErrorCode::InvalidOptions
 pub uuid_slug::ErrorCode::InvalidSentinel
 pub uuid_slug::ErrorCode::InvalidTimestamp
 pub uuid_slug::ErrorCode::InvalidUuid
@@ -240,6 +241,7 @@ impl core::panic::unwind_safe::UnwindSafe for uuid_slug::PlainUuidSlug
 pub struct uuid_slug::Uuid(_)
 impl uuid_slug::Uuid
 pub const fn uuid_slug::Uuid::as_uuid_bytes(&self) -> &[u8; 16]
+pub fn uuid_slug::Uuid::extract_uuid_v7_payload(&self, layout: uuid_slug::UuidV7PayloadLayout) -> core::result::Result<uuid_slug::UuidV7Payload, uuid_slug::Error>
 pub fn uuid_slug::Uuid::extract_uuid_v7_unix_ms(&self) -> core::result::Result<u64, uuid_slug::Error>
 pub fn uuid_slug::Uuid::from_plain_uuid_slug(plain_uuid_slug: &str) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::Uuid::from_uuid_bytes(bytes: &[u8], offset: usize) -> core::result::Result<Self, uuid_slug::Error>
@@ -381,6 +383,7 @@ impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7MaskDerivationCan
 pub struct uuid_slug::UuidV7MaskingCodec
 impl uuid_slug::UuidV7MaskingCodec
 pub fn uuid_slug::UuidV7MaskingCodec::create_uuid_slug_migration_decoder(&self, options: uuid_slug::UuidSlugMigrationOptions) -> uuid_slug::UuidSlugMigrationDecoder<'_>
+pub fn uuid_slug::UuidV7MaskingCodec::extract_masked_uuid_v7_payload(&self, masked_uuid_slug: &str, layout: uuid_slug::UuidV7PayloadLayout) -> core::result::Result<uuid_slug::UuidV7Payload, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::masked_slug_to_uuid(&self, masked_uuid_slug: &str) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::new(options: uuid_slug::UuidV7MaskingCodecOptions) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::sentinels(&self) -> &[uuid_slug::UuidV7Sentinel]
@@ -408,6 +411,67 @@ impl core::marker::Unpin for uuid_slug::UuidV7MaskingCodecOptions
 impl core::marker::UnsafeUnpin for uuid_slug::UuidV7MaskingCodecOptions
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7MaskingCodecOptions
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7MaskingCodecOptions
+pub struct uuid_slug::UuidV7Payload
+pub uuid_slug::UuidV7Payload::counter: core::option::Option<uuid_slug::UuidV7PayloadField<u128>>
+pub uuid_slug::UuidV7Payload::remaining: uuid_slug::UuidV7PayloadField<u128>
+pub uuid_slug::UuidV7Payload::sub_millisecond_fraction: core::option::Option<uuid_slug::UuidV7PayloadField<u16>>
+pub uuid_slug::UuidV7Payload::unix_ms: u64
+impl core::clone::Clone for uuid_slug::UuidV7Payload
+pub fn uuid_slug::UuidV7Payload::clone(&self) -> uuid_slug::UuidV7Payload
+impl core::cmp::Eq for uuid_slug::UuidV7Payload
+impl core::cmp::PartialEq for uuid_slug::UuidV7Payload
+pub fn uuid_slug::UuidV7Payload::eq(&self, other: &uuid_slug::UuidV7Payload) -> bool
+impl core::fmt::Debug for uuid_slug::UuidV7Payload
+pub fn uuid_slug::UuidV7Payload::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::UuidV7Payload
+impl core::marker::StructuralPartialEq for uuid_slug::UuidV7Payload
+impl core::marker::Freeze for uuid_slug::UuidV7Payload
+impl core::marker::Send for uuid_slug::UuidV7Payload
+impl core::marker::Sync for uuid_slug::UuidV7Payload
+impl core::marker::Unpin for uuid_slug::UuidV7Payload
+impl core::marker::UnsafeUnpin for uuid_slug::UuidV7Payload
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7Payload
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7Payload
+pub struct uuid_slug::UuidV7PayloadField<Value>
+pub uuid_slug::UuidV7PayloadField::bits: u8
+pub uuid_slug::UuidV7PayloadField::value: Value
+impl<Value: core::clone::Clone> core::clone::Clone for uuid_slug::UuidV7PayloadField<Value>
+pub fn uuid_slug::UuidV7PayloadField<Value>::clone(&self) -> uuid_slug::UuidV7PayloadField<Value>
+impl<Value: core::cmp::Eq> core::cmp::Eq for uuid_slug::UuidV7PayloadField<Value>
+impl<Value: core::cmp::PartialEq> core::cmp::PartialEq for uuid_slug::UuidV7PayloadField<Value>
+pub fn uuid_slug::UuidV7PayloadField<Value>::eq(&self, other: &uuid_slug::UuidV7PayloadField<Value>) -> bool
+impl<Value: core::cmp::PartialEq> core::marker::StructuralPartialEq for uuid_slug::UuidV7PayloadField<Value>
+impl<Value: core::fmt::Debug> core::fmt::Debug for uuid_slug::UuidV7PayloadField<Value>
+pub fn uuid_slug::UuidV7PayloadField<Value>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Value: core::marker::Copy> core::marker::Copy for uuid_slug::UuidV7PayloadField<Value>
+impl<Value> core::marker::Freeze for uuid_slug::UuidV7PayloadField<Value> where Value: core::marker::Freeze
+impl<Value> core::marker::Send for uuid_slug::UuidV7PayloadField<Value> where Value: core::marker::Send
+impl<Value> core::marker::Sync for uuid_slug::UuidV7PayloadField<Value> where Value: core::marker::Sync
+impl<Value> core::marker::Unpin for uuid_slug::UuidV7PayloadField<Value> where Value: core::marker::Unpin
+impl<Value> core::marker::UnsafeUnpin for uuid_slug::UuidV7PayloadField<Value> where Value: core::marker::UnsafeUnpin
+impl<Value> core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7PayloadField<Value> where Value: core::panic::unwind_safe::RefUnwindSafe
+impl<Value> core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7PayloadField<Value> where Value: core::panic::unwind_safe::UnwindSafe
+pub struct uuid_slug::UuidV7PayloadLayout
+impl uuid_slug::UuidV7PayloadLayout
+pub const fn uuid_slug::UuidV7PayloadLayout::counter_bits(self) -> u8
+pub fn uuid_slug::UuidV7PayloadLayout::new(sub_millisecond_fraction_bits: u8, counter_bits: u8) -> core::result::Result<Self, uuid_slug::Error>
+pub const fn uuid_slug::UuidV7PayloadLayout::sub_millisecond_fraction_bits(self) -> u8
+impl core::clone::Clone for uuid_slug::UuidV7PayloadLayout
+pub fn uuid_slug::UuidV7PayloadLayout::clone(&self) -> uuid_slug::UuidV7PayloadLayout
+impl core::cmp::Eq for uuid_slug::UuidV7PayloadLayout
+impl core::cmp::PartialEq for uuid_slug::UuidV7PayloadLayout
+pub fn uuid_slug::UuidV7PayloadLayout::eq(&self, other: &uuid_slug::UuidV7PayloadLayout) -> bool
+impl core::fmt::Debug for uuid_slug::UuidV7PayloadLayout
+pub fn uuid_slug::UuidV7PayloadLayout::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::UuidV7PayloadLayout
+impl core::marker::StructuralPartialEq for uuid_slug::UuidV7PayloadLayout
+impl core::marker::Freeze for uuid_slug::UuidV7PayloadLayout
+impl core::marker::Send for uuid_slug::UuidV7PayloadLayout
+impl core::marker::Sync for uuid_slug::UuidV7PayloadLayout
+impl core::marker::Unpin for uuid_slug::UuidV7PayloadLayout
+impl core::marker::UnsafeUnpin for uuid_slug::UuidV7PayloadLayout
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7PayloadLayout
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7PayloadLayout
 pub struct uuid_slug::UuidV7PreviousMask
 pub uuid_slug::UuidV7PreviousMask::mask: uuid_slug::UuidV7Mask
 pub uuid_slug::UuidV7PreviousMask::timestamp_range_start_unix_ms: u64
@@ -476,6 +540,7 @@ pub uuid_slug::ErrorCode::InvalidBase32Hex
 pub uuid_slug::ErrorCode::InvalidBase64Url
 pub uuid_slug::ErrorCode::InvalidBuffer
 pub uuid_slug::ErrorCode::InvalidMask
+pub uuid_slug::ErrorCode::InvalidOptions
 pub uuid_slug::ErrorCode::InvalidSentinel
 pub uuid_slug::ErrorCode::InvalidTimestamp
 pub uuid_slug::ErrorCode::InvalidUuid
@@ -704,6 +769,7 @@ impl core::panic::unwind_safe::UnwindSafe for uuid_slug::PlainUuidSlug
 pub struct uuid_slug::Uuid(_)
 impl uuid_slug::Uuid
 pub const fn uuid_slug::Uuid::as_uuid_bytes(&self) -> &[u8; 16]
+pub fn uuid_slug::Uuid::extract_uuid_v7_payload(&self, layout: uuid_slug::UuidV7PayloadLayout) -> core::result::Result<uuid_slug::UuidV7Payload, uuid_slug::Error>
 pub fn uuid_slug::Uuid::extract_uuid_v7_unix_ms(&self) -> core::result::Result<u64, uuid_slug::Error>
 pub fn uuid_slug::Uuid::from_plain_uuid_slug(plain_uuid_slug: &str) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::Uuid::from_uuid_bytes(bytes: &[u8], offset: usize) -> core::result::Result<Self, uuid_slug::Error>
@@ -843,6 +909,7 @@ impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7MaskDerivationCan
 pub struct uuid_slug::UuidV7MaskingCodec
 impl uuid_slug::UuidV7MaskingCodec
 pub fn uuid_slug::UuidV7MaskingCodec::create_uuid_slug_migration_decoder(&self, options: uuid_slug::UuidSlugMigrationOptions) -> uuid_slug::UuidSlugMigrationDecoder<'_>
+pub fn uuid_slug::UuidV7MaskingCodec::extract_masked_uuid_v7_payload(&self, masked_uuid_slug: &str, layout: uuid_slug::UuidV7PayloadLayout) -> core::result::Result<uuid_slug::UuidV7Payload, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::masked_slug_to_uuid(&self, masked_uuid_slug: &str) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::new(options: uuid_slug::UuidV7MaskingCodecOptions) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::sentinels(&self) -> &[uuid_slug::UuidV7Sentinel]
@@ -870,6 +937,67 @@ impl core::marker::Unpin for uuid_slug::UuidV7MaskingCodecOptions
 impl core::marker::UnsafeUnpin for uuid_slug::UuidV7MaskingCodecOptions
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7MaskingCodecOptions
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7MaskingCodecOptions
+pub struct uuid_slug::UuidV7Payload
+pub uuid_slug::UuidV7Payload::counter: core::option::Option<uuid_slug::UuidV7PayloadField<u128>>
+pub uuid_slug::UuidV7Payload::remaining: uuid_slug::UuidV7PayloadField<u128>
+pub uuid_slug::UuidV7Payload::sub_millisecond_fraction: core::option::Option<uuid_slug::UuidV7PayloadField<u16>>
+pub uuid_slug::UuidV7Payload::unix_ms: u64
+impl core::clone::Clone for uuid_slug::UuidV7Payload
+pub fn uuid_slug::UuidV7Payload::clone(&self) -> uuid_slug::UuidV7Payload
+impl core::cmp::Eq for uuid_slug::UuidV7Payload
+impl core::cmp::PartialEq for uuid_slug::UuidV7Payload
+pub fn uuid_slug::UuidV7Payload::eq(&self, other: &uuid_slug::UuidV7Payload) -> bool
+impl core::fmt::Debug for uuid_slug::UuidV7Payload
+pub fn uuid_slug::UuidV7Payload::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::UuidV7Payload
+impl core::marker::StructuralPartialEq for uuid_slug::UuidV7Payload
+impl core::marker::Freeze for uuid_slug::UuidV7Payload
+impl core::marker::Send for uuid_slug::UuidV7Payload
+impl core::marker::Sync for uuid_slug::UuidV7Payload
+impl core::marker::Unpin for uuid_slug::UuidV7Payload
+impl core::marker::UnsafeUnpin for uuid_slug::UuidV7Payload
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7Payload
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7Payload
+pub struct uuid_slug::UuidV7PayloadField<Value>
+pub uuid_slug::UuidV7PayloadField::bits: u8
+pub uuid_slug::UuidV7PayloadField::value: Value
+impl<Value: core::clone::Clone> core::clone::Clone for uuid_slug::UuidV7PayloadField<Value>
+pub fn uuid_slug::UuidV7PayloadField<Value>::clone(&self) -> uuid_slug::UuidV7PayloadField<Value>
+impl<Value: core::cmp::Eq> core::cmp::Eq for uuid_slug::UuidV7PayloadField<Value>
+impl<Value: core::cmp::PartialEq> core::cmp::PartialEq for uuid_slug::UuidV7PayloadField<Value>
+pub fn uuid_slug::UuidV7PayloadField<Value>::eq(&self, other: &uuid_slug::UuidV7PayloadField<Value>) -> bool
+impl<Value: core::cmp::PartialEq> core::marker::StructuralPartialEq for uuid_slug::UuidV7PayloadField<Value>
+impl<Value: core::fmt::Debug> core::fmt::Debug for uuid_slug::UuidV7PayloadField<Value>
+pub fn uuid_slug::UuidV7PayloadField<Value>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<Value: core::marker::Copy> core::marker::Copy for uuid_slug::UuidV7PayloadField<Value>
+impl<Value> core::marker::Freeze for uuid_slug::UuidV7PayloadField<Value> where Value: core::marker::Freeze
+impl<Value> core::marker::Send for uuid_slug::UuidV7PayloadField<Value> where Value: core::marker::Send
+impl<Value> core::marker::Sync for uuid_slug::UuidV7PayloadField<Value> where Value: core::marker::Sync
+impl<Value> core::marker::Unpin for uuid_slug::UuidV7PayloadField<Value> where Value: core::marker::Unpin
+impl<Value> core::marker::UnsafeUnpin for uuid_slug::UuidV7PayloadField<Value> where Value: core::marker::UnsafeUnpin
+impl<Value> core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7PayloadField<Value> where Value: core::panic::unwind_safe::RefUnwindSafe
+impl<Value> core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7PayloadField<Value> where Value: core::panic::unwind_safe::UnwindSafe
+pub struct uuid_slug::UuidV7PayloadLayout
+impl uuid_slug::UuidV7PayloadLayout
+pub const fn uuid_slug::UuidV7PayloadLayout::counter_bits(self) -> u8
+pub fn uuid_slug::UuidV7PayloadLayout::new(sub_millisecond_fraction_bits: u8, counter_bits: u8) -> core::result::Result<Self, uuid_slug::Error>
+pub const fn uuid_slug::UuidV7PayloadLayout::sub_millisecond_fraction_bits(self) -> u8
+impl core::clone::Clone for uuid_slug::UuidV7PayloadLayout
+pub fn uuid_slug::UuidV7PayloadLayout::clone(&self) -> uuid_slug::UuidV7PayloadLayout
+impl core::cmp::Eq for uuid_slug::UuidV7PayloadLayout
+impl core::cmp::PartialEq for uuid_slug::UuidV7PayloadLayout
+pub fn uuid_slug::UuidV7PayloadLayout::eq(&self, other: &uuid_slug::UuidV7PayloadLayout) -> bool
+impl core::fmt::Debug for uuid_slug::UuidV7PayloadLayout
+pub fn uuid_slug::UuidV7PayloadLayout::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::UuidV7PayloadLayout
+impl core::marker::StructuralPartialEq for uuid_slug::UuidV7PayloadLayout
+impl core::marker::Freeze for uuid_slug::UuidV7PayloadLayout
+impl core::marker::Send for uuid_slug::UuidV7PayloadLayout
+impl core::marker::Sync for uuid_slug::UuidV7PayloadLayout
+impl core::marker::Unpin for uuid_slug::UuidV7PayloadLayout
+impl core::marker::UnsafeUnpin for uuid_slug::UuidV7PayloadLayout
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7PayloadLayout
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7PayloadLayout
 pub struct uuid_slug::UuidV7PreviousMask
 pub uuid_slug::UuidV7PreviousMask::mask: uuid_slug::UuidV7Mask
 pub uuid_slug::UuidV7PreviousMask::timestamp_range_start_unix_ms: u64

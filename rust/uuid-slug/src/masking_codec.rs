@@ -2,7 +2,7 @@
 
 use crate::{
     Error, ErrorCode, MaskedOrSentinelUuidV7Slug, MaskedUuidV7Slug, PlainUuidSlug, Uuid,
-    UuidSlugAlphabet, UuidV7Mask,
+    UuidSlugAlphabet, UuidV7Mask, UuidV7Payload, UuidV7PayloadLayout,
 };
 
 /// A named UUID emitted as a plain slug instead of through the mask.
@@ -488,6 +488,16 @@ impl UuidV7MaskingCodec {
         let uuid = self.decode_masked(masked_uuid_slug)?;
         uuid.extract_uuid_v7_unix_ms()?;
         Ok(uuid)
+    }
+
+    /// Decode with this codec, then apply only the payload layout supplied by the caller.
+    pub fn extract_masked_uuid_v7_payload(
+        &self,
+        masked_uuid_slug: &str,
+        layout: UuidV7PayloadLayout,
+    ) -> Result<UuidV7Payload, Error> {
+        self.masked_slug_to_uuid(masked_uuid_slug)?
+            .extract_uuid_v7_payload(layout)
     }
 
     fn decode_masked(&self, slug: &str) -> Result<Uuid, Error> {

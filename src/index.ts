@@ -77,6 +77,8 @@ export type {
   UuidV7PreviousMask,
   UuidV7Bytes,
   UuidV7Bounds,
+  UuidV7Payload,
+  UuidV7PayloadLayout,
   UuidV7Sentinel,
   UuidV7SentinelConfig,
   PlainUuidV7Slug,
@@ -102,6 +104,7 @@ export {
 export {
   uuidBytesToPlainSlug,
   extractUuidV7UnixMs,
+  extractUuidV7Payload,
   extractUuidVersion,
   isPlainUuidSlug,
   isPlainUuidV4Slug,

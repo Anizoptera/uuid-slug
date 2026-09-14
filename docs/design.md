@@ -30,6 +30,11 @@ Masking accepts UUIDv7 and preserves 116 payload bits:
 use them for random data, counters, sub-millisecond time, or a combination. Masking treats all 74
 bits as opaque data and restores them unchanged.
 
+Payload inspection happens after decoding and does not change this wire format. The caller supplies
+the number of leading Method 3 fraction bits and following Method 1 counter bits. The remaining low
+bits stay uninterpreted. The UUID cannot identify the layout or distinguish random data from a
+counter, so the API must not infer either one.
+
 The masked payload is fixed: 22 base64url characters hold 132 bits, leaving `132 - 116 = 16`
 check bits. Twelve replace the constant bits inside the 128-bit block; four occupy the encoding's
 spare bits. All 132 encoded bits have a role. Plain-slug padding rejection does not apply to these

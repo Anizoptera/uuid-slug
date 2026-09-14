@@ -1198,9 +1198,12 @@ Use `bun run bench:competitors` to compare the package's JavaScript paths with c
 alternatives. Each case validates its output before warm-up, rotates measurement order, yields
 between bounded samples, and fails on duplicate, missing, malformed, empty, or non-finite results.
 
-UUIDv7 interoperability is not a generator whitelist. The code treats the full 74-bit payload as
-opaque. The conformance matrix tests both boundaries, alternating patterns, every bit position, and
-real output from each installed JavaScript generator below. Both TypeScript and Rust must parse each
+UUIDv7 interoperability is not a generator whitelist. Conversion and masking preserve the full
+74-bit payload without interpreting it. Optional inspection accepts an explicit count of leading
+Method 3 fraction bits and following Method 1 counter bits. It returns every other bit unchanged.
+The UUID cannot identify its generator or layout, so library names never select an interpretation.
+The conformance matrix tests both boundaries, alternating patterns, every bit position, and real
+output from each installed JavaScript generator below. Both TypeScript and Rust must parse each
 input, extract the same timestamp, and preserve all 128 bits through both plain and masked alphabets.
 
 | Generator | Use of the 74 payload bits |
@@ -1209,6 +1212,12 @@ input, extract the same timestamp, and preserve all 128 bits through both plain 
 | `uuid` 14.0.2, `uniku` 0.6.0 | 32-bit random-start counter and 42 newly random bits |
 | `fastv7` 1.0.2, `@kripod/uuidv7` 0.3.4 | 12-bit zero-start counter and 62 newly random bits |
 | `uuidv7-js` 2.0.0 | Random initial payload, then a random positive increment within the same millisecond |
+
+RFC 9562 permits four useful payload models: random bits; a fixed counter in the leading bits;
+a randomly seeded value increased by random positive amounts; and 1 through 12 leading fraction
+bits, optionally followed by a fixed counter. The first and third models remain in `remaining`:
+one UUID cannot prove that random-looking bits came from either process. The second and fourth can
+be decoded only when the caller already knows their widths.
 
 ### Rust competitor inventory
 
@@ -1239,7 +1248,7 @@ version requires source inspection before its evidence or benchmark result can b
 | [`rok-ids` 0.1.0](https://docs.rs/rok-ids/0.1.0/rok_ids/) | v7 | 2026-05-10 | repository unavailable | Typed wrapper over `uuid` | source inspected; behavior unmeasured |
 | [`uuid-lite` 1.10.8](https://docs.rs/uuid-lite/1.10.8/uuid_lite/) | v4, v7 | 2026-09-13 | unavailable | Published fork of `uuid`; compare only if its code or build differs at measurement time | registry and older compatible source inspected; behavior unmeasured |
 | [`uuid-lite2` 1.10.1](https://docs.rs/uuid-lite2/1.10.1/uuid_lite2/) | v4, v7 | 2026-08-24 | unavailable | Second published `uuid` fork; compare only if its code or build differs | registry and 1.10.0 source inspected; behavior unmeasured |
-| [`short-uuid` 0.2.1](https://docs.rs/short-uuid/0.2.1/short_uuid/) | v4 | 2025-12-20 | 2026-02-10 | Base58 UUID wrapper and direct slug competitor | source inspected; behavior unmeasured |
+| [`short-uuid` 0.2.1](https://docs.rs/short-uuid/0.2.1/short_uuid/) | v4 | 2025-12-20 | 2026-02-10 | Base58 UUID wrapper and direct slug competitor | source inspected; length, canonical decoding, bit preservation, allocation, URL and filename safety, sorting, and speed unmeasured |
 | [`uuid64rs` 0.0.14](https://docs.rs/uuid64rs/0.0.14/uuid64rs/) | v4 | 2021-04-19 | 2021-04-19 | Base64 UUID generator and direct slug competitor | source inspected; behavior unmeasured |
 | [`uuidv4` 1.0.0](https://docs.rs/uuidv4/1.0.0/uuidv4/) | v4 | 2023-08-24 | unavailable | Small standalone generator | package metadata inspected; behavior unmeasured |
 | [`qubit-id` 0.6.0](https://docs.rs/qubit-id/0.6.0/qubit_id/) | v4 | 2026-09-02 | 2026-09-14 | Synchronous and asynchronous generator interfaces | source inspected; behavior unmeasured |
@@ -1251,9 +1260,15 @@ reason: their process or storage overhead would measure a different job.
 Benchmark direct implementations separately from wrappers. Measure text, owned bytes, caller
 storage, and batch calls only where the crate exposes them. Also record entropy failure, clock
 rollback, same-millisecond behavior, allocation, contention, target support, and output validity.
+Compare Base58 codecs with both base64url and base32hex. Another alphabet earns a public wire format
+only if a consumer job benefits enough to pay for its decoder, documentation, compatibility, and
+matching Rust and TypeScript support.
 
-The Rust `uuid` crate can also place sub-millisecond time in the payload. The package preserves it
-as opaque data. `leachuuid7` documents a 60-bit timestamp, but its source writes the RFC 9562
+Rust `uuid` uses a 42-bit leading counter by default. Its additional-precision mode dedicates 1
+through 12 of those leading bits to a Method 3 fraction, leaving the rest of the 42-bit field as the
+counter. `fast-uuid-v7` exposes 4-, 8-, and 12-bit fraction variants with random trailing bits, plus
+a separate 18-bit leading-counter variant. These layouts fit the same explicit fraction-then-counter
+model. `leachuuid7` documents a 60-bit timestamp, but its source writes the RFC 9562
 48-bit timestamp and then sets the standard version and variant bits. The source behavior is what
 the compatibility claim covers.
 

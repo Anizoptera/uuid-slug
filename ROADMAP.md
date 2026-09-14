@@ -2,6 +2,61 @@
 
 Live work only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`.
 
+## UUIDv7 payload interpretation
+
+Maintainer ruling: preserve all UUIDv7 payload bits by default. Let callers explicitly select a
+standard or library-compatible payload layout when they need sub-millisecond time, counters, or
+random fields. Never infer a layout from UUID bits or silently report one interpretation as fact.
+
+- [x] Inventory RFC 9562 payload methods and the layouts used by maintained Rust and TypeScript generators.
+- [x] Define the smallest exact result types and explicit layout selection that cannot imply provenance.
+- [x] Implement matching TypeScript and Rust inspection without changing UUID or masked-slug wire formats.
+- [x] Document precision, quantization, unavailable fields, and ambiguous layouts at each public operation.
+- [x] Falsify bit boundaries, layout confusion, external vectors, masking preservation, declarations, and parity.
+- [x] Run the complete project gate and leave the repository clean.
+
+## High-resolution UUIDv7 generation
+
+Maintainer direction: evaluate sub-millisecond fraction bits from runtime or caller clocks as an
+optional UUIDv7 generation mode. Keep a counter for equal readings and rollback. Do not claim or
+encode precision that the selected clock cannot supply.
+
+- [ ] Measure each runtime's available epoch clock, effective resolution, rollback, call cost, and privacy clamping.
+- [ ] Reject fractional Unix milliseconds as the precision API: a JavaScript number near the current epoch cannot represent nanoseconds.
+- [ ] Compare split `{ unixMs, subMillisecondNanoseconds }` readings with epoch-nanosecond `bigint` readings in TypeScript and Rust.
+- [ ] Compare fraction widths 1 through 12 and the resulting 41- through 30-bit counter capacity against the current 42-bit counter path.
+- [ ] Decide whether counters reset per fraction bucket or per millisecond; verify exhaustion and rollback across both boundaries.
+- [ ] Define explicit caller-clock behavior and runtime fallback without letting one configuration silently emit mixed layouts.
+- [ ] Keep automatic clock selection separate from automatic payload-layout selection; capability presence does not prove effective precision.
+- [ ] Verify Node, Bun, Deno, Chromium, Rust native, and Rust WebAssembly paths, including reduced timer precision.
+- [ ] Benchmark the complete public route against the existing generator and native UUIDv7 paths before changing any default.
+- [ ] Falsify ordering, uniqueness, rollback, reentrancy, entropy failure, counter exhaustion, and exact wire placement.
+- [ ] Expose the selected layout so stored UUIDs can be decoded without guessing their generator runtime.
+
+## Codec capability boundary
+
+Maintainer direction: evaluate a broader codec name and optional masking. Do not make stateless UUID
+conversion harder, duplicate root operations, or expose methods that can only fail because no mask
+was configured.
+
+- [ ] Compare one optional-capability codec, a base codec plus keyed subtype, separate capability
+      interfaces, and generator/codec composition in TypeScript and Rust caller code.
+- [ ] Name the state and repeated work that justify each reusable object; reject wrappers around
+      stateless root functions.
+- [ ] Keep generation sequence state in a generator and mask/key state in the keyed codec unless
+      measured caller code shows that combining them removes more burden than it creates.
+- [ ] Decide the public name and migration before changing the published `UuidV7MaskingCodec`
+      contract.
+
+## Base58 candidate
+
+Maintainer direction: keep Base58 as a candidate alphabet only while evidence can show a useful
+consumer advantage over base64url and base32hex.
+
+- [ ] Benchmark `short-uuid` and other maintained Base58 UUID codecs for length, speed, allocation, and canonical decoding.
+- [ ] Compare URL and filename safety, case handling, sorting, implementation weight, and cross-language support.
+- [ ] Add Base58 only if a measured consumer job justifies another permanent wire spelling.
+
 ## UUIDv7 interoperability proof correction
 
 - [x] Generate UUIDv7 values with every Rust library named by the payload-layout audit.

@@ -304,8 +304,15 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   a batch helper cannot choose a safe allocation, scheduling, or cancellation limit for them.
 - Keep base64url and base32hex as the only slug alphabets. They cover compact URL output and
   case-insensitive sortable output; arbitrary alphabets create private wire formats.
-- Keep timestamps as Unix milliseconds. A `Date` helper adds mutable allocation, range coercion,
-  and no information; application code can construct a `Date` at its boundary.
+- Keep the standard timestamp operation in Unix milliseconds. Decode optional UUIDv7 payload fields
+  only under caller-supplied bit widths because the UUID does not identify its generator or layout.
+  Return a Method 3 fraction as its exact value and width; a floating timestamp would hide its
+  quantization. Keep every undeclared payload bit as an uninterpreted integer instead of guessing.
+  A `Date` helper adds mutable allocation, range coercion, and no information.
+- A high-resolution generator must use a split millisecond and sub-millisecond reading or an exact
+  integer reading. A JavaScript number near the Unix epoch cannot represent nanoseconds. Keep the
+  payload layout explicit and stable across runtimes; capability detection may select a clock
+  implementation, but it must not silently change stored UUID semantics.
 - Keep standalone operations with complete names. Function properties and representation
   namespaces would duplicate them and make detached names less clear.
 - Keep one error-value path. Nullable and throwing duplicates discard diagnostics or split control

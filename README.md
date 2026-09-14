@@ -99,9 +99,10 @@ allows the remaining 74 bits to hold random data, a counter, or both. Use UUIDv4
 has no value. Use UUIDv7 when you need timestamp sorting or extraction. Neither requires masking.
 Anyone can decode a plain slug, including its UUIDv7 timestamp.
 
-This package accepts every RFC 9562 UUIDv7. It treats the 74 payload bits as opaque and restores
-them unchanged. A UUID alone cannot prove which library generated it or whether those bits contain
-random data, a counter, sub-millisecond time, or a combination.
+This package accepts every RFC 9562 UUIDv7. Conversion and masking preserve the 74 payload bits
+without interpreting them. Payload extraction interprets only the layout supplied by the caller.
+A UUID alone cannot prove which library generated it or whether those bits contain random data, a
+counter, sub-millisecond time, or a combination.
 
 UUIDv7 values from different milliseconds sort by timestamp in UUID byte order. Values from the
 same millisecond follow their generator's payload rules; UUIDv7 alone does not promise their order.
@@ -175,6 +176,22 @@ function dateFromId(uuidOrPlainSlug: string) {
 `extractUuidV7UnixMs(bytes, offset)` reads a UUID inside a larger buffer.
 `maskingCodec.extractMaskedUuidV7UnixMs(slug)` reads the same timestamp from a masked slug using the
 masking codec's keys. Masking preserves it. UUIDv4 has no timestamp and is rejected.
+
+The other 74 UUIDv7 bits have no self-describing layout. A generator may use them for random data,
+a fixed counter, a changing random value, a sub-millisecond fraction, or a fraction followed by a
+counter. Use `extractUuidV7Payload(value, layout)` only when you know that generator's layout:
+
+```ts
+const payload = extractUuidV7Payload(uuid, {
+  subMillisecondFractionBits: 12,
+  counterBits: 14,
+});
+```
+
+The result keeps each value with its bit width and returns every undeclared low bit in `remaining`.
+A fraction value `n` stored in `b` bits places creation within
+`[unixMs + n / 2**b, unixMs + (n + 1) / 2**b)` milliseconds. It does not recover a more exact time.
+Use `maskingCodec.extractMaskedUuidV7Payload(slug, layout)` for masked slugs and sentinels.
 
 Choose what the timestamp means when assigning the ID: generation time, or a supplied time for
 imports. It has millisecond precision and does not prove when an external event happened.
@@ -600,6 +617,7 @@ known UUID version remains in the result type.
 | `uuidToPlainSlug(uuid, alphabet?)` | A plain slug from UUID text, bytes, or a plain slug. |
 | `extractUuidVersion(uuid)` | The UUID version nibble from UUID text, exact bytes, or a plain slug. |
 | `extractUuidV7UnixMs(value, offset?)` | Unix milliseconds from UUIDv7 text, a plain slug, or bytes. |
+| `extractUuidV7Payload(value, layout, offset?)` | Timestamp and caller-declared payload fields, with all other payload bits unchanged. |
 | `validateUuidV7Timestamp(uuid, window, textCase?)` / `validatePlainUuidV7SlugUnixMs(slug, window)` | UUIDv7 text in the selected case, or the original plain slug, after checking its timestamp. |
 
 ### Use a masking codec
@@ -621,6 +639,7 @@ readers also try its configured previous masks.
 | `maskedSlugToUuidString(maskedUuidSlug, textCase?)` | UUIDv7 text when the caller knows the slug is masked. |
 | `maskedSlugToUuidBytes(maskedUuidSlug, output?, outputOffset?)` | UUIDv7 bytes when the caller knows the slug is masked. |
 | `extractMaskedUuidV7UnixMs(maskedUuidSlug)` | Unix milliseconds from a masked slug or sentinel. |
+| `extractMaskedUuidV7Payload(maskedUuidSlug, layout)` | Timestamp and caller-declared payload fields from a masked slug or sentinel. |
 | `validateMaskedUuidV7SlugUnixMs(maskedUuidSlug, window)` | The original slug, narrowed to `MaskedOrSentinelUuidV7Slug` after checking its timestamp. |
 | `sentinels` | Readonly reserved names, UUIDs, and slugs. |
 | `createUuidSlugMigrationDecoder(options?)` | A reader for the old formats you enable; new output stays unchanged. |

@@ -53,6 +53,15 @@ declare type EnabledMigrationOption<
   Options,
   Option extends keyof UuidSlugMigrationOptions,
 > = Option extends keyof Options ? (true extends Options[Option] ? Option : never) : never;
+export declare function extractUuidV7Payload<Input extends string | UuidSlugError>(
+  value: UuidV7TimestampInput<Input>,
+  layout: UuidV7PayloadLayout,
+): UuidV7Payload | UuidSlugError;
+export declare function extractUuidV7Payload<Input extends UuidByteInput | UuidSlugError>(
+  value: UuidV7BytesInput<Input>,
+  layout: UuidV7PayloadLayout,
+  byteOffset?: number,
+): UuidV7Payload | UuidSlugError;
 export declare function extractUuidV7UnixMs<Input extends string | UuidSlugError>(
   value: UuidV7TimestampInput<Input>,
 ): number | UuidSlugError;
@@ -476,6 +485,11 @@ export declare interface UuidV7MaskingCodec {
     this: void,
     maskedUuidSlug: SlugStringInput<Input>,
   ): number | UuidSlugError;
+  extractMaskedUuidV7Payload<Input extends string | UuidSlugError>(
+    this: void,
+    maskedUuidSlug: SlugStringInput<Input>,
+    layout: UuidV7PayloadLayout,
+  ): UuidV7Payload | UuidSlugError;
   validateMaskedUuidV7SlugUnixMs<Input extends string | UuidSlugError>(
     this: void,
     maskedUuidSlug: SlugStringInput<Input>,
@@ -498,6 +512,29 @@ export declare interface UuidV7MaskOptions {
   readonly diagnosticLabel?: string;
   readonly seed: string | Uint8Array;
   readonly keyDerivationIterations?: number;
+}
+export declare interface UuidV7Payload {
+  readonly unixMs: number;
+  readonly subMillisecondFraction:
+    | {
+        readonly value: number;
+        readonly bits: number;
+      }
+    | undefined;
+  readonly counter:
+    | {
+        readonly value: bigint;
+        readonly bits: number;
+      }
+    | undefined;
+  readonly remaining: {
+    readonly value: bigint;
+    readonly bits: number;
+  };
+}
+export declare interface UuidV7PayloadLayout {
+  readonly subMillisecondFractionBits: number;
+  readonly counterBits: number;
 }
 export declare interface UuidV7PreviousMask {
   readonly mask: UuidV7Mask | UuidV7MaskOptions | UuidSlugError;

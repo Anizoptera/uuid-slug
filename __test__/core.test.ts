@@ -10,6 +10,7 @@ import {
   createCustomUuidV7Mask,
   deriveUuidV7Mask,
   createUuidV7MaskingCodec as createCodec,
+  extractUuidV7Payload,
   extractUuidV7UnixMs,
   extractUuidVersion,
   isPlainUuidV7Slug,
@@ -239,7 +240,72 @@ const v7PatternAt = (length: number, offset: number) => {
   return bytes;
 };
 
+const uuidV7WithPayload = (unixMs: number, payload: bigint) => {
+  const bytes = unwrap(generateUuidV7BytesAtUnixMs(unixMs));
+  bytes[6] = 0x70 | Number((payload >> 70n) & 0x0fn);
+  bytes[7] = Number((payload >> 62n) & 0xffn);
+  bytes[8] = 0x80 | Number((payload >> 56n) & 0x3fn);
+  for (let index = 9; index < 16; index++)
+    bytes[index] = Number((payload >> BigInt((15 - index) * 8)) & 0xffn);
+  return bytes;
+};
+
 describe("UUIDv7 timestamp extraction", () => {
+  it("interprets only the caller-declared payload fields and preserves the rest", () => {
+    const fraction = 0xa5bn;
+    const counter = 0x2a55n;
+    const remaining = 0x1234_5678_9abcn;
+    const payload = (fraction << 62n) | (counter << 48n) | remaining;
+    const uuid = uuidV7WithPayload(1_700_000_000_123, payload);
+    const layout = { subMillisecondFractionBits: 12, counterBits: 14 };
+
+    expect(extractUuidV7Payload(uuid, layout)).toEqual({
+      unixMs: 1_700_000_000_123,
+      subMillisecondFraction: { value: 0xa5b, bits: 12 },
+      counter: { value: 0x2a55n, bits: 14 },
+      remaining: { value: remaining, bits: 48 },
+    });
+    expect(extractUuidV7Payload(uuid, { subMillisecondFractionBits: 0, counterBits: 0 })).toEqual({
+      unixMs: 1_700_000_000_123,
+      subMillisecondFraction: undefined,
+      counter: undefined,
+      remaining: { value: payload, bits: 74 },
+    });
+    const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
+    expect(codec.extractMaskedUuidV7Payload(unwrap(codec.uuidToMaskedSlug(uuid)), layout)).toEqual(
+      extractUuidV7Payload(uuid, layout),
+    );
+
+    for (let bit = 0n; bit < 74n; bit++) {
+      const oneBit = 1n << bit;
+      expect(
+        unwrap(
+          extractUuidV7Payload(uuidV7WithPayload(0, oneBit), {
+            subMillisecondFractionBits: 0,
+            counterBits: 0,
+          }),
+        ).remaining.value,
+      ).toBe(oneBit);
+    }
+  });
+
+  it("rejects layouts that cannot fit the UUIDv7 payload", () => {
+    const uuid = uuidV7WithPayload(0, 0n);
+    expect(
+      extractUuidV7Payload(uuid, { subMillisecondFractionBits: 13, counterBits: 0 }),
+    ).toMatchObject({
+      code: "invalid_options",
+      message: "subMillisecondFractionBits must be a whole number from 0 through 12; got 13.",
+    });
+    expect(
+      extractUuidV7Payload(uuid, { subMillisecondFractionBits: 12, counterBits: 63 }),
+    ).toMatchObject({
+      code: "invalid_options",
+      message:
+        "counterBits must be a whole number from 0 through 62 when subMillisecondFractionBits is 12; got 63.",
+    });
+  });
+
   it("constructs inclusive UUIDv7 bounds without generating identifiers", () => {
     expect(uuidV7Bounds(0)).toEqual({
       startInclusive: "00000000-0000-7000-8000-000000000000",

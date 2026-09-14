@@ -15,6 +15,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Generate only UUIDv4 and UUIDv7. Keep parsing, inspection, and plain-slug conversion
   version-neutral so other UUID versions work without version-specific machinery. Add support for
   another generated version only after the maintainer reopens it for concrete demand.
+- Preserve all 74 UUIDv7 payload bits. Interpret fraction or counter fields only from an explicit
+  caller-supplied layout; UUID bits and generator names cannot prove that layout. Never select a
+  different generated payload layout only because a runtime exposes a finer clock.
 
 ## Public TypeScript interface protocol
 
