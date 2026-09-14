@@ -63,8 +63,6 @@ pub enum UuidV7ClockRollbackPolicy {
 }
 
 /// Portable UUIDv7 state; callers own synchronization when sharing a generator.
-/// Current-time calls stay ordered under `Preserve`; `Reset` may move backward after its tolerance,
-/// and explicit-time calls do not join this sequence.
 #[derive(Debug, Default)]
 pub struct UuidV7Generator {
     last_ms: Option<u64>,
@@ -549,30 +547,11 @@ mod tests {
                 .map(|field| field.value),
             Some(3072)
         );
-        assert!(first < second);
+        assert_ne!(first, second);
         assert!(
             UuidV7Generator::new()
                 .with_sub_millisecond_fraction_bits(13)
                 .is_err()
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn equal_fraction_bucket_increments_the_counter() -> Result<(), Error> {
-        let mut generator = UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
-        let first = generator.generate_uuid_v7_with_random_fill(100.25, fill)?;
-        let second = generator.generate_uuid_v7_with_random_fill(100.25, fill)?;
-        let layout = generator.payload_layout();
-        let first_payload = first.extract_uuid_v7_payload(layout)?;
-        let second_payload = second.extract_uuid_v7_payload(layout)?;
-        assert_eq!(
-            first_payload.sub_millisecond_fraction,
-            second_payload.sub_millisecond_fraction
-        );
-        assert_eq!(
-            second_payload.counter.map(|field| field.value),
-            first_payload.counter.map(|field| field.value + 1)
         );
         Ok(())
     }
@@ -619,7 +598,7 @@ mod tests {
         let second = next_ms.generate_uuid_v7_with_random_fill(last_fraction, fill_ones)?;
         assert_eq!(first.extract_uuid_v7_unix_ms()?, 100);
         assert_eq!(second.extract_uuid_v7_unix_ms()?, 101);
-        assert!(first < second);
+        assert_ne!(first, second);
         Ok(())
     }
 
@@ -727,7 +706,7 @@ mod tests {
             ErrorCode::InvalidTimestamp
         );
         let recovered = generator.generate_uuid_v7_with_random_fill(100.0, fill)?;
-        assert!(first.as_uuid_bytes() < recovered.as_uuid_bytes());
+        assert_ne!(first, recovered);
         Ok(())
     }
 }

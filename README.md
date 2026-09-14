@@ -163,10 +163,12 @@ back to `Date.now()`. The selected width states the UUID layout, not the clock's
 If another reading lands in the same fraction bucket, the generator increments the counter. If the
 counter fills, it advances the logical fraction and then the millisecond timestamp. The default
 preserve policy applies the same rule when the clock moves backward, so extracted time can be later
-than the clock reading. A reset policy deliberately gives up that ordering after its tolerance.
+than the clock reading. A reset policy may move backward after its tolerance. Explicit-time calls
+use independent randomness and do not join this sequence.
 
-By default, created generators preserve ordering when the clock moves backward. Set `clockRollback`
-to reset or return `invalid_timestamp` when total skew exceeds an inclusive tolerance. Use
+This sequencing prevents reuse inside the current generator, but intra-millisecond event order is
+not an API guarantee. Set `clockRollback` to reset or return `invalid_timestamp` when total skew
+exceeds an inclusive tolerance. Use
 `createUuidV7GeneratorWithRandomFill` only when the application must own entropy; its callback must
 fill every requested byte or return `UuidSlugError`.
 

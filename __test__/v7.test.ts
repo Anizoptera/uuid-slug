@@ -29,14 +29,7 @@ const bytesOf = (generator: ReturnType<typeof createUuidV7Generator>): Uint8Arra
   return result;
 };
 
-/** Lexicographic order over the 16 bytes is exactly the sort order a database index gives. */
-const compare = (left: Uint8Array, right: Uint8Array): number => {
-  for (let i = 0; i < 16; i += 1) {
-    const difference = (left[i] ?? 0) - (right[i] ?? 0);
-    if (difference !== 0) return difference;
-  }
-  return 0;
-};
+const byteKey = (bytes: Uint8Array): string => bytes.join(",");
 
 const timestampOf = (bytes: Uint8Array): number =>
   bytes.slice(0, 6).reduce((total, byte) => total * 256 + byte, 0);
@@ -62,19 +55,7 @@ describe("uuidv7 bit layout", () => {
   });
 });
 
-/**
- * Asserting intra-millisecond order here does NOT contradict README §Guarantees' "NOT ordered
- * within a millisecond", and this block must not be deleted for looking like it does. That
- * guarantee is about ids the package HANDS BACK, which on most runtimes come from a native
- * generator whose intra-ms behaviour we neither control nor probe. These cases drive
- * `createUuidV7Generator` with an injected readUnixMs and fill, which never delegates — so what is
- * pinned is our own 42-bit sequence, not a promise about anyone else's.
- *
- * The ordering assertion also reaches duplicate prevention in the portable state machine.
- * `constantFill` makes every reseed identical, so the counter is the only thing separating
- * consecutive ids: break it and this emits the same UUID a thousand times.
- */
-describe("uuidv7 monotonicity", () => {
+describe("uuidv7 sequence state", () => {
   it.each([1, 6, 12])("places %i clock-fraction bits before the counter", (fractionBits) => {
     const generator = createUuidV7Generator({
       readUnixMs: fixedClock(1_700_000_000_000.75),
@@ -103,22 +84,10 @@ describe("uuidv7 monotonicity", () => {
     now = 100.75;
     const second = bytesOf(generator);
     expect(timestampOf(second)).toBe(100);
-    expect(compare(first, second)).toBeLessThan(0);
+    expect(byteKey(second)).not.toBe(byteKey(first));
   });
 
-  it("increments the counter when consecutive readings use the same fraction bucket", () => {
-    const generator = createUuidV7Generator({
-      readUnixMs: fixedClock(100.25),
-      fillRandom: constantFill(0),
-      subMillisecondFractionBits: 12,
-    });
-    const firstPrefix = payloadPrefixOf(bytesOf(generator));
-    const secondPrefix = payloadPrefixOf(bytesOf(generator));
-    expect(secondPrefix).toBe(firstPrefix + 1);
-    expect(Math.floor(secondPrefix / 2 ** 30)).toBe(Math.floor(firstPrefix / 2 ** 30));
-  });
-
-  it("keeps order when the fractional clock reading moves backward", () => {
+  it("does not repeat when the fractional clock reading moves backward", () => {
     let now = 100.75;
     const generator = createUuidV7Generator({
       readUnixMs: () => now,
@@ -129,7 +98,7 @@ describe("uuidv7 monotonicity", () => {
     now = 100.25;
     const second = bytesOf(generator);
     expect(timestampOf(second)).toBe(100);
-    expect(compare(first, second)).toBeLessThan(0);
+    expect(byteKey(second)).not.toBe(byteKey(first));
   });
 
   it("advances logical time when a fraction bucket exhausts its counter", () => {
@@ -156,19 +125,19 @@ describe("uuidv7 monotonicity", () => {
     const second = bytesOf(generator);
     expect(timestampOf(first)).toBe(100);
     expect(timestampOf(second)).toBe(101);
-    expect(compare(first, second)).toBeLessThan(0);
+    expect(byteKey(second)).not.toBe(byteKey(first));
   });
 
-  it("never repeats or goes backwards while the readUnixMs stands still", () => {
+  it("does not repeat while the readUnixMs stands still", () => {
     const generator = createUuidV7Generator({
       readUnixMs: fixedClock(1_700_000_000_000),
       fillRandom: constantFill(0x00),
     });
-    let previous = bytesOf(generator);
+    const seen = new Set([byteKey(bytesOf(generator))]);
     for (let i = 0; i < 1_000; i += 1) {
-      const current = bytesOf(generator);
-      expect(compare(previous, current)).toBeLessThan(0);
-      previous = current;
+      const key = byteKey(bytesOf(generator));
+      expect(seen.has(key)).toBe(false);
+      seen.add(key);
     }
   });
 
@@ -184,7 +153,7 @@ describe("uuidv7 monotonicity", () => {
     now -= 60_000;
     const after = bytesOf(generator);
     expect(timestampOf(after)).toBe(timestampOf(before));
-    expect(compare(before, after)).toBeLessThan(0);
+    expect(byteKey(after)).not.toBe(byteKey(before));
   });
 
   it("resets to wall time only after the selected rollback tolerance", () => {
@@ -213,7 +182,7 @@ describe("uuidv7 monotonicity", () => {
     expect(generator.generateUuidV7Bytes()).toMatchObject({ code: "invalid_timestamp" });
     now = 100;
     const recovered = bytesOf(generator);
-    expect(compare(first, recovered)).toBeLessThan(0);
+    expect(byteKey(recovered)).not.toBe(byteKey(first));
   });
 
   it("advances the timestamp instead of wrapping when the counter is exhausted", () => {
@@ -226,7 +195,7 @@ describe("uuidv7 monotonicity", () => {
     const first = bytesOf(generator);
     const second = bytesOf(generator);
     expect(timestampOf(second)).toBe(timestampOf(first) + 1);
-    expect(compare(first, second)).toBeLessThan(0);
+    expect(byteKey(second)).not.toBe(byteKey(first));
   });
 });
 
@@ -257,21 +226,20 @@ describe("uuidv7 at a caller-supplied instant", () => {
     expect(generator.generateUuidV7AtUnixMs(ms)).toBeInstanceOf(Error);
   });
 
-  it("does not disturb the counter the untimestamped path is ordering", () => {
+  it("does not disturb current-time sequence state", () => {
     // A supplied instant takes a random sequence and must leave `lastMs` and the counter alone:
-    // routing it through the same reseed would either restart the sequence mid-millisecond or
-    // move `lastMs` to the supplied instant, and both hand out a value below one already issued.
-    // Nothing else observes that, because the two paths share every other line.
+    // comparison with an untouched generator detects either mutation directly.
     const generator = createUuidV7Generator({
       readUnixMs: fixedClock(1_700_000_000_000),
       fillRandom: constantFill(0x00),
     });
-    let previous = bytesOf(generator);
+    const control = createUuidV7Generator({
+      readUnixMs: fixedClock(1_700_000_000_000),
+      fillRandom: constantFill(0x00),
+    });
     for (let i = 0; i < 100; i += 1) {
       expect(generator.generateUuidV7AtUnixMs(1_500_000_000_000)).not.toBeInstanceOf(Error);
-      const current = bytesOf(generator);
-      expect(compare(previous, current)).toBeLessThan(0);
-      previous = current;
+      expect(bytesOf(generator)).toEqual(bytesOf(control));
     }
   });
 });

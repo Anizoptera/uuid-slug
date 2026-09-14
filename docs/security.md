@@ -61,9 +61,10 @@ Rust retains the entropy provider's error. In browsers, `getrandom` reports its 
 code rather than retaining the original JavaScript exception. TypeScript retains that exception.
 This diagnostic difference does not permit a failed draw to produce an identifier.
 
-Created UUIDv7 generators preserve output order when the clock moves backward. Callers can instead
-select reset or failure beyond an inclusive skew tolerance. Reset can emit a UUID timestamp below a
-previous result; failure emits no identifier and leaves generator state unchanged.
+The default preserve policy continues sequence state when the clock moves backward. Callers can
+instead select reset or failure beyond an inclusive skew tolerance. Reset can emit a UUID timestamp
+below a previous result; failure emits no identifier and leaves generator state unchanged. This
+behavior is not an intra-millisecond event-order guarantee.
 
 UUID slug formatting and parsing encode and decode one 16-byte payload. TypeScript byte-offset
 overloads select that payload from a larger array; other payload sizes and malformed UUID text are
