@@ -3,7 +3,8 @@
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
 import { findUnknownOption, INVALID_OPTIONS, UuidSlugError } from "./errors.ts";
-import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types.ts";
+import { UUID_TEXT_LOWERCASE } from "./types.ts";
+import type { UuidTextCase, UuidV7Bytes, UuidV7Generator, UuidV7StringFor } from "./types.ts";
 import { createPortableUuidV7Generator, createRuntimeGenerator } from "./v7.ts";
 
 /** Configure one UUIDv7 sequence. Entropy always comes from the package runtime. */
@@ -63,9 +64,15 @@ let generateDefaultUuidV7: UuidV7Generator["generateUuidV7"] | undefined;
  * a widened method there silently widens the package's public surface. A declared type turns that
  * mismatch into a compile error at the one site that is wrong.
  */
-/** Generate canonical UUIDv7 text for the current readUnixMs reading and platform randomness. */
-export const generateUuidV7 = (): UuidV7String | UuidSlugError =>
-  (generateDefaultUuidV7 ??= v7().generateUuidV7)();
+/**
+ * Generate UUIDv7 text for the current readUnixMs reading, lowercase by default.
+ *
+ * @param textCase - Built-in output spelling. Omit for lowercase.
+ */
+export const generateUuidV7 = <Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  textCase?: Case,
+): UuidV7StringFor<Case> | UuidSlugError =>
+  (generateDefaultUuidV7 ??= v7().generateUuidV7)(textCase);
 
 /**
  * Generate UUIDv7 bytes with platform randomness in a new plain 16-byte `Uint8Array`.
@@ -95,9 +102,12 @@ export function generateUuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Arr
  * current-time sequence, and it does not promise ordering within one millisecond.
  *
  * @param unixMs - Whole Unix millisecond encoded into the UUID.
+ * @param textCase - Built-in output spelling. Omit for lowercase.
  */
-export const generateUuidV7AtUnixMs = (unixMs: number): UuidV7String | UuidSlugError =>
-  v7().generateUuidV7AtUnixMs(unixMs);
+export const generateUuidV7AtUnixMs = <Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  unixMs: number,
+  textCase?: Case,
+): UuidV7StringFor<Case> | UuidSlugError => v7().generateUuidV7AtUnixMs(unixMs, textCase);
 
 /**
  * Generate UUIDv7 bytes at a whole Unix millisecond in `0..2^48-1` in a new plain 16-byte

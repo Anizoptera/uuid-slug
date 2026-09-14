@@ -13,9 +13,12 @@ import {
   isUuidBytes,
   isUuidV4Bytes,
   isUuidString,
+  isUuidText,
   isUuidV4String,
+  isUuidV4Text,
   isUuidV7Bytes,
   isUuidV7String,
+  isUuidV7Text,
   isDirectUuidSlug,
   isDirectUuidV4Slug,
   isDirectUuidV7Slug,
@@ -424,12 +427,13 @@ export const codecBoundaryCases = [
     },
   },
   {
-    name: "boolean guards reject noncanonical characters and preserve every version and variant",
+    name: "UUID guards accept equivalent text spellings and reject invalid characters",
     run() {
       for (const value of [undefined, null, false, 0, "", {}, new DataView(new ArrayBuffer(16))])
         assert.equal(isUuidV7Bytes(value), false);
       const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
-      const hex = "0123456789abcdef";
+      const lowercaseHex = "0123456789abcdef";
+      const acceptedHex = "0123456789abcdefABCDEF";
       const separators = new Set([8, 13, 18, 23]);
       // Replace every position: late invalid characters must not hide behind an earlier guard.
       for (let offset = 0; offset < uuid.length; offset += 1) {
@@ -441,15 +445,23 @@ export const codecBoundaryCases = [
           const value = uuid.slice(0, offset) + char + uuid.slice(offset + 1);
           assert.equal(
             isUuidString(value),
-            separators.has(offset) ? char === "-" : hex.includes(char),
+            separators.has(offset) ? char === "-" : lowercaseHex.includes(char),
             `UUID ${offset}/${char.charCodeAt(0)}`,
+          );
+          assert.equal(
+            isUuidText(value),
+            separators.has(offset) ? char === "-" : acceptedHex.includes(char),
+            `UUID text ${offset}/${char.charCodeAt(0)}`,
           );
         }
       }
       for (const { value, v4, v7 } of uuidVariants(uuid)) {
         assert.equal(isUuidV4String(value), v4);
+        assert.equal(isUuidV4Text(value.toUpperCase()), v4);
         assert.equal(isUuidV7String(value), v7);
-        assert.equal(isUuidV7String(value.toUpperCase()), false);
+        assert.equal(isUuidV7Text(value.toUpperCase()), v7);
+        assert.equal(isUuidV7Text(value.replaceAll("-", "")), v7);
+        assert.equal(isUuidText(value.replaceAll("-", "")), true);
         for (const alphabet of ["base64url", "base32hex"] as const) {
           const slug = uuidStringToDirectSlug(value, alphabet);
           assert.equal(typeof slug, "string");

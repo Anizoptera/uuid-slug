@@ -540,6 +540,8 @@ export function createProfileCases(
     "parse.mixed": (index) => api.uuidStringToBytes(mixedIds[index & 255] as string),
     "parse.into": (index) => api.uuidStringToBytes(ids[index & 255] as string, into, 4),
     format: (index) => api.bytesToUuidString(bytes[index & 255] as Uint8Array),
+    "format.uppercase": (index) =>
+      api.bytesToUuidString(bytes[index & 255] as Uint8Array, api.UUID_TEXT_UPPERCASE),
     "format.offset": (index) => {
       into.set(bytes[index & 255] as Uint8Array, 4);
       return api.bytesToUuidString(into, 4);
@@ -569,6 +571,8 @@ export function createProfileCases(
     "guard.invalid.uuid": () => api.isUuidV7String(badUuid),
     "guard.invalid.slug": () => api.isDirectUuidV7Slug(badSlug),
     "guard.uuid": (index) => api.isUuidV7String(ids[index & 255]),
+    "guard.uuid.compact": (index) => api.isUuidV7Text(compactIds[index & 255]),
+    "guard.uuid.mixed": (index) => api.isUuidV7Text(mixedIds[index & 255]),
     "guard.bytes.any": (index) => api.isUuidBytes(bytes[index & 255]),
     "guard.bytes.v4": () =>
       api.isUuidV4Bytes(

@@ -10,7 +10,11 @@ import {
   createUuidV7SlugCodec as createCodec,
   extractUuidV7UnixMs,
   isDirectUuidV7Slug,
+  isUuidString,
+  isUuidText,
+  isUuidV4String,
   isUuidV7String,
+  isUuidV7Text,
   isUuidSlugError,
   slugToUuidBytes,
   uuidStringToBytes,
@@ -18,8 +22,12 @@ import {
   slugToUuidString,
   uuidStringToDirectSlug,
   generateUuidV4Bytes,
+  generateUuidV4,
   generateDirectUuidV4Slug,
   generateUuidV7BytesAtUnixMs,
+  generateUuidV7,
+  generateUuidV7AtUnixMs,
+  createUuidV7Generator,
   generateDirectUuidV7Slug,
   generateUuidV7WithDirectSlug,
   UuidSlugError,
@@ -213,7 +221,7 @@ describe("direct UUID slugs", () => {
     }
   });
 
-  it("accepts mixed-case hyphenated and compact UUID input but guards canonical output", () => {
+  it("accepts and recognizes mixed-case hyphenated and compact UUID input", () => {
     const mixed = SAMPLE_V7_A.toUpperCase().replace("58B8", "58b8");
     const compact = mixed.replaceAll("-", "");
     expect(bytesToUuidString(unwrap(uuidStringToBytes(mixed)))).toBe(SAMPLE_V7_A);
@@ -226,8 +234,12 @@ describe("direct UUID slugs", () => {
         referenceUnixMs: unwrap(extractUuidV7UnixMs(SAMPLE_V7_A)),
       }),
     ).toBe(SAMPLE_V7_A);
+    expect(isUuidString(mixed)).toBe(false);
+    expect(isUuidText(mixed)).toBe(true);
     expect(isUuidV7String(mixed)).toBe(false);
-    expect(isUuidV7String(compact)).toBe(false);
+    expect(isUuidV7Text(mixed)).toBe(true);
+    expect(isUuidV7Text(compact)).toBe(true);
+    expect(isUuidV4String(compact)).toBe(false);
   });
 
   it("formats UUID bytes with built-in lowercase and uppercase presets", () => {
@@ -239,6 +251,65 @@ describe("direct UUID slugs", () => {
     expect(bytesToUuidString(bytes, UUID_TEXT_UPPERCASE)).toBe(SAMPLE_V7_A.toUpperCase());
     expect(bytesToUuidString(wrapped, 2, UUID_TEXT_UPPERCASE)).toBe(SAMPLE_V7_A.toUpperCase());
     expect(bytesToUuidString(bytes, Symbol("titlecase") as never)).toMatchObject({
+      code: "invalid_options",
+    });
+    expect(bytesToUuidString(bytes, "titlecase" as never)).toMatchObject({
+      code: "invalid_options",
+    });
+  });
+
+  it("applies one UUID text-case choice across generation, decoding, codecs, and validation", () => {
+    const direct = unwrap(uuidStringToDirectSlug(SAMPLE_V7_A));
+    expect(slugToUuidString(direct, UUID_TEXT_UPPERCASE)).toBe(SAMPLE_V7_A.toUpperCase());
+    expect(
+      validateUuidV7Timestamp(
+        SAMPLE_V7_A.toUpperCase(),
+        {
+          maxTimestampDeltaMs: 0,
+          referenceUnixMs: unwrap(extractUuidV7UnixMs(SAMPLE_V7_A)),
+        },
+        UUID_TEXT_LOWERCASE,
+      ),
+    ).toBe(SAMPLE_V7_A);
+
+    expect(unwrap(generateUuidV4(UUID_TEXT_UPPERCASE))).toMatch(/^[0-9A-F-]+$/);
+    expect(unwrap(generateUuidV7(UUID_TEXT_UPPERCASE))).toMatch(/^[0-9A-F-]+$/);
+    expect(unwrap(generateUuidV7AtUnixMs(0, UUID_TEXT_UPPERCASE))).toMatch(/^[0-9A-F-]+$/);
+    expect(unwrap(generateUuidV7WithDirectSlug(UUID_TEXT_UPPERCASE)).uuid).toMatch(/^[0-9A-F-]+$/);
+
+    const codec = createUuidV7SlugCodec({
+      mask: UUID_V7_TEST_MASK,
+      sentinels: [{ name: "sample", uuid: SAMPLE_V7_A.toUpperCase().replaceAll("-", "") }],
+    });
+    const sentinelSlug = codec.sentinels[0]?.slug;
+    if (sentinelSlug === undefined) throw new Error("Expected sentinel fixture.");
+    expect(codec.slugToUuidString(sentinelSlug, UUID_TEXT_UPPERCASE)).toBe(
+      SAMPLE_V7_A.toUpperCase(),
+    );
+    expect(unwrap(codec.generateUuidV7WithCodecSlug(UUID_TEXT_UPPERCASE)).uuid).toMatch(
+      /^[0-9A-F-]+$/,
+    );
+    const migration = codec.createMigrationDecoder({ acceptDirectSlug: true });
+    expect(migration.slugToUuidString(direct, UUID_TEXT_UPPERCASE)).toBe(SAMPLE_V7_A.toUpperCase());
+    expect(migration.slugToUuidStringCandidates(direct, UUID_TEXT_UPPERCASE)).toContain(
+      SAMPLE_V7_A.toUpperCase(),
+    );
+  });
+
+  it("rejects an unknown UUID text case before generation work", () => {
+    const invalid = Symbol("titlecase") as never;
+    let clockReads = 0;
+    const generator = createUuidV7Generator({ readUnixMs: () => ++clockReads });
+    expect(generator.generateUuidV7(invalid)).toMatchObject({ code: "invalid_options" });
+    expect(generator.generateUuidV7AtUnixMs(0, invalid)).toMatchObject({ code: "invalid_options" });
+    expect(clockReads).toBe(0);
+    expect(generateUuidV4(invalid)).toMatchObject({ code: "invalid_options" });
+    expect(generateDirectUuidV4Slug("base36" as never)).toMatchObject({ code: "invalid_options" });
+    expect(generateDirectUuidV7Slug("base36" as never)).toMatchObject({ code: "invalid_options" });
+    expect(generateUuidV7WithDirectSlug("base64url", invalid)).toMatchObject({
+      code: "invalid_options",
+    });
+    expect(slugToUuidString(unwrap(uuidStringToDirectSlug(SAMPLE_V7_A)), invalid)).toMatchObject({
       code: "invalid_options",
     });
   });

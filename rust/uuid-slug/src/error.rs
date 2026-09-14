@@ -19,7 +19,7 @@ pub enum ErrorCode {
     InvalidSentinel,
     /// A timestamp is nonfinite, negative, fractional or outside its allowed range.
     InvalidTimestamp,
-    /// UUID text is not canonical hexadecimal with hyphens.
+    /// UUID text is not hexadecimal in an accepted hyphenated or compact spelling.
     InvalidUuid,
     /// A slug has an invalid length or cannot be decoded under the configured masks.
     InvalidUuidSlug,
@@ -61,7 +61,7 @@ impl ErrorCode {
             Self::InvalidMask => "Invalid mask or key parameters.",
             Self::InvalidSentinel => "Sentinel names must be nonempty and unique within a codec.",
             Self::InvalidTimestamp => "Timestamp must fit the operation's millisecond range.",
-            Self::InvalidUuid => "Expected a UUID with canonical hyphens.",
+            Self::InvalidUuid => "Expected 32 hexadecimal digits with optional canonical hyphens.",
             Self::InvalidUuidSlug => "Invalid slug for the requested operation.",
             Self::InvalidUuidVersion => "This operation requires an RFC-variant UUIDv7.",
             Self::RngUnavailable => "Secure random byte generation failed.",

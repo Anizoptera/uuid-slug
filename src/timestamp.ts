@@ -8,9 +8,17 @@ import {
   invalidUuidStringInput,
   UuidSlugError,
 } from "./errors.ts";
-import type { UuidV7String, UuidV7StringInput, UuidV7TimestampWindow } from "./types.ts";
+import { UUID_TEXT_LOWERCASE } from "./types.ts";
+import type {
+  UuidTextCase,
+  UuidV7StringFor,
+  UuidV7StringInput,
+  UuidV7TimestampWindow,
+} from "./types.ts";
 import {
   formatUuidBytesUnchecked,
+  invalidUuidTextCase,
+  isUuidTextCase,
   isUuidV7Bytes,
   uuidTimestampFromBytesUnchecked,
   uuidStringToBytes,
@@ -63,25 +71,36 @@ export function validateTimestampBytes(
 }
 
 /**
- * Return lowercase hyphenated UUIDv7 text when its timestamp is inside the inclusive symmetric
+ * Return hyphenated UUIDv7 text in the requested case when its timestamp is inside the inclusive symmetric
  * window. Return `timestamp_outside_window` when it is not. This checks clock plausibility, not
  * expiry, authentication, replay, or issuance. TypeScript rejects known slug and UUIDv4 values. A
  * preceding `UuidSlugError` is returned unchanged.
  *
  * @param uuid - Mixed-case hyphenated or compact UUIDv7 text to validate and normalize.
  * @param window - Inclusive maximum distance from an explicit or current reference time.
+ * @param textCase - Built-in output spelling. Omit for lowercase.
  */
-export function validateUuidV7Timestamp<Input extends string | UuidSlugError>(
+export function validateUuidV7Timestamp<
+  Input extends string | UuidSlugError,
+  Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+>(
   uuid: UuidV7StringInput<Input>,
   window: UuidV7TimestampWindow,
-): UuidV7String | UuidSlugError {
+  textCase?: Case,
+): UuidV7StringFor<Case> | UuidSlugError {
   if (typeof uuid !== "string") return invalidUuidStringInput(uuid);
+  const selectedCase = textCase ?? (UUID_TEXT_LOWERCASE as Case);
+  if (!isUuidTextCase(selectedCase)) return invalidUuidTextCase();
   const uuidText: string = uuid;
   const bytes = uuidStringToBytes(uuidText);
   if (bytes instanceof Error) return bytes;
   const valid = validateTimestampBytes(bytes, window);
   if (valid instanceof Error) return valid;
-  return uuidText.length === 36 && uuidText === uuidText.toLowerCase()
-    ? (uuidText as UuidV7String)
-    : (formatUuidBytesUnchecked(bytes) as UuidV7String);
+  const alreadySelected =
+    uuidText.length === 36 &&
+    (selectedCase === UUID_TEXT_LOWERCASE
+      ? uuidText === uuidText.toLowerCase()
+      : uuidText === uuidText.toUpperCase());
+  if (alreadySelected) return uuidText as UuidV7StringFor<Case>;
+  return formatUuidBytesUnchecked(bytes, 0, selectedCase) as UuidV7StringFor<Case>;
 }

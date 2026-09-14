@@ -6,8 +6,8 @@ notes: the section for a version is published verbatim when its tag is pushed.
 ## Unpublished
 
 - Export the last maskable UUIDv7 timestamp and document `invalid_timestamp` on every masked writer.
-- UUID byte conversion provides named lowercase and uppercase text presets instead of requiring a
-  caller string transform or custom configuration.
+- Every UUID-text writer accepts shared string presets for lowercase and uppercase and infers the
+  selected spelling. TypeScript guards and both language parsers accept mixed-case and compact UUID text.
 
 ### Rust crate
 

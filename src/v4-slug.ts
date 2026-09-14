@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { UuidSlugError } from "./errors.ts";
-import { BASE64URL_NAME } from "./alphabet.ts";
+import { BASE64URL_NAME, encode } from "./alphabet.ts";
 import type { DirectUuidV4Slug } from "./types.ts";
 import { generateUuidV4Bytes } from "./v4.ts";
-import { uuidBytesToDirectSlug } from "./slug.ts";
+import { resolveSlugAlphabet } from "./slug.ts";
 import type { SlugAlphabet } from "./slug.ts";
 
 /**
@@ -16,7 +16,9 @@ import type { SlugAlphabet } from "./slug.ts";
 export function generateDirectUuidV4Slug(
   alphabet: SlugAlphabet = BASE64URL_NAME,
 ): DirectUuidV4Slug | UuidSlugError {
+  const resolved = resolveSlugAlphabet(alphabet);
+  if (resolved instanceof Error) return resolved;
   const bytes = generateUuidV4Bytes();
   if (bytes instanceof Error) return bytes;
-  return uuidBytesToDirectSlug(bytes, alphabet) as DirectUuidV4Slug | UuidSlugError;
+  return encode(bytes, resolved) as DirectUuidV4Slug;
 }

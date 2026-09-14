@@ -121,9 +121,9 @@ export function evaluate(request: Request): Outcome {
       }
       case "guards":
         return result([
-          ts.isUuidString(input),
-          ts.isUuidV4String(input),
-          ts.isUuidV7String(input),
+          ts.isUuidText(input),
+          ts.isUuidV4Text(input),
+          ts.isUuidV7Text(input),
           ts.isDirectUuidSlug(input),
           ts.isDirectUuidV4Slug(input),
           ts.isDirectUuidV7Slug(input),
@@ -170,11 +170,15 @@ export function evaluate(request: Request): Outcome {
             });
       }
       case "validateUuidV7Timestamp":
+        return result(
+          ts.validateUuidV7Timestamp(input, {
+            maxTimestampDeltaMs: Number(request.window),
+            referenceUnixMs: Number(request.now),
+          }),
+        );
       case "validateDirectUuidV7SlugUnixMs":
         return result(
-          (request.op === "validateUuidV7Timestamp"
-            ? ts.validateUuidV7Timestamp
-            : ts.validateDirectUuidV7SlugUnixMs)(input, {
+          ts.validateDirectUuidV7SlugUnixMs(input, {
             maxTimestampDeltaMs: Number(request.window),
             referenceUnixMs: Number(request.now),
           }),
@@ -361,6 +365,7 @@ export async function contractRequests(): Promise<Request[]> {
     "",
     "x",
     "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF",
+    ordinary.uuid.replaceAll("-", "").toUpperCase(),
     ...wire.map((v) => v.uuid),
     ...original.direct.map((v) => v.uuid),
   ]) {

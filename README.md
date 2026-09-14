@@ -11,9 +11,9 @@
 **Fastest zero-deps UUIDv7/v4 generation and handling + optionally opaque short UUID slugs for databases, URLs, and files.**
 
 - Encode any UUID as short `base64url` or lowercase `base32hex`.
-- Adopt optional reversible seeded masking makes slugs opaque (supports only UUIDv7).
+- Use optional reversible seeded masking to make UUIDv7 slugs opaque.
 - Keep one ID across all representations, with no lost bits or mapping table.
-- Write directly into your buffers without intermediate text or new output arrays (performance optimized or API).
+- Write directly into your buffers without intermediate text or new output arrays.
 - Read UUIDv7 timestamps instead of duplicating them twice.
 - Use native fastest paths and portable fallbacks across Node, Bun, Deno, and browsers.
 - Benefit from cross-runtime correctness tested and performance optimized.
@@ -210,8 +210,12 @@ function convertUuid() {
 
 `uuidStringToBytes` accepts mixed-case UUID text with or without hyphens. It either allocates a plain
 `Uint8Array` or writes 16 bytes at the requested offset. `bytesToUuidString` reads 16 bytes at an
-optional offset and returns lowercase hyphenated text by default. Pass `UUID_TEXT_UPPERCASE` for
-uppercase output or `UUID_TEXT_LOWERCASE` when the default must be an explicit reusable choice.
+optional offset and returns lowercase hyphenated text by default. Pass `UUID_TEXT_UPPERCASE` or
+`"uppercase"` for uppercase output, or `UUID_TEXT_LOWERCASE` when the default must be an explicit
+reusable choice.
+The same optional preset works on every operation that returns UUID text, including generators,
+direct and masked decoders, timestamp validation, and migration readers. It changes only UUID text;
+slug alphabets and accepted input stay independent.
 `Buffer` works because it is a `Uint8Array`; `ArrayBuffer`, `DataView`, and array-like values do
 not. Use `isUuidBytes`, `isUuidV4Bytes`, or `isUuidV7Bytes` when unknown binary input must be
 narrowed before storage or version-specific work.
@@ -244,7 +248,7 @@ the encoded timestamps across different milliseconds. `generateDirectUuidV7Slug(
 one directly; every keyless slug writer accepts the alphabet without requiring a codec.
 
 `slugToUuidString` infers the alphabet from the length, 22 or 26, so both spellings remain readable
-after you switch output. It accepts uppercase base32hex and returns canonical lowercase UUID text.
+after you switch output. It accepts uppercase base32hex and returns lowercase UUID text by default.
 Decode to a UUID before comparing identities or building a cache key:
 different spellings can identify the same record. Preserve base64url case; lowercasing it changes
 the value. Choose base32hex when storage cannot preserve case distinctions.
@@ -334,7 +338,7 @@ function createIds(seed: string) {
 ```
 
 Each sentinel name must be nonempty and unique within the codec. Each sentinel UUID must also be
-unique, canonical UUIDv7 text.
+unique. Its input may be mixed-case and compact; `codec.sentinels` exposes normalized lowercase text.
 
 Sentinels keep their spelling across seed rotation when the alphabet and reserved UUIDs stay the
 same. This lets reserved identities remain recognizable while ordinary IDs use the new mask.
@@ -461,14 +465,17 @@ you need to retain the narrowed type. A brand proves format, not issuance or per
 JavaScript consumers do not need TypeScript. The shipped declarations compile with TypeScript 5.0
 and newer.
 
-Use `BASE64URL`, `BASE32HEX`, `MAX_MASKED_UUID_V7_UNIX_MS`, and the named error-code constants
-instead of copying their values.
+Use `BASE64URL`, `BASE32HEX`, `UUID_TEXT_LOWERCASE`, `UUID_TEXT_UPPERCASE`,
+`MAX_MASKED_UUID_V7_UNIX_MS`, and the named error-code constants instead of copying their values.
 Migration readers accept `SEEDED_MASK_FORMAT`, `FIXED_MASK_FORMAT`, or `DIRECT_SLUG_FORMAT`;
 their TypeScript type permits only formats enabled when the reader was created.
 
 | Type | What the value is |
 | --- | --- |
+| `UuidText`, `UuidV4Text`, `UuidV7Text` | Valid UUID text in any accepted spelling; the version is known where the name says so. |
 | `UuidString`, `UuidV4String`, `UuidV7String` | Canonical UUID text; the version is known where the name says so. |
+| `UppercaseUuidString`, `UppercaseUuidV4String`, `UppercaseUuidV7String` | Uppercase UUID text; the version is known where the name says so. |
+| `UuidTextCase`, `UuidStringFor`, `UuidV4StringFor`, `UuidV7StringFor` | A preset choice and the UUID text type selected by it. |
 | `DirectUuidSlug`, `DirectUuidV4Slug`, `DirectUuidV7Slug` | A direct slug in either alphabet; the version is known where the name says so. |
 | `MaskedUuidV7Slug` | A masked UUIDv7 slug; its check bits require codec decoding. |
 | `SentinelUuidV7Slug` | A reserved direct UUIDv7 slug, also usable wherever `DirectUuidV7Slug` is accepted. |
@@ -517,12 +524,12 @@ independent generator; UUIDv4 and direct-slug generation remain module-level.
 
 | Call | Successful result |
 | --- | --- |
-| `generateUuidV4()` / `generateUuidV7()` | Canonical UUID text, typed with its version. |
+| `generateUuidV4(textCase?)` / `generateUuidV7(textCase?)` | UUID text in the selected case, typed with its version. |
 | `generateDirectUuidV4Slug(alphabet?)` / `generateDirectUuidV7Slug(alphabet?)` | A direct slug in the chosen alphabet, typed with its UUID version. |
-| `generateUuidV7WithDirectSlug(alphabet?)` | UUIDv7 text and its direct slug from one generated value. |
+| `generateUuidV7WithDirectSlug(alphabetOrTextCase?, textCase?)` | UUIDv7 text and its direct slug from one generated value. |
 | `generateUuidV4Bytes()` / `generateUuidV7Bytes()` | A new 16-byte array, typed with its UUID version. |
 | `generateUuidV4Bytes(out, offset?)` / `generateUuidV7Bytes(out, offset?)` | Your output array, with the UUID written at the offset. |
-| `generateUuidV7AtUnixMs(ms)` | UUIDv7 text with the supplied timestamp. |
+| `generateUuidV7AtUnixMs(ms, textCase?)` | UUIDv7 text with the supplied timestamp. |
 | `generateUuidV7BytesAtUnixMs(ms, out?, offset?)` | UUIDv7 bytes with the supplied timestamp, newly allocated or written into your array. |
 
 ### Convert and inspect IDs
@@ -532,11 +539,11 @@ type. Byte formatting returns a version-agnostic type because caller-owned bytes
 
 | Call | Successful result |
 | --- | --- |
-| `uuidStringToDirectSlug(uuid, alphabet?)` / `slugToUuidString(slug)` | The same UUID as a direct slug or canonical UUID text. |
-| `uuidStringToBytes(uuid, out?, offset?)` / `bytesToUuidString(bytes, offset?)` | The same UUID as bytes or canonical UUID text. |
+| `uuidStringToDirectSlug(uuid, alphabet?)` / `slugToUuidString(slug, textCase?)` | The same UUID as a direct slug or UUID text. |
+| `uuidStringToBytes(uuid, out?, offset?)` / `bytesToUuidString(bytes, offsetOrTextCase?, textCase?)` | The same UUID as bytes or UUID text. |
 | `slugToUuidBytes(slug, out?, offset?)` / `uuidBytesToDirectSlug(bytes, offset?, alphabet?)` | The same UUID as bytes or a direct slug, without intermediate UUID text. |
 | `extractUuidV7UnixMs(value, offset?)` | Unix milliseconds from UUIDv7 text, a direct slug, or bytes. |
-| `validateUuidV7Timestamp(uuid, window)` / `validateDirectUuidV7SlugUnixMs(slug, window)` | Lowercase hyphenated UUIDv7 text, or the original direct slug, after checking its timestamp. |
+| `validateUuidV7Timestamp(uuid, window, textCase?)` / `validateDirectUuidV7SlugUnixMs(slug, window)` | UUIDv7 text in the selected case, or the original direct slug, after checking its timestamp. |
 
 ### Use a masking codec
 
@@ -547,9 +554,9 @@ readers also try its configured previous masks.
 | Member | Successful result |
 | --- | --- |
 | `generateUuidV7CodecSlug()` | A new `UuidV7CodecSlug`: masked or a reserved sentinel. |
-| `generateUuidV7WithCodecSlug()` | UUIDv7 text and its codec slug from one generated value. |
+| `generateUuidV7WithCodecSlug(textCase?)` | UUIDv7 text and its codec slug from one generated value. |
 | `uuidToSlug(uuid)` | A `UuidV7CodecSlug` from UUIDv7 text or bytes. |
-| `slugToUuidString(slug)` | The original `UuidV7String`. |
+| `slugToUuidString(slug, textCase?)` | The original UUIDv7 in the selected text case. |
 | `slugToUuidBytes(slug, out?, offset?)` | New `UuidV7Bytes` or your output array; no UUID text is created. |
 | `extractUuidSlugUnixMs(slug)` | Unix milliseconds from a masked slug or sentinel. |
 | `validateUuidSlugUnixMs(slug, window)` | The original slug, narrowed to `UuidV7CodecSlug` after checking its timestamp. |
@@ -592,7 +599,10 @@ the old formats you enable. Forms no supported encoder produces are invalid.
 
 Also exported from the package root:
 
-- Type guards: `isUuidString`, `isUuidV4String`, `isUuidV7String`, `isDirectUuidSlug`, `isDirectUuidV4Slug`,
+- Permissive type guards: `isUuidText`, `isUuidV4Text`, and `isUuidV7Text` accept mixed case and
+  either the hyphenated or compact spelling.
+- Normalized type guards: `isUuidString`, `isUuidV4String`, and `isUuidV7String` accept lowercase
+  hyphenated text. Slug and byte guards are `isDirectUuidSlug`, `isDirectUuidV4Slug`,
   `isDirectUuidV7Slug`, `isUuidBytes`, `isUuidV4Bytes`, and `isUuidV7Bytes`.
 - `extractUuidV7UnixMs` reads Unix milliseconds from UUIDv7 text, either direct-slug alphabet,
   or bytes. Use `codec.extractUuidSlugUnixMs` for masked slugs and sentinels because their decoding
@@ -791,6 +801,8 @@ Enable an old format before selecting it. Recognized sentinels always return the
 including old trailing-bit aliases when reading original or direct slugs.
 With literal options, TypeScript offers only `SEEDED_MASK_FORMAT` and the formats enabled with `true`;
 options whose values are dynamic remain selectable because they may be enabled at runtime.
+Pass a UUID text-case preset after the slug when the format is unknown, or after the format when it
+is known. Candidate arrays use the same selected case; lowercase remains the default.
 
 For unknown formats, use `slugToUuidStringCandidates` to find the matching record without guessing:
 

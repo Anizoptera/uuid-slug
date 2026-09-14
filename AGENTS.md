@@ -72,6 +72,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   that burden to callers. Normalize once and return one stable form. Keep already-normalized input
   on the least-work path. Reject only different meaning or ambiguity. Document accepted forms and
   normalization in `docs/public-api.md` and declaration JSDoc.
+- Every UUID-text writer accepts the shared lowercase and uppercase presets, defaults to lowercase
+  without extra work, and infers the matching result type. Keep text case independent from slug
+  alphabets, masking, migration selection, UUID bits, and accepted input.
 - Keyed operations belong only on the codec holding the key, including masked timestamp
   validation. Do not add top-level masked shortcuts. Codec construction requires an explicit
   private mask or `UUID_V7_TEST_MASK`; keep the published mask opt-in and remove implicit masked

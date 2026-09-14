@@ -107,15 +107,22 @@ interface is complete, useful, or clear.
 Keep UUID text/binary conversion directional and version-neutral:
 
 RFC 9562 permits uppercase, lowercase, or mixed-case hexadecimal digits. Package output defaults to
-lowercase with hyphens. Pass `UUID_TEXT_UPPERCASE` to `bytesToUuidString` when a destination requires uppercase; use
-`UUID_TEXT_LOWERCASE` when code needs to carry an explicit reusable choice.
+lowercase with hyphens. Every operation that returns UUID text accepts `"uppercase"` or its
+`UUID_TEXT_UPPERCASE` constant; use
+`UUID_TEXT_LOWERCASE` when code needs to carry the default as an explicit reusable choice.
 
 - `uuidStringToBytes` accepts mixed-case, hyphenated UUID text and compact 32-digit hexadecimal
   text; `bytesToUuidString` converts 16 bytes to hyphenated UUID text in the selected case. Source and
   destination names remove the parse/format ambiguity, while version-neutral names remain correct
   for every UUID version.
-- Writers and guards use lowercase hyphenated UUID and lowercase base32hex text. UUID readers also
-  accept mixed case and compact text. Base32hex readers accept mixed case. Base64url remains
+- Apply `UuidTextCase` only to UUID text. It never changes slug alphabets, UUID bytes, masking,
+  sentinel identity, migration selection, or accepted input. A function with another output choice
+  accepts the case preset in the first unambiguous position, so callers do not construct options or
+  pass `undefined` merely to request uppercase UUID text.
+- Writers default to lowercase hyphenated UUID and lowercase base32hex text. UUID readers and
+  `isUuidText` guards accept mixed case and compact text; `isUuidString` guards test normalized
+  lowercase hyphenated text. Output brands retain the selected normalized form; text-guard brands
+  retain validity and version without claiming normalization. Base32hex readers accept mixed case. Base64url remains
   case-sensitive.
 - Accept `Uint8Array` and its subtypes. Exclude `ArrayBuffer`, `DataView`, and array-like values:
   their offset, view, and ownership meanings would make the operation ambiguous. Preserve a
@@ -137,6 +144,9 @@ lowercase with hyphens. Pass `UUID_TEXT_UPPERCASE` to `bytesToUuidString` when a
   `generateUuidV7Bytes`, `generateUuidV7AtUnixMs`, `generateUuidV7BytesAtUnixMs`,
   `generateDirectUuidV7Slug`, and `generateUuidV7WithDirectSlug` at module scope. Use the same
   UUIDv7 names on a generator so a detached method remains self-explanatory.
+- Give every UUID-text generator, decoder, normalizer, validator, codec method, and migration
+  reader the same optional `UuidTextCase` choice. Preserve lowercase as the no-argument path and
+  infer a case-specific result type from either named preset.
 - Create the default generator lazily so a codec used only to encode or decode pays no generator
   allocation. Codec generation uses that package-owned source; callers encode externally produced
   UUIDs through `uuidToSlug` instead of replacing the codec's entropy source.

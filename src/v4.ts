@@ -10,14 +10,15 @@ import {
   nativeOrFallback,
   UuidSlugError,
 } from "./errors.ts";
-import type { UuidV4Bytes, UuidV4String } from "./types.ts";
-import { bytesToUuidString, isUuidV4String } from "./uuid.ts";
+import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
+import type { UuidTextCase, UuidV4Bytes, UuidV4StringFor } from "./types.ts";
+import { bytesToUuidString, invalidUuidTextCase, isUuidV4String, isUuidTextCase } from "./uuid.ts";
 
 export { isUuidSlugError } from "./errors.ts";
 export { UuidSlugError };
 export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidV4Bytes, UuidV4String } from "./types.ts";
-export { isUuidV4Bytes, isUuidV4String } from "./uuid.ts";
+export { isUuidV4Bytes, isUuidV4String, isUuidV4Text } from "./uuid.ts";
 
 const REENTRANT_GENERATION_MESSAGE =
   "UUIDv4 generation cannot be reentered from its entropy source.";
@@ -86,20 +87,30 @@ function generateOwnedUuidV4Bytes(outputOffset: number): UuidV4Bytes | UuidSlugE
 }
 
 /** Generate UUIDv4 text through the portable implementation, even on native-capable hosts. */
-export function generatePortableUuidV4(): UuidV4String | UuidSlugError {
+export function generatePortableUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  textCase: Case = UUID_TEXT_LOWERCASE as Case,
+): UuidV4StringFor<Case> | UuidSlugError {
+  if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
   const bytes = generateUuidV4Bytes();
   return bytes instanceof Error
     ? bytes
-    : (bytesToUuidString(bytes) as UuidV4String | UuidSlugError);
+    : (bytesToUuidString(bytes, textCase) as UuidV4StringFor<Case> | UuidSlugError);
 }
 
-/** Generate canonical UUIDv4 text with platform cryptographic randomness. */
-export function generateUuidV4(): UuidV4String | UuidSlugError {
+/**
+ * Generate UUIDv4 text with platform cryptographic randomness, lowercase by default.
+ *
+ * @param textCase - Built-in output spelling. Omit for lowercase.
+ */
+export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  textCase: Case = UUID_TEXT_LOWERCASE as Case,
+): UuidV4StringFor<Case> | UuidSlugError {
+  if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
   // Native generation is useful only for text, which the host returns directly. Byte and slug
   // routes stay portable because parsing native text adds work and complicates atomic output.
   // Recheck each output form when host APIs change; bench/PERFORMANCE.md owns the evidence.
   const native = runtime.uuidV4;
-  if (!native) return generatePortableUuidV4();
+  if (!native) return generatePortableUuidV4(textCase);
   // Validate a new adapter once, then trust that stable host contract on its hot path. Retaining
   // per-call validation made native UUIDv4 slower than direct wrappers. Function identity keeps
   // injected or replaced adapters behind validation; revalidate every call if a host method can
@@ -108,17 +119,19 @@ export function generateUuidV4(): UuidV4String | UuidSlugError {
     const result = nativeOrFallback(
       native,
       isUuidV4String,
-      (value) => value,
-      generatePortableUuidV4,
+      (value) =>
+        (textCase === UUID_TEXT_UPPERCASE ? value.toUpperCase() : value) as UuidV4StringFor<Case>,
+      () => generatePortableUuidV4(textCase),
       "UUIDv4 generation",
     );
     if (!(result instanceof Error)) trustedNativeUuidV4 = native;
     return result;
   }
   try {
-    return native() as UuidV4String;
+    const uuid = native();
+    return (textCase === UUID_TEXT_UPPERCASE ? uuid.toUpperCase() : uuid) as UuidV4StringFor<Case>;
   } catch (nativeCause) {
-    const fallback = generatePortableUuidV4();
+    const fallback = generatePortableUuidV4(textCase);
     return fallback instanceof Error
       ? failedFallback(nativeCause, fallback, "Native and portable UUIDv4 generation failed.")
       : fallback;

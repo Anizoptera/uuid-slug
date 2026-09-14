@@ -1,5 +1,12 @@
 # Roadmap
 
+- [x] Audit the complete public TypeScript interface against every README workflow and unrepresented consumer job.
+  - [x] Inventory exports, overloads, options, brands, defaults, errors, and declaration guidance from their owning sources.
+  - [x] Exercise representative JavaScript, TypeScript, packed-package, storage, migration, and codec call sites.
+  - [x] Rank concrete friction and ambiguity by caller impact; reject additions without a failing consumer demand.
+  - [x] Implement and document the smallest coherent repairs, with hostile runtime and type tests.
+  - [x] Regenerate API evidence, run the complete gate, inspect the packed surface, and record remaining trade-offs.
+
 Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; this file never owns one.
 
 ## Public interface audit
@@ -9,12 +16,12 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
   - [x] Prove text, byte, generated, and cross-language writers accept the endpoint and reject its successor.
   - [x] Put the limit and `invalid_timestamp` result in codec JSDoc, API guidance, README, and security guidance.
   - [x] Regenerate declarations, run the full gate, and inspect packed consumer access.
-- [ ] Provide built-in UUID text-case presets across every UUID-text writer.
+- [x] Provide built-in UUID text-case presets across every UUID-text writer.
   - [x] Define lowercase and uppercase once as named runtime values with inferred result types.
   - [x] Keep lowercase as the zero-work default and reject unknown untyped selections.
-  - [ ] Apply the same optional selection to conversion, generation, decoding, validation, and codecs.
-  - [ ] Prove source and packed inference, runtime behavior, edge failures, resources, and latency.
-  - [ ] Update public JSDoc, interface guidance, README, declarations, and release notes; run the full gate.
+  - [x] Apply the same optional selection to conversion, generation, decoding, validation, and codecs.
+  - [x] Prove source and packed inference, runtime behavior, edge failures, resources, and latency.
+  - [x] Update public JSDoc, interface guidance, README, declarations, and release notes; run the full gate.
 - [x] Normalize UUID text output while accepting common hexadecimal input forms.
   - [x] Accept mixed-case 36-character UUID text and compact 32-character hexadecimal input.
   - [x] Keep guards and every returned UUID string lowercase and hyphenated.

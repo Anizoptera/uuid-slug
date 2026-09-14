@@ -35,12 +35,16 @@ import type {
   UuidV7Bytes,
   UuidV7Sentinel,
   UuidV7String,
+  UuidTextCase,
+  UuidV7StringFor,
 } from "./types.ts";
+import { UUID_TEXT_LOWERCASE } from "./types.ts";
 import { resolveSlugAlphabet, uuidBytesToDirectSlug, extractUuidV7UnixMs } from "./slug.ts";
 import {
-  bytesToUuidString,
   formatUuidBytesUnchecked,
+  invalidUuidTextCase,
   isUuidString,
+  isUuidTextCase,
   isUuidV7Bytes,
   uuidStringToBytes,
 } from "./uuid.ts";
@@ -361,13 +365,22 @@ function buildUuidSlugCodec(
       : new UuidSlugError(INVALID_BUFFER, "UUID must be text or 16 UUIDv7 bytes.");
   }
 
-  function slugToUuidString(slug: string | UuidSlugError): UuidV7String | UuidSlugError {
+  function slugToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    slug: string | UuidSlugError,
+    textCase: Case = UUID_TEXT_LOWERCASE as Case,
+  ): UuidV7StringFor<Case> | UuidSlugError {
     if (typeof slug !== "string") return invalidUuidSlugInput(slug);
+    if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
     const sentinel = sentinels.bySlug.get(slug);
-    if (sentinel) return sentinel.uuid;
+    if (sentinel)
+      return (
+        textCase === UUID_TEXT_LOWERCASE
+          ? sentinel.uuid
+          : formatUuidBytesUnchecked(sentinel.bytes, 0, textCase)
+      ) as UuidV7StringFor<Case>;
     const decoded = decodeMaskedSlug(slug, handle, previousMasks);
     if (decoded instanceof Error) return decoded;
-    return bytesToUuidString(decoded) as UuidV7String | UuidSlugError;
+    return formatUuidBytesUnchecked(decoded, 0, textCase) as UuidV7StringFor<Case>;
   }
 
   function slugToUuidBytes(slug: string | UuidSlugError): UuidV7Bytes | UuidSlugError;
@@ -405,14 +418,17 @@ function buildUuidSlugCodec(
     }
   }
 
-  function generateUuidV7WithCodecSlug(): GeneratedUuidV7<UuidV7CodecSlug> | UuidSlugError {
+  function generateUuidV7WithCodecSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    textCase: Case = UUID_TEXT_LOWERCASE as Case,
+  ): GeneratedUuidV7<UuidV7CodecSlug, Case> | UuidSlugError {
+    if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
     try {
       const bytes = generateBytes();
       if (!isUint8Array(bytes))
         return isUuidSlugError(bytes)
           ? bytes
           : new UuidSlugError(INVALID_UUID_VERSION, INVALID_MASKED_UUID_BYTES);
-      const uuid = formatUuidBytesUnchecked(bytes) as UuidV7String;
+      const uuid = formatUuidBytesUnchecked(bytes, 0, textCase) as UuidV7StringFor<Case>;
       const slug = encodeMasked(bytes, true);
       return slug instanceof Error ? slug : { uuid, slug };
     } catch (cause) {

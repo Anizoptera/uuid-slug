@@ -16,10 +16,19 @@ import type {
   UuidSlugMigrationFormat,
   UuidSlugMigrationOptions,
   UuidString,
+  UppercaseUuidString,
   UuidV7String,
+  UuidStringFor,
+  UuidTextCase,
 } from "./types.ts";
-import { SEEDED_MASK_FORMAT, DIRECT_SLUG_FORMAT, FIXED_MASK_FORMAT } from "./types.ts";
-import { bytesToUuidString } from "./uuid.ts";
+import {
+  SEEDED_MASK_FORMAT,
+  DIRECT_SLUG_FORMAT,
+  FIXED_MASK_FORMAT,
+  UUID_TEXT_LOWERCASE,
+  UUID_TEXT_UPPERCASE,
+} from "./types.ts";
+import { bytesToUuidString, invalidUuidTextCase, isUuidTextCase } from "./uuid.ts";
 
 // These tables and the four-bit checksum define the original wire format.
 // Changing them would change the UUID recovered from an existing slug.
@@ -162,16 +171,68 @@ export function createMigration(
     return candidates;
   }
 
+  function slugToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    slug: string | UuidSlugError,
+    textCase?: Case,
+  ): UuidStringFor<Case> | UuidSlugError;
+  function slugToUuidString(
+    slug: string | UuidSlugError,
+    format: UuidSlugMigrationFormat | undefined,
+  ): UuidString | UuidSlugError;
+  function slugToUuidString<Case extends UuidTextCase>(
+    slug: string | UuidSlugError,
+    format: UuidSlugMigrationFormat,
+    textCase: Case,
+  ): UuidStringFor<Case> | UuidSlugError;
+  function slugToUuidString<Case extends UuidTextCase>(
+    slug: string | UuidSlugError,
+    formatOrCase?: UuidSlugMigrationFormat | Case,
+    textCase?: Case,
+  ): UuidStringFor<Case> | UuidSlugError {
+    const format = isUuidTextCase(formatOrCase) ? undefined : formatOrCase;
+    const selectedCase =
+      (isUuidTextCase(formatOrCase) ? formatOrCase : textCase) ?? (UUID_TEXT_LOWERCASE as Case);
+    if (!isUuidTextCase(selectedCase)) return invalidUuidTextCase();
+    const result = read(slug, format, true);
+    if (isUuidSlugError(result)) return result;
+    const uuid = result[0];
+    if (uuid === undefined)
+      return new UuidSlugError(INVALID_UUID_SLUG, "Slug does not match an enabled format.");
+    return (
+      selectedCase === UUID_TEXT_UPPERCASE ? uuid.toUpperCase() : uuid
+    ) as UuidStringFor<Case>;
+  }
+
+  function slugToUuidStringCandidates<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    slug: string | UuidSlugError,
+    textCase?: Case,
+  ): readonly UuidStringFor<Case>[] | UuidSlugError;
+  function slugToUuidStringCandidates(
+    slug: string | UuidSlugError,
+    format: UuidSlugMigrationFormat | undefined,
+  ): readonly UuidString[] | UuidSlugError;
+  function slugToUuidStringCandidates<Case extends UuidTextCase>(
+    slug: string | UuidSlugError,
+    format: UuidSlugMigrationFormat,
+    textCase: Case,
+  ): readonly UuidStringFor<Case>[] | UuidSlugError;
+  function slugToUuidStringCandidates(
+    slug: string | UuidSlugError,
+    formatOrCase?: UuidSlugMigrationFormat | UuidTextCase,
+    textCase?: UuidTextCase,
+  ): readonly UuidString[] | readonly UppercaseUuidString[] | UuidSlugError {
+    const format = isUuidTextCase(formatOrCase) ? undefined : formatOrCase;
+    const selectedCase =
+      (isUuidTextCase(formatOrCase) ? formatOrCase : textCase) ?? UUID_TEXT_LOWERCASE;
+    if (!isUuidTextCase(selectedCase)) return invalidUuidTextCase();
+    const result = read(slug, format, false);
+    if (isUuidSlugError(result)) return result;
+    if (selectedCase === UUID_TEXT_LOWERCASE) return result;
+    return result.map((uuid) => uuid.toUpperCase() as UppercaseUuidString);
+  }
+
   return {
-    slugToUuidString(slug, format) {
-      const result = read(slug, format, true);
-      return isUuidSlugError(result)
-        ? result
-        : (result[0] ??
-            new UuidSlugError(INVALID_UUID_SLUG, "Slug does not match an enabled format."));
-    },
-    slugToUuidStringCandidates(slug, format) {
-      return read(slug, format, false);
-    },
+    slugToUuidString,
+    slugToUuidStringCandidates,
   };
 }

@@ -11,6 +11,7 @@ import {
   createCustomUuidV7Mask,
   extractUuidV7UnixMs,
   bytesToUuidString,
+  UUID_TEXT_UPPERCASE,
   uuidBytesToDirectSlug,
   isUuidV4String,
   isUuidV7Bytes,
@@ -102,7 +103,7 @@ export const runtimeBoundaryCases = [
       const nativeCause = new Error("native route failed");
       let failPortable = false;
       const nativeCalls = { v4: 0, v7: 0 };
-      const expectedNativeCalls = { v4: 1, v7: 1 };
+      const expectedNativeCalls = { v4: 2, v7: 2 };
       runtime.fillRandom = (bytes) => {
         if (failPortable) throw portableCause;
         saved.fillRandom(bytes);
@@ -126,9 +127,11 @@ export const runtimeBoundaryCases = [
         runtime.uuidV4 = native("v4", "123e4567-e89b-42d3-a456-426614174000");
         runtime.uuidV7 = native("v7", uuid);
         assert.equal(generateUuidV4(), "123e4567-e89b-42d3-a456-426614174000");
+        assert.equal(generateUuidV4(UUID_TEXT_UPPERCASE), "123E4567-E89B-42D3-A456-426614174000");
         assert.equal(isUuidV4String(bytesToUuidString(unwrap(generateUuidV4Bytes()))), true);
         assert.equal(typeof generateDirectUuidV4Slug(), "string");
         assert.equal(generateUuidV7(), uuid);
+        assert.equal(generateUuidV7(UUID_TEXT_UPPERCASE), uuid.toUpperCase());
         assert.equal(isUuidV7String(generateUuidV7AtUnixMs(timestamp)), true);
         assert.equal(isUuidV7Bytes(generateUuidV7Bytes()), true);
         assert.equal(isUuidV7Bytes(generateUuidV7BytesAtUnixMs(timestamp)), true);

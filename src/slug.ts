@@ -32,24 +32,28 @@ import type {
   UuidBytes,
   UuidV4Bytes,
   UuidV7Bytes,
-  UuidString,
   UuidStringInput,
   DirectUuidV4Slug,
-  UuidV4String,
   DirectUuidV7Slug,
   DirectUuidV7SlugInput,
-  UuidV7String,
   UuidV7BytesInput,
   UuidV7TimestampInput,
   UuidV7TimestampWindow,
+  UuidStringFor,
+  UuidTextCase,
+  UuidV4StringFor,
+  UuidV7StringFor,
 } from "./types.ts";
+import { UUID_TEXT_LOWERCASE } from "./types.ts";
 
 import { validateTimestampBytes } from "./timestamp.ts";
 import {
   bytesToUuidString,
+  invalidUuidTextCase,
+  isUuidText,
+  isUuidTextCase,
+  isUuidV7Text,
   isRfcVariant,
-  isUuidString,
-  isUuidV7String,
   uuidByteAtUnchecked,
   uuidTimestampFromBytesUnchecked,
   uuidStringToBytes,
@@ -292,30 +296,47 @@ export function uuidStringToDirectSlug(
   alphabet: SlugAlphabet = BASE64URL_NAME,
 ): DirectUuidSlug | UuidSlugError {
   if (typeof uuid !== "string") return invalidUuidStringInput(uuid);
-  if (!hasNativeBase64urlEncoder && alphabet === BASE64URL_NAME && isUuidString(uuid))
+  if (
+    !hasNativeBase64urlEncoder &&
+    alphabet === BASE64URL_NAME &&
+    isUuidText(uuid) &&
+    uuid.length === 36
+  )
     return uuidStringToBase64url(uuid);
-  if (alphabet === BASE32HEX_NAME && isUuidString(uuid)) return uuidStringToBase32hex(uuid);
+  if (alphabet === BASE32HEX_NAME && isUuidText(uuid) && uuid.length === 36)
+    return uuidStringToBase32hex(uuid);
   const bytes = uuidStringToBytes(uuid);
   if (bytes instanceof Error) return bytes;
   return uuidBytesToDirectSlug(bytes, alphabet);
 }
 
 /**
- * Decode a direct slug to canonical lowercase UUID text; its length selects base64url or base32hex.
+ * Decode a direct slug to hyphenated UUID text; its length selects base64url or base32hex.
  * Base32hex input accepts uppercase or lowercase. Base64url remains case-sensitive.
  * A known UUID version is preserved in the result type. TypeScript rejects known UUID and masked
  * values; invalid input returns `UuidSlugError`. A preceding `UuidSlugError` is returned unchanged.
  *
  * @param slug - Canonical 22-character base64url or 26-character base32hex direct slug.
+ * @param textCase - Built-in output spelling. Omit for lowercase.
  */
-export function slugToUuidString<Input extends string | UuidSlugError>(
+export function slugToUuidString<
+  Input extends string | UuidSlugError,
+  Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+>(
   slug: DirectUuidSlugInput<Input>,
-): PreserveUuidVersion<Input, UuidString, UuidV4String, UuidV7String> | UuidSlugError;
+  textCase?: Case,
+):
+  | PreserveUuidVersion<Input, UuidStringFor<Case>, UuidV4StringFor<Case>, UuidV7StringFor<Case>>
+  | UuidSlugError;
 /*#__NO_SIDE_EFFECTS__*/
-export function slugToUuidString(slug: string | UuidSlugError): UuidString | UuidSlugError {
+export function slugToUuidString(
+  slug: string | UuidSlugError,
+  textCase: UuidTextCase = UUID_TEXT_LOWERCASE,
+): string | UuidSlugError {
+  if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
   const bytes = slugToUuidBytes(slug);
   if (bytes instanceof Error) return bytes;
-  return bytesToUuidString(bytes);
+  return bytesToUuidString(bytes, textCase);
 }
 
 /** Check a canonical 22-character base64url or 26-character lowercase base32hex direct slug. */
@@ -359,16 +380,18 @@ export function isDirectUuidV7Slug(value: unknown): value is DirectUuidV7Slug {
 /*#__NO_SIDE_EFFECTS__*/
 function extractStringTimestamp(value: string): number | UuidSlugError {
   let timestamp = 0;
-  if (isUuidV7String(value)) {
-    return parseInt(value.slice(0, 8) + value.slice(9, 13), 16);
-  }
+  if (isUuidV7Text(value))
+    return parseInt(
+      value.length === 36 ? value.slice(0, 8) + value.slice(9, 13) : value.slice(0, 12),
+      16,
+    );
   if (isDirectUuidV7Slug(value)) {
     const alpha = SLUG_ALPHABET_BY_LENGTH[value.length] as Alphabet;
     for (let index = 0; index < 6; index += 1)
       timestamp = timestamp * 256 + slugByte(value, alpha, index);
     return timestamp;
   }
-  if (isUuidString(value) || isDirectUuidSlug(value))
+  if (isUuidText(value) || isDirectUuidSlug(value))
     return new UuidSlugError(INVALID_UUID_VERSION, UUID_V7_TIMESTAMP_ONLY);
   const bytes = uuidStringToBytes(value);
   if (!(bytes instanceof Error)) {

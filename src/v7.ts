@@ -12,8 +12,14 @@ import {
   readClock,
   UuidSlugError,
 } from "./errors.ts";
-import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types.ts";
-import { formatUuidBytesUnchecked, isUuidV7String } from "./uuid.ts";
+import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
+import type { UuidTextCase, UuidV7Bytes, UuidV7Generator, UuidV7StringFor } from "./types.ts";
+import {
+  formatUuidBytesUnchecked,
+  invalidUuidTextCase,
+  isUuidV7String,
+  isUuidTextCase,
+} from "./uuid.ts";
 import type { Runtime } from "./runtime/types.ts";
 
 /** Internal controls for exercising the portable UUIDv7 state machine. */
@@ -94,10 +100,13 @@ const rejectInstant = /* @__NO_SIDE_EFFECTS__ */ (ms: number): undefined | UuidS
  * `bytesToUuidString` is version-agnostic: the v7-ness is established by the caller having produced the
  * bytes, not by anything the formatter can check.
  */
-const formatUuidV7 = /* @__NO_SIDE_EFFECTS__ */ (
+const formatUuidV7 = /* @__NO_SIDE_EFFECTS__ */ <Case extends UuidTextCase>(
   result: Uint8Array | UuidSlugError,
-): UuidV7String | UuidSlugError =>
-  result instanceof Error ? result : (formatUuidBytesUnchecked(result) as UuidV7String);
+  textCase: Case,
+): UuidV7StringFor<Case> | UuidSlugError =>
+  result instanceof Error
+    ? result
+    : (formatUuidBytesUnchecked(result, 0, textCase) as UuidV7StringFor<Case>);
 
 const reenteredGeneration = /* @__NO_SIDE_EFFECTS__ */ () =>
   new UuidSlugError(
@@ -279,12 +288,27 @@ export function createPortableUuidV7Generator(
     return bytesAt(timestamp, out, offset);
   }
 
+  function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    textCase: Case = UUID_TEXT_LOWERCASE as Case,
+  ): UuidV7StringFor<Case> | UuidSlugError {
+    if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
+    return formatUuidV7(bytes(textBytes), textCase);
+  }
+
+  function generateUuidV7AtUnixMs<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    timestamp: number,
+    textCase: Case = UUID_TEXT_LOWERCASE as Case,
+  ): UuidV7StringFor<Case> | UuidSlugError {
+    if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
+    return formatUuidV7(bytesAt(timestamp, textBytes), textCase);
+  }
+
   return {
     // Text formatting consumes bytes synchronously, so one generator-owned buffer removes an
     // allocation without exposing mutable storage. The reentrancy guard protects it while readUnixMs
     // and entropy callbacks run.
-    generateUuidV7: () => formatUuidV7(bytes(textBytes)),
-    generateUuidV7AtUnixMs: (timestamp) => formatUuidV7(bytesAt(timestamp, textBytes)),
+    generateUuidV7,
+    generateUuidV7AtUnixMs,
     generateUuidV7Bytes,
     generateUuidV7BytesAtUnixMs,
   };
@@ -300,26 +324,33 @@ export function createPortableUuidV7Generator(
 export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
   const fallback = createPortableUuidV7Generator({ fillRandom: runtime.fillRandom });
   let trustedNativeUuidV7: (() => string) | undefined;
-  function generateUuidV7() {
+  function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    textCase: Case = UUID_TEXT_LOWERCASE as Case,
+  ): UuidV7StringFor<Case> | UuidSlugError {
+    if (!isUuidTextCase(textCase)) return fallback.generateUuidV7(textCase);
     // Missing capability goes directly to portable text; a present capability is validated below
     // because native exceptions or malformed values must degrade without weakening the result.
     const native = runtime.uuidV7;
-    if (!native) return fallback.generateUuidV7();
+    if (!native) return fallback.generateUuidV7(textCase);
     if (native !== trustedNativeUuidV7) {
       const result = nativeOrFallback(
         native,
         isUuidV7String,
-        (value) => value,
-        fallback.generateUuidV7,
+        (value) =>
+          (textCase === UUID_TEXT_UPPERCASE ? value.toUpperCase() : value) as UuidV7StringFor<Case>,
+        () => fallback.generateUuidV7(textCase),
         "UUIDv7 generation",
       );
       if (!(result instanceof Error)) trustedNativeUuidV7 = native;
       return result;
     }
     try {
-      return native() as UuidV7String;
+      const uuid = native();
+      return (
+        textCase === UUID_TEXT_UPPERCASE ? uuid.toUpperCase() : uuid
+      ) as UuidV7StringFor<Case>;
     } catch (nativeCause) {
-      const result = fallback.generateUuidV7();
+      const result = fallback.generateUuidV7(textCase);
       return result instanceof Error
         ? failedFallback(nativeCause, result, "Native and portable UUIDv7 generation failed.")
         : result;

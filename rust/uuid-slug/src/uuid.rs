@@ -1,4 +1,4 @@
-//! Preserve every UUID bit while enforcing canonical text and slug spellings.
+//! Preserve every UUID bit while accepting standard text and enforcing canonical slug spellings.
 use crate::{Alphabet, Error, ErrorCode};
 use std::{fmt, str::FromStr};
 
@@ -25,7 +25,7 @@ impl Uuid {
         out.copy_from_slice(&bytes[range]);
         Ok(Self(out))
     }
-    /// Parse uppercase or lowercase hexadecimal with the canonical four hyphens.
+    /// Parse mixed-case hexadecimal with the canonical four hyphens or without hyphens.
     pub fn parse(text: &str) -> Result<Self, Error> {
         text.parse()
     }
@@ -87,7 +87,9 @@ impl FromStr for Uuid {
     type Err = Error;
     fn from_str(text: &str) -> Result<Self, Error> {
         let input = text.as_bytes();
-        if input.len() != 36 || [8, 13, 18, 23].iter().any(|&i| input[i] != b'-') {
+        if input.len() != 32
+            && (input.len() != 36 || [8, 13, 18, 23].iter().any(|&i| input[i] != b'-'))
+        {
             return Err(Error::new(ErrorCode::InvalidUuid));
         }
         uuid::Uuid::parse_str(text)
@@ -121,6 +123,7 @@ mod tests {
         let id = Uuid::parse("ffffffff-ffff-ffff-ffff-ffffffffffff")?;
         assert!(id.timestamp().is_err());
         assert_eq!(Uuid::parse("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")?, id);
+        assert_eq!(Uuid::parse("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")?, id);
         let mut out = [23; 32];
         assert!(id.write_into(&mut out, usize::MAX).is_err());
         assert_eq!(out, [23; 32]);

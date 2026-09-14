@@ -18,10 +18,13 @@ import type {
   UuidV7Bytes,
   UuidString,
   UuidStringFor,
+  UuidText,
   UuidTextCase,
   UuidStringInput,
   UuidV4String,
+  UuidV4Text,
   UuidV7String,
+  UuidV7Text,
 } from "./types.ts";
 
 export { isUuidSlugError } from "./errors.ts";
@@ -32,6 +35,13 @@ export type { UuidBytes, UuidString } from "./types.ts";
 const HEX = "0123456789abcdef";
 const UPPERCASE_HEX = "0123456789ABCDEF";
 const UUID_SEPARATOR = "-";
+
+/** Keep case-option validation identical across every UUID-text writer. */
+export const isUuidTextCase = (value: unknown): value is UuidTextCase =>
+  value === UUID_TEXT_LOWERCASE || value === UUID_TEXT_UPPERCASE;
+export function invalidUuidTextCase(): UuidSlugError {
+  return new UuidSlugError(INVALID_OPTIONS, "UUID text case must be lowercase or uppercase.");
+}
 // Probe once and allocate the byte-pair fallback only on engines that need it.
 const nativeToHex = (Uint8Array.prototype as { toHex?: () => string }).toHex;
 const HEX_BYTES = nativeToHex
@@ -173,13 +183,15 @@ export function bytesToUuidString(
   textCase: UuidTextCase = UUID_TEXT_LOWERCASE,
 ): UuidString | string | UuidSlugError {
   if (!isUint8Array(bytes)) return invalidByteInput(bytes);
-  const caseIsSecond = typeof offsetOrCase === "symbol";
-  const byteOffset = caseIsSecond ? 0 : offsetOrCase;
+  const caseIsSecond =
+    typeof offsetOrCase === "string"
+      ? Number.isNaN(Number(offsetOrCase))
+      : typeof offsetOrCase !== "number";
+  const byteOffset = (caseIsSecond ? 0 : offsetOrCase) as number;
   const selectedCase = caseIsSecond ? offsetOrCase : textCase;
+  if (!isUuidTextCase(selectedCase)) return invalidUuidTextCase();
   const badRange = checkRange(bytes.length, byteOffset, 16);
   if (badRange) return badRange;
-  if (selectedCase !== UUID_TEXT_LOWERCASE && selectedCase !== UUID_TEXT_UPPERCASE)
-    return new UuidSlugError(INVALID_OPTIONS, "UUID text case must be lowercase or uppercase.");
   if (nativeToHex && selectedCase === UUID_TEXT_LOWERCASE) {
     let offset = 0;
     let hex: string;
@@ -196,13 +208,13 @@ export function bytesToUuidString(
 
 /** Format a UUID range already proved writable by its caller. */
 /*#__NO_SIDE_EFFECTS__*/
-export function formatUuidBytesUnchecked(
+export function formatUuidBytesUnchecked<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   bytes: Uint8Array,
   offset = 0,
-  textCase: UuidTextCase = UUID_TEXT_LOWERCASE,
-): UuidString {
+  textCase: Case = UUID_TEXT_LOWERCASE as Case,
+): UuidStringFor<Case> {
   if (nativeToHex && textCase === UUID_TEXT_LOWERCASE)
-    return hyphenateHex(nativeToHex.call(bytes), offset * 2);
+    return hyphenateHex(nativeToHex.call(bytes), offset * 2) as UuidStringFor<Case>;
   const byte = textCase === UUID_TEXT_UPPERCASE ? uppercaseHexByte : hexByte;
   return (byte(bytes[offset] as number) +
     byte(bytes[offset + 1] as number) +
@@ -223,7 +235,7 @@ export function formatUuidBytesUnchecked(
     byte(bytes[offset + 12] as number) +
     byte(bytes[offset + 13] as number) +
     byte(bytes[offset + 14] as number) +
-    byte(bytes[offset + 15] as number)) as UuidString;
+    byte(bytes[offset + 15] as number)) as UuidStringFor<Case>;
 }
 
 /*#__NO_SIDE_EFFECTS__*/
@@ -237,39 +249,62 @@ export function isRfcVariant(bytes: Uint8Array, offset = 0): boolean {
 }
 
 // Predicates inspect the same hex table as parsing without allocating output bytes or Errors.
-/** Check canonical lowercase UUID syntax without claiming a version, variant, or issuance. */
+/** Check accepted UUID text without claiming a version, variant, or issuance. */
 /*#__NO_SIDE_EFFECTS__*/
-export function isUuidString(value: unknown): value is UuidString {
-  if (typeof value !== "string" || value.length !== UUID_LENGTH) return false;
+export function isUuidText(value: unknown): value is UuidText {
+  if (typeof value !== "string") return false;
+  const hyphenated = value.length === UUID_LENGTH;
+  if (!hyphenated && value.length !== COMPACT_UUID_LENGTH) return false;
   if (
-    value[8] !== UUID_SEPARATOR ||
-    value[13] !== UUID_SEPARATOR ||
-    value[18] !== UUID_SEPARATOR ||
-    value[23] !== UUID_SEPARATOR
+    hyphenated &&
+    (value[8] !== UUID_SEPARATOR ||
+      value[13] !== UUID_SEPARATOR ||
+      value[18] !== UUID_SEPARATOR ||
+      value[23] !== UUID_SEPARATOR)
   )
     return false;
   for (let i = 0; i < UUID_BYTE_OFFSETS.length; i += 1) {
-    const offset = UUID_BYTE_OFFSETS[i] as number;
+    const offset = hyphenated ? (UUID_BYTE_OFFSETS[i] as number) : i * 2;
     if (
-      lowercaseHexValue(value.charCodeAt(offset)) < 0 ||
-      lowercaseHexValue(value.charCodeAt(offset + 1)) < 0
+      parsedHexValue(value.charCodeAt(offset)) < 0 ||
+      parsedHexValue(value.charCodeAt(offset + 1)) < 0
     )
       return false;
   }
   return true;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const UUID_V7_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
-/** Check canonical UUID text with version 4 and RFC variant bits. */
+/** Check accepted UUID text with version 4 and RFC variant bits. */
 /*#__NO_SIDE_EFFECTS__*/
+export function isUuidV4Text(value: unknown): value is UuidV4Text {
+  if (!isUuidText(value)) return false;
+  const compact = value.length === COMPACT_UUID_LENGTH;
+  const variant = parsedHexValue(value.charCodeAt(compact ? 16 : 19));
+  return parsedHexValue(value.charCodeAt(compact ? 12 : 14)) === 4 && variant >= 8 && variant <= 11;
+}
+
+/** Check accepted UUID text with version 7 and RFC variant bits. */
+/*#__NO_SIDE_EFFECTS__*/
+export function isUuidV7Text(value: unknown): value is UuidV7Text {
+  if (!isUuidText(value)) return false;
+  const compact = value.length === COMPACT_UUID_LENGTH;
+  const variant = parsedHexValue(value.charCodeAt(compact ? 16 : 19));
+  return parsedHexValue(value.charCodeAt(compact ? 12 : 14)) === 7 && variant >= 8 && variant <= 11;
+}
+
+/** Check canonical lowercase UUID text without claiming a version, variant, or issuance. */
+export function isUuidString(value: unknown): value is UuidString {
+  return typeof value === "string" && UUID_RE.test(value);
+}
+/** Check canonical lowercase UUIDv4 text with RFC variant bits. */
 export function isUuidV4String(value: unknown): value is UuidV4String {
   return typeof value === "string" && UUID_V4_RE.test(value);
 }
-
-/** Check canonical UUID text with version 7 and RFC variant bits. */
-/*#__NO_SIDE_EFFECTS__*/
+/** Check canonical lowercase UUIDv7 text with RFC variant bits. */
 export function isUuidV7String(value: unknown): value is UuidV7String {
   return typeof value === "string" && UUID_V7_RE.test(value);
 }

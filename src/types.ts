@@ -7,9 +7,9 @@ declare const brand: unique symbol;
 declare const uuidV7MaskBrand: unique symbol;
 
 /** Select the standard lowercase UUID text spelling. */
-export const UUID_TEXT_LOWERCASE: unique symbol = Symbol("UUID text lowercase");
+export const UUID_TEXT_LOWERCASE = "lowercase";
 /** Select the standard uppercase UUID text spelling. */
-export const UUID_TEXT_UPPERCASE: unique symbol = Symbol("UUID text uppercase");
+export const UUID_TEXT_UPPERCASE = "uppercase";
 
 /** Select the hexadecimal letter case of UUID text output. */
 export type UuidTextCase = typeof UUID_TEXT_LOWERCASE | typeof UUID_TEXT_UPPERCASE;
@@ -19,18 +19,36 @@ type Brand<Value, Name extends string> = Value & {
   readonly [brand]: { [BrandName in Name]: true };
 };
 
+/** Valid mixed-case UUID text with or without hyphens; this proves syntax only. */
+export type UuidText = Brand<string, "UuidText">;
+/** Valid UUIDv4 text with RFC variant bits, in any accepted spelling. */
+export type UuidV4Text = Brand<UuidText, "UuidV4Text">;
+/** Valid UUIDv7 text with RFC variant bits, in any accepted spelling. */
+export type UuidV7Text = Brand<UuidText, "UuidV7Text">;
 /** Canonical lowercase UUID text. This proves syntax only, not version or issuance. */
-export type UuidString = Brand<string, "UuidString">;
+export type UuidString = Brand<UuidText, "UuidString">;
 /** Standard uppercase UUID text. This proves syntax only, not version or issuance. */
-export type UppercaseUuidString = Brand<string, "UppercaseUuidString">;
+export type UppercaseUuidString = Brand<UuidText, "UppercaseUuidString">;
 /** UUID text inferred from its requested output case. */
 export type UuidStringFor<Case extends UuidTextCase> = Case extends typeof UUID_TEXT_UPPERCASE
   ? UppercaseUuidString
   : UuidString;
 /** Canonical lowercase UUIDv4 text with RFC variant bits. */
-export type UuidV4String = Brand<UuidString, "UuidV4String">;
+export type UuidV4String = Brand<UuidString & UuidV4Text, "UuidV4String">;
+/** Uppercase UUIDv4 text with RFC variant bits. */
+export type UppercaseUuidV4String = Brand<UppercaseUuidString & UuidV4Text, "UuidV4String">;
+/** UUIDv4 text inferred from its requested output case. */
+export type UuidV4StringFor<Case extends UuidTextCase> = Case extends typeof UUID_TEXT_UPPERCASE
+  ? UppercaseUuidV4String
+  : UuidV4String;
 /** Canonical lowercase UUIDv7 text with RFC variant bits. */
-export type UuidV7String = Brand<UuidString, "UuidV7String">;
+export type UuidV7String = Brand<UuidString & UuidV7Text, "UuidV7String">;
+/** Uppercase UUIDv7 text with RFC variant bits. */
+export type UppercaseUuidV7String = Brand<UppercaseUuidString & UuidV7Text, "UuidV7String">;
+/** UUIDv7 text inferred from its requested output case. */
+export type UuidV7StringFor<Case extends UuidTextCase> = Case extends typeof UUID_TEXT_UPPERCASE
+  ? UppercaseUuidV7String
+  : UuidV7String;
 /** A reversible direct UUID encoding: 22 base64url or 26 lowercase base32hex characters. */
 export type DirectUuidSlug = Brand<string, "DirectUuidSlug">;
 /** A direct slug whose decoded UUID is version 4 with the RFC variant. */
@@ -41,9 +59,9 @@ export type DirectUuidV7Slug = Brand<DirectUuidSlug, "DirectUuidV7Slug">;
 export type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> =
   Input extends UuidSlugError
     ? never
-    : Input extends UuidV4String | DirectUuidV4Slug
+    : Input extends UuidV4Text | DirectUuidV4Slug
       ? Version4
-      : Input extends UuidV7String | DirectUuidV7Slug
+      : Input extends UuidV7Text | DirectUuidV7Slug
         ? Version7
         : UnknownVersion;
 /** A masked payload in either spelling; its check bits are not plain-encoding padding. */
@@ -59,10 +77,13 @@ export type SentinelUuidV7Slug = Brand<DirectUuidV7Slug, "SentinelUuidV7Slug">;
 /** A codec result: either a masked UUIDv7 or a registered raw sentinel. */
 export type UuidV7CodecSlug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 
-/** One generated UUIDv7 in canonical text and a lossless slug made from the same bytes. */
-export interface GeneratedUuidV7<Slug extends DirectUuidV7Slug | UuidV7CodecSlug> {
-  /** Canonical UUIDv7 text. */
-  readonly uuid: UuidV7String;
+/** One generated UUIDv7 in the selected text case and a lossless slug made from the same bytes. */
+export interface GeneratedUuidV7<
+  Slug extends DirectUuidV7Slug | UuidV7CodecSlug,
+  Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+> {
+  /** UUIDv7 text in the requested case. */
+  readonly uuid: UuidV7StringFor<Case>;
   /** Lossless spelling of the same UUID bytes. */
   readonly slug: Slug;
 }
@@ -86,24 +107,24 @@ export type UuidStringInput<Input extends string | UuidSlugError> = RejectKnownI
 /** Reject known UUID text and masked slugs; only a direct slug decodes without a key. */
 export type DirectUuidSlugInput<Input extends string | UuidSlugError> = RejectKnownInput<
   Input,
-  UuidString | MaskedUuidSlug
+  UuidText | MaskedUuidSlug
 >;
 /** Reject known UUID text; slug brands stay accepted because direct and masked spellings overlap. */
-type SlugStringInput<Input extends string | UuidSlugError> = RejectKnownInput<Input, UuidString>;
+type SlugStringInput<Input extends string | UuidSlugError> = RejectKnownInput<Input, UuidText>;
 /** Reject known slugs and UUIDv4 text; the operation reads a UUIDv7 timestamp from text. */
 export type UuidV7StringInput<Input extends string | UuidSlugError> = RejectKnownInput<
   Input,
-  DirectUuidSlug | MaskedUuidSlug | UuidV4String
+  DirectUuidSlug | MaskedUuidSlug | UuidV4Text
 >;
 /** Reject known UUID text, masked slugs, and UUIDv4 slugs; the operation needs a direct UUIDv7 slug. */
 export type DirectUuidV7SlugInput<Input extends string | UuidSlugError> = RejectKnownInput<
   Input,
-  UuidString | MaskedUuidSlug | DirectUuidV4Slug
+  UuidText | MaskedUuidSlug | DirectUuidV4Slug
 >;
 /** Reject masked slugs and known UUIDv4 values; only UUIDv7 text or a direct UUIDv7 slug carries a timestamp. */
 export type UuidV7TimestampInput<Input extends string | UuidSlugError> = RejectKnownInput<
   Input,
-  MaskedUuidSlug | UuidV4String | DirectUuidV4Slug
+  MaskedUuidSlug | UuidV4Text | DirectUuidV4Slug
 >;
 /** Reject known UUIDv4 bytes; the operation needs UUIDv7 bytes. */
 export type UuidV7BytesInput<Input extends Uint8Array | UuidSlugError> = RejectKnownInput<
@@ -113,7 +134,7 @@ export type UuidV7BytesInput<Input extends Uint8Array | UuidSlugError> = RejectK
 /** Reject known slugs and UUIDv4 values; a codec masks UUIDv7 text or bytes. */
 type UuidV7ValueInput<Input extends string | Uint8Array | UuidSlugError> = RejectKnownInput<
   Input,
-  DirectUuidSlug | MaskedUuidSlug | UuidV4String | UuidV4Bytes
+  DirectUuidSlug | MaskedUuidSlug | UuidV4Text | UuidV4Bytes
 >;
 /** Exactly 16 validated UUID bytes. Package-owned values are plain `Uint8Array`. */
 export type UuidBytes = Brand<Uint8Array, "UuidBytes">;
@@ -143,8 +164,11 @@ export interface UuidV7TimestampWindow {
  * generation attempt.
  */
 export interface UuidV7Generator {
-  /** Generate canonical UUIDv7 text for the current clock reading. */
-  generateUuidV7(this: void): UuidV7String | UuidSlugError;
+  /** Generate UUIDv7 text for the current clock reading in the selected case, lowercase by default. */
+  generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    this: void,
+    textCase?: Case,
+  ): UuidV7StringFor<Case> | UuidSlugError;
   /** Generate a new plain 16-byte `Uint8Array` for the current clock reading. */
   generateUuidV7Bytes(this: void): UuidV7Bytes | UuidSlugError;
   /**
@@ -161,9 +185,13 @@ export interface UuidV7Generator {
   ): Output | UuidSlugError;
   /**
    * Generate at a whole Unix millisecond in `0..2^48-1` without changing current-time sequence
-   * state.
+   * state. UUID text is lowercase unless `textCase` selects uppercase.
    */
-  generateUuidV7AtUnixMs(this: void, unixMs: number): UuidV7String | UuidSlugError;
+  generateUuidV7AtUnixMs<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    this: void,
+    unixMs: number,
+    textCase?: Case,
+  ): UuidV7StringFor<Case> | UuidSlugError;
   /** Generate a new 16-byte array at an explicit millisecond without changing current-time state. */
   generateUuidV7BytesAtUnixMs(this: void, unixMs: number): UuidV7Bytes | UuidSlugError;
   /**
@@ -320,12 +348,28 @@ export interface UuidSlugMigrationDecoder<
    *
    * @param slug - Identifier accepted by one enabled migration reader.
    * @param format - Known source format. Omit to try enabled readers in documented order.
+   * @param textCase - UUID text spelling. Pass it after `slug` when format is unknown, or after a
+   * known format. Omit for lowercase.
    */
+  slugToUuidString<
+    Input extends string | UuidSlugError,
+    Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+  >(
+    this: void,
+    slug: SlugStringInput<Input>,
+    textCase?: Case,
+  ): UuidStringFor<Case> | UuidSlugError;
   slugToUuidString<Input extends string | UuidSlugError>(
     this: void,
     slug: SlugStringInput<Input>,
-    format?: Format,
+    format: Format | undefined,
   ): UuidString | UuidSlugError;
+  slugToUuidString<Input extends string | UuidSlugError, Case extends UuidTextCase>(
+    this: void,
+    slug: SlugStringInput<Input>,
+    format: Format,
+    textCase: Case,
+  ): UuidStringFor<Case> | UuidSlugError;
   /**
    * Return every distinct candidate in decode order for one application lookup. An empty array
    * means no enabled format matched; callback failure returns `UuidSlugError`, not a partial list.
@@ -333,12 +377,28 @@ export interface UuidSlugMigrationDecoder<
    *
    * @param slug - Identifier accepted by one or more enabled migration readers.
    * @param format - Known source format. Omit to try enabled readers in documented order.
+   * @param textCase - UUID text spelling. Pass it after `slug` when format is unknown, or after a
+   * known format. Omit for lowercase.
    */
+  slugToUuidStringCandidates<
+    Input extends string | UuidSlugError,
+    Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+  >(
+    this: void,
+    slug: SlugStringInput<Input>,
+    textCase?: Case,
+  ): readonly UuidStringFor<Case>[] | UuidSlugError;
   slugToUuidStringCandidates<Input extends string | UuidSlugError>(
     this: void,
     slug: SlugStringInput<Input>,
-    format?: Format,
+    format: Format | undefined,
   ): readonly UuidString[] | UuidSlugError;
+  slugToUuidStringCandidates<Input extends string | UuidSlugError, Case extends UuidTextCase>(
+    this: void,
+    slug: SlugStringInput<Input>,
+    format: Format,
+    textCase: Case,
+  ): readonly UuidStringFor<Case>[] | UuidSlugError;
 }
 
 /** Configure one immutable UUIDv7 codec for writing, key rotation, and sentinels. */
@@ -398,11 +458,17 @@ export interface UuidV7SlugCodec {
    */
   generateUuidV7CodecSlug(this: void): UuidV7CodecSlug | UuidSlugError;
   /**
-   * Generate canonical UUIDv7 text and its masked or sentinel slug from one random byte draw.
+   * Generate UUIDv7 text and its masked or sentinel slug from one random byte draw. UUID text is
+   * lowercase unless `textCase` selects uppercase.
    * Returns `invalid_timestamp` after `MAX_MASKED_UUID_V7_UNIX_MS` unless the generated UUID is a
    * registered sentinel, which is returned as a direct slug without masking.
+   *
+   * @param textCase - Built-in UUID text spelling. Omit for lowercase.
    */
-  generateUuidV7WithCodecSlug(this: void): GeneratedUuidV7<UuidV7CodecSlug> | UuidSlugError;
+  generateUuidV7WithCodecSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    this: void,
+    textCase?: Case,
+  ): GeneratedUuidV7<UuidV7CodecSlug, Case> | UuidSlugError;
   /**
    * Encode mixed-case hyphenated or compact UUIDv7 text, or 16 UUIDv7 bytes, as a masked slug,
    * unless it is a registered
@@ -419,17 +485,23 @@ export interface UuidV7SlugCodec {
     uuid: UuidV7ValueInput<Input>,
   ): UuidV7CodecSlug | UuidSlugError;
   /**
-   * Decode the first passing sentinel or mask in configured order to canonical UUIDv7 text.
+   * Decode the first passing sentinel or mask in configured order to UUIDv7 text in the selected
+   * case, lowercase by default.
    * Success proves format integrity, not issuance. TypeScript rejects known UUID text; slug values
    * remain accepted because direct and masked spellings can overlap. A preceding `UuidSlugError`
    * is returned unchanged.
    *
    * @param slug - Masked slug or registered sentinel accepted by this codec.
+   * @param textCase - Built-in UUID text spelling. Omit for lowercase.
    */
-  slugToUuidString<Input extends string | UuidSlugError>(
+  slugToUuidString<
+    Input extends string | UuidSlugError,
+    Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+  >(
     this: void,
     slug: SlugStringInput<Input>,
-  ): UuidV7String | UuidSlugError;
+    textCase?: Case,
+  ): UuidV7StringFor<Case> | UuidSlugError;
   /**
    * Decode to a new plain 16-byte `Uint8Array`. Use this when the caller needs binary output. A
    * preceding `UuidSlugError` is returned unchanged.

@@ -186,9 +186,7 @@ fn run(request: &Value) -> Result<Value, Error> {
         "undirect" => Ok(json!(Uuid::parse_slug(input)?.to_string())),
         "timestamp" => Ok(json!(Uuid::parse(input)?.timestamp()?)),
         "guards" => {
-            let uuid = Uuid::parse(input)
-                .ok()
-                .filter(|uuid| uuid.to_string() == input);
+            let uuid = Uuid::parse(input).ok();
             let slug = Uuid::parse_slug(input)
                 .ok()
                 .filter(|uuid| match input.len() {

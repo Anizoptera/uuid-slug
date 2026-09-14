@@ -18,12 +18,15 @@ import {
   isDirectUuidSlug,
   isUuidSlugError,
   isUuidString,
+  isUuidText,
   isUuidV4Bytes,
   isDirectUuidV4Slug,
   isUuidV4String,
+  isUuidV4Text,
   isUuidV7Bytes,
   isDirectUuidV7Slug,
   isUuidV7String,
+  isUuidV7Text,
   INVALID_BUFFER,
   FIXED_MASK_FORMAT,
   uuidStringToBytes,
@@ -40,6 +43,7 @@ import {
   generateUuidV7Bytes,
   generateUuidV7BytesAtUnixMs,
   generateUuidV7,
+  generateUuidV7AtUnixMs,
   generateDirectUuidV7Slug,
   generateUuidV7WithDirectSlug,
 } from "@anizoptera/uuid-slug";
@@ -49,6 +53,8 @@ import type * as UuidSlugApi from "@anizoptera/uuid-slug";
 import type {
   AsyncUuidV7MaskOptions,
   UppercaseUuidString,
+  UppercaseUuidV4String,
+  UppercaseUuidV7String,
   GeneratedUuidV7,
   UuidV7TimestampWindow,
   UuidV7Mask,
@@ -62,6 +68,7 @@ import type {
   DirectUuidV7Slug,
   UuidV7Bytes,
   UuidV7String,
+  UuidV7Text,
   UuidV7Generator,
   UuidV7SlugCodec,
   UuidString,
@@ -126,14 +133,17 @@ const namedError = new UuidSlugError(INVALID_BUFFER, "Caller buffer is too short
 void [namedBase64url, namedInvalidBuffer, namedError];
 expectType<boolean>()(isUuidSlugError(namedError));
 expectType<boolean>()(isUuidString("019ff19b-58b8-7000-9b1b-df713bd5562c"));
+expectType<boolean>()(isUuidText("019FF19B58B870009B1BDF713BD5562C"));
 expectType<boolean>()(isUuidV4String("00000000-0000-4000-8000-000000000000"));
+expectType<boolean>()(isUuidV4Text("00000000000040008000000000000000"));
+expectType<boolean>()(isUuidV7Text("019FF19B58B870009B1BDF713BD5562C"));
 expectType<boolean>()(isDirectUuidSlug("AZ_xnLf5cACbG99xO9VWLw"));
 expectType<boolean>()(isDirectUuidV4Slug("AAAAAAAAQACAAAAAAAAAAA"));
 expectType<boolean>()(isDirectUuidV7Slug("AZ_xnLf5cACbG99xO9VWLw"));
 expectType<boolean>()(isUuidV7Bytes(parsedBytes));
 const externalUuid: unknown = "019ff19b-58b8-7000-9b1b-df713bd5562c";
 if (!isUuidV7String(externalUuid)) throw new Error("Expected a UUIDv7 string.");
-const checkedUuid: UuidV7String = externalUuid;
+const checkedUuid: UuidV7Text = externalUuid;
 const checkedUuidBytes = uuidStringToBytes(checkedUuid);
 if (checkedUuidBytes instanceof Error) throw checkedUuidBytes;
 const versionedBytes: UuidV7Bytes = checkedUuidBytes;
@@ -148,6 +158,9 @@ const versionedUuid: UuidV7String = formattedUuid;
 const convertedSlug = uuidStringToDirectSlug(checkedUuid);
 if (convertedSlug instanceof Error) throw convertedSlug;
 const versionedSlug: DirectUuidV7Slug = convertedSlug;
+expectType<UppercaseUuidV7String | UuidSlugError>()(
+  slugToUuidString(versionedSlug, UUID_TEXT_UPPERCASE),
+);
 expectType<number | UuidSlugError>()(extractUuidV7UnixMs(checkedUuid));
 expectType<number | UuidSlugError>()(extractUuidV7UnixMs(versionedSlug));
 // @ts-expect-error Known slug text cannot enter a UUID text operation.
@@ -182,6 +195,10 @@ expectType<UuidV7Bytes | UuidSlugError>()(directionalBytes);
 expectType<ConsumerBuffer | UuidSlugError>()(uuidStringToBytes(checkedUuid, destination, 8));
 expectType<UuidString | UuidSlugError>()(bytesToUuidString(versionedBytes));
 expectType<ConsumerBuffer | UuidSlugError>()(generator.generateUuidV7Bytes(destination, 8));
+expectType<UppercaseUuidV7String | UuidSlugError>()(generator.generateUuidV7(UUID_TEXT_UPPERCASE));
+expectType<UppercaseUuidV7String | UuidSlugError>()(
+  generator.generateUuidV7AtUnixMs(0, UUID_TEXT_UPPERCASE),
+);
 expectType<ConsumerBuffer | UuidSlugError>()(
   generator.generateUuidV7BytesAtUnixMs(0, destination, 8),
 );
@@ -201,6 +218,19 @@ if (ownedV7 instanceof Error) throw ownedV7;
 // @ts-expect-error A known UUIDv4 has no UUIDv7 timestamp.
 extractUuidV7UnixMs(ownedV4);
 const generatedV4Result = generateUuidV4();
+expectType<UppercaseUuidV4String | UuidSlugError>()(generateUuidV4(UUID_TEXT_UPPERCASE));
+expectType<UppercaseUuidV7String | UuidSlugError>()(generateUuidV7(UUID_TEXT_UPPERCASE));
+const uppercaseV7 = generateUuidV7("uppercase");
+if (uppercaseV7 instanceof Error) throw uppercaseV7;
+expectType<DirectUuidV7Slug | UuidSlugError>()(uuidStringToDirectSlug(uppercaseV7));
+expectType<UppercaseUuidV7String | UuidSlugError>()(generateUuidV7AtUnixMs(0, UUID_TEXT_UPPERCASE));
+const uppercaseV4 = generateUuidV4("uppercase");
+if (uppercaseV4 instanceof Error) throw uppercaseV4;
+// @ts-expect-error A known uppercase UUIDv4 cannot enter UUIDv7 timestamp validation.
+validateUuidV7Timestamp(uppercaseV4, { maxTimestampDeltaMs: 0 });
+expectType<GeneratedUuidV7<DirectUuidV7Slug, typeof UUID_TEXT_UPPERCASE> | UuidSlugError>()(
+  generateUuidV7WithDirectSlug(UUID_TEXT_UPPERCASE),
+);
 if (generatedV4Result instanceof Error) throw generatedV4Result;
 const generatedV4 = generatedV4Result;
 // @ts-expect-error UUIDv7 timestamp validation is undefined for a known UUIDv4.
@@ -209,6 +239,13 @@ expectType<UuidV7String | UuidSlugError>()(
   validateUuidV7Timestamp("019ff19b-58b8-7000-9b1b-df713bd5562c", {
     maxTimestampDeltaMs: 0,
   }),
+);
+expectType<UppercaseUuidV7String | UuidSlugError>()(
+  validateUuidV7Timestamp(
+    "019ff19b-58b8-7000-9b1b-df713bd5562c",
+    { maxTimestampDeltaMs: 0 },
+    UUID_TEXT_UPPERCASE,
+  ),
 );
 const generatedV4SlugResult = generateDirectUuidV4Slug();
 if (generatedV4SlugResult instanceof Error) throw generatedV4SlugResult;
@@ -245,6 +282,9 @@ const codec = codecResult;
 expectType<UuidV7SlugCodec>()(codec);
 expectType<UuidV7CodecSlug | UuidSlugError>()(codec.generateUuidV7CodecSlug());
 expectType<GeneratedUuidV7<UuidV7CodecSlug> | UuidSlugError>()(codec.generateUuidV7WithCodecSlug());
+expectType<GeneratedUuidV7<UuidV7CodecSlug, typeof UUID_TEXT_UPPERCASE> | UuidSlugError>()(
+  codec.generateUuidV7WithCodecSlug(UUID_TEXT_UPPERCASE),
+);
 expectType<UuidV7CodecSlug | UuidSlugError>()(codec.uuidToSlug(versionedBytes));
 expectType<UuidV7CodecSlug | UuidSlugError>()(codec.uuidToSlug(generateUuidV7Bytes()));
 expectType<UuidV7String | UuidSlugError>()(
@@ -257,6 +297,9 @@ expectType<number | UuidSlugError>()(
   codec.extractUuidSlugUnixMs(codec.uuidToSlug(generateUuidV7())),
 );
 expectType<UuidV7String | UuidSlugError>()(codec.slugToUuidString("AZ_xnLf5cACbG99xO9VWLw"));
+expectType<UppercaseUuidV7String | UuidSlugError>()(
+  codec.slugToUuidString("AZ_xnLf5cACbG99xO9VWLw", UUID_TEXT_UPPERCASE),
+);
 expectType<number | UuidSlugError>()(codec.extractUuidSlugUnixMs("AZ_xnLf5cACbG99xO9VWLw"));
 expectType<UuidV7Bytes | UuidSlugError>()(codec.slugToUuidBytes("AZ_xnLf5cACbG99xO9VWLw"));
 expectType<ConsumerBuffer | UuidSlugError>()(
@@ -323,6 +366,16 @@ const migrated: UuidString | UuidSlugError = migration.slugToUuidString("AAAAAAA
 const candidates: readonly UuidString[] | UuidSlugError = migration.slugToUuidStringCandidates(
   "AAAAAAABcACAAAAAAAAAAA",
   FIXED_MASK_FORMAT,
+);
+expectType<UppercaseUuidString | UuidSlugError>()(
+  migration.slugToUuidString("AAAAAAABcACAAAAAAAAAAA", UUID_TEXT_UPPERCASE),
+);
+expectType<readonly UppercaseUuidString[] | UuidSlugError>()(
+  migration.slugToUuidStringCandidates(
+    "AAAAAAABcACAAAAAAAAAAA",
+    FIXED_MASK_FORMAT,
+    UUID_TEXT_UPPERCASE,
+  ),
 );
 const plainOnlyMigration = codec.createMigrationDecoder({ acceptDirectSlug: true });
 plainOnlyMigration.slugToUuidString("AAAAAAAAcACAAAAAAAAAAA", DIRECT_SLUG_FORMAT);
