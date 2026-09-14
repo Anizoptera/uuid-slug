@@ -2,6 +2,14 @@
 
 Live work only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`.
 
+## UUID constants pending maintainer review
+
+- [ ] Review a complete registry, selected namespace constants, and no namespace exports; account for IANA registry growth and the lack of name-based UUID generation in this package.
+- [ ] Review RFC example and test-vector UUIDs against keeping examples local to documentation and conformance tests.
+- [ ] Review protocol-owned UUID registries such as Bluetooth and COM against depending on their owning packages or registries.
+- [ ] Review precomputed plain-slug forms of `NIL_UUID` and `MAX_UUID` in both alphabets against one-time conversion by callers.
+- [ ] Review UUIDv4 and UUIDv7 endpoint constants or timestamp-range builders for database bounds against generic byte and text construction.
+
 ## Competitor ideas pending maintainer review
 
 These ideas remain undecided until the maintainer accepts or rejects each consumer trade-off.
