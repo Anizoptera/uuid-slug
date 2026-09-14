@@ -12,7 +12,7 @@ import {
 } from "../src/masking-codec";
 import { deriveUuidV7Mask } from "../src/mask";
 import { unwrap } from "../dev/unwrap";
-import { MAX_MASKED_UUID_V7_UNIX_MS } from "../src/payload";
+import { MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS } from "../src/payload";
 import { uuidStringToBytes } from "../src/uuid";
 import { uuidStringToPlainSlug } from "../src/slug";
 import { uuidV7Bounds } from "../src/v7-bounds";
@@ -33,7 +33,7 @@ describe("the maskable range", () => {
   const codec = unwrap(createUuidV7MaskingCodec({ mask: handle, sentinels: [] }));
 
   it("masks the last instant before 2^42 ms and refuses the first one at or past it", () => {
-    expect(MAX_MASKED_UUID_V7_UNIX_MS).toBe(2 ** 42 - 1);
+    expect(MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS).toBe(2 ** 42 - 1);
     for (const [maskedSlugAlphabet, length] of [
       ["base64url", 22],
       ["base32hex", 27],
@@ -102,7 +102,7 @@ describe("the maskable range", () => {
       createUuidV7MaskingCodec({ mask: handle, timestampRangeStartUnixMs: start }),
     );
     const first = unwrap(uuidV7Bounds(start)).startInclusive;
-    const last = unwrap(uuidV7Bounds(start + MAX_MASKED_UUID_V7_UNIX_MS)).endInclusive;
+    const last = unwrap(uuidV7Bounds(start + MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS)).endInclusive;
     for (const uuid of [first, last]) {
       const slug = unwrap(shifted.uuidToMaskedSlug(uuid));
       expect(shifted.uuidToString(slug)).toBe(uuid);
@@ -113,7 +113,7 @@ describe("the maskable range", () => {
     });
     expect(
       shifted.uuidToMaskedSlug(
-        unwrap(uuidV7Bounds(start + MAX_MASKED_UUID_V7_UNIX_MS + 1)).startInclusive,
+        unwrap(uuidV7Bounds(start + MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS + 1)).startInclusive,
       ),
     ).toMatchObject({ code: "invalid_timestamp" });
   });
@@ -136,7 +136,7 @@ describe("the maskable range", () => {
   });
 
   it("rejects a range that cannot fit inside UUIDv7's timestamp field", () => {
-    const maxStart = 2 ** 48 - 1 - MAX_MASKED_UUID_V7_UNIX_MS;
+    const maxStart = 2 ** 48 - 1 - MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS;
     const latest = "ffffffff-ffff-7fff-bfff-ffffffffffff";
     const lastRange = unwrap(
       createUuidV7MaskingCodec({ mask: handle, timestampRangeStartUnixMs: maxStart }),

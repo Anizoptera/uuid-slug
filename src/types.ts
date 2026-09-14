@@ -319,7 +319,7 @@ export interface UuidV7SentinelConfig {
   readonly name: string;
   /**
    * UUIDv7 text in an accepted spelling, unique after normalization. Sentinels bypass
-   * masking, so their timestamps may exceed `MAX_MASKED_UUID_V7_UNIX_MS`.
+   * masking, so their timestamps may lie outside the codec's configured range.
    */
   readonly uuid: string;
 }
@@ -456,8 +456,8 @@ export interface UuidV7MaskingCodecOptions {
   readonly mask: UuidV7Mask | UuidV7MaskOptions | UuidSlugError;
   /**
    * First Unix millisecond accepted by masking. The inclusive end is this value plus
-   * `MAX_MASKED_UUID_V7_UNIX_MS`. Changing it changes masked slugs, so retain the old value with
-   * its mask in `previousMasks` while stored slugs still use it.
+   * `MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`. Changing it changes masked slugs, so retain the old
+   * value with its mask in `previousMasks` while stored slugs still use it.
    *
    * @defaultValue `0`
    */

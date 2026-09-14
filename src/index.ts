@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export { createUuidV7MaskingCodec } from "./masking-codec.ts";
-export { MAX_MASKED_UUID_V7_UNIX_MS } from "./payload.ts";
+export { MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS } from "./payload.ts";
 export { validateUuidV7Timestamp } from "./timestamp.ts";
 export {
   ABORTED,

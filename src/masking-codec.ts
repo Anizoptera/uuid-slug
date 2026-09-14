@@ -18,7 +18,7 @@ import {
 import { BASE32HEX_NAME, BASE64URL_NAME } from "./alphabet.ts";
 import { generateUuidV7Bytes as generateDefaultUuidV7Bytes } from "./v7-keyless.ts";
 import {
-  MAX_MASKED_UUID_V7_UNIX_MS,
+  MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS,
   ownedUuidV7BytesToMaskedSlug,
   decodeMaskedSlug,
 } from "./payload.ts";
@@ -149,7 +149,8 @@ function maskFromOption(
 }
 
 const MAX_UUID_V7_UNIX_MS = 2 ** 48 - 1;
-const MAX_TIMESTAMP_RANGE_START_UNIX_MS = MAX_UUID_V7_UNIX_MS - MAX_MASKED_UUID_V7_UNIX_MS;
+const MAX_TIMESTAMP_RANGE_START_UNIX_MS =
+  MAX_UUID_V7_UNIX_MS - MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS;
 
 function timestampRangeStart(value: unknown, option: string): number | UuidSlugError {
   if (value === undefined) return 0;

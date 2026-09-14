@@ -33,7 +33,7 @@ pub use masking_codec::{
     UuidV7MaskingCodec, UuidV7MaskingCodecOptions, UuidV7PreviousMask, UuidV7Sentinel,
     UuidV7TimestampWindow,
 };
-pub use payload::MAX_MASKED_UUID_V7_UNIX_MS;
+pub use payload::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS;
 pub use uuid::{
     MAX_UUID, MaskedOrSentinelUuidV7Slug, MaskedUuidV7Slug, NIL_UUID, PlainUuidSlug, Uuid,
 };

@@ -49,17 +49,17 @@ mod tests {
             );
             assert!(
                 codec
-                    .uuid_to_masked_slug(uuid_at(crate::MAX_MASKED_UUID_V7_UNIX_MS))
+                    .uuid_to_masked_slug(uuid_at(crate::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS))
                     .is_ok()
             );
             assert_eq!(
                 codec
-                    .uuid_to_masked_slug(uuid_at(crate::MAX_MASKED_UUID_V7_UNIX_MS + 1))
+                    .uuid_to_masked_slug(uuid_at(crate::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS + 1))
                     .unwrap_err()
                     .code(),
                 ErrorCode::InvalidTimestamp
             );
-            let sentinel = uuid_at(crate::MAX_MASKED_UUID_V7_UNIX_MS + 1);
+            let sentinel = uuid_at(crate::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS + 1);
             let codec = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
                 masked_slug_alphabet,
                 sentinels: vec![("future".to_owned(), sentinel)],
@@ -83,7 +83,7 @@ mod tests {
             timestamp_range_start_unix_ms: start,
             ..UuidV7MaskingCodecOptions::new(old_mask.clone())
         })?;
-        for timestamp in [start, start + crate::MAX_MASKED_UUID_V7_UNIX_MS] {
+        for timestamp in [start, start + crate::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS] {
             let uuid = uuid_at(timestamp);
             let slug = writer.uuid_to_masked_slug(uuid)?;
             assert_eq!(writer.masked_slug_to_uuid(&slug)?, uuid);
@@ -114,7 +114,7 @@ mod tests {
 
     #[test]
     fn shifted_range_must_fit_uuid_v7_timestamp() {
-        let max_start = (1_u64 << 48) - 1 - crate::MAX_MASKED_UUID_V7_UNIX_MS;
+        let max_start = (1_u64 << 48) - 1 - crate::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS;
         let latest = uuid_at((1_u64 << 48) - 1);
         let last_range = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
             timestamp_range_start_unix_ms: max_start,
@@ -365,7 +365,7 @@ impl UuidV7MaskingCodec {
     /// Validate reserved identities before a codec can emit unreadable output.
     pub fn new(options: UuidV7MaskingCodecOptions) -> Result<Self, Error> {
         const MAX_UUID_V7_UNIX_MS: u64 = (1 << 48) - 1;
-        let max_start = MAX_UUID_V7_UNIX_MS - crate::MAX_MASKED_UUID_V7_UNIX_MS;
+        let max_start = MAX_UUID_V7_UNIX_MS - crate::MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS;
         if options.timestamp_range_start_unix_ms > max_start {
             return Err(
                 Error::new(ErrorCode::InvalidTimestamp).with_message(format!(

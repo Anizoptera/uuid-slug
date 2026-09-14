@@ -19,12 +19,12 @@ per alphabet.
 
 Masking accepts UUIDv7 and preserves 116 payload bits:
 
-| bits | field                       | treatment                                      |
-| ---: | --------------------------- | ---------------------------------------------- |
-|    4 | version nibble, byte 6       | restore the constant `7` on decode              |
-|    2 | variant bits, byte 8         | restore the constant `10` on decode             |
-|    6 | top of timestamp, byte 0     | require zero; restore zero on decode            |
-|  116 | remaining payload           | 42 timestamp bits, 12 `rand_a`, 62 `rand_b`       |
+| bits | field                           | treatment                                             |
+| ---: | ------------------------------- | ----------------------------------------------------- |
+|    4 | version nibble, byte 6           | restore the constant `7` on decode                    |
+|    2 | variant bits, byte 8             | restore the constant `10` on decode                   |
+|    6 | top of timestamp offset, byte 0 | restore zero before adding the configured range start |
+|  116 | remaining payload               | 42 timestamp bits, 12 `rand_a`, 62 `rand_b`           |
 
 The masked payload is fixed: 22 base64url characters hold 132 bits, leaving `132 - 116 = 16`
 check bits. Twelve replace the constant bits inside the 128-bit block; four occupy the encoding's

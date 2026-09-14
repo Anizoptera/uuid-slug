@@ -4,7 +4,7 @@ import {
   bytesToUuidString,
   UUID_TEXT_LOWERCASE,
   UUID_TEXT_UPPERCASE,
-  MAX_MASKED_UUID_V7_UNIX_MS,
+  MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS,
   MAX_UUID,
   NIL_UUID,
   createCustomUuidV7Mask,
@@ -60,7 +60,7 @@ import {
   UUID_V7_ROLLBACK_RESET,
 } from "@anizoptera/uuid-slug";
 
-expectType<number>()(MAX_MASKED_UUID_V7_UNIX_MS);
+expectType<number>()(MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS);
 expectType<UuidString>()(NIL_UUID);
 expectType<UuidString>()(MAX_UUID);
 import type * as UuidSlugApi from "@anizoptera/uuid-slug";

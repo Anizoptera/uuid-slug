@@ -42,7 +42,7 @@ Its 16-bit check can accept an unissued UUID; look up decoded candidates in your
 configured key adds a possible candidate. Pass `uuid_v7_test_mask()` explicitly only for examples
 and wire fixtures because its seed is public. Keep your private seed and iteration count to read issued IDs.
 Masking stores a timestamp offset from `timestamp_range_start_unix_ms` and restores the UUID's
-timestamp on decode. The inclusive end is the start plus `MAX_MASKED_UUID_V7_UNIX_MS`; plain slugs
+timestamp on decode. The inclusive end is the start plus `MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`; plain slugs
 retain the full UUIDv7 timestamp range. Registered sentinels are always plain slugs and are never masked.
 
 Keep previous keys while stored identifiers still need them. The current key writes new masks;

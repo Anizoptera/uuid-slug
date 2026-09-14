@@ -3,7 +3,8 @@ use crate::{Error, ErrorCode, alphabet::UuidSlugAlphabet, mask::UuidV7Mask, uuid
 
 const MAX_MASKED_UUID_V7_HIGH_BYTE: u8 = 3;
 /// Largest timestamp offset that fits in a masked UUIDv7 payload.
-pub const MAX_MASKED_UUID_V7_UNIX_MS: u64 = ((MAX_MASKED_UUID_V7_HIGH_BYTE as u64 + 1) << 40) - 1;
+pub const MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS: u64 =
+    ((MAX_MASKED_UUID_V7_HIGH_BYTE as u64 + 1) << 40) - 1;
 
 fn unix_ms(bytes: &[u8; 16]) -> u64 {
     u64::from_be_bytes([
@@ -45,13 +46,13 @@ pub(crate) fn mask_bytes(
     let Some(timestamp_offset) = timestamp.checked_sub(timestamp_range_start_unix_ms) else {
         return Err(Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
             "Masking accepts UUIDv7 timestamps from Unix millisecond {timestamp_range_start_unix_ms} through {}; got {timestamp}.",
-            timestamp_range_start_unix_ms + MAX_MASKED_UUID_V7_UNIX_MS
+            timestamp_range_start_unix_ms + MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS
         )));
     };
-    if timestamp_offset > MAX_MASKED_UUID_V7_UNIX_MS {
+    if timestamp_offset > MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS {
         return Err(Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
             "Masking accepts UUIDv7 timestamps from Unix millisecond {timestamp_range_start_unix_ms} through {}; got {timestamp}.",
-            timestamp_range_start_unix_ms + MAX_MASKED_UUID_V7_UNIX_MS
+            timestamp_range_start_unix_ms + MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS
         )));
     }
     let check = tag(raw);

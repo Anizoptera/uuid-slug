@@ -29,13 +29,6 @@ starts at Unix millisecond zero and preserves every existing masked slug.
 - [x] Add focused falsifiers for ambiguous branches and preserve underlying causes.
 - [x] Verify source, generated declarations, packed consumers, both runtimes, and repository gates.
 
-## Masked UUIDv7 timestamp range
-
-- [x] State that masking keeps the Unix epoch and accepts timestamps from millisecond zero through
-      `MAX_MASKED_UUID_V7_UNIX_MS`; it does not shift the timestamp.
-- [x] Align TypeScript and Rust public documentation with the same inclusive range.
-- [x] Verify the lower endpoint masks and decodes without changing its timestamp.
-
 ## UUID constants pending maintainer review
 
 Maintainer ruling: UUIDv7 timestamp bounds use inclusive endpoints and expose canonical UUID text

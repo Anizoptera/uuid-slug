@@ -28,7 +28,8 @@ const UNMASKING = "unmasking";
 
 const MAX_MASKED_UUID_V7_HIGH_BYTE = 0x03;
 /** Largest timestamp offset that fits in a masked UUIDv7 payload. */
-export const MAX_MASKED_UUID_V7_UNIX_MS: number = (MAX_MASKED_UUID_V7_HIGH_BYTE + 1) * 2 ** 40 - 1;
+export const MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS: number =
+  (MAX_MASKED_UUID_V7_HIGH_BYTE + 1) * 2 ** 40 - 1;
 
 function readUnixMs(bytes: Uint8Array): number {
   return (
@@ -161,10 +162,10 @@ export function ownedUuidV7BytesToMaskedSlug(
   // decoder could ever tell which was meant. Refusing is the only recoverable answer.
   const timestamp = readUnixMs(raw);
   const timestampOffset = timestamp - timestampRangeStartUnixMs;
-  if (timestampOffset < 0 || timestampOffset > MAX_MASKED_UUID_V7_UNIX_MS)
+  if (timestampOffset < 0 || timestampOffset > MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS)
     return new UuidSlugError(
       INVALID_TIMESTAMP,
-      `Masking accepts UUIDv7 timestamps from Unix millisecond ${timestampRangeStartUnixMs} through ${timestampRangeStartUnixMs + MAX_MASKED_UUID_V7_UNIX_MS}; got ${timestamp}.`,
+      `Masking accepts UUIDv7 timestamps from Unix millisecond ${timestampRangeStartUnixMs} through ${timestampRangeStartUnixMs + MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS}; got ${timestamp}.`,
     );
   const tag = tagFor(raw, TAG_BITS);
   writeUnixMs(raw, timestampOffset);
