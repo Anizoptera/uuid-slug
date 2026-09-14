@@ -14,16 +14,16 @@ export interface UuidV7GeneratorOptions {
    *
    * @defaultValue `Date.now`
    */
-  readonly clock?: () => number;
+  readonly readUnixMs?: () => number;
 }
 
 const GENERATOR_OPTIONS = {
-  clock: true,
+  readUnixMs: true,
 } as const satisfies Record<keyof UuidV7GeneratorOptions, true>;
 
 /**
  * Create a UUIDv7 sequence with its own state, platform randomness, and optionally a caller-supplied
- * clock. Untyped calls with invalid options return `UuidSlugError`; valid TypeScript calls create
+ * readUnixMs. Untyped calls with invalid options return `UuidSlugError`; valid TypeScript calls create
  * the generator directly. Clock and entropy failures are returned by generator methods.
  *
  * @param options - Clock used by this sequence. Omit to read `Date.now`; the sequence state is
@@ -36,19 +36,19 @@ export function createUuidV7Generator(
 ): UuidV7Generator | UuidSlugError {
   if (options === null || typeof options !== "object" || Array.isArray(options))
     return new UuidSlugError(INVALID_OPTIONS, "Generator options must be an object.");
-  let clock: UuidV7GeneratorOptions["clock"];
+  let readUnixMs: UuidV7GeneratorOptions["readUnixMs"];
   try {
     const unknown = findUnknownOption(options, GENERATOR_OPTIONS);
     if (unknown !== undefined)
       return new UuidSlugError(INVALID_OPTIONS, `Unknown generator option: ${unknown}.`);
-    clock = options.clock;
+    readUnixMs = options.readUnixMs;
   } catch (cause) {
     return new UuidSlugError(INVALID_OPTIONS, "Reading generator options failed.", { cause });
   }
-  if (clock !== undefined && typeof clock !== "function")
-    return new UuidSlugError(INVALID_OPTIONS, "Generator clock must be a function.");
+  if (readUnixMs !== undefined && typeof readUnixMs !== "function")
+    return new UuidSlugError(INVALID_OPTIONS, "Generator readUnixMs must be a function.");
   return createPortableUuidV7Generator({
-    ...(clock === undefined ? {} : { clock }),
+    ...(readUnixMs === undefined ? {} : { readUnixMs }),
     fillRandom: runtime.fillRandom,
   });
 }
@@ -63,7 +63,7 @@ let generateDefaultUuidV7: UuidV7Generator["generateUuidV7"] | undefined;
  * a widened method there silently widens the package's public surface. A declared type turns that
  * mismatch into a compile error at the one site that is wrong.
  */
-/** Generate canonical UUIDv7 text for the current clock reading and platform randomness. */
+/** Generate canonical UUIDv7 text for the current readUnixMs reading and platform randomness. */
 export const generateUuidV7 = (): UuidV7String | UuidSlugError =>
   (generateDefaultUuidV7 ??= v7().generateUuidV7)();
 
@@ -96,8 +96,8 @@ export function generateUuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Arr
  *
  * @param unixMs - Whole Unix millisecond encoded into the UUID.
  */
-export const generateUuidV7At = (unixMs: number): UuidV7String | UuidSlugError =>
-  v7().generateUuidV7At(unixMs);
+export const generateUuidV7AtUnixMs = (unixMs: number): UuidV7String | UuidSlugError =>
+  v7().generateUuidV7AtUnixMs(unixMs);
 
 /**
  * Generate UUIDv7 bytes at a whole Unix millisecond in `0..2^48-1` in a new plain 16-byte
@@ -105,7 +105,7 @@ export const generateUuidV7At = (unixMs: number): UuidV7String | UuidSlugError =
  *
  * @param unixMs - Whole Unix millisecond encoded into the UUID.
  */
-export function generateUuidV7BytesAt(unixMs: number): UuidV7Bytes | UuidSlugError;
+export function generateUuidV7BytesAtUnixMs(unixMs: number): UuidV7Bytes | UuidSlugError;
 /**
  * Write an explicit-time UUIDv7 into caller-owned storage only after successful generation.
  *
@@ -114,17 +114,17 @@ export function generateUuidV7BytesAt(unixMs: number): UuidV7Bytes | UuidSlugErr
  * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
  * outside the written range stay unchanged.
  */
-export function generateUuidV7BytesAt<Output extends Uint8Array>(
+export function generateUuidV7BytesAtUnixMs<Output extends Uint8Array>(
   unixMs: number,
   output: Output,
   outputOffset?: number,
 ): Output | UuidSlugError;
-export function generateUuidV7BytesAt(
+export function generateUuidV7BytesAtUnixMs(
   timestamp: number,
   out?: Uint8Array,
   offset?: number,
 ): Uint8Array | UuidSlugError {
-  const generate = v7().generateUuidV7BytesAt as (
+  const generate = v7().generateUuidV7BytesAtUnixMs as (
     timestamp: number,
     out?: Uint8Array,
     offset?: number,

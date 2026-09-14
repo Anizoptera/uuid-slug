@@ -2,9 +2,9 @@
 
 import type { UuidSlugError } from "./errors.ts";
 import { BASE64URL_NAME } from "./alphabet.ts";
-import type { UuidV4Slug } from "./types.ts";
+import type { DirectUuidV4Slug } from "./types.ts";
 import { generateUuidV4Bytes } from "./v4.ts";
-import { bytesToUuidSlug } from "./slug.ts";
+import { uuidBytesToDirectSlug } from "./slug.ts";
 import type { SlugAlphabet } from "./slug.ts";
 
 /**
@@ -13,10 +13,10 @@ import type { SlugAlphabet } from "./slug.ts";
  *
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
-export function generateUuidV4Slug(
+export function generateDirectUuidV4Slug(
   alphabet: SlugAlphabet = BASE64URL_NAME,
-): UuidV4Slug | UuidSlugError {
+): DirectUuidV4Slug | UuidSlugError {
   const bytes = generateUuidV4Bytes();
   if (bytes instanceof Error) return bytes;
-  return bytesToUuidSlug(bytes, alphabet) as UuidV4Slug | UuidSlugError;
+  return uuidBytesToDirectSlug(bytes, alphabet) as DirectUuidV4Slug | UuidSlugError;
 }

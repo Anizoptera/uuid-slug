@@ -294,7 +294,7 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
       root,
       inputs.candidate.npm,
       work,
-      "current-mask",
+      "seeded-mask",
       inputs.name,
       inputs.version,
     );
@@ -302,7 +302,7 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
     const current: Sizes = {
       npm: (await stat(npm)).size,
       crate: (await stat(crate)).size,
-      ...(await measureLinkedSizes(root, crateRoot, work, "current-mask")),
+      ...(await measureLinkedSizes(root, crateRoot, work, "seeded-mask")),
     };
     const sections = await Promise.all(
       inputs.comparisons.map(async (comparison) => {

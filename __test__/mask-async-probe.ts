@@ -4,8 +4,8 @@
 import { strict as assert } from "node:assert";
 import { setImmediate as nextTask } from "node:timers/promises";
 import {
-  createUuidV7Mask,
-  createUuidV7MaskAsync,
+  deriveUuidV7Mask,
+  deriveUuidV7MaskAsync,
   createUuidV7SlugCodec,
   UuidSlugError,
 } from "../src/index";
@@ -44,9 +44,9 @@ export const asyncMaskCases = [
         seeds.flatMap((seed) =>
           [1, 2, 17].map(async (keyDerivationIterations) => {
             const bytes = typeof seed === "string" ? new TextEncoder().encode(seed) : seed;
-            const expected = encoded(createUuidV7Mask({ seed: bytes, keyDerivationIterations }));
+            const expected = encoded(deriveUuidV7Mask({ seed: bytes, keyDerivationIterations }));
             assert.equal(
-              encoded(await createUuidV7MaskAsync({ seed, keyDerivationIterations })),
+              encoded(await deriveUuidV7MaskAsync({ seed, keyDerivationIterations })),
               expected,
             );
           }),
@@ -58,15 +58,15 @@ export const asyncMaskCases = [
     name: "async construction captures options and byte contents before suspension",
     async run(this: void) {
       const seed = new Uint8Array(32).fill(91);
-      const options = { seed, label: "captured", keyDerivationIterations: 65536 };
-      const expected = encoded(createUuidV7Mask(options));
-      const pending = createUuidV7MaskAsync(options);
+      const options = { seed, diagnosticLabel: "captured", keyDerivationIterations: 65536 };
+      const expected = encoded(deriveUuidV7Mask(options));
+      const pending = deriveUuidV7MaskAsync(options);
       seed.fill(0);
-      options.label = "changed";
+      options.diagnosticLabel = "changed";
       options.keyDerivationIterations = 1;
       const result = await pending;
       assert.ok(!(result instanceof Error));
-      assert.equal(result.label, "captured");
+      assert.equal(result.diagnosticLabel, "captured");
       assert.equal(encoded(result), expected);
     },
   },
@@ -76,7 +76,7 @@ export const asyncMaskCases = [
       const reason = { cancelledBy: "caller" };
       const signal = AbortSignal.abort(reason);
       cancelled(
-        await createUuidV7MaskAsync({
+        await deriveUuidV7MaskAsync({
           signal,
           get seed(): string {
             throw new Error("seed must not be read");
@@ -92,12 +92,12 @@ export const asyncMaskCases = [
       const controller = new AbortController();
       const reason = new Error("cancel one construction");
       const trigger = nextTask().then(() => controller.abort(reason));
-      const pending = createUuidV7MaskAsync({
+      const pending = deriveUuidV7MaskAsync({
         seed: "an-async-mask-seed",
         keyDerivationIterations: 1 << 24,
         signal: controller.signal,
       });
-      const sibling = createUuidV7MaskAsync({
+      const sibling = deriveUuidV7MaskAsync({
         seed: "sibling-mask-seed",
         keyDerivationIterations: 8192,
       });
@@ -105,7 +105,7 @@ export const asyncMaskCases = [
       cancelled(result, reason);
       assert.equal(
         encoded(independent),
-        encoded(createUuidV7Mask({ seed: "sibling-mask-seed", keyDerivationIterations: 8192 })),
+        encoded(deriveUuidV7Mask({ seed: "sibling-mask-seed", keyDerivationIterations: 8192 })),
       );
       await trigger;
     },
@@ -122,7 +122,7 @@ export const asyncMaskCases = [
       const controller = new AbortController();
       const trigger = nextTask().then(() => controller.abort("slice cancelled"));
       try {
-        const result = await createUuidV7MaskAsync({
+        const result = await deriveUuidV7MaskAsync({
           seed: new Uint8Array(4096).fill(29),
           signal: controller.signal,
         });
@@ -139,7 +139,7 @@ export const asyncMaskCases = [
     async run(this: void) {
       await Promise.all(
         [0, -1, 0.5, NaN, Infinity, (1 << 24) + 1].map(async (keyDerivationIterations) => {
-          const result = await createUuidV7MaskAsync({
+          const result = await deriveUuidV7MaskAsync({
             seed: "an-async-mask-seed",
             keyDerivationIterations,
           });
@@ -147,11 +147,11 @@ export const asyncMaskCases = [
           assert.equal(result.code, "invalid_mask");
         }),
       );
-      const short = await createUuidV7MaskAsync({ seed: "short" });
+      const short = await deriveUuidV7MaskAsync({ seed: "short" });
       assert.ok(short instanceof UuidSlugError);
       assert.equal(short.code, "invalid_mask");
       const cause = new Error("seed unavailable");
-      const result = await createUuidV7MaskAsync({
+      const result = await deriveUuidV7MaskAsync({
         get seed(): string {
           throw cause;
         },

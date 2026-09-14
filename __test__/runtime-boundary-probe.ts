@@ -9,29 +9,29 @@ import {
   createUuidV7Generator as createSecureUuidV7Generator,
   createUuidV7SlugCodec,
   createCustomUuidV7Mask,
-  extractUuidV7Timestamp,
+  extractUuidV7UnixMs,
   bytesToUuidString,
-  bytesToUuidSlug,
+  uuidBytesToDirectSlug,
   isUuidV4String,
   isUuidV7Bytes,
-  isUuidV7Slug,
+  isDirectUuidV7Slug,
   isUuidV7String,
   isUuidSlugError,
   uuidStringToBytes,
-  uuidSlugToBytes,
-  uuidSlugToString,
+  slugToUuidBytes,
+  slugToUuidString,
   UuidSlugError,
-  uuidStringToSlug,
+  uuidStringToDirectSlug,
   generateUuidV4,
   generateUuidV4Bytes,
-  generateUuidV4Slug,
+  generateDirectUuidV4Slug,
   generateUuidV7,
-  generateUuidV7At,
+  generateUuidV7AtUnixMs,
   validateUuidV7Timestamp,
-  validateUuidV7SlugTimestamp,
+  validateDirectUuidV7SlugUnixMs,
   generateUuidV7Bytes,
-  generateUuidV7BytesAt,
-  generateUuidV7Slug,
+  generateUuidV7BytesAtUnixMs,
+  generateDirectUuidV7Slug,
 } from "../src/index";
 import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
 import { createUuidV7SlugCodecWithGenerator } from "../src/codec";
@@ -42,7 +42,7 @@ import { NIL_TEST_SENTINEL } from "./sentinel-fixtures";
 const timestamp = 1_234_567_890_000;
 const uuid = "011f71fb-0450-7121-8848-484a12121212";
 const makeGenerator = () =>
-  createUuidV7Generator({ clock: () => timestamp, fillRandom: (bytes) => bytes.fill(0x12) });
+  createUuidV7Generator({ readUnixMs: () => timestamp, fillRandom: (bytes) => bytes.fill(0x12) });
 const hasCause = (value: unknown, target: unknown): boolean =>
   value === target ||
   (value instanceof AggregateError && value.errors.some((cause) => hasCause(cause, target))) ||
@@ -59,7 +59,7 @@ export const runtimeBoundaryCases = [
         originalFill(bytes);
       };
       const options = {
-        clock: () => timestamp,
+        readUnixMs: () => timestamp,
         get fillRandom(): never {
           throw new Error("untrusted entropy was read");
         },
@@ -83,7 +83,7 @@ export const runtimeBoundaryCases = [
         new UuidSlugError("rng_unavailable", "platform entropy unavailable", { cause });
       const out = new Uint8Array(24).fill(0xa5);
       try {
-        const generator = createSecureUuidV7Generator({ clock: () => timestamp });
+        const generator = createSecureUuidV7Generator({ readUnixMs: () => timestamp });
         const failure = generator.generateUuidV7Bytes(out, 4);
         assert.ok(failure instanceof UuidSlugError);
         assert.equal(failure.code, "rng_unavailable");
@@ -127,28 +127,28 @@ export const runtimeBoundaryCases = [
         runtime.uuidV7 = native("v7", uuid);
         assert.equal(generateUuidV4(), "123e4567-e89b-42d3-a456-426614174000");
         assert.equal(isUuidV4String(bytesToUuidString(unwrap(generateUuidV4Bytes()))), true);
-        assert.equal(typeof generateUuidV4Slug(), "string");
+        assert.equal(typeof generateDirectUuidV4Slug(), "string");
         assert.equal(generateUuidV7(), uuid);
-        assert.equal(isUuidV7String(generateUuidV7At(timestamp)), true);
+        assert.equal(isUuidV7String(generateUuidV7AtUnixMs(timestamp)), true);
         assert.equal(isUuidV7Bytes(generateUuidV7Bytes()), true);
-        assert.equal(isUuidV7Bytes(generateUuidV7BytesAt(timestamp)), true);
+        assert.equal(isUuidV7Bytes(generateUuidV7BytesAtUnixMs(timestamp)), true);
         const currentOut = new Uint8Array(24).fill(0x55);
         const explicitOut = new Uint8Array(24).fill(0x55);
         assert.equal(generateUuidV7Bytes(currentOut, 4), currentOut);
-        assert.equal(generateUuidV7BytesAt(timestamp, explicitOut, 4), explicitOut);
-        assert.equal(isUuidV7Slug(generateUuidV7Slug()), true);
-        assert.equal(unwrap(generateUuidV7Slug("base32hex")).length, 26);
+        assert.equal(generateUuidV7BytesAtUnixMs(timestamp, explicitOut, 4), explicitOut);
+        assert.equal(isDirectUuidV7Slug(generateDirectUuidV7Slug()), true);
+        assert.equal(unwrap(generateDirectUuidV7Slug("base32hex")).length, 26);
         assert.deepEqual(nativeCalls, expectedNativeCalls);
 
         delete runtime.uuidV4;
         delete runtime.uuidV7;
         assert.equal(isUuidV4String(generateUuidV4()), true);
         assert.equal(isUuidV7String(generateUuidV7()), true);
-        assert.equal(isUuidV7String(generateUuidV7At(timestamp)), true);
+        assert.equal(isUuidV7String(generateUuidV7AtUnixMs(timestamp)), true);
         assert.equal(isUuidV7Bytes(generateUuidV7Bytes()), true);
-        assert.equal(isUuidV7Bytes(generateUuidV7BytesAt(timestamp)), true);
-        assert.equal(isUuidV7Slug(generateUuidV7Slug()), true);
-        assert.equal(unwrap(generateUuidV7Slug("base32hex")).length, 26);
+        assert.equal(isUuidV7Bytes(generateUuidV7BytesAtUnixMs(timestamp)), true);
+        assert.equal(isDirectUuidV7Slug(generateDirectUuidV7Slug()), true);
+        assert.equal(unwrap(generateDirectUuidV7Slug("base32hex")).length, 26);
         assert.deepEqual(nativeCalls, expectedNativeCalls);
 
         const throwNative = (): never => {
@@ -159,7 +159,7 @@ export const runtimeBoundaryCases = [
         failPortable = true;
         assertDualFailure(generateUuidV4());
         assertPortableFailure(generateUuidV4Bytes());
-        assertPortableFailure(generateUuidV4Slug());
+        assertPortableFailure(generateDirectUuidV4Slug());
         const dualGenerator = createRuntimeGenerator({
           fillRandom() {
             throw portableCause;
@@ -210,12 +210,12 @@ export const runtimeBoundaryCases = [
         uuidV7: () => "not-a-uuid",
       });
       assert.equal(isUuidV7String(generator.generateUuidV7()), true);
-      assert.equal(isUuidV7String(generator.generateUuidV7At(timestamp)), true);
+      assert.equal(isUuidV7String(generator.generateUuidV7AtUnixMs(timestamp)), true);
       assert.equal(isUuidV7Bytes(generator.generateUuidV7Bytes()), true);
-      assert.equal(isUuidV7Bytes(generator.generateUuidV7BytesAt(timestamp)), true);
+      assert.equal(isUuidV7Bytes(generator.generateUuidV7BytesAtUnixMs(timestamp)), true);
       for (const generate of [
         (out: Uint8Array) => generator.generateUuidV7Bytes(out, 4),
-        (out: Uint8Array) => generator.generateUuidV7BytesAt(timestamp, out, 4),
+        (out: Uint8Array) => generator.generateUuidV7BytesAtUnixMs(timestamp, out, 4),
       ]) {
         const out = new Uint8Array(24).fill(0x55);
         assert.equal(generate(out), out);
@@ -239,14 +239,14 @@ export const runtimeBoundaryCases = [
         input: Uint8Array,
       ) => Uint8Array;
       const handle = createCustomUuidV7Mask({
-        label: "cross-realm-output",
+        diagnosticLabel: "cross-realm-output",
         mask: copy,
         unmask: copy,
       });
       assert.ok(!(handle instanceof Error));
       const codec = unwrap(createUuidV7SlugCodec({ mask: handle }));
       const slug = unwrap(codec.uuidToSlug(uuid));
-      assert.equal(codec.uuidSlugToString(slug), uuid);
+      assert.equal(codec.slugToUuidString(slug), uuid);
     },
   },
   {
@@ -256,14 +256,14 @@ export const runtimeBoundaryCases = [
       const generator = makeGenerator();
       const calls = [
         (value: unknown) => Reflect.apply(bytesToUuidString, undefined, [value]),
-        (value: unknown) => Reflect.apply(bytesToUuidSlug, undefined, [value]),
-        (value: unknown) => Reflect.apply(extractUuidV7Timestamp, undefined, [value]),
+        (value: unknown) => Reflect.apply(uuidBytesToDirectSlug, undefined, [value]),
+        (value: unknown) => Reflect.apply(extractUuidV7UnixMs, undefined, [value]),
         (value: unknown) => Reflect.apply(uuidStringToBytes, undefined, [uuid, value]),
-        (value: unknown) => Reflect.apply(uuidSlugToBytes, undefined, [slug, value]),
+        (value: unknown) => Reflect.apply(slugToUuidBytes, undefined, [slug, value]),
         (value: unknown) => Reflect.apply(generateUuidV4Bytes, undefined, [value]),
         (value: unknown) => Reflect.apply(generator.generateUuidV7Bytes, undefined, [value]),
         (value: unknown) =>
-          Reflect.apply(generator.generateUuidV7BytesAt, undefined, [timestamp, value]),
+          Reflect.apply(generator.generateUuidV7BytesAtUnixMs, undefined, [timestamp, value]),
       ];
       for (const value of [
         Array.from({ length: 16 }, () => 0),
@@ -310,16 +310,16 @@ export const runtimeBoundaryCases = [
       assert.equal(isUuidSlugError(foreignError), true);
       const generator: UuidV7Generator = {
         generateUuidV7: () => foreignError,
-        generateUuidV7At: () => foreignError,
+        generateUuidV7AtUnixMs: () => foreignError,
         generateUuidV7Bytes: () => foreignError,
-        generateUuidV7BytesAt: () => foreignError,
+        generateUuidV7BytesAtUnixMs: () => foreignError,
       };
       const codec = createUuidV7SlugCodecWithGenerator(
         { mask: { seed: "cross-realm-generator" } },
         generator.generateUuidV7Bytes,
       );
       assert.ok(!(codec instanceof Error));
-      assert.equal(codec.generateUuidSlug(), foreignError);
+      assert.equal(codec.generateUuidV7CodecSlug(), foreignError);
     },
   },
   {
@@ -329,14 +329,14 @@ export const runtimeBoundaryCases = [
         let entropyBytes = 0;
         const generate = (input?: Uint8Array) => {
           const generator = createUuidV7Generator({
-            clock: () => 0,
+            readUnixMs: () => 0,
             fillRandom: (bytes) => {
               entropyBytes = bytes.length;
               if (input) bytes.set(input);
             },
           });
           const bytes = explicit
-            ? generator.generateUuidV7BytesAt(0)
+            ? generator.generateUuidV7BytesAtUnixMs(0)
             : generator.generateUuidV7Bytes();
           assert.ok(bytes instanceof Uint8Array);
           return bytes.reduce((bits, byte) => (bits << 8n) | BigInt(byte), 0n);
@@ -413,7 +413,7 @@ export const runtimeBoundaryCases = [
     name: `uses the supplied generator for ${slugAlphabet}`,
     run(this: void) {
       const generated = unwrap(makeGenerator().generateUuidV7());
-      assert.equal(uuidSlugToString(unwrap(uuidStringToSlug(generated, slugAlphabet))), uuid);
+      assert.equal(slugToUuidString(unwrap(uuidStringToDirectSlug(generated, slugAlphabet))), uuid);
     },
   })),
   {
@@ -423,7 +423,7 @@ export const runtimeBoundaryCases = [
         out?: Uint8Array,
         offset?: number,
       ) => Uint8Array | UuidSlugError;
-      const callUuidV7BytesAt = generateUuidV7BytesAt as (
+      const callUuidV7BytesAt = generateUuidV7BytesAtUnixMs as (
         timestamp: number,
         out?: Uint8Array,
         offset?: number,
@@ -440,13 +440,13 @@ export const runtimeBoundaryCases = [
     },
   },
   {
-    name: "never treats an explicit invalid instant as a clock request",
+    name: "never treats an explicit invalid instant as a readUnixMs request",
     run(this: void) {
       const generator = makeGenerator();
       for (const instant of [undefined, NaN, Infinity, -1, 0.5]) {
         for (const value of [
-          generator.generateUuidV7At(instant as number),
-          generator.generateUuidV7BytesAt(instant as number),
+          generator.generateUuidV7AtUnixMs(instant as number),
+          generator.generateUuidV7BytesAtUnixMs(instant as number),
         ]) {
           assert.ok(value instanceof UuidSlugError);
           assert.equal(value.code, "invalid_timestamp");
@@ -459,7 +459,7 @@ export const runtimeBoundaryCases = [
     run(this: void) {
       const cause = new Error("entropy offline");
       const generator = createUuidV7Generator({
-        clock: () => timestamp,
+        readUnixMs: () => timestamp,
         fillRandom(bytes) {
           bytes.fill(0xaa, 0, 8);
           throw cause;
@@ -468,8 +468,8 @@ export const runtimeBoundaryCases = [
       const out = new Uint8Array(32).fill(0x55);
       for (const value of [
         generator.generateUuidV7Bytes(out, 4),
-        generator.generateUuidV7BytesAt(timestamp, out, 4),
-        generator.generateUuidV7At(timestamp),
+        generator.generateUuidV7BytesAtUnixMs(timestamp, out, 4),
+        generator.generateUuidV7AtUnixMs(timestamp),
         generator.generateUuidV7(),
       ]) {
         assert.ok(value instanceof UuidSlugError);
@@ -480,11 +480,11 @@ export const runtimeBoundaryCases = [
     },
   },
   {
-    name: "preserves a throwing generator clock as invalid_timestamp",
+    name: "preserves a throwing generator readUnixMs as invalid_timestamp",
     run(this: void) {
-      const cause = new Error("clock offline");
+      const cause = new Error("readUnixMs offline");
       const generator = createUuidV7Generator({
-        clock() {
+        readUnixMs() {
           throw cause;
         },
         fillRandom: (bytes) => bytes.fill(0),
@@ -496,11 +496,11 @@ export const runtimeBoundaryCases = [
     },
   },
   {
-    name: "rejects non-number clock results at the JavaScript boundary",
+    name: "rejects non-number readUnixMs results at the JavaScript boundary",
     run(this: void) {
-      for (const value of ["123", 1n, Symbol("clock")]) {
+      for (const value of ["123", 1n, Symbol("readUnixMs")]) {
         const generator = Reflect.apply(createUuidV7Generator, undefined, [
-          { clock: () => value, fillRandom: (bytes: Uint8Array) => bytes.fill(0) },
+          { readUnixMs: () => value, fillRandom: (bytes: Uint8Array) => bytes.fill(0) },
         ]);
         const result = generator.generateUuidV7Bytes();
         assert.ok(result instanceof UuidSlugError);
@@ -511,13 +511,13 @@ export const runtimeBoundaryCases = [
   {
     name: "returns errors for malformed public generator configuration",
     run(this: void) {
-      for (const options of [null, 1, "generator", [], { clock: 1 }, { clok: Date.now }]) {
+      for (const options of [null, 1, "generator", [], { readUnixMs: 1 }, { clok: Date.now }]) {
         const result = Reflect.apply(createSecureUuidV7Generator, undefined, [options]);
         assert.ok(result instanceof UuidSlugError);
         assert.equal(result.code, "invalid_options");
       }
-      for (const property of ["clock"] as const) {
-        const cause = new Error("clock getter failed");
+      for (const property of ["readUnixMs"] as const) {
+        const cause = new Error("readUnixMs getter failed");
         const options = Object.defineProperty({}, property, {
           get() {
             throw cause;
@@ -581,7 +581,7 @@ export const runtimeBoundaryCases = [
         validateUuidV7Timestamp("1f04e7f5-c0c6-4044-b5a3-6278bb77ffb4", {
           maxTimestampDeltaMs: 0,
         }),
-        validateUuidV7SlugTimestamp("HwTn9cDGQES1o2J4u3f_tA", {
+        validateDirectUuidV7SlugUnixMs("HwTn9cDGQES1o2J4u3f_tA", {
           maxTimestampDeltaMs: 0,
         }),
       ]) {
@@ -659,7 +659,7 @@ export const runtimeBoundaryCases = [
       const xor = Uint8Array.from(Buffer.from("c99ff19b58b890005b1bdf713bd55607", "hex"));
       const mask = unwrap(
         createCustomUuidV7Mask({
-          label: "collision",
+          diagnosticLabel: "collision",
           mask(input) {
             return input.map((byte, i) => byte ^ (xor[i] as number));
           },
@@ -671,7 +671,7 @@ export const runtimeBoundaryCases = [
       const codec = unwrap(
         createUuidV7SlugCodecWithGenerator({ mask, sentinels: NIL_TEST_SENTINEL }, () => bytes),
       );
-      const failure = codec.generateUuidSlug();
+      const failure = codec.generateUuidV7CodecSlug();
       assert.ok(failure instanceof UuidSlugError);
       assert.equal(failure.code, "invalid_mask");
     },

@@ -14,7 +14,7 @@ const ids = Array.from(
   { length: 256 },
   (_, i) => `0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f${i.toString(16).padStart(4, "0")}`,
 );
-const slugs = ids.map((id) => unwrap(api.uuidStringToSlug(id)));
+const slugs = ids.map((id) => unwrap(api.uuidStringToDirectSlug(id)));
 const codec = unwrap(api.createUuidV7SlugCodec({ mask: { seed: "profile-current-seed" } }));
 const older = unwrap(api.createUuidV7SlugCodec({ mask: { seed: "profile-previous-seed" } }));
 const rotated = unwrap(
@@ -26,7 +26,7 @@ const rotated = unwrap(
 const masked = ids.map((id) => unwrap(codec.uuidToSlug(id)));
 const old = ids
   .map((id) => unwrap(older.uuidToSlug(id)))
-  .filter((slug) => codec.uuidSlugToString(slug) instanceof Error);
+  .filter((slug) => codec.slugToUuidString(slug) instanceof Error);
 assert.ok(old.length > 0);
 const timestampWindow = {
   maxTimestampDeltaMs: 86_400_000,
@@ -44,26 +44,26 @@ const pairs: { name: string; subject: Operation; reference: Operation; limit: nu
   },
   {
     name: "slug guard / decoding",
-    subject: (i) => api.isUuidV7Slug(slugs[i & 255]),
-    reference: (i) => api.uuidSlugToBytes(slugs[i & 255] as string),
+    subject: (i) => api.isDirectUuidV7Slug(slugs[i & 255]),
+    reference: (i) => api.slugToUuidBytes(slugs[i & 255] as string),
     limit: 1.5,
   },
   {
     name: "plain timestamp validation / decoding",
-    subject: (i) => api.validateUuidV7SlugTimestamp(slugs[i & 255] as string, timestampWindow),
-    reference: (i) => api.uuidSlugToBytes(slugs[i & 255] as string),
+    subject: (i) => api.validateDirectUuidV7SlugUnixMs(slugs[i & 255] as string, timestampWindow),
+    reference: (i) => api.slugToUuidBytes(slugs[i & 255] as string),
     limit: 3,
   },
   {
     name: "masked timestamp validation / decoding",
-    subject: (i) => codec.validateUuidSlugTimestamp(masked[i & 255] as string, timestampWindow),
-    reference: (i) => codec.uuidSlugToString(masked[i & 255] as string),
+    subject: (i) => codec.validateUuidSlugUnixMs(masked[i & 255] as string, timestampWindow),
+    reference: (i) => codec.slugToUuidString(masked[i & 255] as string),
     limit: 1.5,
   },
   {
     name: "previous key / current key",
-    subject: (i) => rotated.uuidSlugToString(old[i % old.length] as string),
-    reference: (i) => rotated.uuidSlugToString(masked[i & 255] as string),
+    subject: (i) => rotated.slugToUuidString(old[i % old.length] as string),
+    reference: (i) => rotated.slugToUuidString(masked[i & 255] as string),
     limit: 3,
   },
 ];

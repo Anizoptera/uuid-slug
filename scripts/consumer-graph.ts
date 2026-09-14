@@ -39,25 +39,25 @@ const jobs = [
   },
   {
     name: "slug",
-    imports: "uuidStringToSlug",
+    imports: "uuidStringToDirectSlug",
     probe:
-      'if (uuidStringToSlug("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5") !== "sbpZnUhES7Ch7qwK64h19Q") throw new Error("uuidStringToSlug failed");',
+      'if (uuidStringToDirectSlug("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5") !== "sbpZnUhES7Ch7qwK64h19Q") throw new Error("uuidStringToDirectSlug failed");',
     masked: false,
     versions: [],
   },
   {
     name: "slug-v4",
-    imports: "generateUuidV4Slug",
+    imports: "generateDirectUuidV4Slug",
     probe:
-      'const value = generateUuidV4Slug(); if (value instanceof Error || value.length !== 22) throw new Error("generateUuidV4Slug failed");',
+      'const value = generateDirectUuidV4Slug(); if (value instanceof Error || value.length !== 22) throw new Error("generateDirectUuidV4Slug failed");',
     masked: false,
     versions: [4],
   },
   {
     name: "slug-v7",
-    imports: "generateUuidV7Slug",
+    imports: "generateDirectUuidV7Slug",
     probe:
-      'const value = generateUuidV7Slug(); if (value instanceof Error || value.length !== 22) throw new Error("generateUuidV7Slug failed");',
+      'const value = generateDirectUuidV7Slug(); if (value instanceof Error || value.length !== 22) throw new Error("generateDirectUuidV7Slug failed");',
     masked: false,
     versions: [7],
   },

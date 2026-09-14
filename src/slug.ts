@@ -28,16 +28,16 @@ import {
 import type {
   DirectUuidSlugInput,
   PreserveUuidVersion,
-  UuidSlug,
+  DirectUuidSlug,
   UuidBytes,
   UuidV4Bytes,
   UuidV7Bytes,
   UuidString,
   UuidStringInput,
-  UuidV4Slug,
+  DirectUuidV4Slug,
   UuidV4String,
-  UuidV7Slug,
-  UuidV7SlugInput,
+  DirectUuidV7Slug,
+  DirectUuidV7SlugInput,
   UuidV7String,
   UuidV7BytesInput,
   UuidV7TimestampInput,
@@ -59,7 +59,7 @@ import {
 export { isUuidSlugError } from "./errors.ts";
 export { UuidSlugError };
 export type { UuidSlugErrorCode } from "./errors.ts";
-export type { UuidSlug, UuidV4Slug, UuidV7Slug } from "./types.ts";
+export type { DirectUuidSlug, DirectUuidV4Slug, DirectUuidV7Slug } from "./types.ts";
 
 /*
  * The alphabets a direct slug may be written in. base64url is the default and the shortest;
@@ -122,7 +122,7 @@ const SLUG_LENGTHS = /*#__PURE__*/ Object.values(SLUG_ALPHABET_CODECS)
 
 /** Encode validated canonical UUID text directly into its fixed 22-character base64url shape. */
 /*#__NO_SIDE_EFFECTS__*/
-function uuidStringToBase64url(uuid: string): UuidSlug {
+function uuidStringToBase64url(uuid: string): DirectUuidSlug {
   let encoded = "";
   for (let byteIndex = 0; byteIndex < 15; byteIndex += 3) {
     const block =
@@ -136,12 +136,14 @@ function uuidStringToBase64url(uuid: string): UuidSlug {
       (BASE64URL.chars[block & 63] as string);
   }
   const last = uuidByteAtUnchecked(uuid, 15);
-  return (encoded + BASE64URL.chars[last >>> 2] + BASE64URL.chars[(last & 3) << 4]) as UuidSlug;
+  return (encoded +
+    BASE64URL.chars[last >>> 2] +
+    BASE64URL.chars[(last & 3) << 4]) as DirectUuidSlug;
 }
 
 /** Encode validated canonical UUID text directly into its fixed 26-character base32hex shape. */
 /*#__NO_SIDE_EFFECTS__*/
-function uuidStringToBase32hex(uuid: string): UuidSlug {
+function uuidStringToBase32hex(uuid: string): DirectUuidSlug {
   let encoded = "";
   const chars = BASE32HEX.chars;
   for (let byteIndex = 0; byteIndex < 15; byteIndex += 5) {
@@ -161,7 +163,7 @@ function uuidStringToBase32hex(uuid: string): UuidSlug {
       (chars[e & 31] as string);
   }
   const last = uuidByteAtUnchecked(uuid, 15);
-  return (encoded + chars[last >>> 3] + chars[(last & 7) << 2]) as UuidSlug;
+  return (encoded + chars[last >>> 3] + chars[(last & 7) << 2]) as DirectUuidSlug;
 }
 
 /**
@@ -171,10 +173,10 @@ function uuidStringToBase32hex(uuid: string): UuidSlug {
  * @param bytes - Exactly 16 UUID bytes.
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
-export function bytesToUuidSlug(
+export function uuidBytesToDirectSlug(
   bytes: Uint8Array | UuidSlugError,
   alphabet?: SlugAlphabet,
-): UuidSlug | UuidSlugError;
+): DirectUuidSlug | UuidSlugError;
 /**
  * Encode 16 bytes within a larger array as a direct slug. A preceding `UuidSlugError` is returned
  * unchanged.
@@ -183,17 +185,17 @@ export function bytesToUuidSlug(
  * @param byteOffset - Zero-based index where the UUID starts.
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
-export function bytesToUuidSlug(
+export function uuidBytesToDirectSlug(
   bytes: Uint8Array | UuidSlugError,
   byteOffset: number,
   alphabet?: SlugAlphabet,
-): UuidSlug | UuidSlugError;
+): DirectUuidSlug | UuidSlugError;
 /*#__NO_SIDE_EFFECTS__*/
-export function bytesToUuidSlug(
+export function uuidBytesToDirectSlug(
   bytes: Uint8Array | UuidSlugError,
   offsetOrAlphabet: number | SlugAlphabet = 0,
   alphabet?: SlugAlphabet,
-): UuidSlug | UuidSlugError {
+): DirectUuidSlug | UuidSlugError {
   const alphabetIsSecond = typeof offsetOrAlphabet !== "number";
   const offset = alphabetIsSecond ? 0 : offsetOrAlphabet;
   if (!isUint8Array(bytes)) return invalidByteInput(bytes);
@@ -213,7 +215,7 @@ export function bytesToUuidSlug(
   return encode(
     bytes.length === 16 ? bytes : bytes.subarray(offset, offset + 16),
     alpha,
-  ) as UuidSlug;
+  ) as DirectUuidSlug;
 }
 
 /**
@@ -223,7 +225,7 @@ export function bytesToUuidSlug(
  *
  * @param slug - Canonical 22-character base64url or 26-character base32hex direct slug.
  */
-export function uuidSlugToBytes<Input extends string | UuidSlugError>(
+export function slugToUuidBytes<Input extends string | UuidSlugError>(
   slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
 /**
@@ -235,12 +237,12 @@ export function uuidSlugToBytes<Input extends string | UuidSlugError>(
  * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
  * outside the written range stay unchanged.
  */
-export function uuidSlugToBytes<Input extends string | UuidSlugError, Output extends Uint8Array>(
+export function slugToUuidBytes<Input extends string | UuidSlugError, Output extends Uint8Array>(
   slug: DirectUuidSlugInput<Input>,
   output: Output,
   outputOffset?: number,
 ): Output | UuidSlugError;
-export function uuidSlugToBytes(
+export function slugToUuidBytes(
   slug: string | UuidSlugError,
   out?: Uint8Array,
   offset = 0,
@@ -277,22 +279,22 @@ export function uuidSlugToBytes(
  * @param uuid - UUID text with uppercase or lowercase hexadecimal digits.
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
-export function uuidStringToSlug<Input extends string | UuidSlugError>(
+export function uuidStringToDirectSlug<Input extends string | UuidSlugError>(
   uuid: UuidStringInput<Input>,
   alphabet?: SlugAlphabet,
-): PreserveUuidVersion<Input, UuidSlug, UuidV4Slug, UuidV7Slug> | UuidSlugError;
+): PreserveUuidVersion<Input, DirectUuidSlug, DirectUuidV4Slug, DirectUuidV7Slug> | UuidSlugError;
 /*#__NO_SIDE_EFFECTS__*/
-export function uuidStringToSlug(
+export function uuidStringToDirectSlug(
   uuid: string | UuidSlugError,
   alphabet: SlugAlphabet = BASE64URL_NAME,
-): UuidSlug | UuidSlugError {
+): DirectUuidSlug | UuidSlugError {
   if (typeof uuid !== "string") return invalidUuidStringInput(uuid);
   if (!hasNativeBase64urlEncoder && alphabet === BASE64URL_NAME && isUuidString(uuid))
     return uuidStringToBase64url(uuid);
   if (alphabet === BASE32HEX_NAME && isUuidString(uuid)) return uuidStringToBase32hex(uuid);
   const bytes = uuidStringToBytes(uuid);
   if (bytes instanceof Error) return bytes;
-  return bytesToUuidSlug(bytes, alphabet);
+  return uuidBytesToDirectSlug(bytes, alphabet);
 }
 
 /**
@@ -303,19 +305,19 @@ export function uuidStringToSlug(
  *
  * @param slug - Canonical 22-character base64url or 26-character base32hex direct slug.
  */
-export function uuidSlugToString<Input extends string | UuidSlugError>(
+export function slugToUuidString<Input extends string | UuidSlugError>(
   slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidString, UuidV4String, UuidV7String> | UuidSlugError;
 /*#__NO_SIDE_EFFECTS__*/
-export function uuidSlugToString(slug: string | UuidSlugError): UuidString | UuidSlugError {
-  const bytes = uuidSlugToBytes(slug);
+export function slugToUuidString(slug: string | UuidSlugError): UuidString | UuidSlugError {
+  const bytes = slugToUuidBytes(slug);
   if (bytes instanceof Error) return bytes;
   return bytesToUuidString(bytes);
 }
 
 /** Check a canonical 22-character base64url or 26-character lowercase base32hex direct slug. */
 /*#__NO_SIDE_EFFECTS__*/
-export function isUuidSlug(value: unknown): value is UuidSlug {
+export function isDirectUuidSlug(value: unknown): value is DirectUuidSlug {
   if (typeof value !== "string" || !value) return false;
   const alpha = SLUG_ALPHABET_BY_LENGTH[value.length];
   return alpha !== undefined && isEncoded(value, alpha, 16);
@@ -333,21 +335,21 @@ function slugByte(slug: string, alpha: Alphabet, offset: number): number {
 }
 
 /*#__NO_SIDE_EFFECTS__*/
-function isVersionedSlug(slug: unknown, version: number): slug is UuidSlug {
-  if (!isUuidSlug(slug)) return false;
+function isVersionedSlug(slug: unknown, version: number): slug is DirectUuidSlug {
+  if (!isDirectUuidSlug(slug)) return false;
   const alpha = SLUG_ALPHABET_BY_LENGTH[slug.length] as Alphabet;
   return slugByte(slug, alpha, 6) >>> 4 === version && slugByte(slug, alpha, 8) >>> 6 === 2;
 }
 
 /** Check a canonical direct slug whose payload is an RFC-variant UUIDv4. */
 /*#__NO_SIDE_EFFECTS__*/
-export function isUuidV4Slug(value: unknown): value is UuidV4Slug {
+export function isDirectUuidV4Slug(value: unknown): value is DirectUuidV4Slug {
   return isVersionedSlug(value, 4);
 }
 
 /** Check a canonical direct slug whose payload is an RFC-variant UUIDv7. */
 /*#__NO_SIDE_EFFECTS__*/
-export function isUuidV7Slug(value: unknown): value is UuidV7Slug {
+export function isDirectUuidV7Slug(value: unknown): value is DirectUuidV7Slug {
   return isVersionedSlug(value, 7);
 }
 
@@ -357,14 +359,14 @@ function extractStringTimestamp(value: string): number | UuidSlugError {
   if (isUuidV7String(value)) {
     return parseInt(value.slice(0, 8) + value.slice(9, 13), 16);
   }
-  if (isUuidV7Slug(value)) {
+  if (isDirectUuidV7Slug(value)) {
     const alpha = SLUG_ALPHABET_BY_LENGTH[value.length] as Alphabet;
     for (let index = 0; index < 6; index += 1)
       timestamp = timestamp * 256 + slugByte(value, alpha, index);
     return timestamp;
   }
   return new UuidSlugError(
-    isUuidString(value) || isUuidSlug(value) ? INVALID_UUID_VERSION : INVALID_UUID,
+    isUuidString(value) || isDirectUuidSlug(value) ? INVALID_UUID_VERSION : INVALID_UUID,
     "Expected canonical UUIDv7 text or a direct UUIDv7 slug.",
   );
 }
@@ -372,12 +374,12 @@ function extractStringTimestamp(value: string): number | UuidSlugError {
 /**
  * Return the 48-bit Unix millisecond encoded by canonical UUIDv7 text, a direct UUIDv7 slug, or
  * UUIDv7 bytes. String forms accept both direct slug alphabets without allocating a byte array.
- * Use `codec.extractUuidSlugTimestamp` for masked or sentinel slugs. Other UUID versions and malformed
+ * Use `codec.extractUuidSlugUnixMs` for masked or sentinel slugs. Other UUID versions and malformed
  * values return `UuidSlugError`. A preceding `UuidSlugError` is returned unchanged.
  *
  * @param value - Canonical UUIDv7 text or a direct UUIDv7 slug in either supported alphabet.
  */
-export function extractUuidV7Timestamp<Input extends string | UuidSlugError>(
+export function extractUuidV7UnixMs<Input extends string | UuidSlugError>(
   value: UuidV7TimestampInput<Input>,
 ): number | UuidSlugError;
 /**
@@ -386,12 +388,12 @@ export function extractUuidV7Timestamp<Input extends string | UuidSlugError>(
  * @param value - Array containing at least one complete 16-byte UUIDv7.
  * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
  */
-export function extractUuidV7Timestamp<Input extends Uint8Array | UuidSlugError>(
+export function extractUuidV7UnixMs<Input extends Uint8Array | UuidSlugError>(
   value: UuidV7BytesInput<Input>,
   byteOffset?: number,
 ): number | UuidSlugError;
 /*#__NO_SIDE_EFFECTS__*/
-export function extractUuidV7Timestamp(
+export function extractUuidV7UnixMs(
   value: string | Uint8Array | UuidSlugError,
   byteOffset = 0,
 ): number | UuidSlugError {
@@ -413,14 +415,14 @@ export function extractUuidV7Timestamp(
  * @param slug - Canonical direct UUIDv7 slug to validate and return.
  * @param window - Inclusive maximum distance from an explicit or current reference time.
  */
-export function validateUuidV7SlugTimestamp<Input extends string | UuidSlugError>(
-  slug: UuidV7SlugInput<Input>,
+export function validateDirectUuidV7SlugUnixMs<Input extends string | UuidSlugError>(
+  slug: DirectUuidV7SlugInput<Input>,
   window: UuidV7TimestampWindow,
-): (Input & UuidV7Slug) | UuidSlugError {
+): (Input & DirectUuidV7Slug) | UuidSlugError {
   if (typeof slug !== "string") return invalidUuidSlugInput(slug);
   const directSlug: string = slug;
-  const bytes = uuidSlugToBytes(directSlug);
+  const bytes = slugToUuidBytes(directSlug);
   if (bytes instanceof Error) return bytes;
   const valid = validateTimestampBytes(bytes, window);
-  return valid instanceof Error ? valid : (directSlug as Input & UuidV7Slug);
+  return valid instanceof Error ? valid : (directSlug as Input & DirectUuidV7Slug);
 }

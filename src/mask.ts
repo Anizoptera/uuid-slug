@@ -12,7 +12,7 @@ const MASK_CONSTRUCTION_FAILURE_MESSAGE = "Mask construction failed.";
 const SEED_PROPERTY = "seed";
 const MASK_OPTIONS = {
   keyDerivationIterations: true,
-  label: true,
+  diagnosticLabel: true,
   [SEED_PROPERTY]: true,
 } as const satisfies Record<keyof UuidV7MaskOptions, true>;
 const ASYNC_MASK_OPTIONS = {
@@ -59,7 +59,7 @@ function validateOptions(options: unknown, accepted: Readonly<Record<string, tru
       "Mask options must contain a string or Uint8Array seed.",
     );
   const input = options as {
-    readonly label?: unknown;
+    readonly diagnosticLabel?: unknown;
     readonly keyDerivationIterations?: unknown;
     readonly seed?: unknown;
   };
@@ -69,15 +69,15 @@ function validateOptions(options: unknown, accepted: Readonly<Record<string, tru
   const seed = input.seed;
   if (typeof seed !== "string" && !isUint8Array(seed))
     return new UuidSlugError(INVALID_MASK, "Mask seed must be a string or Uint8Array.");
-  const givenLabel = input.label;
-  const label = givenLabel === undefined ? "seeded" : givenLabel;
-  if (typeof label !== "string")
-    return new UuidSlugError(INVALID_MASK, "Mask label must be a string.");
+  const givenLabel = input.diagnosticLabel;
+  const diagnosticLabel = givenLabel === undefined ? "seeded" : givenLabel;
+  if (typeof diagnosticLabel !== "string")
+    return new UuidSlugError(INVALID_MASK, "Mask diagnosticLabel must be a string.");
   const givenIterations = input.keyDerivationIterations;
   const keyDerivationIterations = givenIterations === undefined ? 1 : givenIterations;
   const iterations = validatedIterations(keyDerivationIterations);
   if (typeof iterations !== "number") return iterations;
-  return { label, iterations, seed };
+  return { diagnosticLabel, iterations, seed };
 }
 
 /** Repack bytes as the little-endian 32-bit words `halfSipHash` absorbs. */
@@ -150,13 +150,13 @@ function roundKeys(chainA: Int32Array, chainB: Int32Array) {
 }
 
 /*#__NO_SIDE_EFFECTS__*/
-function feistelMask(label: string, seed: Uint8Array, iterations: number): UuidV7Mask {
-  return maskFromKeys(label, derivedKeys(seed, iterations));
+function feistelMask(diagnosticLabel: string, seed: Uint8Array, iterations: number): UuidV7Mask {
+  return maskFromKeys(diagnosticLabel, derivedKeys(seed, iterations));
 }
 
 /*#__NO_SIDE_EFFECTS__*/
-function maskFromKeys(label: string, keys: Int32Array): UuidV7Mask {
-  return createMaskHandle(label, (input, output, direction) => {
+function maskFromKeys(diagnosticLabel: string, keys: Int32Array): UuidV7Mask {
+  return createMaskHandle(diagnosticLabel, (input, output, direction) => {
     feistel16(input, 0, keys, direction, output, 0);
   });
 }
@@ -169,13 +169,13 @@ function maskFromKeys(label: string, keys: Int32Array): UuidV7Mask {
  * @param options - Stable secret seed, optional diagnostic label, and derivation work factor.
  * @returns The mask, or `UuidSlugError` when an option or seed is invalid.
  */
-export function createUuidV7Mask(options: UuidV7MaskOptions): UuidV7Mask | UuidSlugError {
+export function deriveUuidV7Mask(options: UuidV7MaskOptions): UuidV7Mask | UuidSlugError {
   try {
     const validated = validateOptions(options, MASK_OPTIONS);
     if (!(SEED_PROPERTY in validated)) return validated;
     const seed = seedBytes(validated.seed);
     const short = invalidSeedLength(seed.length);
-    return short ?? feistelMask(validated.label, seed, validated.iterations);
+    return short ?? feistelMask(validated.diagnosticLabel, seed, validated.iterations);
   } catch (cause) {
     return new UuidSlugError(INVALID_MASK, MASK_CONSTRUCTION_FAILURE_MESSAGE, { cause });
   }
@@ -310,7 +310,7 @@ function* cooperativeKeys(
  * @param options - Synchronous mask options plus an optional cancellation signal.
  * @returns A promise for the mask or an expected construction error.
  */
-export async function createUuidV7MaskAsync(
+export async function deriveUuidV7MaskAsync(
   options: AsyncUuidV7MaskOptions,
 ): Promise<UuidV7Mask | UuidSlugError> {
   try {
@@ -335,7 +335,7 @@ export async function createUuidV7MaskAsync(
       const step = steps.next();
       if (step.done)
         return ArrayBuffer.isView(step.value)
-          ? maskFromKeys(validated.label, step.value)
+          ? maskFromKeys(validated.diagnosticLabel, step.value)
           : step.value;
       if (performance.now() >= deadline) {
         // eslint-disable-next-line no-await-in-loop -- each slice must yield before continuing the dependent derivation
@@ -358,7 +358,7 @@ export async function createUuidV7MaskAsync(
  */
 const DEFAULT_SEED = "anizoptera.uuid-slug.default-mask.v1";
 
-// Built from `feistelMask` rather than through `createUuidV7Mask`, whose failures are a short seed and a
+// Built from `feistelMask` rather than through `deriveUuidV7Mask`, whose failures are a short seed and a
 // bad iteration count — checks on CALLER input that the literals here cannot fail. Routing through it would return
 // `UuidV7Mask | UuidSlugError` and force a cast that, at module scope, could only ever hide a real Error
 // behind a `UuidV7Mask` type at module scope.

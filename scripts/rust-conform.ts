@@ -19,7 +19,7 @@ type Request = Record<string, unknown> & { op: string; input?: string };
 type Outcome = { value: unknown } | { error: string };
 const custom = unwrap(
   ts.createCustomUuidV7Mask({
-    label: "custom-mix",
+    diagnosticLabel: "custom-mix",
     mask(input) {
       const output = new Uint8Array(16);
       for (let index = 0; index < 16; index++) {
@@ -74,7 +74,7 @@ export function evaluate(request: Request): Outcome {
         type Step = { clock?: number | string; at?: number | string; byte: number; fail?: boolean };
         let current: Step = { byte: 0 };
         const generator = createPortableUuidV7Generator({
-          clock: () => Number(current.clock),
+          readUnixMs: () => Number(current.clock),
           fillRandom: (bytes) => {
             if (current.fail) throw new Error("entropy unavailable");
             bytes.fill(current.byte);
@@ -87,7 +87,7 @@ export function evaluate(request: Request): Outcome {
               return result(
                 step.at === undefined
                   ? generator.generateUuidV7()
-                  : generator.generateUuidV7At(Number(step.at)),
+                  : generator.generateUuidV7AtUnixMs(Number(step.at)),
               );
             } catch (error) {
               if (error instanceof ts.UuidSlugError) return result(error);
@@ -103,54 +103,56 @@ export function evaluate(request: Request): Outcome {
         const offset = request.offset as number;
         return result({
           uuid: result(ts.bytesToUuidString(bytes, offset)),
-          base64: result(ts.bytesToUuidSlug(bytes, offset, "base64url")),
-          base32: result(ts.bytesToUuidSlug(bytes, offset, "base32hex")),
-          timestamp: result(ts.extractUuidV7Timestamp(bytes, offset)),
+          base64: result(ts.uuidBytesToDirectSlug(bytes, offset, "base64url")),
+          base32: result(ts.uuidBytesToDirectSlug(bytes, offset, "base32hex")),
+          timestamp: result(ts.extractUuidV7UnixMs(bytes, offset)),
           v7: ts.isUuidV7Bytes(bytes),
         });
       }
       case "direct":
-        return result(ts.uuidStringToSlug(input, request.alphabet as SlugAlphabet | undefined));
+        return result(
+          ts.uuidStringToDirectSlug(input, request.alphabet as SlugAlphabet | undefined),
+        );
       case "undirect":
-        return result(ts.uuidSlugToString(input));
+        return result(ts.slugToUuidString(input));
       case "timestamp": {
         const bytes = ts.uuidStringToBytes(input);
-        return result(bytes instanceof Error ? bytes : ts.extractUuidV7Timestamp(bytes));
+        return result(bytes instanceof Error ? bytes : ts.extractUuidV7UnixMs(bytes));
       }
       case "guards":
         return result([
           ts.isUuidString(input),
           ts.isUuidV4String(input),
           ts.isUuidV7String(input),
-          ts.isUuidSlug(input),
-          ts.isUuidV4Slug(input),
-          ts.isUuidV7Slug(input),
+          ts.isDirectUuidSlug(input),
+          ts.isDirectUuidV4Slug(input),
+          ts.isDirectUuidV7Slug(input),
         ]);
       case "base64Encode": {
         const bytes = Uint8Array.from(request.bytes as number[]);
         return result(
           bytes.length === 16
-            ? ts.bytesToUuidSlug(bytes)
+            ? ts.uuidBytesToDirectSlug(bytes)
             : new ts.UuidSlugError("invalid_buffer", "Expected one 16-byte UUID payload."),
         );
       }
       case "base64Decode":
         return result(
           input.length === 22
-            ? ts.uuidSlugToBytes(input)
+            ? ts.slugToUuidBytes(input)
             : new ts.UuidSlugError(
                 "invalid_base64url",
                 "Expected a 22-character base64url UUID slug.",
               ),
         );
       case "base64Guard":
-        return result(input.length === 22 && ts.isUuidSlug(input));
+        return result(input.length === 22 && ts.isDirectUuidSlug(input));
       case "base64DecodeTo": {
         const out = new Uint8Array(request.capacity as number).fill(165);
         const offset = request.offset as number;
         const decoded =
           input.length === 22
-            ? ts.uuidSlugToBytes(input, out, offset)
+            ? ts.slugToUuidBytes(input, out, offset)
             : new ts.UuidSlugError(
                 "invalid_base64url",
                 "Expected a 22-character base64url UUID slug.",
@@ -167,12 +169,12 @@ export function evaluate(request: Request): Outcome {
               storage: Array.from(out),
             });
       }
-      case "validateUuidTimestamp":
-      case "validateUuidSlugTimestamp":
+      case "validateUuidV7Timestamp":
+      case "validateDirectUuidV7SlugUnixMs":
         return result(
-          (request.op === "validateUuidTimestamp"
+          (request.op === "validateUuidV7Timestamp"
             ? ts.validateUuidV7Timestamp
-            : ts.validateUuidV7SlugTimestamp)(input, {
+            : ts.validateDirectUuidV7SlugUnixMs)(input, {
             maxTimestampDeltaMs: Number(request.window),
             referenceUnixMs: Number(request.now),
           }),
@@ -203,16 +205,16 @@ export function evaluate(request: Request): Outcome {
       case "unmask":
         return result(
           request.acceptDirect === true
-            ? codec.createMigrationDecoder({ acceptDirectSlug: true }).uuidSlugToString(input)
-            : codec.uuidSlugToString(input),
+            ? codec.createMigrationDecoder({ acceptDirectSlug: true }).slugToUuidString(input)
+            : codec.slugToUuidString(input),
         );
       case "unmaskV7":
-        return result(codec.uuidSlugToString(input));
+        return result(codec.slugToUuidString(input));
       case "sentinels":
         return result(codec.sentinels);
       case "validateMaskedTimestamp":
         return result(
-          codec.validateUuidSlugTimestamp(input, {
+          codec.validateUuidSlugUnixMs(input, {
             maxTimestampDeltaMs: Number(request.window),
             referenceUnixMs: Number(request.now),
           }),
@@ -221,19 +223,19 @@ export function evaluate(request: Request): Outcome {
         return result(
           codec
             .createMigrationDecoder({
-              acceptOriginalMask: request.original === true,
+              acceptFixedMask: request.original === true,
               acceptDirectSlug: request.direct === true,
             })
-            .uuidSlugToString(input, request.format as UuidSlugMigrationFormat | undefined),
+            .slugToUuidString(input, request.format as UuidSlugMigrationFormat | undefined),
         );
       case "candidates":
         return result(
           codec
             .createMigrationDecoder({
-              acceptOriginalMask: request.original === true,
+              acceptFixedMask: request.original === true,
               acceptDirectSlug: request.direct === true,
             })
-            .uuidSlugToStringCandidates(
+            .slugToUuidStringCandidates(
               input,
               request.format as UuidSlugMigrationFormat | undefined,
             ),
@@ -379,8 +381,8 @@ export async function contractRequests(): Promise<Request[]> {
     "A",
     ordinary.direct,
     first.direct,
-    ts.uuidStringToSlug(ordinary.uuid, "base32hex"),
-    ts.uuidStringToSlug("00000000-0000-4000-8000-000000000000"),
+    ts.uuidStringToDirectSlug(ordinary.uuid, "base32hex"),
+    ts.uuidStringToDirectSlug("00000000-0000-4000-8000-000000000000"),
   ]) {
     if (input instanceof Error) throw input;
     for (const now of [
@@ -390,7 +392,7 @@ export async function contractRequests(): Promise<Request[]> {
       "NaN",
     ])
       for (const window of [0, 1000, -1, "Infinity"])
-        requests.push({ op: "validateUuidSlugTimestamp", input, now, window });
+        requests.push({ op: "validateDirectUuidV7SlugUnixMs", input, now, window });
   }
   for (const length of [0, 1, 15, 16, 17, 64])
     requests.push({
@@ -410,7 +412,7 @@ export async function contractRequests(): Promise<Request[]> {
       alphabet === "base64url"
         ? "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
         : "0123456789abcdefghijklmnopqrstuv";
-    const canonical = ts.uuidStringToSlug(ordinary.uuid, alphabet);
+    const canonical = ts.uuidStringToDirectSlug(ordinary.uuid, alphabet);
     if (canonical instanceof Error) throw canonical;
     const last = symbols.indexOf(canonical.at(-1) as string);
     for (let bits = 1; bits < (alphabet === "base64url" ? 16 : 4); bits++) {
@@ -434,7 +436,7 @@ export async function contractRequests(): Promise<Request[]> {
         for (const op of ["migration", "candidates"]) {
           for (const direct of [false, true])
             for (const enabled of [false, true])
-              for (const format of [undefined, "direct-slug", "current-mask", "original-mask"])
+              for (const format of [undefined, "direct-slug", "seeded-mask", "fixed-mask"])
                 requests.push({ op, input, direct, original: enabled, format });
         }
   }
@@ -450,22 +452,22 @@ export async function contractRequests(): Promise<Request[]> {
     requests.push({
       op: "generateSequence",
       steps: [
-        { clock: 10.9, byte },
-        { clock: 9, byte, fail: true },
-        { clock: 9, byte },
+        { readUnixMs: 10.9, byte },
+        { readUnixMs: 9, byte, fail: true },
+        { readUnixMs: 9, byte },
         { at: 1, byte },
-        { clock: 9, byte },
+        { readUnixMs: 9, byte },
         { at: 1.5, byte },
-        { clock: "NaN", byte },
-        { clock: 11, byte },
+        { readUnixMs: "NaN", byte },
+        { readUnixMs: 11, byte },
       ],
     });
     requests.push({
       op: "generateSequence",
       steps: [
-        { clock: 2 ** 48 - 1, byte },
-        { clock: 2 ** 48 - 1, byte },
-        { clock: 2 ** 48 - 1, byte },
+        { readUnixMs: 2 ** 48 - 1, byte },
+        { readUnixMs: 2 ** 48 - 1, byte },
+        { readUnixMs: 2 ** 48 - 1, byte },
         { at: 2 ** 48, byte },
       ],
     });
@@ -474,12 +476,12 @@ export async function contractRequests(): Promise<Request[]> {
     requests.push({ op: "mask", input: ordinary.uuid, mask: selectedMask });
   for (const window of [-1, 0, 0.5, 86_400_000, "NaN", "Infinity"]) {
     for (const now of [0, 1, 1.5, "NaN", "Infinity"])
-      requests.push({ op: "validateUuidTimestamp", input: first.uuid, now, window });
+      requests.push({ op: "validateUuidV7Timestamp", input: first.uuid, now, window });
   }
   const instant = Number.parseInt(ordinary.uuid.slice(0, 8) + ordinary.uuid.slice(9, 13), 16);
   for (const distance of [-1.5, -1, 0, 1, 1.5]) {
     requests.push({
-      op: "validateUuidTimestamp",
+      op: "validateUuidV7Timestamp",
       input: ordinary.uuid,
       now: instant + distance,
       window: 1,

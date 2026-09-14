@@ -33,14 +33,14 @@ function applyMix(
     return cause
       ? new UuidSlugError(
           INVALID_MASK,
-          `UUIDv7 mask "${mask.label}" failed while ${direction === MASK_DIRECTION ? MASKING : UNMASKING}.`,
+          `UUIDv7 mask "${mask.diagnosticLabel}" failed while ${direction === MASK_DIRECTION ? MASKING : UNMASKING}.`,
           { cause },
         )
       : undefined;
   } catch (cause) {
     return new UuidSlugError(
       INVALID_MASK,
-      `UUIDv7 mask "${mask.label}" failed while ${direction === MASK_DIRECTION ? MASKING : UNMASKING}.`,
+      `UUIDv7 mask "${mask.diagnosticLabel}" failed while ${direction === MASK_DIRECTION ? MASKING : UNMASKING}.`,
       { cause },
     );
   }

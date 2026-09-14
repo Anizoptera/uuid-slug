@@ -14,33 +14,34 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 ### Breaking changes
 
-- Rename UUID generation to `generateUuidV4`, `generateUuidV4Bytes`, `generateUuidV4Slug`,
-  `generateUuidV7`, `generateUuidV7Bytes`, `generateUuidV7At`, `generateUuidV7BytesAt`, and
-  `generateUuidV7Slug`.
+- Rename UUID generation to `generateUuidV4`, `generateUuidV4Bytes`, `generateDirectUuidV4Slug`,
+  `generateUuidV7`, `generateUuidV7Bytes`, `generateUuidV7AtUnixMs`, `generateUuidV7BytesAtUnixMs`, and
+  `generateDirectUuidV7Slug`. Use `generateUuidV7WithDirectSlug` when storing both forms.
 - Replace `createUuidSlugCodec` with `createUuidV7SlugCodec`. Codec methods are now
-  `generateUuidSlug`, `uuidToSlug`, `uuidSlugToString`, `uuidSlugToBytes`,
-  `extractUuidSlugTimestamp`, `validateUuidSlugTimestamp`, and `createMigrationDecoder`.
+  `generateUuidV7CodecSlug`, `generateUuidV7WithCodecSlug`, `uuidToSlug`, `slugToUuidString`,
+  `slugToUuidBytes`, `extractUuidSlugUnixMs`, `validateUuidSlugUnixMs`, and
+  `createMigrationDecoder`.
 - Codecs no longer accept a generator or expose keyless generation. Use the module generation
   functions, or `createUuidV7Generator` when the application supplies a clock; entropy stays owned
   by the package.
 - Codecs require an explicit private mask or `UUID_V7_TEST_MASK` and default to no sentinels.
   `defaultCodec`, `DEFAULT_MASK_SCHEMA`, and `UUID_V7_SENTINEL_DEFINITIONS` are removed.
-- Replace `createMaskSchema` and `createMaskSchemaAsync` with `createUuidV7Mask` and
-  `createUuidV7MaskAsync`. Rename `keyIterations` to `keyDerivationIterations`.
+- Replace `createMaskSchema` and `createMaskSchemaAsync` with `deriveUuidV7Mask` and
+  `deriveUuidV7MaskAsync`. Rename `keyIterations` to `keyDerivationIterations`.
 - Rename public shapes to their domain: `MaskSchema*` to `UuidV7Mask*`, `UuidSlugCodec*` to
   `UuidV7SlugCodec*`, `UuidSlugMigration` to `UuidSlugMigrationDecoder`, `MigrationFormat` to
   `UuidSlugMigrationFormat`, `FreshValidationOptions` to `UuidV7TimestampWindow`,
   `UuidV7SentinelDefinition` to `UuidV7SentinelConfig`, and `PublicUuidV7Slug` to
   `UuidV7CodecSlug`. The version-neutral `MaskedUuidSlug` export is removed.
-- Replace `parseUuid`/`formatUuid` with `uuidToBytes`/`bytesToUuid`, and
-  `parseUuidSlug`/`formatUuidSlug` with `slugToBytes`/`bytesToSlug`. Remove the generic base64url
-  helpers `encodeBase64Url`, `decodeBase64Url`, and `isBase64Url` together with `Base64UrlString`;
-  `bytesToSlug`, `slugToBytes`, and `isUuidSlug` accept the 16-byte UUID payload only.
-- Migration readers expose `uuidSlugToString` and `uuidSlugToStringCandidates`. Options and format
-  names are now `acceptOriginalMask`, `acceptDirectSlug`, `current-mask`, `original-mask`, and
+- Replace generic parse/format names with directional UUID and direct-slug conversions:
+  `uuidStringToBytes`, `bytesToUuidString`, `uuidStringToDirectSlug`, `uuidBytesToDirectSlug`,
+  `slugToUuidString`, and `slugToUuidBytes`. Remove generic base64url helpers; direct-slug byte
+  conversions accept exactly one 16-byte UUID payload.
+- Migration readers expose `slugToUuidString` and `slugToUuidStringCandidates`. Options and format
+  names are now `acceptFixedMask`, `acceptDirectSlug`, `seeded-mask`, `fixed-mask`, and
   `direct-slug`.
 - Replace `validateUuidV7Fresh` and `validateUuidV7SlugFresh` with `validateUuidV7Timestamp` and
-  `validateUuidV7SlugTimestamp`. Validation requires `maxTimestampDeltaMs`; only
+  `validateDirectUuidV7SlugUnixMs`. Validation requires `maxTimestampDeltaMs`; only
   `referenceUnixMs` defaults to the current clock. `hasUuidV7Entropy` is removed.
 - Expected generation, conversion, masking, and configuration failures return `UuidSlugError | T`.
   Use `isUuidSlugError` instead of relying on `instanceof` or `UuidRuntimeError`.
@@ -64,7 +65,7 @@ notes: the section for a version is published verbatim when its tag is pushed.
   masked slugs and 26-character sentinels; readers continue to accept base64url spellings.
 - Bun, Deno, and the `development` condition load the published TypeScript source. Other consumers
   load compiled ESM.
-- Read UUIDv7 timestamps from text, direct slugs, or bytes with `extractUuidV7Timestamp`; use the
+- Read UUIDv7 timestamps from text, direct slugs, or bytes with `extractUuidV7UnixMs`; use the
   codec method for masked slugs and sentinels.
 - Export named alphabet, migration-format, and error-code constants with their union types, plus
   byte guards for runtime validation and narrowing.

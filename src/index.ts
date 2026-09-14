@@ -22,12 +22,13 @@ export {
 export { BASE32HEX_NAME as BASE32HEX, BASE64URL_NAME as BASE64URL } from "./alphabet.ts";
 /** Export the code type so consumers can write exhaustive handlers without copying its literals. */
 export type { UuidSlugErrorCode } from "./errors.ts";
-export { UUID_V7_TEST_MASK, createUuidV7Mask, createUuidV7MaskAsync } from "./mask.ts";
+export { UUID_V7_TEST_MASK, deriveUuidV7Mask, deriveUuidV7MaskAsync } from "./mask.ts";
 export { createCustomUuidV7Mask } from "./mask-handle.ts";
-export { CURRENT_MASK_FORMAT, DIRECT_SLUG_FORMAT, ORIGINAL_MASK_FORMAT } from "./types.ts";
+export { SEEDED_MASK_FORMAT, DIRECT_SLUG_FORMAT, FIXED_MASK_FORMAT } from "./types.ts";
 export type {
   AsyncUuidV7MaskOptions,
   CustomUuidV7MaskOptions,
+  GeneratedUuidV7,
   UuidV7TimestampWindow,
   UuidV7Mask,
   UuidV7MaskOptions,
@@ -37,11 +38,11 @@ export type {
   SentinelUuidV7Slug,
   UuidBytes,
   UuidV4Bytes,
-  UuidSlug,
+  DirectUuidSlug,
   UuidSlugMigrationDecoder,
   UuidSlugMigrationOptions,
   UuidString,
-  UuidV4Slug,
+  DirectUuidV4Slug,
   UuidV4String,
   UuidV7Generator,
   UuidV7SlugCodec,
@@ -49,7 +50,7 @@ export type {
   UuidV7Bytes,
   UuidV7Sentinel,
   UuidV7SentinelConfig,
-  UuidV7Slug,
+  DirectUuidV7Slug,
   UuidV7String,
 } from "./types.ts";
 export {
@@ -63,15 +64,15 @@ export {
   uuidStringToBytes,
 } from "./uuid.ts";
 export {
-  bytesToUuidSlug,
-  extractUuidV7Timestamp,
-  isUuidSlug,
-  isUuidV4Slug,
-  isUuidV7Slug,
-  uuidSlugToBytes,
-  uuidSlugToString,
-  uuidStringToSlug,
-  validateUuidV7SlugTimestamp,
+  uuidBytesToDirectSlug,
+  extractUuidV7UnixMs,
+  isDirectUuidSlug,
+  isDirectUuidV4Slug,
+  isDirectUuidV7Slug,
+  slugToUuidBytes,
+  slugToUuidString,
+  uuidStringToDirectSlug,
+  validateDirectUuidV7SlugUnixMs,
 } from "./slug.ts";
 export type { SlugAlphabet } from "./slug.ts";
 export { createUuidV7Generator } from "./keyless.ts";
@@ -82,10 +83,11 @@ export type { UuidV7GeneratorOptions } from "./keyless.ts";
 export {
   generateUuidV4,
   generateUuidV4Bytes,
-  generateUuidV4Slug,
+  generateDirectUuidV4Slug,
   generateUuidV7,
-  generateUuidV7At,
+  generateUuidV7AtUnixMs,
   generateUuidV7Bytes,
-  generateUuidV7BytesAt,
-  generateUuidV7Slug,
+  generateUuidV7BytesAtUnixMs,
+  generateDirectUuidV7Slug,
+  generateUuidV7WithDirectSlug,
 } from "./keyless.ts";

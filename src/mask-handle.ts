@@ -13,7 +13,7 @@ const MASK_PROTOCOL = Symbol.for("@anizoptera/uuid-slug/mask/1");
 const CUSTOM_MASK_FAILURE_MESSAGE = "Custom mask construction failed.";
 const MASK_DIRECTION = "mask";
 const CUSTOM_MASK_OPTIONS = {
-  label: true,
+  diagnosticLabel: true,
   [MASK_DIRECTION]: true,
   unmask: true,
 } as const satisfies Record<keyof CustomUuidV7MaskOptions, true>;
@@ -34,8 +34,8 @@ type MaskHandle = UuidV7Mask & { readonly [MASK_PROTOCOL]: MaskProtocol };
  * The protocol is internal representation, not an authenticity boundary for trusted codec options.
  */
 /*#__NO_SIDE_EFFECTS__*/
-export function createMaskHandle(label: string, mix: MaskProtocol["mix"]): UuidV7Mask {
-  const mask = { label } as MaskHandle;
+export function createMaskHandle(diagnosticLabel: string, mix: MaskProtocol["mix"]): UuidV7Mask {
+  const mask = { diagnosticLabel } as MaskHandle;
   Object.defineProperty(mask, MASK_PROTOCOL, {
     value: Object.freeze<MaskProtocol>({ version: 1, mix }),
   });
@@ -93,11 +93,15 @@ export function createCustomUuidV7Mask(
     const unknown = findUnknownOption(options, CUSTOM_MASK_OPTIONS);
     if (unknown !== undefined)
       return new UuidSlugError(INVALID_MASK, `Unknown custom mask option: ${unknown}.`);
-    const { label, mask, unmask } = options;
-    if (typeof label !== "string" || typeof mask !== "function" || typeof unmask !== "function")
+    const { diagnosticLabel, mask, unmask } = options;
+    if (
+      typeof diagnosticLabel !== "string" ||
+      typeof mask !== "function" ||
+      typeof unmask !== "function"
+    )
       return new UuidSlugError(
         INVALID_MASK,
-        "A custom UUIDv7 mask requires a string label plus mask and unmask functions.",
+        "A custom UUIDv7 mask requires a string diagnosticLabel plus mask and unmask functions.",
       );
     // These probes reject common non-inverses cheaply; no finite sample can prove a bijection over
     // 128 bits, so the public contract keeps full invertibility as the callback author's duty.
@@ -118,10 +122,10 @@ export function createCustomUuidV7Mask(
       if (restored.some((byte, index) => byte !== probe[index]))
         return new UuidSlugError(
           INVALID_MASK,
-          `UUIDv7 mask "${label}" does not unmask its own masked output.`,
+          `UUIDv7 mask "${diagnosticLabel}" does not unmask its own masked output.`,
         );
     }
-    return createMaskHandle(label, (input, output, direction) => {
+    return createMaskHandle(diagnosticLabel, (input, output, direction) => {
       const mixed = runCustom(direction === MASK_DIRECTION ? mask : unmask, input);
       if (isUuidSlugError(mixed)) return mixed;
       output.set(mixed);

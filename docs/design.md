@@ -36,7 +36,7 @@ has no useful chronological ordering in either alphabet.
 
 ## Deriving a mask from a seed
 
-`createUuidV7Mask({ seed, keyDerivationIterations })` derives round keys deterministically:
+`deriveUuidV7Mask({ seed, keyDerivationIterations })` derives round keys deterministically:
 
 1. Encode string seeds as UTF-8; byte seeds retain their byte values. Absorb bytes as little-endian
    words, with the actual byte length passed to HalfSipHash-2-4.
@@ -54,7 +54,7 @@ not an established security strength. The default iteration count is one. Increa
 construction cost and the cost of trying candidate seeds; it cannot replace a randomly generated
 seed. A known UUID/slug pair permits offline seed guessing.
 
-`createUuidV7MaskAsync` uses the same packing, hash and key-expansion primitives. A continuation
+`deriveUuidV7MaskAsync` uses the same packing, hash and key-expansion primitives. A continuation
 stores only partial hash state; output words are written after finalisation. Cooperative work
 bounds text/byte packing and message absorption as well as iteration batches, so a large seed
 cannot hide inside one uninterrupted hash. The driver yields to host tasks when its work slice

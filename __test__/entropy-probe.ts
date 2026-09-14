@@ -16,12 +16,13 @@ import {
   UUID_V7_TEST_MASK,
   generateUuidV4,
   generateUuidV4Bytes,
-  generateUuidV4Slug,
+  generateDirectUuidV4Slug,
   generateUuidV7,
-  generateUuidV7At,
+  generateUuidV7AtUnixMs,
   generateUuidV7Bytes,
-  generateUuidV7BytesAt,
-  generateUuidV7Slug,
+  generateUuidV7BytesAtUnixMs,
+  generateDirectUuidV7Slug,
+  generateUuidV7WithDirectSlug,
 } from "../src/index";
 import { unwrap } from "../dev/unwrap";
 
@@ -44,13 +45,15 @@ const INSTANT = 1_700_000_000_000;
 export const generators: readonly (readonly [string, () => unknown])[] = [
   ["generateUuidV4", generateUuidV4],
   ["generateUuidV7", generateUuidV7],
-  ["generateUuidV7Slug", generateUuidV7Slug],
+  ["generateDirectUuidV7Slug", generateDirectUuidV7Slug],
+  ["generateUuidV7WithDirectSlug", generateUuidV7WithDirectSlug],
   ["generateUuidV4Bytes", generateUuidV4Bytes],
   ["generateUuidV7Bytes", generateUuidV7Bytes],
-  ["generateUuidV7At", () => generateUuidV7At(INSTANT)],
-  ["generateUuidV7BytesAt", () => generateUuidV7BytesAt(INSTANT)],
-  ["generateUuidV4Slug", generateUuidV4Slug],
-  ["generate", () => codec.generateUuidSlug()],
+  ["generateUuidV7AtUnixMs", () => generateUuidV7AtUnixMs(INSTANT)],
+  ["generateUuidV7BytesAtUnixMs", () => generateUuidV7BytesAtUnixMs(INSTANT)],
+  ["generateDirectUuidV4Slug", generateDirectUuidV4Slug],
+  ["generate", () => codec.generateUuidV7CodecSlug()],
+  ["generateUuidV7WithCodecSlug", () => codec.generateUuidV7WithCodecSlug()],
 ];
 
 /**
@@ -62,7 +65,7 @@ export const generators: readonly (readonly [string, () => unknown])[] = [
 export const byteGenerators: readonly (readonly [string, () => Uint8Array | Error])[] = [
   ["generateUuidV4Bytes", generateUuidV4Bytes],
   ["generateUuidV7Bytes", generateUuidV7Bytes],
-  ["generateUuidV7BytesAt", () => generateUuidV7BytesAt(INSTANT)],
+  ["generateUuidV7BytesAtUnixMs", () => generateUuidV7BytesAtUnixMs(INSTANT)],
 ];
 
 /** The instrument patches globals, so it is always removed, including on a failing assertion. */

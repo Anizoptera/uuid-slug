@@ -7,12 +7,12 @@
  */
 import { describe, expect, it } from "vitest";
 import { createUuidV7SlugCodec } from "../src/codec";
-import { createUuidV7Mask } from "../src/mask";
+import { deriveUuidV7Mask } from "../src/mask";
 import { unwrap } from "../dev/unwrap";
 
 /** Pads to the 16-byte seed floor, so cases can keep naming their key after what it tests. */
 const maskOrThrow = (seed: string) => {
-  const mask = createUuidV7Mask({ label: seed, seed: seed.padEnd(16, ".") });
+  const mask = deriveUuidV7Mask({ diagnosticLabel: seed, seed: seed.padEnd(16, ".") });
   if (mask instanceof Error) throw mask;
   return mask;
 };
@@ -51,7 +51,7 @@ describe("the maskable range", () => {
       const slug = codec.uuidToSlug(uuid);
       if (slug instanceof Error) throw slug;
       expect(slug).toHaveLength(22);
-      expect(codec.uuidSlugToString(slug)).toBe(uuid);
+      expect(codec.slugToUuidString(slug)).toBe(uuid);
     }
   });
 });

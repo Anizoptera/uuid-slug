@@ -4,12 +4,12 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 
 ## Public interface audit
 
-- [ ] Repair the consumer friction found by the fresh TypeScript interface audit.
+- [x] Repair the consumer friction found by the fresh TypeScript interface audit.
   - [x] Accept common case variants while preserving canonical lowercase output.
-  - [ ] Replace ambiguous and time-relative public names before the first release baseline.
-  - [ ] Generate the UUID and direct or codec slug from one byte draw for the primary storage workflow.
-  - [ ] Make expensive mask derivation explicit and migration candidates readonly.
-  - [ ] Update public docs and declarations; prove source, runtime, editor, packed, bundle, and full checks.
+  - [x] Replace ambiguous and time-relative public names before the first release baseline.
+  - [x] Generate the UUID and direct or codec slug from one byte draw for the primary storage workflow.
+  - [x] Make expensive mask derivation explicit and migration candidates readonly.
+  - [x] Update public docs and declarations; prove source, runtime, editor, packed, bundle, and full checks.
 - [x] Make `docs/public-api.md` the complete interface authority and shrink the root prompt.
   - [x] Reconcile every interface and naming rule from `AGENTS.md` into the API document.
   - [x] Keep only the trigger and high-risk invariants in `AGENTS.md`.

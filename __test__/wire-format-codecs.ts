@@ -35,7 +35,7 @@ permute.forEach((target, i) => (inverse[target] = i));
 
 const customMix = unwrap(
   createCustomUuidV7Mask({
-    label: "custom-mix",
+    diagnosticLabel: "custom-mix",
     mask(input) {
       const output = new Uint8Array(16);
       for (let i = 0; i < 16; i += 1) {

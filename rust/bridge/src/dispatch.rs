@@ -249,8 +249,8 @@ fn run(request: &Value) -> Result<Value, Error> {
                 <[u8; 16]>::try_from(bytes).map_err(|_| Error::new(ErrorCode::InvalidBuffer))?;
             Ok(json!(Alphabet::Base64Url.encode(&bytes)))
         }
-        "validateUuidTimestamp" | "validateUuidSlugTimestamp" => {
-            let uuid = if request["op"] == "validateUuidSlugTimestamp" {
+        "validateUuidV7Timestamp" | "validateDirectUuidV7SlugUnixMs" => {
+            let uuid = if request["op"] == "validateDirectUuidV7SlugUnixMs" {
                 Uuid::parse_slug(input)?
             } else {
                 Uuid::parse(input)?
@@ -300,8 +300,8 @@ fn run(request: &Value) -> Result<Value, Error> {
             });
             let format = match request["format"].as_str() {
                 None => None,
-                Some("current-mask") => Some(MigrationFormat::Current),
-                Some("original-mask") => Some(MigrationFormat::Original),
+                Some("seeded-mask") => Some(MigrationFormat::Current),
+                Some("fixed-mask") => Some(MigrationFormat::Original),
                 Some("direct-slug") => Some(MigrationFormat::Direct),
                 _ => return Err(Error::new(ErrorCode::InvalidUuidSlug)),
             };

@@ -19,7 +19,7 @@ import type { Runtime } from "./runtime/types.ts";
 /** Internal controls for exercising the portable UUIDv7 state machine. */
 interface PortableUuidV7GeneratorOptions {
   /** Return Unix milliseconds; finite fractional readings are truncated. Defaults to `Date.now`. */
-  readonly clock?: () => number;
+  readonly readUnixMs?: () => number;
   /** Fill every byte. Returned or thrown failures are contained by generation. */
   readonly fillRandom: (bytes: Uint8Array<ArrayBuffer>) => unknown;
 }
@@ -102,7 +102,7 @@ const formatUuidV7 = /* @__NO_SIDE_EFFECTS__ */ (
 const reenteredGeneration = /* @__NO_SIDE_EFFECTS__ */ () =>
   new UuidSlugError(
     RNG_UNAVAILABLE,
-    "UUIDv7 generation cannot be reentered from its clock or entropy callback.",
+    "UUIDv7 generation cannot be reentered from its readUnixMs or entropy callback.",
   );
 
 /**
@@ -129,7 +129,7 @@ const seedLo = /* @__NO_SIDE_EFFECTS__ */ (bytes: Uint8Array) =>
 export function createPortableUuidV7Generator(
   options: PortableUuidV7GeneratorOptions,
 ): UuidV7Generator {
-  const clock = options.clock ?? Date.now;
+  const readUnixMs = options.readUnixMs ?? Date.now;
   const fill = options.fillRandom;
   // The sequence seed consumes six bytes and the UUID tail consumes four. Drawing a full UUID
   // block would copy six bytes that version, variant, timestamp, and sequence fields replace.
@@ -137,10 +137,10 @@ export function createPortableUuidV7Generator(
   // Continuations retain the sequence seed, so expose only the four bytes their UUID tail consumes.
   const randomTail = random.subarray(6);
   /**
-   * Below every timestamp the clock check admits, which is what makes it the uninitialised
+   * Below every timestamp the readUnixMs check admits, which is what makes it the uninitialised
    * sentinel rather than a value: `now > lastMs` alone therefore takes the reseed branch on the
    * first call, and no separate "have we started" flag is needed. The coupling is deliberate and
-   * is why the clock is validated before this is compared against — an unvalidated clock returning
+   * is why the readUnixMs is validated before this is compared against — an unvalidated readUnixMs returning
    * a negative millisecond would make `lastMs` stay below it forever, so the monotonic counter
    * would never be used and every call would reseed.
    */
@@ -184,16 +184,16 @@ export function createPortableUuidV7Generator(
             ? checkRange(16, offset, 16)
             : checkByteRange(out, offset, 16);
       if (badRange) return badRange;
-      // Truncated THEN validated, in that order and not the other. A clock is allowed to be
+      // Truncated THEN validated, in that order and not the other. A readUnixMs is allowed to be
       // fractional — `performance.timeOrigin + performance.now()` is, and is a perfectly good one —
       // so rejecting non-integers here would refuse a legitimate caller, unlike `rejectInstant`,
       // where the fraction is in an argument the caller wrote out. What must not survive is a
       // truncated value the format cannot carry: `writeTimestamp` keeps the low 48 bits of whatever
       // it is handed, so NaN and 2**48 both silently produced the 1970 prefix and a negative
       // millisecond produced the year 10889 by two's-complement wrap. All three now report.
-      // The raw reading is kept for the message rather than calling `clock()` again: a second call
+      // The raw reading is kept for the message rather than calling `readUnixMs()` again: a second call
       // is a second reading, and the message would name a value other than the one refused.
-      const reading = readClock(clock);
+      const reading = readClock(readUnixMs);
       if (isUuidSlugError(reading)) return reading;
       const now = typeof reading === "number" ? Math.trunc(reading) : NaN;
       if (typeof reading !== "number" || reading < 0 || !isValidUuidV7Timestamp(now))
@@ -213,8 +213,8 @@ export function createPortableUuidV7Generator(
         if (nextHi > 0x3ff) {
           // At the ceiling there is no next millisecond to borrow: `writeTimestamp` truncates to
           // six bytes, so `lastMs + 1` wraps to 0 and the generator restarts in 1970 — ordering
-          // broken permanently, and silently, from that call onward. Unreachable on a real clock
-          // until the year 10889; reachable now from any clock that lands near the ceiling, which
+          // broken permanently, and silently, from that call onward. Unreachable on a real readUnixMs
+          // until the year 10889; reachable now from any readUnixMs that lands near the ceiling, which
           // is why refusing is not theoretical.
           if (lastMs >= MAX_TIMESTAMP)
             return new UuidSlugError(
@@ -265,13 +265,13 @@ export function createPortableUuidV7Generator(
     return bytes(out, offset);
   }
 
-  function generateUuidV7BytesAt(timestamp: number): UuidV7Bytes | UuidSlugError;
-  function generateUuidV7BytesAt<Output extends Uint8Array>(
+  function generateUuidV7BytesAtUnixMs(timestamp: number): UuidV7Bytes | UuidSlugError;
+  function generateUuidV7BytesAtUnixMs<Output extends Uint8Array>(
     timestamp: number,
     out: Output,
     offset?: number,
   ): Output | UuidSlugError;
-  function generateUuidV7BytesAt(
+  function generateUuidV7BytesAtUnixMs(
     timestamp: number,
     out?: Uint8Array,
     offset?: number,
@@ -281,12 +281,12 @@ export function createPortableUuidV7Generator(
 
   return {
     // Text formatting consumes bytes synchronously, so one generator-owned buffer removes an
-    // allocation without exposing mutable storage. The reentrancy guard protects it while clock
+    // allocation without exposing mutable storage. The reentrancy guard protects it while readUnixMs
     // and entropy callbacks run.
     generateUuidV7: () => formatUuidV7(bytes(textBytes)),
-    generateUuidV7At: (timestamp) => formatUuidV7(bytesAt(timestamp, textBytes)),
+    generateUuidV7AtUnixMs: (timestamp) => formatUuidV7(bytesAt(timestamp, textBytes)),
     generateUuidV7Bytes,
-    generateUuidV7BytesAt,
+    generateUuidV7BytesAtUnixMs,
   };
 }
 

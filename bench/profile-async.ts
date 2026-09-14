@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { createUuidV7MaskAsync, isUuidSlugError } from "../src/index";
+import { deriveUuidV7MaskAsync, isUuidSlugError } from "../src/index";
 
 interface AsyncProfileRow {
   readonly callMs: number;
@@ -67,7 +67,7 @@ async function measure(
   };
   postedTask(pump);
   const began = performance.now();
-  const pending = createUuidV7MaskAsync({
+  const pending = deriveUuidV7MaskAsync({
     seed,
     keyDerivationIterations,
     ...(controller ? { signal: controller.signal } : {}),

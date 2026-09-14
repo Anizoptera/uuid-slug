@@ -21,8 +21,8 @@ import { unwrap } from "../dev/unwrap";
 import {
   createUuidV7Generator,
   createUuidV7SlugCodec,
-  bytesToUuidSlug,
-  extractUuidV7Timestamp,
+  uuidBytesToDirectSlug,
+  extractUuidV7UnixMs,
   generateUuidV4,
   generateUuidV4Bytes,
   generateUuidV7,
@@ -83,12 +83,12 @@ const offsetTimestampBytesSecond = new Uint8Array(24);
 offsetTimestampBytes.set(timestampBytes[0], 4);
 offsetTimestampBytesSecond.set(timestampBytes[1], 4);
 const timestampSlugs = [
-  unwrap(bytesToUuidSlug(timestampBytes[0])),
-  unwrap(bytesToUuidSlug(timestampBytes[1])),
+  unwrap(uuidBytesToDirectSlug(timestampBytes[0])),
+  unwrap(uuidBytesToDirectSlug(timestampBytes[1])),
 ] as const;
 const timestampSlugsBase32 = [
-  unwrap(bytesToUuidSlug(timestampBytes[0], "base32hex")),
-  unwrap(bytesToUuidSlug(timestampBytes[1], "base32hex")),
+  unwrap(uuidBytesToDirectSlug(timestampBytes[0], "base32hex")),
+  unwrap(uuidBytesToDirectSlug(timestampBytes[1], "base32hex")),
 ] as const;
 const timestampCodec = unwrap(createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }));
 const timestampCodecBase32 = unwrap(
@@ -261,7 +261,7 @@ export const generationCases: readonly GenerationCase[] = [
     7,
     "v7.timestamp.text",
     "validated-text",
-    alternating(timestampUuids, (value) => unwrap(extractUuidV7Timestamp(value))),
+    alternating(timestampUuids, (value) => unwrap(extractUuidV7UnixMs(value))),
     { expectedTimestamps: timestamps },
   ),
   row(
@@ -269,7 +269,7 @@ export const generationCases: readonly GenerationCase[] = [
     7,
     "v7.timestamp.bytes",
     "validated-bytes",
-    alternating(timestampBytes, (value) => unwrap(extractUuidV7Timestamp(value))),
+    alternating(timestampBytes, (value) => unwrap(extractUuidV7UnixMs(value))),
     { expectedTimestamps: timestamps },
   ),
   row(
@@ -278,7 +278,7 @@ export const generationCases: readonly GenerationCase[] = [
     "v7.timestamp.bytes.offset",
     "validated-bytes",
     alternating([offsetTimestampBytes, offsetTimestampBytesSecond], (value) =>
-      unwrap(extractUuidV7Timestamp(value, 4)),
+      unwrap(extractUuidV7UnixMs(value, 4)),
     ),
     { expectedTimestamps: timestamps },
   ),
@@ -287,7 +287,7 @@ export const generationCases: readonly GenerationCase[] = [
     7,
     "v7.timestamp.slug",
     "validated-base64url",
-    alternating(timestampSlugs, (value) => unwrap(extractUuidV7Timestamp(value))),
+    alternating(timestampSlugs, (value) => unwrap(extractUuidV7UnixMs(value))),
     { expectedTimestamps: timestamps },
   ),
   row(
@@ -295,7 +295,7 @@ export const generationCases: readonly GenerationCase[] = [
     7,
     "v7.timestamp.slug",
     "validated-base32hex",
-    alternating(timestampSlugsBase32, (value) => unwrap(extractUuidV7Timestamp(value))),
+    alternating(timestampSlugsBase32, (value) => unwrap(extractUuidV7UnixMs(value))),
     { expectedTimestamps: timestamps },
   ),
   row(
@@ -304,7 +304,7 @@ export const generationCases: readonly GenerationCase[] = [
     "v7.timestamp.masked",
     "authenticated-base64url",
     alternating(maskedTimestampSlugs, (value) =>
-      unwrap(timestampCodec.extractUuidSlugTimestamp(value)),
+      unwrap(timestampCodec.extractUuidSlugUnixMs(value)),
     ),
     { expectedTimestamps: timestamps },
   ),
@@ -314,7 +314,7 @@ export const generationCases: readonly GenerationCase[] = [
     "v7.timestamp.masked",
     "authenticated-base32hex",
     alternating(maskedTimestampSlugsBase32, (value) =>
-      unwrap(timestampCodecBase32.extractUuidSlugTimestamp(value)),
+      unwrap(timestampCodecBase32.extractUuidSlugUnixMs(value)),
     ),
     { expectedTimestamps: timestamps },
   ),

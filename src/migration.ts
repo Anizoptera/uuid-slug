@@ -18,7 +18,7 @@ import type {
   UuidString,
   UuidV7String,
 } from "./types.ts";
-import { CURRENT_MASK_FORMAT, DIRECT_SLUG_FORMAT, ORIGINAL_MASK_FORMAT } from "./types.ts";
+import { SEEDED_MASK_FORMAT, DIRECT_SLUG_FORMAT, FIXED_MASK_FORMAT } from "./types.ts";
 import { bytesToUuidString } from "./uuid.ts";
 
 // These tables and the four-bit checksum define the original wire format.
@@ -29,7 +29,7 @@ const XOR = [
 ] as const;
 const MIGRATION_OPTIONS = {
   acceptDirectSlug: true,
-  acceptOriginalMask: true,
+  acceptFixedMask: true,
 } as const satisfies Record<keyof UuidSlugMigrationOptions, true>;
 
 /** Return a matching candidate or undefined; callers resolve sentinels before trying masks. */
@@ -63,7 +63,7 @@ export function createMigration(
     const unknown = findUnknownOption(options ?? {}, MIGRATION_OPTIONS);
     if (unknown !== undefined)
       return new UuidSlugError(INVALID_OPTIONS, `Unknown migration option: ${unknown}.`);
-    originalOption = options?.acceptOriginalMask;
+    originalOption = options?.acceptFixedMask;
     directOption = options?.acceptDirectSlug;
   } catch (cause) {
     return new UuidSlugError(INVALID_OPTIONS, "Reading migration options failed.", { cause });
@@ -71,7 +71,7 @@ export function createMigration(
   if (originalOption !== undefined && typeof originalOption !== "boolean")
     return new UuidSlugError(
       INVALID_OPTIONS,
-      "Migration acceptOriginalMask option must be a boolean.",
+      "Migration acceptFixedMask option must be a boolean.",
     );
   if (directOption !== undefined && typeof directOption !== "boolean")
     return new UuidSlugError(
@@ -89,10 +89,10 @@ export function createMigration(
     if (typeof slug !== "string") return invalidUuidSlugInput(slug);
     if (
       (format !== undefined &&
-        format !== CURRENT_MASK_FORMAT &&
-        format !== ORIGINAL_MASK_FORMAT &&
+        format !== SEEDED_MASK_FORMAT &&
+        format !== FIXED_MASK_FORMAT &&
         format !== DIRECT_SLUG_FORMAT) ||
-      (format === ORIGINAL_MASK_FORMAT && !original) ||
+      (format === FIXED_MASK_FORMAT && !original) ||
       (format === DIRECT_SLUG_FORMAT && !direct)
     )
       return new UuidSlugError(
@@ -102,8 +102,8 @@ export function createMigration(
 
     const sentinel = sentinels.get(slug);
     if (sentinel) return [sentinel.uuid];
-    const useCurrent = format === undefined || format === CURRENT_MASK_FORMAT;
-    const useOriginal = original && (format === undefined || format === ORIGINAL_MASK_FORMAT);
+    const useCurrent = format === undefined || format === SEEDED_MASK_FORMAT;
+    const useOriginal = original && (format === undefined || format === FIXED_MASK_FORMAT);
     const useDirect = direct && (format === undefined || format === DIRECT_SLUG_FORMAT);
     const bytes = new Uint8Array(16);
     // Original readers ignored the four trailing bits. Keep those aliases confined to migration.
@@ -163,14 +163,14 @@ export function createMigration(
   }
 
   return {
-    uuidSlugToString(slug, format) {
+    slugToUuidString(slug, format) {
       const result = read(slug, format, true);
       return isUuidSlugError(result)
         ? result
         : (result[0] ??
             new UuidSlugError(INVALID_UUID_SLUG, "Slug does not match an enabled format."));
     },
-    uuidSlugToStringCandidates(slug, format) {
+    slugToUuidStringCandidates(slug, format) {
       return read(slug, format, false);
     },
   };

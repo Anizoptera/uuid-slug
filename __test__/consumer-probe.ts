@@ -15,12 +15,12 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   const backfill = api.createUuidV7Generator({});
   const destination = new Uint8Array(20).fill(0x55);
   const generators = [
-    (ms: number) => api.generateUuidV7At(ms),
-    (ms: number) => backfill.generateUuidV7At(ms),
-    (ms: number) => api.generateUuidV7BytesAt(ms),
-    (ms: number) => backfill.generateUuidV7BytesAt(ms),
-    (ms: number) => api.generateUuidV7BytesAt(ms, destination, 2),
-    (ms: number) => backfill.generateUuidV7BytesAt(ms, destination, 2),
+    (ms: number) => api.generateUuidV7AtUnixMs(ms),
+    (ms: number) => backfill.generateUuidV7AtUnixMs(ms),
+    (ms: number) => api.generateUuidV7BytesAtUnixMs(ms),
+    (ms: number) => backfill.generateUuidV7BytesAtUnixMs(ms),
+    (ms: number) => api.generateUuidV7BytesAtUnixMs(ms, destination, 2),
+    (ms: number) => backfill.generateUuidV7BytesAtUnixMs(ms, destination, 2),
   ];
   for (const generate of generators) {
     // Cross a native 12-bit counter's capacity; backfilling must not borrow a later instant.
@@ -54,10 +54,10 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   equal(api.isUuidV7String(unwrap(api.generateUuidV7())), true, "v7 generation");
   equal(api.isUuidV4String(unwrap(api.generateUuidV4())), true, "v4 generation");
   for (const alphabet of [api.BASE64URL, api.BASE32HEX] as const) {
-    const slug = api.uuidStringToSlug(uuid, alphabet);
+    const slug = api.uuidStringToDirectSlug(uuid, alphabet);
     if (slug instanceof Error) throw slug;
-    equal(api.uuidSlugToString(slug), uuid, `${alphabet} conversion`);
-    const generator = api.createUuidV7Generator({ clock: () => 1234567890000 });
+    equal(api.slugToUuidString(slug), uuid, `${alphabet} conversion`);
+    const generator = api.createUuidV7Generator({ readUnixMs: () => 1234567890000 });
     const codec = unwrap(
       api.createUuidV7SlugCodec({
         mask: api.UUID_V7_TEST_MASK,
@@ -66,16 +66,16 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     equal(
       codec
         .createMigrationDecoder({ acceptDirectSlug: true })
-        .uuidSlugToString(slug, api.DIRECT_SLUG_FORMAT),
+        .slugToUuidString(slug, api.DIRECT_SLUG_FORMAT),
       uuid,
       `${alphabet} migration`,
     );
     const generated = unwrap(generator.generateUuidV7());
-    equal(generated.slice(0, 13), "011f71fb-0450", `${alphabet} custom clock`);
+    equal(generated.slice(0, 13), "011f71fb-0450", `${alphabet} custom readUnixMs`);
   }
   const maskOptions = { seed: "consumer-mask-seed", keyDerivationIterations: 1024 };
-  const synchronous = api.createUuidV7Mask(maskOptions);
-  const asynchronous = await api.createUuidV7MaskAsync(maskOptions);
+  const synchronous = api.deriveUuidV7Mask(maskOptions);
+  const asynchronous = await api.deriveUuidV7MaskAsync(maskOptions);
   if (synchronous instanceof Error) throw synchronous;
   if (asynchronous instanceof Error) throw asynchronous;
   equal(
@@ -92,7 +92,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   channel.port1.start();
   channel.port2.postMessage(null);
   try {
-    const cancelled = await api.createUuidV7MaskAsync({
+    const cancelled = await api.deriveUuidV7MaskAsync({
       seed: maskOptions.seed,
       keyDerivationIterations: 1 << 24,
       signal: controller.signal,
@@ -115,23 +115,19 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   const { seed, slug: overlap, currentUuid, originalUuid, directUuid } = fixtures.overlap;
   const migrating = unwrap(api.createUuidV7SlugCodec({ mask: { seed } }));
   const reader = migrating.createMigrationDecoder({
-    acceptOriginalMask: true,
+    acceptFixedMask: true,
     acceptDirectSlug: true,
   });
-  equal(reader.uuidSlugToString(overlap), currentUuid, "migration default");
+  equal(reader.slugToUuidString(overlap), currentUuid, "migration default");
+  equal(reader.slugToUuidString(overlap, api.SEEDED_MASK_FORMAT), currentUuid, "current migration");
   equal(
-    reader.uuidSlugToString(overlap, api.CURRENT_MASK_FORMAT),
-    currentUuid,
-    "current migration",
-  );
-  equal(
-    reader.uuidSlugToString(overlap, api.ORIGINAL_MASK_FORMAT),
+    reader.slugToUuidString(overlap, api.FIXED_MASK_FORMAT),
     originalUuid,
     "original migration",
   );
-  equal(reader.uuidSlugToString(overlap, api.DIRECT_SLUG_FORMAT), directUuid, "direct migration");
+  equal(reader.slugToUuidString(overlap, api.DIRECT_SLUG_FORMAT), directUuid, "direct migration");
   equal(
-    JSON.stringify(reader.uuidSlugToStringCandidates(overlap)),
+    JSON.stringify(reader.slugToUuidStringCandidates(overlap)),
     JSON.stringify([currentUuid, originalUuid, directUuid]),
     "migration candidates",
   );
@@ -139,33 +135,33 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     JSON.stringify(
       migrating
         .createMigrationDecoder({ acceptDirectSlug: true })
-        .uuidSlugToStringCandidates(overlap),
+        .slugToUuidStringCandidates(overlap),
     ),
     JSON.stringify([currentUuid, directUuid]),
-    "original-mask migration retirement",
+    "fixed-mask migration retirement",
   );
   equal(codec.uuidToSlug(uuid), "uqgITQGagyxsoNARAd_pxu", "masked wire vector");
-  equal(codec.uuidSlugToString("uqgITQGagyxsoNARAd_pxu"), uuid, "masked inverse");
+  equal(codec.slugToUuidString("uqgITQGagyxsoNARAd_pxu"), uuid, "masked inverse");
   const sentinelCodec = unwrap(
     api.createUuidV7SlugCodec({
       mask: api.UUID_V7_TEST_MASK,
       sentinels: [{ name: "reserved", uuid }],
     }),
   );
-  const sentinel = api.uuidStringToSlug(uuid);
+  const sentinel = api.uuidStringToDirectSlug(uuid);
   equal(sentinelCodec.uuidToSlug(uuid), sentinel, "custom sentinel encoding");
-  equal(sentinelCodec.uuidSlugToString(String(sentinel)), uuid, "custom sentinel decoding");
-  const bytes = api.generateUuidV7BytesAt(1234567890000);
+  equal(sentinelCodec.slugToUuidString(String(sentinel)), uuid, "custom sentinel decoding");
+  const bytes = api.generateUuidV7BytesAtUnixMs(1234567890000);
   if (bytes instanceof Error) throw bytes;
   equal(bytes.constructor, Uint8Array, "owned byte constructor");
   const uuidText = api.bytesToUuidString(bytes);
   if (uuidText instanceof Error) throw uuidText;
   equal(api.uuidStringToBytes(uuidText) instanceof Uint8Array, true, "directional UUID conversion");
   const out = new Uint8Array(20).fill(0x55);
-  equal(api.generateUuidV7BytesAt(1234567890000, out, 2), out, "caller buffer identity");
+  equal(api.generateUuidV7BytesAtUnixMs(1234567890000, out, 2), out, "caller buffer identity");
   equal(out[0], 0x55, "caller prefix");
   equal(out[19], 0x55, "caller suffix");
-  const callUuidV7BytesAt = api.generateUuidV7BytesAt as (
+  const callUuidV7BytesAt = api.generateUuidV7BytesAtUnixMs as (
     timestamp: number,
     out?: Uint8Array,
     offset?: number,
