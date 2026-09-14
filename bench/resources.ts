@@ -183,6 +183,16 @@ try {
     views: 0,
     errors: 0,
   });
+  check("UUIDv7 text bounds", () => api.uuidV7Bounds(time), {
+    buffers: 0,
+    views: 0,
+    errors: 0,
+  });
+  check("UUIDv7 byte bounds", () => api.uuidV7ByteBounds(time), {
+    buffers: 2,
+    views: 0,
+    errors: 0,
+  });
   assert.equal(clocks, 1, "one generator call must observe the clock once");
   assert.equal(api.generateUuidV7Bytes(into, 4), into, "initialize the package generator");
   check("caller-owned v7 generation", () => api.generateUuidV7Bytes(into, 4), {

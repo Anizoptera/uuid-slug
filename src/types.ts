@@ -109,6 +109,14 @@ export interface GeneratedUuidV7<
   readonly slug: Slug;
 }
 
+/** Inclusive bounds that contain every UUIDv7 from the requested Unix-millisecond interval. */
+export interface UuidV7Bounds<Value extends UuidV7StringFor<UuidTextCase> | UuidV7Bytes> {
+  /** Smallest RFC-variant UUIDv7 at the first requested millisecond. */
+  readonly startInclusive: Value;
+  /** Largest RFC-variant UUIDv7 at the last requested millisecond. */
+  readonly endInclusive: Value;
+}
+
 /*
  * Reject a captured brand that proves an input cannot satisfy an operation. Bare strings remain
  * valid because widening erases their child brand, leaving runtime validation as the only sound

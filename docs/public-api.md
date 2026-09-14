@@ -241,6 +241,10 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   case-sensitive.
 - Export `NIL_UUID` and `MAX_UUID` as canonical `UuidString` values. They are useful boundaries and
   sentinels, but neither value claims UUIDv4 or UUIDv7 semantics.
+- `uuidV7Bounds` and `uuidV7ByteBounds` return the inclusive lowest and highest RFC-variant UUIDv7
+  values for one millisecond or an inclusive millisecond interval. They construct search keys and
+  never generate identifiers. Their range meaning requires comparison in UUID wire-byte order;
+  masked slugs, base64url text, and SQL Server `uniqueidentifier` ordering do not satisfy it.
 - Accept `Uint8Array` and its subtypes, an exact 16-byte `ArrayBuffer`, and a `DataView` whose
   declared range is exactly 16 bytes. A `DataView` makes its range explicit, so it can select a UUID
   inside a larger buffer without a copy. Apply explicit input offsets only to `Uint8Array`. Reject

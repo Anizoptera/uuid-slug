@@ -4,11 +4,32 @@ Live work only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`.
 
 ## UUID constants pending maintainer review
 
-- [ ] Review a complete registry, selected namespace constants, and no namespace exports; account for IANA registry growth and the lack of name-based UUID generation in this package.
-- [ ] Review RFC example and test-vector UUIDs against keeping examples local to documentation and conformance tests.
-- [ ] Review protocol-owned UUID registries such as Bluetooth and COM against depending on their owning packages or registries.
-- [ ] Review precomputed plain-slug forms of `NIL_UUID` and `MAX_UUID` in both alphabets against one-time conversion by callers.
-- [ ] Review UUIDv4 and UUIDv7 endpoint constants or timestamp-range builders for database bounds against generic byte and text construction.
+Maintainer ruling: UUIDv7 timestamp bounds use inclusive endpoints and expose canonical UUID text
+and bytes. One operation accepts an optional inclusive end timestamp; omission selects one
+millisecond. The result is valid only with comparison that preserves UUID byte order.
+
+- [x] Define one strict generic bounds result whose value retains canonical text case or owned bytes.
+- [x] Implement inclusive UUIDv7 bounds for one millisecond or an inclusive millisecond interval.
+- [x] Export and document the TypeScript bounds operations.
+- [x] Implement and document the equivalent Rust bounds operation.
+- [x] Falsify timestamp limits, inverted intervals, fixed version and variant bits, endpoint
+      inclusion, byte ownership, declarations, package exports, and cross-language parity.
+
+- [x] Research namespace constants: IANA's registry can grow and this package does not generate
+      name-based UUIDs, so exports would add a partial second registry without a consuming operation.
+- [ ] Decide whether concrete namespace demand outweighs that registry ownership.
+- [x] Research example UUID constants: RFC examples are test vectors, not assigned identities, and
+      remain useful only beside the examples or conformance cases that establish their expected result.
+- [ ] Decide whether a named public example has a consumer job beyond documentation and tests.
+- [x] Research protocol UUID constants: Bluetooth, COM, and similar values belong to changing
+      domain registries rather than the version-neutral UUID representation.
+- [ ] Decide whether this package should assume ownership of any external protocol registry.
+- [x] Research precomputed nil/max slugs: they save one conversion per process but add four public
+      contracts that callers can derive from the existing canonical constants.
+- [ ] Decide whether repeated slug-heavy call sites justify public nil/max slug constants.
+- [x] Research version endpoint constants: UUIDv7 timestamp bounds serve database range queries,
+      while fixed v4/v7 minima and maxima describe whole version spaces with no known package job.
+- [ ] Decide whether fixed UUIDv4 or UUIDv7 endpoints serve a distinct caller job.
 
 ## Competitor ideas pending maintainer review
 

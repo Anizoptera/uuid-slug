@@ -599,6 +599,19 @@ hex assembly; the current fixed decoder plus runtime-selected formatter remains 
 Reconsider only if the native formatter disappears or a direct string primitive replaces JavaScript
 concatenation.
 
+### UUIDv7 text bounds
+
+UUIDv7 text bounds format the timestamp directly instead of allocating byte bounds and passing them
+through the generic formatter. Three million-call rounds on 2026-09-14 measured the direct form at
+about 42% of the composed path's time on Node 24.21.0 and about 90% on Bun 1.4.2. This isolated local
+comparison varied only the formatter and checked identical output; it does not measure installed
+package import cost, memory retention, other runtimes, or consumer frequency. Recheck if UUID text
+formatting or engine string handling changes.
+
+The shared one-millisecond profile completed both text and byte bounds on Node 24.21.0, Bun 1.4.2,
+Deno 2.9.6, and Chromium 151. Resource counters observed no byte-array allocation for text bounds
+and exactly the two returned arrays for byte bounds.
+
 ### Portable UUIDv7 timestamp writes
 
 Select the fixed 48-bit timestamp writer once when the module loads. Bun keeps the six-byte loop;

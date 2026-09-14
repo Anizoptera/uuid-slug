@@ -378,6 +378,12 @@ the most significant bits come first. Equal-length slugs sort by timestamp even 
 spans two UUID fields. This is timestamp order, not event order: clocks can move backwards, and
 UUIDv7 does not promise creation order within a millisecond.
 
+`uuidV7Bounds(ms)` returns two search keys because one millisecond identifies a set, not one UUID:
+the timestamp fixes the first 48 bits while 74 payload bits can differ. The first key sets those
+payload bits to zero and the second sets them to one. Pass an inclusive end millisecond to cover a
+longer interval. Use these bounds only where comparison follows UUID wire-byte order; SQL Server's
+`uniqueidentifier` order does not.
+
 Use plain slugs to keep time grouping, and base32hex for chronological text sorting.
 Masking scrambles the timestamp with the other fields. It can suit storage that benefits from
 spreading new keys across text ranges instead of grouping them by time.
@@ -552,6 +558,8 @@ independent generator; UUIDv4 and plain-slug generation remain module-level.
 | `generateUuidV4Bytes(out, offset?)` / `generateUuidV7Bytes(out, offset?)` | Your output array, with the UUID written at the offset. |
 | `generateUuidV7AtUnixMs(ms, textCase?)` | UUIDv7 text with the supplied timestamp. |
 | `generateUuidV7BytesAtUnixMs(ms, out?, offset?)` | UUIDv7 bytes with the supplied timestamp, newly allocated or written into your array. |
+| `uuidV7Bounds(ms, textCase?)` / `uuidV7Bounds(startMs, endMs, textCase?)` | Inclusive canonical UUID bounds for one millisecond or an inclusive interval. |
+| `uuidV7ByteBounds(startMs, endMs?)` | The same inclusive bounds as two owned byte arrays. |
 | `createUuidV7GeneratorWithRandomFill(fill, options?)` | An independent UUIDv7 generator using an explicit synchronous entropy source. |
 
 ### Convert and inspect IDs

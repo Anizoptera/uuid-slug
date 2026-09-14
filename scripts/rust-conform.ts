@@ -119,6 +119,14 @@ export function evaluate(request: Request): Outcome {
         const bytes = ts.uuidStringToBytes(input);
         return result(bytes instanceof Error ? bytes : ts.extractUuidV7UnixMs(bytes));
       }
+      case "uuidV7Bounds":
+        return result(
+          ts.uuidV7Bounds(
+            Number(request.start),
+            Number(request.end),
+            request.textCase as ts.UuidTextCase | undefined,
+          ),
+        );
       case "guards":
         return result([
           ts.isUuidText(input),
@@ -263,6 +271,15 @@ export async function contractRequests(): Promise<Request[]> {
     await readFile("rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json", "utf8"),
   );
   const requests: Request[] = [];
+  for (const [start, end] of [
+    [0, 0],
+    [1, 2],
+    [0xffff_ffff_ffff, 0xffff_ffff_ffff],
+    [2, 1],
+    [0x1_0000_0000_0000, 0x1_0000_0000_0000],
+  ])
+    for (const textCase of ["lowercase", "uppercase"])
+      requests.push({ op: "uuidV7Bounds", start, end, textCase });
   // Generic parsing accepts every version/variant; specialized guards must not widen with it.
   for (const { value, v4, v7 } of uuidVariants("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")) {
     deepStrictEqual(evaluate({ op: "guards", input: value }), {

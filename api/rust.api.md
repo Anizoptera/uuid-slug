@@ -306,6 +306,25 @@ impl core::marker::Unpin for uuid_slug::UuidSlugMigrationOptions
 impl core::marker::UnsafeUnpin for uuid_slug::UuidSlugMigrationOptions
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidSlugMigrationOptions
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidSlugMigrationOptions
+pub struct uuid_slug::UuidV7Bounds
+pub uuid_slug::UuidV7Bounds::end_inclusive: uuid_slug::Uuid
+pub uuid_slug::UuidV7Bounds::start_inclusive: uuid_slug::Uuid
+impl core::clone::Clone for uuid_slug::UuidV7Bounds
+pub fn uuid_slug::UuidV7Bounds::clone(&self) -> uuid_slug::UuidV7Bounds
+impl core::cmp::Eq for uuid_slug::UuidV7Bounds
+impl core::cmp::PartialEq for uuid_slug::UuidV7Bounds
+pub fn uuid_slug::UuidV7Bounds::eq(&self, other: &uuid_slug::UuidV7Bounds) -> bool
+impl core::fmt::Debug for uuid_slug::UuidV7Bounds
+pub fn uuid_slug::UuidV7Bounds::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::UuidV7Bounds
+impl core::marker::StructuralPartialEq for uuid_slug::UuidV7Bounds
+impl core::marker::Freeze for uuid_slug::UuidV7Bounds
+impl core::marker::Send for uuid_slug::UuidV7Bounds
+impl core::marker::Sync for uuid_slug::UuidV7Bounds
+impl core::marker::Unpin for uuid_slug::UuidV7Bounds
+impl core::marker::UnsafeUnpin for uuid_slug::UuidV7Bounds
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7Bounds
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7Bounds
 pub struct uuid_slug::UuidV7Generator
 impl uuid_slug::UuidV7Generator
 pub fn uuid_slug::UuidV7Generator::generate_uuid_v7(&mut self) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
@@ -430,6 +449,7 @@ pub fn uuid_slug::fill_os_random_bytes(out: &mut [u8]) -> core::result::Result<(
 pub fn uuid_slug::generate_uuid_v4() -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4_into_with_random_fill(out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4_with_random_fill(fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
+pub fn uuid_slug::uuid_v7_bounds(start_unix_ms: u64, end_unix_ms: core::option::Option<u64>) -> core::result::Result<uuid_slug::UuidV7Bounds, uuid_slug::Error>
 pub fn uuid_slug::uuid_v7_test_mask() -> uuid_slug::UuidV7Mask
 ```
 
@@ -737,6 +757,25 @@ impl core::marker::Unpin for uuid_slug::UuidSlugMigrationOptions
 impl core::marker::UnsafeUnpin for uuid_slug::UuidSlugMigrationOptions
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidSlugMigrationOptions
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidSlugMigrationOptions
+pub struct uuid_slug::UuidV7Bounds
+pub uuid_slug::UuidV7Bounds::end_inclusive: uuid_slug::Uuid
+pub uuid_slug::UuidV7Bounds::start_inclusive: uuid_slug::Uuid
+impl core::clone::Clone for uuid_slug::UuidV7Bounds
+pub fn uuid_slug::UuidV7Bounds::clone(&self) -> uuid_slug::UuidV7Bounds
+impl core::cmp::Eq for uuid_slug::UuidV7Bounds
+impl core::cmp::PartialEq for uuid_slug::UuidV7Bounds
+pub fn uuid_slug::UuidV7Bounds::eq(&self, other: &uuid_slug::UuidV7Bounds) -> bool
+impl core::fmt::Debug for uuid_slug::UuidV7Bounds
+pub fn uuid_slug::UuidV7Bounds::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::UuidV7Bounds
+impl core::marker::StructuralPartialEq for uuid_slug::UuidV7Bounds
+impl core::marker::Freeze for uuid_slug::UuidV7Bounds
+impl core::marker::Send for uuid_slug::UuidV7Bounds
+impl core::marker::Sync for uuid_slug::UuidV7Bounds
+impl core::marker::Unpin for uuid_slug::UuidV7Bounds
+impl core::marker::UnsafeUnpin for uuid_slug::UuidV7Bounds
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7Bounds
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7Bounds
 pub struct uuid_slug::UuidV7Generator
 impl uuid_slug::UuidV7Generator
 pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_at_unix_ms_into_with_random_fill(&self, unix_ms: f64, out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
@@ -857,5 +896,6 @@ pub fn uuid_slug::derive_uuid_v7_mask(mask_seed: &[u8], key_derivation_iteration
 pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str, cancellation: uuid_slug::UuidV7MaskDerivationCancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::generate_uuid_v4_into_with_random_fill(out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::generate_uuid_v4_with_random_fill(fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
+pub fn uuid_slug::uuid_v7_bounds(start_unix_ms: u64, end_unix_ms: core::option::Option<u64>) -> core::result::Result<uuid_slug::UuidV7Bounds, uuid_slug::Error>
 pub fn uuid_slug::uuid_v7_test_mask() -> uuid_slug::UuidV7Mask
 ```

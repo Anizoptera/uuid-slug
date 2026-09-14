@@ -82,6 +82,8 @@ enables the unsupported 0.2.0 masked format.
 
 `UuidV7Generator` owns its sequence. `generate_uuid_v7()` uses secure platform entropy;
 `generate_uuid_v7_at_unix_ms()` takes an explicit timestamp without changing the sequence.
+`uuid_v7_bounds(start, end)` returns the inclusive lowest and highest UUIDv7 search keys; pass
+`None` for one millisecond. Use the bounds only with comparison in UUID wire-byte order.
 Preserve-order clock rollback is the default. Use `with_clock_rollback_policy` to reset or return
 `InvalidTimestamp` after a chosen total-skew tolerance.
 `generate_uuid_v4()` generates

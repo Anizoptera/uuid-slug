@@ -350,6 +350,23 @@ export declare type UuidV4String = Brand<UuidString & UuidV4Text, "UuidV4String"
 export declare type UuidV4StringFor<Case extends UuidTextCase> =
   Case extends typeof UUID_TEXT_UPPERCASE ? UppercaseUuidV4String : UuidV4String;
 export declare type UuidV4Text = Brand<UuidText, "UuidV4Text">;
+export declare interface UuidV7Bounds<Value extends UuidV7StringFor<UuidTextCase> | UuidV7Bytes> {
+  readonly startInclusive: Value;
+  readonly endInclusive: Value;
+}
+export declare function uuidV7Bounds<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  startUnixMs: number,
+  textCase?: Case,
+): UuidV7Bounds<UuidV7StringFor<Case>> | UuidSlugError;
+export declare function uuidV7Bounds<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  startUnixMs: number,
+  endUnixMs: number,
+  textCase?: Case,
+): UuidV7Bounds<UuidV7StringFor<Case>> | UuidSlugError;
+export declare function uuidV7ByteBounds(
+  startUnixMs: number,
+  endUnixMs?: number,
+): UuidV7Bounds<UuidV7Bytes> | UuidSlugError;
 export declare type UuidV7Bytes = Brand<UuidBytes, "UuidV7Bytes">;
 declare type UuidV7BytesInput<Input extends UuidByteInput | UuidSlugError> = RejectKnownInput<
   Input,

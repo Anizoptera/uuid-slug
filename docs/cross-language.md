@@ -58,6 +58,7 @@ conversion preserve other UUID versions without version-specific APIs.
 | v7 generation, rollback, explicit time and caller storage | `UuidV7Generator`, `UuidV7ClockRollbackPolicy`, and its platform-random, explicit random-fill, explicit-time, and caller-output forms |
 | Generated plain or masked slugs | Generate a `Uuid`, then call `to_plain_uuid_slug` or `uuid_to_masked_slug` |
 | UUIDv7 timestamp | `Uuid::extract_uuid_v7_unix_ms` |
+| Inclusive UUIDv7 timestamp bounds | `uuid_v7_bounds` |
 | Last maskable timestamp | `MAX_MASKED_UUID_V7_UNIX_MS` |
 | Sync/async masks and custom transforms | `derive_uuid_v7_mask`, `derive_uuid_v7_mask_async`, `UuidV7Mask::from_permutation_functions` |
 | Explicit public mask | `UUID_V7_TEST_MASK`; `uuid_v7_test_mask()` |

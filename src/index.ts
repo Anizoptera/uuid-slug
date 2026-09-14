@@ -75,12 +75,14 @@ export type {
   UuidV7MaskingCodec,
   UuidV7MaskingCodecOptions,
   UuidV7Bytes,
+  UuidV7Bounds,
   UuidV7Sentinel,
   UuidV7SentinelConfig,
   PlainUuidV7Slug,
   UuidV7String,
   UuidV7Text,
 } from "./types.ts";
+export { uuidV7Bounds, uuidV7ByteBounds } from "./v7-bounds.ts";
 export {
   MAX_UUID,
   NIL_UUID,

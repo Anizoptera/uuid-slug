@@ -35,6 +35,8 @@ import {
   generateUuidV7BytesAtUnixMs,
   generateUuidV7,
   generateUuidV7AtUnixMs,
+  uuidV7Bounds,
+  uuidV7ByteBounds,
   createUuidV7Generator,
   createUuidV7GeneratorWithRandomFill,
   generatePlainUuidV7Slug,
@@ -238,6 +240,38 @@ const v7PatternAt = (length: number, offset: number) => {
 };
 
 describe("UUIDv7 timestamp extraction", () => {
+  it("constructs inclusive UUIDv7 bounds without generating identifiers", () => {
+    expect(uuidV7Bounds(0)).toEqual({
+      startInclusive: "00000000-0000-7000-8000-000000000000",
+      endInclusive: "00000000-0000-7fff-bfff-ffffffffffff",
+    });
+    expect(uuidV7Bounds(1, 2)).toEqual({
+      startInclusive: "00000000-0001-7000-8000-000000000000",
+      endInclusive: "00000000-0002-7fff-bfff-ffffffffffff",
+    });
+    expect(uuidV7Bounds(0xffff_ffff_ffff)).toEqual({
+      startInclusive: "ffffffff-ffff-7000-8000-000000000000",
+      endInclusive: "ffffffff-ffff-7fff-bfff-ffffffffffff",
+    });
+    expect(uuidV7Bounds(0, UUID_TEXT_UPPERCASE)).toEqual({
+      startInclusive: "00000000-0000-7000-8000-000000000000",
+      endInclusive: "00000000-0000-7FFF-BFFF-FFFFFFFFFFFF",
+    });
+  });
+
+  it("owns byte bounds and rejects invalid or inverted intervals", () => {
+    const bounds = unwrap(uuidV7ByteBounds(0));
+    expect(bytesToUuidString(bounds.startInclusive)).toBe("00000000-0000-7000-8000-000000000000");
+    expect(bytesToUuidString(bounds.endInclusive)).toBe("00000000-0000-7fff-bfff-ffffffffffff");
+    expect(bounds.startInclusive).not.toBe(bounds.endInclusive);
+    for (const [start, end] of [[-1], [1.5], [0, 0x1_0000_0000_0000], [2, 1]]) {
+      const result =
+        end === undefined ? uuidV7Bounds(start as number) : uuidV7Bounds(start as number, end);
+      expect(result).toMatchObject({ code: "invalid_timestamp" });
+    }
+    expect(uuidV7Bounds(0, "titlecase" as never)).toMatchObject({ code: "invalid_options" });
+  });
+
   // The defect this pins is silent rather than loud: a v4's first six bytes are random, so the
   // old signature returned a confident date drawn from the next nine thousand years instead of
   // reporting the wrong version. Anything built on it — a timestamp window, an audit trail —

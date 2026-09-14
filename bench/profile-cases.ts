@@ -516,6 +516,8 @@ export function createProfileCases(
         }
       : {}),
     "v7.string": () => api.generateUuidV7(),
+    "v7.bounds.text": (index) => api.uuidV7Bounds(instant + index),
+    "v7.bounds.bytes": (index) => api.uuidV7ByteBounds(instant, instant + index),
     "v4.bytes": () => api.generateUuidV4Bytes(),
     "v4.into": () => api.generateUuidV4Bytes(into, 4),
     "v7.bytes": () => api.generateUuidV7Bytes(),

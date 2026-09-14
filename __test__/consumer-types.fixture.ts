@@ -51,6 +51,8 @@ import {
   generateUuidV7BytesAtUnixMs,
   generateUuidV7,
   generateUuidV7AtUnixMs,
+  uuidV7Bounds,
+  uuidV7ByteBounds,
   generatePlainUuidV7Slug,
   generateUuidV7WithPlainSlug,
   UUID_V7_ROLLBACK_ERROR,
@@ -80,6 +82,7 @@ import type {
   UuidV4String,
   PlainUuidV7Slug,
   UuidV7Bytes,
+  UuidV7Bounds,
   UuidV7String,
   UuidV7Text,
   UuidV7Generator,
@@ -251,6 +254,11 @@ const uppercaseV7 = generateUuidV7("uppercase");
 if (uppercaseV7 instanceof Error) throw uppercaseV7;
 expectType<PlainUuidV7Slug | UuidSlugError>()(uuidStringToPlainSlug(uppercaseV7));
 expectType<UppercaseUuidV7String | UuidSlugError>()(generateUuidV7AtUnixMs(0, UUID_TEXT_UPPERCASE));
+expectType<UuidV7Bounds<UuidV7String> | UuidSlugError>()(uuidV7Bounds(0));
+expectType<UuidV7Bounds<UppercaseUuidV7String> | UuidSlugError>()(
+  uuidV7Bounds(0, UUID_TEXT_UPPERCASE),
+);
+expectType<UuidV7Bounds<UuidV7Bytes> | UuidSlugError>()(uuidV7ByteBounds(0, 1));
 const uppercaseV4 = generateUuidV4("uppercase");
 if (uppercaseV4 instanceof Error) throw uppercaseV4;
 // @ts-expect-error A known uppercase UUIDv4 cannot enter UUIDv7 timestamp validation.

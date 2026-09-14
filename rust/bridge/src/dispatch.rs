@@ -4,7 +4,7 @@ use serde_json::{Value, json};
 use uuid_slug::{
     Error, ErrorCode, Uuid, UuidSlugAlphabet, UuidSlugMigrationFormat, UuidSlugMigrationOptions,
     UuidV7Mask, UuidV7MaskingCodec, UuidV7MaskingCodecOptions, UuidV7TimestampWindow,
-    derive_uuid_v7_mask, uuid_v7_test_mask,
+    derive_uuid_v7_mask, uuid_v7_bounds, uuid_v7_test_mask,
 };
 
 fn text<'a>(value: &'a Value, key: &str) -> Result<&'a str, Error> {
@@ -190,6 +190,27 @@ fn run(request: &Value) -> Result<Value, Error> {
         )),
         "plainToUuid" => Ok(json!(Uuid::from_plain_uuid_slug(input)?.to_string())),
         "timestamp" => Ok(json!(Uuid::from_uuid_string(input)?.extract_uuid_v7_unix_ms()?)),
+        "uuidV7Bounds" => {
+            let start = request["start"]
+                .as_u64()
+                .ok_or_else(|| Error::new(ErrorCode::InvalidTimestamp))?;
+            let end = request["end"]
+                .as_u64()
+                .ok_or_else(|| Error::new(ErrorCode::InvalidTimestamp))?;
+            let bounds = uuid_v7_bounds(start, Some(end))?;
+            let format = |uuid: Uuid| {
+                let text = uuid.to_string();
+                if request["textCase"] == "uppercase" {
+                    text.to_uppercase()
+                } else {
+                    text
+                }
+            };
+            Ok(json!({
+                "startInclusive": format(bounds.start_inclusive),
+                "endInclusive": format(bounds.end_inclusive),
+            }))
+        }
         "guards" => {
             let uuid = Uuid::from_uuid_string(input).ok();
             let slug = Uuid::from_plain_uuid_slug(input)

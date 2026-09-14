@@ -9,6 +9,39 @@ use crate::{Error, ErrorCode, Uuid};
 pub const MAX_UUID_V7_UNIX_MS: u64 = (1 << 48) - 1;
 const MAX_SEQUENCE: u64 = (1 << 42) - 1;
 
+/// Inclusive UUIDv7 search bounds for a Unix-millisecond interval.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct UuidV7Bounds {
+    /// Smallest RFC-variant UUIDv7 at the first requested millisecond.
+    pub start_inclusive: Uuid,
+    /// Largest RFC-variant UUIDv7 at the last requested millisecond.
+    pub end_inclusive: Uuid,
+}
+
+fn uuid_v7_endpoint(unix_ms: u64, upper: bool) -> Uuid {
+    let mut bytes = if upper { [u8::MAX; 16] } else { [0; 16] };
+    bytes[..6].copy_from_slice(&unix_ms.to_be_bytes()[2..]);
+    bytes[6] = if upper { 0x7f } else { 0x70 };
+    bytes[8] = if upper { 0xbf } else { 0x80 };
+    Uuid::from_uuid_bytes_array(bytes)
+}
+
+/// Return bounds containing every RFC-variant UUIDv7 from `start_unix_ms` through the optional
+/// inclusive end. Omit the end to select one millisecond. Comparison must follow UUID wire order.
+pub fn uuid_v7_bounds(start_unix_ms: u64, end_unix_ms: Option<u64>) -> Result<UuidV7Bounds, Error> {
+    let end_unix_ms = end_unix_ms.unwrap_or(start_unix_ms);
+    if start_unix_ms > MAX_UUID_V7_UNIX_MS
+        || end_unix_ms > MAX_UUID_V7_UNIX_MS
+        || start_unix_ms > end_unix_ms
+    {
+        return Err(Error::new(ErrorCode::InvalidTimestamp));
+    }
+    Ok(UuidV7Bounds {
+        start_inclusive: uuid_v7_endpoint(start_unix_ms, false),
+        end_inclusive: uuid_v7_endpoint(end_unix_ms, true),
+    })
+}
+
 /// Policy for a system clock that falls below one generator's accepted high-water reading.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum UuidV7ClockRollbackPolicy {
@@ -377,6 +410,24 @@ mod tests {
                 .generate_uuid_v7_at_unix_ms_with_random_fill(1.5, fill)
                 .is_err()
         );
+        Ok(())
+    }
+    #[test]
+    fn uuid_v7_bounds_cover_one_millisecond_and_intervals() -> Result<(), Error> {
+        let instant = uuid_v7_bounds(0, None)?;
+        assert_eq!(
+            instant.start_inclusive.to_string(),
+            "00000000-0000-7000-8000-000000000000"
+        );
+        assert_eq!(
+            instant.end_inclusive.to_string(),
+            "00000000-0000-7fff-bfff-ffffffffffff"
+        );
+        let interval = uuid_v7_bounds(1, Some(2))?;
+        assert_eq!(interval.start_inclusive.extract_uuid_v7_unix_ms()?, 1);
+        assert_eq!(interval.end_inclusive.extract_uuid_v7_unix_ms()?, 2);
+        assert!(uuid_v7_bounds(2, Some(1)).is_err());
+        assert!(uuid_v7_bounds(MAX_UUID_V7_UNIX_MS + 1, None).is_err());
         Ok(())
     }
     #[test]
