@@ -1,5 +1,33 @@
 # Roadmap
 
+## Competitor interface follow-up
+
+Adopt the useful competitor behavior without copying interfaces that add more caller burden than capability.
+
+- [ ] Accept standard UUID URNs and common brace-wrapped UUID text at every universal UUID-text input.
+  - [ ] Normalize every accepted spelling to the requested canonical hyphenated case.
+  - [ ] Preserve strict source-specific slug parsing and reject prefixes, wrappers, whitespace, or nesting outside the accepted grammar.
+  - [ ] Prove mixed case, nil, max, versions, malformed wrappers, wrong lengths, and runtime non-string inputs.
+- [ ] Export typed canonical `NIL_UUID` and `MAX_UUID` values in TypeScript and Rust.
+  - [ ] Keep nil valid for version-neutral operations and reject it only where an operation requires UUIDv4 or UUIDv7.
+  - [ ] Prove direct conversion, both plain-slug alphabets, masking rejection, declarations, and packed consumers.
+- [ ] Give created UUIDv7 generators an explicit clock-rollback policy.
+  - [ ] Compare preserving the last timestamp, resetting to the observed clock, and returning a typed failure.
+  - [ ] Choose an explicit default from consumer consequences; keep module-level generation simple.
+  - [ ] Prove rollback, repeated timestamps, recovery, overflow, clock failures, and independent generator state.
+- [ ] Re-evaluate the remaining competitor interface ideas from real consumer calls before accepting or rejecting them.
+  - [ ] Compare primitive results with a parsed UUID value object for repeated inspection, conversion, equality, serialization, and worker transfer.
+  - [ ] Compare one-at-a-time generation with bounded or progressive batch generation under allocation and event-loop limits.
+  - [ ] Test whether custom alphabets solve a real interoperability job that the two canonical alphabets cannot.
+  - [ ] Compare numeric Unix milliseconds with `Date` input and output at application boundaries.
+  - [ ] Compare standalone operations, function-attached helpers, and representation-specific namespaces for discovery and detached-name clarity.
+  - [ ] Compare error values, result objects, exceptions, and nullable results on composition, diagnosis, and ordinary call burden.
+  - [ ] Compare runtime-owned entropy with caller-supplied entropy and counters for reproducibility, security, and misuse resistance.
+  - [ ] Compare exact `Uint8Array` input with `ArrayBuffer`, views, and array-like bytes for interoperability, ownership, and validation cost.
+  - [ ] Compare separate generation functions with an output selector for text, bytes, and each plain-slug alphabet.
+  - [ ] Reject unrelated UUID-version generation without further work; version-neutral conversion remains supported.
+- [ ] Evaluate a CLI only after concrete shell, migration, or debugging demand appears; do not build it now.
+
 - [x] Define and enforce the JavaScript primitive-string input boundary.
   - [x] Record the decision and its reason in the public API authority before dependent text.
   - [x] Keep consumer guidance and agent routing concise and consistent with that authority.
