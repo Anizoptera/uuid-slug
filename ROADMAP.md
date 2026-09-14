@@ -26,8 +26,6 @@ Adopt the useful competitor behavior without copying interfaces that add more ca
   - [ ] Compare exact `Uint8Array` input with `ArrayBuffer`, views, and array-like bytes for interoperability, ownership, and validation cost.
   - [ ] Compare separate generation functions with an output selector for text, bytes, and each plain-slug alphabet.
   - [ ] Reject unrelated UUID-version generation without further work; version-neutral conversion remains supported.
-- [ ] Evaluate a CLI only after concrete shell, migration, or debugging demand appears; do not build it now.
-
 - [x] Define and enforce the JavaScript primitive-string input boundary.
   - [x] Record the decision and its reason in the public API authority before dependent text.
   - [x] Keep consumer guidance and agent routing concise and consistent with that authority.
@@ -161,3 +159,8 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 
 - [ ] Render the `bench/matrix.ts` tables as Markdown pipe tables so `bench/results/matrix.md`
       needs no fenced fixed-width blocks. The matrix tests assert the current heading and row text.
+
+## Deferred CLI evaluation
+
+- [ ] Evaluate a CLI only when the maintainer reopens this work after concrete shell, migration,
+      or debugging demand appears. Do not design or build it during the current session.
