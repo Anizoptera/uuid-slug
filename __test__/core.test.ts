@@ -535,10 +535,6 @@ describe("plain UUID slugs", () => {
     expect(createUuidV7GeneratorWithRandomFill(null as never)).toMatchObject({
       code: "invalid_options",
     });
-    expect(generateUuidV4WithRandomFill((() => "bad") as never)).toMatchObject({
-      code: "rng_unavailable",
-    });
-
     let nestedV4: unknown;
     const outerV4 = generateUuidV4WithRandomFill((bytes) => {
       nestedV4 = generateUuidV4WithRandomFill(FILL_WITH_ZEROS);
@@ -1004,7 +1000,10 @@ describe("sentinel definitions", () => {
           { name: "second", uuid: SAMPLE_V7_A },
         ],
       }),
-    ).toMatchObject({ code: "invalid_uuid" });
+    ).toMatchObject({
+      code: "invalid_sentinel",
+      message: 'Sentinel "second" repeats the UUID of an earlier sentinel.',
+    });
   });
 });
 

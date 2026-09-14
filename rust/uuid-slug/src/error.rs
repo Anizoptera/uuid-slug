@@ -1,5 +1,5 @@
 //! Report failures with the same stable codes as the TypeScript package.
-use std::fmt;
+use std::{borrow::Cow, fmt};
 
 /// Stable machine-readable failure classification shared with TypeScript.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -15,9 +15,9 @@ pub enum ErrorCode {
     InvalidBuffer,
     /// The mask configuration violates its contract.
     InvalidMask,
-    /// A sentinel name is empty or repeats within one UUIDv7 masking codec.
+    /// A sentinel name or UUID is empty, invalid, or repeats within one masking codec.
     InvalidSentinel,
-    /// A timestamp is nonfinite, negative, fractional or outside its allowed range.
+    /// A timestamp does not satisfy the requested operation's range or precision.
     InvalidTimestamp,
     /// UUID text is not hexadecimal in an accepted hyphenated or compact spelling.
     InvalidUuid,
@@ -63,7 +63,9 @@ impl ErrorCode {
                 "Sentinel names must be nonempty and unique within a UUIDv7 masking codec."
             }
             Self::InvalidTimestamp => "Timestamp must fit the operation's millisecond range.",
-            Self::InvalidUuid => "Expected 32 hexadecimal digits with optional canonical hyphens.",
+            Self::InvalidUuid => {
+                "Expected compact UUID text, canonical hyphenated text, a UUID URN, or brace-wrapped canonical text."
+            }
             Self::InvalidUuidSlug => "Invalid slug for the requested operation.",
             Self::InvalidUuidVersion => "This operation requires an RFC-variant UUIDv7.",
             Self::RngUnavailable => "Secure random byte generation failed.",
@@ -76,13 +78,24 @@ impl ErrorCode {
 #[derive(Debug)]
 pub struct Error {
     code: ErrorCode,
+    message: Cow<'static, str>,
     source: Option<Box<dyn std::error::Error + Send + Sync>>,
 }
 
 impl Error {
     /// Construct a failure from its stable classification.
     pub const fn new(code: ErrorCode) -> Self {
-        Self { code, source: None }
+        Self {
+            code,
+            message: Cow::Borrowed(code.message()),
+            source: None,
+        }
+    }
+
+    /// Replace the default diagnostic while keeping the stable classification.
+    pub(crate) fn with_message(mut self, message: impl Into<Cow<'static, str>>) -> Self {
+        self.message = message.into();
+        self
     }
 
     /// Return the stable typed classification without inspecting its diagnostic source.
@@ -99,7 +112,7 @@ impl Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.code.message())
+        f.write_str(&self.message)
     }
 }
 
@@ -126,6 +139,18 @@ mod tests {
         assert_eq!(
             error.source().map(ToString::to_string).as_deref(),
             Some("entropy offline")
+        );
+    }
+
+    #[test]
+    fn site_message_preserves_typed_classification() {
+        let error = Error::new(ErrorCode::InvalidMask)
+            .with_message("Mask seed must contain at least 16 bytes; generate a random seed.");
+
+        assert_eq!(error.code(), ErrorCode::InvalidMask);
+        assert_eq!(
+            error.to_string(),
+            "Mask seed must contain at least 16 bytes; generate a random seed."
         );
     }
 }

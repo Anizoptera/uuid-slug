@@ -7,10 +7,16 @@ if (import.meta.main) {
   const names = process.argv.slice(2);
   const selected = names.length ? names : Object.keys(browserEngines);
   if (selected.some((name) => !(name in browserEngines)))
-    throw new Error(`Browser must be one of: ${Object.keys(browserEngines).join(", ")}`);
+    throw new Error(
+      `Browser must be one of ${Object.keys(browserEngines).join(", ")}; got ${selected.join(", ")}.`,
+    );
   const child = Bun.spawn(["bunx", "playwright", "install", "--with-deps", ...selected], {
     stdout: "inherit",
     stderr: "inherit",
   });
-  if ((await child.exited) !== 0) throw new Error("Playwright browser installation failed");
+  const status = await child.exited;
+  if (status !== 0)
+    throw new Error(
+      `Playwright failed to install ${selected.join(", ")} with exit code ${status}.`,
+    );
 }

@@ -213,7 +213,7 @@ export function createPortableUuidV7Generator(
         if (rollback.action === UUID_V7_ROLLBACK_ERROR)
           return new UuidSlugError(
             INVALID_TIMESTAMP,
-            `Clock moved backward by ${rollbackMs} milliseconds, beyond the ${rollback.toleranceMs}-millisecond tolerance.`,
+            `Clock moved backward by ${rollbackMs} milliseconds; clockRollback allows ${rollback.toleranceMs}. Increase tolerance or choose reset/preserve if this rollback is acceptable.`,
           );
         const failed = reseed(now);
         if (failed) return failed;
@@ -236,7 +236,7 @@ export function createPortableUuidV7Generator(
           if (lastMs >= MAX_UUID_V7_UNIX_MS)
             return new UuidSlugError(
               INVALID_TIMESTAMP,
-              `Sequence exhausted at the last representable millisecond (${MAX_UUID_V7_UNIX_MS}).`,
+              `UUIDv7 sequence exhausted at Unix millisecond ${MAX_UUID_V7_UNIX_MS}; another UUID would exceed the 48-bit timestamp.`,
             );
           const failed = reseed(lastMs + 1);
           if (failed) return failed;

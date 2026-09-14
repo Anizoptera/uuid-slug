@@ -24,10 +24,13 @@ fn tag(bytes: &[u8; 16]) -> u16 {
 /// Mix once before formatting or checking reserved output spellings in either alphabet.
 pub(crate) fn mask_bytes(raw: &[u8; 16], mask: &UuidV7Mask) -> Result<([u8; 16], u8), Error> {
     if raw[6] >> 4 != 7 || raw[8] >> 6 != 2 {
-        return Err(Error::new(ErrorCode::InvalidUuidVersion));
+        return Err(Error::new(ErrorCode::InvalidUuidVersion)
+            .with_message("Masking requires an RFC-variant UUIDv7."));
     }
     if raw[0] > MAX_MASKED_UUID_V7_HIGH_BYTE {
-        return Err(Error::new(ErrorCode::InvalidTimestamp));
+        return Err(Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
+            "Masking accepts Unix milliseconds from 0 through {MAX_MASKED_UUID_V7_UNIX_MS}; the timestamp's top six bits hold the check."
+        )));
     }
     let check = tag(raw);
     let inner = check >> 4;

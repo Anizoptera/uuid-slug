@@ -90,7 +90,8 @@ Preserve-order clock rollback is the default. Use `with_clock_rollback_policy` t
 `generate_uuid_v4()` generates
 v4 IDs. Failures return `Error`, retaining the underlying cause. Match `Error::code()` against
 `ErrorCode`; use `ErrorCode::as_str()` only when a text protocol needs the shared TypeScript
-spelling. Within-millisecond ordering is not a cross-language guarantee. IDs are not bearer secrets.
+spelling. Use `Display` for the case-specific diagnostic; do not parse its text. Within-millisecond
+ordering is not a cross-language guarantee. IDs are not bearer secrets.
 
 Default feature `os-rng` provides platform entropy. Disable default features for pure conversion,
 masking, or caller-supplied entropy. Browser generation additionally requires `wasm-js`.

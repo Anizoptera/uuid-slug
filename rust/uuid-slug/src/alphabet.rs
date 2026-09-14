@@ -74,8 +74,13 @@ impl UuidSlugAlphabet {
         let encoding = self.encoding();
         match tail_bits {
             0 => {
-                if text.len() != 128usize.div_ceil(self.bits_per_character()) {
-                    return Err(self.error());
+                let expected = 128usize.div_ceil(self.bits_per_character());
+                if text.len() != expected {
+                    return Err(self.error().with_message(format!(
+                        "Plain {} slug must contain {expected} ASCII characters; got {} UTF-8 bytes.",
+                        self.name(),
+                        text.len()
+                    )));
                 }
                 let mut normalized = [0; 26];
                 let input = if self == Self::Base32Hex {
@@ -86,16 +91,23 @@ impl UuidSlugAlphabet {
                     text.as_bytes()
                 };
                 let mut decoded = [0; 16];
-                encoding
-                    .decode_mut(input, &mut decoded)
-                    .map_err(|_| self.error())?;
+                encoding.decode_mut(input, &mut decoded).map_err(|_| {
+                    self.error().with_message(format!(
+                        "Plain {} slug contains an invalid character or nonzero trailing bits.",
+                        self.name()
+                    ))
+                })?;
                 *out = decoded;
                 Ok(0)
             }
             4 => {
                 let length = 132usize.div_ceil(self.bits_per_character());
                 if text.len() != length {
-                    return Err(self.error());
+                    return Err(self.error().with_message(format!(
+                        "Masked {} slug must contain {length} ASCII characters; got {} UTF-8 bytes.",
+                        self.name(),
+                        text.len()
+                    )));
                 }
                 // Restore the omitted zero character to decode 17 bytes; the low nibble is not payload.
                 let zero = if self == Self::Base64Url { b'A' } else { b'0' };
@@ -107,14 +119,29 @@ impl UuidSlugAlphabet {
                 let mut decoded = [0; 17];
                 encoding
                     .decode_mut(&padded[..length + 1], &mut decoded)
-                    .map_err(|_| self.error())?;
+                    .map_err(|_| {
+                        self.error().with_message(format!(
+                            "Masked {} slug contains an invalid character or invalid trailing bits.",
+                            self.name()
+                        ))
+                    })?;
                 if decoded[16] & 15 != 0 {
-                    return Err(self.error());
+                    return Err(self.error().with_message(format!(
+                        "Masked {} slug has nonzero trailing bits.",
+                        self.name()
+                    )));
                 }
                 out.copy_from_slice(&decoded[..16]);
                 Ok(decoded[16] >> 4)
             }
             _ => Err(self.error()),
+        }
+    }
+
+    const fn name(self) -> &'static str {
+        match self {
+            Self::Base64Url => "base64url",
+            Self::Base32Hex => "base32hex",
         }
     }
     /// Decode exactly one canonical 16-byte UUID payload.
@@ -134,12 +161,18 @@ impl UuidSlugAlphabet {
     ) -> Result<&'a mut [u8], Error> {
         let mut decoded = [0; 16];
         self.decode_into(plain_uuid_slug, &mut decoded, 0)?;
-        let end = output_offset
-            .checked_add(16)
-            .ok_or(Error::new(ErrorCode::InvalidBuffer))?;
-        let target = output
-            .get_mut(output_offset..end)
-            .ok_or(Error::new(ErrorCode::InvalidBuffer))?;
+        let end = output_offset.checked_add(16).ok_or_else(|| {
+            Error::new(ErrorCode::InvalidBuffer).with_message(format!(
+                "Output needs 16 bytes at offset {output_offset}, but the offset overflows usize."
+            ))
+        })?;
+        let capacity = output.len();
+        let target = output.get_mut(output_offset..end).ok_or_else(|| {
+            Error::new(ErrorCode::InvalidBuffer).with_message(format!(
+                "Output needs 16 bytes at offset {output_offset}, but holds {}.",
+                capacity
+            ))
+        })?;
         target.copy_from_slice(&decoded);
         Ok(target)
     }

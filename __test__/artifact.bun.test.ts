@@ -121,7 +121,7 @@ test("refuses malformed source maps before consumer execution", () =>
 test("refuses source-map metadata that cannot describe a usable map", () =>
   rejected(
     { ...base, "package/dist/index.js.map": JSON.stringify({ version: 2, sources: [] }) },
-    "Invalid source map",
+    "must use version 3 with string mappings, string sourceRoot, and a sources array",
   ));
 test("refuses source text duplicated inside a source map", () =>
   rejected(

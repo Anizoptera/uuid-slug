@@ -34,7 +34,9 @@ pub fn uuid_v7_bounds(start_unix_ms: u64, end_unix_ms: Option<u64>) -> Result<Uu
         || end_unix_ms > MAX_UUID_V7_UNIX_MS
         || start_unix_ms > end_unix_ms
     {
-        return Err(Error::new(ErrorCode::InvalidTimestamp));
+        return Err(Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
+            "UUIDv7 range requires whole Unix milliseconds in 0..={MAX_UUID_V7_UNIX_MS} with start <= end; got {start_unix_ms}..={end_unix_ms}."
+        )));
     }
     Ok(UuidV7Bounds {
         start_inclusive: uuid_v7_endpoint(start_unix_ms, false),
@@ -105,7 +107,9 @@ impl UuidV7Generator {
             (Some(rollback), UuidV7ClockRollbackPolicy::Error { tolerance_ms })
                 if rollback > tolerance_ms =>
             {
-                return Err(Error::new(ErrorCode::InvalidTimestamp));
+                return Err(Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
+                    "Clock moved backward by {rollback} milliseconds; the configured tolerance is {tolerance_ms}."
+                )));
             }
             _ => false,
         };
@@ -115,7 +119,9 @@ impl UuidV7Generator {
             (false, Some(last)) if now > last => (now, true),
             (false, Some(last)) if self.sequence == MAX_SEQUENCE => {
                 if last == MAX_UUID_V7_UNIX_MS {
-                    return Err(Error::new(ErrorCode::InvalidTimestamp));
+                    return Err(Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
+                        "UUIDv7 sequence exhausted at Unix millisecond {MAX_UUID_V7_UNIX_MS}; another UUID would exceed the 48-bit timestamp."
+                    )));
                 }
                 (last + 1, true)
             }
@@ -191,7 +197,11 @@ impl UuidV7Generator {
             target_os = "unknown",
             not(feature = "wasm-js")
         ))]
-        return Err(Error::new(ErrorCode::InvalidTimestamp));
+        return Err(
+            Error::new(ErrorCode::InvalidTimestamp).with_message(
+                "Current-time UUIDv7 generation on wasm32-unknown-unknown requires the wasm-js feature or an explicit Unix timestamp.",
+            ),
+        );
         #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
         let elapsed = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -216,7 +226,16 @@ fn timestamp(value: f64, clock: bool) -> Result<u64, Error> {
         || (!clock && value.fract() != 0.0)
         || value.trunc() > MAX_UUID_V7_UNIX_MS as f64
     {
-        return Err(Error::new(ErrorCode::InvalidTimestamp));
+        let requirement = if clock {
+            "a finite nonnegative number of Unix milliseconds"
+        } else {
+            "a whole number of Unix milliseconds"
+        };
+        return Err(
+            Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
+                "UUIDv7 timestamp must be {requirement} in 0..={MAX_UUID_V7_UNIX_MS}; got {value}."
+            )),
+        );
     }
     Ok(value as u64)
 }

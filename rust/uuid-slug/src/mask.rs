@@ -74,7 +74,9 @@ impl UuidV7Mask {
         };
         for probe in [[0; 16], std::array::from_fn(|index| (index * 17) as u8)] {
             if built.unmask(built.mask(probe)?)? != probe {
-                return Err(Error::new(ErrorCode::InvalidMask));
+                return Err(Error::new(ErrorCode::InvalidMask).with_message(
+                    "Custom mask must restore every input; mask and unmask disagree on a probe.",
+                ));
             }
         }
         Ok(built)
@@ -91,8 +93,18 @@ impl UuidV7Mask {
     fn transform(&self, input: [u8; 16], direction: Direction) -> Result<[u8; 16], Error> {
         match &self.implementation {
             Implementation::Feistel(keys) => Ok(feistel(input, keys, direction)),
-            Implementation::Custom(mix) => mix(input, direction)
-                .map_err(|cause| Error::new(ErrorCode::InvalidMask).with_source(cause)),
+            Implementation::Custom(mix) => mix(input, direction).map_err(|cause| {
+                let operation = match direction {
+                    Direction::UuidV7Mask => "masking",
+                    Direction::Unmask => "unmasking",
+                };
+                Error::new(ErrorCode::InvalidMask)
+                    .with_message(format!(
+                        "Custom mask {:?} failed while {operation}.",
+                        self.label
+                    ))
+                    .with_source(cause)
+            }),
         }
     }
 }
@@ -104,8 +116,17 @@ pub fn uuid_v7_test_mask() -> UuidV7Mask {
 }
 
 fn validate(seed: &[u8], iterations: u32) -> Result<(), Error> {
-    if seed.len() < 16 || !(1..=1 << 24).contains(&iterations) {
-        return Err(Error::new(ErrorCode::InvalidMask));
+    if seed.len() < 16 {
+        return Err(Error::new(ErrorCode::InvalidMask).with_message(format!(
+            "Mask seed must contain at least 16 bytes; got {}. Generate a random seed.",
+            seed.len()
+        )));
+    }
+    if !(1..=1 << 24).contains(&iterations) {
+        return Err(Error::new(ErrorCode::InvalidMask).with_message(format!(
+            "Mask key_derivation_iterations must be in 1..={}; got {iterations}.",
+            1 << 24
+        )));
     }
     Ok(())
 }
@@ -250,7 +271,9 @@ impl Future for MaskDerivation {
             return Poll::Ready(Err(failure));
         }
         if this.finished {
-            return Poll::Ready(Err(Error::new(ErrorCode::InvalidMask)));
+            return Poll::Ready(Err(Error::new(ErrorCode::InvalidMask).with_message(
+                "Mask derivation future was polled after completion; do not poll a completed future.",
+            )));
         }
         // Budget includes finalization, so tiny seeds with many iterations cannot monopolize a poll.
         for _ in 0..256 {

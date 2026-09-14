@@ -549,7 +549,9 @@ export async function contractRequests(): Promise<Request[]> {
 
 export function compare(requests: Request[], actual: unknown): void {
   if (!Array.isArray(actual) || !requests.length || actual.length !== requests.length)
-    throw new Error("Native adapter returned an incomplete observation set");
+    throw new Error(
+      `Native adapter must return ${requests.length} observations; got ${Array.isArray(actual) ? actual.length : typeof actual}.`,
+    );
   requests.forEach((request, index) => {
     const expected = evaluate(request);
     try {
@@ -574,7 +576,7 @@ if (import.meta.main) {
   try {
     compare(requests, JSON.parse(bridge.evaluate(JSON.stringify(requests))));
     if (bridge.plain("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f0000") !== "AZChssPUfl-KmwwdLj8AAA")
-      throw new Error(`${bridge.transport} plain plain conversion diverged from its wire vector`);
+      throw new Error(`${bridge.transport} plain conversion diverged from its wire vector.`);
     console.log(`${bridge.transport}: ${requests.length} shared contract observations passed`);
   } finally {
     bridge.close();

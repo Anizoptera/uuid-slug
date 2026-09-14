@@ -70,7 +70,7 @@ describe("bit-packing codec", () => {
     for (let index = 0; index < encoded.length; index += 1) {
       const invalid = `${encoded.slice(0, index)}!${encoded.slice(index + 1)}`;
       expect(decodeInto(invalid, BASE64URL, new Uint8Array(16), 0, 16)).toMatchObject({
-        message: `Invalid base64url character at offset ${index}.`,
+        message: `Invalid base64url character "!" at offset ${index}.`,
       });
     }
   });
@@ -104,7 +104,7 @@ describe("bit-packing codec", () => {
     for (let index = 0; index < encoded.length; index += 1) {
       const invalid = `${encoded.slice(0, index)}w${encoded.slice(index + 1)}`;
       expect(decodeInto(invalid, BASE32HEX, new Uint8Array(16), 0, 16)).toMatchObject({
-        message: `Invalid base32hex character at offset ${index}.`,
+        message: `Invalid base32hex character "w" at offset ${index}.`,
       });
     }
   });

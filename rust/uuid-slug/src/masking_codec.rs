@@ -270,12 +270,24 @@ impl UuidV7MaskingCodec {
         let mut sentinels: Vec<UuidV7Sentinel> = Vec::new();
         let mut reserved = Vec::new();
         for (name, uuid) in options.sentinels {
-            if name.is_empty() || sentinels.iter().any(|entry| entry.name == name) {
-                return Err(Error::new(ErrorCode::InvalidSentinel));
+            if name.is_empty() {
+                return Err(Error::new(ErrorCode::InvalidSentinel)
+                    .with_message("Sentinel name must not be empty."));
             }
-            uuid.extract_uuid_v7_unix_ms()?;
+            if sentinels.iter().any(|entry| entry.name == name) {
+                return Err(Error::new(ErrorCode::InvalidSentinel).with_message(format!(
+                    "Sentinel name {name:?} must be unique within one masking codec."
+                )));
+            }
+            uuid.extract_uuid_v7_unix_ms().map_err(|_| {
+                Error::new(ErrorCode::InvalidUuidVersion).with_message(format!(
+                    "Sentinel {name:?} must be an RFC-variant UUIDv7; got {uuid}."
+                ))
+            })?;
             if sentinels.iter().any(|entry| entry.uuid == uuid) {
-                return Err(Error::new(ErrorCode::InvalidUuid));
+                return Err(Error::new(ErrorCode::InvalidSentinel).with_message(format!(
+                    "Sentinel {name:?} repeats an earlier sentinel UUID: {uuid}."
+                )));
             }
             let plain_uuid_slug = uuid.to_plain_uuid_slug(options.masked_slug_alphabet);
             reserved.push((uuid.to_plain_uuid_slug(UuidSlugAlphabet::Base64Url), uuid));
@@ -322,7 +334,9 @@ impl UuidV7MaskingCodec {
         if self.masked == UuidSlugAlphabet::Base64Url || (tail == 0 && !self.reserved.is_empty()) {
             let base64 = UuidSlugAlphabet::Base64Url.encode_tail(&bytes, tail, 4)?;
             if self.sentinel(&base64).is_some() {
-                return Err(Error::new(ErrorCode::InvalidMask));
+                return Err(Error::new(ErrorCode::InvalidMask).with_message(
+                    "Masked output matches a sentinel slug; use a different mask or sentinel set.",
+                ));
             }
             if self.masked == UuidSlugAlphabet::Base64Url {
                 return Ok(MaskedOrSentinelUuidV7Slug::Masked(MaskedUuidV7Slug(base64)));
@@ -353,7 +367,9 @@ impl UuidV7MaskingCodec {
                 Err(error) => return Err(error),
             }
         }
-        Err(Error::new(ErrorCode::InvalidUuidSlug))
+        Err(Error::new(ErrorCode::InvalidUuidSlug).with_message(
+            "No configured mask accepts this slug; use the codec and retained keys that issued it.",
+        ))
     }
 
     /// Create an opt-in reader without changing this codec's writer or ordinary decoder.
@@ -390,19 +406,29 @@ pub struct UuidV7TimestampWindow {
 impl UuidV7TimestampWindow {
     /// Reject invalid windows and timestamps outside the caller's accepted range.
     pub fn validate_uuid_v7(self, uuid: Uuid) -> Result<Uuid, Error> {
-        let timestamp = uuid
-            .extract_uuid_v7_unix_ms()
-            .map_err(|_| Error::new(ErrorCode::InvalidUuidVersion))? as f64;
+        let timestamp = uuid.extract_uuid_v7_unix_ms().map_err(|_| {
+            Error::new(ErrorCode::InvalidUuidVersion)
+                .with_message("Timestamp validation requires an RFC-variant UUIDv7.")
+        })? as f64;
         if !self.max_timestamp_delta_ms.is_finite()
             || self.max_timestamp_delta_ms < 0.0
             || !self.reference_unix_ms.is_finite()
         {
-            return Err(Error::new(ErrorCode::InvalidTimestamp));
+            return Err(Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
+                "Timestamp window requires a finite reference_unix_ms and a finite nonnegative max_timestamp_delta_ms; got {} and {}.",
+                self.reference_unix_ms, self.max_timestamp_delta_ms
+            )));
         }
         if timestamp < self.reference_unix_ms - self.max_timestamp_delta_ms
             || timestamp > self.reference_unix_ms + self.max_timestamp_delta_ms
         {
-            return Err(Error::new(ErrorCode::TimestampOutsideWindow));
+            return Err(
+                Error::new(ErrorCode::TimestampOutsideWindow).with_message(format!(
+                    "UUIDv7 timestamp {timestamp} is outside {}..={} Unix milliseconds.",
+                    self.reference_unix_ms - self.max_timestamp_delta_ms,
+                    self.reference_unix_ms + self.max_timestamp_delta_ms
+                )),
+            );
         }
         Ok(uuid)
     }
@@ -446,7 +472,10 @@ impl UuidSlugMigrationDecoder<'_> {
             result = Some(uuid);
             true
         })?;
-        result.ok_or_else(|| Error::new(ErrorCode::InvalidUuidSlug))
+        result.ok_or_else(|| {
+            Error::new(ErrorCode::InvalidUuidSlug)
+                .with_message("Slug does not match any enabled migration format.")
+        })
     }
 
     /// Collect distinct candidates atomically: a later callback error fails the whole call.
@@ -476,7 +505,16 @@ impl UuidSlugMigrationDecoder<'_> {
         if (format == Some(OriginalMaskedSlug) && !self.options.accept_original_masked_slug)
             || (format == Some(PlainUuidSlug) && !self.options.accept_plain_uuid_slug)
         {
-            return Err(Error::new(ErrorCode::InvalidUuidSlug));
+            let message = match format {
+                Some(OriginalMaskedSlug) => {
+                    "Original-mask decoding is disabled; set accept_original_masked_slug to true."
+                }
+                Some(PlainUuidSlug) => {
+                    "Plain-slug decoding is disabled; set accept_plain_uuid_slug to true."
+                }
+                _ => "Requested migration format is disabled.",
+            };
+            return Err(Error::new(ErrorCode::InvalidUuidSlug).with_message(message));
         }
         if let Some(uuid) = self.codec.sentinel(slug) {
             stop(uuid);

@@ -34,7 +34,11 @@ export function validateTimestampBytes(
   bytes: Uint8Array,
   window: UuidV7TimestampWindow,
 ): undefined | UuidSlugError {
-  if (!isUuidV7Bytes(bytes)) return new UuidSlugError(INVALID_UUID_VERSION, "Expected UUIDv7.");
+  if (!isUuidV7Bytes(bytes))
+    return new UuidSlugError(
+      INVALID_UUID_VERSION,
+      "Timestamp validation requires an RFC-variant UUIDv7.",
+    );
   const timestamp = uuidTimestampFromBytesUnchecked(bytes, 0);
   let maxTimestampDeltaMs: number;
   let referenceUnixMs: number;
@@ -65,7 +69,7 @@ export function validateTimestampBytes(
   )
     return new UuidSlugError(
       TIMESTAMP_OUTSIDE_WINDOW,
-      "UUIDv7 timestamp is outside the accepted window.",
+      `UUIDv7 timestamp ${timestamp} is outside ${referenceUnixMs - maxTimestampDeltaMs}..${referenceUnixMs + maxTimestampDeltaMs} Unix milliseconds.`,
     );
   return undefined;
 }

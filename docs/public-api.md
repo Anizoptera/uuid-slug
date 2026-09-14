@@ -395,8 +395,11 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   recognition capabilities.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Package-owned interfaces
   carry failures as values; adapt and contain exception-based dependencies at their boundary.
-- Name each error code for the caller's recovery action. State the cause and the correction in the
-  message. A failed call must publish no partial output or state.
+- Name each error code for the caller's recovery action. Each message identifies the failed
+  condition, includes the safe offending value or bound when it helps, and gives the correction
+  when the caller can act. Preserve external failures in `cause`; do not guess what caused them.
+  Messages are diagnostics, not stable branch keys. A failed call must publish no partial output
+  or state.
 - Keep one error class with stable, actionable codes. Codes guide different recovery actions without
   multiplying runtime types; do not publish subclasses or operation-specific error-code generics
   when they add no data or behavior and would make a newly reachable code a source break. Validate
@@ -408,9 +411,9 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   do not; malformed untyped input still gets a returned error, stated at the declaration. Forcing
   every TypeScript caller to narrow a value that is never an error is the worse trade, and
   widening a return type later breaks every caller, so settle this before the call ships.
-- Classify sentinel-list shape and name identity as `invalid_sentinel`. Keep malformed UUID text as
-  `invalid_uuid`, a wrong UUID version as `invalid_uuid_version`, and duplicate UUID compatibility
-  unchanged; these failures require different caller repairs.
+- Classify sentinel-list shape and duplicate names or UUIDs as `invalid_sentinel`. Keep malformed
+  UUID text as `invalid_uuid` and a wrong UUID version as `invalid_uuid_version`; these failures
+  require different caller repairs.
 - Make validation and conversion deterministic and side-effect free. Generation may consume
   entropy and advance its owned sequence state; failed operations must not publish partial output
   or corrupt the next attempt.

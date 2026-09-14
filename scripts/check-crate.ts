@@ -46,11 +46,15 @@ export async function inspectCrate(crate: string, version: string): Promise<void
   const manifest = Bun.TOML.parse(await manifestFile.text()) as PackageManifest;
   const pkg = manifest.package;
   if (pkg?.name !== "uuid-slug" || pkg.version !== version)
-    throw new Error(`${basename(crate)} has the wrong package identity.`);
+    throw new Error(
+      `${basename(crate)} must identify uuid-slug ${version}; got ${String(pkg?.name)} ${String(pkg?.version)}.`,
+    );
   if (pkg.build !== false || pkg.autobins !== false || manifest.bin !== undefined)
     throw new Error("The published crate must remain a library without build or binary targets.");
   if (manifest.lib?.name !== "uuid_slug" || manifest.lib.path !== "src/lib.rs")
-    throw new Error("The published crate has an unexpected library target.");
+    throw new Error(
+      `The crate library target must be uuid_slug at src/lib.rs; got ${String(manifest.lib?.name)} at ${String(manifest.lib?.path)}.`,
+    );
 }
 
 if (import.meta.main) {

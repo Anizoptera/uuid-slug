@@ -15,7 +15,7 @@ properties. Preserve issued identifiers when changing either implementation.
 Identical deterministic inputs must produce identical bytes, text, keys, and decoded candidates.
 Parity includes accepted and rejected inputs, defaults, error conditions, sentinel priority, key
 order, migration controls, timestamp windows, cancellation, and ownership of returned data.
-Sentinel names are nonempty and unique within one codec; both languages report name violations as
+Sentinel names and UUIDs are unique within one codec; both languages report either duplicate as
 `invalid_sentinel` without relabeling malformed UUID text or UUID-version failures.
 Both languages always write registered sentinels as plain slugs without masking, so the masked
 timestamp limit does not apply to them.
@@ -66,13 +66,16 @@ conversion preserve other UUID versions without version-specific APIs.
 | Known/mixed-format migration and candidates | `create_uuid_slug_migration_decoder`, `uuid_slug_to_uuid`, `uuid_slug_to_uuid_candidates`, `UuidSlugMigrationOptions` |
 | Plain timestamp window | Parse UUID or plain slug, then `UuidV7TimestampWindow::validate_uuid_v7`; retain the original text if needed |
 | Masked timestamp window | `UuidV7MaskingCodec::validate_masked_uuid_v7_slug_unix_ms` |
-| Error classification and causes | `Error::code`, `ErrorCode::as_str`, and `std::error::Error::source` |
+| Error classification and diagnostics | `Error::code`, `Display`, `ErrorCode::as_str`, and `std::error::Error::source` |
 
 TypeScript additionally exports `isUuidSlugError` because JavaScript values can cross realms or
 load from duplicate package copies. Rust exposes `ErrorCode` as the typed classification so adding
 a diagnostic source does not change how callers match a failure; bridges serialize
 `ErrorCode::as_str()`. The TypeScript guard accepts the local class first and then the same stable
 error names and codes. It is a classifier, not an authenticity boundary for untrusted objects.
+Both implementations use stable codes for control flow and case-specific messages for diagnostics.
+Messages can add detail; callers must not parse them. Underlying runtime and callback failures stay
+available through `cause` in TypeScript and `source()` in Rust.
 
 Generators own mutable sequence state; codecs own immutable keys. Both languages require callers
 to select private key material or the published mask explicitly. Keeping generation separate allows

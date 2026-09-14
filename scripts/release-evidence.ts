@@ -15,24 +15,28 @@ interface ArtifactPage {
 }
 
 function artifactPage(value: unknown): ArtifactPage {
-  if (!value || typeof value !== "object") throw new Error("Release evidence lookup is malformed.");
+  if (!value || typeof value !== "object")
+    throw new Error("GitHub artifact response must be an object.");
   const { artifacts, total_count: totalCount } = value as Record<string, unknown>;
-  if (!Array.isArray(artifacts) || typeof totalCount !== "number")
-    throw new Error("Release evidence lookup is malformed.");
-  for (const artifact of artifacts) {
+  if (!Array.isArray(artifacts))
+    throw new Error("GitHub artifact response has no artifacts array.");
+  if (typeof totalCount !== "number")
+    throw new Error("GitHub artifact response has no numeric total_count.");
+  for (const [index, artifact] of artifacts.entries()) {
     if (!artifact || typeof artifact !== "object")
-      throw new Error("Release evidence lookup is malformed.");
+      throw new Error(`GitHub artifact at index ${index} must be an object.`);
     const { expired, name, workflow_run: workflowRun } = artifact as Record<string, unknown>;
-    if (
-      typeof expired !== "boolean" ||
-      typeof name !== "string" ||
-      !workflowRun ||
-      typeof workflowRun !== "object"
-    )
-      throw new Error("Release evidence lookup is malformed.");
+    if (typeof expired !== "boolean")
+      throw new Error(`GitHub artifact at index ${index} has no boolean expired value.`);
+    if (typeof name !== "string")
+      throw new Error(`GitHub artifact at index ${index} has no string name.`);
+    if (!workflowRun || typeof workflowRun !== "object")
+      throw new Error(`GitHub artifact at index ${index} has no workflow_run object.`);
     const { head_sha: headSha, id } = workflowRun as Record<string, unknown>;
-    if (typeof headSha !== "string" || typeof id !== "number")
-      throw new Error("Release evidence lookup is malformed.");
+    if (typeof headSha !== "string")
+      throw new Error(`GitHub artifact at index ${index} has no workflow_run.head_sha string.`);
+    if (typeof id !== "number")
+      throw new Error(`GitHub artifact at index ${index} has no numeric workflow_run.id.`);
   }
   return { artifacts: artifacts as Artifact[], total_count: totalCount };
 }

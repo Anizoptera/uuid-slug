@@ -6,7 +6,9 @@ export type ReleaseSelection = (typeof RELEASE_SELECTIONS)[number];
 export function releaseSelection(value: string | undefined): ReleaseSelection {
   const selected = value || "both";
   if (selected === "both" || selected === "npm" || selected === "crate") return selected;
-  throw new Error(`Release packages must be one of: ${RELEASE_SELECTIONS.join(", ")}.`);
+  throw new Error(
+    `Release package selection must be one of ${RELEASE_SELECTIONS.join(", ")}; got ${JSON.stringify(selected)}.`,
+  );
 }
 
 if (import.meta.main) {

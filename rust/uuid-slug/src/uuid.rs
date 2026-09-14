@@ -193,7 +193,12 @@ impl Uuid {
         let alphabet = match utf16_len(plain_uuid_slug) {
             22 => UuidSlugAlphabet::Base64Url,
             26 => UuidSlugAlphabet::Base32Hex,
-            _ => return Err(Error::new(ErrorCode::InvalidUuidSlug)),
+            _ => {
+                return Err(Error::new(ErrorCode::InvalidUuidSlug).with_message(format!(
+                    "Plain UUID slug must contain 22 base64url or 26 base32hex characters; got {}.",
+                    utf16_len(plain_uuid_slug)
+                )));
+            }
         };
         let mut bytes = [0; 16];
         alphabet.decode_into(plain_uuid_slug, &mut bytes, 0)?;
@@ -239,7 +244,11 @@ pub(crate) fn range(capacity: usize, offset: usize) -> Result<std::ops::Range<us
     let end = offset
         .checked_add(16)
         .filter(|&end| end <= capacity)
-        .ok_or(Error::new(ErrorCode::InvalidBuffer))?;
+        .ok_or_else(|| {
+            Error::new(ErrorCode::InvalidBuffer).with_message(format!(
+                "Buffer needs 16 bytes at offset {offset}, but holds {capacity}."
+            ))
+        })?;
     Ok(offset..end)
 }
 impl FromStr for Uuid {

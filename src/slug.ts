@@ -289,7 +289,10 @@ export function plainSlugToUuidBytes(
     for (let i = 0; i < plainUuidSlug.length; i += 1) {
       const code = plainUuidSlug.charCodeAt(i);
       if (code >= 128 || (alpha.decode[code] as number) < 0)
-        return new UuidSlugError(alpha.code, `Invalid ${alpha.name} character at offset ${i}.`);
+        return new UuidSlugError(
+          alpha.code,
+          `Invalid ${alpha.name} character ${JSON.stringify(plainUuidSlug[i])} at offset ${i}.`,
+        );
     }
     return new UuidSlugError(alpha.code, `${alpha.name} value has non-canonical trailing bits.`);
   }

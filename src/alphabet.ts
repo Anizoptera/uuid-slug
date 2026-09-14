@@ -109,6 +109,13 @@ export function isEncoded(value: string, alpha: Alphabet, byteLength: number): b
   );
 }
 
+function invalidCharacter(alpha: Alphabet, value: string, offset: number): UuidSlugError {
+  return new UuidSlugError(
+    alpha.code,
+    `Invalid ${alpha.name} character ${JSON.stringify(value[offset])} at offset ${offset}.`,
+  );
+}
+
 /**
  * Pack bytes, optionally followed by `tailBits` low bits of `tail`, into `alpha`.
  *
@@ -241,7 +248,7 @@ export function decodeInto(
       for (let i = start; i < start + 4; i += 1) {
         const charCode = value.charCodeAt(i);
         const digit = charCode < 128 ? (table[charCode] as number) : -1;
-        if (digit < 0) return new UuidSlugError(code, `Invalid ${name} character at offset ${i}.`);
+        if (digit < 0) return invalidCharacter(alpha, value, i);
         block = (block << 6) | digit;
       }
       out[written] = block >>> 16;
@@ -251,10 +258,10 @@ export function decodeInto(
     }
     const firstCode = value.charCodeAt(20);
     const first = firstCode < 128 ? (table[firstCode] as number) : -1;
-    if (first < 0) return new UuidSlugError(code, `Invalid ${name} character at offset 20.`);
+    if (first < 0) return invalidCharacter(alpha, value, 20);
     const lastCode = value.charCodeAt(21);
     const last = lastCode < 128 ? (table[lastCode] as number) : -1;
-    if (last < 0) return new UuidSlugError(code, `Invalid ${name} character at offset 21.`);
+    if (last < 0) return invalidCharacter(alpha, value, 21);
     out[written] = (first << 2) | (last >>> 4);
     if (tailBits === 4) return last & 15;
     // A masked base64url slug has the same length and carries check bits here, so this is the
@@ -277,7 +284,7 @@ export function decodeInto(
       for (let i = start; i < start + 8; i += 1) {
         const charCode = value.charCodeAt(i);
         const digit = charCode < 128 ? (table[charCode] as number) : -1;
-        if (digit < 0) return new UuidSlugError(code, `Invalid ${name} character at offset ${i}.`);
+        if (digit < 0) return invalidCharacter(alpha, value, i);
         block = (block << 5) | digit;
         blockBits += 5;
         if (blockBits >= 8) {
@@ -289,10 +296,10 @@ export function decodeInto(
     }
     const firstCode = value.charCodeAt(24);
     const first = firstCode < 128 ? (table[firstCode] as number) : -1;
-    if (first < 0) return new UuidSlugError(code, `Invalid ${name} character at offset 24.`);
+    if (first < 0) return invalidCharacter(alpha, value, 24);
     const lastCode = value.charCodeAt(25);
     const last = lastCode < 128 ? (table[lastCode] as number) : -1;
-    if (last < 0) return new UuidSlugError(code, `Invalid ${name} character at offset 25.`);
+    if (last < 0) return invalidCharacter(alpha, value, 25);
     out[written] = (first << 3) | (last >>> 2);
     if (tailBits === 2) return last & 3;
     if ((last & 3) !== 0)
@@ -306,7 +313,7 @@ export function decodeInto(
   for (let i = 0; i < value.length; i += 1) {
     const charCode = value.charCodeAt(i);
     const digit = charCode < 128 ? (table[charCode] as number) : -1;
-    if (digit < 0) return new UuidSlugError(code, `Invalid ${name} character at offset ${i}.`);
+    if (digit < 0) return invalidCharacter(alpha, value, i);
     acc = (acc << bitsPerChar) | digit;
     bits += bitsPerChar;
     while (bits >= 8 && written < byteLength) {

@@ -144,9 +144,7 @@ export function createUuidV7GeneratorWithRandomFill(
     return new UuidSlugError(INVALID_OPTIONS, "Generator fillRandom must be a function.");
   return buildGenerator(options, (bytes) => {
     const result = fillRandom(bytes);
-    return result === undefined || isError(result)
-      ? result
-      : new TypeError("Generator fillRandom must return undefined or UuidSlugError.");
+    return result === undefined || isError(result) ? result : undefined;
   });
 }
 

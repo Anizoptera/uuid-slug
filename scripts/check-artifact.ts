@@ -40,7 +40,8 @@ async function validateSourceMap(
   } catch (cause) {
     throw new Error(`Invalid source map: ${name}`, { cause });
   }
-  if (typeof parsed !== "object" || parsed === null) throw new Error(`Invalid source map: ${name}`);
+  if (typeof parsed !== "object" || parsed === null)
+    throw new Error(`Source map root must be an object: ${name}`);
   const map = parsed as {
     mappings?: unknown;
     sourceRoot?: unknown;
@@ -55,7 +56,9 @@ async function validateSourceMap(
     typeof root !== "string" ||
     !Array.isArray(map.sources)
   )
-    throw new Error(`Invalid source map: ${name}`);
+    throw new Error(
+      `Source map ${name} must use version 3 with string mappings, string sourceRoot, and a sources array.`,
+    );
   const embedded = Array.isArray(map.sourcesContent) ? map.sourcesContent : [];
   if (embedded.length > 0)
     throw new Error(
@@ -63,7 +66,8 @@ async function validateSourceMap(
     );
   const sourceAnnotations = new Map<string, number>();
   for (const [index, source] of map.sources.entries()) {
-    if (typeof source !== "string") throw new Error(`Invalid source map: ${name}`);
+    if (typeof source !== "string")
+      throw new Error(`Source map ${name} has a non-string source at index ${index}.`);
     const input = path.posix.join(root, source);
     if (
       /^(?:[a-z][a-z\d+.-]*:|\/|\\|[a-z]:)/i.test(root) ||
@@ -176,7 +180,10 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
       throw new Error(
         `Packed imports are wrong.\nExpected: ${JSON.stringify(repositoryManifest.imports)}\nReceived: ${JSON.stringify(manifest.imports)}`,
       );
-    if (manifest.name !== "@anizoptera/uuid-slug") throw new Error("Unexpected package name.");
+    if (manifest.name !== "@anizoptera/uuid-slug")
+      throw new Error(
+        `Packed package name must be @anizoptera/uuid-slug; got ${JSON.stringify(manifest.name)}.`,
+      );
     await Bun.write(
       path.join(root, "package.json"),
       JSON.stringify({ type: "module", dependencies: { [manifest.name]: manifest.version } }),

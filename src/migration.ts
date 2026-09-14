@@ -106,7 +106,11 @@ export function createMigration(
     )
       return new UuidSlugError(
         INVALID_UUID_SLUG,
-        "Enable the requested format when creating the migration reader.",
+        format === FIXED_MASK_FORMAT
+          ? "Fixed-mask decoding is disabled; create the migration reader with acceptFixedMask: true."
+          : format === PLAIN_SLUG_FORMAT
+            ? "Plain-slug decoding is disabled; create the migration reader with acceptPlainSlug: true."
+            : `Unknown migration format: ${String(format)}.`,
       );
 
     const sentinel = sentinels.get(uuidSlug);

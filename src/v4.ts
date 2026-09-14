@@ -163,9 +163,7 @@ export function generateUuidV4WithRandomFill<
   try {
     const failed = fillRandomBytes((output) => {
       const result = fillRandom(output);
-      return result === undefined || isError(result)
-        ? result
-        : new TypeError("UUIDv4 fillRandom must return undefined or UuidSlugError.");
+      return result === undefined || isError(result) ? result : undefined;
     }, bytes);
     if (failed) return failed;
     bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40;

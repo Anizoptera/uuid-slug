@@ -235,7 +235,8 @@ export const codecBoundaryCases = [
         sentinels: [TEST_SENTINELS[0], { name: "same-uuid", uuid: TEST_SENTINELS[0].uuid }],
       });
       assert.ok(duplicateUuid instanceof UuidSlugError);
-      assert.equal(duplicateUuid.code, "invalid_uuid");
+      assert.equal(duplicateUuid.code, "invalid_sentinel");
+      assert.match(duplicateUuid.message, /same-uuid.*repeats.*UUID/i);
 
       const canonical = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
       const mixed = canonical.toUpperCase().replace("A1B2", "a1b2");
@@ -252,7 +253,7 @@ export const codecBoundaryCases = [
         ],
       });
       assert.ok(duplicateSpelling instanceof UuidSlugError);
-      assert.equal(duplicateSpelling.code, "invalid_uuid");
+      assert.equal(duplicateSpelling.code, "invalid_sentinel");
     },
   },
   {
@@ -677,8 +678,19 @@ export const codecBoundaryCases = [
           ),
         ).generateMaskedUuidV7Slug();
         assert.ok(isUuidSlugError(malformed));
-        assert.equal(malformed.code, "invalid_uuid_version");
+        assert.equal(malformed.code, "invalid_options");
+        assert.match(malformed.message, /exactly 16 UUID bytes.*got/);
       }
+
+      const wrongVersion = unwrap(
+        createUuidV7MaskingCodecWithGenerator(
+          { mask: UUID_V7_TEST_MASK },
+          () => new Uint8Array(16),
+        ),
+      ).generateMaskedUuidV7Slug();
+      assert.ok(isUuidSlugError(wrongVersion));
+      assert.equal(wrongVersion.code, "invalid_uuid_version");
+      assert.match(wrongVersion.message, /not an RFC-variant UUIDv7/);
     },
   },
   {

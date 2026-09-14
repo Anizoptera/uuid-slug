@@ -467,8 +467,9 @@ intermediate result only when the caller also needs that intermediate successful
 
 Use the error's `code` for handling and its `message` for diagnostics. `UuidSlugErrorCode` is the
 exported code type. Each code has a named constant such as `INVALID_BUFFER`, so callers never need
-to copy a code string or recover one from a collection. Errors wrapping failed entropy draws, clock readings, and custom transform calls
-preserve the original exception as `cause`.
+to copy a code string or recover one from a collection. Do not parse messages; they can add details
+without changing the code. Errors wrapping failed entropy draws, clock readings, and custom
+transform calls preserve the original exception as `cause`.
 
 `uuidBytesToPlainSlug` and `plainSlugToUuidBytes` convert one 16-byte UUID, not arbitrary binary data. Without an
 offset, `uuidBytesToPlainSlug` requires exactly 16 bytes; an explicit offset selects 16 bytes from a larger

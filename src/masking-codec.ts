@@ -4,8 +4,8 @@ import {
   checkByteRange,
   findUnknownOption,
   INVALID_MASK,
+  INVALID_OPTIONS,
   INVALID_SENTINEL,
-  INVALID_UUID,
   INVALID_UUID_SLUG,
   INVALID_UUID_VERSION,
   RNG_UNAVAILABLE,
@@ -73,8 +73,8 @@ function sameUuidBytes(left: Uint8Array, right: Uint8Array): boolean {
 }
 
 const CODEC_CONSTRUCTION_FAILED = "UUIDv7 masking-codec construction failed.";
-const UUID_V7_GENERATION_FAILED = "UUIDv7 byte generation failed.";
-const INVALID_MASKED_UUID_BYTES = "Masked UUID slugs require 16 UUIDv7 bytes.";
+const UUID_V7_GENERATION_FAILED = "generateUuidV7Bytes threw while generating UUIDv7 bytes.";
+const INVALID_MASKED_UUID_BYTES = "Masking requires exactly 16 RFC-variant UUIDv7 bytes.";
 const PLAIN_SLUG_MEANING = "plain";
 const MASKED_SLUG_MEANING = "masked";
 type SlugMeaning = typeof PLAIN_SLUG_MEANING | typeof MASKED_SLUG_MEANING;
@@ -101,6 +101,18 @@ type SentinelState = {
   readonly encodedByFingerprint: EncodedSentinelIndex | undefined;
   readonly sentinels: readonly UuidV7Sentinel[];
 };
+
+function invalidGeneratedUuidV7Bytes(value: unknown): UuidSlugError {
+  if (!isUint8Array(value) || value.length !== 16)
+    return new UuidSlugError(
+      INVALID_OPTIONS,
+      `generateUuidV7Bytes must return exactly 16 UUID bytes or UuidSlugError; got ${isUint8Array(value) ? `${value.length} bytes` : typeof value}.`,
+    );
+  return new UuidSlugError(
+    INVALID_UUID_VERSION,
+    "generateUuidV7Bytes returned 16 bytes that are not an RFC-variant UUIDv7.",
+  );
+}
 
 const EMPTY_SENTINELS: readonly UuidV7Sentinel[] = Object.freeze([]);
 const EMPTY_ENCODED_SENTINELS: readonly EncodedSentinel[] = Object.freeze([]);
@@ -202,7 +214,7 @@ function createSentinels(
     // sentinel owns the reserved value.
     if (byUuid.has(uuid))
       return new UuidSlugError(
-        INVALID_UUID,
+        INVALID_SENTINEL,
         `Sentinel "${definition.name}" repeats the UUID of an earlier sentinel.`,
       );
     // Sentinels remain raw UUIDs; only their writer follows the masked alphabet selection.
@@ -510,9 +522,12 @@ function buildUuidSlugCodec(
   function generateMaskedUuidV7Slug(): MaskedOrSentinelUuidV7Slug | UuidSlugError {
     try {
       const bytes = generateBytes();
-      if (isUint8Array(bytes)) return encodeMasked(bytes, true);
+      if (isUint8Array(bytes))
+        return isUuidV7Bytes(bytes)
+          ? encodeMasked(bytes, true)
+          : invalidGeneratedUuidV7Bytes(bytes);
       if (isUuidSlugError(bytes)) return bytes;
-      return new UuidSlugError(INVALID_UUID_VERSION, INVALID_MASKED_UUID_BYTES);
+      return invalidGeneratedUuidV7Bytes(bytes);
     } catch (cause) {
       return new UuidSlugError(RNG_UNAVAILABLE, UUID_V7_GENERATION_FAILED, { cause });
     }
@@ -533,10 +548,8 @@ function buildUuidSlugCodec(
     if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
     try {
       const bytes = generateBytes();
-      if (!isUint8Array(bytes))
-        return isUuidSlugError(bytes)
-          ? bytes
-          : new UuidSlugError(INVALID_UUID_VERSION, INVALID_MASKED_UUID_BYTES);
+      if (!isUint8Array(bytes) || !isUuidV7Bytes(bytes))
+        return isUuidSlugError(bytes) ? bytes : invalidGeneratedUuidV7Bytes(bytes);
       const uuid = formatUuidBytesUnchecked(bytes, 0, textCase) as UuidV7StringFor<Case>;
       const slug = encodeMasked(bytes, true);
       return slug instanceof Error ? slug : { uuid, slug };
@@ -574,7 +587,10 @@ function buildUuidSlugCodec(
       decodeMaskedSlug(maskedUuidSlug, handle, previousMasks);
     if (bytes instanceof Error) return bytes;
     if (!isUuidV7Bytes(bytes))
-      return new UuidSlugError(INVALID_UUID_VERSION, "Decoded UUID is not UUIDv7.");
+      return new UuidSlugError(
+        INVALID_UUID_VERSION,
+        "Timestamp validation requires an RFC-variant UUIDv7.",
+      );
     const valid = validateTimestampBytes(bytes, window);
     return valid instanceof Error ? valid : (maskedUuidSlug as Input & MaskedOrSentinelUuidV7Slug);
   }

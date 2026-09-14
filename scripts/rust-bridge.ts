@@ -115,21 +115,28 @@ function plainBridge(
   let closed = false;
 
   function invoke(operation: keyof typeof calls, input: string): string {
-    if (closed) throw new Error("Rust bridge is closed");
+    if (closed) throw new Error(`Cannot run Rust bridge ${operation}: the bridge is closed.`);
     const inputCapacity = Math.max(1, input.length * 3);
     if (inputCapacity > inputBuffer.length) inputBuffer = new Uint8Array(inputCapacity);
     const encoded = encoder.encodeInto(input, inputBuffer);
-    if (encoded.read !== input.length) throw new Error("Rust bridge input encoding was partial");
+    if (encoded.read !== input.length)
+      throw new Error(
+        `Rust bridge encoded ${encoded.read} of ${input.length} UTF-16 input units for ${operation}.`,
+      );
 
     let written = calls[operation](inputBuffer, encoded.written, outputBuffer);
     if (!Number.isSafeInteger(written) || written <= 0)
-      throw new Error("Rust bridge rejected input or panicked");
+      throw new Error(
+        `Rust bridge ${operation} returned invalid length ${String(written)}; the native call rejected the request or panicked.`,
+      );
     if (written > outputBuffer.length) {
       outputBuffer = new Uint8Array(written);
       written = calls[operation](inputBuffer, encoded.written, outputBuffer);
     }
     if (!Number.isSafeInteger(written) || written <= 0 || written > outputBuffer.length)
-      throw new Error("Rust bridge returned an invalid output length");
+      throw new Error(
+        `Rust bridge ${operation} returned ${String(written)} bytes for a ${outputBuffer.length}-byte output buffer.`,
+      );
     return decoder.decode(outputBuffer.subarray(0, written));
   }
 
