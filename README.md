@@ -207,8 +207,11 @@ function convertUuid() {
 }
 ```
 
-`uuidStringToBytes` accepts uppercase or lowercase UUID text and either allocates a plain `Uint8Array` or
-writes 16 bytes at the requested offset. `bytesToUuidString` reads 16 bytes at an optional offset.
+`uuidStringToBytes` accepts mixed-case UUID text with or without hyphens. It either allocates a plain
+`Uint8Array` or writes 16 bytes at the requested offset. `bytesToUuidString` reads 16 bytes at an
+optional offset and returns lowercase hyphenated text.
+If an external protocol requires uppercase output, convert the returned text with `toUpperCase()`
+at that boundary. The package does not add a casing option to every text-producing operation.
 `Buffer` works because it is a `Uint8Array`; `ArrayBuffer`, `DataView`, and array-like values do
 not. Use `isUuidBytes`, `isUuidV4Bytes`, or `isUuidV7Bytes` when unknown binary input must be
 narrowed before storage or version-specific work.
@@ -530,7 +533,7 @@ type. Byte formatting returns a version-agnostic type because caller-owned bytes
 | `uuidStringToBytes(uuid, out?, offset?)` / `bytesToUuidString(bytes, offset?)` | The same UUID as bytes or canonical UUID text. |
 | `slugToUuidBytes(slug, out?, offset?)` / `uuidBytesToDirectSlug(bytes, offset?, alphabet?)` | The same UUID as bytes or a direct slug, without intermediate UUID text. |
 | `extractUuidV7UnixMs(value, offset?)` | Unix milliseconds from UUIDv7 text, a direct slug, or bytes. |
-| `validateUuidV7Timestamp(uuid, window)` / `validateDirectUuidV7SlugUnixMs(slug, window)` | The original input, narrowed to UUIDv7 after checking its timestamp. |
+| `validateUuidV7Timestamp(uuid, window)` / `validateDirectUuidV7SlugUnixMs(slug, window)` | Lowercase hyphenated UUIDv7 text, or the original direct slug, after checking its timestamp. |
 
 ### Use a masking codec
 

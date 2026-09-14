@@ -63,6 +63,11 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   of issuance. Do not reject multiple matches or append fallback masks on the caller's behalf.
 - Every decoder must accept every value that a supported matching encoder can produce. Options
   may add accepted forms; they must not remove existing ones. Reject forms no encoder produces.
+- Public inputs MUST accept every recoverable, unambiguous equivalent form. The implementation owns
+  making normalization safe, deterministic, bounded, and negligible-cost; difficulty never moves
+  that burden to callers. Normalize once and return one stable form. Keep already-normalized input
+  on the least-work path. Reject only different meaning or ambiguity. Document accepted forms and
+  normalization in `docs/public-api.md` and declaration JSDoc.
 - Keyed operations belong only on the codec holding the key, including masked timestamp
   validation. Do not add top-level masked shortcuts. Codec construction requires an explicit
   private mask or `UUID_V7_TEST_MASK`; keep the published mask opt-in and remove implicit masked

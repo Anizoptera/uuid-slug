@@ -229,7 +229,7 @@ export interface AsyncUuidV7MaskOptions extends UuidV7MaskOptions {
 export interface UuidV7SentinelConfig {
   /** Nonempty application-facing name, unique within the codec and exposed through `codec.sentinels`. */
   readonly name: string;
-  /** Canonical UUIDv7 text, unique within the codec, reserved for raw sentinel output. */
+  /** Mixed-case hyphenated or compact UUIDv7 text, unique after normalization. */
   readonly uuid: string;
 }
 
@@ -382,12 +382,13 @@ export interface UuidV7SlugCodec {
    */
   generateUuidV7WithCodecSlug(this: void): GeneratedUuidV7<UuidV7CodecSlug> | UuidSlugError;
   /**
-   * Encode canonical UUIDv7 text or 16 UUIDv7 bytes as a masked slug, unless it is a registered
+   * Encode mixed-case hyphenated or compact UUIDv7 text, or 16 UUIDv7 bytes, as a masked slug,
+   * unless it is a registered
    * sentinel. Other UUID versions return `invalid_uuid_version`. TypeScript rejects known slug and
    * UUIDv4 values; unbranded external values are validated when called. A preceding
    * `UuidSlugError` is returned unchanged.
    *
-   * @param uuid - Canonical UUIDv7 text or exactly 16 UUIDv7 bytes.
+   * @param uuid - Hyphenated or compact UUIDv7 text, or exactly 16 UUIDv7 bytes.
    */
   uuidToSlug<Input extends string | Uint8Array | UuidSlugError>(
     this: void,

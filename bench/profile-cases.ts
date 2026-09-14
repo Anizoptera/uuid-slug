@@ -171,6 +171,8 @@ export function createProfileCases(
     return `${time.slice(0, 8)}-${time.slice(8)}-7${a}-${b}-${tail}${index.toString(16).padStart(4, "0")}`;
   };
   const ids = Array.from({ length: 256 }, (_, index) => profileUuid(index));
+  const compactIds = ids.map((uuid) => uuid.replaceAll("-", ""));
+  const mixedIds = ids.map((uuid) => uuid.slice(0, 18).toUpperCase() + uuid.slice(18));
   const bytes = ids.map((id) => unwrap(api.uuidStringToBytes(id)));
   const packageFailure = api.uuidStringToBytes("invalid");
   if (!(packageFailure instanceof Error)) throw new Error("Error profile fixture did not fail");
@@ -534,6 +536,8 @@ export function createProfileCases(
     "v7.slug": () => api.generateDirectUuidV7Slug(),
     "v7.base32": () => api.generateDirectUuidV7Slug(base32hexName),
     parse: (index) => api.uuidStringToBytes(ids[index & 255] as string),
+    "parse.compact": (index) => api.uuidStringToBytes(compactIds[index & 255] as string),
+    "parse.mixed": (index) => api.uuidStringToBytes(mixedIds[index & 255] as string),
     "parse.into": (index) => api.uuidStringToBytes(ids[index & 255] as string, into, 4),
     format: (index) => api.bytesToUuidString(bytes[index & 255] as Uint8Array),
     "format.offset": (index) => {

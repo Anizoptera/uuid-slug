@@ -195,7 +195,7 @@ if (generatedV4Result instanceof Error) throw generatedV4Result;
 const generatedV4 = generatedV4Result;
 // @ts-expect-error UUIDv7 timestamp validation is undefined for a known UUIDv4.
 validateUuidV7Timestamp(generatedV4, { maxTimestampDeltaMs: 0 });
-expectType<(UuidV7String & "019ff19b-58b8-7000-9b1b-df713bd5562c") | UuidSlugError>()(
+expectType<UuidV7String | UuidSlugError>()(
   validateUuidV7Timestamp("019ff19b-58b8-7000-9b1b-df713bd5562c", {
     maxTimestampDeltaMs: 0,
   }),

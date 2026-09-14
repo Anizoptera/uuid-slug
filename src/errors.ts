@@ -16,7 +16,7 @@ export const INVALID_OPTIONS = "invalid_options";
 export const INVALID_SENTINEL = "invalid_sentinel";
 /** A timestamp is invalid or outside the UUIDv7 wire-format range. */
 export const INVALID_TIMESTAMP = "invalid_timestamp";
-/** The input is not a canonical UUID or valid UUID byte payload. */
+/** The input is not valid UUID text or a valid UUID byte payload. */
 export const INVALID_UUID = "invalid_uuid";
 /** The input is not a canonical direct or codec-owned UUID slug. */
 export const INVALID_UUID_SLUG = "invalid_uuid_slug";
@@ -228,9 +228,7 @@ export function invalidByteInput(value: unknown): UuidSlugError {
 /** Preserve a preceding failure or reject an untyped value that is not UUID text. */
 /*#__NO_SIDE_EFFECTS__*/
 export function invalidUuidStringInput(value: unknown): UuidSlugError {
-  return isUuidSlugError(value)
-    ? value
-    : new UuidSlugError(INVALID_UUID, "UUID must be canonical text.");
+  return isUuidSlugError(value) ? value : new UuidSlugError(INVALID_UUID, "UUID must be text.");
 }
 
 /** Preserve a preceding failure or reject an untyped value that is not a UUID slug. */

@@ -41,6 +41,7 @@ for (let i = 0; i < 10; i += 1) HEX_DECODE[48 + i] = i;
 for (let i = 0; i < 6; i += 1) HEX_DECODE[97 + i] = 10 + i;
 
 const UUID_LENGTH = 36;
+const COMPACT_UUID_LENGTH = 32;
 const UUID_BYTE_OFFSETS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34] as const;
 
 const hyphenateHex = /* @__NO_SIDE_EFFECTS__ */ (hex: string, offset: number): UuidString =>
@@ -66,20 +67,21 @@ export function uuidByteAtUnchecked(uuid: string, byteIndex: number): number {
 }
 
 /**
- * Parse uppercase or lowercase UUID text into a new plain 16-byte `Uint8Array`. Known slug values are
- * rejected by TypeScript; invalid text returns `UuidSlugError`. A preceding `UuidSlugError` is
- * returned unchanged.
+ * Parse mixed-case UUID text into a new plain 16-byte `Uint8Array`. Accept the standard
+ * 36-character hyphenated form or 32 hexadecimal characters without hyphens. Known slug values
+ * are rejected by TypeScript; invalid text returns `UuidSlugError`. A preceding `UuidSlugError`
+ * is returned unchanged.
  *
- * @param uuid - UUID text with uppercase or lowercase hexadecimal digits.
+ * @param uuid - Hyphenated or compact UUID text with mixed-case hexadecimal digits.
  */
 export function uuidStringToBytes<Input extends string | UuidSlugError>(
   uuid: UuidStringInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
 /**
- * Parse uppercase or lowercase UUID text into caller-owned storage after validating the full input.
- * A preceding `UuidSlugError` is returned unchanged without writing.
+ * Parse mixed-case, hyphenated or compact UUID text into caller-owned storage after validating the
+ * full input. A preceding `UuidSlugError` is returned unchanged without writing.
  *
- * @param uuid - UUID text with uppercase or lowercase hexadecimal digits.
+ * @param uuid - Hyphenated or compact UUID text with mixed-case hexadecimal digits.
  * @param output - Caller-owned array that receives the 16 UUID bytes.
  * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
  * outside the written range stay unchanged.
@@ -95,21 +97,26 @@ export function uuidStringToBytes(
   offset = 0,
 ): Uint8Array | UuidSlugError {
   if (typeof uuid !== "string") return invalidUuidStringInput(uuid);
-  if (uuid.length !== UUID_LENGTH)
-    return new UuidSlugError(INVALID_UUID, "UUID must be 36 characters.");
+  const hyphenated = uuid.length === UUID_LENGTH;
+  if (!hyphenated && uuid.length !== COMPACT_UUID_LENGTH)
+    return new UuidSlugError(
+      INVALID_UUID,
+      "UUID must be 36 hyphenated characters or 32 hexadecimal characters.",
+    );
   if (
-    uuid[8] !== UUID_SEPARATOR ||
-    uuid[13] !== UUID_SEPARATOR ||
-    uuid[18] !== UUID_SEPARATOR ||
-    uuid[23] !== UUID_SEPARATOR
-  ) {
+    hyphenated &&
+    (uuid[8] !== UUID_SEPARATOR ||
+      uuid[13] !== UUID_SEPARATOR ||
+      uuid[18] !== UUID_SEPARATOR ||
+      uuid[23] !== UUID_SEPARATOR)
+  )
     return new UuidSlugError(INVALID_UUID, "UUID hyphen positions are invalid.");
-  }
 
   const badRange = out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
   if (badRange) return badRange;
 
-  for (const textOffset of UUID_BYTE_OFFSETS) {
+  for (let byteIndex = 0; byteIndex < 16; byteIndex += 1) {
+    const textOffset = hyphenated ? (UUID_BYTE_OFFSETS[byteIndex] as number) : byteIndex * 2;
     if (
       parsedHexValue(uuid.charCodeAt(textOffset)) < 0 ||
       parsedHexValue(uuid.charCodeAt(textOffset + 1)) < 0
@@ -120,8 +127,11 @@ export function uuidStringToBytes(
       );
   }
   const target = out ?? new Uint8Array(16);
-  for (let byteIndex = 0; byteIndex < UUID_BYTE_OFFSETS.length; byteIndex += 1) {
-    target[offset + byteIndex] = uuidByteAtUnchecked(uuid, byteIndex);
+  for (let byteIndex = 0; byteIndex < 16; byteIndex += 1) {
+    const textOffset = hyphenated ? (UUID_BYTE_OFFSETS[byteIndex] as number) : byteIndex * 2;
+    target[offset + byteIndex] =
+      (parsedHexValue(uuid.charCodeAt(textOffset)) << 4) |
+      parsedHexValue(uuid.charCodeAt(textOffset + 1));
   }
   return target;
 }

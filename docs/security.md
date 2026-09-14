@@ -50,7 +50,7 @@ code rather than retaining the original JavaScript exception. TypeScript retains
 This diagnostic difference does not permit a failed draw to produce an identifier.
 
 UUID slug formatting and parsing encode and decode one 16-byte payload. TypeScript byte-offset
-overloads select that payload from a larger array; other payload sizes and noncanonical text are
+overloads select that payload from a larger array; other payload sizes and malformed UUID text are
 rejected. Invalid parsing leaves caller storage unchanged. Conversion preserves all 16-byte
 values; use UUID guards when the version or variant matters.
 

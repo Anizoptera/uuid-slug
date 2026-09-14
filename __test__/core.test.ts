@@ -21,6 +21,7 @@ import {
   generateDirectUuidV7Slug,
   generateUuidV7WithDirectSlug,
   UuidSlugError,
+  validateUuidV7Timestamp,
   validateDirectUuidV7SlugUnixMs,
 } from "../src/index";
 import type { SlugAlphabet, UuidV7SlugCodecOptions } from "../src/index";
@@ -196,10 +197,21 @@ describe("direct UUID slugs", () => {
     }
   });
 
-  it("accepts uppercase UUID input and returns canonical lowercase output", () => {
-    const uppercase = SAMPLE_V7_A.toUpperCase();
-    expect(bytesToUuidString(unwrap(uuidStringToBytes(uppercase)))).toBe(SAMPLE_V7_A);
-    expect(isUuidV7String(uppercase)).toBe(false);
+  it("accepts mixed-case hyphenated and compact UUID input but guards canonical output", () => {
+    const mixed = SAMPLE_V7_A.toUpperCase().replace("58B8", "58b8");
+    const compact = mixed.replaceAll("-", "");
+    expect(bytesToUuidString(unwrap(uuidStringToBytes(mixed)))).toBe(SAMPLE_V7_A);
+    expect(bytesToUuidString(unwrap(uuidStringToBytes(compact)))).toBe(SAMPLE_V7_A);
+    expect(uuidStringToDirectSlug(compact)).toBe(uuidStringToDirectSlug(SAMPLE_V7_A));
+    expect(extractUuidV7UnixMs(mixed)).toBe(extractUuidV7UnixMs(SAMPLE_V7_A));
+    expect(
+      validateUuidV7Timestamp(compact, {
+        maxTimestampDeltaMs: 0,
+        referenceUnixMs: unwrap(extractUuidV7UnixMs(SAMPLE_V7_A)),
+      }),
+    ).toBe(SAMPLE_V7_A);
+    expect(isUuidV7String(mixed)).toBe(false);
+    expect(isUuidV7String(compact)).toBe(false);
   });
 
   it("accepts uppercase base32hex input and returns canonical lowercase output", () => {
@@ -215,6 +227,25 @@ describe("direct UUID slugs", () => {
       for (const alphabet of ["base64url", "base32hex"] as const)
         expect(uuidStringToDirectSlug(invalid, alphabet)).toEqual(uuidStringToBytes(invalid));
     }
+    const compact = SAMPLE_V7_A.replaceAll("-", "");
+    const output = new Uint8Array(16).fill(0x5a);
+    for (let index = 0; index < compact.length; index += 1) {
+      const invalid = `${compact.slice(0, index)}!${compact.slice(index + 1)}`;
+      expect(uuidStringToBytes(invalid, output)).toBeInstanceOf(Error);
+      expect(output.every((byte) => byte === 0x5a)).toBe(true);
+    }
+    for (const invalid of [
+      compact.slice(1),
+      `${compact}0`,
+      SAMPLE_V7_A.replace("-", "0"),
+      `{${SAMPLE_V7_A}}`,
+    ]) {
+      expect(uuidStringToBytes(invalid, output)).toBeInstanceOf(Error);
+      expect(output.every((byte) => byte === 0x5a)).toBe(true);
+    }
+    expect(extractUuidV7UnixMs(SAMPLE_V4.replaceAll("-", ""))).toMatchObject({
+      code: "invalid_uuid_version",
+    });
   });
 
   // A UUIDv7 leads with its 48-bit timestamp, so slugs sort by creation time exactly when the

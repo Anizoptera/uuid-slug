@@ -58,6 +58,7 @@ try {
     process.env.UUID_SLUG_PROFILE_MODULE ?? "@anizoptera/uuid-slug"
   );
   const id = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
+  const compactId = id.replaceAll("-", "");
   const time = 0x0190a1b2c3d4;
   const bytes = api.uuidStringToBytes(id);
   assert.ok(!(bytes instanceof Error));
@@ -159,6 +160,11 @@ try {
       views: 0,
     });
   check("caller-owned UUID conversion", () => api.uuidStringToBytes(id, into, 4), {
+    buffers: 0,
+    views: 0,
+    errors: 0,
+  });
+  check("caller-owned compact UUID conversion", () => api.uuidStringToBytes(compactId, into, 4), {
     buffers: 0,
     views: 0,
     errors: 0,

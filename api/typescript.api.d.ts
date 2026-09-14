@@ -331,4 +331,4 @@ export declare function validateDirectUuidV7SlugUnixMs<Input extends string | Uu
 export declare function validateUuidV7Timestamp<Input extends string | UuidSlugError>(
   uuid: UuidV7StringInput<Input>,
   window: UuidV7TimestampWindow,
-): (Input & UuidV7String) | UuidSlugError;
+): UuidV7String | UuidSlugError;

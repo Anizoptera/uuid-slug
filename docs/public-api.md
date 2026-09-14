@@ -17,6 +17,10 @@ Apply these rules in order. A later rule MUST NOT weaken an earlier one.
    callers build on a false promise.
 2. Let types reject invalid combinations. Validate external data once at the
    public boundary. Expose state and side effects so failures stay local and predictable.
+   Accept every recoverable, unambiguous equivalent input. The implementation must make
+   normalization safe, deterministic, bounded, and negligible-cost; difficulty never moves that
+   burden to callers. Normalize once and return one stable form. Keep already-normalized input on
+   the least-work path. Reject only different meaning or ambiguity.
 3. Preserve every visible behavior after release, or provide a migration. Hiding
    an implementation detail now is cheaper than supporting it forever.
 4. Provide the fewest independent operations that cover real caller jobs.
@@ -97,11 +101,17 @@ interface is complete, useful, or clear.
 
 Keep UUID text/binary conversion directional and version-neutral:
 
-- `uuidStringToBytes` accepts uppercase or lowercase UUID text and converts it to 16-byte storage;
-  `bytesToUuidString` converts 16 bytes to canonical lowercase UUID text. Source and destination names remove the parse/format ambiguity, while
-  version-neutral names remain correct for every UUID version.
-- Writers and guards use canonical lowercase UUID and base32hex text. Decoders accept uppercase or
-  lowercase UUID and base32hex input. Base64url remains case-sensitive.
+RFC 9562 permits uppercase, lowercase, or mixed-case hexadecimal digits. Package output uses one
+stable spelling: lowercase with hyphens. A caller that requires uppercase output converts it at
+that external boundary; a casing option would add the same trivial transform to every text writer.
+
+- `uuidStringToBytes` accepts mixed-case, hyphenated UUID text and compact 32-digit hexadecimal
+  text; `bytesToUuidString` converts 16 bytes to lowercase hyphenated UUID text. Source and
+  destination names remove the parse/format ambiguity, while version-neutral names remain correct
+  for every UUID version.
+- Writers and guards use lowercase hyphenated UUID and lowercase base32hex text. UUID readers also
+  accept mixed case and compact text. Base32hex readers accept mixed case. Base64url remains
+  case-sensitive.
 - Accept `Uint8Array` and its subtypes. Exclude `ArrayBuffer`, `DataView`, and array-like values:
   their offset, view, and ownership meanings would make the operation ambiguous. Preserve a
   caller-owned output subtype and write only after full validation; return plain `Uint8Array` for

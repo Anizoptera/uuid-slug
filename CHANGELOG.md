@@ -58,6 +58,8 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 ### Added
 
+- Accept mixed-case hyphenated UUID text and compact 32-digit hexadecimal input. UUID text output
+  remains lowercase and hyphenated.
 - Encode UUIDv7 text or bytes through a codec and decode directly into new or caller-owned bytes.
   Failed writes leave caller storage unchanged.
 - Use `createCustomUuidV7Mask` to adapt a reversible byte transform into an opaque mask handle.

@@ -40,6 +40,7 @@ import { resolveSlugAlphabet, uuidBytesToDirectSlug, extractUuidV7UnixMs } from 
 import {
   bytesToUuidString,
   formatUuidBytesUnchecked,
+  isUuidString,
   isUuidV7Bytes,
   uuidStringToBytes,
 } from "./uuid.ts";
@@ -170,9 +171,10 @@ function createSentinels(
         INVALID_UUID_VERSION,
         `Sentinel "${definition.name}" must be a UUIDv7, got ${definition.uuid}.`,
       );
+    const uuid = formatUuidBytesUnchecked(bytes) as UuidV7String;
     // Reject duplicate UUIDs before the array and lookup maps can disagree about which exposed
     // sentinel owns the reserved value.
-    if (byUuid.has(definition.uuid))
+    if (byUuid.has(uuid))
       return new UuidSlugError(
         INVALID_UUID,
         `Sentinel "${definition.name}" repeats the UUID of an earlier sentinel.`,
@@ -182,14 +184,13 @@ function createSentinels(
     if (slug instanceof Error) return slug;
     const sentinel = Object.freeze({
       name: definition.name,
-      // `uuidBytesToDirectSlug` returns the version-agnostic brand; the v7-ness comes
-      // from the check above.
+      // Both brands come from the UUIDv7 byte check above.
       slug: slug as SentinelUuidV7Slug,
-      uuid: definition.uuid as UuidV7String,
+      uuid,
     });
     sentinels.push(sentinel);
     names.add(definition.name);
-    byUuid.set(definition.uuid, sentinel.slug);
+    byUuid.set(uuid, sentinel.slug);
     encoded.push({ bytes, slug: sentinel.slug });
     bySlug.set(sentinel.slug, { uuid: sentinel.uuid, bytes });
     const alternate = uuidBytesToDirectSlug(
@@ -336,14 +337,18 @@ function buildUuidSlugCodec(
   }
 
   function encodeString(uuid: string): UuidV7CodecSlug | UuidSlugError {
-    // A canonical string miss cannot match the same sentinel set after parsing, so a second byte scan
-    // adds only work. Keep byte inputs on the scan because their identity has no canonical map key.
+    // Canonical input gets the sentinel lookup before parsing. Other accepted spellings normalize
+    // once after parsing so they cannot bypass the same reserved sentinel identity.
     const sentinel = sentinels.byUuid.get(uuid);
     if (sentinel) return sentinel;
     const bytes = uuidStringToBytes(uuid);
     if (bytes instanceof Error) return bytes;
     if (!isUuidV7Bytes(bytes))
       return new UuidSlugError(INVALID_UUID_VERSION, INVALID_MASKED_UUID_BYTES);
+    if (sentinels.byUuid.size > 0 && !isUuidString(uuid)) {
+      const normalizedSentinel = sentinels.byUuid.get(formatUuidBytesUnchecked(bytes));
+      if (normalizedSentinel) return normalizedSentinel;
+    }
     return ownedUuidV7BytesToMaskedSlug(bytes, handle, outputAlphabet, sentinels.bySlug);
   }
 
@@ -352,7 +357,7 @@ function buildUuidSlugCodec(
     if (isUint8Array(uuid)) return encodeMasked(uuid);
     return isUuidSlugError(uuid)
       ? uuid
-      : new UuidSlugError(INVALID_BUFFER, "UUID must be canonical text or 16 UUIDv7 bytes.");
+      : new UuidSlugError(INVALID_BUFFER, "UUID must be text or 16 UUIDv7 bytes.");
   }
 
   function slugToUuidString(slug: string | UuidSlugError): UuidV7String | UuidSlugError {

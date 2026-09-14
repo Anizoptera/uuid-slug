@@ -232,6 +232,23 @@ export const codecBoundaryCases = [
       });
       assert.ok(duplicateUuid instanceof UuidSlugError);
       assert.equal(duplicateUuid.code, "invalid_uuid");
+
+      const canonical = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
+      const mixed = canonical.toUpperCase().replace("A1B2", "a1b2");
+      const normalized = unwrap(
+        createCodec({ mask: UUID_V7_TEST_MASK, sentinels: [{ name: "mixed", uuid: mixed }] }),
+      );
+      assert.equal(normalized.sentinels[0]?.uuid, canonical);
+      assert.equal(normalized.uuidToSlug(mixed), normalized.sentinels[0]?.slug);
+      const duplicateSpelling = createCodec({
+        mask: UUID_V7_TEST_MASK,
+        sentinels: [
+          { name: "canonical", uuid: canonical },
+          { name: "same-compact", uuid: mixed.replaceAll("-", "") },
+        ],
+      });
+      assert.ok(duplicateSpelling instanceof UuidSlugError);
+      assert.equal(duplicateSpelling.code, "invalid_uuid");
     },
   },
   {

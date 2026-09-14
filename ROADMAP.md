@@ -4,6 +4,11 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 
 ## Public interface audit
 
+- [x] Normalize UUID text output while accepting common hexadecimal input forms.
+  - [x] Accept mixed-case 36-character UUID text and compact 32-character hexadecimal input.
+  - [x] Keep guards and every returned UUID string lowercase and hyphenated.
+  - [x] Normalize sentinel identity before duplicate checks and storage.
+  - [x] Update public contracts, declarations, and release notes; run the complete gate.
 - [x] Repair the consumer friction found by the fresh TypeScript interface audit.
   - [x] Accept common case variants while preserving canonical lowercase output.
   - [x] Replace ambiguous and time-relative public names before the first release baseline.

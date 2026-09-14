@@ -61,6 +61,8 @@ export { UuidSlugError };
 export type { UuidSlugErrorCode } from "./errors.ts";
 export type { DirectUuidSlug, DirectUuidV4Slug, DirectUuidV7Slug } from "./types.ts";
 
+const UUID_V7_TIMESTAMP_ONLY = "Timestamp is only defined for UUIDv7.";
+
 /*
  * The alphabets a direct slug may be written in. base64url is the default and the shortest;
  * base32hex costs four more characters and buys the one property base64url cannot offer: its
@@ -272,11 +274,12 @@ export function slugToUuidBytes(
 }
 
 /**
- * Encode canonical UUID text as a reversible direct slug, using base64url by default. A known UUID
- * version is preserved in the result type. TypeScript rejects known slug values; invalid text or
- * alphabet returns `UuidSlugError`. A preceding `UuidSlugError` is returned unchanged.
+ * Encode mixed-case hyphenated or compact UUID text as a reversible direct slug, using base64url
+ * by default. A known UUID version is preserved in the result type. TypeScript rejects known slug
+ * values; invalid text or alphabet returns `UuidSlugError`. A preceding `UuidSlugError` is returned
+ * unchanged.
  *
- * @param uuid - UUID text with uppercase or lowercase hexadecimal digits.
+ * @param uuid - Hyphenated or compact UUID text with mixed-case hexadecimal digits.
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
 export function uuidStringToDirectSlug<Input extends string | UuidSlugError>(
@@ -365,19 +368,24 @@ function extractStringTimestamp(value: string): number | UuidSlugError {
       timestamp = timestamp * 256 + slugByte(value, alpha, index);
     return timestamp;
   }
-  return new UuidSlugError(
-    isUuidString(value) || isDirectUuidSlug(value) ? INVALID_UUID_VERSION : INVALID_UUID,
-    "Expected canonical UUIDv7 text or a direct UUIDv7 slug.",
-  );
+  if (isUuidString(value) || isDirectUuidSlug(value))
+    return new UuidSlugError(INVALID_UUID_VERSION, UUID_V7_TIMESTAMP_ONLY);
+  const bytes = uuidStringToBytes(value);
+  if (!(bytes instanceof Error)) {
+    if (uuidVersion(bytes) !== 7 || !isRfcVariant(bytes))
+      return new UuidSlugError(INVALID_UUID_VERSION, UUID_V7_TIMESTAMP_ONLY);
+    return uuidTimestampFromBytesUnchecked(bytes, 0);
+  }
+  return new UuidSlugError(INVALID_UUID, "Expected UUIDv7 text or a direct UUIDv7 slug.");
 }
 
 /**
- * Return the 48-bit Unix millisecond encoded by canonical UUIDv7 text, a direct UUIDv7 slug, or
- * UUIDv7 bytes. String forms accept both direct slug alphabets without allocating a byte array.
+ * Return the 48-bit Unix millisecond encoded by hyphenated or compact UUIDv7 text, a direct UUIDv7
+ * slug, or UUIDv7 bytes. String forms accept both direct slug alphabets without allocating a byte array.
  * Use `codec.extractUuidSlugUnixMs` for masked or sentinel slugs. Other UUID versions and malformed
  * values return `UuidSlugError`. A preceding `UuidSlugError` is returned unchanged.
  *
- * @param value - Canonical UUIDv7 text or a direct UUIDv7 slug in either supported alphabet.
+ * @param value - Hyphenated or compact UUIDv7 text, or a direct UUIDv7 slug in either alphabet.
  */
 export function extractUuidV7UnixMs<Input extends string | UuidSlugError>(
   value: UuidV7TimestampInput<Input>,
@@ -402,7 +410,7 @@ export function extractUuidV7UnixMs(
   const badRange = checkByteRange(value, byteOffset, 16);
   if (badRange) return badRange;
   if (uuidVersion(value, byteOffset) !== 7 || !isRfcVariant(value, byteOffset))
-    return new UuidSlugError(INVALID_UUID_VERSION, "Timestamp is only defined for UUIDv7.");
+    return new UuidSlugError(INVALID_UUID_VERSION, UUID_V7_TIMESTAMP_ONLY);
   return uuidTimestampFromBytesUnchecked(value, byteOffset);
 }
 
