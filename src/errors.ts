@@ -43,7 +43,7 @@ export type UuidSlugErrorCode =
   | typeof RNG_UNAVAILABLE
   | typeof TIMESTAMP_OUTSIDE_WINDOW;
 
-export const ERROR_CODES: readonly UuidSlugErrorCode[] = [
+export const ERROR_CODES: readonly UuidSlugErrorCode[] = /*#__PURE__*/ Object.freeze([
   ABORTED,
   INVALID_BASE32HEX,
   INVALID_BASE64URL,
@@ -57,7 +57,7 @@ export const ERROR_CODES: readonly UuidSlugErrorCode[] = [
   INVALID_UUID_VERSION,
   RNG_UNAVAILABLE,
   TIMESTAMP_OUTSIDE_WINDOW,
-];
+]);
 
 const ERROR_CODE_SET: ReadonlySet<unknown> = /*#__PURE__*/ new Set(ERROR_CODES);
 const ERROR_NAME = "UuidSlugError";

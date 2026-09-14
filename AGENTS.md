@@ -97,8 +97,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   `sideEffects`, or optimizer annotations. Before deleting a moved file, account for every original
   implementation line, comment, and consumer. The packed-artifact check MUST preserve every
   source-owned `PURE` and `NO_SIDE_EFFECTS` annotation.
-- Public docs use caller-facing tokens such as `"base32hex"`, not internal symbol names.
-  Documentation-alignment gates are ruled out; test the API behavior instead.
+- Public prose names caller-facing tokens such as `"base32hex"`; executable examples pass the
+  exported semantic constant. Documentation-alignment gates are ruled out; test API behavior instead.
 - Hoist every repeated semantic runtime string in a file, including alphabet names and diagnostics, to
   one named scalar constant in its narrowest semantic owner. Build internal tuples and sets from those
   names only when runtime work requires them; never recover meaning through numeric indexes such as
