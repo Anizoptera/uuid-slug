@@ -245,7 +245,7 @@ export async function runMatrix(
           sources.length > 0 ? sources.join(",") : "unobserved",
           String(r.distinctFields),
           // Count only same-millisecond pairs; including different timestamps measures clock
-          // advancement rather than how the generator arranges its random field.
+          // advancement rather than how the generator arranges its payload field.
           sameTickPairs === 0
             ? "n/a"
             : `${(((r.orderedWithinTick as number) / sameTickPairs) * 100).toFixed(2)}%`,

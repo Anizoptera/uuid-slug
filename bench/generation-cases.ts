@@ -251,7 +251,7 @@ export const generationCases: readonly GenerationCase[] = [
   row("fastv7.v7.text", 7, "v7.text.secure", "pooled-portable", fastV7, {
     qualification: "rejected",
     rejectionReason:
-      "Independent processes and restarted state reuse sequence zero, leaving 62 random bits instead of this package's 74-bit same-timestamp collision margin.",
+      "Independent processes and restarted state reuse sequence zero. This leaves 62 random bits per value; this package also starts its 42-bit sequence from a random seed.",
   }),
   row("uuidv7-js.v7.text", 7, "v7.text.secure", "portable-stateful", uuidv7Js),
   row("kripod.v7.text", 7, "v7.text.secure", "portable-stateful", kripodV7),

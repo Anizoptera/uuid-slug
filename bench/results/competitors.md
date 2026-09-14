@@ -23,39 +23,39 @@ Against the fastest package: leads 5, trails 1, unresolved 1. Trails on `v7.time
 | --- | --- | --- | ---: | --- | ---: |
 | `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuidv7.v4.bytes.allocate` | 0.12 | leads |  |
 | `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.55 | leads |  |
-| `v4.text.secure` | `package.v4.text.native` | `crypto-randomuuid.v4.text` | 1.02 | unresolved | 1.04 |
-| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 0.56 | leads |  |
-| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.57 | leads |  |
-| `v7.text.secure` | `package.v7.text.native` | `uniku.v7.text` | 0.77 | leads | 0.99 |
+| `v4.text.secure` | `package.v4.text.native` | `uniku.v4.text` | 1.04 | unresolved | 1.04 |
+| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 0.58 | leads |  |
+| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.58 | leads |  |
+| `v7.text.secure` | `package.v7.text.native` | `uniku.v7.text` | 0.77 | leads | 0.96 |
 | `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.25 | trails |  |
 
 ## bun 1.4.2
 
-Against the fastest package: leads 4, trails 3, unresolved 0. Trails on `v4.bytes.into.secure`, `v4.text.secure`, `v7.timestamp.text`.
+Against the fastest package: leads 3, trails 3, unresolved 1. Trails on `v4.bytes.into.secure`, `v4.text.secure`, `v7.timestamp.text`.
 
 | Group | Package route | Fastest package | Ratio | Verdict | Ratio to platform |
 | --- | --- | --- | ---: | --- | ---: |
-| `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuid.v4.bytes.allocate` | 0.67 | leads |  |
-| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uuid.v4.bytes.into` | 1.09 | trails |  |
-| `v4.text.secure` | `package.v4.text.native` | `crypto-randomuuid.v4.text` | 1.16 | trails | 1.08 |
-| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuid.v7.bytes.allocate` | 0.93 | leads |  |
+| `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuid.v4.bytes.allocate` | 0.73 | leads |  |
+| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uuid.v4.bytes.into` | 1.08 | trails |  |
+| `v4.text.secure` | `package.v4.text.native` | `crypto-randomuuid.v4.text` | 1.16 | trails | 1.10 |
+| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuid.v7.bytes.allocate` | 0.95 | unresolved |  |
 | `v7.bytes.into.secure` | `package.v7.bytes.into` | `uuid.v7.bytes.into` | 0.95 | leads |  |
-| `v7.text.secure` | `package.v7.text.native` | `uniku.v7.text` | 0.35 | leads | 1.01 |
+| `v7.text.secure` | `package.v7.text.native` | `uniku.v7.text` | 0.34 | leads | 0.98 |
 | `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.35 | trails |  |
 
 ## deno 2.9.6
 
-Against the fastest package: leads 3, trails 2, unresolved 2. Trails on `v4.text.secure`, `v7.timestamp.text`.
+Against the fastest package: leads 4, trails 2, unresolved 1. Trails on `v4.text.secure`, `v7.timestamp.text`.
 
 | Group | Package route | Fastest package | Ratio | Verdict | Ratio to platform |
 | --- | --- | --- | ---: | --- | ---: |
-| `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuid.v4.bytes.allocate` | 0.85 | unresolved |  |
+| `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuid.v4.bytes.allocate` | 0.84 | leads |  |
 | `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.85 | leads |  |
-| `v4.text.secure` | `package.v4.text.native` | `uniku.v4.text` | 1.33 | trails | 1.37 |
-| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 0.98 | unresolved |  |
-| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.88 | leads |  |
-| `v7.text.secure` | `package.v7.text.portable` | `uniku.v7.text` | 0.80 | leads |  |
-| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.06 | trails |  |
+| `v4.text.secure` | `package.v4.text.native` | `uniku.v4.text` | 1.30 | trails | 1.37 |
+| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 1.04 | unresolved |  |
+| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.83 | leads |  |
+| `v7.text.secure` | `package.v7.text.native` | `uniku.v7.text` | 0.83 | leads |  |
+| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.08 | trails |  |
 
 ## chromium
 
@@ -64,12 +64,12 @@ Against the fastest package: leads 5, trails 1, unresolved 1. Trails on `v4.text
 | Group | Package route | Fastest package | Ratio | Verdict | Ratio to platform |
 | --- | --- | --- | ---: | --- | ---: |
 | `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuid.v4.bytes.allocate` | 0.15 | leads |  |
-| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.73 | leads |  |
-| `v4.text.secure` | `package.v4.text.native` | `lukeed.v4.text.secure` | 1.17 | trails | 0.26 |
-| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 0.78 | leads |  |
-| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.85 | leads |  |
-| `v7.text.secure` | `package.v7.text.native` | `uniku.v7.text` | 0.78 | leads |  |
-| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 0.96 | unresolved |  |
+| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.72 | leads |  |
+| `v4.text.secure` | `package.v4.text.native` | `lukeed.v4.text.secure` | 1.19 | trails | 0.27 |
+| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 0.79 | leads |  |
+| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.81 | leads |  |
+| `v7.text.secure` | `package.v7.text.native` | `uniku.v7.text` | 0.80 | leads |  |
+| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.06 | unresolved |  |
 
 ## Timed but not ranked
 
@@ -79,7 +79,7 @@ win a group: each gave up something the package guarantees, or cannot run on tha
 | Row | Why | Runtimes |
 | --- | --- | --- |
 | `lukeed.v4.text.insecure` | Math.random does not provide cryptographic UUIDv4 entropy. | node v24.21.0, bun 1.4.2, deno 2.9.6, chromium |
-| `fastv7.v7.text` | Independent processes and restarted state reuse sequence zero, leaving 62 random bits instead of this package's 74-bit same-timestamp collision margin. | node v24.21.0, bun 1.4.2, deno 2.9.6, chromium |
+| `fastv7.v7.text` | Independent processes and restarted state reuse sequence zero. This leaves 62 random bits per value; this package also starts its 42-bit sequence from a random seed. | node v24.21.0, bun 1.4.2, deno 2.9.6, chromium |
 | `uniku.v7.timestamp.text` | The call does not verify that its input is UUIDv7. | node v24.21.0, bun 1.4.2, deno 2.9.6, chromium |
 | `crypto-randomuuid.v4.text` | Node crypto package; no browser export | chromium |
 

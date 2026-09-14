@@ -18,11 +18,11 @@ const samples = Number(process.env.UUID_SLUG_ENTROPY_SAMPLES ?? (smoke ? 20_000 
 if (!Number.isSafeInteger(samples) || samples <= 0)
   throw new Error("UUID_SLUG_ENTROPY_SAMPLES must be a positive safe integer");
 
-/** Widest counter this scans for: the whole random field. */
+/** Widest counter this scans for: the whole non-structural UUIDv7 payload. */
 const FIELD_BITS = 74n;
 
-/** The 74 bits RFC 9562 declares random — `rand_a` (12) then `rand_b` (62) — as one integer. */
-const randomField = (hex: string): bigint => {
+/** Read `rand_a` and `rand_b` together; either field may contain random data or a counter. */
+const payloadField = (hex: string): bigint => {
   const value = BigInt(`0x${hex}`);
   return (((value >> 64n) & 0xfffn) << 62n) | (value & ((1n << 62n) - 1n));
 };
@@ -67,7 +67,7 @@ function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>
   // Normalize after sampling so reporting work cannot change the observed draw rate.
   for (let i = 0; i < values.length; i++) values[i] = (values[i] as string).replaceAll("-", "");
 
-  const fields = values.map(randomField);
+  const fields = values.map(payloadField);
   const distinctFields = new Set(fields).size;
 
   let conformingValues = 0;
