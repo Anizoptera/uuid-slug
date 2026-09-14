@@ -13,7 +13,7 @@ boundaries, and [cross-language.md](cross-language.md) owns parity and distribut
 | UUID text | Default output is 36-character hyphenated lowercase text; callers may request uppercase. Parsers also accept compact text, UUID URNs, brace-wrapped text, and mixed case. | [RFC 9562 §4](https://www.rfc-editor.org/rfc/rfc9562.html#section-4) permits uppercase, lowercase, and mixed case; it does not choose a default case. This package emits lowercase by default to give each UUID one stable spelling, match common UUID implementations, and align with lowercase base32hex. | `UuidString`, `UuidV4String`, `UuidV7String`; parameter `uuid` on universal converters and `uuidString` on text-only operations. |
 | UUID bytes | Exactly 16 bytes for a standalone value; an explicit offset selects 16 bytes from a larger array. | Successful owned output is a plain `Uint8Array`. Caller-owned output is returned unchanged by identity and is not written on failure. | `UuidBytes`, `UuidV4Bytes`, `UuidV7Bytes`; parameter `uuid` on universal converters and `uuidBytes` on byte-only operations. |
 | Plain UUID slug | 22 unpadded base64url characters or 26 lowercase base32hex characters. | Keyless and lossless for any UUID. It contains all 128 UUID bits. Noncanonical padding and spellings are rejected. | `PlainUuidSlug`, `PlainUuidV4Slug`, `PlainUuidV7Slug`; parameter `plainUuidSlug` when the source must be known. |
-| Masked UUIDv7 slug | 22 base64url characters or 27 lowercase base32hex characters. | Requires its masking codec, carries the UUIDv7 payload plus a 16-bit check, and supports timestamps below 2^42 milliseconds. It proves format integrity, not issuance. | `MaskedUuidV7Slug`; parameter `maskedUuidSlug` when the source must be known. |
+| Masked UUIDv7 slug | 22 base64url characters or 27 lowercase base32hex characters. | Requires its masking codec, carries the UUIDv7 payload plus a 16-bit check, and keeps UUIDv7 timestamps from Unix millisecond 0 through 2^42 - 1 without shifting them. It proves format integrity, not issuance. | `MaskedUuidV7Slug`; parameter `maskedUuidSlug` when the source must be known. |
 | Sentinel UUIDv7 slug | A configured UUIDv7 written as its ordinary 22- or 26-character plain slug. | It is a plain slug, not a masked payload. Every plain-slug operation accepts it. A masking codec only preserves its spelling when writing masked results. | `SentinelUuidV7Slug`; masking results use `MaskedOrSentinelUuidV7Slug`. |
 
 `base64url` and `base32hex` name alphabets, not value kinds. A length selects the alphabet only
@@ -190,9 +190,10 @@ interface is complete, useful, or clear.
   meaning. `uuidToString` and `uuidToBytes` reject that conflict. Source-specific methods let a
   caller state known provenance; migration readers expose ordered candidates when provenance is
   unavailable.
-- Masked UUIDv7 writers accept Unix milliseconds through `MAX_MASKED_UUID_V7_UNIX_MS` and return
-  `invalid_timestamp` above it. Registered sentinels are never masked; like every plain UUID slug,
-  they retain the full 48-bit UUIDv7 range.
+- Masked UUIDv7 writers keep the UUID timestamp without shifting it. They accept Unix
+  milliseconds from zero through `MAX_MASKED_UUID_V7_UNIX_MS`, inclusive, and return
+  `invalid_timestamp` outside that range. Registered sentinels are never masked; like every plain
+  UUID slug, they retain the full 48-bit UUIDv7 range.
 - Keep mutable sequence state in generators and immutable configuration in codecs. Default
   generation uses package-selected cryptographic entropy. Custom entropy requires a separately
   named call whose callback fills the complete requested array or returns `UuidSlugError`.

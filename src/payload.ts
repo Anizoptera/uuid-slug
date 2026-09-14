@@ -22,7 +22,7 @@ const UNMASK_DIRECTION = "unmask";
 const UNMASKING = "unmasking";
 
 const MAX_MASKED_UUID_V7_HIGH_BYTE = 0x03;
-/** Last Unix millisecond representable by the masked UUIDv7 wire format. */
+/** Inclusive upper bound for masking a UUIDv7 timestamp without shifting it; the range starts at 0. */
 export const MAX_MASKED_UUID_V7_UNIX_MS: number = (MAX_MASKED_UUID_V7_HIGH_BYTE + 1) * 2 ** 40 - 1;
 
 /** Custom callbacks can fail after construction; preserve their cause in the public error contract. */
@@ -136,7 +136,7 @@ export function ownedUuidV7BytesToMaskedSlug(
   if ((raw[0] ?? 0) > MAX_MASKED_UUID_V7_HIGH_BYTE)
     return new UuidSlugError(
       INVALID_TIMESTAMP,
-      "Masking requires a UUIDv7 timestamped before 2^42 ms (year 2109); its top six bits carry the check.",
+      "Masking accepts UUIDv7 timestamps from Unix millisecond 0 through 2^42 - 1; the top six bits hold the check.",
     );
   const tag = tagFor(raw, TAG_BITS);
   injectTag(raw, tag >>> OUTER_TAG_BITS);

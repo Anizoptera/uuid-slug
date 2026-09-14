@@ -320,9 +320,11 @@ describe("UUIDv7 timestamp extraction", () => {
     });
     const instant = unwrap(extractUuidV7UnixMs(TEST_SENTINELS[0].uuid));
     const masked = unwrap(codec.uuidToMaskedSlug(SAMPLE_V7_A));
+    const epoch = unwrap(codec.uuidToMaskedSlug("00000000-0000-7000-8000-000000000000"));
     const sentinel = codec.sentinels[0];
     if (!sentinel) throw new Error("Expected configured sentinel");
     expect(codec.extractMaskedUuidV7UnixMs(masked)).toBe(extractUuidV7UnixMs(SAMPLE_V7_A));
+    expect(codec.extractMaskedUuidV7UnixMs(epoch)).toBe(0);
     expect(codec.extractMaskedUuidV7UnixMs(sentinel.slug)).toBe(instant);
   });
 });

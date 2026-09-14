@@ -2,6 +2,13 @@
 
 Live work only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`.
 
+## Masked UUIDv7 timestamp range
+
+- [x] State that masking keeps the Unix epoch and accepts timestamps from millisecond zero through
+      `MAX_MASKED_UUID_V7_UNIX_MS`; it does not shift the timestamp.
+- [x] Align TypeScript and Rust public documentation with the same inclusive range.
+- [x] Verify the lower endpoint masks and decodes without changing its timestamp.
+
 ## UUID constants pending maintainer review
 
 Maintainer ruling: UUIDv7 timestamp bounds use inclusive endpoints and expose canonical UUID text

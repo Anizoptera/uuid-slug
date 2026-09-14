@@ -520,15 +520,17 @@ export interface UuidV7MaskingCodec {
   ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
   /**
    * Generate and encode a UUIDv7 as a masked slug or its registered raw sentinel slug.
-   * Returns `invalid_timestamp` after `MAX_MASKED_UUID_V7_UNIX_MS` unless the generated UUID is a
-   * registered sentinel, which is returned as a plain slug without masking.
+   * Returns `invalid_timestamp` outside the inclusive range from Unix millisecond 0
+   * through `MAX_MASKED_UUID_V7_UNIX_MS` unless the generated UUID is a registered sentinel, which
+   * is returned as a plain slug without masking.
    */
   generateMaskedUuidV7Slug(this: void): MaskedOrSentinelUuidV7Slug | UuidSlugError;
   /**
    * Generate UUIDv7 text and its masked or sentinel slug from one random byte draw. UUID text is
    * lowercase unless `textCase` selects uppercase.
-   * Returns `invalid_timestamp` after `MAX_MASKED_UUID_V7_UNIX_MS` unless the generated UUID is a
-   * registered sentinel, which is returned as a plain slug without masking.
+   * Returns `invalid_timestamp` outside the inclusive range from Unix millisecond 0
+   * through `MAX_MASKED_UUID_V7_UNIX_MS` unless the generated UUID is a registered sentinel, which
+   * is returned as a plain slug without masking.
    *
    * @param textCase - Built-in UUID text spelling. Omit for lowercase.
    */
@@ -540,8 +542,8 @@ export interface UuidV7MaskingCodec {
    * Convert UUID text, 16 UUID bytes, a plain slug, or a masked slug to this masking codec's
    * current masked spelling. A dual-valid raw slug selects its masked meaning. Other UUID versions
    * return `invalid_uuid_version`. TypeScript rejects known UUIDv4 values; unbranded external
-   * values are validated when called. Timestamps after
-   * `MAX_MASKED_UUID_V7_UNIX_MS` return `invalid_timestamp`; registered sentinels are always
+   * values are validated when called. Timestamps outside the inclusive range from Unix
+   * millisecond 0 through `MAX_MASKED_UUID_V7_UNIX_MS` return `invalid_timestamp`; sentinels are
    * returned as plain slugs without masking and retain the full UUIDv7 timestamp range. A preceding
    * `UuidSlugError` is returned unchanged.
    *

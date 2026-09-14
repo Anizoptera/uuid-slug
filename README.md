@@ -128,7 +128,8 @@ function idForImportedRecord(recordedUnixMs: number) {
 
 Each call uses fresh randomness, even at the same timestamp. For retries, keep the first ID or
 use your application's deduplication key. Existing records should keep their UUIDs.
-Masking still requires a timestamp below `2^42` milliseconds.
+Masking accepts UUIDv7 timestamps from Unix millisecond `0` through `2^42 - 1`, inclusive. It does
+not shift the timestamp.
 
 Use `createUuidV7Generator({ readUnixMs })` for an application clock or time-dependent tests.
 Each generator has its own sequence state. A fixed clock does not make IDs repeatable:
@@ -321,9 +322,11 @@ and both are part of the contract rather than implementation detail:
   an existing record: a lookup alone does not prove correct decoding. Every extra
   mask you try adds another opportunity for false acceptance; the combined rate is
   at most the sum of the individual rates. Keep the rotation list short.
-- **Masking accepts timestamps through `MAX_MASKED_UUID_V7_UNIX_MS` (`2^42 - 1`) and refuses the
-  next millisecond**, which arrives in the year 2109. It returns
-  `invalid_timestamp` because those six bits are spent on the check. Truncating instead would let
+- **Masking keeps the UUIDv7 timestamp and accepts Unix milliseconds from `0` through
+  `MAX_MASKED_UUID_V7_UNIX_MS` (`2^42 - 1`), inclusive.** The earliest instant is the Unix
+  epoch. The first rejected timestamp is `2^42` milliseconds after the epoch
+  (`2109-05-15T07:35:11.104Z`). Masking returns `invalid_timestamp` because the timestamp's top six
+  bits hold the check. Truncating instead would let
   two UUIDs share one slug, which nothing could recover from. Plain slugs have no such limit;
   registered sentinels are always plain slugs and therefore retain the full UUIDv7 timestamp range.
 
@@ -607,7 +610,8 @@ Omit it for a standalone 16-byte array. Output offsets select where a method wri
 select where it reads. Bytes outside that 16-byte range stay unchanged.
 
 Masking is possible for any UUID version, but this library supports it only for UUIDv7.
-Its fixed version, variant, and restricted timestamp range leave room for a 16-bit check without
+Its fixed version, variant, and timestamp range from Unix millisecond 0 through `2^42 - 1` leave
+room for a 16-bit check without
 lengthening the default 22-character slug. Plain slugs support every UUID version.
 
 The `At` pair takes the instant first and leaves current-time sequence state unchanged. See

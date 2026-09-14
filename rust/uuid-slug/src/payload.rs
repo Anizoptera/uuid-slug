@@ -2,7 +2,7 @@
 use crate::{Error, ErrorCode, alphabet::UuidSlugAlphabet, mask::UuidV7Mask, uuid::utf16_len};
 
 const MAX_MASKED_UUID_V7_HIGH_BYTE: u8 = 3;
-/// Last Unix millisecond representable by the masked UUIDv7 wire format.
+/// Inclusive upper bound for masking a UUIDv7 timestamp without shifting it; the range starts at 0.
 pub const MAX_MASKED_UUID_V7_UNIX_MS: u64 = ((MAX_MASKED_UUID_V7_HIGH_BYTE as u64 + 1) << 40) - 1;
 
 fn mix32(mut value: u32) -> u32 {

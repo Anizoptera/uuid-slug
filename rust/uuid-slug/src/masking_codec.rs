@@ -40,6 +40,13 @@ mod tests {
                 masked_slug_alphabet,
                 ..UuidV7MaskingCodecOptions::new(crate::uuid_v7_test_mask())
             })?;
+            let epoch = codec.uuid_to_masked_slug(uuid_at(0))?;
+            assert_eq!(
+                codec
+                    .masked_slug_to_uuid(&epoch)?
+                    .extract_uuid_v7_unix_ms()?,
+                0
+            );
             assert!(
                 codec
                     .uuid_to_masked_slug(uuid_at(crate::MAX_MASKED_UUID_V7_UNIX_MS))
@@ -301,8 +308,8 @@ impl UuidV7MaskingCodec {
             .map(|(_, uuid)| *uuid)
     }
 
-    /// Encode a v7 through [`crate::MAX_MASKED_UUID_V7_UNIX_MS`], rejecting later timestamps unless
-    /// the UUID is a registered sentinel; sentinels are returned as plain slugs without masking.
+    /// Encode a UUIDv7 timestamp from Unix millisecond 0 through
+    /// [`crate::MAX_MASKED_UUID_V7_UNIX_MS`], inclusive. Registered sentinels bypass masking.
     pub fn uuid_to_masked_slug(&self, uuid: Uuid) -> Result<MaskedOrSentinelUuidV7Slug, Error> {
         uuid.extract_uuid_v7_unix_ms()?;
         if let Some(sentinel) = self.sentinels.iter().find(|entry| entry.uuid == uuid) {

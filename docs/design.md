@@ -31,9 +31,10 @@ check bits. Twelve replace the constant bits inside the 128-bit block; four occu
 spare bits. All 132 encoded bits have a role. Plain-slug padding rejection does not apply to these
 four check bits.
 
-A timestamp at or past 2^42 milliseconds is rejected before masking. Truncating it would allow
-different UUIDs to share a slug. The full masked payload uses 27 base32hex characters;
-forcing it into 26 would lose bits. Its three padding bits must be zero. Masked output
+Masking does not shift the UUIDv7 timestamp. It accepts Unix milliseconds from zero through
+2^42 - 1, inclusive. It rejects a timestamp at or past 2^42 milliseconds before masking because
+truncation would let different UUIDs share a slug. The full masked payload uses 27 base32hex
+characters; forcing it into 26 would lose bits. Its three padding bits must be zero. Masked output
 has no useful chronological ordering in either alphabet.
 
 ## Deriving a mask from a seed
@@ -98,7 +99,7 @@ the full domain, so the caller remains responsible for that property.
 
 ## Encoding and decoding
 
-1. Reject a non-v7 UUID or a timestamp at or past 2^42 milliseconds.
+1. Keep the timestamp unchanged. Reject a non-v7 UUID or a timestamp at or past 2^42 milliseconds.
 2. Fold `mix32` over the four big-endian words of the original UUID bytes and take the top 16
    bits as the tag.
 3. Store the tag's upper 12 bits in the block: four in byte 6's high nibble, two in byte 8's top
