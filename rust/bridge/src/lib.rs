@@ -239,6 +239,7 @@ impl Derivation {
                         mask,
                     ))?
                     .uuid_to_masked_slug(self.uuid)
+                    .map(|slug| slug.into_string())
                 })
                 .map(Some)
                 .map_err(|error| wasm_bindgen::JsValue::from_str(error.code().as_str())),
