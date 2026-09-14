@@ -57,6 +57,10 @@ type IsExact<Actual, Expected> =
           ? true
           : false
         : false;
+type IsAssignable<Source, Target> = [Source] extends [Target] ? true : false;
+type HasPublicExport<Name extends PropertyKey> = Name extends keyof typeof UuidSlugApi
+  ? true
+  : false;
 declare function expectType<Expected>(): <Actual>(
   actual: IsExact<Actual, Expected> extends true ? Actual : never,
 ) => void;
@@ -107,7 +111,7 @@ expectType<number | UuidSlugError>()(extractUuidV7Timestamp(versionedSlug));
 // @ts-expect-error Known slug text cannot enter a UUID text operation.
 uuidStringToBytes(versionedSlug);
 // @ts-expect-error UUID timestamp validation accepts UUID text, not known slug text.
-validateUuidV7Timestamp(versionedSlug);
+validateUuidV7Timestamp(versionedSlug, { maxTimestampDeltaMs: 0 });
 const convertedUuid = uuidSlugToString(versionedSlug);
 if (convertedUuid instanceof Error) throw convertedUuid;
 const roundTripUuid: UuidV7String = convertedUuid;
@@ -118,7 +122,7 @@ expectType<number | UuidSlugError>()(extractUuidV7Timestamp(versionedSlugBytes))
 // @ts-expect-error Known UUID text cannot enter a slug text operation.
 uuidSlugToBytes(checkedUuid);
 // @ts-expect-error Slug timestamp validation accepts slug text, not known UUID text.
-validateUuidV7SlugTimestamp(checkedUuid);
+validateUuidV7SlugTimestamp(checkedUuid, { maxTimestampDeltaMs: 0 });
 const formattedSlug = bytesToUuidSlug(versionedSlugBytes);
 if (formattedSlug instanceof Error) throw formattedSlug;
 // @ts-expect-error Mutable bytes may no longer contain the version their stale brand records.
@@ -212,12 +216,13 @@ expectType<(UuidV7CodecSlug & "AZ_xnLf5cACbG99xO9VWLw") | UuidSlugError>()(
 );
 // @ts-expect-error Removed codec methods are not part of the public interface.
 codec.uuidV7MaskedSlug();
-// @ts-expect-error Removed codec types are not exported.
-type _RemovedCodec = import("@anizoptera/uuid-slug")["UuidSlugCodec"];
+declare const removedCodecExports: readonly [
+  HasPublicExport<"UuidSlugCodec">,
+  HasPublicExport<"PublicUuidV7Slug">,
+];
+expectType<readonly [false, false]>()(removedCodecExports);
 // @ts-expect-error Removed codec factories are not exported.
 type _RemovedCodecFactory = (typeof import("@anizoptera/uuid-slug"))["createUuidSlugCodec"];
-// @ts-expect-error Visibility did not describe the codec-owned slug value.
-type _RemovedPublicSlug = import("@anizoptera/uuid-slug")["PublicUuidV7Slug"];
 createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK, outputAlphabet: "base32hex" });
 createUuidV7SlugCodec({
   mask: UUID_V7_TEST_MASK,
@@ -328,17 +333,18 @@ expectType<UuidV7CodecSlug | UuidSlugError>()(checkedPublicSlugResult);
 if (checkedPublicSlugResult instanceof Error) throw checkedPublicSlugResult;
 const checkedPublicSlug: UuidV7CodecSlug = checkedPublicSlugResult;
 codec.uuidToSlug("019ff19b-58b8-7000-9b1b-df713bd5562c");
-// @ts-expect-error A plain slug does not carry the masked brand.
-const masked: MaskedUuidV7Slug = plain;
-// @ts-expect-error A v7 slug is not a v4 slug.
-const v4: UuidV4Slug = plain;
+declare const incompatibleSlugBrands: readonly [
+  IsAssignable<UuidV7Slug, MaskedUuidV7Slug>,
+  IsAssignable<UuidV7Slug, UuidV4Slug>,
+];
+expectType<readonly [false, false]>()(incompatibleSlugBrands);
 // @ts-expect-error A generated public slug may be a raw sentinel.
 const onlyMasked: MaskedUuidV7Slug = publicSlug;
 // @ts-expect-error A known masked slug must be decoded by its codec.
 uuidSlugToBytes(onlyMasked);
 // @ts-expect-error A known masked slug requires codec-owned timestamp validation.
 validateUuidV7SlugTimestamp(onlyMasked, { maxTimestampDeltaMs: 0 });
-void [checkedPublicSlug, directPublicSlug, masked, v4, onlyMasked];
+void [checkedPublicSlug, directPublicSlug, onlyMasked];
 
 const timestampWindow: UuidV7TimestampWindow = { maxTimestampDeltaMs: 0 };
 // @ts-expect-error Validation options are captured input, not mutable package state.
@@ -366,6 +372,5 @@ declare const internalTypes: readonly [
   _RuntimeErrorIsInternal,
   _GenericMaskedSlugIsInternal,
   _MigrationProjectionIsInternal,
-  _RemovedPublicSlug,
 ];
 void internalTypes;

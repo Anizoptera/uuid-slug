@@ -17,7 +17,7 @@ import type {
   UuidString,
   UuidV7String,
 } from "./types.ts";
-import { UUID_SLUG_MIGRATION_FORMATS } from "./types.ts";
+import { MIGRATION_FORMATS } from "./types.ts";
 import { bytesToUuidString } from "./uuid.ts";
 
 const DIRECT_SLUG_FORMAT = "direct-slug";
@@ -77,8 +77,7 @@ export function createMigration(
   ) {
     if (typeof slug !== "string") return invalidUuidSlugInput(slug);
     if (
-      (format !== undefined &&
-        !UUID_SLUG_MIGRATION_FORMATS.some((candidate) => candidate === format)) ||
+      (format !== undefined && !MIGRATION_FORMATS.some((candidate) => candidate === format)) ||
       (format === ORIGINAL_MASK_FORMAT && !original) ||
       (format === DIRECT_SLUG_FORMAT && !direct)
     )

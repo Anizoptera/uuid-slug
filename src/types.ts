@@ -235,14 +235,11 @@ export interface UuidV7Sentinel {
   readonly uuid: UuidV7String;
 }
 
-const MIGRATION_FORMATS = ["current-mask", "original-mask", "direct-slug"] as const;
-
-/** The migration formats accepted by `UuidSlugMigrationDecoder`. */
-export const UUID_SLUG_MIGRATION_FORMATS: typeof MIGRATION_FORMATS =
-  /*#__PURE__*/ Object.freeze(MIGRATION_FORMATS);
+/** One owner keeps migration validation and the public selector type aligned. */
+export const MIGRATION_FORMATS = ["current-mask", "original-mask", "direct-slug"] as const;
 
 /** Select one enabled migration format when the input's original encoding is known. */
-export type UuidSlugMigrationFormat = (typeof UUID_SLUG_MIGRATION_FORMATS)[number];
+export type UuidSlugMigrationFormat = (typeof MIGRATION_FORMATS)[number];
 
 /** Enable only formats your application has issued; writers keep using the codec. */
 export interface UuidSlugMigrationOptions {

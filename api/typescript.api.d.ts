@@ -126,7 +126,6 @@ export declare const UUID_SLUG_ERROR_CODES: readonly [
   "rng_unavailable",
   "timestamp_outside_window",
 ];
-export declare const UUID_SLUG_MIGRATION_FORMATS: typeof MIGRATION_FORMATS;
 export declare const UUID_V7_TEST_MASK: UuidV7Mask;
 export declare type UuidBytes = Brand<Uint8Array, "UuidBytes">;
 export declare type UuidSlug = Brand<string, "UuidSlug">;
@@ -150,7 +149,7 @@ export declare interface UuidSlugMigrationDecoder<
     format?: Format,
   ): UuidString[] | UuidSlugError;
 }
-export declare type UuidSlugMigrationFormat = (typeof UUID_SLUG_MIGRATION_FORMATS)[number];
+export declare type UuidSlugMigrationFormat = (typeof MIGRATION_FORMATS)[number];
 export declare interface UuidSlugMigrationOptions {
   readonly originalMask?: boolean;
   readonly directSlug?: boolean;

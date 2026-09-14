@@ -7,7 +7,6 @@ export { UUID_SLUG_ERROR_CODES, UuidSlugError, isUuidSlugError } from "./errors.
 export type { UuidSlugErrorCode } from "./errors.ts";
 export { UUID_V7_TEST_MASK, createUuidV7Mask, createUuidV7MaskAsync } from "./mask.ts";
 export { createCustomUuidV7Mask } from "./mask-handle.ts";
-export { UUID_SLUG_MIGRATION_FORMATS } from "./types.ts";
 export type {
   AsyncUuidV7MaskOptions,
   CustomUuidV7MaskOptions,

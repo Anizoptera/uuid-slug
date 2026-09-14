@@ -460,9 +460,9 @@ you need to retain the narrowed type. A brand proves format, not issuance or per
 JavaScript consumers do not need TypeScript. The shipped declarations compile with TypeScript 5.0
 and newer.
 
-Use the exported lists instead of maintaining your own: `UUID_SLUG_ALPHABETS` for alphabet
-choices, `UUID_SLUG_MIGRATION_FORMATS` for format names, and `UUID_SLUG_ERROR_CODES` for error
-codes. They also work in JavaScript. The migration list includes formats a reader may not have enabled.
+Use `UUID_SLUG_ALPHABETS` and `UUID_SLUG_ERROR_CODES` instead of maintaining your own alphabet or
+error-code lists. They also work in JavaScript. TypeScript exposes migration format names through
+`UuidSlugMigrationFormat`; each reader accepts only the formats enabled when it was created.
 
 | Type | What the value is |
 | --- | --- |
@@ -604,8 +604,8 @@ Also exported from the package root:
 - `UuidSlugError`, including code `rng_unavailable` when the runtime has no usable randomness.
   `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes package errors across
   JavaScript realms and duplicate package copies.
-- `UUID_SLUG_ALPHABETS` and `UUID_SLUG_MIGRATION_FORMATS` are the runtime values for
-  configuration and user-interface validation. Their TypeScript unions derive from the same lists.
+- `UUID_SLUG_ALPHABETS` is the runtime value for alphabet configuration and user-interface
+  validation. `SlugAlphabet` derives from that list.
 
 ### Codec options
 

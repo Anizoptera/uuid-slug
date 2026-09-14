@@ -2,6 +2,13 @@
 
 Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; this file never owns one.
 
+## Public interface audit
+
+- [x] Remove unsupported proof and consumer-surface debt found through the declaration inventory.
+  - [x] Make each negative type case fail for the boundary its comment names.
+  - [x] Keep migration format literals internal while retaining the public selector type.
+  - [x] Correct consumer documentation, regenerate declarations, and run the full gate.
+
 ## Error handling design
 
 - [x] Close the hostile audit of error recognition and semantic string ownership.
