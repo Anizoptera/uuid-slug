@@ -52,6 +52,20 @@ created generators, package copies, workers, and processes are outside that guar
 - [x] Falsify ordering, rollback, reentrancy, entropy failure, counter and fraction exhaustion, and exact wire placement.
 - [x] Expose each reusable generator's fixed layout so stored UUIDs can be decoded without guessing its runtime.
 
+## Configurable UUIDv7 ordering cost
+
+Maintainer ruling: strict package ordering remains the default. A reusable generator may instead
+select validated native ordering when avoiding package sequence coordination matters more than a
+cross-runtime ordering guarantee.
+
+- [ ] Define a named ordering policy that makes native mode incompatible with package-owned clock,
+      rollback, fraction, and entropy configuration.
+- [ ] Route every current-time output of a native-policy generator through one validated native UUID;
+      retain portable explicit-time generation because native APIs do not accept caller time.
+- [ ] Measure text and byte outcomes against monotonic generation before documenting the trade-off.
+- [ ] Falsify native success, malformed output, thrown failure, byte ownership, declarations, and
+      unsupported-runtime behavior.
+
 ## Codec capability boundary
 
 Maintainer direction: evaluate a broader codec name and optional masking. Do not make stateless UUID
