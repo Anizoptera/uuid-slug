@@ -45,9 +45,11 @@ import { TEST_SENTINELS } from "./sentinel-fixtures";
 const SAMPLE_V7_A = "01987008-ef3e-7f69-b677-22ec1a5bbdb2";
 const SAMPLE_V7_B = "01987bbb-178b-7858-93e8-fc5e5444913b";
 const SAMPLE_V4 = "b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5";
+const VALID_NIL_UUID_STRING = "00000000-0000-0000-0000-000000000000";
+const BOXED_VALID_NIL_UUID_STRING = new String(VALID_NIL_UUID_STRING);
 const revokedInput = Proxy.revocable({}, {});
 revokedInput.revoke();
-const INVALID_UUID_INPUTS = [
+const REJECTED_UUID_INPUTS = [
   undefined,
   null,
   false,
@@ -75,7 +77,7 @@ const INVALID_UUID_INPUTS = [
   new Set([SAMPLE_V7_A]),
   Promise.resolve(SAMPLE_V7_A),
   new Error(SAMPLE_V7_A),
-  new String("00000000-0000-0000-0000-000000000000"),
+  BOXED_VALID_NIL_UUID_STRING,
   new ArrayBuffer(16),
   new SharedArrayBuffer(16),
   new DataView(new ArrayBuffer(16)),
@@ -244,7 +246,7 @@ describe("plain UUID slugs", () => {
       "ffffffff-ffff-7fff-bfff-ffffffffffff",
       "ffffffff-ffff-4fff-bfff-ffffffffffff",
       "ffffffff-ffff-8fff-ffff-ffffffffffff",
-      "00000000-0000-0000-0000-000000000000",
+      VALID_NIL_UUID_STRING,
     ])
       for (const alphabet of ["base64url", "base32hex"] as const) {
         const slug = unwrap(uuidStringToPlainSlug(uuid, alphabet));
@@ -478,7 +480,7 @@ describe("plain UUID slugs", () => {
 
   it("rejects arbitrary JavaScript values at the keyless conversion boundary", () => {
     for (const convert of [uuidToString, uuidToBytes, uuidToPlainSlug])
-      for (const input of INVALID_UUID_INPUTS)
+      for (const input of REJECTED_UUID_INPUTS)
         expect(Reflect.apply(convert, undefined, [input])).toBeInstanceOf(UuidSlugError);
 
     const output = new Uint8Array(18).fill(0x5a);
@@ -525,7 +527,7 @@ describe("masked UUID slugs", () => {
       codec.uuidToPlainSlug,
       codec.uuidToMaskedSlug,
     ])
-      for (const input of INVALID_UUID_INPUTS)
+      for (const input of REJECTED_UUID_INPUTS)
         expect(Reflect.apply(convert, undefined, [input])).toBeInstanceOf(UuidSlugError);
 
     const output = new Uint8Array(18).fill(0x5a);

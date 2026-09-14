@@ -369,6 +369,11 @@ codec.plainToMaskedUuidSlug(checkedUuid);
 // @ts-expect-error Codec conversion accepts codec slugs, not known UUID text.
 codec.maskedToPlainUuidSlug(checkedUuid);
 codec.uuidToString(checkedUuid);
+const boxedValidUuidString = new String("00000000-0000-0000-0000-000000000000");
+// @ts-expect-error String wrapper objects are not primitive string inputs.
+uuidToString(boxedValidUuidString);
+// @ts-expect-error A masking codec also accepts primitive strings, not wrappers.
+codec.uuidToString(boxedValidUuidString);
 declare const arbitraryJavaScriptValue: unknown;
 // @ts-expect-error Untyped JavaScript input must be narrowed before a typed call.
 uuidToString(arbitraryJavaScriptValue);

@@ -1,5 +1,11 @@
 # Roadmap
 
+- [x] Define and enforce the JavaScript primitive-string input boundary.
+  - [x] Record the decision and its reason in the public API authority before dependent text.
+  - [x] Keep consumer guidance and agent routing concise and consistent with that authority.
+  - [x] Make the existing runtime falsifier distinguish a valid nil UUID from its rejected wrapper.
+  - [x] Run the focused test and complete gate, re-read the diff, and commit only these files.
+
 - [x] Finish the detached-name audit across the Rust API and every consumer.
   - [x] Rename public UUID-slug alphabets, masks, conversions, migration choices, and timestamp operations by exact domain meaning.
   - [x] Update Rust callers, bridge operations, examples, public docs, and API baselines from one rename map.
