@@ -20,10 +20,10 @@ package does not report those bits as random or predictable. Collisions remain p
 
 Generation selects secure sources separately for text and byte output:
 
-- Node uses `crypto.randomUUID()` for UUIDv4, `crypto.randomUUIDv7()` when available for UUIDv7
-  text, and pooled `crypto.randomFillSync()` for byte generation and portable UUIDv7 fallback.
-- Bun uses `Bun.randomUUIDv7()` for UUIDv7 text and Web Crypto `randomUUID()` for UUIDv4 text.
-  Byte output, plain UUIDv7 slugs, and fallback generation use pooled `getRandomValues()`.
+- Node uses `crypto.randomUUID()` for UUIDv4 text and pooled `crypto.randomFillSync()` for byte
+  generation and UUIDv7.
+- Bun uses Web Crypto `randomUUID()` for UUIDv4 text and pooled `getRandomValues()` for byte
+  output and UUIDv7.
 - Deno uses Web Crypto `randomUUID()` for UUIDv4 text and pooled `getRandomValues()` for byte
   output and UUIDv7. Browsers use pooled `getRandomValues()` for both UUID versions.
 

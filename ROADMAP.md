@@ -66,18 +66,26 @@ strict per-generator ordering, clock policy, fraction bits, and one stable paylo
       policy option, global configuration, runtime generator type, or second public factory.
 - [x] Keep `payloadLayout` and strict ordering on explicitly created generators whose current-time
       and explicit-time outputs share the declared layout.
-- [x] Route current text through validated native generation when present; keep byte, slug, and
-      explicit-time generation portable because native APIs do not accept caller time or bytes.
+- [x] Evaluate validated native text separately from byte, slug, and explicit-time generation;
+      reject it when validation makes the complete route slower than direct portable generation.
 - [x] Keep masking state in the masking codec, sequence state in generators, and stateless conversion
       at module scope unless measured caller code proves a deeper interface.
 - [x] Measure text and byte outcomes, allocations, entropy draws, construction, and fallback costs
       against monotonic generation on every affected runtime path.
-- [x] Falsify native UUIDv4 and UUIDv7 success and fallback, UUIDv7 ordering boundaries, byte
+- [x] Falsify native UUIDv4 fallback, proposed native UUIDv7 dispatch, UUIDv7 ordering boundaries, byte
       ownership, source types, emitted declarations, and packed imports.
 - [x] Update public JSDoc, README guarantees and examples, public-interface reasoning, performance evidence,
       and TypeScript/Rust parity statements without changing UUID or slug wire formats.
 - [x] Run the complete project gate, adversarially pair each promise with evidence, compress completed SOP
       state, commit focused files, and leave the repository clean.
+
+## UUIDv7 default-path adversarial audit
+
+- [x] Prove cached native trust violates the documented fallback contract when a later result is malformed.
+- [x] Audit native replacement, malformed output, throw, dual failure, text case, byte ownership, and representation independence.
+- [x] Compare always-validating native dispatch with cached trust and portable generation on complete public routes.
+- [x] Remove native UUIDv7 dispatch because cached trust weakens validation and always-validating dispatch loses to portable generation.
+- [x] Re-run affected Node and Bun tests, packaged API checks, resource gates, and complete verification; commit a clean tree.
 
 ## Codec capability boundary
 

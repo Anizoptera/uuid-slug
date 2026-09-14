@@ -2,17 +2,9 @@
 
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
-import {
-  failedFallback,
-  findUnknownOption,
-  INVALID_OPTIONS,
-  isError,
-  nativeOrFallback,
-  UuidSlugError,
-} from "./errors.ts";
+import { findUnknownOption, INVALID_OPTIONS, isError, UuidSlugError } from "./errors.ts";
 import {
   UUID_TEXT_LOWERCASE,
-  UUID_TEXT_UPPERCASE,
   UUID_V7_ROLLBACK_ERROR,
   UUID_V7_ROLLBACK_PRESERVE,
   UUID_V7_ROLLBACK_RESET,
@@ -26,7 +18,6 @@ import type {
   UuidV7StringFor,
 } from "./types.ts";
 import { createPortableUuidV7Generator } from "./v7.ts";
-import { invalidUuidTextCase, isUuidTextCase, isUuidV7String } from "./uuid.ts";
 
 /** Configure one UUIDv7 sequence's clock and rollback behavior. */
 export interface UuidV7GeneratorOptions {
@@ -189,9 +180,9 @@ export function createUuidV7GeneratorWithRandomFill(
 }
 
 /**
- * Text uses a validated native primitive when present; bytes keep lazy portable state because
- * parsing native text costs more than direct generation. The forms deliberately do not coordinate.
- * bench/PERFORMANCE.md owns the comparison; remeasure when either host primitive changes.
+ * Text and bytes keep independent lazy state so neither output form pays cross-form coordination.
+ * Native text plus required validation costs more than direct generation on current hosts;
+ * bench/PERFORMANCE.md owns the comparison and remeasurement trigger.
  */
 let textGenerator: UuidV7Generator | undefined;
 let byteGenerator: UuidV7Generator | undefined;
@@ -201,12 +192,6 @@ const v7Bytes = () =>
   (byteGenerator ??= createPortableUuidV7Generator({ fillRandom: runtime.fillRandom }));
 let generateDefaultUuidV7: UuidV7Generator["generateUuidV7"] | undefined;
 let generateDefaultUuidV7Bytes: UuidV7Generator["generateUuidV7Bytes"] | undefined;
-let trustedNativeUuidV7: (() => string) | undefined;
-
-const portableUuidV7 = <Case extends UuidTextCase>(
-  textCase: Case,
-): UuidV7StringFor<Case> | UuidSlugError =>
-  (generateDefaultUuidV7 ??= v7Text().generateUuidV7)(textCase);
 
 /*
  * Return types are DECLARED, not inferred, on all four. Inference reads them off the generator, so
@@ -220,33 +205,9 @@ const portableUuidV7 = <Case extends UuidTextCase>(
  * @param textCase - Built-in output spelling. Omit for lowercase.
  */
 export const generateUuidV7 = <Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-  textCase: Case = UUID_TEXT_LOWERCASE as Case,
-): UuidV7StringFor<Case> | UuidSlugError => {
-  if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
-  const native = runtime.uuidV7;
-  if (!native) return portableUuidV7(textCase);
-  if (native !== trustedNativeUuidV7) {
-    const result = nativeOrFallback(
-      native,
-      isUuidV7String,
-      (value) =>
-        (textCase === UUID_TEXT_UPPERCASE ? value.toUpperCase() : value) as UuidV7StringFor<Case>,
-      () => portableUuidV7(textCase),
-      "UUIDv7 generation",
-    );
-    if (!(result instanceof Error)) trustedNativeUuidV7 = native;
-    return result;
-  }
-  try {
-    const uuid = native();
-    return (textCase === UUID_TEXT_UPPERCASE ? uuid.toUpperCase() : uuid) as UuidV7StringFor<Case>;
-  } catch (nativeCause) {
-    const fallback = portableUuidV7(textCase);
-    return fallback instanceof Error
-      ? failedFallback(nativeCause, fallback, "Native and portable UUIDv7 generation failed.")
-      : fallback;
-  }
-};
+  textCase?: Case,
+): UuidV7StringFor<Case> | UuidSlugError =>
+  (generateDefaultUuidV7 ??= v7Text().generateUuidV7)(textCase);
 
 /**
  * Generate UUIDv7 bytes with platform randomness in a new plain 16-byte `Uint8Array`. Module-level

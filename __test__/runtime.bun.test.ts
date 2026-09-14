@@ -21,15 +21,8 @@ import {
 } from "./entropy-probe";
 import { cases as bufferContractCases } from "./buffer-contract-probe";
 import { generateUuidV4Bytes } from "../src/index";
-import { runtime as bunRuntime } from "../src/runtime/bun";
 
 describe("bun runtime", () => {
-  test("exposes native UUIDv7 text only when Bun provides it", () => {
-    expect(typeof bunRuntime.uuidV7).toBe(
-      typeof Bun.randomUUIDv7 === "function" ? "function" : "undefined",
-    );
-  });
-
   // The same list runs on Node and Bun's portable owned-byte generators, so both runtime branches
   // must preserve the public caller-buffer contract.
   for (const entry of bufferContractCases) {

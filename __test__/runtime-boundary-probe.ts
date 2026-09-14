@@ -111,19 +111,19 @@ export const runtimeBoundaryCases = [
     },
   },
   {
-    name: "distinguishes native text and portable generation failures by output route",
+    name: "distinguishes native UUIDv4 and portable generation failures by output route",
     run(this: void) {
       const saved = { ...runtime };
       const portableCause = new Error("portable route failed");
       const nativeCause = new Error("native route failed");
       let failPortable = false;
-      const nativeCalls = { v4: 0, v7: 0 };
+      let nativeCalls = 0;
       runtime.fillRandom = (bytes) => {
         if (failPortable) throw portableCause;
         saved.fillRandom(bytes);
       };
-      const native = (key: keyof typeof nativeCalls, value: string) => () => {
-        nativeCalls[key] += 1;
+      const native = (value: string) => () => {
+        nativeCalls += 1;
         return value;
       };
       const assertDualFailure = (result: unknown) => {
@@ -136,8 +136,7 @@ export const runtimeBoundaryCases = [
         assert.equal(result.cause, portableCause);
       };
       try {
-        runtime.uuidV4 = native("v4", "123e4567-e89b-42d3-a456-426614174000");
-        runtime.uuidV7 = native("v7", uuid);
+        runtime.uuidV4 = native("123e4567-e89b-42d3-a456-426614174000");
         assert.equal(generateUuidV4(), "123e4567-e89b-42d3-a456-426614174000");
         assert.equal(generateUuidV4(UUID_TEXT_UPPERCASE), "123E4567-E89B-42D3-A456-426614174000");
         assert.equal(isUuidV4String(bytesToUuidString(unwrap(generateUuidV4Bytes()))), true);
@@ -157,10 +156,9 @@ export const runtimeBoundaryCases = [
         assert.equal(generateUuidV7BytesAtUnixMs(timestamp, explicitOut, 4), explicitOut);
         assert.equal(isPlainUuidV7Slug(generatePlainUuidV7Slug()), true);
         assert.equal(unwrap(generatePlainUuidV7Slug("base32hex")).length, 26);
-        assert.deepEqual(nativeCalls, { v4: 2, v7: 2 });
+        assert.equal(nativeCalls, 2);
 
         delete runtime.uuidV4;
-        delete runtime.uuidV7;
         assert.equal(isUuidV4String(generateUuidV4()), true);
         assert.equal(isUuidV7String(generateUuidV7()), true);
         assert.equal(isUuidV7String(generateUuidV7AtUnixMs(timestamp)), true);
@@ -168,13 +166,12 @@ export const runtimeBoundaryCases = [
         assert.equal(isUuidV7Bytes(generateUuidV7BytesAtUnixMs(timestamp)), true);
         assert.equal(isPlainUuidV7Slug(generatePlainUuidV7Slug()), true);
         assert.equal(unwrap(generatePlainUuidV7Slug("base32hex")).length, 26);
-        assert.deepEqual(nativeCalls, { v4: 2, v7: 2 });
+        assert.equal(nativeCalls, 2);
 
         const throwNative = (): never => {
           throw nativeCause;
         };
         runtime.uuidV4 = throwNative;
-        runtime.uuidV7 = throwNative;
         failPortable = true;
         assertDualFailure(generateUuidV4());
         assertPortableFailure(generateUuidV4Bytes());
@@ -214,19 +211,6 @@ export const runtimeBoundaryCases = [
       } finally {
         if (originalV4) runtime.uuidV4 = originalV4;
         else delete runtime.uuidV4;
-      }
-    },
-  },
-  {
-    name: "falls back when optional native UUIDv7 generation returns malformed text",
-    run(this: void) {
-      const originalV7 = runtime.uuidV7;
-      runtime.uuidV7 = () => "not-a-uuid";
-      try {
-        assert.equal(isUuidV7String(generateUuidV7()), true);
-      } finally {
-        if (originalV7) runtime.uuidV7 = originalV7;
-        else delete runtime.uuidV7;
       }
     },
   },

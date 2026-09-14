@@ -28,11 +28,8 @@ import { generateUuidV4Bytes } from "../src/index";
 import { runtime as nodeRuntime } from "../src/runtime/node";
 
 describe("entropy source", () => {
-  it("exposes every supported native Node UUID primitive", () => {
+  it("exposes native UUIDv4 generation on Node", () => {
     expect(typeof nodeRuntime.uuidV4).toBe(typeof nodeCrypto.randomUUID);
-    expect(typeof nodeRuntime.uuidV7).toBe(
-      typeof (nodeCrypto as { randomUUIDv7?: () => string }).randomUUIDv7,
-    );
   });
 
   it.each(generators)("never reaches for Math.random in %s", (_name, generate) => {

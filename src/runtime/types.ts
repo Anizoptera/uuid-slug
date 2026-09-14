@@ -15,5 +15,4 @@ export interface Runtime {
    */
   /** Native values are untrusted until the public generator validates their representation. */
   uuidV4?(this: void): string;
-  uuidV7?(this: void): string;
 }

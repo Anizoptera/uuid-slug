@@ -474,8 +474,8 @@ The 2026-09-12 review probed Node 26.8.2, Bun 1.4.2, Deno 2.9.6, and Chromium
 153 twice. Node and Bun expose `node:crypto.randomUUIDv7`; Deno does not. The probe detected no
 counter in Node's 74 payload bits, and consecutive same-millisecond values ordered near chance.
 Bun's generator advances a 12-bit counter (50,000-sample entropy probe of 2026-08-12 on Node
-26.7.0 and Bun 1.3.14). Those sequence behaviors do not block native module-level text because that
-surface promises no ordering; representation-specific measurements decide dispatch. Bun also exposes
+26.7.0 and Bun 1.3.14). Module-level text promises no ordering, but every returned value must still
+pass package validation before publication. Bun also exposes
 `Bun.randomUUIDv7`: its buffer form is a `Buffer`, explicit zero is accepted, and NaN throws
 `ERR_OUT_OF_RANGE`. Keep runtime dispatch capability-based because shared Node API names do not
 imply shared implementation.
@@ -488,11 +488,9 @@ same counters used by the profiler. Re-run the review after either runtime chang
 before runtime performance work; release notes and property presence are candidate discovery, not
 semantic evidence.
 
-Two packed Bun comparisons tested native UUID-v7 against the portable generator, then tested the
-hybrid selected from that result. Keeping native hex while routing bytes and slugs through the
-portable generator cut byte and caller-owned generation by 53–63%, slug generation by 24–32%, and
-base32 generation by 21–28% across both hybrid replays. The canonical string route did not regress.
-The split preserves wire and validation contracts and must be remeasured after a Bun update.
+Two packed Bun comparisons initially favored native UUIDv7 text while routing bytes and slugs
+through the portable generator. That result omitted the required validation on repeated native
+calls. The complete public route instead favors portable text, as recorded under UUIDv7 generation.
 
 ### Native base64url encoding
 
@@ -774,9 +772,8 @@ portable entropy fallback. Keep conditional adapter selection, module-load probe
 state. Retest only when a measured consumer startup budget makes import material or a synchronous
 runtime gains deferred module evaluation that can preserve the public call shape.
 
-Module-level UUIDv7 text uses a validated native primitive when present, while byte and explicit-time
-generation keep separate lazy portable state. The forms do not coordinate ordering. Callers who need
-strict ordering use `createUuidV7Generator`.
+Module-level UUIDv7 text and bytes use separate lazy portable state and do not coordinate ordering.
+Callers who need strict ordering use `createUuidV7Generator`.
 
 Two repeated complete-route comparisons on 2026-09-14 measured Node 24.21.0, Bun 1.4.2, Deno 2.9.6,
 and Chromium 153. Module text and a directly called created generator had overlapping sample ranges
@@ -787,11 +784,11 @@ A fresh-random-payload module candidate cost 226 ns on Node, 334 ns on Bun, 176 
 counter path. Smoke timings are directional only, but the large Bun loss and no reproduced win on
 higher-priority Node reject the extra entropy work.
 
-The final complete-route run selected native text at 142 ns on Node and 51 ns on Bun, versus 157 ns
-and 108 ns for the direct portable route. Deno and Chromium, which expose no selected native text
-capability, remained within overlapping sample ranges of the direct portable route. The comparison
-uses one machine and nine samples per row; it establishes the current dispatch choice, not a bound
-or a stable ratio. Remeasure when a host adds secure UUIDv7 bytes or changes its text primitive.
+Validating every native result rejected native dispatch. Two focused replays measured Node native
+at 234 ns and 240 ns against 147 ns and 156 ns portable. Two broader UUIDv7-text replays measured
+Bun native at 121 ns in both runs against 111 ns and 112 ns portable. The comparison uses one
+machine and nine samples per row; it establishes the current dispatch choice, not a bound or stable
+ratio. Remeasure when a host adds secure UUIDv7 bytes or changes its text primitive or validation cost.
 
 ### Portable UUIDv4 ownership paths
 
@@ -1339,8 +1336,10 @@ run taken first disagreed with them on Bun byte routes by 30–70%, so smoke out
 harness and ranks nothing. The package led every allocated-byte and caller-buffer group on Node,
 Chromium, and Deno, and Bun's owned-byte groups. Bun's UUIDv4 caller-buffer write trailed `uuid`
 by about 10% in both runs. Deno's owned UUIDv7 bytes were unresolved against `uuidv7`: 12% behind,
-then 2% ahead. UUIDv7 text led every package on all four runtimes and sat within 1–6% of the native
-generator on Node and Bun. UUIDv4 text matched Node's native generator within 1%; on Bun it
+then 2% ahead. UUIDv7 text led every package on all four runtimes. Raw platform generation was 5%
+faster on Node and 2.07 times faster on Bun, but it omits the package's validation boundary; adding
+that validation made native dispatch slower than direct portable generation. UUIDv4 text matched
+Node's native generator within 1%; on Bun it
 trailed `crypto-randomuuid` by about 10% and the native generator by 5%; on Deno it trailed `uniku`
 by about 30% and paid 34% over the native generator for validation and the error-value boundary; on Chromium
 it trailed the pooled portable generator in `@lukeed/uuid` by 13–15%. A single 2026-09-12 run had
