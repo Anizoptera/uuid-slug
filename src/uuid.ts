@@ -28,6 +28,7 @@ import type {
   UuidV4Text,
   UuidV7String,
   UuidV7Text,
+  UuidVersion,
 } from "./types.ts";
 
 export { isUuidSlugError } from "./errors.ts";
@@ -283,8 +284,8 @@ export function formatUuidBytesUnchecked<Case extends UuidTextCase = typeof UUID
 }
 
 /*#__NO_SIDE_EFFECTS__*/
-export function uuidVersion(bytes: Uint8Array, offset = 0): number {
-  return (bytes[offset + 6] ?? 0) >>> 4;
+export function uuidVersion(bytes: Uint8Array, offset = 0): UuidVersion {
+  return ((bytes[offset + 6] ?? 0) >>> 4) as UuidVersion;
 }
 
 /*#__NO_SIDE_EFFECTS__*/

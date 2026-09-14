@@ -496,6 +496,7 @@ their TypeScript type permits only formats enabled when the reader was created.
 | `UuidString`, `UuidV4String`, `UuidV7String` | Canonical UUID text; the version is known where the name says so. |
 | `UppercaseUuidString`, `UppercaseUuidV4String`, `UppercaseUuidV7String` | Uppercase UUID text; the version is known where the name says so. |
 | `UuidTextCase`, `UuidStringFor`, `UuidV4StringFor`, `UuidV7StringFor` | A preset choice and the UUID text type selected by it. |
+| `UuidVersion` | The complete four-bit version field: `0` through `15`. |
 | `PlainUuidSlug`, `PlainUuidV4Slug`, `PlainUuidV7Slug` | A plain slug in either alphabet; the version is known where the name says so. |
 | `MaskedUuidV7Slug` | A masked UUIDv7 slug; its check bits require masking-codec decoding. |
 | `SentinelUuidV7Slug` | A reserved plain UUIDv7 slug, also usable wherever `PlainUuidV7Slug` is accepted. |

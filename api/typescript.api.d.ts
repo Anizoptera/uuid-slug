@@ -62,7 +62,7 @@ export declare function extractUuidV7UnixMs<Input extends UuidByteInput | UuidSl
 ): number | UuidSlugError;
 export declare function extractUuidVersion<Input extends UuidInput>(
   uuid: KeylessUuidInput<Input>,
-): number | UuidSlugError;
+): UuidVersion | UuidSlugError;
 export declare const FIXED_MASK_FORMAT = "fixed-mask";
 export declare interface GeneratedUuidV7<
   Slug extends PlainUuidV7Slug | MaskedOrSentinelUuidV7Slug,
@@ -503,6 +503,23 @@ export declare interface UuidV7TimestampWindow {
 }
 declare type UuidV7ValueInput<Input extends string | UuidByteInput | UuidSlugError> =
   RejectKnownInput<Input, UuidV4Text | UuidV4Bytes>;
+export declare type UuidVersion =
+  | 0
+  | 1
+  | 2
+  | 3
+  | 4
+  | 5
+  | 6
+  | 7
+  | 8
+  | 9
+  | 10
+  | 11
+  | 12
+  | 13
+  | 14
+  | 15;
 export declare function validatePlainUuidV7SlugUnixMs<Input extends string | UuidSlugError>(
   slug: PlainUuidV7SlugInput<Input>,
   window: UuidV7TimestampWindow,

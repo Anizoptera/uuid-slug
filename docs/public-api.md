@@ -276,7 +276,8 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   error policy includes the maximum total clock skew it tolerates from the accepted high-water
   reading. Failed clock and entropy operations leave sequence and clock state unchanged.
 - Inspect the four-bit UUID version through `extractUuidVersion` or Rust `Uuid::uuid_version`.
-  The result does not prove that the variant or version is valid for another operation.
+  TypeScript returns `UuidVersion`, the exact `0..15` union. The result does not prove that the
+  variant or version is valid for another operation.
 - A UUIDv7 masking codec exposes `uuidToString`, `uuidToBytes`, `uuidToPlainSlug`, and
   `uuidToMaskedSlug` for ordinary conversions. It also exposes explicit plain and masked source
   methods only where a dual-valid 22-character slug needs a caller-owned interpretation.

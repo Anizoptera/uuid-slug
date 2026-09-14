@@ -48,6 +48,7 @@ import type {
   UuidTextCase,
   UuidV4StringFor,
   UuidV7StringFor,
+  UuidVersion,
 } from "./types.ts";
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
 
@@ -374,7 +375,7 @@ function decodeKeylessUuid(uuid: unknown): Uint8Array | UuidSlugError {
  */
 export function extractUuidVersion<Input extends UuidInput>(
   uuid: KeylessUuidInput<Input>,
-): number | UuidSlugError {
+): UuidVersion | UuidSlugError {
   const bytes = decodeKeylessUuid(uuid);
   return bytes instanceof Error ? bytes : uuidVersion(bytes, 0);
 }

@@ -20,6 +20,9 @@ export const UUID_V7_ROLLBACK_ERROR = "error";
 /** Select the hexadecimal letter case of UUID text output. */
 export type UuidTextCase = typeof UUID_TEXT_LOWERCASE | typeof UUID_TEXT_UPPERCASE;
 
+/** The complete four-bit UUID version field, whether assigned or reserved. */
+export type UuidVersion = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15;
+
 /** Choose how one created generator handles a clock reading below its accepted high-water mark. */
 export type UuidV7ClockRollbackPolicy =
   | { readonly action: typeof UUID_V7_ROLLBACK_PRESERVE }

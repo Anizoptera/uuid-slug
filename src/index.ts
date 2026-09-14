@@ -65,6 +65,7 @@ export type {
   UuidV4StringFor,
   UuidV7StringFor,
   UuidTextCase,
+  UuidVersion,
   PlainUuidV4Slug,
   UuidV4String,
   UuidV4Text,

@@ -85,6 +85,7 @@ import type {
   UuidV7Generator,
   UuidV7MaskingCodec,
   UuidString,
+  UuidVersion,
   UuidSlugMigrationDecoder,
 } from "@anizoptera/uuid-slug";
 
@@ -532,7 +533,7 @@ const customEntropyGenerator: UuidV7Generator = createUuidV7GeneratorWithRandomF
     clockRollback: { action: UUID_V7_ROLLBACK_ERROR, toleranceMs: 0 },
   },
 );
-expectType<number | UuidSlugError>()(extractUuidVersion(versionedSlug));
+expectType<UuidVersion | UuidSlugError>()(extractUuidVersion(versionedSlug));
 void customEntropyGenerator;
 
 createUuidV7Generator({ clockRollback: { action: UUID_V7_ROLLBACK_PRESERVE } });
