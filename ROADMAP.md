@@ -4,11 +4,11 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 
 ## Public interface audit
 
-- [ ] Audit every TypeScript call shape from consumer code, including defaults, composition,
+- [x] Audit every TypeScript call shape from consumer code, including defaults, composition,
       configuration variants, invalid combinations, ownership, and failure recovery.
-  - [ ] Map each export and member to a caller job; remove or reshape parts whose burden exceeds value.
-  - [ ] Compile realistic source and packed consumers, and run every behavior branch changed by the audit.
-  - [ ] Re-read emitted declarations and editor help, then run the full gate.
+  - [x] Map each export and member to a caller job; remove or reshape parts whose burden exceeds value.
+  - [x] Compile realistic source and packed consumers, and run every behavior branch changed by the audit.
+  - [x] Re-read emitted declarations and editor help, then run the full gate.
 - [x] Expose closed-vocabulary members by semantic names without duplicating their string literals.
   - [x] Export each alphabet choice, migration selector, and error code directly; remove public
         collections with no consumer iteration workflow.
