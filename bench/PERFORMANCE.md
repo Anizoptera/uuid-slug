@@ -1258,7 +1258,7 @@ This is the benchmark work list, not a claim that crates.io has no other UUID pa
 uses the registry searches `uuid`, `uuid v4`, `uuid7`, and `uuidv7`. It includes reusable libraries
 that generate UUIDv4 or UUIDv7 and excludes CLIs, database extensions, domain packages, parsers,
 formatters, and libraries that only consume UUIDs. Re-run the same searches before benchmarking.
-Run `bun run bench:competitors:audit-rust` to detect a newer release or repository commit. Release
+Run `bun run bench:competitors:audit` to detect a newer release or repository commit. Release
 dates come from crates.io; commit dates come from each package's declared GitHub repository. A new
 version requires source inspection before its evidence or benchmark result can be carried forward.
 
@@ -1305,12 +1305,32 @@ model. `leachuuid7` documents a 60-bit timestamp, but its source writes the RFC 
 48-bit timestamp and then sets the standard version and variant bits. The source behavior is what
 the compatibility claim covers.
 
-The retained set covers the most-downloaded packages and every distinct relevant strategy found:
-`uuid`, `@smithy/uuid`, `@lukeed/uuid`, `uuidv7`, `crypto-randomuuid`, `uuid-random`, `uniku`,
-`@kripod/uuidv7`, `uuidv7-js`, and `fastv7`. Official npm downloads for 2026-09-05 through
-2026-09-11 ranged from 206,849,086 for `uuid` to 293 for `fastv7`; low-download packages remain
-only where their strategy or API differs. The deprecated `uuidv4` wrapper and older duplicate
-generators add no independent implementation evidence.
+### TypeScript competitor inventory
+
+Run `bun run bench:competitors:audit` to compare both inventories with npm, crates.io, and each
+package's declared GitHub repository. A changed release or repository date requires source
+inspection before carrying its evidence forward. Dates show activity, not maintainability by
+themselves; stable code may need few commits, while frequent commits may still leave consumer
+defects unresolved.
+
+| Package | Release | Repo commit | Why retained |
+| --- | --- | --- | --- |
+| [`uuid` 14.0.2](https://www.npmjs.com/package/uuid) | 2026-08-18 | 2026-08-18 | Main UUID library; v4 and configurable v7 text and caller storage |
+| [`@smithy/uuid` 1.4.2](https://www.npmjs.com/package/@smithy/uuid) | 2026-08-15 | 2026-09-11 | High-volume UUIDv4 wrapper used by AWS packages |
+| [`@lukeed/uuid` 2.0.1](https://www.npmjs.com/package/@lukeed/uuid) | 2023-03-31 | 2024-01-20 | Small pooled UUIDv4 implementation |
+| [`uuidv7` 1.2.1](https://www.npmjs.com/package/uuidv7) | 2026-03-22 | 2026-08-25 | Stateful v7 generator with rollback policy and owned bytes |
+| [`crypto-randomuuid` 1.0.0](https://www.npmjs.com/package/crypto-randomuuid) | 2021-08-09 | unavailable | Small native UUIDv4 wrapper |
+| [`uuid-random` 1.3.2](https://www.npmjs.com/package/uuid-random) | 2020-06-24 | 2021-05-20 | Standalone UUIDv4 text generator |
+| [`uniku` 0.6.0](https://www.npmjs.com/package/uniku) | 2026-08-13 | 2026-08-13 | v4 and v7 text, caller storage, conversion, and timestamp operations |
+| [`@kripod/uuidv7` 0.3.4](https://www.npmjs.com/package/@kripod/uuidv7) | 2022-07-03 | 2022-08-25 | Small zero-start counter UUIDv7 generator |
+| [`uuidv7-js` 2.0.0](https://www.npmjs.com/package/uuidv7-js) | 2026-05-11 | 2026-05-11 | Random-increment UUIDv7 generator and validated timestamp extraction |
+| [`fastv7` 1.0.2](https://www.npmjs.com/package/fastv7) | 2025-12-20 | 2025-12-20 | Minimal zero-start UUIDv7 generator with a distinct collision trade-off |
+| [`short-uuid` 6.0.3](https://www.npmjs.com/package/short-uuid) | 2025-12-01 | 2025-12-01 | Base58 and caller-selected alphabet codec candidate; generation is secondary |
+
+The inventory covers the most-downloaded packages and every distinct relevant strategy found.
+Official npm downloads for 2026-09-05 through 2026-09-11 ranged from 206,849,086 for `uuid` to 293
+for `fastv7`; low-download packages remain only where their strategy or API differs. The deprecated
+`uuidv4` wrapper and older duplicate generators add no independent implementation evidence.
 
 | Capability | Strongest retained alternatives | This package |
 | --- | --- | --- |

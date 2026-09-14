@@ -95,9 +95,9 @@ consumer advantage over base64url and base32hex.
 
 ## TypeScript UUID competitor refresh
 
-- [ ] Add latest release and repository activity dates to the existing TypeScript competitor set.
-- [ ] Extend the competitor audit command without creating a second package inventory.
-- [ ] Inspect changed releases before carrying forward compatibility or benchmark evidence.
+- [x] Add latest release and repository activity dates to the existing TypeScript competitor set.
+- [x] Extend the competitor audit command without creating a second package inventory.
+- [x] Inspect changed releases before carrying forward compatibility or benchmark evidence.
 
 ## External UUIDv7 compatibility audit
 
