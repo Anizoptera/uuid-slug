@@ -163,6 +163,11 @@ Direct slugs need no key and preserve every UUID version, variant, and timestamp
 timestamp limit. A codec is an object configured with a mask derived from your secret seed to
 encode and decode UUIDv7. A sentinel is a reserved UUIDv7 that the codec leaves unmasked.
 
+No operation eagerly returns every representation. Generate bytes once when one caller genuinely
+needs several outputs, then derive only the text, direct slug, or codec slug it will use. This keeps
+one UUID identity without paying for unused strings. The paired generation methods cover the common
+case that needs UUID text plus one selected slug.
+
 ```mermaid
 flowchart LR
   T["UUID text<br>36 characters"] <--> B["UUID bytes<br>16 bytes"]
@@ -537,6 +542,11 @@ independent generator; UUIDv4 and direct-slug generation remain module-level.
 These root imports need no codec or seed. Text and direct-slug conversions preserve a known v4/v7
 type. Byte formatting returns a version-agnostic type because caller-owned bytes can change.
 
+Root conversions accept only keyless representations. Codec methods accept codec slugs because the
+codec owns the required keys. A raw 22-character base64url value can be either direct or masked, so
+no universal decoder can infer its meaning reliably. Choose from how the identifier was issued;
+use a migration reader when its origin is genuinely unknown.
+
 | Call | Successful result |
 | --- | --- |
 | `uuidStringToDirectSlug(uuid, alphabet?)` / `slugToUuidString(slug, textCase?)` | The same UUID as a direct slug or UUID text. |
@@ -562,6 +572,15 @@ readers also try its configured previous masks.
 | `validateUuidSlugUnixMs(slug, window)` | The original slug, narrowed to `UuidV7CodecSlug` after checking its timestamp. |
 | `sentinels` | Readonly reserved names, UUIDs, and slugs. |
 | `createMigrationDecoder(options?)` | A reader for the old formats you enable; new output stays unchanged. |
+
+Convert between direct and codec slugs by composing the existing error-preserving operations:
+
+`codec.uuidToSlug(slugToUuidBytes(directSlug))` converts known-direct input to codec output.
+`uuidBytesToDirectSlug(codec.slugToUuidBytes(codecSlug), alphabet)` converts codec output to a
+selected direct alphabet.
+
+Each outer operation returns an incoming `UuidSlugError` unchanged, so these conversions need no
+temporary error branch. They still require the caller to select which interpretation the input has.
 
 A byte offset is the zero-based index where one 16-byte UUID starts inside a larger `Uint8Array`.
 Omit it for a standalone 16-byte array. Output offsets select where a method writes; input offsets
@@ -966,9 +985,11 @@ Convert stored UUIDs, decode slugs, and extract timestamps without an entropy so
 read-only tools and static builds that never generate IDs. Generation needs secure randomness;
 conversion does not. The npm package does not load the Rust crate or a WebAssembly module.
 
-Every change runs in CI on each published Node major from 20 upward, with the newest left unpinned
-so a new native API cannot change behavior unnoticed; on the latest Bun and Deno; and as a packed
-consumer on Node, Bun, Deno, Chromium, Firefox, and WebKit. The Rust crate builds and tests
+Every change runs a shared runtime contract on the exact Node 20 floor, the latest published patch
+of every Node major from 20 upward, and unpinned Node Current. Full Node tests also run on each row
+whose runtime satisfies the development test runner. CI uses the latest Bun and Deno. Packed
+JavaScript and both WebAssembly profiles run in the Chromium, Firefox, and WebKit revisions pinned
+by Playwright; dependency updates advance those reproducible browser revisions. The Rust crate builds and tests
 natively on Linux, macOS, and Windows for x86-64 and Arm64, and its WebAssembly build runs in the
 same three browser engines.
 

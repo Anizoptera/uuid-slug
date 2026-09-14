@@ -30,7 +30,7 @@ export function generateDirectUuidV7Slug(
  *
  * @param alphabet - Slug spelling. Omit for the shorter 22-character base64url form.
  * @param textCase - UUID text spelling. Pass it alone to keep the default slug alphabet.
- * @returns Both lossless representations, or `UuidSlugError` when generation fails.
+ * @returns UUID text plus one slug in the selected alphabet, or `UuidSlugError` when generation fails.
  */
 export function generateUuidV7WithDirectSlug(
   alphabet?: SlugAlphabet,

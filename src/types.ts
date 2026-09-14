@@ -77,14 +77,14 @@ export type SentinelUuidV7Slug = Brand<DirectUuidV7Slug, "SentinelUuidV7Slug">;
 /** A codec result: either a masked UUIDv7 or a registered raw sentinel. */
 export type UuidV7CodecSlug = MaskedUuidV7Slug | SentinelUuidV7Slug;
 
-/** One generated UUIDv7 in the selected text case and a lossless slug made from the same bytes. */
+/** One generated UUIDv7 in the selected text case and one selected slug made from the same bytes. */
 export interface GeneratedUuidV7<
   Slug extends DirectUuidV7Slug | UuidV7CodecSlug,
   Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
 > {
   /** UUIDv7 text in the requested case. */
   readonly uuid: UuidV7StringFor<Case>;
-  /** Lossless spelling of the same UUID bytes. */
+  /** Selected direct, masked, or sentinel spelling of the same UUID bytes. */
   readonly slug: Slug;
 }
 
@@ -476,7 +476,8 @@ export interface UuidV7SlugCodec {
    * UUIDv4 values; unbranded external values are validated when called. Timestamps after
    * `MAX_MASKED_UUID_V7_UNIX_MS` return `invalid_timestamp`; registered sentinels are always
    * returned as direct slugs without masking and retain the full UUIDv7 timestamp range. A preceding
-   * `UuidSlugError` is returned unchanged.
+   * `UuidSlugError` is returned unchanged. Decode a known direct slug to bytes before this call;
+   * accepting raw slug text here would confuse overlapping direct and masked base64url spellings.
    *
    * @param uuid - Hyphenated or compact UUIDv7 text, or exactly 16 UUIDv7 bytes.
    */

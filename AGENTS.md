@@ -54,6 +54,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   or its canonical 22-character spelling; reject every other length. Preserve direct-slug padding rejection.
 - Explain masking without confusing problem and scope: every UUID version exposes standardized
   fields, while this package deliberately defines a masked wire format only for UUIDv7.
+- Representation guidance must distinguish keyless root conversions from keyed codec conversions,
+  state that 22-character direct and masked base64url forms overlap, and never imply that a paired
+  generator computes every spelling.
 - Direct slugs are lossless encodings of all 128 UUID bits. Never impose a UUID-version, variant,
   or timestamp restriction on direct encoding or decoding; version-specific brands only preserve
   facts already established about a value.

@@ -1,5 +1,12 @@
 # Roadmap
 
+- [x] Make representation coverage and runtime evidence unambiguous to a cold consumer.
+  - [x] Map direct and codec generation, conversion, decoding, and timestamp operations by accepted input and output.
+  - [x] State why keyed and keyless representations cannot share an ambiguity-free raw-string decoder.
+  - [x] Put each sharp edge at the README workflow and public declaration where it changes a call.
+  - [x] Correct runtime wording to distinguish latest Node and Deno from Playwright-pinned browser engines.
+  - [x] Regenerate declarations, verify editor guidance and packed consumers, run the complete gate, and commit.
+
 - [x] Audit the complete public TypeScript interface against every README workflow and unrepresented consumer job.
   - [x] Inventory exports, overloads, options, brands, defaults, errors, and declaration guidance from their owning sources.
   - [x] Exercise representative JavaScript, TypeScript, packed-package, storage, migration, and codec call sites.
