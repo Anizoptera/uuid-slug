@@ -27,6 +27,7 @@ Live work only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`.
 
 ## External UUIDv7 compatibility audit
 
+- [x] Make the consumer summary distinguish stored bits, recovered bits, codec dependencies, and inference.
 - [x] Inventory every UUIDv7 generator already benchmarked or named in project evidence.
 - [x] Trace how each generator fills the 74-bit payload and what it promises about ordering.
 - [x] Feed every installed JavaScript generator and each Rust generator in the payload-layout table

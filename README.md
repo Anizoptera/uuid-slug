@@ -99,24 +99,22 @@ allows the remaining 74 bits to hold random data, a counter, or both. Use UUIDv4
 has no value. Use UUIDv7 when you need timestamp sorting or extraction. Neither requires masking.
 Anyone can decode a plain slug, including its UUIDv7 timestamp.
 
-This package accepts every RFC 9562 UUIDv7. It preserves the 74 payload bits without
-trying to identify how its generator used them. UUIDv7 contains no marker that can distinguish
-random data, counters, and sub-millisecond time after generation. Plain slugs preserve all 128
-bits. Masked slugs also restore all 128 bits, but encoding rejects timestamps outside the codec's
-configured range. UUID text output uses the requested case and canonical hyphenated form.
+This package accepts every RFC 9562 UUIDv7. It treats the 74 payload bits as opaque and restores
+them unchanged. A UUID alone cannot prove which library generated it or whether those bits contain
+random data, a counter, sub-millisecond time, or a combination.
 
 UUIDv7 values from different milliseconds sort by timestamp in UUID byte order. Values from the
 same millisecond follow their generator's payload rules; UUIDv7 alone does not promise their order.
 
-| Operation | Bits preserved | Other effect |
+| Operation | UUID bits recoverable from the result | Other effect |
 | --- | --- | --- |
-| UUID bytes to plain slug and back | All 128 | None |
-| UUIDv7 to masked slug and back | All 128 | Encoding rejects timestamps outside the configured range |
-| Accepted UUID text to bytes or slug | All 128 | Later UUID text output uses canonical hyphens and the requested case |
-| UUIDv7 timestamp extraction | The 48 timestamp bits | Returns only the timestamp |
+| UUID to plain slug and back | All 128 | Needs no key or codec |
+| UUIDv7 to masked slug and back | All 128 | Needs the matching codec configuration; encoding returns `invalid_timestamp` outside its inclusive range and never truncates |
+| Registered sentinel through a masking codec | All 128 | Remains a plain slug and bypasses the masked timestamp range |
+| Accepted UUID text to bytes or slug | All 128 | Text output uses canonical hyphens and the requested case |
+| UUIDv7 timestamp extraction | 48 | Returns Unix milliseconds; does not return the other 80 UUID bits |
 
-No operation can recover the generating library, its counter policy, or its same-millisecond order.
-UUIDv7 does not store that information.
+Payload patterns may suggest a generator or ordering policy, but the UUID alone cannot prove one.
 Generation is limited to UUIDv4 and UUIDv7. Other versions remain accepted by version-neutral
 parsing, inspection, and plain-slug conversion without version-specific package machinery.
 
