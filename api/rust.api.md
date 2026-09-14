@@ -1,6 +1,6 @@
 # Rust packaged API
 
-This generated baseline records consumer-visible declarations.
+This generated baseline records packaged API signatures for compatibility checks.
 
 ## All features
 

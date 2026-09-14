@@ -113,11 +113,11 @@ async function diff(
 }
 
 function report(language: string, contentSections: string[]): string {
-  return `# ${language} packaged API\n\nThis generated baseline records consumer-visible declarations.\n\n${contentSections.join("\n\n")}\n`;
+  return `# ${language} packaged API\n\nThis generated baseline records packaged API signatures for compatibility checks.\n\n${contentSections.join("\n\n")}\n`;
 }
 
 async function formatTypeScriptReport(declarations: string): Promise<string> {
-  const source = `// Generated consumer-visible declarations; update with \`bun run api:update\` instead of editing.\n\n${declarations}\n`;
+  const source = `// Generated signature baseline for compatibility checks; update with \`bun run api:update\` instead of editing.\n\n${declarations}\n`;
   const child = Bun.spawn(
     [join(root, "node_modules/.bin/oxfmt"), "--stdin-filepath=api/typescript.api.d.ts"],
     { cwd: root, stdin: new TextEncoder().encode(source), stdout: "pipe", stderr: "pipe" },

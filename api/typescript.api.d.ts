@@ -1,4 +1,4 @@
-// Generated consumer-visible declarations; update with `bun run api:update` instead of editing.
+// Generated signature baseline for compatibility checks; update with `bun run api:update` instead of editing.
 
 export declare interface AsyncUuidV7MaskOptions extends UuidV7MaskOptions {
   readonly signal?: AbortSignal;
