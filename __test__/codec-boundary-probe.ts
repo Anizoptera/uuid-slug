@@ -115,6 +115,7 @@ export const codecBoundaryCases = [
         { seed: "a-valid-mask-seed", label: 7 },
         { seed: "a-valid-mask-seed", label: null },
         { seed: "a-valid-mask-seed", keyDerivationIterations: null },
+        { seed: "a-valid-mask-seed", keyDerivationIteration: 2 },
         {
           seed: [],
           get id() {
@@ -145,11 +146,16 @@ export const codecBoundaryCases = [
     run() {
       const cases = [
         { mask: UUID_V7_TEST_MASK, previousMasks: 1 },
+        { mask: UUID_V7_TEST_MASK, outputAlphbet: "base32hex" },
         { mask: UUID_V7_TEST_MASK, sentinels: 1 },
         { mask: UUID_V7_TEST_MASK, sentinels: [null] },
         {
           mask: UUID_V7_TEST_MASK,
           sentinels: [{ name: 7, uuid: "00000000-0000-7000-8000-000000000000" }],
+        },
+        {
+          mask: UUID_V7_TEST_MASK,
+          sentinels: [{ name: "nil", uuid: "00000000-0000-7000-8000-000000000000", id: "ignored" }],
         },
         new Proxy(
           {},
@@ -167,7 +173,7 @@ export const codecBoundaryCases = [
     },
   },
   {
-    name: "codec generation ignores caller-supplied entropy",
+    name: "codec construction rejects unknown caller-supplied entropy",
     run() {
       const options = {
         mask: UUID_V7_TEST_MASK,
@@ -176,8 +182,8 @@ export const codecBoundaryCases = [
         },
       };
       const codec = Reflect.apply(createCodec, undefined, [options]);
-      assert.ok(!(codec instanceof Error));
-      assert.equal(typeof codec.generateUuidSlug(), "string");
+      assert.ok(codec instanceof UuidSlugError);
+      assert.equal(codec.code, "invalid_mask");
     },
   },
   {

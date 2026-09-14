@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { ABORTED, INVALID_MASK, isUint8Array, UuidSlugError } from "./errors.ts";
+import { ABORTED, findUnknownOption, INVALID_MASK, isUint8Array, UuidSlugError } from "./errors.ts";
 import { FEISTEL_KEY_WORDS, feistel16 } from "./feistel.ts";
 import { createMaskHandle } from "./mask-handle.ts";
 import { halfSipHash } from "./siphash.ts";
@@ -10,6 +10,8 @@ import type { AsyncUuidV7MaskOptions, UuidV7Mask, UuidV7MaskOptions } from "./ty
 
 const MASK_CONSTRUCTION_FAILURE_MESSAGE = "Mask construction failed.";
 const SEED_PROPERTY = "seed";
+const MASK_OPTIONS = [SEED_PROPERTY, "label", "keyDerivationIterations"] as const;
+const ASYNC_MASK_OPTIONS = [...MASK_OPTIONS, "signal"] as const;
 
 /** Reject short seeds early; length alone cannot make a chosen secret unpredictable. */
 const SEED_MIN_BYTES = 16;
@@ -43,7 +45,7 @@ function seedBytes(seed: string | Uint8Array) {
 }
 
 /** Reject coercible JavaScript values before they can allocate storage or become key material. */
-function validateOptions(options: unknown) {
+function validateOptions(options: unknown, accepted: readonly string[]) {
   if (typeof options !== "object" || options === null)
     return new UuidSlugError(
       INVALID_MASK,
@@ -54,6 +56,9 @@ function validateOptions(options: unknown) {
     readonly keyDerivationIterations?: unknown;
     readonly seed?: unknown;
   };
+  const unknown = findUnknownOption(input, accepted);
+  if (unknown !== undefined)
+    return new UuidSlugError(INVALID_MASK, `Unknown mask option: ${unknown}.`);
   const seed = input.seed;
   if (typeof seed !== "string" && !isUint8Array(seed))
     return new UuidSlugError(INVALID_MASK, "Mask seed must be a string or Uint8Array.");
@@ -159,7 +164,7 @@ function maskFromKeys(label: string, keys: Int32Array): UuidV7Mask {
  */
 export function createUuidV7Mask(options: UuidV7MaskOptions): UuidV7Mask | UuidSlugError {
   try {
-    const validated = validateOptions(options);
+    const validated = validateOptions(options, MASK_OPTIONS);
     if (!(SEED_PROPERTY in validated)) return validated;
     const seed = seedBytes(validated.seed);
     const short = invalidSeedLength(seed.length);
@@ -308,7 +313,7 @@ export async function createUuidV7MaskAsync(
         cause: signal?.reason,
       });
     if (signal?.aborted) return aborted();
-    const validated = validateOptions(options);
+    const validated = validateOptions(options, ASYNC_MASK_OPTIONS);
     if (!(SEED_PROPERTY in validated)) return validated;
     const seed =
       typeof validated.seed === "string" ? validated.seed : new Uint8Array(validated.seed);

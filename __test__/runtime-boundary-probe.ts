@@ -50,7 +50,7 @@ const hasCause = (value: unknown, target: unknown): boolean =>
 
 export const runtimeBoundaryCases = [
   {
-    name: "public generators never read caller-supplied entropy",
+    name: "public generators reject caller-supplied entropy",
     run(this: void) {
       const originalFill = runtime.fillRandom;
       let runtimeDraws = 0;
@@ -66,8 +66,9 @@ export const runtimeBoundaryCases = [
       };
       try {
         const generator = Reflect.apply(createSecureUuidV7Generator, undefined, [options]);
-        assert.ok(!(generator.generateUuidV7Bytes() instanceof Error));
-        assert.equal(runtimeDraws, 1);
+        assert.ok(generator instanceof UuidSlugError);
+        assert.equal(generator.code, "invalid_options");
+        assert.equal(runtimeDraws, 0);
       } finally {
         runtime.fillRandom = originalFill;
       }
@@ -510,7 +511,7 @@ export const runtimeBoundaryCases = [
   {
     name: "returns errors for malformed public generator configuration",
     run(this: void) {
-      for (const options of [null, 1, "generator", [], { clock: 1 }]) {
+      for (const options of [null, 1, "generator", [], { clock: 1 }, { clok: Date.now }]) {
         const result = Reflect.apply(createSecureUuidV7Generator, undefined, [options]);
         assert.ok(result instanceof UuidSlugError);
         assert.equal(result.code, "invalid_options");
@@ -532,7 +533,13 @@ export const runtimeBoundaryCases = [
   {
     name: "refuses malformed and nonfinite timestamp windows",
     run(this: void) {
-      for (const options of [null, 1, "one day", []]) {
+      for (const options of [
+        null,
+        1,
+        "one day",
+        [],
+        { maxTimestampDeltaMs: 0, referenceUnixMilliseconds: timestamp },
+      ]) {
         const result = Reflect.apply(validateUuidV7Timestamp, undefined, [uuid, options]);
         assert.ok(result instanceof UuidSlugError);
         assert.equal(result.code, "invalid_timestamp");

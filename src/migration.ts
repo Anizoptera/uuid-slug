@@ -4,6 +4,7 @@ import { BASE32HEX, BASE64URL, decodeInto, encode } from "./alphabet.ts";
 import {
   INVALID_OPTIONS,
   INVALID_UUID_SLUG,
+  findUnknownOption,
   invalidUuidSlugInput,
   isUuidSlugError,
   UuidSlugError,
@@ -26,6 +27,7 @@ const PERMUTE = [9, 13, 3, 8, 14, 0, 11, 7, 6, 1, 15, 4, 2, 5, 10, 12] as const;
 const XOR = [
   0xa2, 0x70, 0x32, 0x7f, 0x98, 0xb8, 0x9b, 0x5e, 0x1b, 0x26, 0xb6, 0x16, 0x96, 0xf9, 0xea, 0x3e,
 ] as const;
+const MIGRATION_OPTIONS = ["acceptOriginalMask", "acceptDirectSlug"] as const;
 
 /** Return a matching candidate or undefined; callers resolve sentinels before trying masks. */
 /*#__NO_SIDE_EFFECTS__*/
@@ -52,13 +54,12 @@ export function createMigration(
     (typeof options !== "object" || options === null || Array.isArray(options))
   )
     return new UuidSlugError(INVALID_OPTIONS, "Migration options must be an object.");
-  for (const option of Object.keys(options ?? {})) {
-    if (option !== "acceptOriginalMask" && option !== "acceptDirectSlug")
-      return new UuidSlugError(INVALID_OPTIONS, `Unknown migration option: ${option}.`);
-  }
   let originalOption: boolean | undefined;
   let directOption: boolean | undefined;
   try {
+    const unknown = findUnknownOption(options ?? {}, MIGRATION_OPTIONS);
+    if (unknown !== undefined)
+      return new UuidSlugError(INVALID_OPTIONS, `Unknown migration option: ${unknown}.`);
     originalOption = options?.acceptOriginalMask;
     directOption = options?.acceptDirectSlug;
   } catch (cause) {

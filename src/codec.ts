@@ -2,6 +2,7 @@
 
 import {
   checkByteRange,
+  findUnknownOption,
   INVALID_BUFFER,
   INVALID_MASK,
   INVALID_SENTINEL,
@@ -43,6 +44,8 @@ type EncodedSentinel = { bytes: Uint8Array; slug: SentinelUuidV7Slug };
 
 const CODEC_CONSTRUCTION_FAILED = "Codec construction failed.";
 const INVALID_MASKED_UUID_BYTES = "Masked UUID slugs require 16 UUIDv7 bytes.";
+const CODEC_OPTIONS = ["mask", "previousMasks", "sentinels", "outputAlphabet"] as const;
+const SENTINEL_OPTIONS = ["name", "uuid"] as const;
 type EncodedSentinelIndex = {
   readonly fingerprints: Uint32Array;
   readonly positions: Uint32Array;
@@ -132,6 +135,9 @@ function createSentinels(
         INVALID_SENTINEL,
         "Each sentinel must have a name and UUIDv7 string.",
       );
+    const unknown = findUnknownOption(definition, SENTINEL_OPTIONS);
+    if (unknown !== undefined)
+      return new UuidSlugError(INVALID_SENTINEL, `Unknown sentinel option: ${unknown}.`);
     if (definition.name.length === 0)
       return new UuidSlugError(INVALID_SENTINEL, "Sentinel names must not be empty.");
     if (names.has(definition.name))
@@ -240,12 +246,16 @@ function buildUuidSlugCodec(
   options: UuidV7SlugCodecOptions,
   generateBytes: (this: void) => Uint8Array | UuidSlugError,
 ): UuidV7SlugCodec | UuidSlugError {
-  const mask = typeof options === "object" && options !== null ? options.mask : undefined;
+  const validOptions = typeof options === "object" && options !== null && !Array.isArray(options);
+  const mask = validOptions ? options.mask : undefined;
   if (mask === undefined || mask === null)
     return new UuidSlugError(
       INVALID_MASK,
       "Pass { mask: { seed } } for private masking or { mask: UUID_V7_TEST_MASK } for public examples.",
     );
+  const unknown = findUnknownOption(options, CODEC_OPTIONS);
+  if (unknown !== undefined)
+    return new UuidSlugError(INVALID_MASK, `Unknown codec option: ${unknown}.`);
   const maskResult = maskFromOption(mask);
   if (isUuidSlugError(maskResult)) return maskResult;
   const handle = maskResult;

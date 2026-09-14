@@ -2,7 +2,7 @@
 
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
-import { INVALID_OPTIONS, UuidSlugError } from "./errors.ts";
+import { findUnknownOption, INVALID_OPTIONS, UuidSlugError } from "./errors.ts";
 import type { UuidV7Bytes, UuidV7Generator, UuidV7String } from "./types.ts";
 import { createPortableUuidV7Generator, createRuntimeGenerator } from "./v7.ts";
 
@@ -16,6 +16,8 @@ export interface UuidV7GeneratorOptions {
    */
   readonly clock?: () => number;
 }
+
+const GENERATOR_OPTIONS = ["clock"] as const;
 
 /**
  * Create a UUIDv7 sequence with its own state, platform randomness, and optionally a caller-supplied
@@ -34,6 +36,9 @@ export function createUuidV7Generator(
     return new UuidSlugError(INVALID_OPTIONS, "Generator options must be an object.");
   let clock: UuidV7GeneratorOptions["clock"];
   try {
+    const unknown = findUnknownOption(options, GENERATOR_OPTIONS);
+    if (unknown !== undefined)
+      return new UuidSlugError(INVALID_OPTIONS, `Unknown generator option: ${unknown}.`);
     clock = options.clock;
   } catch (cause) {
     return new UuidSlugError(INVALID_OPTIONS, "Reading generator options failed.", { cause });

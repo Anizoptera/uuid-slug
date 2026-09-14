@@ -1,10 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { INVALID_MASK, isUint8Array, isUuidSlugError, UuidSlugError } from "./errors.ts";
+import {
+  findUnknownOption,
+  INVALID_MASK,
+  isUint8Array,
+  isUuidSlugError,
+  UuidSlugError,
+} from "./errors.ts";
 import type { CustomUuidV7MaskOptions, UuidV7Mask } from "./types.ts";
 
 const MASK_PROTOCOL = Symbol.for("@anizoptera/uuid-slug/mask/1");
 const CUSTOM_MASK_FAILURE_MESSAGE = "Custom mask construction failed.";
+const MASK_DIRECTION = "mask";
+const CUSTOM_MASK_OPTIONS = ["label", MASK_DIRECTION, "unmask"] as const;
 
 interface MaskProtocol {
   readonly version: 1;
@@ -76,6 +84,11 @@ export function createCustomUuidV7Mask(
   options: CustomUuidV7MaskOptions,
 ): UuidV7Mask | UuidSlugError {
   try {
+    if (typeof options !== "object" || options === null || Array.isArray(options))
+      return new UuidSlugError(INVALID_MASK, "Custom mask options must be an object.");
+    const unknown = findUnknownOption(options, CUSTOM_MASK_OPTIONS);
+    if (unknown !== undefined)
+      return new UuidSlugError(INVALID_MASK, `Unknown custom mask option: ${unknown}.`);
     const { label, mask, unmask } = options;
     if (typeof label !== "string" || typeof mask !== "function" || typeof unmask !== "function")
       return new UuidSlugError(
@@ -105,7 +118,7 @@ export function createCustomUuidV7Mask(
         );
     }
     return createMaskHandle(label, (input, output, direction) => {
-      const mixed = runCustom(direction === "mask" ? mask : unmask, input);
+      const mixed = runCustom(direction === MASK_DIRECTION ? mask : unmask, input);
       if (isUuidSlugError(mixed)) return mixed;
       output.set(mixed);
       return undefined;

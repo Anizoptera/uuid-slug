@@ -53,6 +53,7 @@ notes: the section for a version is published verbatim when its tag is pushed.
   than keyless direct slugs.
 - Replace public alphabet and error-code arrays with named constants. Array positions were not
   identifiers and made single-value access fragile.
+- Package-owned option objects reject unknown keys instead of silently applying defaults.
 
 ### Added
 

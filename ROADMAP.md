@@ -4,6 +4,10 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 
 ## Public interface audit
 
+- [x] Close public option objects and preserve the rule in agent guidance.
+  - [x] Reject unknown keys before any default can hide a misspelling in every public constructor.
+  - [x] Add the missing option-naming and consumer-verification rules to `AGENTS.md`.
+  - [x] Exercise source, declaration, packed-consumer, and runtime failure paths; run the full gate.
 - [x] Replace ambiguous migration booleans with call-site names that state accepted input.
   - [x] Rename source, consumer examples, cross-language probes, and benchmark callers together.
   - [x] Regenerate declarations and prove enabled-format inference rejects disabled selectors.

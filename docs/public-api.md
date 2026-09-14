@@ -126,6 +126,9 @@ Keep UUID text/binary conversion directional and version-neutral:
   union type from those constants. Export each constant that callers pass or compare. Export an
   iterable collection only for a documented iteration workflow; its positions are never identifiers.
   Never maintain parallel literal lists in types, validators, and tests.
+- Reject unknown enumerable own string keys in package-owned public options before applying defaults. A typo
+  must return the owning operation's configuration error instead of silently selecting another
+  clock, alphabet, mask, migration reader, sentinel definition, or timestamp window.
 - Accept ergonomic raw input at the package seam, validate it once, and return the narrowest type
   established by that successful operation. Keep format, UUID version, direct or masked spelling,
   and ownership distinctions when consumers use them.

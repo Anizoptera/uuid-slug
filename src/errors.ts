@@ -162,6 +162,16 @@ export function isUint8Array(value: unknown): value is Uint8Array {
   );
 }
 
+/** Return the first unsupported own string key in a package-owned options object. */
+/*#__NO_SIDE_EFFECTS__*/
+export function findUnknownOption(
+  options: object,
+  accepted: readonly string[],
+): string | undefined {
+  for (const option of Object.keys(options)) if (!accepted.includes(option)) return option;
+  return undefined;
+}
+
 /**
  * The one range check for every entry point that reads or writes a caller's buffer at an offset.
  *

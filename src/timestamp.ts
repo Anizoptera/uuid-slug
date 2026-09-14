@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
+  findUnknownOption,
   INVALID_TIMESTAMP,
   INVALID_UUID_VERSION,
   TIMESTAMP_OUTSIDE_WINDOW,
@@ -9,6 +10,8 @@ import {
 } from "./errors.ts";
 import type { UuidV7String, UuidV7StringInput, UuidV7TimestampWindow } from "./types.ts";
 import { isUuidV7Bytes, uuidTimestampFromBytesUnchecked, uuidStringToBytes } from "./uuid.ts";
+
+const TIMESTAMP_WINDOW_OPTIONS = ["maxTimestampDeltaMs", "referenceUnixMs"] as const;
 
 /** Decode before reading the reference time so validation performs one clock observation. */
 export function validateTimestampBytes(
@@ -22,6 +25,9 @@ export function validateTimestampBytes(
   try {
     if (typeof window !== "object" || window === null || Array.isArray(window))
       return new UuidSlugError(INVALID_TIMESTAMP, "Timestamp window must be an object.");
+    const unknown = findUnknownOption(window, TIMESTAMP_WINDOW_OPTIONS);
+    if (unknown !== undefined)
+      return new UuidSlugError(INVALID_TIMESTAMP, `Unknown timestamp window option: ${unknown}.`);
     maxTimestampDeltaMs = window.maxTimestampDeltaMs;
     referenceUnixMs = window.referenceUnixMs ?? Date.now();
   } catch (cause) {

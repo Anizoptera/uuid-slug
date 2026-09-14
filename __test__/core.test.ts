@@ -383,6 +383,18 @@ describe("masked UUID slugs", () => {
     expect(createCodec({ mask: { seed: "fine-test-seed-0000" } })).not.toBeInstanceOf(Error);
   });
 
+  it("refuses unknown custom-mask options instead of ignoring caller intent", () => {
+    const result = Reflect.apply(createCustomUuidV7Mask, undefined, [
+      {
+        label: "typo",
+        mask: (input: Uint8Array) => input,
+        unmask: (input: Uint8Array) => input,
+        verifyInverse: true,
+      },
+    ]);
+    expect(result).toMatchObject({ code: "invalid_mask" });
+  });
+
   // Both are CALLER-input checks whose absence is silent: a short seed masks nothing while every
   // round-trip still passes, and a bad iteration count either derives a different key or hangs
   // construction with no output to read.

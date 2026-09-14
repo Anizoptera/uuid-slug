@@ -657,9 +657,9 @@ function adaptMask(mix: (input: Uint8Array, output: Uint8Array, forward: boolean
 }
 ```
 
-`createUuidV7Mask({ seed, keyDerivationIterations })` returns an error for invalid seed options.
-`createUuidV7SlugCodec(options)` returns an error for invalid options. Create custom handles before
-passing them; an arbitrary object is not a mask.
+Mask, codec, generator, sentinel, migration, and timestamp options reject unknown keys instead of
+silently applying a default. Invalid mask or codec options return an error. Create custom handles
+before passing them; an arbitrary object is not a mask.
 
 Share one derived mask between codecs to avoid repeating key derivation, for example when URLs
 use base64url and filenames use base32hex. Each codec chooses its alphabet and sentinels; keep

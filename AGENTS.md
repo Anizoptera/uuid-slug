@@ -26,6 +26,12 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Define every member of a closed public vocabulary once as a semantic scalar constant and derive
   its union type from those constants. Export each constant that callers pass or compare. Export an
   iterable collection only for a documented consumer workflow; its positions are never identifiers.
+- Name each Boolean option for the behavior `true` enables, such as `acceptDirectSlug`; use a
+  semantic value instead when two states do not read as a clear enable/disable choice.
+- Treat every package-owned public options object as closed at runtime. Reject unknown enumerable string keys
+  before applying defaults so JavaScript, parsed configuration, and misspelled TypeScript values
+  cannot silently select different behavior. Keep the accepted keys with the constructor that reads
+  them; do not create a root option-name catalog.
 - `ROADMAP.md` is transient and never owns a contract, decision, or lasting conclusion. Put
   consumer contracts in README, wire design in `docs/design.md`, security boundaries in
   `docs/security.md`, cross-language and distribution decisions in `docs/cross-language.md`, and
@@ -133,6 +139,10 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   adds information; prose, examples, or tables where they explain a workflow better. Never add tags
   to restate the signature. Omit facts already clear from the type.
   Non-public declarations may use TSDoc when editor help benefits maintainers.
+- Audit public TypeScript from executable consumer calls, not the declaration baseline. Exercise
+  every overload, default, option combination, detached method, branded result, caller-owned output,
+  and expected failure that changes how a caller writes code. Compile source and packed consumers;
+  execute runtime behavior separately. `api/typescript.api.d.ts` tracks generated signatures only.
 - Treat public JSDoc as part of every public-source change. Update or remove affected text in the
   same edit; never leave stale documentation for a later pass. Before committing, build declarations,
   query changed symbols through the TypeScript language service, and read every changed `.d.ts`
