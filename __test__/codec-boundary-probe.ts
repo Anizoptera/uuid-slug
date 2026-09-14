@@ -501,7 +501,7 @@ export const codecBoundaryCases = [
     },
   },
   {
-    name: "masked and migration decoders reject non-string JavaScript input",
+    name: "universal byte inputs and slug-only readers report their own invalid domains",
     run() {
       const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
       const migration = codec.createUuidSlugMigrationDecoder({
@@ -512,7 +512,7 @@ export const codecBoundaryCases = [
         for (const decode of [codec.uuidToString, codec.uuidToBytes]) {
           const result = Reflect.apply(decode, undefined, [value]);
           assert.ok(result instanceof UuidSlugError);
-          assert.equal(result.code, "invalid_uuid");
+          assert.equal(result.code, "invalid_buffer");
         }
         for (const decode of [
           codec.validateMaskedUuidV7SlugUnixMs,

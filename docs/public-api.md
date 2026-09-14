@@ -240,10 +240,12 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   case-sensitive.
 - Export `NIL_UUID` and `MAX_UUID` as canonical `UuidString` values. They are useful boundaries and
   sentinels, but neither value claims UUIDv4 or UUIDv7 semantics.
-- Accept `Uint8Array` and its subtypes. Exclude `ArrayBuffer`, `DataView`, and array-like values:
-  their offset, view, and ownership meanings would make the operation ambiguous. Preserve a
-  caller-owned output subtype and write only after full validation; return plain `Uint8Array` for
-  package-owned bytes.
+- Accept `Uint8Array` and its subtypes, an exact 16-byte `ArrayBuffer`, and a `DataView` whose
+  declared range is exactly 16 bytes. A `DataView` makes its range explicit, so it can select a UUID
+  inside a larger buffer without a copy. Apply explicit input offsets only to `Uint8Array`. Reject
+  other typed arrays and array-like values because their element and coercion semantics are not UUID
+  byte semantics. Preserve a caller-owned output subtype and write only after full validation;
+  return plain `Uint8Array` for package-owned bytes.
 - Use `byteOffset` for the zero-based start of a 16-byte UUID read from a larger array, and
   `outputOffset` for its write position in caller-owned storage. Omission means zero. Equivalent
   read and write operations must explain this contract with the same terms in each overload's

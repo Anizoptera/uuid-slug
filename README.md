@@ -223,9 +223,11 @@ reusable choice.
 The same optional preset works on every operation that returns UUID text, including generators,
 plain and masked decoders, timestamp validation, and migration readers. It changes only UUID text;
 slug alphabets and accepted input stay independent.
-`Buffer` works because it is a `Uint8Array`; `ArrayBuffer`, `DataView`, and array-like values do
-not. Use `isUuidBytes`, `isUuidV4Bytes`, or `isUuidV7Bytes` when unknown binary input must be
-narrowed before storage or version-specific work.
+`Buffer` works because it is a `Uint8Array`. A standalone `ArrayBuffer` must contain exactly 16
+bytes. A `DataView` must declare an exact 16-byte range, which can select a UUID inside a larger
+buffer without copying. Offsets apply only to `Uint8Array`; other typed arrays and array-like values
+are rejected. Use `isUuidBytes`, `isUuidV4Bytes`, or `isUuidV7Bytes` when unknown binary input must
+be narrowed before storage or version-specific work.
 
 For a binary database key or protocol field, use `uuidBytesToPlainSlug(record, offset)` and
 `plainSlugToUuidBytes(slug, record, offset)` to avoid UUID text and temporary slices. Use

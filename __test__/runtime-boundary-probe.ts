@@ -229,10 +229,17 @@ export const runtimeBoundaryCases = [
     },
   },
   {
-    name: "accepts cross-realm Uint8Array inputs",
+    name: "accepts cross-realm UUID byte containers and rejects detached buffers",
     run(this: void) {
       const bytes = vm.runInNewContext("new Uint8Array(16)") as Uint8Array;
+      const buffer = vm.runInNewContext("new ArrayBuffer(16)") as ArrayBuffer;
+      const view = vm.runInNewContext("new DataView(new ArrayBuffer(20), 2, 16)") as DataView;
       assert.equal(bytesToUuidString(bytes), "00000000-0000-0000-0000-000000000000");
+      assert.equal(bytesToUuidString(buffer), "00000000-0000-0000-0000-000000000000");
+      assert.equal(bytesToUuidString(view), "00000000-0000-0000-0000-000000000000");
+      const transferred = structuredClone(buffer, { transfer: [buffer] });
+      assert.equal(bytesToUuidString(transferred), "00000000-0000-0000-0000-000000000000");
+      assert.equal(isUuidSlugError(bytesToUuidString(buffer)), true);
     },
   },
   {
@@ -253,7 +260,7 @@ export const runtimeBoundaryCases = [
     },
   },
   {
-    name: "byte interfaces reject non-Uint8Array inputs and outputs",
+    name: "byte interfaces reject ambiguous inputs and non-Uint8Array outputs",
     run(this: void) {
       const slug = "AR9x-wRQcSGISEhKEhISEg";
       const generator = makeGenerator();
@@ -268,13 +275,20 @@ export const runtimeBoundaryCases = [
         (value: unknown) =>
           Reflect.apply(generator.generateUuidV7BytesAtUnixMs, undefined, [timestamp, value]),
       ];
-      for (const value of [
+      const inputs = [
         Array.from({ length: 16 }, () => 0),
         { length: 16 },
-        new DataView(new ArrayBuffer(16)),
         Object.defineProperty(new Uint16Array(16), Symbol.toStringTag, { value: "Uint8Array" }),
-      ]) {
-        for (const call of calls) {
+      ];
+      for (const value of inputs) {
+        for (const call of calls.slice(0, 3)) {
+          const result = call(value);
+          assert.ok(isUuidSlugError(result));
+          assert.equal(result.code, "invalid_buffer");
+        }
+      }
+      for (const value of [...inputs, new DataView(new ArrayBuffer(16))]) {
+        for (const call of calls.slice(3)) {
           const result = call(value);
           assert.ok(isUuidSlugError(result));
           assert.equal(result.code, "invalid_buffer");

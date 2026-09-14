@@ -127,12 +127,12 @@ export type UuidV7TimestampInput<Input extends string | UuidSlugError> = RejectK
   MaskedUuidSlug | UuidV4Text | PlainUuidV4Slug
 >;
 /** Reject known UUIDv4 bytes; the operation needs UUIDv7 bytes. */
-export type UuidV7BytesInput<Input extends Uint8Array | UuidSlugError> = RejectKnownInput<
+export type UuidV7BytesInput<Input extends UuidByteInput | UuidSlugError> = RejectKnownInput<
   Input,
   UuidV4Bytes
 >;
 /** Reject known UUIDv4 values; a masking codec accepts every UUIDv7 form. */
-type UuidV7ValueInput<Input extends string | Uint8Array | UuidSlugError> = RejectKnownInput<
+type UuidV7ValueInput<Input extends string | UuidByteInput | UuidSlugError> = RejectKnownInput<
   Input,
   UuidV4Text | UuidV4Bytes
 >;
@@ -143,8 +143,10 @@ export type UuidV4Bytes = Brand<UuidBytes, "UuidV4Bytes">;
 /** UUID bytes with version 7 and RFC variant bits. */
 export type UuidV7Bytes = Brand<UuidBytes, "UuidV7Bytes">;
 
+/** A UUID byte source: a `Uint8Array`, a complete `ArrayBuffer`, or a `DataView`'s declared range. */
+export type UuidByteInput = Uint8Array | ArrayBuffer | DataView;
 /** Any supported UUID text, byte, or slug input, plus a preceding package error. */
-export type UuidInput = string | Uint8Array | UuidSlugError;
+export type UuidInput = string | UuidByteInput | UuidSlugError;
 /** UUID text or the error returned while converting the captured input. */
 export type UuidStringResult<Input, Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE> =
   | PreserveUuidVersion<Input, UuidStringFor<Case>, UuidV4StringFor<Case>, UuidV7StringFor<Case>>
@@ -516,7 +518,7 @@ export interface UuidV7MaskingCodec {
    *
    * @param uuid - Any supported UUIDv7 text, bytes, plain slug, masked slug, or sentinel.
    */
-  uuidToMaskedSlug<Input extends string | Uint8Array | UuidSlugError>(
+  uuidToMaskedSlug<Input extends string | UuidByteInput | UuidSlugError>(
     this: void,
     uuid: UuidV7ValueInput<Input>,
   ): MaskedOrSentinelUuidV7Slug | UuidSlugError;

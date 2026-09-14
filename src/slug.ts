@@ -14,12 +14,10 @@ import type { Alphabet } from "./alphabet.ts";
 import {
   checkByteRange,
   checkRange,
-  INVALID_BUFFER,
   INVALID_OPTIONS,
   INVALID_UUID,
   INVALID_UUID_SLUG,
   INVALID_UUID_VERSION,
-  invalidByteInput,
   invalidUuidSlugInput,
   invalidUuidStringInput,
   isUuidSlugError,
@@ -31,6 +29,7 @@ import type {
   PreserveUuidVersion,
   PlainUuidSlug,
   UuidBytes,
+  UuidByteInput,
   UuidV4Bytes,
   UuidV7Bytes,
   UuidStringInput,
@@ -55,9 +54,9 @@ import { UUID_TEXT_LOWERCASE } from "./types.ts";
 import { validateTimestampBytes } from "./timestamp.ts";
 import {
   bytesToUuidString,
+  exactUuidByteView,
   invalidUuidTextCase,
   isUuidText,
-  isUuidBytes,
   isUuidTextCase,
   isUuidV7Text,
   isRfcVariant,
@@ -185,14 +184,15 @@ function uuidStringToBase32hex(uuid: string): PlainUuidSlug {
 }
 
 /**
- * Encode a standalone 16-byte UUID as a plain slug, using base64url by default. An invalid array
- * or alphabet returns `UuidSlugError`. A preceding `UuidSlugError` is returned unchanged.
+ * Encode a standalone 16-byte UUID as a plain slug, using base64url by default. An `ArrayBuffer`
+ * uses its whole contents; a `DataView` uses its declared range. Invalid input or alphabet returns
+ * `UuidSlugError`. A preceding `UuidSlugError` is returned unchanged.
  *
- * @param bytes - Exactly 16 UUID bytes.
+ * @param bytes - One exact 16-byte UUID source.
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
 export function uuidBytesToPlainSlug(
-  bytes: Uint8Array | UuidSlugError,
+  bytes: UuidByteInput | UuidSlugError,
   alphabet?: SlugAlphabet,
 ): PlainUuidSlug | UuidSlugError;
 /**
@@ -210,14 +210,15 @@ export function uuidBytesToPlainSlug(
 ): PlainUuidSlug | UuidSlugError;
 /*#__NO_SIDE_EFFECTS__*/
 export function uuidBytesToPlainSlug(
-  bytes: Uint8Array | UuidSlugError,
+  bytes: UuidByteInput | UuidSlugError,
   offsetOrAlphabet: number | SlugAlphabet = 0,
   alphabet?: SlugAlphabet,
 ): PlainUuidSlug | UuidSlugError {
   const alphabetIsSecond = typeof offsetOrAlphabet !== "number";
   const offset = alphabetIsSecond ? 0 : offsetOrAlphabet;
-  if (!isUint8Array(bytes)) return invalidByteInput(bytes);
-  const badRange = checkRange(bytes.length, offset, 16);
+  const view = isUint8Array(bytes) ? bytes : exactUuidByteView(bytes);
+  if (view instanceof Error) return view;
+  const badRange = checkRange(view.length, offset, 16);
   if (badRange) return badRange;
   if (alphabetIsSecond && alphabet !== undefined)
     return new UuidSlugError(
@@ -231,7 +232,7 @@ export function uuidBytesToPlainSlug(
   );
   if (alpha instanceof Error) return alpha;
   return encode(
-    bytes.length === 16 ? bytes : bytes.subarray(offset, offset + 16),
+    view.length === 16 ? view : view.subarray(offset, offset + 16),
     alpha,
   ) as PlainUuidSlug;
 }
@@ -358,14 +359,7 @@ export function plainSlugToUuidString(
 }
 
 function decodeKeylessUuid(uuid: unknown): Uint8Array | UuidSlugError {
-  if (isUint8Array(uuid))
-    return isUuidBytes(uuid)
-      ? uuid
-      : new UuidSlugError(INVALID_BUFFER, "UUID bytes must contain exactly 16 bytes.");
-  if (typeof uuid !== "string")
-    return isUuidSlugError(uuid)
-      ? uuid
-      : new UuidSlugError(INVALID_UUID, "UUID must be text, bytes, or a plain UUID slug.");
+  if (typeof uuid !== "string") return exactUuidByteView(uuid);
   return uuid.length === 22 || uuid.length === 26
     ? plainSlugToUuidBytes(uuid)
     : uuidStringToBytes(uuid);
@@ -496,27 +490,30 @@ export function extractUuidV7UnixMs<Input extends string | UuidSlugError>(
   value: UuidV7TimestampInput<Input>,
 ): number | UuidSlugError;
 /**
- * Return the 48-bit Unix millisecond encoded by UUIDv7 bytes within an array.
+ * Return the 48-bit Unix millisecond encoded by UUIDv7 bytes. An `ArrayBuffer` uses its whole
+ * contents; a `DataView` uses its declared range. Only `Uint8Array` input accepts an offset.
  *
- * @param value - Array containing at least one complete 16-byte UUIDv7.
+ * @param value - One supported UUIDv7 byte source.
  * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
  */
-export function extractUuidV7UnixMs<Input extends Uint8Array | UuidSlugError>(
+export function extractUuidV7UnixMs<Input extends UuidByteInput | UuidSlugError>(
   value: UuidV7BytesInput<Input>,
   byteOffset?: number,
 ): number | UuidSlugError;
 /*#__NO_SIDE_EFFECTS__*/
 export function extractUuidV7UnixMs(
-  value: string | Uint8Array | UuidSlugError,
+  value: string | UuidByteInput | UuidSlugError,
   byteOffset = 0,
 ): number | UuidSlugError {
   if (typeof value === "string") return extractStringTimestamp(value);
   if (isUuidSlugError(value)) return value;
-  const badRange = checkByteRange(value, byteOffset, 16);
+  const bytes = isUint8Array(value) ? value : exactUuidByteView(value);
+  if (bytes instanceof Error) return bytes;
+  const badRange = checkRange(bytes.length, byteOffset, 16);
   if (badRange) return badRange;
-  if (uuidVersion(value, byteOffset) !== 7 || !isRfcVariant(value, byteOffset))
+  if (uuidVersion(bytes, byteOffset) !== 7 || !isRfcVariant(bytes, byteOffset))
     return new UuidSlugError(INVALID_UUID_VERSION, UUID_V7_TIMESTAMP_ONLY);
-  return uuidTimestampFromBytesUnchecked(value, byteOffset);
+  return uuidTimestampFromBytesUnchecked(bytes, byteOffset);
 }
 
 /**

@@ -44,6 +44,7 @@ export type {
   MaskedOrSentinelUuidV7Slug,
   SentinelUuidV7Slug,
   UuidBytes,
+  UuidByteInput,
   UuidInput,
   UuidStringResult,
   UuidBytesResult,

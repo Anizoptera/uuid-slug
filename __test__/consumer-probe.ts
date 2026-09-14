@@ -155,6 +155,16 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   equal(bytes.constructor, Uint8Array, "owned byte constructor");
   const uuidText = api.bytesToUuidString(bytes);
   if (uuidText instanceof Error) throw uuidText;
+  const ownedBuffer = new Uint8Array(bytes).buffer;
+  equal(api.bytesToUuidString(ownedBuffer), uuidText, "ArrayBuffer UUID input");
+  equal(api.bytesToUuidString(new DataView(ownedBuffer)), uuidText, "DataView UUID input");
+  const wasmMemory = new WebAssembly.Memory({ initial: 1 });
+  new Uint8Array(wasmMemory.buffer, 8, 16).set(bytes);
+  equal(
+    api.bytesToUuidString(new DataView(wasmMemory.buffer, 8, 16)),
+    uuidText,
+    "WebAssembly DataView UUID input",
+  );
   equal(api.uuidStringToBytes(uuidText) instanceof Uint8Array, true, "directional UUID conversion");
   const out = new Uint8Array(20).fill(0x55);
   equal(api.generateUuidV7BytesAtUnixMs(1234567890000, out, 2), out, "caller buffer identity");

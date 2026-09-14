@@ -3,17 +3,20 @@
 import {
   checkByteRange,
   checkRange,
-  invalidByteInput,
   invalidUuidStringInput,
+  INVALID_BUFFER,
   INVALID_OPTIONS,
   INVALID_UUID,
+  isUuidSlugError,
   isUint8Array,
+  uuidByteView,
   UuidSlugError,
 } from "./errors.ts";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
 import type {
   PreserveUuidVersion,
   UuidBytes,
+  UuidByteInput,
   UuidV4Bytes,
   UuidV7Bytes,
   UuidString,
@@ -31,6 +34,16 @@ export { isUuidSlugError } from "./errors.ts";
 export { UuidSlugError };
 export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidBytes, UuidString } from "./types.ts";
+
+/** Borrow one exact UUID payload from any supported byte source. */
+/*#__NO_SIDE_EFFECTS__*/
+export function exactUuidByteView(value: unknown): Uint8Array | UuidSlugError {
+  if (isUuidSlugError(value)) return value;
+  const bytes = uuidByteView(value);
+  return bytes?.length === 16
+    ? bytes
+    : new UuidSlugError(INVALID_BUFFER, "UUID byte input must contain exactly 16 bytes.");
+}
 
 /** The canonical all-zero UUID value, without a version or issuance claim. */
 export const NIL_UUID = "00000000-0000-0000-0000-000000000000" as UuidString;
@@ -187,17 +200,18 @@ export function uuidStringToBytes(
 }
 
 /**
- * Format 16 bytes as standard hyphenated UUID text without assigning a version.
- * An invalid array or range returns `invalid_buffer`. A preceding `UuidSlugError` is returned
- * unchanged.
+ * Format 16 bytes as standard hyphenated UUID text without assigning a version. A standalone
+ * `ArrayBuffer` uses its whole contents; a `DataView` uses its declared range. Only `Uint8Array`
+ * input accepts an explicit offset. Invalid input returns `invalid_buffer`, and a preceding
+ * `UuidSlugError` is returned unchanged.
  *
- * @param bytes - An array containing at least one complete 16-byte UUID.
+ * @param bytes - One supported UUID byte source.
  * @param textCase - Built-in output spelling. Omit for lowercase.
  * @defaultValue `UUID_TEXT_LOWERCASE`
  * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
  */
 export function bytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-  bytes: Uint8Array | UuidSlugError,
+  bytes: UuidByteInput | UuidSlugError,
   textCase?: Case,
 ): UuidStringFor<Case> | UuidSlugError;
 export function bytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
@@ -207,11 +221,12 @@ export function bytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_L
 ): UuidStringFor<Case> | UuidSlugError;
 /*#__NO_SIDE_EFFECTS__*/
 export function bytesToUuidString(
-  bytes: Uint8Array | UuidSlugError,
+  bytes: UuidByteInput | UuidSlugError,
   offsetOrCase: number | UuidTextCase = 0,
   textCase: UuidTextCase = UUID_TEXT_LOWERCASE,
 ): UuidString | string | UuidSlugError {
-  if (!isUint8Array(bytes)) return invalidByteInput(bytes);
+  const view = isUint8Array(bytes) ? bytes : exactUuidByteView(bytes);
+  if (view instanceof Error) return view;
   const caseIsSecond =
     typeof offsetOrCase === "string"
       ? Number.isNaN(Number(offsetOrCase))
@@ -219,20 +234,20 @@ export function bytesToUuidString(
   const byteOffset = (caseIsSecond ? 0 : offsetOrCase) as number;
   const selectedCase = caseIsSecond ? offsetOrCase : textCase;
   if (!isUuidTextCase(selectedCase)) return invalidUuidTextCase();
-  const badRange = checkRange(bytes.length, byteOffset, 16);
+  const badRange = checkRange(view.length, byteOffset, 16);
   if (badRange) return badRange;
   if (nativeToHex && selectedCase === UUID_TEXT_LOWERCASE) {
     let offset = 0;
     let hex: string;
-    if (bytes.length <= 32) {
-      hex = nativeToHex.call(bytes);
+    if (view.length <= 32) {
+      hex = nativeToHex.call(view);
       offset = byteOffset * 2;
     } else {
-      hex = nativeToHex.call(bytes.subarray(byteOffset, byteOffset + 16));
+      hex = nativeToHex.call(view.subarray(byteOffset, byteOffset + 16));
     }
     return hyphenateHex(hex, offset);
   }
-  return formatUuidBytesUnchecked(bytes, byteOffset, selectedCase);
+  return formatUuidBytesUnchecked(view, byteOffset, selectedCase);
 }
 
 /** Format a UUID range already proved writable by its caller. */

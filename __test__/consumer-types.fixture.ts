@@ -67,6 +67,7 @@ import type {
   MaskedUuidV7Slug,
   MaskedOrSentinelUuidV7Slug,
   UuidBytes,
+  UuidByteInput,
   PlainUuidSlug,
   PlainUuidV4Slug,
   UuidV4Bytes,
@@ -127,6 +128,12 @@ expectType<UuidString | UuidSlugError>()(
 );
 if (parsedBytes instanceof Error) throw parsedBytes;
 const storedBytes: UuidBytes = parsedBytes;
+const bufferInput: UuidByteInput = new Uint8Array(parsedBytes).buffer;
+const viewInput: UuidByteInput = new DataView(new Uint8Array(parsedBytes).buffer);
+expectType<UuidString | UuidSlugError>()(bytesToUuidString(bufferInput));
+expectType<PlainUuidSlug | UuidSlugError>()(uuidBytesToPlainSlug(viewInput));
+expectType<UuidBytes | UuidSlugError>()(uuidToBytes(viewInput));
+expectType<number | UuidSlugError>()(extractUuidV7UnixMs(viewInput));
 const directlySelectedAlphabet: PlainUuidSlug | UuidSlugError = uuidBytesToPlainSlug(
   parsedBytes,
   BASE32HEX,

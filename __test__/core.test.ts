@@ -82,9 +82,7 @@ const REJECTED_UUID_INPUTS = [
   Promise.resolve(SAMPLE_V7_A),
   new Error(SAMPLE_V7_A),
   BOXED_VALID_NIL_UUID_STRING,
-  new ArrayBuffer(16),
   new SharedArrayBuffer(16),
-  new DataView(new ArrayBuffer(16)),
   new Int8Array(16),
   new Uint16Array(8),
   new Float64Array(2),
@@ -104,6 +102,53 @@ const REJECTED_UUID_INPUTS = [
 
 const createUuidV7MaskingCodec = (options: UuidV7MaskingCodecOptions) =>
   unwrap(createCodec(options));
+
+describe("UUID byte inputs", () => {
+  it("accepts complete buffers and declared DataView ranges without mutation", () => {
+    const bytes = unwrap(uuidStringToBytes(SAMPLE_V7_A));
+    const backing = new ArrayBuffer(24);
+    new Uint8Array(backing, 4, 16).set(bytes);
+    const view = new DataView(backing, 4, 16);
+    const before = new Uint8Array(backing).slice();
+    const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
+
+    expect(bytesToUuidString(new Uint8Array(bytes).buffer)).toBe(SAMPLE_V7_A);
+    expect(bytesToUuidString(view)).toBe(SAMPLE_V7_A);
+    expect(uuidBytesToPlainSlug(view)).toBe(uuidBytesToPlainSlug(bytes));
+    expect(uuidToString(view)).toBe(SAMPLE_V7_A);
+    expect(uuidToBytes(view)).toEqual(bytes);
+    expect(uuidToPlainSlug(view)).toBe(uuidToPlainSlug(bytes));
+    expect(codec.uuidToMaskedSlug(view)).toBe(codec.uuidToMaskedSlug(bytes));
+    expect(extractUuidV7UnixMs(view)).toBe(extractUuidV7UnixMs(bytes));
+    expect(new Uint8Array(backing)).toEqual(before);
+  });
+
+  it("recognizes cross-realm inputs and rejects inexact, detached, or unrelated containers", () => {
+    const bytes = unwrap(uuidStringToBytes(SAMPLE_V7_A));
+    const foreign = runInNewContext(
+      `(() => {
+        const buffer = new ArrayBuffer(20);
+        new Uint8Array(buffer, 2, 16).set([${[...bytes].join(",")}]);
+        return { buffer: buffer.slice(2, 18), view: new DataView(buffer, 2, 16) };
+      })()`,
+    ) as { buffer: ArrayBuffer; view: DataView };
+    const detached = bytes.buffer.slice(0);
+    structuredClone(detached, { transfer: [detached] });
+
+    expect(bytesToUuidString(foreign.buffer)).toBe(SAMPLE_V7_A);
+    expect(bytesToUuidString(foreign.view)).toBe(SAMPLE_V7_A);
+    for (const input of [
+      new ArrayBuffer(15),
+      new ArrayBuffer(17),
+      new DataView(new ArrayBuffer(17)),
+      new SharedArrayBuffer(16),
+      new Uint16Array(8),
+      detached,
+    ]) {
+      expect(uuidToString(input as never)).toMatchObject({ code: "invalid_buffer" });
+    }
+  });
+});
 
 describe("error classification", () => {
   it("accepts package errors across realms without accepting lookalike data or throwing", () => {

@@ -3,7 +3,6 @@
 import {
   checkByteRange,
   findUnknownOption,
-  INVALID_BUFFER,
   INVALID_MASK,
   INVALID_SENTINEL,
   INVALID_UUID,
@@ -57,8 +56,8 @@ import {
 import {
   formatUuidBytesUnchecked,
   bytesToUuidString,
+  exactUuidByteView,
   invalidUuidTextCase,
-  isUuidBytes,
   isUuidTextCase,
   isUuidV7Bytes,
   uuidStringToBytes,
@@ -337,14 +336,7 @@ function buildUuidSlugCodec(
   const encodeScratch = new Uint8Array(16);
 
   function decodeUuid(uuid: unknown, preferredSlug?: SlugMeaning): Uint8Array | UuidSlugError {
-    if (isUint8Array(uuid))
-      return isUuidBytes(uuid)
-        ? uuid
-        : new UuidSlugError(INVALID_BUFFER, "UUID bytes must contain exactly 16 bytes.");
-    if (typeof uuid !== "string")
-      return isUuidSlugError(uuid)
-        ? uuid
-        : new UuidSlugError(INVALID_UUID, "UUID must be text, bytes, or a UUID slug.");
+    if (typeof uuid !== "string") return exactUuidByteView(uuid);
     const sentinel = sentinels.bySlug.get(uuid)?.bytes;
     if (sentinel) return sentinel;
     if (uuid.length === 26) return decodePlainSlugToBytes(uuid);

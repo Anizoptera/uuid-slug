@@ -64,6 +64,7 @@ const ERROR_NAME = "UuidSlugError";
 const ERROR_MARKER = "__failure";
 const OBJECT_TYPE = "object";
 const ERROR_TAG = "[object Error]";
+const BYTE_LENGTH_PROPERTY = "byteLength";
 const BUFFER_TYPE_MESSAGE = "Buffer must be a Uint8Array.";
 const RANDOM_FAILURE_MESSAGE = "Random byte generation failed.";
 const nativeIsError = (Error as { isError?: (value: unknown) => boolean }).isError;
@@ -71,6 +72,22 @@ const nativeIsError = (Error as { isError?: (value: unknown) => boolean }).isErr
 const typedArrayTagDescriptor = /*#__PURE__*/ Object.getOwnPropertyDescriptor(
   Object.getPrototypeOf(Uint8Array.prototype) as object,
   Symbol.toStringTag,
+);
+const dataViewByteLengthDescriptor = /*#__PURE__*/ Object.getOwnPropertyDescriptor(
+  DataView.prototype,
+  BYTE_LENGTH_PROPERTY,
+);
+const dataViewByteOffsetDescriptor = /*#__PURE__*/ Object.getOwnPropertyDescriptor(
+  DataView.prototype,
+  "byteOffset",
+);
+const dataViewBufferDescriptor = /*#__PURE__*/ Object.getOwnPropertyDescriptor(
+  DataView.prototype,
+  "buffer",
+);
+const arrayBufferByteLengthDescriptor = /*#__PURE__*/ Object.getOwnPropertyDescriptor(
+  ArrayBuffer.prototype,
+  BYTE_LENGTH_PROPERTY,
 );
 
 /**
@@ -162,6 +179,25 @@ export function isUint8Array(value: unknown): value is Uint8Array {
   );
 }
 
+/** Borrow bytes from supported local or cross-realm input without copying or accepting other views. */
+export function uuidByteView(value: unknown): Uint8Array | undefined {
+  if (isUint8Array(value)) return value;
+  try {
+    if (ArrayBuffer.isView(value) && dataViewByteLengthDescriptor?.get?.call(value) !== undefined) {
+      return new Uint8Array(
+        dataViewBufferDescriptor?.get?.call(value) as ArrayBuffer,
+        dataViewByteOffsetDescriptor?.get?.call(value) as number,
+        dataViewByteLengthDescriptor.get.call(value) as number,
+      );
+    }
+    if (arrayBufferByteLengthDescriptor?.get?.call(value) !== undefined)
+      return new Uint8Array(value as ArrayBuffer);
+  } catch {
+    // Detached buffers and hostile objects are invalid byte inputs.
+  }
+  return undefined;
+}
+
 /** Return the first unsupported enumerable own string key in a package-owned options object. */
 /*#__NO_SIDE_EFFECTS__*/
 export function findUnknownOption(
@@ -217,12 +253,6 @@ export function checkByteRange(
     return new UuidSlugError(INVALID_BUFFER, BUFFER_TYPE_MESSAGE);
   }
   return checkRange(bytes.length, offset, need);
-}
-
-/** Return an existing package failure or explain why a value cannot be used as byte storage. */
-/*#__NO_SIDE_EFFECTS__*/
-export function invalidByteInput(value: unknown): UuidSlugError {
-  return isUuidSlugError(value) ? value : new UuidSlugError(INVALID_BUFFER, BUFFER_TYPE_MESSAGE);
 }
 
 /** Preserve a preceding failure or reject an untyped value that is not UUID text. */

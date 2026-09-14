@@ -29,9 +29,10 @@ errors and `Result` instead of JavaScript conventions. Such differences must not
 the accepted domain or result semantics. In particular, a lazy result must not expose partial
 candidates where the existing operation reports an error for the whole call.
 
-TypeScript uses directional text/binary names because raw `Uint8Array` values require validation
-and may target caller storage. Rust uses idiomatic `Uuid` operations because its fixed UUID type
-already owns that validation. Both accept mixed-case canonical or compact text, case-insensitive
+TypeScript uses directional text/binary names because raw byte containers require validation and
+may target caller storage. It accepts an exact `ArrayBuffer` or a `DataView`'s exact 16-byte range
+as borrowed input. Rust uses idiomatic `Uuid` operations because its fixed UUID type already owns
+that validation; `&[u8]` already provides the same range semantics. Both accept mixed-case canonical or compact text, case-insensitive
 UUID URNs, and brace-wrapped canonical text. Their default text output is lowercase and hyphenated,
 and their byte domain is identical. Wrappers cannot nest or contain compact text.
 
