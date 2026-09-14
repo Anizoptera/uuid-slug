@@ -17,11 +17,8 @@ import type {
   UuidString,
   UuidV7String,
 } from "./types.ts";
-import { MIGRATION_FORMATS } from "./types.ts";
+import { CURRENT_MASK_FORMAT, DIRECT_SLUG_FORMAT, ORIGINAL_MASK_FORMAT } from "./types.ts";
 import { bytesToUuidString } from "./uuid.ts";
-
-const DIRECT_SLUG_FORMAT = "direct-slug";
-const ORIGINAL_MASK_FORMAT = "original-mask";
 
 // These tables and the four-bit checksum define the original wire format.
 // Changing them would change the UUID recovered from an existing slug.
@@ -77,7 +74,10 @@ export function createMigration(
   ) {
     if (typeof slug !== "string") return invalidUuidSlugInput(slug);
     if (
-      (format !== undefined && !MIGRATION_FORMATS.some((candidate) => candidate === format)) ||
+      (format !== undefined &&
+        format !== CURRENT_MASK_FORMAT &&
+        format !== ORIGINAL_MASK_FORMAT &&
+        format !== DIRECT_SLUG_FORMAT) ||
       (format === ORIGINAL_MASK_FORMAT && !original) ||
       (format === DIRECT_SLUG_FORMAT && !direct)
     )
@@ -88,7 +88,7 @@ export function createMigration(
 
     const sentinel = sentinels.get(slug);
     if (sentinel) return [sentinel.uuid];
-    const useCurrent = format === undefined || format === "current-mask";
+    const useCurrent = format === undefined || format === CURRENT_MASK_FORMAT;
     const useOriginal = original && (format === undefined || format === ORIGINAL_MASK_FORMAT);
     const useDirect = direct && (format === undefined || format === DIRECT_SLUG_FORMAT);
     const bytes = new Uint8Array(16);

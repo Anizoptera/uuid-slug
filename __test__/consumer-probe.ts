@@ -11,7 +11,7 @@ function equal(actual: unknown, expected: unknown, context: string): void {
 export async function probeConsumer(api: typeof Api): Promise<void> {
   equal(unwrap(api.generateUuidV7()).length, 36, "public UUIDv7 generation");
   const invalidUuid = api.uuidStringToBytes("not a UUID");
-  equal(invalidUuid instanceof Error && invalidUuid.code, "invalid_uuid", "error value");
+  equal(invalidUuid instanceof Error && invalidUuid.code, api.INVALID_UUID, "error value");
   const backfill = unwrap(api.createUuidV7Generator({}));
   const destination = new Uint8Array(20).fill(0x55);
   const generators = [
@@ -53,7 +53,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   const uuid = "019ff19b-58b8-7000-9b1b-df713bd5562c";
   equal(api.isUuidV7String(unwrap(api.generateUuidV7())), true, "v7 generation");
   equal(api.isUuidV4String(unwrap(api.generateUuidV4())), true, "v4 generation");
-  for (const alphabet of ["base64url", "base32hex"] as const) {
+  for (const alphabet of [api.BASE64URL, api.BASE32HEX] as const) {
     const slug = api.uuidStringToSlug(uuid, alphabet);
     if (slug instanceof Error) throw slug;
     equal(api.uuidSlugToString(slug), uuid, `${alphabet} conversion`);
@@ -66,7 +66,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     equal(
       unwrap(codec.createMigrationDecoder({ directSlug: true })).uuidSlugToString(
         slug,
-        "direct-slug",
+        api.DIRECT_SLUG_FORMAT,
       ),
       uuid,
       `${alphabet} migration`,
@@ -100,7 +100,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     });
     equal(
       cancelled instanceof api.UuidSlugError && cancelled.code,
-      "aborted",
+      api.ABORTED,
       "host-task cancellation",
     );
     equal(
@@ -117,8 +117,17 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   const migrating = unwrap(api.createUuidV7SlugCodec({ mask: { seed } }));
   const reader = unwrap(migrating.createMigrationDecoder({ originalMask: true, directSlug: true }));
   equal(reader.uuidSlugToString(overlap), currentUuid, "migration default");
-  equal(reader.uuidSlugToString(overlap, "original-mask"), originalUuid, "original migration");
-  equal(reader.uuidSlugToString(overlap, "direct-slug"), directUuid, "direct migration");
+  equal(
+    reader.uuidSlugToString(overlap, api.CURRENT_MASK_FORMAT),
+    currentUuid,
+    "current migration",
+  );
+  equal(
+    reader.uuidSlugToString(overlap, api.ORIGINAL_MASK_FORMAT),
+    originalUuid,
+    "original migration",
+  );
+  equal(reader.uuidSlugToString(overlap, api.DIRECT_SLUG_FORMAT), directUuid, "direct migration");
   equal(
     JSON.stringify(reader.uuidSlugToStringCandidates(overlap)),
     JSON.stringify([currentUuid, originalUuid, directUuid]),
@@ -158,6 +167,6 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     offset?: number,
   ) => Uint8Array | InstanceType<typeof api.UuidSlugError>;
   const invalid = callUuidV7BytesAt(0, undefined, 1);
-  equal(invalid instanceof api.UuidSlugError && invalid.code, "invalid_buffer", "offset error");
+  equal(invalid instanceof api.UuidSlugError && invalid.code, api.INVALID_BUFFER, "offset error");
   equal("generate" in api, false, "keyed top-level export");
 }

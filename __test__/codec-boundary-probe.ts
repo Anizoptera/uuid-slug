@@ -23,7 +23,6 @@ import {
   uuidStringToSlug,
   generateUuidV7Slug,
   uuidSlugToString,
-  UUID_SLUG_ERROR_CODES,
   UuidSlugError,
 } from "../src/index";
 import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
@@ -694,7 +693,6 @@ export const codecBoundaryCases = [
       assert.ok(Object.isFrozen(codec.sentinels));
       assert.ok(codec.sentinels.every(Object.isFrozen));
       assert.ok(Object.isFrozen(UUID_V7_TEST_MASK));
-      assert.ok(Object.isFrozen(UUID_SLUG_ERROR_CODES));
 
       const mutable = {
         label: "stable-mask-reference",

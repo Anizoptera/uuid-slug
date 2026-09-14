@@ -13,7 +13,7 @@ import {
 import type { UuidV4Bytes, UuidV4String } from "./types.ts";
 import { bytesToUuidString, isUuidV4String } from "./uuid.ts";
 
-export { UUID_SLUG_ERROR_CODES, isUuidSlugError } from "./errors.ts";
+export { isUuidSlugError } from "./errors.ts";
 export { UuidSlugError };
 export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidV4Bytes, UuidV4String } from "./types.ts";

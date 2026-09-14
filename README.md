@@ -121,12 +121,12 @@ time. `generateUuidV7At` and `generateUuidV7BytesAt` accept whole Unix milliseco
 `0..2^48-1`, use secure randomness, and leave the current-time generator's sequence unchanged.
 
 ```ts
-import { generateUuidV7At, isUuidSlugError, uuidStringToSlug } from "@anizoptera/uuid-slug";
+import { BASE32HEX, generateUuidV7At, isUuidSlugError, uuidStringToSlug } from "@anizoptera/uuid-slug";
 
 function idForImportedRecord(recordedUnixMs: number) {
   const uuid = generateUuidV7At(recordedUnixMs);
   if (isUuidSlugError(uuid)) return uuid;
-  return uuidStringToSlug(uuid, "base32hex");
+  return uuidStringToSlug(uuid, BASE32HEX);
 }
 ```
 
@@ -243,7 +243,7 @@ sort can order text differently. Compare one representation at a time: mixing UU
 slug alphabets, or masked slugs does not preserve timestamp order.
 
 base32hex also avoids case collisions in filenames. A directory listing sorted bytewise follows
-the encoded timestamps across different milliseconds. `generateUuidV7Slug("base32hex")` produces
+the encoded timestamps across different milliseconds. `generateUuidV7Slug(BASE32HEX)` produces
 one directly; every keyless slug writer accepts the alphabet without requiring a codec.
 
 `uuidSlugToString` infers the alphabet from the length, 22 or 26, so both spellings remain readable
@@ -255,7 +255,7 @@ the value. Choose base32hex when storage cannot preserve case distinctions.
 
 Masking supports UUIDv7 only. Its compact payload and check pass through a small
 block cipher keyed by your seed, then encoded as 22 base64url characters by default, or 27
-lowercase base32hex characters with `outputAlphabet: "base32hex"`. Both preserve the same payload
+lowercase base32hex characters with `outputAlphabet: BASE32HEX`. Both preserve the same payload
 and check. Use it when the identifier is public and you want an opaque, hash-like spelling instead
 of recognizable UUID fields. Masked slugs are reversible and therefore are not hashes. The exact steps are in
 [how masking works](docs/design.md).
@@ -436,19 +436,20 @@ function saveUuid(uuidText: string, save: (bytes: Uint8Array) => void) {
 The inner conversion's failure passes through the outer conversion unchanged. Check an
 intermediate result only when the caller also needs that intermediate successful value.
 
-Use the error's `code` for handling and its `message` for diagnostics. `UuidSlugErrorCode` and
-`UUID_SLUG_ERROR_CODES` are the exported type and runtime list of codes. Errors wrapping failed
-entropy draws, clock readings, and custom transform calls preserve the original exception as `cause`.
+Use the error's `code` for handling and its `message` for diagnostics. `UuidSlugErrorCode` is the
+exported code type. Each code has a named constant such as `INVALID_BUFFER`, so callers never need
+to copy a code string or recover one from a collection. Errors wrapping failed entropy draws, clock readings, and custom transform calls
+preserve the original exception as `cause`.
 
 `bytesToUuidSlug` and `uuidSlugToBytes` convert one 16-byte UUID, not arbitrary binary data. Without an
 offset, `bytesToUuidSlug` requires exactly 16 bytes; an explicit offset selects 16 bytes from a larger
 array. `uuidSlugToBytes` rejects noncanonical spelling. `isUuidSlug` returns a boolean, not an error.
 
 ```ts
-import { bytesToUuidSlug } from "@anizoptera/uuid-slug";
+import { BASE32HEX, bytesToUuidSlug } from "@anizoptera/uuid-slug";
 
 function encodeStoredUuid(bytes: Uint8Array) {
-  return bytesToUuidSlug(bytes, "base32hex");
+  return bytesToUuidSlug(bytes, BASE32HEX);
 }
 ```
 
@@ -460,9 +461,9 @@ you need to retain the narrowed type. A brand proves format, not issuance or per
 JavaScript consumers do not need TypeScript. The shipped declarations compile with TypeScript 5.0
 and newer.
 
-Use `UUID_SLUG_ALPHABETS` and `UUID_SLUG_ERROR_CODES` instead of maintaining your own alphabet or
-error-code lists. They also work in JavaScript. TypeScript exposes migration format names through
-`UuidSlugMigrationFormat`; each reader accepts only the formats enabled when it was created.
+Use `BASE64URL`, `BASE32HEX`, and the named error-code constants when passing or comparing values.
+Migration readers accept `CURRENT_MASK_FORMAT`, `ORIGINAL_MASK_FORMAT`, or `DIRECT_SLUG_FORMAT`;
+their TypeScript type permits only formats enabled when the reader was created.
 
 | Type | What the value is |
 | --- | --- |
@@ -604,27 +605,26 @@ Also exported from the package root:
 - `UuidSlugError`, including code `rng_unavailable` when the runtime has no usable randomness.
   `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes package errors across
   JavaScript realms and duplicate package copies.
-- `UUID_SLUG_ALPHABETS` is the runtime value for alphabet configuration and user-interface
-  validation. `SlugAlphabet` derives from that list.
+- `BASE64URL` and `BASE32HEX` select slug output without copying string literals.
 
 ### Codec options
 
 ```ts
-import { createUuidV7SlugCodec } from "@anizoptera/uuid-slug";
+import { BASE32HEX, createUuidV7SlugCodec } from "@anizoptera/uuid-slug";
 
 function configureCodec(seed: string, previousSeed: string) {
   return createUuidV7SlugCodec({
     mask: { seed, keyDerivationIterations: 1 },
     sentinels: [{ name: "nil", uuid: "00000000-0000-7000-8000-000000000000" }],
     previousMasks: [{ seed: previousSeed }],
-    outputAlphabet: "base32hex",
+    outputAlphabet: BASE32HEX,
   });
 }
 ```
 
 The masked payload is fixed at 132 bits, including a 16-bit check. `outputAlphabet` defaults to
 `"base64url"`. Readers accept either masked spelling without an alphabet argument. With
-`outputAlphabet: "base32hex"`, sentinels are written as 26-character base32hex slugs; their
+`outputAlphabet: BASE32HEX`, sentinels are written as 26-character base32hex slugs; their
 22-character base64url spelling still decodes.
 
 To supply a different mixing implementation, call
@@ -765,15 +765,15 @@ decode to different UUIDs in different formats; the original check has only four
 When you know the input format, name it to avoid trying unrelated formats:
 
 ```ts
-import { isUuidSlugError } from "@anizoptera/uuid-slug";
+import { isUuidSlugError, ORIGINAL_MASK_FORMAT } from "@anizoptera/uuid-slug";
 import type { UuidSlugMigrationDecoder, UuidV7SlugCodec } from "@anizoptera/uuid-slug";
 
 function replaceOriginalSlug(
   ids: UuidV7SlugCodec,
-  reader: UuidSlugMigrationDecoder<"original-mask">,
+  reader: UuidSlugMigrationDecoder<typeof ORIGINAL_MASK_FORMAT>,
   oldSlug: string,
 ) {
-  const uuid = reader.uuidSlugToString(oldSlug, "original-mask");
+  const uuid = reader.uuidSlugToString(oldSlug, ORIGINAL_MASK_FORMAT);
   if (isUuidSlugError(uuid)) return uuid;
   const replacement = ids.uuidToSlug(uuid);
   if (isUuidSlugError(replacement)) return replacement;
@@ -783,7 +783,7 @@ function replaceOriginalSlug(
 
 Enable an old format before selecting it. Recognized sentinels always return their reserved UUID,
 including old trailing-bit aliases when reading original or direct slugs.
-With literal options, TypeScript offers only `"current-mask"` and the formats enabled with `true`;
+With literal options, TypeScript offers only `CURRENT_MASK_FORMAT` and the formats enabled with `true`;
 options whose values are dynamic remain selectable because they may be enabled at runtime.
 
 For unknown formats, use `uuidSlugToStringCandidates` to find the matching record without guessing:

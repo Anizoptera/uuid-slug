@@ -2,10 +2,10 @@
 
 import ts from "typescript-floor";
 import { BASE32HEX_NAME, BASE64URL_NAME } from "../src/alphabet.ts";
-import { UUID_SLUG_ERROR_CODES } from "../src/errors.ts";
+import { ERROR_CODES } from "../src/errors.ts";
 
 const owners = new Map<string, string>([
-  ...UUID_SLUG_ERROR_CODES.map((code) => [code, "errors.ts"] as const),
+  ...ERROR_CODES.map((code) => [code, "errors.ts"] as const),
   [BASE32HEX_NAME, "alphabet.ts"],
   [BASE64URL_NAME, "alphabet.ts"],
 ]);

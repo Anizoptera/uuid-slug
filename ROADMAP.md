@@ -4,9 +4,14 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 
 ## Public interface audit
 
+- [x] Expose closed-vocabulary members by semantic names without duplicating their string literals.
+  - [x] Export each alphabet choice, migration selector, and error code directly; remove public
+        collections with no consumer iteration workflow.
+  - [x] Prove named values work through source and packed consumer calls without array indexes.
+  - [x] Update consumer documentation, regenerate declarations, and run the full gate.
 - [x] Remove unsupported proof and consumer-surface debt found through the declaration inventory.
   - [x] Make each negative type case fail for the boundary its comment names.
-  - [x] Keep migration format literals internal while retaining the public selector type.
+  - [x] Keep migration selection narrowed to formats enabled on each reader.
   - [x] Correct consumer documentation, regenerate declarations, and run the full gate.
 
 ## Error handling design

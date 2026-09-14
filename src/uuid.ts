@@ -20,7 +20,7 @@ import type {
   UuidV7String,
 } from "./types.ts";
 
-export { UUID_SLUG_ERROR_CODES, isUuidSlugError } from "./errors.ts";
+export { isUuidSlugError } from "./errors.ts";
 export { UuidSlugError };
 export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidBytes, UuidString } from "./types.ts";

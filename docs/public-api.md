@@ -122,10 +122,10 @@ Keep UUID text/binary conversion directional and version-neutral:
 
 ## Types and validation
 
-- Define each closed vocabulary once as an `as const` runtime value and derive its union type from
-  that value. Export the value when consumers need to validate, enumerate, document, or present the
-  members; keep a type-only union only when no runtime use exists. Never maintain parallel literal
-  lists in types, validators, and tests.
+- Define every member of a closed vocabulary once as a semantic scalar constant and derive its
+  union type from those constants. Export each constant that callers pass or compare. Export an
+  iterable collection only for a documented iteration workflow; its positions are never identifiers.
+  Never maintain parallel literal lists in types, validators, and tests.
 - Accept ergonomic raw input at the package seam, validate it once, and return the narrowest type
   established by that successful operation. Keep format, UUID version, direct or masked spelling,
   and ownership distinctions when consumers use them.

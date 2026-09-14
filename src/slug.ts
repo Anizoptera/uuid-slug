@@ -56,7 +56,7 @@ import {
   uuidVersion,
 } from "./uuid.ts";
 
-export { UUID_SLUG_ERROR_CODES, isUuidSlugError } from "./errors.ts";
+export { isUuidSlugError } from "./errors.ts";
 export { UuidSlugError };
 export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidSlug, UuidV4Slug, UuidV7Slug } from "./types.ts";
@@ -70,19 +70,14 @@ export type { UuidSlug, UuidV4Slug, UuidV7Slug } from "./types.ts";
  * Masked output selects its alphabet independently: base32hex preserves case-insensitive filenames,
  * but sorting masked ciphertext does not recover chronological order.
  */
-const ALPHABETS = [BASE64URL_NAME, BASE32HEX_NAME] as const;
 const ALTERNATIVE_SEPARATOR = " or ";
-
-/** The accepted slug alphabets, for configuration validation and user-interface choices. */
-export const UUID_SLUG_ALPHABETS: readonly ["base64url", "base32hex"] =
-  /*#__PURE__*/ Object.freeze(ALPHABETS);
 
 /**
  * Select direct-slug output: 22-character base64url, or 26-character lowercase base32hex.
  * Base64url is shorter. Base32hex UUIDv7 slugs sort by timestamp as plain strings and are safe on
  * case-insensitive filesystems. Decoders infer the alphabet from length.
  */
-export type SlugAlphabet = (typeof UUID_SLUG_ALPHABETS)[number];
+export type SlugAlphabet = typeof BASE64URL_NAME | typeof BASE32HEX_NAME;
 
 const SLUG_ALPHABET_CODECS = {
   base32hex: BASE32HEX,
@@ -99,7 +94,7 @@ export function resolveSlugAlphabet(alphabet: SlugAlphabet): Alphabet | UuidSlug
     return SLUG_ALPHABET_CODECS[alphabet];
   return new UuidSlugError(
     INVALID_OPTIONS,
-    `Unknown slug alphabet; expected ${UUID_SLUG_ALPHABETS.join(ALTERNATIVE_SEPARATOR)}.`,
+    `Unknown slug alphabet; expected ${BASE64URL_NAME}${ALTERNATIVE_SEPARATOR}${BASE32HEX_NAME}.`,
   );
 }
 

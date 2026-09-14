@@ -3,7 +3,9 @@
 import { checkRange, INVALID_BASE32HEX, INVALID_BASE64URL, UuidSlugError } from "./errors.ts";
 import type { UuidSlugErrorCode } from "./errors.ts";
 
+/** Select lowercase base32hex slug output. */
 export const BASE32HEX_NAME = "base32hex";
+/** Select unpadded base64url slug output. */
 export const BASE64URL_NAME = "base64url";
 
 /**

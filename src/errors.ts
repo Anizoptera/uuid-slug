@@ -1,35 +1,49 @@
 // SPDX-License-Identifier: Apache-2.0
 
+/** The operation was cancelled through its `AbortSignal`. */
 export const ABORTED = "aborted";
+/** The input is not a canonical base32hex UUID slug. */
 export const INVALID_BASE32HEX = "invalid_base32hex";
+/** The input is not a canonical base64url UUID slug. */
 export const INVALID_BASE64URL = "invalid_base64url";
+/** A byte buffer or offset cannot satisfy the requested operation. */
 export const INVALID_BUFFER = "invalid_buffer";
+/** A mask is missing, malformed, or failed its reversible transform. */
 export const INVALID_MASK = "invalid_mask";
+/** An options object or one of its values is invalid. */
 export const INVALID_OPTIONS = "invalid_options";
+/** A sentinel definition is invalid or conflicts with another sentinel. */
 export const INVALID_SENTINEL = "invalid_sentinel";
+/** A timestamp is invalid or outside the UUIDv7 wire-format range. */
 export const INVALID_TIMESTAMP = "invalid_timestamp";
+/** The input is not a canonical UUID or valid UUID byte payload. */
 export const INVALID_UUID = "invalid_uuid";
+/** The input is not a canonical direct or codec-owned UUID slug. */
 export const INVALID_UUID_SLUG = "invalid_uuid_slug";
+/** The UUID version does not satisfy the requested operation. */
 export const INVALID_UUID_VERSION = "invalid_uuid_version";
+/** The runtime could not provide cryptographically secure random bytes. */
 export const RNG_UNAVAILABLE = "rng_unavailable";
+/** The UUIDv7 timestamp falls outside the caller's validation window. */
 export const TIMESTAMP_OUTSIDE_WINDOW = "timestamp_outside_window";
 
-/** All stable `UuidSlugError.code` values, for validation and exhaustive handlers. */
-export const UUID_SLUG_ERROR_CODES: readonly [
-  "aborted",
-  "invalid_base32hex",
-  "invalid_base64url",
-  "invalid_buffer",
-  "invalid_mask",
-  "invalid_options",
-  "invalid_sentinel",
-  "invalid_timestamp",
-  "invalid_uuid",
-  "invalid_uuid_slug",
-  "invalid_uuid_version",
-  "rng_unavailable",
-  "timestamp_outside_window",
-] = /*#__PURE__*/ Object.freeze([
+/** One stable `UuidSlugError.code`; branch on this value and use `message` for diagnostics. */
+export type UuidSlugErrorCode =
+  | typeof ABORTED
+  | typeof INVALID_BASE32HEX
+  | typeof INVALID_BASE64URL
+  | typeof INVALID_BUFFER
+  | typeof INVALID_MASK
+  | typeof INVALID_OPTIONS
+  | typeof INVALID_SENTINEL
+  | typeof INVALID_TIMESTAMP
+  | typeof INVALID_UUID
+  | typeof INVALID_UUID_SLUG
+  | typeof INVALID_UUID_VERSION
+  | typeof RNG_UNAVAILABLE
+  | typeof TIMESTAMP_OUTSIDE_WINDOW;
+
+export const ERROR_CODES: readonly UuidSlugErrorCode[] = [
   ABORTED,
   INVALID_BASE32HEX,
   INVALID_BASE64URL,
@@ -43,12 +57,9 @@ export const UUID_SLUG_ERROR_CODES: readonly [
   INVALID_UUID_VERSION,
   RNG_UNAVAILABLE,
   TIMESTAMP_OUTSIDE_WINDOW,
-]);
+];
 
-/** One stable `UuidSlugError.code`; branch on this value and use `message` for diagnostics. */
-export type UuidSlugErrorCode = (typeof UUID_SLUG_ERROR_CODES)[number];
-
-const ERROR_CODE_SET: ReadonlySet<unknown> = /*#__PURE__*/ new Set(UUID_SLUG_ERROR_CODES);
+const ERROR_CODE_SET: ReadonlySet<unknown> = /*#__PURE__*/ new Set(ERROR_CODES);
 const ERROR_NAME = "UuidSlugError";
 const ERROR_MARKER = "__failure";
 const OBJECT_TYPE = "object";

@@ -23,8 +23,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   parameters, return values, narrowing, or configuration. A package signature need not mention the
   type. Remove it only when no documented value or operation needs its distinction. Apply this rule
   separately to TypeScript and Rust, document the consumer effect, and verify each packaged surface.
-- Define a closed public vocabulary once as an `as const` runtime value and derive its union type;
-  export the value when consumers need validation, iteration, schemas, or UI choices.
+- Define every member of a closed public vocabulary once as a semantic scalar constant and derive
+  its union type from those constants. Export each constant that callers pass or compare. Export an
+  iterable collection only for a documented consumer workflow; its positions are never identifiers.
 - `ROADMAP.md` is transient and never owns a contract, decision, or lasting conclusion. Put
   consumer contracts in README, wire design in `docs/design.md`, security boundaries in
   `docs/security.md`, cross-language and distribution decisions in `docs/cross-language.md`, and
@@ -99,8 +100,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Public docs use caller-facing tokens such as `"base32hex"`, not internal symbol names.
   Documentation-alignment gates are ruled out; test the API behavior instead.
 - Hoist every repeated semantic runtime string in a file, including alphabet names and diagnostics, to
-  one named scalar constant in its narrowest semantic owner. Build public tuples and sets from those
-  names; never recover meaning through numeric indexes such as `ERROR_CODES[3]`. Reuse that owner
+  one named scalar constant in its narrowest semantic owner. Build internal tuples and sets from those
+  names only when runtime work requires them; never recover meaning through numeric indexes such as
+  `ERROR_CODES[3]`. Reuse that owner
   across files only when the value is genuinely one shared concept and the import does not retain
   unrelated code; otherwise keep a private file-local constant. Never build a root string catalog
   or runtime lookup object: both retain unrelated values and weaken tree shaking. Keep `typeof`

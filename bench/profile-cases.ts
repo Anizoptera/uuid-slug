@@ -178,9 +178,23 @@ export function createProfileCases(
   const prototypeSymbolMarker = Object.create({ [markerSymbol]: true }) as Record<symbol, unknown>;
   const nativeErrorIsError = (Error as { isError?: (value: unknown) => boolean }).isError;
   const errorMarker = "__failure";
-  const errorCodes: ReadonlySet<unknown> = new Set(api.UUID_SLUG_ERROR_CODES);
+  const errorCodes: ReadonlySet<unknown> = new Set([
+    api.ABORTED,
+    api.INVALID_BASE32HEX,
+    api.INVALID_BASE64URL,
+    api.INVALID_BUFFER,
+    api.INVALID_MASK,
+    api.INVALID_OPTIONS,
+    api.INVALID_SENTINEL,
+    api.INVALID_TIMESTAMP,
+    api.INVALID_UUID,
+    api.INVALID_UUID_SLUG,
+    api.INVALID_UUID_VERSION,
+    api.RNG_UNAVAILABLE,
+    api.TIMESTAMP_OUTSIDE_WINDOW,
+  ]);
   const unmarkedFailure = new Error("invalid") as Error & {
-    code: (typeof api.UUID_SLUG_ERROR_CODES)[number];
+    code: typeof api.INVALID_UUID;
   };
   unmarkedFailure.name = "UuidSlugError";
   unmarkedFailure.code = "invalid_uuid";

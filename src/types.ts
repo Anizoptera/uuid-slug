@@ -235,11 +235,18 @@ export interface UuidV7Sentinel {
   readonly uuid: UuidV7String;
 }
 
-/** One owner keeps migration validation and the public selector type aligned. */
-export const MIGRATION_FORMATS = ["current-mask", "original-mask", "direct-slug"] as const;
+/** Select decoding with the codec's current mask. */
+export const CURRENT_MASK_FORMAT = "current-mask";
+/** Select decoding with the opt-in original fixed mask. */
+export const ORIGINAL_MASK_FORMAT = "original-mask";
+/** Select decoding as an opt-in direct UUID slug. */
+export const DIRECT_SLUG_FORMAT = "direct-slug";
 
 /** Select one enabled migration format when the input's original encoding is known. */
-export type UuidSlugMigrationFormat = (typeof MIGRATION_FORMATS)[number];
+export type UuidSlugMigrationFormat =
+  | typeof CURRENT_MASK_FORMAT
+  | typeof ORIGINAL_MASK_FORMAT
+  | typeof DIRECT_SLUG_FORMAT;
 
 /** Enable only formats your application has issued; writers keep using the codec. */
 export interface UuidSlugMigrationOptions {
@@ -266,9 +273,13 @@ type EnabledMigrationOption<
 
 /** Project enabled options into the only format selectors that decoder can accept. */
 export type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
-  | "current-mask"
-  | (EnabledMigrationOption<Options, "originalMask"> extends never ? never : "original-mask")
-  | (EnabledMigrationOption<Options, "directSlug"> extends never ? never : "direct-slug");
+  | typeof CURRENT_MASK_FORMAT
+  | (EnabledMigrationOption<Options, "originalMask"> extends never
+      ? never
+      : typeof ORIGINAL_MASK_FORMAT)
+  | (EnabledMigrationOption<Options, "directSlug"> extends never
+      ? never
+      : typeof DIRECT_SLUG_FORMAT);
 
 /**
  * Decode current and explicitly enabled old formats without changing codec output.

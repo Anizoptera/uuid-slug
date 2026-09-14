@@ -1,8 +1,11 @@
 // Generated signature baseline for compatibility checks; update with `bun run api:update` instead of editing.
 
+export declare const ABORTED = "aborted";
 export declare interface AsyncUuidV7MaskOptions extends UuidV7MaskOptions {
   readonly signal?: AbortSignal;
 }
+export declare const BASE32HEX = "base32hex";
+export declare const BASE64URL = "base64url";
 declare type Brand<Value, Name extends string> = Value & {
   readonly [brand]: {
     [BrandName in Name]: true;
@@ -33,19 +36,25 @@ export declare function createUuidV7MaskAsync(
 export declare function createUuidV7SlugCodec(
   options: UuidV7SlugCodecOptions,
 ): UuidV7SlugCodec | UuidSlugError;
+export declare const CURRENT_MASK_FORMAT = "current-mask";
 export declare interface CustomUuidV7MaskOptions {
   readonly label: string;
   readonly mask: (bytes: Uint8Array) => Uint8Array | UuidSlugError;
   readonly unmask: (bytes: Uint8Array) => Uint8Array | UuidSlugError;
 }
+export declare const DIRECT_SLUG_FORMAT = "direct-slug";
 declare type DirectUuidSlugInput<Input extends string | UuidSlugError> = RejectKnownInput<
   Input,
   UuidString | MaskedUuidSlug
 >;
 declare type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
-  | "current-mask"
-  | (EnabledMigrationOption<Options, "originalMask"> extends never ? never : "original-mask")
-  | (EnabledMigrationOption<Options, "directSlug"> extends never ? never : "direct-slug");
+  | typeof CURRENT_MASK_FORMAT
+  | (EnabledMigrationOption<Options, "originalMask"> extends never
+      ? never
+      : typeof ORIGINAL_MASK_FORMAT)
+  | (EnabledMigrationOption<Options, "directSlug"> extends never
+      ? never
+      : typeof DIRECT_SLUG_FORMAT);
 declare type EnabledMigrationOption<
   Options,
   Option extends keyof UuidSlugMigrationOptions,
@@ -78,6 +87,16 @@ export declare function generateUuidV7BytesAt<Output extends Uint8Array>(
   outputOffset?: number,
 ): Output | UuidSlugError;
 export declare function generateUuidV7Slug(alphabet?: SlugAlphabet): UuidV7Slug | UuidSlugError;
+export declare const INVALID_BASE32HEX = "invalid_base32hex";
+export declare const INVALID_BASE64URL = "invalid_base64url";
+export declare const INVALID_BUFFER = "invalid_buffer";
+export declare const INVALID_MASK = "invalid_mask";
+export declare const INVALID_OPTIONS = "invalid_options";
+export declare const INVALID_SENTINEL = "invalid_sentinel";
+export declare const INVALID_TIMESTAMP = "invalid_timestamp";
+export declare const INVALID_UUID = "invalid_uuid";
+export declare const INVALID_UUID_SLUG = "invalid_uuid_slug";
+export declare const INVALID_UUID_VERSION = "invalid_uuid_version";
 export declare function isUuidBytes(value: unknown): value is UuidBytes;
 export declare function isUuidSlug(value: unknown): value is UuidSlug;
 export declare function isUuidSlugError(value: unknown): value is UuidSlugError;
@@ -90,7 +109,7 @@ export declare function isUuidV7Slug(value: unknown): value is UuidV7Slug;
 export declare function isUuidV7String(value: unknown): value is UuidV7String;
 declare type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 export declare type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
-declare const MIGRATION_FORMATS: readonly ["current-mask", "original-mask", "direct-slug"];
+export declare const ORIGINAL_MASK_FORMAT = "original-mask";
 declare type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> =
   Input extends UuidSlugError
     ? never
@@ -104,28 +123,14 @@ declare type RejectKnownInput<Input, Invalid> = [
 ] extends [never]
   ? Input
   : never;
+export declare const RNG_UNAVAILABLE = "rng_unavailable";
 export declare type SentinelUuidV7Slug = Brand<UuidV7Slug, "SentinelUuidV7Slug">;
-export declare type SlugAlphabet = (typeof UUID_SLUG_ALPHABETS)[number];
+export declare type SlugAlphabet = typeof BASE64URL | typeof BASE32HEX;
 declare type SlugStringInput<Input extends string | UuidSlugError> = RejectKnownInput<
   Input,
   UuidString
 >;
-export declare const UUID_SLUG_ALPHABETS: readonly ["base64url", "base32hex"];
-export declare const UUID_SLUG_ERROR_CODES: readonly [
-  "aborted",
-  "invalid_base32hex",
-  "invalid_base64url",
-  "invalid_buffer",
-  "invalid_mask",
-  "invalid_options",
-  "invalid_sentinel",
-  "invalid_timestamp",
-  "invalid_uuid",
-  "invalid_uuid_slug",
-  "invalid_uuid_version",
-  "rng_unavailable",
-  "timestamp_outside_window",
-];
+export declare const TIMESTAMP_OUTSIDE_WINDOW = "timestamp_outside_window";
 export declare const UUID_V7_TEST_MASK: UuidV7Mask;
 export declare type UuidBytes = Brand<Uint8Array, "UuidBytes">;
 export declare type UuidSlug = Brand<string, "UuidSlug">;
@@ -134,7 +139,20 @@ export declare class UuidSlugError extends Error {
   readonly code: UuidSlugErrorCode;
   constructor(code: UuidSlugErrorCode, message: string, options?: ErrorOptions);
 }
-export declare type UuidSlugErrorCode = (typeof UUID_SLUG_ERROR_CODES)[number];
+export declare type UuidSlugErrorCode =
+  | typeof ABORTED
+  | typeof INVALID_BASE32HEX
+  | typeof INVALID_BASE64URL
+  | typeof INVALID_BUFFER
+  | typeof INVALID_MASK
+  | typeof INVALID_OPTIONS
+  | typeof INVALID_SENTINEL
+  | typeof INVALID_TIMESTAMP
+  | typeof INVALID_UUID
+  | typeof INVALID_UUID_SLUG
+  | typeof INVALID_UUID_VERSION
+  | typeof RNG_UNAVAILABLE
+  | typeof TIMESTAMP_OUTSIDE_WINDOW;
 export declare interface UuidSlugMigrationDecoder<
   in Format extends UuidSlugMigrationFormat = UuidSlugMigrationFormat,
 > {
@@ -149,7 +167,10 @@ export declare interface UuidSlugMigrationDecoder<
     format?: Format,
   ): UuidString[] | UuidSlugError;
 }
-export declare type UuidSlugMigrationFormat = (typeof MIGRATION_FORMATS)[number];
+export declare type UuidSlugMigrationFormat =
+  | typeof CURRENT_MASK_FORMAT
+  | typeof ORIGINAL_MASK_FORMAT
+  | typeof DIRECT_SLUG_FORMAT;
 export declare interface UuidSlugMigrationOptions {
   readonly originalMask?: boolean;
   readonly directSlug?: boolean;

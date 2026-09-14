@@ -1,14 +1,28 @@
 import {
+  BASE32HEX,
+  BASE64URL,
   bytesToUuidString,
+  createCustomUuidV7Mask,
   createUuidV7Mask,
   createUuidV7MaskAsync,
   createUuidV7Generator,
   createUuidV7SlugCodec,
+  CURRENT_MASK_FORMAT,
+  DIRECT_SLUG_FORMAT,
   extractUuidV7Timestamp,
   bytesToUuidSlug,
   isUuidBytes,
+  isUuidSlug,
+  isUuidSlugError,
+  isUuidString,
   isUuidV4Bytes,
+  isUuidV4Slug,
+  isUuidV4String,
+  isUuidV7Bytes,
+  isUuidV7Slug,
   isUuidV7String,
+  INVALID_BUFFER,
+  ORIGINAL_MASK_FORMAT,
   uuidStringToBytes,
   uuidSlugToBytes,
   UUID_V7_TEST_MASK,
@@ -17,6 +31,7 @@ import {
   validateUuidV7SlugTimestamp,
   validateUuidV7Timestamp,
   uuidStringToSlug,
+  UuidSlugError,
   generateUuidV4Bytes,
   generateUuidV4Slug,
   generateUuidV7Bytes,
@@ -33,7 +48,6 @@ import type {
   UuidV7CodecSlug,
   UuidBytes,
   UuidSlug,
-  UuidSlugError,
   UuidV4Slug,
   UuidV4Bytes,
   UuidV4String,
@@ -89,10 +103,18 @@ expectType<UuidString | UuidSlugError>()(
 );
 if (parsedBytes instanceof Error) throw parsedBytes;
 const storedBytes: UuidBytes = parsedBytes;
-const directlySelectedAlphabet: UuidSlug | UuidSlugError = bytesToUuidSlug(
-  parsedBytes,
-  "base32hex",
-);
+const directlySelectedAlphabet: UuidSlug | UuidSlugError = bytesToUuidSlug(parsedBytes, BASE32HEX);
+const namedBase64url: "base64url" = BASE64URL;
+const namedInvalidBuffer: "invalid_buffer" = INVALID_BUFFER;
+const namedError = new UuidSlugError(INVALID_BUFFER, "Caller buffer is too short.");
+void [namedBase64url, namedInvalidBuffer, namedError];
+expectType<boolean>()(isUuidSlugError(namedError));
+expectType<boolean>()(isUuidString("019ff19b-58b8-7000-9b1b-df713bd5562c"));
+expectType<boolean>()(isUuidV4String("00000000-0000-4000-8000-000000000000"));
+expectType<boolean>()(isUuidSlug("AZ_xnLf5cACbG99xO9VWLw"));
+expectType<boolean>()(isUuidV4Slug("AAAAAAAAQACAAAAAAAAAAA"));
+expectType<boolean>()(isUuidV7Slug("AZ_xnLf5cACbG99xO9VWLw"));
+expectType<boolean>()(isUuidV7Bytes(parsedBytes));
 const externalUuid: unknown = "019ff19b-58b8-7000-9b1b-df713bd5562c";
 if (!isUuidV7String(externalUuid)) throw new Error("Expected a UUIDv7 string.");
 const checkedUuid: UuidV7String = externalUuid;
@@ -187,6 +209,12 @@ generateUuidV7Bytes(undefined, 8);
 // @ts-expect-error An offset has no meaning without a destination buffer.
 generateUuidV7BytesAt(0, undefined, 8);
 const codecResult = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK });
+const customMask = createCustomUuidV7Mask({
+  label: "consumer-mask",
+  mask: (bytes) => bytes,
+  unmask: (bytes) => bytes,
+});
+expectType<UuidV7Mask | UuidSlugError>()(customMask);
 expectType<UuidV7SlugCodec | UuidSlugError>()(
   createUuidV7SlugCodec({ mask: createUuidV7Mask({ seed: "composed" }) }),
 );
@@ -223,7 +251,7 @@ declare const removedCodecExports: readonly [
 expectType<readonly [false, false]>()(removedCodecExports);
 // @ts-expect-error Removed codec factories are not exported.
 type _RemovedCodecFactory = (typeof import("@anizoptera/uuid-slug"))["createUuidSlugCodec"];
-createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK, outputAlphabet: "base32hex" });
+createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK, outputAlphabet: BASE32HEX });
 createUuidV7SlugCodec({
   mask: UUID_V7_TEST_MASK,
   // @ts-expect-error The writer-only option names its output effect.
@@ -272,17 +300,18 @@ migration.uuidSlugToStringCandidates(checkedUuid);
 const migrated: UuidString | UuidSlugError = migration.uuidSlugToString("AAAAAAABcACAAAAAAAAAAA");
 const candidates: UuidString[] | UuidSlugError = migration.uuidSlugToStringCandidates(
   "AAAAAAABcACAAAAAAAAAAA",
-  "original-mask",
+  ORIGINAL_MASK_FORMAT,
 );
 const plainOnlyMigration = codec.createMigrationDecoder({ directSlug: true });
 if (plainOnlyMigration instanceof Error) throw plainOnlyMigration;
-plainOnlyMigration.uuidSlugToString("AAAAAAAAcACAAAAAAAAAAA", "direct-slug");
+plainOnlyMigration.uuidSlugToString("AAAAAAAAcACAAAAAAAAAAA", DIRECT_SLUG_FORMAT);
 // @ts-expect-error This reader was not configured to accept the original masked format.
-plainOnlyMigration.uuidSlugToString("AAAAAAAAcACAAAAAAAAAAA", "original-mask");
+plainOnlyMigration.uuidSlugToString("AAAAAAAAcACAAAAAAAAAAA", ORIGINAL_MASK_FORMAT);
 const currentOnlyMigration = codec.createMigrationDecoder();
 if (currentOnlyMigration instanceof Error) throw currentOnlyMigration;
 // @ts-expect-error A current-only reader cannot select a disabled historical format.
-currentOnlyMigration.uuidSlugToString("AAAAAAAAcACAAAAAAAAAAA", "direct-slug");
+currentOnlyMigration.uuidSlugToString("AAAAAAAAcACAAAAAAAAAAA", DIRECT_SLUG_FORMAT);
+currentOnlyMigration.uuidSlugToString("AAAAAAAAcACAAAAAAAAAAA", CURRENT_MASK_FORMAT);
 void [
   uncheckedBytes,
   uncheckedUuid,

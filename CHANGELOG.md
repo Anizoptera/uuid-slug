@@ -50,6 +50,8 @@ notes: the section for a version is published verbatim when its tag is pushed.
   use version-specific brands; writes preserve the caller's `Uint8Array` subtype.
 - Replace codec `slugAlphabet` with `outputAlphabet`; it controls masked output and sentinels rather
   than keyless direct slugs.
+- Replace public alphabet and error-code arrays with named constants. Array positions were not
+  identifiers and made single-value access fragile.
 
 ### Added
 
@@ -62,8 +64,8 @@ notes: the section for a version is published verbatim when its tag is pushed.
   load compiled ESM.
 - Read UUIDv7 timestamps from text, direct slugs, or bytes with `extractUuidV7Timestamp`; use the
   codec method for masked slugs and sentinels.
-- Export `UUID_SLUG_ALPHABETS`, its union type, migration format types, and byte guards for runtime
-  validation and narrowing.
+- Export named alphabet, migration-format, and error-code constants with their union types, plus
+  byte guards for runtime validation and narrowing.
 
 ### Performance
 
