@@ -32,6 +32,8 @@ encode precision that the selected clock cannot supply.
       and a middle width while profiling the largest arithmetic case.
 - [x] Reset the random-start counter when the observed fraction advances; on stall, rollback, or
       exhaustion, carry through the logical fraction and then the millisecond.
+- [x] State and falsify the ordering boundary: equal fraction buckets increment the counter;
+      reset may move backward after its tolerance, and explicit-time generation is independent.
 - [x] Use fractional `readUnixMs` when supplied; otherwise select the runtime high-resolution clock
       once for fraction layouts and fall back to `Date.now`.
 - [x] Keep automatic clock selection separate from the explicit payload width; capability presence

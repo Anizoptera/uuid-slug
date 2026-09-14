@@ -160,11 +160,13 @@ Set `subMillisecondFractionBits` from 1 through 12 to encode the clock fraction 
 generator's random-start counter. `payloadLayout` exposes the exact split for later extraction.
 Without `readUnixMs`, this mode uses the runtime's high-resolution clock when available and falls
 back to `Date.now()`. The selected width states the UUID layout, not the clock's real accuracy.
-If the clock stalls or moves backward, the generator advances this logical fraction and then the
-millisecond timestamp when needed; extracted fractions can therefore be later than the clock reading.
+If another reading lands in the same fraction bucket, the generator increments the counter. If the
+counter fills, it advances the logical fraction and then the millisecond timestamp. The default
+preserve policy applies the same rule when the clock moves backward, so extracted time can be later
+than the clock reading. A reset policy deliberately gives up that ordering after its tolerance.
 
-Created generators preserve ordering when the clock moves backward. Set `clockRollback` to reset
-or return `invalid_timestamp` when total skew exceeds an inclusive tolerance. Use
+By default, created generators preserve ordering when the clock moves backward. Set `clockRollback`
+to reset or return `invalid_timestamp` when total skew exceeds an inclusive tolerance. Use
 `createUuidV7GeneratorWithRandomFill` only when the application must own entropy; its callback must
 fill every requested byte or return `UuidSlugError`.
 

@@ -226,8 +226,9 @@ export interface UuidV7TimestampWindow {
 
 /**
  * A stateful UUIDv7 sequence using one clock and platform cryptographic randomness. Methods may be
- * detached. Expected clock and entropy failures return `UuidSlugError` without corrupting the next
- * generation attempt.
+ * detached. Current-time methods remain strictly ordered under the default preserve policy; reset
+ * may move backward after its tolerance, and explicit-time methods do not join that sequence.
+ * Expected clock and entropy failures return `UuidSlugError` without corrupting the next attempt.
  */
 export interface UuidV7Generator {
   /** Payload layout emitted by this generator; pass it to UUIDv7 payload extraction. */

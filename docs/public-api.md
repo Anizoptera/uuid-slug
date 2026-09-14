@@ -317,9 +317,10 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   bits, although it cannot preserve an arbitrary nanosecond timestamp. Keep the payload layout
   explicit and stable across runtimes; capability detection may select a clock implementation, but
   it must not silently change stored UUID semantics.
-- Keep sub-millisecond generation monotonic when the clock stalls or moves backward. Increment the
-  random-start counter, then carry into the logical fraction and millisecond fields; the extracted
-  fraction is an ordering value, not proof of the clock's exact reading.
+- For equal fraction buckets, increment the counter and carry into the logical fraction and
+  millisecond fields. Apply the same continuation to clock rollback under the default preserve
+  policy. The reset policy may emit an earlier UUID after its tolerance, and explicit-time methods
+  do not join this sequence. An extracted fraction is ordering data, not proof of an exact reading.
 - Keep standalone operations with complete names. Function properties and representation
   namespaces would duplicate them and make detached names less clear.
 - Keep one error-value path. Nullable and throwing duplicates discard diagnostics or split control

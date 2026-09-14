@@ -106,6 +106,18 @@ describe("uuidv7 monotonicity", () => {
     expect(compare(first, second)).toBeLessThan(0);
   });
 
+  it("increments the counter when consecutive readings use the same fraction bucket", () => {
+    const generator = createUuidV7Generator({
+      readUnixMs: fixedClock(100.25),
+      fillRandom: constantFill(0),
+      subMillisecondFractionBits: 12,
+    });
+    const firstPrefix = payloadPrefixOf(bytesOf(generator));
+    const secondPrefix = payloadPrefixOf(bytesOf(generator));
+    expect(secondPrefix).toBe(firstPrefix + 1);
+    expect(Math.floor(secondPrefix / 2 ** 30)).toBe(Math.floor(firstPrefix / 2 ** 30));
+  });
+
   it("keeps order when the fractional clock reading moves backward", () => {
     let now = 100.75;
     const generator = createUuidV7Generator({
