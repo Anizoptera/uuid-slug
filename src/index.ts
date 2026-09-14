@@ -74,6 +74,7 @@ export type {
   UuidRandomFill,
   UuidV7MaskingCodec,
   UuidV7MaskingCodecOptions,
+  UuidV7PreviousMask,
   UuidV7Bytes,
   UuidV7Bounds,
   UuidV7Sentinel,

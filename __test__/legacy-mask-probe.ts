@@ -303,7 +303,11 @@ export const legacyMaskCases = [
           }),
         ),
       );
-      const candidates = decodeMaskedCandidates(mixed, tail, mutating);
+      const candidates = decodeMaskedCandidates(
+        mixed,
+        tail,
+        mutating.map((mask) => ({ mask, timestampRangeStartUnixMs: 0 })),
+      );
       if (candidates instanceof Error) throw candidates;
       assert.deepEqual(candidates, uuids);
       assert.deepEqual(mixed, original);
@@ -329,7 +333,11 @@ export const legacyMaskCases = [
         }),
       );
       fail = true;
-      const failed = decodeMaskedCandidates(mixed, tail, [...masks, unavailable]);
+      const failed = decodeMaskedCandidates(
+        mixed,
+        tail,
+        [...masks, unavailable].map((mask) => ({ mask, timestampRangeStartUnixMs: 0 })),
+      );
       assert.ok(failed instanceof Error);
       assert.equal(failed.cause, cause);
     },

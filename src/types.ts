@@ -455,13 +455,26 @@ export interface UuidV7MaskingCodecOptions {
    */
   readonly mask: UuidV7Mask | UuidV7MaskOptions | UuidSlugError;
   /**
+   * First Unix millisecond accepted by masking. The inclusive end is this value plus
+   * `MAX_MASKED_UUID_V7_UNIX_MS`. Changing it changes masked slugs, so retain the old value with
+   * its mask in `previousMasks` while stored slugs still use it.
+   *
+   * @defaultValue `0`
+   */
+  readonly timestampRangeStartUnixMs?: number;
+  /**
    * Decode-only masks tried after `mask`, in caller order. Each item accepts a mask or its
    * derivation options. A returned `UuidSlugError` passes through unchanged. Keep the list short:
    * every mask adds decoding work and another chance for a random input to pass its 16-bit check.
    *
    * @defaultValue No previous masks.
    */
-  readonly previousMasks?: readonly (UuidV7Mask | UuidV7MaskOptions | UuidSlugError)[];
+  readonly previousMasks?: readonly (
+    | UuidV7Mask
+    | UuidV7MaskOptions
+    | UuidV7PreviousMask
+    | UuidSlugError
+  )[];
   /**
    * Named UUIDv7 values emitted as raw plain slugs instead of masked payloads.
    *
@@ -477,6 +490,14 @@ export interface UuidV7MaskingCodecOptions {
    * @defaultValue `"base64url"`
    */
   readonly maskedSlugAlphabet?: SlugAlphabet;
+}
+
+/** A retained mask and the timestamp-range start used to create its stored slugs. */
+export interface UuidV7PreviousMask {
+  /** Retained decode-only mask or its derivation options. */
+  readonly mask: UuidV7Mask | UuidV7MaskOptions | UuidSlugError;
+  /** First Unix millisecond accepted by this retained mask. Omit for `0`. */
+  readonly timestampRangeStartUnixMs?: number;
 }
 
 /**
@@ -520,16 +541,16 @@ export interface UuidV7MaskingCodec {
   ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
   /**
    * Generate and encode a UUIDv7 as a masked slug or its registered raw sentinel slug.
-   * Returns `invalid_timestamp` outside the inclusive range from Unix millisecond 0
-   * through `MAX_MASKED_UUID_V7_UNIX_MS` unless the generated UUID is a registered sentinel, which
+   * Returns `invalid_timestamp` outside the codec's inclusive configured timestamp range unless
+   * the generated UUID is a registered sentinel, which
    * is returned as a plain slug without masking.
    */
   generateMaskedUuidV7Slug(this: void): MaskedOrSentinelUuidV7Slug | UuidSlugError;
   /**
    * Generate UUIDv7 text and its masked or sentinel slug from one random byte draw. UUID text is
    * lowercase unless `textCase` selects uppercase.
-   * Returns `invalid_timestamp` outside the inclusive range from Unix millisecond 0
-   * through `MAX_MASKED_UUID_V7_UNIX_MS` unless the generated UUID is a registered sentinel, which
+   * Returns `invalid_timestamp` outside the codec's inclusive configured timestamp range unless
+   * the generated UUID is a registered sentinel, which
    * is returned as a plain slug without masking.
    *
    * @param textCase - Built-in UUID text spelling. Omit for lowercase.
@@ -542,8 +563,8 @@ export interface UuidV7MaskingCodec {
    * Convert UUID text, 16 UUID bytes, a plain slug, or a masked slug to this masking codec's
    * current masked spelling. A dual-valid raw slug selects its masked meaning. Other UUID versions
    * return `invalid_uuid_version`. TypeScript rejects known UUIDv4 values; unbranded external
-   * values are validated when called. Timestamps outside the inclusive range from Unix
-   * millisecond 0 through `MAX_MASKED_UUID_V7_UNIX_MS` return `invalid_timestamp`; sentinels are
+   * values are validated when called. Timestamps outside the codec's inclusive configured range
+   * return `invalid_timestamp`; sentinels are
    * returned as plain slugs without masking and retain the full UUIDv7 timestamp range. A preceding
    * `UuidSlugError` is returned unchanged.
    *

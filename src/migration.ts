@@ -10,8 +10,8 @@ import {
   UuidSlugError,
 } from "./errors.ts";
 import { decodeFirstMaskedCandidate, decodeMaskedCandidates } from "./payload.ts";
+import type { UuidV7MaskRange } from "./payload.ts";
 import type {
-  UuidV7Mask,
   UuidSlugMigrationDecoder,
   UuidSlugMigrationFormat,
   UuidSlugMigrationOptions,
@@ -57,7 +57,7 @@ function decodeOriginalMask(mixed: Uint8Array): Uint8Array | undefined {
 
 /** Read old IDs with the codec's keys and sentinels; never change how new IDs are written. */
 export function createMigration(
-  masks: readonly UuidV7Mask[],
+  masks: readonly UuidV7MaskRange[],
   sentinels: ReadonlyMap<string, { uuid: UuidV7String }>,
   options?: UuidSlugMigrationOptions,
 ): UuidSlugMigrationDecoder | UuidSlugError {

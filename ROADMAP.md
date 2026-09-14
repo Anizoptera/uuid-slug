@@ -2,6 +2,23 @@
 
 Live work only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`.
 
+## Configurable masked UUIDv7 timestamp range
+
+Maintainer ruling: only a masking codec may shift the 42-bit masked timestamp range. The default
+starts at Unix millisecond zero and preserves every existing masked slug.
+
+- [x] Add one codec option for the inclusive first maskable Unix millisecond.
+- [x] Store each previous mask with the range start that produced its retained slugs.
+- [x] Subtract the configured start before masking and restore it after unmasking without changing
+      the UUID returned to callers.
+- [x] Reject invalid starts, timestamps outside the selected range, and ranges that exceed UUIDv7's
+      48-bit timestamp field.
+- [x] Preserve sentinel behavior outside the masked range.
+- [x] Align TypeScript, Rust, wire documentation, public documentation, declarations, and packed
+      consumers.
+- [x] Falsify both endpoints, adjacent rejected values, nonzero-range round trips, default wire
+      compatibility, previous-mask decoding, cross-language parity, and error diagnostics.
+
 ## Error diagnostics audit
 
 - [x] Inventory every public TypeScript and Rust failure site, stable code, message, source, and

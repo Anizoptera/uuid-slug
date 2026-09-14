@@ -30,7 +30,8 @@ pub use mask::{
 };
 pub use masking_codec::{
     UuidSlugMigrationDecoder, UuidSlugMigrationFormat, UuidSlugMigrationOptions,
-    UuidV7MaskingCodec, UuidV7MaskingCodecOptions, UuidV7Sentinel, UuidV7TimestampWindow,
+    UuidV7MaskingCodec, UuidV7MaskingCodecOptions, UuidV7PreviousMask, UuidV7Sentinel,
+    UuidV7TimestampWindow,
 };
 pub use payload::MAX_MASKED_UUID_V7_UNIX_MS;
 pub use uuid::{

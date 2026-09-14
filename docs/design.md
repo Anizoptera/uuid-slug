@@ -31,9 +31,10 @@ check bits. Twelve replace the constant bits inside the 128-bit block; four occu
 spare bits. All 132 encoded bits have a role. Plain-slug padding rejection does not apply to these
 four check bits.
 
-Masking does not shift the UUIDv7 timestamp. It accepts Unix milliseconds from zero through
-2^42 - 1, inclusive. It rejects a timestamp at or past 2^42 milliseconds before masking because
-truncation would let different UUIDs share a slug. The full masked payload uses 27 base32hex
+Masking stores the UUIDv7 timestamp as an unsigned offset from the codec's configured range start.
+The offset accepts zero through 2^42 - 1, inclusive. The default start is zero and preserves the
+existing wire format. The selected range must fit inside UUIDv7's 48-bit timestamp field.
+Truncation would let different UUIDs share a slug. The full masked payload uses 27 base32hex
 characters; forcing it into 26 would lose bits. Its three padding bits must be zero. Masked output
 has no useful chronological ordering in either alphabet.
 
@@ -50,7 +51,7 @@ has no useful chronological ordering in either alphabet.
 
 The fixed chain keys, round count, byte order, index convention, and iteration count affect every
 issued slug. They are wire-format constants, not opportunities for tuning an existing mask.
-Retain old seed and iteration settings in `previousMasks` when rotating.
+Retain each old seed, iteration count, and timestamp-range start in `previousMasks` when rotating.
 
 The chains carry 128 bits of state together; this is a description of their representation,
 not an established security strength. The default iteration count is one. Increasing it raises
@@ -99,7 +100,8 @@ the full domain, so the caller remains responsible for that property.
 
 ## Encoding and decoding
 
-1. Keep the timestamp unchanged. Reject a non-v7 UUID or a timestamp at or past 2^42 milliseconds.
+1. Subtract the configured range start from the timestamp. Reject a non-v7 UUID or an offset
+   outside zero through 2^42 - 1.
 2. Fold `mix32` over the four big-endian words of the original UUID bytes and take the top 16
    bits as the tag.
 3. Store the tag's upper 12 bits in the block: four in byte 6's high nibble, two in byte 8's top
@@ -107,8 +109,8 @@ the full domain, so the caller remains responsible for that property.
 4. Mix the 16-byte block and append the remaining four tag bits. Encode these 132 bits as
    22 base64url or 27 lowercase base32hex characters; base32hex ends with three zero padding bits.
 
-Decoding extracts the outer tag bits, reverses the mix, reads the inner tag, and restores the
-version, variant, and zero timestamp bits. It recomputes the tag from the restored UUID and
+Decoding extracts the outer tag bits, reverses the mix, reads the inner tag, restores the fixed
+bits, and adds the selected range start. It recomputes the tag from the restored UUID and
 compares both parts. A mismatch returns `invalid_uuid_slug`.
 
 The short tag rejects many incorrect decodes, but it is not authentication. About one random
@@ -117,8 +119,8 @@ store lookup; it does not establish that anyone issued the UUID.
 
 ## Mask selection and sentinels
 
-No marker identifies the producing mask. Decode with the current mask first, then each
-`previousMasks` entry in caller order, returning the first candidate whose check passes. More
+No marker identifies the producing mask or range start. Decode with the current pair first, then
+each `previousMasks` entry in caller order, returning the first candidate whose check passes. More
 masks create more opportunities for false acceptance; the combined rate is bounded by the sum
 of their individual rates. The codec must not append masks on the caller's behalf.
 

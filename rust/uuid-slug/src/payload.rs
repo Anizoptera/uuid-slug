@@ -2,8 +2,18 @@
 use crate::{Error, ErrorCode, alphabet::UuidSlugAlphabet, mask::UuidV7Mask, uuid::utf16_len};
 
 const MAX_MASKED_UUID_V7_HIGH_BYTE: u8 = 3;
-/// Inclusive upper bound for masking a UUIDv7 timestamp without shifting it; the range starts at 0.
+/// Largest timestamp offset that fits in a masked UUIDv7 payload.
 pub const MAX_MASKED_UUID_V7_UNIX_MS: u64 = ((MAX_MASKED_UUID_V7_HIGH_BYTE as u64 + 1) << 40) - 1;
+
+fn unix_ms(bytes: &[u8; 16]) -> u64 {
+    u64::from_be_bytes([
+        0, 0, bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5],
+    ])
+}
+
+fn write_unix_ms(bytes: &mut [u8; 16], unix_ms: u64) {
+    bytes[..6].copy_from_slice(&unix_ms.to_be_bytes()[2..]);
+}
 
 fn mix32(mut value: u32) -> u32 {
     value ^= value >> 16;
@@ -22,19 +32,32 @@ fn tag(bytes: &[u8; 16]) -> u16 {
 }
 
 /// Mix once before formatting or checking reserved output spellings in either alphabet.
-pub(crate) fn mask_bytes(raw: &[u8; 16], mask: &UuidV7Mask) -> Result<([u8; 16], u8), Error> {
+pub(crate) fn mask_bytes(
+    raw: &[u8; 16],
+    mask: &UuidV7Mask,
+    timestamp_range_start_unix_ms: u64,
+) -> Result<([u8; 16], u8), Error> {
     if raw[6] >> 4 != 7 || raw[8] >> 6 != 2 {
         return Err(Error::new(ErrorCode::InvalidUuidVersion)
             .with_message("Masking requires an RFC-variant UUIDv7."));
     }
-    if raw[0] > MAX_MASKED_UUID_V7_HIGH_BYTE {
+    let timestamp = unix_ms(raw);
+    let Some(timestamp_offset) = timestamp.checked_sub(timestamp_range_start_unix_ms) else {
         return Err(Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
-            "Masking accepts Unix milliseconds from 0 through {MAX_MASKED_UUID_V7_UNIX_MS}; the timestamp's top six bits hold the check."
+            "Masking accepts UUIDv7 timestamps from Unix millisecond {timestamp_range_start_unix_ms} through {}; got {timestamp}.",
+            timestamp_range_start_unix_ms + MAX_MASKED_UUID_V7_UNIX_MS
+        )));
+    };
+    if timestamp_offset > MAX_MASKED_UUID_V7_UNIX_MS {
+        return Err(Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
+            "Masking accepts UUIDv7 timestamps from Unix millisecond {timestamp_range_start_unix_ms} through {}; got {timestamp}.",
+            timestamp_range_start_unix_ms + MAX_MASKED_UUID_V7_UNIX_MS
         )));
     }
     let check = tag(raw);
     let inner = check >> 4;
     let mut tagged = *raw;
+    write_unix_ms(&mut tagged, timestamp_offset);
     tagged[6] = ((inner as u8 & 15) << 4) | (raw[6] & 15);
     tagged[8] = ((inner as u8 & 48) << 2) | (raw[8] & 63);
     tagged[0] = (((inner >> 6) as u8 & 63) << 2) | (raw[0] & 3);
@@ -59,12 +82,15 @@ pub(crate) fn candidate(
     mixed: [u8; 16],
     outer: u8,
     mask: &UuidV7Mask,
+    timestamp_range_start_unix_ms: u64,
 ) -> Result<Option<[u8; 16]>, Error> {
     let mut raw = mask.unmask(mixed)?;
     let inner = (raw[6] >> 4) as u16 | ((raw[8] >> 6) as u16) << 4 | ((raw[0] >> 2) as u16) << 6;
     raw[6] = (raw[6] & 15) | 0x70;
     raw[8] = (raw[8] & 63) | 0x80;
     raw[0] &= 3;
+    let timestamp = unix_ms(&raw) + timestamp_range_start_unix_ms;
+    write_unix_ms(&mut raw, timestamp);
     Ok((tag(&raw) == (inner << 4) | outer as u16).then_some(raw))
 }
 
@@ -114,7 +140,7 @@ mod tests {
             UuidSlugAlphabet::Base64Url
                 .decode_into(case["plain"].as_str().unwrap(), &mut raw, 0)
                 .unwrap();
-            let (mixed, tail) = mask_bytes(&raw, mask).unwrap();
+            let (mixed, tail) = mask_bytes(&raw, mask, 0).unwrap();
             assert_eq!(
                 UuidSlugAlphabet::Base64Url
                     .encode_tail(&mixed, tail, 4)
@@ -126,10 +152,10 @@ mod tests {
                 .unwrap();
             assert_eq!(safe.len(), 27);
             let (parsed, tag) = normalize(&safe).unwrap();
-            assert_eq!(candidate(parsed, tag, mask).unwrap(), Some(raw));
+            assert_eq!(candidate(parsed, tag, mask, 0).unwrap(), Some(raw));
             for different in 0..16 {
                 if different != tail {
-                    assert!(candidate(parsed, different, mask).unwrap().is_none());
+                    assert!(candidate(parsed, different, mask, 0).unwrap().is_none());
                 }
             }
         }

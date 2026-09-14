@@ -484,7 +484,13 @@ export declare interface UuidV7MaskingCodec {
 }
 export declare interface UuidV7MaskingCodecOptions {
   readonly mask: UuidV7Mask | UuidV7MaskOptions | UuidSlugError;
-  readonly previousMasks?: readonly (UuidV7Mask | UuidV7MaskOptions | UuidSlugError)[];
+  readonly timestampRangeStartUnixMs?: number;
+  readonly previousMasks?: readonly (
+    | UuidV7Mask
+    | UuidV7MaskOptions
+    | UuidV7PreviousMask
+    | UuidSlugError
+  )[];
   readonly sentinels?: readonly UuidV7SentinelConfig[];
   readonly maskedSlugAlphabet?: SlugAlphabet;
 }
@@ -492,6 +498,10 @@ export declare interface UuidV7MaskOptions {
   readonly diagnosticLabel?: string;
   readonly seed: string | Uint8Array;
   readonly keyDerivationIterations?: number;
+}
+export declare interface UuidV7PreviousMask {
+  readonly mask: UuidV7Mask | UuidV7MaskOptions | UuidSlugError;
+  readonly timestampRangeStartUnixMs?: number;
 }
 export declare interface UuidV7Sentinel {
   readonly name: string;

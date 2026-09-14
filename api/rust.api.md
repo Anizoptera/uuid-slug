@@ -396,8 +396,9 @@ impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7MaskingCodec
 pub struct uuid_slug::UuidV7MaskingCodecOptions
 pub uuid_slug::UuidV7MaskingCodecOptions::mask: uuid_slug::UuidV7Mask
 pub uuid_slug::UuidV7MaskingCodecOptions::masked_slug_alphabet: uuid_slug::UuidSlugAlphabet
-pub uuid_slug::UuidV7MaskingCodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::UuidV7Mask>
+pub uuid_slug::UuidV7MaskingCodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::UuidV7PreviousMask>
 pub uuid_slug::UuidV7MaskingCodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::Uuid)>
+pub uuid_slug::UuidV7MaskingCodecOptions::timestamp_range_start_unix_ms: u64
 impl uuid_slug::UuidV7MaskingCodecOptions
 pub fn uuid_slug::UuidV7MaskingCodecOptions::new(mask: uuid_slug::UuidV7Mask) -> Self
 impl core::marker::Freeze for uuid_slug::UuidV7MaskingCodecOptions
@@ -407,6 +408,18 @@ impl core::marker::Unpin for uuid_slug::UuidV7MaskingCodecOptions
 impl core::marker::UnsafeUnpin for uuid_slug::UuidV7MaskingCodecOptions
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7MaskingCodecOptions
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7MaskingCodecOptions
+pub struct uuid_slug::UuidV7PreviousMask
+pub uuid_slug::UuidV7PreviousMask::mask: uuid_slug::UuidV7Mask
+pub uuid_slug::UuidV7PreviousMask::timestamp_range_start_unix_ms: u64
+impl uuid_slug::UuidV7PreviousMask
+pub fn uuid_slug::UuidV7PreviousMask::new(mask: uuid_slug::UuidV7Mask) -> Self
+impl core::marker::Freeze for uuid_slug::UuidV7PreviousMask
+impl core::marker::Send for uuid_slug::UuidV7PreviousMask
+impl core::marker::Sync for uuid_slug::UuidV7PreviousMask
+impl core::marker::Unpin for uuid_slug::UuidV7PreviousMask
+impl core::marker::UnsafeUnpin for uuid_slug::UuidV7PreviousMask
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7PreviousMask
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7PreviousMask
 pub struct uuid_slug::UuidV7Sentinel
 pub uuid_slug::UuidV7Sentinel::name: alloc::string::String
 pub uuid_slug::UuidV7Sentinel::plain_uuid_slug: uuid_slug::PlainUuidSlug
@@ -845,8 +858,9 @@ impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7MaskingCodec
 pub struct uuid_slug::UuidV7MaskingCodecOptions
 pub uuid_slug::UuidV7MaskingCodecOptions::mask: uuid_slug::UuidV7Mask
 pub uuid_slug::UuidV7MaskingCodecOptions::masked_slug_alphabet: uuid_slug::UuidSlugAlphabet
-pub uuid_slug::UuidV7MaskingCodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::UuidV7Mask>
+pub uuid_slug::UuidV7MaskingCodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::UuidV7PreviousMask>
 pub uuid_slug::UuidV7MaskingCodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::Uuid)>
+pub uuid_slug::UuidV7MaskingCodecOptions::timestamp_range_start_unix_ms: u64
 impl uuid_slug::UuidV7MaskingCodecOptions
 pub fn uuid_slug::UuidV7MaskingCodecOptions::new(mask: uuid_slug::UuidV7Mask) -> Self
 impl core::marker::Freeze for uuid_slug::UuidV7MaskingCodecOptions
@@ -856,6 +870,18 @@ impl core::marker::Unpin for uuid_slug::UuidV7MaskingCodecOptions
 impl core::marker::UnsafeUnpin for uuid_slug::UuidV7MaskingCodecOptions
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7MaskingCodecOptions
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7MaskingCodecOptions
+pub struct uuid_slug::UuidV7PreviousMask
+pub uuid_slug::UuidV7PreviousMask::mask: uuid_slug::UuidV7Mask
+pub uuid_slug::UuidV7PreviousMask::timestamp_range_start_unix_ms: u64
+impl uuid_slug::UuidV7PreviousMask
+pub fn uuid_slug::UuidV7PreviousMask::new(mask: uuid_slug::UuidV7Mask) -> Self
+impl core::marker::Freeze for uuid_slug::UuidV7PreviousMask
+impl core::marker::Send for uuid_slug::UuidV7PreviousMask
+impl core::marker::Sync for uuid_slug::UuidV7PreviousMask
+impl core::marker::Unpin for uuid_slug::UuidV7PreviousMask
+impl core::marker::UnsafeUnpin for uuid_slug::UuidV7PreviousMask
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7PreviousMask
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7PreviousMask
 pub struct uuid_slug::UuidV7Sentinel
 pub uuid_slug::UuidV7Sentinel::name: alloc::string::String
 pub uuid_slug::UuidV7Sentinel::plain_uuid_slug: uuid_slug::PlainUuidSlug

@@ -59,7 +59,7 @@ conversion preserve other UUID versions without version-specific APIs.
 | Generated plain or masked slugs | Generate a `Uuid`, then call `to_plain_uuid_slug` or `uuid_to_masked_slug` |
 | UUIDv7 timestamp | `Uuid::extract_uuid_v7_unix_ms` |
 | Inclusive UUIDv7 timestamp bounds | `uuid_v7_bounds` |
-| Maskable timestamps | Unix milliseconds from `0` through `MAX_MASKED_UUID_V7_UNIX_MS`, inclusive; masking does not shift them |
+| Maskable timestamps | A `2^42`-millisecond inclusive range starting at the codec's configured Unix millisecond; the default start is `0` |
 | Sync/async masks and custom transforms | `derive_uuid_v7_mask`, `derive_uuid_v7_mask_async`, `UuidV7Mask::from_permutation_functions` |
 | Explicit public mask | `UUID_V7_TEST_MASK`; `uuid_v7_test_mask()` |
 | Key rotation, masked conversion and sentinels | `UuidV7MaskingCodecOptions::new`, `uuid_to_masked_slug`, `masked_slug_to_uuid`, `sentinels` |

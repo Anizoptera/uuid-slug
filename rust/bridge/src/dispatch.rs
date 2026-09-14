@@ -3,8 +3,8 @@
 use serde_json::{Value, json};
 use uuid_slug::{
     Error, ErrorCode, Uuid, UuidSlugAlphabet, UuidSlugMigrationFormat, UuidSlugMigrationOptions,
-    UuidV7Mask, UuidV7MaskingCodec, UuidV7MaskingCodecOptions, UuidV7TimestampWindow,
-    derive_uuid_v7_mask, uuid_v7_bounds, uuid_v7_test_mask,
+    UuidV7Mask, UuidV7MaskingCodec, UuidV7MaskingCodecOptions, UuidV7PreviousMask,
+    UuidV7TimestampWindow, derive_uuid_v7_mask, uuid_v7_bounds, uuid_v7_test_mask,
 };
 
 fn text<'a>(value: &'a Value, key: &str) -> Result<&'a str, Error> {
@@ -28,6 +28,12 @@ fn number(value: &Value) -> f64 {
         Some("-Infinity") => f64::NEG_INFINITY,
         _ => value.as_f64().unwrap_or(f64::NAN),
     }
+}
+
+fn timestamp_range_start(value: &Value) -> Result<u64, Error> {
+    value
+        .as_u64()
+        .ok_or_else(|| Error::new(ErrorCode::InvalidTimestamp))
 }
 
 fn custom_mix_forward(input: [u8; 16]) -> Result<[u8; 16], Error> {
@@ -101,8 +107,27 @@ fn masking_codec(request: &Value) -> Result<UuidV7MaskingCodec, Error> {
         masked_slug_alphabet: alphabet(&request["maskedAlphabet"])?,
         ..UuidV7MaskingCodecOptions::new(mask(&request["mask"])?)
     };
+    if !request["timestampRangeStartUnixMs"].is_null() {
+        options.timestamp_range_start_unix_ms =
+            timestamp_range_start(&request["timestampRangeStartUnixMs"])?;
+    }
     if let Some(previous) = request["previous"].as_array() {
-        options.previous_masks = previous.iter().map(mask).collect::<Result<_, _>>()?;
+        options.previous_masks = previous
+            .iter()
+            .map(|entry| {
+                if entry["mask"].is_null() {
+                    return mask(entry).map(UuidV7PreviousMask::new);
+                }
+                Ok(UuidV7PreviousMask {
+                    mask: mask(&entry["mask"])?,
+                    timestamp_range_start_unix_ms: if entry["timestampRangeStartUnixMs"].is_null() {
+                        0
+                    } else {
+                        timestamp_range_start(&entry["timestampRangeStartUnixMs"])?
+                    },
+                })
+            })
+            .collect::<Result<_, _>>()?;
     }
     if let Some(definitions) = request["sentinels"].as_array() {
         options.sentinels = definitions

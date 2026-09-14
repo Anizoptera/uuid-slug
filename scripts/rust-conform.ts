@@ -196,12 +196,23 @@ export function evaluate(request: Request): Outcome {
     const codec = unwrap(
       ts.createUuidV7MaskingCodec({
         mask: selectedMask ?? ts.UUID_V7_TEST_MASK,
+        ...(request.timestampRangeStartUnixMs === undefined
+          ? {}
+          : { timestampRangeStartUnixMs: Number(request.timestampRangeStartUnixMs) }),
         ...(request.previous === undefined
           ? {}
           : {
-              previousMasks: (request.previous as unknown[]).map(
-                (value) => mask(value) as UuidV7MaskOptions,
-              ),
+              previousMasks: (request.previous as unknown[]).map((value) => {
+                const configured = value as { mask?: unknown; timestampRangeStartUnixMs?: number };
+                if (configured.mask === undefined) return mask(value) as UuidV7MaskOptions;
+                const previousMask = mask(configured.mask) as UuidV7MaskOptions;
+                if (configured.timestampRangeStartUnixMs === undefined)
+                  return { mask: previousMask };
+                return {
+                  mask: previousMask,
+                  timestampRangeStartUnixMs: configured.timestampRangeStartUnixMs,
+                };
+              }),
             }),
         ...(request.maskedAlphabet === undefined
           ? {}
@@ -493,6 +504,37 @@ export async function contractRequests(): Promise<Request[]> {
   }
   for (const selectedMask of masks)
     requests.push({ op: "mask", input: ordinary.uuid, mask: selectedMask });
+  const shiftedStart = 2 ** 42;
+  const shiftedUuid = "04000000-0000-7000-8000-000000000000";
+  const shiftedMask = { seed: "shifted-range-old-test-key" };
+  const shifted = evaluate({
+    op: "mask",
+    input: shiftedUuid,
+    mask: shiftedMask,
+    timestampRangeStartUnixMs: shiftedStart,
+  });
+  if (!("value" in shifted) || typeof shifted.value !== "string")
+    throw new Error("Shifted timestamp fixture failed to encode");
+  requests.push(
+    {
+      op: "mask",
+      input: shiftedUuid,
+      mask: shiftedMask,
+      timestampRangeStartUnixMs: shiftedStart,
+    },
+    {
+      op: "unmask",
+      input: shifted.value,
+      mask: shiftedMask,
+      timestampRangeStartUnixMs: shiftedStart,
+    },
+    {
+      op: "unmask",
+      input: shifted.value,
+      mask: { seed: "shifted-range-new-test-key" },
+      previous: [{ mask: shiftedMask, timestampRangeStartUnixMs: shiftedStart }],
+    },
+  );
   for (const window of [-1, 0, 0.5, 86_400_000, "NaN", "Infinity"]) {
     for (const now of [0, 1, 1.5, "NaN", "Infinity"])
       requests.push({ op: "validateUuidV7Timestamp", input: first.uuid, now, window });

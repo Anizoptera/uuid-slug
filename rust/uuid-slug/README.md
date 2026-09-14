@@ -41,9 +41,9 @@ with a keyed reversible payload. It is obfuscation, not authentication or encryp
 Its 16-bit check can accept an unissued UUID; look up decoded candidates in your own store. Each
 configured key adds a possible candidate. Pass `uuid_v7_test_mask()` explicitly only for examples
 and wire fixtures because its seed is public. Keep your private seed and iteration count to read issued IDs.
-Masking keeps the UUID timestamp without shifting it. It accepts Unix milliseconds from
-zero through `MAX_MASKED_UUID_V7_UNIX_MS`, inclusive; plain slugs retain the full UUIDv7 timestamp
-range. Registered sentinels are always plain slugs and are never masked.
+Masking stores a timestamp offset from `timestamp_range_start_unix_ms` and restores the UUID's
+timestamp on decode. The inclusive end is the start plus `MAX_MASKED_UUID_V7_UNIX_MS`; plain slugs
+retain the full UUIDv7 timestamp range. Registered sentinels are always plain slugs and are never masked.
 
 Keep previous keys while stored identifiers still need them. The current key writes new masks;
 previous keys only add read candidates. Install readers for the new key and spelling before
@@ -52,7 +52,8 @@ Here, `stored` is an existing slug written with the previous key.
 
 ```rust
 use uuid_slug::{
-    UuidSlugMigrationOptions, UuidV7MaskingCodec, UuidV7MaskingCodecOptions, derive_uuid_v7_mask,
+    UuidSlugMigrationOptions, UuidV7MaskingCodec, UuidV7MaskingCodecOptions,
+    UuidV7PreviousMask, derive_uuid_v7_mask,
 };
 
 # fn main() -> Result<(), uuid_slug::Error> {
@@ -61,7 +62,7 @@ let new_key = derive_uuid_v7_mask(b"replacement-private-seed", 1, "current")?;
 # let uuid = uuid_slug::Uuid::from_uuid_string("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")?;
 # let stored = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions::new(old_key.clone()))?.uuid_to_masked_slug(uuid)?;
 let masking_codec = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
-    previous_masks: vec![old_key],
+    previous_masks: vec![UuidV7PreviousMask::new(old_key)],
     ..UuidV7MaskingCodecOptions::new(new_key)
 })?;
 let id = masking_codec.masked_slug_to_uuid(&stored)?;

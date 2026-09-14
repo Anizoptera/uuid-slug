@@ -14,16 +14,41 @@ import { bytesToUuidString } from "./uuid.ts";
 import type { UuidV7Mask, MaskedUuidV7Slug, UuidString } from "./types.ts";
 import type { SlugAlphabet } from "./slug.ts";
 
+export type UuidV7MaskRange = {
+  readonly mask: UuidV7Mask;
+  readonly timestampRangeStartUnixMs: number;
+};
+
 const MASK_DIRECTION = "mask";
 const MASKING = "masking";
 const NO_MASK_MATCH_MESSAGE =
-  "No configured mask decodes this slug: its check fails under every key.";
+  "No configured mask and timestamp range decodes this slug: its check fails for every configured pair.";
 const UNMASK_DIRECTION = "unmask";
 const UNMASKING = "unmasking";
 
 const MAX_MASKED_UUID_V7_HIGH_BYTE = 0x03;
-/** Inclusive upper bound for masking a UUIDv7 timestamp without shifting it; the range starts at 0. */
+/** Largest timestamp offset that fits in a masked UUIDv7 payload. */
 export const MAX_MASKED_UUID_V7_UNIX_MS: number = (MAX_MASKED_UUID_V7_HIGH_BYTE + 1) * 2 ** 40 - 1;
+
+function readUnixMs(bytes: Uint8Array): number {
+  return (
+    (bytes[0] as number) * 2 ** 40 +
+    (bytes[1] as number) * 2 ** 32 +
+    (bytes[2] as number) * 2 ** 24 +
+    (bytes[3] as number) * 2 ** 16 +
+    (bytes[4] as number) * 2 ** 8 +
+    (bytes[5] as number)
+  );
+}
+
+function writeUnixMs(bytes: Uint8Array, unixMs: number): void {
+  bytes[0] = Math.floor(unixMs / 2 ** 40);
+  bytes[1] = Math.floor(unixMs / 2 ** 32);
+  bytes[2] = unixMs >>> 24;
+  bytes[3] = unixMs >>> 16;
+  bytes[4] = unixMs >>> 8;
+  bytes[5] = unixMs;
+}
 
 /** Custom callbacks can fail after construction; preserve their cause in the public error contract. */
 function applyMix(
@@ -66,11 +91,11 @@ function tagFor(bytes: Uint8Array, width: number) {
 
 /**
  * The 12 check bits a UUIDv7 can hold inside the block, because it spends them on nothing: bits
- * 0-3 in byte 6's version nibble, 4-5 in byte 8's variant bits, 6-11 in byte 0's top six — the
- * high end of the 48-bit timestamp, zero for every instant before 2109. The rest of the check
+ * 0-3 in byte 6's version nibble, 4-5 in byte 8's variant bits, 6-11 in byte 0's top six. The
+ * timestamp is stored as a 42-bit offset, so those top six bits are zero. The rest of the check
  * rides outside the block, in whatever the encoding has spare.
  *
- * Claiming byte 0 is why encoding must REFUSE an instant at or past 2^42 ms rather than truncate.
+ * Encoding must reject an offset at or past 2^42 ms rather than truncate it.
  */
 function injectTag(bytes: Uint8Array, tag: number) {
   bytes[6] = ((tag & 0x0f) << 4) | ((bytes[6] ?? 0) & 0x0f);
@@ -130,15 +155,19 @@ export function ownedUuidV7BytesToMaskedSlug(
   mask: UuidV7Mask,
   alphabet: SlugAlphabet = BASE64URL_NAME,
   reserved?: { readonly size: number; has(slug: string): boolean },
+  timestampRangeStartUnixMs = 0,
 ): MaskedUuidV7Slug | UuidSlugError {
   // Truncating instead would make encoding non-injective — two UUIDs would share one slug, and no
   // decoder could ever tell which was meant. Refusing is the only recoverable answer.
-  if ((raw[0] ?? 0) > MAX_MASKED_UUID_V7_HIGH_BYTE)
+  const timestamp = readUnixMs(raw);
+  const timestampOffset = timestamp - timestampRangeStartUnixMs;
+  if (timestampOffset < 0 || timestampOffset > MAX_MASKED_UUID_V7_UNIX_MS)
     return new UuidSlugError(
       INVALID_TIMESTAMP,
-      "Masking accepts UUIDv7 timestamps from Unix millisecond 0 through 2^42 - 1; the top six bits hold the check.",
+      `Masking accepts UUIDv7 timestamps from Unix millisecond ${timestampRangeStartUnixMs} through ${timestampRangeStartUnixMs + MAX_MASKED_UUID_V7_UNIX_MS}; got ${timestamp}.`,
     );
   const tag = tagFor(raw, TAG_BITS);
+  writeUnixMs(raw, timestampOffset);
   injectTag(raw, tag >>> OUTER_TAG_BITS);
   // Every mask receives an isolated block. Reusing that block as output removes a second
   // allocation; built-in transforms read all words before writing and custom transforms copy input.
@@ -165,8 +194,8 @@ export function ownedUuidV7BytesToMaskedSlug(
 
 export function decodeMaskedSlug(
   slug: string,
-  mask: UuidV7Mask,
-  previous: readonly UuidV7Mask[] = [],
+  current: UuidV7MaskRange,
+  previous: readonly UuidV7MaskRange[] = [],
 ): Uint8Array | UuidSlugError {
   if (typeof slug !== "string")
     return new UuidSlugError(INVALID_UUID_SLUG, "Masked UUID slug must be a string.");
@@ -181,14 +210,14 @@ export function decodeMaskedSlug(
   );
   if (outerTag instanceof Error) return outerTag;
   if (!previous.length) {
-    const primary = unmix(mixed, outerTag, mask);
+    const primary = unmix(mixed, outerTag, current);
     return primary ?? new UuidSlugError(INVALID_UUID_SLUG, NO_MASK_MATCH_MESSAGE);
   }
   const word0 = read32(mixed, 0);
   const word1 = read32(mixed, 4);
   const word2 = read32(mixed, 8);
   const word3 = read32(mixed, 12);
-  const primary = unmix(mixed, outerTag, mask);
+  const primary = unmix(mixed, outerTag, current);
   if (isUuidSlugError(primary)) return primary;
   if (primary) return primary;
   // Scalar ciphertext survives in-place attempts without allocating a block for every decode.
@@ -205,7 +234,7 @@ export function decodeMaskedSlug(
 export function decodeFirstMaskedCandidate(
   mixed: Uint8Array,
   outerTag: number,
-  masks: readonly UuidV7Mask[],
+  masks: readonly UuidV7MaskRange[],
   candidates: UuidString[] = [],
 ): UuidString[] | UuidSlugError {
   for (const mask of masks) {
@@ -225,7 +254,7 @@ export function decodeFirstMaskedCandidate(
 export function decodeMaskedCandidates(
   mixed: Uint8Array,
   outerTag: number,
-  masks: readonly UuidV7Mask[],
+  masks: readonly UuidV7MaskRange[],
   candidates: UuidString[] = [],
 ): UuidString[] | UuidSlugError {
   if (!masks.length) return candidates;
@@ -264,16 +293,17 @@ export function decodeMaskedCandidates(
 function unmix(
   mixed: Uint8Array,
   outerTag: number,
-  mask: UuidV7Mask,
+  range: UuidV7MaskRange,
 ): Uint8Array | undefined | UuidSlugError {
   // `mixed` is already private to this mask attempt, so the same alias-safe transform contract
   // can write back into it instead of allocating another block.
-  const failed = applyMix(mask, mixed, mixed, UNMASK_DIRECTION);
+  const failed = applyMix(range.mask, mixed, mixed, UNMASK_DIRECTION);
   if (failed) return failed;
   // Both halves come out of the same decryption, so a wrong key garbles the observed check as
   // thoroughly as the payload: the tag needs no key of its own to tell keys apart.
   const foundTag = (extractTag(mixed) << OUTER_TAG_BITS) | outerTag;
   restoreV7(mixed);
+  writeUnixMs(mixed, readUnixMs(mixed) + range.timestampRangeStartUnixMs);
   if (tagFor(mixed, TAG_BITS) !== foundTag) return undefined;
   return mixed;
 }

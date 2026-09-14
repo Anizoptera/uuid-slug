@@ -128,8 +128,8 @@ function idForImportedRecord(recordedUnixMs: number) {
 
 Each call uses fresh randomness, even at the same timestamp. For retries, keep the first ID or
 use your application's deduplication key. Existing records should keep their UUIDs.
-Masking accepts UUIDv7 timestamps from Unix millisecond `0` through `2^42 - 1`, inclusive. It does
-not shift the timestamp.
+By default, masking accepts UUIDv7 timestamps from Unix millisecond `0` through `2^42 - 1`,
+inclusive. Set `timestampRangeStartUnixMs` on the masking codec to move that fixed-size range.
 
 Use `createUuidV7Generator({ readUnixMs })` for an application clock or time-dependent tests.
 Each generator has its own sequence state. A fixed clock does not make IDs repeatable:
@@ -312,7 +312,8 @@ slug alphabet. Decoding reverses those steps and rejects a value when its check 
 Create the masking codec once and reuse it; changing its seed changes the mapping.
 
 A supported UUIDv7 carries 116 bits that the masked format must preserve: the version and
-variant are fixed, and the top six bits of the timestamp stay zero until the year 2109. 22 base64url
+variant are fixed, and the timestamp is stored as a 42-bit offset from the codec's configured
+start. 22 base64url
 characters hold 132 bits, so the spare 16 carry a check for incorrect decoding. Two things follow,
 and both are part of the contract rather than implementation detail:
 
@@ -322,13 +323,16 @@ and both are part of the contract rather than implementation detail:
   an existing record: a lookup alone does not prove correct decoding. Every extra
   mask you try adds another opportunity for false acceptance; the combined rate is
   at most the sum of the individual rates. Keep the rotation list short.
-- **Masking keeps the UUIDv7 timestamp and accepts Unix milliseconds from `0` through
-  `MAX_MASKED_UUID_V7_UNIX_MS` (`2^42 - 1`), inclusive.** The earliest instant is the Unix
-  epoch. The first rejected timestamp is `2^42` milliseconds after the epoch
-  (`2109-05-15T07:35:11.104Z`). Masking returns `invalid_timestamp` because the timestamp's top six
-  bits hold the check. Truncating instead would let
+- **Masking keeps the UUIDv7 timestamp and accepts a configurable range of `2^42`
+  milliseconds.** `timestampRangeStartUnixMs` sets the inclusive first millisecond; the inclusive
+  last is `timestampRangeStartUnixMs + MAX_MASKED_UUID_V7_UNIX_MS`. The default start is `0`, which
+  preserves existing slugs. Masking returns `invalid_timestamp` outside the selected range.
+  Truncating instead would let
   two UUIDs share one slug, which nothing could recover from. Plain slugs have no such limit;
   registered sentinels are always plain slugs and therefore retain the full UUIDv7 timestamp range.
+
+Set `timestampRangeStartUnixMs` to the earliest timestamp your application needs to mask. Omit it
+to preserve the default range and existing slugs.
 
 ### Sentinels
 
@@ -513,7 +517,7 @@ their TypeScript type permits only formats enabled when the reader was created.
 | `MaskedOrSentinelUuidV7Slug` | Masked or sentinel: what a masking call returns. |
 | `UuidBytes`, `UuidV4Bytes`, `UuidV7Bytes` | `UuidBytes` proves the 16-byte shape; v4/v7 brands also prove version and variant bits. |
 | `SlugAlphabet` | `"base64url"` or `"base32hex"`. |
-| `UuidV7MaskingCodec`, `UuidV7MaskingCodecOptions`, `UuidV7Mask`, `UuidV7MaskOptions`, `AsyncUuidV7MaskOptions`, `CustomUuidV7MaskOptions`, `UuidV7Sentinel`, `UuidV7SentinelConfig` | The masking codec, what `createUuidV7MaskingCodec` takes, and the mask and sentinel shapes it accepts and exposes. |
+| `UuidV7MaskingCodec`, `UuidV7MaskingCodecOptions`, `UuidV7PreviousMask`, `UuidV7Mask`, `UuidV7MaskOptions`, `AsyncUuidV7MaskOptions`, `CustomUuidV7MaskOptions`, `UuidV7Sentinel`, `UuidV7SentinelConfig` | The masking codec, what `createUuidV7MaskingCodec` takes, and the retained mask and sentinel shapes it accepts and exposes. |
 | `UuidV7Generator`, `UuidV7GeneratorOptions`, `UuidV7ClockRollbackPolicy`, `UuidRandomFill`, `UuidV7TimestampWindow`, `UuidSlugMigrationDecoder`, `UuidSlugMigrationOptions`, `UuidSlugMigrationFormat`, `UuidSlugErrorCode` | A generator, its clock and rollback choices, an explicit custom-entropy callback, timestamp validation, migration controls, and error codes. |
 
 A brand narrows what a call accepts at compile time. A value already typed as the wrong kind is
@@ -611,8 +615,7 @@ Omit it for a standalone 16-byte array. Output offsets select where a method wri
 select where it reads. Bytes outside that 16-byte range stay unchanged.
 
 Masking is possible for any UUID version, but this library supports it only for UUIDv7.
-Its fixed version, variant, and timestamp range from Unix millisecond 0 through `2^42 - 1` leave
-room for a 16-bit check without
+Its fixed version, variant, and 42-bit timestamp offset leave room for a 16-bit check without
 lengthening the default 22-character slug. Plain slugs support every UUID version.
 
 The `At` pair takes the instant first and leaves current-time sequence state unchanged. See
@@ -762,7 +765,7 @@ Copying a very large byte seed, plus allocation, GC, and host scheduling, can st
 than one work slice. Small derivations need no host yield. Construct once and reuse the mask;
 passing seed options to each new codec would repeat derivation.
 
-`previousMasks` is how you rotate a seed. Decoding tries `mask` first, then each entry in the
+`previousMasks` is how you rotate a seed or timestamp range. Decoding tries `mask` first, then each entry in the
 order you list them, and the first whose check passes wins. Put the newest first, and keep the
 list short. Nothing else is ever tried: a masking codec decodes with the masks you gave it and no
 others.
@@ -773,7 +776,7 @@ import { createUuidV7MaskingCodec } from "@anizoptera/uuid-slug";
 function createRotatedCodec(currentSeed: string, previousSeed: string) {
   return createUuidV7MaskingCodec({
     mask: { seed: currentSeed },
-    previousMasks: [{ seed: previousSeed }],
+    previousMasks: [{ mask: { seed: previousSeed }, timestampRangeStartUnixMs: 0 }],
   });
 }
 ```
@@ -795,9 +798,9 @@ Remove compatibility only when the old IDs in those places no longer need to wor
 No recent legacy traffic does not prove that old links are gone. To keep old URLs after removing
 their decoder, retain an application-owned mapping from each supported old slug to its UUID.
 
-Keep keys and sentinel definitions stable throughout the rollout. Non-v7 UUIDs and UUIDv7s
-timestamped at or beyond 2^42 ms cannot use the current masked format; preserve them as UUIDs
-or plain slugs. Never truncate the timestamp or substitute a new identity to make masking pass.
+Keep keys, timestamp-range starts, and sentinel definitions with every format still in use.
+Preserve UUIDs outside the configured masked range as UUID text or plain slugs. Never truncate a
+timestamp or substitute a new identity to make masking pass.
 
 ### Reading original slugs during migration
 

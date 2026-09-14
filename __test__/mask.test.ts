@@ -15,6 +15,7 @@ import { unwrap } from "../dev/unwrap";
 import { MAX_MASKED_UUID_V7_UNIX_MS } from "../src/payload";
 import { uuidStringToBytes } from "../src/uuid";
 import { uuidStringToPlainSlug } from "../src/slug";
+import { uuidV7Bounds } from "../src/v7-bounds";
 
 /** Pads to the 16-byte seed floor, so cases can keep naming their key after what it tests. */
 const maskOrThrow = (seed: string) => {
@@ -93,5 +94,73 @@ describe("the maskable range", () => {
       expect(slug).toHaveLength(22);
       expect(codec.uuidToString(slug)).toBe(uuid);
     }
+  });
+
+  it("moves the inclusive range without changing the UUID", () => {
+    const start = 2 ** 42;
+    const shifted = unwrap(
+      createUuidV7MaskingCodec({ mask: handle, timestampRangeStartUnixMs: start }),
+    );
+    const first = unwrap(uuidV7Bounds(start)).startInclusive;
+    const last = unwrap(uuidV7Bounds(start + MAX_MASKED_UUID_V7_UNIX_MS)).endInclusive;
+    for (const uuid of [first, last]) {
+      const slug = unwrap(shifted.uuidToMaskedSlug(uuid));
+      expect(shifted.uuidToString(slug)).toBe(uuid);
+    }
+    expect(shifted.uuidToMaskedSlug(unwrap(uuidV7Bounds(start - 1)).startInclusive)).toMatchObject({
+      code: "invalid_timestamp",
+      message: expect.stringContaining(`from Unix millisecond ${start} through`),
+    });
+    expect(
+      shifted.uuidToMaskedSlug(
+        unwrap(uuidV7Bounds(start + MAX_MASKED_UUID_V7_UNIX_MS + 1)).startInclusive,
+      ),
+    ).toMatchObject({ code: "invalid_timestamp" });
+  });
+
+  it("retains the range start with each previous mask", () => {
+    const start = 2 ** 42;
+    const uuid = unwrap(uuidV7Bounds(start)).startInclusive;
+    const slug = unwrap(
+      unwrap(
+        createUuidV7MaskingCodec({ mask: handle, timestampRangeStartUnixMs: start }),
+      ).uuidToMaskedSlug(uuid),
+    );
+    const rotated = unwrap(
+      createUuidV7MaskingCodec({
+        mask: maskOrThrow("new-range"),
+        previousMasks: [{ mask: handle, timestampRangeStartUnixMs: start }],
+      }),
+    );
+    expect(rotated.uuidToString(slug)).toBe(uuid);
+  });
+
+  it("rejects a range that cannot fit inside UUIDv7's timestamp field", () => {
+    const maxStart = 2 ** 48 - 1 - MAX_MASKED_UUID_V7_UNIX_MS;
+    const latest = "ffffffff-ffff-7fff-bfff-ffffffffffff";
+    const lastRange = unwrap(
+      createUuidV7MaskingCodec({ mask: handle, timestampRangeStartUnixMs: maxStart }),
+    );
+    expect(lastRange.maskedSlugToUuidString(unwrap(lastRange.uuidToMaskedSlug(latest)))).toBe(
+      latest,
+    );
+    expect(
+      createUuidV7MaskingCodec({ mask: handle, timestampRangeStartUnixMs: maxStart + 1 }),
+    ).toMatchObject({
+      code: "invalid_timestamp",
+      message: `timestampRangeStartUnixMs must be an integer from 0 through ${maxStart}; got ${maxStart + 1}.`,
+    });
+    expect(
+      createUuidV7MaskingCodec({ mask: handle, timestampRangeStartUnixMs: 0.5 }),
+    ).toMatchObject({ code: "invalid_timestamp" });
+    expect(
+      createUuidV7MaskingCodec({
+        mask: handle,
+        previousMasks: [{ mask: handle, timestampRangeStartUnixMs: maxStart + 1 }],
+      }),
+    ).toMatchObject({
+      code: "invalid_timestamp",
+      message: expect.stringContaining("previousMasks[].timestampRangeStartUnixMs"),
+    });
   });
 });
