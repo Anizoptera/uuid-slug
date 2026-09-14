@@ -27,6 +27,7 @@ import {
   isUuidTextCase,
 } from "./uuid.ts";
 import type { Runtime } from "./runtime/types.ts";
+import { MAX_UUID_V7_UNIX_MS, isValidUuidV7UnixMs, rejectUuidV7UnixMs } from "./v7-timestamp.ts";
 
 /** Internal controls for exercising the portable UUIDv7 state machine. */
 interface PortableUuidV7GeneratorOptions {
@@ -82,25 +83,12 @@ function writeCounter(bytes: Uint8Array, hi: number, lo: number, offset: number)
   bytes[offset + 11] = lo & 0xff;
 }
 
-/** The 48 bits RFC 9562 gives the timestamp; beyond it the value cannot be represented. */
-const MAX_TIMESTAMP = 0xffff_ffff_ffff;
-
-/** Reject fractions and out-of-range values before runtime-specific generators can coerce them. */
-const isValidUuidV7Timestamp = /* @__NO_SIDE_EFFECTS__ */ (ms: number): boolean =>
-  Number.isInteger(ms) && ms >= 0 && ms <= MAX_TIMESTAMP;
-
 /**
  * The one check and the one message for a caller-supplied instant. Both the portable generator and
  * the runtime-backed one call it, and the runtime-backed one calls it BEFORE delegating: a native
  * generator may accept what we reject and answer wrongly rather than fail.
  */
-const rejectInstant = /* @__NO_SIDE_EFFECTS__ */ (ms: number): undefined | UuidSlugError =>
-  isValidUuidV7Timestamp(ms)
-    ? undefined
-    : new UuidSlugError(
-        INVALID_TIMESTAMP,
-        `UUIDv7 timestamp must be a whole number of milliseconds in 0..${MAX_TIMESTAMP}.`,
-      );
+const rejectInstant = rejectUuidV7UnixMs;
 
 /**
  * Both string forms differ only in where the instant comes from, so the byte-or-error result is
@@ -215,10 +203,10 @@ export function createPortableUuidV7Generator(
       const reading = readClock(readUnixMs);
       if (isUuidSlugError(reading)) return reading;
       const now = typeof reading === "number" ? Math.trunc(reading) : NaN;
-      if (typeof reading !== "number" || reading < 0 || !isValidUuidV7Timestamp(now))
+      if (typeof reading !== "number" || reading < 0 || !isValidUuidV7UnixMs(now))
         return new UuidSlugError(
           INVALID_TIMESTAMP,
-          `Clock returned ${String(reading)}, which is not a millisecond in 0..${MAX_TIMESTAMP}.`,
+          `Clock returned ${String(reading)}, which is not a millisecond in 0..${MAX_UUID_V7_UNIX_MS}.`,
         );
       const rollbackMs = rollback === undefined ? 0 : clockHighWaterMs - now;
       if (rollback !== undefined && rollbackMs > rollback.toleranceMs) {
@@ -245,10 +233,10 @@ export function createPortableUuidV7Generator(
           // broken permanently, and silently, from that call onward. Unreachable on a real readUnixMs
           // until the year 10889; reachable now from any readUnixMs that lands near the ceiling, which
           // is why refusing is not theoretical.
-          if (lastMs >= MAX_TIMESTAMP)
+          if (lastMs >= MAX_UUID_V7_UNIX_MS)
             return new UuidSlugError(
               INVALID_TIMESTAMP,
-              `Sequence exhausted at the last representable millisecond (${MAX_TIMESTAMP}).`,
+              `Sequence exhausted at the last representable millisecond (${MAX_UUID_V7_UNIX_MS}).`,
             );
           const failed = reseed(lastMs + 1);
           if (failed) return failed;
