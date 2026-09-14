@@ -6,9 +6,6 @@ Live work only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`.
 
 Adopt the useful competitor behavior without copying interfaces that add more caller burden than capability.
 
-- [ ] Refresh every benchmarked competitor to its current release before closing the interface comparison.
-  - [ ] Re-read each package's exported declarations and consumer documentation; do not infer its interface from benchmark imports.
-  - [ ] Update benchmark coverage when a current release changes a measured path or adds a distinct implementation strategy.
 - [ ] Accept standard UUID URNs and common brace-wrapped UUID text at every universal UUID-text input.
   - [ ] Normalize every accepted spelling to the requested canonical hyphenated case.
   - [ ] Preserve strict source-specific slug parsing and reject prefixes, wrappers, whitespace, or nesting outside the accepted grammar.
