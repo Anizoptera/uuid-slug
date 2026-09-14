@@ -61,7 +61,7 @@ pub(crate) fn mask_bytes(
     write_unix_ms(&mut tagged, timestamp_offset);
     tagged[6] = ((inner as u8 & 15) << 4) | (raw[6] & 15);
     tagged[8] = ((inner as u8 & 48) << 2) | (raw[8] & 63);
-    tagged[0] = (((inner >> 6) as u8 & 63) << 2) | (raw[0] & 3);
+    tagged[0] = (((inner >> 6) as u8 & 63) << 2) | (tagged[0] & 3);
     Ok((mask.mask(tagged)?, (check & 15) as u8))
 }
 

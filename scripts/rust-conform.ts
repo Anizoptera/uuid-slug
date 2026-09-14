@@ -80,9 +80,11 @@ function appendUuidV7CompatibilityRequests(requests: Request[], input: string): 
   if (parsed instanceof Error) throw parsed;
   const canonical = ts.bytesToUuidString(parsed);
   if (canonical instanceof Error) throw canonical;
+  const unixMs = Number.parseInt(canonical.slice(0, 8) + canonical.slice(9, 13), 16);
   deepStrictEqual(evaluate({ op: "guards", input }), {
     value: [true, false, true, false, false, false],
   });
+  deepStrictEqual(evaluate({ op: "timestamp", input }), { value: unixMs });
   for (const op of ["parse", "timestamp", "guards"]) requests.push({ op, input });
   for (const alphabet of ["base64url", "base32hex"]) {
     const plain = evaluate({ op: "plain", input, alphabet });
@@ -92,7 +94,11 @@ function appendUuidV7CompatibilityRequests(requests: Request[], input: string): 
     requests.push({ op: "plain", input, alphabet }, { op: "plainToUuid", input: plain.value });
   }
   for (const maskedAlphabet of ["base64url", "base32hex"]) {
-    const options = { mask: { seed: "external-v7-compatibility" }, maskedAlphabet };
+    const options = {
+      mask: { seed: "external-v7-compatibility" },
+      maskedAlphabet,
+      timestampRangeStartUnixMs: unixMs,
+    };
     const masked = evaluate({ ...options, op: "mask", input });
     if (!("value" in masked) || typeof masked.value !== "string")
       throw new Error(`UUIDv7 compatibility input could not be masked: ${input}`);
