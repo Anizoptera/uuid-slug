@@ -13,6 +13,7 @@ import type {
 import { bytePatterns } from "../__test__/byte-patterns";
 import { uuidTailAliases } from "../__test__/uuid-tail-aliases";
 import { uuidVariants } from "../__test__/uuid-variants";
+import { candidates as generationCandidates } from "../bench/candidates";
 import { loadRustBridge } from "./rust-bridge";
 
 type Request = Record<string, unknown> & { op: string; input?: string };
@@ -64,6 +65,45 @@ function result(value: unknown): Outcome {
   return value instanceof ts.UuidSlugError
     ? { error: value.code }
     : { value: value instanceof Uint8Array ? Array.from(value) : value };
+}
+
+function uuidV7FromPayload(unixMs: number, payload: bigint): string {
+  const randA = payload >> 62n;
+  const randB = payload & ((1n << 62n) - 1n);
+  const value = (BigInt(unixMs) << 80n) | (7n << 76n) | (randA << 64n) | (2n << 62n) | randB;
+  const hex = value.toString(16).padStart(32, "0");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+function appendUuidV7CompatibilityRequests(requests: Request[], input: string): void {
+  const parsed = ts.uuidStringToBytes(input);
+  if (parsed instanceof Error) throw parsed;
+  const canonical = ts.bytesToUuidString(parsed);
+  if (canonical instanceof Error) throw canonical;
+  deepStrictEqual(evaluate({ op: "guards", input }), {
+    value: [true, false, true, false, false, false],
+  });
+  for (const op of ["parse", "timestamp", "guards"]) requests.push({ op, input });
+  for (const alphabet of ["base64url", "base32hex"]) {
+    const plain = evaluate({ op: "plain", input, alphabet });
+    if (!("value" in plain) || typeof plain.value !== "string")
+      throw new Error(`UUIDv7 compatibility input was rejected: ${input}`);
+    deepStrictEqual(evaluate({ op: "plainToUuid", input: plain.value }), { value: canonical });
+    requests.push({ op: "plain", input, alphabet }, { op: "plainToUuid", input: plain.value });
+  }
+  for (const maskedAlphabet of ["base64url", "base32hex"]) {
+    const options = { mask: { seed: "external-v7-compatibility" }, maskedAlphabet };
+    const masked = evaluate({ ...options, op: "mask", input });
+    if (!("value" in masked) || typeof masked.value !== "string")
+      throw new Error(`UUIDv7 compatibility input could not be masked: ${input}`);
+    deepStrictEqual(evaluate({ ...options, op: "unmask", input: masked.value }), {
+      value: canonical,
+    });
+    requests.push(
+      { ...options, op: "mask", input },
+      { ...options, op: "unmask", input: masked.value },
+    );
+  }
 }
 
 export function evaluate(request: Request): Outcome {
@@ -282,6 +322,18 @@ export async function contractRequests(): Promise<Request[]> {
     await readFile("rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json", "utf8"),
   );
   const requests: Request[] = [];
+  const maxPayload = (1n << 74n) - 1n;
+  let alternatingPayload = 0n;
+  for (let bit = 0n; bit < 74n; bit += 2n) alternatingPayload |= 1n << bit;
+  // Boundary, alternating, and one-hot payloads catch any code that assigns meaning to RFC rand_a/rand_b.
+  const payloads = [0n, maxPayload, alternatingPayload, maxPayload ^ alternatingPayload];
+  for (let bit = 0n; bit < 74n; bit++) payloads.push(1n << bit);
+  for (const payload of payloads)
+    appendUuidV7CompatibilityRequests(requests, uuidV7FromPayload(1_756_864_833_024, payload));
+  for (const candidate of generationCandidates) {
+    if (candidate.name === "package" || !candidate.uuidV7) continue;
+    appendUuidV7CompatibilityRequests(requests, candidate.uuidV7());
+  }
   for (const [start, end] of [
     [0, 0],
     [1, 2],

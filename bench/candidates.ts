@@ -15,6 +15,7 @@
 import { uuidv7 as kripodUuidV7 } from "@kripod/uuidv7";
 import { uuid as fastUuidV7 } from "fastv7";
 import { v4 as uuidV4, v7 as uuidV7 } from "uuid";
+import { uuidv7 as unikuUuidV7 } from "uniku/uuid/v7";
 import { uuidv7 as uuidv7Js } from "uuidv7-js";
 import { uuidv7 as uuidv7Package } from "uuidv7";
 import nodeCrypto from "node:crypto";
@@ -82,6 +83,7 @@ export const candidates: readonly BenchCandidate[] = [
   },
   { name: "uuid", uuidV4, uuidV7 },
   { name: "uuidv7", uuidV7: uuidv7Package },
+  { name: "uniku", uuidV7: unikuUuidV7 },
   { name: "fastv7", uuidV7: fastUuidV7 },
   { name: "uuidv7-js", uuidV7: uuidv7Js },
   { name: "@kripod/uuidv7", uuidV7: kripodUuidV7 },
