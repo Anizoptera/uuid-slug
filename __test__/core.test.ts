@@ -7,6 +7,8 @@ import {
   createUuidV7Mask,
   createUuidV7SlugCodec as createCodec,
   extractUuidV7Timestamp,
+  isUuidV7Slug,
+  isUuidV7String,
   isUuidSlugError,
   uuidSlugToBytes,
   uuidStringToBytes,
@@ -188,8 +190,16 @@ describe("direct UUID slugs", () => {
     }
   });
 
-  it("rejects uppercase UUIDs instead of silently canonicalizing external input", () => {
-    expect(uuidStringToBytes(SAMPLE_V7_A.toUpperCase())).toBeInstanceOf(Error);
+  it("accepts uppercase UUID input and returns canonical lowercase output", () => {
+    const uppercase = SAMPLE_V7_A.toUpperCase();
+    expect(bytesToUuidString(unwrap(uuidStringToBytes(uppercase)))).toBe(SAMPLE_V7_A);
+    expect(isUuidV7String(uppercase)).toBe(false);
+  });
+
+  it("accepts uppercase base32hex input and returns canonical lowercase output", () => {
+    const canonical = unwrap(uuidStringToSlug(SAMPLE_V7_A, "base32hex"));
+    expect(uuidSlugToString(canonical.toUpperCase())).toBe(SAMPLE_V7_A);
+    expect(isUuidV7Slug(canonical.toUpperCase())).toBe(false);
   });
 
   it("keeps parser diagnostics on every invalid UUID hex position", () => {

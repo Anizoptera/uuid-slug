@@ -47,32 +47,39 @@ const hyphenateHex = /* @__NO_SIDE_EFFECTS__ */ (hex: string, offset: number): U
   `${hex.slice(offset, offset + 8)}-${hex.slice(offset + 8, offset + 12)}-${hex.slice(offset + 12, offset + 16)}-${hex.slice(offset + 16, offset + 20)}-${hex.slice(offset + 20, offset + 32)}` as UuidString;
 
 /*#__NO_SIDE_EFFECTS__*/
-function hexValue(code: number) {
+function lowercaseHexValue(code: number) {
   return HEX_DECODE[code] ?? -1;
+}
+
+/*#__NO_SIDE_EFFECTS__*/
+function parsedHexValue(code: number) {
+  return code >= 65 && code <= 70 ? code - 55 : lowercaseHexValue(code);
 }
 
 /** Read one byte from canonical UUID text already validated by the caller. */
 /*#__NO_SIDE_EFFECTS__*/
 export function uuidByteAtUnchecked(uuid: string, byteIndex: number): number {
   const offset = UUID_BYTE_OFFSETS[byteIndex] as number;
-  return (hexValue(uuid.charCodeAt(offset)) << 4) | hexValue(uuid.charCodeAt(offset + 1));
+  return (
+    (parsedHexValue(uuid.charCodeAt(offset)) << 4) | parsedHexValue(uuid.charCodeAt(offset + 1))
+  );
 }
 
 /**
- * Parse canonical lowercase UUID text into a new plain 16-byte `Uint8Array`. Known slug values are
+ * Parse uppercase or lowercase UUID text into a new plain 16-byte `Uint8Array`. Known slug values are
  * rejected by TypeScript; invalid text returns `UuidSlugError`. A preceding `UuidSlugError` is
  * returned unchanged.
  *
- * @param uuid - Canonical lowercase UUID text.
+ * @param uuid - UUID text with uppercase or lowercase hexadecimal digits.
  */
 export function uuidStringToBytes<Input extends string | UuidSlugError>(
   uuid: UuidStringInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
 /**
- * Parse canonical lowercase UUID text into caller-owned storage after validating the full input.
+ * Parse uppercase or lowercase UUID text into caller-owned storage after validating the full input.
  * A preceding `UuidSlugError` is returned unchanged without writing.
  *
- * @param uuid - Canonical lowercase UUID text.
+ * @param uuid - UUID text with uppercase or lowercase hexadecimal digits.
  * @param output - Caller-owned array that receives the 16 UUID bytes.
  * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
  * outside the written range stay unchanged.
@@ -103,10 +110,13 @@ export function uuidStringToBytes(
   if (badRange) return badRange;
 
   for (const textOffset of UUID_BYTE_OFFSETS) {
-    if (hexValue(uuid.charCodeAt(textOffset)) < 0 || hexValue(uuid.charCodeAt(textOffset + 1)) < 0)
+    if (
+      parsedHexValue(uuid.charCodeAt(textOffset)) < 0 ||
+      parsedHexValue(uuid.charCodeAt(textOffset + 1)) < 0
+    )
       return new UuidSlugError(
         INVALID_UUID,
-        `Invalid UUID hex at offset ${textOffset}; only lowercase 0-9a-f is accepted.`,
+        `Invalid UUID hex at offset ${textOffset}; use 0-9, a-f, or A-F.`,
       );
   }
   const target = out ?? new Uint8Array(16);
@@ -196,7 +206,10 @@ export function isUuidString(value: unknown): value is UuidString {
     return false;
   for (let i = 0; i < UUID_BYTE_OFFSETS.length; i += 1) {
     const offset = UUID_BYTE_OFFSETS[i] as number;
-    if (hexValue(value.charCodeAt(offset)) < 0 || hexValue(value.charCodeAt(offset + 1)) < 0)
+    if (
+      lowercaseHexValue(value.charCodeAt(offset)) < 0 ||
+      lowercaseHexValue(value.charCodeAt(offset + 1)) < 0
+    )
       return false;
   }
   return true;

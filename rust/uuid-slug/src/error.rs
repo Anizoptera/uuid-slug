@@ -7,7 +7,7 @@ use std::fmt;
 pub enum ErrorCode {
     /// Work was cancelled before completion.
     Aborted,
-    /// Invalid lowercase base32hex text or nonzero padding.
+    /// Invalid base32hex text or nonzero padding.
     InvalidBase32Hex,
     /// Invalid base64url text or nonzero padding.
     InvalidBase64Url,
@@ -19,7 +19,7 @@ pub enum ErrorCode {
     InvalidSentinel,
     /// A timestamp is nonfinite, negative, fractional or outside its allowed range.
     InvalidTimestamp,
-    /// UUID text is not canonical lowercase hexadecimal with hyphens.
+    /// UUID text is not canonical hexadecimal with hyphens.
     InvalidUuid,
     /// A slug has an invalid length or cannot be decoded under the configured masks.
     InvalidUuidSlug,
@@ -53,9 +53,7 @@ impl ErrorCode {
     const fn message(self) -> &'static str {
         match self {
             Self::Aborted => "Operation aborted.",
-            Self::InvalidBase32Hex => {
-                "Expected canonical lowercase base32hex with zero trailing bits."
-            }
+            Self::InvalidBase32Hex => "Expected base32hex with zero trailing bits.",
             Self::InvalidBase64Url => {
                 "Expected canonical 22-character unpadded base64url with zero trailing bits."
             }
@@ -63,7 +61,7 @@ impl ErrorCode {
             Self::InvalidMask => "Invalid mask or key parameters.",
             Self::InvalidSentinel => "Sentinel names must be nonempty and unique within a codec.",
             Self::InvalidTimestamp => "Timestamp must fit the operation's millisecond range.",
-            Self::InvalidUuid => "Expected a lowercase UUID with canonical hyphens.",
+            Self::InvalidUuid => "Expected a UUID with canonical hyphens.",
             Self::InvalidUuidSlug => "Invalid slug for the requested operation.",
             Self::InvalidUuidVersion => "This operation requires an RFC-variant UUIDv7.",
             Self::RngUnavailable => "Secure random byte generation failed.",

@@ -65,7 +65,7 @@ export type { UuidSlug, UuidV4Slug, UuidV7Slug } from "./types.ts";
  * The alphabets a direct slug may be written in. base64url is the default and the shortest;
  * base32hex costs four more characters and buys the one property base64url cannot offer: its
  * characters are in ASCII order, so base32hex slugs of UUIDv7s sort chronologically as plain
- * strings. Only the lowercase spelling decodes, so every value has one canonical spelling.
+ * strings. Writers and guards use lowercase; decoders also accept the RFC uppercase spelling.
  *
  * Masked output selects its alphabet independently: base32hex preserves case-insensitive filenames,
  * but sorting masked ciphertext does not recover chronological order.
@@ -274,7 +274,7 @@ export function uuidSlugToBytes(
  * version is preserved in the result type. TypeScript rejects known slug values; invalid text or
  * alphabet returns `UuidSlugError`. A preceding `UuidSlugError` is returned unchanged.
  *
- * @param uuid - Canonical lowercase UUID text.
+ * @param uuid - UUID text with uppercase or lowercase hexadecimal digits.
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
 export function uuidStringToSlug<Input extends string | UuidSlugError>(
@@ -296,7 +296,8 @@ export function uuidStringToSlug(
 }
 
 /**
- * Decode a canonical direct slug to lowercase UUID text; its length selects base64url or base32hex.
+ * Decode a direct slug to canonical lowercase UUID text; its length selects base64url or base32hex.
+ * Base32hex input accepts uppercase or lowercase. Base64url remains case-sensitive.
  * A known UUID version is preserved in the result type. TypeScript rejects known UUID and masked
  * values; invalid input returns `UuidSlugError`. A preceding `UuidSlugError` is returned unchanged.
  *

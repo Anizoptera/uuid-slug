@@ -186,8 +186,16 @@ fn run(request: &Value) -> Result<Value, Error> {
         "undirect" => Ok(json!(Uuid::parse_slug(input)?.to_string())),
         "timestamp" => Ok(json!(Uuid::parse(input)?.timestamp()?)),
         "guards" => {
-            let uuid = Uuid::parse(input).ok();
-            let slug = Uuid::parse_slug(input).ok();
+            let uuid = Uuid::parse(input)
+                .ok()
+                .filter(|uuid| uuid.to_string() == input);
+            let slug = Uuid::parse_slug(input)
+                .ok()
+                .filter(|uuid| match input.len() {
+                    22 => uuid.slug(Alphabet::Base64Url) == input,
+                    26 => uuid.slug(Alphabet::Base32Hex) == input,
+                    _ => false,
+                });
             Ok(json!([
                 uuid.is_some(),
                 uuid.is_some_and(|u| u.is_v4()),

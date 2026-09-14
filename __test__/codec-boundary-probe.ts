@@ -373,7 +373,7 @@ export const codecBoundaryCases = [
             );
           }
         }
-        assert.ok(safe.uuidSlugToString(text.toUpperCase()) instanceof Error);
+        assert.equal(safe.uuidSlugToString(text.toUpperCase()), uuid);
         assert.ok(
           old.uuidSlugToString(uuidStringToSlug(uuid, "base32hex") as string) instanceof Error,
         );

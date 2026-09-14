@@ -24,10 +24,19 @@ export interface Alphabet {
 }
 
 /*#__NO_SIDE_EFFECTS__*/
-function alphabet(name: string, chars: string, code: UuidSlugErrorCode): Alphabet {
+function alphabet(
+  name: string,
+  chars: string,
+  code: UuidSlugErrorCode,
+  acceptUppercase = false,
+): Alphabet {
   const bitsPerChar = Math.log2(chars.length);
   const decode = new Int16Array(128).fill(-1);
-  for (let i = 0; i < chars.length; i += 1) decode[chars.charCodeAt(i)] = i;
+  for (let i = 0; i < chars.length; i += 1) {
+    const charCode = chars.charCodeAt(i);
+    decode[charCode] = i;
+    if (acceptUppercase && charCode >= 97 && charCode <= 122) decode[charCode - 32] = i;
+  }
   return {
     bitsPerChar,
     chars,
@@ -49,15 +58,14 @@ export const BASE64URL: Alphabet = /*#__PURE__*/ alphabet(
  * its characters are in ASCII order, so encoded values sort the same way the underlying bytes do —
  * the one property base64url cannot offer, and the reason a second alphabet exists at all.
  *
- * Spelled LOWERCASE where the RFC writes `0-9A-V`, matching how this package renders UUIDs, and
- * decoding accepts only that spelling so an id has exactly one form. The cost is interop: verified
- * 2026-08-12 against CPython, `base64.b32hexdecode` rejects these slugs unless called with
- * `casefold=True`. Upper-case them at the boundary if a strict RFC decoder has to read them.
+ * Writers use lowercase to match UUID text. Decoders also accept the RFC uppercase spelling, while
+ * canonical guards accept only lowercase so callers can enforce one stored form.
  */
 export const BASE32HEX: Alphabet = /*#__PURE__*/ alphabet(
   BASE32HEX_NAME,
   "0123456789abcdefghijklmnopqrstuv",
   INVALID_BASE32HEX,
+  true,
 );
 
 // Native encoding is strict on output; decoding stays here because it must reject aliases,

@@ -4,7 +4,7 @@ use data_encoding::{BASE64URL_NOPAD, Encoding, Specification};
 use std::sync::LazyLock;
 
 static BASE64URL: Encoding = BASE64URL_NOPAD;
-// Case is part of the wire format; the uppercase built-in base32hex alphabet is not interchangeable.
+// Writers stay lowercase; readers also accept the RFC uppercase base32hex spelling.
 static BASE32HEX: LazyLock<Encoding> = LazyLock::new(|| {
     let mut spec = Specification::new();
     spec.symbols.push_str("0123456789abcdefghijklmnopqrstuv");
@@ -77,9 +77,17 @@ impl Alphabet {
                 if text.len() != 128usize.div_ceil(self.bits()) {
                     return Err(self.error());
                 }
+                let mut normalized = [0; 26];
+                let input = if self == Self::Base32Hex {
+                    normalized.copy_from_slice(text.as_bytes());
+                    normalized.make_ascii_lowercase();
+                    normalized.as_slice()
+                } else {
+                    text.as_bytes()
+                };
                 let mut decoded = [0; 16];
                 encoding
-                    .decode_mut(text.as_bytes(), &mut decoded)
+                    .decode_mut(input, &mut decoded)
                     .map_err(|_| self.error())?;
                 *out = decoded;
                 Ok(0)
@@ -93,6 +101,9 @@ impl Alphabet {
                 let zero = if self == Self::Base64Url { b'A' } else { b'0' };
                 let mut padded = [zero; 28];
                 padded[..length].copy_from_slice(text.as_bytes());
+                if self == Self::Base32Hex {
+                    padded[..length].make_ascii_lowercase();
+                }
                 let mut decoded = [0; 17];
                 encoding
                     .decode_mut(&padded[..length + 1], &mut decoded)

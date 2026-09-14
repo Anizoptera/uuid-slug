@@ -25,7 +25,7 @@ impl Uuid {
         out.copy_from_slice(&bytes[range]);
         Ok(Self(out))
     }
-    /// Parse lowercase hexadecimal with the canonical four hyphens.
+    /// Parse uppercase or lowercase hexadecimal with the canonical four hyphens.
     pub fn parse(text: &str) -> Result<Self, Error> {
         text.parse()
     }
@@ -90,10 +90,6 @@ impl FromStr for Uuid {
         if input.len() != 36 || [8, 13, 18, 23].iter().any(|&i| input[i] != b'-') {
             return Err(Error::new(ErrorCode::InvalidUuid));
         }
-        // The dependency accepts uppercase and other UUID spellings; our input contract does not.
-        if input.iter().any(u8::is_ascii_uppercase) {
-            return Err(Error::new(ErrorCode::InvalidUuid));
-        }
         uuid::Uuid::parse_str(text)
             .map(|id| Self(*id.as_bytes()))
             .map_err(|_| Error::new(ErrorCode::InvalidUuid))
@@ -114,7 +110,7 @@ mod tests {
         let id = Uuid::parse(text)?;
         assert_eq!(id.to_string(), text);
         assert!(id.timestamp().is_err());
-        assert!(Uuid::parse("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF").is_err());
+        assert_eq!(Uuid::parse("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")?, id);
         for alphabet in [Alphabet::Base64Url, Alphabet::Base32Hex] {
             assert_eq!(Uuid::parse_slug(&id.slug(alphabet))?, id);
         }

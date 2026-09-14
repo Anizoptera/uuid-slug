@@ -95,9 +95,11 @@ interface is complete, useful, or clear.
 
 Keep UUID text/binary conversion directional and version-neutral:
 
-- `uuidStringToBytes` converts canonical UUID text to 16-byte storage; `bytesToUuidString` converts 16 bytes to
-  canonical UUID text. Source and destination names remove the parse/format ambiguity, while
+- `uuidStringToBytes` accepts uppercase or lowercase UUID text and converts it to 16-byte storage;
+  `bytesToUuidString` converts 16 bytes to canonical lowercase UUID text. Source and destination names remove the parse/format ambiguity, while
   version-neutral names remain correct for every UUID version.
+- Writers and guards use canonical lowercase UUID and base32hex text. Decoders accept uppercase or
+  lowercase UUID and base32hex input. Base64url remains case-sensitive.
 - Accept `Uint8Array` and its subtypes. Exclude `ArrayBuffer`, `DataView`, and array-like values:
   their offset, view, and ownership meanings would make the operation ambiguous. Preserve a
   caller-owned output subtype and write only after full validation; return plain `Uint8Array` for

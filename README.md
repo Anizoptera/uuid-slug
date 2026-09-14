@@ -213,7 +213,7 @@ function convertUuid() {
 }
 ```
 
-`uuidStringToBytes` accepts one canonical lowercase UUID and either allocates a plain `Uint8Array` or
+`uuidStringToBytes` accepts uppercase or lowercase UUID text and either allocates a plain `Uint8Array` or
 writes 16 bytes at the requested offset. `bytesToUuidString` reads 16 bytes at an optional offset.
 `Buffer` works because it is a `Uint8Array`; `ArrayBuffer`, `DataView`, and array-like values do
 not. Use `isUuidBytes`, `isUuidV4Bytes`, or `isUuidV7Bytes` when unknown binary input must be
@@ -247,7 +247,8 @@ the encoded timestamps across different milliseconds. `generateUuidV7Slug(BASE32
 one directly; every keyless slug writer accepts the alphabet without requiring a codec.
 
 `uuidSlugToString` infers the alphabet from the length, 22 or 26, so both spellings remain readable
-after you switch output. Decode to a UUID before comparing identities or building a cache key:
+after you switch output. It accepts uppercase base32hex and returns canonical lowercase UUID text.
+Decode to a UUID before comparing identities or building a cache key:
 different spellings can identify the same record. Preserve base64url case; lowercasing it changes
 the value. Choose base32hex when storage cannot preserve case distinctions.
 
