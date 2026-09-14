@@ -52,6 +52,7 @@ impl UuidV7Generator {
         self
     }
     /// Generate at a clock reading, truncating fractional milliseconds and applying its rollback policy.
+    /// A reseed requests ten random bytes; continuation at the same UUID timestamp requests four.
     /// Failed entropy draws leave the sequence unchanged so retries cannot corrupt state.
     pub fn generate_uuid_v7_with_random_fill(
         &mut self,
@@ -87,9 +88,13 @@ impl UuidV7Generator {
             }
             (false, Some(last)) => (last, false),
         };
-        let mut random = [0; 16];
-        fill(&mut random)
-            .map_err(|cause| Error::new(ErrorCode::RngUnavailable).with_source(cause))?;
+        let mut random = [0; 10];
+        fill(if reseed {
+            &mut random
+        } else {
+            &mut random[6..]
+        })
+        .map_err(|cause| Error::new(ErrorCode::RngUnavailable).with_source(cause))?;
         let sequence = if reseed {
             seed(&random)
         } else {
@@ -105,14 +110,14 @@ impl UuidV7Generator {
         self.sequence = sequence;
         Ok(id)
     }
-    /// Generate for an explicit whole millisecond without changing the current sequence.
+    /// Generate for an explicit whole millisecond from ten random bytes without changing the current sequence.
     pub fn generate_uuid_v7_at_unix_ms_with_random_fill(
         &self,
         unix_ms: f64,
         mut fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
     ) -> Result<Uuid, Error> {
         let ms = timestamp(unix_ms, false)?;
-        let mut random = [0; 16];
+        let mut random = [0; 10];
         fill(&mut random)
             .map_err(|cause| Error::new(ErrorCode::RngUnavailable).with_source(cause))?;
         Ok(assemble(ms, seed(&random), random))
@@ -182,7 +187,7 @@ fn timestamp(value: f64, clock: bool) -> Result<u64, Error> {
     }
     Ok(value as u64)
 }
-fn seed(bytes: &[u8; 16]) -> u64 {
+fn seed(bytes: &[u8; 10]) -> u64 {
     (u64::from(bytes[0]) << 34)
         | (u64::from(bytes[1]) << 26)
         | (u64::from(bytes[2]) << 18)
@@ -190,15 +195,17 @@ fn seed(bytes: &[u8; 16]) -> u64 {
         | (u64::from(bytes[4]) << 2)
         | u64::from(bytes[5] & 3)
 }
-fn assemble(ms: u64, sequence: u64, mut random: [u8; 16]) -> Uuid {
-    random[..6].copy_from_slice(&ms.to_be_bytes()[2..]);
-    random[6] = 0x70 | ((sequence >> 38) as u8 & 15);
-    random[7] = (sequence >> 30) as u8;
-    random[8] = 0x80 | ((sequence >> 24) as u8 & 63);
-    random[9] = (sequence >> 16) as u8;
-    random[10] = (sequence >> 8) as u8;
-    random[11] = sequence as u8;
-    Uuid::from_uuid_bytes_array(random)
+fn assemble(ms: u64, sequence: u64, random: [u8; 10]) -> Uuid {
+    let mut bytes = [0; 16];
+    bytes[..6].copy_from_slice(&ms.to_be_bytes()[2..]);
+    bytes[6] = 0x70 | ((sequence >> 38) as u8 & 15);
+    bytes[7] = (sequence >> 30) as u8;
+    bytes[8] = 0x80 | ((sequence >> 24) as u8 & 63);
+    bytes[9] = (sequence >> 16) as u8;
+    bytes[10] = (sequence >> 8) as u8;
+    bytes[11] = sequence as u8;
+    bytes[12..].copy_from_slice(&random[6..]);
+    Uuid::from_uuid_bytes_array(bytes)
 }
 /// Generate a random version-4 UUID from a fallible entropy source.
 pub fn generate_uuid_v4_with_random_fill(
@@ -285,7 +292,7 @@ mod tests {
         for version in [4, 7] {
             let generate = |input: [u8; 16]| {
                 let fill = |out: &mut [u8]| {
-                    out.copy_from_slice(&input);
+                    out.copy_from_slice(&input[..out.len()]);
                     Ok(())
                 };
                 if version == 4 {
@@ -318,10 +325,29 @@ mod tests {
         Ok(())
     }
     #[test]
+    fn generation_draws_only_entropy_that_reaches_the_uuid() -> Result<(), Error> {
+        let mut generator = UuidV7Generator::new();
+        let mut reseed_len = 0;
+        generator.generate_uuid_v7_with_random_fill(1.0, |out| {
+            reseed_len = out.len();
+            out.fill(0);
+            Ok(())
+        })?;
+        let mut continuation_len = 0;
+        generator.generate_uuid_v7_with_random_fill(1.0, |out| {
+            continuation_len = out.len();
+            out.fill(0);
+            Ok(())
+        })?;
+        assert_eq!(reseed_len, 10);
+        assert_eq!(continuation_len, 4);
+        Ok(())
+    }
+    #[test]
     fn explicit_time_does_not_mutate_clock_sequence() -> Result<(), Error> {
         let mut generator = UuidV7Generator::new();
         let first = generator.generate_uuid_v7_with_random_fill(123.9, fill)?;
-        assert_eq!(first.to_string(), "00000000-007b-7000-8408-0c110c0d0e0f");
+        assert_eq!(first.to_string(), "00000000-007b-7000-8408-0c1106070809");
         assert_eq!(
             generator
                 .generate_uuid_v7_at_unix_ms_with_random_fill(7.0, fill)?
@@ -403,7 +429,8 @@ mod tests {
                     rollback_policy: UuidV7ClockRollbackPolicy::Preserve,
                 };
                 let fail = |out: &mut [u8]| {
-                    out[..prefix].fill(255);
+                    let written = prefix.min(out.len());
+                    out[..written].fill(255);
                     Err(Error::new(ErrorCode::RngUnavailable))
                 };
                 let mut output = [19; 18];
