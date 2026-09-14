@@ -12,7 +12,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   equal(unwrap(api.generateUuidV7()).length, 36, "public UUIDv7 generation");
   const invalidUuid = api.uuidStringToBytes("not a UUID");
   equal(invalidUuid instanceof Error && invalidUuid.code, api.INVALID_UUID, "error value");
-  const backfill = unwrap(api.createUuidV7Generator({}));
+  const backfill = api.createUuidV7Generator({});
   const destination = new Uint8Array(20).fill(0x55);
   const generators = [
     (ms: number) => api.generateUuidV7At(ms),
@@ -57,17 +57,16 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     const slug = api.uuidStringToSlug(uuid, alphabet);
     if (slug instanceof Error) throw slug;
     equal(api.uuidSlugToString(slug), uuid, `${alphabet} conversion`);
-    const generator = unwrap(api.createUuidV7Generator({ clock: () => 1234567890000 }));
+    const generator = api.createUuidV7Generator({ clock: () => 1234567890000 });
     const codec = unwrap(
       api.createUuidV7SlugCodec({
         mask: api.UUID_V7_TEST_MASK,
       }),
     );
     equal(
-      unwrap(codec.createMigrationDecoder({ directSlug: true })).uuidSlugToString(
-        slug,
-        api.DIRECT_SLUG_FORMAT,
-      ),
+      codec
+        .createMigrationDecoder({ directSlug: true })
+        .uuidSlugToString(slug, api.DIRECT_SLUG_FORMAT),
       uuid,
       `${alphabet} migration`,
     );
@@ -115,7 +114,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   const codec = unwrap(api.createUuidV7SlugCodec({ mask: api.UUID_V7_TEST_MASK }));
   const { seed, slug: overlap, currentUuid, originalUuid, directUuid } = fixtures.overlap;
   const migrating = unwrap(api.createUuidV7SlugCodec({ mask: { seed } }));
-  const reader = unwrap(migrating.createMigrationDecoder({ originalMask: true, directSlug: true }));
+  const reader = migrating.createMigrationDecoder({ originalMask: true, directSlug: true });
   equal(reader.uuidSlugToString(overlap), currentUuid, "migration default");
   equal(
     reader.uuidSlugToString(overlap, api.CURRENT_MASK_FORMAT),
