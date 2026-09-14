@@ -106,14 +106,21 @@ mod tests {
     use super::*;
     #[test]
     fn accepts_generic_bits_but_requires_v7_for_timestamp() -> Result<(), Error> {
-        let text = "ffffffff-ffff-ffff-ffff-ffffffffffff";
-        let id = Uuid::parse(text)?;
-        assert_eq!(id.to_string(), text);
+        for text in [
+            "ffffffff-ffff-7fff-bfff-ffffffffffff",
+            "ffffffff-ffff-4fff-bfff-ffffffffffff",
+            "ffffffff-ffff-8fff-ffff-ffffffffffff",
+            "00000000-0000-0000-0000-000000000000",
+        ] {
+            let id = Uuid::parse(text)?;
+            assert_eq!(id.to_string(), text);
+            for alphabet in [Alphabet::Base64Url, Alphabet::Base32Hex] {
+                assert_eq!(Uuid::parse_slug(&id.slug(alphabet))?, id);
+            }
+        }
+        let id = Uuid::parse("ffffffff-ffff-ffff-ffff-ffffffffffff")?;
         assert!(id.timestamp().is_err());
         assert_eq!(Uuid::parse("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")?, id);
-        for alphabet in [Alphabet::Base64Url, Alphabet::Base32Hex] {
-            assert_eq!(Uuid::parse_slug(&id.slug(alphabet))?, id);
-        }
         let mut out = [23; 32];
         assert!(id.write_into(&mut out, usize::MAX).is_err());
         assert_eq!(out, [23; 32]);

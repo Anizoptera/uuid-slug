@@ -176,6 +176,20 @@ describe("UUIDv7 timestamp extraction", () => {
 });
 
 describe("direct UUID slugs", () => {
+  it("preserves the full UUID space without masked timestamp limits", () => {
+    for (const uuid of [
+      "ffffffff-ffff-7fff-bfff-ffffffffffff",
+      "ffffffff-ffff-4fff-bfff-ffffffffffff",
+      "ffffffff-ffff-8fff-ffff-ffffffffffff",
+      "00000000-0000-0000-0000-000000000000",
+    ])
+      for (const alphabet of ["base64url", "base32hex"] as const) {
+        const slug = unwrap(uuidStringToDirectSlug(uuid, alphabet));
+        expect(slugToUuidString(slug)).toBe(uuid);
+        expect(uuidBytesToDirectSlug(unwrap(uuidStringToBytes(uuid)), alphabet)).toBe(slug);
+      }
+  });
+
   it("matches stable direct vectors", () => {
     expect(uuidStringToDirectSlug(SAMPLE_V7_A)).toBe("AZhwCO8-f2m2dyLsGlu9sg");
     expect(uuidStringToDirectSlug(SAMPLE_V7_B)).toBe("AZh7uxeLeFiT6PxeVESROw");

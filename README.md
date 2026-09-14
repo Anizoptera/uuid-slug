@@ -159,8 +159,9 @@ index cannot serve. Changing the timestamp inside a UUID changes the ID.
 
 A UUID contains 128 bits: 36 characters as canonical text or 16 bytes in binary form.
 
-Direct slugs need no key. A codec is an object configured with a mask derived from your secret
-seed to encode and decode UUIDv7. A sentinel is a reserved UUIDv7 that the codec leaves unmasked.
+Direct slugs need no key and preserve every UUID version, variant, and timestamp bit without a
+timestamp limit. A codec is an object configured with a mask derived from your secret seed to
+encode and decode UUIDv7. A sentinel is a reserved UUIDv7 that the codec leaves unmasked.
 
 ```mermaid
 flowchart LR

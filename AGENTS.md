@@ -54,6 +54,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   or its canonical 22-character spelling; reject every other length. Preserve direct-slug padding rejection.
 - Explain masking without confusing problem and scope: every UUID version exposes standardized
   fields, while this package deliberately defines a masked wire format only for UUIDv7.
+- Direct slugs are lossless encodings of all 128 UUID bits. Never impose a UUID-version, variant,
+  or timestamp restriction on direct encoding or decoding; version-specific brands only preserve
+  facts already established about a value.
 - Read `docs/cross-language.md` before Rust work or changes shared with TypeScript. It owns
   parity, approved filesystem-safe output and distribution boundaries. Keep base64url defaults;
   select filesystem-safe masked output independently from the direct-slug alphabet.
