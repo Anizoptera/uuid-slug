@@ -214,7 +214,8 @@ function convertUuid() {
 }
 ```
 
-`uuidStringToBytes` accepts mixed-case UUID text with or without hyphens. It either allocates a plain
+`uuidStringToBytes` accepts mixed-case canonical or compact UUID text, UUID URNs, and canonical text
+enclosed by braces. It either allocates a plain
 `Uint8Array` or writes 16 bytes at the requested offset. `bytesToUuidString` reads 16 bytes at an
 optional offset and returns lowercase hyphenated text by default. Pass `UUID_TEXT_UPPERCASE` or
 `"uppercase"` for uppercase output, or `UUID_TEXT_LOWERCASE` when the default must be an explicit
@@ -344,7 +345,7 @@ function createSentinels(seed: string) {
 ```
 
 Each sentinel name must be nonempty and unique within the masking codec. Each sentinel UUID must also be
-unique. Its input may be mixed-case and compact; `maskingCodec.sentinels` exposes normalized lowercase text.
+unique. Its input accepts every UUID text spelling above; `maskingCodec.sentinels` exposes normalized lowercase text.
 
 Sentinels keep their spelling across seed rotation when the alphabet and reserved UUIDs stay the
 same. This lets reserved identities remain recognizable while ordinary IDs use the new mask.
@@ -615,8 +616,8 @@ the old formats you enable. Forms no supported encoder produces are invalid.
 
 Also exported from the package root:
 
-- Permissive type guards: `isUuidText`, `isUuidV4Text`, and `isUuidV7Text` accept mixed case and
-  either the hyphenated or compact spelling.
+- Permissive type guards: `isUuidText`, `isUuidV4Text`, and `isUuidV7Text` accept mixed case,
+  canonical or compact text, UUID URNs, and brace-wrapped canonical text.
 - Normalized type guards: `isUuidString`, `isUuidV4String`, and `isUuidV7String` accept lowercase
   hyphenated text. Slug and byte guards are `isPlainUuidSlug`, `isPlainUuidV4Slug`,
   `isPlainUuidV7Slug`, `isUuidBytes`, `isUuidV4Bytes`, and `isUuidV7Bytes`.

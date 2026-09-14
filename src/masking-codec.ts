@@ -345,12 +345,11 @@ function buildUuidSlugCodec(
       return isUuidSlugError(uuid)
         ? uuid
         : new UuidSlugError(INVALID_UUID, "UUID must be text, bytes, or a UUID slug.");
-    if (uuid.length === 32 || uuid.length === 36) return uuidStringToBytes(uuid);
     const sentinel = sentinels.bySlug.get(uuid)?.bytes;
     if (sentinel) return sentinel;
     if (uuid.length === 26) return decodePlainSlugToBytes(uuid);
     if (uuid.length === 27) return decodeMaskedSlug(uuid, handle, previousMasks);
-    if (uuid.length !== 22) return invalidUuidSlugInput(uuid);
+    if (uuid.length !== 22) return uuidStringToBytes(uuid);
     const plain = decodePlainSlugToBytes(uuid);
     if (plain instanceof Error) return decodeMaskedSlug(uuid, handle, previousMasks);
     const masked = decodeMaskedSlug(uuid, handle, previousMasks);

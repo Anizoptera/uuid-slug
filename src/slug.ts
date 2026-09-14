@@ -296,12 +296,12 @@ export function plainSlugToUuidBytes(
 }
 
 /**
- * Encode mixed-case hyphenated or compact UUID text as a reversible plain slug, using base64url
- * by default. A known UUID version is preserved in the result type. TypeScript rejects known slug
+ * Encode accepted mixed-case UUID text as a reversible plain slug, using base64url by default.
+ * A known UUID version is preserved in the result type. TypeScript rejects known slug
  * values; invalid text or alphabet returns `UuidSlugError`. A preceding `UuidSlugError` is returned
  * unchanged.
  *
- * @param uuid - Hyphenated or compact UUID text with mixed-case hexadecimal digits.
+ * @param uuid - UUID text in an accepted spelling.
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
 export function uuidStringToPlainSlug<Input extends string | UuidSlugError>(
@@ -366,9 +366,9 @@ function decodeKeylessUuid(uuid: unknown): Uint8Array | UuidSlugError {
     return isUuidSlugError(uuid)
       ? uuid
       : new UuidSlugError(INVALID_UUID, "UUID must be text, bytes, or a plain UUID slug.");
-  return uuid.length === 32 || uuid.length === 36
-    ? uuidStringToBytes(uuid)
-    : plainSlugToUuidBytes(uuid);
+  return uuid.length === 22 || uuid.length === 26
+    ? plainSlugToUuidBytes(uuid)
+    : uuidStringToBytes(uuid);
 }
 
 /** Convert UUID text, bytes, or a plain UUID slug to new or caller-owned UUID bytes. */
@@ -462,7 +462,7 @@ export function isPlainUuidV7Slug(value: unknown): value is PlainUuidV7Slug {
 /*#__NO_SIDE_EFFECTS__*/
 function extractStringTimestamp(value: string): number | UuidSlugError {
   let timestamp = 0;
-  if (isUuidV7Text(value))
+  if (isUuidV7Text(value) && (value.length === 32 || value.length === 36))
     return parseInt(
       value.length === 36 ? value.slice(0, 8) + value.slice(9, 13) : value.slice(0, 12),
       16,
@@ -473,24 +473,24 @@ function extractStringTimestamp(value: string): number | UuidSlugError {
       timestamp = timestamp * 256 + slugByte(value, alpha, index);
     return timestamp;
   }
-  if (isUuidText(value) || isPlainUuidSlug(value))
-    return new UuidSlugError(INVALID_UUID_VERSION, UUID_V7_TIMESTAMP_ONLY);
   const bytes = uuidStringToBytes(value);
   if (!(bytes instanceof Error)) {
     if (uuidVersion(bytes) !== 7 || !isRfcVariant(bytes))
       return new UuidSlugError(INVALID_UUID_VERSION, UUID_V7_TIMESTAMP_ONLY);
     return uuidTimestampFromBytesUnchecked(bytes, 0);
   }
+  if (isPlainUuidSlug(value))
+    return new UuidSlugError(INVALID_UUID_VERSION, UUID_V7_TIMESTAMP_ONLY);
   return new UuidSlugError(INVALID_UUID, "Expected UUIDv7 text or a plain UUIDv7 slug.");
 }
 
 /**
- * Return the 48-bit Unix millisecond encoded by hyphenated or compact UUIDv7 text, a plain UUIDv7
- * slug, or UUIDv7 bytes. String forms accept both plain slug alphabets without allocating a byte array.
+ * Return the 48-bit Unix millisecond encoded by accepted UUIDv7 text, a plain UUIDv7 slug, or
+ * UUIDv7 bytes. Compact and canonical text and both plain slug alphabets avoid a byte allocation.
  * Use `codec.extractMaskedUuidV7UnixMs` for masked or sentinel slugs. Other UUID versions and malformed
  * values return `UuidSlugError`. A preceding `UuidSlugError` is returned unchanged.
  *
- * @param value - Hyphenated or compact UUIDv7 text, or a plain UUIDv7 slug in either alphabet.
+ * @param value - UUIDv7 text in an accepted spelling, or a plain UUIDv7 slug in either alphabet.
  */
 export function extractUuidV7UnixMs<Input extends string | UuidSlugError>(
   value: UuidV7TimestampInput<Input>,

@@ -12,6 +12,7 @@ import {
   isPlainUuidV7Slug,
   isUuidString,
   isUuidText,
+  isUuidV4Text,
   isUuidV4String,
   isUuidV7String,
   isUuidV7Text,
@@ -46,6 +47,7 @@ const SAMPLE_V7_A = "01987008-ef3e-7f69-b677-22ec1a5bbdb2";
 const SAMPLE_V7_B = "01987bbb-178b-7858-93e8-fc5e5444913b";
 const SAMPLE_V4 = "b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5";
 const VALID_NIL_UUID_STRING = "00000000-0000-0000-0000-000000000000";
+const VALID_MAX_UUID_STRING = "ffffffff-ffff-ffff-ffff-ffffffffffff";
 const BOXED_VALID_NIL_UUID_STRING = new String(VALID_NIL_UUID_STRING);
 const revokedInput = Proxy.revocable({}, {});
 revokedInput.revoke();
@@ -299,6 +301,52 @@ describe("plain UUID slugs", () => {
     expect(isUuidV4String(compact)).toBe(false);
   });
 
+  it("accepts UUID URNs and brace-wrapped UUID text through universal UUID inputs", () => {
+    const mixed = SAMPLE_V7_A.toUpperCase().replace("58B8", "58b8");
+    const accepted = [`UrN:UuId:${mixed}`, `{${mixed}}`];
+    const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
+
+    for (const value of accepted) {
+      expect(bytesToUuidString(unwrap(uuidStringToBytes(value)))).toBe(SAMPLE_V7_A);
+      expect(uuidToString(value)).toBe(SAMPLE_V7_A);
+      expect(uuidStringToPlainSlug(value)).toBe(uuidStringToPlainSlug(SAMPLE_V7_A));
+      expect(extractUuidV7UnixMs(value)).toBe(extractUuidV7UnixMs(SAMPLE_V7_A));
+      expect(isUuidText(value)).toBe(true);
+      expect(isUuidV7Text(value)).toBe(true);
+      expect(isUuidString(value)).toBe(false);
+      expect(isUuidV7String(value)).toBe(false);
+      expect(codec.uuidToString(value)).toBe(SAMPLE_V7_A);
+    }
+    expect(isUuidV4Text(`urn:uuid:${SAMPLE_V4.toUpperCase()}`)).toBe(true);
+    expect(isUuidV7Text(`{${SAMPLE_V4}}`)).toBe(false);
+    expect(uuidToString(`urn:uuid:${VALID_NIL_UUID_STRING}`)).toBe(VALID_NIL_UUID_STRING);
+    expect(uuidToString(`{${VALID_MAX_UUID_STRING}}`)).toBe(VALID_MAX_UUID_STRING);
+  });
+
+  it("keeps UUID wrappers strict and source-specific slug inputs unchanged", () => {
+    const compact = SAMPLE_V7_A.replaceAll("-", "");
+    const invalid = [
+      `urn:uuid:${compact}`,
+      `{${compact}}`,
+      `{urn:uuid:${SAMPLE_V7_A}}`,
+      `urn:uuid:{${SAMPLE_V7_A}}`,
+      `{{${SAMPLE_V7_A}}}`,
+      `{${SAMPLE_V7_A}`,
+      `${SAMPLE_V7_A}}`,
+      `uuid:${SAMPLE_V7_A}`,
+      ` urn:uuid:${SAMPLE_V7_A}`,
+      `urn:uuid:${SAMPLE_V7_A} `,
+    ];
+
+    for (const value of invalid) {
+      expect(uuidStringToBytes(value)).toBeInstanceOf(UuidSlugError);
+      expect(isUuidText(value)).toBe(false);
+      expect(isUuidV7Text(value)).toBe(false);
+    }
+    expect(plainSlugToUuidString(`urn:uuid:${SAMPLE_V7_A}`)).toBeInstanceOf(UuidSlugError);
+    expect(plainSlugToUuidString(`{${SAMPLE_V7_A}}`)).toBeInstanceOf(UuidSlugError);
+  });
+
   it("formats UUID bytes with built-in lowercase and uppercase presets", () => {
     const bytes = unwrap(uuidStringToBytes(SAMPLE_V7_A));
     const wrapped = new Uint8Array(20);
@@ -393,7 +441,7 @@ describe("plain UUID slugs", () => {
       compact.slice(1),
       `${compact}0`,
       SAMPLE_V7_A.replace("-", "0"),
-      `{${SAMPLE_V7_A}}`,
+      `[${SAMPLE_V7_A}]`,
     ]) {
       expect(uuidStringToBytes(invalid, output)).toBeInstanceOf(Error);
       expect(output.every((byte) => byte === 0x5a)).toBe(true);

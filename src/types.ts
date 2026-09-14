@@ -19,7 +19,7 @@ type Brand<Value, Name extends string> = Value & {
   readonly [brand]: { [BrandName in Name]: true };
 };
 
-/** Valid mixed-case UUID text with or without hyphens; this proves syntax only. */
+/** Valid mixed-case canonical, compact, URN, or brace-wrapped UUID text; this proves syntax only. */
 export type UuidText = Brand<string, "UuidText">;
 /** Valid UUIDv4 text with RFC variant bits, in any accepted spelling. */
 export type UuidV4Text = Brand<UuidText, "UuidV4Text">;
@@ -287,7 +287,7 @@ export interface UuidV7SentinelConfig {
   /** Nonempty application-facing name, unique within one masking codec. */
   readonly name: string;
   /**
-   * Mixed-case hyphenated or compact UUIDv7 text, unique after normalization. Sentinels bypass
+   * UUIDv7 text in an accepted spelling, unique after normalization. Sentinels bypass
    * masking, so their timestamps may exceed `MAX_MASKED_UUID_V7_UNIX_MS`.
    */
   readonly uuid: string;

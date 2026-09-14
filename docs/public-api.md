@@ -10,7 +10,7 @@ boundaries, and [cross-language.md](cross-language.md) owns parity and distribut
 
 | Term | Exact representation | Invariants | Public naming |
 | --- | --- | --- | --- |
-| UUID text | Default output is 36-character hyphenated lowercase text; callers may request uppercase. Parsers also accept compact and mixed-case text. | [RFC 9562 §4](https://www.rfc-editor.org/rfc/rfc9562.html#section-4) permits uppercase, lowercase, and mixed case; it does not choose a default case. This package emits lowercase by default to give each UUID one stable spelling, match common UUID implementations, and align with lowercase base32hex. | `UuidString`, `UuidV4String`, `UuidV7String`; parameter `uuid` on universal converters and `uuidString` on text-only operations. |
+| UUID text | Default output is 36-character hyphenated lowercase text; callers may request uppercase. Parsers also accept compact text, UUID URNs, brace-wrapped text, and mixed case. | [RFC 9562 §4](https://www.rfc-editor.org/rfc/rfc9562.html#section-4) permits uppercase, lowercase, and mixed case; it does not choose a default case. This package emits lowercase by default to give each UUID one stable spelling, match common UUID implementations, and align with lowercase base32hex. | `UuidString`, `UuidV4String`, `UuidV7String`; parameter `uuid` on universal converters and `uuidString` on text-only operations. |
 | UUID bytes | Exactly 16 bytes for a standalone value; an explicit offset selects 16 bytes from a larger array. | Successful owned output is a plain `Uint8Array`. Caller-owned output is returned unchanged by identity and is not written on failure. | `UuidBytes`, `UuidV4Bytes`, `UuidV7Bytes`; parameter `uuid` on universal converters and `uuidBytes` on byte-only operations. |
 | Plain UUID slug | 22 unpadded base64url characters or 26 lowercase base32hex characters. | Keyless and lossless for any UUID. It contains all 128 UUID bits. Noncanonical padding and spellings are rejected. | `PlainUuidSlug`, `PlainUuidV4Slug`, `PlainUuidV7Slug`; parameter `plainUuidSlug` when the source must be known. |
 | Masked UUIDv7 slug | 22 base64url characters or 27 lowercase base32hex characters. | Requires its masking codec, carries the UUIDv7 payload plus a 16-bit check, and supports timestamps below 2^42 milliseconds. It proves format integrity, not issuance. | `MaskedUuidV7Slug`; parameter `maskedUuidSlug` when the source must be known. |
@@ -223,8 +223,10 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 `UUID_TEXT_UPPERCASE` constant; use
 `UUID_TEXT_LOWERCASE` when code needs to carry the default as an explicit reusable choice.
 
-- `uuidStringToBytes` accepts mixed-case, hyphenated UUID text and compact 32-digit hexadecimal
-  text; `bytesToUuidString` converts 16 bytes to hyphenated UUID text in the selected case. Source and
+- `uuidStringToBytes` accepts mixed-case canonical text, compact 32-digit hexadecimal text,
+  `urn:uuid:` followed by canonical text, and canonical text enclosed by `{` and `}`. The URN
+  prefix is case-insensitive. Wrappers cannot nest and cannot contain compact text. `bytesToUuidString`
+  converts 16 bytes to hyphenated UUID text in the selected case. Source and
   destination names remove the parse/format ambiguity, while version-neutral names remain correct
   for every UUID version.
 - Apply `UuidTextCase` only to UUID text. It never changes slug alphabets, UUID bytes, masking,
@@ -232,7 +234,7 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   accepts the case preset in the first unambiguous position, so callers do not construct options or
   pass `undefined` merely to request uppercase UUID text.
 - Writers default to lowercase hyphenated UUID and lowercase base32hex text. UUID readers and
-  `isUuidText` guards accept mixed case and compact text; `isUuidString` guards test normalized
+  `isUuidText` guards accept every UUID spelling listed above; `isUuidString` guards test normalized
   lowercase hyphenated text. Output brands retain the selected normalized form; text-guard brands
   retain validity and version without claiming normalization. Base32hex readers accept mixed case. Base64url remains
   case-sensitive.

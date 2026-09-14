@@ -63,7 +63,27 @@ for (let i = 0; i < 6; i += 1) HEX_DECODE[97 + i] = 10 + i;
 
 const UUID_LENGTH = 36;
 const COMPACT_UUID_LENGTH = 32;
+const UUID_URN_LENGTH = 45;
+const BRACED_UUID_LENGTH = 38;
+const UUID_URN_PREFIX = "urn:uuid:";
+const INVALID_UUID_TEXT_START = -2;
+const COMPACT_UUID_TEXT_START = -1;
 const UUID_BYTE_OFFSETS = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34] as const;
+
+/** Return the first canonical UUID character, or the compact/invalid sentinel. */
+/*#__NO_SIDE_EFFECTS__*/
+function uuidTextStart(value: string): number {
+  if (value.length === COMPACT_UUID_LENGTH) return COMPACT_UUID_TEXT_START;
+  if (value.length === UUID_LENGTH) return 0;
+  if (value.length === BRACED_UUID_LENGTH && value[0] === "{" && value[37] === "}") return 1;
+  if (value.length === UUID_URN_LENGTH) {
+    for (let index = 0; index < UUID_URN_PREFIX.length; index += 1)
+      if ((value.charCodeAt(index) | 32) !== UUID_URN_PREFIX.charCodeAt(index))
+        return INVALID_UUID_TEXT_START;
+    return UUID_URN_PREFIX.length;
+  }
+  return INVALID_UUID_TEXT_START;
+}
 
 const hyphenateHex = /* @__NO_SIDE_EFFECTS__ */ (hex: string, offset: number): UuidString =>
   `${hex.slice(offset, offset + 8)}-${hex.slice(offset + 8, offset + 12)}-${hex.slice(offset + 12, offset + 16)}-${hex.slice(offset + 16, offset + 20)}-${hex.slice(offset + 20, offset + 32)}` as UuidString;
@@ -88,21 +108,20 @@ export function uuidByteAtUnchecked(uuid: string, byteIndex: number): number {
 }
 
 /**
- * Parse mixed-case UUID text into a new plain 16-byte `Uint8Array`. Accept the standard
- * 36-character hyphenated form or 32 hexadecimal characters without hyphens. Known slug values
- * are rejected by TypeScript; invalid text returns `UuidSlugError`. A preceding `UuidSlugError`
- * is returned unchanged.
+ * Parse accepted mixed-case UUID text into a new plain 16-byte `Uint8Array`. Accept canonical or
+ * compact text, a UUID URN, or brace-wrapped canonical text. Known slug values are rejected by
+ * TypeScript; invalid text returns `UuidSlugError`. A preceding `UuidSlugError` is returned unchanged.
  *
- * @param uuid - Hyphenated or compact UUID text with mixed-case hexadecimal digits.
+ * @param uuid - UUID text in an accepted spelling.
  */
 export function uuidStringToBytes<Input extends string | UuidSlugError>(
   uuid: UuidStringInput<Input>,
 ): PreserveUuidVersion<Input, UuidBytes, UuidV4Bytes, UuidV7Bytes> | UuidSlugError;
 /**
- * Parse mixed-case, hyphenated or compact UUID text into caller-owned storage after validating the
- * full input. A preceding `UuidSlugError` is returned unchanged without writing.
+ * Parse accepted mixed-case UUID text into caller-owned storage after validating the full input.
+ * A preceding `UuidSlugError` is returned unchanged without writing.
  *
- * @param uuid - Hyphenated or compact UUID text with mixed-case hexadecimal digits.
+ * @param uuid - UUID text in an accepted spelling.
  * @param output - Caller-owned array that receives the 16 UUID bytes.
  * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
  * outside the written range stay unchanged.
@@ -118,18 +137,19 @@ export function uuidStringToBytes(
   offset = 0,
 ): Uint8Array | UuidSlugError {
   if (typeof uuid !== "string") return invalidUuidStringInput(uuid);
-  const hyphenated = uuid.length === UUID_LENGTH;
-  if (!hyphenated && uuid.length !== COMPACT_UUID_LENGTH)
+  const textStart = uuidTextStart(uuid);
+  if (textStart === INVALID_UUID_TEXT_START)
     return new UuidSlugError(
       INVALID_UUID,
-      "UUID must be 36 hyphenated characters or 32 hexadecimal characters.",
+      "UUID must be canonical, compact, a UUID URN, or brace-wrapped canonical text.",
     );
+  const hyphenated = textStart !== COMPACT_UUID_TEXT_START;
   if (
     hyphenated &&
-    (uuid[8] !== UUID_SEPARATOR ||
-      uuid[13] !== UUID_SEPARATOR ||
-      uuid[18] !== UUID_SEPARATOR ||
-      uuid[23] !== UUID_SEPARATOR)
+    (uuid[textStart + 8] !== UUID_SEPARATOR ||
+      uuid[textStart + 13] !== UUID_SEPARATOR ||
+      uuid[textStart + 18] !== UUID_SEPARATOR ||
+      uuid[textStart + 23] !== UUID_SEPARATOR)
   )
     return new UuidSlugError(INVALID_UUID, "UUID hyphen positions are invalid.");
 
@@ -137,7 +157,9 @@ export function uuidStringToBytes(
   if (badRange) return badRange;
 
   for (let byteIndex = 0; byteIndex < 16; byteIndex += 1) {
-    const textOffset = hyphenated ? (UUID_BYTE_OFFSETS[byteIndex] as number) : byteIndex * 2;
+    const textOffset = hyphenated
+      ? textStart + (UUID_BYTE_OFFSETS[byteIndex] as number)
+      : byteIndex * 2;
     if (
       parsedHexValue(uuid.charCodeAt(textOffset)) < 0 ||
       parsedHexValue(uuid.charCodeAt(textOffset + 1)) < 0
@@ -149,7 +171,9 @@ export function uuidStringToBytes(
   }
   const target = out ?? new Uint8Array(16);
   for (let byteIndex = 0; byteIndex < 16; byteIndex += 1) {
-    const textOffset = hyphenated ? (UUID_BYTE_OFFSETS[byteIndex] as number) : byteIndex * 2;
+    const textOffset = hyphenated
+      ? textStart + (UUID_BYTE_OFFSETS[byteIndex] as number)
+      : byteIndex * 2;
     target[offset + byteIndex] =
       (parsedHexValue(uuid.charCodeAt(textOffset)) << 4) |
       parsedHexValue(uuid.charCodeAt(textOffset + 1));
@@ -253,18 +277,19 @@ export function isRfcVariant(bytes: Uint8Array, offset = 0): boolean {
 /*#__NO_SIDE_EFFECTS__*/
 export function isUuidText(value: unknown): value is UuidText {
   if (typeof value !== "string") return false;
-  const hyphenated = value.length === UUID_LENGTH;
-  if (!hyphenated && value.length !== COMPACT_UUID_LENGTH) return false;
+  const textStart = uuidTextStart(value);
+  if (textStart === INVALID_UUID_TEXT_START) return false;
+  const hyphenated = textStart !== COMPACT_UUID_TEXT_START;
   if (
     hyphenated &&
-    (value[8] !== UUID_SEPARATOR ||
-      value[13] !== UUID_SEPARATOR ||
-      value[18] !== UUID_SEPARATOR ||
-      value[23] !== UUID_SEPARATOR)
+    (value[textStart + 8] !== UUID_SEPARATOR ||
+      value[textStart + 13] !== UUID_SEPARATOR ||
+      value[textStart + 18] !== UUID_SEPARATOR ||
+      value[textStart + 23] !== UUID_SEPARATOR)
   )
     return false;
   for (let i = 0; i < UUID_BYTE_OFFSETS.length; i += 1) {
-    const offset = hyphenated ? (UUID_BYTE_OFFSETS[i] as number) : i * 2;
+    const offset = hyphenated ? textStart + (UUID_BYTE_OFFSETS[i] as number) : i * 2;
     if (
       parsedHexValue(value.charCodeAt(offset)) < 0 ||
       parsedHexValue(value.charCodeAt(offset + 1)) < 0
@@ -282,18 +307,34 @@ const UUID_V7_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9
 /*#__NO_SIDE_EFFECTS__*/
 export function isUuidV4Text(value: unknown): value is UuidV4Text {
   if (!isUuidText(value)) return false;
-  const compact = value.length === COMPACT_UUID_LENGTH;
-  const variant = parsedHexValue(value.charCodeAt(compact ? 16 : 19));
-  return parsedHexValue(value.charCodeAt(compact ? 12 : 14)) === 4 && variant >= 8 && variant <= 11;
+  const textStart = uuidTextStart(value);
+  const variant = parsedHexValue(
+    value.charCodeAt(textStart === COMPACT_UUID_TEXT_START ? 16 : textStart + 19),
+  );
+  return (
+    parsedHexValue(
+      value.charCodeAt(textStart === COMPACT_UUID_TEXT_START ? 12 : textStart + 14),
+    ) === 4 &&
+    variant >= 8 &&
+    variant <= 11
+  );
 }
 
 /** Check accepted UUID text with version 7 and RFC variant bits. */
 /*#__NO_SIDE_EFFECTS__*/
 export function isUuidV7Text(value: unknown): value is UuidV7Text {
   if (!isUuidText(value)) return false;
-  const compact = value.length === COMPACT_UUID_LENGTH;
-  const variant = parsedHexValue(value.charCodeAt(compact ? 16 : 19));
-  return parsedHexValue(value.charCodeAt(compact ? 12 : 14)) === 7 && variant >= 8 && variant <= 11;
+  const textStart = uuidTextStart(value);
+  const variant = parsedHexValue(
+    value.charCodeAt(textStart === COMPACT_UUID_TEXT_START ? 16 : textStart + 19),
+  );
+  return (
+    parsedHexValue(
+      value.charCodeAt(textStart === COMPACT_UUID_TEXT_START ? 12 : textStart + 14),
+    ) === 7 &&
+    variant >= 8 &&
+    variant <= 11
+  );
 }
 
 /** Check canonical lowercase UUID text without claiming a version, variant, or issuance. */

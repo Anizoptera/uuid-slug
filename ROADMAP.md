@@ -6,10 +6,6 @@ Live work only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`.
 
 Adopt the useful competitor behavior without copying interfaces that add more caller burden than capability.
 
-- [ ] Accept standard UUID URNs and common brace-wrapped UUID text at every universal UUID-text input.
-  - [ ] Normalize every accepted spelling to the requested canonical hyphenated case.
-  - [ ] Preserve strict source-specific slug parsing and reject prefixes, wrappers, whitespace, or nesting outside the accepted grammar.
-  - [ ] Prove mixed case, nil, max, versions, malformed wrappers, wrong lengths, and runtime non-string inputs.
 - [ ] Export typed canonical `NIL_UUID` and `MAX_UUID` values in TypeScript and Rust.
   - [ ] Keep nil valid for version-neutral operations and reject it only where an operation requires UUIDv4 or UUIDv7.
   - [ ] Prove direct conversion, both plain-slug alphabets, masking rejection, declarations, and packed consumers.

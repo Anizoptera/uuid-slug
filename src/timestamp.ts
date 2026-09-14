@@ -71,12 +71,12 @@ export function validateTimestampBytes(
 }
 
 /**
- * Return hyphenated UUIDv7 text in the requested case when its timestamp is inside the inclusive symmetric
- * window. Return `timestamp_outside_window` when it is not. This checks clock plausibility, not
+ * Validate accepted UUIDv7 text and return its normalized hyphenated spelling when its timestamp is
+ * inside the inclusive symmetric window. Return `timestamp_outside_window` when it is not. This checks clock plausibility, not
  * expiry, authentication, replay, or issuance. TypeScript rejects known slug and UUIDv4 values. A
  * preceding `UuidSlugError` is returned unchanged.
  *
- * @param uuid - Mixed-case hyphenated or compact UUIDv7 text to validate and normalize.
+ * @param uuid - UUIDv7 text in an accepted spelling to validate and normalize.
  * @param window - Inclusive maximum distance from an explicit or current reference time.
  * @param textCase - Built-in output spelling. Omit for lowercase.
  */
