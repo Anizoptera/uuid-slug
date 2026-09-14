@@ -10,8 +10,11 @@ fn evaluate_caught(input: &str) -> Result<String, &'static str> {
 #[cfg(not(target_arch = "wasm32"))]
 fn plain_caught(input: &str) -> Result<String, &'static str> {
     std::panic::catch_unwind(|| {
-        uuid_slug::Uuid::parse(input)
-            .map(|uuid| uuid.slug(uuid_slug::Alphabet::Base64Url))
+        uuid_slug::Uuid::from_uuid_string(input)
+            .map(|uuid| {
+                uuid.to_plain_uuid_slug(uuid_slug::UuidSlugAlphabet::Base64Url)
+                    .into_string()
+            })
             .map_err(|error| error.code().as_str())
     })
     .map_err(|_| "Rust bridge panicked")?
@@ -187,9 +190,12 @@ pub fn evaluate(input: &str) -> Result<String, wasm_bindgen::JsValue> {
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub struct Derivation {
     future: std::pin::Pin<
-        Box<dyn std::future::Future<Output = Result<uuid_slug::Mask, uuid_slug::Error>> + Send>,
+        Box<
+            dyn std::future::Future<Output = Result<uuid_slug::UuidV7Mask, uuid_slug::Error>>
+                + Send,
+        >,
     >,
-    cancellation: uuid_slug::mask::Cancellation,
+    cancellation: uuid_slug::UuidV7MaskDerivationCancellation,
     uuid: uuid_slug::Uuid,
 }
 
@@ -200,13 +206,13 @@ impl Derivation {
     /// Copy the seed before host code can mutate its buffer.
     #[wasm_bindgen::prelude::wasm_bindgen(constructor)]
     pub fn new(seed: &[u8], iterations: u32, uuid: &str) -> Result<Self, wasm_bindgen::JsValue> {
-        let uuid = uuid_slug::Uuid::parse(uuid)
+        let uuid = uuid_slug::Uuid::from_uuid_string(uuid)
             .map_err(|error| wasm_bindgen::JsValue::from_str(error.code().as_str()))?;
-        uuid.timestamp()
+        uuid.extract_uuid_v7_unix_ms()
             .map_err(|error| wasm_bindgen::JsValue::from_str(error.code().as_str()))?;
-        let cancellation = uuid_slug::mask::Cancellation::default();
+        let cancellation = uuid_slug::UuidV7MaskDerivationCancellation::default();
         Ok(Self {
-            future: Box::pin(uuid_slug::create_mask_async(
+            future: Box::pin(uuid_slug::derive_uuid_v7_mask_async(
                 seed,
                 iterations,
                 "browser",
@@ -232,7 +238,7 @@ impl Derivation {
                     uuid_slug::UuidV7MaskingCodec::new(uuid_slug::UuidV7MaskingCodecOptions::new(
                         mask,
                     ))?
-                    .encode_uuid(self.uuid)
+                    .uuid_to_masked_slug(self.uuid)
                 })
                 .map(Some)
                 .map_err(|error| wasm_bindgen::JsValue::from_str(error.code().as_str())),

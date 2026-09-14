@@ -1,9 +1,164 @@
 //! Preserve every UUID bit while accepting standard text and enforcing canonical slug spellings.
-use crate::{Alphabet, Error, ErrorCode};
-use std::{fmt, str::FromStr};
+use crate::{Error, ErrorCode, UuidSlugAlphabet};
+use std::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
 
 pub(crate) fn utf16_len(text: &str) -> usize {
     text.encode_utf16().count()
+}
+
+/// A canonical unpadded base64url or lowercase base32hex spelling of all 128 UUID bits.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct PlainUuidSlug(pub(crate) String);
+
+impl PlainUuidSlug {
+    /// Borrow the canonical plain UUID slug.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Take ownership of the canonical plain UUID slug text.
+    pub fn into_string(self) -> String {
+        self.0
+    }
+}
+
+impl AsRef<str> for PlainUuidSlug {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl Borrow<str> for PlainUuidSlug {
+    fn borrow(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl Deref for PlainUuidSlug {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_str()
+    }
+}
+
+impl From<PlainUuidSlug> for String {
+    fn from(slug: PlainUuidSlug) -> Self {
+        slug.0
+    }
+}
+
+impl fmt::Display for PlainUuidSlug {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(self.as_str())
+    }
+}
+
+/// A canonical masked UUIDv7 payload in unpadded base64url or lowercase base32hex.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct MaskedUuidV7Slug(pub(crate) String);
+
+impl MaskedUuidV7Slug {
+    /// Borrow the canonical masked UUIDv7 slug.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Take ownership of the canonical masked UUIDv7 slug text.
+    pub fn into_string(self) -> String {
+        self.0
+    }
+}
+
+impl AsRef<str> for MaskedUuidV7Slug {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl Borrow<str> for MaskedUuidV7Slug {
+    fn borrow(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl Deref for MaskedUuidV7Slug {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_str()
+    }
+}
+
+impl From<MaskedUuidV7Slug> for String {
+    fn from(slug: MaskedUuidV7Slug) -> Self {
+        slug.0
+    }
+}
+
+impl fmt::Display for MaskedUuidV7Slug {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(self.as_str())
+    }
+}
+
+/// A masking-codec output: either a masked payload or a registered sentinel's plain slug.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum MaskedOrSentinelUuidV7Slug {
+    /// A keyed masked UUIDv7 payload.
+    Masked(MaskedUuidV7Slug),
+    /// A registered sentinel preserved as an ordinary plain UUID slug.
+    Sentinel(PlainUuidSlug),
+}
+
+impl MaskedOrSentinelUuidV7Slug {
+    /// Borrow either canonical slug spelling without erasing its enum variant.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Masked(slug) => slug.as_str(),
+            Self::Sentinel(slug) => slug.as_str(),
+        }
+    }
+
+    /// Take ownership of either canonical slug spelling.
+    pub fn into_string(self) -> String {
+        match self {
+            Self::Masked(slug) => slug.into_string(),
+            Self::Sentinel(slug) => slug.into_string(),
+        }
+    }
+}
+
+impl AsRef<str> for MaskedOrSentinelUuidV7Slug {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl Borrow<str> for MaskedOrSentinelUuidV7Slug {
+    fn borrow(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl Deref for MaskedOrSentinelUuidV7Slug {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        self.as_str()
+    }
+}
+
+impl From<MaskedOrSentinelUuidV7Slug> for String {
+    fn from(slug: MaskedOrSentinelUuidV7Slug) -> Self {
+        slug.into_string()
+    }
+}
+
+impl fmt::Display for MaskedOrSentinelUuidV7Slug {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(self.as_str())
+    }
 }
 
 /// A 128-bit UUID; generic parsing accepts every version and variant, including nil.
@@ -11,64 +166,64 @@ pub(crate) fn utf16_len(text: &str) -> usize {
 pub struct Uuid([u8; 16]);
 impl Uuid {
     /// Take owned bytes without imposing a version restriction.
-    pub const fn from_bytes(bytes: [u8; 16]) -> Self {
+    pub const fn from_uuid_bytes_array(bytes: [u8; 16]) -> Self {
         Self(bytes)
     }
     /// Borrow all sixteen UUID bytes in wire order.
-    pub const fn as_bytes(&self) -> &[u8; 16] {
+    pub const fn as_uuid_bytes(&self) -> &[u8; 16] {
         &self.0
     }
     /// Read sixteen bytes at an offset, rejecting overflow and short buffers.
-    pub fn from_slice(bytes: &[u8], offset: usize) -> Result<Self, Error> {
+    pub fn from_uuid_bytes(bytes: &[u8], offset: usize) -> Result<Self, Error> {
         let range = range(bytes.len(), offset)?;
         let mut out = [0; 16];
         out.copy_from_slice(&bytes[range]);
         Ok(Self(out))
     }
     /// Parse mixed-case hexadecimal with the canonical four hyphens or without hyphens.
-    pub fn parse(text: &str) -> Result<Self, Error> {
-        text.parse()
+    pub fn from_uuid_string(uuid_string: &str) -> Result<Self, Error> {
+        uuid_string.parse()
     }
     /// Infer the plain alphabet from the disjoint 22- and 26-character lengths.
-    pub fn parse_slug(text: &str) -> Result<Self, Error> {
-        let alphabet = match utf16_len(text) {
-            22 => Alphabet::Base64Url,
-            26 => Alphabet::Base32Hex,
+    pub fn from_plain_uuid_slug(plain_uuid_slug: &str) -> Result<Self, Error> {
+        let alphabet = match utf16_len(plain_uuid_slug) {
+            22 => UuidSlugAlphabet::Base64Url,
+            26 => UuidSlugAlphabet::Base32Hex,
             _ => return Err(Error::new(ErrorCode::InvalidUuidSlug)),
         };
         let mut bytes = [0; 16];
-        alphabet.decode_into(text, &mut bytes, 0)?;
+        alphabet.decode_into(plain_uuid_slug, &mut bytes, 0)?;
         Ok(Self(bytes))
     }
     /// Encode the UUID unchanged in the chosen alphabet.
-    pub fn slug(&self, alphabet: Alphabet) -> String {
-        alphabet.encode(&self.0)
+    pub fn to_plain_uuid_slug(&self, alphabet: UuidSlugAlphabet) -> PlainUuidSlug {
+        alphabet.uuid_bytes_to_plain_slug(&self.0)
     }
     /// Copy the UUID to a checked destination range; failure does not write.
-    pub fn write_into(&self, out: &mut [u8], offset: usize) -> Result<(), Error> {
+    pub fn write_uuid_bytes(&self, out: &mut [u8], offset: usize) -> Result<(), Error> {
         let target = range(out.len(), offset)?;
         out[target].copy_from_slice(&self.0);
         Ok(())
     }
     /// Version nibble, without assuming the RFC variant.
-    pub const fn version(&self) -> u8 {
+    pub const fn uuid_version(&self) -> u8 {
         self.0[6] >> 4
     }
     /// Whether the variant is RFC 9562's `10` bit pattern.
-    pub const fn is_rfc_variant(&self) -> bool {
+    pub const fn is_rfc_uuid_variant(&self) -> bool {
         self.0[8] >> 6 == 2
     }
     /// Require both version 7 and the RFC variant.
-    pub const fn is_v7(&self) -> bool {
-        self.version() == 7 && self.is_rfc_variant()
+    pub const fn is_uuid_v7(&self) -> bool {
+        self.uuid_version() == 7 && self.is_rfc_uuid_variant()
     }
     /// Require both version 4 and the RFC variant.
-    pub const fn is_v4(&self) -> bool {
-        self.version() == 4 && self.is_rfc_variant()
+    pub const fn is_uuid_v4(&self) -> bool {
+        self.uuid_version() == 4 && self.is_rfc_uuid_variant()
     }
     /// Read the 48-bit millisecond timestamp, refusing random bytes from other versions.
-    pub fn timestamp(&self) -> Result<u64, Error> {
-        if !self.is_v7() {
+    pub fn extract_uuid_v7_unix_ms(&self) -> Result<u64, Error> {
+        if !self.is_uuid_v7() {
             return Err(Error::new(ErrorCode::InvalidUuidVersion));
         }
         Ok(self.0[..6]
@@ -114,22 +269,45 @@ mod tests {
             "ffffffff-ffff-8fff-ffff-ffffffffffff",
             "00000000-0000-0000-0000-000000000000",
         ] {
-            let id = Uuid::parse(text)?;
+            let id = Uuid::from_uuid_string(text)?;
             assert_eq!(id.to_string(), text);
-            for alphabet in [Alphabet::Base64Url, Alphabet::Base32Hex] {
-                assert_eq!(Uuid::parse_slug(&id.slug(alphabet))?, id);
+            for alphabet in [UuidSlugAlphabet::Base64Url, UuidSlugAlphabet::Base32Hex] {
+                assert_eq!(
+                    Uuid::from_plain_uuid_slug(&id.to_plain_uuid_slug(alphabet))?,
+                    id
+                );
             }
         }
-        let id = Uuid::parse("ffffffff-ffff-ffff-ffff-ffffffffffff")?;
-        assert!(id.timestamp().is_err());
-        assert_eq!(Uuid::parse("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")?, id);
-        assert_eq!(Uuid::parse("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")?, id);
+        let id = Uuid::from_uuid_string("ffffffff-ffff-ffff-ffff-ffffffffffff")?;
+        assert!(id.extract_uuid_v7_unix_ms().is_err());
+        assert_eq!(
+            Uuid::from_uuid_string("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")?,
+            id
+        );
+        assert_eq!(
+            Uuid::from_uuid_string("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")?,
+            id
+        );
+        assert_eq!(id.to_string(), "ffffffff-ffff-ffff-ffff-ffffffffffff");
         let mut out = [23; 32];
-        assert!(id.write_into(&mut out, usize::MAX).is_err());
+        assert!(id.write_uuid_bytes(&mut out, usize::MAX).is_err());
         assert_eq!(out, [23; 32]);
-        id.write_into(&mut out, 16)?;
-        assert_eq!(Uuid::from_slice(&out, 16)?, id);
+        id.write_uuid_bytes(&mut out, 16)?;
+        assert_eq!(Uuid::from_uuid_bytes(&out, 16)?, id);
         assert_eq!(&out[..16], &[23; 16]);
+        Ok(())
+    }
+
+    #[test]
+    fn plain_slug_keeps_its_type_until_string_ownership_is_requested() -> Result<(), Error> {
+        let uuid = Uuid::from_uuid_string("0190A1B2-C3D4-7E5F-8A9B-0C1D2E3F0000")?;
+        let slug = uuid.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex);
+        let allocation = slug.as_ptr();
+
+        assert_eq!(Uuid::from_plain_uuid_slug(slug.as_ref())?, uuid);
+        let text: String = slug.into();
+        assert_eq!(text, "068a3cm3qhv5v2kr1geisfo000");
+        assert_eq!(text.as_ptr(), allocation);
         Ok(())
     }
 }

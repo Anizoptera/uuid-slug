@@ -1,7 +1,8 @@
 //! Measure varied identifier operations separately from setup and host-bridge overhead.
 use std::{hint::black_box, time::Instant};
 use uuid_slug::{
-    Alphabet, Error, Uuid, UuidV7MaskingCodec, UuidV7MaskingCodecOptions, create_mask,
+    Error, Uuid, UuidSlugAlphabet, UuidV7MaskingCodec, UuidV7MaskingCodecOptions,
+    derive_uuid_v7_mask,
 };
 
 fn sample<T>(name: &str, inputs: &[Uuid], mut operation: impl FnMut(Uuid) -> T) {
@@ -32,7 +33,7 @@ fn sample<T>(name: &str, inputs: &[Uuid], mut operation: impl FnMut(Uuid) -> T) 
 
 #[cfg(feature = "os-rng")]
 fn entropy_resources() -> Result<(), Error> {
-    use uuid_slug::generation::{UuidV7Generator, fill_os_random, uuid_v4_with};
+    use uuid_slug::{UuidV7Generator, fill_os_random_bytes, generate_uuid_v4_with_random_fill};
     // Count calls reaching the real platform source, not the OS's internal refills or syscalls.
     for version in [4, 7] {
         let mut generator = UuidV7Generator::new();
@@ -43,12 +44,12 @@ fn entropy_resources() -> Result<(), Error> {
             let fill = |out: &mut [u8]| {
                 draws += 1;
                 bytes += out.len();
-                fill_os_random(out)
+                fill_os_random_bytes(out)
             };
             black_box(if version == 4 {
-                uuid_v4_with(fill)?
+                generate_uuid_v4_with_random_fill(fill)?
             } else {
-                generator.generate_with(1000.0, fill)?
+                generator.generate_uuid_v7_with_random_fill(1000.0, fill)?
             });
         }
         println!(
@@ -65,17 +66,21 @@ fn entropy_resources() -> Result<(), Error> {
         let calls = 10_000;
         let started = Instant::now();
         std::thread::scope(|scope| {
-            let workers: Vec<_> = (0..threads)
-                .map(|_| {
-                    scope.spawn(|| -> Result<(), Error> {
-                        let mut generator = UuidV7Generator::new();
-                        for _ in 0..calls / threads {
-                            black_box(generator.generate_with(1000.0, fill_os_random)?);
-                        }
-                        Ok(())
+            let workers: Vec<_> =
+                (0..threads)
+                    .map(|_| {
+                        scope.spawn(|| -> Result<(), Error> {
+                            let mut generator = UuidV7Generator::new();
+                            for _ in 0..calls / threads {
+                                black_box(generator.generate_uuid_v7_with_random_fill(
+                                    1000.0,
+                                    fill_os_random_bytes,
+                                )?);
+                            }
+                            Ok(())
+                        })
                     })
-                })
-                .collect();
+                    .collect();
             for worker in workers {
                 worker.join().expect("benchmark worker panicked")?;
             }
@@ -99,60 +104,78 @@ fn main() -> Result<(), Error> {
             bytes[0] &= 3;
             bytes[6] = (bytes[6] & 15) | 0x70;
             bytes[8] = (bytes[8] & 63) | 0x80;
-            Uuid::from_bytes(bytes)
+            Uuid::from_uuid_bytes_array(bytes)
         })
         .collect();
-    let mask = create_mask(b"benchmark-seed-not-for-production", 1, "bench")?;
+    let mask = derive_uuid_v7_mask(b"benchmark-seed-not-for-production", 1, "bench")?;
     let compact = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
         ..UuidV7MaskingCodecOptions::new(mask.clone())
     })?;
     let safe = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
-        slug_alphabet: Alphabet::Base32Hex,
+        masked_slug_alphabet: UuidSlugAlphabet::Base32Hex,
         ..UuidV7MaskingCodecOptions::new(mask)
     })?;
-    sample("plain/base64", &ids, |id| id.slug(Alphabet::Base64Url));
-    sample("plain/base32", &ids, |id| id.slug(Alphabet::Base32Hex));
-    sample("mask/base64", &ids, |id| compact.encode_uuid(id).unwrap());
-    sample("mask/base32", &ids, |id| safe.encode_uuid(id).unwrap());
+    sample("plain/base64", &ids, |id| {
+        id.to_plain_uuid_slug(UuidSlugAlphabet::Base64Url)
+    });
+    sample("plain/base32", &ids, |id| {
+        id.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex)
+    });
+    sample("mask/base64", &ids, |id| {
+        compact.uuid_to_masked_slug(id).unwrap()
+    });
+    sample("mask/base32", &ids, |id| {
+        safe.uuid_to_masked_slug(id).unwrap()
+    });
     let text: Vec<String> = ids.iter().map(ToString::to_string).collect();
-    let encoded: Vec<String> = ids
+    let encoded: Vec<_> = ids
         .iter()
-        .map(|id| compact.encode_uuid(*id))
+        .map(|id| compact.uuid_to_masked_slug(*id))
         .collect::<Result<_, _>>()?;
     let mut cursor = 0;
     sample("parse/uuid", &ids, |_| {
         cursor = (cursor + 1) % text.len();
-        Uuid::parse(&text[cursor]).unwrap()
+        Uuid::from_uuid_string(&text[cursor]).unwrap()
     });
     sample("unmask/base64", &ids, |_| {
         cursor = (cursor + 1) % encoded.len();
-        compact.decode_slug(&encoded[cursor]).unwrap()
+        compact.masked_slug_to_uuid(&encoded[cursor]).unwrap()
     });
     sample("construct/default", &ids, |_| {
-        UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions::new(uuid_slug::public_mask())).unwrap()
+        UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions::new(
+            uuid_slug::uuid_v7_test_mask(),
+        ))
+        .unwrap()
     });
-    let plain: Vec<String> = ids.iter().map(|id| id.slug(Alphabet::Base64Url)).collect();
+    let plain_uuid_slugs: Vec<_> = ids
+        .iter()
+        .map(|id| id.to_plain_uuid_slug(UuidSlugAlphabet::Base64Url))
+        .collect();
     let mut out = [0; 16];
     sample("decode/owned", &ids, |_| {
-        cursor = (cursor + 1) % plain.len();
-        Alphabet::Base64Url.decode(&plain[cursor]).unwrap()
+        cursor = (cursor + 1) % plain_uuid_slugs.len();
+        UuidSlugAlphabet::Base64Url
+            .plain_slug_to_uuid_bytes(&plain_uuid_slugs[cursor])
+            .unwrap()
     });
     sample("decode/caller-buffer", &ids, |_| {
-        cursor = (cursor + 1) % plain.len();
+        cursor = (cursor + 1) % plain_uuid_slugs.len();
         black_box(
-            Alphabet::Base64Url
-                .decode_to(&plain[cursor], &mut out, 0)
+            UuidSlugAlphabet::Base64Url
+                .plain_slug_to_uuid_bytes_into(&plain_uuid_slugs[cursor], &mut out, 0)
                 .unwrap(),
         );
     });
-    let migration = compact.migration_decoder(Default::default());
+    let migration = compact.create_uuid_slug_migration_decoder(Default::default());
     sample("migration/first", &ids, |_| {
         cursor = (cursor + 1) % encoded.len();
-        migration.decode(&encoded[cursor], None).unwrap()
+        migration.uuid_slug_to_uuid(&encoded[cursor], None).unwrap()
     });
     sample("migration/candidates", &ids, |_| {
         cursor = (cursor + 1) % encoded.len();
-        migration.candidates(&encoded[cursor], None).unwrap()
+        migration
+            .uuid_slug_to_uuid_candidates(&encoded[cursor], None)
+            .unwrap()
     });
     #[cfg(feature = "os-rng")]
     if std::env::var_os("UUID_SLUG_PROFILE_FILTER").is_none() {

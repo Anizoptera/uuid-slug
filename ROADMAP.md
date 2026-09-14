@@ -1,5 +1,11 @@
 # Roadmap
 
+- [x] Finish the detached-name audit across the Rust API and every consumer.
+  - [x] Rename public UUID-slug alphabets, masks, conversions, migration choices, and timestamp operations by exact domain meaning.
+  - [x] Update Rust callers, bridge operations, examples, public docs, and API baselines from one rename map.
+  - [x] Replace context-dependent `codec` and `reader` example variables with names that retain their meaning when copied.
+  - [x] Add only behavior or compile checks that expose a residual contract gap; run focused gates and the complete check.
+
 - [x] Replace caller-composed plain-to-masking-codec conversions with deep codec operations.
   - [x] Derive the smallest explicit call shapes from plain, masked, UUID-text, and byte workflows.
   - [x] Keep representation identity explicit where raw base64url text is inherently ambiguous.

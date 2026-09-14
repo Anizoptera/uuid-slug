@@ -1,5 +1,5 @@
 //! Store a fixed 16-bit check beside UUIDv7 content without losing timestamp or random bits.
-use crate::{Error, ErrorCode, alphabet::Alphabet, mask::Mask, uuid::utf16_len};
+use crate::{Error, ErrorCode, alphabet::UuidSlugAlphabet, mask::UuidV7Mask, uuid::utf16_len};
 
 const MAX_MASKED_UUID_V7_HIGH_BYTE: u8 = 3;
 /// Last Unix millisecond representable by the masked UUIDv7 wire format.
@@ -22,7 +22,7 @@ fn tag(bytes: &[u8; 16]) -> u16 {
 }
 
 /// Mix once before formatting or checking reserved output spellings in either alphabet.
-pub(crate) fn mask_bytes(raw: &[u8; 16], mask: &Mask) -> Result<([u8; 16], u8), Error> {
+pub(crate) fn mask_bytes(raw: &[u8; 16], mask: &UuidV7Mask) -> Result<([u8; 16], u8), Error> {
     if raw[6] >> 4 != 7 || raw[8] >> 6 != 2 {
         return Err(Error::new(ErrorCode::InvalidUuidVersion));
     }
@@ -41,9 +41,9 @@ pub(crate) fn mask_bytes(raw: &[u8; 16], mask: &Mask) -> Result<([u8; 16], u8), 
 /// Parse text once before trying keys; canonical padding is checked in either alphabet.
 pub(crate) fn normalize(slug: &str) -> Result<([u8; 16], u8), Error> {
     let alphabet = if utf16_len(slug) == 27 {
-        Alphabet::Base32Hex
+        UuidSlugAlphabet::Base32Hex
     } else {
-        Alphabet::Base64Url
+        UuidSlugAlphabet::Base64Url
     };
     let mut mixed = [0; 16];
     let outer = alphabet.decode_into(slug, &mut mixed, 4)?;
@@ -55,7 +55,7 @@ pub(crate) fn normalize(slug: &str) -> Result<([u8; 16], u8), Error> {
 pub(crate) fn candidate(
     mixed: [u8; 16],
     outer: u8,
-    mask: &Mask,
+    mask: &UuidV7Mask,
 ) -> Result<Option<[u8; 16]>, Error> {
     let mut raw = mask.unmask(mixed)?;
     let inner = (raw[6] >> 4) as u16 | ((raw[8] >> 6) as u16) << 4 | ((raw[0] >> 2) as u16) << 6;
@@ -68,14 +68,14 @@ pub(crate) fn candidate(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mask::create_mask;
+    use crate::mask::derive_uuid_v7_mask;
 
     #[test]
     fn retained_wire_vectors_and_safe_spelling_preserve_all_check_bits() {
         let fixture: serde_json::Value =
             serde_json::from_str(include_str!("../tests/fixtures/fixtures-wire-format.json"))
                 .unwrap();
-        let custom = Mask::custom(
+        let custom = UuidV7Mask::from_permutation_functions(
             "custom-mix",
             |input| {
                 let mut out = [0; 16];
@@ -95,8 +95,8 @@ mod tests {
             },
         )
         .unwrap();
-        let seeded = create_mask(b"golden-vector-seed-v3", 1, "seeded-v2").unwrap();
-        let default = crate::public_mask();
+        let seeded = derive_uuid_v7_mask(b"golden-vector-seed-v3", 1, "seeded-v2").unwrap();
+        let default = crate::uuid_v7_test_mask();
         for case in fixture.as_array().unwrap() {
             // Masking-codec sentinel bypass is deliberately not exercised by this block-level test.
             if case["uuid"] == "00000000-0000-7000-8000-000000000000" {
@@ -108,15 +108,19 @@ mod tests {
                 _ => &seeded,
             };
             let mut raw = [0; 16];
-            Alphabet::Base64Url
+            UuidSlugAlphabet::Base64Url
                 .decode_into(case["plain"].as_str().unwrap(), &mut raw, 0)
                 .unwrap();
             let (mixed, tail) = mask_bytes(&raw, mask).unwrap();
             assert_eq!(
-                Alphabet::Base64Url.encode_tail(&mixed, tail, 4).unwrap(),
+                UuidSlugAlphabet::Base64Url
+                    .encode_tail(&mixed, tail, 4)
+                    .unwrap(),
                 case["masked"].as_str().unwrap()
             );
-            let safe = Alphabet::Base32Hex.encode_tail(&mixed, tail, 4).unwrap();
+            let safe = UuidSlugAlphabet::Base32Hex
+                .encode_tail(&mixed, tail, 4)
+                .unwrap();
             assert_eq!(safe.len(), 27);
             let (parsed, tag) = normalize(&safe).unwrap();
             assert_eq!(candidate(parsed, tag, mask).unwrap(), Some(raw));

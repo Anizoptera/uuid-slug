@@ -1,5 +1,5 @@
 //! Encode identifier bits without accepting alternate padding spellings.
-use crate::{Error, ErrorCode};
+use crate::{Error, ErrorCode, PlainUuidSlug};
 use data_encoding::{BASE64URL_NOPAD, Encoding, Specification};
 use std::sync::LazyLock;
 
@@ -13,16 +13,16 @@ static BASE32HEX: LazyLock<Encoding> = LazyLock::new(|| {
 
 /// Supported output representations; decoding plain slugs infers this from length.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum Alphabet {
+pub enum UuidSlugAlphabet {
     /// Shortest representation; case-sensitive.
     #[default]
     Base64Url,
     /// Lowercase, ASCII-sortable representation safe on case-insensitive filesystems.
     Base32Hex,
 }
-impl Alphabet {
+impl UuidSlugAlphabet {
     /// Number of data bits carried by each character.
-    pub const fn bits(self) -> usize {
+    pub const fn bits_per_character(self) -> usize {
         match self {
             Self::Base64Url => 6,
             Self::Base32Hex => 5,
@@ -44,8 +44,8 @@ impl Alphabet {
         self.encoding().encode(bytes)
     }
     /// Encode exactly one 16-byte UUID payload.
-    pub fn encode(self, bytes: &[u8; 16]) -> String {
-        self.encode_raw(bytes)
+    pub fn uuid_bytes_to_plain_slug(self, uuid_bytes: &[u8; 16]) -> PlainUuidSlug {
+        PlainUuidSlug(self.encode_raw(uuid_bytes))
     }
     /// Encode the 128-bit block and four external check bits without changing their wire order.
     pub(crate) fn encode_tail(
@@ -61,7 +61,7 @@ impl Alphabet {
         full[..16].copy_from_slice(bytes);
         full[16] = tail << 4;
         let mut text = self.encode_raw(&full);
-        text.truncate(132usize.div_ceil(self.bits()));
+        text.truncate(132usize.div_ceil(self.bits_per_character()));
         Ok(text)
     }
     /// Decode an identifier transactionally; invalid input cannot modify the caller's bytes.
@@ -74,7 +74,7 @@ impl Alphabet {
         let encoding = self.encoding();
         match tail_bits {
             0 => {
-                if text.len() != 128usize.div_ceil(self.bits()) {
+                if text.len() != 128usize.div_ceil(self.bits_per_character()) {
                     return Err(self.error());
                 }
                 let mut normalized = [0; 26];
@@ -93,7 +93,7 @@ impl Alphabet {
                 Ok(0)
             }
             4 => {
-                let length = 132usize.div_ceil(self.bits());
+                let length = 132usize.div_ceil(self.bits_per_character());
                 if text.len() != length {
                     return Err(self.error());
                 }
@@ -118,27 +118,27 @@ impl Alphabet {
         }
     }
     /// Decode exactly one canonical 16-byte UUID payload.
-    pub fn decode(self, text: &str) -> Result<[u8; 16], Error> {
+    pub fn plain_slug_to_uuid_bytes(self, plain_uuid_slug: &str) -> Result<[u8; 16], Error> {
         let mut decoded = [0; 16];
-        self.decode_into(text, &mut decoded, 0)?;
+        self.decode_into(plain_uuid_slug, &mut decoded, 0)?;
         Ok(decoded)
     }
 
     /// Decode into caller storage and return only the decoded range, without allocating.
     /// Invalid text and ranges leave storage unchanged.
-    pub fn decode_to<'a>(
+    pub fn plain_slug_to_uuid_bytes_into<'a>(
         self,
-        text: &str,
-        out: &'a mut [u8],
-        offset: usize,
+        plain_uuid_slug: &str,
+        output: &'a mut [u8],
+        output_offset: usize,
     ) -> Result<&'a mut [u8], Error> {
         let mut decoded = [0; 16];
-        self.decode_into(text, &mut decoded, 0)?;
-        let end = offset
+        self.decode_into(plain_uuid_slug, &mut decoded, 0)?;
+        let end = output_offset
             .checked_add(16)
             .ok_or(Error::new(ErrorCode::InvalidBuffer))?;
-        let target = out
-            .get_mut(offset..end)
+        let target = output
+            .get_mut(output_offset..end)
             .ok_or(Error::new(ErrorCode::InvalidBuffer))?;
         target.copy_from_slice(&decoded);
         Ok(target)
@@ -151,13 +151,13 @@ mod tests {
     #[test]
     fn preserves_mask_tail_and_refuses_padding_aliases() -> Result<(), Error> {
         let bytes = [0xa5; 16];
-        for alphabet in [Alphabet::Base64Url, Alphabet::Base32Hex] {
+        for alphabet in [UuidSlugAlphabet::Base64Url, UuidSlugAlphabet::Base32Hex] {
             for tail in 0..16 {
                 let text = alphabet.encode_tail(&bytes, tail, 4)?;
                 let mut out = [0; 16];
                 assert_eq!(alphabet.decode_into(&text, &mut out, 4)?, tail);
                 assert_eq!(out, bytes);
-                if alphabet == Alphabet::Base32Hex {
+                if alphabet == UuidSlugAlphabet::Base32Hex {
                     for padding in 1..8 {
                         let mut alias = text.as_bytes().to_vec();
                         let symbols = b"0123456789abcdefghijklmnopqrstuv";
@@ -182,15 +182,15 @@ mod tests {
                 }
                 assert_eq!(
                     text.len(),
-                    if alphabet == Alphabet::Base64Url {
+                    if alphabet == UuidSlugAlphabet::Base64Url {
                         22
                     } else {
                         27
                     }
                 );
             }
-            let text = alphabet.encode(&bytes);
-            let mut alias = text.into_bytes();
+            let text = alphabet.uuid_bytes_to_plain_slug(&bytes);
+            let mut alias = text.into_string().into_bytes();
             let last = alias.len() - 1;
             // The chosen bytes encode with an even final digit in both alphabets.
             alias[last] += 1;
@@ -212,26 +212,36 @@ mod tests {
     #[test]
     fn base64_uuid_payload_is_exact_and_transactional() -> Result<(), Error> {
         let bytes = [0xa5; 16];
-        let text = Alphabet::Base64Url.encode(&bytes);
-        assert_eq!(Alphabet::Base64Url.decode(&text)?, bytes);
+        let text = UuidSlugAlphabet::Base64Url.uuid_bytes_to_plain_slug(&bytes);
+        assert_eq!(
+            UuidSlugAlphabet::Base64Url.plain_slug_to_uuid_bytes(&text)?,
+            bytes
+        );
         for invalid in ["", "Zg", "Zg=", "Zh", "Zg\n", "é"] {
-            assert!(Alphabet::Base64Url.decode(invalid).is_err());
+            assert!(
+                UuidSlugAlphabet::Base64Url
+                    .plain_slug_to_uuid_bytes(invalid)
+                    .is_err()
+            );
         }
         let mut out = [165; 18];
-        assert_eq!(Alphabet::Base64Url.decode_to(&text, &mut out, 1)?, &bytes);
+        assert_eq!(
+            UuidSlugAlphabet::Base64Url.plain_slug_to_uuid_bytes_into(&text, &mut out, 1)?,
+            &bytes
+        );
         assert_eq!(&out[..1], &[165]);
         assert_eq!(&out[17..], &[165]);
         let saved = out;
         assert!(
-            Alphabet::Base64Url
-                .decode_to("AAAAAAAAAAAAAAAAAAAAA!", &mut out, 1)
+            UuidSlugAlphabet::Base64Url
+                .plain_slug_to_uuid_bytes_into("AAAAAAAAAAAAAAAAAAAAA!", &mut out, 1)
                 .is_err()
         );
         assert_eq!(out, saved);
         for offset in [3, usize::MAX] {
             assert!(
-                Alphabet::Base64Url
-                    .decode_to(&text, &mut out, offset)
+                UuidSlugAlphabet::Base64Url
+                    .plain_slug_to_uuid_bytes_into(&text, &mut out, offset)
                     .is_err()
             );
             assert_eq!(out, saved);

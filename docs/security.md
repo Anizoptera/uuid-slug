@@ -60,7 +60,7 @@ values; use UUID guards when the version or variant matters.
 TypeScript pools platform randomness without expanding it. Refills become usable only after the
 source returns successfully; a partial write followed by failure must be retried, never consumed.
 Consumed pool bytes are erased. Rust draws into private generator buffers before copying output;
-the low-level `fill_os_random` function itself does not promise an unchanged buffer on failure.
+the low-level `fill_os_random_bytes` function itself does not promise an unchanged buffer on failure.
 
 The Rust product crate forbids owned unsafe code; its dependencies still contain unsafe code.
 Development bridges are unpublished. Node and Bun load the same generated N-API boundary, while

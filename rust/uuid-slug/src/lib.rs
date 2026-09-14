@@ -7,21 +7,30 @@
 #![forbid(unsafe_code)]
 #![doc = include_str!("../README.md")]
 
-pub mod alphabet;
-pub mod error;
-pub mod generation;
-pub mod mask;
-pub mod masking_codec;
+mod alphabet;
+mod error;
+mod generation;
+mod mask;
+mod masking_codec;
 mod payload;
 mod siphash;
-pub mod uuid;
+mod uuid;
 
-pub use alphabet::Alphabet;
+pub use alphabet::UuidSlugAlphabet;
 pub use error::{Error, ErrorCode};
-pub use mask::{Mask, create_mask, create_mask_async, public_mask};
+pub use generation::{
+    MAX_UUID_V7_UNIX_MS, UuidV7Generator, generate_uuid_v4_into_with_random_fill,
+    generate_uuid_v4_with_random_fill,
+};
+#[cfg(feature = "os-rng")]
+pub use generation::{fill_os_random_bytes, generate_uuid_v4};
+pub use mask::{
+    UuidV7Mask, UuidV7MaskDerivationCancellation, derive_uuid_v7_mask, derive_uuid_v7_mask_async,
+    uuid_v7_test_mask,
+};
 pub use masking_codec::{
-    MigrationDecoder, MigrationFormat, MigrationOptions, Sentinel, UuidV7MaskingCodec,
-    UuidV7MaskingCodecOptions, UuidV7TimestampWindow,
+    UuidSlugMigrationDecoder, UuidSlugMigrationFormat, UuidSlugMigrationOptions,
+    UuidV7MaskingCodec, UuidV7MaskingCodecOptions, UuidV7Sentinel, UuidV7TimestampWindow,
 };
 pub use payload::MAX_MASKED_UUID_V7_UNIX_MS;
-pub use uuid::Uuid;
+pub use uuid::{MaskedOrSentinelUuidV7Slug, MaskedUuidV7Slug, PlainUuidSlug, Uuid};

@@ -36,6 +36,30 @@ when the source still names exactly one API form. Use `plainSlugToUuidString`,
 `maskedSlugToUuidBytes`, `plainToMaskedUuidSlug`, and `maskedToPlainUuidSlug`. Do not copy full type
 names into both sides of an operation.
 
+Rust uses the same domain terms with Rust spelling and ownership conventions. Use
+`UuidSlugAlphabet`, `UuidV7Mask`, `UuidV7MaskingCodec`, `PlainUuidSlug`, and
+`MaskedUuidV7Slug` wherever the type system can preserve the distinction. Associated constructors
+use `from_…`, borrowed views use `as_…`, owned conversions use `to_…`, and fallible domain actions
+use the same `generate_…`, `derive_…`, `extract_…`, and `validate_…` verbs as TypeScript. Do not
+copy TypeScript's `…To…` shape into Rust, and do not shorten `plain_uuid_slug` or
+`masked_uuid_v7_slug` to `slug` where both forms exist. A qualified call such as
+`Uuid::from_plain_uuid_slug` must still identify the accepted representation without nearby prose.
+Fields and Boolean options follow the same rule: `masked_slug_alphabet`,
+`accept_plain_uuid_slug`, and `accept_original_masked_slug` state exactly what they control.
+
+Rust may use an idiomatic receiver or standard trait only when it leaves one meaning. `Display` may
+produce canonical lowercase hyphenated UUID text because that is `Uuid`'s documented display form.
+`FromStr` may accept supported UUID text because its target type fixes the result. Neither trait
+justifies a generic public helper such as `parse_slug`, `encode_uuid`, `decode_slug`, `slug`, or
+`timestamp`; those names hide a representation, masking requirement, or unit that changes the call.
+
+Rust returns `PlainUuidSlug`, `MaskedUuidV7Slug`, or `MaskedOrSentinelUuidV7Slug` instead of an
+untyped `String`. Each type borrows as `str` without allocation, dereferences to `str`, implements
+`Display`, and converts into `String` without copying the slug bytes. Keep construction private so
+only validated canonical output receives these types. Use the enum variant when a masking codec can
+return either a masked payload or a sentinel's plain slug; do not erase that distinction merely to
+make two strings fit one collection.
+
 Use the same vocabulary for parameters: `uuid` accepts any UUID form supported by the operation,
 `plainUuidSlug` accepts only a plain UUID slug, `maskedUuidSlug` accepts a masked UUIDv7 slug or
 registered sentinel, and `uuidSlug` is reserved for readers that intentionally accept several

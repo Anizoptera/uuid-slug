@@ -44,22 +44,22 @@ Use validated `Uuid` values between operations; parse text once rather than at e
 
 | TypeScript capability | Rust entry point or composition |
 | --- | --- |
-| `uuidStringToBytes` / `bytesToUuidString`; bytes and offsets | `Uuid::parse`, `from_slice`, `as_bytes`, `write_into`, `Display` |
-| Plain slug conversion | `Uuid::slug`, `Uuid::parse_slug` |
-| UUID/string/slug and generic/v4/v7 byte guards | Parse once, then `Uuid::is_v4`, `is_v7`, `is_rfc_variant` |
-| Base64url UUID payload | `Alphabet::Base64Url.encode(&[u8; 16])`, `decode`, `decode_to` |
-| Canonical base64url guard | Check `Alphabet::Base64Url.decode` success for exactly 22 characters |
-| v4 generation and caller storage | `generation::uuid_v4`, `uuid_v4_with`, `uuid_v4_into_with` |
-| v7 generation, explicit time and caller storage | `UuidV7Generator::generate`, `at`, and their `_with`/`_into_with` forms |
-| Generated plain or masked slugs | Generate a `Uuid`, then call `slug` or the keyed codec |
-| UUIDv7 timestamp | `Uuid::timestamp` |
+| `uuidStringToBytes` / `bytesToUuidString`; bytes and offsets | `Uuid::from_uuid_string`, `from_uuid_bytes`, `as_uuid_bytes`, `write_uuid_bytes`, `Display` |
+| Plain slug conversion | `Uuid::to_plain_uuid_slug`, `Uuid::from_plain_uuid_slug` |
+| UUID/string/slug and generic/v4/v7 byte guards | Parse once, then `Uuid::is_uuid_v4`, `is_uuid_v7`, `is_rfc_uuid_variant` |
+| Base64url UUID payload | `UuidSlugAlphabet::Base64Url.uuid_bytes_to_plain_slug`, `plain_slug_to_uuid_bytes`, `plain_slug_to_uuid_bytes_into` |
+| Canonical base64url guard | Check `UuidSlugAlphabet::Base64Url.plain_slug_to_uuid_bytes` success for exactly 22 characters |
+| v4 generation and caller storage | `generate_uuid_v4`, `generate_uuid_v4_with_random_fill`, `generate_uuid_v4_into_with_random_fill` |
+| v7 generation, explicit time and caller storage | `UuidV7Generator::generate_uuid_v7`, `generate_uuid_v7_at_unix_ms`, and their explicit random-fill and caller-output forms |
+| Generated plain or masked slugs | Generate a `Uuid`, then call `to_plain_uuid_slug` or `uuid_to_masked_slug` |
+| UUIDv7 timestamp | `Uuid::extract_uuid_v7_unix_ms` |
 | Last maskable timestamp | `MAX_MASKED_UUID_V7_UNIX_MS` |
-| Sync/async masks and custom transforms | `create_mask`, `create_mask_async`, `Mask::custom(label, mask, unmask)` |
-| Explicit public mask | `UUID_V7_TEST_MASK`; `public_mask()` |
-| Key rotation, masked text/byte conversion and sentinels | `UuidV7MaskingCodecOptions::new`, `UuidV7MaskingCodec::encode_uuid`, `decode_slug`, `Uuid::as_bytes`, `write_into`, `sentinels` |
-| Known/mixed-format migration and candidates | `UuidV7MaskingCodec::migration_decoder`, `MigrationDecoder::decode`, `candidates`, `MigrationOptions` |
-| Plain timestamp window | Parse UUID or plain slug, then `UuidV7TimestampWindow::validate`; retain the original text if needed |
-| Masked timestamp window | `UuidV7MaskingCodec::validate_slug_timestamp` |
+| Sync/async masks and custom transforms | `derive_uuid_v7_mask`, `derive_uuid_v7_mask_async`, `UuidV7Mask::from_permutation_functions` |
+| Explicit public mask | `UUID_V7_TEST_MASK`; `uuid_v7_test_mask()` |
+| Key rotation, masked conversion and sentinels | `UuidV7MaskingCodecOptions::new`, `uuid_to_masked_slug`, `masked_slug_to_uuid`, `sentinels` |
+| Known/mixed-format migration and candidates | `create_uuid_slug_migration_decoder`, `uuid_slug_to_uuid`, `uuid_slug_to_uuid_candidates`, `UuidSlugMigrationOptions` |
+| Plain timestamp window | Parse UUID or plain slug, then `UuidV7TimestampWindow::validate_uuid_v7`; retain the original text if needed |
+| Masked timestamp window | `UuidV7MaskingCodec::validate_masked_uuid_v7_slug_unix_ms` |
 | Error classification and causes | `Error::code`, `ErrorCode::as_str`, and `std::error::Error::source` |
 
 TypeScript additionally exports `isUuidSlugError` because JavaScript values can cross realms or
@@ -71,15 +71,16 @@ error names and codes. It is a classifier, not an authenticity boundary for untr
 Generators own mutable sequence state; codecs own immutable keys. Both languages require callers
 to select private key material or the published mask explicitly. Keeping generation separate allows
 shared codecs without a hidden generator lock. Default generators use platform entropy; custom
-`_with` callbacks must fill the entire destination or fail. Pass `generation::fill_os_random` to
+`_with` callbacks must fill the entire destination or fail. Pass `fill_os_random_bytes` to
 caller-buffer operations for the same platform source. Invalid destination ranges draw no entropy.
-`Alphabet::encode` accepts a 16-byte array and cannot receive another payload size. It preserves
-every 16-byte value. `decode` returns a 16-byte array or an error for non-canonical input. UUID
+`UuidSlugAlphabet::uuid_bytes_to_plain_slug` accepts a 16-byte array and cannot receive another
+payload size. It preserves every 16-byte value. `plain_slug_to_uuid_bytes` returns a 16-byte array
+or an error for non-canonical input. UUID
 version and variant checks belong to UUID guards.
-`decode_to`, UUID text and slug parsing validate the complete identifier before writing; all
+`plain_slug_to_uuid_bytes_into`, UUID text and slug parsing validate the complete identifier before writing; all
 fixed-size decoding, parsing and generation commit caller storage only on success.
 
-Async mask derivation returns an opaque `Send` future and a separate public `Cancellation`
+Async mask derivation returns an opaque `Send` future and a separate public `UuidV7MaskDerivationCancellation`
 handle. Callers can schedule and cancel work without depending on the derivation state's fields,
 layout, or incidental auto-traits.
 

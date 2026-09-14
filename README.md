@@ -198,8 +198,8 @@ Decode a masked public ID directly into your database or protocol buffer using y
 ```ts
 import type { UuidV7MaskingCodec } from "@anizoptera/uuid-slug";
 
-function decodePublicId(ids: UuidV7MaskingCodec, publicId: string, record: Uint8Array, offset: number) {
-  return ids.uuidToBytes(publicId, record, offset);
+function decodePublicId(maskingCodec: UuidV7MaskingCodec, publicId: string, record: Uint8Array, offset: number) {
+  return maskingCodec.uuidToBytes(publicId, record, offset);
 }
 ```
 
@@ -277,9 +277,9 @@ import {
 } from "@anizoptera/uuid-slug";
 
 function createPublicIdGenerator(seed: string) {
-  const ids = createUuidV7MaskingCodec({ mask: { seed } });
-  if (isUuidSlugError(ids)) return ids;
-  return ids.generateMaskedUuidV7Slug;
+  const maskingCodec = createUuidV7MaskingCodec({ mask: { seed } });
+  if (isUuidSlugError(maskingCodec)) return maskingCodec;
+  return maskingCodec.generateMaskedUuidV7Slug;
 }
 ```
 
@@ -334,12 +334,12 @@ Read the validated names, UUIDs, and slugs from `maskingCodec.sentinels`:
 ```ts
 import { createUuidV7MaskingCodec, isUuidSlugError } from "@anizoptera/uuid-slug";
 
-function createIds(seed: string) {
-  const ids = createUuidV7MaskingCodec({
+function createSentinels(seed: string) {
+  const maskingCodec = createUuidV7MaskingCodec({
     mask: { seed },
     sentinels: [{ name: "unknownUser", uuid: "00000000-0002-7000-8000-000000000000" }],
   });
-  return isUuidSlugError(ids) ? ids : ids.sentinels;
+  return isUuidSlugError(maskingCodec) ? maskingCodec : maskingCodec.sentinels;
 }
 ```
 
@@ -404,12 +404,12 @@ import { isUuidSlugError } from "@anizoptera/uuid-slug";
 import type { UuidV7MaskingCodec, UuidV7String } from "@anizoptera/uuid-slug";
 
 async function findAuthorizedRecord<Record>(
-  ids: UuidV7MaskingCodec,
+  maskingCodec: UuidV7MaskingCodec,
   slug: string,
   findByUuid: (uuid: UuidV7String) => Promise<Record | undefined>,
   canRead: (record: Record) => boolean,
 ) {
-  const uuid = ids.uuidToString(slug);
+  const uuid = maskingCodec.uuidToString(slug);
   if (isUuidSlugError(uuid)) return uuid;
   const record = await findByUuid(uuid);
   return record !== undefined && canRead(record) ? record : undefined;
@@ -716,7 +716,7 @@ async function createResponsiveCodec(
 
 The async form derives the same keys and accepts the same seed settings. It splits encoding,
 packing and hashing into cooperative work slices, allowing host tasks to run during long
-construction. Cancellation stops derivation and returns `UuidSlugError` with code `aborted` and
+construction. UuidV7MaskDerivationCancellation stops derivation and returns `UuidSlugError` with code `aborted` and
 `signal.reason` as its cause. Invalid options return `invalid_mask`; unexpected construction
 failures retain their cause. No partially derived mask is returned.
 
@@ -770,12 +770,12 @@ Create a migration reader from your codec. Enable only the old formats your appl
 ```ts
 import type { UuidV7MaskingCodec } from "@anizoptera/uuid-slug";
 
-function readLegacySlug(ids: UuidV7MaskingCodec, incomingSlug: string) {
-  const reader = ids.createUuidSlugMigrationDecoder({
+function readLegacySlug(maskingCodec: UuidV7MaskingCodec, incomingSlug: string) {
+  const migrationDecoder = maskingCodec.createUuidSlugMigrationDecoder({
     acceptFixedMask: true,
     acceptPlainSlug: true,
   });
-  return reader.uuidToString(incomingSlug);
+  return migrationDecoder.uuidToString(incomingSlug);
 }
 ```
 
@@ -798,13 +798,13 @@ import { isUuidSlugError, FIXED_MASK_FORMAT } from "@anizoptera/uuid-slug";
 import type { UuidSlugMigrationDecoder, UuidV7MaskingCodec } from "@anizoptera/uuid-slug";
 
 function replaceOriginalSlug(
-  ids: UuidV7MaskingCodec,
-  reader: UuidSlugMigrationDecoder<typeof FIXED_MASK_FORMAT>,
+  maskingCodec: UuidV7MaskingCodec,
+  migrationDecoder: UuidSlugMigrationDecoder<typeof FIXED_MASK_FORMAT>,
   oldSlug: string,
 ) {
-  const uuid = reader.uuidToString(oldSlug, FIXED_MASK_FORMAT);
+  const uuid = migrationDecoder.uuidToString(oldSlug, FIXED_MASK_FORMAT);
   if (isUuidSlugError(uuid)) return uuid;
-  const replacement = ids.uuidToMaskedSlug(uuid);
+  const replacement = maskingCodec.uuidToMaskedSlug(uuid);
   if (isUuidSlugError(replacement)) return replacement;
   return { uuid, replacement }; // Keep uuid in the database; use replacement in new links.
 }
@@ -824,11 +824,11 @@ import { isUuidSlugError } from "@anizoptera/uuid-slug";
 import type { UuidSlugMigrationDecoder, UuidString } from "@anizoptera/uuid-slug";
 
 async function findMigratedRecord(
-  reader: UuidSlugMigrationDecoder,
+  migrationDecoder: UuidSlugMigrationDecoder,
   incomingSlug: string,
   findRecordsByUuids: (uuids: readonly UuidString[]) => Promise<readonly unknown[]>,
 ) {
-  const candidates = reader.uuidToStringCandidates(incomingSlug);
+  const candidates = migrationDecoder.uuidToStringCandidates(incomingSlug);
   if (isUuidSlugError(candidates)) return candidates;
   const matches = candidates.length ? await findRecordsByUuids(candidates) : [];
   if (matches.length !== 1)
@@ -845,9 +845,9 @@ An old sentinel alias can also be a seeded masked ID. `uuidToStringCandidates` r
 `uuidToString` keeps sentinel priority.
 
 Keep this reader while old inputs must work. Replace it with
-`ids.createUuidSlugMigrationDecoder({ acceptPlainSlug: true })` to stop trying the fixed mask, or
-`ids.createUuidSlugMigrationDecoder({ acceptFixedMask: true })` to stop plain-slug decoding.
-`ids.createUuidSlugMigrationDecoder()` tries only current keys and sentinels. Removing the migration reader entirely
+`maskingCodec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true })` to stop trying the fixed mask, or
+`maskingCodec.createUuidSlugMigrationDecoder({ acceptFixedMask: true })` to stop plain-slug decoding.
+`maskingCodec.createUuidSlugMigrationDecoder()` tries only current keys and sentinels. Removing the migration reader entirely
 leaves ordinary masking-codec decoding unchanged. Neither method can identify the issuing format from
 the slug alone, so successful decoding is not a reliable count of legacy traffic.
 
