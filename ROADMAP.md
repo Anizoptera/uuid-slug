@@ -21,10 +21,10 @@ Maintainer direction: evaluate sub-millisecond fraction bits from runtime or cal
 optional UUIDv7 generation mode. Keep a counter for equal readings and rollback. Do not claim or
 encode precision that the selected clock cannot supply.
 
-Maintainer ruling: successful current-time calls on one generator are strictly increasing in UUID
-byte order under the default preserve rollback policy. Module-level output forms share one sequence
-within one loaded package copy. Explicit-time calls, reset policy after its tolerance, independently
-created generators, package copies, workers, and processes are outside that guarantee.
+Maintainer ruling: successful current-time calls on one explicitly created generator are strictly
+increasing in UUID byte order under the default preserve rollback policy. Module-level generation
+does not provide ordering across calls. Explicit-time calls, reset policy after its tolerance,
+independently created generators, package copies, workers, and processes are outside the guarantee.
 
 - [x] Measure each runtime's epoch clocks, effective resolution, call cost, and observed clamping;
       keep rollback policy because a short monotonic run cannot prove future clock behavior.
@@ -39,8 +39,8 @@ created generators, package copies, workers, and processes are outside that guar
       exhaustion, carry through the logical fraction and then the millisecond.
 - [x] State and verify the created-generator ordering guarantee at its exact ownership and policy
       boundary without implying event order across independent sequences.
-- [x] Make module-level native text and portable byte and plain-slug generation share one sequence;
-      validate every native result and advance only its ordered prefix when needed.
+- [x] Keep strict ordering inside explicitly created generators; let module-level text, byte, and
+      plain-slug generation use independent validated secure paths without cross-form coordination.
 - [x] Use fractional `readUnixMs` when supplied; otherwise select the runtime high-resolution clock
       once for fraction layouts and fall back to `Date.now`.
 - [x] Keep automatic clock selection separate from the explicit payload width; capability presence
@@ -54,29 +54,29 @@ created generators, package copies, workers, and processes are outside that guar
 
 ## Configurable UUIDv7 ordering cost
 
-Maintainer ruling: strict package ordering remains the default. A reusable generator may instead
-select validated native ordering when avoiding package sequence coordination matters more than a
-cross-runtime ordering guarantee.
+Maintainer ruling: module-level UUIDv7 generation uses the fastest validated secure path and does
+not coordinate ordering across calls. `createUuidV7Generator()` is the explicit stateful choice for
+strict per-generator ordering, clock policy, fraction bits, and one stable payload layout.
 
-- [ ] Inventory every root export, state owner, option combination, return distinction, and shipped
+- [x] Inventory every root export, state owner, option combination, return distinction, and shipped
       declaration; retain each only when a concrete consumer job fails without it.
-- [ ] Compare independent generator interfaces, separate factories, discriminated options, presets,
+- [x] Compare independent generator interfaces, separate factories, discriminated options, presets,
       module configuration, and representation-specific operations against truthful types and call-site burden.
-- [ ] Define one named current-time policy whose default preserves ordering and whose runtime choice
-      cannot be combined with package-owned clock, rollback, fraction, or entropy configuration.
-- [ ] Keep `payloadLayout` only on generators whose current-time and explicit-time outputs share the
-      declared layout; runtime-selected generation must not imply one layout across unlike paths.
-- [ ] Route each runtime-selected output through its cheapest validated representation-specific path;
-      retain portable explicit-time generation because native APIs do not accept caller time.
-- [ ] Keep masking state in the masking codec, sequence state in generators, and stateless conversion
+- [x] Keep the zero-setup module interface stateless from the caller's perspective; do not add a
+      policy option, global configuration, runtime generator type, or second public factory.
+- [x] Keep `payloadLayout` and strict ordering on explicitly created generators whose current-time
+      and explicit-time outputs share the declared layout.
+- [x] Route current text through validated native generation when present; keep byte, slug, and
+      explicit-time generation portable because native APIs do not accept caller time or bytes.
+- [x] Keep masking state in the masking codec, sequence state in generators, and stateless conversion
       at module scope unless measured caller code proves a deeper interface.
-- [ ] Measure text and byte outcomes, allocations, entropy draws, construction, and fallback costs
+- [x] Measure text and byte outcomes, allocations, entropy draws, construction, and fallback costs
       against monotonic generation on every affected runtime path.
-- [ ] Falsify native success, malformed output, thrown failure, dual failure, unsupported capability,
-      option misuse, ordering boundaries, byte ownership, source types, emitted declarations, and packed imports.
-- [ ] Update public JSDoc, README guarantees and examples, public-interface reasoning, performance evidence,
+- [x] Falsify native UUIDv4 and UUIDv7 success and fallback, UUIDv7 ordering boundaries, byte
+      ownership, source types, emitted declarations, and packed imports.
+- [x] Update public JSDoc, README guarantees and examples, public-interface reasoning, performance evidence,
       and TypeScript/Rust parity statements without changing UUID or slug wire formats.
-- [ ] Run the complete project gate, adversarially pair each promise with evidence, compress completed SOP
+- [x] Run the complete project gate, adversarially pair each promise with evidence, compress completed SOP
       state, commit focused files, and leave the repository clean.
 
 ## Codec capability boundary

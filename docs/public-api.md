@@ -284,6 +284,9 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 - Keep created generators on preserve-order rollback behavior by default. An explicit reset or
   error policy includes the maximum total clock skew it tolerates from the accepted high-water
   reading. Failed clock and entropy operations leave sequence and clock state unchanged.
+- Keep module-level UUIDv7 generation on the fastest validated secure path for each output form; it
+  does not coordinate sequence state across calls. Callers explicitly create a generator when they
+  need strict ordering, clock policy, fraction bits, custom entropy, or one stable payload layout.
 - Inspect the four-bit UUID version through `extractUuidVersion` or Rust `Uuid::uuid_version`.
   TypeScript returns `UuidVersion`, the exact `0..15` union. The result does not prove that the
   variant or version is valid for another operation.
@@ -321,10 +324,9 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   the default preserve policy. The counter continues through equal fraction buckets and clock
   rollback, then carries into the logical fraction and millisecond fields. Reset may move backward
   after its tolerance, and explicit-time methods use independent randomness outside this guarantee.
-- Module-level text, byte, and paired plain-slug helpers share one sequence within one loaded package
-  copy. Validate every native UUIDv7 result and adopt it only when it increases that sequence;
-  otherwise preserve its fresh random tail and advance only its ordered prefix. Independently
-  created generators, package copies, workers, and processes keep independent state.
+- Module-level text, byte, and paired plain-slug helpers do not share sequence state. Select each
+  representation's fastest validated secure runtime or portable path without converting through a
+  slower representation.
 - Keep standalone operations with complete names. Function properties and representation
   namespaces would duplicate them and make detached names less clear.
 - Keep one error-value path. Nullable and throwing duplicates discard diagnostics or split control

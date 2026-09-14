@@ -10,8 +10,8 @@ import { formatUuidBytesUnchecked, invalidUuidTextCase, isUuidTextCase } from ".
 import type { SlugAlphabet } from "./slug.ts";
 
 /**
- * Generate a plain UUIDv7 slug. Lowercase base32hex preserves the module-level UUID byte order;
- * base64url does not preserve that order under text comparison.
+ * Generate a plain UUIDv7 slug. Lowercase base32hex preserves UUID byte order; base64url does not
+ * preserve that order under text comparison. Module-level calls do not provide ordering across calls.
  *
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
@@ -26,8 +26,8 @@ export function generatePlainUuidV7Slug(
 }
 
 /**
- * Generate UUIDv7 text and a plain slug for the same UUID. Successful calls join the module-level
- * current-time sequence.
+ * Generate UUIDv7 text and a plain slug for the same UUID. Module-level calls do not provide
+ * ordering across calls.
  *
  * @param alphabet - Slug spelling. Omit for the shorter 22-character base64url form.
  * @param textCase - UUID text spelling. Pass it alone to keep the default slug alphabet.

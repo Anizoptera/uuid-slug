@@ -3,7 +3,6 @@
 import {
   checkByteRange,
   checkRange,
-  failedFallback,
   fillRandomBytes,
   INVALID_TIMESTAMP,
   RNG_UNAVAILABLE,
@@ -11,7 +10,7 @@ import {
   readClock,
   UuidSlugError,
 } from "./errors.ts";
-import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE, UUID_V7_ROLLBACK_ERROR } from "./types.ts";
+import { UUID_TEXT_LOWERCASE, UUID_V7_ROLLBACK_ERROR } from "./types.ts";
 import type {
   UuidTextCase,
   UuidV7Bytes,
@@ -19,14 +18,7 @@ import type {
   UuidV7Generator,
   UuidV7StringFor,
 } from "./types.ts";
-import {
-  formatUuidBytesUnchecked,
-  invalidUuidTextCase,
-  isUuidV7String,
-  isUuidTextCase,
-  uuidByteAtUnchecked,
-} from "./uuid.ts";
-import type { Runtime } from "./runtime/types.ts";
+import { formatUuidBytesUnchecked, invalidUuidTextCase, isUuidTextCase } from "./uuid.ts";
 import { MAX_UUID_V7_UNIX_MS, isValidUuidV7UnixMs, rejectUuidV7UnixMs } from "./v7-timestamp.ts";
 
 /** Internal controls for exercising the portable UUIDv7 state machine. */
@@ -39,19 +31,6 @@ interface PortableUuidV7GeneratorOptions {
   readonly clockRollback?: Extract<UuidV7ClockRollbackPolicy, { readonly toleranceMs: number }>;
   /** Number of leading payload bits assigned to the clock fraction. */
   readonly subMillisecondFractionBits?: number;
-}
-
-interface PortableUuidV7Generator extends UuidV7Generator {
-  /** Keep or minimally advance a validated native UUID and make it the current ordered value. */
-  integrateNativeUuidV7(
-    this: void,
-    uuid: UuidV7StringFor<typeof UUID_TEXT_LOWERCASE>,
-  ): UuidV7StringFor<typeof UUID_TEXT_LOWERCASE> | UuidSlugError;
-  /** Advance current state using the fresh tail from a validated non-increasing native UUID. */
-  advanceWithNativeUuidV7(
-    this: void,
-    uuid: UuidV7StringFor<typeof UUID_TEXT_LOWERCASE>,
-  ): UuidV7StringFor<typeof UUID_TEXT_LOWERCASE> | UuidSlugError;
 }
 
 function writeTimestampWords(bytes: Uint8Array, ms: number, offset: number) {
@@ -148,7 +127,7 @@ const seedLo = /* @__NO_SIDE_EFFECTS__ */ (bytes: Uint8Array) =>
  */
 export function createPortableUuidV7Generator(
   options: PortableUuidV7GeneratorOptions,
-): PortableUuidV7Generator {
+): UuidV7Generator {
   const readUnixMs = options.readUnixMs ?? Date.now;
   const fill = options.fillRandom;
   const rollback = options.clockRollback;
@@ -351,183 +330,14 @@ export function createPortableUuidV7Generator(
     return formatUuidV7(bytesAt(timestamp, textBytes), textCase);
   }
 
-  function integrateNativeUuidV7(
-    uuid: UuidV7StringFor<typeof UUID_TEXT_LOWERCASE>,
-  ): UuidV7StringFor<typeof UUID_TEXT_LOWERCASE> | UuidSlugError {
-    let ms = 0;
-    for (let index = 0; index < 6; index += 1) ms = ms * 256 + uuidByteAtUnchecked(uuid, index);
-    const hi = ((uuidByteAtUnchecked(uuid, 6) & 0x0f) << 6) | (uuidByteAtUnchecked(uuid, 7) >>> 2);
-    const lo =
-      (((uuidByteAtUnchecked(uuid, 7) & 0x03) << 30) |
-        ((uuidByteAtUnchecked(uuid, 8) & 0x3f) << 24) |
-        (uuidByteAtUnchecked(uuid, 9) << 16) |
-        (uuidByteAtUnchecked(uuid, 10) << 8) |
-        uuidByteAtUnchecked(uuid, 11)) >>>
-      0;
-    let follows =
-      ms > lastMs || (ms === lastMs && (hi > counterHi || (hi === counterHi && lo > counterLo)));
-    if (ms === lastMs && hi === counterHi && lo === counterLo) {
-      for (let index = 12; index < 16; index += 1) {
-        const difference = uuidByteAtUnchecked(uuid, index) - (randomTail[index - 12] as number);
-        if (difference !== 0) {
-          follows = difference > 0;
-          break;
-        }
-      }
-    }
-    copyNativeTail(uuid);
-    if (follows) {
-      lastMs = ms;
-      counterHi = hi;
-      counterLo = lo;
-      clockHighWaterMs = Math.max(clockHighWaterMs, ms);
-      return uuid;
-    }
-    return advanceWithNativeUuidV7(uuid, true);
-  }
-
-  function copyNativeTail(uuid: UuidV7StringFor<typeof UUID_TEXT_LOWERCASE>) {
-    for (let index = 12; index < 16; index += 1)
-      randomTail[index - 12] = uuidByteAtUnchecked(uuid, index);
-  }
-
-  function advanceWithNativeUuidV7(
-    uuid: UuidV7StringFor<typeof UUID_TEXT_LOWERCASE>,
-    tailAlreadyCopied = false,
-  ): UuidV7StringFor<typeof UUID_TEXT_LOWERCASE> | UuidSlugError {
-    if (!tailAlreadyCopied) copyNativeTail(uuid);
-    const nextLo = (counterLo + 1) >>> 0;
-    const nextHi = counterHi + (nextLo === 0 ? 1 : 0);
-    if (nextHi > 0x3ff) {
-      if (lastMs >= MAX_UUID_V7_UNIX_MS)
-        return new UuidSlugError(
-          INVALID_TIMESTAMP,
-          `UUIDv7 sequence exhausted at Unix millisecond ${MAX_UUID_V7_UNIX_MS}; another UUID would exceed the 48-bit timestamp.`,
-        );
-      lastMs += 1;
-      counterHi = 0;
-      counterLo = 0;
-    } else {
-      counterHi = nextHi;
-      counterLo = nextLo;
-    }
-    clockHighWaterMs = Math.max(clockHighWaterMs, lastMs);
-    writeBytes(textBytes, 0, lastMs, counterHi, counterLo);
-    return formatUuidBytesUnchecked(textBytes, 0, UUID_TEXT_LOWERCASE) as UuidV7StringFor<
-      typeof UUID_TEXT_LOWERCASE
-    >;
-  }
-
   return {
     // Text formatting consumes bytes synchronously, so one generator-owned buffer removes an
     // allocation without exposing mutable storage. The reentrancy guard protects it while readUnixMs
     // and entropy callbacks run.
     payloadLayout,
-    advanceWithNativeUuidV7,
-    integrateNativeUuidV7,
     generateUuidV7,
     generateUuidV7AtUnixMs,
     generateUuidV7Bytes,
     generateUuidV7BytesAtUnixMs,
-  };
-}
-
-/**
- * Join native text and portable byte generation behind one ordering state. A validated native UUID
- * supplies both time and fresh entropy; when it would not increase the sequence, only its ordered
- * prefix is advanced. Re-measure when runtimes expose native bytes or sequence state directly;
- * bench/PERFORMANCE.md owns the cost.
- */
-export function createRuntimeGenerator(runtime: Runtime): Omit<UuidV7Generator, "payloadLayout"> {
-  const fallback = createPortableUuidV7Generator({ fillRandom: runtime.fillRandom });
-  let lastUuid: UuidV7StringFor<typeof UUID_TEXT_LOWERCASE> | undefined;
-  let fallbackIsCurrent = true;
-
-  function synchronizeFallback() {
-    if (fallbackIsCurrent || lastUuid === undefined) return;
-    fallback.integrateNativeUuidV7(lastUuid);
-    fallbackIsCurrent = true;
-  }
-
-  function portableText<Case extends UuidTextCase>(
-    textCase: Case,
-  ): UuidV7StringFor<Case> | UuidSlugError {
-    synchronizeFallback();
-    const result = fallback.generateUuidV7(textCase);
-    if (!(result instanceof Error)) {
-      lastUuid = result.toLowerCase() as UuidV7StringFor<typeof UUID_TEXT_LOWERCASE>;
-      fallbackIsCurrent = true;
-    }
-    return result;
-  }
-
-  function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-    textCase: Case = UUID_TEXT_LOWERCASE as Case,
-  ): UuidV7StringFor<Case> | UuidSlugError {
-    if (!isUuidTextCase(textCase)) return portableText(textCase);
-    // Missing capability goes directly to portable text; a present capability is validated below
-    // because native exceptions or malformed values must degrade without weakening the result.
-    const native = runtime.uuidV7;
-    if (!native) return portableText(textCase);
-    let nativeCause: unknown;
-    try {
-      const uuid = native();
-      if (isUuidV7String(uuid)) {
-        const normalized = uuid.toLowerCase() as UuidV7StringFor<typeof UUID_TEXT_LOWERCASE>;
-        if (lastUuid === undefined) {
-          const integrated = fallback.integrateNativeUuidV7(normalized);
-          if (!(integrated instanceof Error)) lastUuid = integrated;
-          return integrated instanceof Error || textCase === UUID_TEXT_LOWERCASE
-            ? (integrated as UuidV7StringFor<Case> | UuidSlugError)
-            : (integrated.toUpperCase() as UuidV7StringFor<Case>);
-        }
-        if (normalized > lastUuid) {
-          lastUuid = normalized;
-          fallbackIsCurrent = false;
-          return (
-            textCase === UUID_TEXT_UPPERCASE ? normalized.toUpperCase() : normalized
-          ) as UuidV7StringFor<Case>;
-        }
-        synchronizeFallback();
-        const integrated = fallback.advanceWithNativeUuidV7(normalized);
-        if (!(integrated instanceof Error)) {
-          lastUuid = integrated;
-          fallbackIsCurrent = true;
-        }
-        return integrated instanceof Error || textCase === UUID_TEXT_LOWERCASE
-          ? (integrated as UuidV7StringFor<Case> | UuidSlugError)
-          : (integrated.toUpperCase() as UuidV7StringFor<Case>);
-      }
-      nativeCause = new TypeError("Native UUIDv7 generation returned an invalid value.");
-    } catch (cause) {
-      nativeCause = cause;
-    }
-    const result = portableText(textCase);
-    return result instanceof Error
-      ? failedFallback(nativeCause, result, "Native and portable UUIDv7 generation failed.")
-      : result;
-  }
-
-  function generateUuidV7Bytes(): UuidV7Bytes | UuidSlugError;
-  function generateUuidV7Bytes<Output extends Uint8Array>(
-    out: Output,
-    offset?: number,
-  ): Output | UuidSlugError;
-  function generateUuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Array | UuidSlugError {
-    synchronizeFallback();
-    const generate = fallback.generateUuidV7Bytes as (
-      output?: Uint8Array,
-      outputOffset?: number,
-    ) => Uint8Array | UuidSlugError;
-    const result = generate(out, offset);
-    if (!(result instanceof Error)) lastUuid = undefined;
-    return result;
-  }
-
-  return {
-    generateUuidV7,
-    generateUuidV7AtUnixMs: fallback.generateUuidV7AtUnixMs,
-    generateUuidV7Bytes,
-    generateUuidV7BytesAtUnixMs: fallback.generateUuidV7BytesAtUnixMs,
   };
 }

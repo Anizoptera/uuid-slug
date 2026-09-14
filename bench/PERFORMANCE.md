@@ -159,7 +159,7 @@ workloads, and they do not turn development bridges into npm distribution candid
 - Boolean validation no longer constructs decoded buffers or discarded errors. A scanner shared with parsing regressed Bun in the measured trial and was rejected; both paths retain the same character table and contract corpus.
 - Rotation decodes text once and constructs a mismatch error only after all explicit keys fail. Custom callbacks still receive owned bytes. Removing those copies would alter ownership semantics.
 - TimestampValidation consumes decoded bytes directly. Formatting remains at string-returning boundaries; it is not part of validation.
-- Async and synchronous construction share hash arithmetic and final key expansion. The initial continuation rewrite regressed masking; a single state branch replaced repeated optional-state lookups. Native generators remain delegated; the later ordering section measures the coordination now required around them.
+- Async and synchronous construction share hash arithmetic and final key expansion. The initial continuation rewrite regressed masking; a single state branch replaced repeated optional-state lookups.
 - Portable v7 currently requests 16 bytes from its entropy callback for both initial and
   same-millisecond generation. Requesting only the four consumed continuation bytes reduced pool
   demand but measured about 2% slower on Bun's `v7.bytes` path, so it added a branch without a
@@ -474,8 +474,8 @@ The 2026-09-12 review probed Node 26.8.2, Bun 1.4.2, Deno 2.9.6, and Chromium
 153 twice. Node and Bun expose `node:crypto.randomUUIDv7`; Deno does not. The probe detected no
 counter in Node's 74 payload bits, and consecutive same-millisecond values ordered near chance.
 Bun's generator advances a 12-bit counter (50,000-sample entropy probe of 2026-08-12 on Node
-26.7.0 and Bun 1.3.14). Those native behaviors did not decide adapter selection; the package-level
-ordering coordinator handles either one. Bun also exposes
+26.7.0 and Bun 1.3.14). Those sequence behaviors do not block native module-level text because that
+surface promises no ordering; representation-specific measurements decide dispatch. Bun also exposes
 `Bun.randomUUIDv7`: its buffer form is a `Buffer`, explicit zero is accepted, and NaN throws
 `ERR_OUT_OF_RANGE`. Keep runtime dispatch capability-based because shared Node API names do not
 imply shared implementation.
@@ -774,36 +774,24 @@ portable entropy fallback. Keep conditional adapter selection, module-load probe
 state. Retest only when a measured consumer startup budget makes import material or a synchronous
 runtime gains deferred module evaluation that can preserve the public call shape.
 
-Keep native UUID generation only for output forms the host produces directly. Bun supplies canonical
-text, base64url, and owned bytes, while Node supplies canonical text when its runtime exposes UUIDv7;
-base32hex and unsupported explicit-time forms stay portable rather than parse or coerce a native
-result. Existing throughput captures show Node's native UUIDv7 more than doubled the package text
-route and cached native UUID generation avoided several-fold entropy-call cost. The 2026-09-12 Bun
-entropy replay produced 200,000 distinct conforming package values and matched the native generator's
-observed 12-bit progression; native entropy remained below JavaScript instrumentation, so this does
-not prove its internal source. Bypassing native delegation failed the shared Node and Bun runtime
-tests on native output and dual-failure preservation. Retest delegation per output form if a host
-changes its native contract or a repeated complete-route comparison favors the portable path.
+Module-level UUIDv7 text uses a validated native primitive when present, while byte and explicit-time
+generation keep separate lazy portable state. The forms do not coordinate ordering. Callers who need
+strict ordering use `createUuidV7Generator`.
 
-The ordering contract requires every native result to be validated and compared. Keep increasing
-canonical text on the string-comparison path. Decode state only when byte output must join it or a
-native result must advance. A valid non-increasing result already supplies fresh entropy, so preserve
-its random tail and rewrite only the ordered prefix; a second clock read and entropy draw add no value.
+Two repeated complete-route comparisons on 2026-09-14 measured Node 24.21.0, Bun 1.4.2, Deno 2.9.6,
+and Chromium 153. Module text and a directly called created generator had overlapping sample ranges
+on Node, Deno, and Chromium. Bun's module wrapper had a 107.9 ns and 116.8 ns median against 106.1 ns
+and 109.2 ns for the direct generator; one replay overlapped and one showed a small wrapper cost.
+A fresh-random-payload module candidate cost 226 ns on Node, 334 ns on Bun, 176 ns on Deno, and
+166 ns on Chromium in its smoke comparison, versus 178 ns, 125 ns, 152 ns, and 164 ns for the
+counter path. Smoke timings are directional only, but the large Bun loss and no reproduced win on
+higher-priority Node reject the extra entropy work.
 
-A six-round packed comparison on 2026-09-14 measured that contract against the previous trusted-native
-path. Node 24.21.0 rose from a 146 ns median to 441 ns, with a 2.75–3.16 median-ratio interval. Bun
-1.4.2 rose from 61 ns to 100 ns, with a 1.59–1.71 interval. The result includes validation, ordering,
-and correction frequency under each runtime's native generator. CPU and heap deltas did not isolate
-their individual costs. Keep the native path because it avoids a second generation and remains below
-the separately measured portable string path; remeasure when a runtime changes native ordering or
-offers validated bytes or sequence state directly.
-
-A filtered native profile on the same date exercised `v7.string` on Node 24.21.0, Bun 1.4.2,
-Deno 2.9.6, and Chromium 153. Median instrumented calls were 715 ns, 95 ns, 262 ns, and 250 ns;
-the longest measured batches were 0.08 ms, 0.02 ms, 0.16 ms, and 0.80 ms. Bun's sampled stacks
-reached native generation, canonical validation, and coordination. Profiling overhead makes these
-timings unsuitable for comparison with the unprofiled results above; the run establishes branch
-and resource visibility, not a production latency bound.
+The final complete-route run selected native text at 142 ns on Node and 51 ns on Bun, versus 157 ns
+and 108 ns for the direct portable route. Deno and Chromium, which expose no selected native text
+capability, remained within overlapping sample ranges of the direct portable route. The comparison
+uses one machine and nine samples per row; it establishes the current dispatch choice, not a bound
+or a stable ratio. Remeasure when a host adds secure UUIDv7 bytes or changes its text primitive.
 
 ### Portable UUIDv4 ownership paths
 

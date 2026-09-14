@@ -64,9 +64,9 @@ This diagnostic difference does not permit a failed draw to produce an identifie
 The default preserve policy continues sequence state when the clock moves backward. Callers can
 instead select reset or failure beyond an inclusive skew tolerance. Reset can emit a UUID timestamp
 below a previous result; failure emits no identifier and leaves generator state unchanged. This
-ordering guarantee applies to successful current-time calls on one generator. Module-level text,
-byte, and paired plain-slug helpers share one sequence within one loaded package copy; independently
-created generators, package copies, workers, and processes do not.
+ordering guarantee applies to successful current-time calls on one explicitly created generator.
+Module-level helpers do not provide ordering across calls. Explicit-time calls, independent
+generators, package copies, workers, and processes do not share sequence state.
 
 UUID slug formatting and parsing encode and decode one 16-byte payload. TypeScript byte-offset
 overloads select that payload from a larger array; other payload sizes and malformed UUID text are

@@ -20,13 +20,14 @@ import {
   sourcesUsedBy,
 } from "./entropy-probe";
 import { cases as bufferContractCases } from "./buffer-contract-probe";
-import { runtime as bunRuntime } from "../src/runtime/bun";
 import { generateUuidV4Bytes } from "../src/index";
+import { runtime as bunRuntime } from "../src/runtime/bun";
 
 describe("bun runtime", () => {
-  test("uses native UUIDv7 only for canonical strings", () => {
-    const availability = typeof Bun.randomUUIDv7 === "function" ? "function" : "undefined";
-    expect(typeof bunRuntime.uuidV7).toBe(availability);
+  test("exposes native UUIDv7 text only when Bun provides it", () => {
+    expect(typeof bunRuntime.uuidV7).toBe(
+      typeof Bun.randomUUIDv7 === "function" ? "function" : "undefined",
+    );
   });
 
   // The same list runs on Node and Bun's portable owned-byte generators, so both runtime branches
@@ -44,8 +45,6 @@ describe("bun runtime", () => {
   });
 
   test("returns plain Uint8Array bytes, never a node Buffer", () => {
-    // Bun's native v7 can hand back a Buffer; this gate keeps that runtime-dependent subtype from
-    // reaching consumers even when adapter dispatch changes.
     for (const [name, generate] of byteGenerators) {
       const bytes = generate();
       expect([name, (bytes as Uint8Array).constructor.name]).toEqual([name, "Uint8Array"]);

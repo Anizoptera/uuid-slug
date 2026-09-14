@@ -6,9 +6,8 @@
  * hostile ones: a readUnixMs that stands still or runs backwards, and randomness that is entirely
  * zeroes or entirely ones, which are exactly the seeds that drive the counter to its bounds.
  *
- * Counter cases protect the generator ordering contract. Runtime-boundary tests separately prove
- * that native text joins module-level portable output. Version, variant, bounds and valid state
- * transitions must survive hostile readUnixMs and entropy inputs.
+ * Counter cases protect the created-generator ordering contract. Version, variant, bounds and valid
+ * state transitions must survive hostile readUnixMs and entropy inputs.
  */
 import { describe, expect, it } from "vitest";
 

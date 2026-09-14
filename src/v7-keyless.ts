@@ -2,9 +2,17 @@
 
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
-import { findUnknownOption, INVALID_OPTIONS, isError, UuidSlugError } from "./errors.ts";
+import {
+  failedFallback,
+  findUnknownOption,
+  INVALID_OPTIONS,
+  isError,
+  nativeOrFallback,
+  UuidSlugError,
+} from "./errors.ts";
 import {
   UUID_TEXT_LOWERCASE,
+  UUID_TEXT_UPPERCASE,
   UUID_V7_ROLLBACK_ERROR,
   UUID_V7_ROLLBACK_PRESERVE,
   UUID_V7_ROLLBACK_RESET,
@@ -17,7 +25,8 @@ import type {
   UuidV7Generator,
   UuidV7StringFor,
 } from "./types.ts";
-import { createPortableUuidV7Generator, createRuntimeGenerator } from "./v7.ts";
+import { createPortableUuidV7Generator } from "./v7.ts";
+import { invalidUuidTextCase, isUuidTextCase, isUuidV7String } from "./uuid.ts";
 
 /** Configure one UUIDv7 sequence's clock and rollback behavior. */
 export interface UuidV7GeneratorOptions {
@@ -179,10 +188,25 @@ export function createUuidV7GeneratorWithRandomFill(
   });
 }
 
-/** Delay generator setup so conversion-only imports draw no entropy and bundle no generator. */
-let generator: ReturnType<typeof createRuntimeGenerator> | undefined;
-const v7 = () => (generator ??= createRuntimeGenerator(runtime));
+/**
+ * Text uses a validated native primitive when present; bytes keep lazy portable state because
+ * parsing native text costs more than direct generation. The forms deliberately do not coordinate.
+ * bench/PERFORMANCE.md owns the comparison; remeasure when either host primitive changes.
+ */
+let textGenerator: UuidV7Generator | undefined;
+let byteGenerator: UuidV7Generator | undefined;
+const v7Text = () =>
+  (textGenerator ??= createPortableUuidV7Generator({ fillRandom: runtime.fillRandom }));
+const v7Bytes = () =>
+  (byteGenerator ??= createPortableUuidV7Generator({ fillRandom: runtime.fillRandom }));
 let generateDefaultUuidV7: UuidV7Generator["generateUuidV7"] | undefined;
+let generateDefaultUuidV7Bytes: UuidV7Generator["generateUuidV7Bytes"] | undefined;
+let trustedNativeUuidV7: (() => string) | undefined;
+
+const portableUuidV7 = <Case extends UuidTextCase>(
+  textCase: Case,
+): UuidV7StringFor<Case> | UuidSlugError =>
+  (generateDefaultUuidV7 ??= v7Text().generateUuidV7)(textCase);
 
 /*
  * Return types are DECLARED, not inferred, on all four. Inference reads them off the generator, so
@@ -190,24 +214,48 @@ let generateDefaultUuidV7: UuidV7Generator["generateUuidV7"] | undefined;
  * mismatch into a compile error at the one site that is wrong.
  */
 /**
- * Generate UUIDv7 text for the current clock reading, lowercase by default. Successful calls share
- * the module-level current-time sequence with byte and paired plain-slug generation.
+ * Generate UUIDv7 text for the current clock reading, lowercase by default. Module-level calls do
+ * not provide ordering across calls.
  *
  * @param textCase - Built-in output spelling. Omit for lowercase.
  */
 export const generateUuidV7 = <Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-  textCase?: Case,
-): UuidV7StringFor<Case> | UuidSlugError =>
-  (generateDefaultUuidV7 ??= v7().generateUuidV7)(textCase);
+  textCase: Case = UUID_TEXT_LOWERCASE as Case,
+): UuidV7StringFor<Case> | UuidSlugError => {
+  if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
+  const native = runtime.uuidV7;
+  if (!native) return portableUuidV7(textCase);
+  if (native !== trustedNativeUuidV7) {
+    const result = nativeOrFallback(
+      native,
+      isUuidV7String,
+      (value) =>
+        (textCase === UUID_TEXT_UPPERCASE ? value.toUpperCase() : value) as UuidV7StringFor<Case>,
+      () => portableUuidV7(textCase),
+      "UUIDv7 generation",
+    );
+    if (!(result instanceof Error)) trustedNativeUuidV7 = native;
+    return result;
+  }
+  try {
+    const uuid = native();
+    return (textCase === UUID_TEXT_UPPERCASE ? uuid.toUpperCase() : uuid) as UuidV7StringFor<Case>;
+  } catch (nativeCause) {
+    const fallback = portableUuidV7(textCase);
+    return fallback instanceof Error
+      ? failedFallback(nativeCause, fallback, "Native and portable UUIDv7 generation failed.")
+      : fallback;
+  }
+};
 
 /**
- * Generate UUIDv7 bytes with platform randomness in a new plain 16-byte `Uint8Array`. Successful
- * calls share the module-level current-time sequence with text and paired plain-slug generation.
+ * Generate UUIDv7 bytes with platform randomness in a new plain 16-byte `Uint8Array`. Module-level
+ * calls do not provide ordering across calls.
  */
 export function generateUuidV7Bytes(): UuidV7Bytes | UuidSlugError;
 /**
- * Write UUIDv7 bytes into caller-owned storage only after successful generation. Successful calls
- * share the module-level current-time sequence with text and paired plain-slug generation.
+ * Write UUIDv7 bytes into caller-owned storage only after successful generation. Module-level calls
+ * do not provide ordering across calls.
  *
  * @param output - Caller-owned array that receives the 16 UUID bytes.
  * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
@@ -218,7 +266,7 @@ export function generateUuidV7Bytes<Output extends Uint8Array>(
   outputOffset?: number,
 ): Output | UuidSlugError;
 export function generateUuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Array | UuidSlugError {
-  const generate = v7().generateUuidV7Bytes as (
+  const generate = (generateDefaultUuidV7Bytes ??= v7Bytes().generateUuidV7Bytes) as (
     out?: Uint8Array,
     offset?: number,
   ) => Uint8Array | UuidSlugError;
@@ -226,8 +274,7 @@ export function generateUuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Arr
 }
 
 /**
- * Generate UUIDv7 text at a whole Unix millisecond in `0..2^48-1`. This does not change the
- * current-time sequence. Explicit-time generation does not join that sequence.
+ * Generate UUIDv7 text at a whole Unix millisecond in `0..2^48-1` without sequence state.
  *
  * @param unixMs - Whole Unix millisecond encoded into the UUID.
  * @param textCase - Built-in output spelling. Omit for lowercase.
@@ -235,7 +282,7 @@ export function generateUuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Arr
 export const generateUuidV7AtUnixMs = <Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   unixMs: number,
   textCase?: Case,
-): UuidV7StringFor<Case> | UuidSlugError => v7().generateUuidV7AtUnixMs(unixMs, textCase);
+): UuidV7StringFor<Case> | UuidSlugError => v7Text().generateUuidV7AtUnixMs(unixMs, textCase);
 
 /**
  * Generate UUIDv7 bytes at a whole Unix millisecond in `0..2^48-1` in a new plain 16-byte
@@ -262,7 +309,7 @@ export function generateUuidV7BytesAtUnixMs(
   out?: Uint8Array,
   offset?: number,
 ): Uint8Array | UuidSlugError {
-  const generate = v7().generateUuidV7BytesAtUnixMs as (
+  const generate = v7Bytes().generateUuidV7BytesAtUnixMs as (
     timestamp: number,
     out?: Uint8Array,
     offset?: number,

@@ -167,12 +167,11 @@ than the clock reading. A reset policy may move backward after its tolerance. Ex
 use independent randomness and do not join this sequence.
 
 With the default preserve policy, successful current-time calls on one generator strictly increase
-in UUID byte order, including calls made within one millisecond. The module-level text, byte, and
-paired plain-slug helpers share one generator. A valid native UUIDv7 joins that sequence; a native
-result that would not increase it keeps its fresh random tail while its ordered prefix advances.
-This does not order explicit-time calls, reset-policy calls after their tolerance, independently
-created generators, separate package copies, workers, or processes. Set `clockRollback` to reset or return
-`invalid_timestamp` when total skew exceeds an inclusive tolerance. Use
+in UUID byte order, including calls made within one millisecond. Module-level generation uses the
+fastest validated secure path for each output form and does not promise ordering across calls.
+Created generators do not coordinate with explicit-time calls, reset-policy calls after their
+tolerance, other generators, package copies, workers, or processes. Set `clockRollback` to reset or
+return `invalid_timestamp` when total skew exceeds an inclusive tolerance. Use
 `createUuidV7GeneratorWithRandomFill` only when the application must own entropy; its callback must
 fill every requested byte or return `UuidSlugError`.
 
@@ -990,7 +989,7 @@ change the ranking. Browser performance comparisons use Chromium; Firefox and We
 
 | Evidence | Scope | Current result |
 | --- | --- | --- |
-| UUIDv7 text | Node, Bun, Deno, Chromium | Leads the compared packages. Calls Node's native UUIDv7 generator when available and Bun's native generator, with portable fallback on failure. |
+| UUIDv7 text | Node, Bun, Deno, Chromium | Leads the compared packages. Module calls use native text where available and portable generation otherwise; created generators add an explicit ordering contract and clock controls. |
 | UUIDv4 text | Node, Bun, Deno, Chromium | Uses native generation on Node, Bun, and Deno. Trails the fastest compared package on Bun, Deno, and Chromium. |
 | UUIDv4/v7 bytes | New arrays and caller buffers on Node, Bun, Deno, Chromium | Leads the compared packages except Bun's UUIDv4 caller-buffer writes, which trail `uuid`, and Deno's new UUIDv7 arrays, which are unresolved against `uuidv7`. |
 | Conversion | UUID text, bytes, both plain-slug alphabets, timestamp extraction | Text timestamp extraction trails `uuidv7-js` on all four runtimes. The study has no comparable package for extraction from bytes or slugs. |
@@ -1013,16 +1012,15 @@ and masking limits.
 - UUID collisions are possible. Keep a uniqueness constraint where a duplicate could overwrite or
   misidentify data. On conflict while creating a record, keep the existing record and generate a
   new ID.
-- Native generation falls back to the portable generator if a result fails validation
+- Native UUID text generation falls back to the portable generator if a result fails validation
   or a call throws. If both fail, the returned error retains both causes.
 - A v7 carries a 48-bit millisecond timestamp in its leading bits, so UUID strings sort by their
   encoded timestamps across different milliseconds.
   Backfilled timestamps or a clock adjustment need not reflect generation order.
 - Successful current-time calls on one generator strictly increase in UUID byte order under the
-  default preserve policy. Module-level text, byte, and paired plain-slug helpers share one sequence
-  within one loaded package copy. Explicit-time calls, reset-policy calls after their tolerance,
-  independently created generators, package copies, workers, and processes do not share it; use a
-  sequence column when event order must cross those boundaries.
+  default preserve policy. Module-level generation does not provide this guarantee. Explicit-time
+  calls, reset-policy calls after their tolerance, independent generators, package copies, workers,
+  and processes do not share sequence state; use a sequence column when order must cross boundaries.
 - A 26-character plain UUIDv7 base32hex slug sorts by encoded timestamp across different
   milliseconds under ASCII comparison. Its digits are in value order and the timestamp comes
   first. Its lowercase spelling also suits case-insensitive storage.

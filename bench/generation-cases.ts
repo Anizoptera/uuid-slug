@@ -199,7 +199,7 @@ export const generationCases: readonly GenerationCase[] = [
     secure: false,
   }),
 
-  row("package.v7.text.native", 7, "v7.text.secure", "runtime-selected", () =>
+  row("package.v7.text.default", 7, "v7.text.secure", "module-default", () =>
     unwrap(generateUuidV7()),
   ),
   row("package.v7.text.portable", 7, "v7.text.secure", "portable", () =>

@@ -35,7 +35,7 @@ and randomness quality beyond these measures; that needs a battery such as Pract
 | operation | bun (bun 1.4.2) | node (node v24.21.0) |
 | --- | ---: | ---: |
 | package.v4.string | 35.78M | 8.58M |
-| package.v7.string | 16.85M | 6.81M |
+| package.v7.string | 17.22M | 7.05M |
 | uuid.v4.string | 36.72M | 7.12M |
 | uuid.v7.string | 7.11M | 1.40M |
 | uuidv7.v7.string | 3.94M | 3.15M |
@@ -74,7 +74,7 @@ and randomness quality beyond these measures; that needs a battery such as Pract
 
 | candidate | entropy source | distinct | in-tick | peak/ms | counter | P(1) range |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| package | unobserved | 50000 | 100.00% | 4046 | 12b @ 100.00% | 0.495-0.63 |
+| package | unobserved | 50000 | 100.00% | 4082 | 12b @ 100.00% | 0.495-0.666 |
 | uuid | crypto.getRandomValues | 50000 | 100.00% | 6711 | 32b @ 100.00% | 0-0.818 |
 | uuidv7 | crypto.getRandomValues | 50000 | 100.00% | 7100 | 42b @ 100.00% | 0.231-0.716 |
 | uniku | unobserved | 50000 | 100.00% | 10749 | 32b @ 100.00% | 0-0.804 |
@@ -88,7 +88,7 @@ and randomness quality beyond these measures; that needs a battery such as Pract
 
 | candidate | entropy source | distinct | in-tick | peak/ms | counter | P(1) range |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| package | unobserved | 50000 | 50.26% | 7928 | 1b @ 25.09% | 0.496-0.506 |
+| package | unobserved | 50000 | 49.90% | 8310 | 1b @ 25.02% | 0.494-0.507 |
 | uuid | crypto.getRandomValues | 50000 | 100.00% | 1489 | 32b @ 100.00% | 0-0.698 |
 | uuidv7 | crypto.getRandomValues | 50000 | 100.00% | 3884 | 42b @ 100.00% | 0.189-0.718 |
 | uniku | unobserved | 50000 | 100.00% | 6659 | 32b @ 100.00% | 0-1 |

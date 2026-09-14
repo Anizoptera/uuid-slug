@@ -5,17 +5,10 @@ import { Buffer } from "node:buffer";
 import { pooledFill } from "./pool.ts";
 import type { Runtime } from "./types.ts";
 
-/**
- * Node releases without `crypto.randomUUIDv7` expose `undefined`, so the capability is simply
- * absent. Probed once here rather than inside the method:
- * `Runtime.uuidV7` is optional precisely so a consumer can branch on its presence, and a
- * method that exists but always throws defeats that and pays exception-driven fallback per call.
- */
-// Cast to a NARROW shape, never `typeof crypto & {...}`. `@types/node` is pinned ahead of the
-// runtime in `.tool-versions` and declares `randomUUIDv7` unconditionally, so intersecting keeps it
-// non-optional and the guard below reads as always-true to the compiler — the type would license a
-// refactor that drops the check and breaks any supported Node where the value is `undefined`.
-// A narrow cast is the only spelling that makes the optionality the code relies on visible.
+// Probe once so older supported Nodes take the portable path without per-call capability checks.
+// Native text currently wins; bytes remain portable because reparsing text loses that advantage.
+// bench/PERFORMANCE.md owns the evidence and the runtime-change remeasurement trigger.
+// The narrow cast keeps runtime optionality visible even when ambient Node types require the method.
 const nativeUuidV7 = (crypto as { randomUUIDv7?: () => string }).randomUUIDv7?.bind(crypto);
 
 /**
@@ -39,11 +32,6 @@ const nodeRuntime: Runtime = {
   uuidV4: crypto.randomUUID.bind(crypto),
 };
 
-if (nativeUuidV7) {
-  // Native text avoids portable entropy and formatting work. Other representations stay portable
-  // because converting native text back to bytes or base32 adds work; remeasure by output form when
-  // Node changes this API. bench/PERFORMANCE.md owns the runtime versions and comparisons.
-  nodeRuntime.uuidV7 = nativeUuidV7;
-}
+if (nativeUuidV7) nodeRuntime.uuidV7 = nativeUuidV7;
 
 export const runtime = nodeRuntime;
