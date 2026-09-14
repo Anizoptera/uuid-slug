@@ -98,7 +98,7 @@ mod tests {
         let seeded = create_mask(b"golden-vector-seed-v3", 1, "seeded-v2").unwrap();
         let default = crate::public_mask();
         for case in fixture.as_array().unwrap() {
-            // Codec-level sentinel bypass is deliberately not exercised by this block-level test.
+            // Masking-codec sentinel bypass is deliberately not exercised by this block-level test.
             if case["uuid"] == "00000000-0000-7000-8000-000000000000" {
                 continue;
             }
@@ -109,7 +109,7 @@ mod tests {
             };
             let mut raw = [0; 16];
             Alphabet::Base64Url
-                .decode_into(case["direct"].as_str().unwrap(), &mut raw, 0)
+                .decode_into(case["plain"].as_str().unwrap(), &mut raw, 0)
                 .unwrap();
             let (mixed, tail) = mask_bytes(&raw, mask).unwrap();
             assert_eq!(

@@ -1,8 +1,8 @@
-//! A codec owns its keys and reserved identities so keyed operations cannot use another codec's key.
+//! A UUIDv7 masking codec owns its keys and reserved identities so keyed operations cannot use another codec's key.
 
 use crate::{Alphabet, Error, ErrorCode, Mask, Uuid};
 
-/// A named UUID emitted directly instead of through the mask.
+/// A named UUID emitted as a plain slug instead of through the mask.
 #[derive(Clone, Debug)]
 pub struct Sentinel {
     /// Caller-facing name, independent of identity.
@@ -33,9 +33,9 @@ mod tests {
     fn masked_writers_accept_the_timestamp_endpoint_and_reject_its_successor() -> Result<(), Error>
     {
         for slug_alphabet in [Alphabet::Base64Url, Alphabet::Base32Hex] {
-            let codec = Codec::new(CodecOptions {
+            let codec = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
                 slug_alphabet,
-                ..CodecOptions::new(crate::public_mask())
+                ..UuidV7MaskingCodecOptions::new(crate::public_mask())
             })?;
             assert!(
                 codec
@@ -50,10 +50,10 @@ mod tests {
                 ErrorCode::InvalidTimestamp
             );
             let sentinel = uuid_at(crate::MAX_MASKED_UUID_V7_UNIX_MS + 1);
-            let codec = Codec::new(CodecOptions {
+            let codec = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
                 slug_alphabet,
                 sentinels: vec![("future".to_owned(), sentinel)],
-                ..CodecOptions::new(crate::public_mask())
+                ..UuidV7MaskingCodecOptions::new(crate::public_mask())
             })?;
             assert_eq!(codec.encode_uuid(sentinel)?, sentinel.slug(slug_alphabet));
         }
@@ -96,9 +96,9 @@ mod tests {
             vec![(String::new(), uuid)],
             vec![("nil".to_owned(), uuid), ("nil".to_owned(), uuid)],
         ] {
-            let error = Codec::new(CodecOptions {
+            let error = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
                 sentinels,
-                ..CodecOptions::new(crate::public_mask())
+                ..UuidV7MaskingCodecOptions::new(crate::public_mask())
             })
             .err()
             .expect("invalid sentinel names must fail codec construction");
@@ -125,10 +125,10 @@ mod tests {
             (*reserved.as_bytes(), 0)
         );
         for alphabet in [Alphabet::Base64Url, Alphabet::Base32Hex] {
-            let codec = Codec::new(CodecOptions {
+            let codec = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
                 sentinels: vec![("nil".to_owned(), reserved)],
                 slug_alphabet: alphabet,
-                ..CodecOptions::new(collision.clone())
+                ..UuidV7MaskingCodecOptions::new(collision.clone())
             })?;
             assert_eq!(
                 codec.encode_uuid(uuid).unwrap_err().code(),
@@ -157,15 +157,15 @@ mod tests {
         let custom = Mask::custom("fallible", fallible.clone(), fallible)?;
         let uuid = Uuid::parse("01234567-89ab-7cde-8fab-0123456789ab")?;
         let good = crate::public_mask();
-        let writer = Codec::new(CodecOptions::new(crate::public_mask()))?;
+        let writer = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions::new(crate::public_mask()))?;
         let slug = writer.encode_uuid(uuid)?;
-        let fallback = Codec::new(CodecOptions {
+        let fallback = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
             previous_masks: vec![good.clone()],
-            ..CodecOptions::new(custom.clone())
+            ..UuidV7MaskingCodecOptions::new(custom.clone())
         })?;
-        let first = Codec::new(CodecOptions {
+        let first = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
             previous_masks: vec![custom],
-            ..CodecOptions::new(good)
+            ..UuidV7MaskingCodecOptions::new(good)
         })?;
         failing.store(true, Ordering::Relaxed);
         let error = fallback.decode_slug(&slug).unwrap_err();
@@ -186,8 +186,8 @@ mod tests {
     }
 }
 
-/// Codec construction options. Existing output stays base64url unless explicitly changed.
-pub struct CodecOptions {
+/// UUIDv7 masking-codec options. Existing output stays base64url unless explicitly changed.
+pub struct UuidV7MaskingCodecOptions {
     /// Current write key; decoding tries this before previous keys.
     pub mask: Mask,
     /// Older read keys, in caller-specified order. No keys are added implicitly.
@@ -198,7 +198,7 @@ pub struct CodecOptions {
     pub sentinels: Vec<(String, Uuid)>,
 }
 
-impl CodecOptions {
+impl UuidV7MaskingCodecOptions {
     /// Start codec configuration from an explicitly selected current mask.
     pub fn new(mask: Mask) -> Self {
         Self {
@@ -211,16 +211,16 @@ impl CodecOptions {
 }
 
 /// Immutable keys and precomputed sentinels. Generation state is independently owned.
-pub struct Codec {
+pub struct UuidV7MaskingCodec {
     masks: Vec<Mask>,
     sentinels: Vec<Sentinel>,
     reserved: Vec<(String, Uuid)>,
     masked: Alphabet,
 }
 
-impl Codec {
+impl UuidV7MaskingCodec {
     /// Validate reserved identities before a codec can emit unreadable output.
-    pub fn new(options: CodecOptions) -> Result<Self, Error> {
+    pub fn new(options: UuidV7MaskingCodecOptions) -> Result<Self, Error> {
         let mut sentinels: Vec<Sentinel> = Vec::new();
         let mut reserved = Vec::new();
         for (name, uuid) in options.sentinels {
@@ -259,7 +259,7 @@ impl Codec {
     }
 
     /// Encode a v7 through [`crate::MAX_MASKED_UUID_V7_UNIX_MS`], rejecting later timestamps unless
-    /// the UUID is a registered sentinel; sentinels are returned as direct slugs without masking.
+    /// the UUID is a registered sentinel; sentinels are returned as plain slugs without masking.
     pub fn encode_uuid(&self, uuid: Uuid) -> Result<String, Error> {
         uuid.timestamp()?;
         if let Some(sentinel) = self.sentinels.iter().find(|entry| entry.uuid == uuid) {
@@ -356,7 +356,7 @@ pub struct MigrationOptions {
     /// Read the original fixed permutation/XOR format, never the unsupported 0.2.0 format.
     pub original: bool,
     /// Read raw UUID slugs, including historical trailing-bit aliases.
-    pub direct: bool,
+    pub plain: bool,
 }
 
 /// A known stored format avoids ambiguity between unrelated decoders.
@@ -367,17 +367,17 @@ pub enum MigrationFormat {
     /// Original fixed permutation/XOR format.
     Original,
     /// Unmasked UUID.
-    Direct,
+    Plain,
 }
 
 /// A reader borrowing its codec, so keys and sentinel definitions cannot drift.
 pub struct MigrationDecoder<'a> {
-    codec: &'a Codec,
+    codec: &'a UuidV7MaskingCodec,
     options: MigrationOptions,
 }
 
 impl MigrationDecoder<'_> {
-    /// Decode with sentinel/current/original/direct priority, stopping at the first candidate.
+    /// Decode with sentinel/current/original/plain priority, stopping at the first candidate.
     pub fn decode(&self, slug: &str, format: Option<MigrationFormat>) -> Result<Uuid, Error> {
         let mut result = None;
         self.read(slug, format, |uuid| {
@@ -410,9 +410,9 @@ impl MigrationDecoder<'_> {
         format: Option<MigrationFormat>,
         mut stop: impl FnMut(Uuid) -> bool,
     ) -> Result<(), Error> {
-        use MigrationFormat::{Current, Direct, Original};
+        use MigrationFormat::{Current, Original, Plain};
         if (format == Some(Original) && !self.options.original)
-            || (format == Some(Direct) && !self.options.direct)
+            || (format == Some(Plain) && !self.options.plain)
         {
             return Err(Error::new(ErrorCode::InvalidUuidSlug));
         }
@@ -422,19 +422,19 @@ impl MigrationDecoder<'_> {
         }
         let current = format.is_none() || format == Some(Current);
         let original = self.options.original && (format.is_none() || format == Some(Original));
-        let direct = self.options.direct && (format.is_none() || format == Some(Direct));
+        let plain = self.options.plain && (format.is_none() || format == Some(Plain));
         let length = crate::uuid::utf16_len(slug);
-        let base32_direct = length == 26 && direct;
+        let base32_plain = length == 26 && plain;
         let safe_masked = length == 27 && current;
-        let alpha = if base32_direct || safe_masked {
+        let alpha = if base32_plain || safe_masked {
             Alphabet::Base32Hex
         } else {
             Alphabet::Base64Url
         };
         let mut bytes = [0; 16];
-        let tail = alpha.decode_into(slug, &mut bytes, if base32_direct { 0 } else { 4 })?;
+        let tail = alpha.decode_into(slug, &mut bytes, if base32_plain { 0 } else { 4 })?;
         let raw = Uuid::from_bytes(bytes);
-        let reserved = if (original || direct) && length != 27 {
+        let reserved = if (original || plain) && length != 27 {
             self.codec.sentinel(&raw.slug(Alphabet::Base64Url))
         } else {
             None
@@ -442,7 +442,7 @@ impl MigrationDecoder<'_> {
         if reserved.is_some_and(&mut stop) {
             return Ok(());
         }
-        if current && !base32_direct {
+        if current && !base32_plain {
             for mask in &self.codec.masks {
                 if let Some(value) = crate::payload::candidate(bytes, tail, mask)? {
                     let uuid = Uuid::from_bytes(value);
@@ -462,7 +462,7 @@ impl MigrationDecoder<'_> {
         {
             return Ok(());
         }
-        if direct && length != 27 {
+        if plain && length != 27 {
             stop(raw);
         }
         Ok(())

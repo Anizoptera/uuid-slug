@@ -33,116 +33,6 @@ impl core::marker::Unpin for uuid_slug::alphabet::Alphabet
 impl core::marker::UnsafeUnpin for uuid_slug::alphabet::Alphabet
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::alphabet::Alphabet
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::alphabet::Alphabet
-pub mod uuid_slug::codec
-pub enum uuid_slug::codec::MigrationFormat
-pub uuid_slug::codec::MigrationFormat::Current
-pub uuid_slug::codec::MigrationFormat::Direct
-pub uuid_slug::codec::MigrationFormat::Original
-impl core::clone::Clone for uuid_slug::codec::MigrationFormat
-pub fn uuid_slug::codec::MigrationFormat::clone(&self) -> uuid_slug::codec::MigrationFormat
-impl core::cmp::Eq for uuid_slug::codec::MigrationFormat
-impl core::cmp::PartialEq for uuid_slug::codec::MigrationFormat
-pub fn uuid_slug::codec::MigrationFormat::eq(&self, other: &uuid_slug::codec::MigrationFormat) -> bool
-impl core::fmt::Debug for uuid_slug::codec::MigrationFormat
-pub fn uuid_slug::codec::MigrationFormat::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for uuid_slug::codec::MigrationFormat
-impl core::marker::StructuralPartialEq for uuid_slug::codec::MigrationFormat
-impl core::marker::Freeze for uuid_slug::codec::MigrationFormat
-impl core::marker::Send for uuid_slug::codec::MigrationFormat
-impl core::marker::Sync for uuid_slug::codec::MigrationFormat
-impl core::marker::Unpin for uuid_slug::codec::MigrationFormat
-impl core::marker::UnsafeUnpin for uuid_slug::codec::MigrationFormat
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationFormat
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationFormat
-pub struct uuid_slug::codec::Codec
-impl uuid_slug::codec::Codec
-pub fn uuid_slug::codec::Codec::decode_slug(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
-pub fn uuid_slug::codec::Codec::encode_uuid(&self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<alloc::string::String, uuid_slug::error::Error>
-pub fn uuid_slug::codec::Codec::migration_decoder(&self, options: uuid_slug::codec::MigrationOptions) -> uuid_slug::codec::MigrationDecoder<'_>
-pub fn uuid_slug::codec::Codec::new(options: uuid_slug::codec::CodecOptions) -> core::result::Result<Self, uuid_slug::error::Error>
-pub fn uuid_slug::codec::Codec::sentinels(&self) -> &[uuid_slug::codec::Sentinel]
-pub fn uuid_slug::codec::Codec::validate_slug_timestamp<'a>(&self, slug: &'a str, window: uuid_slug::codec::UuidV7TimestampWindow) -> core::result::Result<&'a str, uuid_slug::error::Error>
-impl core::marker::Freeze for uuid_slug::codec::Codec
-impl core::marker::Send for uuid_slug::codec::Codec
-impl core::marker::Sync for uuid_slug::codec::Codec
-impl core::marker::Unpin for uuid_slug::codec::Codec
-impl core::marker::UnsafeUnpin for uuid_slug::codec::Codec
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Codec
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Codec
-pub struct uuid_slug::codec::CodecOptions
-pub uuid_slug::codec::CodecOptions::mask: uuid_slug::mask::Mask
-pub uuid_slug::codec::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::mask::Mask>
-pub uuid_slug::codec::CodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
-pub uuid_slug::codec::CodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
-impl uuid_slug::codec::CodecOptions
-pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::mask::Mask) -> Self
-impl core::marker::Freeze for uuid_slug::codec::CodecOptions
-impl core::marker::Send for uuid_slug::codec::CodecOptions
-impl core::marker::Sync for uuid_slug::codec::CodecOptions
-impl core::marker::Unpin for uuid_slug::codec::CodecOptions
-impl core::marker::UnsafeUnpin for uuid_slug::codec::CodecOptions
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::CodecOptions
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::CodecOptions
-pub struct uuid_slug::codec::MigrationDecoder<'a>
-impl uuid_slug::codec::MigrationDecoder<'_>
-pub fn uuid_slug::codec::MigrationDecoder<'_>::candidates(&self, slug: &str, format: core::option::Option<uuid_slug::codec::MigrationFormat>) -> core::result::Result<alloc::vec::Vec<uuid_slug::uuid::Uuid>, uuid_slug::error::Error>
-pub fn uuid_slug::codec::MigrationDecoder<'_>::decode(&self, slug: &str, format: core::option::Option<uuid_slug::codec::MigrationFormat>) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
-impl<'a> core::marker::Freeze for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::Send for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::Sync for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::Unpin for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::UnsafeUnpin for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
-pub struct uuid_slug::codec::MigrationOptions
-pub uuid_slug::codec::MigrationOptions::direct: bool
-pub uuid_slug::codec::MigrationOptions::original: bool
-impl core::clone::Clone for uuid_slug::codec::MigrationOptions
-pub fn uuid_slug::codec::MigrationOptions::clone(&self) -> uuid_slug::codec::MigrationOptions
-impl core::default::Default for uuid_slug::codec::MigrationOptions
-pub fn uuid_slug::codec::MigrationOptions::default() -> uuid_slug::codec::MigrationOptions
-impl core::fmt::Debug for uuid_slug::codec::MigrationOptions
-pub fn uuid_slug::codec::MigrationOptions::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for uuid_slug::codec::MigrationOptions
-impl core::marker::Freeze for uuid_slug::codec::MigrationOptions
-impl core::marker::Send for uuid_slug::codec::MigrationOptions
-impl core::marker::Sync for uuid_slug::codec::MigrationOptions
-impl core::marker::Unpin for uuid_slug::codec::MigrationOptions
-impl core::marker::UnsafeUnpin for uuid_slug::codec::MigrationOptions
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationOptions
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationOptions
-pub struct uuid_slug::codec::Sentinel
-pub uuid_slug::codec::Sentinel::name: alloc::string::String
-pub uuid_slug::codec::Sentinel::slug: alloc::string::String
-pub uuid_slug::codec::Sentinel::uuid: uuid_slug::uuid::Uuid
-impl core::clone::Clone for uuid_slug::codec::Sentinel
-pub fn uuid_slug::codec::Sentinel::clone(&self) -> uuid_slug::codec::Sentinel
-impl core::fmt::Debug for uuid_slug::codec::Sentinel
-pub fn uuid_slug::codec::Sentinel::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Freeze for uuid_slug::codec::Sentinel
-impl core::marker::Send for uuid_slug::codec::Sentinel
-impl core::marker::Sync for uuid_slug::codec::Sentinel
-impl core::marker::Unpin for uuid_slug::codec::Sentinel
-impl core::marker::UnsafeUnpin for uuid_slug::codec::Sentinel
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Sentinel
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Sentinel
-pub struct uuid_slug::codec::UuidV7TimestampWindow
-pub uuid_slug::codec::UuidV7TimestampWindow::max_timestamp_delta_ms: f64
-pub uuid_slug::codec::UuidV7TimestampWindow::reference_unix_ms: f64
-impl uuid_slug::codec::UuidV7TimestampWindow
-pub fn uuid_slug::codec::UuidV7TimestampWindow::validate(self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
-impl core::clone::Clone for uuid_slug::codec::UuidV7TimestampWindow
-pub fn uuid_slug::codec::UuidV7TimestampWindow::clone(&self) -> uuid_slug::codec::UuidV7TimestampWindow
-impl core::fmt::Debug for uuid_slug::codec::UuidV7TimestampWindow
-pub fn uuid_slug::codec::UuidV7TimestampWindow::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Freeze for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Send for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Sync for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Unpin for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::UnsafeUnpin for uuid_slug::codec::UuidV7TimestampWindow
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
 pub mod uuid_slug::error
 #[non_exhaustive] pub enum uuid_slug::error::ErrorCode
 pub uuid_slug::error::ErrorCode::Aborted
@@ -257,6 +147,116 @@ impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::mask::Mask
 pub fn uuid_slug::mask::create_mask(seed: &[u8], iterations: u32, label: &str) -> core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>
 pub fn uuid_slug::mask::create_mask_async(seed: &[u8], iterations: u32, label: &str, cancellation: uuid_slug::mask::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::mask::public_mask() -> uuid_slug::mask::Mask
+pub mod uuid_slug::masking_codec
+pub enum uuid_slug::masking_codec::MigrationFormat
+pub uuid_slug::masking_codec::MigrationFormat::Current
+pub uuid_slug::masking_codec::MigrationFormat::Original
+pub uuid_slug::masking_codec::MigrationFormat::Plain
+impl core::clone::Clone for uuid_slug::masking_codec::MigrationFormat
+pub fn uuid_slug::masking_codec::MigrationFormat::clone(&self) -> uuid_slug::masking_codec::MigrationFormat
+impl core::cmp::Eq for uuid_slug::masking_codec::MigrationFormat
+impl core::cmp::PartialEq for uuid_slug::masking_codec::MigrationFormat
+pub fn uuid_slug::masking_codec::MigrationFormat::eq(&self, other: &uuid_slug::masking_codec::MigrationFormat) -> bool
+impl core::fmt::Debug for uuid_slug::masking_codec::MigrationFormat
+pub fn uuid_slug::masking_codec::MigrationFormat::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::StructuralPartialEq for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Freeze for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Send for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Sync for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Unpin for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::MigrationFormat
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::MigrationFormat
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::MigrationFormat
+pub struct uuid_slug::masking_codec::MigrationDecoder<'a>
+impl uuid_slug::masking_codec::MigrationDecoder<'_>
+pub fn uuid_slug::masking_codec::MigrationDecoder<'_>::candidates(&self, slug: &str, format: core::option::Option<uuid_slug::masking_codec::MigrationFormat>) -> core::result::Result<alloc::vec::Vec<uuid_slug::uuid::Uuid>, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::MigrationDecoder<'_>::decode(&self, slug: &str, format: core::option::Option<uuid_slug::masking_codec::MigrationFormat>) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
+impl<'a> core::marker::Freeze for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::Send for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::Sync for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::Unpin for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::UnsafeUnpin for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> !core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::MigrationDecoder<'a>
+pub struct uuid_slug::masking_codec::MigrationOptions
+pub uuid_slug::masking_codec::MigrationOptions::original: bool
+pub uuid_slug::masking_codec::MigrationOptions::plain: bool
+impl core::clone::Clone for uuid_slug::masking_codec::MigrationOptions
+pub fn uuid_slug::masking_codec::MigrationOptions::clone(&self) -> uuid_slug::masking_codec::MigrationOptions
+impl core::default::Default for uuid_slug::masking_codec::MigrationOptions
+pub fn uuid_slug::masking_codec::MigrationOptions::default() -> uuid_slug::masking_codec::MigrationOptions
+impl core::fmt::Debug for uuid_slug::masking_codec::MigrationOptions
+pub fn uuid_slug::masking_codec::MigrationOptions::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Freeze for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Send for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Sync for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Unpin for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::MigrationOptions
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::MigrationOptions
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::MigrationOptions
+pub struct uuid_slug::masking_codec::Sentinel
+pub uuid_slug::masking_codec::Sentinel::name: alloc::string::String
+pub uuid_slug::masking_codec::Sentinel::slug: alloc::string::String
+pub uuid_slug::masking_codec::Sentinel::uuid: uuid_slug::uuid::Uuid
+impl core::clone::Clone for uuid_slug::masking_codec::Sentinel
+pub fn uuid_slug::masking_codec::Sentinel::clone(&self) -> uuid_slug::masking_codec::Sentinel
+impl core::fmt::Debug for uuid_slug::masking_codec::Sentinel
+pub fn uuid_slug::masking_codec::Sentinel::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for uuid_slug::masking_codec::Sentinel
+impl core::marker::Send for uuid_slug::masking_codec::Sentinel
+impl core::marker::Sync for uuid_slug::masking_codec::Sentinel
+impl core::marker::Unpin for uuid_slug::masking_codec::Sentinel
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::Sentinel
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::Sentinel
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::Sentinel
+pub struct uuid_slug::masking_codec::UuidV7MaskingCodec
+impl uuid_slug::masking_codec::UuidV7MaskingCodec
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::decode_slug(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::encode_uuid(&self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<alloc::string::String, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::migration_decoder(&self, options: uuid_slug::masking_codec::MigrationOptions) -> uuid_slug::masking_codec::MigrationDecoder<'_>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::new(options: uuid_slug::masking_codec::UuidV7MaskingCodecOptions) -> core::result::Result<Self, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::sentinels(&self) -> &[uuid_slug::masking_codec::Sentinel]
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::validate_slug_timestamp<'a>(&self, slug: &'a str, window: uuid_slug::masking_codec::UuidV7TimestampWindow) -> core::result::Result<&'a str, uuid_slug::error::Error>
+impl core::marker::Freeze for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::Send for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::Sync for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::Unpin for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodec
+pub struct uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+pub uuid_slug::masking_codec::UuidV7MaskingCodecOptions::mask: uuid_slug::mask::Mask
+pub uuid_slug::masking_codec::UuidV7MaskingCodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::mask::Mask>
+pub uuid_slug::masking_codec::UuidV7MaskingCodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
+pub uuid_slug::masking_codec::UuidV7MaskingCodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
+impl uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodecOptions::new(mask: uuid_slug::mask::Mask) -> Self
+impl core::marker::Freeze for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::Send for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::Sync for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::Unpin for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+pub struct uuid_slug::masking_codec::UuidV7TimestampWindow
+pub uuid_slug::masking_codec::UuidV7TimestampWindow::max_timestamp_delta_ms: f64
+pub uuid_slug::masking_codec::UuidV7TimestampWindow::reference_unix_ms: f64
+impl uuid_slug::masking_codec::UuidV7TimestampWindow
+pub fn uuid_slug::masking_codec::UuidV7TimestampWindow::validate(self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
+impl core::clone::Clone for uuid_slug::masking_codec::UuidV7TimestampWindow
+pub fn uuid_slug::masking_codec::UuidV7TimestampWindow::clone(&self) -> uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::fmt::Debug for uuid_slug::masking_codec::UuidV7TimestampWindow
+pub fn uuid_slug::masking_codec::UuidV7TimestampWindow::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Freeze for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Send for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Sync for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Unpin for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::UuidV7TimestampWindow
 pub mod uuid_slug::uuid
 pub struct uuid_slug::uuid::Uuid(_)
 impl uuid_slug::uuid::Uuid
@@ -360,53 +360,24 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::error::ErrorCode
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::error::ErrorCode
 pub enum uuid_slug::MigrationFormat
 pub uuid_slug::MigrationFormat::Current
-pub uuid_slug::MigrationFormat::Direct
 pub uuid_slug::MigrationFormat::Original
-impl core::clone::Clone for uuid_slug::codec::MigrationFormat
-pub fn uuid_slug::codec::MigrationFormat::clone(&self) -> uuid_slug::codec::MigrationFormat
-impl core::cmp::Eq for uuid_slug::codec::MigrationFormat
-impl core::cmp::PartialEq for uuid_slug::codec::MigrationFormat
-pub fn uuid_slug::codec::MigrationFormat::eq(&self, other: &uuid_slug::codec::MigrationFormat) -> bool
-impl core::fmt::Debug for uuid_slug::codec::MigrationFormat
-pub fn uuid_slug::codec::MigrationFormat::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for uuid_slug::codec::MigrationFormat
-impl core::marker::StructuralPartialEq for uuid_slug::codec::MigrationFormat
-impl core::marker::Freeze for uuid_slug::codec::MigrationFormat
-impl core::marker::Send for uuid_slug::codec::MigrationFormat
-impl core::marker::Sync for uuid_slug::codec::MigrationFormat
-impl core::marker::Unpin for uuid_slug::codec::MigrationFormat
-impl core::marker::UnsafeUnpin for uuid_slug::codec::MigrationFormat
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationFormat
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationFormat
-pub struct uuid_slug::Codec
-impl uuid_slug::codec::Codec
-pub fn uuid_slug::codec::Codec::decode_slug(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
-pub fn uuid_slug::codec::Codec::encode_uuid(&self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<alloc::string::String, uuid_slug::error::Error>
-pub fn uuid_slug::codec::Codec::migration_decoder(&self, options: uuid_slug::codec::MigrationOptions) -> uuid_slug::codec::MigrationDecoder<'_>
-pub fn uuid_slug::codec::Codec::new(options: uuid_slug::codec::CodecOptions) -> core::result::Result<Self, uuid_slug::error::Error>
-pub fn uuid_slug::codec::Codec::sentinels(&self) -> &[uuid_slug::codec::Sentinel]
-pub fn uuid_slug::codec::Codec::validate_slug_timestamp<'a>(&self, slug: &'a str, window: uuid_slug::codec::UuidV7TimestampWindow) -> core::result::Result<&'a str, uuid_slug::error::Error>
-impl core::marker::Freeze for uuid_slug::codec::Codec
-impl core::marker::Send for uuid_slug::codec::Codec
-impl core::marker::Sync for uuid_slug::codec::Codec
-impl core::marker::Unpin for uuid_slug::codec::Codec
-impl core::marker::UnsafeUnpin for uuid_slug::codec::Codec
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Codec
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Codec
-pub struct uuid_slug::CodecOptions
-pub uuid_slug::CodecOptions::mask: uuid_slug::mask::Mask
-pub uuid_slug::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::mask::Mask>
-pub uuid_slug::CodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
-pub uuid_slug::CodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
-impl uuid_slug::codec::CodecOptions
-pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::mask::Mask) -> Self
-impl core::marker::Freeze for uuid_slug::codec::CodecOptions
-impl core::marker::Send for uuid_slug::codec::CodecOptions
-impl core::marker::Sync for uuid_slug::codec::CodecOptions
-impl core::marker::Unpin for uuid_slug::codec::CodecOptions
-impl core::marker::UnsafeUnpin for uuid_slug::codec::CodecOptions
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::CodecOptions
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::CodecOptions
+pub uuid_slug::MigrationFormat::Plain
+impl core::clone::Clone for uuid_slug::masking_codec::MigrationFormat
+pub fn uuid_slug::masking_codec::MigrationFormat::clone(&self) -> uuid_slug::masking_codec::MigrationFormat
+impl core::cmp::Eq for uuid_slug::masking_codec::MigrationFormat
+impl core::cmp::PartialEq for uuid_slug::masking_codec::MigrationFormat
+pub fn uuid_slug::masking_codec::MigrationFormat::eq(&self, other: &uuid_slug::masking_codec::MigrationFormat) -> bool
+impl core::fmt::Debug for uuid_slug::masking_codec::MigrationFormat
+pub fn uuid_slug::masking_codec::MigrationFormat::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::StructuralPartialEq for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Freeze for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Send for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Sync for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Unpin for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::MigrationFormat
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::MigrationFormat
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::MigrationFormat
 pub struct uuid_slug::Error
 impl uuid_slug::error::Error
 pub const fn uuid_slug::error::Error::code(&self) -> uuid_slug::error::ErrorCode
@@ -441,48 +412,48 @@ impl core::marker::UnsafeUnpin for uuid_slug::mask::Mask
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::mask::Mask
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::mask::Mask
 pub struct uuid_slug::MigrationDecoder<'a>
-impl uuid_slug::codec::MigrationDecoder<'_>
-pub fn uuid_slug::codec::MigrationDecoder<'_>::candidates(&self, slug: &str, format: core::option::Option<uuid_slug::codec::MigrationFormat>) -> core::result::Result<alloc::vec::Vec<uuid_slug::uuid::Uuid>, uuid_slug::error::Error>
-pub fn uuid_slug::codec::MigrationDecoder<'_>::decode(&self, slug: &str, format: core::option::Option<uuid_slug::codec::MigrationFormat>) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
-impl<'a> core::marker::Freeze for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::Send for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::Sync for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::Unpin for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::UnsafeUnpin for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
+impl uuid_slug::masking_codec::MigrationDecoder<'_>
+pub fn uuid_slug::masking_codec::MigrationDecoder<'_>::candidates(&self, slug: &str, format: core::option::Option<uuid_slug::masking_codec::MigrationFormat>) -> core::result::Result<alloc::vec::Vec<uuid_slug::uuid::Uuid>, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::MigrationDecoder<'_>::decode(&self, slug: &str, format: core::option::Option<uuid_slug::masking_codec::MigrationFormat>) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
+impl<'a> core::marker::Freeze for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::Send for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::Sync for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::Unpin for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::UnsafeUnpin for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> !core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::MigrationDecoder<'a>
 pub struct uuid_slug::MigrationOptions
-pub uuid_slug::MigrationOptions::direct: bool
 pub uuid_slug::MigrationOptions::original: bool
-impl core::clone::Clone for uuid_slug::codec::MigrationOptions
-pub fn uuid_slug::codec::MigrationOptions::clone(&self) -> uuid_slug::codec::MigrationOptions
-impl core::default::Default for uuid_slug::codec::MigrationOptions
-pub fn uuid_slug::codec::MigrationOptions::default() -> uuid_slug::codec::MigrationOptions
-impl core::fmt::Debug for uuid_slug::codec::MigrationOptions
-pub fn uuid_slug::codec::MigrationOptions::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for uuid_slug::codec::MigrationOptions
-impl core::marker::Freeze for uuid_slug::codec::MigrationOptions
-impl core::marker::Send for uuid_slug::codec::MigrationOptions
-impl core::marker::Sync for uuid_slug::codec::MigrationOptions
-impl core::marker::Unpin for uuid_slug::codec::MigrationOptions
-impl core::marker::UnsafeUnpin for uuid_slug::codec::MigrationOptions
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationOptions
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationOptions
+pub uuid_slug::MigrationOptions::plain: bool
+impl core::clone::Clone for uuid_slug::masking_codec::MigrationOptions
+pub fn uuid_slug::masking_codec::MigrationOptions::clone(&self) -> uuid_slug::masking_codec::MigrationOptions
+impl core::default::Default for uuid_slug::masking_codec::MigrationOptions
+pub fn uuid_slug::masking_codec::MigrationOptions::default() -> uuid_slug::masking_codec::MigrationOptions
+impl core::fmt::Debug for uuid_slug::masking_codec::MigrationOptions
+pub fn uuid_slug::masking_codec::MigrationOptions::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Freeze for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Send for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Sync for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Unpin for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::MigrationOptions
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::MigrationOptions
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::MigrationOptions
 pub struct uuid_slug::Sentinel
 pub uuid_slug::Sentinel::name: alloc::string::String
 pub uuid_slug::Sentinel::slug: alloc::string::String
 pub uuid_slug::Sentinel::uuid: uuid_slug::uuid::Uuid
-impl core::clone::Clone for uuid_slug::codec::Sentinel
-pub fn uuid_slug::codec::Sentinel::clone(&self) -> uuid_slug::codec::Sentinel
-impl core::fmt::Debug for uuid_slug::codec::Sentinel
-pub fn uuid_slug::codec::Sentinel::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Freeze for uuid_slug::codec::Sentinel
-impl core::marker::Send for uuid_slug::codec::Sentinel
-impl core::marker::Sync for uuid_slug::codec::Sentinel
-impl core::marker::Unpin for uuid_slug::codec::Sentinel
-impl core::marker::UnsafeUnpin for uuid_slug::codec::Sentinel
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Sentinel
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Sentinel
+impl core::clone::Clone for uuid_slug::masking_codec::Sentinel
+pub fn uuid_slug::masking_codec::Sentinel::clone(&self) -> uuid_slug::masking_codec::Sentinel
+impl core::fmt::Debug for uuid_slug::masking_codec::Sentinel
+pub fn uuid_slug::masking_codec::Sentinel::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for uuid_slug::masking_codec::Sentinel
+impl core::marker::Send for uuid_slug::masking_codec::Sentinel
+impl core::marker::Sync for uuid_slug::masking_codec::Sentinel
+impl core::marker::Unpin for uuid_slug::masking_codec::Sentinel
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::Sentinel
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::Sentinel
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::Sentinel
 pub struct uuid_slug::Uuid(_)
 impl uuid_slug::uuid::Uuid
 pub const fn uuid_slug::uuid::Uuid::as_bytes(&self) -> &[u8; 16]
@@ -524,23 +495,52 @@ impl core::marker::Unpin for uuid_slug::uuid::Uuid
 impl core::marker::UnsafeUnpin for uuid_slug::uuid::Uuid
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::uuid::Uuid
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::uuid::Uuid
+pub struct uuid_slug::UuidV7MaskingCodec
+impl uuid_slug::masking_codec::UuidV7MaskingCodec
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::decode_slug(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::encode_uuid(&self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<alloc::string::String, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::migration_decoder(&self, options: uuid_slug::masking_codec::MigrationOptions) -> uuid_slug::masking_codec::MigrationDecoder<'_>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::new(options: uuid_slug::masking_codec::UuidV7MaskingCodecOptions) -> core::result::Result<Self, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::sentinels(&self) -> &[uuid_slug::masking_codec::Sentinel]
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::validate_slug_timestamp<'a>(&self, slug: &'a str, window: uuid_slug::masking_codec::UuidV7TimestampWindow) -> core::result::Result<&'a str, uuid_slug::error::Error>
+impl core::marker::Freeze for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::Send for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::Sync for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::Unpin for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodec
+pub struct uuid_slug::UuidV7MaskingCodecOptions
+pub uuid_slug::UuidV7MaskingCodecOptions::mask: uuid_slug::mask::Mask
+pub uuid_slug::UuidV7MaskingCodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::mask::Mask>
+pub uuid_slug::UuidV7MaskingCodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
+pub uuid_slug::UuidV7MaskingCodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
+impl uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodecOptions::new(mask: uuid_slug::mask::Mask) -> Self
+impl core::marker::Freeze for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::Send for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::Sync for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::Unpin for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
 pub struct uuid_slug::UuidV7TimestampWindow
 pub uuid_slug::UuidV7TimestampWindow::max_timestamp_delta_ms: f64
 pub uuid_slug::UuidV7TimestampWindow::reference_unix_ms: f64
-impl uuid_slug::codec::UuidV7TimestampWindow
-pub fn uuid_slug::codec::UuidV7TimestampWindow::validate(self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
-impl core::clone::Clone for uuid_slug::codec::UuidV7TimestampWindow
-pub fn uuid_slug::codec::UuidV7TimestampWindow::clone(&self) -> uuid_slug::codec::UuidV7TimestampWindow
-impl core::fmt::Debug for uuid_slug::codec::UuidV7TimestampWindow
-pub fn uuid_slug::codec::UuidV7TimestampWindow::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Freeze for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Send for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Sync for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Unpin for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::UnsafeUnpin for uuid_slug::codec::UuidV7TimestampWindow
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
+impl uuid_slug::masking_codec::UuidV7TimestampWindow
+pub fn uuid_slug::masking_codec::UuidV7TimestampWindow::validate(self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
+impl core::clone::Clone for uuid_slug::masking_codec::UuidV7TimestampWindow
+pub fn uuid_slug::masking_codec::UuidV7TimestampWindow::clone(&self) -> uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::fmt::Debug for uuid_slug::masking_codec::UuidV7TimestampWindow
+pub fn uuid_slug::masking_codec::UuidV7TimestampWindow::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Freeze for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Send for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Sync for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Unpin for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::UuidV7TimestampWindow
 pub const uuid_slug::MAX_MASKED_UUID_V7_UNIX_MS: u64
 pub fn uuid_slug::create_mask(seed: &[u8], iterations: u32, label: &str) -> core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>
 pub fn uuid_slug::create_mask_async(seed: &[u8], iterations: u32, label: &str, cancellation: uuid_slug::mask::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>> + core::marker::Send + use<>
@@ -578,116 +578,6 @@ impl core::marker::Unpin for uuid_slug::alphabet::Alphabet
 impl core::marker::UnsafeUnpin for uuid_slug::alphabet::Alphabet
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::alphabet::Alphabet
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::alphabet::Alphabet
-pub mod uuid_slug::codec
-pub enum uuid_slug::codec::MigrationFormat
-pub uuid_slug::codec::MigrationFormat::Current
-pub uuid_slug::codec::MigrationFormat::Direct
-pub uuid_slug::codec::MigrationFormat::Original
-impl core::clone::Clone for uuid_slug::codec::MigrationFormat
-pub fn uuid_slug::codec::MigrationFormat::clone(&self) -> uuid_slug::codec::MigrationFormat
-impl core::cmp::Eq for uuid_slug::codec::MigrationFormat
-impl core::cmp::PartialEq for uuid_slug::codec::MigrationFormat
-pub fn uuid_slug::codec::MigrationFormat::eq(&self, other: &uuid_slug::codec::MigrationFormat) -> bool
-impl core::fmt::Debug for uuid_slug::codec::MigrationFormat
-pub fn uuid_slug::codec::MigrationFormat::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for uuid_slug::codec::MigrationFormat
-impl core::marker::StructuralPartialEq for uuid_slug::codec::MigrationFormat
-impl core::marker::Freeze for uuid_slug::codec::MigrationFormat
-impl core::marker::Send for uuid_slug::codec::MigrationFormat
-impl core::marker::Sync for uuid_slug::codec::MigrationFormat
-impl core::marker::Unpin for uuid_slug::codec::MigrationFormat
-impl core::marker::UnsafeUnpin for uuid_slug::codec::MigrationFormat
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationFormat
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationFormat
-pub struct uuid_slug::codec::Codec
-impl uuid_slug::codec::Codec
-pub fn uuid_slug::codec::Codec::decode_slug(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
-pub fn uuid_slug::codec::Codec::encode_uuid(&self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<alloc::string::String, uuid_slug::error::Error>
-pub fn uuid_slug::codec::Codec::migration_decoder(&self, options: uuid_slug::codec::MigrationOptions) -> uuid_slug::codec::MigrationDecoder<'_>
-pub fn uuid_slug::codec::Codec::new(options: uuid_slug::codec::CodecOptions) -> core::result::Result<Self, uuid_slug::error::Error>
-pub fn uuid_slug::codec::Codec::sentinels(&self) -> &[uuid_slug::codec::Sentinel]
-pub fn uuid_slug::codec::Codec::validate_slug_timestamp<'a>(&self, slug: &'a str, window: uuid_slug::codec::UuidV7TimestampWindow) -> core::result::Result<&'a str, uuid_slug::error::Error>
-impl core::marker::Freeze for uuid_slug::codec::Codec
-impl core::marker::Send for uuid_slug::codec::Codec
-impl core::marker::Sync for uuid_slug::codec::Codec
-impl core::marker::Unpin for uuid_slug::codec::Codec
-impl core::marker::UnsafeUnpin for uuid_slug::codec::Codec
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Codec
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Codec
-pub struct uuid_slug::codec::CodecOptions
-pub uuid_slug::codec::CodecOptions::mask: uuid_slug::mask::Mask
-pub uuid_slug::codec::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::mask::Mask>
-pub uuid_slug::codec::CodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
-pub uuid_slug::codec::CodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
-impl uuid_slug::codec::CodecOptions
-pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::mask::Mask) -> Self
-impl core::marker::Freeze for uuid_slug::codec::CodecOptions
-impl core::marker::Send for uuid_slug::codec::CodecOptions
-impl core::marker::Sync for uuid_slug::codec::CodecOptions
-impl core::marker::Unpin for uuid_slug::codec::CodecOptions
-impl core::marker::UnsafeUnpin for uuid_slug::codec::CodecOptions
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::CodecOptions
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::CodecOptions
-pub struct uuid_slug::codec::MigrationDecoder<'a>
-impl uuid_slug::codec::MigrationDecoder<'_>
-pub fn uuid_slug::codec::MigrationDecoder<'_>::candidates(&self, slug: &str, format: core::option::Option<uuid_slug::codec::MigrationFormat>) -> core::result::Result<alloc::vec::Vec<uuid_slug::uuid::Uuid>, uuid_slug::error::Error>
-pub fn uuid_slug::codec::MigrationDecoder<'_>::decode(&self, slug: &str, format: core::option::Option<uuid_slug::codec::MigrationFormat>) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
-impl<'a> core::marker::Freeze for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::Send for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::Sync for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::Unpin for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::UnsafeUnpin for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
-pub struct uuid_slug::codec::MigrationOptions
-pub uuid_slug::codec::MigrationOptions::direct: bool
-pub uuid_slug::codec::MigrationOptions::original: bool
-impl core::clone::Clone for uuid_slug::codec::MigrationOptions
-pub fn uuid_slug::codec::MigrationOptions::clone(&self) -> uuid_slug::codec::MigrationOptions
-impl core::default::Default for uuid_slug::codec::MigrationOptions
-pub fn uuid_slug::codec::MigrationOptions::default() -> uuid_slug::codec::MigrationOptions
-impl core::fmt::Debug for uuid_slug::codec::MigrationOptions
-pub fn uuid_slug::codec::MigrationOptions::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for uuid_slug::codec::MigrationOptions
-impl core::marker::Freeze for uuid_slug::codec::MigrationOptions
-impl core::marker::Send for uuid_slug::codec::MigrationOptions
-impl core::marker::Sync for uuid_slug::codec::MigrationOptions
-impl core::marker::Unpin for uuid_slug::codec::MigrationOptions
-impl core::marker::UnsafeUnpin for uuid_slug::codec::MigrationOptions
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationOptions
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationOptions
-pub struct uuid_slug::codec::Sentinel
-pub uuid_slug::codec::Sentinel::name: alloc::string::String
-pub uuid_slug::codec::Sentinel::slug: alloc::string::String
-pub uuid_slug::codec::Sentinel::uuid: uuid_slug::uuid::Uuid
-impl core::clone::Clone for uuid_slug::codec::Sentinel
-pub fn uuid_slug::codec::Sentinel::clone(&self) -> uuid_slug::codec::Sentinel
-impl core::fmt::Debug for uuid_slug::codec::Sentinel
-pub fn uuid_slug::codec::Sentinel::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Freeze for uuid_slug::codec::Sentinel
-impl core::marker::Send for uuid_slug::codec::Sentinel
-impl core::marker::Sync for uuid_slug::codec::Sentinel
-impl core::marker::Unpin for uuid_slug::codec::Sentinel
-impl core::marker::UnsafeUnpin for uuid_slug::codec::Sentinel
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Sentinel
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Sentinel
-pub struct uuid_slug::codec::UuidV7TimestampWindow
-pub uuid_slug::codec::UuidV7TimestampWindow::max_timestamp_delta_ms: f64
-pub uuid_slug::codec::UuidV7TimestampWindow::reference_unix_ms: f64
-impl uuid_slug::codec::UuidV7TimestampWindow
-pub fn uuid_slug::codec::UuidV7TimestampWindow::validate(self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
-impl core::clone::Clone for uuid_slug::codec::UuidV7TimestampWindow
-pub fn uuid_slug::codec::UuidV7TimestampWindow::clone(&self) -> uuid_slug::codec::UuidV7TimestampWindow
-impl core::fmt::Debug for uuid_slug::codec::UuidV7TimestampWindow
-pub fn uuid_slug::codec::UuidV7TimestampWindow::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Freeze for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Send for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Sync for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Unpin for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::UnsafeUnpin for uuid_slug::codec::UuidV7TimestampWindow
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
 pub mod uuid_slug::error
 #[non_exhaustive] pub enum uuid_slug::error::ErrorCode
 pub uuid_slug::error::ErrorCode::Aborted
@@ -798,6 +688,116 @@ impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::mask::Mask
 pub fn uuid_slug::mask::create_mask(seed: &[u8], iterations: u32, label: &str) -> core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>
 pub fn uuid_slug::mask::create_mask_async(seed: &[u8], iterations: u32, label: &str, cancellation: uuid_slug::mask::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::mask::public_mask() -> uuid_slug::mask::Mask
+pub mod uuid_slug::masking_codec
+pub enum uuid_slug::masking_codec::MigrationFormat
+pub uuid_slug::masking_codec::MigrationFormat::Current
+pub uuid_slug::masking_codec::MigrationFormat::Original
+pub uuid_slug::masking_codec::MigrationFormat::Plain
+impl core::clone::Clone for uuid_slug::masking_codec::MigrationFormat
+pub fn uuid_slug::masking_codec::MigrationFormat::clone(&self) -> uuid_slug::masking_codec::MigrationFormat
+impl core::cmp::Eq for uuid_slug::masking_codec::MigrationFormat
+impl core::cmp::PartialEq for uuid_slug::masking_codec::MigrationFormat
+pub fn uuid_slug::masking_codec::MigrationFormat::eq(&self, other: &uuid_slug::masking_codec::MigrationFormat) -> bool
+impl core::fmt::Debug for uuid_slug::masking_codec::MigrationFormat
+pub fn uuid_slug::masking_codec::MigrationFormat::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::StructuralPartialEq for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Freeze for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Send for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Sync for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Unpin for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::MigrationFormat
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::MigrationFormat
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::MigrationFormat
+pub struct uuid_slug::masking_codec::MigrationDecoder<'a>
+impl uuid_slug::masking_codec::MigrationDecoder<'_>
+pub fn uuid_slug::masking_codec::MigrationDecoder<'_>::candidates(&self, slug: &str, format: core::option::Option<uuid_slug::masking_codec::MigrationFormat>) -> core::result::Result<alloc::vec::Vec<uuid_slug::uuid::Uuid>, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::MigrationDecoder<'_>::decode(&self, slug: &str, format: core::option::Option<uuid_slug::masking_codec::MigrationFormat>) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
+impl<'a> core::marker::Freeze for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::Send for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::Sync for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::Unpin for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::UnsafeUnpin for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> !core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::MigrationDecoder<'a>
+pub struct uuid_slug::masking_codec::MigrationOptions
+pub uuid_slug::masking_codec::MigrationOptions::original: bool
+pub uuid_slug::masking_codec::MigrationOptions::plain: bool
+impl core::clone::Clone for uuid_slug::masking_codec::MigrationOptions
+pub fn uuid_slug::masking_codec::MigrationOptions::clone(&self) -> uuid_slug::masking_codec::MigrationOptions
+impl core::default::Default for uuid_slug::masking_codec::MigrationOptions
+pub fn uuid_slug::masking_codec::MigrationOptions::default() -> uuid_slug::masking_codec::MigrationOptions
+impl core::fmt::Debug for uuid_slug::masking_codec::MigrationOptions
+pub fn uuid_slug::masking_codec::MigrationOptions::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Freeze for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Send for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Sync for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Unpin for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::MigrationOptions
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::MigrationOptions
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::MigrationOptions
+pub struct uuid_slug::masking_codec::Sentinel
+pub uuid_slug::masking_codec::Sentinel::name: alloc::string::String
+pub uuid_slug::masking_codec::Sentinel::slug: alloc::string::String
+pub uuid_slug::masking_codec::Sentinel::uuid: uuid_slug::uuid::Uuid
+impl core::clone::Clone for uuid_slug::masking_codec::Sentinel
+pub fn uuid_slug::masking_codec::Sentinel::clone(&self) -> uuid_slug::masking_codec::Sentinel
+impl core::fmt::Debug for uuid_slug::masking_codec::Sentinel
+pub fn uuid_slug::masking_codec::Sentinel::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for uuid_slug::masking_codec::Sentinel
+impl core::marker::Send for uuid_slug::masking_codec::Sentinel
+impl core::marker::Sync for uuid_slug::masking_codec::Sentinel
+impl core::marker::Unpin for uuid_slug::masking_codec::Sentinel
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::Sentinel
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::Sentinel
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::Sentinel
+pub struct uuid_slug::masking_codec::UuidV7MaskingCodec
+impl uuid_slug::masking_codec::UuidV7MaskingCodec
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::decode_slug(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::encode_uuid(&self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<alloc::string::String, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::migration_decoder(&self, options: uuid_slug::masking_codec::MigrationOptions) -> uuid_slug::masking_codec::MigrationDecoder<'_>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::new(options: uuid_slug::masking_codec::UuidV7MaskingCodecOptions) -> core::result::Result<Self, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::sentinels(&self) -> &[uuid_slug::masking_codec::Sentinel]
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::validate_slug_timestamp<'a>(&self, slug: &'a str, window: uuid_slug::masking_codec::UuidV7TimestampWindow) -> core::result::Result<&'a str, uuid_slug::error::Error>
+impl core::marker::Freeze for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::Send for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::Sync for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::Unpin for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodec
+pub struct uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+pub uuid_slug::masking_codec::UuidV7MaskingCodecOptions::mask: uuid_slug::mask::Mask
+pub uuid_slug::masking_codec::UuidV7MaskingCodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::mask::Mask>
+pub uuid_slug::masking_codec::UuidV7MaskingCodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
+pub uuid_slug::masking_codec::UuidV7MaskingCodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
+impl uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodecOptions::new(mask: uuid_slug::mask::Mask) -> Self
+impl core::marker::Freeze for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::Send for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::Sync for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::Unpin for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+pub struct uuid_slug::masking_codec::UuidV7TimestampWindow
+pub uuid_slug::masking_codec::UuidV7TimestampWindow::max_timestamp_delta_ms: f64
+pub uuid_slug::masking_codec::UuidV7TimestampWindow::reference_unix_ms: f64
+impl uuid_slug::masking_codec::UuidV7TimestampWindow
+pub fn uuid_slug::masking_codec::UuidV7TimestampWindow::validate(self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
+impl core::clone::Clone for uuid_slug::masking_codec::UuidV7TimestampWindow
+pub fn uuid_slug::masking_codec::UuidV7TimestampWindow::clone(&self) -> uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::fmt::Debug for uuid_slug::masking_codec::UuidV7TimestampWindow
+pub fn uuid_slug::masking_codec::UuidV7TimestampWindow::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Freeze for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Send for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Sync for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Unpin for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::UuidV7TimestampWindow
 pub mod uuid_slug::uuid
 pub struct uuid_slug::uuid::Uuid(_)
 impl uuid_slug::uuid::Uuid
@@ -901,53 +901,24 @@ impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::error::ErrorCode
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::error::ErrorCode
 pub enum uuid_slug::MigrationFormat
 pub uuid_slug::MigrationFormat::Current
-pub uuid_slug::MigrationFormat::Direct
 pub uuid_slug::MigrationFormat::Original
-impl core::clone::Clone for uuid_slug::codec::MigrationFormat
-pub fn uuid_slug::codec::MigrationFormat::clone(&self) -> uuid_slug::codec::MigrationFormat
-impl core::cmp::Eq for uuid_slug::codec::MigrationFormat
-impl core::cmp::PartialEq for uuid_slug::codec::MigrationFormat
-pub fn uuid_slug::codec::MigrationFormat::eq(&self, other: &uuid_slug::codec::MigrationFormat) -> bool
-impl core::fmt::Debug for uuid_slug::codec::MigrationFormat
-pub fn uuid_slug::codec::MigrationFormat::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for uuid_slug::codec::MigrationFormat
-impl core::marker::StructuralPartialEq for uuid_slug::codec::MigrationFormat
-impl core::marker::Freeze for uuid_slug::codec::MigrationFormat
-impl core::marker::Send for uuid_slug::codec::MigrationFormat
-impl core::marker::Sync for uuid_slug::codec::MigrationFormat
-impl core::marker::Unpin for uuid_slug::codec::MigrationFormat
-impl core::marker::UnsafeUnpin for uuid_slug::codec::MigrationFormat
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationFormat
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationFormat
-pub struct uuid_slug::Codec
-impl uuid_slug::codec::Codec
-pub fn uuid_slug::codec::Codec::decode_slug(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
-pub fn uuid_slug::codec::Codec::encode_uuid(&self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<alloc::string::String, uuid_slug::error::Error>
-pub fn uuid_slug::codec::Codec::migration_decoder(&self, options: uuid_slug::codec::MigrationOptions) -> uuid_slug::codec::MigrationDecoder<'_>
-pub fn uuid_slug::codec::Codec::new(options: uuid_slug::codec::CodecOptions) -> core::result::Result<Self, uuid_slug::error::Error>
-pub fn uuid_slug::codec::Codec::sentinels(&self) -> &[uuid_slug::codec::Sentinel]
-pub fn uuid_slug::codec::Codec::validate_slug_timestamp<'a>(&self, slug: &'a str, window: uuid_slug::codec::UuidV7TimestampWindow) -> core::result::Result<&'a str, uuid_slug::error::Error>
-impl core::marker::Freeze for uuid_slug::codec::Codec
-impl core::marker::Send for uuid_slug::codec::Codec
-impl core::marker::Sync for uuid_slug::codec::Codec
-impl core::marker::Unpin for uuid_slug::codec::Codec
-impl core::marker::UnsafeUnpin for uuid_slug::codec::Codec
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Codec
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Codec
-pub struct uuid_slug::CodecOptions
-pub uuid_slug::CodecOptions::mask: uuid_slug::mask::Mask
-pub uuid_slug::CodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::mask::Mask>
-pub uuid_slug::CodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
-pub uuid_slug::CodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
-impl uuid_slug::codec::CodecOptions
-pub fn uuid_slug::codec::CodecOptions::new(mask: uuid_slug::mask::Mask) -> Self
-impl core::marker::Freeze for uuid_slug::codec::CodecOptions
-impl core::marker::Send for uuid_slug::codec::CodecOptions
-impl core::marker::Sync for uuid_slug::codec::CodecOptions
-impl core::marker::Unpin for uuid_slug::codec::CodecOptions
-impl core::marker::UnsafeUnpin for uuid_slug::codec::CodecOptions
-impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::CodecOptions
-impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::CodecOptions
+pub uuid_slug::MigrationFormat::Plain
+impl core::clone::Clone for uuid_slug::masking_codec::MigrationFormat
+pub fn uuid_slug::masking_codec::MigrationFormat::clone(&self) -> uuid_slug::masking_codec::MigrationFormat
+impl core::cmp::Eq for uuid_slug::masking_codec::MigrationFormat
+impl core::cmp::PartialEq for uuid_slug::masking_codec::MigrationFormat
+pub fn uuid_slug::masking_codec::MigrationFormat::eq(&self, other: &uuid_slug::masking_codec::MigrationFormat) -> bool
+impl core::fmt::Debug for uuid_slug::masking_codec::MigrationFormat
+pub fn uuid_slug::masking_codec::MigrationFormat::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::StructuralPartialEq for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Freeze for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Send for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Sync for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::Unpin for uuid_slug::masking_codec::MigrationFormat
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::MigrationFormat
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::MigrationFormat
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::MigrationFormat
 pub struct uuid_slug::Error
 impl uuid_slug::error::Error
 pub const fn uuid_slug::error::Error::code(&self) -> uuid_slug::error::ErrorCode
@@ -982,48 +953,48 @@ impl core::marker::UnsafeUnpin for uuid_slug::mask::Mask
 impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::mask::Mask
 impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::mask::Mask
 pub struct uuid_slug::MigrationDecoder<'a>
-impl uuid_slug::codec::MigrationDecoder<'_>
-pub fn uuid_slug::codec::MigrationDecoder<'_>::candidates(&self, slug: &str, format: core::option::Option<uuid_slug::codec::MigrationFormat>) -> core::result::Result<alloc::vec::Vec<uuid_slug::uuid::Uuid>, uuid_slug::error::Error>
-pub fn uuid_slug::codec::MigrationDecoder<'_>::decode(&self, slug: &str, format: core::option::Option<uuid_slug::codec::MigrationFormat>) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
-impl<'a> core::marker::Freeze for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::Send for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::Sync for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::Unpin for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> core::marker::UnsafeUnpin for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
-impl<'a> !core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationDecoder<'a>
+impl uuid_slug::masking_codec::MigrationDecoder<'_>
+pub fn uuid_slug::masking_codec::MigrationDecoder<'_>::candidates(&self, slug: &str, format: core::option::Option<uuid_slug::masking_codec::MigrationFormat>) -> core::result::Result<alloc::vec::Vec<uuid_slug::uuid::Uuid>, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::MigrationDecoder<'_>::decode(&self, slug: &str, format: core::option::Option<uuid_slug::masking_codec::MigrationFormat>) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
+impl<'a> core::marker::Freeze for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::Send for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::Sync for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::Unpin for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> core::marker::UnsafeUnpin for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::MigrationDecoder<'a>
+impl<'a> !core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::MigrationDecoder<'a>
 pub struct uuid_slug::MigrationOptions
-pub uuid_slug::MigrationOptions::direct: bool
 pub uuid_slug::MigrationOptions::original: bool
-impl core::clone::Clone for uuid_slug::codec::MigrationOptions
-pub fn uuid_slug::codec::MigrationOptions::clone(&self) -> uuid_slug::codec::MigrationOptions
-impl core::default::Default for uuid_slug::codec::MigrationOptions
-pub fn uuid_slug::codec::MigrationOptions::default() -> uuid_slug::codec::MigrationOptions
-impl core::fmt::Debug for uuid_slug::codec::MigrationOptions
-pub fn uuid_slug::codec::MigrationOptions::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for uuid_slug::codec::MigrationOptions
-impl core::marker::Freeze for uuid_slug::codec::MigrationOptions
-impl core::marker::Send for uuid_slug::codec::MigrationOptions
-impl core::marker::Sync for uuid_slug::codec::MigrationOptions
-impl core::marker::Unpin for uuid_slug::codec::MigrationOptions
-impl core::marker::UnsafeUnpin for uuid_slug::codec::MigrationOptions
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::MigrationOptions
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::MigrationOptions
+pub uuid_slug::MigrationOptions::plain: bool
+impl core::clone::Clone for uuid_slug::masking_codec::MigrationOptions
+pub fn uuid_slug::masking_codec::MigrationOptions::clone(&self) -> uuid_slug::masking_codec::MigrationOptions
+impl core::default::Default for uuid_slug::masking_codec::MigrationOptions
+pub fn uuid_slug::masking_codec::MigrationOptions::default() -> uuid_slug::masking_codec::MigrationOptions
+impl core::fmt::Debug for uuid_slug::masking_codec::MigrationOptions
+pub fn uuid_slug::masking_codec::MigrationOptions::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Freeze for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Send for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Sync for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::Unpin for uuid_slug::masking_codec::MigrationOptions
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::MigrationOptions
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::MigrationOptions
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::MigrationOptions
 pub struct uuid_slug::Sentinel
 pub uuid_slug::Sentinel::name: alloc::string::String
 pub uuid_slug::Sentinel::slug: alloc::string::String
 pub uuid_slug::Sentinel::uuid: uuid_slug::uuid::Uuid
-impl core::clone::Clone for uuid_slug::codec::Sentinel
-pub fn uuid_slug::codec::Sentinel::clone(&self) -> uuid_slug::codec::Sentinel
-impl core::fmt::Debug for uuid_slug::codec::Sentinel
-pub fn uuid_slug::codec::Sentinel::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Freeze for uuid_slug::codec::Sentinel
-impl core::marker::Send for uuid_slug::codec::Sentinel
-impl core::marker::Sync for uuid_slug::codec::Sentinel
-impl core::marker::Unpin for uuid_slug::codec::Sentinel
-impl core::marker::UnsafeUnpin for uuid_slug::codec::Sentinel
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::Sentinel
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::Sentinel
+impl core::clone::Clone for uuid_slug::masking_codec::Sentinel
+pub fn uuid_slug::masking_codec::Sentinel::clone(&self) -> uuid_slug::masking_codec::Sentinel
+impl core::fmt::Debug for uuid_slug::masking_codec::Sentinel
+pub fn uuid_slug::masking_codec::Sentinel::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Freeze for uuid_slug::masking_codec::Sentinel
+impl core::marker::Send for uuid_slug::masking_codec::Sentinel
+impl core::marker::Sync for uuid_slug::masking_codec::Sentinel
+impl core::marker::Unpin for uuid_slug::masking_codec::Sentinel
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::Sentinel
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::Sentinel
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::Sentinel
 pub struct uuid_slug::Uuid(_)
 impl uuid_slug::uuid::Uuid
 pub const fn uuid_slug::uuid::Uuid::as_bytes(&self) -> &[u8; 16]
@@ -1065,23 +1036,52 @@ impl core::marker::Unpin for uuid_slug::uuid::Uuid
 impl core::marker::UnsafeUnpin for uuid_slug::uuid::Uuid
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::uuid::Uuid
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::uuid::Uuid
+pub struct uuid_slug::UuidV7MaskingCodec
+impl uuid_slug::masking_codec::UuidV7MaskingCodec
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::decode_slug(&self, slug: &str) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::encode_uuid(&self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<alloc::string::String, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::migration_decoder(&self, options: uuid_slug::masking_codec::MigrationOptions) -> uuid_slug::masking_codec::MigrationDecoder<'_>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::new(options: uuid_slug::masking_codec::UuidV7MaskingCodecOptions) -> core::result::Result<Self, uuid_slug::error::Error>
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::sentinels(&self) -> &[uuid_slug::masking_codec::Sentinel]
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodec::validate_slug_timestamp<'a>(&self, slug: &'a str, window: uuid_slug::masking_codec::UuidV7TimestampWindow) -> core::result::Result<&'a str, uuid_slug::error::Error>
+impl core::marker::Freeze for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::Send for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::Sync for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::Unpin for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodec
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodec
+pub struct uuid_slug::UuidV7MaskingCodecOptions
+pub uuid_slug::UuidV7MaskingCodecOptions::mask: uuid_slug::mask::Mask
+pub uuid_slug::UuidV7MaskingCodecOptions::previous_masks: alloc::vec::Vec<uuid_slug::mask::Mask>
+pub uuid_slug::UuidV7MaskingCodecOptions::sentinels: alloc::vec::Vec<(alloc::string::String, uuid_slug::uuid::Uuid)>
+pub uuid_slug::UuidV7MaskingCodecOptions::slug_alphabet: uuid_slug::alphabet::Alphabet
+impl uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+pub fn uuid_slug::masking_codec::UuidV7MaskingCodecOptions::new(mask: uuid_slug::mask::Mask) -> Self
+impl core::marker::Freeze for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::Send for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::Sync for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::Unpin for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl !core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
+impl !core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::UuidV7MaskingCodecOptions
 pub struct uuid_slug::UuidV7TimestampWindow
 pub uuid_slug::UuidV7TimestampWindow::max_timestamp_delta_ms: f64
 pub uuid_slug::UuidV7TimestampWindow::reference_unix_ms: f64
-impl uuid_slug::codec::UuidV7TimestampWindow
-pub fn uuid_slug::codec::UuidV7TimestampWindow::validate(self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
-impl core::clone::Clone for uuid_slug::codec::UuidV7TimestampWindow
-pub fn uuid_slug::codec::UuidV7TimestampWindow::clone(&self) -> uuid_slug::codec::UuidV7TimestampWindow
-impl core::fmt::Debug for uuid_slug::codec::UuidV7TimestampWindow
-pub fn uuid_slug::codec::UuidV7TimestampWindow::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
-impl core::marker::Copy for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Freeze for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Send for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Sync for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::Unpin for uuid_slug::codec::UuidV7TimestampWindow
-impl core::marker::UnsafeUnpin for uuid_slug::codec::UuidV7TimestampWindow
-impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
-impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
+impl uuid_slug::masking_codec::UuidV7TimestampWindow
+pub fn uuid_slug::masking_codec::UuidV7TimestampWindow::validate(self, uuid: uuid_slug::uuid::Uuid) -> core::result::Result<uuid_slug::uuid::Uuid, uuid_slug::error::Error>
+impl core::clone::Clone for uuid_slug::masking_codec::UuidV7TimestampWindow
+pub fn uuid_slug::masking_codec::UuidV7TimestampWindow::clone(&self) -> uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::fmt::Debug for uuid_slug::masking_codec::UuidV7TimestampWindow
+pub fn uuid_slug::masking_codec::UuidV7TimestampWindow::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Freeze for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Send for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Sync for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::Unpin for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::marker::UnsafeUnpin for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::masking_codec::UuidV7TimestampWindow
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::masking_codec::UuidV7TimestampWindow
 pub const uuid_slug::MAX_MASKED_UUID_V7_UNIX_MS: u64
 pub fn uuid_slug::create_mask(seed: &[u8], iterations: u32, label: &str) -> core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>
 pub fn uuid_slug::create_mask_async(seed: &[u8], iterations: u32, label: &str, cancellation: uuid_slug::mask::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>> + core::marker::Send + use<>

@@ -7,35 +7,35 @@ import { runtime } from "#runtime";
 import { unwrap } from "../dev/unwrap";
 import {
   createUuidV7Generator as createSecureUuidV7Generator,
-  createUuidV7SlugCodec,
+  createUuidV7MaskingCodec,
   createCustomUuidV7Mask,
   extractUuidV7UnixMs,
   bytesToUuidString,
   UUID_TEXT_UPPERCASE,
-  uuidBytesToDirectSlug,
+  uuidBytesToPlainSlug,
   isUuidV4String,
   isUuidV7Bytes,
-  isDirectUuidV7Slug,
+  isPlainUuidV7Slug,
   isUuidV7String,
   isUuidSlugError,
   uuidStringToBytes,
-  slugToUuidBytes,
-  slugToUuidString,
+  plainSlugToUuidBytes,
+  uuidToString,
   UuidSlugError,
-  uuidStringToDirectSlug,
+  uuidStringToPlainSlug,
   generateUuidV4,
   generateUuidV4Bytes,
-  generateDirectUuidV4Slug,
+  generatePlainUuidV4Slug,
   generateUuidV7,
   generateUuidV7AtUnixMs,
   validateUuidV7Timestamp,
-  validateDirectUuidV7SlugUnixMs,
+  validatePlainUuidV7SlugUnixMs,
   generateUuidV7Bytes,
   generateUuidV7BytesAtUnixMs,
-  generateDirectUuidV7Slug,
+  generatePlainUuidV7Slug,
 } from "../src/index";
 import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
-import { createUuidV7SlugCodecWithGenerator } from "../src/codec";
+import { createUuidV7MaskingCodecWithGenerator } from "../src/masking-codec";
 import type { UuidV7Generator } from "../src/types";
 import { createRuntimeGenerator } from "../src/v7";
 import { NIL_TEST_SENTINEL } from "./sentinel-fixtures";
@@ -129,7 +129,7 @@ export const runtimeBoundaryCases = [
         assert.equal(generateUuidV4(), "123e4567-e89b-42d3-a456-426614174000");
         assert.equal(generateUuidV4(UUID_TEXT_UPPERCASE), "123E4567-E89B-42D3-A456-426614174000");
         assert.equal(isUuidV4String(bytesToUuidString(unwrap(generateUuidV4Bytes()))), true);
-        assert.equal(typeof generateDirectUuidV4Slug(), "string");
+        assert.equal(typeof generatePlainUuidV4Slug(), "string");
         assert.equal(generateUuidV7(), uuid);
         assert.equal(generateUuidV7(UUID_TEXT_UPPERCASE), uuid.toUpperCase());
         assert.equal(isUuidV7String(generateUuidV7AtUnixMs(timestamp)), true);
@@ -139,8 +139,8 @@ export const runtimeBoundaryCases = [
         const explicitOut = new Uint8Array(24).fill(0x55);
         assert.equal(generateUuidV7Bytes(currentOut, 4), currentOut);
         assert.equal(generateUuidV7BytesAtUnixMs(timestamp, explicitOut, 4), explicitOut);
-        assert.equal(isDirectUuidV7Slug(generateDirectUuidV7Slug()), true);
-        assert.equal(unwrap(generateDirectUuidV7Slug("base32hex")).length, 26);
+        assert.equal(isPlainUuidV7Slug(generatePlainUuidV7Slug()), true);
+        assert.equal(unwrap(generatePlainUuidV7Slug("base32hex")).length, 26);
         assert.deepEqual(nativeCalls, expectedNativeCalls);
 
         delete runtime.uuidV4;
@@ -150,8 +150,8 @@ export const runtimeBoundaryCases = [
         assert.equal(isUuidV7String(generateUuidV7AtUnixMs(timestamp)), true);
         assert.equal(isUuidV7Bytes(generateUuidV7Bytes()), true);
         assert.equal(isUuidV7Bytes(generateUuidV7BytesAtUnixMs(timestamp)), true);
-        assert.equal(isDirectUuidV7Slug(generateDirectUuidV7Slug()), true);
-        assert.equal(unwrap(generateDirectUuidV7Slug("base32hex")).length, 26);
+        assert.equal(isPlainUuidV7Slug(generatePlainUuidV7Slug()), true);
+        assert.equal(unwrap(generatePlainUuidV7Slug("base32hex")).length, 26);
         assert.deepEqual(nativeCalls, expectedNativeCalls);
 
         const throwNative = (): never => {
@@ -162,7 +162,7 @@ export const runtimeBoundaryCases = [
         failPortable = true;
         assertDualFailure(generateUuidV4());
         assertPortableFailure(generateUuidV4Bytes());
-        assertPortableFailure(generateDirectUuidV4Slug());
+        assertPortableFailure(generatePlainUuidV4Slug());
         const dualGenerator = createRuntimeGenerator({
           fillRandom() {
             throw portableCause;
@@ -247,9 +247,9 @@ export const runtimeBoundaryCases = [
         unmask: copy,
       });
       assert.ok(!(handle instanceof Error));
-      const codec = unwrap(createUuidV7SlugCodec({ mask: handle }));
-      const slug = unwrap(codec.uuidToSlug(uuid));
-      assert.equal(codec.slugToUuidString(slug), uuid);
+      const codec = unwrap(createUuidV7MaskingCodec({ mask: handle }));
+      const slug = unwrap(codec.uuidToMaskedSlug(uuid));
+      assert.equal(codec.uuidToString(slug), uuid);
     },
   },
   {
@@ -259,10 +259,10 @@ export const runtimeBoundaryCases = [
       const generator = makeGenerator();
       const calls = [
         (value: unknown) => Reflect.apply(bytesToUuidString, undefined, [value]),
-        (value: unknown) => Reflect.apply(uuidBytesToDirectSlug, undefined, [value]),
+        (value: unknown) => Reflect.apply(uuidBytesToPlainSlug, undefined, [value]),
         (value: unknown) => Reflect.apply(extractUuidV7UnixMs, undefined, [value]),
         (value: unknown) => Reflect.apply(uuidStringToBytes, undefined, [uuid, value]),
-        (value: unknown) => Reflect.apply(slugToUuidBytes, undefined, [slug, value]),
+        (value: unknown) => Reflect.apply(plainSlugToUuidBytes, undefined, [slug, value]),
         (value: unknown) => Reflect.apply(generateUuidV4Bytes, undefined, [value]),
         (value: unknown) => Reflect.apply(generator.generateUuidV7Bytes, undefined, [value]),
         (value: unknown) =>
@@ -317,12 +317,12 @@ export const runtimeBoundaryCases = [
         generateUuidV7Bytes: () => foreignError,
         generateUuidV7BytesAtUnixMs: () => foreignError,
       };
-      const codec = createUuidV7SlugCodecWithGenerator(
+      const codec = createUuidV7MaskingCodecWithGenerator(
         { mask: { seed: "cross-realm-generator" } },
         generator.generateUuidV7Bytes,
       );
       assert.ok(!(codec instanceof Error));
-      assert.equal(codec.generateUuidV7CodecSlug(), foreignError);
+      assert.equal(codec.generateMaskedUuidV7Slug(), foreignError);
     },
   },
   {
@@ -416,7 +416,7 @@ export const runtimeBoundaryCases = [
     name: `uses the supplied generator for ${slugAlphabet}`,
     run(this: void) {
       const generated = unwrap(makeGenerator().generateUuidV7());
-      assert.equal(slugToUuidString(unwrap(uuidStringToDirectSlug(generated, slugAlphabet))), uuid);
+      assert.equal(uuidToString(unwrap(uuidStringToPlainSlug(generated, slugAlphabet))), uuid);
     },
   })),
   {
@@ -584,7 +584,7 @@ export const runtimeBoundaryCases = [
         validateUuidV7Timestamp("1f04e7f5-c0c6-4044-b5a3-6278bb77ffb4", {
           maxTimestampDeltaMs: 0,
         }),
-        validateDirectUuidV7SlugUnixMs("HwTn9cDGQES1o2J4u3f_tA", {
+        validatePlainUuidV7SlugUnixMs("HwTn9cDGQES1o2J4u3f_tA", {
           maxTimestampDeltaMs: 0,
         }),
       ]) {
@@ -672,9 +672,9 @@ export const runtimeBoundaryCases = [
         }),
       );
       const codec = unwrap(
-        createUuidV7SlugCodecWithGenerator({ mask, sentinels: NIL_TEST_SENTINEL }, () => bytes),
+        createUuidV7MaskingCodecWithGenerator({ mask, sentinels: NIL_TEST_SENTINEL }, () => bytes),
       );
-      const failure = codec.generateUuidV7CodecSlug();
+      const failure = codec.generateMaskedUuidV7Slug();
       assert.ok(failure instanceof UuidSlugError);
       assert.equal(failure.code, "invalid_mask");
     },

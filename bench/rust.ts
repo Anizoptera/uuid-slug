@@ -177,7 +177,7 @@ for (const [lane, laneSamples] of samples) {
     (row) => row.operation === "bridge/dispatch" && row.batch === 1 && row.round !== 0,
   );
   const batches = rows.filter((row) => row.operation === "bridge/dispatch" && row.batch === 64);
-  const direct = rows.filter((row) => row.operation === "bridge/direct-plain" && row.round !== 0);
+  const plain = rows.filter((row) => row.operation === "bridge/plain" && row.round !== 0);
   const startups = startupSamples.get(lane);
   if (!startups) throw new Error(`${lane} has no startup measurements`);
   console.log(
@@ -200,7 +200,7 @@ for (const [lane, laneSamples] of samples) {
       fixedNs: median(fixed.map((row) => Number(row.nsPerCall))),
       steadySingleNs: median(steadySingles.map((row) => Number(row.nsPerIdentifier))),
       batch64Ns: median(batches.map((row) => Number(row.nsPerIdentifier))),
-      directPlainNs: median(direct.map((row) => Number(row.nsPerCall))),
+      plainNs: median(plain.map((row) => Number(row.nsPerCall))),
     }),
   );
 }

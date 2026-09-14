@@ -17,7 +17,7 @@ Parity includes accepted and rejected inputs, defaults, error conditions, sentin
 order, migration controls, timestamp windows, cancellation, and ownership of returned data.
 Sentinel names are nonempty and unique within one codec; both languages report name violations as
 `invalid_sentinel` without relabeling malformed UUID text or UUID-version failures.
-Both languages always write registered sentinels as direct slugs without masking, so the masked
+Both languages always write registered sentinels as plain slugs without masking, so the masked
 timestamp limit does not apply to them.
 Every decoder must accept every value that a supported matching encoder can produce. Options may
 add accepted forms; they must not remove existing ones. Forms no supported encoder produces are invalid.
@@ -45,21 +45,21 @@ Use validated `Uuid` values between operations; parse text once rather than at e
 | TypeScript capability | Rust entry point or composition |
 | --- | --- |
 | `uuidStringToBytes` / `bytesToUuidString`; bytes and offsets | `Uuid::parse`, `from_slice`, `as_bytes`, `write_into`, `Display` |
-| Direct slug conversion | `Uuid::slug`, `Uuid::parse_slug` |
+| Plain slug conversion | `Uuid::slug`, `Uuid::parse_slug` |
 | UUID/string/slug and generic/v4/v7 byte guards | Parse once, then `Uuid::is_v4`, `is_v7`, `is_rfc_variant` |
 | Base64url UUID payload | `Alphabet::Base64Url.encode(&[u8; 16])`, `decode`, `decode_to` |
 | Canonical base64url guard | Check `Alphabet::Base64Url.decode` success for exactly 22 characters |
 | v4 generation and caller storage | `generation::uuid_v4`, `uuid_v4_with`, `uuid_v4_into_with` |
 | v7 generation, explicit time and caller storage | `UuidV7Generator::generate`, `at`, and their `_with`/`_into_with` forms |
-| Generated direct or masked slugs | Generate a `Uuid`, then call `slug` or the keyed codec |
+| Generated plain or masked slugs | Generate a `Uuid`, then call `slug` or the keyed codec |
 | UUIDv7 timestamp | `Uuid::timestamp` |
 | Last maskable timestamp | `MAX_MASKED_UUID_V7_UNIX_MS` |
 | Sync/async masks and custom transforms | `create_mask`, `create_mask_async`, `Mask::custom(label, mask, unmask)` |
 | Explicit public mask | `UUID_V7_TEST_MASK`; `public_mask()` |
-| Key rotation, masked text/byte conversion and sentinels | `CodecOptions::new`, `Codec::encode_uuid`, `decode_slug`, `Uuid::as_bytes`, `write_into`, `sentinels` |
-| Known/mixed-format migration and candidates | `Codec::migration_decoder`, `MigrationDecoder::decode`, `candidates`, `MigrationOptions` |
-| Direct timestamp window | Parse UUID or direct slug, then `UuidV7TimestampWindow::validate`; retain the original text if needed |
-| Masked timestamp window | `Codec::validate_slug_timestamp` |
+| Key rotation, masked text/byte conversion and sentinels | `UuidV7MaskingCodecOptions::new`, `UuidV7MaskingCodec::encode_uuid`, `decode_slug`, `Uuid::as_bytes`, `write_into`, `sentinels` |
+| Known/mixed-format migration and candidates | `UuidV7MaskingCodec::migration_decoder`, `MigrationDecoder::decode`, `candidates`, `MigrationOptions` |
+| Plain timestamp window | Parse UUID or plain slug, then `UuidV7TimestampWindow::validate`; retain the original text if needed |
+| Masked timestamp window | `UuidV7MaskingCodec::validate_slug_timestamp` |
 | Error classification and causes | `Error::code`, `ErrorCode::as_str`, and `std::error::Error::source` |
 
 TypeScript additionally exports `isUuidSlugError` because JavaScript values can cross realms or
@@ -85,18 +85,18 @@ layout, or incidental auto-traits.
 
 ## Filesystem-safe output
 
-Support lowercase filesystem-safe representations for both direct and masked identifiers in both
+Support lowercase filesystem-safe representations for both plain and masked identifiers in both
 languages. Preserve existing encodings and key material. Lowercase output avoids distinctions lost
 on case-insensitive filesystems; it does not make arbitrary surrounding paths safe.
 
-Direct slugs already use 26 base32hex characters for 128 bits. A lossless base32hex representation
+Plain slugs already use 26 base32hex characters for 128 bits. A lossless base32hex representation
 of the existing 132-bit masked payload needs 27 characters, with three zero padding bits. Reject
 nonzero padding on ordinary decoding. Preserve the entire masked payload, including the four tag
 bits outside its 16-byte block; re-encoding only that block would lose information.
 
 This is an alternate spelling, not a new masking scheme; retain the 16-bit check and timestamp bound.
-Safe sentinels remain raw UUID slugs: 26 base32hex characters, readable by the direct-slug decoder.
-Padding them to 27 adds a spelling that the direct-slug decoder rejects, with no identity benefit.
+Safe sentinels remain raw UUID slugs: 26 base32hex characters, readable by the plain-slug decoder.
+Padding them to 27 adds a spelling that the plain-slug decoder rejects, with no identity benefit.
 Their length cannot collide with 27-character masked output. Keep old base64url reads and defaults.
 Masking has no chronological ordering.
 

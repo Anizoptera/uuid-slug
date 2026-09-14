@@ -128,8 +128,8 @@ workloads, and they do not turn development bridges into npm distribution candid
 | `parse` | 68 | 82 | 39 | 34 |
 | `parse.into` | 49 | 62 | 31 | 31 |
 | `format` | 204 | 99 | 211 | 69 |
-| `direct.encode` | 317 | 181 | 245 | 71 |
-| `direct.decode` | 296 | 166 | 246 | 106 |
+| `plain.encode` | 317 | 181 | 245 | 71 |
+| `plain.decode` | 296 | 166 | 246 | 106 |
 | `base32.encode` | 338 | 268 | 259 | 188 |
 | `base32.decode` | 297 | 190 | 240 | 110 |
 | `slug.into` | 67 | 55 | 34 | 34 |
@@ -581,7 +581,7 @@ Regex prevalidation followed by fixed bit formulas was rejected. An eight-round 
 regressed direct decoding by 23% on Node, 31% on Deno, and 22% on Chromium; Bun was unresolved.
 Retest only if primary engines materially change regex or fixed-index string access.
 
-### Direct base64url slug-to-UUID formatting
+### Plain base64url slug-to-UUID formatting
 
 Direct JavaScript decoding into canonical UUID text was rejected. One six-round packed comparison
 made `slugToUuidString` 46–47% slower on Node 26.8.2 and about 100% slower on Bun 1.4.2 while adding about
@@ -590,7 +590,7 @@ hex assembly; the current byte decoder plus runtime-selected formatter remains s
 Reconsider only if the native formatter disappears or a direct string primitive replaces JavaScript
 concatenation.
 
-### Direct base32hex slug-to-UUID formatting
+### Plain base32hex slug-to-UUID formatting
 
 Direct JavaScript decoding into canonical UUID text was rejected. One six-round packed comparison
 made `slugToUuidString` 28–29% slower on Node 26.8.2 and about 115% slower on Bun 1.4.2 while adding about
@@ -838,7 +838,7 @@ arrive as strings, so a bitset still needs a string-to-index classifier and dupl
 runtime vocabulary. Sentinel names and UUIDs are caller-defined, sparse, and unbounded. Keep Sets
 for both domains; reconsider a bitset only when the lookup key is already a bounded integer.
 
-Migration state is already constructed only by the explicit `createMigrationDecoder` call.
+Migration state is already constructed only by the explicit `createUuidSlugMigrationDecoder` call.
 Sentinel construction validates every definition and freezes the public list before returning the
 codec; its maps serve ordinary string encode and decode, and its large byte index serves byte encode.
 Deferring any remaining structure would add hidden mutable initialization and move eager work into
@@ -1166,7 +1166,7 @@ and webpack job-sized output from named root imports. Focused imports produced e
 optimized bytes, so they did not provide additional tree shaking and do not justify public entries.
 
 The packed probes execute every optimized bundle and require the masking seed only in the masked
-case. A 2026-08-12 Bun-only predecessor measured 13,082 bytes for `uuidStringToDirectSlug` before masking was
+case. A 2026-08-12 Bun-only predecessor measured 13,082 bytes for `uuidStringToPlainSlug` before masking was
 made removable and 2,229 after; the current cross-bundler check replaces that narrower proof.
 
 `bun run perf:check` protects JavaScript-visible allocation, decoding, encoding and entropy work, plus coarse relative pipeline timings on both runtimes. Its injected result-preserving regressions must fail. Shared functional cases protect wire identity, ownership, invalid input and optional native branches. Async cases protect snapshots, UTF-8 chunk boundaries, cancellation and independent concurrent constructions; changing host yields to microtasks makes cancellation fail.
@@ -1194,11 +1194,11 @@ generators add no independent implementation evidence.
 
 | Capability | Strongest retained alternatives | This package |
 | --- | --- | --- |
-| v4 generation | `uuid` and `uniku`: text and caller buffer; smaller packages: text or owned bytes | Text, owned bytes, caller buffer, direct slug |
+| v4 generation | `uuid` and `uniku`: text and caller buffer; smaller packages: text or owned bytes | Text, owned bytes, caller buffer, plain slug |
 | v7 generation | `uuid` and `uniku`: text and caller buffer; `uuidv7`: text and owned object bytes | Text, owned bytes, caller buffer, direct or masked slug |
 | Controlled generation | `uuid`: entropy, timestamp, sequence; `uuidv7`: isolated generator and rollback policy | Caller-supplied clock, isolated generator, explicit timestamp; entropy stays runtime-owned |
 | Inspection | `uuid`: validate/version; `uniku`: validate/convert/timestamp; `uuidv7`: parse/format/version/variant | Typed guards, parse/format, slug conversion, timestamp and window checks |
-| Timestamp extraction | `uuidv7-js`: validated v7 text; `uniku`: canonical text without v7 rejection | Validated v7 UUID text, bytes with offset, direct slugs, and codec-owned masked slugs |
+| Timestamp extraction | `uuidv7-js`: validated v7 text; `uniku`: canonical text without v7 rejection | Validated v7 UUID text, bytes with offset, plain slugs, and codec-owned masked slugs |
 
 The measured gaps concern the cost of existing calls. They do not establish demand for batch
 helpers, NIL/MAX constants, permissive UUID spelling, or caller-selected rollback policies.

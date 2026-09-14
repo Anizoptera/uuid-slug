@@ -23,7 +23,7 @@ import type {
 } from "./types.ts";
 import {
   SEEDED_MASK_FORMAT,
-  DIRECT_SLUG_FORMAT,
+  PLAIN_SLUG_FORMAT,
   FIXED_MASK_FORMAT,
   UUID_TEXT_LOWERCASE,
   UUID_TEXT_UPPERCASE,
@@ -37,7 +37,7 @@ const XOR = [
   0xa2, 0x70, 0x32, 0x7f, 0x98, 0xb8, 0x9b, 0x5e, 0x1b, 0x26, 0xb6, 0x16, 0x96, 0xf9, 0xea, 0x3e,
 ] as const;
 const MIGRATION_OPTIONS = {
-  acceptDirectSlug: true,
+  acceptPlainSlug: true,
   acceptFixedMask: true,
 } as const satisfies Record<keyof UuidSlugMigrationOptions, true>;
 
@@ -67,13 +67,13 @@ export function createMigration(
   )
     return new UuidSlugError(INVALID_OPTIONS, "Migration options must be an object.");
   let originalOption: boolean | undefined;
-  let directOption: boolean | undefined;
+  let plainOption: boolean | undefined;
   try {
     const unknown = findUnknownOption(options ?? {}, MIGRATION_OPTIONS);
     if (unknown !== undefined)
       return new UuidSlugError(INVALID_OPTIONS, `Unknown migration option: ${unknown}.`);
     originalOption = options?.acceptFixedMask;
-    directOption = options?.acceptDirectSlug;
+    plainOption = options?.acceptPlainSlug;
   } catch (cause) {
     return new UuidSlugError(INVALID_OPTIONS, "Reading migration options failed.", { cause });
   }
@@ -82,44 +82,44 @@ export function createMigration(
       INVALID_OPTIONS,
       "Migration acceptFixedMask option must be a boolean.",
     );
-  if (directOption !== undefined && typeof directOption !== "boolean")
+  if (plainOption !== undefined && typeof plainOption !== "boolean")
     return new UuidSlugError(
       INVALID_OPTIONS,
-      "Migration acceptDirectSlug option must be a boolean.",
+      "Migration acceptPlainSlug option must be a boolean.",
     );
   const original = originalOption === true;
-  const direct = directOption === true;
+  const plain = plainOption === true;
 
   function read(
-    slug: string | UuidSlugError,
+    uuidSlug: string | UuidSlugError,
     format: UuidSlugMigrationFormat | undefined,
     firstOnly: boolean,
   ) {
-    if (typeof slug !== "string") return invalidUuidSlugInput(slug);
+    if (typeof uuidSlug !== "string") return invalidUuidSlugInput(uuidSlug);
     if (
       (format !== undefined &&
         format !== SEEDED_MASK_FORMAT &&
         format !== FIXED_MASK_FORMAT &&
-        format !== DIRECT_SLUG_FORMAT) ||
+        format !== PLAIN_SLUG_FORMAT) ||
       (format === FIXED_MASK_FORMAT && !original) ||
-      (format === DIRECT_SLUG_FORMAT && !direct)
+      (format === PLAIN_SLUG_FORMAT && !plain)
     )
       return new UuidSlugError(
         INVALID_UUID_SLUG,
         "Enable the requested format when creating the migration reader.",
       );
 
-    const sentinel = sentinels.get(slug);
+    const sentinel = sentinels.get(uuidSlug);
     if (sentinel) return [sentinel.uuid];
     const useCurrent = format === undefined || format === SEEDED_MASK_FORMAT;
     const useOriginal = original && (format === undefined || format === FIXED_MASK_FORMAT);
-    const useDirect = direct && (format === undefined || format === DIRECT_SLUG_FORMAT);
+    const usePlain = plain && (format === undefined || format === PLAIN_SLUG_FORMAT);
     const bytes = new Uint8Array(16);
     // Original readers ignored the four trailing bits. Keep those aliases confined to migration.
-    const base32 = slug.length === 26 && useDirect;
-    const safeMasked = slug.length === 27 && useCurrent;
+    const base32 = uuidSlug.length === 26 && usePlain;
+    const safeMasked = uuidSlug.length === 27 && useCurrent;
     const tail = decodeInto(
-      slug,
+      uuidSlug,
       base32 || safeMasked ? BASE32HEX : BASE64URL,
       bytes,
       0,
@@ -131,13 +131,13 @@ export function createMigration(
     // encoding all sixteen bytes again. Base32 input still needs the sentinel's base64 spelling.
     const reserved =
       !safeMasked &&
-      (useOriginal || useDirect) &&
+      (useOriginal || usePlain) &&
       sentinels.get(
         base32
           ? encode(bytes, BASE64URL)
           : tail === 0
-            ? slug
-            : slug.slice(0, 21) + BASE64URL.chars[((bytes[15] as number) & 3) << 4],
+            ? uuidSlug
+            : uuidSlug.slice(0, 21) + BASE64URL.chars[((bytes[15] as number) & 3) << 4],
       );
     if (reserved && firstOnly) return [reserved.uuid];
     const candidates: UuidString[] = reserved ? [reserved.uuid] : [];
@@ -156,7 +156,7 @@ export function createMigration(
     }
     // Legacy aliases reserve the raw identity, but their check bits can also encode a current ID.
     if (reserved) return candidates;
-    if (useOriginal && slug.length === 22) {
+    if (useOriginal && uuidSlug.length === 22) {
       const match = decodeOriginalMask(bytes);
       if (match) {
         const failed = add(match);
@@ -164,28 +164,28 @@ export function createMigration(
         if (firstOnly) return candidates;
       }
     }
-    if (useDirect && !safeMasked) {
+    if (usePlain && !safeMasked) {
       const failed = add(bytes);
       if (failed) return failed;
     }
     return candidates;
   }
 
-  function slugToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-    slug: string | UuidSlugError,
+  function uuidToString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    uuidSlug: string | UuidSlugError,
     textCase?: Case,
   ): UuidStringFor<Case> | UuidSlugError;
-  function slugToUuidString(
-    slug: string | UuidSlugError,
+  function uuidToString(
+    uuidSlug: string | UuidSlugError,
     format: UuidSlugMigrationFormat | undefined,
   ): UuidString | UuidSlugError;
-  function slugToUuidString<Case extends UuidTextCase>(
-    slug: string | UuidSlugError,
+  function uuidToString<Case extends UuidTextCase>(
+    uuidSlug: string | UuidSlugError,
     format: UuidSlugMigrationFormat,
     textCase: Case,
   ): UuidStringFor<Case> | UuidSlugError;
-  function slugToUuidString<Case extends UuidTextCase>(
-    slug: string | UuidSlugError,
+  function uuidToString<Case extends UuidTextCase>(
+    uuidSlug: string | UuidSlugError,
     formatOrCase?: UuidSlugMigrationFormat | Case,
     textCase?: Case,
   ): UuidStringFor<Case> | UuidSlugError {
@@ -193,7 +193,7 @@ export function createMigration(
     const selectedCase =
       (isUuidTextCase(formatOrCase) ? formatOrCase : textCase) ?? (UUID_TEXT_LOWERCASE as Case);
     if (!isUuidTextCase(selectedCase)) return invalidUuidTextCase();
-    const result = read(slug, format, true);
+    const result = read(uuidSlug, format, true);
     if (isUuidSlugError(result)) return result;
     const uuid = result[0];
     if (uuid === undefined)
@@ -203,21 +203,21 @@ export function createMigration(
     ) as UuidStringFor<Case>;
   }
 
-  function slugToUuidStringCandidates<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-    slug: string | UuidSlugError,
+  function uuidToStringCandidates<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    uuidSlug: string | UuidSlugError,
     textCase?: Case,
   ): readonly UuidStringFor<Case>[] | UuidSlugError;
-  function slugToUuidStringCandidates(
-    slug: string | UuidSlugError,
+  function uuidToStringCandidates(
+    uuidSlug: string | UuidSlugError,
     format: UuidSlugMigrationFormat | undefined,
   ): readonly UuidString[] | UuidSlugError;
-  function slugToUuidStringCandidates<Case extends UuidTextCase>(
-    slug: string | UuidSlugError,
+  function uuidToStringCandidates<Case extends UuidTextCase>(
+    uuidSlug: string | UuidSlugError,
     format: UuidSlugMigrationFormat,
     textCase: Case,
   ): readonly UuidStringFor<Case>[] | UuidSlugError;
-  function slugToUuidStringCandidates(
-    slug: string | UuidSlugError,
+  function uuidToStringCandidates(
+    uuidSlug: string | UuidSlugError,
     formatOrCase?: UuidSlugMigrationFormat | UuidTextCase,
     textCase?: UuidTextCase,
   ): readonly UuidString[] | readonly UppercaseUuidString[] | UuidSlugError {
@@ -225,14 +225,14 @@ export function createMigration(
     const selectedCase =
       (isUuidTextCase(formatOrCase) ? formatOrCase : textCase) ?? UUID_TEXT_LOWERCASE;
     if (!isUuidTextCase(selectedCase)) return invalidUuidTextCase();
-    const result = read(slug, format, false);
+    const result = read(uuidSlug, format, false);
     if (isUuidSlugError(result)) return result;
     if (selectedCase === UUID_TEXT_LOWERCASE) return result;
     return result.map((uuid) => uuid.toUpperCase() as UppercaseUuidString);
   }
 
   return {
-    slugToUuidString,
-    slugToUuidStringCandidates,
+    uuidToString,
+    uuidToStringCandidates,
   };
 }

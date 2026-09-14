@@ -39,33 +39,33 @@ const jobs = [
   },
   {
     name: "slug",
-    imports: "uuidStringToDirectSlug",
+    imports: "uuidStringToPlainSlug",
     probe:
-      'if (uuidStringToDirectSlug("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5") !== "sbpZnUhES7Ch7qwK64h19Q") throw new Error("uuidStringToDirectSlug failed");',
+      'if (uuidStringToPlainSlug("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5") !== "sbpZnUhES7Ch7qwK64h19Q") throw new Error("uuidStringToPlainSlug failed");',
     masked: false,
     versions: [],
   },
   {
     name: "slug-v4",
-    imports: "generateDirectUuidV4Slug",
+    imports: "generatePlainUuidV4Slug",
     probe:
-      'const value = generateDirectUuidV4Slug(); if (value instanceof Error || value.length !== 22) throw new Error("generateDirectUuidV4Slug failed");',
+      'const value = generatePlainUuidV4Slug(); if (value instanceof Error || value.length !== 22) throw new Error("generatePlainUuidV4Slug failed");',
     masked: false,
     versions: [4],
   },
   {
     name: "slug-v7",
-    imports: "generateDirectUuidV7Slug",
+    imports: "generatePlainUuidV7Slug",
     probe:
-      'const value = generateDirectUuidV7Slug(); if (value instanceof Error || value.length !== 22) throw new Error("generateDirectUuidV7Slug failed");',
+      'const value = generatePlainUuidV7Slug(); if (value instanceof Error || value.length !== 22) throw new Error("generatePlainUuidV7Slug failed");',
     masked: false,
     versions: [7],
   },
   {
     name: "masked",
-    imports: "createUuidV7SlugCodec, UUID_V7_TEST_MASK",
+    imports: "createUuidV7MaskingCodec, UUID_V7_TEST_MASK",
     probe:
-      'const codec = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }); if (codec instanceof Error || codec.uuidToSlug("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051") instanceof Error) throw new Error("masked codec failed");',
+      'const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }); if (codec instanceof Error || codec.uuidToMaskedSlug("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051") instanceof Error) throw new Error("masked codec failed");',
     masked: true,
     versions: [7],
   },

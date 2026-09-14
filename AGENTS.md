@@ -8,7 +8,7 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   preferable to a UUID-only library, and keep its capability and representation maps consistent
   with the public API. Update the owning explanation with every consumer-visible change; do not
   copy implementation reasoning or create parallel inventories in other docs.
-- Position the package by the complete consumer contract: base64url and base32hex direct slugs for
+- Position the package by the complete consumer contract: base64url and base32hex plain slugs for
   any UUID, caller-owned storage, UUIDv7 masking and migration, typed failures, and adaptive runtime
   paths. Keep version-neutral encoding separate from UUIDv7-only masking. Generation alone is not
   distinctive. State measured losses as gaps, never hide them with hype.
@@ -20,6 +20,11 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Start from caller code. The easiest call MUST be correct; types reject known misuse; defaults add
   no secret, lossy, compatibility, expensive, or weaker work. The declaration baseline proves none
   of this.
+- Keep runtime acceptance and TypeScript guidance separate. Implementations accept and safely
+  reject arbitrary JavaScript values. Public TypeScript signatures accept every supported form,
+  reject provably invalid branded inputs, and infer the strictest result justified by the input.
+  Read `docs/public-api.md` §Rules before changing these boundaries; never widen declarations to
+  `unknown` just because JavaScript can bypass them.
 - Export one semantic scalar constant for every closed string callers pass or compare. Export a
   collection only for a real iteration job; indexes NEVER identify values. Reject unknown option
   keys and make each local runtime key map exhaustive against its public options type.
@@ -51,20 +56,41 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   masked payloads are UUIDv7-only, with a 16-bit check and timestamps below 2^42 milliseconds.
   Preserve both their 22-character base64url and lossless 27-character base32hex spellings.
   Reject overflow rather than truncate. Base64url helpers accept exactly one 16-byte UUID payload
-  or its canonical 22-character spelling; reject every other length. Preserve direct-slug padding rejection.
+  or its canonical 22-character spelling; reject every other length. Preserve plain-slug padding rejection.
 - Explain masking without confusing problem and scope: every UUID version exposes standardized
   fields, while this package deliberately defines a masked wire format only for UUIDv7.
+- RFC 9562 permits uppercase, lowercase, and mixed-case UUID text; it does not select a default.
+  Accept those cases and compact text, emit lowercase hyphenated text by default for one stable
+  package spelling, and keep uppercase output explicit.
 - Representation guidance must distinguish keyless root conversions from keyed codec conversions,
-  state that 22-character direct and masked base64url forms overlap, and never imply that a paired
+  state that 22-character plain and masked base64url forms overlap, and never imply that a paired
   generator computes every spelling.
-- Direct slugs are lossless encodings of all 128 UUID bits. Never impose a UUID-version, variant,
-  or timestamp restriction on direct encoding or decoding; version-specific brands only preserve
+- Common representation changes need one public call. On a codec, name an alternate source
+  and result explicitly without making the caller compose intermediate conversions.
+- Before editing any public symbol, apply `docs/public-api.md` §UUID slug vocabulary and §Shape to
+  its name, parameters, accepted forms, result, and detached use. That document owns the rules and
+  terms. Fix dependents after a rename; never restore an unclear name to satisfy the compiler.
+- Reject context-dependent option and property names. Name the exact value they control when a cold
+  reader could infer another target; `maskedSlugAlphabet` is valid, `outputAlphabet` is not.
+- Before choosing or accepting a public name, write its detached consumer call. The name and its
+  parameter names must identify the operation, input meaning, affected output, unit, and ownership
+  without the receiver or import path. Add a missing domain term; delete words that add no meaning.
+- Do not repeat a term across both sides of a conversion name. Keep the shared term on the
+  destination when the source still names exactly one API form. Use `plainSlugToUuidString`,
+  `maskedSlugToUuidBytes`, `plainToMaskedUuidSlug`, and `maskedToPlainUuidSlug`; never copy full type
+  names into both sides mechanically.
+- A public terminology change is incomplete while an old public term remains in source, README,
+  durable docs, tests, generated declarations, or packaged consumer examples, except where text
+  explicitly rejects that old term. Search all owners, rebuild declarations, and compile and run
+  packed consumers before committing.
+- Plain slugs are lossless encodings of all 128 UUID bits. Never impose a UUID-version, variant,
+  or timestamp restriction on plain encoding or decoding; version-specific brands only preserve
   facts already established about a value.
 - Read `docs/cross-language.md` before Rust work or changes shared with TypeScript. It owns
   parity, approved filesystem-safe output and distribution boundaries. Keep base64url defaults;
-  select filesystem-safe masked output independently from the direct-slug alphabet.
+  select filesystem-safe masked output independently from the plain-slug alphabet.
   Preserve length-based alphabet inference for plain decoding.
-- Masked slugs and sentinels are core functionality. Sentinels use precomputed direct slugs per
+- Masked slugs and sentinels are core functionality. Sentinels use precomputed plain slugs per
   codec and are never masked; registered sentinels retain the full UUIDv7 timestamp range. Decode
   returns the first passing candidate in caller-specified key order, never proof
   of issuance. Do not reject multiple matches or append fallback masks on the caller's behalf.
@@ -78,8 +104,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Every UUID-text writer accepts the shared lowercase and uppercase presets, defaults to lowercase
   without extra work, and infers the matching result type. Keep text case independent from slug
   alphabets, masking, migration selection, UUID bits, and accepted input.
-- Keyed operations belong only on the codec holding the key, including masked timestamp
-  validation. Do not add top-level masked shortcuts. Codec construction requires an explicit
+- Keyed operations belong only on the UUIDv7 masking codec holding the key, including masked timestamp
+  validation. Do not add top-level masked shortcuts. Masking-codec construction requires an explicit
   private mask or `UUID_V7_TEST_MASK`; keep the published mask opt-in and remove implicit masked
   defaults. Keep codecs immutable and receiver-free; generators own mutable sequence state. A
   codec accepts generation through the minimal `generateUuidV7Bytes` seam and validates every returned
@@ -89,7 +115,7 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   must explain this wire-format obligation, not historical reasons for choosing the constants.
 - Do not add old API aliases, compatibility subpaths, or a compatibility decoder for 0.2.0.
   The maintainer ruled that release had no consumers; that exception does not justify breaking other formats.
-- Original fixed-mask compatibility is opt-in through `codec.createMigrationDecoder`; read README's migration
+- Original fixed-mask compatibility is opt-in through `maskingCodec.createUuidSlugMigrationDecoder`; read README's migration
   sections before changing it. Preserve sentinel priority and stored trailing-bit aliases without
   weakening ordinary strict decoding. Writers and accepted old formats remain independent.
 - npm runtime dependencies are forbidden. Rust dependencies require the evidence described in

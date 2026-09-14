@@ -3,14 +3,14 @@
 import ts from "typescript-floor";
 import { BASE32HEX_NAME, BASE64URL_NAME } from "../src/alphabet.ts";
 import { ERROR_CODES } from "../src/errors.ts";
-import { SEEDED_MASK_FORMAT, DIRECT_SLUG_FORMAT, FIXED_MASK_FORMAT } from "../src/types.ts";
+import { SEEDED_MASK_FORMAT, PLAIN_SLUG_FORMAT, FIXED_MASK_FORMAT } from "../src/types.ts";
 
 const owners = new Map<string, string>([
   ...ERROR_CODES.map((code) => [code, "errors.ts"] as const),
   [BASE32HEX_NAME, "alphabet.ts"],
   [BASE64URL_NAME, "alphabet.ts"],
   [SEEDED_MASK_FORMAT, "types.ts"],
-  [DIRECT_SLUG_FORMAT, "types.ts"],
+  [PLAIN_SLUG_FORMAT, "types.ts"],
   [FIXED_MASK_FORMAT, "types.ts"],
 ]);
 const violations: string[] = [];

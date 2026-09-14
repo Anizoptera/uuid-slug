@@ -18,34 +18,35 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 ### Breaking changes
 
-- Rename UUID generation to `generateUuidV4`, `generateUuidV4Bytes`, `generateDirectUuidV4Slug`,
+- Rename UUID generation to `generateUuidV4`, `generateUuidV4Bytes`, `generatePlainUuidV4Slug`,
   `generateUuidV7`, `generateUuidV7Bytes`, `generateUuidV7AtUnixMs`, `generateUuidV7BytesAtUnixMs`, and
-  `generateDirectUuidV7Slug`. Use `generateUuidV7WithDirectSlug` when storing both forms.
-- Replace `createUuidSlugCodec` with `createUuidV7SlugCodec`. Codec methods are now
-  `generateUuidV7CodecSlug`, `generateUuidV7WithCodecSlug`, `uuidToSlug`, `slugToUuidString`,
-  `slugToUuidBytes`, `extractUuidSlugUnixMs`, `validateUuidSlugUnixMs`, and
-  `createMigrationDecoder`.
-- Codecs no longer accept a generator or expose keyless generation. Use the module generation
+  `generatePlainUuidV7Slug`. Use `generateUuidV7WithPlainSlug` when storing both forms.
+- Replace `createUuidSlugCodec` with `createUuidV7MaskingCodec`. Masking-codec methods include
+  `generateMaskedUuidV7Slug`, `generateUuidV7WithMaskedSlug`, `uuidToMaskedSlug`,
+  `plainToMaskedUuidSlug`, `maskedToPlainUuidSlug`, `uuidToString`, `uuidToBytes`,
+  `extractMaskedUuidV7UnixMs`, `validateMaskedUuidV7SlugUnixMs`, and
+  `createUuidSlugMigrationDecoder`.
+- Masking codecs no longer accept a generator or expose keyless generation. Use the module generation
   functions, or `createUuidV7Generator` when the application supplies a clock; entropy stays owned
   by the package.
-- Codecs require an explicit private mask or `UUID_V7_TEST_MASK` and default to no sentinels.
+- Masking codecs require an explicit private mask or `UUID_V7_TEST_MASK` and default to no sentinels.
   `defaultCodec`, `DEFAULT_MASK_SCHEMA`, and `UUID_V7_SENTINEL_DEFINITIONS` are removed.
 - Replace `createMaskSchema` and `createMaskSchemaAsync` with `deriveUuidV7Mask` and
   `deriveUuidV7MaskAsync`. Rename `keyIterations` to `keyDerivationIterations`.
 - Rename public shapes to their domain: `MaskSchema*` to `UuidV7Mask*`, `UuidSlugCodec*` to
-  `UuidV7SlugCodec*`, `UuidSlugMigration` to `UuidSlugMigrationDecoder`, `MigrationFormat` to
+  `UuidV7MaskingCodec*`, `UuidSlugMigration` to `UuidSlugMigrationDecoder`, `MigrationFormat` to
   `UuidSlugMigrationFormat`, `FreshValidationOptions` to `UuidV7TimestampWindow`,
   `UuidV7SentinelDefinition` to `UuidV7SentinelConfig`, and `PublicUuidV7Slug` to
-  `UuidV7CodecSlug`. The version-neutral `MaskedUuidSlug` export is removed.
-- Replace generic parse/format names with directional UUID and direct-slug conversions:
-  `uuidStringToBytes`, `bytesToUuidString`, `uuidStringToDirectSlug`, `uuidBytesToDirectSlug`,
-  `slugToUuidString`, and `slugToUuidBytes`. Remove generic base64url helpers; direct-slug byte
+  `MaskedOrSentinelUuidV7Slug`. The version-neutral `MaskedUuidSlug` export is removed.
+- Replace generic parse/format names with directional UUID and plain-slug conversions:
+  `uuidStringToBytes`, `bytesToUuidString`, `uuidStringToPlainSlug`, `uuidBytesToPlainSlug`,
+  `uuidToString`, and `plainSlugToUuidBytes`. Remove generic base64url helpers; plain-slug byte
   conversions accept exactly one 16-byte UUID payload.
-- Migration readers expose `slugToUuidString` and `slugToUuidStringCandidates`. Options and format
-  names are now `acceptFixedMask`, `acceptDirectSlug`, `seeded-mask`, `fixed-mask`, and
-  `direct-slug`.
+- Migration readers expose `uuidToString` and `uuidToStringCandidates`. Options and format
+  names are now `acceptFixedMask`, `acceptPlainSlug`, `seeded-mask`, `fixed-mask`, and
+  `plain-slug`.
 - Replace `validateUuidV7Fresh` and `validateUuidV7SlugFresh` with `validateUuidV7Timestamp` and
-  `validateDirectUuidV7SlugUnixMs`. Validation requires `maxTimestampDeltaMs`; only
+  `validatePlainUuidV7SlugUnixMs`. Validation requires `maxTimestampDeltaMs`; only
   `referenceUnixMs` defaults to the current clock. `hasUuidV7Entropy` is removed.
 - Expected generation, conversion, masking, and configuration failures return `UuidSlugError | T`.
   Use `isUuidSlugError` instead of relying on `instanceof` or `UuidRuntimeError`.
@@ -54,8 +55,8 @@ notes: the section for a version is published verbatim when its tag is pushed.
   `invalid_uuid_slug`.
 - UUID and slug brands now reject known wrong representations and UUID versions. Owned byte results
   use version-specific brands; writes preserve the caller's `Uint8Array` subtype.
-- Replace codec `slugAlphabet` with `outputAlphabet`; it controls masked output and sentinels rather
-  than keyless direct slugs.
+- Replace masking-codec `slugAlphabet` with `maskedSlugAlphabet`; it controls masked output and sentinels rather
+  than keyless plain slugs.
 - Replace public alphabet and error-code arrays with named constants. Array positions were not
   identifiers and made single-value access fragile.
 - Package-owned option objects reject unknown keys instead of silently applying defaults.
@@ -64,15 +65,15 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 - Accept mixed-case hyphenated UUID text and compact 32-digit hexadecimal input. UUID text output
   remains lowercase and hyphenated.
-- Encode UUIDv7 text or bytes through a codec and decode directly into new or caller-owned bytes.
+- Encode UUIDv7 text or bytes through a masking codec and decode directly into new or caller-owned bytes.
   Failed writes leave caller storage unchanged.
 - Use `createCustomUuidV7Mask` to adapt a reversible byte transform into an opaque mask handle.
-- Set `outputAlphabet: "base32hex"` for lowercase masked filenames. Writers emit 27-character
+- Set `maskedSlugAlphabet: "base32hex"` for lowercase masked filenames. Writers emit 27-character
   masked slugs and 26-character sentinels; readers continue to accept base64url spellings.
 - Bun, Deno, and the `development` condition load the published TypeScript source. Other consumers
   load compiled ESM.
-- Read UUIDv7 timestamps from text, direct slugs, or bytes with `extractUuidV7UnixMs`; use the
-  codec method for masked slugs and sentinels.
+- Read UUIDv7 timestamps from text, plain slugs, or bytes with `extractUuidV7UnixMs`; use the
+  masking-codec method for masked slugs and sentinels.
 - Export named alphabet, migration-format, and error-code constants with their union types, plus
   byte guards for runtime validation and narrowing.
 
@@ -84,7 +85,7 @@ notes: the section for a version is published verbatim when its tag is pushed.
   array, where no native encoder exists.
 - On Bun, generate UUIDv7 bytes and slugs through the portable generator; it measured faster than
   converting the native result. Native text generation is kept.
-- Index sentinels at codec construction so string and byte lookups no longer scan the list.
+- Index sentinels at masking-codec construction so string and byte lookups no longer scan the list.
 - Restore the decoded block between previous-key attempts instead of allocating scratch per key,
   and mask codec-owned bytes in place.
 - Draw only the entropy bytes the portable UUIDv7 layout consumes, and refill only the random tail
@@ -98,7 +99,7 @@ notes: the section for a version is published verbatim when its tag is pushed.
   data. Preserve both causes if fallback also fails.
 - Preserve UUIDv7 sequence state and caller-owned storage after failed entropy, generation, or
   parsing.
-- Reject direct-slug byte input unless it contains exactly one 16-byte UUID.
+- Reject plain-slug byte input unless it contains exactly one 16-byte UUID.
 
 ## [0.3.0] - 2026-09-08
 
@@ -107,7 +108,7 @@ notes: the section for a version is published verbatim when its tag is pushed.
 - Masking now uses a keyed Feistel construction and a fixed 16-bit check. The 0.2.0 permutation/XOR format and its key derivation differ; retaining the old seed in `previousMasks` alone does not migrate that format.
 - Call masked operations through your codec. Bare masked functions and `UUID_V7_SENTINELS` are removed; use `codec.sentinels`. Sentinels remain raw, recognizable slugs.
 - Replace `legacy.masks` with `previousMasks` for current-format key rotation, and `legacy.directDecode` with `acceptUnmaskedSlugs` for plain slugs. Masked freshness validation is now `codec.validateMaskedSlugFresh`.
-- Use standalone functions for plain conversion, parsing and formatting. Replace `slugToUuidBytes` with `parseUuidSlug` and `uuidBytesToSlug` with `formatUuidSlug`. `createRuntimeGenerator` is no longer exported.
+- Use standalone functions for plain conversion, parsing and formatting. Replace `plainSlugToUuidBytes` with `parseUuidSlug` and `uuidBytesToSlug` with `formatUuidSlug`. `createRuntimeGenerator` is no longer exported.
 - Custom mask schemas expose `mix(input, output, forward)` instead of permutation/XOR tables. `defineMaskSchema`, `ExplicitMaskSchema`, `LEGACY_MASK_SCHEMA_V1` and configurable `tagBits` are removed from the current-format API.
 - Current-format seeds require at least 16 bytes. Masking rejects timestamps at or beyond `2^42` milliseconds; timestamp extraction rejects non-v7 UUIDs. Plain UUID slugs keep the full UUID value.
 

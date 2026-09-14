@@ -20,8 +20,8 @@ import { UUIDv7 as UuidV7Js, uuidv7 as uuidv7Js } from "uuidv7-js";
 import { unwrap } from "../dev/unwrap";
 import {
   createUuidV7Generator,
-  createUuidV7SlugCodec,
-  uuidBytesToDirectSlug,
+  createUuidV7MaskingCodec,
+  uuidBytesToPlainSlug,
   extractUuidV7UnixMs,
   generateUuidV4,
   generateUuidV4Bytes,
@@ -83,24 +83,24 @@ const offsetTimestampBytesSecond = new Uint8Array(24);
 offsetTimestampBytes.set(timestampBytes[0], 4);
 offsetTimestampBytesSecond.set(timestampBytes[1], 4);
 const timestampSlugs = [
-  unwrap(uuidBytesToDirectSlug(timestampBytes[0])),
-  unwrap(uuidBytesToDirectSlug(timestampBytes[1])),
+  unwrap(uuidBytesToPlainSlug(timestampBytes[0])),
+  unwrap(uuidBytesToPlainSlug(timestampBytes[1])),
 ] as const;
 const timestampSlugsBase32 = [
-  unwrap(uuidBytesToDirectSlug(timestampBytes[0], "base32hex")),
-  unwrap(uuidBytesToDirectSlug(timestampBytes[1], "base32hex")),
+  unwrap(uuidBytesToPlainSlug(timestampBytes[0], "base32hex")),
+  unwrap(uuidBytesToPlainSlug(timestampBytes[1], "base32hex")),
 ] as const;
-const timestampCodec = unwrap(createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }));
+const timestampCodec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
 const timestampCodecBase32 = unwrap(
-  createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK, outputAlphabet: "base32hex" }),
+  createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK, maskedSlugAlphabet: "base32hex" }),
 );
 const maskedTimestampSlugs = [
-  unwrap(timestampCodec.uuidToSlug(timestampUuids[0])),
-  unwrap(timestampCodec.uuidToSlug(timestampUuids[1])),
+  unwrap(timestampCodec.uuidToMaskedSlug(timestampUuids[0])),
+  unwrap(timestampCodec.uuidToMaskedSlug(timestampUuids[1])),
 ] as const;
 const maskedTimestampSlugsBase32 = [
-  unwrap(timestampCodecBase32.uuidToSlug(timestampUuids[0])),
-  unwrap(timestampCodecBase32.uuidToSlug(timestampUuids[1])),
+  unwrap(timestampCodecBase32.uuidToMaskedSlug(timestampUuids[0])),
+  unwrap(timestampCodecBase32.uuidToMaskedSlug(timestampUuids[1])),
 ] as const;
 
 function alternating<Input, Output>(
@@ -304,7 +304,7 @@ export const generationCases: readonly GenerationCase[] = [
     "v7.timestamp.masked",
     "authenticated-base64url",
     alternating(maskedTimestampSlugs, (value) =>
-      unwrap(timestampCodec.extractUuidSlugUnixMs(value)),
+      unwrap(timestampCodec.extractMaskedUuidV7UnixMs(value)),
     ),
     { expectedTimestamps: timestamps },
   ),
@@ -314,7 +314,7 @@ export const generationCases: readonly GenerationCase[] = [
     "v7.timestamp.masked",
     "authenticated-base32hex",
     alternating(maskedTimestampSlugsBase32, (value) =>
-      unwrap(timestampCodecBase32.extractUuidSlugUnixMs(value)),
+      unwrap(timestampCodecBase32.extractMaskedUuidV7UnixMs(value)),
     ),
     { expectedTimestamps: timestamps },
   ),

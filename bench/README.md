@@ -123,7 +123,7 @@ Run one corpus through every installed JavaScript runtime:
 
 ```sh
 bun run bench:profile
-UUID_SLUG_PROFILE_FILTER=direct.encode bun run bench:profile:native
+UUID_SLUG_PROFILE_FILTER=plain.encode bun run bench:profile:native
 ```
 
 Set `UUID_SLUG_PROFILE_NODE_EXECUTABLE` to profile a specific Node release. Each run records the

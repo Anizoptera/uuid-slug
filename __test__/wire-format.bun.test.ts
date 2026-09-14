@@ -21,7 +21,7 @@ import {
   encodePortable,
   spareBits,
 } from "../src/alphabet";
-import { uuidStringToDirectSlug } from "../src/index";
+import { uuidStringToPlainSlug } from "../src/index";
 import golden from "../rust/uuid-slug/tests/fixtures/fixtures-wire-format.json";
 import { WIRE_FORMAT_CODECS as codecs } from "./wire-format-codecs";
 
@@ -29,9 +29,9 @@ describe("wire format is identical across runtimes", () => {
   for (const vector of golden) {
     test(`${vector.mask} ${vector.uuid}`, () => {
       const codec = codecs[vector.mask as keyof typeof codecs];
-      expect(String(uuidStringToDirectSlug(vector.uuid))).toBe(vector.direct);
-      expect(String(codec.uuidToSlug(vector.uuid))).toBe(vector.masked);
-      expect(String(codec.slugToUuidString(vector.masked))).toBe(vector.uuid);
+      expect(String(uuidStringToPlainSlug(vector.uuid))).toBe(vector.plain);
+      expect(String(codec.uuidToMaskedSlug(vector.uuid))).toBe(vector.masked);
+      expect(String(codec.uuidToString(vector.masked))).toBe(vector.uuid);
       expect(vector.masked).toHaveLength(22);
     });
   }

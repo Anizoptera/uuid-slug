@@ -112,7 +112,7 @@ export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
   const native = runtime.uuidV4;
   if (!native) return generatePortableUuidV4(textCase);
   // Validate a new adapter once, then trust that stable host contract on its hot path. Retaining
-  // per-call validation made native UUIDv4 slower than direct wrappers. Function identity keeps
+  // per-call validation made native UUIDv4 slower than plain-slug wrappers. Function identity keeps
   // injected or replaced adapters behind validation; revalidate every call if a host method can
   // return malformed values intermittently without changing identity.
   if (native !== trustedNativeUuidV4) {

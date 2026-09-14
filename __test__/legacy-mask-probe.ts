@@ -2,12 +2,12 @@
 
 import assert from "node:assert/strict";
 import { BASE64URL, decodeInto } from "../src/alphabet";
-import { createUuidV7SlugCodec } from "../src/codec";
+import { createUuidV7MaskingCodec } from "../src/masking-codec";
 import { decodeMaskedCandidates } from "../src/payload";
 import { applyMask, createCustomUuidV7Mask } from "../src/mask-handle";
 import { deriveUuidV7Mask, UUID_V7_TEST_MASK } from "../src/mask";
 import { UuidSlugError } from "../src/errors";
-import { slugToUuidBytes, uuidStringToDirectSlug } from "../src/slug";
+import { plainSlugToUuidBytes, uuidStringToPlainSlug } from "../src/slug";
 import fixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json";
 import { unwrap } from "../dev/unwrap";
 import { uuidTailAliases } from "./uuid-tail-aliases";
@@ -51,9 +51,11 @@ export const legacyMaskCases = [
       });
       const primary = masks[0];
       assert.ok(primary);
-      const codec = unwrap(createUuidV7SlugCodec({ mask: primary, previousMasks: masks.slice(1) }));
+      const codec = unwrap(
+        createUuidV7MaskingCodec({ mask: primary, previousMasks: masks.slice(1) }),
+      );
       enabled = true;
-      assert.deepEqual(codec.createMigrationDecoder().slugToUuidStringCandidates(slug), uuids);
+      assert.deepEqual(codec.createUuidSlugMigrationDecoder().uuidToStringCandidates(slug), uuids);
     },
   },
   {
@@ -74,12 +76,12 @@ export const legacyMaskCases = [
         }),
       );
       const identity = unwrap(
-        createUuidV7SlugCodec({ mask: identityMask, sentinels: NIL_TEST_SENTINEL }),
+        createUuidV7MaskingCodec({ mask: identityMask, sentinels: NIL_TEST_SENTINEL }),
       );
-      identity.uuidToSlug(uuid);
+      identity.uuidToMaskedSlug(uuid);
       const sentinel = identity.sentinels[0];
       assert.ok(sentinel);
-      const raw = slugToUuidBytes(sentinel.slug);
+      const raw = plainSlugToUuidBytes(sentinel.slug);
       if (raw instanceof Error) throw raw;
       const key = tagged.map((byte, index) => byte ^ (raw[index] as number));
       const aliasMask = unwrap(
@@ -94,73 +96,69 @@ export const legacyMaskCases = [
         }),
       );
       const codec = unwrap(
-        createUuidV7SlugCodec({ mask: aliasMask, sentinels: NIL_TEST_SENTINEL }),
+        createUuidV7MaskingCodec({ mask: aliasMask, sentinels: NIL_TEST_SENTINEL }),
       );
-      const slug = codec.uuidToSlug(uuid);
+      const slug = codec.uuidToMaskedSlug(uuid);
       if (slug instanceof Error) throw slug;
       assert.notEqual(slug, sentinel.slug);
-      assert.equal(codec.slugToUuidString(slug), uuid);
-      const reader = codec.createMigrationDecoder({
+      assert.equal(codec.uuidToString(slug), uuid);
+      const reader = codec.createUuidSlugMigrationDecoder({
         acceptFixedMask: true,
-        acceptDirectSlug: true,
+        acceptPlainSlug: true,
       });
-      assert.equal(reader.slugToUuidString(slug), sentinel.uuid);
-      assert.deepEqual(reader.slugToUuidStringCandidates(slug), [sentinel.uuid, uuid]);
-      assert.deepEqual(reader.slugToUuidStringCandidates(slug, "seeded-mask"), [uuid]);
+      assert.equal(reader.uuidToString(slug), sentinel.uuid);
+      assert.deepEqual(reader.uuidToStringCandidates(slug), [sentinel.uuid, uuid]);
+      assert.deepEqual(reader.uuidToStringCandidates(slug, "seeded-mask"), [uuid]);
     },
   },
   {
     name: "migration preserves original producer identities and sentinel aliases",
     run(this: void) {
       const codec = unwrap(
-        createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK, sentinels: NIL_TEST_SENTINEL }),
+        createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK, sentinels: NIL_TEST_SENTINEL }),
       );
-      const reader = codec.createMigrationDecoder({
+      const reader = codec.createUuidSlugMigrationDecoder({
         acceptFixedMask: true,
-        acceptDirectSlug: true,
+        acceptPlainSlug: true,
       });
       for (const { uuid, slug, raw } of fixtures.issued) {
-        const format = slug === raw ? "direct-slug" : "fixed-mask";
-        assert.equal(reader.slugToUuidString(slug, format), uuid);
+        const format = slug === raw ? "plain-slug" : "fixed-mask";
+        assert.equal(reader.uuidToString(slug, format), uuid);
         for (const alias of uuidTailAliases(slug)) {
-          assert.equal(reader.slugToUuidString(alias, format), uuid);
+          assert.equal(reader.uuidToString(alias, format), uuid);
         }
       }
-      for (const { uuid, slug } of fixtures.direct)
-        assert.equal(reader.slugToUuidString(slug, "direct-slug"), uuid);
-      const directUuid = fixtures.direct[0]?.uuid;
-      assert.ok(directUuid);
-      const base32 = uuidStringToDirectSlug(directUuid, "base32hex");
+      for (const { uuid, slug } of fixtures.plain)
+        assert.equal(reader.uuidToString(slug, "plain-slug"), uuid);
+      const plainUuid = fixtures.plain[0]?.uuid;
+      assert.ok(plainUuid);
+      const base32 = uuidStringToPlainSlug(plainUuid, "base32hex");
       if (base32 instanceof Error) throw base32;
-      assert.equal(reader.slugToUuidString(base32), directUuid);
-      assert.equal(reader.slugToUuidString(base32, "direct-slug"), directUuid);
-      assert.ok(reader.slugToUuidString(base32, "fixed-mask") instanceof Error);
+      assert.equal(reader.uuidToString(base32), plainUuid);
+      assert.equal(reader.uuidToString(base32, "plain-slug"), plainUuid);
+      assert.ok(reader.uuidToString(base32, "fixed-mask") instanceof Error);
       for (const sentinel of codec.sentinels) {
-        assert.deepEqual(reader.slugToUuidStringCandidates(sentinel.slug), [sentinel.uuid]);
-        assert.equal(reader.slugToUuidString(sentinel.slug, "fixed-mask"), sentinel.uuid);
+        assert.deepEqual(reader.uuidToStringCandidates(sentinel.slug), [sentinel.uuid]);
+        assert.equal(reader.uuidToString(sentinel.slug, "fixed-mask"), sentinel.uuid);
       }
     },
   },
   {
     name: "migration returns one default candidate and all distinct lookup candidates",
     run(this: void) {
-      const { seed, slug, currentUuid, originalUuid, directUuid } = fixtures.overlap;
-      const codec = unwrap(createUuidV7SlugCodec({ mask: { seed }, previousMasks: [{ seed }] }));
-      const reader = codec.createMigrationDecoder({
+      const { seed, slug, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
+      const codec = unwrap(createUuidV7MaskingCodec({ mask: { seed }, previousMasks: [{ seed }] }));
+      const reader = codec.createUuidSlugMigrationDecoder({
         acceptFixedMask: true,
-        acceptDirectSlug: true,
+        acceptPlainSlug: true,
       });
-      assert.equal(reader.slugToUuidString(slug), currentUuid);
-      assert.deepEqual(reader.slugToUuidStringCandidates(slug), [
-        currentUuid,
-        originalUuid,
-        directUuid,
-      ]);
-      assert.equal(reader.slugToUuidString(slug, "fixed-mask"), originalUuid);
-      assert.equal(reader.slugToUuidString(slug, "direct-slug"), directUuid);
-      assert.deepEqual(reader.slugToUuidStringCandidates(slug, "seeded-mask"), [currentUuid]);
+      assert.equal(reader.uuidToString(slug), currentUuid);
+      assert.deepEqual(reader.uuidToStringCandidates(slug), [currentUuid, originalUuid, plainUuid]);
+      assert.equal(reader.uuidToString(slug, "fixed-mask"), originalUuid);
+      assert.equal(reader.uuidToString(slug, "plain-slug"), plainUuid);
+      assert.deepEqual(reader.uuidToStringCandidates(slug, "seeded-mask"), [currentUuid]);
       const custom = unwrap(
-        createUuidV7SlugCodec({
+        createUuidV7MaskingCodec({
           mask: { seed },
           sentinels: [{ name: "reserved", uuid: currentUuid }],
         }),
@@ -169,8 +167,8 @@ export const legacyMaskCases = [
       assert.ok(sentinel);
       assert.deepEqual(
         custom
-          .createMigrationDecoder({ acceptFixedMask: true, acceptDirectSlug: true })
-          .slugToUuidStringCandidates(sentinel.slug),
+          .createUuidSlugMigrationDecoder({ acceptFixedMask: true, acceptPlainSlug: true })
+          .uuidToStringCandidates(sentinel.slug),
         [currentUuid],
       );
     },
@@ -178,44 +176,42 @@ export const legacyMaskCases = [
   {
     name: "migration configuration is captured and old formats can be retired independently",
     run(this: void) {
-      const { seed, slug, currentUuid, originalUuid, directUuid } = fixtures.overlap;
-      const codec = unwrap(createUuidV7SlugCodec({ mask: { seed } }));
-      const options = { acceptFixedMask: true, acceptDirectSlug: true };
-      const reader = codec.createMigrationDecoder(options);
+      const { seed, slug, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
+      const codec = unwrap(createUuidV7MaskingCodec({ mask: { seed } }));
+      const options = { acceptFixedMask: true, acceptPlainSlug: true };
+      const reader = codec.createUuidSlugMigrationDecoder(options);
       options.acceptFixedMask = false;
-      options.acceptDirectSlug = false;
-      assert.deepEqual(reader.slugToUuidStringCandidates(slug), [
-        currentUuid,
-        originalUuid,
-        directUuid,
-      ]);
+      options.acceptPlainSlug = false;
+      assert.deepEqual(reader.uuidToStringCandidates(slug), [currentUuid, originalUuid, plainUuid]);
       assert.deepEqual(
-        codec.createMigrationDecoder({ acceptFixedMask: true }).slugToUuidStringCandidates(slug),
+        codec
+          .createUuidSlugMigrationDecoder({ acceptFixedMask: true })
+          .uuidToStringCandidates(slug),
         [currentUuid, originalUuid],
       );
       assert.deepEqual(
-        codec.createMigrationDecoder({ acceptDirectSlug: true }).slugToUuidStringCandidates(slug),
-        [currentUuid, directUuid],
+        codec
+          .createUuidSlugMigrationDecoder({ acceptPlainSlug: true })
+          .uuidToStringCandidates(slug),
+        [currentUuid, plainUuid],
       );
-      const currentReader = codec.createMigrationDecoder();
-      assert.deepEqual(currentReader.slugToUuidStringCandidates(slug), [currentUuid]);
+      const currentReader = codec.createUuidSlugMigrationDecoder();
+      assert.deepEqual(currentReader.uuidToStringCandidates(slug), [currentUuid]);
       assert.ok(
-        Reflect.apply(currentReader.slugToUuidString, undefined, [slug, "fixed-mask"]) instanceof
-          Error,
+        Reflect.apply(currentReader.uuidToString, undefined, [slug, "fixed-mask"]) instanceof Error,
       );
       assert.ok(
-        Reflect.apply(currentReader.slugToUuidString, undefined, [slug, "direct-slug"]) instanceof
-          Error,
+        Reflect.apply(currentReader.uuidToString, undefined, [slug, "plain-slug"]) instanceof Error,
       );
-      assert.equal(codec.uuidToSlug(currentUuid), slug);
-      assert.equal(codec.slugToUuidString(slug), currentUuid);
+      assert.equal(codec.uuidToMaskedSlug(currentUuid), slug);
+      assert.equal(codec.maskedSlugToUuidString(slug), currentUuid);
       for (const invalid of ["", "!".repeat(22), "A".repeat(21), "A".repeat(23)]) {
-        assert.ok(reader.slugToUuidString(invalid) instanceof Error);
-        assert.ok(reader.slugToUuidStringCandidates(invalid) instanceof Error);
+        assert.ok(reader.uuidToString(invalid) instanceof Error);
+        assert.ok(reader.uuidToStringCandidates(invalid) instanceof Error);
       }
       const noMatch = "A".repeat(22);
-      assert.deepEqual(codec.createMigrationDecoder().slugToUuidStringCandidates(noMatch), []);
-      assert.ok(codec.createMigrationDecoder().slugToUuidString(noMatch) instanceof Error);
+      assert.deepEqual(codec.createUuidSlugMigrationDecoder().uuidToStringCandidates(noMatch), []);
+      assert.ok(codec.createUuidSlugMigrationDecoder().uuidToString(noMatch) instanceof Error);
       const handle = deriveUuidV7Mask({ seed });
       if (handle instanceof Error) throw handle;
       let fail = false;
@@ -233,47 +229,46 @@ export const legacyMaskCases = [
           },
         }),
       );
-      const custom = unwrap(createUuidV7SlugCodec({ mask: failingMask })).createMigrationDecoder({
+      const custom = unwrap(
+        createUuidV7MaskingCodec({ mask: failingMask }),
+      ).createUuidSlugMigrationDecoder({
         acceptFixedMask: true,
-        acceptDirectSlug: true,
+        acceptPlainSlug: true,
       });
       fail = true;
-      for (const result of [
-        custom.slugToUuidString(slug),
-        custom.slugToUuidStringCandidates(slug),
-      ]) {
+      for (const result of [custom.uuidToString(slug), custom.uuidToStringCandidates(slug)]) {
         assert.ok(result instanceof UuidSlugError);
         assert.equal(result.cause, cause);
       }
-      assert.equal(custom.slugToUuidString(slug, "direct-slug"), directUuid);
+      assert.equal(custom.uuidToString(slug, "plain-slug"), plainUuid);
     },
   },
   {
     name: "migration returns errors for malformed reader configuration",
     run(this: void) {
-      const codec = unwrap(createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }));
+      const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
       for (const options of [
         null,
         1,
         "migration",
         [],
         { acceptFixedMask: 1 },
-        { acceptDirectSlug: "true" },
+        { acceptPlainSlug: "true" },
         { originalMask: true },
         { directSlug: true },
-        { acceptDirectSlugs: true },
+        { acceptPlainSlugs: true },
       ]) {
-        const result = Reflect.apply(codec.createMigrationDecoder, undefined, [options]);
+        const result = Reflect.apply(codec.createUuidSlugMigrationDecoder, undefined, [options]);
         assert.ok(result instanceof UuidSlugError);
         assert.equal(result.code, "invalid_options");
       }
       const cause = new Error("migration option getter failed");
-      const options = Object.defineProperty({}, "acceptDirectSlug", {
+      const options = Object.defineProperty({}, "acceptPlainSlug", {
         get() {
           throw cause;
         },
       });
-      const result = Reflect.apply(codec.createMigrationDecoder, undefined, [options]);
+      const result = Reflect.apply(codec.createUuidSlugMigrationDecoder, undefined, [options]);
       assert.ok(result instanceof UuidSlugError);
       assert.equal(result.code, "invalid_options");
       assert.equal(result.cause, cause);
@@ -314,10 +309,10 @@ export const legacyMaskCases = [
       assert.deepEqual(mixed, original);
       const unrelated = { seed: "unrelated-rotation-order-seed" };
       assert.ok(
-        unwrap(createUuidV7SlugCodec({ mask: unrelated })).slugToUuidString(slug) instanceof Error,
+        unwrap(createUuidV7MaskingCodec({ mask: unrelated })).uuidToString(slug) instanceof Error,
       );
-      const ordered = unwrap(createUuidV7SlugCodec({ mask: unrelated, previousMasks: masks }));
-      assert.equal(ordered.slugToUuidString(slug), uuids[0]);
+      const ordered = unwrap(createUuidV7MaskingCodec({ mask: unrelated, previousMasks: masks }));
+      assert.equal(ordered.uuidToString(slug), uuids[0]);
       const cause = new Error("key service unavailable");
       let fail = false;
       const unavailable = unwrap(
@@ -342,34 +337,34 @@ export const legacyMaskCases = [
   {
     name: "one slug can carry three distinct UUID interpretations",
     run(this: void) {
-      const { slug, seed, currentUuid, originalUuid, directUuid } = fixtures.overlap;
-      const codec = unwrap(createUuidV7SlugCodec({ mask: { seed } }));
-      assert.equal(codec.uuidToSlug(currentUuid), slug);
-      assert.equal(codec.slugToUuidString(slug), currentUuid);
+      const { slug, seed, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
+      const codec = unwrap(createUuidV7MaskingCodec({ mask: { seed } }));
+      assert.equal(codec.uuidToMaskedSlug(currentUuid), slug);
+      assert.equal(codec.maskedSlugToUuidString(slug), currentUuid);
       assert.deepEqual(
         codec
-          .createMigrationDecoder({ acceptFixedMask: true, acceptDirectSlug: true })
-          .slugToUuidStringCandidates(slug),
-        [currentUuid, originalUuid, directUuid],
+          .createUuidSlugMigrationDecoder({ acceptFixedMask: true, acceptPlainSlug: true })
+          .uuidToStringCandidates(slug),
+        [currentUuid, originalUuid, plainUuid],
       );
-      assert.equal(new Set([currentUuid, originalUuid, directUuid]).size, 3);
+      assert.equal(new Set([currentUuid, originalUuid, plainUuid]).size, 3);
     },
   },
   {
     name: "preserve original raw UUIDs and their stored tail aliases without relaxing current decoding",
     run(this: void) {
       const reader = unwrap(
-        createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }),
-      ).createMigrationDecoder({
-        acceptDirectSlug: true,
+        createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }),
+      ).createUuidSlugMigrationDecoder({
+        acceptPlainSlug: true,
       });
       for (const vector of [
-        ...fixtures.direct,
+        ...fixtures.plain,
         ...fixtures.issued.map(({ uuid, raw }) => ({ uuid, slug: raw })),
       ]) {
         for (const alias of uuidTailAliases(vector.slug)) {
-          assert.equal(reader.slugToUuidString(alias, "direct-slug"), vector.uuid);
-          if (alias !== vector.slug) assert.ok(slugToUuidBytes(alias) instanceof Error);
+          assert.equal(reader.uuidToString(alias, "plain-slug"), vector.uuid);
+          if (alias !== vector.slug) assert.ok(plainSlugToUuidBytes(alias) instanceof Error);
         }
       }
       for (const invalid of [
@@ -379,19 +374,19 @@ export const legacyMaskCases = [
         "A".repeat(23),
         "A".repeat(21) + "é",
       ])
-        assert.ok(reader.slugToUuidString(invalid, "direct-slug") instanceof Error);
+        assert.ok(reader.uuidToString(invalid, "plain-slug") instanceof Error);
     },
   },
   {
     name: "recover exact UUIDs from original masked producer outputs",
     run(this: void) {
       const reader = unwrap(
-        createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }),
-      ).createMigrationDecoder({ acceptFixedMask: true });
+        createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }),
+      ).createUuidSlugMigrationDecoder({ acceptFixedMask: true });
       let checked = 0;
       for (const vector of fixtures.issued) {
         if (vector.slug === vector.raw) continue;
-        assert.equal(reader.slugToUuidString(vector.slug, "fixed-mask"), vector.uuid);
+        assert.equal(reader.uuidToString(vector.slug, "fixed-mask"), vector.uuid);
         checked++;
       }
       assert.ok(checked > 0);
@@ -401,18 +396,18 @@ export const legacyMaskCases = [
     name: "reject a damaged original checksum",
     run(this: void) {
       const reader = unwrap(
-        createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }),
-      ).createMigrationDecoder({ acceptFixedMask: true });
+        createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }),
+      ).createUuidSlugMigrationDecoder({ acceptFixedMask: true });
       const mixed = new Uint8Array(Buffer.from("TRf_4hG5uOKhvh0EPc3rew", "base64url"));
       assert.ok(
         !(
-          reader.slugToUuidString(Buffer.from(mixed).toString("base64url"), "fixed-mask") instanceof
+          reader.uuidToString(Buffer.from(mixed).toString("base64url"), "fixed-mask") instanceof
           Error
         ),
       );
       mixed[0] = (mixed[0] as number) ^ 1;
       assert.ok(
-        reader.slugToUuidString(Buffer.from(mixed).toString("base64url"), "fixed-mask") instanceof
+        reader.uuidToString(Buffer.from(mixed).toString("base64url"), "fixed-mask") instanceof
           Error,
       );
     },

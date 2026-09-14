@@ -49,7 +49,7 @@ export async function buildRustBridge(profile: "debug" | "release" = "release"):
 
 interface RustBridge {
   evaluate(input: string): string;
-  direct(input: string): string;
+  plain(input: string): string;
   close(): void;
   readonly transport:
     | "Bun FFI"
@@ -74,7 +74,7 @@ type DenoRuntime = {
         readonly parameters: readonly ["buffer", "usize", "buffer", "usize"];
         readonly result: "usize";
       };
-      readonly uuid_slug_direct_into: {
+      readonly uuid_slug_plain_into: {
         readonly parameters: readonly ["buffer", "usize", "buffer", "usize"];
         readonly result: "usize";
       };
@@ -87,7 +87,7 @@ type DenoRuntime = {
         output: Uint8Array,
         outputLength: number,
       ): number | bigint;
-      uuid_slug_direct_into(
+      uuid_slug_plain_into(
         input: Uint8Array,
         inputLength: number,
         output: Uint8Array,
@@ -98,11 +98,11 @@ type DenoRuntime = {
   };
 };
 
-function directBridge(
+function plainBridge(
   transport: RustBridge["transport"],
   calls: Readonly<
     Record<
-      "evaluate" | "direct",
+      "evaluate" | "plain",
       (input: Uint8Array, inputLength: number, output: Uint8Array) => number
     >
   >,
@@ -135,7 +135,7 @@ function directBridge(
 
   return {
     evaluate: (input) => invoke("evaluate", input),
-    direct: (input) => invoke("direct", input),
+    plain: (input) => invoke("plain", input),
     close() {
       if (closed) return;
       closed = true;
@@ -161,7 +161,7 @@ export async function loadRustBridge(): Promise<RustBridge> {
   if (transport === "napi") {
     const native = createRequire(import.meta.url)(files.addon) as Pick<
       RustBridge,
-      "evaluate" | "direct"
+      "evaluate" | "plain"
     >;
     let closed = false;
     return {
@@ -169,9 +169,9 @@ export async function loadRustBridge(): Promise<RustBridge> {
         if (closed) throw new Error("Rust bridge is closed");
         return native.evaluate(input);
       },
-      direct(input) {
+      plain(input) {
         if (closed) throw new Error("Rust bridge is closed");
-        return native.direct(input);
+        return native.plain(input);
       },
       close() {
         closed = true;
@@ -187,18 +187,18 @@ export async function loadRustBridge(): Promise<RustBridge> {
         args: ["buffer", "usize", "buffer", "usize"],
         returns: "usize",
       },
-      uuid_slug_direct_into: {
+      uuid_slug_plain_into: {
         args: ["buffer", "usize", "buffer", "usize"],
         returns: "usize",
       },
     });
-    return directBridge(
+    return plainBridge(
       "Bun FFI",
       {
         evaluate: (input, length, output) =>
           Number(native.symbols.uuid_slug_evaluate_into(input, length, output, output.length)),
-        direct: (input, length, output) =>
-          Number(native.symbols.uuid_slug_direct_into(input, length, output, output.length)),
+        plain: (input, length, output) =>
+          Number(native.symbols.uuid_slug_plain_into(input, length, output, output.length)),
       },
       () => native.close(),
     );
@@ -211,18 +211,18 @@ export async function loadRustBridge(): Promise<RustBridge> {
         parameters: ["buffer", "usize", "buffer", "usize"],
         result: "usize",
       },
-      uuid_slug_direct_into: {
+      uuid_slug_plain_into: {
         parameters: ["buffer", "usize", "buffer", "usize"],
         result: "usize",
       },
     });
-    return directBridge(
+    return plainBridge(
       "Deno FFI",
       {
         evaluate: (input, length, output) =>
           Number(native.symbols.uuid_slug_evaluate_into(input, length, output, output.length)),
-        direct: (input, length, output) =>
-          Number(native.symbols.uuid_slug_direct_into(input, length, output, output.length)),
+        plain: (input, length, output) =>
+          Number(native.symbols.uuid_slug_plain_into(input, length, output, output.length)),
       },
       () => native.close(),
     );
@@ -236,12 +236,12 @@ export async function loadRustBridge(): Promise<RustBridge> {
       arguments: ["buffer", "uint64", "buffer", "uint64"],
       return: "uint64",
     },
-    uuid_slug_direct_into: {
+    uuid_slug_plain_into: {
       arguments: ["buffer", "uint64", "buffer", "uint64"],
       return: "uint64",
     },
   });
-  return directBridge(
+  return plainBridge(
     "Node FFI",
     {
       evaluate: (input, length, output) =>
@@ -253,9 +253,9 @@ export async function loadRustBridge(): Promise<RustBridge> {
             BigInt(output.length),
           ),
         ),
-      direct: (input, length, output) =>
+      plain: (input, length, output) =>
         Number(
-          native.functions.uuid_slug_direct_into(
+          native.functions.uuid_slug_plain_into(
             input,
             BigInt(length),
             output,

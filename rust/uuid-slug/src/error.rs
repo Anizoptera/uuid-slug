@@ -15,7 +15,7 @@ pub enum ErrorCode {
     InvalidBuffer,
     /// The mask configuration violates its contract.
     InvalidMask,
-    /// A sentinel name is empty or repeats within one codec.
+    /// A sentinel name is empty or repeats within one UUIDv7 masking codec.
     InvalidSentinel,
     /// A timestamp is nonfinite, negative, fractional or outside its allowed range.
     InvalidTimestamp,
@@ -59,7 +59,9 @@ impl ErrorCode {
             }
             Self::InvalidBuffer => "The requested byte range does not fit the buffer.",
             Self::InvalidMask => "Invalid mask or key parameters.",
-            Self::InvalidSentinel => "Sentinel names must be nonempty and unique within a codec.",
+            Self::InvalidSentinel => {
+                "Sentinel names must be nonempty and unique within a UUIDv7 masking codec."
+            }
             Self::InvalidTimestamp => "Timestamp must fit the operation's millisecond range.",
             Self::InvalidUuid => "Expected 32 hexadecimal digits with optional canonical hyphens.",
             Self::InvalidUuidSlug => "Invalid slug for the requested operation.",

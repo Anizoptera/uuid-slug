@@ -12,21 +12,21 @@
  */
 import { instrument, INSECURE_SOURCES } from "./instrument";
 import {
-  createUuidV7SlugCodec,
+  createUuidV7MaskingCodec,
   UUID_V7_TEST_MASK,
   generateUuidV4,
   generateUuidV4Bytes,
-  generateDirectUuidV4Slug,
+  generatePlainUuidV4Slug,
   generateUuidV7,
   generateUuidV7AtUnixMs,
   generateUuidV7Bytes,
   generateUuidV7BytesAtUnixMs,
-  generateDirectUuidV7Slug,
-  generateUuidV7WithDirectSlug,
+  generatePlainUuidV7Slug,
+  generateUuidV7WithPlainSlug,
 } from "../src/index";
 import { unwrap } from "../dev/unwrap";
 
-const codec = unwrap(createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }));
+const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
 
 /**
  * A fixed instant for the timestamped entry points. It is a constant rather than `Date.now()` so
@@ -45,15 +45,15 @@ const INSTANT = 1_700_000_000_000;
 export const generators: readonly (readonly [string, () => unknown])[] = [
   ["generateUuidV4", generateUuidV4],
   ["generateUuidV7", generateUuidV7],
-  ["generateDirectUuidV7Slug", generateDirectUuidV7Slug],
-  ["generateUuidV7WithDirectSlug", generateUuidV7WithDirectSlug],
+  ["generatePlainUuidV7Slug", generatePlainUuidV7Slug],
+  ["generateUuidV7WithPlainSlug", generateUuidV7WithPlainSlug],
   ["generateUuidV4Bytes", generateUuidV4Bytes],
   ["generateUuidV7Bytes", generateUuidV7Bytes],
   ["generateUuidV7AtUnixMs", () => generateUuidV7AtUnixMs(INSTANT)],
   ["generateUuidV7BytesAtUnixMs", () => generateUuidV7BytesAtUnixMs(INSTANT)],
-  ["generateDirectUuidV4Slug", generateDirectUuidV4Slug],
-  ["generate", () => codec.generateUuidV7CodecSlug()],
-  ["generateUuidV7WithCodecSlug", () => codec.generateUuidV7WithCodecSlug()],
+  ["generatePlainUuidV4Slug", generatePlainUuidV4Slug],
+  ["generate", () => codec.generateMaskedUuidV7Slug()],
+  ["generateUuidV7WithMaskedSlug", () => codec.generateUuidV7WithMaskedSlug()],
 ];
 
 /**

@@ -11,13 +11,13 @@ import { performance } from "node:perf_hooks";
 import { unwrap } from "../dev/unwrap";
 import { candidates, nativeVariants, runtimeName } from "./candidates";
 import {
-  createUuidV7SlugCodec,
+  createUuidV7MaskingCodec,
   UUID_V7_TEST_MASK,
-  slugToUuidString,
-  uuidStringToDirectSlug,
+  uuidToString,
+  uuidStringToPlainSlug,
   uuidStringToBytes,
   generateUuidV7Bytes,
-  generateDirectUuidV7Slug,
+  generatePlainUuidV7Slug,
   validateUuidV7Timestamp,
 } from "../src/index";
 
@@ -67,43 +67,45 @@ for (const candidate of candidates) {
   if (candidate.uuidV7) measure(`${candidate.name}.v7.string`, candidate.uuidV7);
 }
 
-const publicCodec = unwrap(createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK }));
-measure("package.v7.slug", () => unwrap(generateDirectUuidV7Slug()));
-measure("package.v7.maskedSlug", () => unwrap(publicCodec.generateUuidV7CodecSlug()));
+const publicCodec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
+measure("package.v7.slug", () => unwrap(generatePlainUuidV7Slug()));
+measure("package.v7.maskedSlug", () => unwrap(publicCodec.generateMaskedUuidV7Slug()));
 
 // Fixed inputs exclude generation and key derivation from conversion costs. Error discrimination
 // stays inside the timed call because callers of these APIs must handle the returned error.
 const input = "0191c2bb-6d00-7123-8123-123456789abc";
 for (const alphabet of ["base64url", "base32hex"] as const) {
-  const slug = unwrap(uuidStringToDirectSlug(input, alphabet));
-  measure(`package.${alphabet}.encode`, () => unwrap(uuidStringToDirectSlug(input, alphabet)));
-  measure(`package.${alphabet}.decode`, () => unwrap(slugToUuidString(slug)));
+  const slug = unwrap(uuidStringToPlainSlug(input, alphabet));
+  measure(`package.${alphabet}.encode`, () => unwrap(uuidStringToPlainSlug(input, alphabet)));
+  measure(`package.${alphabet}.decode`, () => unwrap(uuidToString(slug)));
 }
 const timestamp = Number.parseInt(input.slice(0, 13).replace("-", ""), 16);
 const timestampWindow = { maxTimestampDeltaMs: 86_400_000, referenceUnixMs: timestamp };
 measure("package.v7.timestamp", () => unwrap(validateUuidV7Timestamp(input, timestampWindow)));
 const current = { id: "seeded-mask", seed: "benchmark-current-key" };
 const previous = { id: "previous", seed: "benchmark-previous-key" };
-const masked = unwrap(createUuidV7SlugCodec({ mask: current }));
-const rotated = unwrap(createUuidV7SlugCodec({ mask: current, previousMasks: [previous] }));
+const masked = unwrap(createUuidV7MaskingCodec({ mask: current }));
+const rotated = unwrap(createUuidV7MaskingCodec({ mask: current, previousMasks: [previous] }));
 const inputBytes = unwrap(uuidStringToBytes(input));
-const maskedSlug = unwrap(masked.uuidToSlug(input));
-const previousSlug = unwrap(unwrap(createUuidV7SlugCodec({ mask: previous })).uuidToSlug(input));
+const maskedSlug = unwrap(masked.uuidToMaskedSlug(input));
+const previousSlug = unwrap(
+  unwrap(createUuidV7MaskingCodec({ mask: previous })).uuidToMaskedSlug(input),
+);
 // A short mask check can accept another key's output; prove this fixture reaches the older key.
 if (
-  !(masked.slugToUuidString(previousSlug) instanceof Error) ||
-  unwrap(rotated.slugToUuidString(previousSlug)) !== input
+  !(masked.uuidToString(previousSlug) instanceof Error) ||
+  unwrap(rotated.uuidToString(previousSlug)) !== input
 )
   throw new Error(
     "Rotation benchmark fixture must reject the current key and resolve through the previous key",
   );
-measure("package.masked.encode", () => unwrap(masked.uuidToSlug(input)));
-measure("package.masked.encode.bytes", () => unwrap(masked.uuidToSlug(inputBytes)));
-measure("package.masked.decode", () => unwrap(masked.slugToUuidString(maskedSlug)));
-measure("package.rotation.current", () => unwrap(rotated.slugToUuidString(maskedSlug)));
-measure("package.rotation.previous", () => unwrap(rotated.slugToUuidString(previousSlug)));
+measure("package.masked.encode", () => unwrap(masked.uuidToMaskedSlug(input)));
+measure("package.masked.encode.bytes", () => unwrap(masked.uuidToMaskedSlug(inputBytes)));
+measure("package.masked.decode", () => unwrap(masked.uuidToString(maskedSlug)));
+measure("package.rotation.current", () => unwrap(rotated.uuidToString(maskedSlug)));
+measure("package.rotation.previous", () => unwrap(rotated.uuidToString(previousSlug)));
 measure("package.masked.invalid", () => {
-  const result = masked.slugToUuidString("invalid");
+  const result = masked.uuidToString("invalid");
   if (!(result instanceof Error)) throw new Error("invalid input was accepted");
   return result.code;
 });

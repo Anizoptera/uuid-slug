@@ -8,20 +8,20 @@
 #![doc = include_str!("../README.md")]
 
 pub mod alphabet;
-pub mod codec;
 pub mod error;
 pub mod generation;
 pub mod mask;
+pub mod masking_codec;
 mod payload;
 mod siphash;
 pub mod uuid;
 
 pub use alphabet::Alphabet;
-pub use codec::{
-    Codec, CodecOptions, MigrationDecoder, MigrationFormat, MigrationOptions, Sentinel,
-    UuidV7TimestampWindow,
-};
 pub use error::{Error, ErrorCode};
 pub use mask::{Mask, create_mask, create_mask_async, public_mask};
+pub use masking_codec::{
+    MigrationDecoder, MigrationFormat, MigrationOptions, Sentinel, UuidV7MaskingCodec,
+    UuidV7MaskingCodecOptions, UuidV7TimestampWindow,
+};
 pub use payload::MAX_MASKED_UUID_V7_UNIX_MS;
 pub use uuid::Uuid;

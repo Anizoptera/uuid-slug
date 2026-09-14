@@ -14,7 +14,7 @@ Generation selects secure sources separately for text and byte output:
 - Node uses `crypto.randomUUID()` for UUIDv4, `crypto.randomUUIDv7()` when available for UUIDv7
   text, and pooled `crypto.randomFillSync()` for byte generation and portable UUIDv7 fallback.
 - Bun uses `Bun.randomUUIDv7()` for UUIDv7 text and Web Crypto `randomUUID()` for UUIDv4 text.
-  Byte output, direct UUIDv7 slugs, and fallback generation use pooled `getRandomValues()`.
+  Byte output, plain UUIDv7 slugs, and fallback generation use pooled `getRandomValues()`.
 - Deno uses Web Crypto `randomUUID()` for UUIDv4 text and pooled `getRandomValues()` for byte
   output and UUIDv7. Browsers use pooled `getRandomValues()` for both UUID versions.
 
@@ -42,7 +42,7 @@ authenticated encryption. Use a private random seed and retain its exact bytes a
 to read issued values. The exported public mask is for explicit tests and examples; codec
 construction never selects it by omission.
 Masking rejects timestamps above `MAX_MASKED_UUID_V7_UNIX_MS`; truncating the six timestamp bits
-used by the check would make distinct UUIDs encode to the same slug. Direct slugs and raw sentinel
+used by the check would make distinct UUIDs encode to the same slug. Plain slugs and raw sentinel
 slugs preserve the full UUIDv7 timestamp range.
 The 16-bit check filters candidates; look up the intended record and check authorization separately.
 More read keys add possible candidates. Base32 changes the spelling, not the masking strength.

@@ -6,7 +6,7 @@ reversible masking and 27-character lowercase masked filenames.
 Install the crate from crates.io or this repository.
 
 ```rust
-use uuid_slug::{Alphabet, Codec, CodecOptions, Uuid, create_mask};
+use uuid_slug::{Alphabet, Uuid, UuidV7MaskingCodec, UuidV7MaskingCodecOptions, create_mask};
 
 # fn main() -> Result<(), uuid_slug::Error> {
 let uuid = Uuid::parse("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")?;
@@ -14,17 +14,17 @@ let filename = uuid.slug(Alphabet::Base32Hex);
 assert_eq!(Uuid::parse_slug(&filename)?, uuid);
 
 let mask = create_mask(b"replace-with-your-own-secret-seed", 1, "current")?;
-let codec = Codec::new(CodecOptions {
+let masking_codec = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
     slug_alphabet: Alphabet::Base32Hex,
-    ..CodecOptions::new(mask)
+    ..UuidV7MaskingCodecOptions::new(mask)
 })?;
-let masked = codec.encode_uuid(uuid)?;
-assert_eq!(codec.decode_slug(&masked)?, uuid);
+let masked = masking_codec.encode_uuid(uuid)?;
+assert_eq!(masking_codec.decode_slug(&masked)?, uuid);
 # Ok(())
 # }
 ```
 
-Direct slugs hold all 128 UUID bits without version, variant, or timestamp limits: 22 base64url or
+Plain slugs hold all 128 UUID bits without version, variant, or timestamp limits: 22 base64url or
 26 lowercase base32hex characters.
 Masked slugs hold the same 132-bit payload in 22 base64url or 27 base32hex characters.
 Decoding infers the representation; nonzero padding is rejected. Sentinels remain raw UUIDs.
@@ -35,8 +35,8 @@ with a keyed reversible payload. It is obfuscation, not authentication or encryp
 Its 16-bit check can accept an unissued UUID; look up decoded candidates in your own store. Each
 configured key adds a possible candidate. Pass `public_mask()` explicitly only for examples
 and wire fixtures because its seed is public. Keep your private seed and iteration count to read issued IDs.
-Masking accepts UUIDv7 timestamps through `MAX_MASKED_UUID_V7_UNIX_MS`; direct slugs retain the
-full UUIDv7 timestamp range. Registered sentinels are always direct slugs and are never masked.
+Masking accepts UUIDv7 timestamps through `MAX_MASKED_UUID_V7_UNIX_MS`; plain slugs retain the
+full UUIDv7 timestamp range. Registered sentinels are always plain slugs and are never masked.
 
 Keep previous keys while stored identifiers still need them. The current key writes new masks;
 previous keys only add read candidates. Install readers for the new key and spelling before
@@ -44,22 +44,24 @@ switching writers. A rollback must retain those readers or it can strand newly i
 Here, `stored` is an existing slug written with the previous key.
 
 ```rust
-use uuid_slug::{Codec, CodecOptions, MigrationOptions, create_mask};
+use uuid_slug::{
+    MigrationOptions, UuidV7MaskingCodec, UuidV7MaskingCodecOptions, create_mask,
+};
 
 # fn main() -> Result<(), uuid_slug::Error> {
 let old_key = create_mask(b"previous-private-seed", 1, "previous")?;
 let new_key = create_mask(b"replacement-private-seed", 1, "current")?;
 # let uuid = uuid_slug::Uuid::parse("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")?;
-# let stored = Codec::new(CodecOptions::new(old_key.clone()))?.encode_uuid(uuid)?;
-let reader = Codec::new(CodecOptions {
+# let stored = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions::new(old_key.clone()))?.encode_uuid(uuid)?;
+let reader = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
     previous_masks: vec![old_key],
-    ..CodecOptions::new(new_key)
+    ..UuidV7MaskingCodecOptions::new(new_key)
 })?;
 let id = reader.decode_slug(&stored)?;
 # assert_eq!(id, uuid);
 let migration = reader.migration_decoder(MigrationOptions {
     original: true,
-    direct: true,
+    plain: true,
 });
 let candidates = migration.candidates(&stored, None)?;
 # assert!(candidates.contains(&uuid));

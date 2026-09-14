@@ -1,6 +1,8 @@
 //! Measure varied identifier operations separately from setup and host-bridge overhead.
 use std::{hint::black_box, time::Instant};
-use uuid_slug::{Alphabet, Codec, CodecOptions, Error, Uuid, create_mask};
+use uuid_slug::{
+    Alphabet, Error, Uuid, UuidV7MaskingCodec, UuidV7MaskingCodecOptions, create_mask,
+};
 
 fn sample<T>(name: &str, inputs: &[Uuid], mut operation: impl FnMut(Uuid) -> T) {
     // Isolate one operation for allocation attribution without changing its workload.
@@ -101,12 +103,12 @@ fn main() -> Result<(), Error> {
         })
         .collect();
     let mask = create_mask(b"benchmark-seed-not-for-production", 1, "bench")?;
-    let compact = Codec::new(CodecOptions {
-        ..CodecOptions::new(mask.clone())
+    let compact = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+        ..UuidV7MaskingCodecOptions::new(mask.clone())
     })?;
-    let safe = Codec::new(CodecOptions {
+    let safe = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
         slug_alphabet: Alphabet::Base32Hex,
-        ..CodecOptions::new(mask)
+        ..UuidV7MaskingCodecOptions::new(mask)
     })?;
     sample("plain/base64", &ids, |id| id.slug(Alphabet::Base64Url));
     sample("plain/base32", &ids, |id| id.slug(Alphabet::Base32Hex));
@@ -127,7 +129,7 @@ fn main() -> Result<(), Error> {
         compact.decode_slug(&encoded[cursor]).unwrap()
     });
     sample("construct/default", &ids, |_| {
-        Codec::new(CodecOptions::new(uuid_slug::public_mask())).unwrap()
+        UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions::new(uuid_slug::public_mask())).unwrap()
     });
     let plain: Vec<String> = ids.iter().map(|id| id.slug(Alphabet::Base64Url)).collect();
     let mut out = [0; 16];

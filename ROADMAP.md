@@ -1,7 +1,15 @@
 # Roadmap
 
+- [x] Replace caller-composed plain-to-masking-codec conversions with deep codec operations.
+  - [x] Derive the smallest explicit call shapes from plain, masked, UUID-text, and byte workflows.
+  - [x] Keep representation identity explicit where raw base64url text is inherently ambiguous.
+  - [x] Implement conversion without intermediate caller branches or redundant UUID formatting.
+  - [x] Prove branded inference, bare-string validation, sentinels, timestamp limits, both alphabets, and error propagation.
+  - [x] Replace the README recipe with one-call workflows and update public JSDoc and declarations.
+  - [x] Run focused source and packed checks, then the complete gate and commit.
+
 - [x] Make representation coverage and runtime evidence unambiguous to a cold consumer.
-  - [x] Map direct and codec generation, conversion, decoding, and timestamp operations by accepted input and output.
+  - [x] Map plain and masked generation, conversion, decoding, and timestamp operations by accepted input and output.
   - [x] State why keyed and keyless representations cannot share an ambiguity-free raw-string decoder.
   - [x] Put each sharp edge at the README workflow and public declaration where it changes a call.
   - [x] Correct runtime wording to distinguish latest Node and Deno from Playwright-pinned browser engines.
@@ -37,7 +45,7 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 - [x] Repair the consumer friction found by the fresh TypeScript interface audit.
   - [x] Accept common case variants while preserving canonical lowercase output.
   - [x] Replace ambiguous and time-relative public names before the first release baseline.
-  - [x] Generate the UUID and direct or codec slug from one byte draw for the primary storage workflow.
+  - [x] Generate the UUID and plain or masked slug from one byte draw for the primary storage workflow.
   - [x] Make expensive mask derivation explicit and migration candidates readonly.
   - [x] Update public docs and declarations; prove source, runtime, editor, packed, bundle, and full checks.
 - [x] Make `docs/public-api.md` the complete interface authority and shrink the root prompt.
@@ -96,7 +104,7 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 - [x] Implement composable `UuidSlugError` values without intermediate unwrapping.
   - [x] Rename conversions by source and destination representation; keep one codec UUID-to-slug
         method because text and bytes are two forms of the same accepted UUID value.
-  - [x] Pin direct TypeScript chains, exact successful brands, wrong-representation rejection, and
+  - [x] Pin plain TypeScript chains, exact successful brands, wrong-representation rejection, and
         error-union retention in source and packed-consumer fixtures.
   - [x] Pin JavaScript chains, unchanged error identity, skipped output writes and callbacks,
         duplicate-package and cross-realm recognition, and malformed marker behavior.

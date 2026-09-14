@@ -55,19 +55,19 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   equal(api.isUuidV7String(unwrap(api.generateUuidV7())), true, "v7 generation");
   equal(api.isUuidV4String(unwrap(api.generateUuidV4())), true, "v4 generation");
   for (const alphabet of [api.BASE64URL, api.BASE32HEX] as const) {
-    const slug = api.uuidStringToDirectSlug(uuid, alphabet);
+    const slug = api.uuidStringToPlainSlug(uuid, alphabet);
     if (slug instanceof Error) throw slug;
-    equal(api.slugToUuidString(slug), uuid, `${alphabet} conversion`);
+    equal(api.uuidToString(slug), uuid, `${alphabet} conversion`);
     const generator = api.createUuidV7Generator({ readUnixMs: () => 1234567890000 });
     const codec = unwrap(
-      api.createUuidV7SlugCodec({
+      api.createUuidV7MaskingCodec({
         mask: api.UUID_V7_TEST_MASK,
       }),
     );
     equal(
       codec
-        .createMigrationDecoder({ acceptDirectSlug: true })
-        .slugToUuidString(slug, api.DIRECT_SLUG_FORMAT),
+        .createUuidSlugMigrationDecoder({ acceptPlainSlug: true })
+        .uuidToString(slug, api.PLAIN_SLUG_FORMAT),
       uuid,
       `${alphabet} migration`,
     );
@@ -80,8 +80,8 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   if (synchronous instanceof Error) throw synchronous;
   if (asynchronous instanceof Error) throw asynchronous;
   equal(
-    unwrap(api.createUuidV7SlugCodec({ mask: asynchronous })).uuidToSlug(uuid),
-    unwrap(api.createUuidV7SlugCodec({ mask: synchronous })).uuidToSlug(uuid),
+    unwrap(api.createUuidV7MaskingCodec({ mask: asynchronous })).uuidToMaskedSlug(uuid),
+    unwrap(api.createUuidV7MaskingCodec({ mask: synchronous })).uuidToMaskedSlug(uuid),
     "async mask wire identity",
   );
   // An independent host task must be able to cancel real derivation through the installed export.
@@ -112,46 +112,42 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     channel.port1.close();
     channel.port2.close();
   }
-  const codec = unwrap(api.createUuidV7SlugCodec({ mask: api.UUID_V7_TEST_MASK }));
-  const { seed, slug: overlap, currentUuid, originalUuid, directUuid } = fixtures.overlap;
-  const migrating = unwrap(api.createUuidV7SlugCodec({ mask: { seed } }));
-  const reader = migrating.createMigrationDecoder({
+  const codec = unwrap(api.createUuidV7MaskingCodec({ mask: api.UUID_V7_TEST_MASK }));
+  const { seed, slug: overlap, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
+  const migrating = unwrap(api.createUuidV7MaskingCodec({ mask: { seed } }));
+  const reader = migrating.createUuidSlugMigrationDecoder({
     acceptFixedMask: true,
-    acceptDirectSlug: true,
+    acceptPlainSlug: true,
   });
-  equal(reader.slugToUuidString(overlap), currentUuid, "migration default");
-  equal(reader.slugToUuidString(overlap, api.SEEDED_MASK_FORMAT), currentUuid, "current migration");
+  equal(reader.uuidToString(overlap), currentUuid, "migration default");
+  equal(reader.uuidToString(overlap, api.SEEDED_MASK_FORMAT), currentUuid, "current migration");
+  equal(reader.uuidToString(overlap, api.FIXED_MASK_FORMAT), originalUuid, "original migration");
+  equal(reader.uuidToString(overlap, api.PLAIN_SLUG_FORMAT), plainUuid, "plain migration");
   equal(
-    reader.slugToUuidString(overlap, api.FIXED_MASK_FORMAT),
-    originalUuid,
-    "original migration",
-  );
-  equal(reader.slugToUuidString(overlap, api.DIRECT_SLUG_FORMAT), directUuid, "direct migration");
-  equal(
-    JSON.stringify(reader.slugToUuidStringCandidates(overlap)),
-    JSON.stringify([currentUuid, originalUuid, directUuid]),
+    JSON.stringify(reader.uuidToStringCandidates(overlap)),
+    JSON.stringify([currentUuid, originalUuid, plainUuid]),
     "migration candidates",
   );
   equal(
     JSON.stringify(
       migrating
-        .createMigrationDecoder({ acceptDirectSlug: true })
-        .slugToUuidStringCandidates(overlap),
+        .createUuidSlugMigrationDecoder({ acceptPlainSlug: true })
+        .uuidToStringCandidates(overlap),
     ),
-    JSON.stringify([currentUuid, directUuid]),
+    JSON.stringify([currentUuid, plainUuid]),
     "fixed-mask migration retirement",
   );
-  equal(codec.uuidToSlug(uuid), "uqgITQGagyxsoNARAd_pxu", "masked wire vector");
-  equal(codec.slugToUuidString("uqgITQGagyxsoNARAd_pxu"), uuid, "masked inverse");
+  equal(codec.uuidToMaskedSlug(uuid), "uqgITQGagyxsoNARAd_pxu", "masked wire vector");
+  equal(codec.uuidToString("uqgITQGagyxsoNARAd_pxu"), uuid, "masked inverse");
   const sentinelCodec = unwrap(
-    api.createUuidV7SlugCodec({
+    api.createUuidV7MaskingCodec({
       mask: api.UUID_V7_TEST_MASK,
       sentinels: [{ name: "reserved", uuid }],
     }),
   );
-  const sentinel = api.uuidStringToDirectSlug(uuid);
-  equal(sentinelCodec.uuidToSlug(uuid), sentinel, "custom sentinel encoding");
-  equal(sentinelCodec.slugToUuidString(String(sentinel)), uuid, "custom sentinel decoding");
+  const sentinel = api.uuidStringToPlainSlug(uuid);
+  equal(sentinelCodec.uuidToMaskedSlug(uuid), sentinel, "custom sentinel encoding");
+  equal(sentinelCodec.uuidToString(String(sentinel)), uuid, "custom sentinel decoding");
   const bytes = api.generateUuidV7BytesAtUnixMs(1234567890000);
   if (bytes instanceof Error) throw bytes;
   equal(bytes.constructor, Uint8Array, "owned byte constructor");

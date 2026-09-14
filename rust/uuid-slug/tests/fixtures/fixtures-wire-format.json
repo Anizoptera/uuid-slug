@@ -1,72 +1,72 @@
 [
   {
-    "direct": "AAAAAAAAcACAAAAAAAAAAA",
+    "plain": "AAAAAAAAcACAAAAAAAAAAA",
     "masked": "AAAAAAAAcACAAAAAAAAAAA",
     "mask": "custom-mix",
     "uuid": "00000000-0000-7000-8000-000000000000"
   },
   {
-    "direct": "A_______f_-__________w",
+    "plain": "A_______f_-__________w",
     "masked": "_67dzLuqmWh3JlVEMyIRAK",
     "mask": "custom-mix",
     "uuid": "03ffffff-ffff-7fff-bfff-ffffffffffff"
   },
   {
-    "direct": "AZ_xm1i4cACbG99xO9VWLA",
+    "plain": "AZ_xm1i4cACbG99xO9VWLA",
     "masked": "m0r3wkRu-Vf5vBJk4IX1qe",
     "mask": "custom-mix",
     "uuid": "019ff19b-58b8-7000-9b1b-df713bd5562c"
   },
   {
-    "direct": "AZChssPUfl-KmwwdLj9AUQ",
+    "plain": "AZChssPUfl-KmwwdLj9AUQ",
     "masked": "stsdkht79qmVmH63nR51v8",
     "mask": "custom-mix",
     "uuid": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051"
   },
   {
-    "direct": "AAAAAAAAcACAAAAAAAAAAA",
+    "plain": "AAAAAAAAcACAAAAAAAAAAA",
     "masked": "AAAAAAAAcACAAAAAAAAAAA",
     "mask": "default",
     "uuid": "00000000-0000-7000-8000-000000000000"
   },
   {
-    "direct": "A_______f_-__________w",
+    "plain": "A_______f_-__________w",
     "masked": "2G8dcmzmkoewLZ-KjC-7p6",
     "mask": "default",
     "uuid": "03ffffff-ffff-7fff-bfff-ffffffffffff"
   },
   {
-    "direct": "AZ_xm1i4cACbG99xO9VWLA",
+    "plain": "AZ_xm1i4cACbG99xO9VWLA",
     "masked": "uqgITQGagyxsoNARAd_pxu",
     "mask": "default",
     "uuid": "019ff19b-58b8-7000-9b1b-df713bd5562c"
   },
   {
-    "direct": "AZChssPUfl-KmwwdLj9AUQ",
+    "plain": "AZChssPUfl-KmwwdLj9AUQ",
     "masked": "tMX64bWHIA6SSgIawCttes",
     "mask": "default",
     "uuid": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051"
   },
   {
-    "direct": "AAAAAAAAcACAAAAAAAAAAA",
+    "plain": "AAAAAAAAcACAAAAAAAAAAA",
     "masked": "AAAAAAAAcACAAAAAAAAAAA",
     "mask": "seeded-v2",
     "uuid": "00000000-0000-7000-8000-000000000000"
   },
   {
-    "direct": "A_______f_-__________w",
+    "plain": "A_______f_-__________w",
     "masked": "x-ERR4tWdg6DTgBXnTxLgK",
     "mask": "seeded-v2",
     "uuid": "03ffffff-ffff-7fff-bfff-ffffffffffff"
   },
   {
-    "direct": "AZ_xm1i4cACbG99xO9VWLA",
+    "plain": "AZ_xm1i4cACbG99xO9VWLA",
     "masked": "-7MnT1XQ7ZVQnYgrWVEwaO",
     "mask": "seeded-v2",
     "uuid": "019ff19b-58b8-7000-9b1b-df713bd5562c"
   },
   {
-    "direct": "AZChssPUfl-KmwwdLj9AUQ",
+    "plain": "AZChssPUfl-KmwwdLj9AUQ",
     "masked": "fDi5GIgLT0UOs0D0zHlamc",
     "mask": "seeded-v2",
     "uuid": "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051"

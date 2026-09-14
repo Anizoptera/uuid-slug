@@ -2,8 +2,8 @@
 
 use serde_json::{Value, json};
 use uuid_slug::{
-    Alphabet, Codec, CodecOptions, Error, ErrorCode, Mask, MigrationFormat, MigrationOptions, Uuid,
-    UuidV7TimestampWindow, create_mask, public_mask,
+    Alphabet, Error, ErrorCode, Mask, MigrationFormat, MigrationOptions, Uuid, UuidV7MaskingCodec,
+    UuidV7MaskingCodecOptions, UuidV7TimestampWindow, create_mask, public_mask,
 };
 
 fn text<'a>(value: &'a Value, key: &str) -> Result<&'a str, Error> {
@@ -91,10 +91,10 @@ fn mask(value: &Value) -> Result<Mask, Error> {
     create_mask(&bytes, iterations as u32, "seeded")
 }
 
-fn codec(request: &Value) -> Result<Codec, Error> {
-    let mut options = CodecOptions {
+fn masking_codec(request: &Value) -> Result<UuidV7MaskingCodec, Error> {
+    let mut options = UuidV7MaskingCodecOptions {
         slug_alphabet: alphabet(&request["maskedAlphabet"])?,
-        ..CodecOptions::new(mask(&request["mask"])?)
+        ..UuidV7MaskingCodecOptions::new(mask(&request["mask"])?)
     };
     if let Some(previous) = request["previous"].as_array() {
         options.previous_masks = previous.iter().map(mask).collect::<Result<_, _>>()?;
@@ -110,7 +110,7 @@ fn codec(request: &Value) -> Result<Codec, Error> {
             })
             .collect::<Result<_, Error>>()?;
     }
-    Codec::new(options)
+    UuidV7MaskingCodec::new(options)
 }
 
 fn run(request: &Value) -> Result<Value, Error> {
@@ -180,10 +180,10 @@ fn run(request: &Value) -> Result<Value, Error> {
                 "v7": bytes.len() == 16 && Uuid::from_slice(&bytes, 0).is_ok_and(|u| u.is_v7())
             }))
         }
-        "direct" => Ok(json!(
+        "plain" => Ok(json!(
             Uuid::parse(input)?.slug(alphabet(&request["alphabet"])?)
         )),
-        "undirect" => Ok(json!(Uuid::parse_slug(input)?.to_string())),
+        "plainToUuid" => Ok(json!(Uuid::parse_slug(input)?.to_string())),
         "timestamp" => Ok(json!(Uuid::parse(input)?.timestamp()?)),
         "guards" => {
             let uuid = Uuid::parse(input).ok();
@@ -247,8 +247,8 @@ fn run(request: &Value) -> Result<Value, Error> {
                 <[u8; 16]>::try_from(bytes).map_err(|_| Error::new(ErrorCode::InvalidBuffer))?;
             Ok(json!(Alphabet::Base64Url.encode(&bytes)))
         }
-        "validateUuidV7Timestamp" | "validateDirectUuidV7SlugUnixMs" => {
-            let uuid = if request["op"] == "validateDirectUuidV7SlugUnixMs" {
+        "validateUuidV7Timestamp" | "validatePlainUuidV7SlugUnixMs" => {
+            let uuid = if request["op"] == "validatePlainUuidV7SlugUnixMs" {
                 Uuid::parse_slug(input)?
             } else {
                 Uuid::parse(input)?
@@ -260,14 +260,16 @@ fn run(request: &Value) -> Result<Value, Error> {
             .validate(uuid)?;
             Ok(json!(input))
         }
-        "mask" => Ok(json!(codec(request)?.encode_uuid(Uuid::parse(input)?)?)),
+        "mask" => Ok(json!(
+            masking_codec(request)?.encode_uuid(Uuid::parse(input)?)?
+        )),
         "unmask" => {
-            let codec = codec(request)?;
-            let uuid = if request["acceptDirect"] == true {
+            let codec = masking_codec(request)?;
+            let uuid = if request["acceptPlain"] == true {
                 codec
                     .migration_decoder(MigrationOptions {
                         original: false,
-                        direct: true,
+                        plain: true,
                     })
                     .decode(input, None)?
             } else {
@@ -275,8 +277,10 @@ fn run(request: &Value) -> Result<Value, Error> {
             };
             Ok(json!(uuid.to_string()))
         }
-        "unmaskV7" => Ok(json!(codec(request)?.decode_slug(input)?.to_string())),
-        "validateMaskedTimestamp" => Ok(json!(codec(request)?.validate_slug_timestamp(
+        "unmaskV7" => Ok(json!(
+            masking_codec(request)?.decode_slug(input)?.to_string()
+        )),
+        "validateMaskedTimestamp" => Ok(json!(masking_codec(request)?.validate_slug_timestamp(
             input,
             UuidV7TimestampWindow {
                 reference_unix_ms: number(&request["now"]),
@@ -284,23 +288,23 @@ fn run(request: &Value) -> Result<Value, Error> {
             },
         )?)),
         "sentinels" => Ok(json!(
-            codec(request)?
+            masking_codec(request)?
                 .sentinels()
                 .iter()
                 .map(|s| json!({"name":s.name,"uuid":s.uuid.to_string(),"slug":s.slug}))
                 .collect::<Vec<_>>()
         )),
         "migration" | "candidates" => {
-            let codec = codec(request)?;
+            let codec = masking_codec(request)?;
             let migration = codec.migration_decoder(MigrationOptions {
                 original: request["original"] == true,
-                direct: request["direct"] == true,
+                plain: request["plain"] == true,
             });
             let format = match request["format"].as_str() {
                 None => None,
                 Some("seeded-mask") => Some(MigrationFormat::Current),
                 Some("fixed-mask") => Some(MigrationFormat::Original),
-                Some("direct-slug") => Some(MigrationFormat::Direct),
+                Some("plain-slug") => Some(MigrationFormat::Plain),
                 _ => return Err(Error::new(ErrorCode::InvalidUuidSlug)),
             };
             if request["op"] == "migration" {

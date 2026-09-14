@@ -18,7 +18,7 @@ export const INVALID_SENTINEL = "invalid_sentinel";
 export const INVALID_TIMESTAMP = "invalid_timestamp";
 /** The input is not valid UUID text or a valid UUID byte payload. */
 export const INVALID_UUID = "invalid_uuid";
-/** The input is not a canonical direct or codec-owned UUID slug. */
+/** The input is not a canonical plain or codec-owned UUID slug. */
 export const INVALID_UUID_SLUG = "invalid_uuid_slug";
 /** The UUID version does not satisfy the requested operation. */
 export const INVALID_UUID_VERSION = "invalid_uuid_version";

@@ -11,7 +11,7 @@
  * The assertions stay in the suites: an assertion that drifts merely narrows coverage, and it is
  * visible on the page.
  */
-import { createCustomUuidV7Mask, createUuidV7SlugCodec, UUID_V7_TEST_MASK } from "../src/index";
+import { createCustomUuidV7Mask, createUuidV7MaskingCodec, UUID_V7_TEST_MASK } from "../src/index";
 import { unwrap } from "../dev/unwrap";
 import { NIL_TEST_SENTINEL } from "./sentinel-fixtures";
 
@@ -56,10 +56,12 @@ const customMix = unwrap(
 );
 
 export const WIRE_FORMAT_CODECS = {
-  "custom-mix": unwrap(createUuidV7SlugCodec({ mask: customMix, sentinels: NIL_TEST_SENTINEL })),
-  default: unwrap(createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK, sentinels: NIL_TEST_SENTINEL })),
+  "custom-mix": unwrap(createUuidV7MaskingCodec({ mask: customMix, sentinels: NIL_TEST_SENTINEL })),
+  default: unwrap(
+    createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK, sentinels: NIL_TEST_SENTINEL }),
+  ),
   "seeded-v2": unwrap(
-    createUuidV7SlugCodec({
+    createUuidV7MaskingCodec({
       mask: { seed: "golden-vector-seed-v3" },
       sentinels: NIL_TEST_SENTINEL,
     }),

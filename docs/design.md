@@ -11,8 +11,8 @@ most sensitive field, but it is not the only structure being hidden.
 
 ## Representations and bit budget
 
-A UUID is 16 bytes. Direct slugs encode those bytes as 22 base64url or 26 base32hex
-characters. Direct decoding rejects nonzero padding bits, so a UUID has one canonical spelling
+A UUID is 16 bytes. Plain slugs encode those bytes as 22 base64url or 26 base32hex
+characters. Plain decoding rejects nonzero padding bits, so a UUID has one canonical spelling
 per alphabet.
 
 Masking accepts UUIDv7 and preserves 116 payload bits:
@@ -26,7 +26,7 @@ Masking accepts UUIDv7 and preserves 116 payload bits:
 
 The masked payload is fixed: 22 base64url characters hold 132 bits, leaving `132 - 116 = 16`
 check bits. Twelve replace the constant bits inside the 128-bit block; four occupy the encoding's
-spare bits. All 132 encoded bits have a role. Direct-slug padding rejection does not apply to these
+spare bits. All 132 encoded bits have a role. Plain-slug padding rejection does not apply to these
 four check bits.
 
 A timestamp at or past 2^42 milliseconds is rejected before masking. Truncating it would allow
@@ -122,18 +122,18 @@ of their individual rates. The codec must not append masks on the caller's behal
 Masked decoding always accepts both alphabets, sentinels, and current or previous mask outputs.
 Migration adds only the old formats the caller enables. Other forms are invalid.
 
-Only `codec.createMigrationDecoder({ acceptDirectSlug: true })` enables direct-slug decoding. A direct slug may
+Only `codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true })` enables plain-slug decoding. A plain slug may
 accidentally pass an earlier mask check and return a different candidate; migration cannot make
 the two representations distinguishable. Confirm candidates against the issuing store.
 
-Sentinels bypass masking and use precomputed direct slugs in the masked output alphabet.
+Sentinels bypass masking and use precomputed plain slugs in the masked output alphabet.
 Decode checks both raw spellings first: 22 base64url or 26 base32hex characters.
 Both explicit conversion and generation recognize sentinel UUIDs before masking. A non-sentinel
 UUID whose masked result collides with a reserved slug must fail encoding, because accepting it
 would decode to the sentinel and lose the original identity. Safe writers also check the old
 base64url spelling, because converting a safe payload back must not change its identity.
 
-New masked output uses only the layout above. `codec.createMigrationDecoder` can separately read the original
+New masked output uses only the layout above. `codec.createUuidSlugMigrationDecoder` can separately read the original
 fixed permutation/XOR layout when enabled; its four-bit check cannot establish identity either.
 The format published in 0.2.0 remains unsupported. See README's migration sections for format
 selection and record lookup; do not add an old layout to ordinary decoding.

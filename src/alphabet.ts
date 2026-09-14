@@ -258,7 +258,7 @@ export function decodeInto(
     out[written] = (first << 2) | (last >>> 4);
     if (tailBits === 4) return last & 15;
     // A masked base64url slug has the same length and carries check bits here, so this is the
-    // error a caller sees after feeding a masked slug to the direct decoder. Say so.
+    // error a caller sees after feeding a masked slug to the plain decoder. Say so.
     if ((last & 15) !== 0)
       return new UuidSlugError(
         code,

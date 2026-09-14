@@ -103,18 +103,18 @@ export function evaluate(request: Request): Outcome {
         const offset = request.offset as number;
         return result({
           uuid: result(ts.bytesToUuidString(bytes, offset)),
-          base64: result(ts.uuidBytesToDirectSlug(bytes, offset, "base64url")),
-          base32: result(ts.uuidBytesToDirectSlug(bytes, offset, "base32hex")),
+          base64: result(ts.uuidBytesToPlainSlug(bytes, offset, "base64url")),
+          base32: result(ts.uuidBytesToPlainSlug(bytes, offset, "base32hex")),
           timestamp: result(ts.extractUuidV7UnixMs(bytes, offset)),
           v7: ts.isUuidV7Bytes(bytes),
         });
       }
-      case "direct":
+      case "plain":
         return result(
-          ts.uuidStringToDirectSlug(input, request.alphabet as SlugAlphabet | undefined),
+          ts.uuidStringToPlainSlug(input, request.alphabet as SlugAlphabet | undefined),
         );
-      case "undirect":
-        return result(ts.slugToUuidString(input));
+      case "plainToUuid":
+        return result(ts.uuidToString(input));
       case "timestamp": {
         const bytes = ts.uuidStringToBytes(input);
         return result(bytes instanceof Error ? bytes : ts.extractUuidV7UnixMs(bytes));
@@ -124,35 +124,35 @@ export function evaluate(request: Request): Outcome {
           ts.isUuidText(input),
           ts.isUuidV4Text(input),
           ts.isUuidV7Text(input),
-          ts.isDirectUuidSlug(input),
-          ts.isDirectUuidV4Slug(input),
-          ts.isDirectUuidV7Slug(input),
+          ts.isPlainUuidSlug(input),
+          ts.isPlainUuidV4Slug(input),
+          ts.isPlainUuidV7Slug(input),
         ]);
       case "base64Encode": {
         const bytes = Uint8Array.from(request.bytes as number[]);
         return result(
           bytes.length === 16
-            ? ts.uuidBytesToDirectSlug(bytes)
+            ? ts.uuidBytesToPlainSlug(bytes)
             : new ts.UuidSlugError("invalid_buffer", "Expected one 16-byte UUID payload."),
         );
       }
       case "base64Decode":
         return result(
           input.length === 22
-            ? ts.slugToUuidBytes(input)
+            ? ts.uuidToBytes(input)
             : new ts.UuidSlugError(
                 "invalid_base64url",
                 "Expected a 22-character base64url UUID slug.",
               ),
         );
       case "base64Guard":
-        return result(input.length === 22 && ts.isDirectUuidSlug(input));
+        return result(input.length === 22 && ts.isPlainUuidSlug(input));
       case "base64DecodeTo": {
         const out = new Uint8Array(request.capacity as number).fill(165);
         const offset = request.offset as number;
         const decoded =
           input.length === 22
-            ? ts.slugToUuidBytes(input, out, offset)
+            ? ts.uuidToBytes(input, out, offset)
             : new ts.UuidSlugError(
                 "invalid_base64url",
                 "Expected a 22-character base64url UUID slug.",
@@ -176,9 +176,9 @@ export function evaluate(request: Request): Outcome {
             referenceUnixMs: Number(request.now),
           }),
         );
-      case "validateDirectUuidV7SlugUnixMs":
+      case "validatePlainUuidV7SlugUnixMs":
         return result(
-          ts.validateDirectUuidV7SlugUnixMs(input, {
+          ts.validatePlainUuidV7SlugUnixMs(input, {
             maxTimestampDeltaMs: Number(request.window),
             referenceUnixMs: Number(request.now),
           }),
@@ -186,7 +186,7 @@ export function evaluate(request: Request): Outcome {
     }
     const selectedMask = mask(request.mask);
     const codec = unwrap(
-      ts.createUuidV7SlugCodec({
+      ts.createUuidV7MaskingCodec({
         mask: selectedMask ?? ts.UUID_V7_TEST_MASK,
         ...(request.previous === undefined
           ? {}
@@ -197,7 +197,7 @@ export function evaluate(request: Request): Outcome {
             }),
         ...(request.maskedAlphabet === undefined
           ? {}
-          : { outputAlphabet: request.maskedAlphabet as SlugAlphabet }),
+          : { maskedSlugAlphabet: request.maskedAlphabet as SlugAlphabet }),
         ...(request.sentinels === undefined
           ? {}
           : { sentinels: request.sentinels as ts.UuidV7SentinelConfig[] }),
@@ -205,20 +205,20 @@ export function evaluate(request: Request): Outcome {
     );
     switch (request.op) {
       case "mask":
-        return result(codec.uuidToSlug(input));
+        return result(codec.uuidToMaskedSlug(input));
       case "unmask":
         return result(
-          request.acceptDirect === true
-            ? codec.createMigrationDecoder({ acceptDirectSlug: true }).slugToUuidString(input)
-            : codec.slugToUuidString(input),
+          request.acceptPlain === true
+            ? codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true }).uuidToString(input)
+            : codec.maskedSlugToUuidString(input),
         );
       case "unmaskV7":
-        return result(codec.slugToUuidString(input));
+        return result(codec.maskedSlugToUuidString(input));
       case "sentinels":
         return result(codec.sentinels);
       case "validateMaskedTimestamp":
         return result(
-          codec.validateUuidSlugUnixMs(input, {
+          codec.validateMaskedUuidV7SlugUnixMs(input, {
             maxTimestampDeltaMs: Number(request.window),
             referenceUnixMs: Number(request.now),
           }),
@@ -226,23 +226,20 @@ export function evaluate(request: Request): Outcome {
       case "migration":
         return result(
           codec
-            .createMigrationDecoder({
+            .createUuidSlugMigrationDecoder({
               acceptFixedMask: request.original === true,
-              acceptDirectSlug: request.direct === true,
+              acceptPlainSlug: request.plain === true,
             })
-            .slugToUuidString(input, request.format as UuidSlugMigrationFormat | undefined),
+            .uuidToString(input, request.format as UuidSlugMigrationFormat | undefined),
         );
       case "candidates":
         return result(
           codec
-            .createMigrationDecoder({
+            .createUuidSlugMigrationDecoder({
               acceptFixedMask: request.original === true,
-              acceptDirectSlug: request.direct === true,
+              acceptPlainSlug: request.plain === true,
             })
-            .slugToUuidStringCandidates(
-              input,
-              request.format as UuidSlugMigrationFormat | undefined,
-            ),
+            .uuidToStringCandidates(input, request.format as UuidSlugMigrationFormat | undefined),
         );
       default:
         throw new Error(`Unknown conformance operation ${request.op}`);
@@ -254,12 +251,12 @@ export function evaluate(request: Request): Outcome {
 }
 
 export async function contractRequests(): Promise<Request[]> {
-  const wire: { uuid: string; direct: string; masked: string; mask: string }[] = JSON.parse(
+  const wire: { uuid: string; plain: string; masked: string; mask: string }[] = JSON.parse(
     await readFile("rust/uuid-slug/tests/fixtures/fixtures-wire-format.json", "utf8"),
   );
   const original: {
     issued: { uuid: string; slug: string; raw: string }[];
-    direct: { uuid: string; slug: string }[];
+    plain: { uuid: string; slug: string }[];
     overlap: { slug: string; seed: string };
     keyOverlap: { slug: string; seeds: string[] };
   } = JSON.parse(
@@ -296,7 +293,7 @@ export async function contractRequests(): Promise<Request[]> {
           op,
           sentinels,
           maskedAlphabet,
-          input: op === "mask" ? ordinary.uuid : ordinary.direct,
+          input: op === "mask" ? ordinary.uuid : ordinary.plain,
         });
   for (const sentinels of [
     [{ name: "", uuid: ordinary.uuid }],
@@ -315,7 +312,7 @@ export async function contractRequests(): Promise<Request[]> {
       op: "sentinels",
       sentinels,
       maskedAlphabet: "base64url",
-      input: ordinary.direct,
+      input: ordinary.plain,
     });
   for (const vector of wire) {
     const key =
@@ -332,7 +329,7 @@ export async function contractRequests(): Promise<Request[]> {
     };
     // Retained producer bytes constrain both implementations; mutual agreement alone cannot.
     deepStrictEqual(evaluate(encode), { value: vector.masked });
-    deepStrictEqual(evaluate({ op: "direct", input: vector.uuid }), { value: vector.direct });
+    deepStrictEqual(evaluate({ op: "plain", input: vector.uuid }), { value: vector.plain });
     requests.push(encode, {
       op: "unmask",
       input: vector.masked,
@@ -367,27 +364,27 @@ export async function contractRequests(): Promise<Request[]> {
     "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF",
     ordinary.uuid.replaceAll("-", "").toUpperCase(),
     ...wire.map((v) => v.uuid),
-    ...original.direct.map((v) => v.uuid),
+    ...original.plain.map((v) => v.uuid),
   ]) {
     for (const op of ["parse", "timestamp", "guards"]) requests.push({ op, input });
     for (const alphabet of ["base64url", "base32hex"]) {
-      requests.push({ op: "direct", input, alphabet });
-      const encoded = evaluate({ op: "direct", input, alphabet });
+      requests.push({ op: "plain", input, alphabet });
+      const encoded = evaluate({ op: "plain", input, alphabet });
       if ("value" in encoded && typeof encoded.value === "string")
-        for (const op of ["undirect", "guards"]) requests.push({ op, input: encoded.value });
+        for (const op of ["plainToUuid", "guards"]) requests.push({ op, input: encoded.value });
     }
   }
-  for (const input of ["", "A", "Zg", "Zh", "Zg=", "Zg\n", "é", ...wire.map((v) => v.direct)]) {
-    for (const op of ["base64Decode", "base64Guard", "undirect", "guards"])
+  for (const input of ["", "A", "Zg", "Zh", "Zg=", "Zg\n", "é", ...wire.map((v) => v.plain)]) {
+    for (const op of ["base64Decode", "base64Guard", "plainToUuid", "guards"])
       requests.push({ op, input });
   }
   for (const input of [
     "",
     "A",
-    ordinary.direct,
-    first.direct,
-    ts.uuidStringToDirectSlug(ordinary.uuid, "base32hex"),
-    ts.uuidStringToDirectSlug("00000000-0000-4000-8000-000000000000"),
+    ordinary.plain,
+    first.plain,
+    ts.uuidStringToPlainSlug(ordinary.uuid, "base32hex"),
+    ts.uuidStringToPlainSlug("00000000-0000-4000-8000-000000000000"),
   ]) {
     if (input instanceof Error) throw input;
     for (const now of [
@@ -397,7 +394,7 @@ export async function contractRequests(): Promise<Request[]> {
       "NaN",
     ])
       for (const window of [0, 1000, -1, "Infinity"])
-        requests.push({ op: "validateDirectUuidV7SlugUnixMs", input, now, window });
+        requests.push({ op: "validatePlainUuidV7SlugUnixMs", input, now, window });
   }
   for (const length of [0, 1, 15, 16, 17, 64])
     requests.push({
@@ -417,12 +414,12 @@ export async function contractRequests(): Promise<Request[]> {
       alphabet === "base64url"
         ? "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
         : "0123456789abcdefghijklmnopqrstuv";
-    const canonical = ts.uuidStringToDirectSlug(ordinary.uuid, alphabet);
+    const canonical = ts.uuidStringToPlainSlug(ordinary.uuid, alphabet);
     if (canonical instanceof Error) throw canonical;
     const last = symbols.indexOf(canonical.at(-1) as string);
     for (let bits = 1; bits < (alphabet === "base64url" ? 16 : 4); bits++) {
       const input = canonical.slice(0, -1) + symbols[last | bits];
-      const decode: Request = { op: "undirect", input };
+      const decode: Request = { op: "plainToUuid", input };
       const guards: Request = { op: "guards", input };
       deepStrictEqual(evaluate(decode), {
         error: alphabet === "base64url" ? "invalid_base64url" : "invalid_base32hex",
@@ -431,7 +428,7 @@ export async function contractRequests(): Promise<Request[]> {
       requests.push(decode, guards);
     }
   }
-  for (const input of ["", "A", "Zg", "Zh", "Zg=", ordinary.direct, `${ordinary.direct}=`, "é"])
+  for (const input of ["", "A", "Zg", "Zh", "Zg=", ordinary.plain, `${ordinary.plain}=`, "é"])
     for (const capacity of [0, 1, 16, 17, 32])
       for (const offset of [0, 1, 16, 17, 2 ** 32, Number.MAX_SAFE_INTEGER])
         requests.push({ op: "base64DecodeTo", input, capacity, offset });
@@ -439,10 +436,10 @@ export async function contractRequests(): Promise<Request[]> {
     for (const slug of [vector.slug, vector.raw])
       for (const input of uuidTailAliases(slug))
         for (const op of ["migration", "candidates"]) {
-          for (const direct of [false, true])
+          for (const plain of [false, true])
             for (const enabled of [false, true])
-              for (const format of [undefined, "direct-slug", "seeded-mask", "fixed-mask"])
-                requests.push({ op, input, direct, original: enabled, format });
+              for (const format of [undefined, "plain-slug", "seeded-mask", "fixed-mask"])
+                requests.push({ op, input, plain, original: enabled, format });
         }
   }
   const masks = [
@@ -508,16 +505,16 @@ export async function contractRequests(): Promise<Request[]> {
         });
     }
   }
-  for (const input of [ordinary.direct, first.direct, "AAAAAAAAQACAAAAAAAAAAA"])
-    for (const acceptDirect of [false, true])
+  for (const input of [ordinary.plain, first.plain, "AAAAAAAAQACAAAAAAAAAAA"])
+    for (const acceptPlain of [false, true])
       for (const op of ["unmask", "unmaskV7", "validateMaskedTimestamp"])
-        requests.push({ op, input, acceptDirect, now: instant, window: 1 });
+        requests.push({ op, input, acceptPlain, now: instant, window: 1 });
   requests.push({
     op: "candidates",
     input: original.overlap.slug,
     mask: { seed: original.overlap.seed },
     original: true,
-    direct: true,
+    plain: true,
   });
   requests.push({
     op: "candidates",
@@ -526,7 +523,7 @@ export async function contractRequests(): Promise<Request[]> {
     previous: [{ seed: original.keyOverlap.seeds[1] }],
   });
   for (const input of ["é" + "A".repeat(21), "😀" + "A".repeat(20)])
-    requests.push({ op: "undirect", input });
+    requests.push({ op: "plainToUuid", input });
   for (const input of ["é" + "0".repeat(26), "😀" + "0".repeat(25)]) {
     requests.push({ op: "unmask", input }, { op: "candidates", input });
   }
@@ -559,8 +556,8 @@ if (import.meta.main) {
   const bridge = await loadRustBridge();
   try {
     compare(requests, JSON.parse(bridge.evaluate(JSON.stringify(requests))));
-    if (bridge.direct("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f0000") !== "AZChssPUfl-KmwwdLj8AAA")
-      throw new Error(`${bridge.transport} direct direct conversion diverged from its wire vector`);
+    if (bridge.plain("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f0000") !== "AZChssPUfl-KmwwdLj8AAA")
+      throw new Error(`${bridge.transport} plain plain conversion diverged from its wire vector`);
     console.log(`${bridge.transport}: ${requests.length} shared contract observations passed`);
   } finally {
     bridge.close();

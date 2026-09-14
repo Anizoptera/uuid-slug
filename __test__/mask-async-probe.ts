@@ -6,7 +6,7 @@ import { setImmediate as nextTask } from "node:timers/promises";
 import {
   deriveUuidV7Mask,
   deriveUuidV7MaskAsync,
-  createUuidV7SlugCodec,
+  createUuidV7MaskingCodec,
   UuidSlugError,
 } from "../src/index";
 import type { UuidV7Mask } from "../src/index";
@@ -15,7 +15,7 @@ import { unwrap } from "../dev/unwrap";
 const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
 function encoded(handle: UuidV7Mask | UuidSlugError): string {
   assert.ok(!(handle instanceof Error));
-  const result = unwrap(createUuidV7SlugCodec({ mask: handle })).uuidToSlug(uuid);
+  const result = unwrap(createUuidV7MaskingCodec({ mask: handle })).uuidToMaskedSlug(uuid);
   assert.equal(typeof result, "string");
   return result as string;
 }

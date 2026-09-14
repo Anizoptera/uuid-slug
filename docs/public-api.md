@@ -6,6 +6,59 @@ This document owns how TypeScript and Rust public interfaces are formed. README 
 promises, [design.md](design.md) owns the wire format, [security.md](security.md) owns trust
 boundaries, and [cross-language.md](cross-language.md) owns parity and distribution.
 
+## UUID slug vocabulary
+
+| Term | Exact representation | Invariants | Public naming |
+| --- | --- | --- | --- |
+| UUID text | Default output is 36-character hyphenated lowercase text; callers may request uppercase. Parsers also accept compact and mixed-case text. | [RFC 9562 §4](https://www.rfc-editor.org/rfc/rfc9562.html#section-4) permits uppercase, lowercase, and mixed case; it does not choose a default case. This package emits lowercase by default to give each UUID one stable spelling, match common UUID implementations, and align with lowercase base32hex. | `UuidString`, `UuidV4String`, `UuidV7String`; parameter `uuid` on universal converters and `uuidString` on text-only operations. |
+| UUID bytes | Exactly 16 bytes for a standalone value; an explicit offset selects 16 bytes from a larger array. | Successful owned output is a plain `Uint8Array`. Caller-owned output is returned unchanged by identity and is not written on failure. | `UuidBytes`, `UuidV4Bytes`, `UuidV7Bytes`; parameter `uuid` on universal converters and `uuidBytes` on byte-only operations. |
+| Plain UUID slug | 22 unpadded base64url characters or 26 lowercase base32hex characters. | Keyless and lossless for any UUID. It contains all 128 UUID bits. Noncanonical padding and spellings are rejected. | `PlainUuidSlug`, `PlainUuidV4Slug`, `PlainUuidV7Slug`; parameter `plainUuidSlug` when the source must be known. |
+| Masked UUIDv7 slug | 22 base64url characters or 27 lowercase base32hex characters. | Requires its masking codec, carries the UUIDv7 payload plus a 16-bit check, and supports timestamps below 2^42 milliseconds. It proves format integrity, not issuance. | `MaskedUuidV7Slug`; parameter `maskedUuidSlug` when the source must be known. |
+| Sentinel UUIDv7 slug | A configured UUIDv7 written as its ordinary 22- or 26-character plain slug. | It is a plain slug, not a masked payload. Every plain-slug operation accepts it. A masking codec only preserves its spelling when writing masked results. | `SentinelUuidV7Slug`; masking results use `MaskedOrSentinelUuidV7Slug`. |
+
+`base64url` and `base32hex` name alphabets, not value kinds. A length selects the alphabet only
+where the accepted formats have distinct lengths. A 22-character value can be both a valid plain
+slug and a valid masked slug for different UUIDs; only a requested destination or a source-specific
+operation may choose one meaning.
+
+- A **UUIDv7 masking codec** is the immutable object that owns a mask, previous masks, sentinels,
+  and its masked-slug alphabet. `codec` alone is never sufficient as a public name or prose referent.
+
+Every public name must make sense alone in unrelated code. Do not rely on its receiver, import path,
+README, or repository. Keep words that identify the UUID form or result. Remove words that add no
+meaning. Use `uuidToString`, not `uuidRepresentationToUuidString` or `uuidToUuidString`.
+Apply the same test to methods, types, parameters, properties, options, and callbacks. A name must
+state what its value controls when another valid interpretation exists. Use `maskedSlugAlphabet`,
+not `outputAlphabet`, because the option selects masked UUID-slug output rather than every output.
+Keep a shorter name only when the declaration still has one possible meaning when read alone.
+Do not repeat a term across both sides of a conversion name. Keep the shared term on the destination
+when the source still names exactly one API form. Use `plainSlugToUuidString`,
+`maskedSlugToUuidBytes`, `plainToMaskedUuidSlug`, and `maskedToPlainUuidSlug`. Do not copy full type
+names into both sides of an operation.
+
+Use the same vocabulary for parameters: `uuid` accepts any UUID form supported by the operation,
+`plainUuidSlug` accepts only a plain UUID slug, `maskedUuidSlug` accepts a masked UUIDv7 slug or
+registered sentinel, and `uuidSlug` is reserved for readers that intentionally accept several
+UUID-slug formats. Use
+`alphabet`, `textCase`, `output`, `outputOffset`, and `window` only for those exact choices.
+
+Use each verb for one action: `…To…` converts, `generate…` creates a UUID or slug, `create…` builds
+a reusable object, `derive…` makes a mask from a seed, `extract…` reads a field, `validate…` checks
+a rule and returns its input, and `is…` is a type guard. Do not use different verbs for the same
+action. A verb does not replace a needed UUID form, version, result, or unit.
+Conversion methods accept values already in their result form. They validate and normalize them.
+For a raw slug with two valid meanings,
+`uuidToPlainSlug` chooses plain and `uuidToMaskedSlug` chooses masked because the destination
+supplies the missing meaning; `uuidToString` and `uuidToBytes` reject different UUID candidates.
+
+The root API has no mask. Its `uuidToString`, `uuidToBytes`, and `uuidToPlainSlug` functions accept
+UUID text, UUID bytes, or either plain-slug alphabet. They cannot read or write masked slugs.
+
+A `UuidV7MaskingCodec` owns the key required for masked slugs. Its `uuidToString`, `uuidToBytes`,
+`uuidToPlainSlug`, and `uuidToMaskedSlug` methods accept UUID text, UUID bytes, both plain-slug
+alphabets, both masked-slug alphabets, and registered sentinels. Only `uuidToMaskedSlug` requires
+UUIDv7. Source-specific methods exist only to resolve a dual-valid 22-character slug.
+
 ## Rules
 
 Design from caller code, not implementation convenience. Every concept, option, failure, effect,
@@ -21,6 +74,12 @@ Apply these rules in order. A later rule MUST NOT weaken an earlier one.
    normalization safe, deterministic, bounded, and negligible-cost; difficulty never moves that
    burden to callers. Normalize once and return one stable form. Keep already-normalized input on
    the least-work path. Reject only different meaning or ambiguity.
+   Separate runtime acceptance from TypeScript guidance. JavaScript may pass any value, so every
+   public implementation must accept `unknown`, validate it without throwing, and return
+   `UuidSlugError` for bad input. TypeScript signatures accept every supported UUID form, reject a
+   branded value when its known form or UUID version makes the call invalid, and infer every
+   version, case, slug kind, and output-ownership fact proved by the call. Never widen a public
+   TypeScript signature to `unknown` merely because the runtime must defend against it.
 3. Preserve every visible behavior after release, or provide a migration. Hiding
    an implementation detail now is cheaper than supporting it forever.
 4. Provide the fewest independent operations that cover real caller jobs.
@@ -35,6 +94,12 @@ Before selecting a shape, map independent caller-visible axes and the interactio
 behavior. Compare live alternatives and combinations. Put the caller contract in public JSDoc.
 Keep implementation constraints, rejected alternatives, and invalidating assumptions in nearby
 non-JSDoc comments; keep exploration transient.
+
+Model concrete call sites before naming or adding a public part: keyless one-off conversion,
+repeated masked writes, current and rotated-key reads, old-format migration, caller-owned buffer
+writes, untyped JavaScript input, and known-source resolution of an ambiguous slug. Judge each name
+where a consumer constructs, destructures, stores, passes, and calls it outside this package. A
+public part that does not shorten or secure one of those jobs has no reason to exist.
 
 Before editing, inventory every root export, type, overload, parameter, option, callback, property,
 literal, default, result, error, side effect, ownership rule, package entry, and runtime variant.
@@ -65,6 +130,14 @@ interface is complete, useful, or clear.
   compilation, repair the model and every dependent use from that meaning. Never restore an opaque
   legacy name merely to make a gate pass. Use explicit operation values instead of Boolean direction
   flags.
+- Write the shortest realistic detached call before choosing a name. Include the constructor,
+  destructuring or callback handoff, and the call with ordinary variable names. A cold reader must
+  identify the operation, accepted value, affected output, unit, and ownership from that snippet.
+  If two interpretations remain, add the missing domain term. If none remain, remove repeated words.
+  Apply this test to every method, type, parameter, property, option, callback, and returned field.
+- Re-run those call sites after each rename. A compiler repair is valid only when it preserves the
+  original source meaning; a generic converter cannot replace a source-specific operation where one
+  runtime spelling has multiple valid meanings.
 - Use `Uuid` in TypeScript identifiers, `uuid` for values, and `UUID` in prose. Functions start with
   the caller's action. Add source, destination, unit, version, ownership, or timing when its absence
   makes the call ambiguous. Types and properties name the value represented. Callbacks name the
@@ -72,20 +145,29 @@ interface is complete, useful, or clear.
   domain meaning that is clear at the declaration.
 - Put complexity behind the smallest interface that covers the consumer job. Prefer one obvious
   operation over a sequence that makes callers coordinate package state.
-- Use `generateUuidV7WithDirectSlug` or `codec.generateUuidV7WithCodecSlug` when storage needs UUID text and a
+- Prefer destination-led `uuidTo…` methods that accept every input form the implementation can
+  distinguish safely. Split by source only when the same runtime value can produce different valid
+  UUIDs and no available bit or requested destination resolves which one the caller means.
+- Infer UUID text, bytes, plain base32hex, and masked base32hex by validated structure. For
+  22-character base64url, use canonical trailing bits and the configured mask check; run both
+  decoders only when both can succeed. TypeScript brands cannot resolve that final overlap because
+  brands do not exist at runtime.
+- Use `generateUuidV7WithPlainSlug` or `maskingCodec.generateUuidV7WithMaskedSlug` when storage needs UUID text and a
   slug for the same identifier. Both results come from one generated byte payload.
-- Do not add an eager "all representations" result. Generate bytes once and derive only the forms
-  the caller consumes. Each paired generator returns UUID text plus one selected direct or codec
-  slug; it does not imply every alphabet or both masking modes.
-- Direct conversion preserves all 128 bits and accepts every UUID version and variant. Never apply
-  UUIDv7 timestamp validation or the masked timestamp limit to a direct slug operation.
+- `uuidToString`, `uuidToBytes`, `uuidToPlainSlug`, and `uuidToMaskedSlug` cover ordinary
+  conversions in one call. Generate or decode bytes once and derive only the requested result; do
+  not make callers compose package operations or eagerly allocate every representation.
+- Plain conversion preserves all 128 bits and accepts every UUID version and variant. Never apply
+  UUIDv7 timestamp validation or the masked timestamp limit to a plain slug operation.
 - Keep keyless transformations and generation as module functions. Put keys, sentinels, rotation,
-  masked timestamp validation, and migration on the codec that owns that configuration.
-- Never guess whether raw base64url text is direct or masked: both use 22 characters and their valid
-  sets overlap. Root readers decode known-direct input; codec readers decode identifiers issued by
-  that codec; migration readers expose ordered candidates when origin is unknown.
+  masked timestamp validation, and migration on the masking codec that owns that configuration.
+- A raw 22-character base64url value can be both a valid plain slug and a valid masked slug for
+  different UUIDs. `uuidToPlainSlug` selects plain meaning and `uuidToMaskedSlug` selects masked
+  meaning. `uuidToString` and `uuidToBytes` reject that conflict. Source-specific methods let a
+  caller state known provenance; migration readers expose ordered candidates when provenance is
+  unavailable.
 - Masked UUIDv7 writers accept Unix milliseconds through `MAX_MASKED_UUID_V7_UNIX_MS` and return
-  `invalid_timestamp` above it. Registered sentinels are never masked; like every direct UUID slug,
+  `invalid_timestamp` above it. Registered sentinels are never masked; like every plain UUID slug,
   they retain the full 48-bit UUIDv7 range.
 - Keep mutable sequence state in generators and immutable configuration in codecs. Keep
   cryptographic entropy behind the package runtime so public generation cannot accept weaker bytes.
@@ -100,8 +182,8 @@ interface is complete, useful, or clear.
   additional accepted forms, expensive work, or weaker guarantees.
 - Keep public concepts orthogonal. Selecting a slug alphabet must not select a mask, migration
   policy, entropy source, or runtime adapter.
-- Require each codec sentinel to have a nonempty unique application name and unique UUID so every
-  entry exposed through `codec.sentinels` identifies one reserved value without caller repair.
+- Require each masking-codec sentinel to have a nonempty unique application name and unique UUID so
+  every entry exposed through `maskingCodec.sentinels` identifies one reserved value without caller repair.
   Reject ambiguity before building arrays or lookup maps so every representation selects the same
   definition.
 - Hide implementation seams until two real adapters or a consumer-visible capability need them.
@@ -146,23 +228,23 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 ### Generation and codecs
 
 - Name keyless generation with `generate` plus the produced representation. Keep
-  `generateUuidV4`, `generateUuidV4Bytes`, `generateDirectUuidV4Slug`, `generateUuidV7`,
+  `generateUuidV4`, `generateUuidV4Bytes`, `generatePlainUuidV4Slug`, `generateUuidV7`,
   `generateUuidV7Bytes`, `generateUuidV7AtUnixMs`, `generateUuidV7BytesAtUnixMs`,
-  `generateDirectUuidV7Slug`, and `generateUuidV7WithDirectSlug` at module scope. Use the same
+  `generatePlainUuidV7Slug`, and `generateUuidV7WithPlainSlug` at module scope. Use the same
   UUIDv7 names on a generator so a detached method remains self-explanatory.
-- Give every UUID-text generator, decoder, normalizer, validator, codec method, and migration
+- Give every UUID-text generator, decoder, normalizer, validator, masking-codec method, and migration
   reader the same optional `UuidTextCase` choice. Preserve lowercase as the no-argument path and
   infer a case-specific result type from either named preset.
-- Create the default generator lazily so a codec used only to encode or decode pays no generator
-  allocation. Codec generation uses that package-owned source; callers encode externally produced
-  UUIDs through `uuidToSlug` instead of replacing the codec's entropy source.
-- Name codec operations by source and destination: `generateUuidV7CodecSlug`, `generateUuidV7WithCodecSlug`,
-  `uuidToSlug`, `slugToUuidString`, `slugToUuidBytes`, `extractUuidSlugUnixMs`, and
-  `validateUuidSlugUnixMs`. Let `uuidToSlug` accept UUID text or bytes because both represent
-  the same domain value and one shape dispatch removes caller branching. Name migration
-  operations `slugToUuidString` and `slugToUuidStringCandidates` because detached readers must still identify
-  their input.
-- Use `outputAlphabet` for the codec writer choice. It selects emitted slug spelling; it does not
+- Create the default generator lazily so a masking codec used only to encode or decode pays no generator
+  allocation. Masking-codec generation uses that package-owned source; callers encode externally produced
+  UUIDs through `uuidToMaskedSlug` instead of replacing the masking codec's entropy source.
+- A UUIDv7 masking codec exposes `uuidToString`, `uuidToBytes`, `uuidToPlainSlug`, and
+  `uuidToMaskedSlug` for ordinary conversions. It also exposes explicit plain and masked source
+  methods only where a dual-valid 22-character slug needs a caller-owned interpretation.
+- Name generation `generateMaskedUuidV7Slug` and `generateUuidV7WithMaskedSlug`. Name migration
+  operations `uuidToString` and `uuidToStringCandidates` because those readers
+  intentionally accept several stored UUID-slug formats.
+- Use `maskedSlugAlphabet` for the masking-codec writer choice. It selects emitted slug spelling; it does not
   constrain readers, which infer and accept both supported spellings.
 - Require callers to provide `maxTimestampDeltaMs` for every timestamp-window check. Read the
   optional numeric `referenceUnixMs` once, defaulting only that observation to `Date.now()`; do not
@@ -179,7 +261,7 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   another clock, alphabet, mask, migration reader, sentinel definition, or timestamp window. Make
   each runtime key map exhaustive against the public options type so either side cannot drift.
 - Accept ergonomic raw input at the package seam, validate it once, and return the narrowest type
-  established by that successful operation. Keep format, UUID version, direct or masked spelling,
+  established by that successful operation. Keep format, UUID version, plain or masked spelling,
   and ownership distinctions when consumers use them.
 - Make invalid combinations unrepresentable when TypeScript can infer the distinction without a
   cast or annotation. Do not move runtime-only uncertainty into elaborate caller-facing generics.
@@ -248,9 +330,9 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   when they add no data or behavior and would make a newly reachable code a source break. Validate
   configuration at construction when possible; preserve the original cause when an external
   capability fails.
-- Put `UuidSlugError` in a return type only when a well-typed call can fail. Codec construction
+- Put `UuidSlugError` in a return type only when a well-typed call can fail. Masking-codec construction
   can fail on valid TypeScript input, such as a short seed or a duplicate sentinel, so its type
-  carries the union. `createUuidV7Generator` and `createMigrationDecoder` cannot, so their types
+  carries the union. `createUuidV7Generator` and `createUuidSlugMigrationDecoder` cannot, so their types
   do not; malformed untyped input still gets a returned error, stated at the declaration. Forcing
   every TypeScript caller to narrow a value that is never an error is the worse trade, and
   widening a return type later breaks every caller, so settle this before the call ships.
@@ -264,7 +346,7 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   cancellation when derivation can monopolize a host task; do not add promises, scheduling, or
   reactive state to operations that complete as bounded local computation.
 - Keep codecs immutable and shareable. Keep mutable generation state inside its generator so
-  callers do not coordinate hidden codec locks.
+  callers do not coordinate hidden masking-codec locks.
 
 ## Capabilities and runtime work
 
@@ -341,7 +423,7 @@ shape, its rejected live alternatives, and the strongest remaining trade-off. Th
 applicable links:
 
 - declaration inference for current names and options, plus compiler rejection of removed ones;
-- direct behavior and each construction invariant or failure path in Node and Bun;
+- plain behavior and each construction invariant or failure path in Node and Bun;
 - actual adapter selection in Deno and every browser engine selected by the check workflow when that
   path can differ;
 - packed export resolution and use from an extracted consumer;

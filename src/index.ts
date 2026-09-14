@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-export { createUuidV7SlugCodec } from "./codec.ts";
+export { createUuidV7MaskingCodec } from "./masking-codec.ts";
 export { MAX_MASKED_UUID_V7_UNIX_MS } from "./payload.ts";
 export { validateUuidV7Timestamp } from "./timestamp.ts";
 export {
@@ -27,7 +27,7 @@ export { UUID_V7_TEST_MASK, deriveUuidV7Mask, deriveUuidV7MaskAsync } from "./ma
 export { createCustomUuidV7Mask } from "./mask-handle.ts";
 export {
   SEEDED_MASK_FORMAT,
-  DIRECT_SLUG_FORMAT,
+  PLAIN_SLUG_FORMAT,
   FIXED_MASK_FORMAT,
   UUID_TEXT_LOWERCASE,
   UUID_TEXT_UPPERCASE,
@@ -41,11 +41,15 @@ export type {
   UuidV7MaskOptions,
   UuidSlugMigrationFormat,
   MaskedUuidV7Slug,
-  UuidV7CodecSlug,
+  MaskedOrSentinelUuidV7Slug,
   SentinelUuidV7Slug,
   UuidBytes,
+  UuidInput,
+  UuidStringResult,
+  UuidBytesResult,
+  PlainUuidSlugResult,
   UuidV4Bytes,
-  DirectUuidSlug,
+  PlainUuidSlug,
   UuidSlugMigrationDecoder,
   UuidSlugMigrationOptions,
   UuidString,
@@ -57,16 +61,16 @@ export type {
   UuidV4StringFor,
   UuidV7StringFor,
   UuidTextCase,
-  DirectUuidV4Slug,
+  PlainUuidV4Slug,
   UuidV4String,
   UuidV4Text,
   UuidV7Generator,
-  UuidV7SlugCodec,
-  UuidV7SlugCodecOptions,
+  UuidV7MaskingCodec,
+  UuidV7MaskingCodecOptions,
   UuidV7Bytes,
   UuidV7Sentinel,
   UuidV7SentinelConfig,
-  DirectUuidV7Slug,
+  PlainUuidV7Slug,
   UuidV7String,
   UuidV7Text,
 } from "./types.ts";
@@ -84,15 +88,18 @@ export {
   uuidStringToBytes,
 } from "./uuid.ts";
 export {
-  uuidBytesToDirectSlug,
+  uuidBytesToPlainSlug,
   extractUuidV7UnixMs,
-  isDirectUuidSlug,
-  isDirectUuidV4Slug,
-  isDirectUuidV7Slug,
-  slugToUuidBytes,
-  slugToUuidString,
-  uuidStringToDirectSlug,
-  validateDirectUuidV7SlugUnixMs,
+  isPlainUuidSlug,
+  isPlainUuidV4Slug,
+  isPlainUuidV7Slug,
+  plainSlugToUuidBytes,
+  plainSlugToUuidString,
+  uuidToString,
+  uuidToBytes,
+  uuidToPlainSlug,
+  uuidStringToPlainSlug,
+  validatePlainUuidV7SlugUnixMs,
 } from "./slug.ts";
 export type { SlugAlphabet } from "./slug.ts";
 export { createUuidV7Generator } from "./keyless.ts";
@@ -103,11 +110,11 @@ export type { UuidV7GeneratorOptions } from "./keyless.ts";
 export {
   generateUuidV4,
   generateUuidV4Bytes,
-  generateDirectUuidV4Slug,
+  generatePlainUuidV4Slug,
   generateUuidV7,
   generateUuidV7AtUnixMs,
   generateUuidV7Bytes,
   generateUuidV7BytesAtUnixMs,
-  generateDirectUuidV7Slug,
-  generateUuidV7WithDirectSlug,
+  generatePlainUuidV7Slug,
+  generateUuidV7WithPlainSlug,
 } from "./keyless.ts";
