@@ -82,8 +82,8 @@ for (const alphabet of ["base64url", "base32hex"] as const) {
 const timestamp = Number.parseInt(input.slice(0, 13).replace("-", ""), 16);
 const timestampWindow = { maxTimestampDeltaMs: 86_400_000, referenceUnixMs: timestamp };
 measure("package.v7.timestamp", () => unwrap(validateUuidV7Timestamp(input, timestampWindow)));
-const current = { id: "seeded-mask", seed: "benchmark-current-key" };
-const previous = { id: "previous", seed: "benchmark-previous-key" };
+const current = { seed: "benchmark-current-key" };
+const previous = { seed: "benchmark-previous-key" };
 const masked = unwrap(createUuidV7MaskingCodec({ mask: current }));
 const rotated = unwrap(createUuidV7MaskingCodec({ mask: current, previousMasks: [previous] }));
 const inputBytes = unwrap(uuidStringToBytes(input));

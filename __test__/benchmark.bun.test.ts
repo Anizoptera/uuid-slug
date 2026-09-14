@@ -271,6 +271,9 @@ test.concurrent.each([
   expect(result.stdout).toContain("control (fixture 1)");
   expect(result.stdout).toContain("measured");
   expect(result.stdout).toContain("Randomness: control (fixture 1)");
+  expect(result.stdout).toContain("| operation |");
+  expect(result.stdout).toContain("| --- | ---: | ---: |");
+  expect(result.stdout).toContain("| candidate | entropy source | distinct |");
   if (mode === "exit-after") expect(result.stdout).toContain("Randomness: subject (fixture 1)");
 });
 

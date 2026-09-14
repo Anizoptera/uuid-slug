@@ -26,11 +26,6 @@ Adopt the useful competitor behavior without copying interfaces that add more ca
   - [ ] Compare error values, result objects, exceptions, and nullable results on composition, diagnosis, and ordinary call burden.
   - [ ] Compare separate generation functions with an output selector for text, bytes, and each plain-slug alphabet.
 
-## Generated benchmark reports
-
-- [ ] Render the `bench/matrix.ts` tables as Markdown pipe tables so `bench/results/matrix.md`
-      needs no fenced fixed-width blocks.
-
 ## Deferred CLI evaluation
 
 - [ ] Evaluate a CLI only when the maintainer reopens this work after concrete shell, migration,

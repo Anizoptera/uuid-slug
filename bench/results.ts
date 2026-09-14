@@ -52,10 +52,7 @@ async function drive(script: string, env: Readonly<Record<string, string>>): Pro
   return stdout;
 }
 
-/**
- * The matrix driver prints Markdown headings followed by fixed-width tables. Headings stay
- * Markdown; each table goes in a fenced block so its columns survive rendering.
- */
+/** Add stable report context to the Markdown emitted by the matrix driver. */
 function matrixReport(output: string): string {
   const lines: string[] = [
     "# Package throughput and randomness across runtimes",
@@ -90,13 +87,7 @@ function matrixReport(output: string): string {
     "Not covered: memory and allocation, multi-core contention, cold start, megamorphic call sites,",
     "and randomness quality beyond these measures; that needs a battery such as PractRand.",
   ];
-  const sections: { heading: string; rows: string[] }[] = [];
-  for (const line of output.split("\n")) {
-    if (line.startsWith("## ")) sections.push({ heading: line, rows: [] });
-    else sections.at(-1)?.rows.push(line);
-  }
-  for (const { heading, rows } of sections)
-    lines.push("", heading, "", "```text", rows.join("\n").trim(), "```");
+  lines.push("", output.trim());
   return `${lines.join("\n")}\n`;
 }
 

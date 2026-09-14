@@ -216,41 +216,43 @@ export async function runMatrix(
       });
   }
 
-  const operationWidth = Math.max(28, ...Array.from(speed.keys(), (name) => name.length + 2));
-  const columnWidth = Math.max(16, ...versions.map((version) => version.length + 2));
   console.log(`\n## Throughput, ops/s\n`);
-  console.log(
-    `${"operation".padEnd(operationWidth)}${versions.map((v) => v.padStart(columnWidth)).join("")}`,
-  );
+  console.log(markdownRow(["operation", ...versions]));
+  console.log(markdownRow(["---", ...versions.map(() => "---:")]));
   for (const [name, row] of speed)
-    console.log(
-      name.padEnd(operationWidth) +
-        versions.map((_, index) => millions(row.get(index)).padStart(columnWidth)).join(""),
-    );
+    console.log(markdownRow([name, ...versions.map((_, index) => millions(row.get(index)))]));
 
   for (const { version, records } of entropy) {
     console.log(`\n## Randomness: ${version}\n`);
     console.log(
-      `${"candidate".padEnd(16)}${"entropy source".padEnd(25)}${"distinct".padStart(9)}${"in-tick".padStart(9)}${"peak/ms".padStart(9)}${"counter".padStart(16)}${"P(1) range".padStart(15)}`,
+      markdownRow([
+        "candidate",
+        "entropy source",
+        "distinct",
+        "in-tick",
+        "peak/ms",
+        "counter",
+        "P(1) range",
+      ]),
     );
+    console.log(markdownRow(["---", "---", "---:", "---:", "---:", "---:", "---:"]));
     for (const r of records) {
       const sources = r.sources as string[];
       const sameTickPairs = r.sameTickPairs as number;
       console.log(
-        String(r.candidate).padEnd(16) +
-          (sources.length > 0 ? sources.join(",") : "unobserved").slice(0, 24).padEnd(25) +
-          String(r.distinctFields).padStart(9) +
+        markdownRow([
+          String(r.candidate),
+          sources.length > 0 ? sources.join(",") : "unobserved",
+          String(r.distinctFields),
           // Count only same-millisecond pairs; including different timestamps measures clock
           // advancement rather than how the generator arranges its random field.
-          (sameTickPairs === 0
+          sameTickPairs === 0
             ? "n/a"
-            : `${(((r.orderedWithinTick as number) / sameTickPairs) * 100).toFixed(2)}%`
-          ).padStart(9) +
-          String(r.peakDrawsPerTick).padStart(9) +
-          `${String(r.counterBits)}b @ ${((r.counterHolds as number) * 100).toFixed(2)}%`.padStart(
-            16,
-          ) +
-          `${String(r.minOnesRatio)}-${String(r.maxOnesRatio)}`.padStart(15),
+            : `${(((r.orderedWithinTick as number) / sameTickPairs) * 100).toFixed(2)}%`,
+          String(r.peakDrawsPerTick),
+          `${String(r.counterBits)}b @ ${((r.counterHolds as number) * 100).toFixed(2)}%`,
+          `${String(r.minOnesRatio)}-${String(r.maxOnesRatio)}`,
+        ]),
       );
     }
   }
@@ -259,6 +261,10 @@ export async function runMatrix(
 
 const millions = (value: number | undefined) =>
   value === undefined ? "n/a" : `${(value / 1_000_000).toFixed(2)}M`;
+
+/** Keep generated cells valid when a future runtime or candidate label contains Markdown syntax. */
+const markdownRow = (cells: readonly string[]) =>
+  `| ${cells.map((cell) => cell.replaceAll("|", "\\|").replaceAll("\n", " ")).join(" | ")} |`;
 
 if (import.meta.main) {
   const reports = await mkdtemp(join(tmpdir(), "uuid-slug-bench-"));
