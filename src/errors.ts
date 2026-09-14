@@ -162,7 +162,7 @@ export function isUint8Array(value: unknown): value is Uint8Array {
   );
 }
 
-/** Return the first unsupported own string key in a package-owned options object. */
+/** Return the first unsupported enumerable own string key in a package-owned options object. */
 /*#__NO_SIDE_EFFECTS__*/
 export function findUnknownOption(
   options: object,

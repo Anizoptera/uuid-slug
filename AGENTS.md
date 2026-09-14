@@ -28,10 +28,10 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   iterable collection only for a documented consumer workflow; its positions are never identifiers.
 - Name each Boolean option for the behavior `true` enables, such as `acceptDirectSlug`; use a
   semantic value instead when two states do not read as a clear enable/disable choice.
-- Treat every package-owned public options object as closed at runtime. Reject unknown enumerable string keys
-  before applying defaults so JavaScript, parsed configuration, and misspelled TypeScript values
-  cannot silently select different behavior. Keep the accepted keys with the constructor that reads
-  them; do not create a root option-name catalog.
+- Treat every package-owned public options object as closed at runtime. Reject unknown enumerable
+  string keys before applying defaults so JavaScript, parsed configuration, and misspelled TypeScript
+  values cannot silently select different behavior. Keep the accepted keys with the constructor that
+  reads them; do not create a root option-name catalog.
 - `ROADMAP.md` is transient and never owns a contract, decision, or lasting conclusion. Put
   consumer contracts in README, wire design in `docs/design.md`, security boundaries in
   `docs/security.md`, cross-language and distribution decisions in `docs/cross-language.md`, and
