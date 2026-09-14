@@ -31,6 +31,9 @@ export {
   FIXED_MASK_FORMAT,
   UUID_TEXT_LOWERCASE,
   UUID_TEXT_UPPERCASE,
+  UUID_V7_ROLLBACK_ERROR,
+  UUID_V7_ROLLBACK_PRESERVE,
+  UUID_V7_ROLLBACK_RESET,
 } from "./types.ts";
 export type {
   AsyncUuidV7MaskOptions,
@@ -66,6 +69,8 @@ export type {
   UuidV4String,
   UuidV4Text,
   UuidV7Generator,
+  UuidV7ClockRollbackPolicy,
+  UuidRandomFill,
   UuidV7MaskingCodec,
   UuidV7MaskingCodecOptions,
   UuidV7Bytes,
@@ -93,6 +98,7 @@ export {
 export {
   uuidBytesToPlainSlug,
   extractUuidV7UnixMs,
+  extractUuidVersion,
   isPlainUuidSlug,
   isPlainUuidV4Slug,
   isPlainUuidV7Slug,
@@ -105,13 +111,14 @@ export {
   validatePlainUuidV7SlugUnixMs,
 } from "./slug.ts";
 export type { SlugAlphabet } from "./slug.ts";
-export { createUuidV7Generator } from "./keyless.ts";
+export { createUuidV7Generator, createUuidV7GeneratorWithRandomFill } from "./keyless.ts";
 export type { UuidV7GeneratorOptions } from "./keyless.ts";
 
 /* Keyless operations stay module-level and avoid codec setup. Masking and sentinels stay on the
  * codec because their meaning depends on its seed and sentinel table. */
 export {
   generateUuidV4,
+  generateUuidV4WithRandomFill,
   generateUuidV4Bytes,
   generatePlainUuidV4Slug,
   generateUuidV7,

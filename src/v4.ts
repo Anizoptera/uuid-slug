@@ -6,12 +6,14 @@ import {
   checkRange,
   failedFallback,
   fillRandomBytes,
+  INVALID_OPTIONS,
+  isError,
   RNG_UNAVAILABLE,
   nativeOrFallback,
   UuidSlugError,
 } from "./errors.ts";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
-import type { UuidTextCase, UuidV4Bytes, UuidV4StringFor } from "./types.ts";
+import type { UuidRandomFill, UuidTextCase, UuidV4Bytes, UuidV4StringFor } from "./types.ts";
 import { bytesToUuidString, invalidUuidTextCase, isUuidV4String, isUuidTextCase } from "./uuid.ts";
 
 export { isUuidSlugError } from "./errors.ts";
@@ -135,5 +137,41 @@ export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
     return fallback instanceof Error
       ? failedFallback(nativeCause, fallback, "Native and portable UUIDv4 generation failed.")
       : fallback;
+  }
+}
+
+/**
+ * Generate UUIDv4 text from the caller's synchronous random-byte source. The callback must fill
+ * all 16 bytes. Returned or thrown errors become generation failures; the package cannot detect a
+ * successful partial or weak fill.
+ *
+ * @param fillRandom - Fill the complete array from the caller's chosen source.
+ * @param textCase - Built-in output spelling. Omit for lowercase.
+ */
+export function generateUuidV4WithRandomFill<
+  Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+>(
+  fillRandom: UuidRandomFill,
+  textCase: Case = UUID_TEXT_LOWERCASE as Case,
+): UuidV4StringFor<Case> | UuidSlugError {
+  if (typeof fillRandom !== "function")
+    return new UuidSlugError(INVALID_OPTIONS, "UUIDv4 fillRandom must be a function.");
+  if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
+  if (generating) return new UuidSlugError(RNG_UNAVAILABLE, REENTRANT_GENERATION_MESSAGE);
+  const bytes = new Uint8Array(16);
+  generating = true;
+  try {
+    const failed = fillRandomBytes((output) => {
+      const result = fillRandom(output);
+      return result === undefined || isError(result)
+        ? result
+        : new TypeError("UUIDv4 fillRandom must return undefined or UuidSlugError.");
+    }, bytes);
+    if (failed) return failed;
+    bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40;
+    bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
+    return bytesToUuidString(bytes, textCase) as UuidV4StringFor<Case> | UuidSlugError;
+  } finally {
+    generating = false;
   }
 }

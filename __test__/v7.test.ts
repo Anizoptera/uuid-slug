@@ -95,6 +95,35 @@ describe("uuidv7 monotonicity", () => {
     expect(compare(before, after)).toBeLessThan(0);
   });
 
+  it("resets to wall time only after the selected rollback tolerance", () => {
+    let now = 100;
+    const generator = createUuidV7Generator({
+      clockRollback: { action: "reset", toleranceMs: 5 },
+      readUnixMs: () => now,
+      fillRandom: constantFill(0),
+    });
+    expect(timestampOf(bytesOf(generator))).toBe(100);
+    now = 96;
+    expect(timestampOf(bytesOf(generator))).toBe(100);
+    now = 94;
+    expect(timestampOf(bytesOf(generator))).toBe(94);
+  });
+
+  it("returns a typed failure beyond rollback tolerance and recovers without changing state", () => {
+    let now = 100;
+    const generator = createUuidV7Generator({
+      clockRollback: { action: "error", toleranceMs: 0 },
+      readUnixMs: () => now,
+      fillRandom: constantFill(0),
+    });
+    const first = bytesOf(generator);
+    now = 99;
+    expect(generator.generateUuidV7Bytes()).toMatchObject({ code: "invalid_timestamp" });
+    now = 100;
+    const recovered = bytesOf(generator);
+    expect(compare(first, recovered)).toBeLessThan(0);
+  });
+
   it("advances the timestamp instead of wrapping when the counter is exhausted", () => {
     // 0xff fill seeds all 42 counter bits high, so the very next value overflows. Wrapping
     // would hand out a value below one already emitted for the same millisecond.

@@ -19,8 +19,8 @@ mod uuid;
 pub use alphabet::UuidSlugAlphabet;
 pub use error::{Error, ErrorCode};
 pub use generation::{
-    MAX_UUID_V7_UNIX_MS, UuidV7Generator, generate_uuid_v4_into_with_random_fill,
-    generate_uuid_v4_with_random_fill,
+    MAX_UUID_V7_UNIX_MS, UuidV7ClockRollbackPolicy, UuidV7Generator,
+    generate_uuid_v4_into_with_random_fill, generate_uuid_v4_with_random_fill,
 };
 #[cfg(feature = "os-rng")]
 pub use generation::{fill_os_random_bytes, generate_uuid_v4};

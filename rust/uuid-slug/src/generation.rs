@@ -9,21 +9,49 @@ use crate::{Error, ErrorCode, Uuid};
 pub const MAX_UUID_V7_UNIX_MS: u64 = (1 << 48) - 1;
 const MAX_SEQUENCE: u64 = (1 << 42) - 1;
 
+/// Policy for a system clock that falls below one generator's accepted high-water reading.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum UuidV7ClockRollbackPolicy {
+    /// Keep the last UUID timestamp and advance its sequence until the clock catches up.
+    #[default]
+    Preserve,
+    /// Preserve skew through `tolerance_ms`, then restart at the current clock reading.
+    Reset {
+        /// Inclusive skew that keeps the last UUID timestamp.
+        tolerance_ms: u64,
+    },
+    /// Preserve skew through `tolerance_ms`, then return `InvalidTimestamp` without changing state.
+    Error {
+        /// Inclusive skew that keeps the last UUID timestamp.
+        tolerance_ms: u64,
+    },
+}
+
 /// Portable UUIDv7 state; callers own synchronization when sharing a generator.
 #[derive(Debug, Default)]
 pub struct UuidV7Generator {
     last_ms: Option<u64>,
+    clock_high_water_ms: Option<u64>,
     sequence: u64,
+    rollback_policy: UuidV7ClockRollbackPolicy,
 }
 impl UuidV7Generator {
     /// Start without reading the clock or drawing entropy.
     pub const fn new() -> Self {
         Self {
             last_ms: None,
+            clock_high_water_ms: None,
             sequence: 0,
+            rollback_policy: UuidV7ClockRollbackPolicy::Preserve,
         }
     }
-    /// Generate at a clock reading, truncating fractional milliseconds and tolerating rollback.
+    /// Set how this generator handles clock skew beyond an optional tolerance.
+    #[must_use]
+    pub const fn with_clock_rollback_policy(mut self, policy: UuidV7ClockRollbackPolicy) -> Self {
+        self.rollback_policy = policy;
+        self
+    }
+    /// Generate at a clock reading, truncating fractional milliseconds and applying its rollback policy.
     /// Failed entropy draws leave the sequence unchanged so retries cannot corrupt state.
     pub fn generate_uuid_v7_with_random_fill(
         &mut self,
@@ -31,16 +59,33 @@ impl UuidV7Generator {
         mut fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
     ) -> Result<Uuid, Error> {
         let now = timestamp(unix_ms, true)?;
-        let (ms, reseed) = match self.last_ms {
-            None => (now, true),
-            Some(last) if now > last => (now, true),
-            Some(last) if self.sequence == MAX_SEQUENCE => {
+        let rollback_ms = self
+            .clock_high_water_ms
+            .and_then(|high_water| high_water.checked_sub(now));
+        let reset_clock = match (rollback_ms, self.rollback_policy) {
+            (Some(rollback), UuidV7ClockRollbackPolicy::Reset { tolerance_ms })
+                if rollback > tolerance_ms =>
+            {
+                true
+            }
+            (Some(rollback), UuidV7ClockRollbackPolicy::Error { tolerance_ms })
+                if rollback > tolerance_ms =>
+            {
+                return Err(Error::new(ErrorCode::InvalidTimestamp));
+            }
+            _ => false,
+        };
+        let (ms, reseed) = match (reset_clock, self.last_ms) {
+            (true, _) => (now, true),
+            (false, None) => (now, true),
+            (false, Some(last)) if now > last => (now, true),
+            (false, Some(last)) if self.sequence == MAX_SEQUENCE => {
                 if last == MAX_UUID_V7_UNIX_MS {
                     return Err(Error::new(ErrorCode::InvalidTimestamp));
                 }
                 (last + 1, true)
             }
-            Some(last) => (last, false),
+            (false, Some(last)) => (last, false),
         };
         let mut random = [0; 16];
         fill(&mut random)
@@ -52,6 +97,11 @@ impl UuidV7Generator {
         };
         let id = assemble(ms, sequence, random);
         self.last_ms = Some(ms);
+        self.clock_high_water_ms = Some(if reset_clock {
+            now
+        } else {
+            self.clock_high_water_ms.unwrap_or(now).max(now)
+        });
         self.sequence = sequence;
         Ok(id)
     }
@@ -307,7 +357,9 @@ mod tests {
     fn entropy_failure_and_counter_exhaustion_do_not_corrupt_retry() -> Result<(), Error> {
         let mut generator = UuidV7Generator {
             last_ms: Some(10),
+            clock_high_water_ms: Some(10),
             sequence: MAX_SEQUENCE,
+            rollback_policy: UuidV7ClockRollbackPolicy::Preserve,
         };
         assert!(
             generator
@@ -344,7 +396,12 @@ mod tests {
             (Some(10), MAX_SEQUENCE, 9.0),
         ] {
             for prefix in 0..=16 {
-                let mut generator = UuidV7Generator { last_ms, sequence };
+                let mut generator = UuidV7Generator {
+                    last_ms,
+                    clock_high_water_ms: last_ms,
+                    sequence,
+                    rollback_policy: UuidV7ClockRollbackPolicy::Preserve,
+                };
                 let fail = |out: &mut [u8]| {
                     out[..prefix].fill(255);
                     Err(Error::new(ErrorCode::RngUnavailable))
@@ -369,13 +426,69 @@ mod tests {
                 );
                 assert_eq!(output, [19; 18]);
                 assert_eq!((generator.last_ms, generator.sequence), (last_ms, sequence));
-                let mut control = UuidV7Generator { last_ms, sequence };
+                let mut control = UuidV7Generator {
+                    last_ms,
+                    clock_high_water_ms: last_ms,
+                    sequence,
+                    rollback_policy: UuidV7ClockRollbackPolicy::Preserve,
+                };
                 assert_eq!(
                     generator.generate_uuid_v7_with_random_fill(reading, fill)?,
                     control.generate_uuid_v7_with_random_fill(reading, fill)?
                 );
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn rollback_reset_uses_total_skew_and_commits_only_after_entropy() -> Result<(), Error> {
+        let mut generator = UuidV7Generator::new()
+            .with_clock_rollback_policy(UuidV7ClockRollbackPolicy::Reset { tolerance_ms: 5 });
+        assert_eq!(
+            generator
+                .generate_uuid_v7_with_random_fill(100.0, fill)?
+                .extract_uuid_v7_unix_ms()?,
+            100
+        );
+        assert_eq!(
+            generator
+                .generate_uuid_v7_with_random_fill(96.0, fill)?
+                .extract_uuid_v7_unix_ms()?,
+            100
+        );
+        assert!(
+            generator
+                .generate_uuid_v7_with_random_fill(94.0, |_| Err(Error::new(
+                    ErrorCode::RngUnavailable
+                )))
+                .is_err()
+        );
+        assert_eq!(generator.last_ms, Some(100));
+        assert_eq!(generator.clock_high_water_ms, Some(100));
+        assert_eq!(
+            generator
+                .generate_uuid_v7_with_random_fill(94.0, fill)?
+                .extract_uuid_v7_unix_ms()?,
+            94
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn rollback_error_recovers_without_consuming_state() -> Result<(), Error> {
+        let mut generator = UuidV7Generator::new()
+            .with_clock_rollback_policy(UuidV7ClockRollbackPolicy::Error { tolerance_ms: 0 });
+        let first = generator.generate_uuid_v7_with_random_fill(100.0, fill)?;
+        assert_eq!(
+            generator
+                .generate_uuid_v7_with_random_fill(99.0, fill)
+                .unwrap_err()
+                .code(),
+            ErrorCode::InvalidTimestamp
+        );
+        let recovered = generator.generate_uuid_v7_with_random_fill(100.0, fill)?;
+        assert!(first.as_uuid_bytes() < recovered.as_uuid_bytes());
         Ok(())
     }
 }

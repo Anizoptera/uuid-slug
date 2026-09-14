@@ -97,6 +97,8 @@ recover the original UUID, but need the matching masking codec.
 
 Use UUIDv4 for random IDs without a timestamp, or UUIDv7 when its timestamp is useful.
 Neither requires masking. Anyone can decode a plain slug, including its UUIDv7 timestamp.
+Generation is limited to UUIDv4 and UUIDv7. Other versions remain accepted by version-neutral
+parsing, inspection, and plain-slug conversion without version-specific package machinery.
 
 Use this package for short public IDs, binary storage, typed validation, and the same API across
 runtimes. Named root imports let you use UUID generation alone without bundling the other features.
@@ -131,6 +133,11 @@ Masking still requires a timestamp below `2^42` milliseconds.
 Use `createUuidV7Generator({ readUnixMs })` for an application clock or time-dependent tests.
 Each generator has its own sequence state. A fixed clock does not make IDs repeatable:
 randomness still comes from the runtime.
+
+Created generators preserve ordering when the clock moves backward. Set `clockRollback` to reset
+or return `invalid_timestamp` when total skew exceeds an inclusive tolerance. Use
+`createUuidV7GeneratorWithRandomFill` only when the application must own entropy; its callback must
+fill every requested byte or return `UuidSlugError`.
 
 ## Use the UUID as the timestamp source
 
@@ -496,7 +503,7 @@ their TypeScript type permits only formats enabled when the reader was created.
 | `UuidBytes`, `UuidV4Bytes`, `UuidV7Bytes` | `UuidBytes` proves the 16-byte shape; v4/v7 brands also prove version and variant bits. |
 | `SlugAlphabet` | `"base64url"` or `"base32hex"`. |
 | `UuidV7MaskingCodec`, `UuidV7MaskingCodecOptions`, `UuidV7Mask`, `UuidV7MaskOptions`, `AsyncUuidV7MaskOptions`, `CustomUuidV7MaskOptions`, `UuidV7Sentinel`, `UuidV7SentinelConfig` | The masking codec, what `createUuidV7MaskingCodec` takes, and the mask and sentinel shapes it accepts and exposes. |
-| `UuidV7Generator`, `UuidV7GeneratorOptions`, `UuidV7TimestampWindow`, `UuidSlugMigrationDecoder`, `UuidSlugMigrationOptions`, `UuidSlugMigrationFormat`, `UuidSlugErrorCode` | A generator and its `readUnixMs` option, the timestamp window, the migration reader with its options and format names, and the union of error codes. |
+| `UuidV7Generator`, `UuidV7GeneratorOptions`, `UuidV7ClockRollbackPolicy`, `UuidRandomFill`, `UuidV7TimestampWindow`, `UuidSlugMigrationDecoder`, `UuidSlugMigrationOptions`, `UuidSlugMigrationFormat`, `UuidSlugErrorCode` | A generator, its clock and rollback choices, an explicit custom-entropy callback, timestamp validation, migration controls, and error codes. |
 
 A brand narrows what a call accepts at compile time. A value already typed as the wrong kind is
 rejected before it runs, with or without an output buffer:
@@ -537,12 +544,14 @@ independent generator; UUIDv4 and plain-slug generation remain module-level.
 | Call | Successful result |
 | --- | --- |
 | `generateUuidV4(textCase?)` / `generateUuidV7(textCase?)` | UUID text in the selected case, typed with its version. |
+| `generateUuidV4WithRandomFill(fill, textCase?)` | UUIDv4 text from an explicit synchronous entropy source. |
 | `generatePlainUuidV4Slug(alphabet?)` / `generatePlainUuidV7Slug(alphabet?)` | A plain slug in the chosen alphabet, typed with its UUID version. |
 | `generateUuidV7WithPlainSlug(alphabetOrTextCase?, textCase?)` | UUIDv7 text and its plain slug from one generated value. |
 | `generateUuidV4Bytes()` / `generateUuidV7Bytes()` | A new 16-byte array, typed with its UUID version. |
 | `generateUuidV4Bytes(out, offset?)` / `generateUuidV7Bytes(out, offset?)` | Your output array, with the UUID written at the offset. |
 | `generateUuidV7AtUnixMs(ms, textCase?)` | UUIDv7 text with the supplied timestamp. |
 | `generateUuidV7BytesAtUnixMs(ms, out?, offset?)` | UUIDv7 bytes with the supplied timestamp, newly allocated or written into your array. |
+| `createUuidV7GeneratorWithRandomFill(fill, options?)` | An independent UUIDv7 generator using an explicit synchronous entropy source. |
 
 ### Convert and inspect IDs
 
@@ -554,6 +563,7 @@ known UUID version remains in the result type.
 | `uuidToString(uuid, textCase?)` | Canonical UUID text from UUID text, bytes, or a plain slug. |
 | `uuidToBytes(uuid, output?, outputOffset?)` | New UUID bytes or the exact supplied output array. |
 | `uuidToPlainSlug(uuid, alphabet?)` | A plain slug from UUID text, bytes, or a plain slug. |
+| `extractUuidVersion(uuid)` | The UUID version nibble from UUID text, exact bytes, or a plain slug. |
 | `extractUuidV7UnixMs(value, offset?)` | Unix milliseconds from UUIDv7 text, a plain slug, or bytes. |
 | `validateUuidV7Timestamp(uuid, window, textCase?)` / `validatePlainUuidV7SlugUnixMs(slug, window)` | UUIDv7 text in the selected case, or the original plain slug, after checking its timestamp. |
 
@@ -628,13 +638,18 @@ Also exported from the package root:
   or bytes. Use `maskingCodec.extractMaskedUuidV7UnixMs` for masked slugs and sentinels because their decoding
   keys belong to the masking codec. Both return an error for other UUID versions; a v4's first six bytes
   are random and must not be presented as a timestamp.
+- `extractUuidVersion` reads the four-bit version field from UUID text, either plain-slug alphabet,
+  or bytes. It does not prove the RFC variant or that another version-specific operation accepts it.
 - `deriveUuidV7Mask` builds a mask from a seed; `deriveUuidV7MaskAsync` adds cooperative
   cancellation; `createCustomUuidV7Mask` adapts separate forward and reverse callbacks.
   `UUID_V7_TEST_MASK` is the explicit, published-key choice for deterministic examples.
 - `createUuidV7Generator(options?)` builds a generator with its own sequence state, your `readUnixMs`
-  or `Date.now` when omitted, and the package's platform cryptographic entropy. Its options type is `UuidV7GeneratorOptions`. Untyped malformed
-  options return `invalid_options`. Generation returns `rng_unavailable` when secure
-  platform entropy is unavailable and never substitutes caller-controlled bytes.
+  or `Date.now` when omitted, and platform cryptographic entropy. Preserve-order rollback is the
+  default; reset and error policies require an inclusive total-skew tolerance. Untyped malformed
+  options return `invalid_options`.
+- `generateUuidV4WithRandomFill` and `createUuidV7GeneratorWithRandomFill` are the explicit
+  custom-entropy paths. Their callback owns entropy quality and must fill every requested byte or
+  return `UuidSlugError`; weak or partial successful fills cannot be detected.
 - `UuidSlugError`, including code `rng_unavailable` when the runtime has no usable randomness.
   `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes package errors across
   JavaScript realms and duplicate package copies.

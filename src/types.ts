@@ -10,9 +10,27 @@ declare const uuidV7MaskBrand: unique symbol;
 export const UUID_TEXT_LOWERCASE = "lowercase";
 /** Select the standard uppercase UUID text spelling. */
 export const UUID_TEXT_UPPERCASE = "uppercase";
+/** Keep emitting from the last UUID timestamp when the clock moves backward. */
+export const UUID_V7_ROLLBACK_PRESERVE = "preserve";
+/** Restart the sequence at the earlier clock reading after the configured tolerance. */
+export const UUID_V7_ROLLBACK_RESET = "reset";
+/** Return `invalid_timestamp` after the configured rollback tolerance. */
+export const UUID_V7_ROLLBACK_ERROR = "error";
 
 /** Select the hexadecimal letter case of UUID text output. */
 export type UuidTextCase = typeof UUID_TEXT_LOWERCASE | typeof UUID_TEXT_UPPERCASE;
+
+/** Choose how one created generator handles a clock reading below its accepted high-water mark. */
+export type UuidV7ClockRollbackPolicy =
+  | { readonly action: typeof UUID_V7_ROLLBACK_PRESERVE }
+  | {
+      readonly action: typeof UUID_V7_ROLLBACK_RESET | typeof UUID_V7_ROLLBACK_ERROR;
+      /** Preserve the previous timestamp while total clock skew is at most this many milliseconds. */
+      readonly toleranceMs: number;
+    };
+
+/** Fill every byte requested by an explicit custom-entropy operation. */
+export type UuidRandomFill = (bytes: Uint8Array) => void | UuidSlugError;
 
 /** Accumulate validated value kinds without changing their runtime representation. */
 type Brand<Value, Name extends string> = Value & {

@@ -8,6 +8,8 @@ key schedule, and limits needed to audit or reimplement the built-in scheme.
 Every UUID version has standardized fields. This wire format covers the complete compact UUIDv7
 payload so its public spelling exposes none of those fixed positions. UUIDv7's timestamp is the
 most sensitive field, but it is not the only structure being hidden.
+The package generates UUIDv4 and UUIDv7 only. Generic parsing and plain encoding still preserve
+other UUID versions without adding version-specific behavior.
 
 ## Representations and bit budget
 

@@ -5,9 +5,12 @@ Use UUIDs as identifiers, not passwords, access tokens, or proof of authorizatio
 Built-in generation draws from platform cryptographic randomness. TypeScript uses native UUID
 methods when available, otherwise Node crypto or Web Crypto. Rust uses fallible `getrandom`;
 browser generation requires `wasm-js`. Neither implementation substitutes non-cryptographic
-randomness when the secure source fails. TypeScript public generation does not accept a caller
-entropy source because a successful weak or partial fill cannot be detected reliably from its
-output. A plausible-looking UUID does not establish that cryptographic entropy was used.
+randomness when the secure source fails. Separately named custom-entropy calls accept a synchronous
+fill callback for controlled runtimes and deterministic work. The caller must fill every requested
+byte securely or return `UuidSlugError`; a successful weak or partial fill cannot be detected from
+its output. A plausible-looking UUID does not establish that cryptographic entropy was used.
+Built-in generation covers UUIDv4 and UUIDv7 only. Version-neutral parsing and plain conversion
+accept other UUID versions but add no generation or security behavior for them.
 
 Generation selects secure sources separately for text and byte output:
 
@@ -51,6 +54,10 @@ Generator entropy failures report `rng_unavailable`; caller buffers and sequence
 Rust retains the entropy provider's error. In browsers, `getrandom` reports its Web Crypto error
 code rather than retaining the original JavaScript exception. TypeScript retains that exception.
 This diagnostic difference does not permit a failed draw to produce an identifier.
+
+Created UUIDv7 generators preserve output order when the clock moves backward. Callers can instead
+select reset or failure beyond an inclusive skew tolerance. Reset can emit a UUID timestamp below a
+previous result; failure emits no identifier and leaves generator state unchanged.
 
 UUID slug formatting and parsing encode and decode one 16-byte payload. TypeScript byte-offset
 overloads select that payload from a larger array; other payload sizes and malformed UUID text are

@@ -11,10 +11,12 @@ import {
   deriveUuidV7Mask,
   deriveUuidV7MaskAsync,
   createUuidV7Generator,
+  createUuidV7GeneratorWithRandomFill,
   createUuidV7MaskingCodec,
   SEEDED_MASK_FORMAT,
   PLAIN_SLUG_FORMAT,
   extractUuidV7UnixMs,
+  extractUuidVersion,
   uuidBytesToPlainSlug,
   isUuidBytes,
   isPlainUuidSlug,
@@ -38,6 +40,7 @@ import {
   uuidToBytes,
   uuidToPlainSlug,
   generateUuidV4,
+  generateUuidV4WithRandomFill,
   validatePlainUuidV7SlugUnixMs,
   validateUuidV7Timestamp,
   uuidStringToPlainSlug,
@@ -50,6 +53,9 @@ import {
   generateUuidV7AtUnixMs,
   generatePlainUuidV7Slug,
   generateUuidV7WithPlainSlug,
+  UUID_V7_ROLLBACK_ERROR,
+  UUID_V7_ROLLBACK_PRESERVE,
+  UUID_V7_ROLLBACK_RESET,
 } from "@anizoptera/uuid-slug";
 
 expectType<number>()(MAX_MASKED_UUID_V7_UNIX_MS);
@@ -494,6 +500,8 @@ expectType<readonly [false, false]>()(incompatibleSlugBrands);
 const onlyMasked: MaskedUuidV7Slug = publicSlug;
 // @ts-expect-error A known masked slug must be decoded by its codec.
 plainSlugToUuidBytes(onlyMasked);
+// @ts-expect-error A known masked slug must be decoded before its UUID version can be read.
+extractUuidVersion(onlyMasked);
 // @ts-expect-error A known masked slug requires codec-owned timestamp validation.
 validatePlainUuidV7SlugUnixMs(onlyMasked, { maxTimestampDeltaMs: 0 });
 void [checkedPublicSlug, directPublicSlug, onlyMasked];
@@ -510,6 +518,31 @@ const pendingMask: Promise<UuidV7Mask | UuidSlugError> = deriveUuidV7MaskAsync(m
 // @ts-expect-error A pending mask cannot be used as a codec key before awaiting its result.
 createUuidV7MaskingCodec({ mask: pendingMask });
 void pendingMask;
+
+const deterministicFill = (bytes: Uint8Array) => {
+  bytes.fill(0);
+};
+expectType<UuidV4String | UuidSlugError>()(generateUuidV4WithRandomFill(deterministicFill));
+expectType<UppercaseUuidV4String | UuidSlugError>()(
+  generateUuidV4WithRandomFill(deterministicFill, UUID_TEXT_UPPERCASE),
+);
+const customEntropyGenerator: UuidV7Generator = createUuidV7GeneratorWithRandomFill(
+  deterministicFill,
+  {
+    clockRollback: { action: UUID_V7_ROLLBACK_ERROR, toleranceMs: 0 },
+  },
+);
+expectType<number | UuidSlugError>()(extractUuidVersion(versionedSlug));
+void customEntropyGenerator;
+
+createUuidV7Generator({ clockRollback: { action: UUID_V7_ROLLBACK_PRESERVE } });
+createUuidV7Generator({
+  clockRollback: { action: UUID_V7_ROLLBACK_RESET, toleranceMs: 0 },
+});
+// @ts-expect-error Preserve does not accept a tolerance because it never resets or fails.
+createUuidV7Generator({ clockRollback: { action: UUID_V7_ROLLBACK_PRESERVE, toleranceMs: 0 } });
+// @ts-expect-error Reset requires an explicit rollback tolerance.
+createUuidV7Generator({ clockRollback: { action: UUID_V7_ROLLBACK_RESET } });
 
 // @ts-expect-error Public generators always use the package's cryptographic runtime source.
 createUuidV7Generator({ fillRandom: (bytes: Uint8Array) => bytes.fill(0) });

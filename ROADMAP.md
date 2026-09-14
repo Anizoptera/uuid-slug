@@ -18,7 +18,6 @@ These ideas remain undecided until the maintainer accepts or rejects each consum
 - [ ] Review Bun's positional encoding argument against named, strictly typed generation functions.
 - [ ] Review caller-supplied exact random bytes, counters, and complete UUIDv7 fields against the implemented explicit entropy callback and generator-owned state.
 - [ ] Review ordinary array byte inputs against exact `Uint8Array`, `ArrayBuffer`, and `DataView` inputs; account for holes, coercion, invalid elements, and cross-realm use.
-- [ ] Review UUID v1, v3, v5, and v6 generation separately from version-neutral parsing and slug conversion; the maintainer has ruled these versions unrelated to current generation work.
 - [ ] Review a generation-only package surface against this package's conversion, storage, masking, migration, and typed-failure jobs.
 
 ## Deferred CLI evaluation

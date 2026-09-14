@@ -365,6 +365,20 @@ function decodeKeylessUuid(uuid: unknown): Uint8Array | UuidSlugError {
     : uuidStringToBytes(uuid);
 }
 
+/**
+ * Return the four-bit UUID version field from UUID text, exact bytes, or a plain slug after full
+ * input validation. This reports the stored field, including zero for nil and 15 for max; it does
+ * not prove that the UUID has the RFC variant or that the version is assigned.
+ *
+ * @param uuid - Any unmasked UUID representation supported by the package.
+ */
+export function extractUuidVersion<Input extends UuidInput>(
+  uuid: KeylessUuidInput<Input>,
+): number | UuidSlugError {
+  const bytes = decodeKeylessUuid(uuid);
+  return bytes instanceof Error ? bytes : uuidVersion(bytes, 0);
+}
+
 /** Convert UUID text, bytes, or a plain UUID slug to new or caller-owned UUID bytes. */
 export function uuidToBytes<Input extends UuidInput>(
   uuid: KeylessUuidInput<Input>,

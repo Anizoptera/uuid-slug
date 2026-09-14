@@ -43,17 +43,19 @@ callback checks; map JS UTF-16 explicitly rather than pretending Rust strings co
 ## Rust call sites
 
 Use validated `Uuid` values between operations; parse text once rather than at each codec call.
+Both languages generate UUIDv4 and UUIDv7 only. Generic parsing, version inspection, and plain
+conversion preserve other UUID versions without version-specific APIs.
 
 | TypeScript capability | Rust entry point or composition |
 | --- | --- |
 | `uuidStringToBytes` / `bytesToUuidString`; bytes and offsets | `Uuid::from_uuid_string`, `from_uuid_bytes`, `as_uuid_bytes`, `write_uuid_bytes`, `Display` |
 | Plain slug conversion | `Uuid::to_plain_uuid_slug`, `Uuid::from_plain_uuid_slug` |
-| UUID/string/slug and generic/v4/v7 byte guards | Parse once, then `Uuid::is_uuid_v4`, `is_uuid_v7`, `is_rfc_uuid_variant` |
+| UUID version and generic/v4/v7 guards | Parse once, then `Uuid::uuid_version`, `is_uuid_v4`, `is_uuid_v7`, `is_rfc_uuid_variant` |
 | Canonical nil and max UUID values | `NIL_UUID`, `MAX_UUID` |
 | Base64url UUID payload | `UuidSlugAlphabet::Base64Url.uuid_bytes_to_plain_slug`, `plain_slug_to_uuid_bytes`, `plain_slug_to_uuid_bytes_into` |
 | Canonical base64url guard | Check `UuidSlugAlphabet::Base64Url.plain_slug_to_uuid_bytes` success for exactly 22 characters |
 | v4 generation and caller storage | `generate_uuid_v4`, `generate_uuid_v4_with_random_fill`, `generate_uuid_v4_into_with_random_fill` |
-| v7 generation, explicit time and caller storage | `UuidV7Generator::generate_uuid_v7`, `generate_uuid_v7_at_unix_ms`, and their explicit random-fill and caller-output forms |
+| v7 generation, rollback, explicit time and caller storage | `UuidV7Generator`, `UuidV7ClockRollbackPolicy`, and its platform-random, explicit random-fill, explicit-time, and caller-output forms |
 | Generated plain or masked slugs | Generate a `Uuid`, then call `to_plain_uuid_slug` or `uuid_to_masked_slug` |
 | UUIDv7 timestamp | `Uuid::extract_uuid_v7_unix_ms` |
 | Last maskable timestamp | `MAX_MASKED_UUID_V7_UNIX_MS` |
@@ -74,7 +76,8 @@ error names and codes. It is a classifier, not an authenticity boundary for untr
 Generators own mutable sequence state; codecs own immutable keys. Both languages require callers
 to select private key material or the published mask explicitly. Keeping generation separate allows
 shared codecs without a hidden generator lock. Default generators use platform entropy; custom
-`_with` callbacks must fill the entire destination or fail. Pass `fill_os_random_bytes` to
+separately named TypeScript calls and Rust `_with` callbacks must fill the entire destination or
+fail. Pass `fill_os_random_bytes` to
 caller-buffer operations for the same platform source. Invalid destination ranges draw no entropy.
 `UuidSlugAlphabet::uuid_bytes_to_plain_slug` accepts a 16-byte array and cannot receive another
 payload size. It preserves every 16-byte value. `plain_slug_to_uuid_bytes` returns a 16-byte array

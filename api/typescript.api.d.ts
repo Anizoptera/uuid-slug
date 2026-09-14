@@ -25,6 +25,10 @@ export declare function createCustomUuidV7Mask(
   options: CustomUuidV7MaskOptions,
 ): UuidV7Mask | UuidSlugError;
 export declare function createUuidV7Generator(options?: UuidV7GeneratorOptions): UuidV7Generator;
+export declare function createUuidV7GeneratorWithRandomFill(
+  fillRandom: UuidRandomFill,
+  options?: UuidV7GeneratorOptions,
+): UuidV7Generator;
 export declare function createUuidV7MaskingCodec(
   options: UuidV7MaskingCodecOptions,
 ): UuidV7MaskingCodec | UuidSlugError;
@@ -56,6 +60,9 @@ export declare function extractUuidV7UnixMs<Input extends UuidByteInput | UuidSl
   value: UuidV7BytesInput<Input>,
   byteOffset?: number,
 ): number | UuidSlugError;
+export declare function extractUuidVersion<Input extends UuidInput>(
+  uuid: KeylessUuidInput<Input>,
+): number | UuidSlugError;
 export declare const FIXED_MASK_FORMAT = "fixed-mask";
 export declare interface GeneratedUuidV7<
   Slug extends PlainUuidV7Slug | MaskedOrSentinelUuidV7Slug,
@@ -78,6 +85,9 @@ export declare function generateUuidV4Bytes<Output extends Uint8Array>(
   output: Output,
   outputOffset?: number,
 ): Output | UuidSlugError;
+export declare function generateUuidV4WithRandomFill<
+  Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+>(fillRandom: UuidRandomFill, textCase?: Case): UuidV4StringFor<Case> | UuidSlugError;
 export declare const generateUuidV7: <Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   textCase?: Case,
 ) => UuidV7StringFor<Case> | UuidSlugError;
@@ -204,6 +214,9 @@ export declare type UppercaseUuidV4String = Brand<UppercaseUuidString & UuidV4Te
 export declare type UppercaseUuidV7String = Brand<UppercaseUuidString & UuidV7Text, "UuidV7String">;
 export declare const UUID_TEXT_LOWERCASE = "lowercase";
 export declare const UUID_TEXT_UPPERCASE = "uppercase";
+export declare const UUID_V7_ROLLBACK_ERROR = "error";
+export declare const UUID_V7_ROLLBACK_PRESERVE = "preserve";
+export declare const UUID_V7_ROLLBACK_RESET = "reset";
 export declare const UUID_V7_TEST_MASK: UuidV7Mask;
 export declare type UuidByteInput = Uint8Array | ArrayBuffer | DataView;
 export declare type UuidBytes = Brand<Uint8Array, "UuidBytes">;
@@ -220,6 +233,7 @@ export declare function uuidBytesToPlainSlug(
   alphabet?: SlugAlphabet,
 ): PlainUuidSlug | UuidSlugError;
 export declare type UuidInput = string | UuidByteInput | UuidSlugError;
+export declare type UuidRandomFill = (bytes: Uint8Array) => void | UuidSlugError;
 export declare class UuidSlugError extends Error {
   readonly __failure: true;
   readonly code: UuidSlugErrorCode;
@@ -341,6 +355,14 @@ declare type UuidV7BytesInput<Input extends UuidByteInput | UuidSlugError> = Rej
   Input,
   UuidV4Bytes
 >;
+export declare type UuidV7ClockRollbackPolicy =
+  | {
+      readonly action: typeof UUID_V7_ROLLBACK_PRESERVE;
+    }
+  | {
+      readonly action: typeof UUID_V7_ROLLBACK_RESET | typeof UUID_V7_ROLLBACK_ERROR;
+      readonly toleranceMs: number;
+    };
 export declare interface UuidV7Generator {
   generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
@@ -367,6 +389,7 @@ export declare interface UuidV7Generator {
 }
 export declare interface UuidV7GeneratorOptions {
   readonly readUnixMs?: () => number;
+  readonly clockRollback?: UuidV7ClockRollbackPolicy;
 }
 export declare interface UuidV7Mask {
   readonly diagnosticLabel: string;

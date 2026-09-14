@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
-export { generateUuidV4, generateUuidV4Bytes } from "./v4.ts";
+export { generateUuidV4, generateUuidV4Bytes, generateUuidV4WithRandomFill } from "./v4.ts";
 export {
   createUuidV7Generator,
+  createUuidV7GeneratorWithRandomFill,
   generateUuidV7,
   generateUuidV7AtUnixMs,
   generateUuidV7Bytes,

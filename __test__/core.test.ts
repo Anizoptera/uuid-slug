@@ -11,6 +11,7 @@ import {
   deriveUuidV7Mask,
   createUuidV7MaskingCodec as createCodec,
   extractUuidV7UnixMs,
+  extractUuidVersion,
   isPlainUuidV7Slug,
   isUuidString,
   isUuidText,
@@ -29,11 +30,13 @@ import {
   uuidStringToPlainSlug,
   generateUuidV4Bytes,
   generateUuidV4,
+  generateUuidV4WithRandomFill,
   generatePlainUuidV4Slug,
   generateUuidV7BytesAtUnixMs,
   generateUuidV7,
   generateUuidV7AtUnixMs,
   createUuidV7Generator,
+  createUuidV7GeneratorWithRandomFill,
   generatePlainUuidV7Slug,
   generateUuidV7WithPlainSlug,
   INVALID_UUID_VERSION,
@@ -48,9 +51,10 @@ import { TEST_SENTINELS } from "./sentinel-fixtures";
 const SAMPLE_V7_A = "01987008-ef3e-7f69-b677-22ec1a5bbdb2";
 const SAMPLE_V7_B = "01987bbb-178b-7858-93e8-fc5e5444913b";
 const SAMPLE_V4 = "b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5";
-const VALID_NIL_UUID_STRING = "00000000-0000-0000-0000-000000000000";
-const VALID_MAX_UUID_STRING = "ffffffff-ffff-ffff-ffff-ffffffffffff";
-const BOXED_VALID_NIL_UUID_STRING = new String(VALID_NIL_UUID_STRING);
+const FILL_WITH_ZEROS = (bytes: Uint8Array) => {
+  bytes.fill(0);
+};
+const BOXED_VALID_NIL_UUID_STRING = new String(NIL_UUID);
 const revokedInput = Proxy.revocable({}, {});
 revokedInput.revoke();
 const REJECTED_UUID_INPUTS = [
@@ -295,7 +299,7 @@ describe("plain UUID slugs", () => {
       "ffffffff-ffff-7fff-bfff-ffffffffffff",
       "ffffffff-ffff-4fff-bfff-ffffffffffff",
       "ffffffff-ffff-8fff-ffff-ffffffffffff",
-      VALID_NIL_UUID_STRING,
+      NIL_UUID,
     ])
       for (const alphabet of ["base64url", "base32hex"] as const) {
         const slug = unwrap(uuidStringToPlainSlug(uuid, alphabet));
@@ -305,8 +309,8 @@ describe("plain UUID slugs", () => {
   });
 
   it("exports canonical nil and max UUID values without assigning a UUID version", () => {
-    expect(NIL_UUID).toBe(VALID_NIL_UUID_STRING);
-    expect(MAX_UUID).toBe(VALID_MAX_UUID_STRING);
+    expect(NIL_UUID).toBe("00000000-0000-0000-0000-000000000000");
+    expect(MAX_UUID).toBe("ffffffff-ffff-ffff-ffff-ffffffffffff");
     const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
 
     for (const uuid of [NIL_UUID, MAX_UUID]) {
@@ -381,8 +385,8 @@ describe("plain UUID slugs", () => {
     }
     expect(isUuidV4Text(`urn:uuid:${SAMPLE_V4.toUpperCase()}`)).toBe(true);
     expect(isUuidV7Text(`{${SAMPLE_V4}}`)).toBe(false);
-    expect(uuidToString(`urn:uuid:${VALID_NIL_UUID_STRING}`)).toBe(VALID_NIL_UUID_STRING);
-    expect(uuidToString(`{${VALID_MAX_UUID_STRING}}`)).toBe(VALID_MAX_UUID_STRING);
+    expect(uuidToString(`urn:uuid:${NIL_UUID}`)).toBe(NIL_UUID);
+    expect(uuidToString(`{${MAX_UUID}}`)).toBe(MAX_UUID);
   });
 
   it("keeps UUID wrappers strict and source-specific slug inputs unchanged", () => {
@@ -477,6 +481,81 @@ describe("plain UUID slugs", () => {
     expect(uuidToString(unwrap(uuidStringToPlainSlug(SAMPLE_V7_A)), invalid)).toMatchObject({
       code: "invalid_options",
     });
+  });
+
+  it("uses custom entropy only through explicitly named generation calls", () => {
+    const first = generateUuidV4WithRandomFill(FILL_WITH_ZEROS);
+    const second = generateUuidV4WithRandomFill(FILL_WITH_ZEROS);
+    expect(first).toBe(second);
+    expect(isUuidV4String(first)).toBe(true);
+
+    const generator = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
+      readUnixMs: () => 123,
+    });
+    expect(extractUuidV7UnixMs(generator.generateUuidV7())).toBe(123);
+    expect(createUuidV7Generator({ fillRandom: FILL_WITH_ZEROS } as never)).toMatchObject({
+      code: "invalid_options",
+    });
+    expect(createUuidV7GeneratorWithRandomFill(null as never)).toMatchObject({
+      code: "invalid_options",
+    });
+    expect(generateUuidV4WithRandomFill((() => "bad") as never)).toMatchObject({
+      code: "rng_unavailable",
+    });
+
+    let nestedV4: unknown;
+    const outerV4 = generateUuidV4WithRandomFill((bytes) => {
+      nestedV4 = generateUuidV4WithRandomFill(FILL_WITH_ZEROS);
+      bytes.fill(0);
+    });
+    expect(outerV4).not.toBeInstanceOf(Error);
+    expect(nestedV4).toMatchObject({ code: "rng_unavailable" });
+
+    let reentrantGenerator!: ReturnType<typeof createUuidV7GeneratorWithRandomFill>;
+    let nestedV7: unknown;
+    reentrantGenerator = createUuidV7GeneratorWithRandomFill(
+      (bytes) => {
+        nestedV7 = reentrantGenerator.generateUuidV7();
+        bytes.fill(0);
+      },
+      { readUnixMs: () => 123 },
+    );
+    expect(reentrantGenerator.generateUuidV7()).not.toBeInstanceOf(Error);
+    expect(nestedV7).toMatchObject({ code: "rng_unavailable" });
+  });
+
+  it("rejects malformed clock rollback policies before reading the clock", () => {
+    let clockReads = 0;
+    const readUnixMs = () => ++clockReads;
+    const invalidPolicies = [
+      null,
+      "preserve",
+      { action: "preserve", toleranceMs: 0 },
+      { action: "reset" },
+      { action: "error", toleranceMs: -1 },
+      { action: "error", toleranceMs: 0.5 },
+      { action: "error", toleranceMs: Number.MAX_SAFE_INTEGER + 1 },
+      { action: "continue" },
+      { action: "reset", toleranceMs: 0, extra: true },
+      revokedInput.proxy,
+    ];
+    for (const clockRollback of invalidPolicies)
+      expect(createUuidV7Generator({ clockRollback, readUnixMs } as never)).toMatchObject({
+        code: "invalid_options",
+      });
+    expect(clockReads).toBe(0);
+  });
+
+  it("extracts the UUID version field from every unmasked representation", () => {
+    for (const value of [
+      SAMPLE_V4,
+      unwrap(uuidStringToBytes(SAMPLE_V4)),
+      unwrap(uuidStringToPlainSlug(SAMPLE_V4)),
+    ])
+      expect(extractUuidVersion(value)).toBe(4);
+    expect(extractUuidVersion(NIL_UUID)).toBe(0);
+    expect(extractUuidVersion(MAX_UUID)).toBe(15);
+    expect(extractUuidVersion("not-a-uuid")).toMatchObject({ code: "invalid_uuid" });
   });
 
   it("accepts uppercase base32hex input and returns canonical lowercase output", () => {

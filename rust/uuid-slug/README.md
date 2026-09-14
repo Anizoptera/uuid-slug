@@ -2,6 +2,8 @@
 
 Encode any UUID as a 22-character base64url or 26-character base32hex slug. UUIDv7 also supports
 reversible masking and 27-character lowercase masked filenames.
+The crate generates UUIDv4 and UUIDv7. It parses, inspects, and plainly encodes other UUID versions
+without version-specific machinery.
 
 Install the crate from crates.io or this repository.
 
@@ -80,6 +82,8 @@ enables the unsupported 0.2.0 masked format.
 
 `UuidV7Generator` owns its sequence. `generate_uuid_v7()` uses secure platform entropy;
 `generate_uuid_v7_at_unix_ms()` takes an explicit timestamp without changing the sequence.
+Preserve-order clock rollback is the default. Use `with_clock_rollback_policy` to reset or return
+`InvalidTimestamp` after a chosen total-skew tolerance.
 `generate_uuid_v4()` generates
 v4 IDs. Failures return `Error`, retaining the underlying cause. Match `Error::code()` against
 `ErrorCode`; use `ErrorCode::as_str()` only when a text protocol needs the shared TypeScript

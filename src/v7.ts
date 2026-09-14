@@ -12,8 +12,14 @@ import {
   readClock,
   UuidSlugError,
 } from "./errors.ts";
-import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
-import type { UuidTextCase, UuidV7Bytes, UuidV7Generator, UuidV7StringFor } from "./types.ts";
+import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE, UUID_V7_ROLLBACK_ERROR } from "./types.ts";
+import type {
+  UuidTextCase,
+  UuidV7Bytes,
+  UuidV7ClockRollbackPolicy,
+  UuidV7Generator,
+  UuidV7StringFor,
+} from "./types.ts";
 import {
   formatUuidBytesUnchecked,
   invalidUuidTextCase,
@@ -28,6 +34,8 @@ interface PortableUuidV7GeneratorOptions {
   readonly readUnixMs?: () => number;
   /** Fill every byte. Returned or thrown failures are contained by generation. */
   readonly fillRandom: (bytes: Uint8Array<ArrayBuffer>) => unknown;
+  /** Policy already validated at the public seam. */
+  readonly clockRollback?: Extract<UuidV7ClockRollbackPolicy, { readonly toleranceMs: number }>;
 }
 
 function writeTimestampWords(bytes: Uint8Array, ms: number, offset: number) {
@@ -140,6 +148,7 @@ export function createPortableUuidV7Generator(
 ): UuidV7Generator {
   const readUnixMs = options.readUnixMs ?? Date.now;
   const fill = options.fillRandom;
+  const rollback = options.clockRollback;
   // The sequence seed consumes six bytes and the UUID tail consumes four. Drawing a full UUID
   // block would copy six bytes that version, variant, timestamp, and sequence fields replace.
   const random = new Uint8Array(10);
@@ -154,6 +163,7 @@ export function createPortableUuidV7Generator(
    * would never be used and every call would reseed.
    */
   let lastMs = -1;
+  let clockHighWaterMs = -1;
   let counterHi = 0;
   let counterLo = 0;
   let generating = false;
@@ -210,7 +220,17 @@ export function createPortableUuidV7Generator(
           INVALID_TIMESTAMP,
           `Clock returned ${String(reading)}, which is not a millisecond in 0..${MAX_TIMESTAMP}.`,
         );
-      if (now > lastMs) {
+      const rollbackMs = rollback === undefined ? 0 : clockHighWaterMs - now;
+      if (rollback !== undefined && rollbackMs > rollback.toleranceMs) {
+        if (rollback.action === UUID_V7_ROLLBACK_ERROR)
+          return new UuidSlugError(
+            INVALID_TIMESTAMP,
+            `Clock moved backward by ${rollbackMs} milliseconds, beyond the ${rollback.toleranceMs}-millisecond tolerance.`,
+          );
+        const failed = reseed(now);
+        if (failed) return failed;
+        clockHighWaterMs = now;
+      } else if (now > lastMs) {
         const failed = reseed(now);
         if (failed) return failed;
       } else {
@@ -240,6 +260,7 @@ export function createPortableUuidV7Generator(
           counterHi = nextHi;
         }
       }
+      if (rollback !== undefined && now > clockHighWaterMs) clockHighWaterMs = now;
       return writeBytes(target, offset, lastMs, counterHi, counterLo);
     } finally {
       generating = false;

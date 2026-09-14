@@ -193,8 +193,9 @@ interface is complete, useful, or clear.
 - Masked UUIDv7 writers accept Unix milliseconds through `MAX_MASKED_UUID_V7_UNIX_MS` and return
   `invalid_timestamp` above it. Registered sentinels are never masked; like every plain UUID slug,
   they retain the full 48-bit UUIDv7 range.
-- Keep mutable sequence state in generators and immutable configuration in codecs. Keep
-  cryptographic entropy behind the package runtime so public generation cannot accept weaker bytes.
+- Keep mutable sequence state in generators and immutable configuration in codecs. Default
+  generation uses package-selected cryptographic entropy. Custom entropy requires a separately
+  named call whose callback fills the complete requested array or returns `UuidSlugError`.
 - Use `this: void` when a public method has no receiver semantics. This lets callers detach the
   method safely and prevents compatible implementations from adding hidden receiver state.
 - Use an overload only when it preserves one operation and makes the common call shorter without
@@ -257,6 +258,9 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 
 ### Generation and codecs
 
+- Generate only UUIDv4 and UUIDv7. Keep parsing, version inspection, and plain conversion generic
+  for every structurally valid UUID version. Add no version-specific API for another version
+  without concrete demand and a maintainer ruling.
 - Name keyless generation with `generate` plus the produced representation. Keep
   `generateUuidV4`, `generateUuidV4Bytes`, `generatePlainUuidV4Slug`, `generateUuidV7`,
   `generateUuidV7Bytes`, `generateUuidV7AtUnixMs`, `generateUuidV7BytesAtUnixMs`,
@@ -268,6 +272,11 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 - Create the default generator lazily so a masking codec used only to encode or decode pays no generator
   allocation. Masking-codec generation uses that package-owned source; callers encode externally produced
   UUIDs through `uuidToMaskedSlug` instead of replacing the masking codec's entropy source.
+- Keep created generators on preserve-order rollback behavior by default. An explicit reset or
+  error policy includes the maximum total clock skew it tolerates from the accepted high-water
+  reading. Failed clock and entropy operations leave sequence and clock state unchanged.
+- Inspect the four-bit UUID version through `extractUuidVersion` or Rust `Uuid::uuid_version`.
+  The result does not prove that the variant or version is valid for another operation.
 - A UUIDv7 masking codec exposes `uuidToString`, `uuidToBytes`, `uuidToPlainSlug`, and
   `uuidToMaskedSlug` for ordinary conversions. It also exposes explicit plain and masked source
   methods only where a dual-valid 22-character slug needs a caller-owned interpretation.

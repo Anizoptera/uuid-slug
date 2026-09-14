@@ -123,6 +123,30 @@ impl core::marker::Unpin for uuid_slug::UuidSlugMigrationFormat
 impl core::marker::UnsafeUnpin for uuid_slug::UuidSlugMigrationFormat
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidSlugMigrationFormat
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidSlugMigrationFormat
+pub enum uuid_slug::UuidV7ClockRollbackPolicy
+pub uuid_slug::UuidV7ClockRollbackPolicy::Error
+pub uuid_slug::UuidV7ClockRollbackPolicy::Error::tolerance_ms: u64
+pub uuid_slug::UuidV7ClockRollbackPolicy::Preserve
+pub uuid_slug::UuidV7ClockRollbackPolicy::Reset
+pub uuid_slug::UuidV7ClockRollbackPolicy::Reset::tolerance_ms: u64
+impl core::clone::Clone for uuid_slug::UuidV7ClockRollbackPolicy
+pub fn uuid_slug::UuidV7ClockRollbackPolicy::clone(&self) -> uuid_slug::UuidV7ClockRollbackPolicy
+impl core::cmp::Eq for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::cmp::PartialEq for uuid_slug::UuidV7ClockRollbackPolicy
+pub fn uuid_slug::UuidV7ClockRollbackPolicy::eq(&self, other: &uuid_slug::UuidV7ClockRollbackPolicy) -> bool
+impl core::default::Default for uuid_slug::UuidV7ClockRollbackPolicy
+pub fn uuid_slug::UuidV7ClockRollbackPolicy::default() -> uuid_slug::UuidV7ClockRollbackPolicy
+impl core::fmt::Debug for uuid_slug::UuidV7ClockRollbackPolicy
+pub fn uuid_slug::UuidV7ClockRollbackPolicy::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::marker::StructuralPartialEq for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::marker::Freeze for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::marker::Send for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::marker::Sync for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::marker::Unpin for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::marker::UnsafeUnpin for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7ClockRollbackPolicy
 pub struct uuid_slug::Error
 impl uuid_slug::Error
 pub const fn uuid_slug::Error::code(&self) -> uuid_slug::ErrorCode
@@ -291,6 +315,7 @@ pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_at_unix_ms_with_random_fill(
 pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_into_with_random_fill(&mut self, unix_ms: f64, out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_with_random_fill(&mut self, unix_ms: f64, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub const fn uuid_slug::UuidV7Generator::new() -> Self
+pub const fn uuid_slug::UuidV7Generator::with_clock_rollback_policy(self, policy: uuid_slug::UuidV7ClockRollbackPolicy) -> Self
 impl core::default::Default for uuid_slug::UuidV7Generator
 pub fn uuid_slug::UuidV7Generator::default() -> uuid_slug::UuidV7Generator
 impl core::fmt::Debug for uuid_slug::UuidV7Generator
@@ -529,6 +554,30 @@ impl core::marker::Unpin for uuid_slug::UuidSlugMigrationFormat
 impl core::marker::UnsafeUnpin for uuid_slug::UuidSlugMigrationFormat
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidSlugMigrationFormat
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidSlugMigrationFormat
+pub enum uuid_slug::UuidV7ClockRollbackPolicy
+pub uuid_slug::UuidV7ClockRollbackPolicy::Error
+pub uuid_slug::UuidV7ClockRollbackPolicy::Error::tolerance_ms: u64
+pub uuid_slug::UuidV7ClockRollbackPolicy::Preserve
+pub uuid_slug::UuidV7ClockRollbackPolicy::Reset
+pub uuid_slug::UuidV7ClockRollbackPolicy::Reset::tolerance_ms: u64
+impl core::clone::Clone for uuid_slug::UuidV7ClockRollbackPolicy
+pub fn uuid_slug::UuidV7ClockRollbackPolicy::clone(&self) -> uuid_slug::UuidV7ClockRollbackPolicy
+impl core::cmp::Eq for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::cmp::PartialEq for uuid_slug::UuidV7ClockRollbackPolicy
+pub fn uuid_slug::UuidV7ClockRollbackPolicy::eq(&self, other: &uuid_slug::UuidV7ClockRollbackPolicy) -> bool
+impl core::default::Default for uuid_slug::UuidV7ClockRollbackPolicy
+pub fn uuid_slug::UuidV7ClockRollbackPolicy::default() -> uuid_slug::UuidV7ClockRollbackPolicy
+impl core::fmt::Debug for uuid_slug::UuidV7ClockRollbackPolicy
+pub fn uuid_slug::UuidV7ClockRollbackPolicy::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::marker::StructuralPartialEq for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::marker::Freeze for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::marker::Send for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::marker::Sync for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::marker::Unpin for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::marker::UnsafeUnpin for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7ClockRollbackPolicy
+impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7ClockRollbackPolicy
 pub struct uuid_slug::Error
 impl uuid_slug::Error
 pub const fn uuid_slug::Error::code(&self) -> uuid_slug::ErrorCode
@@ -695,6 +744,7 @@ pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_at_unix_ms_with_random_fill(
 pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_into_with_random_fill(&mut self, unix_ms: f64, out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_with_random_fill(&mut self, unix_ms: f64, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub const fn uuid_slug::UuidV7Generator::new() -> Self
+pub const fn uuid_slug::UuidV7Generator::with_clock_rollback_policy(self, policy: uuid_slug::UuidV7ClockRollbackPolicy) -> Self
 impl core::default::Default for uuid_slug::UuidV7Generator
 pub fn uuid_slug::UuidV7Generator::default() -> uuid_slug::UuidV7Generator
 impl core::fmt::Debug for uuid_slug::UuidV7Generator

@@ -12,6 +12,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   any UUID, caller-owned storage, UUIDv7 masking and migration, typed failures, and adaptive runtime
   paths. Keep version-neutral encoding separate from UUIDv7-only masking. Generation alone is not
   distinctive. State measured losses as gaps, never hide them with hype.
+- Generate only UUIDv4 and UUIDv7. Keep parsing, inspection, and plain-slug conversion
+  version-neutral so other UUID versions work without version-specific machinery. Add support for
+  another generated version only after the maintainer reopens it for concrete demand.
 
 ## Public TypeScript interface protocol
 
