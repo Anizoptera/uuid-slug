@@ -58,13 +58,26 @@ Maintainer ruling: strict package ordering remains the default. A reusable gener
 select validated native ordering when avoiding package sequence coordination matters more than a
 cross-runtime ordering guarantee.
 
-- [ ] Define a named ordering policy that makes native mode incompatible with package-owned clock,
-      rollback, fraction, and entropy configuration.
-- [ ] Route every current-time output of a native-policy generator through one validated native UUID;
+- [ ] Inventory every root export, state owner, option combination, return distinction, and shipped
+      declaration; retain each only when a concrete consumer job fails without it.
+- [ ] Compare independent generator interfaces, separate factories, discriminated options, presets,
+      module configuration, and representation-specific operations against truthful types and call-site burden.
+- [ ] Define one named current-time policy whose default preserves ordering and whose runtime choice
+      cannot be combined with package-owned clock, rollback, fraction, or entropy configuration.
+- [ ] Keep `payloadLayout` only on generators whose current-time and explicit-time outputs share the
+      declared layout; runtime-selected generation must not imply one layout across unlike paths.
+- [ ] Route each runtime-selected output through its cheapest validated representation-specific path;
       retain portable explicit-time generation because native APIs do not accept caller time.
-- [ ] Measure text and byte outcomes against monotonic generation before documenting the trade-off.
-- [ ] Falsify native success, malformed output, thrown failure, byte ownership, declarations, and
-      unsupported-runtime behavior.
+- [ ] Keep masking state in the masking codec, sequence state in generators, and stateless conversion
+      at module scope unless measured caller code proves a deeper interface.
+- [ ] Measure text and byte outcomes, allocations, entropy draws, construction, and fallback costs
+      against monotonic generation on every affected runtime path.
+- [ ] Falsify native success, malformed output, thrown failure, dual failure, unsupported capability,
+      option misuse, ordering boundaries, byte ownership, source types, emitted declarations, and packed imports.
+- [ ] Update public JSDoc, README guarantees and examples, public-interface reasoning, performance evidence,
+      and TypeScript/Rust parity statements without changing UUID or slug wire formats.
+- [ ] Run the complete project gate, adversarially pair each promise with evidence, compress completed SOP
+      state, commit focused files, and leave the repository clean.
 
 ## Codec capability boundary
 
