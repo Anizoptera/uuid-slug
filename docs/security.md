@@ -12,6 +12,11 @@ its output. A plausible-looking UUID does not establish that cryptographic entro
 Built-in generation covers UUIDv4 and UUIDv7 only. Version-neutral parsing and plain conversion
 accept other UUID versions but add no generation or security behavior for them.
 
+UUIDv4 uses 122 bits for random data. UUIDv7 uses 48 bits for its timestamp and allows its other 74
+bits to combine random data and counters. Native UUIDv7 text generators decide how to use those 74
+bits. The portable generator uses a 42-bit counter with a random starting value and generates 32
+new random bits for each UUID. Collisions remain possible.
+
 Generation selects secure sources separately for text and byte output:
 
 - Node uses `crypto.randomUUID()` for UUIDv4, `crypto.randomUUIDv7()` when available for UUIDv7
@@ -34,10 +39,9 @@ System entropy can block during early boot while the OS initializes its RNG. App
 strict response deadlines must keep that draw off their event loop; never substitute weaker bytes
 to meet a deadline. See [getrandom's early-boot limits](https://docs.rs/getrandom/latest/getrandom/#early-boot).
 
-Portable v7 generation seeds a 42-bit sequence and draws a fresh 32-bit tail on later values
-within the same millisecond. A cryptographic input source does not make these outputs independent
-secrets. Keep uniqueness constraints where collisions matter. Neither a UUID's bit pattern nor a
-duplicate-free sample can establish that its generating process was cryptographically secure.
+Within one millisecond, the portable generator increments its visible 42-bit counter and draws 32
+new random bits. Observing one UUID reveals the next counter value in that millisecond. Neither a
+UUID's bit pattern nor a duplicate-free sample proves secure generation.
 
 Every UUID version exposes standardized fields. This package masks UUIDv7, replacing its layout,
 including timestamp, version, and variant positions, with a keyed reversible payload. It is obfuscation, not

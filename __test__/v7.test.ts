@@ -62,7 +62,7 @@ describe("uuidv7 bit layout", () => {
  * `createUuidV7Generator` with an injected readUnixMs and fill, which never delegates — so what is
  * pinned is our own 42-bit sequence, not a promise about anyone else's.
  *
- * The ordering assertion is really a DUPLICATE check, which README does promise under Randomness.
+ * The ordering assertion also reaches duplicate prevention in the portable state machine.
  * `constantFill` makes every reseed identical, so the counter is the only thing separating
  * consecutive ids: break it and this emits the same UUID a thousand times.
  */

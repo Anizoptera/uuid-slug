@@ -17,8 +17,7 @@
 - Read UUIDv7 timestamps instead of duplicating them twice.
 - Use native fastest paths and portable fallbacks across Node, Bun, Deno, and browsers.
 - Benefit from cross-runtime correctness tested and performance optimized.
-- Generation uses only secure randomness with enough entropy.
-- Failures return typed errors instead of throwing or falling back to weaker randomness.
+- Failures return typed errors. Built-in generation never falls back to weaker randomness.
 - Unused features tree-shake away with any modern bundler.
 
 [Install](#install) · [Quick start](#quick-start) · [Contents](#contents) · [API](#api) · [Performance](#measured-performance)
@@ -95,8 +94,10 @@ accepts every UUID version, including IDs from databases and other libraries. It
 bits, so shortening adds no collisions and needs no mapping table. Masked UUIDv7 slugs also
 recover the original UUID, but need the matching masking codec.
 
-Use UUIDv4 for random IDs without a timestamp, or UUIDv7 when its timestamp is useful.
-Neither requires masking. Anyone can decode a plain slug, including its UUIDv7 timestamp.
+UUIDv4 uses 122 bits for random data. UUIDv7 uses 48 bits for its millisecond timestamp. RFC 9562
+allows the remaining 74 bits to hold random data, a counter, or both. Use UUIDv4 when the timestamp
+has no value. Use UUIDv7 when you need timestamp sorting or extraction. Neither requires masking.
+Anyone can decode a plain slug, including its UUIDv7 timestamp.
 Generation is limited to UUIDv4 and UUIDv7. Other versions remain accepted by version-neutral
 parsing, inspection, and plain-slug conversion without version-specific package machinery.
 
@@ -955,8 +956,10 @@ and masking limits.
 - Generated IDs have RFC 9562 version and variant bits.
 - Built-in generators use the runtime's cryptographically secure random source. They never fall
   back to weaker randomness. If secure randomness is unavailable,
-  generation returns `rng_unavailable`. With a working runtime, collision risk is negligible.
-  Treat any collision as a generator or entropy failure.
+  generation returns `rng_unavailable`.
+- UUID collisions are possible. Keep a uniqueness constraint where a duplicate could overwrite or
+  misidentify data. On conflict while creating a record, keep the existing record and generate a
+  new ID.
 - Native generation falls back to the portable generator if its first result fails validation
   or a call throws. If both fail, the returned error retains both causes.
 - A v7 carries a 48-bit millisecond timestamp in its leading bits, so UUID strings sort by their

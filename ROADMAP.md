@@ -2,6 +2,14 @@
 
 Live work only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`.
 
+## UUIDv4 and UUIDv7 randomness contract audit
+
+- [x] Trace each generation route to its actual random, timestamp, and sequence inputs.
+- [x] Replace vague or false consumer claims with the exact v4/v7 distinction.
+- [x] Keep the consumer choice in README, trust limits in security guidance, and implementation
+      details out of public JSDoc.
+- [x] Falsify the corrected contract through source, declarations, packaged consumers, and runtime behavior.
+
 ## Configurable masked UUIDv7 timestamp range
 
 Maintainer ruling: only a masking codec may shift the 42-bit masked timestamp range. The default
