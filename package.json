@@ -106,6 +106,7 @@
     "bench:profile:native": "bun bench/profile-all.ts --native",
     "bench:compare": "bun bench/compare.ts",
     "bench:competitors": "bun bench/generation-matrix.ts",
+    "bench:competitors:audit-rust": "bun scripts/audit-rust-competitors.ts",
     "bench:competitors:smoke": "bun bench/generation-matrix.ts --smoke",
     "bench:results": "bun bench/results.ts",
     "lint": "oxlint --type-aware",

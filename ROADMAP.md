@@ -2,12 +2,35 @@
 
 Live work only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`.
 
+## UUIDv7 interoperability proof correction
+
+- [x] Generate UUIDv7 values with every Rust library named by the payload-layout audit.
+- [x] Run those values through the TypeScript and Rust plain, masked, guard, and timestamp paths.
+- [x] Correct every claim that confuses source inspection with executed interoperability evidence.
+- [x] Falsify the permanent test by introducing a payload-bit corruption and requiring failure.
+- [x] Run the complete project gate and leave the repository clean.
+
+## Rust UUID competitor benchmark
+
+- [x] Inventory reusable Rust libraries that generate UUIDv4, UUIDv7, or competing short forms.
+- [ ] Re-run the registry census and resolve new or renamed candidates before measurement.
+- [ ] Execute each direct generator and retain wrappers only when they add a distinct consumer cost.
+- [ ] Compare matching text, byte, caller-storage, and batch operations without hiding weaker paths.
+- [ ] Measure validity, entropy failure, clock rollback, same-millisecond behavior, allocation,
+      contention, target support, and throughput.
+
+## TypeScript UUID competitor refresh
+
+- [ ] Add latest release and repository activity dates to the existing TypeScript competitor set.
+- [ ] Extend the competitor audit command without creating a second package inventory.
+- [ ] Inspect changed releases before carrying forward compatibility or benchmark evidence.
+
 ## External UUIDv7 compatibility audit
 
 - [x] Inventory every UUIDv7 generator already benchmarked or named in project evidence.
 - [x] Trace how each generator fills the 74-bit payload and what it promises about ordering.
-- [x] Feed each generator's real output through TypeScript and Rust parsing, timestamp, plain-slug,
-      masking, and unmasking paths.
+- [x] Feed every installed JavaScript generator and each Rust generator in the payload-layout table
+      through TypeScript and Rust parsing, timestamp, plain-slug, masking, and unmasking paths.
 - [x] Add the smallest permanent compatibility proof that catches payload-layout assumptions.
 - [x] Document every supported field variation and every operation that intentionally discards
       representation or ordering information.

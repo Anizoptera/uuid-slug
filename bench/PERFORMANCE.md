@@ -1209,9 +1209,48 @@ input, extract the same timestamp, and preserve all 128 bits through both plain 
 | `uuid` 14.0.2, `uniku` 0.6.0 | 32-bit random-start counter and 42 newly random bits |
 | `fastv7` 1.0.2, `@kripod/uuidv7` 0.3.4 | 12-bit zero-start counter and 62 newly random bits |
 | `uuidv7-js` 2.0.0 | Random initial payload, then a random positive increment within the same millisecond |
-| Rust [`uuid` 1.26.1](https://docs.rs/uuid/1.26.1/uuid/struct.ContextV7.html) | Caller-selected counter width from zero to 74 bits; remaining bits are random |
-| Rust [`uuid7` 1.8.0](https://docs.rs/uuid7/1.8.0/uuid7/) | 42-bit random-start counter and 32 newly random bits |
-| Rust [`uuidv7` 0.1.7](https://docs.rs/uuidv7/0.1.7/src/uuidv7/lib.rs.html), [`leachuuid7` 0.1.0](https://docs.rs/leachuuid7/0.1.0/src/leachuuid7/lib.rs.html) | 74 random bits |
+
+### Rust competitor inventory
+
+This is the benchmark work list, not a claim that crates.io has no other UUID package. The census
+uses the registry searches `uuid`, `uuid v4`, `uuid7`, and `uuidv7`. It includes reusable libraries
+that generate UUIDv4 or UUIDv7 and excludes CLIs, database extensions, domain packages, parsers,
+formatters, and libraries that only consume UUIDs. Re-run the same searches before benchmarking.
+Run `bun run bench:competitors:audit-rust` to detect a newer release or repository commit. Release
+dates come from crates.io; commit dates come from each package's declared GitHub repository. A new
+version requires source inspection before its evidence or benchmark result can be carried forward.
+
+| Crate | Versions | Release | Repo commit | Why retained | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| [`uuid` 1.26.1](https://docs.rs/uuid/1.26.1/uuid/) | v4, v7 | 2026-09-10 | 2026-09-10 | Main Rust UUID library; configurable v7 counter width and random source | v7 generated and round-tripped; source inspected |
+| [`uuid7` 1.8.0](https://docs.rs/uuid7/1.8.0/uuid7/) | v4, v7 | 2026-05-17 | 2026-05-17 | Dedicated stateful generator; batch, rollback, fork, and caller-RNG behavior | v7 generated and round-tripped; source inspected |
+| [`fast-uuid-v7` 0.1.9](https://docs.rs/fast-uuid-v7/0.1.9/fast_uuid_v7/) | v7 | 2026-08-17 | 2026-08-17 | Multiple timestamp-fraction and sequential paths; allocation-free output | source inspected; interoperability and speed unmeasured |
+| [`hyperuuid` 0.3.0](https://docs.rs/hyperuuid/0.3.0/hyperuuid/) | v4, v7 | 2026-09-04 | 2026-09-04 | Allocation-free scalar and batch API | package metadata inspected; behavior unmeasured |
+| [`uuidv7` 0.1.7](https://docs.rs/uuidv7/0.1.7/uuidv7/) | v7 | 2025-01-29 | 2025-01-29 | Small stateless text and byte generator | generated and round-tripped; source inspected |
+| [`leachuuid7` 0.1.0](https://docs.rs/leachuuid7/0.1.0/leachuuid7/) | v7 | 2025-03-16 | unavailable | Independent random-payload implementation | generated and round-tripped; source inspected |
+| [`nativelite-uid` 0.1.0](https://docs.rs/nativelite-uid/0.1.0/nativelite_uid/) | v7 | 2026-09-07 | 2026-09-06 | Standard-library-only monotonic generator | source inspected; behavior unmeasured |
+| [`nexus-id` 1.1.5](https://docs.rs/nexus-id/1.1.5/nexus_id/) | v4, v7 | 2026-05-10 | 2026-09-13 | Low-latency generators with caller storage and batch paths | source inspected; behavior unmeasured |
+| [`rivid-core` 1.1.0](https://docs.rs/rivid-core/1.1.0/rivid_core/) | v7 | 2026-08-27 | 2026-09-02 | Text, raw bytes, caller storage, and batch generation | source inspected; behavior unmeasured |
+| [`id-forge` 1.0.0](https://docs.rs/id-forge/1.0.0/id_forge/) | v4, v7 | 2026-05-20 | 2026-05-21 | Zero-dependency typed generator with monotonic variants | package metadata inspected; behavior unmeasured |
+| [`philiprehberger-id-gen` 0.3.0](https://docs.rs/philiprehberger-id-gen/0.3.0/philiprehberger_id_gen/) | v7 | 2026-05-31 | 2026-06-19 | General ID library with text, bytes, parsing, and explicit timestamps | source inspected; behavior unmeasured |
+| [`uniqer_rs` 0.0.4](https://docs.rs/uniqer_rs/0.0.4/uniqer_rs/) | v4, v7 | 2025-09-03 | 2025-09-03 | Builder wrapper over `uuid`; measures wrapper cost, not a new generator | source inspected; behavior unmeasured |
+| [`uuid-extra` 0.0.2](https://docs.rs/uuid-extra/0.0.2/uuid_extra/) | v4, v7 | 2025-06-29 | 2025-06-29 | `uuid` wrapper with base58 and base64 output | source inspected; behavior unmeasured |
+| [`uuid-tag` 0.2.1](https://docs.rs/uuid-tag/0.2.1/uuid_tag/) | v4, v7 | 2026-05-30 | 2026-05-30 | Typed wrapper over `uuid`; measures type-wrapper cost | package metadata inspected; behavior unmeasured |
+| [`rok-ids` 0.1.0](https://docs.rs/rok-ids/0.1.0/rok_ids/) | v7 | 2026-05-10 | repository unavailable | Typed wrapper over `uuid` | source inspected; behavior unmeasured |
+| [`uuid-lite` 1.10.8](https://docs.rs/uuid-lite/1.10.8/uuid_lite/) | v4, v7 | 2026-09-13 | unavailable | Published fork of `uuid`; compare only if its code or build differs at measurement time | registry and older compatible source inspected; behavior unmeasured |
+| [`uuid-lite2` 1.10.1](https://docs.rs/uuid-lite2/1.10.1/uuid_lite2/) | v4, v7 | 2026-08-24 | unavailable | Second published `uuid` fork; compare only if its code or build differs | registry and 1.10.0 source inspected; behavior unmeasured |
+| [`short-uuid` 0.2.1](https://docs.rs/short-uuid/0.2.1/short_uuid/) | v4 | 2025-12-20 | 2026-02-10 | Base58 UUID wrapper and direct slug competitor | source inspected; behavior unmeasured |
+| [`uuid64rs` 0.0.14](https://docs.rs/uuid64rs/0.0.14/uuid64rs/) | v4 | 2021-04-19 | 2021-04-19 | Base64 UUID generator and direct slug competitor | source inspected; behavior unmeasured |
+| [`uuidv4` 1.0.0](https://docs.rs/uuidv4/1.0.0/uuidv4/) | v4 | 2023-08-24 | unavailable | Small standalone generator | package metadata inspected; behavior unmeasured |
+| [`qubit-id` 0.6.0](https://docs.rs/qubit-id/0.6.0/qubit_id/) | v4 | 2026-09-02 | 2026-09-14 | Synchronous and asynchronous generator interfaces | source inspected; behavior unmeasured |
+
+`switchy_uuid` is a deterministic simulation adapter, and `rs-uuid` generates shorter custom IDs;
+neither is a production RFC UUID generator. CLI and database packages remain excluded for the same
+reason: their process or storage overhead would measure a different job.
+
+Benchmark direct implementations separately from wrappers. Measure text, owned bytes, caller
+storage, and batch calls only where the crate exposes them. Also record entropy failure, clock
+rollback, same-millisecond behavior, allocation, contention, target support, and output validity.
 
 The Rust `uuid` crate can also place sub-millisecond time in the payload. The package preserves it
 as opaque data. `leachuuid7` documents a 60-bit timestamp, but its source writes the RFC 9562
