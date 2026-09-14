@@ -1,6 +1,10 @@
 //! Store a fixed 16-bit check beside UUIDv7 content without losing timestamp or random bits.
 use crate::{Error, ErrorCode, alphabet::Alphabet, mask::Mask, uuid::utf16_len};
 
+const MAX_MASKED_UUID_V7_HIGH_BYTE: u8 = 3;
+/// Last Unix millisecond representable by the masked UUIDv7 wire format.
+pub const MAX_MASKED_UUID_V7_UNIX_MS: u64 = ((MAX_MASKED_UUID_V7_HIGH_BYTE as u64 + 1) << 40) - 1;
+
 fn mix32(mut value: u32) -> u32 {
     value ^= value >> 16;
     value = value.wrapping_mul(0x7feb_352d);
@@ -22,7 +26,7 @@ pub(crate) fn mask_bytes(raw: &[u8; 16], mask: &Mask) -> Result<([u8; 16], u8), 
     if raw[6] >> 4 != 7 || raw[8] >> 6 != 2 {
         return Err(Error::new(ErrorCode::InvalidUuidVersion));
     }
-    if raw[0] > 3 {
+    if raw[0] > MAX_MASKED_UUID_V7_HIGH_BYTE {
         return Err(Error::new(ErrorCode::InvalidTimestamp));
     }
     let check = tag(raw);
@@ -65,6 +69,7 @@ pub(crate) fn candidate(
 mod tests {
     use super::*;
     use crate::mask::create_mask;
+
     #[test]
     fn retained_wire_vectors_and_safe_spelling_preserve_all_check_bits() {
         let fixture: serde_json::Value =

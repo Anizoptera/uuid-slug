@@ -541,6 +541,7 @@ impl core::marker::Unpin for uuid_slug::codec::UuidV7TimestampWindow
 impl core::marker::UnsafeUnpin for uuid_slug::codec::UuidV7TimestampWindow
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
+pub const uuid_slug::MAX_MASKED_UUID_V7_UNIX_MS: u64
 pub fn uuid_slug::create_mask(seed: &[u8], iterations: u32, label: &str) -> core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>
 pub fn uuid_slug::create_mask_async(seed: &[u8], iterations: u32, label: &str, cancellation: uuid_slug::mask::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::public_mask() -> uuid_slug::mask::Mask
@@ -1081,6 +1082,7 @@ impl core::marker::Unpin for uuid_slug::codec::UuidV7TimestampWindow
 impl core::marker::UnsafeUnpin for uuid_slug::codec::UuidV7TimestampWindow
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::codec::UuidV7TimestampWindow
+pub const uuid_slug::MAX_MASKED_UUID_V7_UNIX_MS: u64
 pub fn uuid_slug::create_mask(seed: &[u8], iterations: u32, label: &str) -> core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>
 pub fn uuid_slug::create_mask_async(seed: &[u8], iterations: u32, label: &str, cancellation: uuid_slug::mask::Cancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::mask::Mask, uuid_slug::error::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::public_mask() -> uuid_slug::mask::Mask

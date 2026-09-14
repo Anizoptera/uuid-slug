@@ -6,9 +6,11 @@
  * Frozen vectors in `alphabet.test.ts` own the exact 16-bit check layout.
  */
 import { describe, expect, it } from "vitest";
-import { createUuidV7SlugCodec } from "../src/codec";
+import { createUuidV7SlugCodec, createUuidV7SlugCodecWithGenerator } from "../src/codec";
 import { deriveUuidV7Mask } from "../src/mask";
 import { unwrap } from "../dev/unwrap";
+import { MAX_MASKED_UUID_V7_UNIX_MS } from "../src/payload";
+import { uuidStringToBytes } from "../src/uuid";
 
 /** Pads to the 16-byte seed floor, so cases can keep naming their key after what it tests. */
 const maskOrThrow = (seed: string) => {
@@ -26,13 +28,39 @@ describe("the maskable range", () => {
   const codec = unwrap(createUuidV7SlugCodec({ mask: handle, sentinels: [] }));
 
   it("masks the last instant before 2^42 ms and refuses the first one at or past it", () => {
-    expect(codec.uuidToSlug(LAST_MASKABLE)).toHaveLength(22);
+    expect(MAX_MASKED_UUID_V7_UNIX_MS).toBe(2 ** 42 - 1);
+    for (const [outputAlphabet, length] of [
+      ["base64url", 22],
+      ["base32hex", 27],
+    ] as const) {
+      const selected = unwrap(createUuidV7SlugCodec({ mask: handle, outputAlphabet }));
+      expect(selected.uuidToSlug(LAST_MASKABLE)).toHaveLength(length);
+      expect(selected.uuidToSlug(unwrap(uuidStringToBytes(LAST_MASKABLE)))).toHaveLength(length);
+      expect(selected.uuidToSlug(unwrap(uuidStringToBytes(FIRST_REFUSED)))).toMatchObject({
+        code: "invalid_timestamp",
+      });
+      const sentinel = unwrap(
+        createUuidV7SlugCodec({
+          mask: handle,
+          outputAlphabet,
+          sentinels: [{ name: "future", uuid: FIRST_REFUSED }],
+        }),
+      );
+      expect(sentinel.uuidToSlug(FIRST_REFUSED)).toHaveLength(
+        outputAlphabet === "base64url" ? 22 : 26,
+      );
+    }
     // Version 7 and the RFC variant are both set here on purpose. Those are checked FIRST, so an
     // input built to reach the timestamp guard has to satisfy them or the earlier guard answers
     // and this case silently stops testing the boundary it names.
     const refused = codec.uuidToSlug(FIRST_REFUSED);
-    expect(refused).toBeInstanceOf(Error);
-    expect((refused as { code?: string }).code).toBe("invalid_timestamp");
+    expect(refused).toMatchObject({ code: "invalid_timestamp" });
+    const generated = unwrap(
+      createUuidV7SlugCodecWithGenerator({ mask: handle }, () =>
+        unwrap(uuidStringToBytes(FIRST_REFUSED)),
+      ),
+    ).generateUuidV7CodecSlug();
+    expect(generated).toMatchObject({ code: "invalid_timestamp" });
   });
 
   it("refuses anything that is not a UUIDv7, rather than stamping one on at decode", () => {

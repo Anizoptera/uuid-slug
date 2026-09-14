@@ -123,6 +123,7 @@ export declare function isUuidV7Bytes(value: unknown): value is UuidV7Bytes;
 export declare function isUuidV7String(value: unknown): value is UuidV7String;
 declare type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 export declare type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
+export declare const MAX_MASKED_UUID_V7_UNIX_MS: number;
 declare type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> =
   Input extends UuidSlugError
     ? never

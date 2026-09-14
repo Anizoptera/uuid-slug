@@ -300,7 +300,8 @@ and both are part of the contract rather than implementation detail:
   an existing record: a lookup alone does not prove correct decoding. Every extra
   mask you try adds another opportunity for false acceptance; the combined rate is
   at most the sum of the individual rates. Keep the rotation list short.
-- **Masking refuses a timestamp at or past 2^42 ms**, which arrives in the year 2109. It returns
+- **Masking accepts timestamps through `MAX_MASKED_UUID_V7_UNIX_MS` (`2^42 - 1`) and refuses the
+  next millisecond**, which arrives in the year 2109. It returns
   `invalid_timestamp` because those six bits are spent on the check. Truncating instead would let
   two UUIDs share one slug, which nothing could recover from. Direct slugs have no such limit.
 
@@ -458,7 +459,8 @@ you need to retain the narrowed type. A brand proves format, not issuance or per
 JavaScript consumers do not need TypeScript. The shipped declarations compile with TypeScript 5.0
 and newer.
 
-Use `BASE64URL`, `BASE32HEX`, and the named error-code constants when passing or comparing values.
+Use `BASE64URL`, `BASE32HEX`, `MAX_MASKED_UUID_V7_UNIX_MS`, and the named error-code constants
+instead of copying their values.
 Migration readers accept `SEEDED_MASK_FORMAT`, `FIXED_MASK_FORMAT`, or `DIRECT_SLUG_FORMAT`;
 their TypeScript type permits only formats enabled when the reader was created.
 

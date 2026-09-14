@@ -21,6 +21,10 @@ const NO_MASK_MATCH_MESSAGE =
 const UNMASK_DIRECTION = "unmask";
 const UNMASKING = "unmasking";
 
+const MAX_MASKED_UUID_V7_HIGH_BYTE = 0x03;
+/** Last Unix millisecond representable by the masked UUIDv7 wire format. */
+export const MAX_MASKED_UUID_V7_UNIX_MS: number = (MAX_MASKED_UUID_V7_HIGH_BYTE + 1) * 2 ** 40 - 1;
+
 /** Custom callbacks can fail after construction; preserve their cause in the public error contract. */
 function applyMix(
   mask: UuidV7Mask,
@@ -129,7 +133,7 @@ export function ownedUuidV7BytesToMaskedSlug(
 ): MaskedUuidV7Slug | UuidSlugError {
   // Truncating instead would make encoding non-injective — two UUIDs would share one slug, and no
   // decoder could ever tell which was meant. Refusing is the only recoverable answer.
-  if ((raw[0] ?? 0) > 0x03)
+  if ((raw[0] ?? 0) > MAX_MASKED_UUID_V7_HIGH_BYTE)
     return new UuidSlugError(
       INVALID_TIMESTAMP,
       "Masking requires a UUIDv7 timestamped before 2^42 ms (year 2109); its top six bits carry the check.",

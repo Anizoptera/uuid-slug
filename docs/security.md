@@ -41,6 +41,9 @@ including timestamp, version, and variant positions, with a keyed reversible pay
 authenticated encryption. Use a private random seed and retain its exact bytes and iteration count
 to read issued values. The exported public mask is for explicit tests and examples; codec
 construction never selects it by omission.
+Masking rejects timestamps above `MAX_MASKED_UUID_V7_UNIX_MS`; truncating the six timestamp bits
+used by the check would make distinct UUIDs encode to the same slug. Direct slugs and raw sentinel
+slugs preserve the full UUIDv7 timestamp range.
 The 16-bit check filters candidates; look up the intended record and check authorization separately.
 More read keys add possible candidates. Base32 changes the spelling, not the masking strength.
 

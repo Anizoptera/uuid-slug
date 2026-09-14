@@ -4,6 +4,7 @@ import {
   bytesToUuidString,
   UUID_TEXT_LOWERCASE,
   UUID_TEXT_UPPERCASE,
+  MAX_MASKED_UUID_V7_UNIX_MS,
   createCustomUuidV7Mask,
   deriveUuidV7Mask,
   deriveUuidV7MaskAsync,
@@ -42,6 +43,8 @@ import {
   generateDirectUuidV7Slug,
   generateUuidV7WithDirectSlug,
 } from "@anizoptera/uuid-slug";
+
+expectType<number>()(MAX_MASKED_UUID_V7_UNIX_MS);
 import type * as UuidSlugApi from "@anizoptera/uuid-slug";
 import type {
   AsyncUuidV7MaskOptions,

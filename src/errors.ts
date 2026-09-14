@@ -14,7 +14,7 @@ export const INVALID_MASK = "invalid_mask";
 export const INVALID_OPTIONS = "invalid_options";
 /** A sentinel definition is invalid or conflicts with another sentinel. */
 export const INVALID_SENTINEL = "invalid_sentinel";
-/** A timestamp is invalid or outside the UUIDv7 wire-format range. */
+/** A timestamp is invalid or outside the selected operation's range. */
 export const INVALID_TIMESTAMP = "invalid_timestamp";
 /** The input is not valid UUID text or a valid UUID byte payload. */
 export const INVALID_UUID = "invalid_uuid";

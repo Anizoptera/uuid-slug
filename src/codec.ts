@@ -231,7 +231,8 @@ function createSentinels(
 /**
  * Build an immutable UUIDv7 codec with an explicit writer mask. It reads the writer first, then
  * `previousMasks` in caller order. Invalid masks, sentinels, options, or callbacks return
- * `UuidSlugError`; no implicit public mask is selected.
+ * `UuidSlugError`; no implicit public mask is selected. Masked writers return `invalid_timestamp`
+ * for UUIDv7 timestamps after `MAX_MASKED_UUID_V7_UNIX_MS`; registered sentinels remain direct.
  *
  * @param options - Writer mask plus optional reader masks, sentinels, and output spelling.
  * @returns The codec, or `UuidSlugError` when its configuration cannot form a valid codec.

@@ -243,7 +243,10 @@ export interface AsyncUuidV7MaskOptions extends UuidV7MaskOptions {
 export interface UuidV7SentinelConfig {
   /** Nonempty application-facing name, unique within the codec and exposed through `codec.sentinels`. */
   readonly name: string;
-  /** Mixed-case hyphenated or compact UUIDv7 text, unique after normalization. */
+  /**
+   * Mixed-case hyphenated or compact UUIDv7 text, unique after normalization. Sentinels bypass
+   * masking, so their timestamps may exceed `MAX_MASKED_UUID_V7_UNIX_MS`.
+   */
   readonly uuid: string;
 }
 
@@ -388,18 +391,22 @@ export interface UuidV7SlugCodec {
     this: void,
     options?: Options,
   ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
-  /** Generate and encode a UUIDv7 as a masked slug or its registered raw sentinel slug. */
+  /**
+   * Generate and encode a UUIDv7 as a masked slug or its registered raw sentinel slug.
+   * Returns `invalid_timestamp` at timestamps after `MAX_MASKED_UUID_V7_UNIX_MS`.
+   */
   generateUuidV7CodecSlug(this: void): UuidV7CodecSlug | UuidSlugError;
   /**
    * Generate canonical UUIDv7 text and its masked or sentinel slug from one random byte draw.
-   * Returns `UuidSlugError` when generation or masking fails.
+   * Returns `invalid_timestamp` at timestamps after `MAX_MASKED_UUID_V7_UNIX_MS`.
    */
   generateUuidV7WithCodecSlug(this: void): GeneratedUuidV7<UuidV7CodecSlug> | UuidSlugError;
   /**
    * Encode mixed-case hyphenated or compact UUIDv7 text, or 16 UUIDv7 bytes, as a masked slug,
    * unless it is a registered
    * sentinel. Other UUID versions return `invalid_uuid_version`. TypeScript rejects known slug and
-   * UUIDv4 values; unbranded external values are validated when called. A preceding
+   * UUIDv4 values; unbranded external values are validated when called. Timestamps after
+   * `MAX_MASKED_UUID_V7_UNIX_MS` return `invalid_timestamp`. A preceding
    * `UuidSlugError` is returned unchanged.
    *
    * @param uuid - Hyphenated or compact UUIDv7 text, or exactly 16 UUIDv7 bytes.

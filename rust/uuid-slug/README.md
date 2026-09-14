@@ -34,7 +34,8 @@ with a keyed reversible payload. It is obfuscation, not authentication or encryp
 Its 16-bit check can accept an unissued UUID; look up decoded candidates in your own store. Each
 configured key adds a possible candidate. Pass `public_mask()` explicitly only for examples
 and wire fixtures because its seed is public. Keep your private seed and iteration count to read issued IDs.
-Masking accepts UUIDv7 timestamps below 2^42 milliseconds; direct slugs have no such restriction.
+Masking accepts UUIDv7 timestamps through `MAX_MASKED_UUID_V7_UNIX_MS`; direct slugs retain the
+full UUIDv7 timestamp range.
 
 Keep previous keys while stored identifiers still need them. The current key writes new masks;
 previous keys only add read candidates. Install readers for the new key and spelling before

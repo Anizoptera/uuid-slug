@@ -4,6 +4,11 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 
 ## Public interface audit
 
+- [x] Make the masked UUIDv7 timestamp boundary complete at every public and runtime boundary.
+  - [x] Export the last maskable Unix millisecond in TypeScript and Rust.
+  - [x] Prove text, byte, generated, and cross-language writers accept the endpoint and reject its successor.
+  - [x] Put the limit and `invalid_timestamp` result in codec JSDoc, API guidance, README, and security guidance.
+  - [x] Regenerate declarations, run the full gate, and inspect packed consumer access.
 - [ ] Provide built-in UUID text-case presets across every UUID-text writer.
   - [x] Define lowercase and uppercase once as named runtime values with inferred result types.
   - [x] Keep lowercase as the zero-work default and reject unknown untyped selections.

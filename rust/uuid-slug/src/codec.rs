@@ -21,6 +21,45 @@ mod tests {
         atomic::{AtomicBool, Ordering},
     };
 
+    fn uuid_at(timestamp: u64) -> Uuid {
+        let mut bytes = [0; 16];
+        bytes[..6].copy_from_slice(&timestamp.to_be_bytes()[2..]);
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        Uuid::from_bytes(bytes)
+    }
+
+    #[test]
+    fn masked_writers_accept_the_timestamp_endpoint_and_reject_its_successor() -> Result<(), Error>
+    {
+        for slug_alphabet in [Alphabet::Base64Url, Alphabet::Base32Hex] {
+            let codec = Codec::new(CodecOptions {
+                slug_alphabet,
+                ..CodecOptions::new(crate::public_mask())
+            })?;
+            assert!(
+                codec
+                    .encode_uuid(uuid_at(crate::MAX_MASKED_UUID_V7_UNIX_MS))
+                    .is_ok()
+            );
+            assert_eq!(
+                codec
+                    .encode_uuid(uuid_at(crate::MAX_MASKED_UUID_V7_UNIX_MS + 1))
+                    .unwrap_err()
+                    .code(),
+                ErrorCode::InvalidTimestamp
+            );
+            let sentinel = uuid_at(crate::MAX_MASKED_UUID_V7_UNIX_MS + 1);
+            let codec = Codec::new(CodecOptions {
+                slug_alphabet,
+                sentinels: vec![("future".to_owned(), sentinel)],
+                ..CodecOptions::new(crate::public_mask())
+            })?;
+            assert_eq!(codec.encode_uuid(sentinel)?, sentinel.slug(slug_alphabet));
+        }
+        Ok(())
+    }
+
     #[test]
     fn timestamp_window_accepts_structurally_valid_v7_endpoint_values() -> Result<(), Error> {
         let window = UuidV7TimestampWindow {
@@ -219,7 +258,7 @@ impl Codec {
             .map(|(_, uuid)| *uuid)
     }
 
-    /// Encode a v7, preserving sentinel identities and rejecting ciphertext collisions.
+    /// Encode a v7 through [`crate::MAX_MASKED_UUID_V7_UNIX_MS`], preserving sentinels and rejecting collisions.
     pub fn encode_uuid(&self, uuid: Uuid) -> Result<String, Error> {
         uuid.timestamp()?;
         if let Some(sentinel) = self.sentinels.iter().find(|entry| entry.uuid == uuid) {

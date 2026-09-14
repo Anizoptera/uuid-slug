@@ -9,6 +9,7 @@ function equal(actual: unknown, expected: unknown, context: string): void {
 
 /** Exercise public calls through the module supplied by the consumer's own resolver. */
 export async function probeConsumer(api: typeof Api): Promise<void> {
+  equal(api.MAX_MASKED_UUID_V7_UNIX_MS, 2 ** 42 - 1, "masked timestamp endpoint");
   equal(unwrap(api.generateUuidV7()).length, 36, "public UUIDv7 generation");
   const invalidUuid = api.uuidStringToBytes("not a UUID");
   equal(invalidUuid instanceof Error && invalidUuid.code, api.INVALID_UUID, "error value");

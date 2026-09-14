@@ -23,4 +23,5 @@ pub use codec::{
 };
 pub use error::{Error, ErrorCode};
 pub use mask::{Mask, create_mask, create_mask_async, public_mask};
+pub use payload::MAX_MASKED_UUID_V7_UNIX_MS;
 pub use uuid::Uuid;
