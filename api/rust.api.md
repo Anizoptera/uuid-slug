@@ -396,7 +396,9 @@ impl core::marker::UnsafeUnpin for uuid_slug::UuidV7TimestampWindow
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7TimestampWindow
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7TimestampWindow
 pub const uuid_slug::MAX_MASKED_UUID_V7_UNIX_MS: u64
+pub const uuid_slug::MAX_UUID: uuid_slug::Uuid
 pub const uuid_slug::MAX_UUID_V7_UNIX_MS: u64
+pub const uuid_slug::NIL_UUID: uuid_slug::Uuid
 pub fn uuid_slug::derive_uuid_v7_mask(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str) -> core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>
 pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str, cancellation: uuid_slug::UuidV7MaskDerivationCancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::fill_os_random_bytes(out: &mut [u8]) -> core::result::Result<(), uuid_slug::Error>
@@ -798,7 +800,9 @@ impl core::marker::UnsafeUnpin for uuid_slug::UuidV7TimestampWindow
 impl core::panic::unwind_safe::RefUnwindSafe for uuid_slug::UuidV7TimestampWindow
 impl core::panic::unwind_safe::UnwindSafe for uuid_slug::UuidV7TimestampWindow
 pub const uuid_slug::MAX_MASKED_UUID_V7_UNIX_MS: u64
+pub const uuid_slug::MAX_UUID: uuid_slug::Uuid
 pub const uuid_slug::MAX_UUID_V7_UNIX_MS: u64
+pub const uuid_slug::NIL_UUID: uuid_slug::Uuid
 pub fn uuid_slug::derive_uuid_v7_mask(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str) -> core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>
 pub fn uuid_slug::derive_uuid_v7_mask_async(mask_seed: &[u8], key_derivation_iterations: u32, diagnostic_label: &str, cancellation: uuid_slug::UuidV7MaskDerivationCancellation) -> impl core::future::future::Future<Output = core::result::Result<uuid_slug::UuidV7Mask, uuid_slug::Error>> + core::marker::Send + use<>
 pub fn uuid_slug::generate_uuid_v4_into_with_random_fill(out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>

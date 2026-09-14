@@ -69,6 +69,19 @@ mod tests {
     }
 
     #[test]
+    fn masked_writers_reject_generic_uuid_boundaries() -> Result<(), Error> {
+        let codec =
+            UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions::new(crate::uuid_v7_test_mask()))?;
+        for uuid in [crate::NIL_UUID, crate::MAX_UUID] {
+            assert_eq!(
+                codec.uuid_to_masked_slug(uuid).unwrap_err().code(),
+                ErrorCode::InvalidUuidVersion
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn timestamp_window_accepts_structurally_valid_v7_endpoint_values() -> Result<(), Error> {
         let window = UuidV7TimestampWindow {
             reference_unix_ms: 1_234_567_890_000.0,

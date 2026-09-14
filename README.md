@@ -475,8 +475,9 @@ and newer.
 String inputs accept primitive JavaScript strings, not `String` wrapper objects. The package never
 coerces objects into strings, even when a wrapper contains valid UUID text.
 
-Use `BASE64URL`, `BASE32HEX`, `UUID_TEXT_LOWERCASE`, `UUID_TEXT_UPPERCASE`,
+Use `BASE64URL`, `BASE32HEX`, `UUID_TEXT_LOWERCASE`, `UUID_TEXT_UPPERCASE`, `NIL_UUID`, `MAX_UUID`,
 `MAX_MASKED_UUID_V7_UNIX_MS`, and the named error-code constants instead of copying their values.
+`NIL_UUID` and `MAX_UUID` are canonical generic UUID text; they do not claim a UUID version.
 Migration readers accept `SEEDED_MASK_FORMAT`, `FIXED_MASK_FORMAT`, or `PLAIN_SLUG_FORMAT`;
 their TypeScript type permits only formats enabled when the reader was created.
 

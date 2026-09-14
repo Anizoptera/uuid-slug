@@ -238,6 +238,8 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   lowercase hyphenated text. Output brands retain the selected normalized form; text-guard brands
   retain validity and version without claiming normalization. Base32hex readers accept mixed case. Base64url remains
   case-sensitive.
+- Export `NIL_UUID` and `MAX_UUID` as canonical `UuidString` values. They are useful boundaries and
+  sentinels, but neither value claims UUIDv4 or UUIDv7 semantics.
 - Accept `Uint8Array` and its subtypes. Exclude `ArrayBuffer`, `DataView`, and array-like values:
   their offset, view, and ownership meanings would make the operation ambiguous. Preserve a
   caller-owned output subtype and write only after full validation; return plain `Uint8Array` for

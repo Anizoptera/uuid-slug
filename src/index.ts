@@ -75,6 +75,8 @@ export type {
   UuidV7Text,
 } from "./types.ts";
 export {
+  MAX_UUID,
+  NIL_UUID,
   bytesToUuidString,
   isUuidBytes,
   isUuidV4Bytes,

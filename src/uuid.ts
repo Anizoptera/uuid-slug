@@ -32,6 +32,11 @@ export { UuidSlugError };
 export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidBytes, UuidString } from "./types.ts";
 
+/** The canonical all-zero UUID value, without a version or issuance claim. */
+export const NIL_UUID = "00000000-0000-0000-0000-000000000000" as UuidString;
+/** The canonical all-one UUID value, without a version or issuance claim. */
+export const MAX_UUID = "ffffffff-ffff-ffff-ffff-ffffffffffff" as UuidString;
+
 const HEX = "0123456789abcdef";
 const UPPERCASE_HEX = "0123456789ABCDEF";
 const UUID_SEPARATOR = "-";

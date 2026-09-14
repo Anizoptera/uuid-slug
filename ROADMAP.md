@@ -6,9 +6,6 @@ Live work only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`.
 
 Adopt the useful competitor behavior without copying interfaces that add more caller burden than capability.
 
-- [ ] Export typed canonical `NIL_UUID` and `MAX_UUID` values in TypeScript and Rust.
-  - [ ] Keep nil valid for version-neutral operations and reject it only where an operation requires UUIDv4 or UUIDv7.
-  - [ ] Prove direct conversion, both plain-slug alphabets, masking rejection, declarations, and packed consumers.
 - [ ] Give created UUIDv7 generators an explicit clock-rollback policy.
   - [ ] Compare preserving the last timestamp, resetting to the observed clock, and returning a typed failure.
   - [ ] Compare a fixed rollback rule with a caller-selected significance threshold and explicit monotonic versus wall-clock semantics.

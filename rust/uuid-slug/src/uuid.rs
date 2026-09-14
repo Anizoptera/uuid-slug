@@ -164,6 +164,10 @@ impl fmt::Display for MaskedOrSentinelUuidV7Slug {
 /// A 128-bit UUID; generic parsing accepts every version and variant, including nil.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Uuid([u8; 16]);
+/// The all-zero UUID value, without a version or issuance claim.
+pub const NIL_UUID: Uuid = Uuid::from_uuid_bytes_array([0; 16]);
+/// The all-one UUID value, without a version or issuance claim.
+pub const MAX_UUID: Uuid = Uuid::from_uuid_bytes_array([u8::MAX; 16]);
 impl Uuid {
     /// Take owned bytes without imposing a version restriction.
     pub const fn from_uuid_bytes_array(bytes: [u8; 16]) -> Self {
@@ -334,6 +338,23 @@ mod tests {
         let text: String = slug.into();
         assert_eq!(text, "068a3cm3qhv5v2kr1geisfo000");
         assert_eq!(text.as_ptr(), allocation);
+        Ok(())
+    }
+
+    #[test]
+    fn canonical_uuid_boundaries_remain_generic_values() -> Result<(), Error> {
+        assert_eq!(NIL_UUID.to_string(), "00000000-0000-0000-0000-000000000000");
+        assert_eq!(MAX_UUID.to_string(), "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        for uuid in [NIL_UUID, MAX_UUID] {
+            for alphabet in [UuidSlugAlphabet::Base64Url, UuidSlugAlphabet::Base32Hex] {
+                assert_eq!(
+                    Uuid::from_plain_uuid_slug(&uuid.to_plain_uuid_slug(alphabet))?,
+                    uuid
+                );
+            }
+            assert!(!uuid.is_uuid_v4());
+            assert!(!uuid.is_uuid_v7());
+        }
         Ok(())
     }
 }

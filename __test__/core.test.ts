@@ -3,6 +3,8 @@ import { runInNewContext } from "node:vm";
 import {
   uuidBytesToPlainSlug,
   bytesToUuidString,
+  MAX_UUID,
+  NIL_UUID,
   UUID_TEXT_LOWERCASE,
   UUID_TEXT_UPPERCASE,
   createCustomUuidV7Mask,
@@ -255,6 +257,21 @@ describe("plain UUID slugs", () => {
         expect(uuidToString(slug)).toBe(uuid);
         expect(uuidBytesToPlainSlug(unwrap(uuidStringToBytes(uuid)), alphabet)).toBe(slug);
       }
+  });
+
+  it("exports canonical nil and max UUID values without assigning a UUID version", () => {
+    expect(NIL_UUID).toBe(VALID_NIL_UUID_STRING);
+    expect(MAX_UUID).toBe(VALID_MAX_UUID_STRING);
+    const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
+
+    for (const uuid of [NIL_UUID, MAX_UUID]) {
+      expect(uuidToString(uuid)).toBe(uuid);
+      for (const alphabet of ["base64url", "base32hex"] as const) {
+        const slug = unwrap(uuidToPlainSlug(uuid, alphabet));
+        expect(plainSlugToUuidString(slug)).toBe(uuid);
+      }
+      expect(codec.uuidToMaskedSlug(uuid)).toMatchObject({ code: INVALID_UUID_VERSION });
+    }
   });
 
   it("matches stable plain vectors", () => {

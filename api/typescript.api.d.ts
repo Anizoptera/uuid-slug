@@ -140,6 +140,8 @@ export declare type MaskedOrSentinelUuidV7Slug = MaskedUuidV7Slug | SentinelUuid
 declare type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 export declare type MaskedUuidV7Slug = Brand<MaskedUuidSlug, "MaskedUuidV7Slug">;
 export declare const MAX_MASKED_UUID_V7_UNIX_MS: number;
+export declare const MAX_UUID: UuidString;
+export declare const NIL_UUID: UuidString;
 export declare const PLAIN_SLUG_FORMAT = "plain-slug";
 export declare function plainSlugToUuidBytes<Input extends string | UuidSlugError>(
   plainUuidSlug: PlainUuidSlugInput<Input>,
