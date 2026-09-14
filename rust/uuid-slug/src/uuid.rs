@@ -180,7 +180,7 @@ impl Uuid {
         out.copy_from_slice(&bytes[range]);
         Ok(Self(out))
     }
-    /// Parse mixed-case hexadecimal with the canonical four hyphens or without hyphens.
+    /// Parse an accepted UUID spelling: canonical, compact, URN, or brace-wrapped canonical text.
     pub fn from_uuid_string(uuid_string: &str) -> Result<Self, Error> {
         uuid_string.parse()
     }
@@ -242,12 +242,24 @@ impl FromStr for Uuid {
     type Err = Error;
     fn from_str(text: &str) -> Result<Self, Error> {
         let input = text.as_bytes();
-        if input.len() != 32
-            && (input.len() != 36 || [8, 13, 18, 23].iter().any(|&i| input[i] != b'-'))
-        {
-            return Err(Error::new(ErrorCode::InvalidUuid));
-        }
-        uuid::Uuid::parse_str(text)
+        let canonical = |value: &[u8]| {
+            value.len() == 36 && [8, 13, 18, 23].iter().all(|&index| value[index] == b'-')
+        };
+        let body = match input {
+            value if value.len() == 32 => value,
+            value if canonical(value) => value,
+            [b'{', value @ .., b'}'] if canonical(value) => value,
+            value
+                if value.len() == 45
+                    && value[..9].eq_ignore_ascii_case(b"urn:uuid:")
+                    && canonical(&value[9..]) =>
+            {
+                &value[9..]
+            }
+            _ => return Err(Error::new(ErrorCode::InvalidUuid)),
+        };
+        let body = std::str::from_utf8(body).map_err(|_| Error::new(ErrorCode::InvalidUuid))?;
+        uuid::Uuid::parse_str(body)
             .map(|id| Self(*id.as_bytes()))
             .map_err(|_| Error::new(ErrorCode::InvalidUuid))
     }
@@ -289,6 +301,20 @@ mod tests {
             id
         );
         assert_eq!(id.to_string(), "ffffffff-ffff-ffff-ffff-ffffffffffff");
+        for text in [
+            "UrN:UuId:FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF",
+            "{FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF}",
+        ] {
+            assert_eq!(Uuid::from_uuid_string(text)?, id);
+        }
+        for text in [
+            "urn:uuid:ffffffffffffffffffffffffffffffff",
+            "{ffffffffffffffffffffffffffffffff}",
+            "urn:uuid:{ffffffff-ffff-ffff-ffff-ffffffffffff}",
+            "{urn:uuid:ffffffff-ffff-ffff-ffff-ffffffffffff}",
+        ] {
+            assert!(Uuid::from_uuid_string(text).is_err());
+        }
         let mut out = [23; 32];
         assert!(id.write_uuid_bytes(&mut out, usize::MAX).is_err());
         assert_eq!(out, [23; 32]);

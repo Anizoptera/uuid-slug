@@ -31,8 +31,9 @@ candidates where the existing operation reports an error for the whole call.
 
 TypeScript uses directional text/binary names because raw `Uint8Array` values require validation
 and may target caller storage. Rust uses idiomatic `Uuid` operations because its fixed UUID type
-already owns that validation. Both accept mixed-case UUID text with or without canonical hyphens;
-their default text output is lowercase and hyphenated, and their byte domain is identical.
+already owns that validation. Both accept mixed-case canonical or compact text, case-insensitive
+UUID URNs, and brace-wrapped canonical text. Their default text output is lowercase and hyphenated,
+and their byte domain is identical. Wrappers cannot nest or contain compact text.
 
 Run shared cases through each implementation from its first increment; check nonzero execution
 per adapter, because an aggregate pass can hide one that ran nothing. Keep native ownership and
