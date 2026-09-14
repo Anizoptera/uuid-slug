@@ -2,6 +2,8 @@ import {
   BASE32HEX,
   BASE64URL,
   bytesToUuidString,
+  UUID_TEXT_LOWERCASE,
+  UUID_TEXT_UPPERCASE,
   createCustomUuidV7Mask,
   deriveUuidV7Mask,
   deriveUuidV7MaskAsync,
@@ -43,6 +45,7 @@ import {
 import type * as UuidSlugApi from "@anizoptera/uuid-slug";
 import type {
   AsyncUuidV7MaskOptions,
+  UppercaseUuidString,
   GeneratedUuidV7,
   UuidV7TimestampWindow,
   UuidV7Mask,
@@ -132,6 +135,10 @@ const checkedUuidBytes = uuidStringToBytes(checkedUuid);
 if (checkedUuidBytes instanceof Error) throw checkedUuidBytes;
 const versionedBytes: UuidV7Bytes = checkedUuidBytes;
 const formattedUuid = bytesToUuidString(versionedBytes);
+expectType<UuidString | UuidSlugError>()(bytesToUuidString(versionedBytes, UUID_TEXT_LOWERCASE));
+expectType<UppercaseUuidString | UuidSlugError>()(
+  bytesToUuidString(versionedBytes, UUID_TEXT_UPPERCASE),
+);
 if (formattedUuid instanceof Error) throw formattedUuid;
 // @ts-expect-error Mutable bytes may no longer contain the version their stale brand records.
 const versionedUuid: UuidV7String = formattedUuid;

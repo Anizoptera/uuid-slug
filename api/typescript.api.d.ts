@@ -12,10 +12,15 @@ declare type Brand<Value, Name extends string> = Value & {
   };
 };
 declare const brand: unique symbol;
-export declare function bytesToUuidString(
+export declare function bytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   bytes: Uint8Array | UuidSlugError,
-  byteOffset?: number,
-): UuidString | UuidSlugError;
+  textCase?: Case,
+): UuidStringFor<Case> | UuidSlugError;
+export declare function bytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  bytes: Uint8Array | UuidSlugError,
+  byteOffset: number,
+  textCase?: Case,
+): UuidStringFor<Case> | UuidSlugError;
 export declare function createCustomUuidV7Mask(
   options: CustomUuidV7MaskOptions,
 ): UuidV7Mask | UuidSlugError;
@@ -150,6 +155,9 @@ export declare function slugToUuidString<Input extends string | UuidSlugError>(
   slug: DirectUuidSlugInput<Input>,
 ): PreserveUuidVersion<Input, UuidString, UuidV4String, UuidV7String> | UuidSlugError;
 export declare const TIMESTAMP_OUTSIDE_WINDOW = "timestamp_outside_window";
+export declare type UppercaseUuidString = Brand<string, "UppercaseUuidString">;
+export declare const UUID_TEXT_LOWERCASE: unique symbol;
+export declare const UUID_TEXT_UPPERCASE: unique symbol;
 export declare const UUID_V7_TEST_MASK: UuidV7Mask;
 export declare type UuidBytes = Brand<Uint8Array, "UuidBytes">;
 export declare function uuidBytesToDirectSlug(
@@ -203,6 +211,8 @@ export declare interface UuidSlugMigrationOptions {
   readonly acceptDirectSlug?: boolean;
 }
 export declare type UuidString = Brand<string, "UuidString">;
+export declare type UuidStringFor<Case extends UuidTextCase> =
+  Case extends typeof UUID_TEXT_UPPERCASE ? UppercaseUuidString : UuidString;
 declare type UuidStringInput<Input extends string | UuidSlugError> = RejectKnownInput<
   Input,
   DirectUuidSlug | MaskedUuidSlug
@@ -218,6 +228,7 @@ export declare function uuidStringToDirectSlug<Input extends string | UuidSlugEr
   uuid: UuidStringInput<Input>,
   alphabet?: SlugAlphabet,
 ): PreserveUuidVersion<Input, DirectUuidSlug, DirectUuidV4Slug, DirectUuidV7Slug> | UuidSlugError;
+export declare type UuidTextCase = typeof UUID_TEXT_LOWERCASE | typeof UUID_TEXT_UPPERCASE;
 export declare type UuidV4Bytes = Brand<UuidBytes, "UuidV4Bytes">;
 export declare type UuidV4String = Brand<UuidString, "UuidV4String">;
 export declare type UuidV7Bytes = Brand<UuidBytes, "UuidV7Bytes">;

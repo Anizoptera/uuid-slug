@@ -24,7 +24,13 @@ export { BASE32HEX_NAME as BASE32HEX, BASE64URL_NAME as BASE64URL } from "./alph
 export type { UuidSlugErrorCode } from "./errors.ts";
 export { UUID_V7_TEST_MASK, deriveUuidV7Mask, deriveUuidV7MaskAsync } from "./mask.ts";
 export { createCustomUuidV7Mask } from "./mask-handle.ts";
-export { SEEDED_MASK_FORMAT, DIRECT_SLUG_FORMAT, FIXED_MASK_FORMAT } from "./types.ts";
+export {
+  SEEDED_MASK_FORMAT,
+  DIRECT_SLUG_FORMAT,
+  FIXED_MASK_FORMAT,
+  UUID_TEXT_LOWERCASE,
+  UUID_TEXT_UPPERCASE,
+} from "./types.ts";
 export type {
   AsyncUuidV7MaskOptions,
   CustomUuidV7MaskOptions,
@@ -42,6 +48,9 @@ export type {
   UuidSlugMigrationDecoder,
   UuidSlugMigrationOptions,
   UuidString,
+  UppercaseUuidString,
+  UuidStringFor,
+  UuidTextCase,
   DirectUuidV4Slug,
   UuidV4String,
   UuidV7Generator,

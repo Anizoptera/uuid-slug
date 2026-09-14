@@ -15,6 +15,7 @@ const ids = Array.from(
   (_, i) => `0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f${i.toString(16).padStart(4, "0")}`,
 );
 const compactIds = ids.map((id) => id.replaceAll("-", ""));
+const uuidBytes = unwrap(api.uuidStringToBytes(ids[0] as string));
 const slugs = ids.map((id) => unwrap(api.uuidStringToDirectSlug(id)));
 const codec = unwrap(api.createUuidV7SlugCodec({ mask: { seed: "profile-current-seed" } }));
 const older = unwrap(api.createUuidV7SlugCodec({ mask: { seed: "profile-previous-seed" } }));
@@ -37,6 +38,12 @@ type Operation = (index: number) => unknown;
 // These are coarse regression budgets, not public latency promises. Paired primitives set the
 // local speed reference; resource counters catch smaller regressions without noisy timing limits.
 const pairs: { name: string; subject: Operation; reference: Operation; limit: number }[] = [
+  {
+    name: "uppercase UUID formatting / lowercase UUID formatting",
+    subject: () => api.bytesToUuidString(uuidBytes, api.UUID_TEXT_UPPERCASE),
+    reference: () => api.bytesToUuidString(uuidBytes),
+    limit: 1.5,
+  },
   {
     name: "compact UUID parsing / hyphenated UUID parsing",
     subject: (i) => api.uuidStringToBytes(compactIds[i & 255] as string),

@@ -3,6 +3,8 @@ import { runInNewContext } from "node:vm";
 import {
   uuidBytesToDirectSlug,
   bytesToUuidString,
+  UUID_TEXT_LOWERCASE,
+  UUID_TEXT_UPPERCASE,
   createCustomUuidV7Mask,
   deriveUuidV7Mask,
   createUuidV7SlugCodec as createCodec,
@@ -212,6 +214,19 @@ describe("direct UUID slugs", () => {
     ).toBe(SAMPLE_V7_A);
     expect(isUuidV7String(mixed)).toBe(false);
     expect(isUuidV7String(compact)).toBe(false);
+  });
+
+  it("formats UUID bytes with built-in lowercase and uppercase presets", () => {
+    const bytes = unwrap(uuidStringToBytes(SAMPLE_V7_A));
+    const wrapped = new Uint8Array(20);
+    wrapped.set(bytes, 2);
+    expect(bytesToUuidString(bytes)).toBe(SAMPLE_V7_A);
+    expect(bytesToUuidString(bytes, UUID_TEXT_LOWERCASE)).toBe(SAMPLE_V7_A);
+    expect(bytesToUuidString(bytes, UUID_TEXT_UPPERCASE)).toBe(SAMPLE_V7_A.toUpperCase());
+    expect(bytesToUuidString(wrapped, 2, UUID_TEXT_UPPERCASE)).toBe(SAMPLE_V7_A.toUpperCase());
+    expect(bytesToUuidString(bytes, Symbol("titlecase") as never)).toMatchObject({
+      code: "invalid_options",
+    });
   });
 
   it("accepts uppercase base32hex input and returns canonical lowercase output", () => {

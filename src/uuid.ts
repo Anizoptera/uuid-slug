@@ -5,16 +5,20 @@ import {
   checkRange,
   invalidByteInput,
   invalidUuidStringInput,
+  INVALID_OPTIONS,
   INVALID_UUID,
   isUint8Array,
   UuidSlugError,
 } from "./errors.ts";
+import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
 import type {
   PreserveUuidVersion,
   UuidBytes,
   UuidV4Bytes,
   UuidV7Bytes,
   UuidString,
+  UuidStringFor,
+  UuidTextCase,
   UuidStringInput,
   UuidV4String,
   UuidV7String,
@@ -26,6 +30,7 @@ export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidBytes, UuidString } from "./types.ts";
 
 const HEX = "0123456789abcdef";
+const UPPERCASE_HEX = "0123456789ABCDEF";
 const UUID_SEPARATOR = "-";
 // Probe once and allocate the byte-pair fallback only on engines that need it.
 const nativeToHex = (Uint8Array.prototype as { toHex?: () => string }).toHex;
@@ -36,6 +41,12 @@ const HEX_BYTES = nativeToHex
       (_, byte) => (HEX[byte >>> 4] as string) + (HEX[byte & 15] as string),
     );
 const hexByte = /* @__NO_SIDE_EFFECTS__ */ (byte: number) => HEX_BYTES[byte] ?? "";
+let uppercaseHexBytes: string[] | undefined;
+const uppercaseHexByte = (byte: number) =>
+  (uppercaseHexBytes ??= Array.from(
+    { length: 256 },
+    (_, value) => (UPPERCASE_HEX[value >>> 4] as string) + (UPPERCASE_HEX[value & 15] as string),
+  ))[byte] ?? "";
 const HEX_DECODE = new Int8Array(128).fill(-1);
 for (let i = 0; i < 10; i += 1) HEX_DECODE[48 + i] = i;
 for (let i = 0; i < 6; i += 1) HEX_DECODE[97 + i] = 10 + i;
@@ -137,22 +148,39 @@ export function uuidStringToBytes(
 }
 
 /**
- * Format 16 bytes at `byteOffset` as canonical lowercase UUID text without assigning a version.
+ * Format 16 bytes as standard hyphenated UUID text without assigning a version.
  * An invalid array or range returns `invalid_buffer`. A preceding `UuidSlugError` is returned
  * unchanged.
  *
  * @param bytes - An array containing at least one complete 16-byte UUID.
+ * @param textCase - Built-in output spelling. Omit for lowercase.
+ * @defaultValue `UUID_TEXT_LOWERCASE`
  * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
  */
+export function bytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  bytes: Uint8Array | UuidSlugError,
+  textCase?: Case,
+): UuidStringFor<Case> | UuidSlugError;
+export function bytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  bytes: Uint8Array | UuidSlugError,
+  byteOffset: number,
+  textCase?: Case,
+): UuidStringFor<Case> | UuidSlugError;
 /*#__NO_SIDE_EFFECTS__*/
 export function bytesToUuidString(
   bytes: Uint8Array | UuidSlugError,
-  byteOffset = 0,
-): UuidString | UuidSlugError {
+  offsetOrCase: number | UuidTextCase = 0,
+  textCase: UuidTextCase = UUID_TEXT_LOWERCASE,
+): UuidString | string | UuidSlugError {
   if (!isUint8Array(bytes)) return invalidByteInput(bytes);
+  const caseIsSecond = typeof offsetOrCase === "symbol";
+  const byteOffset = caseIsSecond ? 0 : offsetOrCase;
+  const selectedCase = caseIsSecond ? offsetOrCase : textCase;
   const badRange = checkRange(bytes.length, byteOffset, 16);
   if (badRange) return badRange;
-  if (nativeToHex) {
+  if (selectedCase !== UUID_TEXT_LOWERCASE && selectedCase !== UUID_TEXT_UPPERCASE)
+    return new UuidSlugError(INVALID_OPTIONS, "UUID text case must be lowercase or uppercase.");
+  if (nativeToHex && selectedCase === UUID_TEXT_LOWERCASE) {
     let offset = 0;
     let hex: string;
     if (bytes.length <= 32) {
@@ -163,33 +191,39 @@ export function bytesToUuidString(
     }
     return hyphenateHex(hex, offset);
   }
-  return formatUuidBytesUnchecked(bytes, byteOffset);
+  return formatUuidBytesUnchecked(bytes, byteOffset, selectedCase);
 }
 
 /** Format a UUID range already proved writable by its caller. */
 /*#__NO_SIDE_EFFECTS__*/
-export function formatUuidBytesUnchecked(bytes: Uint8Array, offset = 0): UuidString {
-  if (nativeToHex) return hyphenateHex(nativeToHex.call(bytes), offset * 2);
-  return (hexByte(bytes[offset] as number) +
-    hexByte(bytes[offset + 1] as number) +
-    hexByte(bytes[offset + 2] as number) +
-    hexByte(bytes[offset + 3] as number) +
+export function formatUuidBytesUnchecked(
+  bytes: Uint8Array,
+  offset = 0,
+  textCase: UuidTextCase = UUID_TEXT_LOWERCASE,
+): UuidString {
+  if (nativeToHex && textCase === UUID_TEXT_LOWERCASE)
+    return hyphenateHex(nativeToHex.call(bytes), offset * 2);
+  const byte = textCase === UUID_TEXT_UPPERCASE ? uppercaseHexByte : hexByte;
+  return (byte(bytes[offset] as number) +
+    byte(bytes[offset + 1] as number) +
+    byte(bytes[offset + 2] as number) +
+    byte(bytes[offset + 3] as number) +
     UUID_SEPARATOR +
-    hexByte(bytes[offset + 4] as number) +
-    hexByte(bytes[offset + 5] as number) +
+    byte(bytes[offset + 4] as number) +
+    byte(bytes[offset + 5] as number) +
     UUID_SEPARATOR +
-    hexByte(bytes[offset + 6] as number) +
-    hexByte(bytes[offset + 7] as number) +
+    byte(bytes[offset + 6] as number) +
+    byte(bytes[offset + 7] as number) +
     UUID_SEPARATOR +
-    hexByte(bytes[offset + 8] as number) +
-    hexByte(bytes[offset + 9] as number) +
+    byte(bytes[offset + 8] as number) +
+    byte(bytes[offset + 9] as number) +
     UUID_SEPARATOR +
-    hexByte(bytes[offset + 10] as number) +
-    hexByte(bytes[offset + 11] as number) +
-    hexByte(bytes[offset + 12] as number) +
-    hexByte(bytes[offset + 13] as number) +
-    hexByte(bytes[offset + 14] as number) +
-    hexByte(bytes[offset + 15] as number)) as UuidString;
+    byte(bytes[offset + 10] as number) +
+    byte(bytes[offset + 11] as number) +
+    byte(bytes[offset + 12] as number) +
+    byte(bytes[offset + 13] as number) +
+    byte(bytes[offset + 14] as number) +
+    byte(bytes[offset + 15] as number)) as UuidString;
 }
 
 /*#__NO_SIDE_EFFECTS__*/

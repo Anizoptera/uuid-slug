@@ -4,6 +4,12 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 
 ## Public interface audit
 
+- [ ] Provide built-in UUID text-case presets across every UUID-text writer.
+  - [x] Define lowercase and uppercase once as named runtime values with inferred result types.
+  - [x] Keep lowercase as the zero-work default and reject unknown untyped selections.
+  - [ ] Apply the same optional selection to conversion, generation, decoding, validation, and codecs.
+  - [ ] Prove source and packed inference, runtime behavior, edge failures, resources, and latency.
+  - [ ] Update public JSDoc, interface guidance, README, declarations, and release notes; run the full gate.
 - [x] Normalize UUID text output while accepting common hexadecimal input forms.
   - [x] Accept mixed-case 36-character UUID text and compact 32-character hexadecimal input.
   - [x] Keep guards and every returned UUID string lowercase and hyphenated.

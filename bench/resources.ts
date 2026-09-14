@@ -169,6 +169,15 @@ try {
     views: 0,
     errors: 0,
   });
+  check(
+    "uppercase UUID formatting",
+    () => api.bytesToUuidString(into, 4, api.UUID_TEXT_UPPERCASE),
+    {
+      buffers: 0,
+      views: 0,
+      errors: 0,
+    },
+  );
   check("portable generation", () => portable.generateUuidV7Bytes(into, 4), {
     buffers: 0,
     views: 0,

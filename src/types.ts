@@ -6,6 +6,14 @@ import type { SlugAlphabet } from "./slug.ts";
 declare const brand: unique symbol;
 declare const uuidV7MaskBrand: unique symbol;
 
+/** Select the standard lowercase UUID text spelling. */
+export const UUID_TEXT_LOWERCASE: unique symbol = Symbol("UUID text lowercase");
+/** Select the standard uppercase UUID text spelling. */
+export const UUID_TEXT_UPPERCASE: unique symbol = Symbol("UUID text uppercase");
+
+/** Select the hexadecimal letter case of UUID text output. */
+export type UuidTextCase = typeof UUID_TEXT_LOWERCASE | typeof UUID_TEXT_UPPERCASE;
+
 /** Accumulate validated value kinds without changing their runtime representation. */
 type Brand<Value, Name extends string> = Value & {
   readonly [brand]: { [BrandName in Name]: true };
@@ -13,6 +21,12 @@ type Brand<Value, Name extends string> = Value & {
 
 /** Canonical lowercase UUID text. This proves syntax only, not version or issuance. */
 export type UuidString = Brand<string, "UuidString">;
+/** Standard uppercase UUID text. This proves syntax only, not version or issuance. */
+export type UppercaseUuidString = Brand<string, "UppercaseUuidString">;
+/** UUID text inferred from its requested output case. */
+export type UuidStringFor<Case extends UuidTextCase> = Case extends typeof UUID_TEXT_UPPERCASE
+  ? UppercaseUuidString
+  : UuidString;
 /** Canonical lowercase UUIDv4 text with RFC variant bits. */
 export type UuidV4String = Brand<UuidString, "UuidV4String">;
 /** Canonical lowercase UUIDv7 text with RFC variant bits. */

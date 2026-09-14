@@ -101,12 +101,12 @@ interface is complete, useful, or clear.
 
 Keep UUID text/binary conversion directional and version-neutral:
 
-RFC 9562 permits uppercase, lowercase, or mixed-case hexadecimal digits. Package output uses one
-stable spelling: lowercase with hyphens. A caller that requires uppercase output converts it at
-that external boundary; a casing option would add the same trivial transform to every text writer.
+RFC 9562 permits uppercase, lowercase, or mixed-case hexadecimal digits. Package output defaults to
+lowercase with hyphens. Pass `UUID_TEXT_UPPERCASE` to `bytesToUuidString` when a destination requires uppercase; use
+`UUID_TEXT_LOWERCASE` when code needs to carry an explicit reusable choice.
 
 - `uuidStringToBytes` accepts mixed-case, hyphenated UUID text and compact 32-digit hexadecimal
-  text; `bytesToUuidString` converts 16 bytes to lowercase hyphenated UUID text. Source and
+  text; `bytesToUuidString` converts 16 bytes to hyphenated UUID text in the selected case. Source and
   destination names remove the parse/format ambiguity, while version-neutral names remain correct
   for every UUID version.
 - Writers and guards use lowercase hyphenated UUID and lowercase base32hex text. UUID readers also

@@ -5,6 +5,9 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 ## Unpublished
 
+- UUID byte conversion provides named lowercase and uppercase text presets instead of requiring a
+  caller string transform or custom configuration.
+
 ### Rust crate
 
 - `uuid-slug` implements the same generation, encoding, masking, sentinel, rotation, migration,
