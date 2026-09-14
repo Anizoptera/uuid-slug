@@ -26,6 +26,10 @@ Masking accepts UUIDv7 and preserves 116 payload bits:
 |    6 | top of timestamp offset, byte 0 | restore zero before adding the configured range start |
 |  116 | remaining payload               | 42 timestamp bits, 12 `rand_a`, 62 `rand_b`           |
 
+`rand_a` and `rand_b` are RFC field names, not proof that those bits are random. A generator may
+use them for random data, counters, sub-millisecond time, or a combination. Masking treats all 74
+bits as opaque data and restores them unchanged.
+
 The masked payload is fixed: 22 base64url characters hold 132 bits, leaving `132 - 116 = 16`
 check bits. Twelve replace the constant bits inside the 128-bit block; four occupy the encoding's
 spare bits. All 132 encoded bits have a role. Plain-slug padding rejection does not apply to these

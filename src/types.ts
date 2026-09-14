@@ -44,7 +44,7 @@ type Brand<Value, Name extends string> = Value & {
 export type UuidText = Brand<string, "UuidText">;
 /** Valid UUIDv4 text with RFC variant bits, in any accepted spelling. */
 export type UuidV4Text = Brand<UuidText, "UuidV4Text">;
-/** Valid UUIDv7 text with RFC variant bits, in any accepted spelling. */
+/** Valid UUIDv7 text with RFC variant bits, in any accepted spelling. Its 74 payload bits have no inferred meaning. */
 export type UuidV7Text = Brand<UuidText, "UuidV7Text">;
 /** Canonical lowercase UUID text. This proves syntax only, not version or issuance. */
 export type UuidString = Brand<UuidText, "UuidString">;

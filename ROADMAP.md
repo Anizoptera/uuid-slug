@@ -2,6 +2,17 @@
 
 Live work only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`.
 
+## External UUIDv7 compatibility audit
+
+- [x] Inventory every UUIDv7 generator already benchmarked or named in project evidence.
+- [x] Trace how each generator fills the 74-bit payload and what it promises about ordering.
+- [x] Feed each generator's real output through TypeScript and Rust parsing, timestamp, plain-slug,
+      masking, and unmasking paths.
+- [x] Add the smallest permanent compatibility proof that catches payload-layout assumptions.
+- [x] Document every supported field variation and every operation that intentionally discards
+      representation or ordering information.
+- [x] Verify source, declarations, packed consumers, both runtimes, and the complete project gate.
+
 ## UUIDv4 and UUIDv7 randomness contract audit
 
 - [x] Trace each generation route to its actual random, timestamp, and sequence inputs.

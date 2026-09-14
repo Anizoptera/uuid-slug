@@ -1198,6 +1198,26 @@ Use `bun run bench:competitors` to compare the package's JavaScript paths with c
 alternatives. Each case validates its output before warm-up, rotates measurement order, yields
 between bounded samples, and fails on duplicate, missing, malformed, empty, or non-finite results.
 
+UUIDv7 interoperability is not a generator whitelist. The code treats the full 74-bit payload as
+opaque. The conformance matrix tests both boundaries, alternating patterns, every bit position, and
+real output from each installed JavaScript generator below. Both TypeScript and Rust must parse each
+input, extract the same timestamp, and preserve all 128 bits through both plain and masked alphabets.
+
+| Generator | Use of the 74 payload bits |
+| --- | --- |
+| package, `uuidv7` 1.2.1 | 42-bit random-start counter and 32 newly random bits |
+| `uuid` 14.0.2, `uniku` 0.6.0 | 32-bit random-start counter and 42 newly random bits |
+| `fastv7` 1.0.2, `@kripod/uuidv7` 0.3.4 | 12-bit zero-start counter and 62 newly random bits |
+| `uuidv7-js` 2.0.0 | Random initial payload, then a random positive increment within the same millisecond |
+| Rust [`uuid` 1.26.1](https://docs.rs/uuid/1.26.1/uuid/struct.ContextV7.html) | Caller-selected counter width from zero to 74 bits; remaining bits are random |
+| Rust [`uuid7` 1.8.0](https://docs.rs/uuid7/1.8.0/uuid7/) | 42-bit random-start counter and 32 newly random bits |
+| Rust [`uuidv7` 0.1.7](https://docs.rs/uuidv7/0.1.7/src/uuidv7/lib.rs.html), [`leachuuid7` 0.1.0](https://docs.rs/leachuuid7/0.1.0/src/leachuuid7/lib.rs.html) | 74 random bits |
+
+The Rust `uuid` crate can also place sub-millisecond time in the payload. The package preserves it
+as opaque data. `leachuuid7` documents a 60-bit timestamp, but its source writes the RFC 9562
+48-bit timestamp and then sets the standard version and variant bits. The source behavior is what
+the compatibility claim covers.
+
 The retained set covers the most-downloaded packages and every distinct relevant strategy found:
 `uuid`, `@smithy/uuid`, `@lukeed/uuid`, `uuidv7`, `crypto-randomuuid`, `uuid-random`, `uniku`,
 `@kripod/uuidv7`, `uuidv7-js`, and `fastv7`. Official npm downloads for 2026-09-05 through

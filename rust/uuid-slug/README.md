@@ -84,6 +84,9 @@ enables the unsupported 0.2.0 masked format.
 
 `UuidV7Generator` owns its sequence. `generate_uuid_v7()` uses secure platform entropy;
 `generate_uuid_v7_at_unix_ms()` takes an explicit timestamp without changing the sequence.
+The crate accepts every RFC 9562 UUIDv7 and treats its 74 non-timestamp payload bits as opaque.
+Plain and masked round trips preserve those bits. Masking rejects timestamps outside the codec's
+configured range instead of truncating them. Same-millisecond ordering depends on the generator.
 `uuid_v7_bounds(start, end)` returns the inclusive lowest and highest UUIDv7 search keys; pass
 `None` for one millisecond. Use the bounds only with comparison in UUID wire-byte order.
 Preserve-order clock rollback is the default. Use `with_clock_rollback_policy` to reset or return

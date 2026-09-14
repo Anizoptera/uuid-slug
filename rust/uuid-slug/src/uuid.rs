@@ -222,7 +222,7 @@ impl Uuid {
     pub const fn is_rfc_uuid_variant(&self) -> bool {
         self.0[8] >> 6 == 2
     }
-    /// Require both version 7 and the RFC variant.
+    /// Require version 7 and the RFC variant without interpreting its 74 payload bits.
     pub const fn is_uuid_v7(&self) -> bool {
         self.uuid_version() == 7 && self.is_rfc_uuid_variant()
     }
