@@ -114,6 +114,10 @@ try {
       return time;
     },
   });
+  const portableSubMillisecond = api.createUuidV7Generator({
+    readUnixMs: () => time + 0.75,
+    subMillisecondFractionBits: 12,
+  });
   const reset = () => {
     for (const key of Object.keys(counts) as (keyof typeof counts)[]) counts[key] = 0;
   };
@@ -183,6 +187,11 @@ try {
     views: 0,
     errors: 0,
   });
+  check(
+    "sub-millisecond portable generation",
+    () => portableSubMillisecond.generateUuidV7Bytes(into, 4),
+    { buffers: 0, views: 0, errors: 0 },
+  );
   check("UUIDv7 text bounds", () => api.uuidV7Bounds(time), {
     buffers: 0,
     views: 0,

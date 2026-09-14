@@ -552,10 +552,12 @@ const customEntropyGenerator: UuidV7Generator = createUuidV7GeneratorWithRandomF
     clockRollback: { action: UUID_V7_ROLLBACK_ERROR, toleranceMs: 0 },
   },
 );
+expectType<UuidV7PayloadLayout>()(customEntropyGenerator.payloadLayout);
 expectType<UuidVersion | UuidSlugError>()(extractUuidVersion(versionedSlug));
 void customEntropyGenerator;
 
 createUuidV7Generator({ clockRollback: { action: UUID_V7_ROLLBACK_PRESERVE } });
+createUuidV7Generator({ subMillisecondFractionBits: 12 });
 createUuidV7Generator({
   clockRollback: { action: UUID_V7_ROLLBACK_RESET, toleranceMs: 0 },
 });

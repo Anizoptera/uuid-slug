@@ -230,6 +230,8 @@ export interface UuidV7TimestampWindow {
  * generation attempt.
  */
 export interface UuidV7Generator {
+  /** Payload layout emitted by this generator; pass it to UUIDv7 payload extraction. */
+  readonly payloadLayout: UuidV7PayloadLayout;
   /** Generate UUIDv7 text for the current clock reading in the selected case, lowercase by default. */
   generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
@@ -251,14 +253,15 @@ export interface UuidV7Generator {
   ): Output | UuidSlugError;
   /**
    * Generate at a whole Unix millisecond in `0..2^48-1` without changing current-time sequence
-   * state. UUID text is lowercase unless `textCase` selects uppercase.
+   * state. A configured fraction field is zero. UUID text is lowercase unless `textCase` selects
+   * uppercase.
    */
   generateUuidV7AtUnixMs<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
     unixMs: number,
     textCase?: Case,
   ): UuidV7StringFor<Case> | UuidSlugError;
-  /** Generate a new 16-byte array at an explicit millisecond without changing current-time state. */
+  /** Generate at an explicit millisecond with a zero fraction field and unchanged current-time state. */
   generateUuidV7BytesAtUnixMs(this: void, unixMs: number): UuidV7Bytes | UuidSlugError;
   /**
    * Write an explicit-time UUIDv7 only after success and return the exact supplied array.

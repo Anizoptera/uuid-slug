@@ -598,6 +598,10 @@ describe("plain UUID slugs", () => {
     expect(createUuidV7Generator({ fillRandom: FILL_WITH_ZEROS } as never)).toMatchObject({
       code: "invalid_options",
     });
+    expect(createUuidV7Generator({ subMillisecondFractionBits: 13 })).toMatchObject({
+      code: "invalid_options",
+      message: "Generator subMillisecondFractionBits must be a whole number from 0 through 12.",
+    });
     expect(createUuidV7GeneratorWithRandomFill(null as never)).toMatchObject({
       code: "invalid_options",
     });

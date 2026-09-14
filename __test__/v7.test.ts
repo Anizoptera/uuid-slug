@@ -41,6 +41,14 @@ const compare = (left: Uint8Array, right: Uint8Array): number => {
 const timestampOf = (bytes: Uint8Array): number =>
   bytes.slice(0, 6).reduce((total, byte) => total * 256 + byte, 0);
 
+const payloadPrefixOf = (bytes: Uint8Array): number =>
+  ((bytes[6] ?? 0) & 0x0f) * 2 ** 38 +
+  (bytes[7] ?? 0) * 2 ** 30 +
+  ((bytes[8] ?? 0) & 0x3f) * 2 ** 24 +
+  (bytes[9] ?? 0) * 2 ** 16 +
+  (bytes[10] ?? 0) * 2 ** 8 +
+  (bytes[11] ?? 0);
+
 describe("uuidv7 bit layout", () => {
   // The version and variant occupy bits the entropy source also writes to, so an
   // implementation that masks them wrongly produces a well-formed-looking value that is not a
@@ -67,6 +75,78 @@ describe("uuidv7 bit layout", () => {
  * consecutive ids: break it and this emits the same UUID a thousand times.
  */
 describe("uuidv7 monotonicity", () => {
+  it.each([1, 6, 12])("places %i clock-fraction bits before the counter", (fractionBits) => {
+    const generator = createUuidV7Generator({
+      readUnixMs: fixedClock(1_700_000_000_000.75),
+      fillRandom: constantFill(0),
+      subMillisecondFractionBits: fractionBits,
+    });
+    const bytes = bytesOf(generator);
+    const prefix = payloadPrefixOf(bytes);
+    expect(generator.payloadLayout).toEqual({
+      subMillisecondFractionBits: fractionBits,
+      counterBits: 42 - fractionBits,
+    });
+    expect(Math.floor(prefix / 2 ** (42 - fractionBits))).toBe(
+      Math.floor(0.75 * 2 ** fractionBits),
+    );
+  });
+
+  it("reseeds when the clock advances within one millisecond", () => {
+    let now = 100.25;
+    const generator = createUuidV7Generator({
+      readUnixMs: () => now,
+      fillRandom: constantFill(0),
+      subMillisecondFractionBits: 12,
+    });
+    const first = bytesOf(generator);
+    now = 100.75;
+    const second = bytesOf(generator);
+    expect(timestampOf(second)).toBe(100);
+    expect(compare(first, second)).toBeLessThan(0);
+  });
+
+  it("keeps order when the fractional clock reading moves backward", () => {
+    let now = 100.75;
+    const generator = createUuidV7Generator({
+      readUnixMs: () => now,
+      fillRandom: constantFill(0),
+      subMillisecondFractionBits: 12,
+    });
+    const first = bytesOf(generator);
+    now = 100.25;
+    const second = bytesOf(generator);
+    expect(timestampOf(second)).toBe(100);
+    expect(compare(first, second)).toBeLessThan(0);
+  });
+
+  it("advances logical time when a fraction bucket exhausts its counter", () => {
+    const generator = createUuidV7Generator({
+      readUnixMs: fixedClock(100.25),
+      fillRandom: constantFill(0xff),
+      subMillisecondFractionBits: 12,
+    });
+    const first = bytesOf(generator);
+    const second = bytesOf(generator);
+    expect(timestampOf(second)).toBe(100);
+    expect(Math.floor(payloadPrefixOf(second) / 2 ** 30)).toBe(
+      Math.floor(payloadPrefixOf(first) / 2 ** 30) + 1,
+    );
+  });
+
+  it("borrows the next millisecond when the last fraction bucket exhausts", () => {
+    const generator = createUuidV7Generator({
+      readUnixMs: fixedClock(100 + (2 ** 12 - 1) / 2 ** 12),
+      fillRandom: constantFill(0xff),
+      subMillisecondFractionBits: 12,
+    });
+    const first = bytesOf(generator);
+    const second = bytesOf(generator);
+    expect(timestampOf(first)).toBe(100);
+    expect(timestampOf(second)).toBe(101);
+    expect(compare(first, second)).toBeLessThan(0);
+  });
+
   it("never repeats or goes backwards while the readUnixMs stands still", () => {
     const generator = createUuidV7Generator({
       readUnixMs: fixedClock(1_700_000_000_000),

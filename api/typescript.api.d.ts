@@ -390,6 +390,7 @@ export declare type UuidV7ClockRollbackPolicy =
       readonly toleranceMs: number;
     };
 export declare interface UuidV7Generator {
+  readonly payloadLayout: UuidV7PayloadLayout;
   generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
     textCase?: Case,
@@ -415,6 +416,7 @@ export declare interface UuidV7Generator {
 }
 export declare interface UuidV7GeneratorOptions {
   readonly readUnixMs?: () => number;
+  readonly subMillisecondFractionBits?: number;
   readonly clockRollback?: UuidV7ClockRollbackPolicy;
 }
 export declare interface UuidV7Mask {

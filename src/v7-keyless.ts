@@ -22,12 +22,21 @@ import { createPortableUuidV7Generator, createRuntimeGenerator } from "./v7.ts";
 /** Configure one UUIDv7 sequence's clock and rollback behavior. */
 export interface UuidV7GeneratorOptions {
   /**
-   * Return Unix milliseconds; finite fractional readings are truncated. Invalid readings and
-   * thrown values make that generation call return `invalid_timestamp`.
+   * Return Unix milliseconds. Fractional readings feed `subMillisecondFractionBits`; otherwise
+   * they are truncated. Invalid readings and thrown values return `invalid_timestamp`.
    *
-   * @defaultValue `Date.now`
+   * @defaultValue `Date.now` with no fraction bits; otherwise the runtime high-resolution clock
+   * when present, then `Date.now`
    */
   readonly readUnixMs?: () => number;
+  /**
+   * Whole number from 0 through 12 assigning leading payload bits to the RFC 9562
+   * sub-millisecond fraction. The remaining leading payload bits hold the random-start counter.
+   * Monotonic continuation can advance the encoded fraction ahead of a stalled or backward clock.
+   *
+   * @defaultValue `0`
+   */
+  readonly subMillisecondFractionBits?: number;
   /**
    * Handle a reading below the accepted clock high-water mark. Preserve-order behavior is the
    * default. Reset and error policies preserve small rollbacks through their inclusive tolerance.
@@ -40,9 +49,16 @@ export interface UuidV7GeneratorOptions {
 const GENERATOR_OPTIONS = {
   clockRollback: true,
   readUnixMs: true,
+  subMillisecondFractionBits: true,
 } as const satisfies Record<keyof UuidV7GeneratorOptions, true>;
 const INVALID_GENERATOR_OPTIONS = "Generator options must be an object.";
 const INVALID_ROLLBACK_POLICY = "Generator clockRollback must be a policy object.";
+
+const highResolutionClock = globalThis.performance;
+const readHighResolutionUnixMs =
+  highResolutionClock === undefined
+    ? Date.now
+    : () => highResolutionClock.timeOrigin + highResolutionClock.now();
 
 function validatedRollback(
   value: unknown,
@@ -86,6 +102,7 @@ function buildGenerator(
     return new UuidSlugError(INVALID_OPTIONS, INVALID_GENERATOR_OPTIONS);
   let readUnixMs: UuidV7GeneratorOptions["readUnixMs"];
   let clockRollback: unknown;
+  let subMillisecondFractionBits: unknown;
   try {
     if (Array.isArray(options))
       return new UuidSlugError(INVALID_OPTIONS, INVALID_GENERATOR_OPTIONS);
@@ -94,16 +111,29 @@ function buildGenerator(
       return new UuidSlugError(INVALID_OPTIONS, `Unknown generator option: ${unknown}.`);
     readUnixMs = options.readUnixMs;
     clockRollback = options.clockRollback;
+    subMillisecondFractionBits = options.subMillisecondFractionBits;
   } catch (cause) {
     return new UuidSlugError(INVALID_OPTIONS, "Reading generator options failed.", { cause });
   }
   if (readUnixMs !== undefined && typeof readUnixMs !== "function")
     return new UuidSlugError(INVALID_OPTIONS, "Generator readUnixMs must be a function.");
+  if (
+    subMillisecondFractionBits !== undefined &&
+    (!Number.isInteger(subMillisecondFractionBits) ||
+      (subMillisecondFractionBits as number) < 0 ||
+      (subMillisecondFractionBits as number) > 12)
+  )
+    return new UuidSlugError(
+      INVALID_OPTIONS,
+      "Generator subMillisecondFractionBits must be a whole number from 0 through 12.",
+    );
   const rollback = validatedRollback(clockRollback);
   if (rollback instanceof Error) return rollback;
+  const fractionBits = (subMillisecondFractionBits as number | undefined) ?? 0;
   return createPortableUuidV7Generator({
     ...(rollback === undefined ? {} : { clockRollback: rollback }),
-    ...(readUnixMs === undefined ? {} : { readUnixMs }),
+    readUnixMs: readUnixMs ?? (fractionBits === 0 ? Date.now : readHighResolutionUnixMs),
+    subMillisecondFractionBits: fractionBits,
     fillRandom,
   });
 }
@@ -113,8 +143,8 @@ function buildGenerator(
  * readUnixMs. Untyped calls with invalid options return `UuidSlugError`; valid TypeScript calls create
  * the generator directly. Clock and entropy failures are returned by generator methods.
  *
- * @param options - Clock used by this sequence. Omit to read `Date.now`; the sequence state is
- * still separate from the module-level generator.
+ * @param options - Clock and payload layout used by this sequence. Omit to read `Date.now` with no
+ * fraction field; a selected fraction field uses the runtime's high-resolution clock when present.
  * @returns An independent generator.
  */
 export function createUuidV7Generator(options?: UuidV7GeneratorOptions): UuidV7Generator;
@@ -130,7 +160,7 @@ export function createUuidV7Generator(
  * failures; the package cannot detect a successful partial or weak fill.
  *
  * @param fillRandom - Fill the complete array from the caller's chosen source.
- * @param options - Clock and rollback behavior for this sequence.
+ * @param options - Clock, payload layout, and rollback behavior for this sequence.
  */
 export function createUuidV7GeneratorWithRandomFill(
   fillRandom: UuidRandomFill,
@@ -149,7 +179,7 @@ export function createUuidV7GeneratorWithRandomFill(
 }
 
 /** Delay generator setup so conversion-only imports draw no entropy and bundle no generator. */
-let generator: UuidV7Generator | undefined;
+let generator: ReturnType<typeof createRuntimeGenerator> | undefined;
 const v7 = () => (generator ??= createRuntimeGenerator(runtime));
 let generateDefaultUuidV7: UuidV7Generator["generateUuidV7"] | undefined;
 

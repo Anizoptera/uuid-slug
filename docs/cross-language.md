@@ -47,8 +47,19 @@ Both languages generate UUIDv4 and UUIDv7 only. Generic parsing, version inspect
 conversion preserve other UUID versions without version-specific APIs.
 
 Any high-resolution generation mode must expose the same fraction width and counter layout in both
-languages. TypeScript must not carry epoch nanoseconds in a `number`; use split fields or `bigint`.
-Runtime clock selection may differ, but one generator configuration must keep one wire layout.
+languages. Fractional Unix milliseconds can carry UUIDv7's 12 fraction bits near the current epoch;
+they cannot preserve arbitrary nanoseconds. Runtime clock selection may differ, but one generator
+configuration must keep one wire layout.
+
+Do not add nanosecond `bigint` or split-second clock callbacks unless a consumer needs exact fraction
+placement near the end of UUIDv7's 48-bit millisecond range. UUIDv7 stores at most 12 fraction bits;
+near current dates, a JavaScript number already addresses every bucket without BigInt work or a
+second public clock shape. Revisit this when that range assumption changes.
+
+Native Rust uses `SystemTime` for configured fraction bits. Rust WebAssembly keeps its existing
+`Date.now()` dependency and therefore starts configured fractions at zero until logical ordering
+advances them. Callers that need measured browser precision can pass fractional Unix milliseconds
+through `generate_uuid_v7_with_random_fill`; the callback also owns secure entropy on that path.
 
 | TypeScript capability | Rust entry point or composition |
 | --- | --- |

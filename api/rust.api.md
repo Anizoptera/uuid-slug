@@ -336,7 +336,9 @@ pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_at_unix_ms_with_random_fill(
 pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_into_with_random_fill(&mut self, unix_ms: f64, out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_with_random_fill(&mut self, unix_ms: f64, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub const fn uuid_slug::UuidV7Generator::new() -> Self
+pub fn uuid_slug::UuidV7Generator::payload_layout(&self) -> uuid_slug::UuidV7PayloadLayout
 pub const fn uuid_slug::UuidV7Generator::with_clock_rollback_policy(self, policy: uuid_slug::UuidV7ClockRollbackPolicy) -> Self
+pub fn uuid_slug::UuidV7Generator::with_sub_millisecond_fraction_bits(self, bits: u8) -> core::result::Result<Self, uuid_slug::Error>
 impl core::default::Default for uuid_slug::UuidV7Generator
 pub fn uuid_slug::UuidV7Generator::default() -> uuid_slug::UuidV7Generator
 impl core::fmt::Debug for uuid_slug::UuidV7Generator
@@ -862,7 +864,9 @@ pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_at_unix_ms_with_random_fill(
 pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_into_with_random_fill(&mut self, unix_ms: f64, out: &mut [u8], offset: usize, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<(), uuid_slug::Error>
 pub fn uuid_slug::UuidV7Generator::generate_uuid_v7_with_random_fill(&mut self, unix_ms: f64, fill: impl core::ops::function::FnMut(&mut [u8]) -> core::result::Result<(), uuid_slug::Error>) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 pub const fn uuid_slug::UuidV7Generator::new() -> Self
+pub fn uuid_slug::UuidV7Generator::payload_layout(&self) -> uuid_slug::UuidV7PayloadLayout
 pub const fn uuid_slug::UuidV7Generator::with_clock_rollback_policy(self, policy: uuid_slug::UuidV7ClockRollbackPolicy) -> Self
+pub fn uuid_slug::UuidV7Generator::with_sub_millisecond_fraction_bits(self, bits: u8) -> core::result::Result<Self, uuid_slug::Error>
 impl core::default::Default for uuid_slug::UuidV7Generator
 pub fn uuid_slug::UuidV7Generator::default() -> uuid_slug::UuidV7Generator
 impl core::fmt::Debug for uuid_slug::UuidV7Generator

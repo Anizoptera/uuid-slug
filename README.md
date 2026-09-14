@@ -134,6 +134,8 @@ the server; generating a valid UUID does not grant permission to create or repla
 When importing records that do not yet have IDs, encode their recorded time instead of the import
 time. `generateUuidV7AtUnixMs` and `generateUuidV7BytesAtUnixMs` accept whole Unix milliseconds in
 `0..2^48-1`, use secure randomness, and leave the current-time generator's sequence unchanged.
+They set a configured sub-millisecond fraction field to zero because their input is a whole
+millisecond.
 
 ```ts
 import { BASE32HEX, generateUuidV7AtUnixMs, isUuidSlugError, uuidStringToPlainSlug } from "@anizoptera/uuid-slug";
@@ -153,6 +155,13 @@ inclusive. Set `timestampRangeStartUnixMs` on the masking codec to move that fix
 Use `createUuidV7Generator({ readUnixMs })` for an application clock or time-dependent tests.
 Each generator has its own sequence state. A fixed clock does not make IDs repeatable:
 randomness still comes from the runtime.
+
+Set `subMillisecondFractionBits` from 1 through 12 to encode the clock fraction before the
+generator's random-start counter. `payloadLayout` exposes the exact split for later extraction.
+Without `readUnixMs`, this mode uses the runtime's high-resolution clock when available and falls
+back to `Date.now()`. The selected width states the UUID layout, not the clock's real accuracy.
+If the clock stalls or moves backward, the generator advances this logical fraction and then the
+millisecond timestamp when needed; extracted fractions can therefore be later than the clock reading.
 
 Created generators preserve ordering when the clock moves backward. Set `clockRollback` to reset
 or return `invalid_timestamp` when total skew exceeds an inclusive tolerance. Use

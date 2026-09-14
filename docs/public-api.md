@@ -83,6 +83,10 @@ A `UuidV7MaskingCodec` owns the key required for masked slugs. Its `uuidToString
 alphabets, both masked-slug alphabets, and registered sentinels. Only `uuidToMaskedSlug` requires
 UUIDv7. Source-specific methods exist only to resolve a dual-valid 22-character slug.
 
+Keep this codec distinct from `UuidV7Generator`. The generator owns mutable clock and sequence
+state. The codec owns immutable masks, retained masks, sentinels, and masked spelling. Stateless
+conversion and inspection remain root functions; an unkeyed codec would only duplicate them.
+
 ## Rules
 
 Design from caller code, not implementation convenience. Every concept, option, failure, effect,
@@ -309,10 +313,13 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   Return a Method 3 fraction as its exact value and width; a floating timestamp would hide its
   quantization. Keep every undeclared payload bit as an uninterpreted integer instead of guessing.
   A `Date` helper adds mutable allocation, range coercion, and no information.
-- A high-resolution generator must use a split millisecond and sub-millisecond reading or an exact
-  integer reading. A JavaScript number near the Unix epoch cannot represent nanoseconds. Keep the
-  payload layout explicit and stable across runtimes; capability detection may select a clock
-  implementation, but it must not silently change stored UUID semantics.
+- A fractional Unix-millisecond number near the current epoch distinguishes all 12 UUIDv7 fraction
+  bits, although it cannot preserve an arbitrary nanosecond timestamp. Keep the payload layout
+  explicit and stable across runtimes; capability detection may select a clock implementation, but
+  it must not silently change stored UUID semantics.
+- Keep sub-millisecond generation monotonic when the clock stalls or moves backward. Increment the
+  random-start counter, then carry into the logical fraction and millisecond fields; the extracted
+  fraction is an ordering value, not proof of the clock's exact reading.
 - Keep standalone operations with complete names. Function properties and representation
   namespaces would duplicate them and make detached names less clear.
 - Keep one error-value path. Nullable and throwing duplicates discard diagnostics or split control

@@ -31,12 +31,14 @@ import { MAX_UUID_V7_UNIX_MS, isValidUuidV7UnixMs, rejectUuidV7UnixMs } from "./
 
 /** Internal controls for exercising the portable UUIDv7 state machine. */
 interface PortableUuidV7GeneratorOptions {
-  /** Return Unix milliseconds; finite fractional readings are truncated. Defaults to `Date.now`. */
+  /** Return Unix milliseconds; selected fraction bits consume the fractional part. */
   readonly readUnixMs?: () => number;
   /** Fill every byte. Returned or thrown failures are contained by generation. */
   readonly fillRandom: (bytes: Uint8Array<ArrayBuffer>) => unknown;
   /** Policy already validated at the public seam. */
   readonly clockRollback?: Extract<UuidV7ClockRollbackPolicy, { readonly toleranceMs: number }>;
+  /** Number of leading payload bits assigned to the clock fraction. */
+  readonly subMillisecondFractionBits?: number;
 }
 
 function writeTimestampWords(bytes: Uint8Array, ms: number, offset: number) {
@@ -137,6 +139,13 @@ export function createPortableUuidV7Generator(
   const readUnixMs = options.readUnixMs ?? Date.now;
   const fill = options.fillRandom;
   const rollback = options.clockRollback;
+  const fractionBits = options.subMillisecondFractionBits ?? 0;
+  const counterBits = 42 - fractionBits;
+  const counterModulus = 2 ** counterBits;
+  const payloadLayout = Object.freeze({
+    subMillisecondFractionBits: fractionBits,
+    counterBits,
+  });
   // The sequence seed consumes six bytes and the UUID tail consumes four. Drawing a full UUID
   // block would copy six bytes that version, variant, timestamp, and sequence fields replace.
   const random = new Uint8Array(10);
@@ -157,12 +166,14 @@ export function createPortableUuidV7Generator(
   let generating = false;
   const textBytes = new Uint8Array(16);
 
-  function reseed(ms: number) {
+  function reseed(ms: number, fraction: number) {
     const failed = fillRandomBytes(fill, random);
     if (failed) return failed;
+    const seededCounter = (seedHi(random) * 0x1_0000_0000 + seedLo(random)) % counterModulus;
+    const payloadPrefix = fraction * counterModulus + seededCounter;
     lastMs = ms;
-    counterHi = seedHi(random);
-    counterLo = seedLo(random);
+    counterHi = Math.floor(payloadPrefix / 0x1_0000_0000);
+    counterLo = payloadPrefix >>> 0;
     return undefined;
   }
 
@@ -191,7 +202,7 @@ export function createPortableUuidV7Generator(
             ? checkRange(16, offset, 16)
             : checkByteRange(out, offset, 16);
       if (badRange) return badRange;
-      // Truncated THEN validated, in that order and not the other. A readUnixMs is allowed to be
+      // Split THEN validated, in that order and not the other. A readUnixMs is allowed to be
       // fractional — `performance.timeOrigin + performance.now()` is, and is a perfectly good one —
       // so rejecting non-integers here would refuse a legitimate caller, unlike `rejectInstant`,
       // where the fraction is in an argument the caller wrote out. What must not survive is a
@@ -208,6 +219,10 @@ export function createPortableUuidV7Generator(
           INVALID_TIMESTAMP,
           `Clock returned ${String(reading)}, which is not a millisecond in 0..${MAX_UUID_V7_UNIX_MS}.`,
         );
+      const fraction =
+        fractionBits === 0
+          ? 0
+          : Math.min(2 ** fractionBits - 1, Math.floor((reading - now) * 2 ** fractionBits));
       const rollbackMs = rollback === undefined ? 0 : clockHighWaterMs - now;
       if (rollback !== undefined && rollbackMs > rollback.toleranceMs) {
         if (rollback.action === UUID_V7_ROLLBACK_ERROR)
@@ -215,11 +230,15 @@ export function createPortableUuidV7Generator(
             INVALID_TIMESTAMP,
             `Clock moved backward by ${rollbackMs} milliseconds; clockRollback allows ${rollback.toleranceMs}. Increase tolerance or choose reset/preserve if this rollback is acceptable.`,
           );
-        const failed = reseed(now);
+        const failed = reseed(now, fraction);
         if (failed) return failed;
         clockHighWaterMs = now;
-      } else if (now > lastMs) {
-        const failed = reseed(now);
+      } else if (
+        now > lastMs ||
+        (now === lastMs &&
+          fraction > Math.floor((counterHi * 0x1_0000_0000 + counterLo) / counterModulus))
+      ) {
+        const failed = reseed(now, fraction);
         if (failed) return failed;
       } else {
         const nextLo = (counterLo + 1) >>> 0;
@@ -238,7 +257,7 @@ export function createPortableUuidV7Generator(
               INVALID_TIMESTAMP,
               `UUIDv7 sequence exhausted at Unix millisecond ${MAX_UUID_V7_UNIX_MS}; another UUID would exceed the 48-bit timestamp.`,
             );
-          const failed = reseed(lastMs + 1);
+          const failed = reseed(lastMs + 1, 0);
           if (failed) return failed;
         } else {
           const failed = fillRandomBytes(fill, randomTail);
@@ -268,7 +287,14 @@ export function createPortableUuidV7Generator(
       const failed = fillRandomBytes(fill, random);
       if (failed) return failed;
       // A supplied instant takes a random sequence and leaves current-time state untouched.
-      return writeBytes(target, offset, timestamp, seedHi(random), seedLo(random));
+      const seededCounter = (seedHi(random) * 0x1_0000_0000 + seedLo(random)) % counterModulus;
+      return writeBytes(
+        target,
+        offset,
+        timestamp,
+        Math.floor(seededCounter / 0x1_0000_0000),
+        seededCounter >>> 0,
+      );
     } finally {
       generating = false;
     }
@@ -316,6 +342,7 @@ export function createPortableUuidV7Generator(
     // Text formatting consumes bytes synchronously, so one generator-owned buffer removes an
     // allocation without exposing mutable storage. The reentrancy guard protects it while readUnixMs
     // and entropy callbacks run.
+    payloadLayout,
     generateUuidV7,
     generateUuidV7AtUnixMs,
     generateUuidV7Bytes,
@@ -330,7 +357,7 @@ export function createPortableUuidV7Generator(
  * native call. Revalidate each call if a host can return intermittent malformed output from one
  * stable function; current platform UUID contracts do not.
  */
-export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
+export function createRuntimeGenerator(runtime: Runtime): Omit<UuidV7Generator, "payloadLayout"> {
   const fallback = createPortableUuidV7Generator({ fillRandom: runtime.fillRandom });
   let trustedNativeUuidV7: (() => string) | undefined;
   function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
@@ -365,5 +392,10 @@ export function createRuntimeGenerator(runtime: Runtime): UuidV7Generator {
         : result;
     }
   }
-  return { ...fallback, generateUuidV7 };
+  return {
+    generateUuidV7,
+    generateUuidV7AtUnixMs: fallback.generateUuidV7AtUnixMs,
+    generateUuidV7Bytes: fallback.generateUuidV7Bytes,
+    generateUuidV7BytesAtUnixMs: fallback.generateUuidV7BytesAtUnixMs,
+  };
 }

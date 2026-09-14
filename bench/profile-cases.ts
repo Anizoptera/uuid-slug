@@ -162,6 +162,13 @@ export function createProfileCases(
   const maskedOnlyMigration = codec.createUuidSlugMigrationDecoder();
   const originals = originalFixtures.filter(({ slug, raw }) => slug !== raw);
   const portable = api.createUuidV7Generator({ readUnixMs: () => instant });
+  const portableSubMillisecond = api.createUuidV7Generator({
+    readUnixMs: () => instant + 0.75,
+    subMillisecondFractionBits: 12,
+  });
+  const portableSubMillisecondAuto = api.createUuidV7Generator({
+    subMillisecondFractionBits: 12,
+  });
   let advancingMs = instant;
   const portableAdvancing = api.createUuidV7Generator({ readUnixMs: () => (advancingMs += 1) });
   let rollingBackMs = instant;
@@ -528,6 +535,8 @@ export function createProfileCases(
     "portable.string": () => portable.generateUuidV7(),
     "portable.bytes": () => portable.generateUuidV7Bytes(),
     "portable.into": () => portable.generateUuidV7Bytes(into, 4),
+    "portable.subms12.into": () => portableSubMillisecond.generateUuidV7Bytes(into, 4),
+    "portable.subms12.auto.into": () => portableSubMillisecondAuto.generateUuidV7Bytes(into, 4),
     "portable.at": (index) => portable.generateUuidV7AtUnixMs(instant + (index & 255)),
     "portable.at.bytes": (index) => portable.generateUuidV7BytesAtUnixMs(instant + (index & 255)),
     "portable.at.into": (index) =>

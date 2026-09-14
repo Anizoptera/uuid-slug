@@ -1188,6 +1188,25 @@ The Bun test lane uses two isolated workers. Automatic parallelism increased con
 shortening the complete local check on 2026-09-11; change the cap only after measuring the complete
 lane with the same corpus and isolation.
 
+### High-resolution UUIDv7 generation
+
+Measured 2026-09-14 on macOS Arm64 with Node 24.21.0, Bun 1.4.2, Deno 2.9.6, and bundled headless
+Chromium. In 200,000 consecutive reads, `performance.timeOrigin + performance.now()` had a smallest
+positive step of 0.000244140625 ms in Node, Bun, and Deno, but about 0.1 ms in Chromium. `Date.now`
+advanced in 1 ms steps. No clock moved backward during this short run; that does not establish
+rollback behavior, and browser privacy settings can reduce timer resolution further.
+
+Two consecutive filtered profiles compared caller-buffer generation with a fixed fractional clock
+against the automatic high-resolution clock. Median nanoseconds per call were 44.36/47.11 versus
+74.77/76.14 in Node, 27.18/26.12 versus 67.38/67.25 in Bun, 48.04/46.79 versus 104.47/105.11 in
+Deno, and 43.40/44.20 versus 109.27/108.89 in Chromium. The clock dominates the added cost. Keep
+fraction bits opt-in and probe the clock implementation once; do not infer accuracy from API presence.
+
+The fraction arithmetic itself was smaller and reproducible in Node, Deno, and Chromium, while Bun
+changed direction between short runs. These measurements cover one machine, current runtime modes,
+and caller-buffer output. They do not compare power use, other CPUs, browser privacy modes, or clock
+behavior under system suspend and wall-clock adjustment.
+
 The benchmark harness runs only its independent child-process cases concurrently. On Bun 1.4.2,
 five-run medians fell from 655 ms to 266 ms for that file and from 889 ms to 693 ms for the complete
 Bun test lane. Keep parser and statistics cases serial; they do not wait and gain nothing from overlap.

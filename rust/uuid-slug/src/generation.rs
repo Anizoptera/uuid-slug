@@ -3,7 +3,7 @@
 //! Every `_with` callback must fill every requested byte from its chosen source or return an
 //! error. A successful partial fill cannot be distinguished reliably from valid random bytes.
 //! Use the default generators for platform CSPRNG entropy; custom callbacks own that guarantee.
-use crate::{Error, ErrorCode, Uuid};
+use crate::{Error, ErrorCode, Uuid, UuidV7PayloadLayout};
 
 /// Largest timestamp the UUIDv7 wire format can carry.
 pub const MAX_UUID_V7_UNIX_MS: u64 = (1 << 48) - 1;
@@ -69,6 +69,7 @@ pub struct UuidV7Generator {
     clock_high_water_ms: Option<u64>,
     sequence: u64,
     rollback_policy: UuidV7ClockRollbackPolicy,
+    sub_millisecond_fraction_bits: u8,
 }
 impl UuidV7Generator {
     /// Start without reading the clock or drawing entropy.
@@ -78,6 +79,7 @@ impl UuidV7Generator {
             clock_high_water_ms: None,
             sequence: 0,
             rollback_policy: UuidV7ClockRollbackPolicy::Preserve,
+            sub_millisecond_fraction_bits: 0,
         }
     }
     /// Set how this generator handles clock skew beyond an optional tolerance.
@@ -86,7 +88,23 @@ impl UuidV7Generator {
         self.rollback_policy = policy;
         self
     }
-    /// Generate at a clock reading, truncating fractional milliseconds and applying its rollback policy.
+    /// Assign up to 12 leading payload bits to RFC 9562 sub-millisecond time.
+    /// Monotonic continuation can advance that field ahead of a stalled or backward clock.
+    pub fn with_sub_millisecond_fraction_bits(mut self, bits: u8) -> Result<Self, Error> {
+        UuidV7PayloadLayout::new(bits, 0)?;
+        self.sub_millisecond_fraction_bits = bits;
+        Ok(self)
+    }
+    /// Payload layout emitted by this generator.
+    pub fn payload_layout(&self) -> UuidV7PayloadLayout {
+        UuidV7PayloadLayout::new(
+            self.sub_millisecond_fraction_bits,
+            42 - self.sub_millisecond_fraction_bits,
+        )
+        .expect("generator validates its fraction width")
+    }
+    /// Generate at a clock reading, starting the selected fraction bits from that reading and
+    /// applying rollback policy.
     /// A reseed requests ten random bytes; continuation at the same UUID timestamp requests four.
     /// Failed entropy draws leave the sequence unchanged so retries cannot corrupt state.
     pub fn generate_uuid_v7_with_random_fill(
@@ -95,6 +113,14 @@ impl UuidV7Generator {
         mut fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
     ) -> Result<Uuid, Error> {
         let now = timestamp(unix_ms, true)?;
+        let fraction_bits = self.sub_millisecond_fraction_bits;
+        let counter_bits = 42 - fraction_bits;
+        let fraction = if fraction_bits == 0 {
+            0
+        } else {
+            ((unix_ms.fract() * (1u64 << fraction_bits) as f64).floor() as u64)
+                .min((1u64 << fraction_bits) - 1)
+        };
         let rollback_ms = self
             .clock_high_water_ms
             .and_then(|high_water| high_water.checked_sub(now));
@@ -116,7 +142,11 @@ impl UuidV7Generator {
         let (ms, reseed) = match (reset_clock, self.last_ms) {
             (true, _) => (now, true),
             (false, None) => (now, true),
-            (false, Some(last)) if now > last => (now, true),
+            (false, Some(last))
+                if now > last || (now == last && fraction > (self.sequence >> counter_bits)) =>
+            {
+                (now, true)
+            }
             (false, Some(last)) if self.sequence == MAX_SEQUENCE => {
                 if last == MAX_UUID_V7_UNIX_MS {
                     return Err(Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
@@ -135,7 +165,7 @@ impl UuidV7Generator {
         })
         .map_err(|cause| Error::new(ErrorCode::RngUnavailable).with_source(cause))?;
         let sequence = if reseed {
-            seed(&random)
+            (fraction << counter_bits) | (seed(&random) & ((1u64 << counter_bits) - 1))
         } else {
             self.sequence + 1
         };
@@ -150,6 +180,7 @@ impl UuidV7Generator {
         Ok(id)
     }
     /// Generate for an explicit whole millisecond from ten random bytes without changing the current sequence.
+    /// A configured fraction field is zero because this operation accepts no fractional time.
     pub fn generate_uuid_v7_at_unix_ms_with_random_fill(
         &self,
         unix_ms: f64,
@@ -159,7 +190,12 @@ impl UuidV7Generator {
         let mut random = [0; 10];
         fill(&mut random)
             .map_err(|cause| Error::new(ErrorCode::RngUnavailable).with_source(cause))?;
-        Ok(assemble(ms, seed(&random), random))
+        let counter_bits = 42 - self.sub_millisecond_fraction_bits;
+        Ok(assemble(
+            ms,
+            seed(&random) & ((1u64 << counter_bits) - 1),
+            random,
+        ))
     }
     /// Generate into caller storage; reject a short destination before clock or entropy work.
     pub fn generate_uuid_v7_into_with_random_fill(
@@ -207,7 +243,11 @@ impl UuidV7Generator {
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(|error| Error::new(ErrorCode::InvalidTimestamp).with_source(error))?;
         #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-        let reading = elapsed.as_millis() as f64;
+        let reading = if self.sub_millisecond_fraction_bits == 0 {
+            elapsed.as_millis() as f64
+        } else {
+            elapsed.as_millis() as f64 + f64::from(elapsed.subsec_nanos() % 1_000_000) / 1_000_000.0
+        };
         #[cfg(any(
             not(all(target_arch = "wasm32", target_os = "unknown")),
             feature = "wasm-js"
@@ -456,6 +496,7 @@ mod tests {
             clock_high_water_ms: Some(10),
             sequence: MAX_SEQUENCE,
             rollback_policy: UuidV7ClockRollbackPolicy::Preserve,
+            sub_millisecond_fraction_bits: 0,
         };
         assert!(
             generator
@@ -484,6 +525,84 @@ mod tests {
     }
 
     #[test]
+    fn sub_millisecond_fraction_precedes_the_reduced_counter() -> Result<(), Error> {
+        let mut generator = UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
+        let first = generator.generate_uuid_v7_with_random_fill(100.25, fill)?;
+        let second = generator.generate_uuid_v7_with_random_fill(100.75, fill)?;
+        assert_eq!(
+            generator.payload_layout(),
+            UuidV7PayloadLayout::new(12, 30)?
+        );
+        assert_eq!(
+            first
+                .extract_uuid_v7_payload(generator.payload_layout())?
+                .sub_millisecond_fraction
+                .map(|field| field.value),
+            Some(1024)
+        );
+        assert_eq!(
+            second
+                .extract_uuid_v7_payload(generator.payload_layout())?
+                .sub_millisecond_fraction
+                .map(|field| field.value),
+            Some(3072)
+        );
+        assert!(first < second);
+        assert!(
+            UuidV7Generator::new()
+                .with_sub_millisecond_fraction_bits(13)
+                .is_err()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn explicit_millisecond_has_zero_configured_fraction() -> Result<(), Error> {
+        let generator = UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
+        let uuid = generator.generate_uuid_v7_at_unix_ms_with_random_fill(100.0, |out| {
+            out.fill(u8::MAX);
+            Ok(())
+        })?;
+        assert_eq!(
+            uuid.extract_uuid_v7_payload(generator.payload_layout())?
+                .sub_millisecond_fraction
+                .map(|field| field.value),
+            Some(0)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn exhausted_fraction_counter_advances_logical_time() -> Result<(), Error> {
+        let fill_ones = |out: &mut [u8]| {
+            out.fill(u8::MAX);
+            Ok(())
+        };
+        let layout = UuidV7PayloadLayout::new(12, 30)?;
+        let mut within_ms = UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
+        let first = within_ms.generate_uuid_v7_with_random_fill(100.25, fill_ones)?;
+        let second = within_ms.generate_uuid_v7_with_random_fill(100.25, fill_ones)?;
+        assert_eq!(first.extract_uuid_v7_unix_ms()?, 100);
+        assert_eq!(second.extract_uuid_v7_unix_ms()?, 100);
+        assert_eq!(
+            second
+                .extract_uuid_v7_payload(layout)?
+                .sub_millisecond_fraction
+                .map(|field| field.value),
+            Some(1025)
+        );
+
+        let mut next_ms = UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
+        let last_fraction = 100.0 + f64::from((1 << 12) - 1) / f64::from(1 << 12);
+        let first = next_ms.generate_uuid_v7_with_random_fill(last_fraction, fill_ones)?;
+        let second = next_ms.generate_uuid_v7_with_random_fill(last_fraction, fill_ones)?;
+        assert_eq!(first.extract_uuid_v7_unix_ms()?, 100);
+        assert_eq!(second.extract_uuid_v7_unix_ms()?, 101);
+        assert!(first < second);
+        Ok(())
+    }
+
+    #[test]
     fn partial_failed_draws_preserve_output_and_retry() -> Result<(), Error> {
         for (last_ms, sequence, reading) in [
             (None, 0, 10.0),
@@ -497,6 +616,7 @@ mod tests {
                     clock_high_water_ms: last_ms,
                     sequence,
                     rollback_policy: UuidV7ClockRollbackPolicy::Preserve,
+                    sub_millisecond_fraction_bits: 0,
                 };
                 let fail = |out: &mut [u8]| {
                     let written = prefix.min(out.len());
@@ -528,6 +648,7 @@ mod tests {
                     clock_high_water_ms: last_ms,
                     sequence,
                     rollback_policy: UuidV7ClockRollbackPolicy::Preserve,
+                    sub_millisecond_fraction_bits: 0,
                 };
                 assert_eq!(
                     generator.generate_uuid_v7_with_random_fill(reading, fill)?,

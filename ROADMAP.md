@@ -21,17 +21,27 @@ Maintainer direction: evaluate sub-millisecond fraction bits from runtime or cal
 optional UUIDv7 generation mode. Keep a counter for equal readings and rollback. Do not claim or
 encode precision that the selected clock cannot supply.
 
-- [ ] Measure each runtime's available epoch clock, effective resolution, rollback, call cost, and privacy clamping.
-- [ ] Reject fractional Unix milliseconds as the precision API: a JavaScript number near the current epoch cannot represent nanoseconds.
-- [ ] Compare split `{ unixMs, subMillisecondNanoseconds }` readings with epoch-nanosecond `bigint` readings in TypeScript and Rust.
-- [ ] Compare fraction widths 1 through 12 and the resulting 41- through 30-bit counter capacity against the current 42-bit counter path.
-- [ ] Decide whether counters reset per fraction bucket or per millisecond; verify exhaustion and rollback across both boundaries.
-- [ ] Define explicit caller-clock behavior and runtime fallback without letting one configuration silently emit mixed layouts.
-- [ ] Keep automatic clock selection separate from automatic payload-layout selection; capability presence does not prove effective precision.
-- [ ] Verify Node, Bun, Deno, Chromium, Rust native, and Rust WebAssembly paths, including reduced timer precision.
-- [ ] Benchmark the complete public route against the existing generator and native UUIDv7 paths before changing any default.
-- [ ] Falsify ordering, uniqueness, rollback, reentrancy, entropy failure, counter exhaustion, and exact wire placement.
-- [ ] Expose the selected layout so stored UUIDs can be decoded without guessing their generator runtime.
+- [x] Measure each runtime's epoch clocks, effective resolution, call cost, and observed clamping;
+      keep rollback policy because a short monotonic run cannot prove future clock behavior.
+- [x] Keep fractional Unix milliseconds as a supported clock API: near the current epoch, its
+      spacing reaches every one of UUIDv7's 12 permitted fraction bits; it does not preserve an
+      arbitrary nanosecond timestamp.
+- [x] Reject split and `bigint` clock APIs for now: they add a second public clock shape but cannot
+      improve UUIDv7's 12-bit fraction near current dates; revisit for exact far-future placement.
+- [x] Support fraction widths 1 through 12, leaving 41 through 30 counter bits; verify both limits
+      and a middle width while profiling the largest arithmetic case.
+- [x] Reset the random-start counter when the observed fraction advances; on stall, rollback, or
+      exhaustion, carry through the logical fraction and then the millisecond.
+- [x] Use fractional `readUnixMs` when supplied; otherwise select the runtime high-resolution clock
+      once for fraction layouts and fall back to `Date.now`.
+- [x] Keep automatic clock selection separate from the explicit payload width; capability presence
+      does not prove effective precision.
+- [x] Verify Node, Bun, Deno, Chromium, Rust native, and Rust WebAssembly paths, including the
+      reduced timer precision observed in Chromium.
+- [x] Benchmark the complete public caller-buffer route against the existing generator; keep the
+      default unchanged because high-resolution clock reads add material runtime cost.
+- [x] Falsify ordering, rollback, reentrancy, entropy failure, counter and fraction exhaustion, and exact wire placement.
+- [x] Expose each reusable generator's fixed layout so stored UUIDs can be decoded without guessing its runtime.
 
 ## Codec capability boundary
 
@@ -39,14 +49,14 @@ Maintainer direction: evaluate a broader codec name and optional masking. Do not
 conversion harder, duplicate root operations, or expose methods that can only fail because no mask
 was configured.
 
-- [ ] Compare one optional-capability codec, a base codec plus keyed subtype, separate capability
+- [x] Compare one optional-capability codec, a base codec plus keyed subtype, separate capability
       interfaces, and generator/codec composition in TypeScript and Rust caller code.
-- [ ] Name the state and repeated work that justify each reusable object; reject wrappers around
+- [x] Name the state and repeated work that justify each reusable object; reject wrappers around
       stateless root functions.
-- [ ] Keep generation sequence state in a generator and mask/key state in the keyed codec unless
+- [x] Keep generation sequence state in a generator and mask/key state in the keyed codec unless
       measured caller code shows that combining them removes more burden than it creates.
-- [ ] Decide the public name and migration before changing the published `UuidV7MaskingCodec`
-      contract.
+- [x] Keep the published `UuidV7MaskingCodec` name: its unique state and added accepted forms all
+      depend on masking; a broader base object would only mirror stateless root functions.
 
 ## Base58 candidate
 

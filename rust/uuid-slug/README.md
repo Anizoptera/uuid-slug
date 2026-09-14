@@ -87,6 +87,13 @@ enables the unsupported 0.2.0 masked format.
 The crate accepts every RFC 9562 UUIDv7 and preserves its 74 payload bits. Use
 `Uuid::extract_uuid_v7_payload` with `UuidV7PayloadLayout` only when the generator's leading
 fraction and counter widths are known. Every undeclared low bit remains in `remaining`.
+`with_sub_millisecond_fraction_bits` assigns 1 through 12 leading payload bits to the clock
+fraction; `payload_layout` returns that split and the remaining counter width.
+Explicit-time generation sets the configured fraction field to zero. Native current-time generation
+reads the operating system's sub-millisecond clock; WebAssembly's built-in clock uses millisecond
+`Date.now()`, so pass a fractional reading to `generate_uuid_v7_with_random_fill` when that precision matters.
+When the clock stalls or moves backward, the generator advances this logical fraction and then
+the millisecond timestamp when needed; extracted fractions can be later than the clock reading.
 Use `UuidV7MaskingCodec::extract_masked_uuid_v7_payload` for masked slugs. Masking rejects timestamps outside the codec's
 configured range instead of truncating them. Same-millisecond ordering depends on the generator.
 `uuid_v7_bounds(start, end)` returns the inclusive lowest and highest UUIDv7 search keys; pass
