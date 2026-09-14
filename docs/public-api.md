@@ -291,9 +291,9 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   coercion, even when the wrapped text is valid; explicitly documented byte and error inputs keep
   their own paths. TypeScript rejects the wrapper at compile time, while runtime rejection keeps
   that contract intact for JavaScript and avoids making an object wrapper part of every
-  string-taking API. This is an interface choice, not a
-  runtime limitation: `String.prototype.valueOf.call(value)` can read a genuine wrapper without
-  invoking caller-defined coercion hooks.
+  string-taking API. JavaScript can read a genuine wrapper with
+  `String.prototype.valueOf.call(value)` without invoking caller-defined coercion hooks, so
+  rejection is an interface choice, not a runtime limitation.
   If measured consumer demand ever justifies wrappers, normalize them once at every public string
   seam with that intrinsic operation; never call caller-owned coercion hooks.
 - Make invalid combinations unrepresentable when TypeScript can infer the distinction without a
