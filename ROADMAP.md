@@ -4,6 +4,11 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 
 ## Public interface audit
 
+- [x] Make the naming and public-interface review protocol explicit in project guidance.
+  - [x] Cover every public symbol, parameter, option, literal, collection, overload, default, result,
+        error, ownership rule, and package entry without duplicating the contract inventory.
+  - [x] Require ideal consumer call sites plus source, declaration, editor-help, runtime, and packed proof.
+  - [x] Re-read the resulting rules cold, run the complete gate, and commit the focused guidance change.
 - [x] Make runtime option vocabularies exhaustive against their public TypeScript owners.
   - [x] Replace positional key arrays with exact `keyof` maps checked by the compiler.
   - [x] Prove an interface-key mutation fails compilation and rerun the complete gate.

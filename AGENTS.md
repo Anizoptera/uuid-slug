@@ -16,6 +16,48 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   any UUID, caller-owned storage, UUIDv7 masking and migration, typed failures, and adaptive runtime
   paths. Keep version-neutral encoding separate from UUIDv7-only masking. Generation alone is not
   distinctive. State measured losses as gaps, never hide them with hype.
+
+## Public TypeScript interface protocol
+
+- Start from the shortest correct consumer call for each job. Inventory every root export, type,
+  overload, parameter, option, callback, property, literal, default, result, error, side effect,
+  ownership rule, package entry, and runtime variant before editing; each retained part must name a
+  caller job that fails without it. Delete pass-through aliases, duplicated ways to express one job,
+  and public implementation seams. Do not infer completeness from the generated declaration baseline.
+- Name symbols by enforced domain meaning. Use `Uuid` in TypeScript identifiers, `uuid` for values,
+  and `UUID` in prose. Operations start with the caller's action and name source, destination, unit,
+  version, ownership, or timing whenever omission creates ambiguity. Types and properties name the
+  value represented; callbacks name the result they must produce. One term has one meaning across
+  source, declarations, errors, docs, examples, and Rust parity. Opaque terms such as `data`, `item`,
+  `handle`, `process`, or `value` require a domain reason visible at the declaration.
+- Make the obvious call the safe complete call. Use overloads only for one semantic operation with
+  unambiguous forms; use an options object for independent optional axes. Boolean options use an
+  affirmative behavior name that reads correctly with `true`; use a semantic union when both values
+  are choices. Defaults perform no secret, lossy, compatibility, expensive, or weaker work.
+- Make misuse unrepresentable where TypeScript knows enough, while accepting unbranded external
+  values at the validating seam. Preserve brands, exact caller-owned output subtypes, enabled-option
+  narrowing, and detached `this: void` methods. Public types contain no `any`; `unknown` is limited to
+  genuinely unbounded input and narrowed once.
+- Give every closed string vocabulary one semantic scalar constant per member and derive its union
+  from those constants. Export the constants callers pass or compare. An exported collection must
+  serve a documented iteration job, and its positions never identify members. Reject unknown own
+  enumerable string keys before defaults. Keep runtime option maps local, named by property, and
+  exhaustive against `keyof` their public options type.
+- Return expected failures as `UuidSlugError` values and preserve existing error identity through
+  compatible chains. Error codes name caller recovery, messages state cause and correction, and
+  failed calls publish no partial output or state. Keep bounded local work synchronous; offer async
+  cancellation only where work can monopolize a host task.
+- Public JSDoc states accepted input, default, result, ownership, expected failure, effect, ordering,
+  and decision-relevant limit at the declaration that owns each fact; it never exposes implementation
+  rationale. Update README only for the consumer model and the owning design document only for the
+  lasting contract or reason. Do not copy inventories between them.
+- Finish only after compiling executable source and packed-package consumers for every changed call
+  form, running each changed success and failure path, reading emitted `.d.ts` and language-service
+  help cold, and executing every produced bundle. A typecheck proves types, runtime tests prove
+  behavior, and packed consumers prove shipped resolution; none substitutes for another.
+
+## Contract rules
+
 - The externally visible API is reserved. Put any proposed public export, option, behavior, or
   feature change and its consumer consequences in the same pull request. Merging is the maintainer
   decision; no separate acceptance step exists.
@@ -23,16 +65,6 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   parameters, return values, narrowing, or configuration. A package signature need not mention the
   type. Remove it only when no documented value or operation needs its distinction. Apply this rule
   separately to TypeScript and Rust, document the consumer effect, and verify each packaged surface.
-- Define every member of a closed public vocabulary once as a semantic scalar constant and derive
-  its union type from those constants. Export each constant that callers pass or compare. Export an
-  iterable collection only for a documented consumer workflow; its positions are never identifiers.
-- Name each Boolean option for the behavior `true` enables, such as `acceptDirectSlug`; use a
-  semantic value instead when two states do not read as a clear enable/disable choice.
-- Treat every package-owned public options object as closed at runtime. Reject unknown enumerable
-  string keys before applying defaults so JavaScript, parsed configuration, and misspelled TypeScript
-  values cannot silently select different behavior. Keep a named-key map with the constructor that
-  reads it and make it satisfy `Record<keyof Options, true>` so public type changes cannot drift from
-  runtime validation; do not create a root option-name catalog.
 - `ROADMAP.md` is transient and never owns a contract, decision, or lasting conclusion. Put
   consumer contracts in README, wire design in `docs/design.md`, security boundaries in
   `docs/security.md`, cross-language and distribution decisions in `docs/cross-language.md`, and
