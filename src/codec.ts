@@ -44,8 +44,16 @@ type EncodedSentinel = { bytes: Uint8Array; slug: SentinelUuidV7Slug };
 
 const CODEC_CONSTRUCTION_FAILED = "Codec construction failed.";
 const INVALID_MASKED_UUID_BYTES = "Masked UUID slugs require 16 UUIDv7 bytes.";
-const CODEC_OPTIONS = ["mask", "previousMasks", "sentinels", "outputAlphabet"] as const;
-const SENTINEL_OPTIONS = ["name", "uuid"] as const;
+const CODEC_OPTIONS = {
+  mask: true,
+  outputAlphabet: true,
+  previousMasks: true,
+  sentinels: true,
+} as const satisfies Record<keyof UuidV7SlugCodecOptions, true>;
+const SENTINEL_OPTIONS = {
+  name: true,
+  uuid: true,
+} as const satisfies Record<keyof UuidV7SentinelConfig, true>;
 type EncodedSentinelIndex = {
   readonly fingerprints: Uint32Array;
   readonly positions: Uint32Array;

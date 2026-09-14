@@ -11,7 +11,10 @@ import {
 import type { UuidV7String, UuidV7StringInput, UuidV7TimestampWindow } from "./types.ts";
 import { isUuidV7Bytes, uuidTimestampFromBytesUnchecked, uuidStringToBytes } from "./uuid.ts";
 
-const TIMESTAMP_WINDOW_OPTIONS = ["maxTimestampDeltaMs", "referenceUnixMs"] as const;
+const TIMESTAMP_WINDOW_OPTIONS = {
+  maxTimestampDeltaMs: true,
+  referenceUnixMs: true,
+} as const satisfies Record<keyof UuidV7TimestampWindow, true>;
 
 /** Decode before reading the reference time so validation performs one clock observation. */
 export function validateTimestampBytes(

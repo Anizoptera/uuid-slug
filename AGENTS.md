@@ -30,8 +30,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   semantic value instead when two states do not read as a clear enable/disable choice.
 - Treat every package-owned public options object as closed at runtime. Reject unknown enumerable
   string keys before applying defaults so JavaScript, parsed configuration, and misspelled TypeScript
-  values cannot silently select different behavior. Keep the accepted keys with the constructor that
-  reads them; do not create a root option-name catalog.
+  values cannot silently select different behavior. Keep a named-key map with the constructor that
+  reads it and make it satisfy `Record<keyof Options, true>` so public type changes cannot drift from
+  runtime validation; do not create a root option-name catalog.
 - `ROADMAP.md` is transient and never owns a contract, decision, or lasting conclusion. Put
   consumer contracts in README, wire design in `docs/design.md`, security boundaries in
   `docs/security.md`, cross-language and distribution decisions in `docs/cross-language.md`, and

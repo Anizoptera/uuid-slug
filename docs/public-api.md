@@ -128,7 +128,8 @@ Keep UUID text/binary conversion directional and version-neutral:
   Never maintain parallel literal lists in types, validators, and tests.
 - Reject unknown enumerable own string keys in package-owned public options before applying defaults.
   A typo must return the owning operation's configuration error instead of silently selecting
-  another clock, alphabet, mask, migration reader, sentinel definition, or timestamp window.
+  another clock, alphabet, mask, migration reader, sentinel definition, or timestamp window. Make
+  each runtime key map exhaustive against the public options type so either side cannot drift.
 - Accept ergonomic raw input at the package seam, validate it once, and return the narrowest type
   established by that successful operation. Keep format, UUID version, direct or masked spelling,
   and ownership distinctions when consumers use them.

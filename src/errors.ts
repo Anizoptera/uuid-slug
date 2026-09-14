@@ -166,9 +166,9 @@ export function isUint8Array(value: unknown): value is Uint8Array {
 /*#__NO_SIDE_EFFECTS__*/
 export function findUnknownOption(
   options: object,
-  accepted: readonly string[],
+  accepted: Readonly<Record<string, true>>,
 ): string | undefined {
-  for (const option of Object.keys(options)) if (!accepted.includes(option)) return option;
+  for (const option of Object.keys(options)) if (!Object.hasOwn(accepted, option)) return option;
   return undefined;
 }
 

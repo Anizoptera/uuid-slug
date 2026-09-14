@@ -4,6 +4,9 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 
 ## Public interface audit
 
+- [x] Make runtime option vocabularies exhaustive against their public TypeScript owners.
+  - [x] Replace positional key arrays with exact `keyof` maps checked by the compiler.
+  - [x] Prove an interface-key mutation fails compilation and rerun the complete gate.
 - [x] Close public option objects and preserve the rule in agent guidance.
   - [x] Reject unknown keys before any default can hide a misspelling in every public constructor.
   - [x] Add the missing option-naming and consumer-verification rules to `AGENTS.md`.

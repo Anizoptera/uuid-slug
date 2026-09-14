@@ -17,7 +17,9 @@ export interface UuidV7GeneratorOptions {
   readonly clock?: () => number;
 }
 
-const GENERATOR_OPTIONS = ["clock"] as const;
+const GENERATOR_OPTIONS = {
+  clock: true,
+} as const satisfies Record<keyof UuidV7GeneratorOptions, true>;
 
 /**
  * Create a UUIDv7 sequence with its own state, platform randomness, and optionally a caller-supplied

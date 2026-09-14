@@ -12,7 +12,11 @@ import type { CustomUuidV7MaskOptions, UuidV7Mask } from "./types.ts";
 const MASK_PROTOCOL = Symbol.for("@anizoptera/uuid-slug/mask/1");
 const CUSTOM_MASK_FAILURE_MESSAGE = "Custom mask construction failed.";
 const MASK_DIRECTION = "mask";
-const CUSTOM_MASK_OPTIONS = ["label", MASK_DIRECTION, "unmask"] as const;
+const CUSTOM_MASK_OPTIONS = {
+  label: true,
+  [MASK_DIRECTION]: true,
+  unmask: true,
+} as const satisfies Record<keyof CustomUuidV7MaskOptions, true>;
 
 interface MaskProtocol {
   readonly version: 1;

@@ -10,8 +10,15 @@ import type { AsyncUuidV7MaskOptions, UuidV7Mask, UuidV7MaskOptions } from "./ty
 
 const MASK_CONSTRUCTION_FAILURE_MESSAGE = "Mask construction failed.";
 const SEED_PROPERTY = "seed";
-const MASK_OPTIONS = [SEED_PROPERTY, "label", "keyDerivationIterations"] as const;
-const ASYNC_MASK_OPTIONS = [...MASK_OPTIONS, "signal"] as const;
+const MASK_OPTIONS = {
+  keyDerivationIterations: true,
+  label: true,
+  [SEED_PROPERTY]: true,
+} as const satisfies Record<keyof UuidV7MaskOptions, true>;
+const ASYNC_MASK_OPTIONS = {
+  ...MASK_OPTIONS,
+  signal: true,
+} as const satisfies Record<keyof AsyncUuidV7MaskOptions, true>;
 
 /** Reject short seeds early; length alone cannot make a chosen secret unpredictable. */
 const SEED_MIN_BYTES = 16;
@@ -45,7 +52,7 @@ function seedBytes(seed: string | Uint8Array) {
 }
 
 /** Reject coercible JavaScript values before they can allocate storage or become key material. */
-function validateOptions(options: unknown, accepted: readonly string[]) {
+function validateOptions(options: unknown, accepted: Readonly<Record<string, true>>) {
   if (typeof options !== "object" || options === null)
     return new UuidSlugError(
       INVALID_MASK,

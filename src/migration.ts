@@ -27,7 +27,10 @@ const PERMUTE = [9, 13, 3, 8, 14, 0, 11, 7, 6, 1, 15, 4, 2, 5, 10, 12] as const;
 const XOR = [
   0xa2, 0x70, 0x32, 0x7f, 0x98, 0xb8, 0x9b, 0x5e, 0x1b, 0x26, 0xb6, 0x16, 0x96, 0xf9, 0xea, 0x3e,
 ] as const;
-const MIGRATION_OPTIONS = ["acceptOriginalMask", "acceptDirectSlug"] as const;
+const MIGRATION_OPTIONS = {
+  acceptDirectSlug: true,
+  acceptOriginalMask: true,
+} as const satisfies Record<keyof UuidSlugMigrationOptions, true>;
 
 /** Return a matching candidate or undefined; callers resolve sentinels before trying masks. */
 /*#__NO_SIDE_EFFECTS__*/
