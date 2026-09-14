@@ -114,7 +114,7 @@ export function evaluate(request: Request): Outcome {
           ts.uuidStringToPlainSlug(input, request.alphabet as SlugAlphabet | undefined),
         );
       case "plainToUuid":
-        return result(ts.uuidToString(input));
+        return result(ts.plainSlugToUuidString(input));
       case "timestamp": {
         const bytes = ts.uuidStringToBytes(input);
         return result(bytes instanceof Error ? bytes : ts.extractUuidV7UnixMs(bytes));
