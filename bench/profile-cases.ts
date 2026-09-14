@@ -148,7 +148,10 @@ export function createProfileCases(
     }),
   );
   const rotated = unwrap(api.createUuidV7SlugCodec({ mask: current, previousMasks: [previous] }));
-  const migration = rotated.createMigrationDecoder({ originalMask: true, directSlug: true });
+  const migration = rotated.createMigrationDecoder({
+    acceptOriginalMask: true,
+    acceptDirectSlug: true,
+  });
   const maskedOnlyMigration = codec.createMigrationDecoder();
   const originals = originalFixtures.filter(({ slug, raw }) => slug !== raw);
   const portable = api.createUuidV7Generator({ clock: () => instant });
@@ -821,10 +824,11 @@ export function createProfileCases(
     "construct.codec.sentinels64": () =>
       api.createUuidV7SlugCodec({ mask: current, sentinels: sentinelDefinitions }),
     "construct.migration.current": () => codec.createMigrationDecoder(),
-    "construct.migration.direct": () => codec.createMigrationDecoder({ directSlug: true }),
-    "construct.migration.original": () => codec.createMigrationDecoder({ originalMask: true }),
+    "construct.migration.direct": () => codec.createMigrationDecoder({ acceptDirectSlug: true }),
+    "construct.migration.original": () =>
+      codec.createMigrationDecoder({ acceptOriginalMask: true }),
     "construct.migration.all": () =>
-      codec.createMigrationDecoder({ originalMask: true, directSlug: true }),
+      codec.createMigrationDecoder({ acceptOriginalMask: true, acceptDirectSlug: true }),
     "construct.custom": () =>
       api.createCustomUuidV7Mask({
         label: "profile-identity",

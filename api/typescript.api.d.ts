@@ -49,10 +49,10 @@ declare type DirectUuidSlugInput<Input extends string | UuidSlugError> = RejectK
 >;
 declare type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
   | typeof CURRENT_MASK_FORMAT
-  | (EnabledMigrationOption<Options, "originalMask"> extends never
+  | (EnabledMigrationOption<Options, "acceptOriginalMask"> extends never
       ? never
       : typeof ORIGINAL_MASK_FORMAT)
-  | (EnabledMigrationOption<Options, "directSlug"> extends never
+  | (EnabledMigrationOption<Options, "acceptDirectSlug"> extends never
       ? never
       : typeof DIRECT_SLUG_FORMAT);
 declare type EnabledMigrationOption<
@@ -172,8 +172,8 @@ export declare type UuidSlugMigrationFormat =
   | typeof ORIGINAL_MASK_FORMAT
   | typeof DIRECT_SLUG_FORMAT;
 export declare interface UuidSlugMigrationOptions {
-  readonly originalMask?: boolean;
-  readonly directSlug?: boolean;
+  readonly acceptOriginalMask?: boolean;
+  readonly acceptDirectSlug?: boolean;
 }
 export declare function uuidSlugToBytes<Input extends string | UuidSlugError>(
   slug: DirectUuidSlugInput<Input>,

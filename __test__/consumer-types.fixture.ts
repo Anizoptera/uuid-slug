@@ -288,8 +288,8 @@ createUuidV7SlugCodec({
   generateUuidV7Bytes: () => new Uint8Array(16),
 });
 const migration = codec.createMigrationDecoder({
-  originalMask: true,
-  directSlug: true,
+  acceptOriginalMask: true,
+  acceptDirectSlug: true,
 });
 expectType<UuidSlugMigrationDecoder>()(migration);
 // @ts-expect-error Migration readers accept encoded slug text, not known UUID text.
@@ -301,11 +301,13 @@ const candidates: UuidString[] | UuidSlugError = migration.uuidSlugToStringCandi
   "AAAAAAABcACAAAAAAAAAAA",
   ORIGINAL_MASK_FORMAT,
 );
-const plainOnlyMigration = codec.createMigrationDecoder({ directSlug: true });
+const plainOnlyMigration = codec.createMigrationDecoder({ acceptDirectSlug: true });
 plainOnlyMigration.uuidSlugToString("AAAAAAAAcACAAAAAAAAAAA", DIRECT_SLUG_FORMAT);
 // @ts-expect-error This reader was not configured to accept the original masked format.
 plainOnlyMigration.uuidSlugToString("AAAAAAAAcACAAAAAAAAAAA", ORIGINAL_MASK_FORMAT);
 const currentOnlyMigration = codec.createMigrationDecoder();
+// @ts-expect-error Migration options state what input the reader accepts.
+codec.createMigrationDecoder({ directSlug: true });
 // @ts-expect-error A current-only reader cannot select a disabled historical format.
 currentOnlyMigration.uuidSlugToString("AAAAAAAAcACAAAAAAAAAAA", DIRECT_SLUG_FORMAT);
 currentOnlyMigration.uuidSlugToString("AAAAAAAAcACAAAAAAAAAAA", CURRENT_MASK_FORMAT);

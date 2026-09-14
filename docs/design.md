@@ -122,7 +122,7 @@ of their individual rates. The codec must not append masks on the caller's behal
 Masked decoding always accepts both alphabets, sentinels, and current or previous mask outputs.
 Migration adds only the old formats the caller enables. Other forms are invalid.
 
-Only `codec.createMigrationDecoder({ directSlug: true })` enables direct-slug decoding. A direct slug may
+Only `codec.createMigrationDecoder({ acceptDirectSlug: true })` enables direct-slug decoding. A direct slug may
 accidentally pass an earlier mask check and return a different candidate; migration cannot make
 the two representations distinguishable. Confirm candidates against the issuing store.
 

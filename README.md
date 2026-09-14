@@ -745,15 +745,18 @@ Create a migration reader from your codec. Enable only the old formats your appl
 import type { UuidV7SlugCodec } from "@anizoptera/uuid-slug";
 
 function readLegacySlug(ids: UuidV7SlugCodec, incomingSlug: string) {
-  const reader = ids.createMigrationDecoder({ originalMask: true, directSlug: true });
+  const reader = ids.createMigrationDecoder({
+    acceptOriginalMask: true,
+    acceptDirectSlug: true,
+  });
   return reader.uuidSlugToString(incomingSlug);
 }
 ```
 
-`originalMask` accepts the fixed-key permutation/XOR format with a 4-bit check that predates
+`acceptOriginalMask` accepts the fixed-key permutation/XOR format with a 4-bit check that predates
 seeded masking, from before package 0.2.0. Releases from 0.2.0 on write different formats, and the
 0.2.0 masked format itself is not readable.
-`directSlug` accepts direct UUID slugs of any version, including old base64url spellings whose
+`acceptDirectSlug` accepts direct UUID slugs of any version, including old base64url spellings whose
 last four bits were ignored. Ordinary `uuidSlugToString` remains strict about those trailing bits.
 Both options must be booleans; untyped malformed reader configuration returns `invalid_options`.
 Neither option changes generation, ordinary codec methods, keys or sentinels.
@@ -813,8 +816,9 @@ successful but incomplete list.
 An old sentinel alias can also be a current masked ID. `uuidSlugToStringCandidates` retains both UUIDs;
 `uuidSlugToString` keeps sentinel priority.
 
-Keep this reader while old inputs must work. Replace it with `ids.createMigrationDecoder({ directSlug: true })`
-to stop trying the original mask, or `ids.createMigrationDecoder({ originalMask: true })` to stop direct-slug decoding.
+Keep this reader while old inputs must work. Replace it with
+`ids.createMigrationDecoder({ acceptDirectSlug: true })` to stop trying the original mask, or
+`ids.createMigrationDecoder({ acceptOriginalMask: true })` to stop direct-slug decoding.
 `ids.createMigrationDecoder()` tries only current keys and sentinels. Removing the migration reader entirely
 leaves ordinary codec decoding unchanged. Neither method can identify the issuing format from
 the slug alone, so successful decoding is not a reliable count of legacy traffic.

@@ -4,6 +4,10 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 
 ## Public interface audit
 
+- [x] Replace ambiguous migration booleans with call-site names that state accepted input.
+  - [x] Rename source, consumer examples, cross-language probes, and benchmark callers together.
+  - [x] Regenerate declarations and prove enabled-format inference rejects disabled selectors.
+  - [x] Run the full gate and re-read the final declaration as a cold consumer.
 - [x] Audit every TypeScript call shape from consumer code, including defaults, composition,
       configuration variants, invalid combinations, ownership, and failure recovery.
   - [x] Map each export and member to a caller job; remove or reshape parts whose burden exceeds value.

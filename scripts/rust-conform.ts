@@ -203,7 +203,7 @@ export function evaluate(request: Request): Outcome {
       case "unmask":
         return result(
           request.acceptDirect === true
-            ? codec.createMigrationDecoder({ directSlug: true }).uuidSlugToString(input)
+            ? codec.createMigrationDecoder({ acceptDirectSlug: true }).uuidSlugToString(input)
             : codec.uuidSlugToString(input),
         );
       case "unmaskV7":
@@ -221,8 +221,8 @@ export function evaluate(request: Request): Outcome {
         return result(
           codec
             .createMigrationDecoder({
-              originalMask: request.original === true,
-              directSlug: request.direct === true,
+              acceptOriginalMask: request.original === true,
+              acceptDirectSlug: request.direct === true,
             })
             .uuidSlugToString(input, request.format as UuidSlugMigrationFormat | undefined),
         );
@@ -230,8 +230,8 @@ export function evaluate(request: Request): Outcome {
         return result(
           codec
             .createMigrationDecoder({
-              originalMask: request.original === true,
-              directSlug: request.direct === true,
+              acceptOriginalMask: request.original === true,
+              acceptDirectSlug: request.direct === true,
             })
             .uuidSlugToStringCandidates(
               input,

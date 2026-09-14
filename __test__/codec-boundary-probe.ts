@@ -346,13 +346,13 @@ export const codecBoundaryCases = [
           assert.deepEqual(reader.uuidSlugToBytes(legacy as string), bytes);
           assert.deepEqual(
             reader
-              .createMigrationDecoder({ directSlug: true })
+              .createMigrationDecoder({ acceptDirectSlug: true })
               .uuidSlugToStringCandidates(text, "current-mask"),
             [uuid],
           );
           assert.deepEqual(
             reader
-              .createMigrationDecoder({ directSlug: true, originalMask: true })
+              .createMigrationDecoder({ acceptDirectSlug: true, acceptOriginalMask: true })
               .uuidSlugToStringCandidates(text),
             [uuid],
           );
@@ -362,7 +362,7 @@ export const codecBoundaryCases = [
             assert.ok(reader.uuidSlugToString(alias) instanceof Error);
             assert.ok(
               reader
-                .createMigrationDecoder({ directSlug: true, originalMask: true })
+                .createMigrationDecoder({ acceptDirectSlug: true, acceptOriginalMask: true })
                 .uuidSlugToStringCandidates(alias) instanceof Error,
             );
           }
@@ -378,7 +378,9 @@ export const codecBoundaryCases = [
         for (const reader of [old, safe]) {
           assert.equal(reader.uuidSlugToString(sentinel.slug), sentinel.uuid);
           assert.equal(
-            reader.createMigrationDecoder({ directSlug: true }).uuidSlugToString(sentinel.slug),
+            reader
+              .createMigrationDecoder({ acceptDirectSlug: true })
+              .uuidSlugToString(sentinel.slug),
             sentinel.uuid,
           );
           assert.equal(
@@ -463,7 +465,10 @@ export const codecBoundaryCases = [
     name: "masked and migration decoders reject non-string JavaScript input",
     run() {
       const codec = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK });
-      const migration = codec.createMigrationDecoder({ originalMask: true, directSlug: true });
+      const migration = codec.createMigrationDecoder({
+        acceptOriginalMask: true,
+        acceptDirectSlug: true,
+      });
       for (const value of [null, 1, Symbol("slug"), { length: 22 }]) {
         for (const decode of [
           codec.uuidSlugToString,

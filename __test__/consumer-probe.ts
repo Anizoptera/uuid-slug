@@ -65,7 +65,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     );
     equal(
       codec
-        .createMigrationDecoder({ directSlug: true })
+        .createMigrationDecoder({ acceptDirectSlug: true })
         .uuidSlugToString(slug, api.DIRECT_SLUG_FORMAT),
       uuid,
       `${alphabet} migration`,
@@ -114,7 +114,10 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   const codec = unwrap(api.createUuidV7SlugCodec({ mask: api.UUID_V7_TEST_MASK }));
   const { seed, slug: overlap, currentUuid, originalUuid, directUuid } = fixtures.overlap;
   const migrating = unwrap(api.createUuidV7SlugCodec({ mask: { seed } }));
-  const reader = migrating.createMigrationDecoder({ originalMask: true, directSlug: true });
+  const reader = migrating.createMigrationDecoder({
+    acceptOriginalMask: true,
+    acceptDirectSlug: true,
+  });
   equal(reader.uuidSlugToString(overlap), currentUuid, "migration default");
   equal(
     reader.uuidSlugToString(overlap, api.CURRENT_MASK_FORMAT),
@@ -134,7 +137,9 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   );
   equal(
     JSON.stringify(
-      migrating.createMigrationDecoder({ directSlug: true }).uuidSlugToStringCandidates(overlap),
+      migrating
+        .createMigrationDecoder({ acceptDirectSlug: true })
+        .uuidSlugToStringCandidates(overlap),
     ),
     JSON.stringify([currentUuid, directUuid]),
     "original-mask migration retirement",

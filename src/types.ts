@@ -257,13 +257,13 @@ export interface UuidSlugMigrationOptions {
    *
    * @defaultValue `false`
    */
-  readonly originalMask?: boolean;
+  readonly acceptOriginalMask?: boolean;
   /**
    * Accept direct UUID slugs of any version, including retained trailing-bit aliases.
    *
    * @defaultValue `false`
    */
-  readonly directSlug?: boolean;
+  readonly acceptDirectSlug?: boolean;
 }
 
 type EnabledMigrationOption<
@@ -274,10 +274,10 @@ type EnabledMigrationOption<
 /** Project enabled options into the only format selectors that decoder can accept. */
 export type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
   | typeof CURRENT_MASK_FORMAT
-  | (EnabledMigrationOption<Options, "originalMask"> extends never
+  | (EnabledMigrationOption<Options, "acceptOriginalMask"> extends never
       ? never
       : typeof ORIGINAL_MASK_FORMAT)
-  | (EnabledMigrationOption<Options, "directSlug"> extends never
+  | (EnabledMigrationOption<Options, "acceptDirectSlug"> extends never
       ? never
       : typeof DIRECT_SLUG_FORMAT);
 

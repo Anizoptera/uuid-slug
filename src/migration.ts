@@ -52,18 +52,28 @@ export function createMigration(
     (typeof options !== "object" || options === null || Array.isArray(options))
   )
     return new UuidSlugError(INVALID_OPTIONS, "Migration options must be an object.");
+  for (const option of Object.keys(options ?? {})) {
+    if (option !== "acceptOriginalMask" && option !== "acceptDirectSlug")
+      return new UuidSlugError(INVALID_OPTIONS, `Unknown migration option: ${option}.`);
+  }
   let originalOption: boolean | undefined;
   let directOption: boolean | undefined;
   try {
-    originalOption = options?.originalMask;
-    directOption = options?.directSlug;
+    originalOption = options?.acceptOriginalMask;
+    directOption = options?.acceptDirectSlug;
   } catch (cause) {
     return new UuidSlugError(INVALID_OPTIONS, "Reading migration options failed.", { cause });
   }
   if (originalOption !== undefined && typeof originalOption !== "boolean")
-    return new UuidSlugError(INVALID_OPTIONS, "Migration originalMask option must be a boolean.");
+    return new UuidSlugError(
+      INVALID_OPTIONS,
+      "Migration acceptOriginalMask option must be a boolean.",
+    );
   if (directOption !== undefined && typeof directOption !== "boolean")
-    return new UuidSlugError(INVALID_OPTIONS, "Migration directSlug option must be a boolean.");
+    return new UuidSlugError(
+      INVALID_OPTIONS,
+      "Migration acceptDirectSlug option must be a boolean.",
+    );
   const original = originalOption === true;
   const direct = directOption === true;
 

@@ -428,15 +428,15 @@ describe("direct-slug migration", () => {
     // `decode` rejecting them is correct; something has to accept them.
     const codec = createUuidV7SlugCodec({ mask: UUID_V7_TEST_MASK });
     const slug = uuidStringToSlug(SAMPLE_V4);
-    expect(codec.createMigrationDecoder({ directSlug: true }).uuidSlugToString(String(slug))).toBe(
-      SAMPLE_V4,
-    );
+    expect(
+      codec.createMigrationDecoder({ acceptDirectSlug: true }).uuidSlugToString(String(slug)),
+    ).toBe(SAMPLE_V4);
     expect(codec.uuidSlugToString(String(slug))).toBeInstanceOf(Error);
   });
 
   it("keeps wrong-key diagnosis out of an explicitly enabled plain migration", () => {
     // Ordinary decoding owns current masked identifiers and must report the wrong key. A separate
-    // migration reader with `directSlug: true` deliberately adds the overlapping direct interpretation;
+    // migration reader with `acceptDirectSlug: true` deliberately adds the overlapping direct interpretation;
     // it must return that candidate instead of changing ordinary codec behavior.
     const mine = createUuidV7Mask({ label: "feistel-only", seed: "the-key-in-use-test-seed-0000" });
     const theirs = createUuidV7Mask({
@@ -451,7 +451,7 @@ describe("direct-slug migration", () => {
     const failure = codec.uuidSlugToString(foreign);
     expect(failure).toBeInstanceOf(UuidSlugError);
     expect((failure as UuidSlugError).code).toBe("invalid_uuid_slug");
-    expect(codec.createMigrationDecoder({ directSlug: true }).uuidSlugToString(foreign)).toBe(
+    expect(codec.createMigrationDecoder({ acceptDirectSlug: true }).uuidSlugToString(foreign)).toBe(
       "1f04e7f5-c0c6-4044-b5a3-6278bb77ffb4",
     );
   });
