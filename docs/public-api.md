@@ -279,6 +279,24 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 - Require callers to provide `maxTimestampDeltaMs` for every timestamp-window check. Read the
   optional numeric `referenceUnixMs` once, defaulting only that observation to `Date.now()`; do not
   embed an application tolerance or callback protocol in validation.
+- Keep UUID values as branded strings or bytes. A package wrapper would allocate, use object
+  identity instead of UUID equality, and lose its prototype across structured clone. Parse once
+  into bytes when one local workflow needs repeated field access; Rust uses `Uuid` for that job.
+- Keep equality and ordering outside the API. Normalize known plain input with `uuidToString`, then
+  compare canonical text or bytes; masked input first needs its codec and can be ambiguous without
+  provenance. One comparator cannot hide those different meanings honestly.
+- Keep generation one identifier at a time. Callers can bound a loop or reuse caller-owned storage;
+  a batch helper cannot choose a safe allocation, scheduling, or cancellation limit for them.
+- Keep base64url and base32hex as the only slug alphabets. They cover compact URL output and
+  case-insensitive sortable output; arbitrary alphabets create private wire formats.
+- Keep timestamps as Unix milliseconds. A `Date` helper adds mutable allocation, range coercion,
+  and no information; application code can construct a `Date` at its boundary.
+- Keep standalone operations with complete names. Function properties and representation
+  namespaces would duplicate them and make detached names less clear.
+- Keep one error-value path. Nullable and throwing duplicates discard diagnostics or split control
+  flow without adding a recovery action.
+- Keep separate generation functions and the paired UUID-plus-slug operations. An output selector
+  moves representation into runtime configuration, weakens inference, and does not remove work.
 
 ## Types and validation
 

@@ -15,16 +15,8 @@ Adopt the useful competitor behavior without copying interfaces that add more ca
   - [ ] Keep cryptographically secure runtime entropy as the zero-configuration default and make the custom source impossible to select accidentally.
   - [ ] Compare an entropy callback, exact random bytes, a caller-selected counter, and complete UUIDv7 fields without coupling independent controls.
   - [ ] Choose the smallest source contract, then prove deterministic output, source failure, malformed output, reuse, and default-path isolation.
-- [ ] Re-evaluate the remaining competitor interface ideas from real consumer calls before accepting or rejecting them.
-  - [ ] Compare primitive results with a parsed UUID value object for repeated inspection, conversion, equality, serialization, and worker transfer.
-  - [ ] Compare standalone UUID version and variant inspection with version-specific guards and caller-side byte inspection.
-  - [ ] Compare equality and ordering across UUID text, bytes, plain slugs, and codec-owned masked slugs with normalize-then-compare caller code.
-  - [ ] Compare one-at-a-time generation with bounded or progressive batch generation under allocation and event-loop limits.
-  - [ ] Test whether custom alphabets solve a real interoperability job that the two canonical alphabets cannot.
-  - [ ] Compare numeric Unix milliseconds with `Date` input and output at application boundaries.
-  - [ ] Compare standalone operations, function-attached helpers, and representation-specific namespaces for discovery and detached-name clarity.
-  - [ ] Compare error values, result objects, exceptions, and nullable results on composition, diagnosis, and ordinary call burden.
-  - [ ] Compare separate generation functions with an output selector for text, bytes, and each plain-slug alphabet.
+- [ ] Resolve whether UUID version inspection should accept text, exact bytes, and plain slugs for
+      routing versions other than v4 and v7; the existing guards cover only those two versions.
 
 ## Deferred CLI evaluation
 
