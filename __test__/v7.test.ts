@@ -6,9 +6,9 @@
  * hostile ones: a readUnixMs that stands still or runs backwards, and randomness that is entirely
  * zeroes or entirely ones, which are exactly the seeds that drive the counter to its bounds.
  *
- * Counter cases constrain this portable implementation, not the runtime-independent API.
- * Native generators may choose different within-millisecond strategies. Version, variant,
- * bounds and valid state transitions must survive hostile readUnixMs and entropy inputs.
+ * Counter cases protect the generator ordering contract. Runtime-boundary tests separately prove
+ * that native text joins module-level portable output. Version, variant, bounds and valid state
+ * transitions must survive hostile readUnixMs and entropy inputs.
  */
 import { describe, expect, it } from "vitest";
 
@@ -29,7 +29,9 @@ const bytesOf = (generator: ReturnType<typeof createUuidV7Generator>): Uint8Arra
   return result;
 };
 
-const byteKey = (bytes: Uint8Array): string => bytes.join(",");
+const expectAfter = (later: Uint8Array, earlier: Uint8Array) => {
+  expect(Buffer.compare(later, earlier)).toBeGreaterThan(0);
+};
 
 const timestampOf = (bytes: Uint8Array): number =>
   bytes.slice(0, 6).reduce((total, byte) => total * 256 + byte, 0);
@@ -73,7 +75,7 @@ describe("uuidv7 sequence state", () => {
     );
   });
 
-  it("reseeds when the clock advances within one millisecond", () => {
+  it("sorts after the prior UUID when the clock advances within one millisecond", () => {
     let now = 100.25;
     const generator = createUuidV7Generator({
       readUnixMs: () => now,
@@ -84,10 +86,10 @@ describe("uuidv7 sequence state", () => {
     now = 100.75;
     const second = bytesOf(generator);
     expect(timestampOf(second)).toBe(100);
-    expect(byteKey(second)).not.toBe(byteKey(first));
+    expectAfter(second, first);
   });
 
-  it("does not repeat when the fractional clock reading moves backward", () => {
+  it("sorts after the prior UUID when the fractional clock reading moves backward", () => {
     let now = 100.75;
     const generator = createUuidV7Generator({
       readUnixMs: () => now,
@@ -98,7 +100,7 @@ describe("uuidv7 sequence state", () => {
     now = 100.25;
     const second = bytesOf(generator);
     expect(timestampOf(second)).toBe(100);
-    expect(byteKey(second)).not.toBe(byteKey(first));
+    expectAfter(second, first);
   });
 
   it("advances logical time when a fraction bucket exhausts its counter", () => {
@@ -125,19 +127,19 @@ describe("uuidv7 sequence state", () => {
     const second = bytesOf(generator);
     expect(timestampOf(first)).toBe(100);
     expect(timestampOf(second)).toBe(101);
-    expect(byteKey(second)).not.toBe(byteKey(first));
+    expectAfter(second, first);
   });
 
-  it("does not repeat while the readUnixMs stands still", () => {
+  it("strictly increases while the readUnixMs stands still", () => {
     const generator = createUuidV7Generator({
       readUnixMs: fixedClock(1_700_000_000_000),
       fillRandom: constantFill(0x00),
     });
-    const seen = new Set([byteKey(bytesOf(generator))]);
+    let previous = bytesOf(generator);
     for (let i = 0; i < 1_000; i += 1) {
-      const key = byteKey(bytesOf(generator));
-      expect(seen.has(key)).toBe(false);
-      seen.add(key);
+      const current = bytesOf(generator);
+      expectAfter(current, previous);
+      previous = current;
     }
   });
 
@@ -153,7 +155,7 @@ describe("uuidv7 sequence state", () => {
     now -= 60_000;
     const after = bytesOf(generator);
     expect(timestampOf(after)).toBe(timestampOf(before));
-    expect(byteKey(after)).not.toBe(byteKey(before));
+    expectAfter(after, before);
   });
 
   it("resets to wall time only after the selected rollback tolerance", () => {
@@ -182,7 +184,7 @@ describe("uuidv7 sequence state", () => {
     expect(generator.generateUuidV7Bytes()).toMatchObject({ code: "invalid_timestamp" });
     now = 100;
     const recovered = bytesOf(generator);
-    expect(byteKey(recovered)).not.toBe(byteKey(first));
+    expectAfter(recovered, first);
   });
 
   it("advances the timestamp instead of wrapping when the counter is exhausted", () => {
@@ -195,7 +197,7 @@ describe("uuidv7 sequence state", () => {
     const first = bytesOf(generator);
     const second = bytesOf(generator);
     expect(timestampOf(second)).toBe(timestampOf(first) + 1);
-    expect(byteKey(second)).not.toBe(byteKey(first));
+    expectAfter(second, first);
   });
 });
 

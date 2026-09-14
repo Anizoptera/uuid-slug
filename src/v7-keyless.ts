@@ -140,8 +140,9 @@ function buildGenerator(
 
 /**
  * Create a UUIDv7 sequence with its own state, platform randomness, and optionally a caller-supplied
- * readUnixMs. Untyped calls with invalid options return `UuidSlugError`; valid TypeScript calls create
- * the generator directly. Clock and entropy failures are returned by generator methods.
+ * readUnixMs. Successful current-time calls strictly increase in UUID byte order under the default
+ * preserve rollback policy. Untyped calls with invalid options return `UuidSlugError`; valid
+ * TypeScript calls create the generator directly. Clock and entropy failures are returned by methods.
  *
  * @param options - Clock and payload layout used by this sequence. Omit to read `Date.now` with no
  * fraction field; a selected fraction field uses the runtime's high-resolution clock when present.
@@ -189,7 +190,8 @@ let generateDefaultUuidV7: UuidV7Generator["generateUuidV7"] | undefined;
  * mismatch into a compile error at the one site that is wrong.
  */
 /**
- * Generate UUIDv7 text for the current readUnixMs reading, lowercase by default.
+ * Generate UUIDv7 text for the current clock reading, lowercase by default. Successful calls share
+ * the module-level current-time sequence with byte and paired plain-slug generation.
  *
  * @param textCase - Built-in output spelling. Omit for lowercase.
  */
@@ -199,11 +201,13 @@ export const generateUuidV7 = <Case extends UuidTextCase = typeof UUID_TEXT_LOWE
   (generateDefaultUuidV7 ??= v7().generateUuidV7)(textCase);
 
 /**
- * Generate UUIDv7 bytes with platform randomness in a new plain 16-byte `Uint8Array`.
+ * Generate UUIDv7 bytes with platform randomness in a new plain 16-byte `Uint8Array`. Successful
+ * calls share the module-level current-time sequence with text and paired plain-slug generation.
  */
 export function generateUuidV7Bytes(): UuidV7Bytes | UuidSlugError;
 /**
- * Write UUIDv7 bytes into caller-owned storage only after successful generation.
+ * Write UUIDv7 bytes into caller-owned storage only after successful generation. Successful calls
+ * share the module-level current-time sequence with text and paired plain-slug generation.
  *
  * @param output - Caller-owned array that receives the 16 UUID bytes.
  * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
@@ -223,7 +227,7 @@ export function generateUuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Arr
 
 /**
  * Generate UUIDv7 text at a whole Unix millisecond in `0..2^48-1`. This does not change the
- * current-time sequence, and it does not promise ordering within one millisecond.
+ * current-time sequence. Explicit-time generation does not join that sequence.
  *
  * @param unixMs - Whole Unix millisecond encoded into the UUID.
  * @param textCase - Built-in output spelling. Omit for lowercase.

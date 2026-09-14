@@ -21,6 +21,11 @@ Maintainer direction: evaluate sub-millisecond fraction bits from runtime or cal
 optional UUIDv7 generation mode. Keep a counter for equal readings and rollback. Do not claim or
 encode precision that the selected clock cannot supply.
 
+Maintainer ruling: successful current-time calls on one generator are strictly increasing in UUID
+byte order under the default preserve rollback policy. Module-level output forms share one sequence
+within one loaded package copy. Explicit-time calls, reset policy after its tolerance, independently
+created generators, package copies, workers, and processes are outside that guarantee.
+
 - [x] Measure each runtime's epoch clocks, effective resolution, call cost, and observed clamping;
       keep rollback policy because a short monotonic run cannot prove future clock behavior.
 - [x] Keep fractional Unix milliseconds as a supported clock API: near the current epoch, its
@@ -32,8 +37,10 @@ encode precision that the selected clock cannot supply.
       and a middle width while profiling the largest arithmetic case.
 - [x] Reset the random-start counter when the observed fraction advances; on stall, rollback, or
       exhaustion, carry through the logical fraction and then the millisecond.
-- [x] Explain the current equal-fraction continuation and its reset and explicit-time boundaries
-      without turning intra-millisecond order into a public guarantee or gate.
+- [x] State and verify the created-generator ordering guarantee at its exact ownership and policy
+      boundary without implying event order across independent sequences.
+- [x] Make module-level native text and portable byte and plain-slug generation share one sequence;
+      validate every native result and advance only its ordered prefix when needed.
 - [x] Use fractional `readUnixMs` when supplied; otherwise select the runtime high-resolution clock
       once for fraction layouts and fall back to `Date.now`.
 - [x] Keep automatic clock selection separate from the explicit payload width; capability presence

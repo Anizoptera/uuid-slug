@@ -166,9 +166,13 @@ preserve policy applies the same rule when the clock moves backward, so extracte
 than the clock reading. A reset policy may move backward after its tolerance. Explicit-time calls
 use independent randomness and do not join this sequence.
 
-This sequencing prevents reuse inside the current generator, but intra-millisecond event order is
-not an API guarantee. Set `clockRollback` to reset or return `invalid_timestamp` when total skew
-exceeds an inclusive tolerance. Use
+With the default preserve policy, successful current-time calls on one generator strictly increase
+in UUID byte order, including calls made within one millisecond. The module-level text, byte, and
+paired plain-slug helpers share one generator. A valid native UUIDv7 joins that sequence; a native
+result that would not increase it keeps its fresh random tail while its ordered prefix advances.
+This does not order explicit-time calls, reset-policy calls after their tolerance, independently
+created generators, separate package copies, workers, or processes. Set `clockRollback` to reset or return
+`invalid_timestamp` when total skew exceeds an inclusive tolerance. Use
 `createUuidV7GeneratorWithRandomFill` only when the application must own entropy; its callback must
 fill every requested byte or return `UuidSlugError`.
 
@@ -1009,14 +1013,16 @@ and masking limits.
 - UUID collisions are possible. Keep a uniqueness constraint where a duplicate could overwrite or
   misidentify data. On conflict while creating a record, keep the existing record and generate a
   new ID.
-- Native generation falls back to the portable generator if its first result fails validation
+- Native generation falls back to the portable generator if a result fails validation
   or a call throws. If both fail, the returned error retains both causes.
 - A v7 carries a 48-bit millisecond timestamp in its leading bits, so UUID strings sort by their
   encoded timestamps across different milliseconds.
   Backfilled timestamps or a clock adjustment need not reflect generation order.
-- Two IDs created in the same millisecond may sort in either order. RFC 9562 §6.2 permits different
-  counter and random-bit strategies. Do not use a v7
-  to recover the order of events inside a millisecond; use a sequence column.
+- Successful current-time calls on one generator strictly increase in UUID byte order under the
+  default preserve policy. Module-level text, byte, and paired plain-slug helpers share one sequence
+  within one loaded package copy. Explicit-time calls, reset-policy calls after their tolerance,
+  independently created generators, package copies, workers, and processes do not share it; use a
+  sequence column when event order must cross those boundaries.
 - A 26-character plain UUIDv7 base32hex slug sorts by encoded timestamp across different
   milliseconds under ASCII comparison. Its digits are in value order and the timestamp comes
   first. Its lowercase spelling also suits case-insensitive storage.

@@ -317,10 +317,14 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   bits, although it cannot preserve an arbitrary nanosecond timestamp. Keep the payload layout
   explicit and stable across runtimes; capability detection may select a clock implementation, but
   it must not silently change stored UUID semantics.
-- The current generator increments its counter for equal fraction buckets and carries into the
-  logical fraction and millisecond fields. Preserve applies this continuation to clock rollback;
-  reset may move backward after its tolerance, and explicit-time methods use independent randomness.
-  Keep this as implementation behavior, not an intra-millisecond ordering guarantee or gate.
+- Successful current-time calls on one generator strictly increase in UUID byte order under
+  the default preserve policy. The counter continues through equal fraction buckets and clock
+  rollback, then carries into the logical fraction and millisecond fields. Reset may move backward
+  after its tolerance, and explicit-time methods use independent randomness outside this guarantee.
+- Module-level text, byte, and paired plain-slug helpers share one sequence within one loaded package
+  copy. Validate every native UUIDv7 result and adopt it only when it increases that sequence;
+  otherwise preserve its fresh random tail and advance only its ordered prefix. Independently
+  created generators, package copies, workers, and processes keep independent state.
 - Keep standalone operations with complete names. Function properties and representation
   namespaces would duplicate them and make detached names less clear.
 - Keep one error-value path. Nullable and throwing duplicates discard diagnostics or split control

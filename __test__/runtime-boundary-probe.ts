@@ -44,12 +44,48 @@ const timestamp = 1_234_567_890_000;
 const uuid = "011f71fb-0450-7121-8848-484a12121212";
 const makeGenerator = () =>
   createUuidV7Generator({ readUnixMs: () => timestamp, fillRandom: (bytes) => bytes.fill(0x12) });
+const compareBytes = (left: Uint8Array, right: Uint8Array) => {
+  for (let index = 0; index < left.length; index += 1) {
+    const difference = (left[index] as number) - (right[index] as number);
+    if (difference !== 0) return difference;
+  }
+  return 0;
+};
 const hasCause = (value: unknown, target: unknown): boolean =>
   value === target ||
   (value instanceof AggregateError && value.errors.some((cause) => hasCause(cause, target))) ||
   (value instanceof Error && hasCause(value.cause, target));
 
 export const runtimeBoundaryCases = [
+  {
+    name: "orders successful current-time calls across one created generator's output forms",
+    run(this: void) {
+      const generator = unwrap(createSecureUuidV7Generator({ readUnixMs: () => timestamp }));
+      const first = unwrap(uuidStringToBytes(generator.generateUuidV7()));
+      const second = unwrap(generator.generateUuidV7Bytes());
+      assert.ok(compareBytes(second, first) > 0);
+    },
+  },
+  {
+    name: "orders native text and portable bytes through one runtime generator",
+    run(this: void) {
+      const generator = createRuntimeGenerator({
+        fillRandom: (bytes) => {
+          bytes.fill(0x34);
+        },
+        uuidV7: () => uuid,
+      });
+      const first = unwrap(uuidStringToBytes(generator.generateUuidV7()));
+      const secondText = unwrap(generator.generateUuidV7());
+      const second = unwrap(uuidStringToBytes(secondText));
+      const third = unwrap(generator.generateUuidV7Bytes());
+      const fourth = unwrap(uuidStringToBytes(generator.generateUuidV7()));
+      assert.ok(compareBytes(second, first) > 0);
+      assert.equal(secondText.slice(-8), uuid.slice(-8));
+      assert.ok(compareBytes(third, second) > 0);
+      assert.ok(compareBytes(fourth, third) > 0);
+    },
+  },
   {
     name: "public generators reject caller-supplied entropy",
     run(this: void) {
@@ -130,10 +166,12 @@ export const runtimeBoundaryCases = [
         assert.equal(generateUuidV4(UUID_TEXT_UPPERCASE), "123E4567-E89B-42D3-A456-426614174000");
         assert.equal(isUuidV4String(bytesToUuidString(unwrap(generateUuidV4Bytes()))), true);
         assert.equal(typeof generatePlainUuidV4Slug(), "string");
-        assert.equal(generateUuidV7(), uuid);
-        assert.equal(generateUuidV7(UUID_TEXT_UPPERCASE), uuid.toUpperCase());
+        const firstV7 = unwrap(uuidStringToBytes(generateUuidV7()));
+        const secondV7 = unwrap(uuidStringToBytes(generateUuidV7(UUID_TEXT_UPPERCASE)));
+        assert.ok(compareBytes(secondV7, firstV7) > 0);
         assert.equal(isUuidV7String(generateUuidV7AtUnixMs(timestamp)), true);
-        assert.equal(isUuidV7Bytes(generateUuidV7Bytes()), true);
+        const thirdV7 = unwrap(generateUuidV7Bytes());
+        assert.ok(compareBytes(thirdV7, secondV7) > 0);
         assert.equal(isUuidV7Bytes(generateUuidV7BytesAtUnixMs(timestamp)), true);
         const currentOut = new Uint8Array(24).fill(0x55);
         const explicitOut = new Uint8Array(24).fill(0x55);

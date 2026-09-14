@@ -63,6 +63,8 @@ pub enum UuidV7ClockRollbackPolicy {
 }
 
 /// Portable UUIDv7 state; callers own synchronization when sharing a generator.
+/// Successful current-time calls strictly increase in UUID byte order under the default preserve
+/// policy. Explicit-time calls and reset-policy calls after their tolerance are outside that sequence.
 #[derive(Debug, Default)]
 pub struct UuidV7Generator {
     last_ms: Option<u64>,
@@ -553,6 +555,17 @@ mod tests {
                 .with_sub_millisecond_fraction_bits(13)
                 .is_err()
         );
+        Ok(())
+    }
+
+    #[test]
+    fn preserve_policy_orders_current_time_calls() -> Result<(), Error> {
+        let mut generator = UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
+        let first = generator.generate_uuid_v7_with_random_fill(100.75, fill)?;
+        let second = generator.generate_uuid_v7_with_random_fill(100.75, fill)?;
+        let third = generator.generate_uuid_v7_with_random_fill(100.25, fill)?;
+        assert!(first.as_uuid_bytes() < second.as_uuid_bytes());
+        assert!(second.as_uuid_bytes() < third.as_uuid_bytes());
         Ok(())
     }
 

@@ -21,8 +21,8 @@ Both languages always write registered sentinels as plain slugs without masking,
 timestamp limit does not apply to them.
 Every decoder must accept every value that a supported matching encoder can produce. Options may
 add accepted forms; they must not remove existing ones. Forms no supported encoder produces are invalid.
-Generated identifiers must meet the same promises; random draws, scheduling, allocation strategy,
-and unpromised intra-millisecond ordering need not match.
+Generated identifiers must meet the same promises; random draws, exact sequence positions,
+scheduling, and allocation strategy need not match.
 
 Keep verbs and parameter meanings recognizable across languages. Rust may use ownership, typed
 errors and `Result` instead of JavaScript conventions. Such differences must not silently change

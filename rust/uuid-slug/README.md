@@ -94,6 +94,9 @@ reads the operating system's sub-millisecond clock; WebAssembly's built-in clock
 `Date.now()`, so pass a fractional reading to `generate_uuid_v7_with_random_fill` when that precision matters.
 When the clock stalls or moves backward, the generator advances this logical fraction and then
 the millisecond timestamp when needed; extracted fractions can be later than the clock reading.
+Successful current-time calls on one generator strictly increase in UUID byte order under the
+default preserve policy. Explicit-time calls and reset-policy calls after their tolerance are outside
+that sequence.
 Use `UuidV7MaskingCodec::extract_masked_uuid_v7_payload` for masked slugs. Masking rejects timestamps outside the codec's
 configured range instead of truncating them. Same-millisecond ordering depends on the generator.
 `uuid_v7_bounds(start, end)` returns the inclusive lowest and highest UUIDv7 search keys; pass
