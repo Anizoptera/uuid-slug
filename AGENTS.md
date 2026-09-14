@@ -4,10 +4,6 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Contract owners
 
-- Read `docs/public-api.md` before changing or documenting a public export, type, parameter,
-  default, error, runtime path, or performance characteristic; it owns interface shape and the
-  declaration comments consumers see. A naming repair follows domain meaning through every
-  dependent use; a compile failure never licenses restoring an opaque legacy term.
 - README owns the consumer model: define each term before first use, state when this package is
   preferable to a UUID-only library, and keep its capability and representation maps consistent
   with the public API. Update the owning explanation with every consumer-visible change; do not
@@ -19,42 +15,16 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Public TypeScript interface protocol
 
-- Start from the shortest correct consumer call for each job. Inventory every root export, type,
-  overload, parameter, option, callback, property, literal, default, result, error, side effect,
-  ownership rule, package entry, and runtime variant before editing; each retained part must name a
-  caller job that fails without it. Delete pass-through aliases, duplicated ways to express one job,
-  and public implementation seams. Do not infer completeness from the generated declaration baseline.
-- Name symbols by enforced domain meaning. Use `Uuid` in TypeScript identifiers, `uuid` for values,
-  and `UUID` in prose. Operations start with the caller's action and name source, destination, unit,
-  version, ownership, or timing whenever omission creates ambiguity. Types and properties name the
-  value represented; callbacks name the result they must produce. One term has one meaning across
-  source, declarations, errors, docs, examples, and Rust parity. Opaque terms such as `data`, `item`,
-  `handle`, `process`, or `value` require a domain reason visible at the declaration.
-- Make the obvious call the safe complete call. Use overloads only for one semantic operation with
-  unambiguous forms; use an options object for independent optional axes. Boolean options use an
-  affirmative behavior name that reads correctly with `true`; use a semantic union when both values
-  are choices. Defaults perform no secret, lossy, compatibility, expensive, or weaker work.
-- Make misuse unrepresentable where TypeScript knows enough, while accepting unbranded external
-  values at the validating seam. Preserve brands, exact caller-owned output subtypes, enabled-option
-  narrowing, and detached `this: void` methods. Public types contain no `any`; `unknown` is limited to
-  genuinely unbounded input and narrowed once.
-- Give every closed string vocabulary one semantic scalar constant per member and derive its union
-  from those constants. Export the constants callers pass or compare. An exported collection must
-  serve a documented iteration job, and its positions never identify members. Reject unknown own
-  enumerable string keys before defaults. Keep runtime option maps local, named by property, and
-  exhaustive against `keyof` their public options type.
-- Return expected failures as `UuidSlugError` values and preserve existing error identity through
-  compatible chains. Error codes name caller recovery, messages state cause and correction, and
-  failed calls publish no partial output or state. Keep bounded local work synchronous; offer async
-  cancellation only where work can monopolize a host task.
-- Public JSDoc states accepted input, default, result, ownership, expected failure, effect, ordering,
-  and decision-relevant limit at the declaration that owns each fact; it never exposes implementation
-  rationale. Update README only for the consumer model and the owning design document only for the
-  lasting contract or reason. Do not copy inventories between them.
-- Finish only after compiling executable source and packed-package consumers for every changed call
-  form, running each changed success and failure path, reading emitted `.d.ts` and language-service
-  help cold, and executing every produced bundle. A typecheck proves types, runtime tests prove
-  behavior, and packed consumers prove shipped resolution; none substitutes for another.
+- Before ANY public TypeScript or Rust interface work, read `docs/public-api.md` in full. It owns
+  naming, shape, types, literals, defaults, errors, effects, compatibility, comments, and proof.
+- Start from caller code. The easiest call MUST be correct; types reject known misuse; defaults add
+  no secret, lossy, compatibility, expensive, or weaker work. The declaration baseline proves none
+  of this.
+- Export one semantic scalar constant for every closed string callers pass or compare. Export a
+  collection only for a real iteration job; indexes NEVER identify values. Reject unknown option
+  keys and make each local runtime key map exhaustive against its public options type.
+- Finish only when source calls, runtime paths, emitted declarations, editor help, packed consumers,
+  and produced bundles independently prove the changed contract.
 
 ## Contract rules
 

@@ -32,6 +32,12 @@ behavior. Compare live alternatives and combinations. Put the caller contract in
 Keep implementation constraints, rejected alternatives, and invalidating assumptions in nearby
 non-JSDoc comments; keep exploration transient.
 
+Before editing, inventory every root export, type, overload, parameter, option, callback, property,
+literal, default, result, error, side effect, ownership rule, package entry, and runtime variant.
+Start from the shortest correct caller code for each job. Each retained part must serve a job that
+fails without it. The generated declaration baseline records signatures; it does not prove that the
+interface is complete, useful, or clear.
+
 ## Shape
 
 ### Package entries
@@ -55,6 +61,11 @@ non-JSDoc comments; keep exploration transient.
   compilation, repair the model and every dependent use from that meaning. Never restore an opaque
   legacy name merely to make a gate pass. Use explicit operation values instead of Boolean direction
   flags.
+- Use `Uuid` in TypeScript identifiers, `uuid` for values, and `UUID` in prose. Functions start with
+  the caller's action. Add source, destination, unit, version, ownership, or timing when its absence
+  makes the call ambiguous. Types and properties name the value represented. Callbacks name the
+  result they must produce. Terms such as `data`, `item`, `handle`, `process`, and `value` need a
+  domain meaning that is clear at the declaration.
 - Put complexity behind the smallest interface that covers the consumer job. Prefer one obvious
   operation over a sequence that makes callers coordinate package state.
 - Keep keyless transformations and generation as module functions. Put keys, sentinels, rotation,
@@ -66,6 +77,8 @@ non-JSDoc comments; keep exploration transient.
 - Use an overload only when it preserves one operation and makes the common call shorter without
   creating ambiguous argument meaning. Use an options object when independent optional axes would
   otherwise become positional.
+- Name a Boolean option for the behavior that `true` enables. Use a semantic union when both values
+  are choices rather than enable and disable states.
 - Make defaults safe and cheap. Require an explicit choice for secrets, lossy behavior, migration,
   additional accepted forms, expensive work, or weaker guarantees.
 - Keep public concepts orthogonal. Selecting a slug alphabet must not select a mask, migration
@@ -193,6 +206,8 @@ Keep UUID text/binary conversion directional and version-neutral:
   recognition capabilities.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Package-owned interfaces
   carry failures as values; adapt and contain exception-based dependencies at their boundary.
+- Name each error code for the caller's recovery action. State the cause and the correction in the
+  message. A failed call must publish no partial output or state.
 - Keep one error class with stable, actionable codes. Codes guide different recovery actions without
   multiplying runtime types; do not publish subclasses or operation-specific error-code generics
   when they add no data or behavior and would make a newly reachable code a source break. Validate
@@ -295,6 +310,7 @@ applicable links:
 - actual adapter selection in Deno and every browser engine selected by the check workflow when that
   path can differ;
 - packed export resolution and use from an extracted consumer;
+- language-service help for each changed public symbol and execution of every produced bundle;
 - shared TypeScript and Rust contract cases for cross-language behavior;
 - allocation, operation, and latency measurements for performance claims;
 - API baseline and release classification for consumer-visible change.

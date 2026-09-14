@@ -4,6 +4,10 @@ Live plan only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; t
 
 ## Public interface audit
 
+- [x] Make `docs/public-api.md` the complete interface authority and shrink the root prompt.
+  - [x] Reconcile every interface and naming rule from `AGENTS.md` into the API document.
+  - [x] Keep only the trigger and high-risk invariants in `AGENTS.md`.
+  - [x] Re-read both documents cold, run the complete gate, and commit the focused documentation change.
 - [x] Make the naming and public-interface review protocol explicit in project guidance.
   - [x] Cover every public symbol, parameter, option, literal, collection, overload, default, result,
         error, ownership rule, and package entry without duplicating the contract inventory.
