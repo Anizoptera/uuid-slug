@@ -2,6 +2,16 @@
 
 Live work only. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`.
 
+## Error diagnostics audit
+
+- [ ] Inventory every public TypeScript and Rust failure site, stable code, message, source, and
+      caller action.
+- [ ] Inventory repository checks, hooks, packaging, benchmarks, and release-tool failures.
+- [ ] Split messages where one text hides different causes or different fixes.
+- [ ] Keep shared wording in one owner when the failed condition and fix are identical.
+- [ ] Add focused falsifiers for ambiguous branches and preserve underlying causes.
+- [ ] Verify source, generated declarations, packed consumers, both runtimes, and repository gates.
+
 ## Masked UUIDv7 timestamp range
 
 - [x] State that masking keeps the Unix epoch and accepts timestamps from millisecond zero through
