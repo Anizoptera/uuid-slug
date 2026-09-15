@@ -199,6 +199,19 @@ describe("uuidv7 sequence state", () => {
     expect(timestampOf(second)).toBe(timestampOf(first) + 1);
     expectAfter(second, first);
   });
+
+  it("fails atomically when the final UUIDv7 sequence is exhausted", () => {
+    const generator = createUuidV7Generator({
+      fillRandom: constantFill(0xff),
+      readUnixMs: fixedClock(2 ** 48 - 1),
+    });
+    bytesOf(generator);
+    const output = new Uint8Array(16).fill(0x55);
+
+    expect(generator.generateUuidV7Bytes(output)).toMatchObject({ code: INVALID_TIMESTAMP });
+    expect(output).toEqual(new Uint8Array(16).fill(0x55));
+    expect(generator.generateUuidV7Bytes()).toMatchObject({ code: INVALID_TIMESTAMP });
+  });
 });
 
 describe("uuidv7 at a caller-supplied instant", () => {
