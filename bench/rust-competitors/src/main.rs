@@ -1,5 +1,7 @@
 use std::{
     hint::black_box,
+    sync::Barrier,
+    thread,
     time::{Duration, Instant},
 };
 use uuid64rs::Uuid as _;
@@ -62,6 +64,42 @@ fn measure_batch(name: &str, batch_size: usize, mut generate: impl FnMut()) {
                 "kind": "measurement", "name": name, "version": 7, "round": round,
                 "calls": CALLS, "batchSize": batch_size,
                 "nsPerCall": started.elapsed().as_nanos() as f64 / CALLS as f64
+            })
+        );
+    }
+}
+
+fn measure_concurrent(name: &str, factory: &(impl Fn() -> Box<dyn FnMut() + Send> + Sync)) {
+    const THREADS: usize = 4;
+    for round in 0..5 {
+        let ready = Barrier::new(THREADS + 1);
+        let start = Barrier::new(THREADS + 1);
+        let elapsed = thread::scope(|scope| {
+            let mut handles = Vec::with_capacity(THREADS);
+            for _ in 0..THREADS {
+                handles.push(scope.spawn(|| {
+                    let mut generate = factory();
+                    ready.wait();
+                    start.wait();
+                    for _ in 0..CALLS / THREADS {
+                        black_box(generate());
+                    }
+                }));
+            }
+            ready.wait();
+            let started = Instant::now();
+            start.wait();
+            for handle in handles {
+                handle.join().unwrap();
+            }
+            started.elapsed()
+        });
+        println!(
+            "{}",
+            serde_json::json!({
+                "kind": "contention", "name": name, "version": 7, "round": round,
+                "threads": THREADS, "calls": CALLS,
+                "nsPerCall": elapsed.as_nanos() as f64 / CALLS as f64
             })
         );
     }
@@ -281,6 +319,32 @@ fn main() {
     measure_batch("rivid-core.v7.caller-batch", 256, || {
         rivid_core::uuidv7::fill_secure(&mut rivid_batch).unwrap();
         black_box(&rivid_batch);
+    });
+    measure_concurrent("package.v7.per-thread", &|| {
+        let mut generator = uuid_slug::UuidV7Generator::new();
+        Box::new(move || {
+            black_box(generator.generate_uuid_v7().unwrap());
+        })
+    });
+    measure_concurrent("uuid7.v7.global", &|| {
+        Box::new(|| {
+            black_box(uuid7::new_v7());
+        })
+    });
+    measure_concurrent("nativelite-uid.v7.global", &|| {
+        Box::new(|| {
+            black_box(uid::uuid7());
+        })
+    });
+    measure_concurrent("hyperuuid.v7.global", &|| {
+        Box::new(|| {
+            black_box(hyperuuid::v7::new_v7(1_700_000_000_000).unwrap());
+        })
+    });
+    measure_concurrent("rivid-core.v7.thread-local", &|| {
+        Box::new(|| {
+            black_box(rivid_core::uuidv7::generate_bytes16());
+        })
     });
     println!("{{\"complete\":true}}");
 }
