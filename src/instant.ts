@@ -131,7 +131,14 @@ export function readUuidV7Instant(instant: unknown): NormalizedUuidV7Instant | U
   if (typeof instant === "string") return readZonedTimestamp(instant);
   if (instant === null || typeof instant !== "object") return invalidInstant();
 
-  if (instant instanceof Date) return readUnixMilliseconds(instant.getTime());
+  let dateCause: unknown;
+  try {
+    // The intrinsic brand check works across realms and runs before record access so attaching
+    // fields to a Date cannot change its meaning or invoke caller code only in another realm.
+    return readUnixMilliseconds(Date.prototype.getTime.call(instant));
+  } catch (cause) {
+    dateCause = cause;
+  }
 
   try {
     const source = instant as {
@@ -180,9 +187,5 @@ export function readUuidV7Instant(instant: unknown): NormalizedUuidV7Instant | U
     return invalidInstant(cause);
   }
 
-  try {
-    return readUnixMilliseconds(Date.prototype.getTime.call(instant));
-  } catch (cause) {
-    return invalidInstant(cause);
-  }
+  return invalidInstant(dateCause);
 }

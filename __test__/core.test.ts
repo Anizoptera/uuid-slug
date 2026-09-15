@@ -599,8 +599,12 @@ describe("plain UUID slugs", () => {
   it("generates UUIDv7 from cross-realm and structural instant values", () => {
     const unixMs = 1_789_475_696_789;
     const crossRealmDate = runInNewContext(`new Date(${unixMs})`) as Date;
+    const crossRealmDateWithHostileProperty = runInNewContext(
+      `Object.defineProperty(new Date(${unixMs}), "epochMilliseconds", { get() { throw new Error("must not read Date properties") } })`,
+    ) as Date;
     const inputs = [
       crossRealmDate,
+      crossRealmDateWithHostileProperty,
       { epochMilliseconds: BigInt(unixMs) },
       { epochNanoseconds: BigInt(unixMs) * 1_000_000n },
       { seconds: 1_789_475_696n, nanoseconds: 789_000_000 },
