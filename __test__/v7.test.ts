@@ -281,6 +281,7 @@ describe("uuidv7 at a caller-supplied instant", () => {
   it.each([
     { epochMilliseconds: 2, epochNanoseconds: 1_500_000n },
     { epochMilliseconds: 1.75, epochNanoseconds: 1_500_000n },
+    { epochMilliseconds: 1.0001, epochNanoseconds: 1_999_999n },
     { epochMilliseconds: 1_000, seconds: 1 },
   ])("rejects conflicting instant fields in %o", (at) => {
     const generator = createUuidV7Generator({ fillRandom: constantFill(0x00) });

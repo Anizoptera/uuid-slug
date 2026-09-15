@@ -162,7 +162,9 @@ export function readUuidV7Instant(instant: unknown): NormalizedUuidV7Instant | U
       const stated = readUnixMilliseconds(epochMilliseconds);
       return stated instanceof Error ||
         stated.unixMs !== normalized.unixMs ||
-        (stated.fractionBucket12 !== 0 && stated.fractionBucket12 !== normalized.fractionBucket12)
+        (stated.fractionBucket12 !== normalized.fractionBucket12 &&
+          (stated.fractionBucket12 !== 0 ||
+            (typeof epochMilliseconds === "number" && !Number.isInteger(epochMilliseconds))))
         ? invalidInstant()
         : normalized;
     }
