@@ -607,6 +607,8 @@ describe("plain UUID slugs", () => {
     ] as const;
 
     for (const at of inputs) expect(extractUuidV7UnixMs(generateUuidV7({ at }))).toBe(unixMs);
+    const crossRealmOptions = runInNewContext(`({ at: ${unixMs} })`) as { at: number };
+    expect(extractUuidV7UnixMs(generateUuidV7(crossRealmOptions))).toBe(unixMs);
     expect(extractUuidV7UnixMs(generateUuidV7({ at: { epochNanoseconds: 1n } }))).toBe(0);
   });
 
@@ -623,6 +625,24 @@ describe("plain UUID slugs", () => {
     { seconds: 0, nanoseconds: 1_000_000_000 },
   ])("rejects ambiguous or invalid instant %o", (at) => {
     expect(generateUuidV7({ at: at as never })).toMatchObject({ code: "invalid_timestamp" });
+  });
+
+  it.each([
+    new Date(0),
+    new Map(),
+    /options/,
+    new (class Options {
+      readonly marker = true;
+    })(),
+  ])("rejects an exotic generation options object %o", (options) => {
+    expect(generateUuidV7(options as never)).toMatchObject({ code: "invalid_options" });
+    expect(generatePlainUuidV7Slug(options as never)).toMatchObject({ code: "invalid_options" });
+  });
+
+  it("returns an option error when an options proxy blocks validation", () => {
+    expect(generateUuidV7(revokedInput.proxy as never)).toMatchObject({
+      code: "invalid_options",
+    });
   });
 
   it("uses one at option across keyless UUIDv7 representations", () => {
@@ -648,20 +668,26 @@ describe("plain UUID slugs", () => {
     const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
     const at = { epochNanoseconds: 100_250_000n } as const;
 
+    const text = unwrap(generateUuidV7({ at, generator }));
+    const bytes = unwrap(generateUuidV7Bytes({ at, generator }));
+    const output = new Uint8Array(20);
+    const written = unwrap(generateUuidV7Bytes({ at, generator, output, outputOffset: 2 }));
     const plain = unwrap(generatePlainUuidV7Slug({ at, generator }));
     const plainPair = unwrap(generateUuidV7WithPlainSlug({ at, generator }));
     const masked = unwrap(codec.generateMaskedUuidV7Slug({ at, generator }));
     const maskedPair = unwrap(codec.generateUuidV7WithMaskedSlug({ at, generator }));
     const uuids = [
+      text,
+      unwrap(bytesToUuidString(bytes)),
+      unwrap(bytesToUuidString(written, 2)),
       unwrap(plainSlugToUuidString(plain)),
       plainPair.uuid,
       unwrap(codec.maskedSlugToUuidString(masked)),
       maskedPair.uuid,
     ] as const;
 
-    expect(uuids[1] > uuids[0]).toBe(true);
-    expect(uuids[2] > uuids[1]).toBe(true);
-    expect(uuids[3] > uuids[2]).toBe(true);
+    for (let index = 1; index < uuids.length; index += 1)
+      expect(uuids[index]! > uuids[index - 1]!).toBe(true);
     for (const uuid of uuids)
       expect(extractUuidV7Payload(uuid, generator.payloadLayout)).toMatchObject({
         unixMs: 100,
@@ -681,6 +707,8 @@ describe("plain UUID slugs", () => {
     const calls = (bytes: Uint8Array) => {
       const generator = { generateUuidV7Bytes: () => bytes, payloadLayout: layout } as never;
       return [
+        generateUuidV7({ at: 100.5, generator }),
+        generateUuidV7Bytes({ at: 100.5, generator }),
         generateUuidV7Value({ at: 100.5, generator }),
         generatePlainUuidV7Slug({ at: 100.5, generator }),
         generateUuidV7WithPlainSlug({ at: 100.5, generator }),
@@ -712,7 +740,9 @@ describe("plain UUID slugs", () => {
     } as never;
 
     expect(generatePlainUuidV7Slug({ generator })).toMatchObject({ code: "invalid_options" });
-    expect(layoutReads).toBe(1);
+    expect(generateUuidV7({ generator })).toMatchObject({ code: "invalid_options" });
+    expect(generateUuidV7Bytes({ generator })).toMatchObject({ code: "invalid_options" });
+    expect(layoutReads).toBe(3);
     expect(generationCalls).toBe(0);
 
     const validLayoutGenerator = {
@@ -725,7 +755,30 @@ describe("plain UUID slugs", () => {
     expect(
       generatePlainUuidV7Slug({ at: Number.NaN, generator: validLayoutGenerator }),
     ).toMatchObject({ code: "invalid_timestamp" });
+    expect(generateUuidV7({ at: Number.NaN, generator: validLayoutGenerator })).toMatchObject({
+      code: "invalid_timestamp",
+    });
+    expect(
+      generateUuidV7Bytes({ generator: validLayoutGenerator, output: new Uint8Array(15) }),
+    ).toMatchObject({ code: "invalid_buffer" });
     expect(generationCalls).toBe(0);
+  });
+
+  it("protects caller-owned output from a failing selected generator", () => {
+    const valid = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, { readUnixMs: () => 0 });
+    const generator = {
+      generateUuidV7Bytes: (options?: { output?: Uint8Array }) => {
+        options?.output?.fill(0xbb);
+        return "not UUID bytes";
+      },
+      payloadLayout: valid.payloadLayout,
+    } as never;
+    const output = new Uint8Array(16).fill(0xaa);
+
+    expect(generateUuidV7Bytes({ generator, output })).toMatchObject({
+      code: "invalid_uuid_version",
+    });
+    expect(output).toEqual(new Uint8Array(16).fill(0xaa));
   });
 
   it("rejects an unknown UUID text case before generation work", () => {
@@ -734,6 +787,12 @@ describe("plain UUID slugs", () => {
     const generator = createUuidV7Generator({ readUnixMs: () => ++clockReads });
     expect(generator.generateUuidV7(invalid)).toMatchObject({ code: "invalid_options" });
     expect(generator.generateUuidV7({ at: 0, textCase: invalid })).toMatchObject({
+      code: "invalid_options",
+    });
+    expect(generator.generateUuidV7({ generator } as never)).toMatchObject({
+      code: "invalid_options",
+    });
+    expect(generator.generateUuidV7Bytes({ generator } as never)).toMatchObject({
       code: "invalid_options",
     });
     expect(clockReads).toBe(0);

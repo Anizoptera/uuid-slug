@@ -17,9 +17,14 @@ export function readGenerationOptions(
   accepted: Readonly<Partial<Record<keyof GenerationOptionValues, true>>>,
   operation: string,
 ): GenerationOptionValues | UuidSlugError {
-  if (options === null || typeof options !== "object" || Array.isArray(options))
-    return new UuidSlugError(INVALID_OPTIONS, `${operation} options must be an object.`);
+  if (options === null || typeof options !== "object")
+    return new UuidSlugError(INVALID_OPTIONS, `${operation} options must be a plain object.`);
   try {
+    if (Array.isArray(options))
+      return new UuidSlugError(INVALID_OPTIONS, `${operation} options must be a plain object.`);
+    const prototype = Object.getPrototypeOf(options);
+    if (prototype !== null && Object.getPrototypeOf(prototype) !== null)
+      return new UuidSlugError(INVALID_OPTIONS, `${operation} options must be a plain object.`);
     const unknown = findUnknownOption(options, accepted);
     if (unknown !== undefined)
       return new UuidSlugError(INVALID_OPTIONS, `Unknown ${operation} option: ${unknown}.`);

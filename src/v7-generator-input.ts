@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
+  checkByteRange,
   INVALID_OPTIONS,
   INVALID_TIMESTAMP,
   INVALID_UUID_VERSION,
   isUuidSlugError,
   UuidSlugError,
 } from "./errors.ts";
-import type { UuidV7Bytes, UuidV7Generator, UuidV7Instant, UuidV7PayloadLayout } from "./types.ts";
+import type { UuidV7Generator, UuidV7Instant, UuidV7PayloadLayout } from "./types.ts";
 import { readUuidV7Instant } from "./instant.ts";
 import { readUuidV7PayloadLayout, uuidV7PayloadFromBytesUnchecked } from "./v7-payload.ts";
 import { isUuidV7Bytes, uuidTimestampFromBytesUnchecked } from "./uuid.ts";
@@ -17,6 +18,8 @@ const UUID_V7_GENERATOR_REQUIRED = "generator must be a UUIDv7 generator.";
 
 export interface UuidV7GenerationValues {
   readonly at?: unknown;
+  readonly output?: unknown;
+  readonly outputOffset?: unknown;
 }
 
 export interface ValidatedUuidV7Generator {
@@ -51,10 +54,16 @@ export function readUuidV7Generator(
 export function generateUuidV7BytesWithGenerator(
   generator: ValidatedUuidV7Generator,
   options: UuidV7GenerationValues,
-): UuidV7Bytes | UuidSlugError {
+): Uint8Array | UuidSlugError {
   const hasAt = Object.hasOwn(options, AT_OPTION);
   const requested = hasAt ? readUuidV7Instant(options.at) : undefined;
   if (requested instanceof Error) return requested;
+  const hasOutput = Object.hasOwn(options, "output");
+  const outputOffset = (options.outputOffset as number | undefined) ?? 0;
+  if (hasOutput || Object.hasOwn(options, "outputOffset")) {
+    const rangeError = checkByteRange(options.output, outputOffset, 16);
+    if (rangeError) return rangeError;
+  }
   let generated: unknown;
   try {
     generated = hasAt
@@ -85,5 +94,8 @@ export function generateUuidV7BytesWithGenerator(
         "UUIDv7 generator returned an instant before at; its output must preserve or advance the requested instant.",
       );
   }
-  return generated;
+  if (!hasOutput) return generated;
+  const output = options.output as Uint8Array;
+  output.set(generated, outputOffset);
+  return output;
 }

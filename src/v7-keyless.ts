@@ -3,6 +3,7 @@
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
 import { UuidSlugError } from "./errors.ts";
+import { readGenerationOptions } from "./generation-options.ts";
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
 import type {
   GenerateUuidV7Options,
@@ -13,9 +14,19 @@ import type {
   UuidV7StringFor,
 } from "./types.ts";
 import type { UuidV7PayloadLayout } from "./types.ts";
-import { isUuidTextCase } from "./uuid.ts";
+import { formatUuidBytesUnchecked, invalidUuidTextCase, isUuidTextCase } from "./uuid.ts";
 import { createPortableUuidV7Generator } from "./v7.ts";
 import type { PortableUuidV7Generator } from "./v7.ts";
+import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
+
+const UUID_V7_TEXT_OPTIONS = { at: true, generator: true, textCase: true } as const;
+const AT_OPTION = "at";
+const UUID_V7_BYTE_OPTIONS = {
+  at: true,
+  generator: true,
+  output: true,
+  outputOffset: true,
+} as const;
 
 /**
  * Text and bytes keep independent lazy state so neither output form pays cross-form coordination.
@@ -56,8 +67,7 @@ export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
  * Generate UUIDv7 text at an explicit time or the current clock reading. Explicit time does not
  * join module-level sequence state.
  *
- * @param options - Time and text spelling. Omit `at` to read the current clock and omit `textCase`
- * for lowercase.
+ * @param options - Time, sequence, and text spelling. Omit `generator` for an independent call.
  */
 export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   options: GenerateUuidV7Options<Case>,
@@ -67,7 +77,25 @@ export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
 ): UuidV7StringFor<Case> | UuidSlugError {
   if (textCaseOrOptions === undefined || isUuidTextCase(textCaseOrOptions))
     return (generateDefaultUuidV7 ??= v7Text().generateUuidV7)(textCaseOrOptions);
-  return v7Text().generateUuidV7(textCaseOrOptions);
+  const values = readGenerationOptions(
+    textCaseOrOptions,
+    UUID_V7_TEXT_OPTIONS,
+    "UUIDv7 generation",
+  );
+  if (values instanceof Error) return values;
+  const textCase = values.textCase ?? UUID_TEXT_LOWERCASE;
+  if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
+  const generator = readUuidV7Generator(values.generator);
+  if (generator instanceof Error) return generator;
+  if (!generator)
+    return v7Text().generateUuidV7({
+      ...(Object.hasOwn(values, AT_OPTION) ? { at: values.at as never } : {}),
+      textCase,
+    }) as UuidV7StringFor<Case> | UuidSlugError;
+  const bytes = generateUuidV7BytesWithGenerator(generator, values);
+  return bytes instanceof Error
+    ? bytes
+    : (formatUuidBytesUnchecked(bytes, 0, textCase) as UuidV7StringFor<Case>);
 }
 
 /**
@@ -102,6 +130,30 @@ export function generateUuidV7Bytes(
     | GenerateUuidV7BytesIntoOptions<Uint8Array>,
   offset?: number,
 ): Uint8Array | UuidSlugError {
+  if (
+    outOrOptions !== undefined &&
+    outOrOptions !== null &&
+    typeof outOrOptions === "object" &&
+    !Array.isArray(outOrOptions) &&
+    !ArrayBuffer.isView(outOrOptions)
+  ) {
+    const values = readGenerationOptions(
+      outOrOptions,
+      UUID_V7_BYTE_OPTIONS,
+      "UUIDv7 byte generation",
+    );
+    if (values instanceof Error) return values;
+    const generator = readUuidV7Generator(values.generator);
+    if (generator instanceof Error) return generator;
+    if (generator) return generateUuidV7BytesWithGenerator(generator, values);
+    outOrOptions = {
+      ...(Object.hasOwn(values, AT_OPTION) ? { at: values.at as never } : {}),
+      ...(Object.hasOwn(values, "output") ? { output: values.output as Uint8Array } : {}),
+      ...(Object.hasOwn(values, "outputOffset")
+        ? { outputOffset: values.outputOffset as number }
+        : {}),
+    };
+  }
   const generate = (generateDefaultUuidV7Bytes ??= v7Bytes().generateUuidV7Bytes) as (
     outputOrOptions?:
       | Uint8Array

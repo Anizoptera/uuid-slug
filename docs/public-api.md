@@ -396,6 +396,8 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   A typo must return the owning operation's configuration error instead of silently selecting
   another clock, alphabet, mask, migration reader, sentinel definition, or timestamp window. Make
   each runtime key map exhaustive against the public options type so either side cannot drift.
+- Accept plain records from any realm, including records with a null prototype. Reject arrays and
+  objects with host or class behavior instead of silently reading them as empty options.
 - Accept ergonomic raw input at the package seam, validate it once, and return the narrowest type
   established by that successful operation. Keep format, UUID version, plain or masked spelling,
   and ownership distinctions when consumers use them.

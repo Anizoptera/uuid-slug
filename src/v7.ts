@@ -47,13 +47,13 @@ export type PortableUuidV7Generator = Omit<UuidV7Generator, "generateUuidV7Value
 const UUID_V7_TEXT_OPTIONS = {
   at: true,
   textCase: true,
-} as const satisfies Record<keyof GenerateUuidV7Options, true>;
+} as const satisfies Record<keyof Omit<GenerateUuidV7Options<UuidTextCase>, "generator">, true>;
 const UUID_V7_BYTE_OPTIONS = {
   at: true,
   output: true,
   outputOffset: true,
 } as const satisfies Record<
-  keyof (GenerateUuidV7BytesOptions & GenerateUuidV7BytesIntoOptions<Uint8Array>),
+  keyof Omit<GenerateUuidV7BytesOptions & GenerateUuidV7BytesIntoOptions<Uint8Array>, "generator">,
   true
 >;
 const AT_OPTION = "at";
@@ -328,15 +328,17 @@ export function createPortableUuidV7Generator(
     out: Output,
     offset?: number,
   ): Output | UuidSlugError;
-  function generateUuidV7Bytes(options: GenerateUuidV7BytesOptions): UuidV7Bytes | UuidSlugError;
+  function generateUuidV7Bytes(
+    options: Omit<GenerateUuidV7BytesOptions, "generator">,
+  ): UuidV7Bytes | UuidSlugError;
   function generateUuidV7Bytes<Output extends Uint8Array>(
-    options: GenerateUuidV7BytesIntoOptions<Output>,
+    options: Omit<GenerateUuidV7BytesIntoOptions<Output>, "generator">,
   ): Output | UuidSlugError;
   function generateUuidV7Bytes(
     outOrOptions?:
       | Uint8Array
-      | GenerateUuidV7BytesOptions
-      | GenerateUuidV7BytesIntoOptions<Uint8Array>,
+      | Omit<GenerateUuidV7BytesOptions, "generator">
+      | Omit<GenerateUuidV7BytesIntoOptions<Uint8Array>, "generator">,
     offset?: number,
   ): Uint8Array | UuidSlugError {
     if (outOrOptions === undefined || isUint8Array(outOrOptions))
@@ -360,10 +362,12 @@ export function createPortableUuidV7Generator(
     textCase?: Case,
   ): UuidV7StringFor<Case> | UuidSlugError;
   function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-    options: GenerateUuidV7Options<Case>,
+    options: Omit<GenerateUuidV7Options<Case>, "generator">,
   ): UuidV7StringFor<Case> | UuidSlugError;
   function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-    textCaseOrOptions: Case | GenerateUuidV7Options<Case> = UUID_TEXT_LOWERCASE as Case,
+    textCaseOrOptions:
+      | Case
+      | Omit<GenerateUuidV7Options<Case>, "generator"> = UUID_TEXT_LOWERCASE as Case,
   ): UuidV7StringFor<Case> | UuidSlugError {
     if (isUuidTextCase(textCaseOrOptions)) return formatUuidV7(bytes(textBytes), textCaseOrOptions);
     const values = readGenerationOptions(

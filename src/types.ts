@@ -381,7 +381,7 @@ export interface UuidV7Generator {
   /** Generate UUIDv7 text at an explicit time or the current clock reading. */
   generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
-    options: GenerateUuidV7Options<Case>,
+    options: Omit<GenerateUuidV7Options<Case>, "generator">,
   ): UuidV7StringFor<Case> | UuidSlugError;
   /** Generate a new plain 16-byte `Uint8Array` for the current clock reading. */
   generateUuidV7Bytes(this: void): UuidV7Bytes | UuidSlugError;
@@ -398,11 +398,14 @@ export interface UuidV7Generator {
     outputOffset?: number,
   ): Output | UuidSlugError;
   /** Generate package-owned UUIDv7 bytes at an explicit time or the current clock reading. */
-  generateUuidV7Bytes(this: void, options: GenerateUuidV7BytesOptions): UuidV7Bytes | UuidSlugError;
+  generateUuidV7Bytes(
+    this: void,
+    options: Omit<GenerateUuidV7BytesOptions, "generator">,
+  ): UuidV7Bytes | UuidSlugError;
   /** Write UUIDv7 bytes at an explicit time or the current clock reading into caller-owned storage. */
   generateUuidV7Bytes<Output extends Uint8Array>(
     this: void,
-    options: GenerateUuidV7BytesIntoOptions<Output>,
+    options: Omit<GenerateUuidV7BytesIntoOptions<Output>, "generator">,
   ): Output | UuidSlugError;
 }
 
@@ -420,6 +423,8 @@ export type UuidV7Instant =
 export interface GenerateUuidV7Options<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE> {
   /** Time to encode. A created generator joins its sequence; a module call stays independent. */
   readonly at?: UuidV7Instant;
+  /** Generator that supplies entropy, payload layout, and sequence policy. */
+  readonly generator?: UuidV7Generator;
   /** UUID text spelling. Omit for lowercase. */
   readonly textCase?: Case;
 }
@@ -438,6 +443,8 @@ export interface GeneratePlainUuidV7SlugOptions {
 export interface GenerateUuidV7BytesOptions {
   /** Time to encode. A created generator joins its sequence; a module call stays independent. */
   readonly at?: UuidV7Instant;
+  /** Generator that supplies entropy, payload layout, and sequence policy. */
+  readonly generator?: UuidV7Generator;
   readonly output?: never;
   readonly outputOffset?: never;
 }
@@ -446,6 +453,8 @@ export interface GenerateUuidV7BytesOptions {
 export interface GenerateUuidV7BytesIntoOptions<Output extends Uint8Array> {
   /** Time to encode. A created generator joins its sequence; a module call stays independent. */
   readonly at?: UuidV7Instant;
+  /** Generator that supplies entropy, payload layout, and sequence policy. */
+  readonly generator?: UuidV7Generator;
   /** Caller-owned array that receives the 16 UUID bytes after successful generation. */
   readonly output: Output;
   /** Zero-based index where writing starts. Omit to start at index 0. */

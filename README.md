@@ -149,8 +149,8 @@ function idForImportedRecord(recordedAt: Date) {
 }
 ```
 
-Pass the same created generator to plain, paired, or masked generation when those results must join
-one sequence. The representation call generates and formats once; callers do not unwrap bytes first.
+Pass the same created generator to any UUIDv7 representation call when its result must join one
+sequence. The representation call generates and formats once; callers do not unwrap bytes first.
 
 Each call uses fresh randomness, even at the same timestamp. For retries, keep the first ID or
 use your application's deduplication key. Existing records should keep their UUIDs.
@@ -614,12 +614,12 @@ independent generator; UUIDv4 and plain-slug generation remain module-level.
 
 | Call | Successful result |
 | --- | --- |
-| `generateUuidV4(textCase?)` / `generateUuidV7(textCaseOrOptions?)` | UUID text in the selected case, typed with its version. UUIDv7 options may set `at`. |
+| `generateUuidV4(textCase?)` / `generateUuidV7(textCaseOrOptions?)` | UUID text in the selected case, typed with its version. UUIDv7 options may set `at` and `generator`. |
 | `generateUuidV4WithRandomFill(fill, textCase?)` | UUIDv4 text from an explicit synchronous entropy source. |
 | `generatePlainUuidV4Slug(alphabet?)` / `generatePlainUuidV7Slug(alphabetOrOptions?)` | A plain slug in the chosen alphabet, typed with its UUID version. UUIDv7 options may set `at` or select a generator. |
 | `generateUuidV7WithPlainSlug(alphabetOrTextCaseOrOptions?, textCase?)` | UUIDv7 text and its plain slug from one generated value; options may set `at` or select a generator. |
-| `generateUuidV4Bytes()` / `generateUuidV7Bytes(options?)` | A new 16-byte array, typed with its UUID version. UUIDv7 options may set `at`. |
-| `generateUuidV4Bytes(out, offset?)` / `generateUuidV7Bytes(out, offset?)` | Your output array, with the UUID written at the offset. UUIDv7 also accepts `{ at, output, outputOffset }`. |
+| `generateUuidV4Bytes()` / `generateUuidV7Bytes(options?)` | A new 16-byte array, typed with its UUID version. UUIDv7 options may set `at` and `generator`. |
+| `generateUuidV4Bytes(out, offset?)` / `generateUuidV7Bytes(out, offset?)` | Your output array, with the UUID written at the offset. UUIDv7 also accepts `{ at, generator, output, outputOffset }`. |
 | `generateUuidV7Value(options?)` | An immutable UUIDv7; options may set `at`, select a generator, or retain a masking codec. |
 | `uuidV7Bounds(ms, textCase?)` / `uuidV7Bounds(startMs, endMs, textCase?)` | Inclusive canonical UUID bounds for one millisecond or an inclusive interval. |
 | `uuidV7ByteBounds(startMs, endMs?)` | The same inclusive bounds as two owned byte arrays. |

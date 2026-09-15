@@ -280,6 +280,15 @@ expectType<UppercaseUuidV7String | UuidSlugError>()(generateUuidV7(UUID_TEXT_UPP
 expectType<UppercaseUuidV7String | UuidSlugError>()(
   generateUuidV7({ at: new Date(0), textCase: UUID_TEXT_UPPERCASE }),
 );
+expectType<UuidV7String | UuidSlugError>()(generateUuidV7({ generator }));
+expectType<UuidV7Bytes | UuidSlugError>()(generateUuidV7Bytes({ generator }));
+expectType<ConsumerBuffer | UuidSlugError>()(
+  generateUuidV7Bytes({ generator, output: destination, outputOffset: 8 }),
+);
+// @ts-expect-error A generator method already owns its generator.
+generator.generateUuidV7({ generator });
+// @ts-expect-error A generator method already owns its generator.
+generator.generateUuidV7Bytes({ generator });
 expectType<PlainUuidV7Slug | UuidSlugError>()(
   generatePlainUuidV7Slug({ at: 0n, alphabet: BASE32HEX }),
 );
