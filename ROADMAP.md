@@ -31,8 +31,8 @@ export, accepted form, and registry becomes a permanent compatibility and verifi
 - [ ] Design the immutable UUID around caller decisions and compare it with the existing narrow
       extractors. Provide equivalent top-level and owner methods whenever a codec or generator owns
       operation state; the top-level call receives that owner explicitly and the owner method presets
-      itself. Preserve explicitly supplied codec and generator context as typed convenience presets;
-      require missing context at the later operation and allow an explicit override.
+      itself. Preserve an explicitly supplied masking codec and an immutable generated payload-layout
+      snapshot as typed convenience presets. Never retain a generator in a UUID.
 
 ## Competitor benchmarks
 

@@ -327,13 +327,15 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   cannot affect the operation.
 - Preserve useful immutable construction context in the parsed UUID. A UUID parsed through a masking
   codec may omit that codec from later masked conversions; an unbound UUID must provide one. An
-  explicit codec on a later call overrides the preset. A UUID generated through a generator may use
-  that generator's payload layout for later payload inspection; other UUIDs must provide the layout.
-  Types must distinguish calls with and without each preset so omission is rejected before runtime.
+  explicit codec on a later call overrides the preset. Never retain a generator in a UUID: its
+  mutable clock, entropy, sequence, and rollback state cannot affect an identifier already produced.
+  A UUID generated through a generator may retain an immutable copy of that generator's payload
+  layout for later payload inspection; other UUIDs must provide the layout. Types must distinguish
+  calls with and without each preset so omission is rejected before runtime.
 - Retaining a masking codec keeps its key-bearing state reachable for the parsed UUID's lifetime.
   Only explicit construction with that codec may incur this retention. Serialization preserves the
-  UUID value but not codec, generator, source spelling, or other construction context, so a value
-  reconstructed from serialized data is unbound.
+  UUID value but not codec, payload layout, source spelling, or other construction context, so a
+  value reconstructed from serialized data is unbound.
 - Keep equality and ordering outside the API. Normalize known plain input with `uuidToString`, then
   compare canonical text or bytes; masked input first needs its codec and can be ambiguous without
   provenance. One comparator cannot hide those different meanings honestly.
