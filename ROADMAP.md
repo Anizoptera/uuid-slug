@@ -51,12 +51,18 @@ instead of steering the API toward whichever operations competitors happen to ex
 - [x] Re-run the registry census and resolve new or renamed candidates immediately before measurement.
 - [x] Execute each direct generator and retain wrappers only when they add a distinct consumer cost.
 - [x] Compare equivalent text, byte, caller-storage, and batch outcomes without hiding weaker paths.
-- [ ] Measure validity, entropy failure, clock rollback, same-millisecond behavior, allocation,
-      contention, target support, and throughput.
+- [x] Reject invalid generator output and execute entropy failure, rollback, and same-millisecond limits.
+- [x] Classify fixed values, caller storage, and returned strings without claiming hidden allocator work.
+- [ ] Measure one-thread and concurrent throughput for state-local and process-global generators.
+- [ ] Compile each retained generator for its claimed native and `wasm32-unknown-unknown` capability;
+      report unsupported lanes instead of weakening every crate to one feature set.
+- [ ] Generate the Rust report from raw records so names, medians, qualifications, and omissions have
+      one executable owner rather than hand-maintained prose.
 
 ### Final evidence
 
-- [ ] Run the complete competitor matrix after the candidate inventory and public operations are
-      frozen; update measured conclusions without turning competitor behavior into package policy.
-- [ ] Run the complete project gate, pair every retained claim with its owning evidence, commit the
-      focused benchmark evidence, and leave the repository clean.
+- [ ] Run the complete JavaScript and Rust competitor matrices after the candidate inventory and
+      public operations are frozen.
+- [ ] Update measured conclusions without turning competitor behavior into package policy.
+- [ ] Run the complete project gate and pair every retained claim with its owning evidence.
+- [ ] Commit the focused benchmark evidence, remove transient captures, and leave the repository clean.
