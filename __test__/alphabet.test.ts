@@ -70,6 +70,7 @@ describe("bit-packing codec", () => {
     for (let index = 0; index < encoded.length; index += 1) {
       const invalid = `${encoded.slice(0, index)}!${encoded.slice(index + 1)}`;
       expect(decodeInto(invalid, BASE64URL, new Uint8Array(16), 0, 16)).toMatchObject({
+        code: "invalid_base64url",
         message: `Invalid base64url character "!" at offset ${index}.`,
       });
     }
@@ -83,6 +84,7 @@ describe("bit-packing codec", () => {
       expect(out).toEqual(bytes);
     }
     expect(decodeInto(`${"A".repeat(21)}B`, BASE64URL, new Uint8Array(16), 0, 16)).toMatchObject({
+      code: "invalid_base64url",
       message:
         "base64url value has non-canonical trailing bits; a masked slug of this length decodes only through its codec.",
     });
@@ -104,6 +106,7 @@ describe("bit-packing codec", () => {
     for (let index = 0; index < encoded.length; index += 1) {
       const invalid = `${encoded.slice(0, index)}w${encoded.slice(index + 1)}`;
       expect(decodeInto(invalid, BASE32HEX, new Uint8Array(16), 0, 16)).toMatchObject({
+        code: "invalid_base32hex",
         message: `Invalid base32hex character "w" at offset ${index}.`,
       });
     }
@@ -117,6 +120,7 @@ describe("bit-packing codec", () => {
       expect(out).toEqual(bytes);
     }
     expect(decodeInto(`${"0".repeat(25)}1`, BASE32HEX, new Uint8Array(16), 0, 16)).toMatchObject({
+      code: "invalid_base32hex",
       message: "base32hex value has non-canonical trailing bits.",
     });
   });
