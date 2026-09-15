@@ -713,6 +713,40 @@ describe("plain UUID slugs", () => {
     expect(generateUuidV7Bytes({ generator: generator as never })).toBeInstanceOf(Uint8Array);
   });
 
+  it("owns bytes returned through an untrusted selected generator", () => {
+    const source = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, { readUnixMs: () => 0 });
+    const shared = new (class extends Uint8Array {})(unwrap(source.generateUuidV7Bytes()));
+    const generator = {
+      generateUuidV7Bytes: () => shared,
+      payloadLayout: source.payloadLayout,
+    };
+
+    const result = unwrap(generateUuidV7Bytes({ generator: generator as never }));
+    shared.fill(0xff);
+
+    expect(result.constructor).toBe(Uint8Array);
+    expect(result).not.toEqual(shared);
+  });
+
+  it("isolates returned bytes from a selected generator's retained output", () => {
+    const source = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, { readUnixMs: () => 0 });
+    const valid = unwrap(source.generateUuidV7Bytes());
+    let retained: Uint8Array | undefined;
+    const generator = {
+      generateUuidV7Bytes(output: Uint8Array) {
+        retained = output;
+        output.set(valid);
+        return output;
+      },
+      payloadLayout: source.payloadLayout,
+    };
+
+    const result = unwrap(generateUuidV7Bytes({ generator: generator as never }));
+    retained?.fill(0xff);
+
+    expect(result).toEqual(valid);
+  });
+
   it("rejects selected-generator output before the requested precise instant", () => {
     const source = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
       readUnixMs: () => 100,

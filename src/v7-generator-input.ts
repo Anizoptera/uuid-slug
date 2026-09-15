@@ -65,11 +65,12 @@ export function generateUuidV7BytesWithGenerator(
     if (rangeError) return rangeError;
   }
   let generated: unknown;
+  const generatedOutput = new Uint8Array(16);
   try {
     const generateUuidV7Bytes = generator.generateUuidV7Bytes;
     generated = hasAt
-      ? generateUuidV7Bytes({ at: options.at as UuidV7Instant })
-      : generateUuidV7Bytes();
+      ? generateUuidV7Bytes({ at: options.at as UuidV7Instant, output: generatedOutput })
+      : generateUuidV7Bytes(generatedOutput);
   } catch (cause) {
     return new UuidSlugError(INVALID_OPTIONS, "UUIDv7 generator failed.", { cause });
   }
@@ -79,12 +80,13 @@ export function generateUuidV7BytesWithGenerator(
       INVALID_UUID_VERSION,
       "Generator must return exactly 16 RFC-variant UUIDv7 bytes.",
     );
+  if (generated !== generatedOutput) generatedOutput.set(generated);
   if (requested) {
-    const generatedUnixMs = uuidTimestampFromBytesUnchecked(generated, 0);
+    const generatedUnixMs = uuidTimestampFromBytesUnchecked(generatedOutput, 0);
     const fractionBits = generator.payloadLayout.subMillisecondFractionBits;
     const requestedFraction = requested.fractionBucket12 >> (12 - fractionBits);
     const generatedFraction = Number(
-      uuidV7PayloadFromBytesUnchecked(generated, 0) >> BigInt(74 - fractionBits),
+      uuidV7PayloadFromBytesUnchecked(generatedOutput, 0) >> BigInt(74 - fractionBits),
     );
     if (
       generatedUnixMs < requested.unixMs ||
@@ -95,8 +97,8 @@ export function generateUuidV7BytesWithGenerator(
         "UUIDv7 generator returned an instant before at; its output must preserve or advance the requested instant.",
       );
   }
-  if (!hasOutput) return generated;
+  if (!hasOutput) return new Uint8Array(generatedOutput);
   const output = options.output as Uint8Array;
-  output.set(generated, outputOffset);
+  output.set(generatedOutput, outputOffset);
   return output;
 }
