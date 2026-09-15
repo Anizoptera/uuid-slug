@@ -107,6 +107,10 @@ const CODEC_OPTIONS = {
   sentinels: true,
   timestampRangeStartUnixMs: true,
 } as const satisfies Record<keyof UuidV7MaskingCodecOptions, true>;
+const UUID_V7_MASKING_CODEC_VALUE_OPTIONS = {
+  at: true,
+  generator: true,
+} as const satisfies Record<keyof UuidV7MaskingCodecValueOptions, true>;
 const PREVIOUS_MASK_OPTIONS = {
   mask: true,
   timestampRangeStartUnixMs: true,
@@ -625,7 +629,7 @@ function buildUuidSlugCodec(
   }
 
   function generateCodecBytes(generationOptions?: unknown): UuidV7Bytes | UuidSlugError {
-    const values = readUuidV7ValueOptions(generationOptions, { at: true, generator: true });
+    const values = readUuidV7ValueOptions(generationOptions, UUID_V7_MASKING_CODEC_VALUE_OPTIONS);
     return values instanceof Error ? values : generateCodecBytesFromValues(values);
   }
 
@@ -726,7 +730,7 @@ function buildUuidSlugCodec(
   }
 
   function generateUuidV7Value(valueOptions?: UuidV7MaskingCodecValueOptions) {
-    const values = readUuidV7ValueOptions(valueOptions, { at: true, generator: true });
+    const values = readUuidV7ValueOptions(valueOptions, UUID_V7_MASKING_CODEC_VALUE_OPTIONS);
     if (values instanceof Error) return values;
     const generator = readUuidV7Generator(values.generator);
     if (generator instanceof Error) return generator;

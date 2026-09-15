@@ -19,14 +19,18 @@ import { createPortableUuidV7Generator } from "./v7.ts";
 import type { PortableUuidV7Generator } from "./v7.ts";
 import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
 
-const UUID_V7_TEXT_OPTIONS = { at: true, generator: true, textCase: true } as const;
+const UUID_V7_TEXT_OPTIONS = {
+  at: true,
+  generator: true,
+  textCase: true,
+} as const satisfies Record<keyof GenerateUuidV7Options, true>;
 const AT_OPTION = "at";
 const UUID_V7_BYTE_OPTIONS = {
   at: true,
   generator: true,
   output: true,
   outputOffset: true,
-} as const;
+} as const satisfies Record<keyof GenerateUuidV7BytesIntoOptions<Uint8Array>, true>;
 
 /**
  * Text and bytes keep independent lazy state so neither output form pays cross-form coordination.

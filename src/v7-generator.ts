@@ -54,6 +54,10 @@ const GENERATOR_OPTIONS = {
 } as const satisfies Record<keyof UuidV7GeneratorOptions, true>;
 const INVALID_GENERATOR_OPTIONS = "Generator options must be an object.";
 const INVALID_ROLLBACK_POLICY = "Generator clockRollback must be a policy object.";
+const UUID_V7_GENERATOR_VALUE_OPTIONS = {
+  at: true,
+  maskingCodec: true,
+} as const satisfies Record<keyof UuidV7GeneratorValueOptions, true>;
 
 const highResolutionClock = globalThis.performance;
 const readHighResolutionUnixMs =
@@ -145,7 +149,7 @@ function buildGenerator(
   function generateUuidV7Value(
     valueOptions?: UuidV7GeneratorValueOptions,
   ): Uuid<7, boolean, true> | UuidSlugError {
-    const values = readUuidV7ValueOptions(valueOptions, { at: true, maskingCodec: true });
+    const values = readUuidV7ValueOptions(valueOptions, UUID_V7_GENERATOR_VALUE_OPTIONS);
     if (values instanceof Error) return values;
     const maskingCodec = readUuidV7MaskingCodec(values.maskingCodec);
     if (maskingCodec instanceof Error) return maskingCodec;

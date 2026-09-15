@@ -11,6 +11,12 @@ import {
 } from "./v7-value-options.ts";
 import { readUuidV7Generator } from "./v7-generator-input.ts";
 
+const UUID_V7_VALUE_OPTIONS = {
+  at: true,
+  generator: true,
+  maskingCodec: true,
+} as const satisfies Record<keyof UuidV7ValueOptions, true>;
+
 /** Generate an immutable UUIDv7 with optional time, generator, and retained masking codec. */
 export function generateUuidV7Value<const Options extends UuidV7ValueOptions = {}>(
   options?: Options,
@@ -20,11 +26,7 @@ export function generateUuidV7Value<const Options extends UuidV7ValueOptions = {
 export function generateUuidV7Value(
   options?: UuidV7ValueOptions,
 ): Uuid<7, boolean, true> | UuidSlugError {
-  const values = readUuidV7ValueOptions(options, {
-    at: true,
-    generator: true,
-    maskingCodec: true,
-  });
+  const values = readUuidV7ValueOptions(options, UUID_V7_VALUE_OPTIONS);
   if (values instanceof Error) return values;
   const generator = readUuidV7Generator(values.generator);
   if (generator instanceof Error) return generator;
