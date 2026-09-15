@@ -8,7 +8,7 @@
 
 ## TL;DR
 
-**Fastest zero-deps UUIDv7/v4 generation and handling + optionally opaque short UUID slugs for databases, URLs, and files.**
+**Zero-dependency UUIDv4/v7 generation, lossless base64url and base32hex slugs for any UUID, and reversible UUIDv7 masking for databases, URLs, and files.**
 
 - Encode any UUID as short `base64url` or lowercase `base32hex`.
 - Use optional reversible seeded masking to make UUIDv7 slugs opaque.
@@ -16,7 +16,7 @@
 - Write directly into your buffers without intermediate text or new output arrays.
 - Read UUIDv7 timestamps instead of duplicating them twice.
 - Use native fastest paths and portable fallbacks across Node, Bun, Deno, and browsers.
-- Benefit from cross-runtime correctness tested and performance optimized.
+- Use native runtime APIs with matching portable fallbacks.
 - Failures return typed errors. Built-in generation never falls back to weaker randomness.
 - Unused features tree-shake away with any modern bundler.
 
