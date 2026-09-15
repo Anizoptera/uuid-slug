@@ -252,6 +252,19 @@ describe("uuidv7 at a caller-supplied instant", () => {
     expect(Math.floor(payloadPrefixOf(bytes) / 2 ** 30)).toBe(fraction);
   });
 
+  it("accepts consistent millisecond and nanosecond fields", () => {
+    const generator = createUuidV7Generator({
+      fillRandom: constantFill(0x00),
+      subMillisecondFractionBits: 12,
+    });
+    const bytes = generator.generateUuidV7Bytes({
+      at: { epochMilliseconds: 1.5, epochNanoseconds: 1_500_000n },
+    });
+    if (bytes instanceof Error) throw bytes;
+    expect(timestampOf(bytes)).toBe(1);
+    expect(Math.floor(payloadPrefixOf(bytes) / 2 ** 30)).toBe(2048);
+  });
+
   // NaN and Infinity matter because runtime-native validation is not this portable contract. Bun
   // rejects them today, but runtime behavior is re-probed on update rather than assumed here.
   it.each([-1, NaN, Infinity, 2 ** 48])("rejects the instant %d", (ms) => {
