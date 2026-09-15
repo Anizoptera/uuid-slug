@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import { isUuidSlugError } from "./errors.ts";
 import type { UuidSlugError } from "./errors.ts";
 import { BASE64URL_NAME, encode } from "./alphabet.ts";
 import { readGenerationOptions } from "./generation-options.ts";
@@ -14,6 +15,7 @@ import type {
   UuidV7StringFor,
 } from "./types.ts";
 import { generateUuidV7Bytes } from "./v7-keyless.ts";
+import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
 import { resolveSlugAlphabet } from "./slug.ts";
 import { formatUuidBytesUnchecked, invalidUuidTextCase, isUuidTextCase } from "./uuid.ts";
 import type { SlugAlphabet } from "./slug.ts";
@@ -21,22 +23,24 @@ import type { SlugAlphabet } from "./slug.ts";
 const PLAIN_UUID_V7_SLUG_OPTIONS = {
   alphabet: true,
   at: true,
+  generator: true,
 } as const satisfies Record<keyof GeneratePlainUuidV7SlugOptions, true>;
 const UUID_V7_WITH_PLAIN_SLUG_OPTIONS = {
   alphabet: true,
   at: true,
+  generator: true,
   textCase: true,
 } as const satisfies Record<keyof GenerateUuidV7WithPlainSlugOptions, true>;
 const AT_OPTION = "at";
 
 /**
  * Generate a plain UUIDv7 slug. Lowercase base32hex preserves UUID byte order; base64url does not
- * preserve that order under text comparison. Module-level calls do not provide ordering across calls.
+ * preserve that order under text comparison. Select a generator when this result must join its sequence.
  *
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
 export function generatePlainUuidV7Slug(alphabet?: SlugAlphabet): PlainUuidV7Slug | UuidSlugError;
-/** Generate a plain UUIDv7 slug at an explicit time or the current clock reading. */
+/** Generate a plain UUIDv7 slug with optional time, alphabet, and sequence state. */
 export function generatePlainUuidV7Slug(
   options: GeneratePlainUuidV7SlugOptions,
 ): PlainUuidV7Slug | UuidSlugError;
@@ -54,16 +58,20 @@ export function generatePlainUuidV7Slug(
   if (values instanceof Error) return values;
   const resolved = resolveSlugAlphabet((values.alphabet ?? BASE64URL_NAME) as SlugAlphabet);
   if (resolved instanceof Error) return resolved;
-  const bytes = !Object.hasOwn(values, AT_OPTION)
-    ? generateUuidV7Bytes()
-    : generateUuidV7Bytes({ at: values.at as UuidV7Instant });
-  if (bytes instanceof Error) return bytes;
+  const generator = readUuidV7Generator(values.generator);
+  if (generator instanceof Error) return generator;
+  const bytes = generator
+    ? generateUuidV7BytesWithGenerator(generator, values)
+    : !Object.hasOwn(values, AT_OPTION)
+      ? generateUuidV7Bytes()
+      : generateUuidV7Bytes({ at: values.at as UuidV7Instant });
+  if (isUuidSlugError(bytes)) return bytes;
   return encode(bytes, resolved) as PlainUuidV7Slug;
 }
 
 /**
- * Generate UUIDv7 text and a plain slug for the same UUID. Module-level calls do not provide
- * ordering across calls.
+ * Generate UUIDv7 text and a plain slug for the same UUID. Select a generator when this result must
+ * join its sequence.
  *
  * @param alphabet - Slug spelling. Omit for the shorter 22-character base64url form.
  * @param textCase - UUID text spelling. Pass it alone to keep the default slug alphabet.
@@ -79,7 +87,7 @@ export function generateUuidV7WithPlainSlug<Case extends UuidTextCase>(
   alphabet: SlugAlphabet,
   textCase: Case,
 ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
-/** Generate UUIDv7 text and a plain slug at an explicit time or the current clock reading. */
+/** Generate the pair with optional time, spelling, and sequence state. */
 export function generateUuidV7WithPlainSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   options: GenerateUuidV7WithPlainSlugOptions<Case>,
 ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
@@ -105,10 +113,14 @@ export function generateUuidV7WithPlainSlug(
   if (!isUuidTextCase(selectedCase)) return invalidUuidTextCase();
   const resolved = resolveSlugAlphabet((values.alphabet ?? BASE64URL_NAME) as SlugAlphabet);
   if (resolved instanceof Error) return resolved;
-  const bytes = !Object.hasOwn(values, AT_OPTION)
-    ? generateUuidV7Bytes()
-    : generateUuidV7Bytes({ at: values.at as UuidV7Instant });
-  if (bytes instanceof Error) return bytes;
+  const generator = readUuidV7Generator(values.generator);
+  if (generator instanceof Error) return generator;
+  const bytes = generator
+    ? generateUuidV7BytesWithGenerator(generator, values)
+    : !Object.hasOwn(values, AT_OPTION)
+      ? generateUuidV7Bytes()
+      : generateUuidV7Bytes({ at: values.at as UuidV7Instant });
+  if (isUuidSlugError(bytes)) return bytes;
   return {
     uuid: formatUuidBytesUnchecked(bytes, 0, selectedCase) as UuidV7StringFor<UuidTextCase>,
     slug: encode(bytes, resolved) as PlainUuidV7Slug,

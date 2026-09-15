@@ -391,12 +391,28 @@ parsedV4Value.toMaskedSlug(codec);
 // @ts-expect-error A parsed UUIDv4 has no UUIDv7 payload.
 parsedV4Value.extractV7Payload(payloadLayout);
 expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(codec.generateMaskedUuidV7Slug());
+expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(
+  codec.generateMaskedUuidV7Slug({ at: new Date(0), generator }),
+);
 expectType<GeneratedUuidV7<MaskedOrSentinelUuidV7Slug> | UuidSlugError>()(
   codec.generateUuidV7WithMaskedSlug(),
 );
 expectType<
   GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, typeof UUID_TEXT_UPPERCASE> | UuidSlugError
 >()(codec.generateUuidV7WithMaskedSlug(UUID_TEXT_UPPERCASE));
+expectType<
+  GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, typeof UUID_TEXT_UPPERCASE> | UuidSlugError
+>()(codec.generateUuidV7WithMaskedSlug({ generator, textCase: UUID_TEXT_UPPERCASE }));
+expectType<PlainUuidV7Slug | UuidSlugError>()(
+  generatePlainUuidV7Slug({ at: { epochNanoseconds: 1n }, generator }),
+);
+expectType<GeneratedUuidV7<PlainUuidV7Slug> | UuidSlugError>()(
+  generateUuidV7WithPlainSlug({ at: { seconds: 0n, nanoseconds: 1n }, generator }),
+);
+// @ts-expect-error Representation generation requires a generator, not a lookalike callback bag.
+generatePlainUuidV7Slug({ generator: { generateUuidV7Bytes: () => new Uint8Array(16) } });
+// @ts-expect-error Masked pair options reject work unrelated to generation or text spelling.
+codec.generateUuidV7WithMaskedSlug({ alphabet: BASE32HEX });
 expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(codec.uuidToMaskedSlug(versionedBytes));
 expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(
   codec.uuidToMaskedSlug(generateUuidV7Bytes()),

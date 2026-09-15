@@ -149,6 +149,9 @@ function idForImportedRecord(recordedAt: Date) {
 }
 ```
 
+Pass the same created generator to plain, paired, or masked generation when those results must join
+one sequence. The representation call generates and formats once; callers do not unwrap bytes first.
+
 Each call uses fresh randomness, even at the same timestamp. For retries, keep the first ID or
 use your application's deduplication key. Existing records should keep their UUIDs.
 By default, masking accepts UUIDv7 timestamps from Unix millisecond `0` through `2^42 - 1`,
@@ -613,8 +616,8 @@ independent generator; UUIDv4 and plain-slug generation remain module-level.
 | --- | --- |
 | `generateUuidV4(textCase?)` / `generateUuidV7(textCaseOrOptions?)` | UUID text in the selected case, typed with its version. UUIDv7 options may set `at`. |
 | `generateUuidV4WithRandomFill(fill, textCase?)` | UUIDv4 text from an explicit synchronous entropy source. |
-| `generatePlainUuidV4Slug(alphabet?)` / `generatePlainUuidV7Slug(alphabetOrOptions?)` | A plain slug in the chosen alphabet, typed with its UUID version. UUIDv7 options may set `at`. |
-| `generateUuidV7WithPlainSlug(alphabetOrTextCaseOrOptions?, textCase?)` | UUIDv7 text and its plain slug from one generated value; options may set `at`. |
+| `generatePlainUuidV4Slug(alphabet?)` / `generatePlainUuidV7Slug(alphabetOrOptions?)` | A plain slug in the chosen alphabet, typed with its UUID version. UUIDv7 options may set `at` or select a generator. |
+| `generateUuidV7WithPlainSlug(alphabetOrTextCaseOrOptions?, textCase?)` | UUIDv7 text and its plain slug from one generated value; options may set `at` or select a generator. |
 | `generateUuidV4Bytes()` / `generateUuidV7Bytes(options?)` | A new 16-byte array, typed with its UUID version. UUIDv7 options may set `at`. |
 | `generateUuidV4Bytes(out, offset?)` / `generateUuidV7Bytes(out, offset?)` | Your output array, with the UUID written at the offset. UUIDv7 also accepts `{ at, output, outputOffset }`. |
 | `generateUuidV7Value(options?)` | An immutable UUIDv7; options may set `at`, select a generator, or retain a masking codec. |
@@ -659,8 +662,8 @@ readers also try its configured previous masks.
 | Member | Successful result |
 | --- | --- |
 | `generateUuidV7Value(options?)` | An immutable UUIDv7 with this codec retained; options may set `at` or select a generator. |
-| `generateMaskedUuidV7Slug()` | A new `MaskedOrSentinelUuidV7Slug`: masked or a reserved sentinel. |
-| `generateUuidV7WithMaskedSlug(textCase?)` | UUIDv7 text and its masked or sentinel slug from one generated value. |
+| `generateMaskedUuidV7Slug(options?)` | A new `MaskedOrSentinelUuidV7Slug`; options may set `at` or select a generator. |
+| `generateUuidV7WithMaskedSlug(textCaseOrOptions?)` | UUIDv7 text and its masked or sentinel slug from one generated value; options may set `at`, select a generator, or select UUID text case. |
 | `parseUuid(uuid)` | The same parsed value as top-level `parseUuid(uuid, codec)`, with this codec retained. |
 | `uuidToString(uuid, textCase?)` | UUID text from any supported UUID form. |
 | `uuidToBytes(uuid, output?, outputOffset?)` | UUID bytes from any supported UUID form. |

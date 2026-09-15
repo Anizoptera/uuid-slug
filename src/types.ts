@@ -426,10 +426,12 @@ export interface GenerateUuidV7Options<Case extends UuidTextCase = typeof UUID_T
 
 /** Select an explicit time and alphabet for one plain UUIDv7 slug. */
 export interface GeneratePlainUuidV7SlugOptions {
-  /** Time to encode in this independent module call. Omit to read the current clock. */
+  /** Time to encode. A selected generator may advance it to preserve its sequence. */
   readonly at?: UuidV7Instant;
   /** Slug spelling. Omit for the shorter base64url form. */
   readonly alphabet?: SlugAlphabet;
+  /** Generator that supplies entropy, payload layout, and sequence policy. */
+  readonly generator?: UuidV7Generator;
 }
 
 /** Select an explicit time for package-owned UUIDv7 bytes. */
@@ -454,10 +456,12 @@ export interface GenerateUuidV7BytesIntoOptions<Output extends Uint8Array> {
 export interface GenerateUuidV7WithPlainSlugOptions<
   Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
 > {
-  /** Time to encode in this independent module call. Omit to read the current clock. */
+  /** Time to encode. A selected generator may advance it to preserve its sequence. */
   readonly at?: UuidV7Instant;
   /** Slug spelling. Omit for the shorter base64url form. */
   readonly alphabet?: SlugAlphabet;
+  /** Generator that supplies entropy, payload layout, and sequence policy. */
+  readonly generator?: UuidV7Generator;
   /** UUID text spelling. Omit for lowercase. */
   readonly textCase?: Case;
 }
@@ -478,10 +482,18 @@ export interface UuidV7ValueOptions extends UuidV7GeneratorValueOptions {
 
 /** Select optional generation state when a masking codec is already preset. */
 export interface UuidV7MaskingCodecValueOptions {
-  /** Time to encode through `generator` when provided; otherwise generation stays independent. */
+  /** Time to encode. A selected generator may advance it to preserve its sequence. */
   readonly at?: UuidV7Instant;
   /** Generator that supplies entropy, sequence policy, and the retained payload layout. */
   readonly generator?: UuidV7Generator;
+}
+
+/** Select generation state and UUID text spelling for one masked UUIDv7 pair. */
+export interface GenerateUuidV7WithMaskedSlugOptions<
+  Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+> extends UuidV7MaskingCodecValueOptions {
+  /** UUID text spelling. Omit for lowercase. */
+  readonly textCase?: Case;
 }
 
 /** An immutable handle for masking the recognizable fields of a UUIDv7; key material is not exposed. */
@@ -779,14 +791,19 @@ export interface UuidV7MaskingCodec {
   ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
   /**
    * Generate and encode a UUIDv7 as a masked slug or its registered raw sentinel slug.
+   * Options may select an explicit time and a generator whose sequence this call joins.
    * Returns `invalid_timestamp` outside the codec's inclusive configured timestamp range unless
    * the generated UUID is a registered sentinel, which
    * is returned as a plain slug without masking.
    */
-  generateMaskedUuidV7Slug(this: void): MaskedOrSentinelUuidV7Slug | UuidSlugError;
+  generateMaskedUuidV7Slug(
+    this: void,
+    options?: UuidV7MaskingCodecValueOptions,
+  ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
   /**
    * Generate UUIDv7 text and its masked or sentinel slug from one random byte draw. UUID text is
-   * lowercase unless `textCase` selects uppercase.
+   * lowercase unless `textCase` selects uppercase. Options may select an explicit time and a
+   * generator whose sequence this call joins.
    * Returns `invalid_timestamp` outside the codec's inclusive configured timestamp range unless
    * the generated UUID is a registered sentinel, which
    * is returned as a plain slug without masking.
@@ -796,6 +813,11 @@ export interface UuidV7MaskingCodec {
   generateUuidV7WithMaskedSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
     textCase?: Case,
+  ): GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, Case> | UuidSlugError;
+  /** Generate the pair through selected sequence state at an explicit time or the current clock. */
+  generateUuidV7WithMaskedSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    this: void,
+    options: GenerateUuidV7WithMaskedSlugOptions<Case>,
   ): GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, Case> | UuidSlugError;
   /**
    * Convert UUID text, 16 UUID bytes, a plain slug, or a masked slug to this masking codec's

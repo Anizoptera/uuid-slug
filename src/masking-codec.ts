@@ -57,6 +57,8 @@ import type {
   UuidV7Payload,
   UuidV7PayloadLayout,
   UuidV7MaskingCodecValueOptions,
+  GenerateUuidV7WithMaskedSlugOptions,
+  GenerateUuidV7BytesOptions,
   UuidV7Instant,
 } from "./types.ts";
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
@@ -80,11 +82,9 @@ import type { UuidV7TimestampWindow, UuidV7SentinelConfig } from "./types.ts";
 import type { SlugAlphabet } from "./slug.ts";
 import { createUuidValue, parseUuidWithCodec } from "./uuid-value.ts";
 import { uuidValueBytes } from "./uuid-value-protocol.ts";
-import {
-  generateUuidV7ValueWithGenerator,
-  readUuidV7Generator,
-  readUuidV7ValueOptions,
-} from "./v7-value-options.ts";
+import { generateUuidV7ValueWithGenerator, readUuidV7ValueOptions } from "./v7-value-options.ts";
+import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
+import { readGenerationOptions } from "./generation-options.ts";
 
 type EncodedSentinel = { bytes: Uint8Array; slug: SentinelUuidV7Slug };
 
@@ -96,6 +96,7 @@ function sameUuidBytes(left: Uint8Array, right: Uint8Array): boolean {
 const CODEC_CONSTRUCTION_FAILED = "UUIDv7 masking-codec construction failed.";
 const UUID_V7_GENERATION_FAILED = "generateUuidV7Bytes threw while generating UUIDv7 bytes.";
 const INVALID_MASKED_UUID_BYTES = "Masking requires exactly 16 RFC-variant UUIDv7 bytes.";
+const AT_OPTION = "at";
 const PLAIN_SLUG_MEANING = "plain";
 const MASKED_SLUG_MEANING = "masked";
 type SlugMeaning = typeof PLAIN_SLUG_MEANING | typeof MASKED_SLUG_MEANING;
@@ -114,6 +115,11 @@ const SENTINEL_OPTIONS = {
   name: true,
   uuid: true,
 } as const satisfies Record<keyof UuidV7SentinelConfig, true>;
+const MASKED_PAIR_GENERATION_OPTIONS = {
+  at: true,
+  generator: true,
+  textCase: true,
+} as const satisfies Record<keyof GenerateUuidV7WithMaskedSlugOptions, true>;
 type EncodedSentinelIndex = {
   readonly fingerprints: Uint32Array;
   readonly positions: Uint32Array;
@@ -333,7 +339,10 @@ export function createUuidV7MaskingCodec(
 /** Internal seam for exercising generator failures without weakening public generation. */
 export function createUuidV7MaskingCodecWithGenerator(
   options: UuidV7MaskingCodecOptions,
-  generateUuidV7Bytes: (this: void) => Uint8Array | UuidSlugError,
+  generateUuidV7Bytes: (
+    this: void,
+    options?: GenerateUuidV7BytesOptions,
+  ) => Uint8Array | UuidSlugError,
 ): UuidV7MaskingCodec | UuidSlugError {
   try {
     return buildUuidSlugCodec(options, generateUuidV7Bytes);
@@ -344,7 +353,7 @@ export function createUuidV7MaskingCodecWithGenerator(
 
 function buildUuidSlugCodec(
   options: UuidV7MaskingCodecOptions,
-  generateBytes: (this: void) => Uint8Array | UuidSlugError,
+  generateBytes: (this: void, options?: GenerateUuidV7BytesOptions) => Uint8Array | UuidSlugError,
 ): UuidV7MaskingCodec | UuidSlugError {
   const validOptions = typeof options === "object" && options !== null && !Array.isArray(options);
   const mask = validOptions ? options.mask : undefined;
@@ -595,18 +604,36 @@ function buildUuidSlugCodec(
     return sentinelBytes ? new Uint8Array(sentinelBytes) : decoded;
   }
 
-  function generateMaskedUuidV7Slug(): MaskedOrSentinelUuidV7Slug | UuidSlugError {
+  function generateCodecBytesFromValues(values: {
+    readonly at?: unknown;
+    readonly generator?: unknown;
+  }): UuidV7Bytes | UuidSlugError {
+    const generator = readUuidV7Generator(values.generator);
+    if (generator instanceof Error) return generator;
     try {
-      const bytes = generateBytes();
-      if (isUint8Array(bytes))
-        return isUuidV7Bytes(bytes)
-          ? encodeMasked(bytes, true)
-          : invalidGeneratedUuidV7Bytes(bytes);
-      if (isUuidSlugError(bytes)) return bytes;
-      return invalidGeneratedUuidV7Bytes(bytes);
+      const bytes = generator
+        ? generateUuidV7BytesWithGenerator(generator, values)
+        : Object.hasOwn(values, AT_OPTION)
+          ? generateBytes({ at: values.at as UuidV7Instant })
+          : generateBytes();
+      if (!isUint8Array(bytes) || !isUuidV7Bytes(bytes))
+        return isUuidSlugError(bytes) ? bytes : invalidGeneratedUuidV7Bytes(bytes);
+      return bytes;
     } catch (cause) {
       return new UuidSlugError(RNG_UNAVAILABLE, UUID_V7_GENERATION_FAILED, { cause });
     }
+  }
+
+  function generateCodecBytes(generationOptions?: unknown): UuidV7Bytes | UuidSlugError {
+    const values = readUuidV7ValueOptions(generationOptions, { at: true, generator: true });
+    return values instanceof Error ? values : generateCodecBytesFromValues(values);
+  }
+
+  function generateMaskedUuidV7Slug(
+    generationOptions?: UuidV7MaskingCodecValueOptions,
+  ): MaskedOrSentinelUuidV7Slug | UuidSlugError {
+    const bytes = generateCodecBytes(generationOptions);
+    return isUuidSlugError(bytes) ? bytes : encodeMasked(bytes, true);
   }
 
   function maskedToPlainUuidSlug(
@@ -614,24 +641,40 @@ function buildUuidSlugCodec(
     alphabet: SlugAlphabet = BASE64URL_NAME,
   ): PlainUuidV7Slug | UuidSlugError {
     const bytes = maskedSlugToUuidBytes(maskedUuidSlug, encodeScratch);
-    if (bytes instanceof Error) return bytes;
+    if (isUuidSlugError(bytes)) return bytes;
     return uuidBytesToPlainSlug(encodeScratch, alphabet) as PlainUuidV7Slug | UuidSlugError;
   }
 
   function generateUuidV7WithMaskedSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-    textCase: Case = UUID_TEXT_LOWERCASE as Case,
+    textCase?: Case,
+  ): GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, Case> | UuidSlugError;
+  function generateUuidV7WithMaskedSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    options: GenerateUuidV7WithMaskedSlugOptions<Case>,
+  ): GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, Case> | UuidSlugError;
+  function generateUuidV7WithMaskedSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    textCaseOrOptions:
+      | Case
+      | GenerateUuidV7WithMaskedSlugOptions<Case> = UUID_TEXT_LOWERCASE as Case,
   ): GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, Case> | UuidSlugError {
+    const values =
+      typeof textCaseOrOptions === "string"
+        ? { textCase: textCaseOrOptions }
+        : readGenerationOptions(
+            textCaseOrOptions,
+            MASKED_PAIR_GENERATION_OPTIONS,
+            "masked UUIDv7 pair generation",
+          );
+    if (values instanceof Error) return values;
+    const textCase = (values.textCase ?? UUID_TEXT_LOWERCASE) as Case;
     if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
-    try {
-      const bytes = generateBytes();
-      if (!isUint8Array(bytes) || !isUuidV7Bytes(bytes))
-        return isUuidSlugError(bytes) ? bytes : invalidGeneratedUuidV7Bytes(bytes);
-      const uuid = formatUuidBytesUnchecked(bytes, 0, textCase) as UuidV7StringFor<Case>;
-      const slug = encodeMasked(bytes, true);
-      return slug instanceof Error ? slug : { uuid, slug };
-    } catch (cause) {
-      return new UuidSlugError(RNG_UNAVAILABLE, UUID_V7_GENERATION_FAILED, { cause });
-    }
+    const bytes =
+      typeof textCaseOrOptions === "string"
+        ? generateCodecBytes()
+        : generateCodecBytesFromValues(values);
+    if (bytes instanceof Error) return bytes;
+    const uuid = formatUuidBytesUnchecked(bytes, 0, textCase) as UuidV7StringFor<Case>;
+    const slug = encodeMasked(bytes, true);
+    return slug instanceof Error ? slug : { uuid, slug };
   }
 
   function extractMaskedUuidV7UnixMs(
@@ -687,8 +730,8 @@ function buildUuidSlugCodec(
     if (values instanceof Error) return values;
     const generator = readUuidV7Generator(values.generator);
     if (generator instanceof Error) return generator;
-    if (generator) return generateUuidV7ValueWithGenerator(generator, values.at, maskingCodec);
-    const generated = !Object.hasOwn(values, "at")
+    if (generator) return generateUuidV7ValueWithGenerator(generator, values, maskingCodec);
+    const generated = !Object.hasOwn(values, AT_OPTION)
       ? generateDefaultUuidV7Bytes()
       : generateDefaultUuidV7Bytes({ at: values.at as UuidV7Instant });
     return generated instanceof Error

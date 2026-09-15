@@ -290,14 +290,15 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   reader the same optional `UuidTextCase` choice. Preserve lowercase as the no-argument path and
   infer a case-specific result type from either named preset.
 - Create the default generator lazily so a masking codec used only to encode or decode pays no generator
-  allocation. Masking-codec generation uses that package-owned source; callers encode externally produced
-  UUIDs through `uuidToMaskedSlug` instead of replacing the masking codec's entropy source.
+  allocation. Each representation generator may instead receive a created generator when its fraction,
+  counter, rollback, entropy, or payload-layout state must span different output forms.
 - Keep created generators on preserve-order rollback behavior by default. An explicit reset or
   error policy includes the maximum total clock skew it tolerates from the accepted high-water
   reading. Failed clock and entropy operations leave sequence and clock state unchanged.
 - Keep module-level UUIDv7 generation on the fastest validated secure path for each output form; it
   does not coordinate sequence state across calls. Callers explicitly create a generator when they
   need strict ordering, clock policy, fraction bits, custom entropy, or one stable payload layout.
+  Pass that generator in the existing representation call; do not generate bytes and convert them.
 - Inspect the four-bit UUID version through `extractUuidVersion` or Rust `Uuid::uuid_version`.
   TypeScript returns `UuidVersion`, the exact `0..15` union. The result does not prove that the
   variant or version is valid for another operation.
@@ -369,6 +370,9 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   preserve policy, including calls with `at`. The counter continues through equal fraction buckets and clock
   rollback, then carries into the logical fraction and millisecond fields. Reset may move backward
   after its tolerance.
+- A structural generator is untrusted. Read and validate its byte method and payload layout before
+  generation, validate its result as UUIDv7, and reject output earlier than explicit `at` at the
+  fraction width that layout declares. Later output is valid because ordering can advance logical time.
 - Module-level text, byte, and paired plain-slug helpers do not share sequence state. Select each
   representation's fastest validated secure runtime or portable path without converting through a
   slower representation.
@@ -377,7 +381,8 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 - Keep one error-value path. Nullable and throwing duplicates discard diagnostics or split control
   flow without adding a recovery action.
 - Keep representation-specific generation functions and the paired UUID-plus-slug operation. Each
-  function accepts the same `at` option, so recorded time does not multiply the function matrix. A
+  function accepts the same `at` and `generator` options, so recorded time and shared state do not
+  multiply the function matrix or require an intermediate conversion. A
   universal output selector would retain unrelated formatters behind one function and move the
   selected representation into runtime configuration.
 

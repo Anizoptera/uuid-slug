@@ -5,6 +5,7 @@ import { findUnknownOption, INVALID_OPTIONS, UuidSlugError } from "./errors.ts";
 export interface GenerationOptionValues {
   readonly alphabet?: unknown;
   readonly at?: unknown;
+  readonly generator?: unknown;
   readonly output?: unknown;
   readonly outputOffset?: unknown;
   readonly textCase?: unknown;
@@ -28,6 +29,9 @@ export function readGenerationOptions(
         ? { alphabet: source.alphabet }
         : {}),
       ...(accepted.at && Object.hasOwn(source, "at") ? { at: source.at } : {}),
+      ...(accepted.generator && Object.hasOwn(source, "generator")
+        ? { generator: source.generator }
+        : {}),
       ...(accepted.output && Object.hasOwn(source, "output") ? { output: source.output } : {}),
       ...(accepted.outputOffset && Object.hasOwn(source, "outputOffset")
         ? { outputOffset: source.outputOffset }

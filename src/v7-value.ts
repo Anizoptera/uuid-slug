@@ -6,10 +6,10 @@ import { createUuidValue } from "./uuid-value.ts";
 import { generateUuidV7Bytes, uuidV7DefaultPayloadLayout } from "./v7-keyless.ts";
 import {
   generateUuidV7ValueWithGenerator,
-  readUuidV7Generator,
   readUuidV7MaskingCodec,
   readUuidV7ValueOptions,
 } from "./v7-value-options.ts";
+import { readUuidV7Generator } from "./v7-generator-input.ts";
 
 /** Generate an immutable UUIDv7 with optional time, generator, and retained masking codec. */
 export function generateUuidV7Value<const Options extends UuidV7ValueOptions = {}>(
@@ -30,7 +30,7 @@ export function generateUuidV7Value(
   if (generator instanceof Error) return generator;
   const maskingCodec = readUuidV7MaskingCodec(values.maskingCodec);
   if (maskingCodec instanceof Error) return maskingCodec;
-  if (generator) return generateUuidV7ValueWithGenerator(generator, values.at, maskingCodec);
+  if (generator) return generateUuidV7ValueWithGenerator(generator, values, maskingCodec);
   const generated = !Object.hasOwn(values, "at")
     ? generateUuidV7Bytes()
     : generateUuidV7Bytes({ at: values.at as UuidV7Instant });

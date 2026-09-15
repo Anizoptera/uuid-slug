@@ -102,6 +102,7 @@ export declare function generatePlainUuidV7Slug(
 declare interface GeneratePlainUuidV7SlugOptions {
   readonly at?: UuidV7Instant;
   readonly alphabet?: SlugAlphabet;
+  readonly generator?: UuidV7Generator;
 }
 export declare function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   textCase?: Case,
@@ -158,6 +159,11 @@ export declare function generateUuidV7Value<const Options extends UuidV7ValueOpt
       true
     >
   | UuidSlugError;
+declare interface GenerateUuidV7WithMaskedSlugOptions<
+  Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+> extends UuidV7MaskingCodecValueOptions {
+  readonly textCase?: Case;
+}
 export declare function generateUuidV7WithPlainSlug(
   alphabet?: SlugAlphabet,
 ): GeneratedUuidV7<PlainUuidV7Slug> | UuidSlugError;
@@ -178,6 +184,7 @@ declare interface GenerateUuidV7WithPlainSlugOptions<
 > {
   readonly at?: UuidV7Instant;
   readonly alphabet?: SlugAlphabet;
+  readonly generator?: UuidV7Generator;
   readonly textCase?: Case;
 }
 export declare const INVALID_BASE32HEX = "invalid_base32hex";
@@ -619,10 +626,17 @@ export declare interface UuidV7MaskingCodec {
     this: void,
     options?: Options,
   ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
-  generateMaskedUuidV7Slug(this: void): MaskedOrSentinelUuidV7Slug | UuidSlugError;
+  generateMaskedUuidV7Slug(
+    this: void,
+    options?: UuidV7MaskingCodecValueOptions,
+  ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
   generateUuidV7WithMaskedSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
     textCase?: Case,
+  ): GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, Case> | UuidSlugError;
+  generateUuidV7WithMaskedSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    this: void,
+    options: GenerateUuidV7WithMaskedSlugOptions<Case>,
   ): GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, Case> | UuidSlugError;
   uuidToMaskedSlug<Input extends UuidInput>(
     this: void,

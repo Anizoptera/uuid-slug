@@ -81,7 +81,7 @@ through `generate_uuid_v7_with_random_fill`; the callback also owns secure entro
 | Canonical base64url guard | Check `UuidSlugAlphabet::Base64Url.plain_slug_to_uuid_bytes` success for exactly 22 characters |
 | v4 generation and caller storage | `generate_uuid_v4`, `generate_uuid_v4_with_random_fill`, `generate_uuid_v4_into_with_random_fill` |
 | v7 generation, rollback, explicit time and caller storage | `UuidV7Generator`, `UuidV7ClockRollbackPolicy`, and its platform-random, explicit random-fill, explicit-time, and caller-output forms |
-| Generated plain or masked slugs | Generate a `Uuid`, then call `to_plain_uuid_slug` or `uuid_to_masked_slug` |
+| Generated plain or masked slugs | TypeScript representation calls may select one generator directly; Rust generates a `Uuid`, then calls `to_plain_uuid_slug` or `uuid_to_masked_slug` |
 | UUIDv7 timestamp | `Uuid::extract_uuid_v7_unix_ms` |
 | Caller-known UUIDv7 payload layout | `UuidV7PayloadLayout::new`, `Uuid::extract_uuid_v7_payload`, `UuidV7MaskingCodec::extract_masked_uuid_v7_payload` |
 | Inclusive UUIDv7 timestamp bounds | `uuid_v7_bounds` |

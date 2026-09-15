@@ -640,6 +640,94 @@ describe("plain UUID slugs", () => {
     expect(pair instanceof Error ? pair : pair.uuid).toMatch(/^[0-9A-F-]+$/);
   });
 
+  it("uses one selected generator sequence across every generated representation", () => {
+    const generator = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
+      readUnixMs: () => 100.25,
+      subMillisecondFractionBits: 12,
+    });
+    const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
+    const at = { epochNanoseconds: 100_250_000n } as const;
+
+    const plain = unwrap(generatePlainUuidV7Slug({ at, generator }));
+    const plainPair = unwrap(generateUuidV7WithPlainSlug({ at, generator }));
+    const masked = unwrap(codec.generateMaskedUuidV7Slug({ at, generator }));
+    const maskedPair = unwrap(codec.generateUuidV7WithMaskedSlug({ at, generator }));
+    const uuids = [
+      unwrap(plainSlugToUuidString(plain)),
+      plainPair.uuid,
+      unwrap(codec.maskedSlugToUuidString(masked)),
+      maskedPair.uuid,
+    ] as const;
+
+    expect(uuids[1] > uuids[0]).toBe(true);
+    expect(uuids[2] > uuids[1]).toBe(true);
+    expect(uuids[3] > uuids[2]).toBe(true);
+    for (const uuid of uuids)
+      expect(extractUuidV7Payload(uuid, generator.payloadLayout)).toMatchObject({
+        unixMs: 100,
+        subMillisecondFraction: { value: 1024, bits: 12 },
+      });
+  });
+
+  it("rejects selected-generator output before the requested precise instant", () => {
+    const source = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
+      readUnixMs: () => 100,
+      subMillisecondFractionBits: 12,
+    });
+    const earlierMillisecond = unwrap(source.generateUuidV7Bytes({ at: 99.999 }));
+    const earlierFraction = unwrap(source.generateUuidV7Bytes({ at: 100.25 }));
+    const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
+    const layout = source.payloadLayout;
+    const calls = (bytes: Uint8Array) => {
+      const generator = { generateUuidV7Bytes: () => bytes, payloadLayout: layout } as never;
+      return [
+        generateUuidV7Value({ at: 100.5, generator }),
+        generatePlainUuidV7Slug({ at: 100.5, generator }),
+        generateUuidV7WithPlainSlug({ at: 100.5, generator }),
+        codec.generateMaskedUuidV7Slug({ at: 100.5, generator }),
+        codec.generateUuidV7WithMaskedSlug({ at: 100.5, generator }),
+      ];
+    };
+
+    for (const result of [...calls(earlierMillisecond), ...calls(earlierFraction)])
+      expect(result).toMatchObject({
+        code: "invalid_timestamp",
+        message:
+          "UUIDv7 generator returned an instant before at; its output must preserve or advance the requested instant.",
+      });
+  });
+
+  it("rejects invalid selected-generator inputs before advancing external state", () => {
+    let generationCalls = 0;
+    let layoutReads = 0;
+    const generator = {
+      generateUuidV7Bytes() {
+        generationCalls += 1;
+        return new Uint8Array(16);
+      },
+      get payloadLayout() {
+        layoutReads += 1;
+        return { subMillisecondFractionBits: 13, counterBits: 0 };
+      },
+    } as never;
+
+    expect(generatePlainUuidV7Slug({ generator })).toMatchObject({ code: "invalid_options" });
+    expect(layoutReads).toBe(1);
+    expect(generationCalls).toBe(0);
+
+    const validLayoutGenerator = {
+      generateUuidV7Bytes() {
+        generationCalls += 1;
+        return new Uint8Array(16);
+      },
+      payloadLayout: { subMillisecondFractionBits: 0, counterBits: 42 },
+    } as never;
+    expect(
+      generatePlainUuidV7Slug({ at: Number.NaN, generator: validLayoutGenerator }),
+    ).toMatchObject({ code: "invalid_timestamp" });
+    expect(generationCalls).toBe(0);
+  });
+
   it("rejects an unknown UUID text case before generation work", () => {
     const invalid = Symbol("titlecase") as never;
     let clockReads = 0;

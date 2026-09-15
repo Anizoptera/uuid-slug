@@ -1,22 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import {
-  findUnknownOption,
-  INVALID_OPTIONS,
-  INVALID_UUID_VERSION,
-  isUuidSlugError,
-  UuidSlugError,
-} from "./errors.ts";
-import type {
-  Uuid,
-  UuidV7Generator,
-  UuidV7Instant,
-  UuidV7MaskingCodec,
-  UuidV7PayloadLayout,
-} from "./types.ts";
-import { extractUuidV7Payload } from "./slug.ts";
+import { findUnknownOption, INVALID_OPTIONS, isUuidSlugError, UuidSlugError } from "./errors.ts";
+import type { Uuid, UuidV7MaskingCodec } from "./types.ts";
+import { generateUuidV7BytesWithGenerator } from "./v7-generator-input.ts";
+import type { ValidatedUuidV7Generator } from "./v7-generator-input.ts";
 import { createUuidValue } from "./uuid-value.ts";
-import { isUuidV7Bytes } from "./uuid.ts";
+
+const AT_OPTION = "at";
 
 export interface UuidV7ValueOptionValues {
   readonly at?: unknown;
@@ -24,52 +14,15 @@ export interface UuidV7ValueOptionValues {
   readonly maskingCodec?: unknown;
 }
 
-type UuidV7ValueGenerator = Pick<UuidV7Generator, "generateUuidV7Bytes" | "payloadLayout">;
-
-/** Narrow an untrusted generator without relying on package-copy identity. */
-export function readUuidV7Generator(value: unknown): UuidV7Generator | UuidSlugError | undefined {
-  if (value === undefined) return undefined;
-  try {
-    if (
-      value !== null &&
-      typeof value === "object" &&
-      typeof (value as { readonly generateUuidV7Bytes?: unknown }).generateUuidV7Bytes ===
-        "function"
-    )
-      return value as UuidV7Generator;
-  } catch (cause) {
-    return new UuidSlugError(INVALID_OPTIONS, "Reading UUIDv7 generator failed.", { cause });
-  }
-  return new UuidSlugError(INVALID_OPTIONS, "generator must be a UUIDv7 generator.");
-}
-
 /** Generate through an untrusted structural generator and validate its bytes and payload layout. */
 export function generateUuidV7ValueWithGenerator(
-  generator: UuidV7ValueGenerator,
-  at: unknown,
+  generator: ValidatedUuidV7Generator,
+  options: Pick<UuidV7ValueOptionValues, "at">,
   maskingCodec?: UuidV7MaskingCodec,
 ): Uuid<7, boolean, true> | UuidSlugError {
-  let generated: unknown;
-  let payloadLayout: unknown;
-  try {
-    generated =
-      at === undefined
-        ? generator.generateUuidV7Bytes()
-        : generator.generateUuidV7Bytes({ at: at as UuidV7Instant });
-    payloadLayout = generator.payloadLayout;
-  } catch (cause) {
-    return new UuidSlugError(INVALID_OPTIONS, "UUIDv7 generator failed.", { cause });
-  }
+  const generated = generateUuidV7BytesWithGenerator(generator, options);
   if (isUuidSlugError(generated)) return generated;
-  if (!isUuidV7Bytes(generated))
-    return new UuidSlugError(
-      INVALID_UUID_VERSION,
-      "Generator must return exactly 16 RFC-variant UUIDv7 bytes.",
-    );
-  const layout = payloadLayout as UuidV7PayloadLayout;
-  const payload = extractUuidV7Payload(generated, layout);
-  if (payload instanceof Error) return payload;
-  return createUuidValue<7, boolean, true>(generated, maskingCodec, layout);
+  return createUuidValue<7, boolean, true>(generated, maskingCodec, generator.payloadLayout);
 }
 
 /** Narrow an untrusted masking codec without relying on package-copy identity. */
@@ -104,7 +57,7 @@ export function readUuidV7ValueOptions(
       return new UuidSlugError(INVALID_OPTIONS, `Unknown UUIDv7 value option: ${unknown}.`);
     const source = options as UuidV7ValueOptionValues;
     return {
-      ...(accepted.at && Object.hasOwn(source, "at") ? { at: source.at } : {}),
+      ...(accepted.at && Object.hasOwn(source, AT_OPTION) ? { at: source.at } : {}),
       ...(accepted.generator && Object.hasOwn(source, "generator")
         ? { generator: source.generator }
         : {}),

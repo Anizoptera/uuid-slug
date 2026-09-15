@@ -417,6 +417,12 @@ export function createProfileCases(
     return { count, distinct, duplicate };
   });
   const into = new Uint8Array(24);
+  const selectedGenerator = unwrap(
+    api.createUuidV7Generator({
+      readUnixMs: () => instant + 0.25,
+      subMillisecondFractionBits: 12,
+    }),
+  );
   const portableDecodeInto = new Uint8Array(16);
   if (privateAlphabetApi) {
     for (const [value, alpha] of [
@@ -554,6 +560,10 @@ export function createProfileCases(
     "v4.base32": () => api.generatePlainUuidV4Slug(base32hexName),
     "v7.slug": () => api.generatePlainUuidV7Slug(),
     "v7.base32": () => api.generatePlainUuidV7Slug(base32hexName),
+    "v7.slug.selected-generator": () =>
+      api.generatePlainUuidV7Slug({ generator: selectedGenerator }),
+    "v7.pair.selected-generator": () =>
+      api.generateUuidV7WithPlainSlug({ generator: selectedGenerator }),
     parse: (index) => api.uuidStringToBytes(ids[index & 255] as string),
     "parse.compact": (index) => api.uuidStringToBytes(compactIds[index & 255] as string),
     "parse.mixed": (index) => api.uuidStringToBytes(mixedIds[index & 255] as string),
@@ -627,6 +637,10 @@ export function createProfileCases(
       ),
     "masked.generate": () => codec.generateMaskedUuidV7Slug(),
     "masked.base32.generate": () => base32Codec.generateMaskedUuidV7Slug(),
+    "masked.generate.selected-generator": () =>
+      codec.generateMaskedUuidV7Slug({ generator: selectedGenerator }),
+    "masked.pair.selected-generator": () =>
+      codec.generateUuidV7WithMaskedSlug({ generator: selectedGenerator }),
     "masked.encode": (index) => codec.uuidToMaskedSlug(ids[index & 255] as string),
     "masked.encode.bytes": (index) => codec.uuidToMaskedSlug(bytes[index & 255] as Uint8Array),
     "masked.decode": (index) => codec.uuidToString(masked[index & 255] as string),
