@@ -4,23 +4,23 @@ Make every supported UUID job require the least caller knowledge and runtime wor
 
 ## Audit contract
 
-- [ ] Rewrite `docs/public-api.md` where inherited interface conventions conflict with permissive input, a smaller language, direct selected output, or least caller work; preserve only wire, safety, and demonstrated compatibility constraints.
-- [ ] Define the JavaScript and TypeScript consumer: an application or coding agent that already has a UUID job, an instant in a standard host form, and a required storage or display representation; success is one obvious inferred call with no caller normalization or unused work.
-- [ ] Inventory every root export, public type, overload, parameter, option, callback, property, literal, default, result, error, side effect, ownership rule, package entry, and runtime-selected path.
-- [ ] Map each public part to a concrete consumer job and shortest correct detached call; mark anything without a necessary job as a removal candidate.
-- [ ] Compare the inventory with `docs/public-api.md`, README capability and representation guidance, generated declarations, package exports, and Rust parity where the contract is shared.
-- [ ] Evaluate every call by truth, misuse prevention, predictability, naming, inference, completion help, caller burden, allocation, parsing, fallback work, state retention, and composition.
-- [ ] Classify each constraint as wire or platform necessity, published compatibility promise, maintainer ruling, measured trade-off, or removable implementation convention.
-- [ ] Record each finding with the observed evidence, consumer consequence, live alternatives, strongest falsifier, and required proof before changing code.
+- [x] Rewrite `docs/public-api.md` where inherited interface conventions conflict with permissive input, a smaller language, direct selected output, or least caller work; preserve only wire, safety, and demonstrated compatibility constraints.
+- [x] Define the JavaScript and TypeScript consumer: an application or coding agent that already has a UUID job, an instant in a standard host form, and a required storage or display representation; success is one obvious inferred call with no caller normalization or unused work.
+- [x] Inventory every root export, public type, overload, parameter, option, callback, property, literal, default, result, error, side effect, ownership rule, package entry, and runtime-selected path.
+- [x] Map each public part to a concrete consumer job and shortest correct detached call; mark anything without a necessary job as a removal candidate.
+- [x] Compare the inventory with `docs/public-api.md`, README capability and representation guidance, generated declarations, package exports, and Rust parity where the contract is shared.
+- [x] Evaluate every call by truth, misuse prevention, predictability, naming, inference, completion help, caller burden, allocation, parsing, fallback work, state retention, and composition.
+- [x] Classify each constraint as wire or platform necessity, published compatibility promise, maintainer ruling, measured trade-off, or removable implementation convention.
+- [x] Record each finding with the observed evidence, consumer consequence, live alternatives, strongest falsifier, and required proof before changing code.
 
 ## Interface proof
 
-- [ ] Compile realistic source consumers for every overload, default, option combination, detached method, branded result, caller-owned output, compatible error chain, and intended rejected call.
-- [ ] Prove negative type tests fail for the intended diagnostic when their expected-error marker or production restriction is removed.
-- [ ] Build declarations, inspect every public declaration and comment as a cold consumer, and query language-service help for every changed symbol.
-- [ ] Pack the package and compile and execute fresh consumers through every public export condition and supported TypeScript compiler contract.
-- [ ] Run equivalent runtime success and failure cases in Node and Bun, then exercise Deno and browser adapters for behavior that can differ.
-- [ ] Execute produced bundles, verify named root imports remove unrelated domains across independent bundlers, and inspect the packed artifact.
+- [x] Compile realistic source consumers for every overload, default, option combination, detached method, branded result, caller-owned output, compatible error chain, and intended rejected call.
+- [x] Prove negative type tests fail for the intended diagnostic when their expected-error marker or production restriction is removed.
+- [x] Build declarations, inspect every public declaration and comment as a cold consumer, and query language-service help for every changed symbol.
+- [x] Pack the package and compile and execute fresh consumers through every public export condition and supported TypeScript compiler contract.
+- [x] Run equivalent runtime success and failure cases in Node and Bun, then exercise Deno and browser adapters for behavior that can differ.
+- [x] Execute produced bundles, verify named root imports remove unrelated domains across independent bundlers, and inspect the packed artifact.
 
 ## Design and implementation
 
@@ -34,7 +34,7 @@ Make every supported UUID job require the least caller knowledge and runtime wor
 - [x] Publish and mechanically verify a TypeScript-to-Rust job map that distinguishes intentional idiomatic shape differences from missing accepted inputs, results, ordering, failures, ownership, or wire guarantees.
 - [x] Replace Rust's supplied-time-only `f64` interface with an exact standard-time form while retaining a narrow bridge path for fractional Unix milliseconds; prove bucket boundaries near zero and the end of UUIDv7's timestamp range.
 - [x] Prototype at least: format presets on one generator, a discriminated options object, operation-specific methods, immutable generated values, and a hybrid default-plus-options surface; compile cold call sites and count public concepts, decisions, narrowing steps, allocations, and runtime branches.
-- [ ] Remove or replace matrix helpers and exported type machinery whose consumer job the selected model subsumes; do not preserve unreleased duplication merely because it exists.
+- [x] Remove or replace matrix helpers and exported type machinery whose consumer job the selected model subsumes; do not preserve unreleased duplication merely because it exists.
 - [x] Change the README's recorded-time example only after the selected interface makes that job direct without growing the existing helper matrix.
 - [x] Falsify these generation-interface topologies against the same cold and repeated caller jobs: keep the sparse named matrix; complete every matrix cell; one discriminated options function; overload one function by semantic preset; no-argument default plus options; fluent builder; immutable generated value; one stateful generator object; representation-specific codec objects; caller callback sink; one output descriptor; a typed multiple-output descriptor; curried configured generator; version namespace; capability subpaths; UUID value constructor; tagged command executor; template-literal call; capability-negotiated generator; bytes-first primitive plus public formatters; function properties; one version-parameterized generator; generated language-specific facades; and a small common tier plus one advanced escape hatch.
 - [x] Falsify these instant-input strategies independently: Unix-millisecond number; branded milliseconds; bigint milliseconds; `Date`; nominal `Temporal.Instant`; nominal `Temporal.ZonedDateTime`; structural `epochMilliseconds`; structural `epochNanoseconds`; strict RFC 3339 text with an explicit offset; canonical ISO text; numeric millisecond text; explicit `{ unixMs }`; explicit `{ seconds, nanoseconds }`; tuple seconds plus nanoseconds; protobuf timestamp; Firestore timestamp; caller normalization adapter; package instant protocol; `valueOf`; `toISOString`; `toTemporalInstant`; and a clock callback for repeated current-time reads.
@@ -42,21 +42,21 @@ Make every supported UUID job require the least caller knowledge and runtime wor
 - [x] Reject any candidate that makes the default call longer, accepts an ambiguous unit or timezone, claims precision the selected UUIDv7 payload layout cannot carry, invokes uncontrolled coercion, weakens inferred result brands, performs unused work, hides entropy failure, couples masking keys to keyless generation, or makes detached use unclear.
 - [x] Retain a hybrid only when each part wins a different consumer job and removing either part makes that job materially worse; otherwise select the single deeper interface.
 - [x] For each confirmed deficiency and independent decision axis, design at least twenty materially different live shapes or implementation strategies, sampling rare but coherent tails and including deletion, composition, adaptation, and hybrids.
-- [ ] Choose refactor-first only where behavior-preserving structure measurably lowers the risk or duplication of the contract change; keep restructuring and behavior changes in separate commits.
-- [ ] Implement the smallest deep interface that makes the obvious call correct, preserves all accepted encodings, and hides keys, state, normalization, capabilities, and migration work behind their owners.
-- [ ] Keep recoverable failures as `UuidSlugError` values, preserve compatible error identity, and use only the least expensive recognition path valid at each seam.
-- [ ] Reject unknown option keys and provably incompatible brands while accepting every recoverable unambiguous runtime form.
-- [ ] Keep default hot paths free of opt-in parsing, allocation, derivation, entropy, fallback, state retention, and cross-realm checks.
-- [ ] Update the owning README or durable design document with every consumer-visible contract change and update Rust only where the shared contract requires parity.
-- [ ] Commit each independently useful, fully checked file-level change with an explicit file list and a lean Conventional Commit message.
+- [x] Choose refactor-first only where behavior-preserving structure measurably lowers the risk or duplication of the contract change; keep restructuring and behavior changes in separate commits.
+- [x] Implement the smallest deep interface that makes the obvious call correct, preserves all accepted encodings, and hides keys, state, normalization, capabilities, and migration work behind their owners.
+- [x] Keep recoverable failures as `UuidSlugError` values, preserve compatible error identity, and use only the least expensive recognition path valid at each seam.
+- [x] Reject unknown option keys and provably incompatible brands while accepting every recoverable unambiguous runtime form.
+- [x] Keep default hot paths free of opt-in parsing, allocation, derivation, entropy, fallback, state retention, and cross-realm checks.
+- [x] Update the owning README or durable design document with every consumer-visible contract change and update Rust only where the shared contract requires parity.
+- [x] Commit each independently useful, fully checked file-level change with an explicit file list and a lean Conventional Commit message.
 
 ## Final falsification
 
-- [ ] Run `bun run check` and require every complete lane to remain within the repository's five-minute ceiling without weakening coverage.
-- [ ] Mutate each new guard or type restriction and prove its nearest test fails for the intended reason, restoring files from an independent copy.
-- [ ] Search the entire tree for superseded public terms, stale examples, old option literals, duplicated semantic strings, and comments invalidated by changed behavior.
-- [ ] Pair every requested criterion and every documented promise with implementation and external evidence; delete every changed part that cannot name a required consumer outcome.
-- [ ] Perform an adversarial review of the final diff, package, call sites, runtime branches, documentation, and git state before removing this roadmap.
+- [x] Run `bun run check` and require every complete lane to remain within the repository's five-minute ceiling without weakening coverage.
+- [x] Mutate each new guard or type restriction and prove its nearest test fails for the intended reason, restoring files from an independent copy.
+- [x] Search the entire tree for superseded public terms, stale examples, old option literals, duplicated semantic strings, and comments invalidated by changed behavior.
+- [x] Pair every requested criterion and every documented promise with implementation and external evidence; delete every changed part that cannot name a required consumer outcome.
+- [x] Perform an adversarial review of the final diff, package, call sites, runtime branches, documentation, and git state before removing this roadmap.
 
 ## Selected interface evidence
 
