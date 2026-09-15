@@ -39,6 +39,9 @@ It reports unsupported runtime rows instead of dropping them. Each comparable gr
 fastest package route, fastest external or platform reference, and their median ratio so a local
 optimum cannot hide in raw rows.
 
+Run `bun run bench:competitors:rust` for the isolated Rust generator matrix. Its own lockfile pins
+the inspected releases without adding benchmark-only crates to the product workspace.
+
 Re-run the full matrix for each release candidate and after changing a competitor or runtime
 version. Upgrade benchmark packages only in `devDependencies`, inspect changed public calls and
 source mechanisms, update the shared case inventory when capabilities change, then run smoke before

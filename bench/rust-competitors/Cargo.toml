@@ -1,0 +1,26 @@
+[package]
+name = "uuid-slug-rust-competitors"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+fast-uuid-v7 = "=0.1.9"
+hyperuuid = "=0.3.0"
+id-forge = "=1.0.0"
+leachuuid7 = "=0.1.0"
+nativelite-uid = "=0.1.0"
+nexus-id = "=1.1.5"
+philiprehberger-id-gen = "=0.3.0"
+qubit-id = { version = "=0.6.0", default-features = false, features = ["uuid"] }
+rivid-core = "=1.1.0"
+serde_json = "1"
+uuid = { version = "=1.26.1", features = ["v4", "v7"] }
+uuid-extra = "=0.0.2"
+uuid-slug = { path = "../../rust/uuid-slug" }
+uuid7 = { version = "=1.8.0", features = ["uuid"] }
+uuid64rs = "=0.0.14"
+uuidv4 = "=1.0.0"
+uuidv7 = "=0.1.7"
+
+[workspace]
