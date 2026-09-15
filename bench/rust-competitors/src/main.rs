@@ -169,6 +169,12 @@ fn main() {
     measure("uuid.v7.value", 7, uuid::Uuid::now_v7, |id| {
         valid_bytes(id.as_bytes(), 7)
     });
+    measure("uuid-lite.v4.value", 4, uuid_lite::Uuid::new_v4, |id| {
+        valid_bytes(id.as_bytes(), 4)
+    });
+    measure("uuid-lite2.v4.value", 4, uuid_lite2::Uuid::new_v4, |id| {
+        valid_bytes(id.as_bytes(), 4)
+    });
     measure("uuid7.v7.value", 7, uuid7::new_v7, |id| {
         valid_bytes(id.as_bytes(), 7)
     });
@@ -234,6 +240,9 @@ fn main() {
         philiprehberger_id_gen::Uuid7::new,
         |id| valid_bytes(&id.to_bytes(), 7),
     );
+    measure("rok-ids.v7.value", 7, rok_ids::UuidV7::generate, |id| {
+        valid_bytes(id.as_bytes(), 7)
+    });
     let qubit_v4 = qubit_id::uuid::UuidV4Generator::new();
     measure(
         "qubit-id.v4.value",
@@ -244,6 +253,18 @@ fn main() {
     measure("uuidv4.v4.text", 4, uuidv4::uuid::v4, |id| {
         valid_text(id, 4)
     });
+    measure(
+        "uniqer-rs.v4.text",
+        4,
+        || uniqer_rs::Uniqer::new().uuidv4().unwrap(),
+        |id| valid_text(id, 4),
+    );
+    measure(
+        "uniqer-rs.v7.text",
+        7,
+        || uniqer_rs::Uniqer::new().uuidv7().unwrap(),
+        |id| valid_text(id, 7),
+    );
     measure(
         "uuid64rs.v4.base64",
         4,

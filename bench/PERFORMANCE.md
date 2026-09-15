@@ -1249,28 +1249,29 @@ version requires source inspection before its evidence or benchmark result can b
 
 | Crate | Versions | Release | Repo commit | Why retained | Evidence |
 | --- | --- | --- | --- | --- | --- |
-| [`uuid` 1.26.1](https://docs.rs/uuid/1.26.1/uuid/) | v4, v7 | 2026-09-10 | 2026-09-10 | Main Rust UUID library; configurable v7 counter width and random source | v7 generated and round-tripped; source inspected |
-| [`uuid7` 1.8.0](https://docs.rs/uuid7/1.8.0/uuid7/) | v4, v7 | 2026-05-17 | 2026-05-17 | Dedicated stateful generator; batch, rollback, fork, and caller-RNG behavior | v7 generated and round-tripped; source inspected |
-| [`fast-uuid-v7` 0.1.9](https://docs.rs/fast-uuid-v7/0.1.9/fast_uuid_v7/) | v7 | 2026-08-17 | 2026-08-17 | Multiple timestamp-fraction and sequential paths; allocation-free output | source inspected; interoperability and speed unmeasured |
-| [`hyperuuid` 0.3.0](https://docs.rs/hyperuuid/0.3.0/hyperuuid/) | v4, v7 | 2026-09-04 | 2026-09-04 | Allocation-free scalar and batch API | package metadata inspected; behavior unmeasured |
-| [`uuidv7` 0.1.7](https://docs.rs/uuidv7/0.1.7/uuidv7/) | v7 | 2025-01-29 | 2025-01-29 | Small stateless text and byte generator | generated and round-tripped; source inspected |
-| [`leachuuid7` 0.1.0](https://docs.rs/leachuuid7/0.1.0/leachuuid7/) | v7 | 2025-03-16 | unavailable | Independent random-payload implementation | generated and round-tripped; source inspected |
-| [`nativelite-uid` 0.1.0](https://docs.rs/nativelite-uid/0.1.0/nativelite_uid/) | v7 | 2026-09-07 | 2026-09-06 | Standard-library-only monotonic generator | source inspected; behavior unmeasured |
-| [`nexus-id` 1.1.5](https://docs.rs/nexus-id/1.1.5/nexus_id/) | v4, v7 | 2026-05-10 | 2026-09-13 | Low-latency generators with caller storage and batch paths | source inspected; behavior unmeasured |
-| [`rivid-core` 1.1.0](https://docs.rs/rivid-core/1.1.0/rivid_core/) | v7 | 2026-08-27 | 2026-09-02 | Text, raw bytes, caller storage, and batch generation | source inspected; behavior unmeasured |
-| [`id-forge` 1.0.0](https://docs.rs/id-forge/1.0.0/id_forge/) | v4, v7 | 2026-05-20 | 2026-05-21 | Zero-dependency typed generator with monotonic variants | package metadata inspected; behavior unmeasured |
-| [`philiprehberger-id-gen` 0.3.0](https://docs.rs/philiprehberger-id-gen/0.3.0/philiprehberger_id_gen/) | v7 | 2026-05-31 | 2026-06-19 | General ID library with text, bytes, parsing, and explicit timestamps | source inspected; behavior unmeasured |
-| [`uniqer_rs` 0.0.4](https://docs.rs/uniqer_rs/0.0.4/uniqer_rs/) | v4, v7 | 2025-09-03 | 2025-09-03 | Builder wrapper over `uuid`; measures wrapper cost, not a new generator | source inspected; behavior unmeasured |
-| [`uuid-extra` 0.0.2](https://docs.rs/uuid-extra/0.0.2/uuid_extra/) | v4, v7 | 2025-06-29 | 2025-06-29 | `uuid` wrapper with direct base64 output | source inspected; behavior unmeasured |
-| [`uuid-tag` 0.2.1](https://docs.rs/uuid-tag/0.2.1/uuid_tag/) | v4, v7 | 2026-05-30 | 2026-05-30 | Typed wrapper over `uuid`; measures type-wrapper cost | package metadata inspected; behavior unmeasured |
-| [`rok-ids` 0.1.0](https://docs.rs/rok-ids/0.1.0/rok_ids/) | v7 | 2026-05-10 | repository unavailable | Typed wrapper over `uuid` | source inspected; behavior unmeasured |
-| [`uuid-lite` 1.10.8](https://docs.rs/uuid-lite/1.10.8/uuid_lite/) | v4, v7 | 2026-09-13 | unavailable | Published fork of `uuid`; compare only if its code or build differs at measurement time | registry and older compatible source inspected; behavior unmeasured |
-| [`uuid-lite2` 1.10.1](https://docs.rs/uuid-lite2/1.10.1/uuid_lite2/) | v4, v7 | 2026-08-24 | unavailable | Second published `uuid` fork; compare only if its code or build differs | registry and 1.10.0 source inspected; behavior unmeasured |
-| [`uuid64rs` 0.0.14](https://docs.rs/uuid64rs/0.0.14/uuid64rs/) | v4 | 2021-04-19 | 2021-04-19 | Base64 UUID generator and direct slug competitor | source inspected; behavior unmeasured |
-| [`uuidv4` 1.0.0](https://docs.rs/uuidv4/1.0.0/uuidv4/) | v4 | 2023-08-24 | unavailable | Small standalone generator | package metadata inspected; behavior unmeasured |
-| [`qubit-id` 0.6.0](https://docs.rs/qubit-id/0.6.0/qubit_id/) | v4 | 2026-09-02 | 2026-09-14 | Synchronous and asynchronous generator interfaces | source inspected; behavior unmeasured |
+| [`uuid` 1.26.1](https://docs.rs/uuid/1.26.1/uuid/) | v4, v7 | 2026-09-10 | 2026-09-10 | Main Rust UUID library; configurable v7 counter width and random source | matrix executed; native and wasm compiled; source inspected |
+| [`uuid7` 1.8.0](https://docs.rs/uuid7/1.8.0/uuid7/) | v4, v7 | 2026-05-17 | 2026-05-17 | Dedicated stateful generator; batch, rollback, fork, and caller-RNG behavior | matrix and rollback probe executed; native and wasm compiled; source inspected |
+| [`fast-uuid-v7` 0.1.9](https://docs.rs/fast-uuid-v7/0.1.9/fast_uuid_v7/) | v7 | 2026-08-17 | 2026-08-17 | Multiple timestamp-fraction and sequential paths; allocation-free output | matrix executed; native and wasm compiled; source inspected |
+| [`hyperuuid` 0.3.0](https://docs.rs/hyperuuid/0.3.0/hyperuuid/) | v4, v7 | 2026-09-04 | 2026-09-04 | Allocation-free scalar and batch API | matrix executed; native and wasm compiled; source inspected |
+| [`uuidv7` 0.1.7](https://docs.rs/uuidv7/0.1.7/uuidv7/) | v7 | 2025-01-29 | 2025-01-29 | Small stateless text and byte generator | matrix executed; native and wasm compiled; source inspected |
+| [`leachuuid7` 0.1.0](https://docs.rs/leachuuid7/0.1.0/leachuuid7/) | v7 | 2025-03-16 | unavailable | Independent random-payload implementation | matrix executed; native and wasm compiled; source inspected |
+| [`nativelite-uid` 0.1.0](https://docs.rs/nativelite-uid/0.1.0/nativelite_uid/) | v7 | 2026-09-07 | 2026-09-06 | Standard-library-only monotonic generator | matrix executed; native compiled; wasm generation unsupported; source inspected |
+| [`nexus-id` 1.1.5](https://docs.rs/nexus-id/1.1.5/nexus_id/) | v4, v7 | 2026-05-10 | 2026-09-13 | Low-latency generators with caller storage and batch paths | matrix and same-millisecond limit executed; native and wasm compiled; source inspected |
+| [`rivid-core` 1.1.0](https://docs.rs/rivid-core/1.1.0/rivid_core/) | v7 | 2026-08-27 | 2026-09-02 | Text, raw bytes, caller storage, and batch generation | matrix executed; native and wasm compiled; source inspected |
+| [`id-forge` 1.0.0](https://docs.rs/id-forge/1.0.0/id_forge/) | v4, v7 | 2026-05-20 | 2026-05-21 | Zero-dependency typed generator with monotonic variants | matrix executed; native and wasm compiled; source inspected |
+| [`philiprehberger-id-gen` 0.3.0](https://docs.rs/philiprehberger-id-gen/0.3.0/philiprehberger_id_gen/) | v7 | 2026-05-31 | 2026-06-19 | General ID library with text, bytes, parsing, and explicit timestamps | matrix executed; native and wasm compiled; source inspected |
+| [`uniqer_rs` 0.0.4](https://docs.rs/uniqer_rs/0.0.4/uniqer_rs/) | v4, v7 | 2025-09-03 | 2025-09-03 | Builder wrapper over `uuid`; measures allocated-text wrapper cost, not a new generator | matrix executed; native and wasm compiled; source inspected |
+| [`uuid-extra` 0.0.2](https://docs.rs/uuid-extra/0.0.2/uuid_extra/) | v4, v7 | 2025-06-29 | 2025-06-29 | `uuid` wrapper with direct base64 output | matrix executed; native and wasm compiled; source inspected |
+| [`rok-ids` 0.1.0](https://docs.rs/rok-ids/0.1.0/rok_ids/) | v7 | 2026-05-10 | repository unavailable | Typed value wrapper over `uuid` | matrix executed; native and wasm compiled; source inspected |
+| [`uuid-lite` 1.10.8](https://docs.rs/uuid-lite/1.10.8/uuid_lite/) | v4 | 2026-09-13 | unavailable | Minimal direct `getrandom` generator with fixed-size output | matrix executed; native and wasm compiled; source inspected |
+| [`uuid-lite2` 1.10.1](https://docs.rs/uuid-lite2/1.10.1/uuid_lite2/) | v4 | 2026-08-24 | unavailable | Separately published copy of the same minimal v4 mechanism | matrix executed; native and wasm compiled; source inspected |
+| [`uuid64rs` 0.0.14](https://docs.rs/uuid64rs/0.0.14/uuid64rs/) | v4 | 2021-04-19 | 2021-04-19 | Base64 UUID generator and direct slug competitor | matrix executed; native and wasm compiled; source inspected |
+| [`uuidv4` 1.0.0](https://docs.rs/uuidv4/1.0.0/uuidv4/) | v4 | 2023-08-24 | unavailable | Small standalone generator | matrix executed; native and wasm compiled; source inspected |
+| [`qubit-id` 0.6.0](https://docs.rs/qubit-id/0.6.0/qubit_id/) | v4 | 2026-09-02 | 2026-09-14 | Synchronous and asynchronous generator interfaces | matrix executed; native and wasm compiled; source inspected |
 
-`switchy_uuid` is a deterministic simulation adapter, and `rs-uuid` generates shorter custom IDs;
+`uuid-tag` changes UUID payload bits to carry an application tag, so it does not produce the same
+caller outcome as an ordinary UUID generator. `switchy_uuid` is a deterministic simulation adapter,
+and `rs-uuid` generates shorter custom IDs;
 neither is a production RFC UUID generator. CLI and database packages remain excluded for the same
 reason: their process or storage overhead would measure a different job.
 
@@ -1296,8 +1297,19 @@ real caller needs batch generation; benchmark speed alone does not create that c
 
 The matrix treats returned fixed-size values and caller buffers as allocation-free public outcomes,
 and returned `String` values as allocated outcomes; it makes no claim about hidden allocator work.
-Contention and cross-target support remain unresolved because neither source inspection nor a
-single-host scalar run measures them.
+Across three fresh processes, four-thread generation cost 248 to 345 ns per package call. `uuid7`
+and `nativelite-uid` remained near 76 to 93 ns, `hyperuuid` ranged from 194 to 337 ns, and
+`rivid-core` remained near 8 ns. These rows isolate simultaneous generation after per-thread setup,
+but their entropy and state-sharing contracts differ, so the figures do not rank interchangeable
+results. The package keeps independent generator state and secure entropy per call; this measurement
+does not justify replacing either guarantee with shared or seeded state.
+
+Isolated consumers compiled every retained generator call natively. Nineteen also compiled for
+`wasm32-unknown-unknown` after enabling each crate's documented feature or the matching
+caller-selected `getrandom` WebAssembly backend. `nativelite-uid` 0.1.0 alone failed in its library:
+its WebAssembly branch calls `fill_random`, which is not defined for that target. The target matrix
+proves compilation, not browser execution or entropy quality; this package's executed WebAssembly
+profiles remain the behavioral evidence for its own WebAssembly support.
 
 Rust `uuid` uses a 42-bit leading counter by default. Its additional-precision mode dedicates 1
 through 12 of those leading bits to a Method 3 fraction, leaving the rest of the 42-bit field as the

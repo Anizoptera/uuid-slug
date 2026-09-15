@@ -26,6 +26,16 @@ const probes: readonly Probe[] = [
     source: "let _ = uuid::Uuid::now_v7();",
   },
   {
+    name: "uuid-lite",
+    dependency: 'uuid-lite = "=1.10.8"',
+    source: "let _ = uuid_lite::Uuid::new_v4();",
+  },
+  {
+    name: "uuid-lite2",
+    dependency: 'uuid-lite2 = "=1.10.1"',
+    source: "let _ = uuid_lite2::Uuid::new_v4();",
+  },
+  {
     name: "uuid7",
     dependency: 'uuid7 = { version = "=1.8.0", features = ["uuid"] }',
     source: "let _ = uuid7::new_v7();",
@@ -73,11 +83,23 @@ const probes: readonly Probe[] = [
     source: "let _ = philiprehberger_id_gen::Uuid7::new();",
   },
   {
+    name: "rok-ids",
+    dependency: 'rok-ids = "=0.1.0"',
+    wasmDependency: 'rok-ids = "=0.1.0"\nuuid = { version = "=1.26.1", features = ["js"] }',
+    source: "let _ = rok_ids::UuidV7::generate();",
+  },
+  {
     name: "qubit-id",
     dependency: 'qubit-id = { version = "=0.6.0", default-features = false, features = ["uuid"] }',
     source: "let _ = qubit_id::uuid::UuidV4Generator::new();",
   },
   { name: "uuidv4", dependency: 'uuidv4 = "=1.0.0"', source: "let _ = uuidv4::uuid::v4();" },
+  {
+    name: "uniqer-rs",
+    dependency: 'uniqer_rs = "=0.0.4"',
+    wasmDependency: 'uniqer_rs = "=0.0.4"\nuuid = { version = "=1.26.1", features = ["js"] }',
+    source: "let _ = uniqer_rs::Uniqer::new().uuidv7();",
+  },
   {
     name: "uuid64rs",
     dependency: 'uuid64rs = "=0.0.14"',

@@ -14,9 +14,13 @@ nexus-id = "=1.1.5"
 philiprehberger-id-gen = "=0.3.0"
 qubit-id = { version = "=0.6.0", default-features = false, features = ["uuid"] }
 rivid-core = "=1.1.0"
+rok-ids = "=0.1.0"
 serde_json = "1"
+uniqer_rs = "=0.0.4"
 uuid = { version = "=1.26.1", features = ["v4", "v7"] }
 uuid-extra = "=0.0.2"
+uuid-lite = "=1.10.8"
+uuid-lite2 = "=1.10.1"
 uuid-slug = { path = "../../rust/uuid-slug" }
 uuid7 = { version = "=1.8.0", features = ["uuid"] }
 uuid64rs = "=0.0.14"

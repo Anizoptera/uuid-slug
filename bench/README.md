@@ -39,8 +39,8 @@ It reports unsupported runtime rows instead of dropping them. Each comparable gr
 fastest package route, fastest external or platform reference, and their median ratio so a local
 optimum cannot hide in raw rows.
 
-Run `bun run bench:competitors:rust` for the isolated Rust generator matrix. Its own lockfile pins
-the inspected releases without adding benchmark-only crates to the product workspace.
+Run `bun run bench:competitors:rust` for one isolated Rust generator timing process. Its own
+lockfile pins the inspected releases without adding benchmark-only crates to the product workspace.
 
 Re-run the full matrix for each release candidate and after changing a competitor or runtime
 version. Upgrade benchmark packages only in `devDependencies`, inspect changed public calls and
@@ -48,8 +48,11 @@ source mechanisms, update the shared case inventory when capabilities change, th
 the full matrix. A version change never inherits an earlier performance or compatibility verdict.
 
 Run `bun run bench:results` to refresh the tracked reports in `bench/results/`: `matrix.md` with
-package throughput and randomness per runtime, and `competitors.md` with its raw
-`competitors.jsonl`. They are tracked, unlike the profiling artifacts under ignored
+package throughput and randomness per runtime, `competitors.md` with its raw `competitors.jsonl`,
+and `rust-competitors.md` with its raw `rust-competitors.jsonl`. The Rust report combines three
+fresh timing processes and compiles every retained generator call for native Rust and
+`wasm32-unknown-unknown` with its strongest supported entropy configuration. These files are
+tracked, unlike the profiling artifacts under ignored
 `bench/reports/`, because a report git tracks shows its own date and can be diffed between runs,
 while a hand-pasted snapshot rots behind a date that looks fresh. Nothing in them is typed in.
 They are evidence for `bench/PERFORMANCE.md`, which owns conclusions; a figure in them is one
