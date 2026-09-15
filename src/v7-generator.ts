@@ -13,6 +13,7 @@ import type {
   UuidV7ClockRollbackPolicy,
   UuidV7Generator,
   UuidV7GeneratorValueOptions,
+  UuidV7Instant,
   UuidV7MaskingCodec,
 } from "./types.ts";
 import { createUuidValue } from "./uuid-value.ts";
@@ -144,14 +145,13 @@ function buildGenerator(
   function generateUuidV7Value(
     valueOptions?: UuidV7GeneratorValueOptions,
   ): Uuid<7, boolean, true> | UuidSlugError {
-    const values = readUuidV7ValueOptions(valueOptions, { maskingCodec: true, unixMs: true });
+    const values = readUuidV7ValueOptions(valueOptions, { at: true, maskingCodec: true });
     if (values instanceof Error) return values;
     const maskingCodec = readUuidV7MaskingCodec(values.maskingCodec);
     if (maskingCodec instanceof Error) return maskingCodec;
-    const generated =
-      values.unixMs === undefined
-        ? generator.generateUuidV7Bytes()
-        : generator.generateUuidV7BytesAtUnixMs(values.unixMs as number);
+    const generated = !Object.hasOwn(values, "at")
+      ? generator.generateUuidV7Bytes()
+      : generator.generateUuidV7Bytes({ at: values.at as UuidV7Instant });
     return generated instanceof Error
       ? generated
       : createUuidValue<7, boolean, true>(generated, maskingCodec, generator.payloadLayout);

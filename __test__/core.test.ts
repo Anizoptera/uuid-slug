@@ -34,10 +34,9 @@ import {
   generateUuidV4,
   generateUuidV4WithRandomFill,
   generatePlainUuidV4Slug,
-  generateUuidV7BytesAtUnixMs,
+  generateUuidV7Bytes,
   generateUuidV7,
   generateUuidV7Value,
-  generateUuidV7AtUnixMs,
   uuidV7Bounds,
   uuidV7ByteBounds,
   createUuidV7Generator,
@@ -243,7 +242,7 @@ const v7PatternAt = (length: number, offset: number) => {
 };
 
 const uuidV7WithPayload = (unixMs: number, payload: bigint) => {
-  const bytes = unwrap(generateUuidV7BytesAtUnixMs(unixMs));
+  const bytes = unwrap(generateUuidV7Bytes({ at: unixMs }));
   bytes[6] = 0x70 | Number((payload >> 70n) & 0x0fn);
   bytes[7] = Number((payload >> 62n) & 0xffn);
   bytes[8] = 0x80 | Number((payload >> 56n) & 0x3fn);
@@ -363,18 +362,18 @@ describe("UUIDv7 timestamp extraction", () => {
   });
 
   it("reads back the exact instant a UUID was minted at, at any offset", () => {
-    // `generateUuidV7BytesAtUnixMs` is the independent oracle: the instant is chosen here, not read back from
+    // Explicit-time generation is the independent oracle: the instant is chosen here, not read back from
     // whatever the generator happened to produce, so the two must agree on the 48-bit layout.
     const instant = 1_700_000_000_123;
     const buffer = new Uint8Array(32);
-    const written = generateUuidV7BytesAtUnixMs(instant, buffer, 16);
+    const written = generateUuidV7Bytes({ at: instant, output: buffer, outputOffset: 16 });
     if (written instanceof Error) throw written;
     expect(extractUuidV7UnixMs(buffer, 16)).toBe(instant);
   });
 
   it("reads the same instant from UUID text and both plain slug spellings", () => {
     const instant = 1_700_000_000_123;
-    const uuid = unwrap(generateUuidV7BytesAtUnixMs(instant));
+    const uuid = unwrap(generateUuidV7Bytes({ at: instant }));
     const text = unwrap(bytesToUuidString(uuid));
     expect(extractUuidV7UnixMs(text)).toBe(instant);
     expect(extractUuidV7UnixMs(unwrap(uuidBytesToPlainSlug(uuid)))).toBe(instant);
@@ -549,7 +548,9 @@ describe("plain UUID slugs", () => {
 
     expect(unwrap(generateUuidV4(UUID_TEXT_UPPERCASE))).toMatch(/^[0-9A-F-]+$/);
     expect(unwrap(generateUuidV7(UUID_TEXT_UPPERCASE))).toMatch(/^[0-9A-F-]+$/);
-    expect(unwrap(generateUuidV7AtUnixMs(0, UUID_TEXT_UPPERCASE))).toMatch(/^[0-9A-F-]+$/);
+    expect(unwrap(generateUuidV7({ at: 0, textCase: UUID_TEXT_UPPERCASE }))).toMatch(
+      /^[0-9A-F-]+$/,
+    );
     expect(unwrap(generateUuidV7WithPlainSlug(UUID_TEXT_UPPERCASE)).uuid).toMatch(/^[0-9A-F-]+$/);
 
     const codec = createUuidV7MaskingCodec({
@@ -569,12 +570,84 @@ describe("plain UUID slugs", () => {
     );
   });
 
+  it("generates UUIDv7 at a Date without caller normalization", () => {
+    const instant = new Date("2026-09-15T12:34:56.789Z");
+    const uuid = generateUuidV7({ at: instant });
+
+    expect(extractUuidV7UnixMs(uuid)).toBe(instant.getTime());
+  });
+
+  it("generates UUIDv7 at bigint Unix milliseconds without caller conversion", () => {
+    expect(extractUuidV7UnixMs(generateUuidV7({ at: 1_789_475_696_789n }))).toBe(1_789_475_696_789);
+  });
+
+  it("generates UUIDv7 from precise zoned timestamp text", () => {
+    const expected = Date.parse("2026-09-15T12:34:56.789Z");
+
+    expect(extractUuidV7UnixMs(generateUuidV7({ at: "2026-09-15T12:34:56.789Z" }))).toBe(expected);
+    expect(extractUuidV7UnixMs(generateUuidV7({ at: "2026-09-15T13:34:56.789+01:00" }))).toBe(
+      expected,
+    );
+    expect(generateUuidV7({ at: "2026-09-15T12:34:56" })).toMatchObject({
+      code: "invalid_timestamp",
+    });
+    expect(extractUuidV7UnixMs(generateUuidV7({ at: "2026-09-15T12:34:56.789001Z" }))).toBe(
+      expected,
+    );
+  });
+
+  it("generates UUIDv7 from cross-realm and structural instant values", () => {
+    const unixMs = 1_789_475_696_789;
+    const crossRealmDate = runInNewContext(`new Date(${unixMs})`) as Date;
+    const inputs = [
+      crossRealmDate,
+      { epochMilliseconds: BigInt(unixMs) },
+      { epochNanoseconds: BigInt(unixMs) * 1_000_000n },
+      { seconds: 1_789_475_696n, nanoseconds: 789_000_000 },
+    ] as const;
+
+    for (const at of inputs) expect(extractUuidV7UnixMs(generateUuidV7({ at }))).toBe(unixMs);
+    expect(extractUuidV7UnixMs(generateUuidV7({ at: { epochNanoseconds: 1n } }))).toBe(0);
+  });
+
+  it.each([
+    new Date(NaN),
+    "2026-09-15T12:34:56",
+    "2026-02-29T00:00:00Z",
+    "2026-09-15T24:00:00Z",
+    "2026-09-15T12:34:60Z",
+    "2026-09-15T12:34:56-00:00",
+    { epochMilliseconds: 1.5, epochNanoseconds: 1_600_000n },
+    { epochMilliseconds: 1, seconds: 2 },
+    { nanoseconds: 1 },
+    { seconds: 0, nanoseconds: 1_000_000_000 },
+  ])("rejects ambiguous or invalid instant %o", (at) => {
+    expect(generateUuidV7({ at: at as never })).toMatchObject({ code: "invalid_timestamp" });
+  });
+
+  it("uses one at option across keyless UUIDv7 representations", () => {
+    const at = new Date("2026-09-15T12:34:56.789Z");
+    const expected = at.getTime();
+    const output = new Uint8Array(20);
+    const bytes = generateUuidV7Bytes({ at, output, outputOffset: 2 });
+    const slug = generatePlainUuidV7Slug({ at, alphabet: "base32hex" });
+    const pair = generateUuidV7WithPlainSlug({ at, textCase: UUID_TEXT_UPPERCASE });
+
+    expect(bytes).toBe(output);
+    expect(extractUuidV7UnixMs(output.subarray(2, 18))).toBe(expected);
+    expect(extractUuidV7UnixMs(slug)).toBe(expected);
+    expect(extractUuidV7UnixMs(pair instanceof Error ? pair : pair.uuid)).toBe(expected);
+    expect(pair instanceof Error ? pair : pair.uuid).toMatch(/^[0-9A-F-]+$/);
+  });
+
   it("rejects an unknown UUID text case before generation work", () => {
     const invalid = Symbol("titlecase") as never;
     let clockReads = 0;
     const generator = createUuidV7Generator({ readUnixMs: () => ++clockReads });
     expect(generator.generateUuidV7(invalid)).toMatchObject({ code: "invalid_options" });
-    expect(generator.generateUuidV7AtUnixMs(0, invalid)).toMatchObject({ code: "invalid_options" });
+    expect(generator.generateUuidV7({ at: 0, textCase: invalid })).toMatchObject({
+      code: "invalid_options",
+    });
     expect(clockReads).toBe(0);
     expect(generateUuidV4(invalid)).toMatchObject({ code: "invalid_options" });
     expect(generatePlainUuidV4Slug("base36" as never)).toMatchObject({ code: "invalid_options" });
@@ -742,7 +815,7 @@ describe("plain UUID slugs", () => {
       readUnixMs: () => 123.5,
       subMillisecondFractionBits: 12,
     });
-    const generated = unwrap(generateUuidV7Value({ generator, maskingCodec: codec, unixMs: 123 }));
+    const generated = unwrap(generateUuidV7Value({ at: 123, generator, maskingCodec: codec }));
     expect(generated.version).toBe(7);
     expect(generated.toMaskedSlug()).not.toBeInstanceOf(Error);
     expect(unwrap(generated.extractV7Payload())).toMatchObject({
@@ -752,9 +825,9 @@ describe("plain UUID slugs", () => {
     expect(Object.keys(generated)).not.toContain("generator");
     expect(Object.keys(generated)).not.toContain("payloadLayout");
 
-    const fromGenerator = unwrap(generator.generateUuidV7Value({ unixMs: 124 }));
-    const fromCodec = unwrap(codec.generateUuidV7Value({ generator, unixMs: 124 }));
-    expect(fromGenerator.toString()).toBe(fromCodec.toString());
+    const fromGenerator = unwrap(generator.generateUuidV7Value({ at: 124 }));
+    const fromCodec = unwrap(codec.generateUuidV7Value({ at: 124, generator }));
+    expect(fromCodec.toString() > fromGenerator.toString()).toBe(true);
     expect(unwrap(fromGenerator.extractV7Payload()).unixMs).toBe(124);
     expect(unwrap(fromCodec.extractV7Payload()).unixMs).toBe(124);
     expect(fromCodec.toMaskedSlug()).not.toBeInstanceOf(Error);
@@ -767,10 +840,11 @@ describe("plain UUID slugs", () => {
     });
     unwrap(control.generateUuidV7Value());
     unwrap(observed.generateUuidV7Value());
-    unwrap(observed.generateUuidV7Value({ unixMs: 100 }));
-    expect(unwrap(observed.generateUuidV7Value()).toString()).toBe(
-      unwrap(control.generateUuidV7Value()).toString(),
-    );
+    unwrap(observed.generateUuidV7Value({ at: 100 }));
+    expect(
+      unwrap(observed.generateUuidV7Value()).toString() >
+        unwrap(control.generateUuidV7Value()).toString(),
+    ).toBe(true);
   });
 
   it("returns typed failures for malformed JavaScript UUID-value calls", () => {
@@ -798,7 +872,6 @@ describe("plain UUID slugs", () => {
           generator: {
             payloadLayout: { subMillisecondFractionBits: 0, counterBits: 42 },
             generateUuidV7Bytes: () => new Uint8Array(16),
-            generateUuidV7BytesAtUnixMs: () => new Uint8Array(16),
           },
         },
       ]),

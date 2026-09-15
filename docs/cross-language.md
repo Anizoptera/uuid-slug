@@ -29,6 +29,11 @@ errors and `Result` instead of JavaScript conventions. Such differences must not
 the accepted domain or result semantics. In particular, a lazy result must not expose partial
 candidates where the existing operation reports an error for the whole call.
 
+TypeScript accepts standard JavaScript host forms through `at`; Rust accepts its idiomatic numeric
+time forms. Both store the containing Unix millisecond and quantize the remaining fraction when the
+generator's payload layout assigns fraction bits. Supplied-time generation joins a created
+generator's sequence state in both languages.
+
 TypeScript uses directional text/binary names because raw byte containers require validation and
 may target caller storage. It accepts an exact `ArrayBuffer` or a `DataView`'s exact 16-byte range
 as borrowed input. Rust uses idiomatic `Uuid` operations because its fixed UUID type already owns

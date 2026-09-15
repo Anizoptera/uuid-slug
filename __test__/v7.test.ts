@@ -12,6 +12,7 @@
 import { describe, expect, it } from "vitest";
 
 import { UuidSlugError } from "../src/index";
+import type { UuidV7Instant } from "../src/index";
 import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
 
 /** Fills with one repeated byte, so the counter seed lands on a known bound. */
@@ -210,38 +211,85 @@ describe("uuidv7 at a caller-supplied instant", () => {
       readUnixMs: fixedClock(1),
       fillRandom: constantFill(0x00),
     });
-    const bytes = generator.generateUuidV7BytesAtUnixMs(ms);
+    const bytes = generator.generateUuidV7Bytes({ at: ms });
     if (bytes instanceof Error) throw bytes;
     expect(timestampOf(bytes)).toBe(ms);
   });
 
-  // 1.5 is the case that motivated the check: the write path truncates, so a fractional instant
-  // silently became 1 while the error message promised a whole number of milliseconds. NaN and
-  // Infinity matter because runtime-native validation is not this portable contract. Bun 1.4.2
-  // rejects NaN, but runtime behavior is re-probed on update rather than assumed here.
-  it.each([1.5, -1, NaN, Infinity, 2 ** 48])("rejects the instant %d", (ms) => {
+  it("uses the best fraction the selected payload layout can represent", () => {
+    const generator = createUuidV7Generator({
+      readUnixMs: fixedClock(1),
+      fillRandom: constantFill(0x00),
+      subMillisecondFractionBits: 12,
+    });
+    const bytes = generator.generateUuidV7Bytes({ at: 1.75 });
+    if (bytes instanceof Error) throw bytes;
+    expect(timestampOf(bytes)).toBe(1);
+    expect(Math.floor(payloadPrefixOf(bytes) / 2 ** 30)).toBe(Math.floor(0.75 * 2 ** 12));
+  });
+
+  it.each<[UuidV7Instant, number, number]>([
+    [1.5, 1, 2048],
+    [{ epochMilliseconds: 1.25 }, 1, 1024],
+    [{ epochNanoseconds: 1_999_999n }, 1, 4095],
+    [{ seconds: 0, nanoseconds: 244_141 }, 0, 1000],
+    ["1970-01-01T00:00:00.000244141Z", 0, 1000],
+    ["1970-01-01T01:00:00.000244141+01:00", 0, 1000],
+    [new Date(1), 1, 0],
+  ])("normalizes %o to millisecond %d and fraction bucket %d", (at, unixMs, fraction) => {
+    const generator = createUuidV7Generator({
+      fillRandom: constantFill(0x00),
+      subMillisecondFractionBits: 12,
+    });
+    const bytes = generator.generateUuidV7Bytes({ at });
+    if (bytes instanceof Error) throw bytes;
+    expect(timestampOf(bytes)).toBe(unixMs);
+    expect(Math.floor(payloadPrefixOf(bytes) / 2 ** 30)).toBe(fraction);
+  });
+
+  // NaN and Infinity matter because runtime-native validation is not this portable contract. Bun
+  // rejects them today, but runtime behavior is re-probed on update rather than assumed here.
+  it.each([-1, NaN, Infinity, 2 ** 48])("rejects the instant %d", (ms) => {
     const generator = createUuidV7Generator({
       readUnixMs: fixedClock(1),
       fillRandom: constantFill(0x00),
     });
-    expect(generator.generateUuidV7AtUnixMs(ms)).toBeInstanceOf(Error);
+    expect(generator.generateUuidV7({ at: ms })).toBeInstanceOf(Error);
   });
 
-  it("does not disturb current-time sequence state", () => {
-    // A supplied instant takes a random sequence and must leave `lastMs` and the counter alone:
-    // comparison with an untouched generator detects either mutation directly.
+  it("joins explicit instants to the created generator's ordered sequence", () => {
     const generator = createUuidV7Generator({
       readUnixMs: fixedClock(1_700_000_000_000),
       fillRandom: constantFill(0x00),
+      subMillisecondFractionBits: 12,
     });
-    const control = createUuidV7Generator({
-      readUnixMs: fixedClock(1_700_000_000_000),
+    const instants = [
+      { epochNanoseconds: 100_250_000n },
+      { epochNanoseconds: 100_250_000n },
+      { epochNanoseconds: 100_750_000n },
+      { epochNanoseconds: 99_500_000n },
+    ] as const;
+    const generated = instants.map((at) => {
+      const bytes = generator.generateUuidV7Bytes({ at });
+      if (bytes instanceof Error) throw bytes;
+      return bytes;
+    });
+    for (let index = 1; index < generated.length; index += 1)
+      expectAfter(generated[index] as Uint8Array, generated[index - 1] as Uint8Array);
+  });
+
+  it("does not coordinate explicit instants when sequential generation is disabled", () => {
+    const generator = createUuidV7Generator({
+      coordinateExplicitInstants: false,
       fillRandom: constantFill(0x00),
+      subMillisecondFractionBits: 12,
     });
-    for (let i = 0; i < 100; i += 1) {
-      expect(generator.generateUuidV7AtUnixMs(1_500_000_000_000)).not.toBeInstanceOf(Error);
-      expect(bytesOf(generator)).toEqual(bytesOf(control));
-    }
+    const at = { epochNanoseconds: 100_750_000n } as const;
+    const first = generator.generateUuidV7Bytes({ at });
+    const second = generator.generateUuidV7Bytes({ at });
+    if (first instanceof Error) throw first;
+    if (second instanceof Error) throw second;
+    expect(second).toEqual(first);
   });
 });
 
@@ -297,6 +345,20 @@ describe("uuidv7 readUnixMs contract", () => {
 });
 
 describe("uuidv7 buffer handling", () => {
+  it("accepts an empty options object and identifies unknown option names", () => {
+    const generator = createUuidV7Generator({
+      readUnixMs: fixedClock(1),
+      fillRandom: constantFill(0x00),
+    });
+    expect(generator.generateUuidV7Bytes({})).toBeInstanceOf(Uint8Array);
+    expect(
+      Reflect.apply(generator.generateUuidV7Bytes, undefined, [{ outputOffsetTypo: 0 }]),
+    ).toMatchObject({
+      code: "invalid_options",
+      message: "Unknown UUIDv7 byte generation option: outputOffsetTypo.",
+    });
+  });
+
   it("writes exactly its own sixteen bytes and leaves the rest of the buffer alone", () => {
     const generator = createUuidV7Generator({
       readUnixMs: fixedClock(1),

@@ -82,21 +82,21 @@ Use `uuid_slug_to_uuid_candidates` for explicit lookup across possible formats o
 your store. Disable each legacy reader only after its stored values are migrated; neither option
 enables the unsupported 0.2.0 masked format.
 
-`UuidV7Generator` owns its sequence. `generate_uuid_v7()` uses secure platform entropy;
-`generate_uuid_v7_at_unix_ms()` takes an explicit timestamp without changing the sequence.
+`UuidV7Generator` owns its sequence. `generate_uuid_v7()` reads the system clock;
+`generate_uuid_v7_at_unix_ms()` accepts a caller-supplied millisecond value. Both use secure
+platform entropy and join the same sequence.
 The crate accepts every RFC 9562 UUIDv7 and preserves its 74 payload bits. Use
 `Uuid::extract_uuid_v7_payload` with `UuidV7PayloadLayout` only when the generator's leading
 fraction and counter widths are known. Every undeclared low bit remains in `remaining`.
 `with_sub_millisecond_fraction_bits` assigns 1 through 12 leading payload bits to the clock
 fraction; `payload_layout` returns that split and the remaining counter width.
-Explicit-time generation sets the configured fraction field to zero. Native current-time generation
+Supplied fractional milliseconds fill the configured fraction field. Native current-time generation
 reads the operating system's sub-millisecond clock; WebAssembly's built-in clock uses millisecond
 `Date.now()`, so pass a fractional reading to `generate_uuid_v7_with_random_fill` when that precision matters.
 When the clock stalls or moves backward, the generator advances this logical fraction and then
 the millisecond timestamp when needed; extracted fractions can be later than the clock reading.
-Successful current-time calls on one generator strictly increase in UUID byte order under the
-default preserve policy. Explicit-time calls and reset-policy calls after their tolerance are outside
-that sequence.
+Successful calls on one generator strictly increase in UUID byte order under the default preserve
+policy. Reset-policy calls after their tolerance are outside that sequence.
 Use `UuidV7MaskingCodec::extract_masked_uuid_v7_payload` for masked slugs. Masking rejects timestamps outside the codec's
 configured range instead of truncating them. Same-millisecond ordering depends on the generator.
 `uuid_v7_bounds(start, end)` returns the inclusive lowest and highest UUIDv7 search keys; pass

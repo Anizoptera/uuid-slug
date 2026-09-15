@@ -27,11 +27,9 @@ import {
   generateUuidV4Bytes,
   generatePlainUuidV4Slug,
   generateUuidV7,
-  generateUuidV7AtUnixMs,
   validateUuidV7Timestamp,
   validatePlainUuidV7SlugUnixMs,
   generateUuidV7Bytes,
-  generateUuidV7BytesAtUnixMs,
   generatePlainUuidV7Slug,
 } from "../src/index";
 import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
@@ -146,14 +144,17 @@ export const runtimeBoundaryCases = [
           isUuidV7String(unwrap(generateUuidV7(UUID_TEXT_UPPERCASE)).toLowerCase()),
           true,
         );
-        assert.equal(isUuidV7String(generateUuidV7AtUnixMs(timestamp)), true);
+        assert.equal(isUuidV7String(generateUuidV7({ at: timestamp })), true);
         const thirdV7 = unwrap(generateUuidV7Bytes());
         assert.equal(isUuidV7Bytes(thirdV7), true);
-        assert.equal(isUuidV7Bytes(generateUuidV7BytesAtUnixMs(timestamp)), true);
+        assert.equal(isUuidV7Bytes(generateUuidV7Bytes({ at: timestamp })), true);
         const currentOut = new Uint8Array(24).fill(0x55);
         const explicitOut = new Uint8Array(24).fill(0x55);
         assert.equal(generateUuidV7Bytes(currentOut, 4), currentOut);
-        assert.equal(generateUuidV7BytesAtUnixMs(timestamp, explicitOut, 4), explicitOut);
+        assert.equal(
+          generateUuidV7Bytes({ at: timestamp, output: explicitOut, outputOffset: 4 }),
+          explicitOut,
+        );
         assert.equal(isPlainUuidV7Slug(generatePlainUuidV7Slug()), true);
         assert.equal(unwrap(generatePlainUuidV7Slug("base32hex")).length, 26);
         assert.equal(nativeCalls, 2);
@@ -161,9 +162,9 @@ export const runtimeBoundaryCases = [
         delete runtime.uuidV4;
         assert.equal(isUuidV4String(generateUuidV4()), true);
         assert.equal(isUuidV7String(generateUuidV7()), true);
-        assert.equal(isUuidV7String(generateUuidV7AtUnixMs(timestamp)), true);
+        assert.equal(isUuidV7String(generateUuidV7({ at: timestamp })), true);
         assert.equal(isUuidV7Bytes(generateUuidV7Bytes()), true);
-        assert.equal(isUuidV7Bytes(generateUuidV7BytesAtUnixMs(timestamp)), true);
+        assert.equal(isUuidV7Bytes(generateUuidV7Bytes({ at: timestamp })), true);
         assert.equal(isPlainUuidV7Slug(generatePlainUuidV7Slug()), true);
         assert.equal(unwrap(generatePlainUuidV7Slug("base32hex")).length, 26);
         assert.equal(nativeCalls, 2);
@@ -257,9 +258,10 @@ export const runtimeBoundaryCases = [
         (value: unknown) => Reflect.apply(uuidStringToBytes, undefined, [uuid, value]),
         (value: unknown) => Reflect.apply(plainSlugToUuidBytes, undefined, [slug, value]),
         (value: unknown) => Reflect.apply(generateUuidV4Bytes, undefined, [value]),
-        (value: unknown) => Reflect.apply(generator.generateUuidV7Bytes, undefined, [value]),
         (value: unknown) =>
-          Reflect.apply(generator.generateUuidV7BytesAtUnixMs, undefined, [timestamp, value]),
+          Reflect.apply(generator.generateUuidV7Bytes, undefined, [
+            { at: timestamp, output: value },
+          ]),
       ];
       const inputs = [
         Array.from({ length: 16 }, () => 0),
@@ -280,6 +282,15 @@ export const runtimeBoundaryCases = [
           assert.equal(result.code, "invalid_buffer");
         }
       }
+      const invalidDestinations = [inputs[0], inputs[2], new DataView(new ArrayBuffer(16))];
+      for (const value of invalidDestinations) {
+        const result = Reflect.apply(generator.generateUuidV7Bytes, undefined, [value]);
+        assert.ok(isUuidSlugError(result));
+        assert.equal(result.code, "invalid_buffer");
+      }
+      const invalidOptions = Reflect.apply(generator.generateUuidV7Bytes, undefined, [inputs[1]]);
+      assert.ok(isUuidSlugError(invalidOptions));
+      assert.equal(invalidOptions.code, "invalid_options");
     },
   },
   {
@@ -315,9 +326,7 @@ export const runtimeBoundaryCases = [
         payloadLayout: { subMillisecondFractionBits: 0, counterBits: 42 },
         generateUuidV7Value: () => foreignError,
         generateUuidV7: () => foreignError,
-        generateUuidV7AtUnixMs: () => foreignError,
         generateUuidV7Bytes: () => foreignError,
-        generateUuidV7BytesAtUnixMs: () => foreignError,
       };
       const codec = createUuidV7MaskingCodecWithGenerator(
         { mask: { seed: "cross-realm-generator" } },
@@ -341,7 +350,7 @@ export const runtimeBoundaryCases = [
             },
           });
           const bytes = explicit
-            ? generator.generateUuidV7BytesAtUnixMs(0)
+            ? generator.generateUuidV7Bytes({ at: 0 })
             : generator.generateUuidV7Bytes();
           assert.ok(bytes instanceof Uint8Array);
           return bytes.reduce((bits, byte) => (bits << 8n) | BigInt(byte), 0n);
@@ -428,15 +437,10 @@ export const runtimeBoundaryCases = [
         out?: Uint8Array,
         offset?: number,
       ) => Uint8Array | UuidSlugError;
-      const callUuidV7BytesAt = generateUuidV7BytesAtUnixMs as (
-        timestamp: number,
-        out?: Uint8Array,
-        offset?: number,
-      ) => Uint8Array | UuidSlugError;
       for (const offset of [-1, 1, 0.5, NaN, Infinity]) {
         for (const value of [
           callUuidV7Bytes(undefined, offset),
-          callUuidV7BytesAt(timestamp, undefined, offset),
+          Reflect.apply(generateUuidV7Bytes, undefined, [{ at: timestamp, outputOffset: offset }]),
         ]) {
           assert.ok(value instanceof UuidSlugError);
           assert.equal(value.code, "invalid_buffer");
@@ -448,10 +452,10 @@ export const runtimeBoundaryCases = [
     name: "never treats an explicit invalid instant as a readUnixMs request",
     run(this: void) {
       const generator = makeGenerator();
-      for (const instant of [undefined, NaN, Infinity, -1, 0.5]) {
+      for (const instant of [undefined, NaN, Infinity, -1]) {
         for (const value of [
-          generator.generateUuidV7AtUnixMs(instant as number),
-          generator.generateUuidV7BytesAtUnixMs(instant as number),
+          generator.generateUuidV7({ at: instant as number }),
+          generator.generateUuidV7Bytes({ at: instant as number }),
         ]) {
           assert.ok(value instanceof UuidSlugError);
           assert.equal(value.code, "invalid_timestamp");
@@ -473,8 +477,8 @@ export const runtimeBoundaryCases = [
       const out = new Uint8Array(32).fill(0x55);
       for (const value of [
         generator.generateUuidV7Bytes(out, 4),
-        generator.generateUuidV7BytesAtUnixMs(timestamp, out, 4),
-        generator.generateUuidV7AtUnixMs(timestamp),
+        generator.generateUuidV7Bytes({ at: timestamp, output: out, outputOffset: 4 }),
+        generator.generateUuidV7({ at: timestamp }),
         generator.generateUuidV7(),
       ]) {
         assert.ok(value instanceof UuidSlugError);

@@ -7,21 +7,24 @@ import {
   isUuidSlugError,
   UuidSlugError,
 } from "./errors.ts";
-import type { Uuid, UuidV7Generator, UuidV7MaskingCodec, UuidV7PayloadLayout } from "./types.ts";
+import type {
+  Uuid,
+  UuidV7Generator,
+  UuidV7Instant,
+  UuidV7MaskingCodec,
+  UuidV7PayloadLayout,
+} from "./types.ts";
 import { extractUuidV7Payload } from "./slug.ts";
 import { createUuidValue } from "./uuid-value.ts";
 import { isUuidV7Bytes } from "./uuid.ts";
 
 export interface UuidV7ValueOptionValues {
+  readonly at?: unknown;
   readonly generator?: unknown;
   readonly maskingCodec?: unknown;
-  readonly unixMs?: unknown;
 }
 
-type UuidV7ValueGenerator = Pick<
-  UuidV7Generator,
-  "generateUuidV7Bytes" | "generateUuidV7BytesAtUnixMs" | "payloadLayout"
->;
+type UuidV7ValueGenerator = Pick<UuidV7Generator, "generateUuidV7Bytes" | "payloadLayout">;
 
 /** Narrow an untrusted generator without relying on package-copy identity. */
 export function readUuidV7Generator(value: unknown): UuidV7Generator | UuidSlugError | undefined {
@@ -31,9 +34,7 @@ export function readUuidV7Generator(value: unknown): UuidV7Generator | UuidSlugE
       value !== null &&
       typeof value === "object" &&
       typeof (value as { readonly generateUuidV7Bytes?: unknown }).generateUuidV7Bytes ===
-        "function" &&
-      typeof (value as { readonly generateUuidV7BytesAtUnixMs?: unknown })
-        .generateUuidV7BytesAtUnixMs === "function"
+        "function"
     )
       return value as UuidV7Generator;
   } catch (cause) {
@@ -45,16 +46,16 @@ export function readUuidV7Generator(value: unknown): UuidV7Generator | UuidSlugE
 /** Generate through an untrusted structural generator and validate its bytes and payload layout. */
 export function generateUuidV7ValueWithGenerator(
   generator: UuidV7ValueGenerator,
-  unixMs: unknown,
+  at: unknown,
   maskingCodec?: UuidV7MaskingCodec,
 ): Uuid<7, boolean, true> | UuidSlugError {
   let generated: unknown;
   let payloadLayout: unknown;
   try {
     generated =
-      unixMs === undefined
+      at === undefined
         ? generator.generateUuidV7Bytes()
-        : generator.generateUuidV7BytesAtUnixMs(unixMs as number);
+        : generator.generateUuidV7Bytes({ at: at as UuidV7Instant });
     payloadLayout = generator.payloadLayout;
   } catch (cause) {
     return new UuidSlugError(INVALID_OPTIONS, "UUIDv7 generator failed.", { cause });
@@ -103,9 +104,13 @@ export function readUuidV7ValueOptions(
       return new UuidSlugError(INVALID_OPTIONS, `Unknown UUIDv7 value option: ${unknown}.`);
     const source = options as UuidV7ValueOptionValues;
     return {
-      ...(accepted.generator ? { generator: source.generator } : {}),
-      ...(accepted.maskingCodec ? { maskingCodec: source.maskingCodec } : {}),
-      ...(accepted.unixMs ? { unixMs: source.unixMs } : {}),
+      ...(accepted.at && Object.hasOwn(source, "at") ? { at: source.at } : {}),
+      ...(accepted.generator && Object.hasOwn(source, "generator")
+        ? { generator: source.generator }
+        : {}),
+      ...(accepted.maskingCodec && Object.hasOwn(source, "maskingCodec")
+        ? { maskingCodec: source.maskingCodec }
+        : {}),
     };
   } catch (cause) {
     return new UuidSlugError(INVALID_OPTIONS, "Reading UUIDv7 value options failed.", { cause });

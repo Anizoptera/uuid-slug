@@ -128,7 +128,7 @@ fn probe_behavior() {
         uuid_slug::ErrorCode::InvalidTimestamp
     );
     let entropy_error = uuid_slug::UuidV7Generator::new()
-        .generate_uuid_v7_at_unix_ms_with_random_fill(2_000.0, |_| {
+        .generate_uuid_v7_with_random_fill(2_000.0, |_| {
             Err(uuid_slug::Error::new(uuid_slug::ErrorCode::RngUnavailable))
         })
         .unwrap_err();
@@ -300,7 +300,7 @@ fn main() {
         uuid_extra::new_v7_b64url_nopad,
         |slug| valid_bytes(uuid_extra::from_b64url_nopad(slug).unwrap().as_bytes(), 7),
     );
-    let package_slug_generator = uuid_slug::UuidV7Generator::new();
+    let mut package_slug_generator = uuid_slug::UuidV7Generator::new();
     measure(
         "package.v7.base64url",
         7,
@@ -319,7 +319,7 @@ fn main() {
             )
         },
     );
-    let package_batch_generator = uuid_slug::UuidV7Generator::new();
+    let mut package_batch_generator = uuid_slug::UuidV7Generator::new();
     let mut package_batch = [0u8; 16 * 256];
     measure_batch("package.v7.caller-batch", 256, || {
         for chunk in package_batch.chunks_exact_mut(16) {

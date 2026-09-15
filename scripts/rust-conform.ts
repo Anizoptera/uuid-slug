@@ -125,6 +125,7 @@ export function evaluate(request: Request): Outcome {
             if (current.fail) throw new Error("entropy unavailable");
             bytes.fill(current.byte);
           },
+          subMillisecondFractionBits: Number(request.fractionBits ?? 0),
         });
         return result(
           (request.steps as Step[]).map((step) => {
@@ -133,7 +134,7 @@ export function evaluate(request: Request): Outcome {
               return result(
                 step.at === undefined
                   ? generator.generateUuidV7()
-                  : generator.generateUuidV7AtUnixMs(Number(step.at)),
+                  : generator.generateUuidV7({ at: Number(step.at) }),
               );
             } catch (error) {
               if (error instanceof ts.UuidSlugError) return result(error);
@@ -539,23 +540,24 @@ export async function contractRequests(): Promise<Request[]> {
   for (const byte of [0, 1, 255]) {
     requests.push({
       op: "generateSequence",
+      fractionBits: 12,
       steps: [
-        { readUnixMs: 10.9, byte },
-        { readUnixMs: 9, byte, fail: true },
-        { readUnixMs: 9, byte },
+        { clock: 10.9, byte },
+        { clock: 9, byte, fail: true },
+        { clock: 9, byte },
         { at: 1, byte },
-        { readUnixMs: 9, byte },
+        { clock: 9, byte },
         { at: 1.5, byte },
-        { readUnixMs: "NaN", byte },
-        { readUnixMs: 11, byte },
+        { clock: "NaN", byte },
+        { clock: 11, byte },
       ],
     });
     requests.push({
       op: "generateSequence",
       steps: [
-        { readUnixMs: 2 ** 48 - 1, byte },
-        { readUnixMs: 2 ** 48 - 1, byte },
-        { readUnixMs: 2 ** 48 - 1, byte },
+        { clock: 2 ** 48 - 1, byte },
+        { clock: 2 ** 48 - 1, byte },
+        { clock: 2 ** 48 - 1, byte },
         { at: 2 ** 48, byte },
       ],
     });

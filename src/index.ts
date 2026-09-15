@@ -77,6 +77,7 @@ export type {
   UuidV4String,
   UuidV4Text,
   UuidV7Generator,
+  UuidV7Instant,
   UuidV7GeneratorValueOptions,
   UuidV7ValueOptions,
   UuidV7ClockRollbackPolicy,
@@ -140,9 +141,7 @@ export {
   generateUuidV4Bytes,
   generatePlainUuidV4Slug,
   generateUuidV7,
-  generateUuidV7AtUnixMs,
   generateUuidV7Bytes,
-  generateUuidV7BytesAtUnixMs,
   generatePlainUuidV7Slug,
   generateUuidV7WithPlainSlug,
 } from "./keyless.ts";

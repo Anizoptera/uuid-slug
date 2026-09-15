@@ -18,9 +18,7 @@ import {
   generateUuidV4Bytes,
   generatePlainUuidV4Slug,
   generateUuidV7,
-  generateUuidV7AtUnixMs,
   generateUuidV7Bytes,
-  generateUuidV7BytesAtUnixMs,
   generatePlainUuidV7Slug,
   generateUuidV7WithPlainSlug,
 } from "../src/index";
@@ -49,8 +47,8 @@ export const generators: readonly (readonly [string, () => unknown])[] = [
   ["generateUuidV7WithPlainSlug", generateUuidV7WithPlainSlug],
   ["generateUuidV4Bytes", generateUuidV4Bytes],
   ["generateUuidV7Bytes", generateUuidV7Bytes],
-  ["generateUuidV7AtUnixMs", () => generateUuidV7AtUnixMs(INSTANT)],
-  ["generateUuidV7BytesAtUnixMs", () => generateUuidV7BytesAtUnixMs(INSTANT)],
+  ["generateUuidV7 at explicit time", () => generateUuidV7({ at: INSTANT })],
+  ["generateUuidV7Bytes at explicit time", () => generateUuidV7Bytes({ at: INSTANT })],
   ["generatePlainUuidV4Slug", generatePlainUuidV4Slug],
   ["generate", () => codec.generateMaskedUuidV7Slug()],
   ["generateUuidV7WithMaskedSlug", () => codec.generateUuidV7WithMaskedSlug()],
@@ -65,7 +63,7 @@ export const generators: readonly (readonly [string, () => unknown])[] = [
 export const byteGenerators: readonly (readonly [string, () => Uint8Array | Error])[] = [
   ["generateUuidV4Bytes", generateUuidV4Bytes],
   ["generateUuidV7Bytes", generateUuidV7Bytes],
-  ["generateUuidV7BytesAtUnixMs", () => generateUuidV7BytesAtUnixMs(INSTANT)],
+  ["generateUuidV7Bytes at explicit time", () => generateUuidV7Bytes({ at: INSTANT })],
 ];
 
 /** The instrument patches globals, so it is always removed, including on a failing assertion. */

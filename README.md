@@ -132,18 +132,20 @@ the server; generating a valid UUID does not grant permission to create or repla
 ## Generate at a recorded time
 
 When importing records that do not yet have IDs, encode their recorded time instead of the import
-time. `generateUuidV7AtUnixMs` and `generateUuidV7BytesAtUnixMs` accept whole Unix milliseconds in
-`0..2^48-1`, use secure randomness, and leave the current-time generator's sequence unchanged.
-They set a configured sub-millisecond fraction field to zero because their input is a whole
-millisecond.
+time. Pass `at` to the UUIDv7 text, byte, plain-slug, paired, or immutable-value generator. It
+accepts a Unix-millisecond `number` or `bigint`, a `Date`, zoned ISO timestamp text, a
+Temporal-style `epochMilliseconds` or `epochNanoseconds` object, or a `{ seconds, nanoseconds }`
+timestamp. Text must include a time zone. The 48-bit UUID timestamp stores the containing Unix
+millisecond. A configured generator also stores the best fraction its selected payload bits can
+represent; the default layout assigns no payload bits to fractions. A created generator mixes that
+fraction with its counter and applies its rollback policy, so `at` calls join the same sequence.
+Module-level calls remain independent.
 
 ```ts
-import { BASE32HEX, generateUuidV7AtUnixMs, isUuidSlugError, uuidStringToPlainSlug } from "@anizoptera/uuid-slug";
+import { BASE32HEX, generatePlainUuidV7Slug } from "@anizoptera/uuid-slug";
 
-function idForImportedRecord(recordedUnixMs: number) {
-  const uuid = generateUuidV7AtUnixMs(recordedUnixMs);
-  if (isUuidSlugError(uuid)) return uuid;
-  return uuidStringToPlainSlug(uuid, BASE32HEX);
+function idForImportedRecord(recordedAt: Date) {
+  return generatePlainUuidV7Slug({ at: recordedAt, alphabet: BASE32HEX });
 }
 ```
 
@@ -163,14 +165,14 @@ back to `Date.now()`. The selected width states the UUID layout, not the clock's
 If another reading lands in the same fraction bucket, the generator increments the counter. If the
 counter fills, it advances the logical fraction and then the millisecond timestamp. The default
 preserve policy applies the same rule when the clock moves backward, so extracted time can be later
-than the clock reading. A reset policy may move backward after its tolerance. Explicit-time calls
-use independent randomness and do not join this sequence.
+than the supplied instant. A reset policy may move backward after its tolerance. Explicit `at`
+calls on the generator join this sequence; module-level `at` calls use independent randomness.
 
 With the default preserve policy, successful current-time calls on one generator strictly increase
 in UUID byte order, including calls made within one millisecond. Module-level generation uses the
 fastest validated secure path for each output form and does not promise ordering across calls.
-Created generators do not coordinate with explicit-time calls, reset-policy calls after their
-tolerance, other generators, package copies, workers, or processes. Set `clockRollback` to reset or
+Created generators do not coordinate with reset-policy calls after their tolerance, other
+generators, package copies, workers, or processes. Set `clockRollback` to reset or
 return `invalid_timestamp` when total skew exceeds an inclusive tolerance. Use
 `createUuidV7GeneratorWithRandomFill` only when the application must own entropy; its callback must
 fill every requested byte or return `UuidSlugError`.
@@ -609,15 +611,13 @@ independent generator; UUIDv4 and plain-slug generation remain module-level.
 
 | Call | Successful result |
 | --- | --- |
-| `generateUuidV4(textCase?)` / `generateUuidV7(textCase?)` | UUID text in the selected case, typed with its version. |
+| `generateUuidV4(textCase?)` / `generateUuidV7(textCaseOrOptions?)` | UUID text in the selected case, typed with its version. UUIDv7 options may set `at`. |
 | `generateUuidV4WithRandomFill(fill, textCase?)` | UUIDv4 text from an explicit synchronous entropy source. |
-| `generatePlainUuidV4Slug(alphabet?)` / `generatePlainUuidV7Slug(alphabet?)` | A plain slug in the chosen alphabet, typed with its UUID version. |
-| `generateUuidV7WithPlainSlug(alphabetOrTextCase?, textCase?)` | UUIDv7 text and its plain slug from one generated value. |
-| `generateUuidV4Bytes()` / `generateUuidV7Bytes()` | A new 16-byte array, typed with its UUID version. |
-| `generateUuidV4Bytes(out, offset?)` / `generateUuidV7Bytes(out, offset?)` | Your output array, with the UUID written at the offset. |
-| `generateUuidV7AtUnixMs(ms, textCase?)` | UUIDv7 text with the supplied timestamp. |
-| `generateUuidV7BytesAtUnixMs(ms, out?, offset?)` | UUIDv7 bytes with the supplied timestamp, newly allocated or written into your array. |
-| `generateUuidV7Value(options?)` | An immutable UUIDv7; options may set `unixMs`, select a generator, or retain a masking codec. |
+| `generatePlainUuidV4Slug(alphabet?)` / `generatePlainUuidV7Slug(alphabetOrOptions?)` | A plain slug in the chosen alphabet, typed with its UUID version. UUIDv7 options may set `at`. |
+| `generateUuidV7WithPlainSlug(alphabetOrTextCaseOrOptions?, textCase?)` | UUIDv7 text and its plain slug from one generated value; options may set `at`. |
+| `generateUuidV4Bytes()` / `generateUuidV7Bytes(options?)` | A new 16-byte array, typed with its UUID version. UUIDv7 options may set `at`. |
+| `generateUuidV4Bytes(out, offset?)` / `generateUuidV7Bytes(out, offset?)` | Your output array, with the UUID written at the offset. UUIDv7 also accepts `{ at, output, outputOffset }`. |
+| `generateUuidV7Value(options?)` | An immutable UUIDv7; options may set `at`, select a generator, or retain a masking codec. |
 | `uuidV7Bounds(ms, textCase?)` / `uuidV7Bounds(startMs, endMs, textCase?)` | Inclusive canonical UUID bounds for one millisecond or an inclusive interval. |
 | `uuidV7ByteBounds(startMs, endMs?)` | The same inclusive bounds as two owned byte arrays. |
 | `createUuidV7GeneratorWithRandomFill(fill, options?)` | An independent UUIDv7 generator using an explicit synchronous entropy source. |
@@ -658,7 +658,7 @@ readers also try its configured previous masks.
 
 | Member | Successful result |
 | --- | --- |
-| `generateUuidV7Value(options?)` | An immutable UUIDv7 with this codec retained; options may set `unixMs` or select a generator. |
+| `generateUuidV7Value(options?)` | An immutable UUIDv7 with this codec retained; options may set `at` or select a generator. |
 | `generateMaskedUuidV7Slug()` | A new `MaskedOrSentinelUuidV7Slug`: masked or a reserved sentinel. |
 | `generateUuidV7WithMaskedSlug(textCase?)` | UUIDv7 text and its masked or sentinel slug from one generated value. |
 | `parseUuid(uuid)` | The same parsed value as top-level `parseUuid(uuid, codec)`, with this codec retained. |
@@ -686,9 +686,6 @@ select where it reads. Bytes outside that 16-byte range stay unchanged.
 Masking is possible for any UUID version, but this library supports it only for UUIDv7.
 Its fixed version, variant, and 42-bit timestamp offset leave room for a 16-bit check without
 lengthening the default 22-character slug. Plain slugs support every UUID version.
-
-The `At` pair takes the instant first and leaves current-time sequence state unchanged. See
-[Generate at a recorded time](#generate-at-a-recorded-time) for backfills, limits, and retry behavior.
 
 Use an independent generator when the application owns the clock:
 
@@ -1034,8 +1031,8 @@ and masking limits.
   encoded timestamps across different milliseconds.
   Backfilled timestamps or a clock adjustment need not reflect generation order.
 - Successful current-time calls on one generator strictly increase in UUID byte order under the
-  default preserve policy. Module-level generation does not provide this guarantee. Explicit-time
-  calls, reset-policy calls after their tolerance, independent generators, package copies, workers,
+  default preserve policy, including calls with `at`. Module-level generation does not provide this
+  guarantee. Reset-policy calls after their tolerance, independent generators, package copies, workers,
   and processes do not share sequence state; use a sequence column when order must cross boundaries.
 - A 26-character plain UUIDv7 base32hex slug sorts by encoded timestamp across different
   milliseconds under ASCII comparison. Its digits are in value order and the timestamp comes

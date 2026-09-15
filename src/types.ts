@@ -359,8 +359,8 @@ export interface UuidV7TimestampWindow {
 
 /**
  * A stateful UUIDv7 sequence using one clock and entropy source. Successful
- * current-time calls strictly increase in UUID byte order under the default preserve rollback
- * policy. Explicit-time methods do not join that sequence. Methods may be detached. Expected clock
+ * calls strictly increase in UUID byte order under the default preserve rollback policy, including
+ * calls with `at`. Methods may be detached. Expected clock
  * and entropy failures return `UuidSlugError` without corrupting the next generation attempt.
  */
 export interface UuidV7Generator {
@@ -378,6 +378,11 @@ export interface UuidV7Generator {
     this: void,
     textCase?: Case,
   ): UuidV7StringFor<Case> | UuidSlugError;
+  /** Generate UUIDv7 text at an explicit time or the current clock reading. */
+  generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    this: void,
+    options: GenerateUuidV7Options<Case>,
+  ): UuidV7StringFor<Case> | UuidSlugError;
   /** Generate a new plain 16-byte `Uint8Array` for the current clock reading. */
   generateUuidV7Bytes(this: void): UuidV7Bytes | UuidSlugError;
   /**
@@ -392,38 +397,75 @@ export interface UuidV7Generator {
     output: Output,
     outputOffset?: number,
   ): Output | UuidSlugError;
-  /**
-   * Generate at a whole Unix millisecond in `0..2^48-1` without changing current-time sequence
-   * state. A configured fraction field is zero. UUID text is lowercase unless `textCase` selects
-   * uppercase.
-   */
-  generateUuidV7AtUnixMs<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  /** Generate package-owned UUIDv7 bytes at an explicit time or the current clock reading. */
+  generateUuidV7Bytes(this: void, options: GenerateUuidV7BytesOptions): UuidV7Bytes | UuidSlugError;
+  /** Write UUIDv7 bytes at an explicit time or the current clock reading into caller-owned storage. */
+  generateUuidV7Bytes<Output extends Uint8Array>(
     this: void,
-    unixMs: number,
-    textCase?: Case,
-  ): UuidV7StringFor<Case> | UuidSlugError;
-  /** Generate at an explicit millisecond with a zero fraction field and unchanged current-time state. */
-  generateUuidV7BytesAtUnixMs(this: void, unixMs: number): UuidV7Bytes | UuidSlugError;
-  /**
-   * Write an explicit-time UUIDv7 only after success and return the exact supplied array.
-   *
-   * @param unixMs - Whole Unix millisecond encoded into the UUID.
-   * @param output - Caller-owned array that receives the 16 UUID bytes.
-   * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
-   * outside the written range stay unchanged.
-   */
-  generateUuidV7BytesAtUnixMs<Output extends Uint8Array>(
-    this: void,
-    unixMs: number,
-    output: Output,
-    outputOffset?: number,
+    options: GenerateUuidV7BytesIntoOptions<Output>,
   ): Output | UuidSlugError;
+}
+
+/** A standard host instant; generation uses every sub-millisecond fraction bit its layout provides. */
+export type UuidV7Instant =
+  | number
+  | bigint
+  | string
+  | Date
+  | { readonly epochMilliseconds: number | bigint }
+  | { readonly epochNanoseconds: bigint }
+  | { readonly seconds: number | bigint; readonly nanoseconds?: number | bigint };
+
+/** Select an explicit time and UUID text spelling for one UUIDv7. */
+export interface GenerateUuidV7Options<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE> {
+  /** Time to encode. A created generator joins its sequence; a module call stays independent. */
+  readonly at?: UuidV7Instant;
+  /** UUID text spelling. Omit for lowercase. */
+  readonly textCase?: Case;
+}
+
+/** Select an explicit time and alphabet for one plain UUIDv7 slug. */
+export interface GeneratePlainUuidV7SlugOptions {
+  /** Time to encode in this independent module call. Omit to read the current clock. */
+  readonly at?: UuidV7Instant;
+  /** Slug spelling. Omit for the shorter base64url form. */
+  readonly alphabet?: SlugAlphabet;
+}
+
+/** Select an explicit time for package-owned UUIDv7 bytes. */
+export interface GenerateUuidV7BytesOptions {
+  /** Time to encode. A created generator joins its sequence; a module call stays independent. */
+  readonly at?: UuidV7Instant;
+  readonly output?: never;
+  readonly outputOffset?: never;
+}
+
+/** Select an explicit time and caller-owned storage for UUIDv7 bytes. */
+export interface GenerateUuidV7BytesIntoOptions<Output extends Uint8Array> {
+  /** Time to encode. A created generator joins its sequence; a module call stays independent. */
+  readonly at?: UuidV7Instant;
+  /** Caller-owned array that receives the 16 UUID bytes after successful generation. */
+  readonly output: Output;
+  /** Zero-based index where writing starts. Omit to start at index 0. */
+  readonly outputOffset?: number;
+}
+
+/** Select time and both spellings for one UUIDv7 text-and-plain-slug pair. */
+export interface GenerateUuidV7WithPlainSlugOptions<
+  Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+> {
+  /** Time to encode in this independent module call. Omit to read the current clock. */
+  readonly at?: UuidV7Instant;
+  /** Slug spelling. Omit for the shorter base64url form. */
+  readonly alphabet?: SlugAlphabet;
+  /** UUID text spelling. Omit for lowercase. */
+  readonly textCase?: Case;
 }
 
 /** Select optional state for immutable UUIDv7 generation through a generator. */
 export interface UuidV7GeneratorValueOptions {
-  /** Whole Unix millisecond to encode without changing the generator's current-time sequence. */
-  readonly unixMs?: number;
+  /** Time to encode through this generator's sequence state. */
+  readonly at?: UuidV7Instant;
   /** Masking codec retained by the generated UUID for later masked conversion. */
   readonly maskingCodec?: UuidV7MaskingCodec;
 }
@@ -436,8 +478,8 @@ export interface UuidV7ValueOptions extends UuidV7GeneratorValueOptions {
 
 /** Select optional generation state when a masking codec is already preset. */
 export interface UuidV7MaskingCodecValueOptions {
-  /** Whole Unix millisecond to encode without changing current-time sequence state. */
-  readonly unixMs?: number;
+  /** Time to encode through `generator` when provided; otherwise generation stays independent. */
+  readonly at?: UuidV7Instant;
   /** Generator that supplies entropy, sequence policy, and the retained payload layout. */
   readonly generator?: UuidV7Generator;
 }

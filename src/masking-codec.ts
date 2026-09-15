@@ -18,7 +18,6 @@ import {
 import { BASE32HEX_NAME, BASE64URL_NAME } from "./alphabet.ts";
 import {
   generateUuidV7Bytes as generateDefaultUuidV7Bytes,
-  generateUuidV7BytesAtUnixMs,
   uuidV7DefaultPayloadLayout,
 } from "./v7-keyless.ts";
 import {
@@ -58,6 +57,7 @@ import type {
   UuidV7Payload,
   UuidV7PayloadLayout,
   UuidV7MaskingCodecValueOptions,
+  UuidV7Instant,
 } from "./types.ts";
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
 import {
@@ -683,15 +683,14 @@ function buildUuidSlugCodec(
   }
 
   function generateUuidV7Value(valueOptions?: UuidV7MaskingCodecValueOptions) {
-    const values = readUuidV7ValueOptions(valueOptions, { generator: true, unixMs: true });
+    const values = readUuidV7ValueOptions(valueOptions, { at: true, generator: true });
     if (values instanceof Error) return values;
     const generator = readUuidV7Generator(values.generator);
     if (generator instanceof Error) return generator;
-    if (generator) return generateUuidV7ValueWithGenerator(generator, values.unixMs, maskingCodec);
-    const generated =
-      values.unixMs === undefined
-        ? generateDefaultUuidV7Bytes()
-        : generateUuidV7BytesAtUnixMs(values.unixMs as number);
+    if (generator) return generateUuidV7ValueWithGenerator(generator, values.at, maskingCodec);
+    const generated = !Object.hasOwn(values, "at")
+      ? generateDefaultUuidV7Bytes()
+      : generateDefaultUuidV7Bytes({ at: values.at as UuidV7Instant });
     return generated instanceof Error
       ? generated
       : createUuidValue<7, true, true>(generated, maskingCodec, uuidV7DefaultPayloadLayout());

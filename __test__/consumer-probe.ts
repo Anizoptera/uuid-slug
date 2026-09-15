@@ -37,12 +37,12 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   const backfill = api.createUuidV7Generator({});
   const destination = new Uint8Array(20).fill(0x55);
   const generators = [
-    (ms: number) => api.generateUuidV7AtUnixMs(ms),
-    (ms: number) => backfill.generateUuidV7AtUnixMs(ms),
-    (ms: number) => api.generateUuidV7BytesAtUnixMs(ms),
-    (ms: number) => backfill.generateUuidV7BytesAtUnixMs(ms),
-    (ms: number) => api.generateUuidV7BytesAtUnixMs(ms, destination, 2),
-    (ms: number) => backfill.generateUuidV7BytesAtUnixMs(ms, destination, 2),
+    (ms: number) => api.generateUuidV7({ at: ms }),
+    (ms: number) => backfill.generateUuidV7({ at: ms }),
+    (ms: number) => api.generateUuidV7Bytes({ at: ms }),
+    (ms: number) => backfill.generateUuidV7Bytes({ at: ms }),
+    (ms: number) => api.generateUuidV7Bytes({ at: ms, output: destination, outputOffset: 2 }),
+    (ms: number) => backfill.generateUuidV7Bytes({ at: ms, output: destination, outputOffset: 2 }),
   ];
   for (const generate of generators) {
     // Cross a native 12-bit counter's capacity; backfilling must not borrow a later instant.
@@ -169,7 +169,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   const sentinel = api.uuidStringToPlainSlug(uuid);
   equal(sentinelCodec.uuidToMaskedSlug(uuid), sentinel, "custom sentinel encoding");
   equal(sentinelCodec.uuidToString(String(sentinel)), uuid, "custom sentinel decoding");
-  const bytes = api.generateUuidV7BytesAtUnixMs(1234567890000);
+  const bytes = api.generateUuidV7Bytes({ at: 1234567890000 });
   if (bytes instanceof Error) throw bytes;
   equal(bytes.constructor, Uint8Array, "owned byte constructor");
   const uuidText = api.bytesToUuidString(bytes);
@@ -186,15 +186,14 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   );
   equal(api.uuidStringToBytes(uuidText) instanceof Uint8Array, true, "directional UUID conversion");
   const out = new Uint8Array(20).fill(0x55);
-  equal(api.generateUuidV7BytesAtUnixMs(1234567890000, out, 2), out, "caller buffer identity");
+  equal(
+    api.generateUuidV7Bytes({ at: 1234567890000, output: out, outputOffset: 2 }),
+    out,
+    "caller buffer identity",
+  );
   equal(out[0], 0x55, "caller prefix");
   equal(out[19], 0x55, "caller suffix");
-  const callUuidV7BytesAt = api.generateUuidV7BytesAtUnixMs as (
-    timestamp: number,
-    out?: Uint8Array,
-    offset?: number,
-  ) => Uint8Array | InstanceType<typeof api.UuidSlugError>;
-  const invalid = callUuidV7BytesAt(0, undefined, 1);
+  const invalid = Reflect.apply(api.generateUuidV7Bytes, undefined, [{ at: 0, outputOffset: 1 }]);
   equal(invalid instanceof api.UuidSlugError && invalid.code, api.INVALID_BUFFER, "offset error");
   equal("generate" in api, false, "keyed top-level export");
 }

@@ -147,7 +147,9 @@ fn run(request: &Value) -> Result<Value, Error> {
     let input = request["input"].as_str().unwrap_or("");
     match text(request, "op")? {
         "generateSequence" => {
-            let mut generator = uuid_slug::UuidV7Generator::new();
+            let fraction_bits = request["fractionBits"].as_u64().unwrap_or(0) as u8;
+            let mut generator = uuid_slug::UuidV7Generator::new()
+                .with_sub_millisecond_fraction_bits(fraction_bits)?;
             let steps = request["steps"]
                 .as_array()
                 .ok_or_else(|| Error::new(ErrorCode::InvalidBuffer))?;
@@ -165,7 +167,7 @@ fn run(request: &Value) -> Result<Value, Error> {
                         let result = if step["at"].is_null() {
                             generator.generate_uuid_v7_with_random_fill(number(&step["clock"]), fill)
                         } else {
-                            generator.generate_uuid_v7_at_unix_ms_with_random_fill(number(&step["at"]), fill)
+                            generator.generate_uuid_v7_with_random_fill(number(&step["at"]), fill)
                         };
                         match result {
                             Ok(uuid) => json!({"value":uuid.to_string()}),

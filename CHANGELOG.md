@@ -19,8 +19,10 @@ notes: the section for a version is published verbatim when its tag is pushed.
 ### Breaking changes
 
 - Rename UUID generation to `generateUuidV4`, `generateUuidV4Bytes`, `generatePlainUuidV4Slug`,
-  `generateUuidV7`, `generateUuidV7Bytes`, `generateUuidV7AtUnixMs`, `generateUuidV7BytesAtUnixMs`, and
-  `generatePlainUuidV7Slug`. Use `generateUuidV7WithPlainSlug` when storing both forms.
+  `generateUuidV7`, `generateUuidV7Bytes`, and `generatePlainUuidV7Slug`. UUIDv7 generation accepts
+  standard explicit-time values through `at` without separate timestamp-named functions and keeps
+  the fraction supported by the selected payload layout. Use `generateUuidV7WithPlainSlug` when
+  storing both forms.
 - Replace `createUuidSlugCodec` with `createUuidV7MaskingCodec`. Masking-codec methods include
   `generateMaskedUuidV7Slug`, `generateUuidV7WithMaskedSlug`, `uuidToMaskedSlug`,
   `plainToMaskedUuidSlug`, `maskedToPlainUuidSlug`, `uuidToString`, `uuidToBytes`,

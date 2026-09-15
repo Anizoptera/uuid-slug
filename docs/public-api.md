@@ -283,9 +283,9 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   a maintainer ruling.
 - Name keyless generation with `generate` plus the produced representation. Keep
   `generateUuidV4`, `generateUuidV4Bytes`, `generatePlainUuidV4Slug`, `generateUuidV7`,
-  `generateUuidV7Bytes`, `generateUuidV7AtUnixMs`, `generateUuidV7BytesAtUnixMs`,
-  `generatePlainUuidV7Slug`, and `generateUuidV7WithPlainSlug` at module scope. Use the same
-  UUIDv7 names on a generator so a detached method remains self-explanatory.
+  `generateUuidV7Bytes`, `generatePlainUuidV7Slug`, and `generateUuidV7WithPlainSlug` at module
+  scope. The same UUIDv7 text and byte names belong on a generator, so a detached method remains
+  self-explanatory. Their `at` option replaces separate current-time and explicit-time names.
 - Give every UUID-text generator, decoder, normalizer, validator, masking-codec method, and migration
   reader the same optional `UuidTextCase` choice. Preserve lowercase as the no-argument path and
   infer a case-specific result type from either named preset.
@@ -326,9 +326,10 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   expose the same effects, and report the same failures. Do not accept an owner where its state
   cannot affect the operation.
 - Immutable UUIDv7 generation uses one options object because generation time, generator state, and
-  retained masking are independent choices. The top-level call accepts `unixMs`, `generator`, and
+  retained masking are independent choices. The top-level call accepts `at`, `generator`, and
   `maskingCodec`; generator and masking-codec methods omit only their preset owner. An explicit
-  `unixMs` leaves current-time sequence state unchanged and sets a configured fraction field to zero.
+  `at` fills a configured fraction field from the supplied instant and joins a created generator's
+  sequence and rollback state. Module-level `at` calls remain uncoordinated.
 - Preserve useful immutable construction context in the parsed UUID. A UUID parsed through a masking
   codec may omit that codec from later masked conversions; an unbound UUID must provide one. An
   explicit codec on a later call overrides the preset. Never retain a generator in a UUID: its
@@ -349,19 +350,25 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   case-insensitive sortable output; arbitrary alphabets create private wire formats. Base58 has
   the same 22-character UUID length as base64url, and avoiding look-alike characters does not
   justify a third wire format without concrete demand for IDs that people transcribe manually.
-- Keep the standard timestamp operation in Unix milliseconds. Decode optional UUIDv7 payload fields
+- Keep extracted timestamps in Unix milliseconds. Explicit generation accepts a
+  Unix-millisecond `number` or `bigint`, a `Date`, zoned ISO timestamp text, an object with
+  `epochMilliseconds` or `epochNanoseconds`, or a `{ seconds, nanoseconds }` timestamp. Normalize
+  each form once. Store its containing Unix millisecond and preserve the best sub-millisecond
+  fraction the selected UUIDv7 payload layout can represent. A layout with no fraction bits ignores
+  only that unrepresentable remainder; callers must not pre-truncate it. Reject text without a time
+  zone and conflicting structural fields. Decode optional UUIDv7 payload fields
   only under caller-supplied bit widths because the UUID does not identify its generator or layout.
   Return a Method 3 fraction as its exact value and width; a floating timestamp would hide its
   quantization. Keep every undeclared payload bit as an uninterpreted integer instead of guessing.
-  A `Date` helper adds mutable allocation, range coercion, and no information.
+  Do not return a `Date`; that would add mutable allocation and lose no caller conversion work.
 - A fractional Unix-millisecond number near the current epoch distinguishes all 12 UUIDv7 fraction
   bits, although it cannot preserve an arbitrary nanosecond timestamp. Keep the payload layout
   explicit and stable across runtimes; capability detection may select a clock implementation, but
   it must not silently change stored UUID semantics.
-- Successful current-time calls on one generator strictly increase in UUID byte order under
-  the default preserve policy. The counter continues through equal fraction buckets and clock
+- Successful calls on one generator strictly increase in UUID byte order under the default
+  preserve policy, including calls with `at`. The counter continues through equal fraction buckets and clock
   rollback, then carries into the logical fraction and millisecond fields. Reset may move backward
-  after its tolerance, and explicit-time methods use independent randomness outside this guarantee.
+  after its tolerance.
 - Module-level text, byte, and paired plain-slug helpers do not share sequence state. Select each
   representation's fastest validated secure runtime or portable path without converting through a
   slower representation.
@@ -369,8 +376,10 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   namespaces would duplicate them and make detached names less clear.
 - Keep one error-value path. Nullable and throwing duplicates discard diagnostics or split control
   flow without adding a recovery action.
-- Keep separate generation functions and the paired UUID-plus-slug operations. An output selector
-  moves representation into runtime configuration, weakens inference, and does not remove work.
+- Keep representation-specific generation functions and the paired UUID-plus-slug operation. Each
+  function accepts the same `at` option, so recorded time does not multiply the function matrix. A
+  universal output selector would retain unrelated formatters behind one function and move the
+  selected representation into runtime configuration.
 
 ## Types and validation
 

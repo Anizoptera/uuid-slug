@@ -50,10 +50,8 @@ import {
   generateUuidV4Bytes,
   generatePlainUuidV4Slug,
   generateUuidV7Bytes,
-  generateUuidV7BytesAtUnixMs,
   generateUuidV7,
   generateUuidV7Value,
-  generateUuidV7AtUnixMs,
   uuidV7Bounds,
   uuidV7ByteBounds,
   generatePlainUuidV7Slug,
@@ -248,10 +246,10 @@ expectType<UuidString | UuidSlugError>()(bytesToUuidString(versionedBytes));
 expectType<ConsumerBuffer | UuidSlugError>()(generator.generateUuidV7Bytes(destination, 8));
 expectType<UppercaseUuidV7String | UuidSlugError>()(generator.generateUuidV7(UUID_TEXT_UPPERCASE));
 expectType<UppercaseUuidV7String | UuidSlugError>()(
-  generator.generateUuidV7AtUnixMs(0, UUID_TEXT_UPPERCASE),
+  generator.generateUuidV7({ at: 0, textCase: UUID_TEXT_UPPERCASE }),
 );
 expectType<ConsumerBuffer | UuidSlugError>()(
-  generator.generateUuidV7BytesAtUnixMs(0, destination, 8),
+  generator.generateUuidV7Bytes({ at: 0, output: destination, outputOffset: 8 }),
 );
 const parsedInto: ConsumerBuffer | UuidSlugError = uuidStringToBytes(checkedUuid, destination, 8);
 const parsedSlugInto: ConsumerBuffer | UuidSlugError = plainSlugToUuidBytes(
@@ -265,7 +263,11 @@ uuidStringToBytes(versionedSlug, destination);
 plainSlugToUuidBytes(checkedUuid, destination);
 const v4Into: ConsumerBuffer | UuidSlugError = generateUuidV4Bytes(destination, 8);
 const v7Into: ConsumerBuffer | UuidSlugError = generateUuidV7Bytes(destination, 8);
-const v7AtInto: ConsumerBuffer | UuidSlugError = generateUuidV7BytesAtUnixMs(0, destination, 8);
+const v7AtInto: ConsumerBuffer | UuidSlugError = generateUuidV7Bytes({
+  at: 0,
+  output: destination,
+  outputOffset: 8,
+});
 const ownedV4: UuidV4Bytes | UuidSlugError = generateUuidV4Bytes();
 const ownedV7: UuidV7Bytes | UuidSlugError = generateUuidV7Bytes();
 if (ownedV4 instanceof Error) throw ownedV4;
@@ -275,10 +277,32 @@ extractUuidV7UnixMs(ownedV4);
 const generatedV4Result = generateUuidV4();
 expectType<UppercaseUuidV4String | UuidSlugError>()(generateUuidV4(UUID_TEXT_UPPERCASE));
 expectType<UppercaseUuidV7String | UuidSlugError>()(generateUuidV7(UUID_TEXT_UPPERCASE));
+expectType<UppercaseUuidV7String | UuidSlugError>()(
+  generateUuidV7({ at: new Date(0), textCase: UUID_TEXT_UPPERCASE }),
+);
+expectType<PlainUuidV7Slug | UuidSlugError>()(
+  generatePlainUuidV7Slug({ at: 0n, alphabet: BASE32HEX }),
+);
+expectType<UuidV7Bytes | UuidSlugError>()(generateUuidV7Bytes({ at: "1970-01-01T00:00:00Z" }));
+expectType<ConsumerBuffer | UuidSlugError>()(
+  generateUuidV7Bytes({ at: { epochMilliseconds: 0 }, output: destination, outputOffset: 8 }),
+);
+expectType<GeneratedUuidV7<PlainUuidV7Slug, typeof UUID_TEXT_UPPERCASE> | UuidSlugError>()(
+  generateUuidV7WithPlainSlug({
+    at: { seconds: 0n, nanoseconds: 0 },
+    textCase: UUID_TEXT_UPPERCASE,
+  }),
+);
+// @ts-expect-error An output offset has no meaning without caller-owned output storage.
+generateUuidV7Bytes({ at: 0, outputOffset: 8 });
+// @ts-expect-error A misspelled time option must not generate at the current clock reading.
+generateUuidV7({ att: new Date(0) });
 const uppercaseV7 = generateUuidV7("uppercase");
 if (uppercaseV7 instanceof Error) throw uppercaseV7;
 expectType<PlainUuidV7Slug | UuidSlugError>()(uuidStringToPlainSlug(uppercaseV7));
-expectType<UppercaseUuidV7String | UuidSlugError>()(generateUuidV7AtUnixMs(0, UUID_TEXT_UPPERCASE));
+expectType<UppercaseUuidV7String | UuidSlugError>()(
+  generateUuidV7({ at: 0, textCase: UUID_TEXT_UPPERCASE }),
+);
 expectType<UuidV7Bounds<UuidV7String> | UuidSlugError>()(uuidV7Bounds(0));
 expectType<UuidV7Bounds<UppercaseUuidV7String> | UuidSlugError>()(
   uuidV7Bounds(0, UUID_TEXT_UPPERCASE),
@@ -325,8 +349,6 @@ const versionedV4: UuidV4String = formattedV4;
 generateUuidV4Bytes(undefined, 8);
 // @ts-expect-error An offset has no meaning without a destination buffer.
 generateUuidV7Bytes(undefined, 8);
-// @ts-expect-error An offset has no meaning without a destination buffer.
-generateUuidV7BytesAtUnixMs(0, undefined, 8);
 const codecResult = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
 const customMask = createCustomUuidV7Mask({
   diagnosticLabel: "consumer-mask",
@@ -348,10 +370,8 @@ expectType<Uuid<7, false, true> | UuidSlugError>()(generator.generateUuidV7Value
 expectType<Uuid<7, true, true> | UuidSlugError>()(
   generator.generateUuidV7Value({ maskingCodec: codec }),
 );
-expectType<Uuid<7, true, true> | UuidSlugError>()(
-  codec.generateUuidV7Value({ generator, unixMs: 0 }),
-);
-const generatedUuidValue = generateUuidV7Value({ generator, maskingCodec: codec, unixMs: 0 });
+expectType<Uuid<7, true, true> | UuidSlugError>()(codec.generateUuidV7Value({ at: 0, generator }));
+const generatedUuidValue = generateUuidV7Value({ at: 0, generator, maskingCodec: codec });
 expectType<Uuid<7, true, true> | UuidSlugError>()(generatedUuidValue);
 // @ts-expect-error UUIDv7 value options reject unrelated work.
 generateUuidV7Value({ textCase: UUID_TEXT_UPPERCASE });

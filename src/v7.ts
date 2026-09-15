@@ -7,11 +7,18 @@ import {
   INVALID_TIMESTAMP,
   RNG_UNAVAILABLE,
   isUuidSlugError,
+  isUint8Array,
   readClock,
   UuidSlugError,
 } from "./errors.ts";
+import { readGenerationOptions } from "./generation-options.ts";
+import { readUuidV7Instant } from "./instant.ts";
+import type { NormalizedUuidV7Instant } from "./instant.ts";
 import { UUID_TEXT_LOWERCASE, UUID_V7_ROLLBACK_ERROR } from "./types.ts";
 import type {
+  GenerateUuidV7BytesIntoOptions,
+  GenerateUuidV7BytesOptions,
+  GenerateUuidV7Options,
   UuidTextCase,
   UuidV7Bytes,
   UuidV7ClockRollbackPolicy,
@@ -19,7 +26,7 @@ import type {
   UuidV7StringFor,
 } from "./types.ts";
 import { formatUuidBytesUnchecked, invalidUuidTextCase, isUuidTextCase } from "./uuid.ts";
-import { MAX_UUID_V7_UNIX_MS, isValidUuidV7UnixMs, rejectUuidV7UnixMs } from "./v7-timestamp.ts";
+import { MAX_UUID_V7_UNIX_MS, isValidUuidV7UnixMs } from "./v7-timestamp.ts";
 
 /** Internal controls for exercising the portable UUIDv7 state machine. */
 interface PortableUuidV7GeneratorOptions {
@@ -31,9 +38,25 @@ interface PortableUuidV7GeneratorOptions {
   readonly clockRollback?: Extract<UuidV7ClockRollbackPolicy, { readonly toleranceMs: number }>;
   /** Number of leading payload bits assigned to the clock fraction. */
   readonly subMillisecondFractionBits?: number;
+  /** Keep explicit instants in this generator's ordering and rollback state. */
+  readonly coordinateExplicitInstants?: boolean;
 }
 
 export type PortableUuidV7Generator = Omit<UuidV7Generator, "generateUuidV7Value">;
+
+const UUID_V7_TEXT_OPTIONS = {
+  at: true,
+  textCase: true,
+} as const satisfies Record<keyof GenerateUuidV7Options, true>;
+const UUID_V7_BYTE_OPTIONS = {
+  at: true,
+  output: true,
+  outputOffset: true,
+} as const satisfies Record<
+  keyof (GenerateUuidV7BytesOptions & GenerateUuidV7BytesIntoOptions<Uint8Array>),
+  true
+>;
+const AT_OPTION = "at";
 
 function writeTimestampWords(bytes: Uint8Array, ms: number, offset: number) {
   // Split the fixed 48-bit field once: JavaScript bitwise operators keep the low 32 bits, while
@@ -78,13 +101,6 @@ function writeCounter(bytes: Uint8Array, hi: number, lo: number, offset: number)
   bytes[offset + 10] = (lo >>> 8) & 0xff;
   bytes[offset + 11] = lo & 0xff;
 }
-
-/**
- * The one check and the one message for a caller-supplied instant. Both the portable generator and
- * the runtime-backed one call it, and the runtime-backed one calls it BEFORE delegating: a native
- * generator may accept what we reject and answer wrongly rather than fail.
- */
-const rejectInstant = rejectUuidV7UnixMs;
 
 /**
  * Both string forms differ only in where the instant comes from, so the byte-or-error result is
@@ -134,6 +150,7 @@ export function createPortableUuidV7Generator(
   const fill = options.fillRandom;
   const rollback = options.clockRollback;
   const fractionBits = options.subMillisecondFractionBits ?? 0;
+  const coordinateExplicitInstants = options.coordinateExplicitInstants ?? true;
   const counterBits = 42 - fractionBits;
   const counterModulus = 2 ** counterBits;
   const payloadLayout = Object.freeze({
@@ -184,6 +201,54 @@ export function createPortableUuidV7Generator(
     return target;
   }
 
+  function advanceSequence(now: number, fraction: number): UuidSlugError | undefined {
+    const rollbackMs = rollback === undefined ? 0 : clockHighWaterMs - now;
+    if (rollback !== undefined && rollbackMs > rollback.toleranceMs) {
+      if (rollback.action === UUID_V7_ROLLBACK_ERROR)
+        return new UuidSlugError(
+          INVALID_TIMESTAMP,
+          `Clock moved backward by ${rollbackMs} milliseconds; clockRollback allows ${rollback.toleranceMs}. Increase tolerance or choose reset/preserve if this rollback is acceptable.`,
+        );
+      const failed = reseed(now, fraction);
+      if (failed) return failed;
+      clockHighWaterMs = now;
+    } else if (
+      now > lastMs ||
+      (now === lastMs &&
+        fraction > Math.floor((counterHi * 0x1_0000_0000 + counterLo) / counterModulus))
+    ) {
+      const failed = reseed(now, fraction);
+      if (failed) return failed;
+    } else {
+      const nextLo = (counterLo + 1) >>> 0;
+      const nextHi = counterHi + (nextLo === 0 ? 1 : 0);
+      // Past 42 bits the sequence no longer fits `rand_a` plus the borrowed `rand_b` bits.
+      // Borrowing the next millisecond keeps ids ordered and unique rather than wrapping into
+      // values this millisecond has already issued.
+      if (nextHi > 0x3ff) {
+        // At the ceiling there is no next millisecond to borrow: `writeTimestamp` truncates to
+        // six bytes, so `lastMs + 1` wraps to 0 and the generator restarts in 1970 — ordering
+        // broken permanently, and silently, from that call onward. Unreachable on a real clock
+        // until the year 10889; reachable from a supplied instant near the ceiling.
+        if (lastMs >= MAX_UUID_V7_UNIX_MS)
+          return new UuidSlugError(
+            INVALID_TIMESTAMP,
+            `UUIDv7 sequence exhausted at Unix millisecond ${MAX_UUID_V7_UNIX_MS}; another UUID would exceed the 48-bit timestamp.`,
+          );
+        const failed = reseed(lastMs + 1, 0);
+        if (failed) return failed;
+      } else {
+        const failed = fillRandomBytes(fill, randomTail);
+        if (failed) return failed;
+        // Commit only after entropy succeeds; a failed draw must not consume sequence state.
+        counterLo = nextLo;
+        counterHi = nextHi;
+      }
+    }
+    if (rollback !== undefined && now > clockHighWaterMs) clockHighWaterMs = now;
+    return undefined;
+  }
+
   function bytes(out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
     if (generating) return reenteredGeneration();
     generating = true;
@@ -198,8 +263,7 @@ export function createPortableUuidV7Generator(
       if (badRange) return badRange;
       // Split THEN validated, in that order and not the other. A readUnixMs is allowed to be
       // fractional — `performance.timeOrigin + performance.now()` is, and is a perfectly good one —
-      // so rejecting non-integers here would refuse a legitimate caller, unlike `rejectInstant`,
-      // where the fraction is in an argument the caller wrote out. What must not survive is a
+      // so rejecting non-integers here would refuse a legitimate caller. What must not survive is a
       // truncated value the format cannot carry: `writeTimestamp` keeps the low 48 bits of whatever
       // it is handed, so NaN and 2**48 both silently produced the 1970 prefix and a negative
       // millisecond produced the year 10889 by two's-complement wrap. All three now report.
@@ -217,58 +281,19 @@ export function createPortableUuidV7Generator(
         fractionBits === 0
           ? 0
           : Math.min(2 ** fractionBits - 1, Math.floor((reading - now) * 2 ** fractionBits));
-      const rollbackMs = rollback === undefined ? 0 : clockHighWaterMs - now;
-      if (rollback !== undefined && rollbackMs > rollback.toleranceMs) {
-        if (rollback.action === UUID_V7_ROLLBACK_ERROR)
-          return new UuidSlugError(
-            INVALID_TIMESTAMP,
-            `Clock moved backward by ${rollbackMs} milliseconds; clockRollback allows ${rollback.toleranceMs}. Increase tolerance or choose reset/preserve if this rollback is acceptable.`,
-          );
-        const failed = reseed(now, fraction);
-        if (failed) return failed;
-        clockHighWaterMs = now;
-      } else if (
-        now > lastMs ||
-        (now === lastMs &&
-          fraction > Math.floor((counterHi * 0x1_0000_0000 + counterLo) / counterModulus))
-      ) {
-        const failed = reseed(now, fraction);
-        if (failed) return failed;
-      } else {
-        const nextLo = (counterLo + 1) >>> 0;
-        const nextHi = counterHi + (nextLo === 0 ? 1 : 0);
-        // Past 42 bits the sequence no longer fits `rand_a` plus the borrowed `rand_b` bits.
-        // Borrowing the next millisecond keeps ids ordered and unique rather than wrapping into
-        // values this millisecond has already issued.
-        if (nextHi > 0x3ff) {
-          // At the ceiling there is no next millisecond to borrow: `writeTimestamp` truncates to
-          // six bytes, so `lastMs + 1` wraps to 0 and the generator restarts in 1970 — ordering
-          // broken permanently, and silently, from that call onward. Unreachable on a real readUnixMs
-          // until the year 10889; reachable now from any readUnixMs that lands near the ceiling, which
-          // is why refusing is not theoretical.
-          if (lastMs >= MAX_UUID_V7_UNIX_MS)
-            return new UuidSlugError(
-              INVALID_TIMESTAMP,
-              `UUIDv7 sequence exhausted at Unix millisecond ${MAX_UUID_V7_UNIX_MS}; another UUID would exceed the 48-bit timestamp.`,
-            );
-          const failed = reseed(lastMs + 1, 0);
-          if (failed) return failed;
-        } else {
-          const failed = fillRandomBytes(fill, randomTail);
-          if (failed) return failed;
-          // Commit only after entropy succeeds; a failed draw must not consume sequence state.
-          counterLo = nextLo;
-          counterHi = nextHi;
-        }
-      }
-      if (rollback !== undefined && now > clockHighWaterMs) clockHighWaterMs = now;
+      const failed = advanceSequence(now, fraction);
+      if (failed) return failed;
       return writeBytes(target, offset, lastMs, counterHi, counterLo);
     } finally {
       generating = false;
     }
   }
 
-  function bytesAt(timestamp: number, out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError {
+  function bytesAt(
+    instant: NormalizedUuidV7Instant,
+    out?: Uint8Array,
+    offset = 0,
+  ): Uint8Array | UuidSlugError {
     if (generating) return reenteredGeneration();
     generating = true;
     try {
@@ -276,18 +301,28 @@ export function createPortableUuidV7Generator(
       const badRange =
         out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
       if (badRange) return badRange;
-      const invalid = rejectInstant(timestamp);
-      if (invalid) return invalid;
+      const fraction =
+        fractionBits === 0
+          ? 0
+          : Math.min(
+              2 ** fractionBits - 1,
+              Math.floor(instant.subMillisecondFraction * 2 ** fractionBits),
+            );
+      if (coordinateExplicitInstants) {
+        const failed = advanceSequence(instant.unixMs, fraction);
+        if (failed) return failed;
+        return writeBytes(target, offset, lastMs, counterHi, counterLo);
+      }
       const failed = fillRandomBytes(fill, random);
       if (failed) return failed;
-      // A supplied instant takes a random sequence and leaves current-time state untouched.
       const seededCounter = (seedHi(random) * 0x1_0000_0000 + seedLo(random)) % counterModulus;
+      const payloadPrefix = fraction * counterModulus + seededCounter;
       return writeBytes(
         target,
         offset,
-        timestamp,
-        Math.floor(seededCounter / 0x1_0000_0000),
-        seededCounter >>> 0,
+        instant.unixMs,
+        Math.floor(payloadPrefix / 0x1_0000_0000),
+        payloadPrefix >>> 0,
       );
     } finally {
       generating = false;
@@ -299,37 +334,58 @@ export function createPortableUuidV7Generator(
     out: Output,
     offset?: number,
   ): Output | UuidSlugError;
-  function generateUuidV7Bytes(out?: Uint8Array, offset?: number): Uint8Array | UuidSlugError {
-    return bytes(out, offset);
-  }
-
-  function generateUuidV7BytesAtUnixMs(timestamp: number): UuidV7Bytes | UuidSlugError;
-  function generateUuidV7BytesAtUnixMs<Output extends Uint8Array>(
-    timestamp: number,
-    out: Output,
-    offset?: number,
+  function generateUuidV7Bytes(options: GenerateUuidV7BytesOptions): UuidV7Bytes | UuidSlugError;
+  function generateUuidV7Bytes<Output extends Uint8Array>(
+    options: GenerateUuidV7BytesIntoOptions<Output>,
   ): Output | UuidSlugError;
-  function generateUuidV7BytesAtUnixMs(
-    timestamp: number,
-    out?: Uint8Array,
+  function generateUuidV7Bytes(
+    outOrOptions?:
+      | Uint8Array
+      | GenerateUuidV7BytesOptions
+      | GenerateUuidV7BytesIntoOptions<Uint8Array>,
     offset?: number,
   ): Uint8Array | UuidSlugError {
-    return bytesAt(timestamp, out, offset);
+    if (outOrOptions === undefined || isUint8Array(outOrOptions))
+      return bytes(outOrOptions, offset);
+    if (Array.isArray(outOrOptions) || ArrayBuffer.isView(outOrOptions))
+      return checkByteRange(outOrOptions, offset ?? 0, 16) as UuidSlugError;
+    const values = readGenerationOptions(
+      outOrOptions,
+      UUID_V7_BYTE_OPTIONS,
+      "UUIDv7 byte generation",
+    );
+    if (values instanceof Error) return values;
+    const output = values.output as Uint8Array | undefined;
+    const outputOffset = values.outputOffset as number | undefined;
+    if (!Object.hasOwn(values, AT_OPTION)) return bytes(output, outputOffset);
+    const instant = readUuidV7Instant(values.at);
+    return instant instanceof Error ? instant : bytesAt(instant, output, outputOffset);
   }
 
   function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-    textCase: Case = UUID_TEXT_LOWERCASE as Case,
+    textCase?: Case,
+  ): UuidV7StringFor<Case> | UuidSlugError;
+  function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    options: GenerateUuidV7Options<Case>,
+  ): UuidV7StringFor<Case> | UuidSlugError;
+  function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    textCaseOrOptions: Case | GenerateUuidV7Options<Case> = UUID_TEXT_LOWERCASE as Case,
   ): UuidV7StringFor<Case> | UuidSlugError {
+    if (isUuidTextCase(textCaseOrOptions)) return formatUuidV7(bytes(textBytes), textCaseOrOptions);
+    const values = readGenerationOptions(
+      textCaseOrOptions,
+      UUID_V7_TEXT_OPTIONS,
+      "UUIDv7 generation",
+    );
+    if (values instanceof Error) return values;
+    const textCase = values.textCase ?? UUID_TEXT_LOWERCASE;
     if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
-    return formatUuidV7(bytes(textBytes), textCase);
-  }
-
-  function generateUuidV7AtUnixMs<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-    timestamp: number,
-    textCase: Case = UUID_TEXT_LOWERCASE as Case,
-  ): UuidV7StringFor<Case> | UuidSlugError {
-    if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
-    return formatUuidV7(bytesAt(timestamp, textBytes), textCase);
+    if (!Object.hasOwn(values, AT_OPTION))
+      return formatUuidV7(bytes(textBytes), textCase) as UuidV7StringFor<Case>;
+    const instant = readUuidV7Instant(values.at);
+    return instant instanceof Error
+      ? instant
+      : (formatUuidV7(bytesAt(instant, textBytes), textCase) as UuidV7StringFor<Case>);
   }
 
   return {
@@ -338,8 +394,6 @@ export function createPortableUuidV7Generator(
     // and entropy callbacks run.
     payloadLayout,
     generateUuidV7,
-    generateUuidV7AtUnixMs,
     generateUuidV7Bytes,
-    generateUuidV7BytesAtUnixMs,
   };
 }

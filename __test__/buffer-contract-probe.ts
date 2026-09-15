@@ -25,7 +25,6 @@ import {
   UUID_V7_TEST_MASK,
   generateUuidV4Bytes,
   generateUuidV7Bytes,
-  generateUuidV7BytesAtUnixMs,
 } from "../src/index";
 import { bytePatterns } from "./byte-patterns";
 
@@ -59,8 +58,8 @@ const writers: readonly (readonly [string, (out: Uint8Array, offset: number) => 
   ["generateUuidV4Bytes", (out, offset) => generateUuidV4Bytes(out, offset)],
   ["generateUuidV7Bytes", (out, offset) => generateUuidV7Bytes(out, offset)],
   [
-    "generateUuidV7BytesAtUnixMs",
-    (out, offset) => generateUuidV7BytesAtUnixMs(INSTANT, out, offset),
+    "generateUuidV7Bytes at explicit time",
+    (out, offset) => generateUuidV7Bytes({ at: INSTANT, output: out, outputOffset: offset }),
   ],
 ];
 
