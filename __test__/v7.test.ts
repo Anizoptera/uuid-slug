@@ -230,10 +230,15 @@ describe("uuidv7 at a caller-supplied instant", () => {
 
   it.each<[UuidV7Instant, number, number]>([
     [1.5, 1, 2048],
+    [0.244_140_624_999_999_97, 0, 999],
+    [0.244_140_625, 0, 1000],
     [{ epochMilliseconds: 1.25 }, 1, 1024],
     [{ epochNanoseconds: 1_999_999n }, 1, 4095],
+    [{ seconds: 0, nanoseconds: 244_140 }, 0, 999],
     [{ seconds: 0, nanoseconds: 244_141 }, 0, 1000],
+    ["1970-01-01T00:00:00.000244140625Z", 0, 1000],
     ["1970-01-01T00:00:00.000244141Z", 0, 1000],
+    ["1970-01-01T00:00:00.000244140624999999999Z", 0, 999],
     ["1970-01-01T01:00:00.000244141+01:00", 0, 1000],
     [new Date(1), 1, 0],
   ])("normalizes %o to millisecond %d and fraction bucket %d", (at, unixMs, fraction) => {

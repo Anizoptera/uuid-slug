@@ -301,13 +301,7 @@ export function createPortableUuidV7Generator(
       const badRange =
         out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
       if (badRange) return badRange;
-      const fraction =
-        fractionBits === 0
-          ? 0
-          : Math.min(
-              2 ** fractionBits - 1,
-              Math.floor(instant.subMillisecondFraction * 2 ** fractionBits),
-            );
+      const fraction = fractionBits === 0 ? 0 : instant.fractionBucket12 >>> (12 - fractionBits);
       if (coordinateExplicitInstants) {
         const failed = advanceSequence(instant.unixMs, fraction);
         if (failed) return failed;
