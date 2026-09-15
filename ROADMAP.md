@@ -33,6 +33,12 @@ export, accepted form, and registry becomes a permanent compatibility and verifi
       operation state; the top-level call receives that owner explicitly and the owner method presets
       itself. Preserve an explicitly supplied masking codec and the immutable generated payload-layout
       snapshot as typed convenience presets. Never retain a generator in a UUID.
+  - [ ] Implement the immutable UUID core, stable diagnosis, keyless conversions, equality, and JSON.
+  - [ ] Accept parsed UUIDs across existing conversion and inspection calls without slowing primitive inputs.
+  - [ ] Add symmetric top-level, masking-codec, and generator parsing or generation entry points.
+  - [ ] Prove bound and unbound capability inference, malformed JavaScript rejection, ambiguity,
+        caller-owned output, serialization, duplicate-package input, tree shaking, and runtime cost.
+  - [ ] Update README workflows, declarations, and packed consumers; then close this design item.
 
 ## Competitor benchmarks
 
