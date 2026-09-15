@@ -48,9 +48,9 @@ instead of steering the API toward whichever operations competitors happen to ex
 ### Rust UUID competitors
 
 - [x] Inventory reusable Rust libraries that generate UUIDv4, UUIDv7, or competing short forms.
-- [ ] Re-run the registry census and resolve new or renamed candidates immediately before measurement.
-- [ ] Execute each direct generator and retain wrappers only when they add a distinct consumer cost.
-- [ ] Compare equivalent text, byte, caller-storage, and batch outcomes without hiding weaker paths.
+- [x] Re-run the registry census and resolve new or renamed candidates immediately before measurement.
+- [x] Execute each direct generator and retain wrappers only when they add a distinct consumer cost.
+- [x] Compare equivalent text, byte, caller-storage, and batch outcomes without hiding weaker paths.
 - [ ] Measure validity, entropy failure, clock rollback, same-millisecond behavior, allocation,
       contention, target support, and throughput.
 

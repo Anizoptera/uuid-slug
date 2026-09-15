@@ -1280,6 +1280,25 @@ rollback, same-millisecond behavior, allocation, contention, target support, and
 Base58 codecs are outside the benchmark set because no accepted consumer job needs their third UUID
 spelling. Performance cannot supply the missing human-transcription requirement.
 
+The 2026-09-15 executable matrix validated every retained direct generator's RFC version and
+variant. It also exercised the package's typed entropy failure and strict rollback error, `uuid7`'s
+rollback abort, and `nexus-id`'s 4,096-value same-millisecond limit. Three repeated native runs found
+the package and `uuid` equivalent for v4 values, while package v7 values led `uuid` and matched
+`hyperuuid` within run variation. Direct base64url output likewise left the package and `uuid-extra`
+effectively tied for v4, while the package led for v7. These are per-call OS-entropy outcomes.
+
+Seeded or process-global generators ran tens to hundreds of times faster, but they do less entropy
+work per call and carry mutable sequence, rollback, fork, or exhaustion behavior. They are mechanism
+floors, not equivalent secure-generation winners. `hyperuuid` and `rivid-core` batch APIs were much
+faster than the package's scalar caller-storage loop because they amortize entropy acquisition and
+timestamp work across the batch. A dedicated package batch interface remains unjustified until a
+real caller needs batch generation; benchmark speed alone does not create that contract.
+
+The matrix treats returned fixed-size values and caller buffers as allocation-free public outcomes,
+and returned `String` values as allocated outcomes; it makes no claim about hidden allocator work.
+Contention and cross-target support remain unresolved because neither source inspection nor a
+single-host scalar run measures them.
+
 Rust `uuid` uses a 42-bit leading counter by default. Its additional-precision mode dedicates 1
 through 12 of those leading bits to a Method 3 fraction, leaving the rest of the 42-bit field as the
 counter. `fast-uuid-v7` exposes 4-, 8-, and 12-bit fraction variants with random trailing bits, plus
