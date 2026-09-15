@@ -11,10 +11,10 @@
 **Zero-dependency UUIDv4/v7 generation, lossless base64url and base32hex slugs for any UUID, and reversible UUIDv7 masking for databases, URLs, and files.**
 
 - Encode any UUID as short `base64url` or lowercase `base32hex`.
-- Use optional reversible seeded masking to make UUIDv7 slugs opaque.
+- Use optional reversible masking to hide the timestamp and structure of UUIDv7 slugs.
 - Keep one ID across all representations, with no lost bits or mapping table.
 - Write directly into your buffers without intermediate text or new output arrays.
-- Read UUIDv7 timestamps instead of duplicating them twice.
+- Read the time directly from UUIDv7 when it is the timestamp your application needs.
 - Use native runtime APIs with matching portable fallbacks.
 - Failures return typed errors. Built-in generation never falls back to weaker randomness.
 - Unused features tree-shake away with any modern bundler.
@@ -23,18 +23,25 @@
 
 ### TypeScript API map
 
+A UUID is a 128-bit identifier. UUIDv4 is random; UUIDv7 starts with a Unix-millisecond timestamp
+so values from different milliseconds sort by time in UUID byte order. A slug is the same UUID in
+shorter text. A plain slug needs no key. A masked slug hides UUIDv7 fields with a secret held by a
+reusable masking codec. A sentinel is an application-reserved UUIDv7 that the codec deliberately
+leaves as a recognizable plain slug.
+
 ```text
 UUID text ─┐
 UUID bytes ├── keyless conversion ── UUID text / bytes / plain slug
 plain slug ┘
 
-UUIDv7 forms ── masking codec ── masked slug / sentinel / decoded UUID
+UUIDv7 text / bytes / plain slug ── masking codec ── masked slug / sentinel / decoded UUID
                      │
                      ├── current + previous masks
                      └── opt-in migration reader
 ```
 
-The same UUIDv7 in each format (**16 bytes in binary**):
+The concrete examples encode the same UUIDv7; the sentinel row describes a separately configured value.
+`ch` means text characters and `B` means bytes.
 
 | Representation | Size (ch/B) | Example | Meaning and use |
 | --- | ---: | --- | --- |
@@ -44,15 +51,17 @@ The same UUIDv7 in each format (**16 bytes in binary**):
 | UUID URN | 45 | `urn:uuid:0198abcd-1234-7abc-9def-0123456789ab` | Input; prefix is case-insensitive and requires canonical text; hexadecimal may use mixed case |
 | UUID bytes | 16 | `01 98 ab cd 12 34 7a bc 9d ef 01 23 45 67 89 ab` | Compact storage; output can use a new array or caller-owned storage; URLs need text encoding |
 | Plain base64url slug | 22 | `AZirzRI0eryd7wEjRWeJqw` | Shortest keyless lossless form for any UUID; case-sensitive and not lexically ordered |
-| Plain base32hex slug | 26 | `06canj8i6htbp7ff04hkaps9lc` | Keyless lossless lowercase form; UUIDv7 timestamps remain visible and sort lexically |
-| Masked base64url UUIDv7 slug | 22 | `ap225Qa_y6wN5LQCJgwH0z` | Short opaque form with a 16-bit check; case-sensitive, unordered, and requires its mask |
-| Masked base32hex UUIDv7 slug | 27 | `daerdp86nv5qo3f4mg12c307qco` | Lowercase opaque form; unordered and requires its mask |
-| Sentinel UUIDv7 slug | 22/26 | Configured | A recognizable plain slug reserved by a masking codec |
+| Plain base32hex slug | 26 | `06canj8i6htbp7ff04hkaps9lc` | Keyless and lossless; output is lowercase, input may use mixed case, and UUIDv7 values sort by timestamp |
+| Masked base64url UUIDv7 slug | 22 | `ap225Qa_y6wN5LQCJgwH0z` | Short opaque form with a 16-bit check; case-sensitive, unordered, and decoding requires its codec |
+| Masked base32hex UUIDv7 slug | 27 | `daerdp86nv5qo3f4mg12c307qco` | Opaque and unordered; output is lowercase, input may use mixed case, and decoding requires its codec |
+| Sentinel UUIDv7 slug | 22/26 | Configured | A recognizable plain slug reserved by a codec; size follows its selected alphabet |
 
 Plain and masked slugs work in URLs and filenames. Alphabet and masking are independent choices.
 
-The four concrete slug examples recover the UUIDv7 shown above. Masking hides the UUID layout, making it look like a random string; encoding and decoding require your secret. Plain base64url keeps time grouping, not sort order. [Time sorting](#ordering-and-key-distribution) requires bytewise comparison; masked slugs
-have no time order and are closer to random distribution.
+The four concrete slug examples recover the UUIDv7 shown above. Masking makes UUIDv7 fields
+unrecognizable; encoding and decoding require the codec that holds your secret. Plain base64url
+keeps similar timestamps visually grouped but does not sort chronologically as text. Plain
+base32hex does. Masked slugs expose no useful time order.
 
 | Job | Main TypeScript API |
 | --- | --- |
@@ -79,8 +88,8 @@ timestamps from unavailable entropy, cancellation, wrong UUID versions, and time
 
 Operational contracts:
 
-- A created UUIDv7 generator owns its clock and sequence. The default policy strictly increases
-  successful values; sequence exhaustion advances logical time instead of wrapping.
+- A created UUIDv7 generator owns its clock and sequence. Its successful current-time values
+  strictly increase in UUID byte order; sequence exhaustion advances logical time instead of failing or wrapping.
 - Module-level UUIDv7 calls share no sequence state. Supply one generator when calls must share ordering.
 - A masking codec is immutable. Writers use its current mask; readers also try previous masks in order.
 - Caller-owned buffer writes are transactional. Invalid input or output ranges leave the buffer unchanged.
@@ -90,10 +99,11 @@ Operational contracts:
 Critical boundaries:
 
 - A 22-character base64url value can be a plain slug and a masked slug for different UUIDs.
-  On a masking codec, destination-specific calls select one meaning; generic UUID text and byte conversion rejects a conflict.
+  On a masking codec, the requested output can select one meaning; UUID text and byte conversions reject a conflict.
 - Masking hides recognizable UUIDv7 fields. It is not encryption, authentication, authorization,
   proof of issuance, or a replacement for record lookup and access checks.
-- Mask checks can accept a wrong key by chance. Readers try only the configured current and previous masks.
+- Mask checks can accept a wrong key by chance. Readers try only the configured current and previous masks;
+  record lookup must decide whether the decoded UUID exists.
 - Sentinels remain recognizable plain slugs and bypass the masking codec's timestamp range.
 - Plain base32hex UUIDv7 slugs preserve timestamp order. Base64url and masked slugs do not.
 - Generated UUID collisions remain possible. Use a uniqueness constraint wherever a duplicate can cause harm.
