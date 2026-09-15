@@ -118,6 +118,7 @@ try {
     readUnixMs: () => time + 0.75,
     subMillisecondFractionBits: 12,
   });
+  const selectedGenerator = api.createUuidV7Generator({ readUnixMs: () => time });
   const reset = () => {
     for (const key of Object.keys(counts) as (keyof typeof counts)[]) counts[key] = 0;
   };
@@ -209,6 +210,20 @@ try {
     views: 0,
     errors: 0,
   });
+  check(
+    "selected-generator owned v7 generation",
+    () => api.generateUuidV7Bytes({ generator: selectedGenerator }),
+    {
+      buffers: 2,
+      views: 0,
+      errors: 0,
+    },
+  );
+  check(
+    "selected-generator caller-owned v7 generation",
+    () => api.generateUuidV7Bytes({ generator: selectedGenerator, output: into, outputOffset: 4 }),
+    { buffers: 1, views: 0, errors: 0 },
+  );
   check("exact UUID text conversion", () => api.bytesToUuidString(bytes), {
     buffers: 0,
     views: 0,
