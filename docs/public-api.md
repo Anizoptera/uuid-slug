@@ -253,7 +253,7 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 - Do not publish precomputed plain slugs for `NIL_UUID` or `MAX_UUID`. Callers that repeatedly need
   one can convert it once, while dedicated exports would duplicate values already derived by the
   public conversion API.
-- `uuidV7Bounds` and `uuidV7ByteBounds` return the inclusive lowest and highest RFC-variant UUIDv7
+- `uuidV7StringBounds` and `uuidV7ByteBounds` return the inclusive lowest and highest RFC-variant UUIDv7
   values for one millisecond or an inclusive millisecond interval. They construct search keys and
   never generate identifiers. Their range meaning requires comparison in UUID wire-byte order;
   masked slugs, base64url text, and SQL Server `uniqueidentifier` ordering do not satisfy it.
@@ -306,7 +306,7 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   `uuidToMaskedSlug` for ordinary conversions. It also exposes explicit plain and masked source
   methods only where a dual-valid 22-character slug needs a caller-owned interpretation.
 - Name generation `generateMaskedUuidV7Slug` and `generateUuidV7WithMaskedSlug`. Name migration
-  operations `uuidToString` and `uuidToStringCandidates` because those readers
+  operations `uuidSlugToUuidString` and `uuidSlugToUuidStringCandidates` because those readers
   intentionally accept several stored UUID-slug formats.
 - Use `maskedSlugAlphabet` for the masking-codec writer choice. It selects emitted slug spelling; it does not
   constrain readers, which infer and accept both supported spellings.
@@ -480,12 +480,11 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   when they add no data or behavior and would make a newly reachable code a source break. Validate
   configuration at construction when possible; preserve the original cause when an external
   capability fails.
-- Put `UuidSlugError` in a return type only when a well-typed call can fail. Masking-codec construction
-  can fail on valid TypeScript input, such as a short seed or a duplicate sentinel, so its type
-  carries the union. `createUuidV7Generator` and `createUuidSlugMigrationDecoder` cannot, so their types
-  do not; malformed untyped input still gets a returned error, stated at the declaration. Forcing
-  every TypeScript caller to narrow a value that is never an error is the worse trade, and
-  widening a return type later breaks every caller, so settle this before the call ships.
+- Put `UuidSlugError` in a return type only when a well-typed call can fail. Masking-codec and
+  UUIDv7-generator construction accept numeric settings whose valid ranges TypeScript cannot
+  express, so their types carry the union. Migration-reader construction has no such typed failure;
+  malformed untyped input still returns an error as stated at the declaration. Do not force callers
+  to narrow construction that cannot fail for typed input.
 - Classify sentinel-list shape and duplicate names or UUIDs as `invalid_sentinel`. Keep malformed
   UUID text as `invalid_uuid` and a wrong UUID version as `invalid_uuid_version`; these failures
   require different caller repairs.

@@ -380,13 +380,13 @@ export const codecBoundaryCases = [
           assert.deepEqual(
             reader
               .createUuidSlugMigrationDecoder({ acceptPlainSlug: true })
-              .uuidToStringCandidates(text, "seeded-mask"),
+              .uuidSlugToUuidStringCandidates(text, "seeded-mask"),
             [uuid],
           );
           assert.deepEqual(
             reader
               .createUuidSlugMigrationDecoder({ acceptPlainSlug: true, acceptFixedMask: true })
-              .uuidToStringCandidates(text),
+              .uuidSlugToUuidStringCandidates(text),
             [uuid],
           );
           for (let padding = 1; padding < 8; padding += 1) {
@@ -396,7 +396,7 @@ export const codecBoundaryCases = [
             assert.ok(
               reader
                 .createUuidSlugMigrationDecoder({ acceptPlainSlug: true, acceptFixedMask: true })
-                .uuidToStringCandidates(alias) instanceof Error,
+                .uuidSlugToUuidStringCandidates(alias) instanceof Error,
             );
           }
         }
@@ -411,7 +411,7 @@ export const codecBoundaryCases = [
           assert.equal(
             reader
               .createUuidSlugMigrationDecoder({ acceptPlainSlug: true })
-              .uuidToString(sentinel.slug),
+              .uuidSlugToUuidString(sentinel.slug),
             sentinel.uuid,
           );
           assert.equal(
@@ -517,8 +517,8 @@ export const codecBoundaryCases = [
         }
         for (const decode of [
           codec.validateMaskedUuidV7SlugUnixMs,
-          migration.uuidToString,
-          migration.uuidToStringCandidates,
+          migration.uuidSlugToUuidString,
+          migration.uuidSlugToUuidStringCandidates,
         ]) {
           const result = Reflect.apply(decode, undefined, [value]);
           assert.ok(result instanceof UuidSlugError);

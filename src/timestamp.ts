@@ -84,7 +84,7 @@ export function validateTimestampBytes(
  * @param window - Inclusive maximum distance from an explicit or current reference time.
  * @param textCase - Built-in output spelling. Omit for lowercase.
  */
-export function validateUuidV7Timestamp<
+export function validateUuidV7StringUnixMs<
   Input extends string | UuidSlugError,
   Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
 >(

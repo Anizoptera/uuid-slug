@@ -18,7 +18,7 @@ import {
   uuidStringToBytes,
   generateUuidV7Bytes,
   generatePlainUuidV7Slug,
-  validateUuidV7Timestamp,
+  validateUuidV7StringUnixMs,
 } from "../src/index";
 
 const smoke = process.argv.includes("--smoke");
@@ -81,7 +81,7 @@ for (const alphabet of ["base64url", "base32hex"] as const) {
 }
 const timestamp = Number.parseInt(input.slice(0, 13).replace("-", ""), 16);
 const timestampWindow = { maxTimestampDeltaMs: 86_400_000, referenceUnixMs: timestamp };
-measure("package.v7.timestamp", () => unwrap(validateUuidV7Timestamp(input, timestampWindow)));
+measure("package.v7.timestamp", () => unwrap(validateUuidV7StringUnixMs(input, timestampWindow)));
 const current = { seed: "benchmark-current-key" };
 const previous = { seed: "benchmark-previous-key" };
 const masked = unwrap(createUuidV7MaskingCodec({ mask: current }));

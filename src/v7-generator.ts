@@ -163,19 +163,27 @@ function buildGenerator(
   return Object.freeze({ ...generator, generateUuidV7Value });
 }
 
-/** Create a UUIDv7 sequence with its own state, clock policy, and platform randomness. */
-export function createUuidV7Generator(options?: UuidV7GeneratorOptions): UuidV7Generator;
+/**
+ * Create a UUIDv7 sequence with its own state, clock policy, and platform randomness.
+ * Invalid numeric ranges or clock policies return `UuidSlugError`.
+ */
+export function createUuidV7Generator(
+  options?: UuidV7GeneratorOptions,
+): UuidV7Generator | UuidSlugError;
 export function createUuidV7Generator(
   options: UuidV7GeneratorOptions = {},
 ): UuidV7Generator | UuidSlugError {
   return buildGenerator(options, runtime.fillRandom);
 }
 
-/** Create a UUIDv7 sequence using the caller's synchronous random-byte source. */
+/**
+ * Create a UUIDv7 sequence using the caller's synchronous random-byte source.
+ * Invalid numeric ranges or clock policies return `UuidSlugError`.
+ */
 export function createUuidV7GeneratorWithRandomFill(
   fillRandom: UuidRandomFill,
   options?: UuidV7GeneratorOptions,
-): UuidV7Generator;
+): UuidV7Generator | UuidSlugError;
 export function createUuidV7GeneratorWithRandomFill(
   fillRandom: UuidRandomFill,
   options: UuidV7GeneratorOptions = {},

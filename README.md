@@ -74,8 +74,8 @@ base32hex does. Masked slugs expose no useful time order.
 | Parse once for repeated work | `parseUuid` returns an immutable `Uuid` value |
 | Inspect version, variant, timestamp, or payload | `Uuid.inspect`, `extractUuidVersion`, `extractUuidV7UnixMs`, `extractUuidV7Payload` |
 | Narrow untrusted input | `isUuidText`, `isUuidString`, `isUuidBytes`, `isPlainUuidSlug`, their v4/v7 guards, and `isUuidSlugError` |
-| Build UUIDv7 database range keys | `uuidV7Bounds`, `uuidV7ByteBounds` |
-| Validate a UUIDv7 timestamp window | `validateUuidV7Timestamp` and the plain or masked slug equivalents |
+| Build UUIDv7 database range keys | `uuidV7StringBounds`, `uuidV7ByteBounds` |
+| Validate a UUIDv7 timestamp window | `validateUuidV7StringUnixMs` and the plain or masked slug equivalents |
 | Create UUIDv7 masking | `deriveUuidV7Mask`, `deriveUuidV7MaskAsync`, `createCustomUuidV7Mask` |
 | Mask, unmask, rotate keys, or reserve sentinels | `createUuidV7MaskingCodec` and its methods |
 | Read explicitly enabled old formats | `maskingCodec.createUuidSlugMigrationDecoder` |
@@ -504,7 +504,7 @@ the most significant bits come first. Equal-length slugs sort by timestamp even 
 spans two UUID fields. This is timestamp order, not event order: clocks can move backwards, and
 UUIDv7 does not promise creation order within a millisecond.
 
-`uuidV7Bounds(ms)` returns two search keys because one millisecond identifies a set, not one UUID:
+`uuidV7StringBounds(ms)` returns two search keys because one millisecond identifies a set, not one UUID:
 the timestamp fixes the first 48 bits while 74 payload bits can differ. The first key sets those
 payload bits to zero and the second sets them to one. Pass an inclusive end millisecond to cover a
 longer interval. Use these bounds only where comparison follows UUID wire-byte order; SQL Server's
@@ -642,6 +642,7 @@ their TypeScript type permits only formats enabled when the reader was created.
 | `UuidV7Instant` | A supported host time accepted by UUIDv7 generation, including exact epoch nanoseconds. |
 | `UuidV7MaskingCodec`, `UuidV7MaskingCodecOptions`, `UuidV7PreviousMask`, `UuidV7Mask`, `UuidV7MaskOptions`, `AsyncUuidV7MaskOptions`, `CustomUuidV7MaskOptions`, `UuidV7Sentinel`, `UuidV7SentinelConfig` | The masking codec, what `createUuidV7MaskingCodec` takes, and the retained mask and sentinel shapes it accepts and exposes. |
 | `UuidV7Generator`, `UuidV7GeneratorOptions`, `UuidV7ClockRollbackPolicy`, `UuidRandomFill`, `UuidV7TimestampWindow`, `UuidSlugMigrationDecoder`, `UuidSlugMigrationOptions`, `UuidSlugMigrationFormat`, `UuidSlugErrorCode` | A generator, its clock and rollback choices, an explicit custom-entropy callback, timestamp validation, migration controls, and error codes. |
+| `GenerateUuidV7Options`, `GeneratePlainUuidV7SlugOptions`, `GenerateUuidV7BytesOptions`, `GenerateUuidV7BytesIntoOptions`, `GenerateUuidV7WithPlainSlugOptions`, `GenerateUuidV7WithMaskedSlugOptions` | Reusable option shapes for each UUIDv7 output job. |
 
 A brand narrows what a call accepts at compile time. A value already typed as the wrong kind is
 rejected before it runs, with or without an output buffer:
@@ -688,8 +689,9 @@ independent generator; UUIDv4 and plain-slug generation remain module-level.
 | `generateUuidV4Bytes()` / `generateUuidV7Bytes(options?)` | A new 16-byte array, typed with its UUID version. UUIDv7 options may set `at` and `generator`. |
 | `generateUuidV4Bytes(out, offset?)` / `generateUuidV7Bytes(out, offset?)` | Your output array, with the UUID written at the offset. UUIDv7 also accepts `{ at, generator, output, outputOffset }`. |
 | `generateUuidV7Value(options?)` | An immutable UUIDv7; options may set `at`, select a generator, or retain a masking codec. |
-| `uuidV7Bounds(ms, textCase?)` / `uuidV7Bounds(startMs, endMs, textCase?)` | Inclusive canonical UUID bounds for one millisecond or an inclusive interval. |
+| `uuidV7StringBounds(ms, textCase?)` / `uuidV7StringBounds(startMs, endMs, textCase?)` | Inclusive canonical UUID bounds for one millisecond or an inclusive interval. |
 | `uuidV7ByteBounds(startMs, endMs?)` | The same inclusive bounds as two owned byte arrays. |
+| `createUuidV7Generator(options?)` | An independent UUIDv7 sequence using platform cryptographic entropy; invalid numeric ranges or clock policies return `UuidSlugError`. |
 | `createUuidV7GeneratorWithRandomFill(fill, options?)` | An independent UUIDv7 generator using an explicit synchronous entropy source. |
 
 ### Convert and inspect IDs
@@ -706,7 +708,7 @@ known UUID version remains in the result type.
 | `extractUuidVersion(uuid)` | The UUID version nibble from UUID text, exact bytes, or a plain slug. |
 | `extractUuidV7UnixMs(value, offset?)` | Unix milliseconds from UUIDv7 text, a plain slug, or bytes. |
 | `extractUuidV7Payload(value, layout, offset?)` | Timestamp and caller-declared payload fields, with all other payload bits unchanged. |
-| `validateUuidV7Timestamp(uuid, window, textCase?)` / `validatePlainUuidV7SlugUnixMs(slug, window)` | UUIDv7 text in the selected case, or the original plain slug, after checking its timestamp. |
+| `validateUuidV7StringUnixMs(uuid, window, textCase?)` / `validatePlainUuidV7SlugUnixMs(slug, window)` | UUIDv7 text in the selected case, or the original plain slug, after checking its timestamp. |
 
 Use `parseUuid` when one UUID needs several operations. It validates and copies the input once.
 Serialization returns canonical UUID text and intentionally drops the codec and payload layout.
@@ -798,8 +800,8 @@ Also exported from the package root:
   `UUID_V7_TEST_MASK` is the explicit, published-key choice for deterministic examples.
 - `createUuidV7Generator(options?)` builds a generator with its own sequence state, your `readUnixMs`
   or `Date.now` when omitted, and platform cryptographic entropy. Preserve-order rollback is the
-  default; reset and error policies require an inclusive total-skew tolerance. Untyped malformed
-  options return `invalid_options`.
+  default; reset and error policies require an inclusive total-skew tolerance. Invalid numeric
+  ranges, clock policies, and untyped malformed options return `invalid_options`.
 - `generateUuidV4WithRandomFill` and `createUuidV7GeneratorWithRandomFill` are the explicit
   custom-entropy paths. Their callback owns entropy quality and must fill every requested byte or
   return `UuidSlugError`; weak or partial successful fills cannot be detected.
@@ -950,7 +952,7 @@ function readLegacySlug(maskingCodec: UuidV7MaskingCodec, incomingSlug: string) 
     acceptFixedMask: true,
     acceptPlainSlug: true,
   });
-  return migrationDecoder.uuidToString(incomingSlug);
+  return migrationDecoder.uuidSlugToUuidString(incomingSlug);
 }
 ```
 
@@ -962,7 +964,7 @@ last four bits were ignored. Ordinary `uuidToString` remains strict about those 
 Both options must be booleans; untyped malformed reader configuration returns `invalid_options`.
 Neither option changes generation, ordinary codec methods, keys or sentinels.
 
-`uuidToString` returns one UUID or `UuidSlugError`: sentinels first, then current keys, then enabled
+`uuidSlugToUuidString` returns one UUID or `UuidSlugError`: sentinels first, then current keys, then enabled
 original and plain formats. A successful decode still needs a record lookup. The same slug can
 decode to different UUIDs in different formats; the original check has only four bits.
 
@@ -977,7 +979,7 @@ function replaceOriginalSlug(
   migrationDecoder: UuidSlugMigrationDecoder<typeof FIXED_MASK_FORMAT>,
   oldSlug: string,
 ) {
-  const uuid = migrationDecoder.uuidToString(oldSlug, FIXED_MASK_FORMAT);
+  const uuid = migrationDecoder.uuidSlugToUuidString(oldSlug, FIXED_MASK_FORMAT);
   if (isUuidSlugError(uuid)) return uuid;
   const replacement = maskingCodec.uuidToMaskedSlug(uuid);
   if (isUuidSlugError(replacement)) return replacement;
@@ -992,7 +994,7 @@ options whose values are dynamic remain selectable because they may be enabled a
 Pass a UUID text-case preset after the slug when the format is unknown, or after the format when it
 is known. Candidate arrays use the same selected case; lowercase remains the default.
 
-For unknown formats, use `uuidToStringCandidates` to find the matching record without guessing:
+For unknown formats, use `uuidSlugToUuidStringCandidates` to find the matching record without guessing:
 
 ```ts
 import { isUuidSlugError } from "@anizoptera/uuid-slug";
@@ -1003,7 +1005,7 @@ async function findMigratedRecord(
   incomingSlug: string,
   findRecordsByUuids: (uuids: readonly UuidString[]) => Promise<readonly unknown[]>,
 ) {
-  const candidates = migrationDecoder.uuidToStringCandidates(incomingSlug);
+  const candidates = migrationDecoder.uuidSlugToUuidStringCandidates(incomingSlug);
   if (isUuidSlugError(candidates)) return candidates;
   const matches = candidates.length ? await findRecordsByUuids(candidates) : [];
   if (matches.length !== 1)
@@ -1012,12 +1014,12 @@ async function findMigratedRecord(
 }
 ```
 
-`findRecordsByUuids` is your database query. Return distinct records by UUID. `uuidToStringCandidates`
+`findRecordsByUuids` is your database query. Return distinct records by UUID. `uuidSlugToUuidStringCandidates`
 returns distinct UUIDs in decoding order, or an empty array if none match. Malformed input and
 failed mask callbacks return an error. Callback errors keep their cause; they never produce a
 successful but incomplete list.
-An old sentinel alias can also be a seeded masked ID. `uuidToStringCandidates` retains both UUIDs;
-`uuidToString` keeps sentinel priority.
+An old sentinel alias can also be a seeded masked ID. `uuidSlugToUuidStringCandidates` retains both UUIDs;
+`uuidSlugToUuidString` keeps sentinel priority.
 
 Keep this reader while old inputs must work. Replace it with
 `maskingCodec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true })` to stop trying the fixed mask, or
@@ -1029,10 +1031,10 @@ the slug alone, so successful decoding is not a reliable count of legacy traffic
 ### Validating timestamp windows
 
 ```ts
-import { validateUuidV7Timestamp } from "@anizoptera/uuid-slug";
+import { validateUuidV7StringUnixMs } from "@anizoptera/uuid-slug";
 
 function validateRecentUuid(uuid: string) {
-  return validateUuidV7Timestamp(uuid, { maxTimestampDeltaMs: 60_000 });
+  return validateUuidV7StringUnixMs(uuid, { maxTimestampDeltaMs: 60_000 });
 }
 ```
 

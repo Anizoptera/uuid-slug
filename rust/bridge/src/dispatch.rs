@@ -234,7 +234,7 @@ fn run(request: &Value) -> Result<Value, Error> {
         )),
         "plainToUuid" => Ok(json!(Uuid::from_plain_uuid_slug(input)?.to_string())),
         "timestamp" => Ok(json!(Uuid::from_uuid_string(input)?.extract_uuid_v7_unix_ms()?)),
-        "uuidV7Bounds" => {
+        "uuidV7StringBounds" => {
             let start = request["start"]
                 .as_u64()
                 .ok_or_else(|| Error::new(ErrorCode::InvalidTimestamp))?;
@@ -321,7 +321,7 @@ fn run(request: &Value) -> Result<Value, Error> {
                     .into_string()
             ))
         }
-        "validateUuidV7Timestamp" | "validatePlainUuidV7SlugUnixMs" => {
+        "validateUuidV7StringUnixMs" | "validatePlainUuidV7SlugUnixMs" => {
             let uuid = if request["op"] == "validatePlainUuidV7SlugUnixMs" {
                 Uuid::from_plain_uuid_slug(input)?
             } else {

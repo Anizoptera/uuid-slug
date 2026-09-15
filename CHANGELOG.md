@@ -44,10 +44,10 @@ notes: the section for a version is published verbatim when its tag is pushed.
   `uuidStringToBytes`, `bytesToUuidString`, `uuidStringToPlainSlug`, `uuidBytesToPlainSlug`,
   `uuidToString`, and `plainSlugToUuidBytes`. Remove generic base64url helpers; plain-slug byte
   conversions accept exactly one 16-byte UUID payload.
-- Migration readers expose `uuidToString` and `uuidToStringCandidates`. Options and format
+- Migration readers expose `uuidSlugToUuidString` and `uuidSlugToUuidStringCandidates`. Options and format
   names are now `acceptFixedMask`, `acceptPlainSlug`, `seeded-mask`, `fixed-mask`, and
   `plain-slug`.
-- Replace `validateUuidV7Fresh` and `validateUuidV7SlugFresh` with `validateUuidV7Timestamp` and
+- Replace `validateUuidV7Fresh` and `validateUuidV7SlugFresh` with `validateUuidV7StringUnixMs` and
   `validatePlainUuidV7SlugUnixMs`. Validation requires `maxTimestampDeltaMs`; only
   `referenceUnixMs` defaults to the current clock. `hasUuidV7Entropy` is removed.
 - Expected generation, conversion, masking, and configuration failures return `UuidSlugError | T`.

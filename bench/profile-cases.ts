@@ -161,18 +161,26 @@ export function createProfileCases(
   });
   const maskedOnlyMigration = codec.createUuidSlugMigrationDecoder();
   const originals = originalFixtures.filter(({ slug, raw }) => slug !== raw);
-  const portable = api.createUuidV7Generator({ readUnixMs: () => instant });
-  const portableSubMillisecond = api.createUuidV7Generator({
-    readUnixMs: () => instant + 0.75,
-    subMillisecondFractionBits: 12,
-  });
-  const portableSubMillisecondAuto = api.createUuidV7Generator({
-    subMillisecondFractionBits: 12,
-  });
+  const portable = unwrap(api.createUuidV7Generator({ readUnixMs: () => instant }));
+  const portableSubMillisecond = unwrap(
+    api.createUuidV7Generator({
+      readUnixMs: () => instant + 0.75,
+      subMillisecondFractionBits: 12,
+    }),
+  );
+  const portableSubMillisecondAuto = unwrap(
+    api.createUuidV7Generator({
+      subMillisecondFractionBits: 12,
+    }),
+  );
   let advancingMs = instant;
-  const portableAdvancing = api.createUuidV7Generator({ readUnixMs: () => (advancingMs += 1) });
+  const portableAdvancing = unwrap(
+    api.createUuidV7Generator({ readUnixMs: () => (advancingMs += 1) }),
+  );
   let rollingBackMs = instant;
-  const portableRollingBack = api.createUuidV7Generator({ readUnixMs: () => (rollingBackMs -= 1) });
+  const portableRollingBack = unwrap(
+    api.createUuidV7Generator({ readUnixMs: () => (rollingBackMs -= 1) }),
+  );
   const portableSlug = (alphabet: typeof base64urlName | typeof base32hexName) => {
     const value = portable.generateUuidV7Bytes();
     return value instanceof Error ? value : api.uuidBytesToPlainSlug(value, alphabet);
@@ -465,19 +473,19 @@ export function createProfileCases(
     [16, migration16],
   ] as const) {
     migrationScalingCases[`migration.masks${count}.first`] = () =>
-      fixture.reader.uuidToString(fixture.first);
+      fixture.reader.uuidSlugToUuidString(fixture.first);
     migrationScalingCases[`migration.masks${count}.middle`] = () =>
-      fixture.reader.uuidToString(fixture.middle);
+      fixture.reader.uuidSlugToUuidString(fixture.middle);
     migrationScalingCases[`migration.masks${count}.last`] = () =>
-      fixture.reader.uuidToString(fixture.last);
+      fixture.reader.uuidSlugToUuidString(fixture.last);
     migrationScalingCases[`invalid.migration.masks${count}.miss`] = () =>
-      fixture.reader.uuidToString(fixture.miss);
+      fixture.reader.uuidSlugToUuidString(fixture.miss);
     migrationScalingCases[`migration.masks${count}.candidates`] = () =>
-      fixture.reader.uuidToStringCandidates(fixture.first);
+      fixture.reader.uuidSlugToUuidStringCandidates(fixture.first);
   }
   for (const { count, distinct, duplicate } of candidateFixtures) {
-    const distinctWitness = distinct.uuidToStringCandidates(overlapSlug);
-    const duplicateWitness = duplicate.uuidToStringCandidates(overlapSlug);
+    const distinctWitness = distinct.uuidSlugToUuidStringCandidates(overlapSlug);
+    const duplicateWitness = duplicate.uuidSlugToUuidStringCandidates(overlapSlug);
     if (
       distinctWitness instanceof Error ||
       duplicateWitness instanceof Error ||
@@ -488,9 +496,9 @@ export function createProfileCases(
         `Migration candidate fixture did not yield ${count} distinct and one duplicate`,
       );
     migrationScalingCases[`migration.candidates${count}.distinct`] = () =>
-      distinct.uuidToStringCandidates(overlapSlug);
+      distinct.uuidSlugToUuidStringCandidates(overlapSlug);
     migrationScalingCases[`migration.candidates${count}.duplicate`] = () =>
-      duplicate.uuidToStringCandidates(overlapSlug);
+      duplicate.uuidSlugToUuidStringCandidates(overlapSlug);
   }
 
   const cases = {
@@ -529,7 +537,7 @@ export function createProfileCases(
         }
       : {}),
     "v7.string": () => api.generateUuidV7(),
-    "v7.bounds.text": (index) => api.uuidV7Bounds(instant + index),
+    "v7.bounds.text": (index) => api.uuidV7StringBounds(instant + index),
     "v7.bounds.bytes": (index) => api.uuidV7ByteBounds(instant, instant + index),
     "v4.bytes": () => api.generateUuidV4Bytes(),
     "v4.into": () => api.generateUuidV4Bytes(into, 4),
@@ -612,7 +620,7 @@ export function createProfileCases(
     "guard.slug.v4": () => api.isPlainUuidV4Slug("OxLx31IySASJfpF785dhig"),
     "guard.slug": (index) => api.isPlainUuidV7Slug(slugs[index & 255]),
     "timestamp.uuid": (index) =>
-      api.validateUuidV7Timestamp(ids[index & 255] as string, timestampWindow),
+      api.validateUuidV7StringUnixMs(ids[index & 255] as string, timestampWindow),
     "timestamp.slug": (index) =>
       api.validatePlainUuidV7SlugUnixMs(slugs[index & 255] as string, timestampWindow),
     "timestamp.extract": (index) => api.extractUuidV7UnixMs(bytes[index & 255] as Uint8Array),
@@ -677,30 +685,31 @@ export function createProfileCases(
     "rotation16.current": (index) => rotation16.reader.uuidToString(masked[index & 255] as string),
     "rotation16.last": () => rotation16.reader.uuidToString(rotation16.last),
     "invalid.rotation16.miss": () => rotation16.reader.uuidToString(rotation16.miss),
-    "migration.current": (index) => migration.uuidToString(masked[index & 255] as string),
+    "migration.current": (index) => migration.uuidSlugToUuidString(masked[index & 255] as string),
     "migration.previous": (index) =>
-      migration.uuidToString(oldOnly[index % oldOnly.length] as string),
+      migration.uuidSlugToUuidString(oldOnly[index % oldOnly.length] as string),
     "migration.decodeCandidates": (index) =>
-      migration.uuidToStringCandidates(masked[index & 255] as string),
+      migration.uuidSlugToUuidStringCandidates(masked[index & 255] as string),
     "migration.previousCandidates": (index) =>
-      migration.uuidToStringCandidates(oldOnly[index % oldOnly.length] as string),
+      migration.uuidSlugToUuidStringCandidates(oldOnly[index % oldOnly.length] as string),
     "migration.plain": (index) =>
-      migration.uuidToString(slugs[index & 255] as string, plainSlugFormat),
+      migration.uuidSlugToUuidString(slugs[index & 255] as string, plainSlugFormat),
     "migration.base32": (index) =>
-      migration.uuidToString(base32[index & 255] as string, plainSlugFormat),
+      migration.uuidSlugToUuidString(base32[index & 255] as string, plainSlugFormat),
     "migration.base32Candidates": (index) =>
-      migration.uuidToStringCandidates(base32[index & 255] as string, plainSlugFormat),
+      migration.uuidSlugToUuidStringCandidates(base32[index & 255] as string, plainSlugFormat),
     "migration.original": (index) =>
-      migration.uuidToString(originals[index % originals.length]!.slug, originalMaskFormat),
+      migration.uuidSlugToUuidString(originals[index % originals.length]!.slug, originalMaskFormat),
     "migration.directCandidates": (index) =>
-      migration.uuidToStringCandidates(slugs[index & 255] as string, plainSlugFormat),
+      migration.uuidSlugToUuidStringCandidates(slugs[index & 255] as string, plainSlugFormat),
     "migration.originalCandidates": (index) =>
-      migration.uuidToStringCandidates(
+      migration.uuidSlugToUuidStringCandidates(
         originals[index % originals.length]!.slug,
         originalMaskFormat,
       ),
-    "invalid.migration": () => maskedOnlyMigration.uuidToString(badSlug),
-    "invalid.migrationCandidates": () => maskedOnlyMigration.uuidToStringCandidates(badSlug),
+    "invalid.migration": () => maskedOnlyMigration.uuidSlugToUuidString(badSlug),
+    "invalid.migrationCandidates": () =>
+      maskedOnlyMigration.uuidSlugToUuidStringCandidates(badSlug),
     "sentinel.encode": () => codec.uuidToMaskedSlug(sentinel.uuid),
     "sentinel.encode.bytes": () => codec.uuidToMaskedSlug(sentinelBytes[0] as Uint8Array),
     "sentinel.encode.bytes.miss": () => codec.uuidToMaskedSlug(bytes[255] as Uint8Array),
@@ -800,9 +809,9 @@ export function createProfileCases(
     "invalid.mask.sentinel-collision": () => collisionCodec.uuidToMaskedSlug(collisionInput),
     "invalid.mask.sentinel-collision.base32": () =>
       collisionBase32Codec.uuidToMaskedSlug(collisionInput),
-    "invalid.timestamp.version": () => api.validateUuidV7Timestamp(v4Uuid, timestampWindow),
+    "invalid.timestamp.version": () => api.validateUuidV7StringUnixMs(v4Uuid, timestampWindow),
     "invalid.timestamp.window": () =>
-      api.validateUuidV7Timestamp(ids[0] as string, outsideTimestampWindow),
+      api.validateUuidV7StringUnixMs(ids[0] as string, outsideTimestampWindow),
     "invalid.timestamp.slug.version": () =>
       api.validatePlainUuidV7SlugUnixMs(v4Slug, timestampWindow),
     "invalid.timestamp.slug.window": () =>

@@ -67,7 +67,7 @@ const fillV4 = () => globalThis.crypto.getRandomValues(randomV4);
 const fillV7 = () => globalThis.crypto.getRandomValues(randomV7);
 const portableV4Options = { rng: fillV4 };
 const portableV7Options = { rng: fillV7 };
-const portableV7 = createUuidV7Generator({});
+const portableV7 = unwrap(createUuidV7Generator({}));
 const timestamp = 1_756_864_833_024;
 const timestamps = [timestamp, timestamp + 1] as const;
 const timestampUuids = [

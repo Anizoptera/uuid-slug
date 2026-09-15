@@ -15,7 +15,7 @@ import { unwrap } from "../dev/unwrap";
 import { MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS } from "../src/payload";
 import { uuidStringToBytes } from "../src/uuid";
 import { uuidStringToPlainSlug } from "../src/slug";
-import { uuidV7Bounds } from "../src/v7-bounds";
+import { uuidV7StringBounds } from "../src/v7-bounds";
 
 /** Pads to the 16-byte seed floor, so cases can keep naming their key after what it tests. */
 const maskOrThrow = (seed: string) => {
@@ -101,26 +101,31 @@ describe("the maskable range", () => {
     const shifted = unwrap(
       createUuidV7MaskingCodec({ mask: handle, timestampRangeStartUnixMs: start }),
     );
-    const first = unwrap(uuidV7Bounds(start)).startInclusive;
-    const last = unwrap(uuidV7Bounds(start + MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS)).endInclusive;
+    const first = unwrap(uuidV7StringBounds(start)).startInclusive;
+    const last = unwrap(
+      uuidV7StringBounds(start + MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS),
+    ).endInclusive;
     for (const uuid of [first, last]) {
       const slug = unwrap(shifted.uuidToMaskedSlug(uuid));
       expect(shifted.uuidToString(slug)).toBe(uuid);
     }
-    expect(shifted.uuidToMaskedSlug(unwrap(uuidV7Bounds(start - 1)).startInclusive)).toMatchObject({
+    expect(
+      shifted.uuidToMaskedSlug(unwrap(uuidV7StringBounds(start - 1)).startInclusive),
+    ).toMatchObject({
       code: "invalid_timestamp",
       message: expect.stringContaining(`from Unix millisecond ${start} through`),
     });
     expect(
       shifted.uuidToMaskedSlug(
-        unwrap(uuidV7Bounds(start + MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS + 1)).startInclusive,
+        unwrap(uuidV7StringBounds(start + MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS + 1))
+          .startInclusive,
       ),
     ).toMatchObject({ code: "invalid_timestamp" });
   });
 
   it("retains the range start with each previous mask", () => {
     const start = 2 ** 42;
-    const uuid = unwrap(uuidV7Bounds(start)).startInclusive;
+    const uuid = unwrap(uuidV7StringBounds(start)).startInclusive;
     const slug = unwrap(
       unwrap(
         createUuidV7MaskingCodec({ mask: handle, timestampRangeStartUnixMs: start }),

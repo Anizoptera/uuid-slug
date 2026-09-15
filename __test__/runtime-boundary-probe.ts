@@ -29,7 +29,7 @@ import {
   generatePlainUuidV4Slug,
   generateUuidV7,
   generateUuidV7Value,
-  validateUuidV7Timestamp,
+  validateUuidV7StringUnixMs,
   validatePlainUuidV7SlugUnixMs,
   generateUuidV7Bytes,
   generatePlainUuidV7Slug,
@@ -150,6 +150,7 @@ export const runtimeBoundaryCases = [
       const out = new Uint8Array(24).fill(0xa5);
       try {
         const generator = createSecureUuidV7Generator({ readUnixMs: () => timestamp });
+        assert.ok(!(generator instanceof Error));
         const failure = generator.generateUuidV7Bytes(out, 4);
         assert.ok(failure instanceof UuidSlugError);
         assert.equal(failure.code, "rng_unavailable");
@@ -601,7 +602,7 @@ export const runtimeBoundaryCases = [
         [],
         { maxTimestampDeltaMs: 0, referenceUnixMilliseconds: timestamp },
       ]) {
-        const result = Reflect.apply(validateUuidV7Timestamp, undefined, [uuid, options]);
+        const result = Reflect.apply(validateUuidV7StringUnixMs, undefined, [uuid, options]);
         assert.ok(result instanceof UuidSlugError);
         assert.equal(result.code, "invalid_timestamp");
       }
@@ -612,13 +613,13 @@ export const runtimeBoundaryCases = [
             throw cause;
           },
         });
-        const result = validateUuidV7Timestamp(uuid, options);
+        const result = validateUuidV7StringUnixMs(uuid, options);
         assert.ok(result instanceof UuidSlugError);
         assert.equal(result.code, "invalid_timestamp");
         assert.equal(result.cause, cause);
       }
       for (const maxTimestampDeltaMs of [NaN, Infinity, -Infinity, -1]) {
-        const result = validateUuidV7Timestamp(uuid, {
+        const result = validateUuidV7StringUnixMs(uuid, {
           maxTimestampDeltaMs,
           referenceUnixMs: timestamp,
         });
@@ -626,7 +627,7 @@ export const runtimeBoundaryCases = [
         assert.equal(result.code, "invalid_timestamp");
       }
       for (const referenceUnixMs of [NaN, Infinity, -Infinity]) {
-        const result = validateUuidV7Timestamp(uuid, {
+        const result = validateUuidV7StringUnixMs(uuid, {
           maxTimestampDeltaMs: 0,
           referenceUnixMs,
         });
@@ -639,7 +640,7 @@ export const runtimeBoundaryCases = [
     name: "distinguishes valid UUIDv4 values from malformed UUID text and slugs",
     run(this: void) {
       for (const result of [
-        validateUuidV7Timestamp("1f04e7f5-c0c6-4044-b5a3-6278bb77ffb4", {
+        validateUuidV7StringUnixMs("1f04e7f5-c0c6-4044-b5a3-6278bb77ffb4", {
           maxTimestampDeltaMs: 0,
         }),
         validatePlainUuidV7SlugUnixMs("HwTn9cDGQES1o2J4u3f_tA", {
@@ -656,7 +657,7 @@ export const runtimeBoundaryCases = [
     run(this: void) {
       for (const delta of [-0.5, 0, 0.5]) {
         assert.equal(
-          validateUuidV7Timestamp(uuid, {
+          validateUuidV7StringUnixMs(uuid, {
             maxTimestampDeltaMs: 0.5,
             referenceUnixMs: timestamp + delta,
           }),
@@ -664,13 +665,13 @@ export const runtimeBoundaryCases = [
         );
       }
       assert.equal(
-        validateUuidV7Timestamp(uuid, {
+        validateUuidV7StringUnixMs(uuid, {
           maxTimestampDeltaMs: 0,
           referenceUnixMs: timestamp,
         }),
         uuid,
       );
-      const stale = validateUuidV7Timestamp(uuid, {
+      const stale = validateUuidV7StringUnixMs(uuid, {
         maxTimestampDeltaMs: 0.5,
         referenceUnixMs: timestamp + 1,
       });
@@ -688,7 +689,7 @@ export const runtimeBoundaryCases = [
         return timestamp;
       };
       try {
-        assert.equal(validateUuidV7Timestamp(uuid, { maxTimestampDeltaMs: 0 }), uuid);
+        assert.equal(validateUuidV7StringUnixMs(uuid, { maxTimestampDeltaMs: 0 }), uuid);
         assert.equal(readings, 1);
       } finally {
         Date.now = originalNow;
@@ -703,7 +704,7 @@ export const runtimeBoundaryCases = [
         "011f71fb-0450-7fff-bfff-ffffffffffff",
       ]) {
         assert.equal(
-          validateUuidV7Timestamp(endpoint, {
+          validateUuidV7StringUnixMs(endpoint, {
             maxTimestampDeltaMs: 0,
             referenceUnixMs: timestamp,
           }),

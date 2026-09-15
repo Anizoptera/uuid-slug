@@ -175,20 +175,20 @@ export function createMigration(
     return candidates;
   }
 
-  function uuidToString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  function uuidSlugToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     uuidSlug: string | UuidSlugError,
     textCase?: Case,
   ): UuidStringFor<Case> | UuidSlugError;
-  function uuidToString(
+  function uuidSlugToUuidString(
     uuidSlug: string | UuidSlugError,
     format: UuidSlugMigrationFormat | undefined,
   ): UuidString | UuidSlugError;
-  function uuidToString<Case extends UuidTextCase>(
+  function uuidSlugToUuidString<Case extends UuidTextCase>(
     uuidSlug: string | UuidSlugError,
     format: UuidSlugMigrationFormat,
     textCase: Case,
   ): UuidStringFor<Case> | UuidSlugError;
-  function uuidToString<Case extends UuidTextCase>(
+  function uuidSlugToUuidString<Case extends UuidTextCase>(
     uuidSlug: string | UuidSlugError,
     formatOrCase?: UuidSlugMigrationFormat | Case,
     textCase?: Case,
@@ -207,20 +207,20 @@ export function createMigration(
     ) as UuidStringFor<Case>;
   }
 
-  function uuidToStringCandidates<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  function uuidSlugToUuidStringCandidates<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     uuidSlug: string | UuidSlugError,
     textCase?: Case,
   ): readonly UuidStringFor<Case>[] | UuidSlugError;
-  function uuidToStringCandidates(
+  function uuidSlugToUuidStringCandidates(
     uuidSlug: string | UuidSlugError,
     format: UuidSlugMigrationFormat | undefined,
   ): readonly UuidString[] | UuidSlugError;
-  function uuidToStringCandidates<Case extends UuidTextCase>(
+  function uuidSlugToUuidStringCandidates<Case extends UuidTextCase>(
     uuidSlug: string | UuidSlugError,
     format: UuidSlugMigrationFormat,
     textCase: Case,
   ): readonly UuidStringFor<Case>[] | UuidSlugError;
-  function uuidToStringCandidates(
+  function uuidSlugToUuidStringCandidates(
     uuidSlug: string | UuidSlugError,
     formatOrCase?: UuidSlugMigrationFormat | UuidTextCase,
     textCase?: UuidTextCase,
@@ -236,7 +236,7 @@ export function createMigration(
   }
 
   return {
-    uuidToString,
-    uuidToStringCandidates,
+    uuidSlugToUuidString,
+    uuidSlugToUuidStringCandidates,
   };
 }

@@ -26,6 +26,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     readUnixMs: () => 100,
     clockRollback: { action: api.UUID_V7_ROLLBACK_ERROR, toleranceMs: 0 },
   });
+  if (deterministicV7 instanceof Error) throw deterministicV7;
   equal(
     unwrap(deterministicV7.generateUuidV7()).slice(0, 13),
     "00000000-0064",
@@ -35,6 +36,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   const invalidUuid = api.uuidStringToBytes("not a UUID");
   equal(invalidUuid instanceof Error && invalidUuid.code, api.INVALID_UUID, "error value");
   const backfill = api.createUuidV7Generator({});
+  if (backfill instanceof Error) throw backfill;
   const destination = new Uint8Array(20).fill(0x55);
   const generators = [
     (ms: number) => api.generateUuidV7({ at: ms }),
@@ -80,6 +82,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     if (slug instanceof Error) throw slug;
     equal(api.uuidToString(slug), uuid, `${alphabet} conversion`);
     const generator = api.createUuidV7Generator({ readUnixMs: () => 1234567890000 });
+    if (generator instanceof Error) throw generator;
     const codec = unwrap(
       api.createUuidV7MaskingCodec({
         mask: api.UUID_V7_TEST_MASK,
@@ -88,7 +91,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     equal(
       codec
         .createUuidSlugMigrationDecoder({ acceptPlainSlug: true })
-        .uuidToString(slug, api.PLAIN_SLUG_FORMAT),
+        .uuidSlugToUuidString(slug, api.PLAIN_SLUG_FORMAT),
       uuid,
       `${alphabet} migration`,
     );
@@ -140,12 +143,20 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     acceptFixedMask: true,
     acceptPlainSlug: true,
   });
-  equal(reader.uuidToString(overlap), currentUuid, "migration default");
-  equal(reader.uuidToString(overlap, api.SEEDED_MASK_FORMAT), currentUuid, "current migration");
-  equal(reader.uuidToString(overlap, api.FIXED_MASK_FORMAT), originalUuid, "original migration");
-  equal(reader.uuidToString(overlap, api.PLAIN_SLUG_FORMAT), plainUuid, "plain migration");
+  equal(reader.uuidSlugToUuidString(overlap), currentUuid, "migration default");
   equal(
-    JSON.stringify(reader.uuidToStringCandidates(overlap)),
+    reader.uuidSlugToUuidString(overlap, api.SEEDED_MASK_FORMAT),
+    currentUuid,
+    "current migration",
+  );
+  equal(
+    reader.uuidSlugToUuidString(overlap, api.FIXED_MASK_FORMAT),
+    originalUuid,
+    "original migration",
+  );
+  equal(reader.uuidSlugToUuidString(overlap, api.PLAIN_SLUG_FORMAT), plainUuid, "plain migration");
+  equal(
+    JSON.stringify(reader.uuidSlugToUuidStringCandidates(overlap)),
     JSON.stringify([currentUuid, originalUuid, plainUuid]),
     "migration candidates",
   );
@@ -153,7 +164,7 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     JSON.stringify(
       migrating
         .createUuidSlugMigrationDecoder({ acceptPlainSlug: true })
-        .uuidToStringCandidates(overlap),
+        .uuidSlugToUuidStringCandidates(overlap),
     ),
     JSON.stringify([currentUuid, plainUuid]),
     "fixed-mask migration retirement",

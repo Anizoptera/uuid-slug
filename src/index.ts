@@ -2,7 +2,7 @@
 
 export { createUuidV7MaskingCodec } from "./masking-codec.ts";
 export { MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS } from "./payload.ts";
-export { validateUuidV7Timestamp } from "./timestamp.ts";
+export { validateUuidV7StringUnixMs } from "./timestamp.ts";
 export {
   ABORTED,
   INVALID_BASE32HEX,
@@ -43,6 +43,12 @@ export type {
   AsyncUuidV7MaskOptions,
   CustomUuidV7MaskOptions,
   GeneratedUuidV7,
+  GeneratePlainUuidV7SlugOptions,
+  GenerateUuidV7BytesIntoOptions,
+  GenerateUuidV7BytesOptions,
+  GenerateUuidV7Options,
+  GenerateUuidV7WithMaskedSlugOptions,
+  GenerateUuidV7WithPlainSlugOptions,
   UuidV7TimestampWindow,
   UuidV7Mask,
   UuidV7MaskOptions,
@@ -96,7 +102,7 @@ export type {
   UuidV7String,
   UuidV7Text,
 } from "./types.ts";
-export { uuidV7Bounds, uuidV7ByteBounds } from "./v7-bounds.ts";
+export { uuidV7StringBounds, uuidV7ByteBounds } from "./v7-bounds.ts";
 export {
   MAX_UUID,
   NIL_UUID,

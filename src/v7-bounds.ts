@@ -72,7 +72,7 @@ function textEndpoint<Case extends UuidTextCase>(
  * @param textCase - Built-in output spelling. Omit for lowercase.
  * @returns Canonical UUIDv7 endpoints, or `invalid_timestamp` for an invalid millisecond.
  */
-export function uuidV7Bounds<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+export function uuidV7StringBounds<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   startUnixMs: number,
   textCase?: Case,
 ): UuidV7Bounds<UuidV7StringFor<Case>> | UuidSlugError;
@@ -85,12 +85,12 @@ export function uuidV7Bounds<Case extends UuidTextCase = typeof UUID_TEXT_LOWERC
  * @param textCase - Built-in output spelling. Omit for lowercase.
  * @returns Canonical UUIDv7 endpoints, or `invalid_timestamp` for an invalid interval.
  */
-export function uuidV7Bounds<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+export function uuidV7StringBounds<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   startUnixMs: number,
   endUnixMs: number,
   textCase?: Case,
 ): UuidV7Bounds<UuidV7StringFor<Case>> | UuidSlugError;
-export function uuidV7Bounds(
+export function uuidV7StringBounds(
   startUnixMs: number,
   endOrCase: number | UuidTextCase = startUnixMs,
   requestedCase: UuidTextCase = UUID_TEXT_LOWERCASE,

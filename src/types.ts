@@ -646,7 +646,7 @@ export interface UuidSlugMigrationDecoder<
    * @param textCase - UUID text spelling. Pass it after `uuidSlug` when format is unknown, or after a
    * known format. Omit for lowercase.
    */
-  uuidToString<
+  uuidSlugToUuidString<
     Input extends string | UuidSlugError,
     Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
   >(
@@ -654,12 +654,12 @@ export interface UuidSlugMigrationDecoder<
     uuidSlug: SlugStringInput<Input>,
     textCase?: Case,
   ): UuidStringFor<Case> | UuidSlugError;
-  uuidToString<Input extends string | UuidSlugError>(
+  uuidSlugToUuidString<Input extends string | UuidSlugError>(
     this: void,
     uuidSlug: SlugStringInput<Input>,
     format: Format | undefined,
   ): UuidString | UuidSlugError;
-  uuidToString<Input extends string | UuidSlugError, Case extends UuidTextCase>(
+  uuidSlugToUuidString<Input extends string | UuidSlugError, Case extends UuidTextCase>(
     this: void,
     uuidSlug: SlugStringInput<Input>,
     format: Format,
@@ -675,7 +675,7 @@ export interface UuidSlugMigrationDecoder<
    * @param textCase - UUID text spelling. Pass it after `uuidSlug` when format is unknown, or after a
    * known format. Omit for lowercase.
    */
-  uuidToStringCandidates<
+  uuidSlugToUuidStringCandidates<
     Input extends string | UuidSlugError,
     Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
   >(
@@ -683,12 +683,12 @@ export interface UuidSlugMigrationDecoder<
     uuidSlug: SlugStringInput<Input>,
     textCase?: Case,
   ): readonly UuidStringFor<Case>[] | UuidSlugError;
-  uuidToStringCandidates<Input extends string | UuidSlugError>(
+  uuidSlugToUuidStringCandidates<Input extends string | UuidSlugError>(
     this: void,
     uuidSlug: SlugStringInput<Input>,
     format: Format | undefined,
   ): readonly UuidString[] | UuidSlugError;
-  uuidToStringCandidates<Input extends string | UuidSlugError, Case extends UuidTextCase>(
+  uuidSlugToUuidStringCandidates<Input extends string | UuidSlugError, Case extends UuidTextCase>(
     this: void,
     uuidSlug: SlugStringInput<Input>,
     format: Format,

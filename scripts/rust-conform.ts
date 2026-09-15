@@ -171,9 +171,9 @@ export function evaluate(request: Request): Outcome {
         const bytes = ts.uuidStringToBytes(input);
         return result(bytes instanceof Error ? bytes : ts.extractUuidV7UnixMs(bytes));
       }
-      case "uuidV7Bounds":
+      case "uuidV7StringBounds":
         return result(
-          ts.uuidV7Bounds(
+          ts.uuidV7StringBounds(
             Number(request.start),
             Number(request.end),
             request.textCase as ts.UuidTextCase | undefined,
@@ -229,9 +229,9 @@ export function evaluate(request: Request): Outcome {
               storage: Array.from(out),
             });
       }
-      case "validateUuidV7Timestamp":
+      case "validateUuidV7StringUnixMs":
         return result(
-          ts.validateUuidV7Timestamp(input, {
+          ts.validateUuidV7StringUnixMs(input, {
             maxTimestampDeltaMs: Number(request.window),
             referenceUnixMs: Number(request.now),
           }),
@@ -280,7 +280,9 @@ export function evaluate(request: Request): Outcome {
       case "unmask":
         return result(
           request.acceptPlain === true
-            ? codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true }).uuidToString(input)
+            ? codec
+                .createUuidSlugMigrationDecoder({ acceptPlainSlug: true })
+                .uuidSlugToUuidString(input)
             : codec.maskedSlugToUuidString(input),
         );
       case "unmaskV7":
@@ -301,7 +303,7 @@ export function evaluate(request: Request): Outcome {
               acceptFixedMask: request.original === true,
               acceptPlainSlug: request.plain === true,
             })
-            .uuidToString(input, request.format as UuidSlugMigrationFormat | undefined),
+            .uuidSlugToUuidString(input, request.format as UuidSlugMigrationFormat | undefined),
         );
       case "candidates":
         return result(
@@ -310,7 +312,10 @@ export function evaluate(request: Request): Outcome {
               acceptFixedMask: request.original === true,
               acceptPlainSlug: request.plain === true,
             })
-            .uuidToStringCandidates(input, request.format as UuidSlugMigrationFormat | undefined),
+            .uuidSlugToUuidStringCandidates(
+              input,
+              request.format as UuidSlugMigrationFormat | undefined,
+            ),
         );
       default:
         throw new Error(`Unknown conformance operation ${request.op}`);
@@ -354,7 +359,7 @@ export async function contractRequests(): Promise<Request[]> {
     [0x1_0000_0000_0000, 0x1_0000_0000_0000],
   ])
     for (const textCase of ["lowercase", "uppercase"])
-      requests.push({ op: "uuidV7Bounds", start, end, textCase });
+      requests.push({ op: "uuidV7StringBounds", start, end, textCase });
   // Generic parsing accepts every version/variant; specialized guards must not widen with it.
   for (const { value, v4, v7 } of uuidVariants("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")) {
     deepStrictEqual(evaluate({ op: "guards", input: value }), {
@@ -612,12 +617,12 @@ export async function contractRequests(): Promise<Request[]> {
   );
   for (const window of [-1, 0, 0.5, 86_400_000, "NaN", "Infinity"]) {
     for (const now of [0, 1, 1.5, "NaN", "Infinity"])
-      requests.push({ op: "validateUuidV7Timestamp", input: first.uuid, now, window });
+      requests.push({ op: "validateUuidV7StringUnixMs", input: first.uuid, now, window });
   }
   const instant = Number.parseInt(ordinary.uuid.slice(0, 8) + ordinary.uuid.slice(9, 13), 16);
   for (const distance of [-1.5, -1, 0, 1, 1.5]) {
     requests.push({
-      op: "validateUuidV7Timestamp",
+      op: "validateUuidV7StringUnixMs",
       input: ordinary.uuid,
       now: instant + distance,
       window: 1,

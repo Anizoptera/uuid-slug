@@ -37,7 +37,7 @@ import {
   generateUuidV7Bytes,
   generateUuidV7,
   generateUuidV7Value,
-  uuidV7Bounds,
+  uuidV7StringBounds,
   uuidV7ByteBounds,
   createUuidV7Generator,
   createUuidV7GeneratorWithRandomFill,
@@ -45,10 +45,10 @@ import {
   generateUuidV7WithPlainSlug,
   INVALID_UUID_VERSION,
   UuidSlugError,
-  validateUuidV7Timestamp,
+  validateUuidV7StringUnixMs,
   validatePlainUuidV7SlugUnixMs,
 } from "../src/index";
-import type { SlugAlphabet, UuidV7MaskingCodecOptions } from "../src/index";
+import type { SlugAlphabet, UuidV7Generator, UuidV7MaskingCodecOptions } from "../src/index";
 import { unwrap } from "../dev/unwrap";
 import { TEST_SENTINELS } from "./sentinel-fixtures";
 
@@ -212,8 +212,10 @@ describe("error classification", () => {
     expect(codec.uuidToBytes(failure, output, 8)).toBe(failure);
     expect(codec.extractMaskedUuidV7UnixMs(failure)).toBe(failure);
     expect(codec.validateMaskedUuidV7SlugUnixMs(failure, { maxTimestampDeltaMs: 0 })).toBe(failure);
-    expect(codec.createUuidSlugMigrationDecoder().uuidToString(failure)).toBe(failure);
-    expect(codec.createUuidSlugMigrationDecoder().uuidToStringCandidates(failure)).toBe(failure);
+    expect(codec.createUuidSlugMigrationDecoder().uuidSlugToUuidString(failure)).toBe(failure);
+    expect(codec.createUuidSlugMigrationDecoder().uuidSlugToUuidStringCandidates(failure)).toBe(
+      failure,
+    );
     expect(output.every((byte) => byte === 0x5a)).toBe(true);
   });
 
@@ -308,19 +310,19 @@ describe("UUIDv7 timestamp extraction", () => {
   });
 
   it("constructs inclusive UUIDv7 bounds without generating identifiers", () => {
-    expect(uuidV7Bounds(0)).toEqual({
+    expect(uuidV7StringBounds(0)).toEqual({
       startInclusive: "00000000-0000-7000-8000-000000000000",
       endInclusive: "00000000-0000-7fff-bfff-ffffffffffff",
     });
-    expect(uuidV7Bounds(1, 2)).toEqual({
+    expect(uuidV7StringBounds(1, 2)).toEqual({
       startInclusive: "00000000-0001-7000-8000-000000000000",
       endInclusive: "00000000-0002-7fff-bfff-ffffffffffff",
     });
-    expect(uuidV7Bounds(0xffff_ffff_ffff)).toEqual({
+    expect(uuidV7StringBounds(0xffff_ffff_ffff)).toEqual({
       startInclusive: "ffffffff-ffff-7000-8000-000000000000",
       endInclusive: "ffffffff-ffff-7fff-bfff-ffffffffffff",
     });
-    expect(uuidV7Bounds(0, UUID_TEXT_UPPERCASE)).toEqual({
+    expect(uuidV7StringBounds(0, UUID_TEXT_UPPERCASE)).toEqual({
       startInclusive: "00000000-0000-7000-8000-000000000000",
       endInclusive: "00000000-0000-7FFF-BFFF-FFFFFFFFFFFF",
     });
@@ -333,10 +335,14 @@ describe("UUIDv7 timestamp extraction", () => {
     expect(bounds.startInclusive).not.toBe(bounds.endInclusive);
     for (const [start, end] of [[-1], [1.5], [0, 0x1_0000_0000_0000], [2, 1]]) {
       const result =
-        end === undefined ? uuidV7Bounds(start as number) : uuidV7Bounds(start as number, end);
+        end === undefined
+          ? uuidV7StringBounds(start as number)
+          : uuidV7StringBounds(start as number, end);
       expect(result).toMatchObject({ code: "invalid_timestamp" });
     }
-    expect(uuidV7Bounds(0, "titlecase" as never)).toMatchObject({ code: "invalid_options" });
+    expect(uuidV7StringBounds(0, "titlecase" as never)).toMatchObject({
+      code: "invalid_options",
+    });
   });
 
   // The defect this pins is silent rather than loud: a v4's first six bytes are random, so the
@@ -457,7 +463,7 @@ describe("plain UUID slugs", () => {
     expect(uuidStringToPlainSlug(compact)).toBe(uuidStringToPlainSlug(SAMPLE_V7_A));
     expect(extractUuidV7UnixMs(mixed)).toBe(extractUuidV7UnixMs(SAMPLE_V7_A));
     expect(
-      validateUuidV7Timestamp(compact, {
+      validateUuidV7StringUnixMs(compact, {
         maxTimestampDeltaMs: 0,
         referenceUnixMs: unwrap(extractUuidV7UnixMs(SAMPLE_V7_A)),
       }),
@@ -547,7 +553,7 @@ describe("plain UUID slugs", () => {
     const plain = unwrap(uuidStringToPlainSlug(SAMPLE_V7_A));
     expect(uuidToString(plain, UUID_TEXT_UPPERCASE)).toBe(SAMPLE_V7_A.toUpperCase());
     expect(
-      validateUuidV7Timestamp(
+      validateUuidV7StringUnixMs(
         SAMPLE_V7_A.toUpperCase(),
         {
           maxTimestampDeltaMs: 0,
@@ -575,8 +581,10 @@ describe("plain UUID slugs", () => {
       /^[0-9A-F-]+$/,
     );
     const migration = codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true });
-    expect(migration.uuidToString(plain, UUID_TEXT_UPPERCASE)).toBe(SAMPLE_V7_A.toUpperCase());
-    expect(migration.uuidToStringCandidates(plain, UUID_TEXT_UPPERCASE)).toContain(
+    expect(migration.uuidSlugToUuidString(plain, UUID_TEXT_UPPERCASE)).toBe(
+      SAMPLE_V7_A.toUpperCase(),
+    );
+    expect(migration.uuidSlugToUuidStringCandidates(plain, UUID_TEXT_UPPERCASE)).toContain(
       SAMPLE_V7_A.toUpperCase(),
     );
   });
@@ -664,10 +672,12 @@ describe("plain UUID slugs", () => {
   });
 
   it("uses one selected generator sequence across every generated representation", () => {
-    const generator = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
-      readUnixMs: () => 100.25,
-      subMillisecondFractionBits: 12,
-    });
+    const generator = unwrap(
+      createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
+        readUnixMs: () => 100.25,
+        subMillisecondFractionBits: 12,
+      }),
+    );
     const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
     const at = { epochNanoseconds: 100_250_000n } as const;
 
@@ -699,10 +709,12 @@ describe("plain UUID slugs", () => {
   });
 
   it("rejects selected-generator output before the requested precise instant", () => {
-    const source = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
-      readUnixMs: () => 100,
-      subMillisecondFractionBits: 12,
-    });
+    const source = unwrap(
+      createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
+        readUnixMs: () => 100,
+        subMillisecondFractionBits: 12,
+      }),
+    );
     const earlierMillisecond = unwrap(source.generateUuidV7Bytes({ at: 99.999 }));
     const earlierFraction = unwrap(source.generateUuidV7Bytes({ at: 100.25 }));
     const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
@@ -768,7 +780,9 @@ describe("plain UUID slugs", () => {
   });
 
   it("protects caller-owned output from a failing selected generator", () => {
-    const valid = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, { readUnixMs: () => 0 });
+    const valid = unwrap(
+      createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, { readUnixMs: () => 0 }),
+    );
     const generator = {
       generateUuidV7Bytes: (options?: { output?: Uint8Array }) => {
         options?.output?.fill(0xbb);
@@ -787,7 +801,7 @@ describe("plain UUID slugs", () => {
   it("rejects an unknown UUID text case before generation work", () => {
     const invalid = Symbol("titlecase") as never;
     let clockReads = 0;
-    const generator = createUuidV7Generator({ readUnixMs: () => ++clockReads });
+    const generator = unwrap(createUuidV7Generator({ readUnixMs: () => ++clockReads }));
     expect(generator.generateUuidV7(invalid)).toMatchObject({ code: "invalid_options" });
     expect(generator.generateUuidV7({ at: 0, textCase: invalid })).toMatchObject({
       code: "invalid_options",
@@ -816,9 +830,11 @@ describe("plain UUID slugs", () => {
     expect(first).toBe(second);
     expect(isUuidV4String(first)).toBe(true);
 
-    const generator = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
-      readUnixMs: () => 123,
-    });
+    const generator = unwrap(
+      createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
+        readUnixMs: () => 123,
+      }),
+    );
     expect(extractUuidV7UnixMs(generator.generateUuidV7())).toBe(123);
     expect(createUuidV7Generator({ fillRandom: FILL_WITH_ZEROS } as never)).toMatchObject({
       code: "invalid_options",
@@ -838,14 +854,16 @@ describe("plain UUID slugs", () => {
     expect(outerV4).not.toBeInstanceOf(Error);
     expect(nestedV4).toMatchObject({ code: "rng_unavailable" });
 
-    let reentrantGenerator!: ReturnType<typeof createUuidV7GeneratorWithRandomFill>;
+    let reentrantGenerator!: UuidV7Generator;
     let nestedV7: unknown;
-    reentrantGenerator = createUuidV7GeneratorWithRandomFill(
-      (bytes) => {
-        nestedV7 = reentrantGenerator.generateUuidV7();
-        bytes.fill(0);
-      },
-      { readUnixMs: () => 123 },
+    reentrantGenerator = unwrap(
+      createUuidV7GeneratorWithRandomFill(
+        (bytes) => {
+          nestedV7 = reentrantGenerator.generateUuidV7();
+          bytes.fill(0);
+        },
+        { readUnixMs: () => 123 },
+      ),
     );
     expect(reentrantGenerator.generateUuidV7()).not.toBeInstanceOf(Error);
     expect(nestedV7).toMatchObject({ code: "rng_unavailable" });
@@ -970,10 +988,12 @@ describe("plain UUID slugs", () => {
 
   it("retains generated layout and an explicit codec without retaining generator state", () => {
     const codec = unwrap(createCodec({ mask: UUID_V7_TEST_MASK }));
-    const generator = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
-      readUnixMs: () => 123.5,
-      subMillisecondFractionBits: 12,
-    });
+    const generator = unwrap(
+      createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
+        readUnixMs: () => 123.5,
+        subMillisecondFractionBits: 12,
+      }),
+    );
     const generated = unwrap(generateUuidV7Value({ at: 123, generator, maskingCodec: codec }));
     expect(generated.version).toBe(7);
     expect(generated.toMaskedSlug()).not.toBeInstanceOf(Error);
@@ -991,12 +1011,16 @@ describe("plain UUID slugs", () => {
     expect(unwrap(fromCodec.extractV7Payload()).unixMs).toBe(124);
     expect(fromCodec.toMaskedSlug()).not.toBeInstanceOf(Error);
 
-    const control = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
-      readUnixMs: () => 200,
-    });
-    const observed = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
-      readUnixMs: () => 200,
-    });
+    const control = unwrap(
+      createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
+        readUnixMs: () => 200,
+      }),
+    );
+    const observed = unwrap(
+      createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
+        readUnixMs: () => 200,
+      }),
+    );
     unwrap(control.generateUuidV7Value());
     unwrap(observed.generateUuidV7Value());
     unwrap(observed.generateUuidV7Value({ at: 100 }));
@@ -1450,7 +1474,7 @@ describe("plain-slug migration", () => {
     expect(failure).toBeInstanceOf(UuidSlugError);
     expect((failure as UuidSlugError).code).toBe("invalid_uuid_slug");
     expect(
-      codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true }).uuidToString(foreign),
+      codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true }).uuidSlugToUuidString(foreign),
     ).toBe("1f04e7f5-c0c6-4044-b5a3-6278bb77ffb4");
   });
 

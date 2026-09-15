@@ -44,7 +44,7 @@ import {
   generateUuidV4,
   generateUuidV4WithRandomFill,
   validatePlainUuidV7SlugUnixMs,
-  validateUuidV7Timestamp,
+  validateUuidV7StringUnixMs,
   uuidStringToPlainSlug,
   UuidSlugError,
   generateUuidV4Bytes,
@@ -52,7 +52,7 @@ import {
   generateUuidV7Bytes,
   generateUuidV7,
   generateUuidV7Value,
-  uuidV7Bounds,
+  uuidV7StringBounds,
   uuidV7ByteBounds,
   generatePlainUuidV7Slug,
   generateUuidV7WithPlainSlug,
@@ -71,6 +71,12 @@ import type {
   UppercaseUuidV4String,
   UppercaseUuidV7String,
   GeneratedUuidV7,
+  GeneratePlainUuidV7SlugOptions,
+  GenerateUuidV7BytesIntoOptions,
+  GenerateUuidV7BytesOptions,
+  GenerateUuidV7Options,
+  GenerateUuidV7WithMaskedSlugOptions,
+  GenerateUuidV7WithPlainSlugOptions,
   UuidV7TimestampWindow,
   UuidV7Mask,
   MaskedUuidV7Slug,
@@ -210,7 +216,7 @@ expectType<number | UuidSlugError>()(extractUuidV7UnixMs(versionedSlug));
 // @ts-expect-error Known slug text cannot enter a UUID text operation.
 uuidStringToBytes(versionedSlug);
 // @ts-expect-error UUID timestamp validation accepts UUID text, not known slug text.
-validateUuidV7Timestamp(versionedSlug, { maxTimestampDeltaMs: 0 });
+validateUuidV7StringUnixMs(versionedSlug, { maxTimestampDeltaMs: 0 });
 const convertedUuid = uuidToString(versionedSlug);
 if (convertedUuid instanceof Error) throw convertedUuid;
 const roundTripUuid: UuidV7String = convertedUuid;
@@ -312,29 +318,29 @@ expectType<PlainUuidV7Slug | UuidSlugError>()(uuidStringToPlainSlug(uppercaseV7)
 expectType<UppercaseUuidV7String | UuidSlugError>()(
   generateUuidV7({ at: 0, textCase: UUID_TEXT_UPPERCASE }),
 );
-expectType<UuidV7Bounds<UuidV7String> | UuidSlugError>()(uuidV7Bounds(0));
+expectType<UuidV7Bounds<UuidV7String> | UuidSlugError>()(uuidV7StringBounds(0));
 expectType<UuidV7Bounds<UppercaseUuidV7String> | UuidSlugError>()(
-  uuidV7Bounds(0, UUID_TEXT_UPPERCASE),
+  uuidV7StringBounds(0, UUID_TEXT_UPPERCASE),
 );
 expectType<UuidV7Bounds<UuidV7Bytes> | UuidSlugError>()(uuidV7ByteBounds(0, 1));
 const uppercaseV4 = generateUuidV4("uppercase");
 if (uppercaseV4 instanceof Error) throw uppercaseV4;
 // @ts-expect-error A known uppercase UUIDv4 cannot enter UUIDv7 timestamp validation.
-validateUuidV7Timestamp(uppercaseV4, { maxTimestampDeltaMs: 0 });
+validateUuidV7StringUnixMs(uppercaseV4, { maxTimestampDeltaMs: 0 });
 expectType<GeneratedUuidV7<PlainUuidV7Slug, typeof UUID_TEXT_UPPERCASE> | UuidSlugError>()(
   generateUuidV7WithPlainSlug(UUID_TEXT_UPPERCASE),
 );
 if (generatedV4Result instanceof Error) throw generatedV4Result;
 const generatedV4 = generatedV4Result;
 // @ts-expect-error UUIDv7 timestamp validation is undefined for a known UUIDv4.
-validateUuidV7Timestamp(generatedV4, { maxTimestampDeltaMs: 0 });
+validateUuidV7StringUnixMs(generatedV4, { maxTimestampDeltaMs: 0 });
 expectType<UuidV7String | UuidSlugError>()(
-  validateUuidV7Timestamp("019ff19b-58b8-7000-9b1b-df713bd5562c", {
+  validateUuidV7StringUnixMs("019ff19b-58b8-7000-9b1b-df713bd5562c", {
     maxTimestampDeltaMs: 0,
   }),
 );
 expectType<UppercaseUuidV7String | UuidSlugError>()(
-  validateUuidV7Timestamp(
+  validateUuidV7StringUnixMs(
     "019ff19b-58b8-7000-9b1b-df713bd5562c",
     { maxTimestampDeltaMs: 0 },
     UUID_TEXT_UPPERCASE,
@@ -525,34 +531,35 @@ const migration = codec.createUuidSlugMigrationDecoder({
 });
 expectType<UuidSlugMigrationDecoder>()(migration);
 // @ts-expect-error Migration readers accept encoded slug text, not known UUID text.
-migration.uuidToString(checkedUuid);
+migration.uuidSlugToUuidString(checkedUuid);
 // @ts-expect-error Candidate discovery accepts encoded slug text, not known UUID text.
-migration.uuidToStringCandidates(checkedUuid);
-const migrated: UuidString | UuidSlugError = migration.uuidToString("AAAAAAABcACAAAAAAAAAAA");
-const candidates: readonly UuidString[] | UuidSlugError = migration.uuidToStringCandidates(
+migration.uuidSlugToUuidStringCandidates(checkedUuid);
+const migrated: UuidString | UuidSlugError =
+  migration.uuidSlugToUuidString("AAAAAAABcACAAAAAAAAAAA");
+const candidates: readonly UuidString[] | UuidSlugError = migration.uuidSlugToUuidStringCandidates(
   "AAAAAAABcACAAAAAAAAAAA",
   FIXED_MASK_FORMAT,
 );
 expectType<UppercaseUuidString | UuidSlugError>()(
-  migration.uuidToString("AAAAAAABcACAAAAAAAAAAA", UUID_TEXT_UPPERCASE),
+  migration.uuidSlugToUuidString("AAAAAAABcACAAAAAAAAAAA", UUID_TEXT_UPPERCASE),
 );
 expectType<readonly UppercaseUuidString[] | UuidSlugError>()(
-  migration.uuidToStringCandidates(
+  migration.uuidSlugToUuidStringCandidates(
     "AAAAAAABcACAAAAAAAAAAA",
     FIXED_MASK_FORMAT,
     UUID_TEXT_UPPERCASE,
   ),
 );
 const plainOnlyMigration = codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true });
-plainOnlyMigration.uuidToString("AAAAAAAAcACAAAAAAAAAAA", PLAIN_SLUG_FORMAT);
+plainOnlyMigration.uuidSlugToUuidString("AAAAAAAAcACAAAAAAAAAAA", PLAIN_SLUG_FORMAT);
 // @ts-expect-error This reader was not configured to accept the original masked format.
-plainOnlyMigration.uuidToString("AAAAAAAAcACAAAAAAAAAAA", FIXED_MASK_FORMAT);
+plainOnlyMigration.uuidSlugToUuidString("AAAAAAAAcACAAAAAAAAAAA", FIXED_MASK_FORMAT);
 const currentOnlyMigration = codec.createUuidSlugMigrationDecoder();
 // @ts-expect-error Migration options state what input the reader accepts.
 codec.createUuidSlugMigrationDecoder({ directSlug: true });
 // @ts-expect-error A current-only reader cannot select a disabled historical format.
-currentOnlyMigration.uuidToString("AAAAAAAAcACAAAAAAAAAAA", PLAIN_SLUG_FORMAT);
-currentOnlyMigration.uuidToString("AAAAAAAAcACAAAAAAAAAAA", SEEDED_MASK_FORMAT);
+currentOnlyMigration.uuidSlugToUuidString("AAAAAAAAcACAAAAAAAAAAA", PLAIN_SLUG_FORMAT);
+currentOnlyMigration.uuidSlugToUuidString("AAAAAAAAcACAAAAAAAAAAA", SEEDED_MASK_FORMAT);
 void [
   uncheckedBytes,
   uncheckedUuid,
@@ -638,18 +645,20 @@ expectType<UuidV4String | UuidSlugError>()(generateUuidV4WithRandomFill(determin
 expectType<UppercaseUuidV4String | UuidSlugError>()(
   generateUuidV4WithRandomFill(deterministicFill, UUID_TEXT_UPPERCASE),
 );
-const customEntropyGenerator: UuidV7Generator = createUuidV7GeneratorWithRandomFill(
-  deterministicFill,
-  {
-    clockRollback: { action: UUID_V7_ROLLBACK_ERROR, toleranceMs: 0 },
-  },
-);
+const customEntropyGenerator = createUuidV7GeneratorWithRandomFill(deterministicFill, {
+  clockRollback: { action: UUID_V7_ROLLBACK_ERROR, toleranceMs: 0 },
+});
+expectType<UuidV7Generator | UuidSlugError>()(customEntropyGenerator);
+if (customEntropyGenerator instanceof Error) throw customEntropyGenerator;
 expectType<UuidV7PayloadLayout>()(customEntropyGenerator.payloadLayout);
 expectType<UuidVersion | UuidSlugError>()(extractUuidVersion(versionedSlug));
 void customEntropyGenerator;
 
 createUuidV7Generator({ clockRollback: { action: UUID_V7_ROLLBACK_PRESERVE } });
 createUuidV7Generator({ subMillisecondFractionBits: 12 });
+expectType<UuidV7Generator | UuidSlugError>()(
+  createUuidV7Generator({ subMillisecondFractionBits: 12 }),
+);
 createUuidV7Generator({
   clockRollback: { action: UUID_V7_ROLLBACK_RESET, toleranceMs: 0 },
 });
@@ -673,3 +682,13 @@ declare const internalTypes: readonly [
   _MigrationProjectionIsInternal,
 ];
 void internalTypes;
+
+declare const reusableGenerationOptions: readonly [
+  GenerateUuidV7Options,
+  GeneratePlainUuidV7SlugOptions,
+  GenerateUuidV7BytesOptions,
+  GenerateUuidV7BytesIntoOptions<Uint8Array>,
+  GenerateUuidV7WithPlainSlugOptions,
+  GenerateUuidV7WithMaskedSlugOptions,
+];
+void reusableGenerationOptions;

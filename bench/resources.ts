@@ -114,11 +114,14 @@ try {
       return time;
     },
   });
+  assert.ok(!(portable instanceof Error));
   const portableSubMillisecond = api.createUuidV7Generator({
     readUnixMs: () => time + 0.75,
     subMillisecondFractionBits: 12,
   });
+  assert.ok(!(portableSubMillisecond instanceof Error));
   const selectedGenerator = api.createUuidV7Generator({ readUnixMs: () => time });
+  assert.ok(!(selectedGenerator instanceof Error));
   const reset = () => {
     for (const key of Object.keys(counts) as (keyof typeof counts)[]) counts[key] = 0;
   };
@@ -193,7 +196,7 @@ try {
     () => portableSubMillisecond.generateUuidV7Bytes(into, 4),
     { buffers: 0, views: 0, errors: 0 },
   );
-  check("UUIDv7 text bounds", () => api.uuidV7Bounds(time), {
+  check("UUIDv7 text bounds", () => api.uuidV7StringBounds(time), {
     buffers: 0,
     views: 0,
     errors: 0,
@@ -279,13 +282,13 @@ try {
       chars: 22,
     },
   );
-  check("migration first match", () => migration.uuidToString(old as string), {
+  check("migration first match", () => migration.uuidSlugToUuidString(old as string), {
     base64: 0,
     errors: 0,
     chars: 22,
     draws: 0,
   });
-  check("migration candidates", () => migration.uuidToStringCandidates(old as string), {
+  check("migration candidates", () => migration.uuidSlugToUuidStringCandidates(old as string), {
     base64: 0,
     errors: 0,
     chars: 22,
@@ -293,7 +296,7 @@ try {
   });
   check(
     "migration candidates with 16 masks",
-    () => migrationManyReader.uuidToStringCandidates(migrationLastSlug as string),
+    () => migrationManyReader.uuidSlugToUuidStringCandidates(migrationLastSlug as string),
     { slices: 1, errors: 0, chars: 22, draws: 0 },
   );
   check(
