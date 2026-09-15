@@ -20,10 +20,16 @@ export, accepted form, and registry becomes a permanent compatibility and verifi
 - [ ] Rule whether repeated slug-heavy call sites justify precomputed nil and max slugs instead of
       one conversion per process.
 
-### UUID inspection
+### Unknown-ID diagnosis
 
-- [ ] Rule whether callers need a version-neutral UUID variant result in addition to the existing
-      version inspection and version-specific RFC-variant guards.
+- [x] Programmatic migration and debugging tools need one diagnosis of an unknown UUID: its
+      normalized value, version, layout family, available timestamp facts, and which package
+      operations accept it.
+- [ ] Rule whether repeated diagnosis and conversion justify an opt-in immutable parsed UUID value
+      or only a one-shot serializable result. Keep existing direct functions for one-shot and hot
+      paths either way.
+- [ ] Design the accepted result around caller decisions and compare it with the existing narrow
+      extractors. Keep masking codecs explicit; a diagnosed UUID must not retain key-bearing state.
 
 ## Competitor benchmarks
 
