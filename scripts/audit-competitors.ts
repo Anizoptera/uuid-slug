@@ -14,7 +14,7 @@ const rustRows = [
 if (rustRows.length === 0) throw new Error(`${document} has no Rust competitor rows.`);
 
 type CrateResponse = {
-  crate: { repository: string | null };
+  crate: { max_stable_version: string; repository: string | null };
   versions: { num: string; yanked: boolean; created_at: string }[];
 };
 
@@ -60,7 +60,11 @@ async function currentCrate(name: string): Promise<readonly [string, string, str
   });
   if (!crateResponse.ok) throw new Error(`${name}: crates.io returned ${crateResponse.status}.`);
   const crate = (await crateResponse.json()) as CrateResponse;
-  const latest = crate.versions.find(({ yanked }) => !yanked);
+  // crates.io orders versions by publication time, so a newly published lower
+  // SemVer can precede the registry's selected stable release.
+  const latest = crate.versions.find(
+    ({ num, yanked }) => !yanked && num === crate.crate.max_stable_version,
+  );
   if (!latest) throw new Error(`${name}: crates.io returned no non-yanked release.`);
 
   return [

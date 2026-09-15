@@ -1298,7 +1298,7 @@ defects unresolved.
 
 | Package | Release | Repo commit | Why retained |
 | --- | --- | --- | --- |
-| [`uuid` 14.0.2](https://www.npmjs.com/package/uuid) | 2026-08-18 | 2026-08-18 | Main UUID library; v4 and configurable v7 text and caller storage |
+| [`uuid` 14.0.2](https://www.npmjs.com/package/uuid) | 2026-08-18 | 2026-09-15 | Main UUID library; v4 and configurable v7 text and caller storage |
 | [`@smithy/uuid` 1.4.2](https://www.npmjs.com/package/@smithy/uuid) | 2026-08-15 | 2026-09-11 | High-volume UUIDv4 wrapper used by AWS packages |
 | [`@lukeed/uuid` 2.0.1](https://www.npmjs.com/package/@lukeed/uuid) | 2023-03-31 | 2024-01-20 | Small pooled UUIDv4 implementation |
 | [`uuidv7` 1.2.1](https://www.npmjs.com/package/uuidv7) | 2026-03-22 | 2026-08-25 | Stateful v7 generator with rollback policy and owned bytes |
