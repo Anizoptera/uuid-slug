@@ -246,6 +246,13 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   case-sensitive.
 - Export `NIL_UUID` and `MAX_UUID` as canonical `UuidString` values. They are useful boundaries and
   sentinels, but neither value claims UUIDv4 or UUIDv7 semantics.
+- Keep RFC example UUIDs in documentation and tests. A named runtime export would turn a fixture
+  into a package concept without helping callers generate, validate, inspect, or convert a UUID.
+- Do not publish UUID registries owned by external protocols such as Bluetooth or COM. Their names,
+  assignments, and release cadence belong to those protocols rather than UUID representation.
+- Do not publish precomputed plain slugs for `NIL_UUID` or `MAX_UUID`. Callers that repeatedly need
+  one can convert it once, while dedicated exports would duplicate values already derived by the
+  public conversion API.
 - `uuidV7Bounds` and `uuidV7ByteBounds` return the inclusive lowest and highest RFC-variant UUIDv7
   values for one millisecond or an inclusive millisecond interval. They construct search keys and
   never generate identifiers. Their range meaning requires comparison in UUID wire-byte order;

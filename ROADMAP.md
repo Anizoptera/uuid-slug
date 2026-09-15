@@ -15,10 +15,11 @@ export, accepted form, and registry becomes a permanent compatibility and verifi
 
 ### UUID constants
 
-- [ ] Rule whether a named RFC example has a runtime consumer job beyond documentation and tests.
-- [ ] Rule whether this package should own any external protocol registry such as Bluetooth or COM.
-- [ ] Rule whether repeated slug-heavy call sites justify precomputed nil and max slugs instead of
-      one conversion per process.
+- [x] Keep named RFC examples in documentation and tests; they have no runtime consumer job.
+- [x] Reject external protocol registries such as Bluetooth or COM; their independent ownership and
+      release cadence do not belong in a UUID representation package.
+- [x] Reject precomputed nil and max slugs; one conversion per process is cheaper than permanent
+      exports for values already derivable from `NIL_UUID` and `MAX_UUID`.
 
 ### Unknown-ID diagnosis
 
