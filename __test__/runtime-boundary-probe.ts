@@ -9,6 +9,7 @@ import {
   createUuidV7Generator as createSecureUuidV7Generator,
   createUuidV7MaskingCodec,
   createCustomUuidV7Mask,
+  UUID_V7_TEST_MASK,
   extractUuidV7UnixMs,
   bytesToUuidString,
   UUID_TEXT_UPPERCASE,
@@ -27,6 +28,7 @@ import {
   generateUuidV4Bytes,
   generatePlainUuidV4Slug,
   generateUuidV7,
+  generateUuidV7Value,
   validateUuidV7Timestamp,
   validatePlainUuidV7SlugUnixMs,
   generateUuidV7Bytes,
@@ -107,6 +109,34 @@ export const runtimeBoundaryCases = [
         assert.equal(runtimeDraws, 0);
       } finally {
         runtime.fillRandom = originalFill;
+      }
+    },
+  },
+  {
+    name: "generation rejects exotic option objects through every public owner",
+    run(this: void) {
+      const generator = unwrap(createSecureUuidV7Generator());
+      const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
+      const calls = [
+        (options: never) => generateUuidV7(options),
+        (options: never) => generatePlainUuidV7Slug(options),
+        (options: never) => generateUuidV7Value(options),
+        (options: never) => generator.generateUuidV7Value(options),
+        (options: never) => codec.generateUuidV7Value(options),
+      ];
+      const exoticOptions = [
+        new Date(0),
+        new Map(),
+        /options/,
+        new (class Options {
+          readonly marker = true;
+        })(),
+      ];
+      for (const options of exoticOptions) {
+        for (const call of calls) {
+          const result = call(options as never);
+          assert.equal(result instanceof UuidSlugError && result.code, "invalid_options");
+        }
       }
     },
   },

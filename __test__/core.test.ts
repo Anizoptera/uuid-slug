@@ -631,25 +631,6 @@ describe("plain UUID slugs", () => {
     expect(generateUuidV7({ at: at as never })).toMatchObject({ code: "invalid_timestamp" });
   });
 
-  it.each([
-    new Date(0),
-    new Map(),
-    /options/,
-    new (class Options {
-      readonly marker = true;
-    })(),
-  ])("rejects an exotic generation options object %o", (options) => {
-    const generator = createUuidV7Generator();
-    const codec = unwrap(createCodec({ mask: UUID_V7_TEST_MASK }));
-    expect(generateUuidV7(options as never)).toMatchObject({ code: "invalid_options" });
-    expect(generatePlainUuidV7Slug(options as never)).toMatchObject({ code: "invalid_options" });
-    expect(generateUuidV7Value(options as never)).toMatchObject({ code: "invalid_options" });
-    expect(generator.generateUuidV7Value(options as never)).toMatchObject({
-      code: "invalid_options",
-    });
-    expect(codec.generateUuidV7Value(options as never)).toMatchObject({ code: "invalid_options" });
-  });
-
   it("returns an option error when an options proxy blocks validation", () => {
     expect(generateUuidV7(revokedInput.proxy as never)).toMatchObject({
       code: "invalid_options",
