@@ -371,7 +371,6 @@ mod tests {
         for result in [
             generate_uuid_v4_with_random_fill(fail),
             generator.generate_uuid_v7_with_random_fill(1.0, fail),
-            generator.generate_uuid_v7_with_random_fill(1.0, fail),
         ] {
             let error = result.unwrap_err();
             assert_eq!(error.code(), ErrorCode::RngUnavailable);
