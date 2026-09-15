@@ -64,6 +64,28 @@ export const runtimeBoundaryCases = [
     },
   },
   {
+    name: "detaches selected generators and isolates their retained output",
+    run(this: void) {
+      const source = makeGenerator();
+      const valid = unwrap(source.generateUuidV7Bytes());
+      let retained: Uint8Array | undefined;
+      const generator = {
+        payloadLayout: source.payloadLayout,
+        generateUuidV7Bytes(this: void, output: Uint8Array) {
+          assert.equal(this, undefined);
+          retained = output;
+          output.set(valid);
+          return output;
+        },
+      };
+
+      const result = unwrap(generateUuidV7Bytes({ generator: generator as never }));
+      retained?.fill(0xff);
+      assert.equal(result.constructor, Uint8Array);
+      assert.deepEqual(result, valid);
+    },
+  },
+  {
     name: "public generators reject caller-supplied entropy",
     run(this: void) {
       const originalFill = runtime.fillRandom;
