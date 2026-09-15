@@ -1261,12 +1261,11 @@ version requires source inspection before its evidence or benchmark result can b
 | [`id-forge` 1.0.0](https://docs.rs/id-forge/1.0.0/id_forge/) | v4, v7 | 2026-05-20 | 2026-05-21 | Zero-dependency typed generator with monotonic variants | package metadata inspected; behavior unmeasured |
 | [`philiprehberger-id-gen` 0.3.0](https://docs.rs/philiprehberger-id-gen/0.3.0/philiprehberger_id_gen/) | v7 | 2026-05-31 | 2026-06-19 | General ID library with text, bytes, parsing, and explicit timestamps | source inspected; behavior unmeasured |
 | [`uniqer_rs` 0.0.4](https://docs.rs/uniqer_rs/0.0.4/uniqer_rs/) | v4, v7 | 2025-09-03 | 2025-09-03 | Builder wrapper over `uuid`; measures wrapper cost, not a new generator | source inspected; behavior unmeasured |
-| [`uuid-extra` 0.0.2](https://docs.rs/uuid-extra/0.0.2/uuid_extra/) | v4, v7 | 2025-06-29 | 2025-06-29 | `uuid` wrapper with base58 and base64 output | source inspected; behavior unmeasured |
+| [`uuid-extra` 0.0.2](https://docs.rs/uuid-extra/0.0.2/uuid_extra/) | v4, v7 | 2025-06-29 | 2025-06-29 | `uuid` wrapper with direct base64 output | source inspected; behavior unmeasured |
 | [`uuid-tag` 0.2.1](https://docs.rs/uuid-tag/0.2.1/uuid_tag/) | v4, v7 | 2026-05-30 | 2026-05-30 | Typed wrapper over `uuid`; measures type-wrapper cost | package metadata inspected; behavior unmeasured |
 | [`rok-ids` 0.1.0](https://docs.rs/rok-ids/0.1.0/rok_ids/) | v7 | 2026-05-10 | repository unavailable | Typed wrapper over `uuid` | source inspected; behavior unmeasured |
 | [`uuid-lite` 1.10.8](https://docs.rs/uuid-lite/1.10.8/uuid_lite/) | v4, v7 | 2026-09-13 | unavailable | Published fork of `uuid`; compare only if its code or build differs at measurement time | registry and older compatible source inspected; behavior unmeasured |
 | [`uuid-lite2` 1.10.1](https://docs.rs/uuid-lite2/1.10.1/uuid_lite2/) | v4, v7 | 2026-08-24 | unavailable | Second published `uuid` fork; compare only if its code or build differs | registry and 1.10.0 source inspected; behavior unmeasured |
-| [`short-uuid` 0.2.1](https://docs.rs/short-uuid/0.2.1/short_uuid/) | v4 | 2025-12-20 | 2026-02-10 | Base58 UUID wrapper and direct slug competitor | source inspected; length, canonical decoding, bit preservation, allocation, URL and filename safety, sorting, and speed unmeasured |
 | [`uuid64rs` 0.0.14](https://docs.rs/uuid64rs/0.0.14/uuid64rs/) | v4 | 2021-04-19 | 2021-04-19 | Base64 UUID generator and direct slug competitor | source inspected; behavior unmeasured |
 | [`uuidv4` 1.0.0](https://docs.rs/uuidv4/1.0.0/uuidv4/) | v4 | 2023-08-24 | unavailable | Small standalone generator | package metadata inspected; behavior unmeasured |
 | [`qubit-id` 0.6.0](https://docs.rs/qubit-id/0.6.0/qubit_id/) | v4 | 2026-09-02 | 2026-09-14 | Synchronous and asynchronous generator interfaces | source inspected; behavior unmeasured |
@@ -1278,9 +1277,8 @@ reason: their process or storage overhead would measure a different job.
 Benchmark direct implementations separately from wrappers. Measure text, owned bytes, caller
 storage, and batch calls only where the crate exposes them. Also record entropy failure, clock
 rollback, same-millisecond behavior, allocation, contention, target support, and output validity.
-Compare Base58 codecs with both base64url and base32hex. Another alphabet earns a public wire format
-only if a consumer job benefits enough to pay for its decoder, documentation, compatibility, and
-matching Rust and TypeScript support.
+Base58 codecs are outside the benchmark set because no accepted consumer job needs their third UUID
+spelling. Performance cannot supply the missing human-transcription requirement.
 
 Rust `uuid` uses a 42-bit leading counter by default. Its additional-precision mode dedicates 1
 through 12 of those leading bits to a Method 3 fraction, leaving the rest of the 42-bit field as the
@@ -1310,7 +1308,6 @@ defects unresolved.
 | [`@kripod/uuidv7` 0.3.4](https://www.npmjs.com/package/@kripod/uuidv7) | 2022-07-03 | 2022-08-25 | Small zero-start counter UUIDv7 generator |
 | [`uuidv7-js` 2.0.0](https://www.npmjs.com/package/uuidv7-js) | 2026-05-11 | 2026-05-11 | Random-increment UUIDv7 generator and validated timestamp extraction |
 | [`fastv7` 1.0.2](https://www.npmjs.com/package/fastv7) | 2025-12-20 | 2025-12-20 | Minimal zero-start UUIDv7 generator with a distinct collision trade-off |
-| [`short-uuid` 6.0.3](https://www.npmjs.com/package/short-uuid) | 2025-12-01 | 2025-12-01 | Base58 and caller-selected alphabet codec candidate; generation is secondary |
 
 The inventory covers the most-downloaded packages and every distinct relevant strategy found.
 Official npm downloads for 2026-09-05 through 2026-09-11 ranged from 206,849,086 for `uuid` to 293

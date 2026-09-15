@@ -268,8 +268,9 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 ### Generation and codecs
 
 - Generate only UUIDv4 and UUIDv7. Keep parsing, version inspection, and plain conversion generic
-  for every structurally valid UUID version. Add no version-specific API for another version
-  without concrete demand and a maintainer ruling.
+  for every structurally valid UUID version. Do not add generation, constants, bounds, fields,
+  guards, or helpers for another version. Reconsider that boundary only after concrete demand and
+  a maintainer ruling.
 - Name keyless generation with `generate` plus the produced representation. Keep
   `generateUuidV4`, `generateUuidV4Bytes`, `generatePlainUuidV4Slug`, `generateUuidV7`,
   `generateUuidV7Bytes`, `generateUuidV7AtUnixMs`, `generateUuidV7BytesAtUnixMs`,
@@ -310,7 +311,9 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 - Keep generation one identifier at a time. Callers can bound a loop or reuse caller-owned storage;
   a batch helper cannot choose a safe allocation, scheduling, or cancellation limit for them.
 - Keep base64url and base32hex as the only slug alphabets. They cover compact URL output and
-  case-insensitive sortable output; arbitrary alphabets create private wire formats.
+  case-insensitive sortable output; arbitrary alphabets create private wire formats. Base58 has
+  the same 22-character UUID length as base64url, and avoiding look-alike characters does not
+  justify a third wire format without concrete demand for IDs that people transcribe manually.
 - Keep the standard timestamp operation in Unix milliseconds. Decode optional UUIDv7 payload fields
   only under caller-supplied bit widths because the UUID does not identify its generator or layout.
   Return a Method 3 fraction as its exact value and width; a floating timestamp would hide its

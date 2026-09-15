@@ -1,26 +1,12 @@
 # Roadmap
 
-Settle the public product before comparing implementations. Decide Base58 first, resolve every
-remaining public-interface question second, and run competitor benchmarks only after those rulings
-freeze the operations worth measuring. Contracts live in README, `docs/`, and
-`bench/PERFORMANCE.md`; the CLI is outside the current scope.
-
-## Base58 decision
-
-Base58 does not shorten a UUID below the existing 22-character base64url spelling. Its plausible
-distinct job is safer human transcription; base32hex already owns case-insensitive sorting, and
-base64url owns the smallest existing machine-oriented spelling. Performance cannot create a
-consumer job, so do not benchmark Base58 until that job is accepted.
-
-- [x] Inventory maintained Base58 UUID codecs and the consumer claims that differ from base64url
-      and base32hex.
-- [x] Compare fixed length, canonical decoding, leading-zero preservation, URL and filename use,
-      text collation, case handling, visual ambiguity, cross-language availability, dependencies,
-      and permanent wire-format cost without using throughput as a proxy for usefulness.
-- [ ] Rule whether manual reading or transcription is a supported package job.
-- [ ] If it is not, reject Base58 and remove it from the benchmark candidate set.
-- [ ] If it is, define the exact alphabet, canonical spelling, accepted input, TypeScript and Rust
-      surface, migration cost, and success evidence before adding its conditional benchmark work.
+Settle the public product before comparing implementations. Base58 is rejected until concrete
+human-transcription demand justifies a third UUID spelling. Resolve every remaining public-interface
+question, then run competitor benchmarks only after those rulings freeze the operations worth
+measuring. Contracts live in README, `docs/`, and `bench/PERFORMANCE.md`; the CLI is outside the
+current product and remains rejected until concrete shell, migration, or debugging demand identifies
+a job the libraries do not serve. Generation and version-specific APIs remain limited to UUIDv4 and
+UUIDv7; other versions retain only version-neutral operations that add no special machinery.
 
 ## Public-interface rulings
 
@@ -29,8 +15,6 @@ export, accepted form, and registry becomes a permanent compatibility and verifi
 
 ### UUID constants
 
-- [ ] Rule whether concrete namespace demand justifies owning a changing external registry despite
-      this package not generating name-based UUIDs.
 - [ ] Rule whether a named RFC example has a runtime consumer job beyond documentation and tests.
 - [ ] Rule whether this package should own any external protocol registry such as Bluetooth or COM.
 - [ ] Rule whether repeated slug-heavy call sites justify precomputed nil and max slugs instead of
@@ -56,12 +40,6 @@ instead of steering the API toward whichever operations competitors happen to ex
 - [ ] Compare equivalent text, byte, caller-storage, and batch outcomes without hiding weaker paths.
 - [ ] Measure validity, entropy failure, clock rollback, same-millisecond behavior, allocation,
       contention, target support, and throughput.
-
-### Conditional Base58 competitors
-
-- [ ] Only if Base58 survives its product ruling, compare maintained TypeScript and Rust codecs for
-      canonical round trips, complete UUID preservation, output length, allocation, implementation
-      weight, and throughput on the repository's supported runtimes.
 
 ### Final evidence
 

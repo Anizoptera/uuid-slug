@@ -44,7 +44,9 @@ callback checks; map JS UTF-16 explicitly rather than pretending Rust strings co
 
 Use validated `Uuid` values between operations; parse text once rather than at each codec call.
 Both languages generate UUIDv4 and UUIDv7 only. Generic parsing, version inspection, and plain
-conversion preserve other UUID versions without version-specific APIs.
+conversion preserve other UUID versions without version-specific APIs. Do not add generation,
+constants, bounds, fields, guards, or helpers for another version unless the maintainer reopens
+that boundary for concrete demand.
 
 Any high-resolution generation mode must expose the same fraction width and counter layout in both
 languages. Fractional Unix milliseconds can carry UUIDv7's 12 fraction bits near the current epoch;
@@ -131,6 +133,9 @@ Masking has no chronological ordering.
 
 Publish one npm package and one Rust crate. Keep JavaScript chunks internal and Rust targets under
 one release identity. Add prebuilt Rust artifacts only when a measured consumer need justifies them.
+Do not publish a CLI. The library calls already serve application conversion and generation without
+process startup, shell parsing, or a second distribution surface; reconsider a CLI only after
+concrete shell, migration, or debugging demand identifies a job the libraries do not serve.
 Publish `src` as executable package code for Bun and the opt-in `development` condition; source-map
 resolution is a second use, not its reason to exist. Prefer source for a runtime that normally loads
 TypeScript. Use compiled output only when a packed consumer proves that the runtime's default
