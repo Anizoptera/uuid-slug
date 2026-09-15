@@ -8,6 +8,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   preferable to a UUID-only library, and keep its capability and representation maps consistent
   with the public API. Update the owning explanation with every consumer-visible change; do not
   copy implementation reasoning or create parallel inventories in other docs.
+- Keep README's TypeScript API map synchronized with every public capability, representation, and
+  decision-changing boundary; update the existing row or bullet instead of creating another inventory.
 - Position the package by the complete consumer contract: base64url and base32hex plain slugs for
   any UUID, caller-owned storage, UUIDv7 masking and migration, typed failures, and adaptive runtime
   paths. Keep version-neutral encoding separate from UUIDv7-only masking. Generation alone is not
