@@ -11,7 +11,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { UuidSlugError } from "../src/index";
+import { INVALID_TIMESTAMP, UuidSlugError } from "../src/index";
 import type { UuidV7Instant } from "../src/index";
 import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
 
@@ -263,6 +263,15 @@ describe("uuidv7 at a caller-supplied instant", () => {
     if (bytes instanceof Error) throw bytes;
     expect(timestampOf(bytes)).toBe(1);
     expect(Math.floor(payloadPrefixOf(bytes) / 2 ** 30)).toBe(2048);
+  });
+
+  it.each([
+    { epochMilliseconds: 2, epochNanoseconds: 1_500_000n },
+    { epochMilliseconds: 1.75, epochNanoseconds: 1_500_000n },
+    { epochMilliseconds: 1_000, seconds: 1 },
+  ])("rejects conflicting instant fields in %o", (at) => {
+    const generator = createUuidV7Generator({ fillRandom: constantFill(0x00) });
+    expect(generator.generateUuidV7Bytes({ at })).toMatchObject({ code: INVALID_TIMESTAMP });
   });
 
   // NaN and Infinity matter because runtime-native validation is not this portable contract. Bun
