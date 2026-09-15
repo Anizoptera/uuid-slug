@@ -641,6 +641,7 @@ describe("plain UUID slugs", () => {
   ])("rejects an exotic generation options object %o", (options) => {
     expect(generateUuidV7(options as never)).toMatchObject({ code: "invalid_options" });
     expect(generatePlainUuidV7Slug(options as never)).toMatchObject({ code: "invalid_options" });
+    expect(generateUuidV7Value(options as never)).toMatchObject({ code: "invalid_options" });
   });
 
   it("returns an option error when an options proxy blocks validation", () => {

@@ -6,6 +6,7 @@ export interface GenerationOptionValues {
   readonly alphabet?: unknown;
   readonly at?: unknown;
   readonly generator?: unknown;
+  readonly maskingCodec?: unknown;
   readonly output?: unknown;
   readonly outputOffset?: unknown;
   readonly textCase?: unknown;
@@ -36,6 +37,9 @@ export function readGenerationOptions(
       ...(accepted.at && Object.hasOwn(source, "at") ? { at: source.at } : {}),
       ...(accepted.generator && Object.hasOwn(source, "generator")
         ? { generator: source.generator }
+        : {}),
+      ...(accepted.maskingCodec && Object.hasOwn(source, "maskingCodec")
+        ? { maskingCodec: source.maskingCodec }
         : {}),
       ...(accepted.output && Object.hasOwn(source, "output") ? { output: source.output } : {}),
       ...(accepted.outputOffset && Object.hasOwn(source, "outputOffset")
