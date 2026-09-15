@@ -329,8 +329,8 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   codec may omit that codec from later masked conversions; an unbound UUID must provide one. An
   explicit codec on a later call overrides the preset. Never retain a generator in a UUID: its
   mutable clock, entropy, sequence, and rollback state cannot affect an identifier already produced.
-  A UUID generated through a generator may retain an immutable copy of that generator's payload
-  layout for later payload inspection; other UUIDs must provide the layout. Types must distinguish
+  A UUID generated through a generator retains an immutable copy of that generator's payload layout
+  for later payload inspection; other UUIDs must provide the layout. Types must distinguish
   calls with and without each preset so omission is rejected before runtime.
 - Retaining a masking codec keeps its key-bearing state reachable for the parsed UUID's lifetime.
   Only explicit construction with that codec may incur this retention. Serialization preserves the
