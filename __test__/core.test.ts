@@ -700,6 +700,19 @@ describe("plain UUID slugs", () => {
       });
   });
 
+  it("invokes a selected generator without a hidden receiver", () => {
+    const source = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, { readUnixMs: () => 0 });
+    const generator = {
+      generateUuidV7Bytes(this: void) {
+        if (this !== undefined) throw new Error("generator method received a hidden receiver");
+        return source.generateUuidV7Bytes();
+      },
+      payloadLayout: source.payloadLayout,
+    };
+
+    expect(generateUuidV7Bytes({ generator: generator as never })).toBeInstanceOf(Uint8Array);
+  });
+
   it("rejects selected-generator output before the requested precise instant", () => {
     const source = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
       readUnixMs: () => 100,

@@ -66,9 +66,10 @@ export function generateUuidV7BytesWithGenerator(
   }
   let generated: unknown;
   try {
+    const generateUuidV7Bytes = generator.generateUuidV7Bytes;
     generated = hasAt
-      ? generator.generateUuidV7Bytes({ at: options.at as UuidV7Instant })
-      : generator.generateUuidV7Bytes();
+      ? generateUuidV7Bytes({ at: options.at as UuidV7Instant })
+      : generateUuidV7Bytes();
   } catch (cause) {
     return new UuidSlugError(INVALID_OPTIONS, "UUIDv7 generator failed.", { cause });
   }
