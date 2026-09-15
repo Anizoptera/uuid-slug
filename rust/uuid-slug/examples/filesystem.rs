@@ -33,8 +33,10 @@ fn exercise(directory: &std::path::Path) -> Result<(), Box<dyn std::error::Error
     ];
     // Cross digit boundaries; never infer chronology from directory enumeration order.
     let mut chronological = Vec::new();
-    for timestamp in [31.0, 32.0, 1023.0, 1024.0, ((1_u64 << 42) - 1) as f64] {
-        let id = generator.generate_uuid_v7_at_unix_ms(timestamp)?;
+    for timestamp in [31, 32, 1023, 1024, (1_u64 << 42) - 1] {
+        let id = generator.generate_uuid_v7_at(
+            std::time::UNIX_EPOCH + std::time::Duration::from_millis(timestamp),
+        )?;
         let name = id.to_plain_uuid_slug(UuidSlugAlphabet::Base32Hex);
         chronological.push(name.to_string());
         cases.push((name.into_string(), id));

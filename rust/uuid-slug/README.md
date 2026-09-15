@@ -83,16 +83,17 @@ your store. Disable each legacy reader only after its stored values are migrated
 enables the unsupported 0.2.0 masked format.
 
 `UuidV7Generator` owns its sequence. `generate_uuid_v7()` reads the system clock;
-`generate_uuid_v7_at_unix_ms()` accepts a caller-supplied millisecond value. Both use secure
-platform entropy and join the same sequence.
+`generate_uuid_v7_at(SystemTime)` accepts an exact standard-library time. Both use secure platform
+entropy and join the same sequence. Use `generate_uuid_v7_at_unix_ms()` only when a numeric interop
+boundary already supplies fractional Unix milliseconds.
 The crate accepts every RFC 9562 UUIDv7 and preserves its 74 payload bits. Use
 `Uuid::extract_uuid_v7_payload` with `UuidV7PayloadLayout` only when the generator's leading
 fraction and counter widths are known. Every undeclared low bit remains in `remaining`.
 `with_sub_millisecond_fraction_bits` assigns 1 through 12 leading payload bits to the clock
 fraction; `payload_layout` returns that split and the remaining counter width.
-Supplied fractional milliseconds fill the configured fraction field. Native current-time generation
-reads the operating system's sub-millisecond clock; WebAssembly's built-in clock uses millisecond
-`Date.now()`, so pass a fractional reading to `generate_uuid_v7_with_random_fill` when that precision matters.
+Supplied time fills the configured fraction field. Native current-time generation reads the operating
+system's sub-millisecond clock; WebAssembly's built-in clock uses millisecond `Date.now()`, so pass a
+fractional reading to `generate_uuid_v7_with_random_fill` when that precision matters.
 When the clock stalls or moves backward, the generator advances this logical fraction and then
 the millisecond timestamp when needed; extracted fractions can be later than the clock reading.
 Successful calls on one generator strictly increase in UUID byte order under the default preserve

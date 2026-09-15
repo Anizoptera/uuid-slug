@@ -63,8 +63,8 @@ configuration must keep one wire layout.
 TypeScript accepts `epochNanoseconds` as `bigint` because Temporal and timestamp protocols already
 provide that form and caller-side conversion would discard useful fraction bits. Its numeric
 Unix-millisecond form remains the shorter path when a `number` already identifies the needed
-bucket. Rust needs an exact supplied-time form based on its standard time types rather than a
-JavaScript-shaped bigint or split numeric fields.
+bucket. Rust accepts exact supplied time as `SystemTime`. Its fractional Unix-millisecond method
+remains a narrow bridge for numeric interop rather than the primary Rust call.
 
 Native Rust uses `SystemTime` for configured fraction bits. Rust WebAssembly keeps its existing
 `Date.now()` dependency and therefore starts configured fractions at zero until logical ordering
@@ -80,7 +80,7 @@ through `generate_uuid_v7_with_random_fill`; the callback also owns secure entro
 | Base64url UUID payload | `UuidSlugAlphabet::Base64Url.uuid_bytes_to_plain_slug`, `plain_slug_to_uuid_bytes`, `plain_slug_to_uuid_bytes_into` |
 | Canonical base64url guard | Check `UuidSlugAlphabet::Base64Url.plain_slug_to_uuid_bytes` success for exactly 22 characters |
 | v4 generation and caller storage | `generate_uuid_v4`, `generate_uuid_v4_with_random_fill`, `generate_uuid_v4_into_with_random_fill` |
-| v7 generation, rollback, explicit time and caller storage | `UuidV7Generator`, `UuidV7ClockRollbackPolicy`, and its platform-random, explicit random-fill, explicit-time, and caller-output forms |
+| v7 generation, rollback, explicit time and caller storage | `UuidV7Generator`, `UuidV7ClockRollbackPolicy`, exact `SystemTime`, fractional Unix-millisecond interop, explicit random-fill, and caller-output forms |
 | Generated plain or masked slugs | TypeScript representation calls may select one generator directly; Rust generates a `Uuid`, then calls `to_plain_uuid_slug` or `uuid_to_masked_slug` |
 | UUIDv7 timestamp | `Uuid::extract_uuid_v7_unix_ms` |
 | Caller-known UUIDv7 payload layout | `UuidV7PayloadLayout::new`, `Uuid::extract_uuid_v7_payload`, `UuidV7MaskingCodec::extract_masked_uuid_v7_payload` |

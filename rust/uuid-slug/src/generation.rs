@@ -9,6 +9,12 @@ use crate::{Error, ErrorCode, Uuid, UuidV7PayloadLayout};
 pub const MAX_UUID_V7_UNIX_MS: u64 = (1 << 48) - 1;
 const MAX_SEQUENCE: u64 = (1 << 42) - 1;
 
+#[derive(Clone, Copy)]
+struct UuidV7Instant {
+    unix_ms: u64,
+    fraction_12: u16,
+}
+
 /// Inclusive UUIDv7 search bounds for a Unix-millisecond interval.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct UuidV7Bounds {
@@ -112,16 +118,30 @@ impl UuidV7Generator {
     pub fn generate_uuid_v7_with_random_fill(
         &mut self,
         unix_ms: f64,
+        fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
+    ) -> Result<Uuid, Error> {
+        self.generate_uuid_v7_from_instant(float_instant(unix_ms)?, fill)
+    }
+    /// Generate at an exact standard-library time using caller-supplied entropy.
+    pub fn generate_uuid_v7_at_with_random_fill(
+        &mut self,
+        at: std::time::SystemTime,
+        fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
+    ) -> Result<Uuid, Error> {
+        self.generate_uuid_v7_from_instant(system_instant(at)?, fill)
+    }
+    fn generate_uuid_v7_from_instant(
+        &mut self,
+        at: UuidV7Instant,
         mut fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
     ) -> Result<Uuid, Error> {
-        let now = timestamp(unix_ms)?;
+        let now = at.unix_ms;
         let fraction_bits = self.sub_millisecond_fraction_bits;
         let counter_bits = 42 - fraction_bits;
         let fraction = if fraction_bits == 0 {
             0
         } else {
-            ((unix_ms.fract() * (1u64 << fraction_bits) as f64).floor() as u64)
-                .min((1u64 << fraction_bits) - 1)
+            u64::from(at.fraction_12) >> (12 - fraction_bits)
         };
         let rollback_ms = self
             .clock_high_water_ms
@@ -194,11 +214,26 @@ impl UuidV7Generator {
         out[target].copy_from_slice(id.as_uuid_bytes());
         Ok(())
     }
+    /// Generate at an exact standard-library time into caller storage.
+    /// Invalid storage or time and entropy failure leave the destination unchanged.
+    pub fn generate_uuid_v7_at_into_with_random_fill(
+        &mut self,
+        at: std::time::SystemTime,
+        out: &mut [u8],
+        offset: usize,
+        fill: impl FnMut(&mut [u8]) -> Result<(), Error>,
+    ) -> Result<(), Error> {
+        let target = crate::uuid::range(out.len(), offset)?;
+        let instant = system_instant(at)?;
+        let id = self.generate_uuid_v7_from_instant(instant, fill)?;
+        out[target].copy_from_slice(id.as_uuid_bytes());
+        Ok(())
+    }
     /// Generate at the system clock with the operating system's secure entropy source.
     #[cfg(feature = "os-rng")]
     pub fn generate_uuid_v7(&mut self) -> Result<Uuid, Error> {
         #[cfg(all(target_arch = "wasm32", target_os = "unknown", feature = "wasm-js"))]
-        let reading = js_sys::Date::now();
+        let reading = float_instant(js_sys::Date::now())?;
         #[cfg(all(
             target_arch = "wasm32",
             target_os = "unknown",
@@ -214,24 +249,25 @@ impl UuidV7Generator {
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(|error| Error::new(ErrorCode::InvalidTimestamp).with_source(error))?;
         #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
-        let reading = if self.sub_millisecond_fraction_bits == 0 {
-            elapsed.as_millis() as f64
-        } else {
-            elapsed.as_millis() as f64 + f64::from(elapsed.subsec_nanos() % 1_000_000) / 1_000_000.0
-        };
+        let reading = system_instant(std::time::UNIX_EPOCH + elapsed)?;
         #[cfg(any(
             not(all(target_arch = "wasm32", target_os = "unknown")),
             feature = "wasm-js"
         ))]
-        self.generate_uuid_v7_with_random_fill(reading, fill_os_random_bytes)
+        self.generate_uuid_v7_from_instant(reading, fill_os_random_bytes)
     }
-    /// Generate at a supplied timestamp with secure platform entropy and this sequence's policy.
+    /// Generate at an exact standard-library time with secure platform entropy and this sequence's policy.
+    #[cfg(feature = "os-rng")]
+    pub fn generate_uuid_v7_at(&mut self, at: std::time::SystemTime) -> Result<Uuid, Error> {
+        self.generate_uuid_v7_at_with_random_fill(at, fill_os_random_bytes)
+    }
+    /// Generate from fractional Unix milliseconds for numeric interop boundaries.
     #[cfg(feature = "os-rng")]
     pub fn generate_uuid_v7_at_unix_ms(&mut self, unix_ms: f64) -> Result<Uuid, Error> {
         self.generate_uuid_v7_with_random_fill(unix_ms, fill_os_random_bytes)
     }
 }
-fn timestamp(value: f64) -> Result<u64, Error> {
+fn float_instant(value: f64) -> Result<UuidV7Instant, Error> {
     if !value.is_finite() || value < 0.0 || value.trunc() > MAX_UUID_V7_UNIX_MS as f64 {
         return Err(
             Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
@@ -239,7 +275,31 @@ fn timestamp(value: f64) -> Result<u64, Error> {
             )),
         );
     }
-    Ok(value as u64)
+    Ok(UuidV7Instant {
+        unix_ms: value as u64,
+        fraction_12: (value.fract() * 4096.0).floor() as u16,
+    })
+}
+fn system_instant(value: std::time::SystemTime) -> Result<UuidV7Instant, Error> {
+    let elapsed = value
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|error| Error::new(ErrorCode::InvalidTimestamp).with_source(error))?;
+    let unix_ms = u64::try_from(elapsed.as_millis()).map_err(|error| {
+        Error::new(ErrorCode::InvalidTimestamp)
+            .with_message("UUIDv7 time exceeds its 48-bit Unix-millisecond field.")
+            .with_source(error)
+    })?;
+    if unix_ms > MAX_UUID_V7_UNIX_MS {
+        return Err(
+            Error::new(ErrorCode::InvalidTimestamp).with_message(format!(
+                "UUIDv7 time exceeds Unix millisecond {MAX_UUID_V7_UNIX_MS}."
+            )),
+        );
+    }
+    Ok(UuidV7Instant {
+        unix_ms,
+        fraction_12: ((elapsed.subsec_nanos() % 1_000_000) * 4096 / 1_000_000) as u16,
+    })
 }
 fn seed(bytes: &[u8; 10]) -> u64 {
     (u64::from(bytes[0]) << 34)
@@ -418,6 +478,57 @@ mod tests {
                 .generate_uuid_v7_with_random_fill(1.5, fill)
                 .is_ok()
         );
+        Ok(())
+    }
+    #[test]
+    fn system_time_preserves_exact_fraction_and_uuid_v7_boundaries() -> Result<(), Error> {
+        use std::time::{Duration, UNIX_EPOCH};
+
+        let mut generator = UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
+        let first = generator
+            .generate_uuid_v7_at_with_random_fill(UNIX_EPOCH + Duration::from_nanos(244), fill)?;
+        let second = generator
+            .generate_uuid_v7_at_with_random_fill(UNIX_EPOCH + Duration::from_nanos(245), fill)?;
+        let first_fraction = first
+            .extract_uuid_v7_payload(generator.payload_layout())?
+            .sub_millisecond_fraction
+            .expect("the configured fraction field is present");
+        let second_fraction = second
+            .extract_uuid_v7_payload(generator.payload_layout())?
+            .sub_millisecond_fraction
+            .expect("the configured fraction field is present");
+        assert_eq!((first_fraction.value, first_fraction.bits), (0, 12));
+        assert_eq!((second_fraction.value, second_fraction.bits), (1, 12));
+
+        let endpoint = UNIX_EPOCH + Duration::from_millis(MAX_UUID_V7_UNIX_MS);
+        assert_eq!(
+            UuidV7Generator::new()
+                .generate_uuid_v7_at_with_random_fill(endpoint, fill)?
+                .extract_uuid_v7_unix_ms()?,
+            MAX_UUID_V7_UNIX_MS
+        );
+        assert!(
+            UuidV7Generator::new()
+                .generate_uuid_v7_at_with_random_fill(endpoint + Duration::from_millis(1), fill)
+                .is_err()
+        );
+        assert!(
+            UuidV7Generator::new()
+                .generate_uuid_v7_at_with_random_fill(UNIX_EPOCH - Duration::from_nanos(1), fill)
+                .is_err()
+        );
+        let mut output = [19; 16];
+        assert!(
+            UuidV7Generator::new()
+                .generate_uuid_v7_at_into_with_random_fill(
+                    UNIX_EPOCH - Duration::from_nanos(1),
+                    &mut output,
+                    0,
+                    fill,
+                )
+                .is_err()
+        );
+        assert_eq!(output, [19; 16]);
         Ok(())
     }
     #[test]
