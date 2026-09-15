@@ -29,10 +29,12 @@ errors and `Result` instead of JavaScript conventions. Such differences must not
 the accepted domain or result semantics. In particular, a lazy result must not expose partial
 candidates where the existing operation reports an error for the whole call.
 
-TypeScript accepts standard JavaScript host forms through `at`; Rust accepts its idiomatic numeric
-time forms. Both store the containing Unix millisecond and quantize the remaining fraction when the
-generator's payload layout assigns fraction bits. Supplied-time generation joins a created
-generator's sequence state in both languages.
+TypeScript accepts standard JavaScript host forms through `at`, including exact epoch nanoseconds.
+Rust reads `SystemTime` for current-time generation and currently accepts fractional Unix
+milliseconds for supplied-time generation. Both store the containing Unix millisecond and quantize
+the remaining fraction when the generator's payload layout assigns fraction bits. Supplied-time
+generation joins a created generator's sequence state in both languages. The public job map must
+mark Rust's missing exact supplied-time form as a gap until an idiomatic Rust call covers it.
 
 TypeScript uses directional text/binary names because raw byte containers require validation and
 may target caller storage. It accepts an exact `ArrayBuffer` or a `DataView`'s exact 16-byte range
@@ -58,10 +60,11 @@ languages. Fractional Unix milliseconds can carry UUIDv7's 12 fraction bits near
 they cannot preserve arbitrary nanoseconds. Runtime clock selection may differ, but one generator
 configuration must keep one wire layout.
 
-Do not add nanosecond `bigint` or split-second clock callbacks unless a consumer needs exact fraction
-placement near the end of UUIDv7's 48-bit millisecond range. UUIDv7 stores at most 12 fraction bits;
-near current dates, a JavaScript number already addresses every bucket without BigInt work or a
-second public clock shape. Revisit this when that range assumption changes.
+TypeScript accepts `epochNanoseconds` as `bigint` because Temporal and timestamp protocols already
+provide that form and caller-side conversion would discard useful fraction bits. Its numeric
+Unix-millisecond form remains the shorter path when a `number` already identifies the needed
+bucket. Rust needs an exact supplied-time form based on its standard time types rather than a
+JavaScript-shaped bigint or split numeric fields.
 
 Native Rust uses `SystemTime` for configured fraction bits. Rust WebAssembly keeps its existing
 `Date.now()` dependency and therefore starts configured fractions at zero until logical ordering
