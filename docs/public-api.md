@@ -312,9 +312,28 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 - Require callers to provide `maxTimestampDeltaMs` for every timestamp-window check. Read the
   optional numeric `referenceUnixMs` once, defaulting only that observation to `Date.now()`; do not
   embed an application tolerance or callback protocol in validation.
-- Keep UUID values as branded strings or bytes. A package wrapper would allocate, use object
-  identity instead of UUID equality, and lose its prototype across structured clone. Parse once
-  into bytes when one local workflow needs repeated field access; Rust uses `Uuid` for that job.
+- Keep direct functions as the least-work path for one-shot calls. Also provide an opt-in immutable
+  parsed UUID for workflows that inspect or convert one UUID repeatedly. It owns its validated UUID
+  data. UUID bits alone determine equality; attached construction context only presets later calls.
+- Keep parsed construction symmetric. The top-level parser accepts keyless UUID forms and may
+  receive a masking codec to accept that codec's masked forms; the masking codec exposes the same
+  operation with itself preset. Equivalent calls accept the same forms, return the same parsed UUID,
+  and report the same failures. A generator may generate that parsed value directly, but it does not
+  participate in parsing an existing UUID.
+- Apply that symmetry to every operation with a reusable owner. A top-level call receiving an
+  explicit masking codec or generator and the corresponding owner method with that owner preset must
+  accept the same remaining inputs, select the same defaults and runtime path, return the same type,
+  expose the same effects, and report the same failures. Do not accept an owner where its state
+  cannot affect the operation.
+- Preserve useful immutable construction context in the parsed UUID. A UUID parsed through a masking
+  codec may omit that codec from later masked conversions; an unbound UUID must provide one. An
+  explicit codec on a later call overrides the preset. A UUID generated through a generator may use
+  that generator's payload layout for later payload inspection; other UUIDs must provide the layout.
+  Types must distinguish calls with and without each preset so omission is rejected before runtime.
+- Retaining a masking codec keeps its key-bearing state reachable for the parsed UUID's lifetime.
+  Only explicit construction with that codec may incur this retention. Serialization preserves the
+  UUID value but not codec, generator, source spelling, or other construction context, so a value
+  reconstructed from serialized data is unbound.
 - Keep equality and ordering outside the API. Normalize known plain input with `uuidToString`, then
   compare canonical text or bytes; masked input first needs its codec and can be ambiguous without
   provenance. One comparator cannot hide those different meanings honestly.

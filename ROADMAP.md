@@ -26,11 +26,13 @@ export, accepted form, and registry becomes a permanent compatibility and verifi
 - [x] Programmatic migration and debugging tools need one diagnosis of an unknown UUID: its
       normalized value, version, layout family, available timestamp facts, and which package
       operations accept it.
-- [ ] Rule whether repeated diagnosis and conversion justify an opt-in immutable parsed UUID value
-      or only a one-shot serializable result. Keep existing direct functions for one-shot and hot
-      paths either way.
-- [ ] Design the accepted result around caller decisions and compare it with the existing narrow
-      extractors. Keep masking codecs explicit; a diagnosed UUID must not retain key-bearing state.
+- [x] Repeated diagnosis and conversion justify an opt-in immutable parsed UUID value. Keep existing
+      direct functions for one-shot and hot paths.
+- [ ] Design the immutable UUID around caller decisions and compare it with the existing narrow
+      extractors. Provide equivalent top-level and owner methods whenever a codec or generator owns
+      operation state; the top-level call receives that owner explicitly and the owner method presets
+      itself. Preserve explicitly supplied codec and generator context as typed convenience presets;
+      require missing context at the later operation and allow an explicit override.
 
 ## Competitor benchmarks
 
