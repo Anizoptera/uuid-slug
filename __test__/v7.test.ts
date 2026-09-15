@@ -199,19 +199,6 @@ describe("uuidv7 sequence state", () => {
     expect(timestampOf(second)).toBe(timestampOf(first) + 1);
     expectAfter(second, first);
   });
-
-  it("fails atomically only after the entire UUIDv7 time space is exhausted", () => {
-    const generator = createUuidV7Generator({
-      fillRandom: constantFill(0xff),
-      readUnixMs: fixedClock(2 ** 48 - 1),
-    });
-    bytesOf(generator);
-    const output = new Uint8Array(16).fill(0x55);
-
-    expect(generator.generateUuidV7Bytes(output)).toMatchObject({ code: INVALID_TIMESTAMP });
-    expect(output).toEqual(new Uint8Array(16).fill(0x55));
-    expect(generator.generateUuidV7Bytes()).toMatchObject({ code: INVALID_TIMESTAMP });
-  });
 });
 
 describe("uuidv7 at a caller-supplied instant", () => {
@@ -372,7 +359,10 @@ describe("uuidv7 readUnixMs contract", () => {
       fillRandom: constantFill(0xff),
     });
     expect(timestampOf(bytesOf(atCeiling))).toBe(2 ** 48 - 1);
-    expect(atCeiling.generateUuidV7Bytes()).toBeInstanceOf(Error);
+    const output = new Uint8Array(16).fill(0x55);
+    expect(atCeiling.generateUuidV7Bytes(output)).toMatchObject({ code: INVALID_TIMESTAMP });
+    expect(output).toEqual(new Uint8Array(16).fill(0x55));
+    expect(atCeiling.generateUuidV7Bytes()).toMatchObject({ code: INVALID_TIMESTAMP });
 
     // The control that proves the refusal is about the ceiling and not about the borrow itself:
     // one millisecond lower, the same sequence borrows and lands ON the ceiling.
