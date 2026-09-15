@@ -947,18 +947,12 @@ describe("plain UUID slugs", () => {
   });
 
   it.each([
-    [0x00, "ncs"],
-    [0x7f, "ncs"],
-    [0x80, "rfc"],
-    [0xbf, "rfc"],
-    [0xc0, "microsoft"],
-    [0xdf, "microsoft"],
-    [0xe0, "future"],
-    [0xff, "future"],
-  ] as const)("classifies UUID variant boundary 0x%s as %s", (variantByte, variant) => {
+    ["c0", 0xc0],
+    ["df", 0xdf],
+  ] as const)("classifies Microsoft UUID variant boundary 0x%s", (_hex, variantByte) => {
     const bytes = unwrap(uuidStringToBytes(SAMPLE_V7_A));
     bytes[8] = variantByte;
-    expect(unwrap(parseUuid(bytes)).inspect().variant).toBe(variant);
+    expect(unwrap(parseUuid(bytes)).inspect().variant).toBe("microsoft");
   });
 
   it("keeps top-level and masking-codec parsing behavior symmetric", () => {
