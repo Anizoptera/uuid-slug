@@ -572,7 +572,11 @@ their TypeScript type permits only formats enabled when the reader was created.
 | `SentinelUuidV7Slug` | A reserved plain UUIDv7 slug, also usable wherever `PlainUuidV7Slug` is accepted. |
 | `MaskedOrSentinelUuidV7Slug` | Masked or sentinel: what a masking call returns. |
 | `UuidBytes`, `UuidV4Bytes`, `UuidV7Bytes` | `UuidBytes` proves the 16-byte shape; v4/v7 brands also prove version and variant bits. |
+| `UuidByteInput`, `UuidInput` | The byte forms and complete keyless input domain accepted by generic conversion helpers. |
 | `SlugAlphabet` | `"base64url"` or `"base32hex"`. |
+| `GeneratedUuidV7`, `UuidStringResult`, `UuidBytesResult`, `PlainUuidSlugResult` | The paired generation result and version-preserving result types for typed wrapper functions. |
+| `Uuid`, `UuidInspection`, `UuidV7Bounds`, `UuidV7Payload`, `UuidV7PayloadLayout` | An immutable parsed UUID and the typed inspection, search-bound, and caller-declared UUIDv7 payload results it exposes. |
+| `UuidV7Instant` | A supported host time accepted by UUIDv7 generation, including exact epoch nanoseconds. |
 | `UuidV7MaskingCodec`, `UuidV7MaskingCodecOptions`, `UuidV7PreviousMask`, `UuidV7Mask`, `UuidV7MaskOptions`, `AsyncUuidV7MaskOptions`, `CustomUuidV7MaskOptions`, `UuidV7Sentinel`, `UuidV7SentinelConfig` | The masking codec, what `createUuidV7MaskingCodec` takes, and the retained mask and sentinel shapes it accepts and exposes. |
 | `UuidV7Generator`, `UuidV7GeneratorOptions`, `UuidV7ClockRollbackPolicy`, `UuidRandomFill`, `UuidV7TimestampWindow`, `UuidSlugMigrationDecoder`, `UuidSlugMigrationOptions`, `UuidSlugMigrationFormat`, `UuidSlugErrorCode` | A generator, its clock and rollback choices, an explicit custom-entropy callback, timestamp validation, migration controls, and error codes. |
 
