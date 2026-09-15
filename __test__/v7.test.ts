@@ -200,7 +200,7 @@ describe("uuidv7 sequence state", () => {
     expectAfter(second, first);
   });
 
-  it("fails atomically when the final UUIDv7 sequence is exhausted", () => {
+  it("fails atomically only after the entire UUIDv7 time space is exhausted", () => {
     const generator = createUuidV7Generator({
       fillRandom: constantFill(0xff),
       readUnixMs: fixedClock(2 ** 48 - 1),
