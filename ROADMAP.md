@@ -19,8 +19,6 @@ export, accepted form, and registry becomes a permanent compatibility and verifi
 - [ ] Rule whether this package should own any external protocol registry such as Bluetooth or COM.
 - [ ] Rule whether repeated slug-heavy call sites justify precomputed nil and max slugs instead of
       one conversion per process.
-- [ ] Rule whether fixed UUIDv4 or UUIDv7 endpoints serve a caller job distinct from UUIDv7
-      timestamp bounds.
 
 ### UUID inspection
 

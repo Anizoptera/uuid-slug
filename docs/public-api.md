@@ -250,6 +250,9 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   values for one millisecond or an inclusive millisecond interval. They construct search keys and
   never generate identifiers. Their range meaning requires comparison in UUID wire-byte order;
   masked slugs, base64url text, and SQL Server `uniqueidentifier` ordering do not satisfy it.
+- Do not publish whole-version UUIDv4 or UUIDv7 endpoint constants. No caller job needs them, and
+  the variant bits sit inside the UUID, so one lowest-to-highest range also contains values outside
+  the RFC variant. Timestamp bounds remain useful because the timestamp occupies the leading bits.
 - Accept `Uint8Array` and its subtypes, an exact 16-byte `ArrayBuffer`, and a `DataView` whose
   declared range is exactly 16 bytes. A `DataView` makes its range explicit, so it can select a UUID
   inside a larger buffer without a copy. Apply explicit input offsets only to `Uint8Array`. Reject
