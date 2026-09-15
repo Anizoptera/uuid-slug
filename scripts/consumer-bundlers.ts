@@ -99,6 +99,9 @@ export async function compileConsumer(
         "error",
       ],
       path.dirname(entry),
+      // Parcel's reporter probes /dev/tty through a bundled helper unless dimensions are present.
+      // Fixed dimensions avoid that irrelevant subprocess while preserving non-interactive output.
+      { COLUMNS: "80", LINES: "24" },
     );
     await rename(parcelOutput, outfile);
     await rename(`${parcelOutput}.map`, `${outfile}.map`);

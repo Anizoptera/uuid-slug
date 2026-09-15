@@ -146,8 +146,11 @@ export async function inspectConsumerGraph(
       path.join(root, "package.json"),
       JSON.stringify({ private: true, "@parcel/resolver-default": { packageExports: true } }),
     );
-    const cases = jobs.flatMap((job) =>
-      optimizers.map(async (optimizer): Promise<ConsumerGraphResult> => {
+    // Each optimizer is an independent evidence lane. Serial work within a lane avoids running
+    // redundant heavyweight compiler instances concurrently while all optimizer families overlap.
+    const lanes = optimizers.map(async (optimizer): Promise<ConsumerGraphResult[]> => {
+      const results: ConsumerGraphResult[] = [];
+      for (const job of jobs) {
         const caseName = `${job.name}-${optimizer}`;
         const entryFile = path.join(root, `${caseName}.js`);
         await Bun.write(entryFile, consumerSource(job, packageName));
@@ -183,17 +186,18 @@ export async function inspectConsumerGraph(
             );
         }
         await command("node", [path.join(root, caseName, "bundle.js")], consumerRoot);
-        return {
+        results.push({
           job: job.name,
           optimizer,
           rawBytes: code.byteLength,
           gzipBytes: gzipSync(code).byteLength,
           brotliBytes: brotliCompressSync(code).byteLength,
           zstdBytes: zstdCompressSync(code).byteLength,
-        };
-      }),
-    );
-    return await settleAll(cases);
+        });
+      }
+      return results;
+    });
+    return (await settleAll(lanes)).flat();
   } finally {
     await rm(root, { recursive: true, force: true });
   }
