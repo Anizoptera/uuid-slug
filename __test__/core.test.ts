@@ -516,6 +516,17 @@ describe("plain UUID slugs", () => {
     expect(plainSlugToUuidString(`{${SAMPLE_V7_A}}`)).toBeInstanceOf(UuidSlugError);
   });
 
+  it("rejects distinguishable base58 UUID encodings", () => {
+    // Base58 characters overlap base64url, so only length and canonical trailing bits can
+    // distinguish these unsupported encodings without rejecting valid plain slugs.
+    expect(plainSlugToUuidBytes("CRkpm85ZUP1BKCYyZTmrR")).toMatchObject({
+      code: "invalid_uuid_slug",
+    });
+    expect(plainSlugToUuidBytes("YcVfxkQb6JRzqk5kF2tNLv")).toMatchObject({
+      code: "invalid_base64url",
+    });
+  });
+
   it("formats UUID bytes with built-in lowercase and uppercase presets", () => {
     const bytes = unwrap(uuidStringToBytes(SAMPLE_V7_A));
     const wrapped = new Uint8Array(20);
@@ -935,6 +946,21 @@ describe("plain UUID slugs", () => {
     });
   });
 
+  it.each([
+    [0x00, "ncs"],
+    [0x7f, "ncs"],
+    [0x80, "rfc"],
+    [0xbf, "rfc"],
+    [0xc0, "microsoft"],
+    [0xdf, "microsoft"],
+    [0xe0, "future"],
+    [0xff, "future"],
+  ] as const)("classifies UUID variant boundary 0x%s as %s", (variantByte, variant) => {
+    const bytes = unwrap(uuidStringToBytes(SAMPLE_V7_A));
+    bytes[8] = variantByte;
+    expect(unwrap(parseUuid(bytes)).inspect().variant).toBe(variant);
+  });
+
   it("keeps top-level and masking-codec parsing behavior symmetric", () => {
     const codec = unwrap(createCodec({ mask: UUID_V7_TEST_MASK }));
     const masked = unwrap(codec.uuidToMaskedSlug(SAMPLE_V7_A));
@@ -995,10 +1021,38 @@ describe("plain UUID slugs", () => {
     expect(uuid.toString("mixed")).toMatchObject({
       code: "invalid_options",
     });
+    expect(uuid.toPlainSlug("base58" as never)).toMatchObject({
+      code: "invalid_options",
+    });
     // @ts-expect-error JavaScript can omit a codec that TypeScript requires.
     expect(uuid.toMaskedSlug()).toMatchObject({
       code: "invalid_options",
     });
+    // @ts-expect-error JavaScript can omit a payload layout that TypeScript requires.
+    expect(uuid.extractV7Payload()).toMatchObject({
+      code: "invalid_options",
+    });
+    const unreadableCodecCause = new Error("unreadable codec");
+    const unreadableCodec = Object.defineProperty({}, "uuidToBytes", {
+      get() {
+        throw unreadableCodecCause;
+      },
+    });
+    expect(Reflect.apply(parseUuid, undefined, [SAMPLE_V7_A, unreadableCodec])).toMatchObject({
+      code: "invalid_options",
+      cause: unreadableCodecCause,
+    });
+    const throwingCodecCause = new Error("codec parser failed");
+    expect(
+      Reflect.apply(parseUuid, undefined, [
+        SAMPLE_V7_A,
+        {
+          uuidToBytes() {
+            throw throwingCodecCause;
+          },
+        },
+      ]),
+    ).toMatchObject({ code: "invalid_options", cause: throwingCodecCause });
     expect(Reflect.apply(generateUuidV7Value, undefined, [{ nope: true }])).toMatchObject({
       code: "invalid_options",
     });
@@ -1141,6 +1195,18 @@ describe("plain UUID slugs", () => {
 });
 
 describe("masked UUID slugs", () => {
+  it("rejects distinguishable base58 masked-payload encodings", () => {
+    // Base58 characters overlap base64url, so only length and the keyed mask check can
+    // distinguish these unsupported encodings without rejecting valid masked slugs.
+    const codec = unwrap(createCodec({ mask: UUID_V7_TEST_MASK }));
+    expect(codec.maskedSlugToUuidBytes("9inukNyWQTotxStJvsXAtVt")).toMatchObject({
+      code: "invalid_base64url",
+    });
+    expect(codec.maskedSlugToUuidBytes("xo1m1y1HU1SG66cVVeYjhc")).toMatchObject({
+      code: "invalid_uuid_slug",
+    });
+  });
+
   it("converts every supported UUID form without caller-managed intermediate values", () => {
     const codec = createUuidV7MaskingCodec({
       mask: { seed: "conversion-test-seed-0000" },
