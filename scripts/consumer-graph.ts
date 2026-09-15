@@ -27,6 +27,7 @@ const MASKING_MODULE_FILES = new Set([
   "mask.js",
   "siphash.js",
 ]);
+const UUID_VALUE_MODULE_FILES = new Set(["uuid-value.js", "uuid-value.ts"]);
 
 const jobs = [
   {
@@ -35,6 +36,7 @@ const jobs = [
     probe:
       'const value = uuidStringToBytes("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5"); if (value instanceof Error || value.length !== 16) throw new Error("uuidStringToBytes failed");',
     masked: false,
+    uuidValue: false,
     versions: [],
   },
   {
@@ -43,6 +45,7 @@ const jobs = [
     probe:
       'if (uuidStringToPlainSlug("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5") !== "sbpZnUhES7Ch7qwK64h19Q") throw new Error("uuidStringToPlainSlug failed");',
     masked: false,
+    uuidValue: false,
     versions: [],
   },
   {
@@ -51,6 +54,7 @@ const jobs = [
     probe:
       'const value = generatePlainUuidV4Slug(); if (value instanceof Error || value.length !== 22) throw new Error("generatePlainUuidV4Slug failed");',
     masked: false,
+    uuidValue: false,
     versions: [4],
   },
   {
@@ -59,6 +63,7 @@ const jobs = [
     probe:
       'const value = generatePlainUuidV7Slug(); if (value instanceof Error || value.length !== 22) throw new Error("generatePlainUuidV7Slug failed");',
     masked: false,
+    uuidValue: false,
     versions: [7],
   },
   {
@@ -67,7 +72,17 @@ const jobs = [
     probe:
       'const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }); if (codec instanceof Error || codec.uuidToMaskedSlug("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051") instanceof Error) throw new Error("masked codec failed");',
     masked: true,
+    uuidValue: true,
     versions: [7],
+  },
+  {
+    name: "uuid-value",
+    imports: "parseUuid",
+    probe:
+      'const value = parseUuid("b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5"); if (value instanceof Error || value.toString() !== "b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5") throw new Error("parseUuid failed");',
+    masked: false,
+    uuidValue: true,
+    versions: [],
   },
 ] as const;
 
@@ -154,6 +169,11 @@ export async function inspectConsumerGraph(
         const retainsMasking = [...modules].some((module) => MASKING_MODULE_FILES.has(module));
         if (retainsMasking !== job.masked)
           throw new Error(`${caseName} ${job.masked ? "lost" : "retained"} masking code.`);
+        const retainsUuidValue = [...modules].some((module) => UUID_VALUE_MODULE_FILES.has(module));
+        if (retainsUuidValue !== job.uuidValue)
+          throw new Error(
+            `${caseName} ${job.uuidValue ? "lost" : "retained"} immutable UUID value code.`,
+          );
         for (const version of [4, 7] as const) {
           const retainsVersion = includesVersion(job.versions, version);
           const hasVersion = [...VERSION_MODULES[version]].some((module) => modules.has(module));

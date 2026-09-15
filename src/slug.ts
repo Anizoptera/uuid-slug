@@ -35,7 +35,6 @@ import type {
   UuidStringInput,
   PlainUuidV4Slug,
   PlainUuidV7Slug,
-  MaskedUuidV7Slug,
   PlainUuidV7SlugInput,
   UuidV7BytesInput,
   UuidV7TimestampInput,
@@ -51,8 +50,10 @@ import type {
   UuidV4StringFor,
   UuidV7StringFor,
   UuidVersion,
+  KeylessUuidInput,
 } from "./types.ts";
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
+import { uuidValueBytes } from "./uuid-value-protocol.ts";
 import { extractPayloadFields } from "./v7-payload.ts";
 
 import { validateTimestampBytes } from "./timestamp.ts";
@@ -76,12 +77,6 @@ export type { UuidSlugErrorCode } from "./errors.ts";
 export type { PlainUuidSlug, PlainUuidV4Slug, PlainUuidV7Slug } from "./types.ts";
 
 const UUID_V7_TIMESTAMP_ONLY = "Timestamp is only defined for UUIDv7.";
-type KeylessUuidInput<Input> = [Extract<Exclude<Input, UuidSlugError>, MaskedUuidV7Slug>] extends [
-  never,
-]
-  ? Input
-  : never;
-
 /*
  * The alphabets a plain slug may be written in. base64url is the default and the shortest;
  * base32hex costs four more characters and buys the one property base64url cannot offer: its
@@ -365,8 +360,11 @@ export function plainSlugToUuidString(
   return bytesToUuidString(bytes, textCase);
 }
 
-function decodeKeylessUuid(uuid: unknown): Uint8Array | UuidSlugError {
-  if (typeof uuid !== "string") return exactUuidByteView(uuid);
+export function decodeKeylessUuid(uuid: unknown): Uint8Array | UuidSlugError {
+  if (typeof uuid !== "string") {
+    const bytes = exactUuidByteView(uuid);
+    return bytes instanceof Error ? (uuidValueBytes(uuid) ?? bytes) : bytes;
+  }
   return uuid.length === 22 || uuid.length === 26
     ? plainSlugToUuidBytes(uuid)
     : uuidStringToBytes(uuid);

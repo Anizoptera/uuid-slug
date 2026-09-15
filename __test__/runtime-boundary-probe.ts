@@ -313,6 +313,7 @@ export const runtimeBoundaryCases = [
       assert.equal(isUuidSlugError(foreignError), true);
       const generator: UuidV7Generator = {
         payloadLayout: { subMillisecondFractionBits: 0, counterBits: 42 },
+        generateUuidV7Value: () => foreignError,
         generateUuidV7: () => foreignError,
         generateUuidV7AtUnixMs: () => foreignError,
         generateUuidV7Bytes: () => foreignError,

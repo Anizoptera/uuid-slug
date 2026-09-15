@@ -16,7 +16,11 @@ import {
   UuidSlugError,
 } from "./errors.ts";
 import { BASE32HEX_NAME, BASE64URL_NAME } from "./alphabet.ts";
-import { generateUuidV7Bytes as generateDefaultUuidV7Bytes } from "./v7-keyless.ts";
+import {
+  generateUuidV7Bytes as generateDefaultUuidV7Bytes,
+  generateUuidV7BytesAtUnixMs,
+  uuidV7DefaultPayloadLayout,
+} from "./v7-keyless.ts";
 import {
   MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS,
   ownedUuidV7BytesToMaskedSlug,
@@ -53,6 +57,7 @@ import type {
   UuidV7StringFor,
   UuidV7Payload,
   UuidV7PayloadLayout,
+  UuidV7MaskingCodecValueOptions,
 } from "./types.ts";
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
 import {
@@ -73,6 +78,13 @@ import {
 } from "./uuid.ts";
 import type { UuidV7TimestampWindow, UuidV7SentinelConfig } from "./types.ts";
 import type { SlugAlphabet } from "./slug.ts";
+import { createUuidValue, parseUuidWithCodec } from "./uuid-value.ts";
+import { uuidValueBytes } from "./uuid-value-protocol.ts";
+import {
+  generateUuidV7ValueWithGenerator,
+  readUuidV7Generator,
+  readUuidV7ValueOptions,
+} from "./v7-value-options.ts";
 
 type EncodedSentinel = { bytes: Uint8Array; slug: SentinelUuidV7Slug };
 
@@ -403,7 +415,10 @@ function buildUuidSlugCodec(
   const encodeScratch = new Uint8Array(16);
 
   function decodeUuid(uuid: unknown, preferredSlug?: SlugMeaning): Uint8Array | UuidSlugError {
-    if (typeof uuid !== "string") return exactUuidByteView(uuid);
+    if (typeof uuid !== "string") {
+      const bytes = exactUuidByteView(uuid);
+      return bytes instanceof Error ? (uuidValueBytes(uuid) ?? bytes) : bytes;
+    }
     const sentinel = sentinels.bySlug.get(uuid)?.bytes;
     if (sentinel) return sentinel;
     if (uuid.length === 26) return decodePlainSlugToBytes(uuid);
@@ -667,8 +682,25 @@ function buildUuidSlugCodec(
     return valid instanceof Error ? valid : (maskedUuidSlug as Input & MaskedOrSentinelUuidV7Slug);
   }
 
+  function generateUuidV7Value(valueOptions?: UuidV7MaskingCodecValueOptions) {
+    const values = readUuidV7ValueOptions(valueOptions, { generator: true, unixMs: true });
+    if (values instanceof Error) return values;
+    const generator = readUuidV7Generator(values.generator);
+    if (generator instanceof Error) return generator;
+    if (generator) return generateUuidV7ValueWithGenerator(generator, values.unixMs, maskingCodec);
+    const generated =
+      values.unixMs === undefined
+        ? generateDefaultUuidV7Bytes()
+        : generateUuidV7BytesAtUnixMs(values.unixMs as number);
+    return generated instanceof Error
+      ? generated
+      : createUuidValue<7, true, true>(generated, maskingCodec, uuidV7DefaultPayloadLayout());
+  }
+
   const maskingCodec: UuidV7MaskingCodec = {
     sentinels: sentinels.sentinels,
+    generateUuidV7Value,
+    parseUuid: (uuid) => parseUuidWithCodec(uuid, maskingCodec),
     uuidToString,
     uuidToBytes,
     uuidToPlainSlug,

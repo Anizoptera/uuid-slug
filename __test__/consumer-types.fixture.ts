@@ -18,6 +18,7 @@ import {
   extractUuidV7Payload,
   extractUuidV7UnixMs,
   extractUuidVersion,
+  parseUuid,
   uuidBytesToPlainSlug,
   isUuidBytes,
   isPlainUuidSlug,
@@ -51,6 +52,7 @@ import {
   generateUuidV7Bytes,
   generateUuidV7BytesAtUnixMs,
   generateUuidV7,
+  generateUuidV7Value,
   generateUuidV7AtUnixMs,
   uuidV7Bounds,
   uuidV7ByteBounds,
@@ -92,6 +94,7 @@ import type {
   UuidV7PayloadLayout,
   UuidString,
   UuidVersion,
+  Uuid,
   UuidSlugMigrationDecoder,
 } from "@anizoptera/uuid-slug";
 
@@ -182,6 +185,19 @@ const versionedUuid: UuidV7String = formattedUuid;
 const convertedSlug = uuidStringToPlainSlug(checkedUuid);
 if (convertedSlug instanceof Error) throw convertedSlug;
 const versionedSlug: PlainUuidV7Slug = convertedSlug;
+const parsedValue = parseUuid(versionedSlug);
+if (parsedValue instanceof Error) throw parsedValue;
+expectType<Uuid<7>>()(parsedValue);
+expectType<UuidV7String>()(parsedValue.toString());
+expectType<UppercaseUuidV7String>()(parsedValue.toString(UUID_TEXT_UPPERCASE));
+expectType<UuidV7Bytes>()(parsedValue.toBytes());
+expectType<PlainUuidV7Slug>()(parsedValue.toPlainSlug());
+expectType<UuidV7String>()(parsedValue.inspect().uuid);
+expectType<7>()(parsedValue.inspect().version);
+// @ts-expect-error An unbound UUID requires a masking codec for masked output.
+parsedValue.toMaskedSlug();
+// @ts-expect-error A UUID without a generated layout requires an explicit payload layout.
+parsedValue.extractV7Payload();
 expectType<UppercaseUuidV7String | UuidSlugError>()(
   uuidToString(versionedSlug, UUID_TEXT_UPPERCASE),
 );
@@ -190,6 +206,7 @@ const payloadLayout: UuidV7PayloadLayout = {
   subMillisecondFractionBits: 12,
   counterBits: 30,
 };
+expectType<UuidV7Payload | UuidSlugError>()(parsedValue.extractV7Payload(payloadLayout));
 expectType<UuidV7Payload | UuidSlugError>()(extractUuidV7Payload(checkedUuid, payloadLayout));
 expectType<number | UuidSlugError>()(extractUuidV7UnixMs(versionedSlug));
 // @ts-expect-error Known slug text cannot enter a UUID text operation.
@@ -323,6 +340,36 @@ expectType<UuidV7MaskingCodec | UuidSlugError>()(
 if (codecResult instanceof Error) throw codecResult;
 const codec = codecResult;
 expectType<UuidV7MaskingCodec>()(codec);
+const codecParsedValue = codec.parseUuid(codec.generateMaskedUuidV7Slug());
+expectType<Uuid<7, true> | UuidSlugError>()(codecParsedValue);
+const topLevelCodecValue = parseUuid(codec.generateMaskedUuidV7Slug(), codec);
+expectType<Uuid<7, true> | UuidSlugError>()(topLevelCodecValue);
+expectType<Uuid<7, false, true> | UuidSlugError>()(generator.generateUuidV7Value());
+expectType<Uuid<7, true, true> | UuidSlugError>()(
+  generator.generateUuidV7Value({ maskingCodec: codec }),
+);
+expectType<Uuid<7, true, true> | UuidSlugError>()(
+  codec.generateUuidV7Value({ generator, unixMs: 0 }),
+);
+const generatedUuidValue = generateUuidV7Value({ generator, maskingCodec: codec, unixMs: 0 });
+expectType<Uuid<7, true, true> | UuidSlugError>()(generatedUuidValue);
+// @ts-expect-error UUIDv7 value options reject unrelated work.
+generateUuidV7Value({ textCase: UUID_TEXT_UPPERCASE });
+// @ts-expect-error A generator method already owns its generator.
+generator.generateUuidV7Value({ generator });
+// @ts-expect-error A masking-codec method already owns its masking codec.
+codec.generateUuidV7Value({ maskingCodec: codec });
+if (generatedUuidValue instanceof Error) throw generatedUuidValue;
+expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(generatedUuidValue.toMaskedSlug());
+expectType<UuidV7Payload | UuidSlugError>()(generatedUuidValue.extractV7Payload());
+const parsedV4Value = parseUuid(versionedV4);
+if (parsedV4Value instanceof Error) throw parsedV4Value;
+// @ts-expect-error A UUID proved to be v4 cannot enter UUIDv7 masking.
+codec.uuidToMaskedSlug(parsedV4Value);
+// @ts-expect-error A parsed UUIDv4 cannot produce a masked UUIDv7 slug.
+parsedV4Value.toMaskedSlug(codec);
+// @ts-expect-error A parsed UUIDv4 has no UUIDv7 payload.
+parsedV4Value.extractV7Payload(payloadLayout);
 expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(codec.generateMaskedUuidV7Slug());
 expectType<GeneratedUuidV7<MaskedOrSentinelUuidV7Slug> | UuidSlugError>()(
   codec.generateUuidV7WithMaskedSlug(),

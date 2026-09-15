@@ -33,6 +33,8 @@ interface PortableUuidV7GeneratorOptions {
   readonly subMillisecondFractionBits?: number;
 }
 
+export type PortableUuidV7Generator = Omit<UuidV7Generator, "generateUuidV7Value">;
+
 function writeTimestampWords(bytes: Uint8Array, ms: number, offset: number) {
   // Split the fixed 48-bit field once: JavaScript bitwise operators keep the low 32 bits, while
   // division supplies the independent high 16 bits without BigInt or six iterative divisions.
@@ -127,7 +129,7 @@ const seedLo = /* @__NO_SIDE_EFFECTS__ */ (bytes: Uint8Array) =>
  */
 export function createPortableUuidV7Generator(
   options: PortableUuidV7GeneratorOptions,
-): UuidV7Generator {
+): PortableUuidV7Generator {
   const readUnixMs = options.readUnixMs ?? Date.now;
   const fill = options.fillRandom;
   const rollback = options.clockRollback;

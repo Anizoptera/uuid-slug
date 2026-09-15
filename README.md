@@ -617,6 +617,7 @@ independent generator; UUIDv4 and plain-slug generation remain module-level.
 | `generateUuidV4Bytes(out, offset?)` / `generateUuidV7Bytes(out, offset?)` | Your output array, with the UUID written at the offset. |
 | `generateUuidV7AtUnixMs(ms, textCase?)` | UUIDv7 text with the supplied timestamp. |
 | `generateUuidV7BytesAtUnixMs(ms, out?, offset?)` | UUIDv7 bytes with the supplied timestamp, newly allocated or written into your array. |
+| `generateUuidV7Value(options?)` | An immutable UUIDv7; options may set `unixMs`, select a generator, or retain a masking codec. |
 | `uuidV7Bounds(ms, textCase?)` / `uuidV7Bounds(startMs, endMs, textCase?)` | Inclusive canonical UUID bounds for one millisecond or an inclusive interval. |
 | `uuidV7ByteBounds(startMs, endMs?)` | The same inclusive bounds as two owned byte arrays. |
 | `createUuidV7GeneratorWithRandomFill(fill, options?)` | An independent UUIDv7 generator using an explicit synchronous entropy source. |
@@ -631,10 +632,23 @@ known UUID version remains in the result type.
 | `uuidToString(uuid, textCase?)` | Canonical UUID text from UUID text, bytes, or a plain slug. |
 | `uuidToBytes(uuid, output?, outputOffset?)` | New UUID bytes or the exact supplied output array. |
 | `uuidToPlainSlug(uuid, alphabet?)` | A plain slug from UUID text, bytes, or a plain slug. |
+| `parseUuid(uuid, maskingCodec?)` | An immutable UUID for repeated inspection and conversion; the optional codec also accepts masked input and stays available to the value. |
 | `extractUuidVersion(uuid)` | The UUID version nibble from UUID text, exact bytes, or a plain slug. |
 | `extractUuidV7UnixMs(value, offset?)` | Unix milliseconds from UUIDv7 text, a plain slug, or bytes. |
 | `extractUuidV7Payload(value, layout, offset?)` | Timestamp and caller-declared payload fields, with all other payload bits unchanged. |
 | `validateUuidV7Timestamp(uuid, window, textCase?)` / `validatePlainUuidV7SlugUnixMs(slug, window)` | UUIDv7 text in the selected case, or the original plain slug, after checking its timestamp. |
+
+Use `parseUuid` when one UUID needs several operations. It validates and copies the input once.
+Serialization returns canonical UUID text and intentionally drops the codec and payload layout.
+
+```ts
+const uuid = parseUuid(input, codec);
+if (uuid instanceof Error) return uuid;
+
+const facts = uuid.inspect();
+const stored = uuid.toBytes();
+const publicId = uuid.toMaskedSlug();
+```
 
 ### Use a masking codec
 
@@ -644,8 +658,10 @@ readers also try its configured previous masks.
 
 | Member | Successful result |
 | --- | --- |
+| `generateUuidV7Value(options?)` | An immutable UUIDv7 with this codec retained; options may set `unixMs` or select a generator. |
 | `generateMaskedUuidV7Slug()` | A new `MaskedOrSentinelUuidV7Slug`: masked or a reserved sentinel. |
 | `generateUuidV7WithMaskedSlug(textCase?)` | UUIDv7 text and its masked or sentinel slug from one generated value. |
+| `parseUuid(uuid)` | The same parsed value as top-level `parseUuid(uuid, codec)`, with this codec retained. |
 | `uuidToString(uuid, textCase?)` | UUID text from any supported UUID form. |
 | `uuidToBytes(uuid, output?, outputOffset?)` | UUID bytes from any supported UUID form. |
 | `uuidToPlainSlug(uuid, alphabet?)` | A plain slug from any supported UUID form. |

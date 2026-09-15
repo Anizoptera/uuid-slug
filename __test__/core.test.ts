@@ -13,6 +13,7 @@ import {
   extractUuidV7Payload,
   extractUuidV7UnixMs,
   extractUuidVersion,
+  parseUuid,
   isPlainUuidV7Slug,
   isUuidString,
   isUuidText,
@@ -35,6 +36,7 @@ import {
   generatePlainUuidV4Slug,
   generateUuidV7BytesAtUnixMs,
   generateUuidV7,
+  generateUuidV7Value,
   generateUuidV7AtUnixMs,
   uuidV7Bounds,
   uuidV7ByteBounds,
@@ -658,6 +660,152 @@ describe("plain UUID slugs", () => {
     expect(extractUuidVersion(NIL_UUID)).toBe(0);
     expect(extractUuidVersion(MAX_UUID)).toBe(15);
     expect(extractUuidVersion("not-a-uuid")).toMatchObject({ code: "invalid_uuid" });
+  });
+
+  it("parses one immutable UUID for repeated inspection and conversion", () => {
+    const uuid = unwrap(parseUuid(SAMPLE_V7_A));
+    expect(Object.isFrozen(uuid)).toBe(true);
+    expect(uuid.version).toBe(7);
+    expect(uuid.inspect()).toEqual({
+      uuid: SAMPLE_V7_A,
+      version: 7,
+      variant: "rfc",
+      unixMs: 1754226290494,
+      isNil: false,
+      isMax: false,
+    });
+    expect(uuid.toString()).toBe(SAMPLE_V7_A);
+    expect(uuid.toString(UUID_TEXT_UPPERCASE)).toBe(SAMPLE_V7_A.toUpperCase());
+    expect(uuid.toPlainSlug()).toBe(uuidStringToPlainSlug(SAMPLE_V7_A));
+    expect(uuidToString(uuid)).toBe(SAMPLE_V7_A);
+    expect(uuidToPlainSlug(uuid)).toBe(uuid.toPlainSlug());
+    expect(extractUuidVersion(uuid)).toBe(7);
+    expect(JSON.stringify(uuid)).toBe(JSON.stringify(SAMPLE_V7_A));
+  });
+
+  it("keeps parsed UUID bytes private and caller-owned writes atomic", () => {
+    const source = unwrap(uuidStringToBytes(SAMPLE_V4));
+    const uuid = unwrap(parseUuid(source));
+    source.fill(0);
+    expect(uuid.toString()).toBe(SAMPLE_V4);
+
+    const copy = uuid.toBytes();
+    copy.fill(0);
+    expect(uuid.toString()).toBe(SAMPLE_V4);
+
+    const output = new Uint8Array(20).fill(0x5a);
+    expect(uuid.toBytes(output, 2)).toBe(output);
+    expect(bytesToUuidString(output, 2)).toBe(SAMPLE_V4);
+    const before = output.slice();
+    expect(uuid.toBytes(output, 5)).toMatchObject({ code: "invalid_buffer" });
+    expect(output).toEqual(before);
+  });
+
+  it("diagnoses nil, max, and non-RFC layouts without inventing timestamps", () => {
+    expect(unwrap(parseUuid(NIL_UUID)).inspect()).toMatchObject({
+      version: 0,
+      variant: "ncs",
+      unixMs: undefined,
+      isNil: true,
+    });
+    expect(unwrap(parseUuid(MAX_UUID)).inspect()).toMatchObject({
+      version: 15,
+      variant: "future",
+      unixMs: undefined,
+      isMax: true,
+    });
+    const bytes = unwrap(uuidStringToBytes(SAMPLE_V7_A));
+    bytes[8] = 0;
+    expect(unwrap(parseUuid(bytes)).inspect()).toMatchObject({
+      version: 7,
+      variant: "ncs",
+      unixMs: undefined,
+    });
+  });
+
+  it("keeps top-level and masking-codec parsing behavior symmetric", () => {
+    const codec = unwrap(createCodec({ mask: UUID_V7_TEST_MASK }));
+    const masked = unwrap(codec.uuidToMaskedSlug(SAMPLE_V7_A));
+    const direct = unwrap(parseUuid(masked, codec));
+    const owned = unwrap(codec.parseUuid(masked));
+    expect(direct.toString()).toBe(SAMPLE_V7_A);
+    expect(owned.toString()).toBe(SAMPLE_V7_A);
+    expect(direct.toMaskedSlug()).toBe(masked);
+    expect(owned.toMaskedSlug()).toBe(masked);
+    expect(uuidToString(owned)).toBe(SAMPLE_V7_A);
+    expect(codec.uuidToMaskedSlug(owned)).toBe(masked);
+  });
+
+  it("retains generated layout and an explicit codec without retaining generator state", () => {
+    const codec = unwrap(createCodec({ mask: UUID_V7_TEST_MASK }));
+    const generator = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
+      readUnixMs: () => 123.5,
+      subMillisecondFractionBits: 12,
+    });
+    const generated = unwrap(generateUuidV7Value({ generator, maskingCodec: codec, unixMs: 123 }));
+    expect(generated.version).toBe(7);
+    expect(generated.toMaskedSlug()).not.toBeInstanceOf(Error);
+    expect(unwrap(generated.extractV7Payload())).toMatchObject({
+      unixMs: 123,
+      subMillisecondFraction: { value: 0, bits: 12 },
+    });
+    expect(Object.keys(generated)).not.toContain("generator");
+    expect(Object.keys(generated)).not.toContain("payloadLayout");
+
+    const fromGenerator = unwrap(generator.generateUuidV7Value({ unixMs: 124 }));
+    const fromCodec = unwrap(codec.generateUuidV7Value({ generator, unixMs: 124 }));
+    expect(fromGenerator.toString()).toBe(fromCodec.toString());
+    expect(unwrap(fromGenerator.extractV7Payload()).unixMs).toBe(124);
+    expect(unwrap(fromCodec.extractV7Payload()).unixMs).toBe(124);
+    expect(fromCodec.toMaskedSlug()).not.toBeInstanceOf(Error);
+
+    const control = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
+      readUnixMs: () => 200,
+    });
+    const observed = createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
+      readUnixMs: () => 200,
+    });
+    unwrap(control.generateUuidV7Value());
+    unwrap(observed.generateUuidV7Value());
+    unwrap(observed.generateUuidV7Value({ unixMs: 100 }));
+    expect(unwrap(observed.generateUuidV7Value()).toString()).toBe(
+      unwrap(control.generateUuidV7Value()).toString(),
+    );
+  });
+
+  it("returns typed failures for malformed JavaScript UUID-value calls", () => {
+    expect(Reflect.apply(parseUuid, undefined, [SAMPLE_V7_A, {}])).toMatchObject({
+      code: "invalid_options",
+    });
+    const uuid = unwrap(parseUuid(SAMPLE_V7_A));
+    // @ts-expect-error JavaScript can pass a text case that TypeScript rejects.
+    expect(uuid.toString("mixed")).toMatchObject({
+      code: "invalid_options",
+    });
+    // @ts-expect-error JavaScript can omit a codec that TypeScript requires.
+    expect(uuid.toMaskedSlug()).toMatchObject({
+      code: "invalid_options",
+    });
+    expect(Reflect.apply(generateUuidV7Value, undefined, [{ nope: true }])).toMatchObject({
+      code: "invalid_options",
+    });
+    expect(Reflect.apply(generateUuidV7Value, undefined, [{ generator: 1 }])).toMatchObject({
+      code: "invalid_options",
+    });
+    expect(
+      Reflect.apply(generateUuidV7Value, undefined, [
+        {
+          generator: {
+            payloadLayout: { subMillisecondFractionBits: 0, counterBits: 42 },
+            generateUuidV7Bytes: () => new Uint8Array(16),
+            generateUuidV7BytesAtUnixMs: () => new Uint8Array(16),
+          },
+        },
+      ]),
+    ).toMatchObject({ code: "invalid_uuid_version" });
+    expect(Reflect.apply(generateUuidV7Value, undefined, [{ maskingCodec: {} }])).toMatchObject({
+      code: "invalid_options",
+    });
   });
 
   it("accepts uppercase base32hex input and returns canonical lowercase output", () => {

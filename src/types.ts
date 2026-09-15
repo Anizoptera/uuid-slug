@@ -23,6 +23,22 @@ export type UuidTextCase = typeof UUID_TEXT_LOWERCASE | typeof UUID_TEXT_UPPERCA
 /** The complete four-bit UUID version field, whether assigned or reserved. */
 export type UuidVersion = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15;
 
+/** UUID bits use the Apollo NCS layout. */
+export const UUID_VARIANT_NCS = "ncs";
+/** UUID bits use the RFC 9562 layout. */
+export const UUID_VARIANT_RFC = "rfc";
+/** UUID bits use the reserved Microsoft layout. */
+export const UUID_VARIANT_MICROSOFT = "microsoft";
+/** UUID bits use the reserved future layout. */
+export const UUID_VARIANT_FUTURE = "future";
+
+/** The layout family selected by the UUID variant bits. */
+export type UuidVariant =
+  | typeof UUID_VARIANT_NCS
+  | typeof UUID_VARIANT_RFC
+  | typeof UUID_VARIANT_MICROSOFT
+  | typeof UUID_VARIANT_FUTURE;
+
 /** Choose how one created generator handles a clock reading below its accepted high-water mark. */
 export type UuidV7ClockRollbackPolicy =
   | { readonly action: typeof UUID_V7_ROLLBACK_PRESERVE }
@@ -80,11 +96,27 @@ export type PlainUuidV7Slug = Brand<PlainUuidSlug, "PlainUuidV7Slug">;
 export type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> =
   Input extends UuidSlugError
     ? never
+    : Input extends Uuid<infer Version, boolean, boolean>
+      ? Version extends 4
+        ? Version4
+        : Version extends 7
+          ? Version7
+          : UnknownVersion
+      : Input extends UuidV4Text | PlainUuidV4Slug | UuidV4Bytes
+        ? Version4
+        : Input extends UuidV7Text | PlainUuidV7Slug | UuidV7Bytes | MaskedUuidSlug
+          ? Version7
+          : UnknownVersion;
+/** Preserve a UUID version already proved by the input; otherwise retain the complete field range. */
+export type UuidVersionOf<Input> = Input extends UuidSlugError
+  ? never
+  : Input extends Uuid<infer Version, boolean, boolean>
+    ? Version
     : Input extends UuidV4Text | PlainUuidV4Slug | UuidV4Bytes
-      ? Version4
+      ? 4
       : Input extends UuidV7Text | PlainUuidV7Slug | UuidV7Bytes | MaskedUuidSlug
-        ? Version7
-        : UnknownVersion;
+        ? 7
+        : UuidVersion;
 /** A masked payload in either spelling; its check bits are not plain-encoding padding. */
 type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 /**
@@ -137,6 +169,93 @@ export interface UuidV7Payload {
   readonly remaining: { readonly value: bigint; readonly bits: number };
 }
 
+/** Stable facts read from one immutable UUID without interpreting application-owned payload bits. */
+export interface UuidInspection<Version extends UuidVersion = UuidVersion> {
+  /** Canonical lowercase UUID text. */
+  readonly uuid: UuidStringForVersion<Version, typeof UUID_TEXT_LOWERCASE>;
+  /** The complete four-bit version field, whether assigned or reserved. */
+  readonly version: Version;
+  /** The UUID layout family selected by the variant bits. */
+  readonly variant: UuidVariant;
+  /** Standard UUIDv7 Unix milliseconds, present only for an RFC-variant UUIDv7. */
+  readonly unixMs: number | undefined;
+  /** Whether every UUID bit is zero. */
+  readonly isNil: boolean;
+  /** Whether every UUID bit is one. */
+  readonly isMax: boolean;
+}
+
+/** Canonical UUID text narrowed when the parsed value proves version 4 or 7. */
+export type UuidStringForVersion<Version, Case extends UuidTextCase> = Version extends 4
+  ? UuidV4StringFor<Case>
+  : Version extends 7
+    ? UuidV7StringFor<Case>
+    : UuidStringFor<Case>;
+/** UUID bytes narrowed when the parsed value proves version 4 or 7. */
+export type UuidBytesForVersion<Version> = Version extends 4
+  ? UuidV4Bytes
+  : Version extends 7
+    ? UuidV7Bytes
+    : UuidBytes;
+/** Plain UUID slug narrowed when the parsed value proves version 4 or 7. */
+export type PlainUuidSlugForVersion<Version> = Version extends 4
+  ? PlainUuidV4Slug
+  : Version extends 7
+    ? PlainUuidV7Slug
+    : PlainUuidSlug;
+
+/** An immutable parsed UUID with optional preset masking and UUIDv7 payload-layout capabilities. */
+export interface Uuid<
+  Version extends UuidVersion = UuidVersion,
+  HasMaskingCodec extends boolean = false,
+  HasPayloadLayout extends boolean = false,
+> {
+  /** The UUID version field. */
+  readonly version: Version;
+  /** Return stable UUID facts in one serializable record. */
+  inspect(this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>): UuidInspection<Version>;
+  /** Return canonical UUID text, lowercase by default. */
+  toString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
+    textCase?: Case,
+  ): UuidStringForVersion<Version, Case>;
+  /** Return a new plain 16-byte UUID array. */
+  toBytes(this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>): UuidBytesForVersion<Version>;
+  /** Write the UUID into caller-owned storage after validating the complete destination range. */
+  toBytes<Output extends Uint8Array>(
+    this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
+    output: Output,
+    outputOffset?: number,
+  ): Output | UuidSlugError;
+  /** Return a plain UUID slug, using base64url by default. */
+  toPlainSlug(
+    this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
+    alphabet?: SlugAlphabet,
+  ): PlainUuidSlugForVersion<Version>;
+  /** Return the masked UUIDv7 spelling using an explicit or preset masking codec. */
+  toMaskedSlug(
+    this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
+    ...codec: Version extends 4
+      ? readonly [maskingCodec: never]
+      : HasMaskingCodec extends true
+        ? readonly [maskingCodec?: UuidV7MaskingCodec]
+        : readonly [maskingCodec: UuidV7MaskingCodec]
+  ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
+  /** Decode UUIDv7 payload fields using an explicit or generated preset layout. */
+  extractV7Payload(
+    this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
+    ...layout: Version extends 4
+      ? readonly [payloadLayout: never]
+      : HasPayloadLayout extends true
+        ? readonly [payloadLayout?: UuidV7PayloadLayout]
+        : readonly [payloadLayout: UuidV7PayloadLayout]
+  ): UuidV7Payload | UuidSlugError;
+  /** Serialize as canonical lowercase UUID text; capabilities are process-local. */
+  toJSON(
+    this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
+  ): UuidStringForVersion<Version, typeof UUID_TEXT_LOWERCASE>;
+}
+
 /*
  * Reject a captured brand that proves an input cannot satisfy an operation. Bare strings remain
  * valid because widening erases their child brand, leaving runtime validation as the only sound
@@ -181,9 +300,9 @@ export type UuidV7BytesInput<Input extends UuidByteInput | UuidSlugError> = Reje
   UuidV4Bytes
 >;
 /** Reject known UUIDv4 values; a masking codec accepts every UUIDv7 form. */
-type UuidV7ValueInput<Input extends string | UuidByteInput | UuidSlugError> = RejectKnownInput<
+type UuidV7ValueInput<Input extends UuidInput> = RejectKnownInput<
   Input,
-  UuidV4Text | UuidV4Bytes
+  UuidV4Text | UuidV4Bytes | Uuid<4, boolean, boolean>
 >;
 /** Exactly 16 validated UUID bytes. Package-owned values are plain `Uint8Array`. */
 export type UuidBytes = Brand<Uint8Array, "UuidBytes">;
@@ -194,8 +313,22 @@ export type UuidV7Bytes = Brand<UuidBytes, "UuidV7Bytes">;
 
 /** A UUID byte source: a `Uint8Array`, a complete `ArrayBuffer`, or a `DataView`'s declared range. */
 export type UuidByteInput = Uint8Array | ArrayBuffer | DataView;
+type AnyUuidForVersion<Version extends UuidVersion> =
+  | Uuid<Version>
+  | Uuid<Version, false, true>
+  | Uuid<Version, true>
+  | Uuid<Version, true, true>;
+type AnyUuid =
+  | AnyUuidForVersion<UuidVersion>
+  | { [Version in UuidVersion]: AnyUuidForVersion<Version> }[UuidVersion];
 /** Any supported UUID text, byte, or slug input, plus a preceding package error. */
-export type UuidInput = string | UuidByteInput | UuidSlugError;
+export type UuidInput = string | UuidByteInput | AnyUuid | UuidSlugError;
+/** Reject a branded masked slug where no masking codec is available. */
+export type KeylessUuidInput<Input> = [
+  Extract<Exclude<Input, UuidSlugError>, MaskedUuidV7Slug>,
+] extends [never]
+  ? Input
+  : never;
 /** UUID text or the error returned while converting the captured input. */
 export type UuidStringResult<Input, Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE> =
   | PreserveUuidVersion<Input, UuidStringFor<Case>, UuidV4StringFor<Case>, UuidV7StringFor<Case>>
@@ -233,6 +366,13 @@ export interface UuidV7TimestampWindow {
 export interface UuidV7Generator {
   /** Payload layout emitted by this generator; pass it to UUIDv7 payload extraction. */
   readonly payloadLayout: UuidV7PayloadLayout;
+  /** Generate an immutable UUIDv7 that remembers this generator's payload layout. */
+  generateUuidV7Value<const Options extends UuidV7GeneratorValueOptions = {}>(
+    this: void,
+    options?: Options,
+  ):
+    | Uuid<7, Options extends { readonly maskingCodec: UuidV7MaskingCodec } ? true : false, true>
+    | UuidSlugError;
   /** Generate UUIDv7 text for the current clock reading in the selected case, lowercase by default. */
   generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
@@ -278,6 +418,28 @@ export interface UuidV7Generator {
     output: Output,
     outputOffset?: number,
   ): Output | UuidSlugError;
+}
+
+/** Select optional state for immutable UUIDv7 generation through a generator. */
+export interface UuidV7GeneratorValueOptions {
+  /** Whole Unix millisecond to encode without changing the generator's current-time sequence. */
+  readonly unixMs?: number;
+  /** Masking codec retained by the generated UUID for later masked conversion. */
+  readonly maskingCodec?: UuidV7MaskingCodec;
+}
+
+/** Select independent owners and time for top-level immutable UUIDv7 generation. */
+export interface UuidV7ValueOptions extends UuidV7GeneratorValueOptions {
+  /** Generator that supplies entropy, sequence policy, and the retained payload layout. */
+  readonly generator?: UuidV7Generator;
+}
+
+/** Select optional generation state when a masking codec is already preset. */
+export interface UuidV7MaskingCodecValueOptions {
+  /** Whole Unix millisecond to encode without changing current-time sequence state. */
+  readonly unixMs?: number;
+  /** Generator that supplies entropy, sequence policy, and the retained payload layout. */
+  readonly generator?: UuidV7Generator;
 }
 
 /** An immutable handle for masking the recognizable fields of a UUIDv7; key material is not exposed. */
@@ -531,6 +693,16 @@ export interface UuidV7PreviousMask {
 export interface UuidV7MaskingCodec {
   /** Frozen sentinel metadata in the masking codec's configured masked-slug alphabet. */
   readonly sentinels: readonly UuidV7Sentinel[];
+  /** Generate an immutable UUIDv7 with this masking codec retained. */
+  generateUuidV7Value(
+    this: void,
+    options?: UuidV7MaskingCodecValueOptions,
+  ): Uuid<7, true, true> | UuidSlugError;
+  /** Parse any accepted UUID form and retain this codec for later masked conversions. */
+  parseUuid<Input extends UuidInput>(
+    this: void,
+    uuid: Input,
+  ): Uuid<UuidVersionOf<Input>, true> | UuidSlugError;
   /** Convert any accepted UUID form to normalized UUID text. Ambiguous raw slugs fail explicitly. */
   uuidToString<Input extends UuidInput, Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
@@ -594,7 +766,7 @@ export interface UuidV7MaskingCodec {
    *
    * @param uuid - Any supported UUIDv7 text, bytes, plain slug, masked slug, or sentinel.
    */
-  uuidToMaskedSlug<Input extends string | UuidByteInput | UuidSlugError>(
+  uuidToMaskedSlug<Input extends UuidInput>(
     this: void,
     uuid: UuidV7ValueInput<Input>,
   ): MaskedOrSentinelUuidV7Slug | UuidSlugError;

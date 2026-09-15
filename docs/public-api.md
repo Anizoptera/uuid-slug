@@ -325,6 +325,10 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   accept the same remaining inputs, select the same defaults and runtime path, return the same type,
   expose the same effects, and report the same failures. Do not accept an owner where its state
   cannot affect the operation.
+- Immutable UUIDv7 generation uses one options object because generation time, generator state, and
+  retained masking are independent choices. The top-level call accepts `unixMs`, `generator`, and
+  `maskingCodec`; generator and masking-codec methods omit only their preset owner. An explicit
+  `unixMs` leaves current-time sequence state unchanged and sets a configured fraction field to zero.
 - Preserve useful immutable construction context in the parsed UUID. A UUID parsed through a masking
   codec may omit that codec from later masked conversions; an unbound UUID must provide one. An
   explicit codec on a later call overrides the preset. Never retain a generator in a UUID: its
