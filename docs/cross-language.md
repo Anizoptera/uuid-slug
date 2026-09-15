@@ -30,11 +30,10 @@ the accepted domain or result semantics. In particular, a lazy result must not e
 candidates where the existing operation reports an error for the whole call.
 
 TypeScript accepts standard JavaScript host forms through `at`, including exact epoch nanoseconds.
-Rust reads `SystemTime` for current-time generation and currently accepts fractional Unix
-milliseconds for supplied-time generation. Both store the containing Unix millisecond and quantize
-the remaining fraction when the generator's payload layout assigns fraction bits. Supplied-time
-generation joins a created generator's sequence state in both languages. The public job map must
-mark Rust's missing exact supplied-time form as a gap until an idiomatic Rust call covers it.
+Rust accepts `SystemTime` for current and supplied-time generation, while fractional Unix
+milliseconds remain available for numeric interop. Both store the containing Unix millisecond and
+quantize the remaining fraction when the generator's payload layout assigns fraction bits.
+Supplied-time generation joins a created generator's sequence state in both languages.
 
 TypeScript uses directional text/binary names because raw byte containers require validation and
 may target caller storage. It accepts an exact `ArrayBuffer` or a `DataView`'s exact 16-byte range
@@ -93,6 +92,10 @@ through `generate_uuid_v7_with_random_fill`; the callback also owns secure entro
 | Plain timestamp window | Parse UUID or plain slug, then `UuidV7TimestampWindow::validate_uuid_v7`; retain the original text if needed |
 | Masked timestamp window | `UuidV7MaskingCodec::validate_masked_uuid_v7_slug_unix_ms` |
 | Error classification and diagnostics | `Error::code`, `Display`, `ErrorCode::as_str`, and `std::error::Error::source` |
+
+`scripts/rust-conform.ts` executes the shared wire, acceptance, rejection, ordering, and error cases
+through both implementations. Its exact-time sequence cases cross a fraction-bucket boundary and
+the maximum UUIDv7 timestamp so the mapping above cannot hide precision or range drift.
 
 TypeScript additionally exports `isUuidSlugError` because JavaScript values can cross realms or
 load from duplicate package copies. Rust exposes `ErrorCode` as the typed classification so adding

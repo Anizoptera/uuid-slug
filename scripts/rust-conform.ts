@@ -117,7 +117,12 @@ export function evaluate(request: Request): Outcome {
   try {
     switch (request.op) {
       case "generateSequence": {
-        type Step = { clock?: number | string; at?: number | string; byte: number; fail?: boolean };
+        type Step = {
+          clock?: number | string;
+          at?: ts.UuidV7Instant;
+          byte: number;
+          fail?: boolean;
+        };
         let current: Step = { byte: 0 };
         const generator = createPortableUuidV7Generator({
           readUnixMs: () => Number(current.clock),
@@ -134,7 +139,7 @@ export function evaluate(request: Request): Outcome {
               return result(
                 step.at === undefined
                   ? generator.generateUuidV7()
-                  : generator.generateUuidV7({ at: Number(step.at) }),
+                  : generator.generateUuidV7({ at: step.at }),
               );
             } catch (error) {
               if (error instanceof ts.UuidSlugError) return result(error);
@@ -550,6 +555,16 @@ export async function contractRequests(): Promise<Request[]> {
         { at: 1.5, byte },
         { clock: "NaN", byte },
         { clock: 11, byte },
+      ],
+    });
+    requests.push({
+      op: "generateSequence",
+      fractionBits: 12,
+      steps: [
+        { at: { seconds: 0, nanoseconds: 244 }, byte },
+        { at: { seconds: 0, nanoseconds: 245 }, byte },
+        { at: { seconds: 281_474_976_710, nanoseconds: 655_000_000 }, byte },
+        { at: { seconds: 281_474_976_710, nanoseconds: 656_000_000 }, byte },
       ],
     });
     requests.push({

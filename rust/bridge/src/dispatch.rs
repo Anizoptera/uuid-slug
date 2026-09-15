@@ -30,6 +30,19 @@ fn number(value: &Value) -> f64 {
     }
 }
 
+fn system_time(value: &Value) -> Result<std::time::SystemTime, Error> {
+    let seconds = value["seconds"]
+        .as_u64()
+        .ok_or_else(|| Error::new(ErrorCode::InvalidTimestamp))?;
+    let nanoseconds = value["nanoseconds"].as_u64().unwrap_or(0);
+    if nanoseconds > 999_999_999 {
+        return Err(Error::new(ErrorCode::InvalidTimestamp));
+    }
+    std::time::UNIX_EPOCH
+        .checked_add(std::time::Duration::new(seconds, nanoseconds as u32))
+        .ok_or_else(|| Error::new(ErrorCode::InvalidTimestamp))
+}
+
 fn timestamp_range_start(value: &Value) -> Result<u64, Error> {
     value
         .as_u64()
@@ -166,6 +179,10 @@ fn run(request: &Value) -> Result<Value, Error> {
                         };
                         let result = if step["at"].is_null() {
                             generator.generate_uuid_v7_with_random_fill(number(&step["clock"]), fill)
+                        } else if step["at"].is_object() {
+                            system_time(&step["at"]).and_then(|at| {
+                                generator.generate_uuid_v7_at_with_random_fill(at, fill)
+                            })
                         } else {
                             generator.generate_uuid_v7_with_random_fill(number(&step["at"]), fill)
                         };
