@@ -33,8 +33,9 @@
   in JavaScript. A timer-cached clock is rejected: it lags during synchronous bursts.
 - Tool limits: Deno cannot screen through the symlinked source (`#runtime` does not resolve), so
   replays decide Deno; the Bash tool cuts the middle of long output, so log commit-hook output.
-- Phase order is WSJF: a cheap proof, the widest default win (V8 writers), unknown gaps, small Bun
-  gaps, then configured and batch calls, which rank below single default calls.
+- Phase order is WSJF: a cheap proof, the widest default win (V8 writers), then unknown gaps before
+  known Bun gaps (conversions are common default calls; Bun gaps are a few ns and may be
+  irremovable), then configured and batch calls, which rank below single default calls.
 
 ## Phase 0: prove the delivered state
 
