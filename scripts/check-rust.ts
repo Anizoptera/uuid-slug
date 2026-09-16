@@ -114,12 +114,14 @@ for (const selection of fast ? selections.slice(0, 1) : selections) {
       manifest,
       "-p",
       "uuid-slug",
+      "--lib",
       "--locked",
       ...selection.args,
       ...profile,
     ]);
   }
 }
+await run(["cargo", "test", "--manifest-path", manifest, "-p", "uuid-slug", "--doc", "--locked"]);
 await run([
   "cargo",
   "clippy",
