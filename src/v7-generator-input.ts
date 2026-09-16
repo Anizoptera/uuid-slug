@@ -30,25 +30,48 @@ export interface ValidatedUuidV7Generator {
   readonly drawUuidV7Bytes?: PortableUuidV7Generator["drawUuidV7Bytes"];
 }
 
+/** Return its argument so a subclass can add private fields to an existing object. */
+// eslint-disable-next-line typescript/no-extraneous-class -- only a class constructor can hand `super` an existing object
+class ReturnObject {
+  constructor(value: object) {
+    return value;
+  }
+}
+
 /**
- * Public generators this package copy created, mapped to their sequences. Each public object is
- * frozen and its layout was validated when it was built, so reading it again proves nothing, and its
- * sequence writes fresh or caller-owned bytes that nothing else retains.
+ * Stamps the sequence onto a public generator this package copy created. That object is frozen and
+ * its layout was validated when it was built, so reading it again proves nothing, and its sequence
+ * writes fresh or caller-owned bytes that nothing else retains. A lookalike, a proxy, or a generator
+ * from another package copy has no stamp and takes the structural read.
  *
  * Structural validation allocated a validated object and rescanned the layout keys on every call
  * that passed `generator`, and the untrusted-generator call then needed a scratch buffer, byte
- * validation, an `at` check, and a copy (bench/PERFORMANCE.md). A generator from another package
- * copy misses this map and still takes those steps. Remeasure if `WeakMap#get` stops being cheaper
- * than the structural read.
+ * validation, an `at` check, and a copy (bench/PERFORMANCE.md). The stamp adds a private field
+ * instead of a class prototype, so the public object stays plain. A module `WeakMap` is the rejected
+ * alternative: registration made default generator creation 1.6 times slower. Remeasure if engines
+ * change how they store private fields or weak collections.
  */
-const packageUuidV7Generators = new WeakMap<object, ValidatedUuidV7Generator>();
+class PackageUuidV7Generator extends ReturnObject {
+  readonly #sequence: PortableUuidV7Generator;
 
-/** Record a frozen public generator and the sequence behind its methods. */
-export function registerPackageUuidV7Generator(
-  generator: object,
+  constructor(generator: object, sequence: PortableUuidV7Generator) {
+    super(generator);
+    this.#sequence = sequence;
+  }
+
+  static sequenceOf(value: unknown): PortableUuidV7Generator | undefined {
+    return typeof value === "object" && value !== null && #sequence in value
+      ? value.#sequence
+      : undefined;
+  }
+}
+
+/** Stamp a not-yet-frozen public generator with the sequence behind its methods, and return it. */
+export function stampPackageUuidV7Generator<Generator extends object>(
+  generator: Generator,
   sequence: PortableUuidV7Generator,
-): void {
-  packageUuidV7Generators.set(generator, sequence);
+): Generator {
+  return new PackageUuidV7Generator(generator, sequence) as object as Generator;
 }
 
 /** Narrow an untrusted generator without relying on package-copy identity. */
@@ -56,7 +79,7 @@ export function readUuidV7Generator(
   value: unknown,
 ): ValidatedUuidV7Generator | UuidSlugError | undefined {
   if (value === undefined) return undefined;
-  const packaged = packageUuidV7Generators.get(value as object);
+  const packaged = PackageUuidV7Generator.sequenceOf(value);
   if (packaged) return packaged;
   try {
     if (value === null || typeof value !== "object")

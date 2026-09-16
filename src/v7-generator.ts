@@ -25,7 +25,7 @@ import { readUuidV7Instant } from "./instant.ts";
 import { createUuidValue } from "./uuid-value.ts";
 import { createPortableUuidV7Generator } from "./v7.ts";
 import { uuidV7GeneratorSlugMethods } from "./v7-slug.ts";
-import { registerPackageUuidV7Generator } from "./v7-generator-input.ts";
+import { stampPackageUuidV7Generator } from "./v7-generator-input.ts";
 import { readUuidV7MaskingCodec, readUuidV7ValueOptions } from "./v7-value-options.ts";
 
 /** Configure one UUIDv7 sequence's clock and rollback behavior. */
@@ -175,15 +175,17 @@ function buildGenerator(
       : createUuidValue<7, boolean, true>(generated, maskingCodec, generator.payloadLayout);
   }
   // Named properties rather than a spread keep the internal draw off the public object.
-  const created = Object.freeze({
-    payloadLayout: generator.payloadLayout,
-    generateUuidV7: generator.generateUuidV7,
-    generateUuidV7Bytes: generator.generateUuidV7Bytes,
-    ...uuidV7GeneratorSlugMethods(drawSequencedBytes),
-    generateUuidV7Value,
-  });
-  registerPackageUuidV7Generator(created, generator);
-  return created;
+  const created = stampPackageUuidV7Generator(
+    {
+      payloadLayout: generator.payloadLayout,
+      generateUuidV7: generator.generateUuidV7,
+      generateUuidV7Bytes: generator.generateUuidV7Bytes,
+      ...uuidV7GeneratorSlugMethods(drawSequencedBytes),
+      generateUuidV7Value,
+    },
+    generator,
+  );
+  return Object.freeze(created);
 }
 
 /**
