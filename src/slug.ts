@@ -65,6 +65,7 @@ import {
   exactUuidByteView,
   formatUuidBytesUnchecked,
   invalidUuidBytes,
+  isUuidString,
   isUuidText,
   resolveUuidTextCase,
   isUuidV7Text,
@@ -380,7 +381,8 @@ export function plainSlugToUuidString(
   if (selectedCase instanceof Error) return selectedCase;
   const bytes = plainSlugToUuidBytes(plainUuidSlug);
   if (bytes instanceof Error) return bytes;
-  return bytesToUuidString(bytes, selectedCase);
+  // A successful decode yields exactly 16 bytes, so the checked formatter would repeat work.
+  return formatUuidBytesUnchecked(bytes, 0, selectedCase);
 }
 
 // Package-created decode failures are local Errors. A caller-owned cross-realm package error is
@@ -516,6 +518,9 @@ export function uuidToString(
     if (byteOffsetOrCase !== 0) return new UuidSlugError(INVALID_OPTIONS, BYTE_OFFSET_NEEDS_BYTES);
     textCase = caseAfterOffset;
   } else textCase = byteOffsetOrCase;
+  // Canonical lowercase text is already the default output, so it is returned without decoding.
+  // An inline `typeof` guard ahead of the helper slowed Node mixed-case text (bench/PERFORMANCE.md).
+  if (textCase === UUID_TEXT_LOWERCASE && isUuidString(uuid)) return uuid;
   const localBytes = exactLocalUuidBytes(uuid);
   if (localBytes) {
     const selectedCase = resolveUuidTextCase(textCase);
@@ -524,7 +529,11 @@ export function uuidToString(
   }
   const bytes = decodeKeylessUuid(uuid);
   if (bytes instanceof Error || (bytes === uuid && isUuidSlugError(bytes))) return bytes;
-  return bytesToUuidString(bytes, textCase);
+  const selectedCase = resolveUuidTextCase(textCase);
+  if (selectedCase instanceof Error) return selectedCase;
+  // A successful decode yields exactly 16 bytes, so the checked formatter's range and argument
+  // dispatch would repeat work.
+  return formatUuidBytesUnchecked(bytes, 0, selectedCase);
 }
 
 /**

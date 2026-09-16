@@ -513,6 +513,44 @@ change, while its byte routes were unchanged. Direct calls restored parity. `ben
 gates zero errors on the codec plain-slug read and on parsed-UUID text and masked conversion; the
 pre-change source fails both rows. Remeasure if engine error construction stops capturing stacks.
 
+### Canonical UUID text
+
+`uuidToString` and a codec's `uuidToString` return canonical lowercase text unchanged when lowercase
+output is selected, instead of parsing it and formatting the same text again. Decoded bytes, and
+`plainSlugToUuidString` results, go straight to the unchecked formatter because a successful decode
+always yields exactly 16 bytes.
+
+Two six-round packed replays on 2026-09-16 compared `d8306ba` with the change. Median ns per call:
+
+| Route | Node 26.8.2 | Bun 1.4.2 | Chromium | Deno 2.9.6 | Node JITless |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `uuidToString(canonical text)` | 320–323 → 77–80 | 236–243 → 35 | 229–238 → 84 | 396–399 → 81–83 | 4,556–4,699 → 412–417 |
+| `codec.uuidToString(canonical text)` | 331–337 → 82–83 | 237–238 → 36 | 236–242 → 83–85 | 401–410 → 84 | 4,769–4,781 → 470–471 |
+| `plainSlugToUuidString` | 249–258 → 211–213 | 128–131 → 115–121 | 172–174 → 155–165 | 275–296 → 257–267 | 1,928–1,953 → 1,690–1,724 |
+| `uuidToString(plain slug)` | 258–268 → 227–228 | 136–147 → 119 | 175–176 → 165–168 | 286–288 → 272–282 | 1,955–1,959 → 1,841–1,874 |
+| `codec.uuidToString(sentinel slug)` | 12 → 12 | 12 → 16 | 14 → 11 | 12 → 12 | 151–152 → 160 |
+
+Canonical text is faster on every runtime in both replays. `plainSlugToUuidString` is faster in
+both replays on Node, Bun, and JITless and in one replay on Chromium and Deno. `uuidToString(plain
+slug)` is faster in both replays on Node and Bun, in one on JITless, and unresolved on Chromium and
+Deno. Mixed-case text, byte input, and masked decoding were no slower in either replay on Node, Bun,
+Chromium, or Deno.
+
+Two losses remain. A Bun sentinel read through the codec costs about 4 ns more in both replays.
+With `BUN_JSC_maximumFunctionForCallInlineCandidateBytecodeCostForDFG` and
+`BUN_JSC_maximumFunctionForCallInlineCandidateBytecodeCostForFTL` raised to 1000 for both sides,
+the difference disappeared, so the larger function is no longer inlined into the benchmark's
+one-line caller. A HEAD-against-HEAD replay of the same rows showed no difference. Checking for a
+sentinel before canonical text lost the same amount, and moving both checks into a helper lost
+about 5 ns. JITless byte input to `uuidToString` costs 2–5% more in both replays.
+
+Two further shapes were rejected. Keeping `bytesToUuidString` at the end of the codec method did not
+recover the Bun sentinel read. A `typeof uuid === "string"` guard ahead of the keyless check made
+Node mixed-case text 7–9% slower in both replays while leaving the JITless byte-input change inside
+its interval. `bench/resources.ts` gates zero buffers, errors, hex calls, and character reads on
+canonical text for both methods; the pre-change source fails both rows. Remeasure when either
+method changes shape or the engines change their inlining limits.
+
 ### Runtime capability review
 
 The 2026-09-12 review probed Node 26.8.2, Bun 1.4.2, Deno 2.9.6, and Chromium

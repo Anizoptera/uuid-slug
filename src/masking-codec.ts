@@ -77,7 +77,7 @@ import {
 } from "./slug.ts";
 import {
   formatUuidBytesUnchecked,
-  bytesToUuidString,
+  isUuidString,
   resolveUuidTextCase,
   isUuidV7Bytes,
   uuidStringToBytes,
@@ -531,17 +531,28 @@ function buildUuidSlugCodec(
     if (localBytes)
       return formatUuidBytesUnchecked(localBytes, 0, selectedCase) as UuidStringFor<Case>;
     if (typeof uuid === "string") {
-      const sentinel = sentinels.bySlug.get(uuid);
-      if (sentinel)
-        return (
-          selectedCase === UUID_TEXT_LOWERCASE
-            ? sentinel.uuid
-            : formatUuidBytesUnchecked(sentinel.bytes, 0, selectedCase)
-        ) as UuidStringFor<Case>;
+      // Canonical lowercase text is already the default output. No sentinel slug is 36 characters
+      // long, so the length keeps the text pattern off the sentinel lookup. This branch grows the
+      // function past the size JavaScriptCore inlines into a small caller, which costs Bun sentinel
+      // reads a few nanoseconds; moving it into a helper cost more because Bun did not inline the
+      // helper either. Recheck `sentinel.base32.decode` on Bun when this function changes
+      // (bench/PERFORMANCE.md).
+      if (uuid.length === 36) {
+        if (selectedCase === UUID_TEXT_LOWERCASE && isUuidString(uuid))
+          return uuid as UuidStringFor<Case>;
+      } else {
+        const sentinel = sentinels.bySlug.get(uuid);
+        if (sentinel)
+          return (
+            selectedCase === UUID_TEXT_LOWERCASE
+              ? sentinel.uuid
+              : formatUuidBytesUnchecked(sentinel.bytes, 0, selectedCase)
+          ) as UuidStringFor<Case>;
+      }
     }
     const bytes = decodeUuid(uuid);
     if (bytes instanceof Error || (bytes === uuid && isUuidSlugError(bytes))) return bytes;
-    return bytesToUuidString(bytes, selectedCase) as UuidStringFor<Case> | UuidSlugError;
+    return formatUuidBytesUnchecked(bytes, 0, selectedCase) as UuidStringFor<Case>;
   }
 
   function uuidToBytes<Input extends UuidInput>(uuid: Input): UuidBytesResult<Input>;

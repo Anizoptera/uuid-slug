@@ -351,6 +351,10 @@ try {
   assert.ok(!(parsed instanceof Error));
   check("parsed UUID text conversion", () => api.uuidToString(parsed), { buffers: 0, errors: 0 });
   check("parsed UUID masked encode", () => codec.uuidToMaskedSlug(parsed), { errors: 0 });
+  // Canonical lowercase text is already the default output, so it must not be parsed and rebuilt.
+  const canonical = { buffers: 0, errors: 0, hex: 0, chars: 0 };
+  check("canonical UUID text", () => api.uuidToString(id), canonical);
+  check("codec canonical UUID text", () => codec.uuidToString(id), canonical);
   const sentinel = codec.sentinels[0];
   assert.ok(sentinel);
   check("cached sentinel", () => codec.uuidToString(sentinel.slug), {
