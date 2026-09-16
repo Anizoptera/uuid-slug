@@ -22,7 +22,8 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
   Node, Bun, Chromium, and Deno (bench/PERFORMANCE.md).
 - Compare records now carry `runtimeVersion`; pass `UUID_SLUG_COMPARE_NODE_EXECUTABLE` for Node
   Current, since the project pins Node 24.21.0.
-- `extractUuidV7Payload(text)` costs 412–508 ns against 104–125 ns for the timestamp.
+- Retained: two-number payload assembly makes `extractUuidV7Payload` 1.5–3.2 times faster from bytes
+  and 1.1–2.2 from text on every runtime (bench/PERFORMANCE.md).
 - The profile corpus now has rows for parsed values, codec plain-slug reads, canonical-text
   normalization, and payload extraction (`1a5dd32`); the filter accepts comma-separated terms.
 - Retained: removing the discarded errors made those codec and parsed-value routes 16–30 times
@@ -38,4 +39,4 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
       byte copy in `parseUuid`.
 - [x] Packed compare each remaining change on Node and Bun, then Chromium, Deno, and JITless.
 - [x] Record retained results in `bench/PERFORMANCE.md`; run `bun run check`.
-- [ ] Measure `extractUuidV7Payload(text)` against the timestamp route and remove avoidable work.
+- [x] Measure `extractUuidV7Payload(text)` against the timestamp route and remove avoidable work.
