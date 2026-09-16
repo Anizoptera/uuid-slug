@@ -144,6 +144,7 @@ for (const profile of fast ? [] : (["debug", "release"] as const)) {
     manifest,
     "-p",
     "uuid-slug-bridge",
+    "--lib",
     "--all-features",
     "--locked",
     ...profileArgs,
