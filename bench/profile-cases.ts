@@ -681,6 +681,8 @@ export function createProfileCases(
     "codec.toBytes.plain": (index) =>
       codec.uuidToBytes(plainOnlySlugs[index % plainOnlySlugs.length] as string),
     "uuid.toString.canonical": (index) => api.uuidToString(ids[index & 255] as string),
+    "uuid.toString.mixed": (index) => api.uuidToString(mixedIds[index & 255] as string),
+    "plain.toString": (index) => api.plainSlugToUuidString(slugs[index & 255] as string),
     "value.parse.uuid": (index) => api.parseUuid(ids[index & 255] as string),
     "value.parse.slug": (index) => api.parseUuid(slugs[index & 255] as string),
     "value.parse.bytes": (index) => api.parseUuid(bytes[index & 255] as Uint8Array),
