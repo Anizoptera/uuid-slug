@@ -33,13 +33,9 @@
   in JavaScript. A timer-cached clock is rejected: it lags during synchronous bursts.
 - Tool limits: Deno cannot screen through the symlinked source (`#runtime` does not resolve), so
   replays decide Deno; the Bash tool cuts the middle of long output, so log commit-hook output.
-- Phase order is WSJF: a cheap proof, the widest default win (V8 writers), then unknown gaps before
+- Phase order is WSJF: the widest default win (V8 writers), then unknown gaps before
   known Bun gaps (conversions are common default calls; Bun gaps are a few ns and may be
   irremovable), then configured and batch calls, which rank below single default calls.
-
-## Phase 0: prove the delivered state
-
-- [ ] Run `bun run check > log 2>&1`. Done when it exits 0; fix every failure it names first.
 
 ## Phase 1: per-engine text and slug writers
 
@@ -86,7 +82,7 @@ Feistel rounds (about half their time) set their floor.
       Node Current column, so the first-ranked runtime needs no scratch probes.
 - [ ] Add native floor rows for conversions on every runtime where the primitive exists:
       `plainSlugToUuidBytes` against `Uint8Array.fromBase64(slug, { alphabet: "base64url",
-      lastChunkHandling: "strict" })` plus a length check; `uuidBytesToPlainSlug` against
+    lastChunkHandling: "strict" })` plus a length check; `uuidBytesToPlainSlug` against
       `toBase64({ alphabet: "base64url", omitPadding: true })`; `uuidStringToBytes` against
       `Uint8Array.fromHex` and `Buffer.from(hex, "hex")` over dehyphenated text; `bytesToUuidString`
       against `toHex` or `Buffer` hex plus hyphens; `uuidStringToPlainSlug` and
