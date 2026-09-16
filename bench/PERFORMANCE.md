@@ -823,6 +823,24 @@ result; the other cells come from the matrix. A cell without a floor has no nati
 unpooled Web Crypto and `randomFillSync` calls cost far more than the pooled draw, and Node's native
 UUIDv7 text is slower than the portable generator, so Node keeps portable UUIDv7 and bytes.
 
+Portable UUIDv4 text also beats Node's native `crypto.randomUUID` once it formats from the module
+scratch array instead of allocating owned bytes and passing them through `bytesToUuidString`'s input,
+case, and range checks. Two packed replays against `75c7e3b` measured default UUIDv4 text at 0.626–0.661
+of its previous cost on Node 26.8.2 (151–160 to 100 ns) and 0.700–0.713 on Node 24.21.0 (126–129 to
+89–92 ns), with Node using the portable path instead of native text. The portable path alone read
+0.655–0.677 on both Node releases, 0.733–0.774 on Bun, 0.395–0.408 on Deno, and 0.769–0.781 on
+Chromium, where default text improved to 0.753–0.795. Bun and Deno keep native text: it stayed
+unresolved there at 37–41 ns against 60–63 and 91–92 ns portable. UUIDv4 bytes, slugs, and guards
+stayed unresolved, except one Deno byte-guard replay at 1.178 that the other replay did not repeat.
+Node 26.8.2 JITless default text is 2.56–2.57 times slower (567–570 to 1,456–1,457 ns), because
+without the JIT native text wins; the JIT rungs outrank it, and one `--jitless` probe for every
+Node selection remains open. The Node floor-table cells above predate this change.
+
+Patching Bun's native UUIDv7 output with the package clock produces correct values but loses: text
+cost 91–94 ns and slugs 103–106 ns against 70–73 and 66–71 ns for the package generator in two
+one-process screens on Bun 1.4.2, because slicing and concatenating the native string costs more
+than the native call saves.
+
 `Bun.randomUUIDv7` is the fastest UUIDv7 text and slug on Bun, but it cannot replace module-level
 generation because it encodes timestamps ahead of the clock. When its 12-bit counter overflows
 within one millisecond it advances the encoded millisecond, and repeated overflow compounds. After
@@ -1886,7 +1904,7 @@ by about 10% in both runs. Deno's owned UUIDv7 bytes were unresolved against `uu
 then 2% ahead. UUIDv7 text led every package on all four runtimes. Raw platform generation was 5%
 faster on Node and 2.07 times faster on Bun. Bun's native generator encodes timestamps ahead of the
 clock during bursts, so it cannot replace the package generator; see Native floors. UUIDv4 text matched
-Node's native generator within 1%; on Bun it
+Node's native generator within 1% before portable text replaced it (see Native floors); on Bun it
 trailed `crypto-randomuuid` by about 10% and the native generator by 5%; on Deno it trailed `uniku`
 by about 30% and paid 34% over the native generator for validation and the error-value boundary; on Chromium
 it trailed the pooled portable generator in `@lukeed/uuid` by 13–15%. A single 2026-09-12 run had

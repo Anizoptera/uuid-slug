@@ -139,13 +139,12 @@ Status from the 2026-09-16 floors and reports, ns package / floor or rival:
 
 ### Generation hypotheses
 
-- [ ] Bun UUIDv7 text and slug: call `Bun.randomUUIDv7()` or `("base64url")` and overwrite the
-      timestamp (first 13 text characters, or the first 8 slug characters, which hold exactly 48
-      bits) with the package clock, cached per millisecond. Breaks if Bun's 62 remaining bits are
-      not fresh CSPRNG output per call (audit with `bench/entropy.ts`), if the 12-bit counter plus
-      62 random bits weakens the cross-process collision margin `docs/security.md` states against
-      the portable 42-bit random-start sequence (needs a ruling if it does), or if patching costs
-      more than 79 ns text or 78 ns slug. Rejected rebuilding: passing `Date.now()` still drifts.
+- [ ] Default string writers that allocate or recheck settled input: `generatePlainUuidV4Slug`
+      allocates owned bytes before encoding; `generatePlainUuidV7Slug()` builds an `{ alphabet }`
+      object, runs option and generator reads, and allocates owned bytes; `generateUuidV7WithPlainSlug`
+      draws owned bytes for two encodings. Draw into generator-owned scratch and encode directly, as
+      UUIDv4 and UUIDv7 text do. Breaks reentrancy if a nested draw can overwrite scratch before
+      encoding; extend the reentrancy tests to each writer and mutate their guards.
 - [ ] UUIDv7 draw on Bun (about 42 ns against 22 ns for UUIDv4 bytes): ablate the reentrancy
       `try`, `readClock` wrapper, per-call clock validation for the built-in `Date.now`, rollback
       checks the module generator never enables, the four-byte `randomTail` intermediate copy, and
@@ -163,10 +162,9 @@ Status from the 2026-09-16 floors and reports, ns package / floor or rival:
       path. Import-time validation is rejected: it draws entropy before a heap snapshot.
 - [ ] Bun UUIDv4 slug (2–4 ns over `toBase64` on Web Crypto bytes): compare the Latin-1 slug writer
       with native `toBase64` over pooled bytes, results consumed.
-- [ ] Node Current UUIDv4 text: native `randomUUID` costs 139–152 ns while portable UUIDv7 text
-      costs 108; measure portable UUIDv4 text (pooled draw plus Latin-1 formatting) on Node 26.8.2
-      and 24.21.0. If portable wins only on some versions, find a capability probe that selects it
-      without version sniffing.
+- [ ] Node JITless: portable UUIDv4 text costs 1,323–1,329 ns against 454–455 ns for native
+      `randomUUID` on Node 26.8.2. Evaluate one flag probe (`--jitless` in `process.execArgv` or
+      `NODE_OPTIONS`) applied to every Node selection that loses without the JIT, not to this call alone.
 - [ ] Node UUIDv7 slug 137 ns costs more than UUIDv7 text 108 ns although it writes 22 characters
       instead of 36: profile the slug writer against native `toBase64` and `Buffer` base64url.
 - [ ] New 16-byte arrays: Deno UUIDv4 bytes cost 159 ns against 37 ns into a caller buffer, Node
@@ -200,5 +198,12 @@ Status from the 2026-09-16 floors and reports, ns package / floor or rival:
       corpus, and measure twice on every runtime.
 - [x] Reject Bun native UUIDv7 text and slugs as published values: counter overflow encodes
       timestamps ahead of the clock. Keep validated-once UUIDv4 trust.
+- [x] Patch Bun native UUIDv7 output with the package clock: correct, but text cost 91–94 ns and
+      slugs 103–106 ns against 70–73 and 66–71 ns for the package generator on Bun 1.4.2, because
+      slicing and concatenating the native string costs more than the native call saves.
+- [x] Portable UUIDv4 text formats from module scratch instead of new owned bytes, and Node uses it
+      instead of `crypto.randomUUID`: 87–88 against 134–135 ns on Node 26.8.2, 76–77 against
+      112–115 on Node 24.21.0 in scratch screens; packed replays 0.63–0.71 on both Node releases and
+      0.75–0.80 on Chromium, JITless 2.56 slower (bench/PERFORMANCE.md).
 - [x] Split the Bun UUIDv7 text cost: about 42 ns draw and 37 ns Latin-1 formatting; `toHex`,
       `Buffer` `hexSlice`, and byte-table concatenation cost 86–94 ns on Bun.
