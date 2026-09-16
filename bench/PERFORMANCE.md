@@ -577,6 +577,25 @@ Conversions from an existing value were no slower in both replays, except Deno
 Node 24.21.0 was not replayed. `bench/resources.ts` allows one buffer for `parseUuid(text)`; the
 `WeakMap` source used two.
 
+### UUIDv7 payload assembly
+
+`uuidV7PayloadFromBytesUnchecked` assembles the upper 34 and lower 40 payload bits as exact numbers
+and joins them with one BigInt shift; payload fields use `BigInt.asUintN`. The rejected per-byte form
+converted and shifted one BigInt per byte and built each field mask with a shift. In a scratch probe
+on 2026-09-16, assembly took 124 → 52 ns on Node 26.8.2 and 243 → 41 ns on Bun 1.4.2.
+`extractUuidV7Payload(text)` also reads decoded bytes directly instead of a copy.
+
+Two six-round packed replays on 2026-09-16 compared `43c2ef1` with `634d5a5`, layout
+`{ subMillisecondFractionBits: 0, counterBits: 42 }`. Median ns per call:
+
+| Route | Node 26.8.2 | Bun 1.4.2 | Chromium 153 | Deno 2.9.6 | Node 26.8.2 JITless |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `extractUuidV7Payload(bytes)` | 252–256 → 149 | 383–393 → 124 | 216–217 → 133–135 | 240–246 → 138–141 | 1,441–1,462 → 976–979 |
+| `extractUuidV7Payload(text)` | 446–451 → 306–307 | 536–552 → 250–255 | 332–346 → 223–226 | 629–647 → 395–399 | 5,346–5,406 → 4,622–4,720 |
+
+Both rows are faster in both replays on every runtime. Timestamp extraction and value formatting
+were not slower in both replays on any runtime.
+
 ### Runtime capability review
 
 The 2026-09-12 review probed Node 26.8.2, Bun 1.4.2, Deno 2.9.6, and Chromium
