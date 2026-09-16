@@ -13,7 +13,6 @@
  * perfectly random.
  */
 import { describe, expect, it, vi } from "vitest";
-import nodeCrypto from "node:crypto";
 
 import { instrument } from "./instrument";
 import {
@@ -24,12 +23,17 @@ import {
   insecureAmong,
   sourcesUsedBy,
 } from "./entropy-probe";
-import { generateUuidV4Bytes } from "../src/index";
+import { generateUuidV4, generateUuidV4Bytes } from "../src/index";
 import { runtime as nodeRuntime } from "../src/runtime/node";
 
 describe("entropy source", () => {
-  it("exposes native UUIDv4 generation on Node", () => {
-    expect(typeof nodeRuntime.uuidV4).toBe(typeof nodeCrypto.randomUUID);
+  it("generates UUIDv4 text from the package's attributable pool on Node", () => {
+    // Node's native text is slower than the pooled portable path, so the adapter omits it and text
+    // must draw through `fillRandom`, where the source can be attributed.
+    expect(nodeRuntime.uuidV4).toBeUndefined();
+    const used = attributedSourcesFor(() => generateUuidV4());
+    expect(used).not.toEqual([]);
+    expect(insecureAmong(used)).toEqual([]);
   });
 
   it.each(generators)("never reaches for Math.random in %s", (_name, generate) => {

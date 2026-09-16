@@ -24,7 +24,8 @@ const nodeRuntime: Runtime = {
     crypto.randomFillSync(into);
     return undefined;
   }),
-  uuidV4: crypto.randomUUID.bind(crypto),
+  // No `uuidV4`: formatting pooled `randomFillSync` bytes beats `crypto.randomUUID` on Node 24 and 26
+  // with the JIT, and loses without it; bench/PERFORMANCE.md owns both results and the recheck.
   latin1Scratch: bufferLatin1Scratch(Buffer),
 };
 
