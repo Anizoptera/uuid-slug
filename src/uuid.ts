@@ -13,6 +13,8 @@ import {
   uuidByteView,
   UuidSlugError,
 } from "./errors.ts";
+import { runtime } from "#runtime";
+import type { Latin1Scratch } from "./runtime/types.ts";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
 import type {
   PreserveUuidVersion,
@@ -73,12 +75,14 @@ export function invalidUuidTextCase(): UuidSlugError {
 }
 // Probe once and allocate the byte-pair fallback only on engines that need it.
 const nativeToHex = (Uint8Array.prototype as { toHex?: () => string }).toHex;
-const HEX_BYTES = nativeToHex
-  ? []
-  : /*#__PURE__*/ Array.from(
-      { length: 256 },
-      (_, byte) => (HEX[byte >>> 4] as string) + (HEX[byte & 15] as string),
-    );
+const createLatin1Scratch = runtime.latin1Scratch;
+const HEX_BYTES =
+  nativeToHex || createLatin1Scratch
+    ? []
+    : /*#__PURE__*/ Array.from(
+        { length: 256 },
+        (_, byte) => (HEX[byte >>> 4] as string) + (HEX[byte & 15] as string),
+      );
 const hexByte = /* @__NO_SIDE_EFFECTS__ */ (byte: number) => HEX_BYTES[byte] ?? "";
 let uppercaseHexBytes: string[] | undefined;
 const uppercaseHexByte = (byte: number) =>
@@ -94,6 +98,51 @@ const HEX_NIBBLES = new Uint16Array(128).fill(0x100);
 for (let i = 0; i < 16; i += 1) {
   HEX_NIBBLES[HEX.charCodeAt(i)] = i;
   HEX_NIBBLES[UPPERCASE_HEX.charCodeAt(i)] = i;
+}
+// Node, Bun, and Deno format UUID text through a native Latin-1 conversion, which measured faster
+// than native hex plus hyphenation and than string concatenation; browsers keep those paths
+// (bench/PERFORMANCE.md). Buffers and tables are built on first use.
+let uuidTextScratch: Latin1Scratch | undefined;
+let lowercaseHexCodes: Uint8Array | undefined;
+let uppercaseHexCodes: Uint8Array | undefined;
+function hexCodes(digits: string): Uint8Array {
+  const codes = new Uint8Array(512);
+  for (let byte = 0; byte < 256; byte += 1) {
+    codes[byte * 2] = digits.charCodeAt(byte >>> 4);
+    codes[byte * 2 + 1] = digits.charCodeAt(byte & 15);
+  }
+  return codes;
+}
+function createUuidTextScratch(create: NonNullable<typeof createLatin1Scratch>): Latin1Scratch {
+  const scratch = create(UUID_LENGTH);
+  // Hyphens never move, so only the hex digits are written per call.
+  for (const hyphen of [8, 13, 18, 23]) scratch.bytes[hyphen] = UUID_SEPARATOR.charCodeAt(0);
+  return scratch;
+}
+/**
+ * Format through one native byte-to-string call instead of hex strings, slices, and concatenation;
+ * the result is also flat text that a reader need not flatten. The scratch is safe to share because
+ * nothing between these writes and the read can re-enter formatting.
+ */
+function formatUuidBytesLatin1(
+  create: NonNullable<typeof createLatin1Scratch>,
+  bytes: Uint8Array,
+  offset: number,
+  textCase: UuidTextCase,
+): string {
+  const scratch = (uuidTextScratch ??= createUuidTextScratch(create));
+  const codes =
+    textCase === UUID_TEXT_UPPERCASE
+      ? (uppercaseHexCodes ??= hexCodes(UPPERCASE_HEX))
+      : (lowercaseHexCodes ??= hexCodes(HEX));
+  const text = scratch.bytes;
+  for (let byteIndex = 0; byteIndex < 16; byteIndex += 1) {
+    const textOffset = UUID_BYTE_OFFSETS[byteIndex] as number;
+    const code = (bytes[offset + byteIndex] as number) * 2;
+    text[textOffset] = codes[code] as number;
+    text[textOffset + 1] = codes[code + 1] as number;
+  }
+  return scratch.text();
 }
 // Caller-owned output must stay unchanged when text fails, so its bytes are decoded here first.
 const decodedUuidScratch = new Uint8Array(16);
@@ -277,7 +326,7 @@ export function bytesToUuidString(
   if (selectedCase instanceof Error) return selectedCase;
   const badRange = checkRange(view.length, byteOffset, 16);
   if (badRange) return badRange;
-  if (nativeToHex && selectedCase === UUID_TEXT_LOWERCASE) {
+  if (!createLatin1Scratch && nativeToHex && selectedCase === UUID_TEXT_LOWERCASE) {
     let offset = 0;
     let hex: string;
     if (view.length <= 32) {
@@ -298,6 +347,15 @@ export function formatUuidBytesUnchecked<Case extends UuidTextCase = typeof UUID
   offset = 0,
   textCase: Case = UUID_TEXT_LOWERCASE as Case,
 ): UuidStringFor<Case> {
+  // A separate function keeps this one small enough for V8 to inline where browsers never take the
+  // Latin-1 branch; inlining the loop here slowed Chromium value conversion (bench/PERFORMANCE.md).
+  if (createLatin1Scratch)
+    return formatUuidBytesLatin1(
+      createLatin1Scratch,
+      bytes,
+      offset,
+      textCase,
+    ) as UuidStringFor<Case>;
   if (nativeToHex && textCase === UUID_TEXT_LOWERCASE)
     return hyphenateHex(nativeToHex.call(bytes), offset * 2) as UuidStringFor<Case>;
   const byte = textCase === UUID_TEXT_UPPERCASE ? uppercaseHexByte : hexByte;

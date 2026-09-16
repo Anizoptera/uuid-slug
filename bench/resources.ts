@@ -11,6 +11,7 @@ const counts = {
   views: 0,
   hex: 0,
   base64: 0,
+  latin1: 0,
   chars: 0,
   draws: 0,
 };
@@ -49,6 +50,14 @@ assert.ok(wrapMethod(OriginalBytes.prototype, "subarray", "views"));
 assert.ok(wrapMethod(OriginalBytes.prototype, "slice", "slices"));
 const hasHex = wrapMethod(OriginalBytes.prototype, "toHex", "hex");
 const hasBase64 = wrapMethod(OriginalBytes.prototype, "toBase64", "base64");
+// Node and Bun format UUID text through `Buffer#toString("latin1")` instead of native hex.
+const hasLatin1Text =
+  typeof globalThis.Buffer === "function" &&
+  wrapMethod(globalThis.Buffer.prototype, "toString", "latin1");
+const expectTextFormatter = (message: string) => {
+  if (hasLatin1Text) assert.equal(counts.latin1, 1, `native Latin-1 text: ${message}`);
+  else if (hasHex) assert.equal(counts.hex, 1, `native hex: ${message}`);
+};
 assert.ok(wrapMethod(String.prototype, "charCodeAt", "chars"));
 assert.ok(wrapMethod(crypto, "randomFillSync", "draws"));
 assert.ok(wrapMethod(globalThis.crypto, "getRandomValues", "draws"));
@@ -122,6 +131,8 @@ try {
   assert.ok(!(portableSubMillisecond instanceof Error));
   const selectedGenerator = api.createUuidV7Generator({ readUnixMs: () => time });
   assert.ok(!(selectedGenerator instanceof Error));
+  // Formatting builds its case tables and text buffer on first use, not on every call.
+  assert.equal(typeof api.bytesToUuidString(bytes, api.UUID_TEXT_UPPERCASE), "string");
   const reset = () => {
     for (const key of Object.keys(counts) as (keyof typeof counts)[]) counts[key] = 0;
   };
@@ -232,22 +243,22 @@ try {
     views: 0,
     errors: 0,
   });
-  if (hasHex) assert.equal(counts.hex, 1, "available native hex must be used once");
+  expectTextFormatter("must be used once");
   into.set(bytes, 4);
   check("small offset UUID text conversion", () => api.bytesToUuidString(into, 4), {
     buffers: 0,
     views: 0,
     errors: 0,
   });
-  if (hasHex) assert.equal(counts.hex, 1, "small offsets must use one bounded native hex call");
+  expectTextFormatter("small offsets must use one bounded call");
   const oversized = new Uint8Array(256);
   oversized.set(bytes, 120);
   check("oversized offset UUID text conversion", () => api.bytesToUuidString(oversized, 120), {
     buffers: 0,
-    views: hasHex ? 1 : 0,
+    views: hasHex && !hasLatin1Text ? 1 : 0,
     errors: 0,
   });
-  if (hasHex) assert.equal(counts.hex, 1, "oversized offsets must convert only the UUID window");
+  expectTextFormatter("oversized offsets must convert only the UUID window");
   check("exact slug formatting", () => api.uuidBytesToPlainSlug(bytes), {
     buffers: 0,
     views: 0,

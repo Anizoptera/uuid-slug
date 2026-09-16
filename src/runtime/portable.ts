@@ -2,7 +2,7 @@
 
 import { RNG_UNAVAILABLE, UuidSlugError } from "../errors.ts";
 import { pooledFill } from "./pool.ts";
-import type { Runtime } from "./types.ts";
+import type { Latin1Scratch, Runtime } from "./types.ts";
 
 let utf8Encoder: TextEncoder | undefined;
 
@@ -25,11 +25,30 @@ const runtimeCapabilities: Runtime = {
   }),
 };
 
+type Latin1Buffer = Uint8Array & {
+  toString(encoding: "latin1", start: number, end: number): string;
+};
+type HostBuffer = { alloc(size: number): Latin1Buffer } | undefined;
+
+/** Build scratch text through a Node-compatible `Buffer` constructor. */
+export function bufferLatin1Scratch(hostBuffer: NonNullable<HostBuffer>) {
+  return (length: number): Latin1Scratch => {
+    const bytes = hostBuffer.alloc(length);
+    return { bytes, text: () => bytes.toString("latin1", 0, length) };
+  };
+}
+
 // Deno's Web Crypto UUID method is faster than the portable formatter; Chromium's is slower.
 // Runtime identity decides only this measured performance split—the entropy and UUID contracts
 // are the same, and both paths remain covered by the shared runtime corpus.
-if (typeof (globalThis as { Deno?: unknown }).Deno !== "undefined" && globalThis.crypto?.randomUUID)
-  runtimeCapabilities.uuidV4 = globalThis.crypto.randomUUID.bind(globalThis.crypto);
+if (typeof (globalThis as { Deno?: unknown }).Deno !== "undefined") {
+  if (globalThis.crypto?.randomUUID)
+    runtimeCapabilities.uuidV4 = globalThis.crypto.randomUUID.bind(globalThis.crypto);
+  // Deno's global `Buffer` measured faster than native hex. A browser bundle can define a
+  // JavaScript `Buffer` polyfill that is slower than string building, so only Deno selects it.
+  const hostBuffer = (globalThis as { Buffer?: HostBuffer }).Buffer;
+  if (hostBuffer) runtimeCapabilities.latin1Scratch = bufferLatin1Scratch(hostBuffer);
+}
 
 /**
  * Browser `randomUUID` is intentionally not selected. Chromium measured it about five times

@@ -3,6 +3,7 @@
 import crypto from "node:crypto";
 import { Buffer } from "node:buffer";
 import { pooledFill } from "./pool.ts";
+import { bufferLatin1Scratch } from "./portable.ts";
 import type { Runtime } from "./types.ts";
 
 /**
@@ -24,6 +25,7 @@ const nodeRuntime: Runtime = {
     return undefined;
   }),
   uuidV4: crypto.randomUUID.bind(crypto),
+  latin1Scratch: bufferLatin1Scratch(Buffer),
 };
 
 export const runtime = nodeRuntime;

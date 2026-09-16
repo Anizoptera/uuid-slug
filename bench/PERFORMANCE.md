@@ -155,7 +155,7 @@ workloads, and they do not turn development bridges into npm distribution candid
 
 ## Costs removed and alternatives rejected
 
-- Native hexadecimal/base64 encoding replaces JavaScript assembly where supported. Older runtimes keep portable paths. Exact-sized buffers bypass redundant views; caller-owned generation writes at the requested offset.
+- Node, Bun, and Deno write UUID text as ASCII bytes and convert them with one `Buffer` Latin-1 call; browsers use native hexadecimal encoding where supported. Native base64 encoding replaces JavaScript assembly where supported. Older runtimes keep portable paths. Exact-sized buffers bypass redundant views; caller-owned generation writes at the requested offset.
 - Boolean validation no longer constructs decoded buffers or discarded errors. A scanner shared with parsing regressed Bun in the measured trial and was rejected; both paths retain the same character table and contract corpus.
 - Rotation decodes text once and constructs a mismatch error only after all explicit keys fail. Custom callbacks still receive owned bytes. Removing those copies would alter ownership semantics.
 - TimestampValidation consumes decoded bytes directly. Formatting remains at string-returning boundaries; it is not part of validation.
@@ -512,6 +512,33 @@ A `decodeMaskedSlug` wrapper that built the miss error around `unmaskSlug` was r
 change, while its byte routes were unchanged. Direct calls restored parity. `bench/resources.ts`
 gates zero errors on the codec plain-slug read and on parsed-UUID text and masked conversion; the
 pre-change source fails both rows. Remeasure if engine error construction stops capturing stacks.
+
+### UUID text formatting
+
+Node, Bun, and Deno format UUID bytes by writing ASCII hex codes into a reused 36-byte `Buffer` and
+reading it back with one `toString("latin1")` call. The runtime adapter supplies that capability;
+the portable adapter enables it only on Deno because a browser bundle may define a slow JavaScript
+`Buffer`. Browsers keep `toHex` or byte-pair strings. The loop lives in a helper so the shared
+formatter stays small: inlined into it, Chromium value conversion was 3–5% slower in two replays.
+
+Two packed `35ad052`-to-candidate replays on 2026-09-16 measured median ratios; every listed pair
+had its 95% interval below 1 unless marked unresolved:
+
+| Runtime | `uuid.toString.bytes` | `v7.string` | `plain.toString` | `value.toString` | `codec.toString.plain` |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Node 26.8.2 | 0.70, 0.72 | 0.77, 0.79 | 0.80, 0.82 | 0.76, 0.78 | 0.89, 0.91 |
+| Bun 1.4.2 | 0.54, 0.55 | 0.62, 0.65 | 0.60, 0.66 | 0.60, 0.62 | 0.75, 0.79 |
+| Node 24.21.0 | 0.47, 0.47 | 0.59, 0.59 | 0.67, 0.69 | 0.46, 0.47 | 0.81, 0.83 |
+| Deno 2.9.6 | 0.70, 0.70 | 0.82, 0.83 | 0.89, unresolved | 0.76, 0.78 | 0.95, unresolved |
+| Node 26.8.2 JITless | 2.40, 2.40 slower | 1.52, 1.54 slower | 1.42, 1.43 slower | 2.08, 2.09 slower | 1.06, 1.06 slower |
+
+Chromium 153 stayed unresolved on every row; one `v4.string` replay read 1.04 and did not reproduce.
+Native `randomUUID` text, canonical text passthrough, and sentinel timestamps stayed unresolved
+everywhere. Node JITless loses because it interprets the 32 typed-array writes one by one; the gains
+on every higher-priority runtime outweigh that final rung. An isolated probe with consumed results
+measured a fresh `Buffer.allocUnsafe(36)` per call 35–42% slower than the reused buffer, and
+`TextDecoder("latin1")` slower than `toHex` on Node and Deno. Recheck if `toHex` or a native
+formatter stops trailing `Buffer#toString("latin1")` on Node, Bun, or Deno.
 
 ### UUID text parsing
 
@@ -985,7 +1012,8 @@ Use the unchecked formatter only behind the generator-owned 16-byte text buffer.
 screen found no gain, but it omitted the allocation removal and direct competitor floor; the combined
 public route was retained after the competitor matrix exposed that interaction. A direct byte-pair
 formatter was re-screened after that discovery and lost on Chromium without closing Node or Deno, so
-engines with `Uint8Array.toHex` keep the native intermediate string.
+browsers with `Uint8Array.toHex` keep the native intermediate string; Node, Bun, and Deno now use the
+Latin-1 formatter described under UUID text formatting.
 Replacing the entropy pool's copy-and-erase loop with `set(subarray)` plus ranged `fill` regressed
 UUIDv4 byte routes by 57–88% on Node, 60–95% on Bun, 20–108% on Deno, and 65–87% on Chromium.
 The allocated view and two native calls cost more than one 16-byte JavaScript loop.
@@ -1250,7 +1278,7 @@ replay was no faster than the precheck on Node and was slower on Bun. It duplica
 syntax loop while mixed-valid intervals still included no change. Keep one grammar validator and
 the cheap version/variant precheck; reconsider only if valid-heavy traffic regresses on a later engine.
 
-Native offset UUID formatting converts the whole buffer only through 32 bytes; larger buffers keep a
+On engines using `toHex`, native offset UUID formatting converts the whole buffer only through 32 bytes; larger buffers keep a
 16-byte view so work cannot scale with unrelated caller data. Direct byte formatting was 2.1–3.2
 times slower in Node 26.8.2 and Bun 1.4.2; allocating a view or copy kept the avoidable object, while
 unbounded whole-buffer conversion became 1.7–17 times slower at 256–4,096 bytes. Three packed

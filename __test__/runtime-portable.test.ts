@@ -62,4 +62,38 @@ describe("portable runtime capability probe", () => {
     expect(runtime.uuidV4?.()).toBe("00000000-0000-4000-8000-000000000000");
     expect(randomUUID).toHaveBeenCalledOnce();
   });
+
+  it("selects Buffer text on Deno but never a browser's Buffer", async () => {
+    // Node's global Buffer stands in for a bundler polyfill: without Deno it must stay unused.
+    expect((await adapterWith({ getRandomValues: fill })).latin1Scratch).toBeUndefined();
+    const scratch = (await adapterWith({ getRandomValues: fill }, {})).latin1Scratch?.(3);
+    scratch?.bytes.set([0x41, 0xe9, 0x2d]);
+    expect(scratch?.text()).toBe("A\u00e9-");
+  });
+});
+
+describe("portable UUID text formatting", () => {
+  // Node, Bun, and Deno lanes format through the native Latin-1 capability, so only this case
+  // reaches the browser paths: native hex where it exists, byte-pair strings where it does not.
+  it.each([false, true])(
+    "formats canonical text with native hex removed: %s",
+    async (removeHex) => {
+      const toHex = Object.getOwnPropertyDescriptor(Uint8Array.prototype, "toHex");
+      if (removeHex) Reflect.deleteProperty(Uint8Array.prototype, "toHex");
+      try {
+        vi.resetModules();
+        vi.doMock("#runtime", () => import("../src/runtime/portable"));
+        const api = await import("../src/index");
+        const bytes = Uint8Array.from({ length: 20 }, (_, index) => (index - 2) * 17);
+        const lower = "00112233-4455-6677-8899-aabbccddeeff";
+        expect(api.bytesToUuidString(bytes, 2)).toBe(lower);
+        expect(api.bytesToUuidString(bytes, 2, "uppercase")).toBe(lower.toUpperCase());
+        expect(api.uuidToString(bytes.slice(2, 18))).toBe(lower);
+      } finally {
+        vi.doUnmock("#runtime");
+        // eslint-disable-next-line no-extend-native -- restores the engine's own descriptor removed above
+        if (toHex) Object.defineProperty(Uint8Array.prototype, "toHex", toHex);
+      }
+    },
+  );
 });

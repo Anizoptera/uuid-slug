@@ -15,4 +15,15 @@ export interface Runtime {
    */
   /** Native values are untrusted until the public generator validates their representation. */
   uuidV4?(this: void): string;
+  /**
+   * Create a reusable buffer whose bytes a native call turns into a flat Latin-1 string. Adapters
+   * provide it only where that call beats building text from JavaScript strings.
+   */
+  latin1Scratch?(this: void, length: number): Latin1Scratch;
+}
+
+export interface Latin1Scratch {
+  readonly bytes: Uint8Array;
+  /** Return every byte of `bytes` as one Latin-1 string. */
+  text(this: void): string;
 }
