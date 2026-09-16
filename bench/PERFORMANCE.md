@@ -734,6 +734,25 @@ comparison varied only the formatter and checked identical output; it does not m
 package import cost, memory retention, other runtimes, or consumer frequency. Recheck if UUID text
 formatting or engine string handling changes.
 
+The timestamp is formatted from a lazily built table of 256 byte-pair strings instead of
+`Number.prototype.toString(16)`. Two packed `ec67d78`-to-candidate replays on 2026-09-16 measured
+`v7.bounds.text` medians, with every 95% paired-ratio interval below 1:
+
+| Runtime | Baseline ns | Candidate ns | Ratio |
+| --- | ---: | ---: | ---: |
+| Node 26.8.2 | 505, 506 | 83, 84 | 0.17, 0.17 |
+| Bun 1.4.2 | 133, 133 | 57, 52 | 0.43, 0.39 |
+| Chromium 153 | 491, 498 | 80, 80 | 0.16, 0.16 |
+| Deno 2.9.6 | 493, 492 | 83, 83 | 0.17, 0.17 |
+| Node 26.8.2 JITless | 891, 888 | 471, 466 | 0.53, 0.52 |
+
+`v7.bounds.bytes`, which the change does not reach, stayed unresolved on every runtime. An isolated probe,
+one process per variant, formatted both endpoints in about 600 ns with `toString(16)` on Node 26.8.2
+and Node 24.21.0 against 65 and 64 ns with byte pairs. Per-nibble lookups without a table took
+112 ns on Node 26.8.2 and 51 ns on Bun against 65 and 27 ns for byte pairs. Node 24.21.0 was probed
+but not replayed through the packed comparison. Recheck if V8 speeds up `toString(16)` for
+millisecond timestamps.
+
 The shared one-millisecond profile completed both text and byte bounds on Node 24.21.0, Bun 1.4.2,
 Deno 2.9.6, and Chromium 151. Resource counters observed no byte-array allocation for text bounds
 and exactly the two returned arrays for byte bounds.

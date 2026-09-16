@@ -52,14 +52,34 @@ export function uuidV7ByteBounds(
   };
 }
 
+let hexBytes: string[] | undefined;
+
 function textEndpoint<Case extends UuidTextCase>(
   unixMs: number,
   upper: boolean,
   textCase: Case,
 ): UuidV7StringFor<Case> {
-  const timestamp = unixMs.toString(16).padStart(12, "0");
-  const suffix = upper ? "7fff-bfff-ffffffffffff" : "7000-8000-000000000000";
-  const value = `${timestamp.slice(0, 8)}-${timestamp.slice(8)}-${suffix}`;
+  // Byte-pair lookups replace `unixMs.toString(16)`, which on V8 cost several times the rest of the
+  // call for a millisecond timestamp. Nibble
+  // lookups need no table but were slower on Node Current and Bun. Built on first use so an import
+  // that never formats bounds pays nothing. Recheck if V8 speeds up radix formatting
+  // (bench/PERFORMANCE.md).
+  const hex = (hexBytes ??= Array.from({ length: 256 }, (_, byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ));
+  // `rejectUuidV7UnixMs` admits only whole milliseconds below 2^48, so `high` holds 16 bits and
+  // the unsigned shifts read the low 32 bits exactly.
+  const high = Math.floor(unixMs / 0x1_0000_0000);
+  const suffix = upper ? "-7fff-bfff-ffffffffffff" : "-7000-8000-000000000000";
+  const value =
+    (hex[high >>> 8] as string) +
+    (hex[high & 0xff] as string) +
+    (hex[unixMs >>> 24] as string) +
+    (hex[(unixMs >>> 16) & 0xff] as string) +
+    "-" +
+    (hex[(unixMs >>> 8) & 0xff] as string) +
+    (hex[unixMs & 0xff] as string) +
+    suffix;
   return (textCase === UUID_TEXT_UPPERCASE ? value.toUpperCase() : value) as UuidV7StringFor<Case>;
 }
 
