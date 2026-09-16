@@ -61,7 +61,10 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   kept there is lost to the next session.
 - Read README §Guarantees before changing generation or tests; it owns the consumer guarantees.
   New guarantees require a maintainer ruling before code or tests impose them. Intra-millisecond ordering
-  is explicitly not guaranteed: do not gate it or reject a native generator for lacking it.
+  is explicitly not guaranteed: do not gate it or reject a native generator for lacking it. The
+  exemption covers order only. Before adopting a native or alternative generator, compare every
+  field it encodes with the package generator, including timestamps against the clock during
+  sustained same-millisecond bursts, because counter overflow can move them ahead.
   Measure implementation differences in `bench/`, where results inform rather than gate.
 - Read `docs/design.md` before changing masking, mask derivation, or sentinels. Preserve its wire layout:
   masked payloads are UUIDv7-only, with a 16-bit check and timestamps below 2^42 milliseconds.
