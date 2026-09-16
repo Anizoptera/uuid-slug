@@ -43,7 +43,9 @@ notes: the section for a version is published verbatim when its tag is pushed.
 - Replace generic parse/format names with directional UUID and plain-slug conversions:
   `uuidStringToBytes`, `bytesToUuidString`, `uuidStringToPlainSlug`, `uuidBytesToPlainSlug`,
   `uuidToString`, and `plainSlugToUuidBytes`. Remove generic base64url helpers; plain-slug byte
-  conversions accept exactly one 16-byte UUID payload.
+  conversions accept exactly one 16-byte UUID payload. A masking codec's `uuidToString`,
+  `uuidToBytes`, and `uuidToPlainSlug` read a 22-character base64url slug as masked when it passes
+  the codec's check and as plain otherwise.
 - Migration readers expose `uuidSlugToUuidString` and `uuidSlugToUuidStringCandidates`. Options and format
   names are now `acceptFixedMask`, `acceptPlainSlug`, `seeded-mask`, `fixed-mask`, and
   `plain-slug`.

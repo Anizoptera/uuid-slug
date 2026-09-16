@@ -776,13 +776,19 @@ export interface UuidV7MaskingCodec {
     this: void,
     uuid: Input,
   ): Uuid<UuidVersionOf<Input>, true> | UuidSlugError;
-  /** Convert any accepted UUID form to normalized UUID text. Ambiguous raw slugs fail explicitly. */
+  /**
+   * Convert any accepted UUID form to normalized UUID text. A 22-character slug is read as masked
+   * when it passes this codec's check and as plain otherwise.
+   */
   uuidToString<Input extends UuidInput, Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
     uuid: Input,
     textCase?: Case,
   ): UuidStringResult<Input, Case>;
-  /** Convert any accepted UUID form to a new plain 16-byte array. Ambiguous raw slugs fail explicitly. */
+  /**
+   * Convert any accepted UUID form to a new plain 16-byte array. A 22-character slug is read as
+   * masked when it passes this codec's check and as plain otherwise.
+   */
   uuidToBytes<Input extends UuidInput>(this: void, uuid: Input): UuidBytesResult<Input>;
   /** Convert any accepted UUID form into caller-owned storage after complete validation. */
   uuidToBytes<Output extends Uint8Array>(
@@ -791,7 +797,10 @@ export interface UuidV7MaskingCodec {
     output: Output,
     outputOffset?: number,
   ): Output | UuidSlugError;
-  /** Convert any accepted UUID form to a plain UUID slug. A dual-valid raw slug selects its plain meaning. */
+  /**
+   * Convert any accepted UUID form to a plain UUID slug. A 22-character slug is read as masked
+   * when it passes this codec's check and as plain otherwise.
+   */
   uuidToPlainSlug<Input extends UuidInput>(
     this: void,
     uuid: Input,
@@ -840,7 +849,8 @@ export interface UuidV7MaskingCodec {
   ): GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, Case> | UuidSlugError;
   /**
    * Convert UUID text, 16 UUID bytes, a plain slug, or a masked slug to this masking codec's
-   * current masked spelling. A dual-valid raw slug selects its masked meaning. Other UUID versions
+   * current masked spelling. A 22-character slug is read as masked when it passes this codec's
+   * check and as plain otherwise. Other UUID versions
    * return `invalid_uuid_version`. TypeScript rejects known UUIDv4 values; unbranded external
    * values are validated when called. Timestamps outside the codec's inclusive configured range
    * return `invalid_timestamp`; sentinels are

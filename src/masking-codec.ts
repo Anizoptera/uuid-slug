@@ -89,19 +89,11 @@ import { readGenerationOptions } from "./generation-options.ts";
 
 type EncodedSentinel = { bytes: Uint8Array; slug: SentinelUuidV7Slug };
 
-function sameUuidBytes(left: Uint8Array, right: Uint8Array): boolean {
-  for (let index = 0; index < 16; index += 1) if (left[index] !== right[index]) return false;
-  return true;
-}
-
 const CODEC_CONSTRUCTION_FAILED = "UUIDv7 masking-codec construction failed.";
 const UUID_V7_GENERATION_FAILED = "generateUuidV7Bytes threw while generating UUIDv7 bytes.";
 const INVALID_MASKED_UUID_BYTES = "Masking requires exactly 16 RFC-variant UUIDv7 bytes.";
 const INVALID_SENTINEL_SHAPE = "Each sentinel must have a name and UUIDv7 string.";
 const AT_OPTION = "at";
-const PLAIN_SLUG_MEANING = "plain";
-const MASKED_SLUG_MEANING = "masked";
-type SlugMeaning = typeof PLAIN_SLUG_MEANING | typeof MASKED_SLUG_MEANING;
 const CODEC_OPTIONS = {
   mask: true,
   maskedSlugAlphabet: true,
@@ -429,7 +421,7 @@ function buildUuidSlugCodec(
   // Package-created decode failures are local Errors. A caller-owned cross-realm package error is
   // the only failure arm that can bypass `instanceof`, and this function returns it unchanged;
   // identity keeps marker recognition off successful conversion paths.
-  function decodeUuid(uuid: unknown, preferredSlug?: SlugMeaning): Uint8Array | UuidSlugError {
+  function decodeUuid(uuid: unknown): Uint8Array | UuidSlugError {
     let text = typeof uuid === "string" ? uuid : undefined;
     if (text === undefined) {
       const bytes = exactUuidByteView(uuid);
@@ -445,18 +437,16 @@ function buildUuidSlugCodec(
     if (text.length === 26) return decodePlainSlugToBytes(text);
     if (text.length === 27) return decodeMaskedSlug(text, current, previousMasks);
     if (text.length !== 22) return uuidStringToBytes(text);
-    const plain = decodePlainSlugToBytes(text);
-    if (plain instanceof Error) return decodeMaskedSlug(text, current, previousMasks);
+    // One masked base64url slug in 16 is also the canonical plain slug of a different UUID, so the
+    // codec's check is the only evidence of meaning: a slug that passes it under any configured
+    // mask is masked, and the plain reading is used only once every mask has rejected the text.
+    // Alphabet errors and mask-callback failures are returned as they are; only a failed check
+    // falls through to the plain reading.
     const masked = decodeMaskedSlug(text, current, previousMasks);
-    if (masked instanceof Error)
-      return isUuidSlugError(masked) && masked.code === INVALID_UUID_SLUG ? plain : masked;
-    if (sameUuidBytes(plain, masked)) return plain;
-    if (preferredSlug === PLAIN_SLUG_MEANING) return plain;
-    if (preferredSlug === MASKED_SLUG_MEANING) return masked;
-    return new UuidSlugError(
-      INVALID_UUID_SLUG,
-      "This 22-character slug is valid as both plain and masked but resolves to different UUIDs; use an explicit plain or masked conversion.",
-    );
+    if (!(masked instanceof Error)) return masked;
+    if (!isUuidSlugError(masked) || masked.code !== INVALID_UUID_SLUG) return masked;
+    const plain = decodePlainSlugToBytes(text);
+    return plain instanceof Error ? masked : plain;
   }
 
   function encodeMasked(
@@ -571,7 +561,7 @@ function buildUuidSlugCodec(
   ): PlainUuidSlug | UuidSlugError {
     const localBytes = exactLocalUuidBytes(uuid);
     if (localBytes) return uuidBytesToPlainSlug(localBytes, alphabet);
-    const bytes = decodeUuid(uuid, PLAIN_SLUG_MEANING);
+    const bytes = decodeUuid(uuid);
     if (bytes instanceof Error || (bytes === uuid && isUuidSlugError(bytes))) return bytes;
     return uuidBytesToPlainSlug(bytes, alphabet);
   }
@@ -579,7 +569,7 @@ function buildUuidSlugCodec(
   function uuidToMaskedSlug(uuid: unknown): MaskedOrSentinelUuidV7Slug | UuidSlugError {
     const localBytes = exactLocalUuidBytes(uuid);
     if (localBytes) return encodeMasked(localBytes);
-    const bytes = decodeUuid(uuid, MASKED_SLUG_MEANING);
+    const bytes = decodeUuid(uuid);
     if (bytes instanceof Error || (bytes === uuid && isUuidSlugError(bytes))) return bytes;
     return encodeMasked(bytes);
   }

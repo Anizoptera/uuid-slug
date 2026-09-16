@@ -657,8 +657,9 @@ rejected before it runs, with or without an output buffer:
 | `unknown` | All conversion signatures | Narrow untyped data before calling; JavaScript values are still checked safely at runtime. |
 
 Parsers accept ordinary strings and validate them at runtime. Choose the decoder from your ID
-format: plain and masked base64url spellings overlap. UUID values with an unknown version
-also receive runtime version checks.
+format: plain and masked base64url spellings overlap. A masking codec reads a 22-character slug as
+masked when it passes the codec's check and as plain otherwise; keyless root readers always read
+it as plain. UUID values with an unknown version also receive runtime version checks.
 Lossless conversion preserves a known UUID version in its result type. Byte conversion returns an
 owned branded array when it allocates and the caller's exact array subtype when it writes into
 supplied storage.
@@ -750,8 +751,9 @@ readers also try its configured previous masks.
 | `sentinels` | Readonly reserved names, UUIDs, and slugs. |
 | `createUuidSlugMigrationDecoder(options?)` | A reader for the old formats you enable; new output stays unchanged. |
 
-The source-specific methods require the caller to state
-the source meaning because a 22-character base64url string cannot identify that meaning itself.
+The universal methods read a 22-character base64url slug as masked when it passes the codec's
+check and as plain otherwise. The source-specific methods apply the meaning the caller states
+instead, because that string cannot identify its meaning itself.
 
 A byte offset is the zero-based index where one 16-byte UUID starts inside a larger `Uint8Array`.
 Omit it for a standalone 16-byte array. Output offsets select where a method writes; input offsets

@@ -133,12 +133,19 @@ each `previousMasks` entry in caller order, returning the first candidate whose 
 masks create more opportunities for false acceptance; the combined rate is bounded by the sum
 of their individual rates. The codec must not append masks on the caller's behalf.
 
-Masked decoding always accepts both alphabets, sentinels, and current or previous mask outputs.
-Migration adds only the old formats the caller enables. Other forms are invalid.
+Masked-source decoding always accepts both alphabets, sentinels, and current or previous mask
+outputs. Migration adds only the old formats the caller enables. Other forms are invalid.
 
-Only `codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true })` enables plain-slug decoding. A plain slug may
-accidentally pass an earlier mask check and return a different candidate; migration cannot make
-the two representations distinguishable. Confirm candidates against the issuing store.
+The codec's universal readers apply the same order to a 22-character base64url slug: the masked
+reading wins when any configured mask's check passes, and the plain reading is used only after
+every mask rejects the text. One masked slug in 16 has zero outer check bits and is therefore
+also the canonical plain slug of another UUID, so no reading without the check can tell them
+apart; keyless root readers never unmask.
+
+Among the masked-source readers, only `codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true })` enables
+plain-slug decoding. A plain slug may accidentally pass an earlier mask check and return a
+different candidate; migration cannot make the two representations distinguishable. Confirm
+candidates against the issuing store.
 
 Sentinels bypass masking and use precomputed plain slugs in the masked output alphabet.
 Decode checks both raw spellings first: 22 base64url or 26 base32hex characters.
