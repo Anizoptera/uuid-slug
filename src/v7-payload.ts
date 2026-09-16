@@ -10,7 +10,6 @@ const PAYLOAD_LAYOUT_OPTIONS = {
   subMillisecondFractionBits: true,
 } as const satisfies Record<keyof UuidV7PayloadLayout, true>;
 
-const lowBits = (bits: number): bigint => (bits === 0 ? 0n : (1n << BigInt(bits)) - 1n);
 const describeBitCount = (value: unknown): string =>
   typeof value === "number" ? String(value) : `type ${typeof value}`;
 
@@ -65,14 +64,26 @@ export function readUuidV7PayloadLayout(
   return { subMillisecondFractionBits: fractionBits, counterBits: counterBits as number };
 }
 
-/** Join `rand_a` and `rand_b`; version and variant bits are separators, not payload. */
+/**
+ * Join `rand_a` and `rand_b`; version and variant bits are separators, not payload.
+ *
+ * The upper 34 and lower 40 payload bits are assembled as exact numbers and joined once, because a
+ * BigInt conversion and shift per byte cost several times more (bench/PERFORMANCE.md).
+ */
 export function uuidV7PayloadFromBytesUnchecked(bytes: Uint8Array, offset: number): bigint {
-  let payload = BigInt((bytes[offset + 6] ?? 0) & 0x0f) << 70n;
-  payload |= BigInt(bytes[offset + 7] ?? 0) << 62n;
-  payload |= BigInt((bytes[offset + 8] ?? 0) & 0x3f) << 56n;
-  for (let index = 9; index < 16; index++)
-    payload |= BigInt(bytes[offset + index] ?? 0) << BigInt((15 - index) * 8);
-  return payload;
+  const upper =
+    ((bytes[offset + 6] as number) & 0x0f) * 0x4000_0000 +
+    (bytes[offset + 7] as number) * 0x40_0000 +
+    (((bytes[offset + 8] as number) & 0x3f) << 16) +
+    ((bytes[offset + 9] as number) << 8) +
+    (bytes[offset + 10] as number);
+  const lower =
+    (bytes[offset + 11] as number) * 0x1_0000_0000 +
+    (((bytes[offset + 12] as number) << 24) >>> 0) +
+    ((bytes[offset + 13] as number) << 16) +
+    ((bytes[offset + 14] as number) << 8) +
+    (bytes[offset + 15] as number);
+  return (BigInt(upper) << 40n) | BigInt(lower);
 }
 
 export function extractPayloadFields(
@@ -102,9 +113,9 @@ export function extractPayloadFields(
       counterBits === 0
         ? undefined
         : {
-            value: (payload >> BigInt(remainingBits)) & lowBits(counterBits),
+            value: BigInt.asUintN(counterBits, payload >> BigInt(remainingBits)),
             bits: counterBits,
           },
-    remaining: { value: payload & lowBits(remainingBits), bits: remainingBits },
+    remaining: { value: BigInt.asUintN(remainingBits, payload), bits: remainingBits },
   };
 }

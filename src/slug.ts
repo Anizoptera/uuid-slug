@@ -717,7 +717,7 @@ export function extractUuidV7Payload(
   let bytes: Uint8Array | UuidSlugError;
   if (typeof value === "string") {
     if (byteOffset !== 0) return new UuidSlugError(INVALID_OPTIONS, BYTE_OFFSET_NEEDS_BYTES);
-    bytes = uuidToBytes(value);
+    bytes = decodeKeylessUuid(value);
   } else if (isUuidSlugError(value)) {
     return value;
   } else {
