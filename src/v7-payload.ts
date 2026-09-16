@@ -68,7 +68,7 @@ export function readUuidV7PayloadLayout(
  * Join `rand_a` and `rand_b`; version and variant bits are separators, not payload.
  *
  * The upper 34 and lower 40 payload bits are assembled as exact numbers and joined once, because a
- * BigInt conversion and shift per byte cost several times more (bench/PERFORMANCE.md).
+ * BigInt conversion and shift per byte cost more than twice as much (bench/PERFORMANCE.md).
  */
 export function uuidV7PayloadFromBytesUnchecked(bytes: Uint8Array, offset: number): bigint {
   const upper =
