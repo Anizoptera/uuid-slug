@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import { runtime } from "#runtime";
 import { checkRange, INVALID_BASE32HEX, INVALID_BASE64URL, UuidSlugError } from "./errors.ts";
 import type { UuidSlugErrorCode } from "./errors.ts";
+import type { Latin1Scratch } from "./runtime/types.ts";
 
 /** Select lowercase base32hex slug output. */
 export const BASE32HEX_NAME = "base32hex";
@@ -81,6 +83,16 @@ const availableNativeToBase64 = (
 const nativeToBase64 = denoVersion === undefined ? availableNativeToBase64 : undefined;
 export const hasNativeBase64urlEncoder: boolean = nativeToBase64 !== undefined;
 const BASE64_OPTIONS = { alphabet: BASE64URL_NAME, omitPadding: true } as const;
+const createLatin1Scratch = runtime.latin1Scratch;
+let base64urlScratch: Latin1Scratch | undefined;
+let base32hexScratch: Latin1Scratch | undefined;
+let base64urlCodes: Uint8Array | undefined;
+let base32hexCodes: Uint8Array | undefined;
+
+/*#__NO_SIDE_EFFECTS__*/
+function characterCodes(alpha: Alphabet): Uint8Array {
+  return Uint8Array.from(alpha.chars, (character) => character.charCodeAt(0));
+}
 
 /**
  * Bits left over when `byteLength` bytes are written in this alphabet. A slug rounds up to whole
@@ -136,6 +148,12 @@ function firstInvalidCharacter(alpha: Alphabet, value: string): UuidSlugError {
  */
 /*#__NO_SIDE_EFFECTS__*/
 export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {
+  if (createLatin1Scratch && bytes.length === 16) {
+    if (alpha === BASE64URL && (tailBits === 0 || tailBits === 4))
+      return encodeBase64urlLatin1(createLatin1Scratch, bytes, tail);
+    if (alpha === BASE32HEX && (tailBits === 0 || tailBits === 2))
+      return encodeBase32hexLatin1(createLatin1Scratch, bytes, tail);
+  }
   if (
     nativeToBase64 &&
     alpha === BASE64URL &&
@@ -152,6 +170,66 @@ export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 
     return encoded.slice(0, last) + alpha.chars[digit | trailing];
   }
   return encodePortable(bytes, alpha, tail, tailBits);
+}
+
+/**
+ * Write a UUID payload's character codes into reused scratch and read them back with one native
+ * Latin-1 conversion. The result is flat text, where native base64url output needs a slice and a
+ * concatenation for the check tail and portable output concatenates characters. The scratch is safe
+ * to share because nothing between these writes and the read can re-enter encoding.
+ */
+function encodeBase64urlLatin1(
+  create: NonNullable<typeof createLatin1Scratch>,
+  bytes: Uint8Array,
+  tail: number,
+): string {
+  const scratch = (base64urlScratch ??= create(22));
+  const codes = (base64urlCodes ??= characterCodes(BASE64URL));
+  const text = scratch.bytes;
+  for (let offset = 0, written = 0; offset < 15; offset += 3, written += 4) {
+    const block =
+      ((bytes[offset] as number) << 16) |
+      ((bytes[offset + 1] as number) << 8) |
+      (bytes[offset + 2] as number);
+    text[written] = codes[block >>> 18] as number;
+    text[written + 1] = codes[(block >>> 12) & 63] as number;
+    text[written + 2] = codes[(block >>> 6) & 63] as number;
+    text[written + 3] = codes[block & 63] as number;
+  }
+  const last = bytes[15] as number;
+  text[20] = codes[last >>> 2] as number;
+  text[21] = codes[((last & 3) << 4) | (tail & 15)] as number;
+  return scratch.text();
+}
+
+/** The base32hex counterpart of `encodeBase64urlLatin1`. */
+function encodeBase32hexLatin1(
+  create: NonNullable<typeof createLatin1Scratch>,
+  bytes: Uint8Array,
+  tail: number,
+): string {
+  const scratch = (base32hexScratch ??= create(26));
+  const codes = (base32hexCodes ??= characterCodes(BASE32HEX));
+  const text = scratch.bytes;
+  for (let offset = 0, written = 0; offset < 15; offset += 5, written += 8) {
+    const a = bytes[offset] as number;
+    const b = bytes[offset + 1] as number;
+    const c = bytes[offset + 2] as number;
+    const d = bytes[offset + 3] as number;
+    const e = bytes[offset + 4] as number;
+    text[written] = codes[a >>> 3] as number;
+    text[written + 1] = codes[((a & 7) << 2) | (b >>> 6)] as number;
+    text[written + 2] = codes[(b >>> 1) & 31] as number;
+    text[written + 3] = codes[((b & 1) << 4) | (c >>> 4)] as number;
+    text[written + 4] = codes[((c & 15) << 1) | (d >>> 7)] as number;
+    text[written + 5] = codes[(d >>> 2) & 31] as number;
+    text[written + 6] = codes[((d & 3) << 3) | (e >>> 5)] as number;
+    text[written + 7] = codes[e & 31] as number;
+  }
+  const last = bytes[15] as number;
+  text[24] = codes[last >>> 3] as number;
+  text[25] = codes[((last & 7) << 2) | (tail & 3)] as number;
+  return scratch.text();
 }
 
 /** Encode without runtime-native delegation so fallback performance can be measured directly. */

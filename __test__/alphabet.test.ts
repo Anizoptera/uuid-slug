@@ -29,9 +29,14 @@ describe("bit-packing codec", () => {
   // An oracle only has value when it can fail independently of the code under test. Comparing
   // against this package's own previous output would agree by construction; `Buffer` is a
   // separate implementation of the same RFC 4648 alphabet.
-  it("encodes a UUID payload identically to node Buffer", () => {
-    const bytes = bytesFrom(16);
-    expect(uuidBytesToPlainSlug(bytes)).toBe(Buffer.from(bytes).toString("base64url"));
+  it("encodes varied UUID payloads identically to node Buffer and the base32hex reference", () => {
+    for (let seed = 0; seed < 256; seed += 1) {
+      const bytes = Uint8Array.from({ length: 16 }, (_, index) =>
+        Math.imul(seed + 1, index * 197 + 131),
+      );
+      expect(uuidBytesToPlainSlug(bytes)).toBe(Buffer.from(bytes).toString("base64url"));
+      expect(encode(bytes, BASE32HEX)).toBe(encodeBase32Reference(bytes));
+    }
   });
 
   // No platform ships base32, so the independent channel is the definition itself: the bytes as

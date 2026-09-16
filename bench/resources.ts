@@ -50,7 +50,8 @@ assert.ok(wrapMethod(OriginalBytes.prototype, "subarray", "views"));
 assert.ok(wrapMethod(OriginalBytes.prototype, "slice", "slices"));
 const hasHex = wrapMethod(OriginalBytes.prototype, "toHex", "hex");
 const hasBase64 = wrapMethod(OriginalBytes.prototype, "toBase64", "base64");
-// Node and Bun format UUID text through `Buffer#toString("latin1")` instead of native hex.
+// Node and Bun write UUID text and 16-byte slugs through `Buffer#toString("latin1")` instead of
+// native hex or base64.
 const hasLatin1Text =
   typeof globalThis.Buffer === "function" &&
   wrapMethod(globalThis.Buffer.prototype, "toString", "latin1");
@@ -264,7 +265,8 @@ try {
     views: 0,
     errors: 0,
   });
-  if (hasBase64) assert.equal(counts.base64, 1, "available native base64 must be used once");
+  if (hasLatin1Text) assert.equal(counts.latin1, 1, "native Latin-1 slug text must be used once");
+  else if (hasBase64) assert.equal(counts.base64, 1, "available native base64 must be used once");
   check("UUID text to slug", () => api.uuidStringToPlainSlug(id), {
     buffers: hasBase64 ? 1 : 0,
     views: 0,

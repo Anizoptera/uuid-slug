@@ -706,10 +706,35 @@ Two packed Bun comparisons initially favored native UUIDv7 text while routing by
 through the portable generator. That result omitted the required validation on repeated native
 calls. The complete public route instead favors portable text, as recorded under UUIDv7 generation.
 
+### Latin-1 slug writing
+
+Node, Bun, and Deno write a 16-byte UUID payload's 22 base64url or 26 base32hex character codes into
+reused scratch and read them back with one `Buffer#toString("latin1")` call. This takes precedence
+over native `toBase64`, whose masked result also needs a slice and a concatenation for the check
+tail, and over portable writers that concatenate characters. Either alternative returns
+concatenated text that a reader must flatten. Browsers keep the selection described below.
+
+Two packed `22d3055`-to-candidate replays on 2026-09-16 measured median ratios; every listed pair
+had its 95% interval below 1 unless marked:
+
+| Runtime | `v4.slug` | `v7.slug` | `v7.base32` | `masked.generate` | `masked.encode.bytes` |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Node 26.8.2 | 0.84, 0.83 | 0.82, 0.84 | 0.62, 0.64 | 0.82, 0.82 | 0.76, 0.79 |
+| Bun 1.4.2 | unresolved, unresolved | unresolved, unresolved | 0.45, 0.43 | 0.89, 0.86 | 0.85, 0.86 |
+| Node 24.21.0 | 0.56, 0.60 | 0.63, 0.65 | 0.58, 0.60 | 0.77, 0.79 | 0.71, 0.69 |
+| Deno 2.9.6 | 0.73, 0.73 | 0.83, 0.75 | 0.75, 0.73 | unresolved, 0.81 | 0.74, 0.73 |
+| Node 26.8.2 JITless | 1.64, 1.58 slower | 1.41, 1.39 slower | 1.13, 1.12 slower | unresolved, unresolved | 1.06, 1.05 slower |
+
+Chromium 153 does not select this writer; its rows were unresolved, and three cells of 1.02–1.04 in
+an earlier replay did not reproduce. Node JITless interprets the 22 typed-array writes one by one;
+the gains on every higher-priority runtime outweigh that final rung. Recheck if native `toBase64`
+stops trailing this writer on Bun, or if a runtime gains a native base32hex encoder.
+
 ### Native base64url encoding
 
-Use `Uint8Array.prototype.toBase64` when the runtime provides it; probe once at module load and keep
-the fixed-size portable encoder as the fallback. Two 24-round comparisons on 2026-09-12 disabled
+Browsers use `Uint8Array.prototype.toBase64` when it exists; probe once at module load and keep
+the fixed-size portable encoder as the fallback. Node, Bun, and Deno select the Latin-1 writer above
+for UUID payloads. Two 24-round comparisons on 2026-09-12 disabled
 only native encoding on the public plain-encode route. The portable path was 2.29–2.34 times slower
 on Bun 1.4.1, 13–15% slower on Deno 2.9.6, and 14–29% slower on Chromium 151; every 95% median
 interval excluded parity in both replays. Node 24.20.0 was unresolved because both revisions used

@@ -72,14 +72,18 @@ describe("portable runtime capability probe", () => {
   });
 });
 
-describe("portable UUID text formatting", () => {
-  // Node, Bun, and Deno lanes format through the native Latin-1 capability, so only this case
-  // reaches the browser paths: native hex where it exists, byte-pair strings where it does not.
+describe("portable UUID text and slug writing", () => {
+  // Node, Bun, and Deno lanes write through the native Latin-1 capability, so only this case
+  // reaches the browser paths: native hex and base64 where they exist, portable writers where not.
   it.each([false, true])(
-    "formats canonical text with native hex removed: %s",
-    async (removeHex) => {
+    "writes canonical text and slugs with native hex and base64 removed: %s",
+    async (removeNative) => {
       const toHex = Object.getOwnPropertyDescriptor(Uint8Array.prototype, "toHex");
-      if (removeHex) Reflect.deleteProperty(Uint8Array.prototype, "toHex");
+      const toBase64 = Object.getOwnPropertyDescriptor(Uint8Array.prototype, "toBase64");
+      if (removeNative) {
+        Reflect.deleteProperty(Uint8Array.prototype, "toHex");
+        Reflect.deleteProperty(Uint8Array.prototype, "toBase64");
+      }
       try {
         vi.resetModules();
         vi.doMock("#runtime", () => import("../src/runtime/portable"));
@@ -89,10 +93,18 @@ describe("portable UUID text formatting", () => {
         expect(api.bytesToUuidString(bytes, 2)).toBe(lower);
         expect(api.bytesToUuidString(bytes, 2, "uppercase")).toBe(lower.toUpperCase());
         expect(api.uuidToString(bytes.slice(2, 18))).toBe(lower);
+        const alphabet = await import("../src/alphabet");
+        const uuid = bytes.slice(2, 18);
+        expect(api.uuidBytesToPlainSlug(uuid)).toBe(Buffer.from(uuid).toString("base64url"));
+        expect(api.uuidBytesToPlainSlug(uuid, "base32hex")).toBe("008i4cq4alj7f24platspnfevs");
+        expect(alphabet.encode(uuid, alphabet.BASE64URL, 9, 4)).toBe("ABEiM0RVZneImaq7zN3u_5");
+        expect(alphabet.encode(uuid, alphabet.BASE32HEX, 3, 2)).toBe("008i4cq4alj7f24platspnfevv");
       } finally {
         vi.doUnmock("#runtime");
-        // eslint-disable-next-line no-extend-native -- restores the engine's own descriptor removed above
+        // eslint-disable-next-line no-extend-native -- restores the engine's own descriptors removed above
         if (toHex) Object.defineProperty(Uint8Array.prototype, "toHex", toHex);
+        // eslint-disable-next-line no-extend-native -- restores the engine's own descriptors removed above
+        if (toBase64) Object.defineProperty(Uint8Array.prototype, "toBase64", toBase64);
       }
     },
   );
