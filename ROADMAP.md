@@ -38,11 +38,9 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
   27 against 145 ns on Bun; retained after packed replays (bench/PERFORMANCE.md).
 - Retained: assigning option values instead of one conditional spread per key makes `{ at }`
   generation 1.2–1.3 times faster on Node, Chromium, and Deno and 3 on Bun, and `{ generator }`
-  slug and masked generation up to 1.9 on Bun (bench/PERFORMANCE.md). `generateUuidV7({ at })`
-  still costs about 290 ns on Node 26.8.2 against 130 ns without options: the keyless function reads
-  its options, then passes a new object that the text generator reads again (`src/v7-keyless.ts`).
-  The public generator object copies its methods with a spread, so a private unparsed entry point
-  would be exposed on it (`src/v7-generator.ts`).
+  slug and masked generation up to 1.9 on Bun (bench/PERFORMANCE.md). Keyless option calls read
+  their options once and draw through the module generator's internal entry point, making `{ at }`
+  rows 0.40-0.88 on every runtime.
 - Retained: Node, Bun, and Deno format UUID text through one reused `Buffer` Latin-1 read, 1.05–2.2
   times faster there; Node JITless is 1.06–2.4 times slower (bench/PERFORMANCE.md).
 - Rejected: calling `crypto.randomUUID` directly instead of through the Node adapter wrapper read
@@ -84,6 +82,6 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
       screen the candidates together, then replay the survivors on every runtime.
 - [ ] Re-rank the primary single-call rows on Node 26.8.2 and Bun after the retained changes.
 - [ ] Run `bun run check` before final delivery.
-- [ ] Remove the second option read from keyless `generateUuidV7({ at })` without exposing a new
+- [x] Remove the second option read from keyless `generateUuidV7({ at })` without exposing a new
       method on public generators.
 - [ ] Replay the value-state and payload changes on Node 24.21.0.

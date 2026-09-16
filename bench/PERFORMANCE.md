@@ -610,6 +610,32 @@ but not in an isolated probe or a process mixing generator draws with keyless `{
 the brand it is unresolved on every runtime. Keyless `v7.at`, `v7.slug`, and `masked.generate` never
 reach either change.
 
+### Keyless option draws
+
+Module-level `generateUuidV7`, `generateUuidV7Bytes`, `generatePlainUuidV7Slug`, and
+`generateUuidV7Value` read an options object once and pass the normalized instant, output, and
+offset to the module generator's internal draw. They previously built a new options object for that
+generator's public method, which scanned and read every option again. Text formatting draws into a
+module scratch buffer because it reads the bytes before returning and the module generators run no
+caller code. Argument-free calls never read options and keep their direct paths.
+
+Two packed `a89d5e7`-to-candidate replays on 2026-09-16 measured median ratios; every listed pair had
+its 95% interval below 1 unless marked unresolved:
+
+| Runtime | `v7.at` | `v7.at.bytes` | `v7.at.into` | `v7.at.slug` | `value.generate.at` |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Node 26.8.2 | 0.67, 0.65 | 0.68, 0.65 | 0.58, 0.58 | 0.56, 0.58 | 0.54, 0.53 |
+| Bun 1.4.2 | 0.83, 0.80 unresolved | 0.58, 0.56 | 0.54, 0.62 | 0.58, 0.53 | 0.43, 0.40 |
+| Node 24.21.0 | 0.63, 0.67 | 0.68, 0.70 | 0.58, 0.62 | 0.54, 0.55 | 0.50, 0.50 |
+| Chromium 153 | 0.80, 0.79 | 0.69, 0.70 | 0.59, 0.58 | 0.64, 0.64 | 0.55, 0.54 |
+| Deno 2.9.6 | 0.66, 0.67 | 0.77, 0.75 | 0.61, 0.59 | 0.66, 0.67 | 0.65, 0.63 |
+| Node 26.8.2 JITless | 0.86, 0.88 | 0.79, 0.78 | 0.77, 0.74 | 0.73, 0.74 | 0.68, 0.66 |
+
+No argument-free text, bytes, caller-buffer, slug, or value row read slower in both replays; single
+slower readings were 1.03 for Chromium `v7.string` and 1.01 for JITless `value.generate`. Node 24.21.0
+`v7.slug.selected-generator`, a route this change does not reach, read 1.05 and 1.03 slower in the
+packed corpus; three isolated probes of the same call measured 228–230 ns against 233–240 ns before.
+
 ### UUID text formatting
 
 Node, Bun, and Deno format UUID bytes by writing ASCII hex codes into a reused 36-byte `Buffer` and

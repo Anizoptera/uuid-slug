@@ -570,6 +570,7 @@ export function createProfileCases(
     "v7.at.bytes": (index) => api.generateUuidV7Bytes({ at: instant + (index & 255) }),
     "v7.at.into": (index) =>
       api.generateUuidV7Bytes({ at: instant + (index & 255), output: into, outputOffset: 4 }),
+    "v7.at.slug": (index) => api.generatePlainUuidV7Slug({ at: instant + (index & 255) }),
     "portable.string": () => portable.generateUuidV7(),
     "portable.bytes": () => portable.generateUuidV7Bytes(),
     "portable.into": () => portable.generateUuidV7Bytes(into, 4),
@@ -694,6 +695,7 @@ export function createProfileCases(
     "value.parse.bytes": (index) => api.parseUuid(bytes[index & 255] as Uint8Array),
     "value.parse.masked": (index) => codec.parseUuid(masked[index & 255] as string),
     "value.generate": () => api.generateUuidV7Value(),
+    "value.generate.at": (index) => api.generateUuidV7Value({ at: instant + (index & 255) }),
     "value.toString": (index) => values[index & 255]!.toString(),
     "value.toPlainSlug": (index) => values[index & 255]!.toPlainSlug(),
     "value.convert.string": (index) => api.uuidToString(values[index & 255]!),
