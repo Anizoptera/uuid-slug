@@ -193,11 +193,21 @@ export function ownedUuidV7BytesToMaskedSlug(
   ) as MaskedUuidV7Slug;
 }
 
-export function decodeMaskedSlug(
+/** Report a slug that every configured mask's check rejects. */
+export const noMaskedSlugMatch = /* @__NO_SIDE_EFFECTS__ */ (): UuidSlugError =>
+  new UuidSlugError(INVALID_UUID_SLUG, NO_MASK_MATCH_MESSAGE);
+
+/**
+ * Decode a masked slug and return `undefined` when every mask's check rejects it. Source-specific
+ * readers report that miss with `noMaskedSlugMatch`; a codec reading an ambiguous 22-character slug
+ * takes the plain reading instead, so the miss builds no error. Readers call this directly: a wrapper
+ * that built the error slowed the masked-slug text reader on Node (bench/PERFORMANCE.md).
+ */
+export function unmaskSlug(
   slug: string,
   current: UuidV7MaskRange,
   previous: readonly UuidV7MaskRange[] = [],
-): Uint8Array | UuidSlugError {
+): Uint8Array | UuidSlugError | undefined {
   if (typeof slug !== "string")
     return new UuidSlugError(INVALID_UUID_SLUG, "Masked UUID slug must be a string.");
   const mixed = new Uint8Array(16);
@@ -211,8 +221,7 @@ export function decodeMaskedSlug(
   );
   if (outerTag instanceof Error) return outerTag;
   if (!previous.length) {
-    const primary = unmix(mixed, outerTag, current);
-    return primary ?? new UuidSlugError(INVALID_UUID_SLUG, NO_MASK_MATCH_MESSAGE);
+    return unmix(mixed, outerTag, current);
   }
   const word0 = read32(mixed, 0);
   const word1 = read32(mixed, 4);
@@ -228,7 +237,7 @@ export function decodeMaskedSlug(
     if (isUuidSlugError(decoded)) return decoded;
     if (decoded) return decoded;
   }
-  return new UuidSlugError(INVALID_UUID_SLUG, NO_MASK_MATCH_MESSAGE);
+  return undefined;
 }
 
 /** Capture the first passing UUID before another callback can mutate its private bytes. */

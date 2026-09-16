@@ -8,7 +8,6 @@ import {
   INVALID_OPTIONS,
   INVALID_SENTINEL,
   INVALID_TIMESTAMP,
-  INVALID_UUID_SLUG,
   INVALID_UUID_VERSION,
   RNG_UNAVAILABLE,
   isUuidSlugError,
@@ -25,7 +24,8 @@ import {
 import {
   MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS,
   ownedUuidV7BytesToMaskedSlug,
-  decodeMaskedSlug,
+  noMaskedSlugMatch,
+  unmaskSlug,
 } from "./payload.ts";
 import { createMigration } from "./migration.ts";
 import { isMaskHandle } from "./mask-handle.ts";
@@ -67,6 +67,7 @@ import { UUID_TEXT_LOWERCASE } from "./types.ts";
 import {
   resolveSlugAlphabet,
   plainSlugToUuidBytes as decodePlainSlugToBytes,
+  readObjectUuidInput,
   uuidBytesToPlainSlug,
   extractUuidV7UnixMs,
   extractUuidV7Payload,
@@ -77,7 +78,6 @@ import {
 import {
   formatUuidBytesUnchecked,
   bytesToUuidString,
-  exactUuidByteView,
   resolveUuidTextCase,
   isUuidV7Bytes,
   uuidStringToBytes,
@@ -85,7 +85,6 @@ import {
 import type { UuidV7TimestampWindow, UuidV7SentinelConfig } from "./types.ts";
 import type { SlugAlphabet } from "./slug.ts";
 import { createUuidValue, parseUuidWithCodec } from "./uuid-value.ts";
-import { uuidValueBytes } from "./uuid-value-protocol.ts";
 import { generateUuidV7ValueWithGenerator, readUuidV7ValueOptions } from "./v7-value-options.ts";
 import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
 import { readGenerationOptions } from "./generation-options.ts";
@@ -436,31 +435,27 @@ function buildUuidSlugCodec(
   // the only failure arm that can bypass `instanceof`, and this function returns it unchanged;
   // identity keeps marker recognition off successful conversion paths.
   function decodeUuid(uuid: unknown): Uint8Array | UuidSlugError {
-    let text = typeof uuid === "string" ? uuid : undefined;
-    if (text === undefined) {
-      const bytes = exactUuidByteView(uuid);
-      if (!(bytes instanceof Error)) return bytes;
-      const valueBytes = uuidValueBytes(uuid);
-      if (valueBytes) return valueBytes;
-      if (isUuidSlugError(uuid)) return uuid;
-      text = stringInput(uuid);
-      if (text === undefined) return bytes;
+    let text: string;
+    if (typeof uuid === "string") text = uuid;
+    else {
+      const input = readObjectUuidInput(uuid);
+      if (typeof input !== "string") return input;
+      text = input;
     }
     const sentinel = sentinels.bySlug.get(text)?.bytes;
     if (sentinel) return sentinel;
     if (text.length === 26) return decodePlainSlugToBytes(text);
-    if (text.length === 27) return decodeMaskedSlug(text, current, previousMasks);
+    if (text.length === 27) return unmaskSlug(text, current, previousMasks) ?? noMaskedSlugMatch();
     if (text.length !== 22) return uuidStringToBytes(text);
     // One masked base64url slug in 16 is also the canonical plain slug of a different UUID, so the
     // codec's check is the only evidence of meaning: a slug that passes it under any configured
     // mask is masked, and the plain reading is used only once every mask has rejected the text.
     // Alphabet errors and mask-callback failures are returned as they are; only a failed check
     // falls through to the plain reading.
-    const masked = decodeMaskedSlug(text, current, previousMasks);
-    if (!(masked instanceof Error)) return masked;
-    if (!isUuidSlugError(masked) || masked.code !== INVALID_UUID_SLUG) return masked;
+    const masked = unmaskSlug(text, current, previousMasks);
+    if (masked !== undefined) return masked;
     const plain = decodePlainSlugToBytes(text);
-    return plain instanceof Error ? masked : plain;
+    return plain instanceof Error ? noMaskedSlugMatch() : plain;
   }
 
   function encodeMasked(
@@ -671,7 +666,7 @@ function buildUuidSlugCodec(
           ? sentinel.uuid
           : formatUuidBytesUnchecked(sentinel.bytes, 0, selectedCase)
       ) as UuidV7StringFor<Case>;
-    const decoded = decodeMaskedSlug(slug, current, previousMasks);
+    const decoded = unmaskSlug(slug, current, previousMasks) ?? noMaskedSlugMatch();
     if (decoded instanceof Error) return decoded;
     return formatUuidBytesUnchecked(decoded, 0, selectedCase) as UuidV7StringFor<Case>;
   }
@@ -694,7 +689,8 @@ function buildUuidSlugCodec(
     const badRange = output === undefined ? undefined : checkByteRange(output, outputOffset, 16);
     if (badRange) return badRange;
     const sentinelBytes = sentinels.bySlug.get(slug)?.bytes;
-    const decoded = sentinelBytes ?? decodeMaskedSlug(slug, current, previousMasks);
+    const decoded =
+      sentinelBytes ?? unmaskSlug(slug, current, previousMasks) ?? noMaskedSlugMatch();
     if (decoded instanceof Error) return decoded;
     if (output) {
       output.set(decoded, outputOffset);
@@ -787,7 +783,9 @@ function buildUuidSlugCodec(
     const slug = normalizeUuidSlugInput(maskedUuidSlug);
     if (typeof slug !== "string") return slug;
     const bytes =
-      sentinels.bySlug.get(slug)?.bytes ?? decodeMaskedSlug(slug, current, previousMasks);
+      sentinels.bySlug.get(slug)?.bytes ??
+      unmaskSlug(slug, current, previousMasks) ??
+      noMaskedSlugMatch();
     return bytes instanceof Error ? bytes : extractUuidV7UnixMs(bytes);
   }
 
@@ -798,7 +796,9 @@ function buildUuidSlugCodec(
     const slug = normalizeUuidSlugInput(maskedUuidSlug);
     if (typeof slug !== "string") return slug;
     const bytes =
-      sentinels.bySlug.get(slug)?.bytes ?? decodeMaskedSlug(slug, current, previousMasks);
+      sentinels.bySlug.get(slug)?.bytes ??
+      unmaskSlug(slug, current, previousMasks) ??
+      noMaskedSlugMatch();
     return bytes instanceof Error ? bytes : extractUuidV7Payload(bytes, layout);
   }
 
@@ -818,7 +818,9 @@ function buildUuidSlugCodec(
     const slug = normalizeUuidSlugInput(maskedUuidSlug);
     if (typeof slug !== "string") return slug;
     const bytes =
-      sentinels.bySlug.get(slug)?.bytes ?? decodeMaskedSlug(slug, current, previousMasks);
+      sentinels.bySlug.get(slug)?.bytes ??
+      unmaskSlug(slug, current, previousMasks) ??
+      noMaskedSlugMatch();
     if (bytes instanceof Error) return bytes;
     if (!isUuidV7Bytes(bytes))
       return new UuidSlugError(

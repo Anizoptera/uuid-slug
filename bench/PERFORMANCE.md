@@ -484,6 +484,35 @@ screen regressed Node's eight-key last hit by 1.8%; its 95% median interval excl
 the regression did not repeat. Keep the separate current-key fast path and previous-key loop until a
 precompiled operation removes measured per-attempt work rather than only reshaping traversal.
 
+### Discarded errors on successful reads
+
+A successful read builds no error it will throw away: on V8 each one captures a stack that costs
+more than the whole conversion. Two universal-reader paths did. Non-string input first asked the byte
+reader, which built an `invalid_buffer` error before the parsed-UUID and `String` readers ran, so a
+parsed `Uuid` passed back to a converter paid for one. A codec reading a plain 22-character slug
+built the check-miss error before taking the plain reading. `readObjectUuidInput` now builds an error
+only when no reader accepts the object, and `unmaskSlug` reports a check miss as `undefined`.
+
+Two six-round packed replays on 2026-09-16 compared `1a5dd32` with the change. Median ns per call:
+
+| Route | Node 26.8.2 | Bun 1.4.2 | Chromium | Deno 2.9.6 | Node JITless |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `codec.uuidToString(plain slug)` | 5,959–6,091 → 380–382 | 505–549 → 298–303 | 2,170–2,214 → 354–362 | 7,419–7,423 → 748–768 | 10,929–10,991 → 9,657–9,797 |
+| `codec.uuidToBytes(plain slug)` | 5,884–6,067 → 271–277 | 360–365 → 205–209 | 2,097–2,111 → 264–266 | 6,033–6,136 → 515–526 | 10,618–11,036 → 9,281–9,640 |
+| `uuidToString(parsed Uuid)` | 5,582–5,613 → 189–192 | 303–329 → 120–122 | 1,817–2,003 → 128–133 | 5,717–5,792 → 146–150 | 2,158–2,205 → 718–724 |
+| `codec.uuidToMaskedSlug(parsed Uuid)` | 5,541–5,656 → 316–317 | 411–417 → 211–215 | 1,953–2,298 → 294–306 | 5,710–5,784 → 313–319 | 9,081–9,170 → 7,872–7,950 |
+
+Every primary-runtime interval excluded no change in both replays. No masked-decode, rotation,
+timestamp, or byte-input control was slower in both replays on any runtime. A load average near 14
+from unrelated processes widened intervals, and one Node and Bun replay too noisy to read was
+discarded.
+
+A `decodeMaskedSlug` wrapper that built the miss error around `unmaskSlug` was rejected: the Node
+`maskedSlugToUuidString` text route slowed 16–20% in both replays, with both intervals above no
+change, while its byte routes were unchanged. Direct calls restored parity. `bench/resources.ts`
+gates zero errors on the codec plain-slug read and on parsed-UUID text and masked conversion; the
+pre-change source fails both rows. Remeasure if engine error construction stops capturing stacks.
+
 ### Runtime capability review
 
 The 2026-09-12 review probed Node 26.8.2, Bun 1.4.2, Deno 2.9.6, and Chromium

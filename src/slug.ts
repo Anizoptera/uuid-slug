@@ -24,6 +24,7 @@ import {
   normalizeUuidSlugInput,
   normalizeUuidStringInput,
   stringInput,
+  uuidByteView,
   UuidSlugError,
 } from "./errors.ts";
 import type {
@@ -63,6 +64,7 @@ import {
   bytesToUuidString,
   exactUuidByteView,
   formatUuidBytesUnchecked,
+  invalidUuidBytes,
   isUuidText,
   resolveUuidTextCase,
   isUuidV7Text,
@@ -385,21 +387,30 @@ export function plainSlugToUuidString(
 // the only failure arm that can bypass `instanceof`, and this function returns it unchanged;
 // identity keeps marker recognition off successful conversion paths.
 export function decodeKeylessUuid(uuid: unknown): Uint8Array | UuidSlugError {
-  if (typeof uuid !== "string") {
-    const bytes = exactUuidByteView(uuid);
-    if (!(bytes instanceof Error)) return bytes;
-    const valueBytes = uuidValueBytes(uuid);
-    if (valueBytes) return valueBytes;
-    if (isUuidSlugError(uuid)) return uuid;
-    const normalized = stringInput(uuid);
-    if (normalized === undefined) return bytes;
-    return normalized.length === 22 || normalized.length === 26
-      ? plainSlugToUuidBytes(normalized)
-      : uuidStringToBytes(normalized);
+  let text: string;
+  if (typeof uuid === "string") text = uuid;
+  else {
+    const input = readObjectUuidInput(uuid);
+    if (typeof input !== "string") return input;
+    text = input;
   }
-  return uuid.length === 22 || uuid.length === 26
-    ? plainSlugToUuidBytes(uuid)
-    : uuidStringToBytes(uuid);
+  return text.length === 22 || text.length === 26
+    ? plainSlugToUuidBytes(text)
+    : uuidStringToBytes(text);
+}
+
+/**
+ * Read a non-string UUID input as borrowed bytes, a parsed UUID's bytes, recovered `String` text, or
+ * the failure it carries. An error is built only when nothing matches: a discarded error would make
+ * every accepted object pay for a stack capture that costs more than the conversion.
+ */
+export function readObjectUuidInput(uuid: unknown): Uint8Array | string | UuidSlugError {
+  const view = uuidByteView(uuid);
+  if (view) return view.length === 16 ? view : invalidUuidBytes();
+  const valueBytes = uuidValueBytes(uuid);
+  if (valueBytes) return valueBytes;
+  if (isUuidSlugError(uuid)) return uuid;
+  return stringInput(uuid) ?? invalidUuidBytes();
 }
 
 /**

@@ -37,14 +37,16 @@ export { UuidSlugError };
 export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidBytes, UuidString } from "./types.ts";
 
+/** Report byte input that does not hold exactly one 16-byte UUID. */
+export const invalidUuidBytes = /* @__NO_SIDE_EFFECTS__ */ (): UuidSlugError =>
+  new UuidSlugError(INVALID_BUFFER, "UUID byte input must contain exactly 16 bytes.");
+
 /** Borrow one exact UUID payload from any supported byte source. */
 /*#__NO_SIDE_EFFECTS__*/
 export function exactUuidByteView(value: unknown): Uint8Array | UuidSlugError {
   if (isUuidSlugError(value)) return value;
   const bytes = uuidByteView(value);
-  return bytes?.length === 16
-    ? bytes
-    : new UuidSlugError(INVALID_BUFFER, "UUID byte input must contain exactly 16 bytes.");
+  return bytes?.length === 16 ? bytes : invalidUuidBytes();
 }
 
 /** The canonical all-zero UUID value, without a version or issuance claim. */

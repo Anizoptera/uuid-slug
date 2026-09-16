@@ -344,6 +344,13 @@ try {
     hex: 0,
     chars: 22,
   });
+  // A plain slug the codec check rejects must reach the plain reading without a discarded error.
+  assert.ok(codec.maskedSlugToUuidString(slug as string) instanceof Error);
+  check("codec plain slug read", () => codec.uuidToString(slug as string), { errors: 0 });
+  const parsed = api.parseUuid(id);
+  assert.ok(!(parsed instanceof Error));
+  check("parsed UUID text conversion", () => api.uuidToString(parsed), { buffers: 0, errors: 0 });
+  check("parsed UUID masked encode", () => codec.uuidToMaskedSlug(parsed), { errors: 0 });
   const sentinel = codec.sentinels[0];
   assert.ok(sentinel);
   check("cached sentinel", () => codec.uuidToString(sentinel.slug), {
