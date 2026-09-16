@@ -521,10 +521,15 @@ function buildUuidSlugCodec(
     byteOffsetOrCase: number | Case = UUID_TEXT_LOWERCASE as Case,
     caseAfterOffset?: Case,
   ): UuidStringFor<Case> | UuidSlugError {
-    // Bytes at an offset carry no masked spelling, so the keyless reader owns every offset form.
-    if (typeof byteOffsetOrCase === "number")
-      return keylessUuidToString(uuid as Uint8Array, byteOffsetOrCase, caseAfterOffset);
-    const textCase = byteOffsetOrCase;
+    // Bytes at an offset carry no masked spelling, so the keyless reader owns every offset read and
+    // its rejection of an offset beside another form. Zero is the spelling of "no offset", so it
+    // stays here: sending a masked slug to the keyless reader would spell out a different UUID.
+    let textCase: Case;
+    if (typeof byteOffsetOrCase === "number") {
+      if (isUint8Array(uuid) || byteOffsetOrCase !== 0)
+        return keylessUuidToString(uuid as Uint8Array, byteOffsetOrCase, caseAfterOffset);
+      textCase = caseAfterOffset ?? (UUID_TEXT_LOWERCASE as Case);
+    } else textCase = byteOffsetOrCase;
     const selectedCase = resolveUuidTextCase(textCase);
     if (selectedCase instanceof Error) return selectedCase;
     const localBytes = exactLocalUuidBytes(uuid);
@@ -563,8 +568,11 @@ function buildUuidSlugCodec(
     outputOrOutputOffset?: unknown,
     offsetAfterOutput = 0,
   ): UuidBytes | Uint8Array | UuidSlugError {
-    // Bytes at an offset carry no masked spelling, so the keyless reader owns every offset form.
-    if (typeof outputOrByteOffset === "number")
+    // Bytes at an offset carry no masked spelling, so the keyless reader owns every offset read and
+    // its rejection of an offset beside another form. Zero is the spelling of "no offset", so it
+    // stays here: sending a masked slug to the keyless reader would decode a different UUID.
+    const readsAtOffset = typeof outputOrByteOffset === "number";
+    if (readsAtOffset && (isUint8Array(uuid) || outputOrByteOffset !== 0))
       return outputOrOutputOffset === undefined
         ? keylessUuidToBytes(uuid as Uint8Array, outputOrByteOffset)
         : keylessUuidToBytes(
@@ -573,8 +581,10 @@ function buildUuidSlugCodec(
             outputOrOutputOffset as Uint8Array,
             offsetAfterOutput,
           );
-    const output = outputOrByteOffset;
-    const outputOffset = (outputOrOutputOffset as number | undefined) ?? 0;
+    const output = readsAtOffset ? outputOrOutputOffset : outputOrByteOffset;
+    const outputOffset = readsAtOffset
+      ? offsetAfterOutput
+      : ((outputOrOutputOffset as number | undefined) ?? 0);
     const badRange = output === undefined ? undefined : checkByteRange(output, outputOffset, 16);
     if (badRange) return badRange;
     const destination = output as Uint8Array | undefined;
@@ -609,10 +619,19 @@ function buildUuidSlugCodec(
     byteOffsetOrAlphabet: number | SlugAlphabet = BASE64URL_NAME,
     alphabetAfterOffset?: SlugAlphabet,
   ): PlainUuidSlug | UuidSlugError {
-    // Bytes at an offset carry no masked spelling, so the keyless reader owns every offset form.
-    if (typeof byteOffsetOrAlphabet === "number")
-      return keylessUuidToPlainSlug(uuid as Uint8Array, byteOffsetOrAlphabet, alphabetAfterOffset);
-    const alphabet = byteOffsetOrAlphabet;
+    // Bytes at an offset carry no masked spelling, so the keyless reader owns every offset read and
+    // its rejection of an offset beside another form. Zero is the spelling of "no offset", so it
+    // stays here: sending a masked slug to the keyless reader would return it unchanged as plain.
+    let alphabet: SlugAlphabet;
+    if (typeof byteOffsetOrAlphabet === "number") {
+      if (isUint8Array(uuid) || byteOffsetOrAlphabet !== 0)
+        return keylessUuidToPlainSlug(
+          uuid as Uint8Array,
+          byteOffsetOrAlphabet,
+          alphabetAfterOffset,
+        );
+      alphabet = alphabetAfterOffset ?? BASE64URL_NAME;
+    } else alphabet = byteOffsetOrAlphabet;
     const localBytes = exactLocalUuidBytes(uuid);
     if (localBytes) return uuidBytesToPlainSlug(localBytes, alphabet);
     const bytes = decodeUuid(uuid);

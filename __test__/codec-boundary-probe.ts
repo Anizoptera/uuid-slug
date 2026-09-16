@@ -99,7 +99,7 @@ export const codecBoundaryCases = [
       // An offset past the end is a buffer error, never a short read.
       assert.ok(uuidToBytes(packed, 9) instanceof UuidSlugError);
       assert.ok(codec.uuidToPlainSlug(packed, 9) instanceof UuidSlugError);
-      // Every other accepted form carries no offset, so an offset with one is a caller mistake.
+      // Every other accepted form holds one UUID, so a non-zero offset with one is a caller mistake.
       for (const read of [uuidToString, uuidToBytes, uuidToPlainSlug, codec.uuidToString]) {
         for (const value of [uuid, slug, packed.buffer, new DataView(packed.buffer)]) {
           const result = Reflect.apply(read, undefined, [value, 5]);
@@ -107,6 +107,23 @@ export const codecBoundaryCases = [
           assert.equal(result.code, "invalid_options");
         }
       }
+      // Offset zero is the spelling of "no offset", so it reads every form the standalone call does.
+      const exact = unwrap(uuidStringToBytes(uuid));
+      for (const value of [uuid, slug, exact.buffer, new DataView(exact.buffer)]) {
+        assert.equal(Reflect.apply(uuidToString, undefined, [value, 0]), uuid);
+        assert.equal(Reflect.apply(uuidToPlainSlug, undefined, [value, 0]), slug);
+      }
+      assert.equal(
+        Reflect.apply(uuidToString, undefined, [uuid, 0, "uppercase"]),
+        uuid.toUpperCase(),
+      );
+      assert.deepEqual(Reflect.apply(uuidToBytes, undefined, [uuid, 0, new Uint8Array(16)]), exact);
+      // Zero must not route a codec read to the keyless reader: a masked slug would spell out the
+      // wrong UUID, and one masked base64url slug in sixteen is also a valid plain slug.
+      const masked = unwrap(codec.uuidToMaskedSlug(uuid));
+      assert.equal(Reflect.apply(codec.uuidToString, undefined, [masked, 0]), uuid);
+      assert.equal(Reflect.apply(codec.uuidToPlainSlug, undefined, [masked, 0]), slug);
+      assert.deepEqual(Reflect.apply(codec.uuidToBytes, undefined, [masked, 0]), exact);
     },
   },
   {

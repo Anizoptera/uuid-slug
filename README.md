@@ -765,8 +765,9 @@ instead, because that string cannot identify its meaning itself.
 
 A byte offset is the zero-based index where one 16-byte UUID starts inside a larger `Uint8Array`.
 Omit it for a standalone 16-byte array. Output offsets select where a method writes; input offsets
-select where it reads. Bytes outside that 16-byte range stay unchanged. Only `Uint8Array` input
-accepts an input offset, because UUID text and slugs carry no surrounding bytes.
+select where it reads. Bytes outside that 16-byte range stay unchanged. An offset of `0` always means
+the same as omitting it. Only `Uint8Array` input accepts a non-zero input offset: every other
+accepted form holds exactly one UUID, with no surrounding bytes to skip.
 
 Masking is possible for any UUID version, but this library supports it only for UUIDv7.
 Its fixed version, variant, and 42-bit timestamp offset leave room for a 16-bit check without
