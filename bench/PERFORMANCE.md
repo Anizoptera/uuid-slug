@@ -520,36 +520,38 @@ output is selected, instead of parsing it and formatting the same text again. De
 `plainSlugToUuidString` results, go straight to the unchecked formatter because a successful decode
 always yields exactly 16 bytes.
 
-Two six-round packed replays on 2026-09-16 compared `d8306ba` with the change. Median ns per call:
+Two six-round packed replays per runtime on 2026-09-16 compared `d8306ba` with the change. Median ns
+per call:
 
-| Route | Node 26.8.2 | Bun 1.4.2 | Chromium | Deno 2.9.6 | Node JITless |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| `uuidToString(canonical text)` | 320–323 → 77–80 | 236–243 → 35 | 229–238 → 84 | 396–399 → 81–83 | 4,556–4,699 → 412–417 |
-| `codec.uuidToString(canonical text)` | 331–337 → 82–83 | 237–238 → 36 | 236–242 → 83–85 | 401–410 → 84 | 4,769–4,781 → 470–471 |
-| `plainSlugToUuidString` | 249–258 → 211–213 | 128–131 → 115–121 | 172–174 → 155–165 | 275–296 → 257–267 | 1,928–1,953 → 1,690–1,724 |
-| `uuidToString(plain slug)` | 258–268 → 227–228 | 136–147 → 119 | 175–176 → 165–168 | 286–288 → 272–282 | 1,955–1,959 → 1,841–1,874 |
-| `codec.uuidToString(sentinel slug)` | 12 → 12 | 12 → 16 | 14 → 11 | 12 → 12 | 151–152 → 160 |
+| Route | Node 26.8.2 | Bun 1.4.2 | Node 24.21.0 | Chromium | Deno 2.9.6 | Node 26.8.2 JITless |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `uuidToString(canonical text)` | 299–308 → 77–78 | 236–243 → 35 | 320–323 → 77–80 | 229–238 → 84 | 396–399 → 81–83 | 4,338–4,342 → 747–748 |
+| `codec.uuidToString(canonical text)` | 313–315 → 81–83 | 237–238 → 36 | 331–337 → 82–83 | 236–242 → 83–85 | 401–410 → 84 | 4,353–4,429 → 805–809 |
+| `plainSlugToUuidString` | 182–183 → 165–167 | 128–131 → 115–121 | 249–258 → 211–213 | 172–174 → 155–165 | 275–296 → 257–267 | 1,590–1,613 → 1,402–1,430 |
+| `uuidToString(plain slug)` | 192–195 → 182–188 | 136–147 → 119 | 258–268 → 227–228 | 175–176 → 165–168 | 286–288 → 272–282 | 1,629–1,724 → 1,550–1,583 |
+| `codec.uuidToString(sentinel slug)` | 10–11 → 10–11 | 12 → 16 | 12 → 12 | 14 → 11 | 12 → 12 | 153 → 158–159 |
 
 Canonical text is faster on every runtime in both replays. `plainSlugToUuidString` is faster in
-both replays on Node, Bun, and JITless and in one replay on Chromium and Deno. `uuidToString(plain
-slug)` is faster in both replays on Node and Bun, in one on JITless, and unresolved on Chromium and
-Deno. Mixed-case text, byte input, and masked decoding were no slower in either replay on Node, Bun,
-Chromium, or Deno.
+both replays on Node 26.8.2, Bun, Node 24.21.0, and JITless, and in one replay on Chromium and Deno.
+`uuidToString(plain slug)` is faster in both replays on Bun and Node 24.21.0, in one on Node 26.8.2
+and JITless, and unresolved on Chromium and Deno. Mixed-case text, byte input, and masked decoding
+were no slower in either replay on Node 26.8.2, Bun, Node 24.21.0, Chromium, or Deno.
 
-Two losses remain. A Bun sentinel read through the codec costs about 4 ns more in both replays.
-With `BUN_JSC_maximumFunctionForCallInlineCandidateBytecodeCostForDFG` and
+A Bun sentinel read through the codec costs about 4 ns more in both replays. With
+`BUN_JSC_maximumFunctionForCallInlineCandidateBytecodeCostForDFG` and
 `BUN_JSC_maximumFunctionForCallInlineCandidateBytecodeCostForFTL` raised to 1000 for both sides,
 the difference disappeared, so the larger function is no longer inlined into the benchmark's
 one-line caller. A HEAD-against-HEAD replay of the same rows showed no difference. Checking for a
 sentinel before canonical text lost the same amount, and moving both checks into a helper lost
-about 5 ns. JITless byte input to `uuidToString` costs 2–5% more in both replays.
+about 5 ns. On JITless, byte input to `uuidToString` and the sentinel read were each 3–4% slower in
+one of the two replays.
 
 Two further shapes were rejected. Keeping `bytesToUuidString` at the end of the codec method did not
 recover the Bun sentinel read. A `typeof uuid === "string"` guard ahead of the keyless check made
-Node mixed-case text 7–9% slower in both replays while leaving the JITless byte-input change inside
-its interval. `bench/resources.ts` gates zero buffers, errors, hex calls, and character reads on
-canonical text for both methods; the pre-change source fails both rows. Remeasure when either
-method changes shape or the engines change their inlining limits.
+Node 24.21.0 mixed-case text 7–9% slower in both replays. `bench/resources.ts` gates zero buffers,
+errors, hex calls, and character reads on canonical text for both methods; the pre-change source
+fails both rows. Remeasure when either method changes shape or the engines change their inlining
+limits.
 
 ### Runtime capability review
 
