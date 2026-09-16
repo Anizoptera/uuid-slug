@@ -7,7 +7,7 @@ import { writeFile } from "node:fs/promises";
 import inspector from "node:inspector/promises";
 import * as v8 from "node:v8";
 import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json" with { type: "json" };
-import { assertProfileOutcome, createProfileCases } from "./profile-cases";
+import { assertProfileOutcome, createProfileCases, selectProfileCases } from "./profile-cases";
 
 const nativeDirectory = process.env.UUID_SLUG_PROFILE_NATIVE_DIR;
 const nativeName = process.env.UUID_SLUG_PROFILE_NATIVE_NAME;
@@ -84,8 +84,7 @@ if (
   throw new Error(
     "Profile samples must be positive, with positive duration and warm-up milliseconds",
   );
-const selected = Object.entries(cases).filter(([name]) => !filter || name.includes(filter));
-if (selected.length === 0) throw new Error("Profile filter selected no cases");
+const selected = selectProfileCases(cases, filter);
 for (const [name, fn] of selected) {
   const expectedError = assertProfileOutcome(name, fn(0));
   const started = performance.now();

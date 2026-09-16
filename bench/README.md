@@ -161,7 +161,7 @@ rows stay outside the synchronous corpus so task scheduling cannot contaminate p
 Before warm-up, the shared corpus validates identifier shape, UUID bytes, caller-owned output
 identity and boundaries, and atomic invalid-range failure. These checks stay outside timed calls.
 
-Set `UUID_SLUG_PROFILE_FILTER` to a case-name substring before native profiling so startup and unrelated
+Set `UUID_SLUG_PROFILE_FILTER` to comma-separated case-name substrings before native profiling so startup and unrelated
 operations do not dominate attribution. `UUID_SLUG_PROFILE_WARMUP_MS`, `UUID_SLUG_PROFILE_SAMPLES`, and
 `UUID_SLUG_PROFILE_MS` control per-case warm-up and timing samples. Add `--smoke` to
 `bench/profile-all.ts` only when checking harness wiring. Compare

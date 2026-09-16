@@ -28,6 +28,19 @@ export function assertProfileOutcome(name: string, value: ProfileValue): boolean
   return expectedError;
 }
 
+/** Select cases whose names contain any comma-separated filter substring; fail when none match. */
+export function selectProfileCases<Case>(
+  cases: Record<string, Case>,
+  filter: string | null | undefined,
+): [string, Case][] {
+  const terms = filter ? filter.split(",").filter(Boolean) : [];
+  const selected = Object.entries(cases).filter(
+    ([name]) => terms.length === 0 || terms.some((term) => name.includes(term)),
+  );
+  if (selected.length === 0) throw new Error("Profile filter selected no cases");
+  return selected;
+}
+
 interface OriginalFixture {
   readonly raw: string;
   readonly slug: string;
@@ -464,6 +477,14 @@ export function createProfileCases(
   const outsideTimestampWindow = { maxTimestampDeltaMs: 0, referenceUnixMs: instant + 1 };
   if (!base32Sentinel) throw new Error("Missing base32 sentinel fixture");
   customFailureEnabled = true;
+  // Plain slugs this codec's check rejects take its plain reading on the universal readers.
+  const plainOnlySlugs = slugs.filter(
+    (slug) => codec.maskedSlugToUuidString(slug) instanceof Error,
+  );
+  if (plainOnlySlugs.some((slug) => codec.uuidToString(slug) !== api.uuidToString(slug)))
+    throw new Error("Codec plain-slug fixture did not take the plain reading");
+  const values = ids.map((id) => unwrap(api.parseUuid(id)));
+  const payloadLayout = { subMillisecondFractionBits: 0, counterBits: 42 };
 
   const migrationScalingCases: Record<string, ProfileCase> = {};
   for (const [count, fixture] of [
@@ -655,6 +676,24 @@ export function createProfileCases(
     "masked.encode": (index) => codec.uuidToMaskedSlug(ids[index & 255] as string),
     "masked.encode.bytes": (index) => codec.uuidToMaskedSlug(bytes[index & 255] as Uint8Array),
     "codec.toString.uuid": (index) => codec.uuidToString(ids[index & 255] as string),
+    "codec.toString.plain": (index) =>
+      codec.uuidToString(plainOnlySlugs[index % plainOnlySlugs.length] as string),
+    "codec.toBytes.plain": (index) =>
+      codec.uuidToBytes(plainOnlySlugs[index % plainOnlySlugs.length] as string),
+    "uuid.toString.canonical": (index) => api.uuidToString(ids[index & 255] as string),
+    "value.parse.uuid": (index) => api.parseUuid(ids[index & 255] as string),
+    "value.parse.slug": (index) => api.parseUuid(slugs[index & 255] as string),
+    "value.parse.bytes": (index) => api.parseUuid(bytes[index & 255] as Uint8Array),
+    "value.parse.masked": (index) => codec.parseUuid(masked[index & 255] as string),
+    "value.generate": () => api.generateUuidV7Value(),
+    "value.toString": (index) => values[index & 255]!.toString(),
+    "value.toPlainSlug": (index) => values[index & 255]!.toPlainSlug(),
+    "value.convert.string": (index) => api.uuidToString(values[index & 255]!),
+    "value.convert.masked": (index) => codec.uuidToMaskedSlug(values[index & 255]!),
+    "payload.extract.uuid": (index) =>
+      api.extractUuidV7Payload(ids[index & 255] as string, payloadLayout),
+    "payload.extract.bytes": (index) =>
+      api.extractUuidV7Payload(bytes[index & 255] as Uint8Array, payloadLayout),
     "codec.toString.bytes": (index) => codec.uuidToString(bytes[index & 255] as Uint8Array),
     "codec.toBytes.bytes": (index) => codec.uuidToBytes(bytes[index & 255] as Uint8Array),
     "codec.toPlainSlug.bytes": (index) => codec.uuidToPlainSlug(bytes[index & 255] as Uint8Array),

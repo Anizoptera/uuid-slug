@@ -4,7 +4,11 @@ import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original
 import * as api from "../src/index";
 import * as privateAlphabetApi from "../src/alphabet";
 import * as privateV4Api from "../src/v4";
-import { assertProfileOutcome, createProfileCases } from "./profile-cases";
+import {
+  assertProfileOutcome,
+  createProfileCases,
+  selectProfileCases as selectByFilter,
+} from "./profile-cases";
 import type { ProfileCase, ProfileValue } from "./profile-cases";
 
 interface BrowserProfileOptions {
@@ -84,10 +88,7 @@ function selectProfileCases(options: BrowserProfileOptions): readonly [string, P
     options.privateImplementations ? privateAlphabetApi : undefined,
   );
   suite.verify();
-  const selected = Object.entries(suite.cases).filter(
-    ([name]) => !options.filter || name.includes(options.filter),
-  );
-  if (selected.length === 0) throw new Error("Profile filter selected no cases");
+  const selected = selectByFilter(suite.cases, options.filter);
   for (const [name, operation] of selected) {
     const expectedError = assertProfileOutcome(name, operation(0));
     const started = performance.now();

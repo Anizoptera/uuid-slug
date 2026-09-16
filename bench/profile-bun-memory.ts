@@ -4,7 +4,7 @@ import { heapStats, memoryUsage, profile } from "bun:jsc";
 import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json" with { type: "json" };
 import * as api from "../src/index";
 import * as privateApi from "../src/v4";
-import { createProfileCases } from "./profile-cases";
+import { createProfileCases, selectProfileCases } from "./profile-cases";
 
 const reports = process.env.UUID_SLUG_PROFILE_NATIVE_DIR;
 if (!reports) throw new Error("UUID_SLUG_PROFILE_NATIVE_DIR is required");
@@ -15,8 +15,7 @@ const suite = createProfileCases(
   process.env.UUID_SLUG_PROFILE_PRIVATE === "1" ? privateApi : undefined,
 );
 suite.verify();
-const cases = Object.entries(suite.cases).filter(([name]) => !filter || name.includes(filter));
-if (cases.length === 0) throw new Error("Profile filter selected no cases");
+const cases = selectProfileCases(suite.cases, filter);
 
 /** Consume results so JavaScriptCore cannot discard the public calls under study. */
 let sink = 0;
