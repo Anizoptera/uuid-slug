@@ -91,3 +91,19 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
 - [x] Remove the second option read from keyless `generateUuidV7({ at })` without exposing a new
       method on public generators.
 - [x] Replay the value-state and payload changes on Node 24.21.0.
+
+## Native floors
+
+Simple generation calls must cost no more than the runtime's own UUID and random primitives, or
+negligibly more. Where a call ends in a native primitive, the package overhead above it must be the
+minimum its contract needs; every remaining gap needs a named cause.
+
+- [ ] Inventory each runtime's native UUID and random APIs on Node 26.8.2, Bun 1.4.2, Node 24.21.0,
+      Chromium, and Deno 2.9.6: output form, case, version and variant bits, ordering, entropy
+      source and pooling, allocation and buffer type, arguments, failures.
+- [ ] Pair every simple package call (v4 and v7 text, bytes, caller buffer, plain slug) with its
+      nearest native floor and add the missing floor rows to `bench/generation-cases.ts`.
+- [ ] Measure package against floor on every runtime, Node 26.8.2 included, twice.
+- [ ] Profile each material gap, remove overhead no contract needs, and retain changes by the
+      usual replay rules.
+- [ ] Record each remaining gap and its cause in `bench/PERFORMANCE.md`.
