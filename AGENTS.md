@@ -292,6 +292,15 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   method name identifies the code under test. Compare byte keys with `join(",")` or hex,
   never platform-dependent string coercion or UTF-8 decoding.
 - Preserve an unpinned newest-Node CI lane: pinned runtimes cannot expose newly added native APIs.
+- Maintainer ruling, 2026-09-16: every default call (no arguments, or only a text-case or alphabet
+  preset) must cost no more than the fastest runtime-native path producing the same output on every
+  ranked runtime, and must beat every qualified competitor. Configured calls (options, caller
+  buffers, generators, custom entropy, masking) may cost more than a native floor only by work that
+  floor lacks; they must still beat every qualified competitor. Reach parity by combining native
+  output, patched native output, pooled native entropy, and portable work per runtime; never settle
+  for one path everywhere. A native path that breaks a package contract is not adopted, but its cost
+  stays the target. Every call family needs a floor row, and every open gap needs a `ROADMAP.md`
+  task until a change closes it or `bench/PERFORMANCE.md` records a cause no implementation can remove.
 - Rank apples-to-apples consumer outcomes, not identical internals. Correct wire output, secure
   entropy, and published guarantees are mandatory; weigh other differences by measured consumer
   harm. Clock rollback, sequence, buffer, ownership, validation, and failure strategies remain
