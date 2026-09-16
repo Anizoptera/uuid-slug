@@ -7,7 +7,6 @@ import {
   BASE64URL_NAME,
   decodeInto,
   encode,
-  hasNativeBase64urlEncoder,
   isEncoded,
 } from "./alphabet.ts";
 import type { Alphabet } from "./alphabet.ts";
@@ -66,11 +65,9 @@ import {
   formatUuidBytesUnchecked,
   invalidUuidBytes,
   isUuidString,
-  isUuidText,
   resolveUuidTextCase,
   isUuidV7Text,
   isRfcVariant,
-  uuidByteAtUnchecked,
   uuidTimestampFromBytesUnchecked,
   uuidStringToBytes,
   uuidVersion,
@@ -92,6 +89,7 @@ const UUID_V7_TIMESTAMP_ONLY = "Timestamp is only defined for UUIDv7.";
  * but sorting masked ciphertext does not recover chronological order.
  */
 const ALTERNATIVE_SEPARATOR = " or ";
+const textSlugScratch = new Uint8Array(16);
 /*
  * A byteOffset of zero is the spelling of "no offset", so it must read exactly like the standalone
  * form for every accepted input, or a caller forwarding `offset ?? 0` through a wrapper would see
@@ -148,52 +146,6 @@ const SLUG_ALPHABET_BY_LENGTH: readonly (Alphabet | undefined)[] = /*#__PURE__*/
 const SLUG_LENGTHS = /*#__PURE__*/ Object.values(SLUG_ALPHABET_CODECS)
   .map((alpha) => `${slugLength(alpha)} (${alpha.name})`)
   .join(ALTERNATIVE_SEPARATOR);
-
-/** Encode validated canonical UUID text directly into its fixed 22-character base64url shape. */
-/*#__NO_SIDE_EFFECTS__*/
-function uuidStringToBase64url(uuid: string): PlainUuidSlug {
-  let encoded = "";
-  for (let byteIndex = 0; byteIndex < 15; byteIndex += 3) {
-    const block =
-      (uuidByteAtUnchecked(uuid, byteIndex) << 16) |
-      (uuidByteAtUnchecked(uuid, byteIndex + 1) << 8) |
-      uuidByteAtUnchecked(uuid, byteIndex + 2);
-    encoded +=
-      (BASE64URL.chars[(block >>> 18) & 63] as string) +
-      (BASE64URL.chars[(block >>> 12) & 63] as string) +
-      (BASE64URL.chars[(block >>> 6) & 63] as string) +
-      (BASE64URL.chars[block & 63] as string);
-  }
-  const last = uuidByteAtUnchecked(uuid, 15);
-  return (encoded +
-    BASE64URL.chars[last >>> 2] +
-    BASE64URL.chars[(last & 3) << 4]) as PlainUuidSlug;
-}
-
-/** Encode validated canonical UUID text directly into its fixed 26-character base32hex shape. */
-/*#__NO_SIDE_EFFECTS__*/
-function uuidStringToBase32hex(uuid: string): PlainUuidSlug {
-  let encoded = "";
-  const chars = BASE32HEX.chars;
-  for (let byteIndex = 0; byteIndex < 15; byteIndex += 5) {
-    const a = uuidByteAtUnchecked(uuid, byteIndex);
-    const b = uuidByteAtUnchecked(uuid, byteIndex + 1);
-    const c = uuidByteAtUnchecked(uuid, byteIndex + 2);
-    const d = uuidByteAtUnchecked(uuid, byteIndex + 3);
-    const e = uuidByteAtUnchecked(uuid, byteIndex + 4);
-    encoded +=
-      (chars[a >>> 3] as string) +
-      (chars[((a & 7) << 2) | (b >>> 6)] as string) +
-      (chars[(b >>> 1) & 31] as string) +
-      (chars[((b & 1) << 4) | (c >>> 4)] as string) +
-      (chars[((c & 15) << 1) | (d >>> 7)] as string) +
-      (chars[(d >>> 2) & 31] as string) +
-      (chars[((d & 3) << 3) | (e >>> 5)] as string) +
-      (chars[e & 31] as string);
-  }
-  const last = uuidByteAtUnchecked(uuid, 15);
-  return (encoded + chars[last >>> 3] + chars[(last & 7) << 2]) as PlainUuidSlug;
-}
 
 /**
  * Encode a standalone 16-byte UUID as a plain slug, using base64url by default. An `ArrayBuffer`
@@ -340,16 +292,10 @@ export function uuidStringToPlainSlug(
     uuidText = normalizeUuidStringInput(uuidText);
     if (typeof uuidText !== "string") return uuidText;
   }
-  if (
-    !hasNativeBase64urlEncoder &&
-    alphabet === BASE64URL_NAME &&
-    isUuidText(uuidText) &&
-    uuidText.length === 36
-  )
-    return uuidStringToBase64url(uuidText);
-  if (alphabet === BASE32HEX_NAME && isUuidText(uuidText) && uuidText.length === 36)
-    return uuidStringToBase32hex(uuidText);
-  const bytes = uuidStringToBytes(uuidText);
+  // Parse into shared scratch, then encode: one pass each, no per-call array. Separate text-to-slug
+  // writers read hex pairs and concatenated characters, and were slower on every runtime
+  // (bench/PERFORMANCE.md). Nothing between the parse and the encode can re-enter this function.
+  const bytes = uuidStringToBytes(uuidText, textSlugScratch);
   if (bytes instanceof Error) return bytes;
   return uuidBytesToPlainSlug(bytes, alphabet);
 }

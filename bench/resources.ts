@@ -268,7 +268,7 @@ try {
   if (hasLatin1Text) assert.equal(counts.latin1, 1, "native Latin-1 slug text must be used once");
   else if (hasBase64) assert.equal(counts.base64, 1, "available native base64 must be used once");
   check("UUID text to slug", () => api.uuidStringToPlainSlug(id), {
-    buffers: hasBase64 ? 1 : 0,
+    buffers: 0,
     views: 0,
     errors: 0,
   });

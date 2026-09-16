@@ -184,15 +184,6 @@ function parsedHexValue(code: number) {
   return code >= 65 && code <= 70 ? code - 55 : lowercaseHexValue(code);
 }
 
-/** Read one byte from canonical UUID text already validated by the caller. */
-/*#__NO_SIDE_EFFECTS__*/
-export function uuidByteAtUnchecked(uuid: string, byteIndex: number): number {
-  const offset = UUID_BYTE_OFFSETS[byteIndex] as number;
-  return (
-    (parsedHexValue(uuid.charCodeAt(offset)) << 4) | parsedHexValue(uuid.charCodeAt(offset + 1))
-  );
-}
-
 /**
  * Parse accepted mixed-case UUID text into a new plain 16-byte `Uint8Array`. Accept canonical or
  * compact text, a UUID URN, or brace-wrapped canonical text. Known slug values are rejected by
@@ -266,7 +257,10 @@ export function uuidStringToBytes(
   }
   if (codes < 128 && pairs < 256) {
     if (out === undefined) return target;
-    out.set(target, offset);
+    // A byte loop rather than `set`: the native call made Bun text-to-slug conversion slower
+    // (bench/PERFORMANCE.md).
+    for (let byteIndex = 0; byteIndex < 16; byteIndex += 1)
+      out[offset + byteIndex] = target[byteIndex] as number;
     return out;
   }
   // Name the first invalid pair with the same test as the decoding pass, so the scan stops within

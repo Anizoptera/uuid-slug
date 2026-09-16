@@ -854,6 +854,27 @@ hex assembly; the current fixed decoder plus runtime-selected formatter remains 
 Reconsider only if the native formatter disappears or a direct string primitive replaces JavaScript
 concatenation.
 
+### UUID text to plain slug
+
+Converting UUID text to a plain slug parses into reused 16-byte scratch and encodes it through the
+shared writer. Separate text-to-slug writers, which read hex pairs from validated text and
+concatenated characters, were deleted. The parser copies into caller-owned output with a byte loop:
+`Uint8Array#set` made Bun `plain.encode` 1.20 times slower in two replays of an earlier candidate.
+
+Two packed `22d3055`-to-candidate replays on 2026-09-16 measured median ratios, including the
+Latin-1 writer above; every listed pair had its 95% interval below 1 unless marked:
+
+| Runtime | `plain.encode` | `base32.encode` | `parse.into` |
+| --- | ---: | ---: | ---: |
+| Node 26.8.2 | 0.71, 0.75 | 0.50, 0.48 | unresolved, unresolved |
+| Bun 1.4.2 | unresolved, unresolved | 0.29, 0.29 | unresolved, unresolved |
+| Node 24.21.0 | 0.46, 0.46 | 0.41, 0.43 | 0.95, 0.96 |
+| Chromium 153 | 0.90, 0.95 | 0.91, 0.90 | unresolved, 0.99 |
+| Deno 2.9.6 | 0.53, 0.49 | 0.48, 0.46 | unresolved, unresolved |
+| Node 26.8.2 JITless | 1.44, 1.50 slower | 0.59, 0.61 | 1.17, 1.18 slower |
+
+Text-to-slug conversion allocates no array; the resource gate holds that budget at zero.
+
 ### UUIDv7 text bounds
 
 UUIDv7 text bounds format the timestamp directly instead of allocating byte bounds and passing them

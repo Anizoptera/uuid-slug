@@ -81,7 +81,6 @@ const availableNativeToBase64 = (
 // Deno 2.9.6 implements this capability but takes longer than the fixed 16-byte encoder. Treat
 // that implementation as unavailable until a Deno update overturns the repeated public-route result.
 const nativeToBase64 = denoVersion === undefined ? availableNativeToBase64 : undefined;
-export const hasNativeBase64urlEncoder: boolean = nativeToBase64 !== undefined;
 const BASE64_OPTIONS = { alphabet: BASE64URL_NAME, omitPadding: true } as const;
 const createLatin1Scratch = runtime.latin1Scratch;
 let base64urlScratch: Latin1Scratch | undefined;
