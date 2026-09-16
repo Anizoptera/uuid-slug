@@ -84,6 +84,15 @@ function drawAt(
 
 /** Module-generator bytes at an `at` option value the caller has read but not validated. */
 export const uuidV7BytesAt = (at: unknown): Uint8Array | UuidSlugError => drawAt(v7Bytes(), at);
+
+/*
+ * Slug and pair writers encode their bytes before returning and draw nothing in between, so they
+ * reuse the text scratch instead of allocating owned bytes (bench/PERFORMANCE.md).
+ */
+export const currentUuidV7Scratch = (): Uint8Array | UuidSlugError =>
+  v7Text().drawUuidV7Bytes(undefined, keylessTextBytes);
+export const uuidV7ScratchAt = (at: unknown): Uint8Array | UuidSlugError =>
+  drawAt(v7Text(), at, keylessTextBytes);
 let generateDefaultUuidV7: PortableUuidV7Generator["generateUuidV7"] | undefined;
 let generateDefaultUuidV7Bytes: PortableUuidV7Generator["generateUuidV7Bytes"] | undefined;
 
