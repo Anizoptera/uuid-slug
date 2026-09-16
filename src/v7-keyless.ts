@@ -14,6 +14,7 @@ import type {
   UuidV7StringFor,
 } from "./types.ts";
 import type { UuidV7PayloadLayout } from "./types.ts";
+import { readUuidV7Instant } from "./instant.ts";
 import { formatUuidBytesUnchecked, resolveUuidTextCase } from "./uuid.ts";
 import { createPortableUuidV7Generator } from "./v7.ts";
 import type { PortableUuidV7Generator } from "./v7.ts";
@@ -50,6 +51,38 @@ const v7Bytes = () =>
     fillRandom: runtime.fillRandom,
   }));
 export const uuidV7DefaultPayloadLayout = (): UuidV7PayloadLayout => v7Bytes().payloadLayout;
+// Text formatting reads these bytes before returning, and the module generators run no caller code.
+const keylessTextBytes = new Uint8Array(16);
+
+/**
+ * Draw with options this module already read. Rebuilding an options object for the generator's
+ * public method allocated it and read every option a second time (bench/PERFORMANCE.md).
+ */
+function drawFromReadOptions(
+  generator: PortableUuidV7Generator,
+  values: { readonly at?: unknown },
+  output?: Uint8Array,
+  outputOffset?: number,
+): Uint8Array | UuidSlugError {
+  return Object.hasOwn(values, AT_OPTION)
+    ? drawAt(generator, values.at, output, outputOffset)
+    : generator.drawUuidV7Bytes(undefined, output, outputOffset);
+}
+
+function drawAt(
+  generator: PortableUuidV7Generator,
+  at: unknown,
+  output?: Uint8Array,
+  outputOffset?: number,
+): Uint8Array | UuidSlugError {
+  const instant = readUuidV7Instant(at);
+  return instant instanceof Error
+    ? instant
+    : generator.drawUuidV7Bytes(instant, output, outputOffset);
+}
+
+/** Module-generator bytes at an `at` option value the caller has read but not validated. */
+export const uuidV7BytesAt = (at: unknown): Uint8Array | UuidSlugError => drawAt(v7Bytes(), at);
 let generateDefaultUuidV7: PortableUuidV7Generator["generateUuidV7"] | undefined;
 let generateDefaultUuidV7Bytes: PortableUuidV7Generator["generateUuidV7Bytes"] | undefined;
 
@@ -114,12 +147,9 @@ export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
   if (textCase instanceof Error) return textCase;
   const generator = readUuidV7Generator(values.generator);
   if (generator instanceof Error) return generator;
-  if (!generator)
-    return v7Text().generateUuidV7({
-      ...(Object.hasOwn(values, AT_OPTION) ? { at: values.at as never } : {}),
-      textCase,
-    }) as UuidV7StringFor<Case> | UuidSlugError;
-  const bytes = generateUuidV7BytesWithGenerator(generator, values, true);
+  const bytes = generator
+    ? generateUuidV7BytesWithGenerator(generator, values, true)
+    : drawFromReadOptions(v7Text(), values, keylessTextBytes);
   return bytes instanceof Error
     ? bytes
     : (formatUuidBytesUnchecked(bytes, 0, textCase) as UuidV7StringFor<Case>);
@@ -194,13 +224,12 @@ export function uuidV7BytesFor(
     const generator = readUuidV7Generator(values.generator);
     if (generator instanceof Error) return generator;
     if (generator) return generateUuidV7BytesWithGenerator(generator, values);
-    outOrOptions = {
-      ...(Object.hasOwn(values, AT_OPTION) ? { at: values.at as never } : {}),
-      ...(Object.hasOwn(values, "output") ? { output: values.output as Uint8Array } : {}),
-      ...(Object.hasOwn(values, "outputOffset")
-        ? { outputOffset: values.outputOffset as number }
-        : {}),
-    };
+    return drawFromReadOptions(
+      v7Bytes(),
+      values,
+      values.output as Uint8Array | undefined,
+      values.outputOffset as number | undefined,
+    );
   }
   const generate = (generateDefaultUuidV7Bytes ??= v7Bytes().generateUuidV7Bytes) as (
     outputOrOptions?:

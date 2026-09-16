@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Uuid, UuidV7Instant, UuidV7MaskingCodec, UuidV7ValueOptions } from "./types.ts";
+import type { Uuid, UuidV7MaskingCodec, UuidV7ValueOptions } from "./types.ts";
 import { UuidSlugError } from "./errors.ts";
 import { createUuidValue } from "./uuid-value.ts";
-import { currentUuidV7Bytes, uuidV7BytesFor, uuidV7DefaultPayloadLayout } from "./v7-keyless.ts";
+import { currentUuidV7Bytes, uuidV7BytesAt, uuidV7DefaultPayloadLayout } from "./v7-keyless.ts";
 import {
   generateUuidV7ValueWithGenerator,
   readUuidV7MaskingCodec,
@@ -40,9 +40,7 @@ export function generateUuidV7Value(
   const maskingCodec = readUuidV7MaskingCodec(values.maskingCodec);
   if (maskingCodec instanceof Error) return maskingCodec;
   if (generator) return generateUuidV7ValueWithGenerator(generator, values, maskingCodec);
-  const generated = !Object.hasOwn(values, "at")
-    ? currentUuidV7Bytes()
-    : uuidV7BytesFor({ at: values.at as UuidV7Instant });
+  const generated = !Object.hasOwn(values, "at") ? currentUuidV7Bytes() : uuidV7BytesAt(values.at);
   if (generated instanceof Error) {
     // Without options nothing the caller supplied can fail, so a failed draw is thrown.
     if (options === undefined) throw generated;

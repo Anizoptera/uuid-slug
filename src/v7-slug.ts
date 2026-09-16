@@ -12,10 +12,9 @@ import type {
   PlainUuidV7Slug,
   UuidTextCase,
   UuidV7Generator,
-  UuidV7Instant,
   UuidV7StringFor,
 } from "./types.ts";
-import { currentUuidV7Bytes, uuidV7BytesFor } from "./v7-keyless.ts";
+import { currentUuidV7Bytes, uuidV7BytesAt } from "./v7-keyless.ts";
 import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
 import { resolveSlugAlphabet } from "./slug.ts";
 import { formatUuidBytesUnchecked, isUuidTextCase, resolveUuidTextCase } from "./uuid.ts";
@@ -54,7 +53,7 @@ const drawKeylessUuidV7Bytes: DrawUuidV7Bytes = (values) => {
     ? generateUuidV7BytesWithGenerator(generator, values, true)
     : !Object.hasOwn(values, AT_OPTION)
       ? currentUuidV7Bytes()
-      : uuidV7BytesFor({ at: values.at as UuidV7Instant });
+      : uuidV7BytesAt(values.at);
 };
 
 /**
