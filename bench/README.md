@@ -180,4 +180,7 @@ and summary carries `runtimeVersion`; take the release named in a result from th
 prints one line per summarized row: release, baseline and candidate medians, the median ratio, and its
 95% interval with `faster`, `slower`, or `unresolved`, which a smoke run has too few rounds to compute.
 The current worktree owns the comparison corpus and drivers; packed revisions supply only the code
-under test. A baseline must not remove the newer case intended to distinguish it.
+under test. A baseline must not remove the newer case intended to distinguish it. If packing fails
+because Parcel crashes (SIGSEGV) in the consumer-graph check, rerun the replay; the crash says
+nothing about the candidate. Every timing probe must read each result: a loop that discards results
+lets V8 skip work, and native `randomUUID` then read 23 ns instead of 139 ns on Node 26.8.2.

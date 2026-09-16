@@ -660,7 +660,9 @@ Native `randomUUID` text, canonical text passthrough, and sentinel timestamps st
 everywhere. Node JITless loses because it interprets the 32 typed-array writes one by one; the gains
 on every higher-priority runtime outweigh that final rung. An isolated probe with consumed results
 measured a fresh `Buffer.allocUnsafe(36)` per call 35–42% slower than the reused buffer, and
-`TextDecoder("latin1")` slower than `toHex` on Node and Deno. Recheck if `toHex` or a native
+`TextDecoder("latin1")` slower than `toHex` on Node and Deno. Calling the undocumented
+`Buffer#latin1Slice` instead of `toString("latin1")` saved only 2–7 ns on Node 26.8.2, Bun, and
+Deno, so it was rejected. Recheck if `toHex` or a native
 formatter stops trailing `Buffer#toString("latin1")` on Node, Bun, or Deno.
 
 ### UUID text parsing
@@ -724,6 +726,9 @@ Node 24.21.0 mixed-case text 7–9% slower in both replays. `bench/resources.ts`
 errors, hex calls, and character reads on canonical text for both methods; the pre-change source
 fails both rows. Remeasure when either method changes shape or the engines change their inlining
 limits.
+
+The canonical text guards keep regular expressions: a character loop took 135 ns on Node 26.8.2 and
+64 ns on Bun against 72 and 24 ns for `UUID_RE`, results consumed.
 
 ### Parsed UUID value state
 
@@ -925,7 +930,9 @@ generation row at 0.87–0.98 of baseline on Node 26.8.2, 0.65–0.98 on Bun 1.4
 Chromium 153, 0.88–1.01 on Node 24.21.0, 0.87–0.99 on Deno 2.9.6, and 0.91–0.97 on Node 26.8.2
 JITless. Each cell was faster or unresolved; none was slower. The fixed Feistel vector and the
 wire-format vectors killed six mutants of the written-out rounds, constants, key schedule, and
-output words. Recheck if the round function or its message length changes.
+output words. Recheck if the round function or its message length changes. Node 26.8.2 CPU
+profiles then put Feistel work at about half of masked encode and decode time; the frozen round
+count sets that floor.
 
 ### Latin-1 slug writing
 

@@ -412,6 +412,8 @@ export function isUuidText(value: unknown): value is UuidText {
   return true;
 }
 
+// Canonical guards stay regular expressions: a character loop measured slower on Node and Bun
+// (bench/PERFORMANCE.md, Canonical UUID text).
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const UUID_V7_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
