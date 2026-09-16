@@ -2,7 +2,13 @@
 
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
-import { generatedOrThrow, stringInput, trustedNativeOrFallback, UuidSlugError } from "./errors.ts";
+import {
+  generatedOrThrow,
+  portableAfterNative,
+  stringInput,
+  UuidSlugError,
+  validatedNativeOrFallback,
+} from "./errors.ts";
 import type { NativeTrust } from "./errors.ts";
 import { readGenerationOptions } from "./generation-options.ts";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
@@ -99,15 +105,29 @@ const portableUuidV7Text = (textCase: UuidTextCase): string | UuidSlugError =>
 function currentUuidV7Text(textCase: UuidTextCase): string | UuidSlugError {
   const native = runtime.uuidV7;
   if (!native) return portableUuidV7Text(textCase);
-  const uuid = trustedNativeOrFallback<undefined, UuidTextCase>(
-    nativeUuidV7Trust,
-    native,
-    undefined,
-    isUuidV7String,
-    portableUuidV7Text,
-    UUID_TEXT_LOWERCASE,
-    UUID_V7_GENERATION,
-  );
+  let uuid: string | UuidSlugError;
+  if (native === nativeUuidV7Trust.trusted) {
+    try {
+      uuid = native();
+    } catch (nativeCause) {
+      uuid = portableAfterNative<UuidTextCase>(
+        nativeCause,
+        portableUuidV7Text,
+        UUID_TEXT_LOWERCASE,
+        UUID_V7_GENERATION,
+      );
+    }
+  } else {
+    uuid = validatedNativeOrFallback<undefined, UuidTextCase>(
+      nativeUuidV7Trust,
+      native,
+      undefined,
+      isUuidV7String,
+      portableUuidV7Text,
+      UUID_TEXT_LOWERCASE,
+      UUID_V7_GENERATION,
+    );
+  }
   return textCase === UUID_TEXT_UPPERCASE && typeof uuid === "string" ? uuid.toUpperCase() : uuid;
 }
 

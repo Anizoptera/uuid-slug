@@ -9,8 +9,9 @@ import {
   INVALID_OPTIONS,
   isError,
   RNG_UNAVAILABLE,
-  trustedNativeOrFallback,
+  portableAfterNative,
   UuidSlugError,
+  validatedNativeOrFallback,
 } from "./errors.ts";
 import type { NativeTrust } from "./errors.ts";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
@@ -23,6 +24,7 @@ export type { UuidSlugErrorCode } from "./errors.ts";
 export type { UuidV4Bytes, UuidV4String } from "./types.ts";
 export { isUuidV4Bytes, isUuidV4String, isUuidV4Text } from "./uuid.ts";
 
+const UUID_V4_GENERATION = "UUIDv4 generation";
 const REENTRANT_GENERATION_MESSAGE =
   "UUIDv4 generation cannot be reentered from its entropy source.";
 
@@ -122,15 +124,29 @@ function nativeOrPortableUuidV4<Case extends UuidTextCase>(
   // Recheck each output form when host APIs change; bench/PERFORMANCE.md owns the evidence.
   const native = runtime.uuidV4;
   if (!native) return generatePortableUuidV4(textCase);
-  const uuid = trustedNativeOrFallback<undefined, UuidTextCase>(
-    nativeUuidV4Trust,
-    native,
-    undefined,
-    isUuidV4String,
-    generatePortableUuidV4,
-    UUID_TEXT_LOWERCASE,
-    "UUIDv4 generation",
-  );
+  let uuid: string | UuidSlugError;
+  if (native === nativeUuidV4Trust.trusted) {
+    try {
+      uuid = native();
+    } catch (nativeCause) {
+      uuid = portableAfterNative<UuidTextCase>(
+        nativeCause,
+        generatePortableUuidV4,
+        UUID_TEXT_LOWERCASE,
+        UUID_V4_GENERATION,
+      );
+    }
+  } else {
+    uuid = validatedNativeOrFallback<undefined, UuidTextCase>(
+      nativeUuidV4Trust,
+      native,
+      undefined,
+      isUuidV4String,
+      generatePortableUuidV4,
+      UUID_TEXT_LOWERCASE,
+      UUID_V4_GENERATION,
+    );
+  }
   return (
     textCase === UUID_TEXT_UPPERCASE && typeof uuid === "string" ? uuid.toUpperCase() : uuid
   ) as UuidV4StringFor<Case> | UuidSlugError;

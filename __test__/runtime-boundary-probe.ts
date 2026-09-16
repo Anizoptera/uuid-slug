@@ -313,6 +313,19 @@ export const runtimeBoundaryCases = [
         assert.equal(unwrap(generatePlainUuidV7Slug("base32hex")).length, 26);
         assert.equal(nativeCalls, 2);
 
+        // A trusted function that later throws still falls back, and joins a portable failure.
+        let throwTrusted = false;
+        runtime.uuidV4 = () => {
+          if (throwTrusted) throw nativeCause;
+          return "123e4567-e89b-42d3-a456-426614174000";
+        };
+        assert.equal(generateUuidV4(), "123e4567-e89b-42d3-a456-426614174000");
+        throwTrusted = true;
+        assert.equal(isUuidV4String(generateUuidV4()), true);
+        failPortable = true;
+        assertDualFailure(thrownBy(() => generateUuidV4()));
+        failPortable = false;
+
         const throwNative = (): never => {
           throw nativeCause;
         };
@@ -409,6 +422,23 @@ export const runtimeBoundaryCases = [
         runtime.uuidV7 = native("not-a-uuid", "not-a-slug");
         assert.equal(isUuidV7String(generateUuidV7()), true);
         assert.equal(isPlainUuidV7Slug(generatePlainUuidV7Slug()), true);
+
+        // A trusted function that later throws still falls back, and joins a portable failure.
+        let throwTrusted = false;
+        const trustedNative = native(nativeText, nativeSlug);
+        runtime.uuidV7 = (encoding) => {
+          if (throwTrusted) throw nativeCause;
+          return trustedNative(encoding);
+        };
+        assert.equal(generateUuidV7(), nativeText);
+        assert.equal(generatePlainUuidV7Slug(), nativeSlug);
+        throwTrusted = true;
+        assert.equal(isUuidV7String(generateUuidV7()), true);
+        assert.equal(isPlainUuidV7Slug(generatePlainUuidV7Slug()), true);
+        failPortable(true);
+        assertDualFailure(thrownBy(() => generateUuidV7()));
+        assertDualFailure(thrownBy(() => generatePlainUuidV7Slug()));
+        failPortable(false);
 
         const throwNative = (): never => {
           throw nativeCause;

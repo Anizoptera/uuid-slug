@@ -387,15 +387,15 @@ export interface NativeTrust {
 }
 
 /**
- * Publish native text, falling back to the portable generator exactly once when the native call
- * throws or its value fails `accepts`. A function whose own value passed `accepts` is trusted by
- * identity, so later calls skip the predicate: per-call validation made native generation slower
- * than the portable generators it replaces (bench/PERFORMANCE.md). Only an accepted native value
- * grants trust, so a rejected adapter stays validated on every call; replacing the function
- * validates the replacement. Revalidate every call if a host method can return malformed values
- * intermittently without changing identity. Dual failures keep both causes.
+ * Publish native text that passes `accepts` and trust its function by identity from then on;
+ * otherwise fall back to the portable generator exactly once. Call sites publish values from
+ * `trust.trusted` without calling this: per-call validation made native generation slower than the
+ * portable generators it replaces, and Bun did not inline this call (bench/PERFORMANCE.md). Only an
+ * accepted native value grants trust, so a rejected adapter stays validated on every call and a
+ * replaced function is validated again. Revalidate every call if a host method can return malformed
+ * values intermittently without changing identity.
  */
-export function trustedNativeOrFallback<NativeArgument, FallbackArgument>(
+export function validatedNativeOrFallback<NativeArgument, FallbackArgument>(
   trust: NativeTrust,
   native: (argument: NativeArgument) => string,
   nativeArgument: NativeArgument,
@@ -407,7 +407,6 @@ export function trustedNativeOrFallback<NativeArgument, FallbackArgument>(
   let nativeCause: unknown;
   try {
     const value = native(nativeArgument);
-    if (native === trust.trusted) return value;
     if (accepts(value)) {
       trust.trusted = native;
       return value;
@@ -416,6 +415,16 @@ export function trustedNativeOrFallback<NativeArgument, FallbackArgument>(
   } catch (cause) {
     nativeCause = cause;
   }
+  return portableAfterNative(nativeCause, fallback, fallbackArgument, operation);
+}
+
+/** Run the portable generator once after native generation failed; dual failures keep both causes. */
+export function portableAfterNative<FallbackArgument>(
+  nativeCause: unknown,
+  fallback: (argument: FallbackArgument) => string | UuidSlugError,
+  fallbackArgument: FallbackArgument,
+  operation: string,
+): string | UuidSlugError {
   const result = fallback(fallbackArgument);
   return result instanceof Error
     ? failedFallback(nativeCause, result, `Native and portable ${operation} failed.`)

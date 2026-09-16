@@ -4,8 +4,9 @@ import { runtime } from "#runtime";
 import {
   generatedOrThrow,
   isUuidSlugError,
+  portableAfterNative,
   stringInput,
-  trustedNativeOrFallback,
+  validatedNativeOrFallback,
 } from "./errors.ts";
 import type { NativeTrust, UuidSlugError } from "./errors.ts";
 import { BASE64URL_NAME, encode } from "./alphabet.ts";
@@ -189,9 +190,23 @@ export function generatePlainUuidV7Slug(
   alphabetOrOptions: SlugAlphabet | GeneratePlainUuidV7SlugOptions = BASE64URL_NAME,
 ): PlainUuidV7Slug | UuidSlugError {
   const native = runtime.uuidV7;
-  if (native && alphabetOrOptions === BASE64URL_NAME)
+  if (native && alphabetOrOptions === BASE64URL_NAME) {
+    if (native === nativePlainUuidV7SlugTrust.trusted) {
+      try {
+        return native(BASE64URL_NAME) as PlainUuidV7Slug;
+      } catch (nativeCause) {
+        return generatedOrThrow(
+          portableAfterNative(
+            nativeCause,
+            portablePlainUuidV7Slug,
+            BASE64URL_NAME,
+            PLAIN_UUID_V7_SLUG_GENERATION,
+          ),
+        ) as PlainUuidV7Slug;
+      }
+    }
     return generatedOrThrow(
-      trustedNativeOrFallback<typeof BASE64URL_NAME, SlugAlphabet>(
+      validatedNativeOrFallback<typeof BASE64URL_NAME, SlugAlphabet>(
         nativePlainUuidV7SlugTrust,
         native,
         BASE64URL_NAME,
@@ -201,6 +216,7 @@ export function generatePlainUuidV7Slug(
         PLAIN_UUID_V7_SLUG_GENERATION,
       ),
     ) as PlainUuidV7Slug;
+  }
   return plainUuidV7SlugFrom(
     alphabetOrOptions,
     PLAIN_UUID_V7_SLUG_OPTIONS,
