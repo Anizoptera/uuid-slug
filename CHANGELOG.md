@@ -5,6 +5,12 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 ## Unpublished
 
+- Generation with no arguments or only a spelling preset (`generateUuidV4`, `generateUuidV4Bytes`,
+  `generatePlainUuidV4Slug`, `generateUuidV7`, `generateUuidV7Bytes`, `generatePlainUuidV7Slug`,
+  `generateUuidV7WithPlainSlug`, `generateUuidV7Value`) returns its value without an error union
+  and throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
+  source. Calls with an explicit time, a generator, caller-owned output, or custom entropy, and
+  every generator or masking-codec method, keep returning `UuidSlugError`.
 - Export the last maskable UUIDv7 timestamp and document `invalid_timestamp` on every masked writer.
 - Every UUID-text writer accepts shared string presets for lowercase and uppercase and infers the
   selected spelling. TypeScript guards and both language parsers accept mixed-case and compact UUID text.

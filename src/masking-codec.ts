@@ -19,7 +19,7 @@ import {
 } from "./errors.ts";
 import { BASE32HEX_NAME, BASE64URL_NAME } from "./alphabet.ts";
 import {
-  generateUuidV7Bytes as generateDefaultUuidV7Bytes,
+  uuidV7BytesFor as generateDefaultUuidV7Bytes,
   uuidV7DefaultPayloadLayout,
 } from "./v7-keyless.ts";
 import {
@@ -325,6 +325,8 @@ export function createUuidV7MaskingCodec(
   options: UuidV7MaskingCodecOptions,
 ): UuidV7MaskingCodec | UuidSlugError {
   try {
+    // Codec generation keeps every failure as a value: a configured timestamp range can reject
+    // the current time, so no codec generation call is free of fallible input.
     return buildUuidSlugCodec(options, generateDefaultUuidV7Bytes);
   } catch (cause) {
     return new UuidSlugError(INVALID_MASK, CODEC_CONSTRUCTION_FAILED, { cause });

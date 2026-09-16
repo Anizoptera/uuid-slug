@@ -5,10 +5,13 @@ Use UUIDs as identifiers, not passwords, access tokens, or proof of authorizatio
 Built-in generation draws from platform cryptographic randomness. TypeScript uses native UUID
 methods when available, otherwise Node crypto or Web Crypto. Rust uses fallible `getrandom`;
 browser generation requires `wasm-js`. Neither implementation substitutes non-cryptographic
-randomness when the secure source fails. Separately named custom-entropy calls accept a synchronous
-fill callback for controlled runtimes and deterministic work. The caller must fill every requested
-byte securely or return `UuidSlugError`; a successful weak or partial fill cannot be detected from
-its output. A plausible-looking UUID does not establish that cryptographic entropy was used.
+randomness when the secure source fails. TypeScript generation with no arguments or only a
+spelling preset throws `UuidSlugError` with code `rng_unavailable` in that case; every other
+generation call returns it, and Rust returns `Err` on every path. Separately named custom-entropy
+calls accept a synchronous fill callback for controlled runtimes and deterministic work. The caller
+must fill every requested byte securely or return `UuidSlugError`; a successful weak or partial
+fill cannot be detected from its output. A plausible-looking UUID does not establish that
+cryptographic entropy was used.
 Built-in generation covers UUIDv4 and UUIDv7 only. Version-neutral parsing and plain conversion
 accept other UUID versions but add no generation or security behavior for them.
 

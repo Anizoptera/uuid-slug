@@ -172,8 +172,10 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Keep repository-only docs, benchmarks, and Rust sources out of the npm tarball when the package
   does not need them at runtime; README links do not require shipping their targets.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Never add a throwing
-  convenience API. Package-owned interfaces carry failures as values; adapt and contain
-  exception-based dependencies at their boundary.
+  convenience API; the one ruled throw is `rng_unavailable` from argument-free or preset-only
+  generation, whose declarations carry no union (`docs/public-api.md` §Failures and effects).
+  Package-owned interfaces carry failures as values; adapt and contain exception-based
+  dependencies at their boundary.
 - Make compatible calls compose without intermediate error unwrapping. Read
   `docs/public-api.md` §Failures and effects when designing or changing composition, error
   propagation, markers, recognition checks, or result types; it owns the required behavior and

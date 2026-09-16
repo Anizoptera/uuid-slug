@@ -82,6 +82,8 @@ base32hex does. Masked slugs expose no useful time order.
 
 The TypeScript types preserve known UUID versions, text case, slug kind, and caller-owned buffer
 types. Expected failures return `UuidSlugError`; invalid writes leave caller storage unchanged.
+Generation with no arguments or only a spelling preset returns its value directly and throws only
+when the runtime has no secure random source.
 Generator, masking-codec, and migration methods can be detached without binding `this`.
 Stable error codes distinguish malformed encodings, UUIDs, buffers, options, masks, sentinels and
 timestamps from unavailable entropy, cancellation, wrong UUID versions, and timestamps outside a window.
@@ -670,7 +672,10 @@ the matching API. For access to stored records, check existence and authorizatio
 
 ## API
 
-Generation, conversion, and validation return the result below or `UuidSlugError`. When you supply
+Generation, conversion, and validation return the result below or `UuidSlugError`. Generation with
+no arguments or only a spelling preset returns its result directly; it throws `UuidSlugError` with
+code `rng_unavailable` when the runtime has no secure random source, which no supported runtime
+lacks. When you supply
 an output array, the exact array and its type are preserved; otherwise byte outputs are new plain
 `Uint8Array` values. Invalid input leaves caller storage unchanged.
 
@@ -809,7 +814,8 @@ Also exported from the package root:
 - `generateUuidV4WithRandomFill` and `createUuidV7GeneratorWithRandomFill` are the explicit
   custom-entropy paths. Their callback owns entropy quality and must fill every requested byte or
   return `UuidSlugError`; weak or partial successful fills cannot be detected.
-- `UuidSlugError`, including code `rng_unavailable` when the runtime has no usable randomness.
+- `UuidSlugError`, including code `rng_unavailable` when the runtime has no usable randomness;
+  generation with no arguments or only a spelling preset throws that error instead of returning it.
   `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes package errors across
   JavaScript realms and duplicate package copies.
 - `BASE64URL` and `BASE32HEX` select slug output without copying string literals.
@@ -1096,8 +1102,9 @@ and masking limits.
 
 - Generated IDs have RFC 9562 version and variant bits.
 - Built-in generators use the runtime's cryptographically secure random source. They never fall
-  back to weaker randomness. If secure randomness is unavailable,
-  generation returns `rng_unavailable`.
+  back to weaker randomness. If secure randomness is unavailable, generation with no arguments or
+  only a spelling preset throws `UuidSlugError` with code `rng_unavailable`, and every generation
+  call with an explicit time, a generator, caller-owned output, or custom entropy returns it.
 - UUID collisions are possible. Keep a uniqueness constraint where a duplicate could overwrite or
   misidentify data. On conflict while creating a record, keep the existing record and generate a
   new ID.

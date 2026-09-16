@@ -3,7 +3,7 @@
 import type { Uuid, UuidV7Instant, UuidV7MaskingCodec, UuidV7ValueOptions } from "./types.ts";
 import { UuidSlugError } from "./errors.ts";
 import { createUuidValue } from "./uuid-value.ts";
-import { generateUuidV7Bytes, uuidV7DefaultPayloadLayout } from "./v7-keyless.ts";
+import { currentUuidV7Bytes, uuidV7BytesFor, uuidV7DefaultPayloadLayout } from "./v7-keyless.ts";
 import {
   generateUuidV7ValueWithGenerator,
   readUuidV7MaskingCodec,
@@ -17,9 +17,16 @@ const UUID_V7_VALUE_OPTIONS = {
   maskingCodec: true,
 } as const satisfies Record<keyof UuidV7ValueOptions, true>;
 
+/**
+ * Generate an immutable UUIDv7 for the current clock reading with the module payload layout.
+ *
+ * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
+ * source. No supported runtime lacks one, so this is not expected during normal operation.
+ */
+export function generateUuidV7Value(): Uuid<7, false, true>;
 /** Generate an immutable UUIDv7 with optional time, generator, and retained masking codec. */
 export function generateUuidV7Value<const Options extends UuidV7ValueOptions = {}>(
-  options?: Options,
+  options: Options,
 ):
   | Uuid<7, Options extends { readonly maskingCodec: UuidV7MaskingCodec } ? true : false, true>
   | UuidSlugError;
@@ -34,9 +41,12 @@ export function generateUuidV7Value(
   if (maskingCodec instanceof Error) return maskingCodec;
   if (generator) return generateUuidV7ValueWithGenerator(generator, values, maskingCodec);
   const generated = !Object.hasOwn(values, "at")
-    ? generateUuidV7Bytes()
-    : generateUuidV7Bytes({ at: values.at as UuidV7Instant });
-  return generated instanceof Error
-    ? generated
-    : createUuidValue<7, boolean, true>(generated, maskingCodec, uuidV7DefaultPayloadLayout());
+    ? currentUuidV7Bytes()
+    : uuidV7BytesFor({ at: values.at as UuidV7Instant });
+  if (generated instanceof Error) {
+    // Without options nothing the caller supplied can fail, so a failed draw is thrown.
+    if (options === undefined) throw generated;
+    return generated;
+  }
+  return createUuidValue<7, boolean, true>(generated, maskingCodec, uuidV7DefaultPayloadLayout());
 }

@@ -52,7 +52,7 @@ const jobs = [
     name: "slug-v4",
     imports: "generatePlainUuidV4Slug",
     probe:
-      'const value = generatePlainUuidV4Slug(); if (value instanceof Error || value.length !== 22) throw new Error("generatePlainUuidV4Slug failed");',
+      'const value = generatePlainUuidV4Slug(); if (value.length !== 22) throw new Error("generatePlainUuidV4Slug failed");',
     masked: false,
     uuidValue: false,
     versions: [4],
@@ -61,7 +61,7 @@ const jobs = [
     name: "slug-v7",
     imports: "generatePlainUuidV7Slug",
     probe:
-      'const value = generatePlainUuidV7Slug(); if (value instanceof Error || value.length !== 22) throw new Error("generatePlainUuidV7Slug failed");',
+      'const value = generatePlainUuidV7Slug(); if (value.length !== 22) throw new Error("generatePlainUuidV7Slug failed");',
     masked: false,
     uuidValue: false,
     versions: [7],

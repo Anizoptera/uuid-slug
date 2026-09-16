@@ -331,6 +331,16 @@ export function fillRandomBytes(
   }
 }
 
+/**
+ * Generation whose typed inputs cannot fail declares no error union, so a failure reaching this
+ * point is an environment defect such as a missing secure random source and is thrown. Callers
+ * with fallible input never route through here; they keep the error value.
+ */
+export function generatedOrThrow<Value>(result: Value | UuidSlugError): Value {
+  if (result instanceof Error) throw result;
+  return result;
+}
+
 /** Keep both failed implementations inspectable when an optional native shortcut also fails. */
 /*#__NO_SIDE_EFFECTS__*/
 export function failedFallback(

@@ -6,6 +6,7 @@ import {
   checkRange,
   failedFallback,
   fillRandomBytes,
+  generatedOrThrow,
   INVALID_OPTIONS,
   isError,
   RNG_UNAVAILABLE,
@@ -35,8 +36,11 @@ let trustedNativeUuidV4: (() => string) | undefined;
 
 /**
  * Generate UUIDv4 bytes with platform randomness in a new plain 16-byte `Uint8Array`.
+ *
+ * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
+ * source. No supported runtime lacks one, so this is not expected during normal operation.
  */
-export function generateUuidV4Bytes(): UuidV4Bytes | UuidSlugError;
+export function generateUuidV4Bytes(): UuidV4Bytes;
 /**
  * Write UUIDv4 bytes into caller-owned storage only after successful generation.
  *
@@ -52,7 +56,12 @@ export function generateUuidV4Bytes(
   output?: Uint8Array,
   outputOffset = 0,
 ): Uint8Array | UuidSlugError {
-  if (output === undefined) return generateOwnedUuidV4Bytes(outputOffset);
+  if (output === undefined) {
+    // Only an untyped call reaches an offset without storage; that misuse stays an error value.
+    const badRange = outputOffset === 0 ? undefined : checkRange(16, outputOffset, 16);
+    if (badRange) return badRange;
+    return generatedOrThrow(generateOwnedUuidV4Bytes());
+  }
   if (generating) return new UuidSlugError(RNG_UNAVAILABLE, REENTRANT_GENERATION_MESSAGE);
   const badRange = checkByteRange(output, outputOffset, 16);
   if (badRange) return badRange;
@@ -71,10 +80,9 @@ export function generateUuidV4Bytes(
 
 // Keep owned output separate so it can draw directly into its result without adding a post-draw
 // ownership branch to caller-buffer writes. Merge the paths if either primary runtime loses this win.
-function generateOwnedUuidV4Bytes(outputOffset: number): UuidV4Bytes | UuidSlugError {
+// Failures are returned so slug and text callers can decide at their own public seam.
+export function generateOwnedUuidV4Bytes(): UuidV4Bytes | UuidSlugError {
   if (generating) return new UuidSlugError(RNG_UNAVAILABLE, REENTRANT_GENERATION_MESSAGE);
-  const badRange = checkRange(16, outputOffset, 16);
-  if (badRange) return badRange;
   const output = new Uint8Array(16);
   generating = true;
   try {
@@ -88,7 +96,10 @@ function generateOwnedUuidV4Bytes(outputOffset: number): UuidV4Bytes | UuidSlugE
   }
 }
 
-/** Generate UUIDv4 text through the portable implementation, even on native-capable hosts. */
+/**
+ * Generate UUIDv4 text through the portable implementation, even on native-capable hosts.
+ * Failures are returned so the native path can aggregate them with its own cause.
+ */
 export function generatePortableUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   textCase: Case = UUID_TEXT_LOWERCASE as Case,
 ): UuidV4StringFor<Case> | UuidSlugError {
@@ -97,27 +108,15 @@ export function generatePortableUuidV4<Case extends UuidTextCase = typeof UUID_T
     if (selectedCase instanceof Error) return selectedCase;
     textCase = selectedCase as Case;
   }
-  const bytes = generateUuidV4Bytes();
+  const bytes = generateOwnedUuidV4Bytes();
   return bytes instanceof Error
     ? bytes
     : (bytesToUuidString(bytes, textCase) as UuidV4StringFor<Case> | UuidSlugError);
 }
 
-function generateUuidV4FromUnknown(value: unknown): UuidV4StringFor<UuidTextCase> | UuidSlugError {
-  const textCase = resolveUuidTextCase(value);
-  return textCase instanceof Error ? textCase : generateUuidV4(textCase);
-}
-
-/**
- * Generate UUIDv4 text with platform cryptographic randomness, lowercase by default.
- *
- * @param textCase - Built-in output spelling. Omit for lowercase.
- */
-export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-  textCase: Case = UUID_TEXT_LOWERCASE as Case,
+function nativeOrPortableUuidV4<Case extends UuidTextCase>(
+  textCase: Case,
 ): UuidV4StringFor<Case> | UuidSlugError {
-  if (!isUuidTextCase(textCase))
-    return generateUuidV4FromUnknown(textCase) as UuidV4StringFor<Case> | UuidSlugError;
   // Native generation is useful only for text, which the host returns directly. Byte and slug
   // routes stay portable because parsing native text adds work and complicates atomic output.
   // Recheck each output form when host APIs change; bench/PERFORMANCE.md owns the evidence.
@@ -148,6 +147,28 @@ export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
       ? failedFallback(nativeCause, fallback, "Native and portable UUIDv4 generation failed.")
       : fallback;
   }
+}
+
+/**
+ * Generate UUIDv4 text with platform cryptographic randomness, lowercase by default.
+ *
+ * @param textCase - Built-in output spelling. Omit for lowercase.
+ * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
+ * source. No supported runtime lacks one, so this is not expected during normal operation.
+ */
+export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  textCase?: Case,
+): UuidV4StringFor<Case>;
+export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  textCase: Case = UUID_TEXT_LOWERCASE as Case,
+): UuidV4StringFor<Case> | UuidSlugError {
+  if (!isUuidTextCase(textCase)) {
+    // Only an untyped call reaches an unknown spelling; that misuse stays an error value.
+    const selectedCase = resolveUuidTextCase(textCase);
+    if (selectedCase instanceof Error) return selectedCase;
+    textCase = selectedCase as Case;
+  }
+  return generatedOrThrow(nativeOrPortableUuidV4(textCase));
 }
 
 /**

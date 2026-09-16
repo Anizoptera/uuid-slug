@@ -11,7 +11,7 @@ import type { UuidSlugError } from "../errors.ts";
  *
  * The source is unchanged — this batches the same CSPRNG, it does not replace or stretch it.
  */
-const POOL_BYTES = 8192;
+export const POOL_BYTES = 8192;
 
 /**
  * Wraps a direct random-fill primitive in a pool.

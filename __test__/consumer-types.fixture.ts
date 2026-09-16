@@ -127,10 +127,26 @@ expectType<string>()(untypedValue);
 declare const generator: UuidV7Generator;
 
 // The emitted declarations must infer strict brands without requiring branded inputs.
+// Argument-free and preset-only generation carries no error union; every option form keeps it.
 const plainResult = generatePlainUuidV7Slug();
-expectType<PlainUuidV7Slug | UuidSlugError>()(plainResult);
-expectType<GeneratedUuidV7<PlainUuidV7Slug> | UuidSlugError>()(generateUuidV7WithPlainSlug());
-if (plainResult instanceof Error) throw plainResult;
+expectType<PlainUuidV7Slug>()(plainResult);
+expectType<PlainUuidV7Slug>()(generatePlainUuidV7Slug(BASE32HEX));
+expectType<PlainUuidV7Slug | UuidSlugError>()(generatePlainUuidV7Slug({}));
+expectType<GeneratedUuidV7<PlainUuidV7Slug>>()(generateUuidV7WithPlainSlug());
+expectType<GeneratedUuidV7<PlainUuidV7Slug>>()(generateUuidV7WithPlainSlug(BASE32HEX));
+expectType<GeneratedUuidV7<PlainUuidV7Slug, typeof UUID_TEXT_UPPERCASE>>()(
+  generateUuidV7WithPlainSlug(BASE32HEX, UUID_TEXT_UPPERCASE),
+);
+expectType<GeneratedUuidV7<PlainUuidV7Slug> | UuidSlugError>()(generateUuidV7WithPlainSlug({}));
+expectType<UuidV7String>()(generateUuidV7());
+expectType<UuidV7String | UuidSlugError>()(generateUuidV7({}));
+expectType<UuidV4String>()(generateUuidV4());
+expectType<UuidV7Bytes>()(generateUuidV7Bytes());
+expectType<UuidV7Bytes | UuidSlugError>()(generateUuidV7Bytes({}));
+expectType<UuidV4Bytes>()(generateUuidV4Bytes());
+expectType<PlainUuidV4Slug>()(generatePlainUuidV4Slug());
+expectType<Uuid<7, false, true>>()(generateUuidV7Value());
+expectType<Uuid<7, false, true> | UuidSlugError>()(generateUuidV7Value({}));
 const plainSlug: PlainUuidV7Slug = plainResult;
 // @ts-expect-error Unchecked bytes are not a validated UUID payload.
 const uncheckedBytes: UuidBytes = new Uint8Array(16);
@@ -267,22 +283,19 @@ const parsedSlugInto: ConsumerBuffer | UuidSlugError = plainSlugToUuidBytes(
 uuidStringToBytes(versionedSlug, destination);
 // @ts-expect-error Supplying storage must not let known UUID text enter a slug text operation.
 plainSlugToUuidBytes(checkedUuid, destination);
-const v4Into: ConsumerBuffer | UuidSlugError = generateUuidV4Bytes(destination, 8);
-const v7Into: ConsumerBuffer | UuidSlugError = generateUuidV7Bytes(destination, 8);
-const v7AtInto: ConsumerBuffer | UuidSlugError = generateUuidV7Bytes({
-  at: 0,
-  output: destination,
-  outputOffset: 8,
-});
-const ownedV4: UuidV4Bytes | UuidSlugError = generateUuidV4Bytes();
-const ownedV7: UuidV7Bytes | UuidSlugError = generateUuidV7Bytes();
-if (ownedV4 instanceof Error) throw ownedV4;
-if (ownedV7 instanceof Error) throw ownedV7;
+const v4Into = generateUuidV4Bytes(destination, 8);
+expectType<ConsumerBuffer | UuidSlugError>()(v4Into);
+const v7Into = generateUuidV7Bytes(destination, 8);
+expectType<ConsumerBuffer | UuidSlugError>()(v7Into);
+const v7AtInto = generateUuidV7Bytes({ at: 0, output: destination, outputOffset: 8 });
+expectType<ConsumerBuffer | UuidSlugError>()(v7AtInto);
+const ownedV4: UuidV4Bytes = generateUuidV4Bytes();
+const ownedV7: UuidV7Bytes = generateUuidV7Bytes();
 // @ts-expect-error A known UUIDv4 has no UUIDv7 timestamp.
 extractUuidV7UnixMs(ownedV4);
-const generatedV4Result = generateUuidV4();
-expectType<UppercaseUuidV4String | UuidSlugError>()(generateUuidV4(UUID_TEXT_UPPERCASE));
-expectType<UppercaseUuidV7String | UuidSlugError>()(generateUuidV7(UUID_TEXT_UPPERCASE));
+const generatedV4 = generateUuidV4();
+expectType<UppercaseUuidV4String>()(generateUuidV4(UUID_TEXT_UPPERCASE));
+expectType<UppercaseUuidV7String>()(generateUuidV7(UUID_TEXT_UPPERCASE));
 expectType<UppercaseUuidV7String | UuidSlugError>()(
   generateUuidV7({ at: new Date(0), textCase: UUID_TEXT_UPPERCASE }),
 );
@@ -313,7 +326,7 @@ generateUuidV7Bytes({ at: 0, outputOffset: 8 });
 // @ts-expect-error A misspelled time option must not generate at the current clock reading.
 generateUuidV7({ att: new Date(0) });
 const uppercaseV7 = generateUuidV7("uppercase");
-if (uppercaseV7 instanceof Error) throw uppercaseV7;
+expectType<UppercaseUuidV7String>()(uppercaseV7);
 expectType<PlainUuidV7Slug | UuidSlugError>()(uuidStringToPlainSlug(uppercaseV7));
 expectType<UppercaseUuidV7String | UuidSlugError>()(
   generateUuidV7({ at: 0, textCase: UUID_TEXT_UPPERCASE }),
@@ -324,14 +337,12 @@ expectType<UuidV7Bounds<UppercaseUuidV7String> | UuidSlugError>()(
 );
 expectType<UuidV7Bounds<UuidV7Bytes> | UuidSlugError>()(uuidV7ByteBounds(0, 1));
 const uppercaseV4 = generateUuidV4("uppercase");
-if (uppercaseV4 instanceof Error) throw uppercaseV4;
+expectType<UppercaseUuidV4String>()(uppercaseV4);
 // @ts-expect-error A known uppercase UUIDv4 cannot enter UUIDv7 timestamp validation.
 validateUuidV7StringUnixMs(uppercaseV4, { maxTimestampDeltaMs: 0 });
-expectType<GeneratedUuidV7<PlainUuidV7Slug, typeof UUID_TEXT_UPPERCASE> | UuidSlugError>()(
+expectType<GeneratedUuidV7<PlainUuidV7Slug, typeof UUID_TEXT_UPPERCASE>>()(
   generateUuidV7WithPlainSlug(UUID_TEXT_UPPERCASE),
 );
-if (generatedV4Result instanceof Error) throw generatedV4Result;
-const generatedV4 = generatedV4Result;
 // @ts-expect-error UUIDv7 timestamp validation is undefined for a known UUIDv4.
 validateUuidV7StringUnixMs(generatedV4, { maxTimestampDeltaMs: 0 });
 expectType<UuidV7String | UuidSlugError>()(
@@ -346,9 +357,7 @@ expectType<UppercaseUuidV7String | UuidSlugError>()(
     UUID_TEXT_UPPERCASE,
   ),
 );
-const generatedV4SlugResult = generatePlainUuidV4Slug();
-if (generatedV4SlugResult instanceof Error) throw generatedV4SlugResult;
-const generatedV4Slug = generatedV4SlugResult;
+const generatedV4Slug = generatePlainUuidV4Slug();
 // @ts-expect-error UUIDv7 timestamp validation is undefined for a known UUIDv4 slug.
 validatePlainUuidV7SlugUnixMs(generatedV4Slug, { maxTimestampDeltaMs: 0 });
 expectType<(PlainUuidV7Slug & "AZ_xnLf5cACbG99xO9VWLAAAAAAAAAAAAAAAAA") | UuidSlugError>()(

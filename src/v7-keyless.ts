@@ -2,7 +2,7 @@
 
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
-import { stringInput, UuidSlugError } from "./errors.ts";
+import { generatedOrThrow, stringInput, UuidSlugError } from "./errors.ts";
 import { readGenerationOptions } from "./generation-options.ts";
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
 import type {
@@ -63,10 +63,12 @@ let generateDefaultUuidV7Bytes: PortableUuidV7Generator["generateUuidV7Bytes"] |
  * not provide ordering across calls.
  *
  * @param textCase - Built-in output spelling. Omit for lowercase.
+ * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
+ * source. No supported runtime lacks one, so this is not expected during normal operation.
  */
 export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   textCase?: Case,
-): UuidV7StringFor<Case> | UuidSlugError;
+): UuidV7StringFor<Case>;
 /**
  * Generate UUIDv7 text at an explicit time or the current clock reading. Explicit time does not
  * join module-level sequence state.
@@ -85,12 +87,14 @@ export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
       : typeof textCaseOrOptions === "string"
         ? textCaseOrOptions
         : undefined;
+  // A spelling preset is the only input on this path, and an unknown one can arrive only from an
+  // untyped call, so it stays an error value while a failed draw is thrown.
   if (directCase !== undefined) {
     const selectedCase = resolveUuidTextCase(directCase);
     return selectedCase instanceof Error
       ? selectedCase
-      : ((generateDefaultUuidV7 ??= v7Text().generateUuidV7)(
-          selectedCase,
+      : (generatedOrThrow(
+          (generateDefaultUuidV7 ??= v7Text().generateUuidV7)(selectedCase),
         ) as UuidV7StringFor<Case>);
   }
   let values = readGenerationOptions(textCaseOrOptions, UUID_V7_TEXT_OPTIONS, "UUIDv7 generation");
@@ -100,8 +104,8 @@ export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
       const selectedCase = resolveUuidTextCase(wrappedCase);
       return selectedCase instanceof Error
         ? selectedCase
-        : ((generateDefaultUuidV7 ??= v7Text().generateUuidV7)(
-            selectedCase,
+        : (generatedOrThrow(
+            (generateDefaultUuidV7 ??= v7Text().generateUuidV7)(selectedCase),
           ) as UuidV7StringFor<Case>);
     }
   }
@@ -124,8 +128,11 @@ export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
 /**
  * Generate UUIDv7 bytes with platform randomness in a new plain 16-byte `Uint8Array`. Module-level
  * calls do not provide ordering across calls.
+ *
+ * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
+ * source. No supported runtime lacks one, so this is not expected during normal operation.
  */
-export function generateUuidV7Bytes(): UuidV7Bytes | UuidSlugError;
+export function generateUuidV7Bytes(): UuidV7Bytes;
 /**
  * Write UUIDv7 bytes into caller-owned storage only after successful generation. Module-level calls
  * do not provide ordering across calls.
@@ -147,6 +154,24 @@ export function generateUuidV7Bytes<Output extends Uint8Array>(
   options: GenerateUuidV7BytesIntoOptions<Output>,
 ): Output | UuidSlugError;
 export function generateUuidV7Bytes(
+  outOrOptions?:
+    | Uint8Array
+    | GenerateUuidV7BytesOptions
+    | GenerateUuidV7BytesIntoOptions<Uint8Array>,
+  offset?: number,
+): Uint8Array | UuidSlugError {
+  // Only an untyped call reaches an offset without storage; that misuse stays an error value.
+  if (outOrOptions === undefined && (offset === undefined || offset === 0))
+    return generatedOrThrow(currentUuidV7Bytes());
+  return uuidV7BytesFor(outOrOptions, offset);
+}
+
+/** Current-time bytes from the module generator with failures returned for option-taking callers. */
+export const currentUuidV7Bytes = (): UuidV7Bytes | UuidSlugError =>
+  (generateDefaultUuidV7Bytes ??= v7Bytes().generateUuidV7Bytes)();
+
+/** Every module-level byte form with failures returned; public seams without fallible input throw. */
+export function uuidV7BytesFor(
   outOrOptions?:
     | Uint8Array
     | GenerateUuidV7BytesOptions

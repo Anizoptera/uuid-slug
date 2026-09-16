@@ -380,7 +380,8 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 - Keep standalone operations with complete names. Function properties and representation
   namespaces would duplicate them and make detached names less clear.
 - Keep one error-value path. Nullable and throwing duplicates discard diagnostics or split control
-  flow without adding a recovery action.
+  flow without adding a recovery action. A thrown `rng_unavailable` from argument-free or
+  preset-only generation is no duplicate: those calls have no error-value path.
 - Keep representation-specific generation functions and the paired UUID-plus-slug operation. Each
   function accepts the same `at` and `generator` options, so recorded time and shared state do not
   multiply the function matrix or require an intermediate conversion. A
@@ -470,6 +471,10 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   recognition capabilities.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Package-owned interfaces
   carry failures as values; adapt and contain exception-based dependencies at their boundary.
+  Throw only from argument-free or preset-only generation, and only `rng_unavailable`: no caller
+  input can cause it and no supported runtime produces it, so the declaration carries no union
+  and states the throw with `@throws`. Validate a preset before drawing so untyped misuse still
+  returns its error value.
 - Name each error code for the caller's recovery action. Each message identifies the failed
   condition, includes the safe offending value or bound when it helps, and gives the correction
   when the caller can act. Preserve external failures in `cause`; do not guess what caused them.
@@ -484,7 +489,11 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   UUIDv7-generator construction accept numeric settings whose valid ranges TypeScript cannot
   express, so their types carry the union. Migration-reader construction has no such typed failure;
   malformed untyped input still returns an error as stated at the declaration. Do not force callers
-  to narrow construction that cannot fail for typed input.
+  to narrow construction that cannot fail for typed input. Argument-free and preset-only generation
+  has no typed failure either; its only failure, a missing secure random source, is thrown. Every
+  generation call with an explicit time, a generator, caller-owned output, or custom entropy keeps
+  the union, as do generator and masking-codec methods, whose custom clocks and configured
+  timestamp ranges can fail.
 - Classify sentinel-list shape and duplicate names or UUIDs as `invalid_sentinel`. Keep malformed
   UUID text as `invalid_uuid` and a wrong UUID version as `invalid_uuid_version`; these failures
   require different caller repairs.

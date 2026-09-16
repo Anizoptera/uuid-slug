@@ -2,7 +2,8 @@
 
 import { strict as assert } from "node:assert";
 import vm from "node:vm";
-import { pooledFill } from "../src/runtime/pool";
+import nodeCrypto from "node:crypto";
+import { POOL_BYTES, pooledFill } from "../src/runtime/pool";
 import { runtime } from "#runtime";
 import { unwrap } from "../dev/unwrap";
 import {
@@ -33,11 +34,23 @@ import {
   validatePlainUuidV7SlugUnixMs,
   generateUuidV7Bytes,
   generatePlainUuidV7Slug,
+  generateUuidV7WithPlainSlug,
+  generateUuidV4WithRandomFill,
 } from "../src/index";
 import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
 import { createUuidV7MaskingCodecWithGenerator } from "../src/masking-codec";
 import type { UuidV7Generator } from "../src/types";
 import { NIL_TEST_SENTINEL } from "./sentinel-fixtures";
+
+/** Capture what a call throws; a call that returns instead fails the probe. */
+function thrownBy(call: () => unknown): unknown {
+  try {
+    call();
+  } catch (error) {
+    return error;
+  }
+  throw new Error("expected the call to throw");
+}
 
 const timestamp = 1_234_567_890_000;
 const uuid = "011f71fb-0450-7121-8848-484a12121212";
@@ -143,22 +156,80 @@ export const runtimeBoundaryCases = [
   {
     name: "public generators fail atomically when platform entropy is unavailable",
     run(this: void) {
-      const originalFill = runtime.fillRandom;
+      // Fail the platform primitive itself rather than `runtime.fillRandom`: module-level UUIDv7
+      // generation binds the pooled fill once, so only the primitive reaches every public route.
+      // Emptying the pool first makes the very next draw refill through the failing primitive.
       const cause = new Error("platform entropy unavailable");
-      runtime.fillRandom = () =>
-        new UuidSlugError("rng_unavailable", "platform entropy unavailable", { cause });
+      const webCrypto = globalThis.crypto;
+      // eslint-disable-next-line typescript/unbound-method -- saved for restoration, never called
+      const originalWebFill = webCrypto.getRandomValues;
+      // eslint-disable-next-line typescript/unbound-method -- saved for restoration, never called
+      const originalNodeFill = nodeCrypto.randomFillSync;
+      const failing = (): never => {
+        throw cause;
+      };
+      assert.equal(runtime.fillRandom(new Uint8Array(POOL_BYTES)), undefined);
+      webCrypto.getRandomValues = failing;
+      nodeCrypto.randomFillSync = failing;
       const out = new Uint8Array(24).fill(0xa5);
-      try {
-        const generator = createSecureUuidV7Generator({ readUnixMs: () => timestamp });
-        assert.ok(!(generator instanceof Error));
-        const failure = generator.generateUuidV7Bytes(out, 4);
+      const assertEntropyFailure = (failure: unknown) => {
         assert.ok(failure instanceof UuidSlugError);
         assert.equal(failure.code, "rng_unavailable");
         assert.equal(failure.cause, cause);
+      };
+      try {
+        const generator = createSecureUuidV7Generator({ readUnixMs: () => timestamp });
+        assert.ok(!(generator instanceof Error));
+        const maskingCodec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
+        assertEntropyFailure(generator.generateUuidV7Bytes(out, 4));
         assert.deepEqual(out, new Uint8Array(24).fill(0xa5));
+        // Calls whose typed inputs cannot fail carry no error union, so the defect is thrown.
+        // UUIDv4 text is absent here because a native host shortcut can bypass the byte draw;
+        // the native-plus-portable failure case below covers its thrown form.
+        const throwing: readonly (() => unknown)[] = [
+          () => generateUuidV4Bytes(),
+          () => generatePlainUuidV4Slug(),
+          () => generatePlainUuidV4Slug("base32hex"),
+          () => generateUuidV7(),
+          () => generateUuidV7(UUID_TEXT_UPPERCASE),
+          () => generateUuidV7Bytes(),
+          () => generatePlainUuidV7Slug(),
+          () => generatePlainUuidV7Slug("base32hex"),
+          () => generateUuidV7WithPlainSlug(),
+          () => generateUuidV7WithPlainSlug("base32hex", UUID_TEXT_UPPERCASE),
+          () => generateUuidV7Value(),
+        ];
+        for (const call of throwing) assertEntropyFailure(thrownBy(call));
+        // Every form with a fallible input keeps the error value, even when that input is absent.
+        const returning: readonly (() => unknown)[] = [
+          () => generateUuidV4Bytes(out, 4),
+          () =>
+            generateUuidV4WithRandomFill((bytes) =>
+              runtime.fillRandom(bytes as Uint8Array<ArrayBuffer>),
+            ),
+          () => generateUuidV7({}),
+          () => generateUuidV7({ at: timestamp }),
+          () => generateUuidV7Bytes(out, 4),
+          () => generateUuidV7Bytes({}),
+          () => generateUuidV7Bytes({ at: timestamp, output: out, outputOffset: 4 }),
+          () => generatePlainUuidV7Slug({}),
+          () => generateUuidV7WithPlainSlug({ at: timestamp }),
+          () => generateUuidV7Value({}),
+          () => generator.generateUuidV7(),
+          () => generator.generateUuidV7Bytes(),
+          () => maskingCodec.generateMaskedUuidV7Slug(),
+          () => maskingCodec.generateUuidV7Value(),
+        ];
+        for (const call of returning) assertEntropyFailure(call());
+        assert.deepEqual(out, new Uint8Array(24).fill(0xa5));
+        // Untyped misuse on an argument-free form is still a caller-caused error value.
+        const misuse = Reflect.apply(generateUuidV7, undefined, ["sideways"]);
+        assert.equal(isUuidSlugError(misuse) && misuse.code, "invalid_options");
       } finally {
-        runtime.fillRandom = originalFill;
+        webCrypto.getRandomValues = originalWebFill;
+        nodeCrypto.randomFillSync = originalNodeFill;
       }
+      assert.equal(isUuidV7String(generateUuidV7()), true);
     },
   },
   {
@@ -227,9 +298,9 @@ export const runtimeBoundaryCases = [
         };
         runtime.uuidV4 = throwNative;
         failPortable = true;
-        assertDualFailure(generateUuidV4());
-        assertPortableFailure(generateUuidV4Bytes());
-        assertPortableFailure(generatePlainUuidV4Slug());
+        assertDualFailure(thrownBy(() => generateUuidV4()));
+        assertPortableFailure(thrownBy(() => generateUuidV4Bytes()));
+        assertPortableFailure(thrownBy(() => generatePlainUuidV4Slug()));
         failPortable = false;
         assert.equal(isUuidV7String(generateUuidV7()), true);
       } finally {
@@ -248,7 +319,7 @@ export const runtimeBoundaryCases = [
         throw nativeCause;
       };
       try {
-        assert.ok(!(generateUuidV4() instanceof Error));
+        assert.equal(isUuidV4String(generateUuidV4()), true);
       } finally {
         if (originalV4) runtime.uuidV4 = originalV4;
         else delete runtime.uuidV4;
@@ -465,10 +536,11 @@ export const runtimeBoundaryCases = [
       let nested: unknown;
       runtime.fillRandom = (bytes) => {
         bytes.fill(nested === undefined ? 0x11 : 0x22);
-        if (nested === undefined) nested = generateUuidV4Bytes();
+        // The nested argument-free call throws its refusal; catching it keeps the outer draw whole.
+        if (nested === undefined) nested = thrownBy(() => generateUuidV4Bytes());
       };
       try {
-        assert.ok(!(generateUuidV4Bytes() instanceof Error));
+        assert.equal(generateUuidV4Bytes().length, 16);
         assert.ok(nested instanceof UuidSlugError);
         assert.equal(nested.code, "rng_unavailable");
       } finally {

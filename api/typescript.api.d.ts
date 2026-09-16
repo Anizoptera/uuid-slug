@@ -92,12 +92,8 @@ export declare interface GeneratedUuidV7<
   readonly uuid: UuidV7StringFor<Case>;
   readonly slug: Slug;
 }
-export declare function generatePlainUuidV4Slug(
-  alphabet?: SlugAlphabet,
-): PlainUuidV4Slug | UuidSlugError;
-export declare function generatePlainUuidV7Slug(
-  alphabet?: SlugAlphabet,
-): PlainUuidV7Slug | UuidSlugError;
+export declare function generatePlainUuidV4Slug(alphabet?: SlugAlphabet): PlainUuidV4Slug;
+export declare function generatePlainUuidV7Slug(alphabet?: SlugAlphabet): PlainUuidV7Slug;
 export declare function generatePlainUuidV7Slug(
   options: GeneratePlainUuidV7SlugOptions,
 ): PlainUuidV7Slug | UuidSlugError;
@@ -108,8 +104,8 @@ export declare interface GeneratePlainUuidV7SlugOptions {
 }
 export declare function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   textCase?: Case,
-): UuidV4StringFor<Case> | UuidSlugError;
-export declare function generateUuidV4Bytes(): UuidV4Bytes | UuidSlugError;
+): UuidV4StringFor<Case>;
+export declare function generateUuidV4Bytes(): UuidV4Bytes;
 export declare function generateUuidV4Bytes<Output extends Uint8Array>(
   output: Output,
   outputOffset?: number,
@@ -119,11 +115,11 @@ export declare function generateUuidV4WithRandomFill<
 >(fillRandom: UuidRandomFill, textCase?: Case): UuidV4StringFor<Case> | UuidSlugError;
 export declare function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   textCase?: Case,
-): UuidV7StringFor<Case> | UuidSlugError;
+): UuidV7StringFor<Case>;
 export declare function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   options: GenerateUuidV7Options<Case>,
 ): UuidV7StringFor<Case> | UuidSlugError;
-export declare function generateUuidV7Bytes(): UuidV7Bytes | UuidSlugError;
+export declare function generateUuidV7Bytes(): UuidV7Bytes;
 export declare function generateUuidV7Bytes<Output extends Uint8Array>(
   output: Output,
   outputOffset?: number,
@@ -153,8 +149,9 @@ export declare interface GenerateUuidV7Options<
   readonly generator?: UuidV7Generator;
   readonly textCase?: Case;
 }
+export declare function generateUuidV7Value(): Uuid<7, false, true>;
 export declare function generateUuidV7Value<const Options extends UuidV7ValueOptions = {}>(
-  options?: Options,
+  options: Options,
 ):
   | Uuid<
       7,
@@ -173,14 +170,14 @@ export declare interface GenerateUuidV7WithMaskedSlugOptions<
 }
 export declare function generateUuidV7WithPlainSlug(
   alphabet?: SlugAlphabet,
-): GeneratedUuidV7<PlainUuidV7Slug> | UuidSlugError;
+): GeneratedUuidV7<PlainUuidV7Slug>;
 export declare function generateUuidV7WithPlainSlug<Case extends UuidTextCase>(
   textCase: Case,
-): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
+): GeneratedUuidV7<PlainUuidV7Slug, Case>;
 export declare function generateUuidV7WithPlainSlug<Case extends UuidTextCase>(
   alphabet: SlugAlphabet,
   textCase: Case,
-): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
+): GeneratedUuidV7<PlainUuidV7Slug, Case>;
 export declare function generateUuidV7WithPlainSlug<
   Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
 >(
