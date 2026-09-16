@@ -51,6 +51,15 @@ function thrownBy(call: () => unknown): unknown {
   throw new Error("expected the call to throw");
 }
 
+const drawUuidV4Text = () => generateUuidV4();
+const drawOwnedUuidV4Bytes = () => generateUuidV4Bytes();
+const drawCallerUuidV4Bytes = () => {
+  const output = new Uint8Array(20);
+  const result = generateUuidV4Bytes(output, 4);
+  if (result instanceof Error) throw result;
+  return output.subarray(4);
+};
+
 const timestamp = 1_234_567_890_000;
 const uuid = "011f71fb-0450-7121-8848-484a12121212";
 const makeGenerator = () =>
@@ -566,18 +575,36 @@ export const runtimeBoundaryCases = [
     name: "refuses UUIDv4 generation reentered from its entropy source",
     run(this: void) {
       const originalFill = runtime.fillRandom;
-      let nested: unknown;
-      runtime.fillRandom = (bytes) => {
-        bytes.fill(nested === undefined ? 0x11 : 0x22);
-        // The nested argument-free call throws its refusal; catching it keeps the outer draw whole.
-        if (nested === undefined) nested = thrownBy(() => generateUuidV4Bytes());
-      };
-      try {
-        assert.equal(generateUuidV4Bytes().length, 16);
+      const originalV4 = runtime.uuidV4;
+      const expectedText = "11111111-1111-4111-9111-111111111111";
+      const expectedBytes = Array.from(unwrap(uuidStringToBytes(expectedText)));
+      // Only the outermost draw reenters. An unrefused nested draw fills different bytes and returns,
+      // so the outer result or the missing refusal fails here instead of recursing until the stack
+      // overflows into an entropy failure that looks like the refusal.
+      const reentered = <Result>(outer: () => Result, inner: () => unknown): Result => {
+        let depth = 0;
+        let nested: unknown;
+        runtime.fillRandom = (bytes) => {
+          depth += 1;
+          bytes.fill(depth === 1 ? 0x11 : 0x22);
+          if (depth === 1) nested = thrownBy(inner);
+        };
+        const result = outer();
         assert.ok(nested instanceof UuidSlugError);
         assert.equal(nested.code, "rng_unavailable");
+        return result;
+      };
+      try {
+        // Portable text and caller-buffer writes share one module scratch array.
+        delete runtime.uuidV4;
+        for (const inner of [drawUuidV4Text, drawOwnedUuidV4Bytes, drawCallerUuidV4Bytes]) {
+          assert.equal(reentered(drawUuidV4Text, inner), expectedText);
+          assert.deepEqual(Array.from(reentered(drawOwnedUuidV4Bytes, inner)), expectedBytes);
+          assert.deepEqual(Array.from(reentered(drawCallerUuidV4Bytes, inner)), expectedBytes);
+        }
       } finally {
         runtime.fillRandom = originalFill;
+        if (originalV4) runtime.uuidV4 = originalV4;
       }
     },
   },

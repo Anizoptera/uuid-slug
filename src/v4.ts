@@ -16,7 +16,13 @@ import {
 import type { NativeTrust } from "./errors.ts";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
 import type { UuidRandomFill, UuidTextCase, UuidV4Bytes, UuidV4StringFor } from "./types.ts";
-import { bytesToUuidString, isUuidTextCase, isUuidV4String, resolveUuidTextCase } from "./uuid.ts";
+import {
+  bytesToUuidString,
+  formatUuidBytesUnchecked,
+  isUuidTextCase,
+  isUuidV4String,
+  resolveUuidTextCase,
+} from "./uuid.ts";
 
 export { isUuidSlugError } from "./errors.ts";
 export { UuidSlugError };
@@ -110,10 +116,20 @@ export function generatePortableUuidV4<Case extends UuidTextCase = typeof UUID_T
     if (selectedCase instanceof Error) return selectedCase;
     textCase = selectedCase as Case;
   }
-  const bytes = generateOwnedUuidV4Bytes();
-  return bytes instanceof Error
-    ? bytes
-    : (bytesToUuidString(bytes, textCase) as UuidV4StringFor<Case> | UuidSlugError);
+  // Text never exposes its storage, so it draws into the module scratch and skips the new array and
+  // the public converter's input checks; both cost about a quarter of Node's portable call
+  // (bench/PERFORMANCE.md).
+  if (generating) return new UuidSlugError(RNG_UNAVAILABLE, REENTRANT_GENERATION_MESSAGE);
+  generating = true;
+  try {
+    const failed = fillRandomBytes(runtime.fillRandom, random);
+    if (failed) return failed;
+    random[6] = ((random[6] ?? 0) & 0x0f) | 0x40;
+    random[8] = ((random[8] ?? 0) & 0x3f) | 0x80;
+    return formatUuidBytesUnchecked(random, 0, textCase) as UuidV4StringFor<Case>;
+  } finally {
+    generating = false;
+  }
 }
 
 function nativeOrPortableUuidV4<Case extends UuidTextCase>(
