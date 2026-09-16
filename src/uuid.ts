@@ -89,6 +89,14 @@ const uppercaseHexByte = (byte: number) =>
 const HEX_DECODE = new Int8Array(128).fill(-1);
 for (let i = 0; i < 10; i += 1) HEX_DECODE[48 + i] = i;
 for (let i = 0; i < 6; i += 1) HEX_DECODE[97 + i] = 10 + i;
+// Nibbles of both hex cases; 0x100 marks every other ASCII character so OR-ed pairs expose it.
+const HEX_NIBBLES = new Uint16Array(128).fill(0x100);
+for (let i = 0; i < 16; i += 1) {
+  HEX_NIBBLES[HEX.charCodeAt(i)] = i;
+  HEX_NIBBLES[UPPERCASE_HEX.charCodeAt(i)] = i;
+}
+// Caller-owned output must stay unchanged when text fails, so its bytes are decoded here first.
+const decodedUuidScratch = new Uint8Array(16);
 
 const UUID_LENGTH = 36;
 const COMPACT_UUID_LENGTH = 32;
@@ -189,29 +197,47 @@ export function uuidStringToBytes(
   const badRange = out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
   if (badRange) return badRange;
 
+  // One pass decodes and validates: OR-ing every character code and every decoded pair exposes a
+  // non-ASCII or non-hex character after the loop. Validating before a second decoding pass cost
+  // about twice as much on Node and three times on Bun (bench/PERFORMANCE.md). Only failing text
+  // pays a second scan, which locates the offset for the message.
+  const target = out === undefined ? new Uint8Array(16) : decodedUuidScratch;
+  let codes = 0;
+  let pairs = 0;
   for (let byteIndex = 0; byteIndex < 16; byteIndex += 1) {
     const textOffset = hyphenated
       ? textStart + (UUID_BYTE_OFFSETS[byteIndex] as number)
       : byteIndex * 2;
+    const high = uuidText.charCodeAt(textOffset);
+    const low = uuidText.charCodeAt(textOffset + 1);
+    const pair = ((HEX_NIBBLES[high & 127] as number) << 4) | (HEX_NIBBLES[low & 127] as number);
+    codes |= high | low;
+    pairs |= pair;
+    target[byteIndex] = pair;
+  }
+  if (codes < 128 && pairs < 256) {
+    if (out === undefined) return target;
+    out.set(target, offset);
+    return out;
+  }
+  // Name the first invalid pair with the same test as the decoding pass, so the scan stops within
+  // the 16 pairs even if the two ever disagree.
+  let textOffset = 0;
+  for (let byteIndex = 0; byteIndex < 16; byteIndex += 1) {
+    textOffset = hyphenated ? textStart + (UUID_BYTE_OFFSETS[byteIndex] as number) : byteIndex * 2;
+    const high = uuidText.charCodeAt(textOffset);
+    const low = uuidText.charCodeAt(textOffset + 1);
     if (
-      parsedHexValue(uuidText.charCodeAt(textOffset)) < 0 ||
-      parsedHexValue(uuidText.charCodeAt(textOffset + 1)) < 0
+      (high | low) > 127 ||
+      (HEX_NIBBLES[high] as number) > 15 ||
+      (HEX_NIBBLES[low] as number) > 15
     )
-      return new UuidSlugError(
-        INVALID_UUID,
-        `Invalid UUID hex at offset ${textOffset}; use 0-9, a-f, or A-F.`,
-      );
+      break;
   }
-  const target = out ?? new Uint8Array(16);
-  for (let byteIndex = 0; byteIndex < 16; byteIndex += 1) {
-    const textOffset = hyphenated
-      ? textStart + (UUID_BYTE_OFFSETS[byteIndex] as number)
-      : byteIndex * 2;
-    target[offset + byteIndex] =
-      (parsedHexValue(uuidText.charCodeAt(textOffset)) << 4) |
-      parsedHexValue(uuidText.charCodeAt(textOffset + 1));
-  }
-  return target;
+  return new UuidSlugError(
+    INVALID_UUID,
+    `Invalid UUID hex at offset ${textOffset}; use 0-9, a-f, or A-F.`,
+  );
 }
 
 /**

@@ -513,6 +513,28 @@ change, while its byte routes were unchanged. Direct calls restored parity. `ben
 gates zero errors on the codec plain-slug read and on parsed-UUID text and masked conversion; the
 pre-change source fails both rows. Remeasure if engine error construction stops capturing stacks.
 
+### UUID text parsing
+
+UUID text decodes in one pass: a 128-entry nibble table marks non-hex characters with bit 8, and the
+loop ORs every character code and decoded pair so one check after the loop rejects bad text. Caller
+output receives the bytes only after that check, from a module scratch array. Two packed
+`1c6ea69`-to-candidate replays on 2026-09-16 measured these median ratios, with every cited 95%
+interval below 1:
+
+| Runtime | `parse` | `parse.into` | `value.parse.uuid` | `timestamp.uuid` | `masked.encode` |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Node 26.8.2 | 0.49, 0.50 | 0.48, 0.51 | 0.58, 0.60 | 0.61, 0.61 | 0.79, 0.81 |
+| Bun 1.4.2 | 0.29, 0.30 | 0.36, 0.37 | 0.38, 0.42 | 0.43, 0.44 | 0.70, 0.73 |
+| Node 24.21.0 | 0.52, 0.53 | 0.51, 0.54 | 0.56, 0.60 | 0.58, 0.58 | 0.83, 0.86 |
+| Chromium 153 | 0.59, 0.62 | 0.58, 0.59 | 0.62, 0.64 | 0.58, 0.60 | 0.84, unresolved |
+| Deno 2.9.6 | 0.67, 0.68 | 0.49, 0.53 | 0.70, 0.71 | 0.70, 0.72 | 0.83, 0.84 |
+| Node 26.8.2 JITless | 0.34, 0.35 | 0.34, 0.34 | 0.38, 0.39 | 0.42, 0.43 | 0.74, 0.78 |
+
+`plain.encode` was 0.67 on Node 26.8.2, 0.47–0.48 on Bun, and 0.70–0.71 on Chromium; it stayed
+unresolved on Deno and Node 24.21.0, where text-to-base64url conversion skips the byte parser.
+Byte, slug, and masked-slug inputs stayed unresolved everywhere. Recheck if a native hex decoder
+accepts hyphenated text or the accepted UUID spellings change.
+
 ### Canonical UUID text
 
 `uuidToString` and a codec's `uuidToString` return canonical lowercase text unchanged when lowercase
