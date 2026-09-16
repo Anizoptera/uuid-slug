@@ -92,31 +92,113 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
       method on public generators.
 - [x] Replay the value-state and payload changes on Node 24.21.0.
 
-## Native floors
+## Native parity
 
-Simple generation calls must cost no more than the runtime's own UUID and random primitives, or
-negligibly more. Where a call ends in a native primitive, the package overhead above it must be the
-minimum its contract needs; every remaining gap needs a named cause.
+Target (AGENTS.md ruling): default calls match the fastest native path producing the same output
+and beat qualified competitors on every ranked runtime; configured calls beat competitors and exceed
+a native floor only by work it lacks. Each hypothesis names its mechanism, the contract it could
+break, and the result that kills it. Keep only changes that reproduce in packed replays.
 
-- [x] Inventory native UUID and random APIs on every runtime. Probed presence, output form,
-      version and variant bits, UUIDv7 ordering and timestamps under burst, arguments, and buffer
-      type. Native failure behaviour and native entropy caches were not probed; a portable fallback
-      covers thrown or malformed native values, not weaker values that pass validation.
-- [x] Pair simple calls with native floors in the competitor corpus and build that corpus per
-      runtime, so Bun and Deno measure their own adapters.
-- [x] Measure package against floor twice on every runtime, Node 26.8.2 through probes.
-- [x] Reject Bun native UUIDv7 text and slugs: counter overflow encodes timestamps ahead of the
-      clock. Keep validated-once UUIDv4 trust with its defect fixed and trusted calls at each call site.
-- [x] Record floors, remaining gaps, causes, and the unresolved Bun explicit-time byte signal in
-      `bench/PERFORMANCE.md`.
-- [x] Refresh the tracked reports with `bun run bench:results`.
-- [x] Run `bun run check`.
+Status from the 2026-09-16 floors and reports, ns package / floor or rival:
+
+- Missed default: Bun UUIDv4 text 31–36 / 27–32; Bun UUIDv4 slug 53–54 / 50–52; Bun UUIDv7 text
+  75–82 / 39–45 and slug 77–82 / 54–58 (native drifts ahead of the clock); Bun UUIDv7 new bytes
+  44.9 / `uuid` 40.6; Chromium UUIDv4 text 147 / `@lukeed/uuid` 118.
+- Missed configured: Bun UUIDv7 caller bytes 43.5 / `uuid` 37.0; Bun UUIDv4 caller bytes 27.9 /
+  `uuid` 26.1 (native floor 17.5).
+- Unmeasured: every conversion, parse, guard and extraction call against native primitives; every
+  configured generation call against competitor options; Node Current in the tracked reports.
+
+### Instrument first
+
+- [ ] Add Node Current to `bench:results` beside the pinned LTS, so the first-ranked runtime has
+      tracked rows instead of scratch probes.
+- [ ] Add native floor rows for conversions on every runtime where the primitive exists:
+      `plainSlugToUuidBytes` against `Uint8Array.fromBase64(slug, { alphabet: "base64url",
+      lastChunkHandling: "strict" })` plus a length check; `uuidBytesToPlainSlug` against
+      `toBase64({ alphabet: "base64url", omitPadding: true })`; `uuidStringToBytes` against
+      `Uint8Array.fromHex` and `Buffer.from(hex, "hex")` over dehyphenated text; `bytesToUuidString`
+      against `toHex` or `Buffer` hex plus hyphens; `uuidStringToPlainSlug` and
+      `plainSlugToUuidString` against those pairs; `isUuidString` against a canonical regex;
+      `extractUuidV7UnixMs(text)` against `parseInt` over the 12 timestamp digits.
+- [ ] Add competitor rows for conversions (`uuid` `parse`, `stringify`, `validate`) and census UUID
+      slug packages (search the registry for base64url UUID encoders such as `slugid` and
+      `short-uuid`); rank only those producing the same 128-bit lossless form.
+- [ ] Add configured-call competitor rows: `uuid.v7({ msecs })` against `{ at }`, stateful
+      generator objects against `createUuidV7Generator`, and caller-buffer rows already present.
+- [ ] Make the generated report print package / floor and package / best rival per call and
+      runtime with a parity verdict, so this status list is produced instead of copied.
+- [ ] Replace `fastv7`'s rejection reason with its measured clock drift (47–88 ms ahead after a
+      2M-call burst); `@kripod/uuidv7` shares its 62-random-bit layout unrejected, so the bit count
+      cannot be the disqualifier. Add the burst drift probe as a bench row whatever the guarantee
+      ruling decides.
 - [ ] Maintainer ruling: make "current-time UUIDv7 generation never encodes a timestamp ahead of the
       clock unless the clock moved backwards under the preserve policy" a README guarantee with a
       burst test on Node and Bun, a bench-only row, or neither. Asked 2026-09-16 without an answer;
       the test stays unwritten until ruled.
-- [ ] Find why Bun UUIDv7 bytes trail `uuid` (package 44–46 ns new and 44–45 ns caller-owned against
-      40–41 and 37 in three competitor runs) and UUIDv4 caller-buffer writes trail it (28–29 against
-      26–27). Not the entropy source: Bun Web Crypto and `node:crypto` cost the same per byte on an
-      8 KiB pool, and a 256-byte pool costs more. Locate the cost inside the portable generator and
-      pool copy before proposing a change.
+
+### Generation hypotheses
+
+- [ ] Bun UUIDv7 text and slug: call `Bun.randomUUIDv7()` or `("base64url")` and overwrite the
+      timestamp (first 13 text characters, or the first 8 slug characters, which hold exactly 48
+      bits) with the package clock, cached per millisecond. Breaks if Bun's 62 remaining bits are
+      not fresh CSPRNG output per call (audit with `bench/entropy.ts`), if the 12-bit counter plus
+      62 random bits weakens the cross-process collision margin `docs/security.md` states against
+      the portable 42-bit random-start sequence (needs a ruling if it does), or if patching costs
+      more than 79 ns text or 78 ns slug. Rejected rebuilding: passing `Date.now()` still drifts.
+- [ ] UUIDv7 draw on Bun (about 42 ns against 22 ns for UUIDv4 bytes): ablate the reentrancy
+      `try`, `readClock` wrapper, per-call clock validation for the built-in `Date.now`, rollback
+      checks the module generator never enables, the four-byte `randomTail` intermediate copy, and
+      rewriting unchanged timestamp bytes within one millisecond. Candidate: a module-level
+      generator specialized for `Date.now` without rollback or fraction options. Breaks
+      reentrancy, clock-failure, or sequence-exhaustion tests; mutate each removed guard. Not the
+      entropy source: Bun Web Crypto and `node:crypto` cost the same per byte on an 8 KiB pool, and
+      a 256-byte pool costs more.
+- [ ] Caller-buffer bytes (Bun UUIDv4 27.9 / 17.5, UUIDv7 43.5 / `uuid` 37.0): copy from the pool
+      straight into the caller range after the refill succeeds, removing the private copy. Breaks
+      atomicity only if a refill can fail after caller bytes change; prove with the transactional
+      buffer tests and entropy-failure injection.
+- [ ] Bun UUIDv4 text (4–7 ns over native): ablate the default parameter plus `isUuidTextCase`
+      check, the trusted-identity comparison, and the `try` separately; try an argument-count fast
+      path. Import-time validation is rejected: it draws entropy before a heap snapshot.
+- [ ] Bun UUIDv4 slug (2–4 ns over `toBase64` on Web Crypto bytes): compare the Latin-1 slug writer
+      with native `toBase64` over pooled bytes, results consumed.
+- [ ] Node Current UUIDv4 text: native `randomUUID` costs 139–152 ns while portable UUIDv7 text
+      costs 108; measure portable UUIDv4 text (pooled draw plus Latin-1 formatting) on Node 26.8.2
+      and 24.21.0. If portable wins only on some versions, find a capability probe that selects it
+      without version sniffing.
+- [ ] Node UUIDv7 slug 137 ns costs more than UUIDv7 text 108 ns although it writes 22 characters
+      instead of 36: profile the slug writer against native `toBase64` and `Buffer` base64url.
+- [ ] New 16-byte arrays: Deno UUIDv4 bytes cost 159 ns against 37 ns into a caller buffer, Node
+      47–51 against 34–38. Compare `new Uint8Array(16)`, `pool.slice`, and
+      `new Uint8Array(new ArrayBuffer(16))` per runtime. Views onto a shared slab are rejected:
+      their `.buffer` exposes other issued IDs.
+- [ ] Chromium UUIDv4 text 147 / `@lukeed/uuid` 118 and UUIDv7 slug 177 against text 137: format
+      directly from the pool without the private copy, and compare byte-pair concatenation with
+      `toHex` plus hyphens under a consuming sink.
+- [ ] Deno slugs (UUIDv4 207 ns, UUIDv7 251 ns against 32 and 116 ns text): check which writer
+      Deno selects and measure native `toBase64`.
+- [ ] Uppercase text on every writer: compare the uppercase formatter with lowercase output plus
+      `toUpperCase()`; UUIDv4 native text already uses the latter.
+- [ ] `generateUuidV7WithPlainSlug` and `generateUuidV7Value`: measure against separate text, slug,
+      and byte calls; each must cost less than the calls a consumer would otherwise combine.
+- [ ] `{ at }` and `{ generator }` calls (Node 189 ns text with `at`, Bun 92): compare with
+      `uuid.v7({ msecs })` and the stateful generator competitors once their rows exist.
+
+### Conversion hypotheses (after floor rows exist)
+
+- [ ] Plain base64url slug to bytes and back: adopt native `fromBase64` or `toBase64` wherever it
+      beats the package decoder with length, padding, and trailing-bit checks kept.
+- [ ] UUID text to bytes and back: adopt `fromHex`, `toHex`, or `Buffer` hex wherever they beat the
+      one-pass parser and Latin-1 formatter with hyphen positions and mixed case still accepted.
+- [ ] Guards and timestamp extraction: close the `uuidv7-js` text extraction gap (1.12–1.32 on
+      Node, Bun, and Deno); find its mechanism before copying it.
+
+### Closed
+
+- [x] Inventory native UUID and random APIs, pair generation calls with floors in a per-runtime
+      corpus, and measure twice on every runtime.
+- [x] Reject Bun native UUIDv7 text and slugs as published values: counter overflow encodes
+      timestamps ahead of the clock. Keep validated-once UUIDv4 trust.
+- [x] Split the Bun UUIDv7 text cost: about 42 ns draw and 37 ns Latin-1 formatting; `toHex`,
+      `Buffer` `hexSlice`, and byte-table concatenation cost 86–94 ns on Bun.
