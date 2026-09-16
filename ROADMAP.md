@@ -60,9 +60,10 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
 - A packed compare can fail while packing when Parcel crashes (SIGSEGV) in the consumer-graph
   check; rerun that replay.
 - Retained (bench/PERFORMANCE.md): 27-character masked base32hex slugs use fixed formulas (encode
-  0.48-0.74 except Chromium 0.94); calls passing a package generator skip re-reading it, and text,
-  slug, and masked writers skip copying its bytes (0.72-0.95 everywhere; generator creation
-  55-120 ns slower, once).
+  0.48-0.74 except Chromium 0.94); a package generator passed as `{ generator }` draws from its
+  sequence, recognized by a private-field brand (bytes 0.70-0.81, slug 0.84-0.93, creation 0.70-0.88);
+  caller-built generators skip the byte copy in text and slug writers but read 1.05 slower on
+  Chromium and once 1.08 on Node 24.21.0.
 - Rejected: calling `Buffer#latin1Slice` directly instead of `toString("latin1")` saved only 2-7 ns
   on Node 26.8.2, Bun, and Deno through an undocumented method.
 
