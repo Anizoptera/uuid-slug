@@ -22,12 +22,12 @@ Against the fastest package: leads 5, trails 1, unresolved 1. Trails on `v7.time
 | Group | Package route | Fastest package | Ratio | Verdict | Ratio to platform |
 | --- | --- | --- | ---: | --- | ---: |
 | `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuidv7.v4.bytes.allocate` | 0.12 | leads | 0.08 |
-| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.53 | leads | 0.07 |
-| `v4.text.secure` | `package.v4.text.native` | `uniku.v4.text` | 1.00 | unresolved | 1.03 |
+| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.54 | leads | 0.07 |
+| `v4.text.secure` | `package.v4.text.native` | `crypto-randomuuid.v4.text` | 1.05 | unresolved | 1.03 |
 | `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 0.63 | leads |  |
-| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.69 | leads |  |
-| `v7.text.secure` | `package.v7.text.portable` | `uniku.v7.text` | 0.57 | leads | 0.73 |
-| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.29 | trails |  |
+| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.68 | leads |  |
+| `v7.text.secure` | `package.v7.text.portable` | `uniku.v7.text` | 0.58 | leads | 0.74 |
+| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.28 | trails |  |
 
 ## bun 1.4.2
 
@@ -35,45 +35,45 @@ Against the fastest package: leads 2, trails 5, unresolved 0. Trails on `v4.byte
 
 | Group | Package route | Fastest package | Ratio | Verdict | Ratio to platform |
 | --- | --- | --- | ---: | --- | ---: |
-| `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuid.v4.bytes.allocate` | 0.75 | leads | 1.05 |
-| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uuid.v4.bytes.into` | 1.10 | trails | 1.66 |
+| `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuid.v4.bytes.allocate` | 0.73 | leads | 1.03 |
+| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uuid.v4.bytes.into` | 1.07 | trails | 1.60 |
 | `v4.slug.base64url.secure` | `package.v4.slug.base64url` | none | |  | 1.07 |
-| `v4.text.secure` | `package.v4.text.native` | `crypto-randomuuid.v4.text` | 1.25 | trails | 1.15 |
-| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuid.v7.bytes.allocate` | 1.13 | trails | 0.91 |
-| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uuid.v7.bytes.into` | 1.22 | trails |  |
-| `v7.slug.base64url.secure` | `package.v7.slug.base64url` | none | |  | 1.07 |
-| `v7.text.secure` | `package.v7.text.default` | `uuid.v7.text.default` | 0.27 | leads | 1.07 |
-| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.41 | trails |  |
+| `v4.text.secure` | `package.v4.text.native` | `crypto-randomuuid.v4.text` | 1.26 | trails | 1.15 |
+| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuid.v7.bytes.allocate` | 1.11 | trails | 0.87 |
+| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uuid.v7.bytes.into` | 1.18 | trails |  |
+| `v7.slug.base64url.secure` | `package.v7.slug.base64url` | none | |  | 1.39 |
+| `v7.text.secure` | `package.v7.text.portable` | `uuid.v7.text.default` | 0.46 | leads | 1.82 |
+| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.32 | trails |  |
 
 ## deno 2.9.6
 
-Against the fastest package: leads 3, trails 1, unresolved 3. Trails on `v7.timestamp.text`.
+Against the fastest package: leads 4, trails 1, unresolved 2. Trails on `v7.timestamp.text`.
 
 | Group | Package route | Fastest package | Ratio | Verdict | Ratio to platform |
 | --- | --- | --- | ---: | --- | ---: |
-| `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuid.v4.bytes.allocate` | 0.88 | leads | 0.89 |
-| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.83 | leads | 0.60 |
-| `v4.slug.base64url.secure` | `package.v4.slug.base64url` | none | |  | 0.78 |
-| `v4.text.secure` | `package.v4.text.native` | `uniku.v4.text` | 0.94 | unresolved | 0.98 |
-| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 1.01 | unresolved |  |
-| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 1.01 | unresolved |  |
-| `v7.text.secure` | `package.v7.text.portable` | `uniku.v7.text` | 0.67 | leads |  |
-| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.18 | trails |  |
+| `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuid.v4.bytes.allocate` | 0.87 | unresolved | 0.87 |
+| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.85 | leads | 0.62 |
+| `v4.slug.base64url.secure` | `package.v4.slug.base64url` | none | |  | 0.79 |
+| `v4.text.secure` | `package.v4.text.native` | `uniku.v4.text` | 0.94 | leads | 0.99 |
+| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 1.09 | unresolved |  |
+| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.92 | leads |  |
+| `v7.text.secure` | `package.v7.text.portable` | `uniku.v7.text` | 0.72 | leads |  |
+| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.12 | trails |  |
 
 ## chromium
 
-Against the fastest package: leads 5, trails 1, unresolved 1. Trails on `v4.text.secure`.
+Against the fastest package: leads 5, trails 0, unresolved 2.
 
 | Group | Package route | Fastest package | Ratio | Verdict | Ratio to platform |
 | --- | --- | --- | ---: | --- | ---: |
 | `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuid.v4.bytes.allocate` | 0.15 | leads | 0.10 |
-| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.72 | leads | 0.12 |
+| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.73 | leads | 0.12 |
 | `v4.slug.base64url.secure` | `package.v4.slug.base64url` | none | |  | 0.23 |
-| `v4.text.secure` | `package.v4.text.native` | `lukeed.v4.text.secure` | 1.27 | trails | 0.27 |
-| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 0.83 | leads |  |
-| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.90 | leads |  |
-| `v7.text.secure` | `package.v7.text.portable` | `uniku.v7.text` | 0.90 | leads |  |
-| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.02 | unresolved |  |
+| `v4.text.secure` | `package.v4.text.native` | `lukeed.v4.text.secure` | 1.24 | unresolved | 0.26 |
+| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 0.87 | leads |  |
+| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.89 | leads |  |
+| `v7.text.secure` | `package.v7.text.portable` | `uniku.v7.text` | 0.87 | leads |  |
+| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 0.99 | unresolved |  |
 
 ## Timed but not ranked
 

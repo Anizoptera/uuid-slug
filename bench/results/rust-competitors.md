@@ -13,43 +13,43 @@ direction, not digits.
 
 | Call | Mode | UUID | Median ns/call | Observed range |
 | --- | --- | ---: | ---: | ---: |
-| `fast-uuid-v7.v7.u128` | scalar | v7 | 3.36 | 3.25–3.53 |
-| `hyperuuid.v4.value` | scalar | v4 | 983.60 | 979.32–1012.26 |
-| `hyperuuid.v7.caller-batch` | batch 256 | v7 | 24.87 | 24.50–25.60 |
-| `hyperuuid.v7.global` | 4 threads | v7 | 288.34 | 163.87–349.29 |
-| `hyperuuid.v7.value` | scalar | v7 | 870.16 | 855.11–881.14 |
-| `id-forge.v4.value` | scalar | v4 | 3.25 | 3.20–3.52 |
-| `id-forge.v7.value` | scalar | v7 | 23.91 | 23.09–24.34 |
-| `leachuuid7.v7.value` | scalar | v7 | 35.73 | 34.98–36.38 |
-| `nativelite-uid.v7.global` | 4 threads | v7 | 82.02 | 77.06–97.56 |
-| `nativelite-uid.v7.value` | scalar | v7 | 28.72 | 28.05–29.47 |
-| `nexus-id.v4.value` | scalar | v4 | 5.40 | 5.25–5.59 |
-| `nexus-id.v7.value` | scalar | v7 | 9.27 | 8.89–14.78 |
-| `package.v4.base64url` | scalar | v4 | 1011.54 | 996.41–1022.63 |
-| `package.v4.value` | scalar | v4 | 985.19 | 977.01–1002.90 |
-| `package.v7.base64url` | scalar | v7 | 856.75 | 851.27–866.21 |
-| `package.v7.caller-batch` | batch 256 | v7 | 832.87 | 829.91–888.27 |
-| `package.v7.per-thread` | 4 threads | v7 | 258.44 | 196.29–348.78 |
-| `package.v7.value` | scalar | v7 | 867.00 | 859.50–916.01 |
-| `philiprehberger-id-gen.v7.value` | scalar | v7 | 22.64 | 21.60–23.96 |
-| `qubit-id.v4.value` | scalar | v4 | 985.20 | 977.96–1018.32 |
-| `rivid-core.v7.bytes` | scalar | v7 | 30.15 | 28.92–30.81 |
-| `rivid-core.v7.caller-batch` | batch 256 | v7 | 13.50 | 13.28–14.26 |
-| `rivid-core.v7.thread-local` | 4 threads | v7 | 7.72 | 7.55–8.72 |
-| `rok-ids.v7.value` | scalar | v7 | 32.70 | 31.26–34.18 |
-| `uniqer-rs.v4.text` | scalar | v4 | 31.96 | 30.61–35.45 |
-| `uniqer-rs.v7.text` | scalar | v7 | 50.47 | 47.87–51.53 |
-| `uuid-extra.v4.base64url` | scalar | v4 | 31.52 | 30.66–32.76 |
-| `uuid-extra.v7.base64url` | scalar | v7 | 48.32 | 47.11–49.31 |
-| `uuid-lite.v4.value` | scalar | v4 | 990.99 | 979.45–1022.69 |
-| `uuid-lite2.v4.value` | scalar | v4 | 986.58 | 978.48–1009.11 |
-| `uuid.v4.value` | scalar | v4 | 10.42 | 10.34–10.73 |
-| `uuid.v7.value` | scalar | v7 | 34.52 | 33.52–36.14 |
-| `uuid64rs.v4.base64` | scalar | v4 | 1389.28 | 1363.04–1429.84 |
-| `uuid7.v7.global` | 4 threads | v7 | 93.58 | 90.04–97.89 |
-| `uuid7.v7.value` | scalar | v7 | 31.30 | 30.76–32.15 |
-| `uuidv4.v4.text` | scalar | v4 | 244.83 | 240.45–254.95 |
-| `uuidv7.v7.bytes` | scalar | v7 | 862.75 | 852.65–1045.39 |
+| `fast-uuid-v7.v7.u128` | scalar | v7 | 3.34 | 3.25–3.61 |
+| `hyperuuid.v4.value` | scalar | v4 | 985.83 | 978.75–1008.19 |
+| `hyperuuid.v7.caller-batch` | batch 256 | v7 | 25.13 | 24.64–25.85 |
+| `hyperuuid.v7.global` | 4 threads | v7 | 266.19 | 189.65–324.89 |
+| `hyperuuid.v7.value` | scalar | v7 | 861.30 | 853.14–895.29 |
+| `id-forge.v4.value` | scalar | v4 | 3.32 | 3.26–3.50 |
+| `id-forge.v7.value` | scalar | v7 | 23.50 | 22.82–25.71 |
+| `leachuuid7.v7.value` | scalar | v7 | 35.29 | 34.73–36.92 |
+| `nativelite-uid.v7.global` | 4 threads | v7 | 84.40 | 76.63–91.92 |
+| `nativelite-uid.v7.value` | scalar | v7 | 28.47 | 27.71–29.74 |
+| `nexus-id.v4.value` | scalar | v4 | 5.50 | 5.26–7.90 |
+| `nexus-id.v7.value` | scalar | v7 | 9.22 | 9.11–9.62 |
+| `package.v4.base64url` | scalar | v4 | 1006.90 | 998.83–1029.79 |
+| `package.v4.value` | scalar | v4 | 983.98 | 975.14–1155.16 |
+| `package.v7.base64url` | scalar | v7 | 856.01 | 849.58–866.03 |
+| `package.v7.caller-batch` | batch 256 | v7 | 835.16 | 828.48–839.06 |
+| `package.v7.per-thread` | 4 threads | v7 | 273.38 | 192.91–348.11 |
+| `package.v7.value` | scalar | v7 | 862.60 | 855.89–880.02 |
+| `philiprehberger-id-gen.v7.value` | scalar | v7 | 22.03 | 21.64–22.89 |
+| `qubit-id.v4.value` | scalar | v4 | 981.93 | 974.53–986.83 |
+| `rivid-core.v7.bytes` | scalar | v7 | 29.38 | 28.72–29.92 |
+| `rivid-core.v7.caller-batch` | batch 256 | v7 | 13.51 | 13.33–14.17 |
+| `rivid-core.v7.thread-local` | 4 threads | v7 | 7.94 | 7.59–10.18 |
+| `rok-ids.v7.value` | scalar | v7 | 32.35 | 31.54–32.79 |
+| `uniqer-rs.v4.text` | scalar | v4 | 32.72 | 30.68–37.74 |
+| `uniqer-rs.v7.text` | scalar | v7 | 49.08 | 48.01–50.97 |
+| `uuid-extra.v4.base64url` | scalar | v4 | 31.38 | 30.70–32.24 |
+| `uuid-extra.v7.base64url` | scalar | v7 | 47.94 | 47.51–49.48 |
+| `uuid-lite.v4.value` | scalar | v4 | 991.80 | 978.23–1135.35 |
+| `uuid-lite2.v4.value` | scalar | v4 | 986.84 | 980.78–1153.91 |
+| `uuid.v4.value` | scalar | v4 | 10.55 | 10.32–13.64 |
+| `uuid.v7.value` | scalar | v7 | 34.81 | 33.52–46.85 |
+| `uuid64rs.v4.base64` | scalar | v4 | 1386.47 | 1352.26–1734.49 |
+| `uuid7.v7.global` | 4 threads | v7 | 94.62 | 87.94–98.84 |
+| `uuid7.v7.value` | scalar | v7 | 30.93 | 30.09–32.59 |
+| `uuidv4.v4.text` | scalar | v4 | 247.56 | 242.03–259.44 |
+| `uuidv7.v7.bytes` | scalar | v7 | 857.84 | 851.39–928.54 |
 
 ## Compile targets
 
