@@ -381,27 +381,42 @@ export function failedFallback(
   });
 }
 
+/** The native function whose values currently skip validation at one call site. */
+export interface NativeTrust {
+  trusted: ((argument: never) => string) | undefined;
+}
+
 /**
- * Publish a valid native result without portable work; otherwise run the fallback exactly once.
- * Validation costs one predicate but prevents a fast host shortcut from weakening package output,
- * while aggregating dual failures preserves both causes without exception-driven success control.
+ * Publish native text, falling back to the portable generator exactly once when the native call
+ * throws or its value fails `accepts`. A function whose own value passed `accepts` is trusted by
+ * identity, so later calls skip the predicate: per-call validation made native generation slower
+ * than the portable generators it replaces (bench/PERFORMANCE.md). Only an accepted native value
+ * grants trust, so a rejected adapter stays validated on every call; replacing the function
+ * validates the replacement. Revalidate every call if a host method can return malformed values
+ * intermittently without changing identity. Dual failures keep both causes.
  */
-export function nativeOrFallback<Native, Result>(
-  native: () => unknown,
-  accepts: (value: unknown) => value is Native,
-  use: (value: Native) => Result,
-  fallback: () => Result | UuidSlugError,
+export function trustedNativeOrFallback<NativeArgument, FallbackArgument>(
+  trust: NativeTrust,
+  native: (argument: NativeArgument) => string,
+  nativeArgument: NativeArgument,
+  accepts: (value: unknown) => boolean,
+  fallback: (argument: FallbackArgument) => string | UuidSlugError,
+  fallbackArgument: FallbackArgument,
   operation: string,
-): Result | UuidSlugError {
+): string | UuidSlugError {
   let nativeCause: unknown;
   try {
-    const value = native();
-    if (accepts(value)) return use(value);
+    const value = native(nativeArgument);
+    if (native === trust.trusted) return value;
+    if (accepts(value)) {
+      trust.trusted = native;
+      return value;
+    }
     nativeCause = new TypeError(`Native ${operation} returned an invalid value.`);
   } catch (cause) {
     nativeCause = cause;
   }
-  const result = fallback();
+  const result = fallback(fallbackArgument);
   return result instanceof Error
     ? failedFallback(nativeCause, result, `Native and portable ${operation} failed.`)
     : result;

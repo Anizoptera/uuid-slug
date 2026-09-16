@@ -4,15 +4,15 @@ import { runtime } from "#runtime";
 import {
   checkByteRange,
   checkRange,
-  failedFallback,
   fillRandomBytes,
   generatedOrThrow,
   INVALID_OPTIONS,
   isError,
   RNG_UNAVAILABLE,
-  nativeOrFallback,
+  trustedNativeOrFallback,
   UuidSlugError,
 } from "./errors.ts";
+import type { NativeTrust } from "./errors.ts";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
 import type { UuidRandomFill, UuidTextCase, UuidV4Bytes, UuidV4StringFor } from "./types.ts";
 import { bytesToUuidString, isUuidTextCase, isUuidV4String, resolveUuidTextCase } from "./uuid.ts";
@@ -32,7 +32,7 @@ const REENTRANT_GENERATION_MESSAGE =
  */
 const random = new Uint8Array(16);
 let generating = false;
-let trustedNativeUuidV4: (() => string) | undefined;
+const nativeUuidV4Trust: NativeTrust = { trusted: undefined };
 
 /**
  * Generate UUIDv4 bytes with platform randomness in a new plain 16-byte `Uint8Array`.
@@ -122,31 +122,18 @@ function nativeOrPortableUuidV4<Case extends UuidTextCase>(
   // Recheck each output form when host APIs change; bench/PERFORMANCE.md owns the evidence.
   const native = runtime.uuidV4;
   if (!native) return generatePortableUuidV4(textCase);
-  // Validate a new adapter once, then trust that stable host contract on its hot path. Retaining
-  // per-call validation made native UUIDv4 slower than plain-slug wrappers. Function identity keeps
-  // injected or replaced adapters behind validation; revalidate every call if a host method can
-  // return malformed values intermittently without changing identity.
-  if (native !== trustedNativeUuidV4) {
-    const result = nativeOrFallback(
-      native,
-      isUuidV4String,
-      (value) =>
-        (textCase === UUID_TEXT_UPPERCASE ? value.toUpperCase() : value) as UuidV4StringFor<Case>,
-      () => generatePortableUuidV4(textCase),
-      "UUIDv4 generation",
-    );
-    if (!(result instanceof Error)) trustedNativeUuidV4 = native;
-    return result;
-  }
-  try {
-    const uuid = native();
-    return (textCase === UUID_TEXT_UPPERCASE ? uuid.toUpperCase() : uuid) as UuidV4StringFor<Case>;
-  } catch (nativeCause) {
-    const fallback = generatePortableUuidV4(textCase);
-    return fallback instanceof Error
-      ? failedFallback(nativeCause, fallback, "Native and portable UUIDv4 generation failed.")
-      : fallback;
-  }
+  const uuid = trustedNativeOrFallback<undefined, UuidTextCase>(
+    nativeUuidV4Trust,
+    native,
+    undefined,
+    isUuidV4String,
+    generatePortableUuidV4,
+    UUID_TEXT_LOWERCASE,
+    "UUIDv4 generation",
+  );
+  return (
+    textCase === UUID_TEXT_UPPERCASE && typeof uuid === "string" ? uuid.toUpperCase() : uuid
+  ) as UuidV4StringFor<Case> | UuidSlugError;
 }
 
 /**
