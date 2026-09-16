@@ -746,8 +746,10 @@ Every row is faster in both replays on Node, Bun, Chromium, and Deno. On JITless
 parsing and generation are faster in both, byte parsing in one, and masked parsing is unresolved.
 Conversions from an existing value were no slower in both replays, except Deno
 `codec.uuidToMaskedSlug(value)`, which was 7% slower in one replay and unresolved in the other.
-Node 24.21.0 was not replayed. `bench/resources.ts` allows one buffer for `parseUuid(text)`; the
-`WeakMap` source used two.
+Two six-round Node 24.21.0 replays compared `281dc5e` with `80d3722` and measured median ratios of
+0.54 and 0.58 for `parseUuid(text)`, 0.41 and 0.42 for a plain slug, 0.51 and 0.65 for bytes, 0.60 and
+0.65 for a masked slug with its codec, and 0.47 and 0.48 for `generateUuidV7Value()`.
+`bench/resources.ts` allows one buffer for `parseUuid(text)`; the `WeakMap` source used two.
 
 ### UUIDv7 payload assembly
 
@@ -767,6 +769,8 @@ Two six-round packed replays on 2026-09-16 compared `43c2ef1` with `634d5a5`, la
 
 Both rows are faster in both replays on every runtime. Timestamp extraction and value formatting
 were not slower in both replays on any runtime.
+Two six-round Node 24.21.0 replays compared `43c2ef1` with `634d5a5` and measured median ratios of 0.65 and
+0.65 from text and 0.59 and 0.59 from bytes; timestamp extraction read 0.99 and 0.98.
 
 ### Runtime capability review
 

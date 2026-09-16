@@ -64,6 +64,12 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
   Chromium and once 1.08 on Node 24.21.0.
 - Rejected: calling `Buffer#latin1Slice` directly instead of `toString("latin1")` saved only 2-7 ns
   on Node 26.8.2, Bun, and Deno through an undocumented method.
+- Rejected: a character loop for the canonical lowercase UUID text guard took 135 ns on Node 26.8.2
+  and 64 ns on Bun against 72 and 24 ns for the current regular expression, results consumed.
+- Re-ranked single calls, Node 26.8.2 then Bun: masked generation with a generator 355 and 193 ns,
+  masked encode 286 and 185, `codec.uuidToString(plain slug)` 284 and 187, masked decode 235 and
+  168, `{ at }` text 189 and 92, plain slug generation 165 and 95; masked costs sit on the frozen
+  Feistel floor and plain reads try the masked decode first.
 
 ## Tasks
 
@@ -76,12 +82,12 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
 - [x] Record retained results in `bench/PERFORMANCE.md`; run `bun run check`.
 - [x] Measure `extractUuidV7Payload(text)` against the timestamp route and remove avoidable work.
 - [x] Retain the one-pass UUID text parser after packed replays on every runtime.
-- [ ] Redo the canonical-text guard screen (regex against a character loop) with results consumed.
+- [x] Redo the canonical-text guard screen (regex against a character loop) with results consumed.
 - [x] Find the option-object cost in `{ at }` and `{ generator }` generation calls.
 - [x] Profile `masked.generate`, `masked.encode`, and `masked.decode` on Node 26.8.2 and Bun;
       screen the candidates together, then replay the survivors on every runtime.
-- [ ] Re-rank the primary single-call rows on Node 26.8.2 and Bun after the retained changes.
-- [ ] Run `bun run check` before final delivery.
+- [x] Re-rank the primary single-call rows on Node 26.8.2 and Bun after the retained changes.
+- [x] Run `bun run check` before final delivery.
 - [x] Remove the second option read from keyless `generateUuidV7({ at })` without exposing a new
       method on public generators.
-- [ ] Replay the value-state and payload changes on Node 24.21.0.
+- [x] Replay the value-state and payload changes on Node 24.21.0.
