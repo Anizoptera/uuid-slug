@@ -4,7 +4,7 @@ import { generatedOrThrow } from "./errors.ts";
 import type { UuidSlugError } from "./errors.ts";
 import { BASE64URL_NAME, encode } from "./alphabet.ts";
 import type { PlainUuidV4Slug } from "./types.ts";
-import { generateOwnedUuidV4Bytes } from "./v4.ts";
+import { drawUuidV4Scratch } from "./v4.ts";
 import { resolveSlugAlphabet } from "./slug.ts";
 import type { SlugAlphabet } from "./slug.ts";
 
@@ -23,5 +23,5 @@ export function generatePlainUuidV4Slug(
   // Only an untyped call reaches an unknown alphabet; that misuse stays an error value.
   const resolved = resolveSlugAlphabet(alphabet);
   if (resolved instanceof Error) return resolved;
-  return encode(generatedOrThrow(generateOwnedUuidV4Bytes()), resolved) as PlainUuidV4Slug;
+  return encode(generatedOrThrow(drawUuidV4Scratch()), resolved) as PlainUuidV4Slug;
 }

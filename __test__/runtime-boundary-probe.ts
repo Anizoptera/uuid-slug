@@ -53,6 +53,7 @@ function thrownBy(call: () => unknown): unknown {
 
 const drawUuidV4Text = () => generateUuidV4();
 const drawOwnedUuidV4Bytes = () => generateUuidV4Bytes();
+const drawUuidV4Slug = () => generatePlainUuidV4Slug();
 const drawCallerUuidV4Bytes = () => {
   const output = new Uint8Array(20);
   const result = generateUuidV4Bytes(output, 4);
@@ -578,6 +579,7 @@ export const runtimeBoundaryCases = [
       const originalV4 = runtime.uuidV4;
       const expectedText = "11111111-1111-4111-9111-111111111111";
       const expectedBytes = Array.from(unwrap(uuidStringToBytes(expectedText)));
+      const expectedSlug = unwrap(uuidStringToPlainSlug(expectedText));
       // Only the outermost draw reenters. An unrefused nested draw fills different bytes and returns,
       // so the outer result or the missing refusal fails here instead of recursing until the stack
       // overflows into an entropy failure that looks like the refusal.
@@ -595,10 +597,16 @@ export const runtimeBoundaryCases = [
         return result;
       };
       try {
-        // Portable text and caller-buffer writes share one module scratch array.
+        // Portable text, slugs, and caller-buffer writes share one module scratch array.
         delete runtime.uuidV4;
-        for (const inner of [drawUuidV4Text, drawOwnedUuidV4Bytes, drawCallerUuidV4Bytes]) {
+        for (const inner of [
+          drawUuidV4Text,
+          drawUuidV4Slug,
+          drawOwnedUuidV4Bytes,
+          drawCallerUuidV4Bytes,
+        ]) {
           assert.equal(reentered(drawUuidV4Text, inner), expectedText);
+          assert.equal(reentered(drawUuidV4Slug, inner), expectedSlug);
           assert.deepEqual(Array.from(reentered(drawOwnedUuidV4Bytes, inner)), expectedBytes);
           assert.deepEqual(Array.from(reentered(drawCallerUuidV4Bytes, inner)), expectedBytes);
         }

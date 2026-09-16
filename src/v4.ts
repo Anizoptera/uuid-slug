@@ -116,9 +116,19 @@ export function generatePortableUuidV4<Case extends UuidTextCase = typeof UUID_T
     if (selectedCase instanceof Error) return selectedCase;
     textCase = selectedCase as Case;
   }
-  // Text never exposes its storage, so it draws into the module scratch and skips the new array and
-  // the public converter's input checks; both cost about a quarter of Node's portable call
-  // (bench/PERFORMANCE.md).
+  const bytes = drawUuidV4Scratch();
+  return bytes instanceof Error
+    ? bytes
+    : (formatUuidBytesUnchecked(bytes, 0, textCase) as UuidV4StringFor<Case>);
+}
+
+/**
+ * Fill the module scratch with UUIDv4 bytes for a writer that reads them before its next draw. Text
+ * and slug writers never expose the scratch, so they skip a new array and the public converters'
+ * input checks, which cost about a third of Node's portable text call (bench/PERFORMANCE.md).
+ * Encoding cannot draw entropy, so the scratch cannot change between this return and the read.
+ */
+export function drawUuidV4Scratch(): Uint8Array | UuidSlugError {
   if (generating) return new UuidSlugError(RNG_UNAVAILABLE, REENTRANT_GENERATION_MESSAGE);
   generating = true;
   try {
@@ -126,7 +136,7 @@ export function generatePortableUuidV4<Case extends UuidTextCase = typeof UUID_T
     if (failed) return failed;
     random[6] = ((random[6] ?? 0) & 0x0f) | 0x40;
     random[8] = ((random[8] ?? 0) & 0x3f) | 0x80;
-    return formatUuidBytesUnchecked(random, 0, textCase) as UuidV4StringFor<Case>;
+    return random;
   } finally {
     generating = false;
   }
