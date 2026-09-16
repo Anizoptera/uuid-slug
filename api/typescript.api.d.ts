@@ -563,6 +563,27 @@ export declare interface UuidV7Generator {
     this: void,
     options: Omit<GenerateUuidV7BytesIntoOptions<Output>, "generator">,
   ): Output | UuidSlugError;
+  generatePlainUuidV7Slug(
+    this: void,
+    alphabetOrOptions?: SlugAlphabet | Omit<GeneratePlainUuidV7SlugOptions, "generator">,
+  ): PlainUuidV7Slug | UuidSlugError;
+  generateUuidV7WithPlainSlug(
+    this: void,
+    alphabet?: SlugAlphabet,
+  ): GeneratedUuidV7<PlainUuidV7Slug> | UuidSlugError;
+  generateUuidV7WithPlainSlug<Case extends UuidTextCase>(
+    this: void,
+    textCase: Case,
+  ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
+  generateUuidV7WithPlainSlug<Case extends UuidTextCase>(
+    this: void,
+    alphabet: SlugAlphabet,
+    textCase: Case,
+  ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
+  generateUuidV7WithPlainSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    this: void,
+    options: Omit<GenerateUuidV7WithPlainSlugOptions<Case>, "generator">,
+  ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
 }
 export declare interface UuidV7GeneratorOptions {
   readonly readUnixMs?: () => number;

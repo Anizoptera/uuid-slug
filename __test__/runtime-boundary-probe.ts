@@ -39,7 +39,6 @@ import {
 } from "../src/index";
 import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
 import { createUuidV7MaskingCodecWithGenerator } from "../src/masking-codec";
-import type { UuidV7Generator } from "../src/types";
 import { NIL_TEST_SENTINEL } from "./sentinel-fixtures";
 
 /** Capture what a call throws; a call that returns instead fails the probe. */
@@ -446,15 +445,9 @@ export const runtimeBoundaryCases = [
       ) as UuidSlugError;
       assert.equal(foreignError instanceof Error, false);
       assert.equal(isUuidSlugError(foreignError), true);
-      const generator: UuidV7Generator = {
-        payloadLayout: { subMillisecondFractionBits: 0, counterBits: 42 },
-        generateUuidV7Value: () => foreignError,
-        generateUuidV7: () => foreignError,
-        generateUuidV7Bytes: () => foreignError,
-      };
       const codec = createUuidV7MaskingCodecWithGenerator(
         { mask: { seed: "cross-realm-generator" } },
-        generator.generateUuidV7Bytes,
+        () => foreignError,
       );
       assert.ok(!(codec instanceof Error));
       assert.equal(codec.generateMaskedUuidV7Slug(), foreignError);

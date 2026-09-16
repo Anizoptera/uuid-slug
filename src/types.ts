@@ -410,6 +410,42 @@ export interface UuidV7Generator {
     this: void,
     options: Omit<GenerateUuidV7BytesIntoOptions<Output>, "generator">,
   ): Output | UuidSlugError;
+  /**
+   * Generate a plain UUIDv7 slug in this sequence. Lowercase base32hex preserves UUID byte order;
+   * base64url does not preserve that order under text comparison.
+   *
+   * @param alphabetOrOptions - Output spelling, or an explicit time with that spelling. Omit for
+   * the shorter 22-character base64url form at the current clock reading.
+   */
+  generatePlainUuidV7Slug(
+    this: void,
+    alphabetOrOptions?: SlugAlphabet | Omit<GeneratePlainUuidV7SlugOptions, "generator">,
+  ): PlainUuidV7Slug | UuidSlugError;
+  /**
+   * Generate UUIDv7 text and a plain slug for the same UUID in this sequence.
+   *
+   * @param alphabet - Slug spelling. Omit for the shorter 22-character base64url form.
+   * @param textCase - UUID text spelling. Pass it alone to keep the default slug alphabet.
+   * @returns UUID text plus one slug in the selected alphabet, or `UuidSlugError` when generation fails.
+   */
+  generateUuidV7WithPlainSlug(
+    this: void,
+    alphabet?: SlugAlphabet,
+  ): GeneratedUuidV7<PlainUuidV7Slug> | UuidSlugError;
+  generateUuidV7WithPlainSlug<Case extends UuidTextCase>(
+    this: void,
+    textCase: Case,
+  ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
+  generateUuidV7WithPlainSlug<Case extends UuidTextCase>(
+    this: void,
+    alphabet: SlugAlphabet,
+    textCase: Case,
+  ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
+  /** Generate the pair at an explicit time or the current clock reading, in the selected spellings. */
+  generateUuidV7WithPlainSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    this: void,
+    options: Omit<GenerateUuidV7WithPlainSlugOptions<Case>, "generator">,
+  ): GeneratedUuidV7<PlainUuidV7Slug, Case> | UuidSlugError;
 }
 
 /**

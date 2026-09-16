@@ -11,6 +11,9 @@ notes: the section for a version is published verbatim when its tag is pushed.
   and throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
   source. Calls with an explicit time, a generator, caller-owned output, or custom entropy, and
   every generator or masking-codec method, keep returning `UuidSlugError`.
+- UUIDv7 generators generate slugs directly: `generatePlainUuidV7Slug` and
+  `generateUuidV7WithPlainSlug` take the same spellings and `at` as their root functions, without
+  the `generator` option and without revalidating the sequence on every call.
 - `createUuidV7MaskingCodec` accepts the writer seed directly as `maskSeed`. Keep `mask` for a mask
   derived elsewhere, for `UUID_V7_TEST_MASK`, or for seed material that also needs a diagnostic
   label or a key-derivation work factor. Supplying both, or neither, fails with `invalid_mask`.

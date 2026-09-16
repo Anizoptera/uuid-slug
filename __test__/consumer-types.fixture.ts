@@ -147,6 +147,14 @@ expectType<UuidV4Bytes>()(generateUuidV4Bytes());
 expectType<PlainUuidV4Slug>()(generatePlainUuidV4Slug());
 expectType<Uuid<7, false, true>>()(generateUuidV7Value());
 expectType<Uuid<7, false, true> | UuidSlugError>()(generateUuidV7Value({}));
+expectType<PlainUuidV7Slug | UuidSlugError>()(generator.generatePlainUuidV7Slug());
+expectType<PlainUuidV7Slug | UuidSlugError>()(generator.generatePlainUuidV7Slug({ at: 0 }));
+expectType<GeneratedUuidV7<PlainUuidV7Slug> | UuidSlugError>()(
+  generator.generateUuidV7WithPlainSlug(),
+);
+expectType<GeneratedUuidV7<PlainUuidV7Slug, typeof UUID_TEXT_UPPERCASE> | UuidSlugError>()(
+  generator.generateUuidV7WithPlainSlug(BASE32HEX, UUID_TEXT_UPPERCASE),
+);
 const plainSlug: PlainUuidV7Slug = plainResult;
 // @ts-expect-error Unchecked bytes are not a validated UUID payload.
 const uncheckedBytes: UuidBytes = new Uint8Array(16);

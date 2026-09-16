@@ -43,7 +43,12 @@ interface PortableUuidV7GeneratorOptions {
   readonly coordinateExplicitInstants?: boolean;
 }
 
-export type PortableUuidV7Generator = Omit<UuidV7Generator, "generateUuidV7Value">;
+// The slug and value methods are attached by the public seam, which owns the slug encoder and the
+// UUID value graph; keeping them out here lets a generation-only consumer drop both.
+export type PortableUuidV7Generator = Omit<
+  UuidV7Generator,
+  "generatePlainUuidV7Slug" | "generateUuidV7Value" | "generateUuidV7WithPlainSlug"
+>;
 
 const UUID_V7_TEXT_OPTIONS = {
   at: true,

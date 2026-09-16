@@ -947,6 +947,15 @@ describe("plain UUID slugs", () => {
     expect(generator.generateUuidV7Bytes({ generator } as never)).toMatchObject({
       code: "invalid_options",
     });
+    expect(generator.generatePlainUuidV7Slug({ generator } as never)).toMatchObject({
+      code: "invalid_options",
+    });
+    expect(generator.generateUuidV7WithPlainSlug({ generator } as never)).toMatchObject({
+      code: "invalid_options",
+    });
+    expect(generator.generatePlainUuidV7Slug("base36" as never)).toMatchObject({
+      code: "invalid_options",
+    });
     expect(clockReads).toBe(0);
     expect(generateUuidV4(invalid)).toMatchObject({ code: "invalid_options" });
     expect(generatePlainUuidV4Slug("base36" as never)).toMatchObject({ code: "invalid_options" });
@@ -957,6 +966,26 @@ describe("plain UUID slugs", () => {
     expect(uuidToString(unwrap(uuidStringToPlainSlug(SAMPLE_V7_A)), invalid)).toMatchObject({
       code: "invalid_options",
     });
+  });
+
+  it("generates slugs in the sequence that owns the clock", () => {
+    const generator = unwrap(createUuidV7Generator({ readUnixMs: () => 0 }));
+    const first = unwrap(generator.generatePlainUuidV7Slug("base32hex"));
+    const pair = unwrap(generator.generateUuidV7WithPlainSlug("base32hex", "uppercase"));
+    const last = unwrap(generator.generatePlainUuidV7Slug("base32hex"));
+    // The module clock would stamp the present; this sequence's clock reads zero, and lowercase
+    // base32hex preserves UUID byte order, so one sequence advancing shows as increasing text.
+    expect(extractUuidV7UnixMs(first)).toBe(0);
+    expect(first.length).toBe(26);
+    expect(pair.slug > first).toBe(true);
+    expect(last > pair.slug).toBe(true);
+    expect(pair.uuid).toBe(pair.uuid.toUpperCase());
+    expect(uuidStringToPlainSlug(pair.uuid, "base32hex")).toBe(pair.slug);
+    const at = 1_700_000_000_000;
+    expect(extractUuidV7UnixMs(unwrap(generator.generatePlainUuidV7Slug({ at })))).toBe(at);
+    expect(extractUuidV7UnixMs(unwrap(generator.generateUuidV7WithPlainSlug({ at })).uuid)).toBe(
+      at,
+    );
   });
 
   it("uses custom entropy only through explicitly named generation calls", () => {

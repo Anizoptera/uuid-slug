@@ -11,6 +11,7 @@ import type {
   GenerateUuidV7WithPlainSlugOptions,
   PlainUuidV7Slug,
   UuidTextCase,
+  UuidV7Generator,
   UuidV7Instant,
   UuidV7StringFor,
 } from "./types.ts";
@@ -31,7 +32,139 @@ const UUID_V7_WITH_PLAIN_SLUG_OPTIONS = {
   generator: true,
   textCase: true,
 } as const satisfies Record<keyof GenerateUuidV7WithPlainSlugOptions, true>;
+const GENERATOR_PLAIN_SLUG_OPTIONS = {
+  alphabet: true,
+  at: true,
+} as const satisfies Record<keyof Omit<GeneratePlainUuidV7SlugOptions, "generator">, true>;
+const GENERATOR_WITH_PLAIN_SLUG_OPTIONS = {
+  alphabet: true,
+  at: true,
+  textCase: true,
+} as const satisfies Record<keyof Omit<GenerateUuidV7WithPlainSlugOptions, "generator">, true>;
 const AT_OPTION = "at";
+
+/** Supply the UUIDv7 bytes one slug operation encodes, from a sequence or from the module clock. */
+type DrawUuidV7Bytes = (values: { readonly at?: unknown }) => Uint8Array | UuidSlugError;
+
+/** Draw for the module-level calls, where an untrusted `generator` option may select a sequence. */
+const drawKeylessUuidV7Bytes: DrawUuidV7Bytes = (values) => {
+  const generator = readUuidV7Generator((values as { generator?: unknown }).generator);
+  if (generator instanceof Error) return generator;
+  return generator
+    ? generateUuidV7BytesWithGenerator(generator, values)
+    : !Object.hasOwn(values, AT_OPTION)
+      ? currentUuidV7Bytes()
+      : uuidV7BytesFor({ at: values.at as UuidV7Instant });
+};
+
+/**
+ * Read one plain-slug call's options, resolve its alphabet, draw, and encode.
+ *
+ * `presetFormThrows` carries the module-level rule that an alphabet alone cannot fail once
+ * accepted, so a failed draw is thrown on that form and returned on the options form, whose time
+ * and generator can fail. A generator method never throws: its clock and sequence state can fail
+ * on every form.
+ */
+function plainUuidV7SlugFrom(
+  alphabetOrOptions: SlugAlphabet | GeneratePlainUuidV7SlugOptions,
+  accepted: Record<string, true>,
+  drawBytes: DrawUuidV7Bytes,
+  presetFormThrows: boolean,
+): PlainUuidV7Slug | UuidSlugError {
+  let alphabetOnly = typeof alphabetOrOptions === "string";
+  let values = alphabetOnly
+    ? { alphabet: alphabetOrOptions as SlugAlphabet }
+    : readGenerationOptions(alphabetOrOptions, accepted, "plain UUIDv7 slug generation");
+  if (values instanceof Error) {
+    const alphabet = stringInput(alphabetOrOptions);
+    if (alphabet !== undefined) {
+      values = { alphabet };
+      alphabetOnly = true;
+    }
+  }
+  if (values instanceof Error) return values;
+  const resolved = resolveSlugAlphabet((values.alphabet ?? BASE64URL_NAME) as SlugAlphabet);
+  if (resolved instanceof Error) return resolved;
+  const bytes = drawBytes(values);
+  if (isUuidSlugError(bytes)) {
+    if (alphabetOnly && presetFormThrows) throw bytes;
+    return bytes;
+  }
+  return encode(bytes, resolved) as PlainUuidV7Slug;
+}
+
+/**
+ * Read one pair call's options, resolve both spellings, draw, and encode.
+ *
+ * `presetFormThrows` carries the same rule as `plainUuidV7SlugFrom`.
+ */
+function uuidV7WithPlainSlugFrom(
+  alphabetOrCaseOrOptions: SlugAlphabet | UuidTextCase | GenerateUuidV7WithPlainSlugOptions,
+  textCase: UuidTextCase,
+  accepted: Record<string, true>,
+  drawBytes: DrawUuidV7Bytes,
+  presetFormThrows: boolean,
+): GeneratedUuidV7<PlainUuidV7Slug, UuidTextCase> | UuidSlugError {
+  let presetsOnly = typeof alphabetOrCaseOrOptions === "string";
+  let values = presetsOnly
+    ? isUuidTextCase(alphabetOrCaseOrOptions)
+      ? { alphabet: BASE64URL_NAME, textCase: alphabetOrCaseOrOptions }
+      : { alphabet: alphabetOrCaseOrOptions as SlugAlphabet, textCase }
+    : readGenerationOptions(alphabetOrCaseOrOptions, accepted, "UUIDv7 pair generation");
+  if (values instanceof Error) {
+    const selector = stringInput(alphabetOrCaseOrOptions);
+    if (selector !== undefined) {
+      values = isUuidTextCase(selector)
+        ? { alphabet: BASE64URL_NAME, textCase: selector }
+        : { alphabet: selector, textCase };
+      presetsOnly = true;
+    }
+  }
+  if (values instanceof Error) return values;
+  const selectedCase = resolveUuidTextCase(values.textCase ?? UUID_TEXT_LOWERCASE);
+  if (selectedCase instanceof Error) return selectedCase;
+  const resolved = resolveSlugAlphabet((values.alphabet ?? BASE64URL_NAME) as SlugAlphabet);
+  if (resolved instanceof Error) return resolved;
+  const bytes = drawBytes(values);
+  if (isUuidSlugError(bytes)) {
+    if (presetsOnly && presetFormThrows) throw bytes;
+    return bytes;
+  }
+  return {
+    uuid: formatUuidBytesUnchecked(bytes, 0, selectedCase) as UuidV7StringFor<UuidTextCase>,
+    slug: encode(bytes, resolved) as PlainUuidV7Slug,
+  };
+}
+
+/**
+ * Build one generator's slug methods around the sequence's own byte draw. The generator is the
+ * package's own, so these skip the untrusted-generator validation the module-level calls run.
+ */
+export function uuidV7GeneratorSlugMethods(
+  drawBytes: DrawUuidV7Bytes,
+): Pick<UuidV7Generator, "generatePlainUuidV7Slug" | "generateUuidV7WithPlainSlug"> {
+  return {
+    generatePlainUuidV7Slug: (
+      alphabetOrOptions:
+        | SlugAlphabet
+        | Omit<GeneratePlainUuidV7SlugOptions, "generator"> = BASE64URL_NAME,
+    ) => plainUuidV7SlugFrom(alphabetOrOptions, GENERATOR_PLAIN_SLUG_OPTIONS, drawBytes, false),
+    generateUuidV7WithPlainSlug: (
+      alphabetOrCaseOrOptions:
+        | SlugAlphabet
+        | UuidTextCase
+        | Omit<GenerateUuidV7WithPlainSlugOptions, "generator"> = BASE64URL_NAME,
+      textCase: UuidTextCase = UUID_TEXT_LOWERCASE,
+    ) =>
+      uuidV7WithPlainSlugFrom(
+        alphabetOrCaseOrOptions,
+        textCase,
+        GENERATOR_WITH_PLAIN_SLUG_OPTIONS,
+        drawBytes,
+        false,
+      ),
+  };
+}
 
 /**
  * Generate a plain UUIDv7 slug. Lowercase base32hex preserves UUID byte order; base64url does not
@@ -49,38 +182,12 @@ export function generatePlainUuidV7Slug(
 export function generatePlainUuidV7Slug(
   alphabetOrOptions: SlugAlphabet | GeneratePlainUuidV7SlugOptions = BASE64URL_NAME,
 ): PlainUuidV7Slug | UuidSlugError {
-  // An alphabet alone cannot fail once accepted, so a failed draw is thrown on that form and
-  // returned on the options form, whose time and generator can fail.
-  let alphabetOnly = typeof alphabetOrOptions === "string";
-  let values = alphabetOnly
-    ? { alphabet: alphabetOrOptions as SlugAlphabet }
-    : readGenerationOptions(
-        alphabetOrOptions,
-        PLAIN_UUID_V7_SLUG_OPTIONS,
-        "plain UUIDv7 slug generation",
-      );
-  if (values instanceof Error) {
-    const alphabet = stringInput(alphabetOrOptions);
-    if (alphabet !== undefined) {
-      values = { alphabet };
-      alphabetOnly = true;
-    }
-  }
-  if (values instanceof Error) return values;
-  const resolved = resolveSlugAlphabet((values.alphabet ?? BASE64URL_NAME) as SlugAlphabet);
-  if (resolved instanceof Error) return resolved;
-  const generator = readUuidV7Generator(values.generator);
-  if (generator instanceof Error) return generator;
-  const bytes = generator
-    ? generateUuidV7BytesWithGenerator(generator, values)
-    : !Object.hasOwn(values, AT_OPTION)
-      ? currentUuidV7Bytes()
-      : uuidV7BytesFor({ at: values.at as UuidV7Instant });
-  if (isUuidSlugError(bytes)) {
-    if (alphabetOnly) throw bytes;
-    return bytes;
-  }
-  return encode(bytes, resolved) as PlainUuidV7Slug;
+  return plainUuidV7SlugFrom(
+    alphabetOrOptions,
+    PLAIN_UUID_V7_SLUG_OPTIONS,
+    drawKeylessUuidV7Bytes,
+    true,
+  );
 }
 
 /**
@@ -118,45 +225,11 @@ export function generateUuidV7WithPlainSlug(
     | GenerateUuidV7WithPlainSlugOptions = BASE64URL_NAME,
   textCase: UuidTextCase = UUID_TEXT_LOWERCASE,
 ): GeneratedUuidV7<PlainUuidV7Slug, UuidTextCase> | UuidSlugError {
-  // Spelling presets alone cannot fail once accepted, so a failed draw is thrown on those forms
-  // and returned on the options form, whose time and generator can fail.
-  let presetsOnly = typeof alphabetOrCaseOrOptions === "string";
-  let values = presetsOnly
-    ? isUuidTextCase(alphabetOrCaseOrOptions)
-      ? { alphabet: BASE64URL_NAME, textCase: alphabetOrCaseOrOptions }
-      : { alphabet: alphabetOrCaseOrOptions as SlugAlphabet, textCase }
-    : readGenerationOptions(
-        alphabetOrCaseOrOptions,
-        UUID_V7_WITH_PLAIN_SLUG_OPTIONS,
-        "UUIDv7 pair generation",
-      );
-  if (values instanceof Error) {
-    const selector = stringInput(alphabetOrCaseOrOptions);
-    if (selector !== undefined) {
-      values = isUuidTextCase(selector)
-        ? { alphabet: BASE64URL_NAME, textCase: selector }
-        : { alphabet: selector, textCase };
-      presetsOnly = true;
-    }
-  }
-  if (values instanceof Error) return values;
-  const selectedCase = resolveUuidTextCase(values.textCase ?? UUID_TEXT_LOWERCASE);
-  if (selectedCase instanceof Error) return selectedCase;
-  const resolved = resolveSlugAlphabet((values.alphabet ?? BASE64URL_NAME) as SlugAlphabet);
-  if (resolved instanceof Error) return resolved;
-  const generator = readUuidV7Generator(values.generator);
-  if (generator instanceof Error) return generator;
-  const bytes = generator
-    ? generateUuidV7BytesWithGenerator(generator, values)
-    : !Object.hasOwn(values, AT_OPTION)
-      ? currentUuidV7Bytes()
-      : uuidV7BytesFor({ at: values.at as UuidV7Instant });
-  if (isUuidSlugError(bytes)) {
-    if (presetsOnly) throw bytes;
-    return bytes;
-  }
-  return {
-    uuid: formatUuidBytesUnchecked(bytes, 0, selectedCase) as UuidV7StringFor<UuidTextCase>,
-    slug: encode(bytes, resolved) as PlainUuidV7Slug,
-  };
+  return uuidV7WithPlainSlugFrom(
+    alphabetOrCaseOrOptions,
+    textCase,
+    UUID_V7_WITH_PLAIN_SLUG_OPTIONS,
+    drawKeylessUuidV7Bytes,
+    true,
+  );
 }

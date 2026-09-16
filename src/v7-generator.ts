@@ -24,6 +24,7 @@ import type {
 } from "./types.ts";
 import { createUuidValue } from "./uuid-value.ts";
 import { createPortableUuidV7Generator } from "./v7.ts";
+import { uuidV7GeneratorSlugMethods } from "./v7-slug.ts";
 import { readUuidV7MaskingCodec, readUuidV7ValueOptions } from "./v7-value-options.ts";
 
 /** Configure one UUIDv7 sequence's clock and rollback behavior. */
@@ -64,6 +65,7 @@ const UUID_V7_GENERATOR_VALUE_OPTIONS = {
   at: true,
   maskingCodec: true,
 } as const satisfies Record<keyof UuidV7GeneratorValueOptions, true>;
+const AT_OPTION = "at";
 
 const highResolutionClock = globalThis.performance;
 const readHighResolutionUnixMs =
@@ -148,6 +150,11 @@ function buildGenerator(
     subMillisecondFractionBits: fractionBits,
     fillRandom,
   });
+  /** One draw for every method on this object: the sequence's own bytes, at `at` or at its clock. */
+  const drawSequencedBytes = (values: { readonly at?: unknown }) =>
+    !Object.hasOwn(values, AT_OPTION)
+      ? generator.generateUuidV7Bytes()
+      : generator.generateUuidV7Bytes({ at: values.at as UuidV7Instant });
   function generateUuidV7Value<const Options extends UuidV7GeneratorValueOptions = {}>(
     valueOptions?: Options,
   ):
@@ -160,14 +167,16 @@ function buildGenerator(
     if (values instanceof Error) return values;
     const maskingCodec = readUuidV7MaskingCodec(values.maskingCodec);
     if (maskingCodec instanceof Error) return maskingCodec;
-    const generated = !Object.hasOwn(values, "at")
-      ? generator.generateUuidV7Bytes()
-      : generator.generateUuidV7Bytes({ at: values.at as UuidV7Instant });
+    const generated = drawSequencedBytes(values);
     return generated instanceof Error
       ? generated
       : createUuidValue<7, boolean, true>(generated, maskingCodec, generator.payloadLayout);
   }
-  return Object.freeze({ ...generator, generateUuidV7Value });
+  return Object.freeze({
+    ...generator,
+    ...uuidV7GeneratorSlugMethods(drawSequencedBytes),
+    generateUuidV7Value,
+  });
 }
 
 /**

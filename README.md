@@ -813,7 +813,11 @@ Also exported from the package root:
 - `createUuidV7Generator(options?)` builds a generator with its own sequence state, your `readUnixMs`
   or `Date.now` when omitted, and platform cryptographic entropy. Preserve-order rollback is the
   default; reset and error policies require an inclusive total-skew tolerance. Invalid numeric
-  ranges, clock policies, and untyped malformed options return `invalid_options`.
+  ranges, clock policies, and untyped malformed options return `invalid_options`. Every method on
+  the generator generates in its sequence: `generateUuidV7`, `generateUuidV7Bytes`,
+  `generatePlainUuidV7Slug`, `generateUuidV7WithPlainSlug`, and `generateUuidV7Value`. Each takes
+  the same spellings and `at` as its root function, without the `generator` option. The root
+  functions reach the same sequence by taking `{ generator }`.
 - `generateUuidV4WithRandomFill` and `createUuidV7GeneratorWithRandomFill` are the explicit
   custom-entropy paths. Their callback owns entropy quality and must fill every requested byte or
   return `UuidSlugError`; weak or partial successful fills cannot be detected.
