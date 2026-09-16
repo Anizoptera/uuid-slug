@@ -553,6 +553,30 @@ errors, hex calls, and character reads on canonical text for both methods; the p
 fails both rows. Remeasure when either method changes shape or the engines change their inlining
 limits.
 
+### Parsed UUID value state
+
+A parsed or generated `Uuid` keeps its bytes, codec, and payload layout in private fields of
+`LocalUuidValue`. The rejected module `WeakMap` cost one registration per value, which was more than
+the rest of value creation, and needed a state object and a frozen layout copy per value. Text parsed
+without a codec keeps its freshly decoded bytes; byte input and bytes returned by a codec are copied.
+
+Two six-round packed replays on 2026-09-16 compared `281dc5e` with `80d3722`. Median ns per call:
+
+| Route | Node 26.8.2 | Bun 1.4.2 | Chromium 153 | Deno 2.9.6 | Node 26.8.2 JITless |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `parseUuid(text)` | 304–326 → 222–228 | 225–231 → 146–152 | 283–295 → 168–171 | 737–746 → 308–314 | 4,183–4,212 → 4,047–4,144 |
+| `parseUuid(plain slug)` | 349–352 → 111–115 | 138–142 → 54–56 | 192–219 → 111–113 | 377–383 → 225–228 | 1,474–1,482 → 1,390–1,399 |
+| `parseUuid(bytes)` | 124–129 → 87–90 | 126–153 → 41–42 | 139–146 → 89–91 | 341–350 → 174–185 | 468–477 → 445 |
+| `parseUuid(masked slug, codec)` | 389–438 → 279–284 | 310–314 → 208–217 | 399–841 → 265–270 | 1,138–1,467 → 545–578 | 8,646–8,662 → 8,498–8,502 |
+| `generateUuidV7Value()` | 218–231 → 110–113 | 162–181 → 68 | 240–477 → 116 | 325–337 → 204–211 | 1,200–1,222 → 1,105–1,106 |
+
+Every row is faster in both replays on Node, Bun, Chromium, and Deno. On JITless, text and slug
+parsing and generation are faster in both, byte parsing in one, and masked parsing is unresolved.
+Conversions from an existing value were no slower in both replays, except Deno
+`codec.uuidToMaskedSlug(value)`, which was 7% slower in one replay and unresolved in the other.
+Node 24.21.0 was not replayed. `bench/resources.ts` allows one buffer for `parseUuid(text)`; the
+`WeakMap` source used two.
+
 ### Runtime capability review
 
 The 2026-09-12 review probed Node 26.8.2, Bun 1.4.2, Deno 2.9.6, and Chromium
