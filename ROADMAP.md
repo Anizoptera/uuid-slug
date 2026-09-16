@@ -15,8 +15,9 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
 - `codec.uuidToString(plain 22-character slug)` costs 5,708 ns on Node against 152 ns keyless,
   ×4 on Bun: `decodeMaskedSlug` builds the check-miss error that the codec discards before the
   plain reading (`src/payload.ts`).
-- `uuidToString(canonical text)` parses and reformats: 228 ns against 143 ns for parsing alone on
-  Node; already-normalized input is not on the least-work path.
+- Retained: canonical lowercase text returns unchanged from both `uuidToString` methods, 4 times
+  faster on Node and 6.5 on Bun; Bun codec sentinel reads lose about 4 ns to JavaScriptCore
+  inlining limits (bench/PERFORMANCE.md).
 - `parseUuid` and `generateUuidV7Value` add 100–230 ns per value over the byte routes: `WeakMap`
   state, spread, freeze, and a copy of already-owned decoded bytes (`src/uuid-value.ts`).
 - `extractUuidV7Payload(text)` costs 412–508 ns against 104–125 ns for the timestamp.
@@ -30,7 +31,7 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
 
 - [x] Remove the discarded error from non-byte object input and codec plain-slug reads; add
       resource-gate rows proving zero errors on those successful routes.
-- [ ] Return canonical lowercase UUID text from `uuidToString` without reformatting.
+- [x] Return canonical lowercase UUID text from `uuidToString` without reformatting.
 - [ ] Measure a private-field `Uuid` value against the `WeakMap` protocol; remove the redundant
       byte copy in `parseUuid`.
 - [ ] Packed compare each remaining change on Node and Bun, then Chromium, Deno, and JITless.
