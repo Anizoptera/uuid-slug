@@ -51,7 +51,7 @@ const drawKeylessUuidV7Bytes: DrawUuidV7Bytes = (values) => {
   const generator = readUuidV7Generator((values as { generator?: unknown }).generator);
   if (generator instanceof Error) return generator;
   return generator
-    ? generateUuidV7BytesWithGenerator(generator, values)
+    ? generateUuidV7BytesWithGenerator(generator, values, true)
     : !Object.hasOwn(values, AT_OPTION)
       ? currentUuidV7Bytes()
       : uuidV7BytesFor({ at: values.at as UuidV7Instant });

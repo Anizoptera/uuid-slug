@@ -97,6 +97,13 @@ export const runtimeBoundaryCases = [
       retained?.fill(0xff);
       assert.equal(result.constructor, Uint8Array);
       assert.deepEqual(result, valid);
+
+      const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
+      for (const generate of [generateUuidV7Value, codec.generateUuidV7Value]) {
+        const value = unwrap(generate({ generator: generator as never }));
+        retained?.fill(0xff);
+        assert.deepEqual(value.toBytes(), valid);
+      }
     },
   },
   {

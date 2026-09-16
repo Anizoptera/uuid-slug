@@ -718,7 +718,7 @@ function buildUuidSlugCodec(
     if (generator instanceof Error) return generator;
     try {
       const bytes = generator
-        ? generateUuidV7BytesWithGenerator(generator, values)
+        ? generateUuidV7BytesWithGenerator(generator, values, true)
         : Object.hasOwn(values, AT_OPTION)
           ? generateBytes({ at: values.at as UuidV7Instant })
           : generateBytes();

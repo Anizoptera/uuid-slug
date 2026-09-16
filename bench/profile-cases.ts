@@ -444,6 +444,8 @@ export function createProfileCases(
       subMillisecondFractionBits: 12,
     }),
   );
+  // A caller-built generator that delegates to a package sequence takes the structural read.
+  const structuralGenerator: typeof selectedGenerator = { ...selectedGenerator };
   const portableDecodeInto = new Uint8Array(16);
   if (privateAlphabetApi) {
     for (const [value, alpha] of [
@@ -593,6 +595,10 @@ export function createProfileCases(
       api.generatePlainUuidV7Slug({ generator: selectedGenerator }),
     "v7.pair.selected-generator": () =>
       api.generateUuidV7WithPlainSlug({ generator: selectedGenerator }),
+    "v7.slug.structural-generator": () =>
+      api.generatePlainUuidV7Slug({ generator: structuralGenerator }),
+    "v7.bytes.selected-generator": () => api.generateUuidV7Bytes({ generator: selectedGenerator }),
+    "v7.string.selected-generator": () => api.generateUuidV7({ generator: selectedGenerator }),
     parse: (index) => api.uuidStringToBytes(ids[index & 255] as string),
     "parse.compact": (index) => api.uuidStringToBytes(compactIds[index & 255] as string),
     "parse.mixed": (index) => api.uuidStringToBytes(mixedIds[index & 255] as string),

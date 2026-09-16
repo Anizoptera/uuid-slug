@@ -27,11 +27,28 @@ export interface ValidatedUuidV7Generator {
   readonly payloadLayout: UuidV7PayloadLayout;
 }
 
+/**
+ * Generators this package copy created. Each is frozen and its layout was validated when it was
+ * built, so reading it again proves nothing.
+ *
+ * Structural validation allocated a validated object and rescanned the layout keys on every call
+ * that passed `generator` (bench/PERFORMANCE.md). A generator from another package copy misses
+ * this set and still takes the structural read. Remeasure if `WeakSet#has` stops being cheaper
+ * than that read.
+ */
+const packageUuidV7Generators = new WeakSet();
+
+/** Record a frozen generator whose `generateUuidV7Bytes` and validated layout never change. */
+export function registerPackageUuidV7Generator(generator: ValidatedUuidV7Generator): void {
+  packageUuidV7Generators.add(generator);
+}
+
 /** Narrow an untrusted generator without relying on package-copy identity. */
 export function readUuidV7Generator(
   value: unknown,
 ): ValidatedUuidV7Generator | UuidSlugError | undefined {
   if (value === undefined) return undefined;
+  if (packageUuidV7Generators.has(value as object)) return value as ValidatedUuidV7Generator;
   try {
     if (value === null || typeof value !== "object")
       return new UuidSlugError(INVALID_OPTIONS, UUID_V7_GENERATOR_REQUIRED);
@@ -50,10 +67,17 @@ export function readUuidV7Generator(
   }
 }
 
-/** Generate bytes only after validating every option that can fail without advancing sequence state. */
+/**
+ * Generate bytes only after validating every option that can fail without advancing sequence state.
+ *
+ * The generator receives the result buffer and may keep a reference to it, so a result the caller
+ * keeps is a copy. Pass `borrowed` only when the package consumes the bytes before returning and
+ * never returns them: text, slug, and masked-slug writers skip that copy (bench/PERFORMANCE.md).
+ */
 export function generateUuidV7BytesWithGenerator(
   generator: ValidatedUuidV7Generator,
   options: UuidV7GenerationValues,
+  borrowed = false,
 ): Uint8Array | UuidSlugError {
   const hasAt = Object.hasOwn(options, AT_OPTION);
   const requested = hasAt ? readUuidV7Instant(options.at) : undefined;
@@ -97,7 +121,7 @@ export function generateUuidV7BytesWithGenerator(
         "UUIDv7 generator returned an instant before at; its output must preserve or advance the requested instant.",
       );
   }
-  if (!hasOutput) return new Uint8Array(generatedOutput);
+  if (!hasOutput) return borrowed ? generatedOutput : new Uint8Array(generatedOutput);
   const output = options.output as Uint8Array;
   output.set(generatedOutput, outputOffset);
   return output;

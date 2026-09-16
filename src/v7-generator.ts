@@ -25,6 +25,7 @@ import type {
 import { createUuidValue } from "./uuid-value.ts";
 import { createPortableUuidV7Generator } from "./v7.ts";
 import { uuidV7GeneratorSlugMethods } from "./v7-slug.ts";
+import { registerPackageUuidV7Generator } from "./v7-generator-input.ts";
 import { readUuidV7MaskingCodec, readUuidV7ValueOptions } from "./v7-value-options.ts";
 
 /** Configure one UUIDv7 sequence's clock and rollback behavior. */
@@ -172,11 +173,13 @@ function buildGenerator(
       ? generated
       : createUuidValue<7, boolean, true>(generated, maskingCodec, generator.payloadLayout);
   }
-  return Object.freeze({
+  const created = Object.freeze({
     ...generator,
     ...uuidV7GeneratorSlugMethods(drawSequencedBytes),
     generateUuidV7Value,
   });
+  registerPackageUuidV7Generator(created);
+  return created;
 }
 
 /**

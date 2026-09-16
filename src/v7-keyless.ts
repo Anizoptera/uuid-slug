@@ -119,7 +119,7 @@ export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
       ...(Object.hasOwn(values, AT_OPTION) ? { at: values.at as never } : {}),
       textCase,
     }) as UuidV7StringFor<Case> | UuidSlugError;
-  const bytes = generateUuidV7BytesWithGenerator(generator, values);
+  const bytes = generateUuidV7BytesWithGenerator(generator, values, true);
   return bytes instanceof Error
     ? bytes
     : (formatUuidBytesUnchecked(bytes, 0, textCase) as UuidV7StringFor<Case>);

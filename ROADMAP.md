@@ -59,6 +59,12 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
   `latin1Slice` is about a fifth of masked byte encoding.
 - A packed compare can fail while packing when Parcel crashes (SIGSEGV) in the consumer-graph
   check; rerun that replay.
+- Retained (bench/PERFORMANCE.md): 27-character masked base32hex slugs use fixed formulas (encode
+  0.48-0.74 except Chromium 0.94); calls passing a package generator skip re-reading it, and text,
+  slug, and masked writers skip copying its bytes (0.72-0.95 everywhere; generator creation
+  55-120 ns slower, once).
+- Rejected: calling `Buffer#latin1Slice` directly instead of `toString("latin1")` saved only 2-7 ns
+  on Node 26.8.2, Bun, and Deno through an undocumented method.
 
 ## Tasks
 
