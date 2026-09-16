@@ -706,6 +706,20 @@ Two packed Bun comparisons initially favored native UUIDv7 text while routing by
 through the portable generator. That result omitted the required validation on repeated native
 calls. The complete public route instead favors portable text, as recorded under UUIDv7 generation.
 
+### Feistel round function
+
+The Feistel round writes HalfSipHash-2-4 out for its fixed two-word, 8-byte message instead of calling
+the general function through word arrays. A consumed-result probe put the four-round network at
+87 ns before and 72 ns after on Node 26.8.2, and 82 and 66 ns on Bun 1.4.2, with identical output
+over 2,000 random keys and blocks in both directions.
+
+Two packed `af5f468`-to-candidate replays on 2026-09-16 measured every masked encode, decode, and
+generation row at 0.87–0.98 of baseline on Node 26.8.2, 0.65–0.98 on Bun 1.4.2, 0.88–0.95 on
+Chromium 153, 0.88–1.01 on Node 24.21.0, 0.87–0.99 on Deno 2.9.6, and 0.91–0.97 on Node 26.8.2
+JITless. Each cell was faster or unresolved; none was slower. The fixed Feistel vector and the
+wire-format vectors killed six mutants of the written-out rounds, constants, key schedule, and
+output words. Recheck if the round function or its message length changes.
+
 ### Latin-1 slug writing
 
 Node, Bun, and Deno write a 16-byte UUID payload's 22 base64url or 26 base32hex character codes into

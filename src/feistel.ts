@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { halfSipHash } from "./siphash.ts";
-
 /**
  * A four-round Feistel network gives masking an exact inverse while spreading each UUID change
  * across the block. HalfSipHash-2-4 supplies the keyed round function. This is reversible
@@ -50,12 +48,6 @@ function write32(bytes: Uint8Array, offset: number, value: number) {
   bytes[offset + 3] = value & 0xff;
 }
 
-// Scratch for the round function, at module scope because allocating two 2-word arrays per call
-// dominated the mix. Safe because nothing here is reentrant: `feistel16` is synchronous, calls only
-// `halfSipHash`, and that calls nothing.
-const roundInput = new Int32Array(2);
-const roundOutput = new Int32Array(2);
-
 /**
  * Transform 16 bytes from `input` into `output`, which may be the same array.
  *
@@ -76,11 +68,65 @@ export function feistel16(
   let right1 = read32(input, inputOffset + 12);
   for (let round = 0; round < ROUNDS; round += 1) {
     const key = (direction === "mask" ? round : ROUNDS - 1 - round) * 2;
-    roundInput[0] = right0;
-    roundInput[1] = right1;
-    halfSipHash(keys[key] as number, keys[key + 1] as number, roundInput, 8, roundOutput);
-    const next0 = left0 ^ (roundOutput[0] as number);
-    const next1 = left1 ^ (roundOutput[1] as number);
+    // The round function is `halfSipHash(keys[key], keys[key + 1], [right0, right1], 8)`, written
+    // out for its fixed two-word message: the call through word arrays cost about a fifth more of
+    // the network on Node and Bun (bench/PERFORMANCE.md). The fixed vector in `feistel.test.ts`
+    // and the wire-format vectors hold it to issued slugs.
+    const key0 = keys[key] as number;
+    const key1 = keys[key + 1] as number;
+    let v0 = key0 | 0;
+    let v1 = (key1 ^ 0xee) | 0;
+    let v2 = (key0 ^ 0x6c796765) | 0;
+    let v3 = (key1 ^ 0x74656462) | 0;
+    // Absorb both message words, then the length block for 8 bytes, with two rounds each.
+    for (let block = 0; block < 3; block += 1) {
+      const m = block === 0 ? right0 : block === 1 ? right1 : 8 << 24;
+      v3 ^= m;
+      for (let sipRound = 0; sipRound < 2; sipRound += 1) {
+        v0 = (v0 + v1) | 0;
+        v1 = (v1 << 5) | (v1 >>> 27);
+        v1 ^= v0;
+        v0 = (v0 << 16) | (v0 >>> 16);
+        v2 = (v2 + v3) | 0;
+        v3 = (v3 << 8) | (v3 >>> 24);
+        v3 ^= v2;
+        v0 = (v0 + v3) | 0;
+        v3 = (v3 << 7) | (v3 >>> 25);
+        v3 ^= v0;
+        v2 = (v2 + v1) | 0;
+        v1 = (v1 << 13) | (v1 >>> 19);
+        v1 ^= v2;
+        v2 = (v2 << 16) | (v2 >>> 16);
+      }
+      v0 ^= m;
+    }
+    // Two four-round squeezes yield the two output words.
+    v2 ^= 0xee;
+    let hash0 = 0;
+    for (let half = 0; half < 2; half += 1) {
+      for (let sipRound = 0; sipRound < 4; sipRound += 1) {
+        v0 = (v0 + v1) | 0;
+        v1 = (v1 << 5) | (v1 >>> 27);
+        v1 ^= v0;
+        v0 = (v0 << 16) | (v0 >>> 16);
+        v2 = (v2 + v3) | 0;
+        v3 = (v3 << 8) | (v3 >>> 24);
+        v3 ^= v2;
+        v0 = (v0 + v3) | 0;
+        v3 = (v3 << 7) | (v3 >>> 25);
+        v3 ^= v0;
+        v2 = (v2 + v1) | 0;
+        v1 = (v1 << 13) | (v1 >>> 19);
+        v1 ^= v2;
+        v2 = (v2 << 16) | (v2 >>> 16);
+      }
+      if (half === 0) {
+        hash0 = v1 ^ v3;
+        v1 ^= 0xdd;
+      }
+    }
+    const next0 = left0 ^ hash0;
+    const next1 = left1 ^ v1 ^ v3;
     left0 = right0;
     left1 = right1;
     right0 = next0;

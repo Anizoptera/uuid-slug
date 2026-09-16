@@ -6,8 +6,9 @@
  * without the key its output on a chosen input is not computable, which is exactly what `mix32` — a
  * fixed, public, unkeyed bijection — could never be, and the reason it replaced it.
  *
- * One primitive serves both callers that need one: the Feistel round function (`feistel.ts`) and the
- * key derivation (`mask.ts`). Neither justifies its own.
+ * Key derivation (`mask.ts`) calls this function. The Feistel round (`feistel.ts`) writes the same
+ * function out for its fixed two-word message because the call cost measurably more per masked slug;
+ * the published vectors grade this transcription, and the Feistel and wire-format vectors grade that one.
  *
  * Chosen over full SipHash-2-4 because that is defined over 64-bit words, which JavaScript has only
  * as `BigInt` or as hand-emulated 32-bit pairs — the first far too slow for a hot path, the second a
