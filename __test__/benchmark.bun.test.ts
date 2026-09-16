@@ -307,9 +307,10 @@ test.concurrent.each(["0", "-1", "1.5", "NaN", "Infinity"])(
   },
 );
 
-// The timeout bounds a deliberately hung child; it does not decide readiness.
+// The timeout bounds a deliberately hung child. The healthy control runs under the same bound, so it
+// must cover Bun startup while the commit hook runs other suites in parallel: 100 ms killed it there.
 test.concurrent("hung runtime cannot hold the matrix indefinitely", async () => {
-  const result = await matrix("hang", 100);
+  const result = await matrix("hang", 1_000);
   expect(result.status).toBe(1);
   expect(result.stderr).toContain("exited");
   expect(result.stdout).toContain("Randomness: control (fixture 1)");
