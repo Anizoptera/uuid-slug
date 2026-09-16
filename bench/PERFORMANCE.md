@@ -1878,15 +1878,18 @@ harness and ranks nothing. The package led every allocated-byte and caller-buffe
 Chromium, and Deno, and Bun's owned-byte groups. Bun's UUIDv4 caller-buffer write trailed `uuid`
 by about 10% in both runs. Deno's owned UUIDv7 bytes were unresolved against `uuidv7`: 12% behind,
 then 2% ahead. UUIDv7 text led every package on all four runtimes. Raw platform generation was 5%
-faster on Node and 2.07 times faster on Bun, but it omits the package's validation boundary; adding
-that validation made native dispatch slower than direct portable generation. UUIDv4 text matched
+faster on Node and 2.07 times faster on Bun. Bun's native generator encodes timestamps ahead of the
+clock during bursts, so it cannot replace the package generator; see Native floors. UUIDv4 text matched
 Node's native generator within 1%; on Bun it
 trailed `crypto-randomuuid` by about 10% and the native generator by 5%; on Deno it trailed `uniku`
 by about 30% and paid 34% over the native generator for validation and the error-value boundary; on Chromium
 it trailed the pooled portable generator in `@lukeed/uuid` by 13–15%. A single 2026-09-12 run had
 put the Chromium gap at about 4% and found no Bun caller-buffer loss; the paired runs supersede it.
 `fastv7` remains timed but cannot be the reference: independent processes and restarted state
-reuse sequence zero, leaving 62 random bits per value. This package also starts its 42-bit sequence
+reuse sequence zero, leaving 62 random bits per value, and its 12-bit counter advances the encoded
+millisecond on overflow. After a burst of 2 million calls it encoded timestamps up to 47 ms ahead of
+`Date.now()` on Node 26.8.2 and 88 ms ahead on Bun 1.4.2, with 95–97% of values ahead; `uuid`,
+`uuidv7`, `uniku`, `uuidv7-js`, `@kripod/uuidv7`, and this package stayed at or behind the clock. This package also starts its 42-bit sequence
 from a random seed. Its clock, sequence, buffer, and failure strategies are not
 disqualifying by themselves. Its faster mechanism is worth adopting only if that margin survives.
 Validated text timestamp extraction trailed `uuidv7-js` by 3–8% on Node, Bun, and Deno and by
@@ -1901,7 +1904,8 @@ package's failure contract.
 Rejected rows remain timed and are reconsidered after every package update. The insecure
 `@lukeed/uuid` entry uses `Math.random`, so it cannot establish secure UUIDv4 performance. The
 `uniku` timestamp call does not verify UUIDv7, so it cannot establish validated UUIDv7 extraction
-performance. `fastv7` does not preserve this package's same-timestamp cross-process collision margin.
+performance. `fastv7` does not preserve this package's same-timestamp cross-process collision margin, and it
+encodes timestamps ahead of the clock during bursts.
 Native platform rows are always qualified floors; error handling around them is package overhead,
 not a reason to hide them.
 
