@@ -793,6 +793,24 @@ Regex prevalidation followed by fixed bit formulas was rejected. An eight-round 
 regressed direct decoding by 23% on Node, 31% on Deno, and 22% on Chromium; Bun was unresolved.
 Retest only if primary engines materially change regex or fixed-index string access.
 
+Both fixed decoders check validity once after decoding: they OR every character code and every
+table digit, then rescan only a rejected value to report its first invalid offset. Two packed
+`17e2f97`-to-candidate replays on 2026-09-16 measured median ratios; every listed pair had its 95%
+interval below 1 unless marked unresolved:
+
+| Runtime | `plain.decode` | `value.parse.slug` | `base32.decode` | `portable.base32.decode` |
+| --- | ---: | ---: | ---: | ---: |
+| Node 26.8.2 | 0.90, 0.89 | 0.85, 0.88 | 0.85, 0.86 | 0.65, 0.63 |
+| Bun 1.4.2 | 0.83, 0.88 | 0.83, 0.82 | 0.77, 0.78 | 0.63, 0.64 |
+| Node 24.21.0 | 0.94, 0.88 | 0.90, 0.87 | 0.85, 0.89 unresolved | 0.66, 0.66 |
+| Chromium 153 | unresolved, unresolved | 0.89, unresolved | 0.85, 0.88 | 0.59, 0.55 |
+| Deno 2.9.6 | unresolved, unresolved | unresolved, unresolved | 0.88, 0.92 | 0.70, 0.70 |
+| Node 26.8.2 JITless | 0.95, unresolved | 0.92, 0.93 | 0.90, 0.91 | 0.82, 0.82 |
+
+Masked decoding moved by at most 8% and was mostly unresolved because HalfSipHash dominates it;
+two single Chromium replays read 1.005 and 1.024 slower and did not reproduce. Tests reject a
+non-ASCII character whose low seven bits alias a valid digit at every offset.
+
 ### Plain base64url slug-to-UUID formatting
 
 Direct JavaScript decoding into canonical UUID text was rejected. One six-round packed comparison

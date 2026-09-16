@@ -67,13 +67,15 @@ describe("bit-packing codec", () => {
 
   it("reports every invalid base64url character position on the fixed UUID path", () => {
     const encoded = Buffer.alloc(16).toString("base64url");
-    for (let index = 0; index < encoded.length; index += 1) {
-      const invalid = `${encoded.slice(0, index)}!${encoded.slice(index + 1)}`;
-      expect(decodeInto(invalid, BASE64URL, new Uint8Array(16), 0, 16)).toMatchObject({
-        code: "invalid_base64url",
-        message: `Invalid base64url character "!" at offset ${index}.`,
-      });
-    }
+    // U+0141 shares its low seven bits with "A", so a table read that drops the high bits accepts it.
+    for (const character of ["!", "\u0141"])
+      for (let index = 0; index < encoded.length; index += 1) {
+        const invalid = `${encoded.slice(0, index)}${character}${encoded.slice(index + 1)}`;
+        expect(decodeInto(invalid, BASE64URL, new Uint8Array(16), 0, 16)).toMatchObject({
+          code: "invalid_base64url",
+          message: `Invalid base64url character ${JSON.stringify(character)} at offset ${index}.`,
+        });
+      }
   });
 
   it("preserves every base64url UUID tail and rejects non-canonical plain tails", () => {
@@ -103,13 +105,15 @@ describe("bit-packing codec", () => {
 
   it("reports every invalid base32hex character position on the fixed UUID path", () => {
     const encoded = "0".repeat(26);
-    for (let index = 0; index < encoded.length; index += 1) {
-      const invalid = `${encoded.slice(0, index)}w${encoded.slice(index + 1)}`;
-      expect(decodeInto(invalid, BASE32HEX, new Uint8Array(16), 0, 16)).toMatchObject({
-        code: "invalid_base32hex",
-        message: `Invalid base32hex character "w" at offset ${index}.`,
-      });
-    }
+    // U+0130 shares its low seven bits with "0", so a table read that drops the high bits accepts it.
+    for (const character of ["w", "\u0130"])
+      for (let index = 0; index < encoded.length; index += 1) {
+        const invalid = `${encoded.slice(0, index)}${character}${encoded.slice(index + 1)}`;
+        expect(decodeInto(invalid, BASE32HEX, new Uint8Array(16), 0, 16)).toMatchObject({
+          code: "invalid_base32hex",
+          message: `Invalid base32hex character ${JSON.stringify(character)} at offset ${index}.`,
+        });
+      }
   });
 
   it("preserves every base32hex UUID tail and rejects non-canonical plain tails", () => {

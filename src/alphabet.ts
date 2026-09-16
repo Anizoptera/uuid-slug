@@ -116,6 +116,17 @@ function invalidCharacter(alpha: Alphabet, value: string, offset: number): UuidS
   );
 }
 
+/** Report the first character of a fixed-length value that a single-check decode rejected. */
+function firstInvalidCharacter(alpha: Alphabet, value: string): UuidSlugError {
+  let offset = 0;
+  while (offset < value.length - 1) {
+    const charCode = value.charCodeAt(offset);
+    if (charCode > 127 || (alpha.decode[charCode] as number) < 0) break;
+    offset += 1;
+  }
+  return invalidCharacter(alpha, value, offset);
+}
+
 /**
  * Pack bytes, optionally followed by `tailBits` low bits of `tail`, into `alpha`.
  *
@@ -241,27 +252,36 @@ export function decodeInto(
 
   // UUID base64url has five complete groups and one byte. Decode that fixed wire shape directly;
   // keep the accumulator below for every other byte length, alphabet, and tail width.
+  // Fixed paths check every character once after the loop: ORing the codes exposes any code
+  // above 127, whose low bits the table read would alias, and ORing the digits turns any -1
+  // negative. A branch per character was slower on Node and Bun (bench/PERFORMANCE.md).
   if (alpha === BASE64URL && byteLength === 16 && (tailBits === 0 || tailBits === 4)) {
+    let codes = 0;
+    let digits = 0;
     let written = offset;
     for (let start = 0; start < 20; start += 4) {
-      let block = 0;
-      for (let i = start; i < start + 4; i += 1) {
-        const charCode = value.charCodeAt(i);
-        const digit = charCode < 128 ? (table[charCode] as number) : -1;
-        if (digit < 0) return invalidCharacter(alpha, value, i);
-        block = (block << 6) | digit;
-      }
+      const a = value.charCodeAt(start);
+      const b = value.charCodeAt(start + 1);
+      const c = value.charCodeAt(start + 2);
+      const d = value.charCodeAt(start + 3);
+      const block =
+        ((table[a & 127] as number) << 18) |
+        ((table[b & 127] as number) << 12) |
+        ((table[c & 127] as number) << 6) |
+        (table[d & 127] as number);
+      codes |= a | b | c | d;
+      digits |= block;
       out[written] = block >>> 16;
       out[written + 1] = block >>> 8;
       out[written + 2] = block;
       written += 3;
     }
     const firstCode = value.charCodeAt(20);
-    const first = firstCode < 128 ? (table[firstCode] as number) : -1;
-    if (first < 0) return invalidCharacter(alpha, value, 20);
     const lastCode = value.charCodeAt(21);
-    const last = lastCode < 128 ? (table[lastCode] as number) : -1;
-    if (last < 0) return invalidCharacter(alpha, value, 21);
+    const first = table[firstCode & 127] as number;
+    const last = table[lastCode & 127] as number;
+    if ((codes | firstCode | lastCode) > 127 || (digits | first | last) < 0)
+      return firstInvalidCharacter(alpha, value);
     out[written] = (first << 2) | (last >>> 4);
     if (tailBits === 4) return last & 15;
     // A masked base64url slug has the same length and carries check bits here, so this is the
@@ -277,29 +297,42 @@ export function decodeInto(
   // UUID base32hex has three complete eight-character groups and one byte. Resetting the
   // accumulator per group removes general length and output guards without changing bit packing.
   if (alpha === BASE32HEX && byteLength === 16 && (tailBits === 0 || tailBits === 2)) {
+    let codes = 0;
+    let digits = 0;
     let written = offset;
     for (let start = 0; start < 24; start += 8) {
-      let block = 0;
-      let blockBits = 0;
-      for (let i = start; i < start + 8; i += 1) {
-        const charCode = value.charCodeAt(i);
-        const digit = charCode < 128 ? (table[charCode] as number) : -1;
-        if (digit < 0) return invalidCharacter(alpha, value, i);
-        block = (block << 5) | digit;
-        blockBits += 5;
-        if (blockBits >= 8) {
-          blockBits -= 8;
-          out[written] = (block >>> blockBits) & 0xff;
-          written += 1;
-        }
-      }
+      // Eight 5-bit digits exceed int32, so each byte is assembled from the digits it spans.
+      const d0 = value.charCodeAt(start);
+      const d1 = value.charCodeAt(start + 1);
+      const d2 = value.charCodeAt(start + 2);
+      const d3 = value.charCodeAt(start + 3);
+      const d4 = value.charCodeAt(start + 4);
+      const d5 = value.charCodeAt(start + 5);
+      const d6 = value.charCodeAt(start + 6);
+      const d7 = value.charCodeAt(start + 7);
+      codes |= d0 | d1 | d2 | d3 | d4 | d5 | d6 | d7;
+      const v0 = table[d0 & 127] as number;
+      const v1 = table[d1 & 127] as number;
+      const v2 = table[d2 & 127] as number;
+      const v3 = table[d3 & 127] as number;
+      const v4 = table[d4 & 127] as number;
+      const v5 = table[d5 & 127] as number;
+      const v6 = table[d6 & 127] as number;
+      const v7 = table[d7 & 127] as number;
+      digits |= v0 | v1 | v2 | v3 | v4 | v5 | v6 | v7;
+      out[written] = (v0 << 3) | (v1 >>> 2);
+      out[written + 1] = (v1 << 6) | (v2 << 1) | (v3 >>> 4);
+      out[written + 2] = (v3 << 4) | (v4 >>> 1);
+      out[written + 3] = (v4 << 7) | (v5 << 2) | (v6 >>> 3);
+      out[written + 4] = (v6 << 5) | v7;
+      written += 5;
     }
     const firstCode = value.charCodeAt(24);
-    const first = firstCode < 128 ? (table[firstCode] as number) : -1;
-    if (first < 0) return invalidCharacter(alpha, value, 24);
     const lastCode = value.charCodeAt(25);
-    const last = lastCode < 128 ? (table[lastCode] as number) : -1;
-    if (last < 0) return invalidCharacter(alpha, value, 25);
+    const first = table[firstCode & 127] as number;
+    const last = table[lastCode & 127] as number;
+    if ((codes | firstCode | lastCode) > 127 || (digits | first | last) < 0)
+      return firstInvalidCharacter(alpha, value);
     out[written] = (first << 3) | (last >>> 2);
     if (tailBits === 2) return last & 3;
     if ((last & 3) !== 0)
