@@ -111,6 +111,10 @@ minimum its contract needs; every remaining gap needs a named cause.
       `bench/PERFORMANCE.md`.
 - [x] Refresh the tracked reports with `bun run bench:results`.
 - [x] Run `bun run check`.
+- [ ] Maintainer ruling: make "current-time UUIDv7 generation never encodes a timestamp ahead of the
+      clock unless the clock moved backwards under the preserve policy" a README guarantee with a
+      burst test on Node and Bun, a bench-only row, or neither. Asked 2026-09-16 without an answer;
+      the test stays unwritten until ruled.
 - [ ] Find why Bun UUIDv7 bytes trail `uuid` (package 44–46 ns new and 44–45 ns caller-owned against
       40–41 and 37 in three competitor runs) and UUIDv4 caller-buffer writes trail it (28–29 against
       26–27). Not the entropy source: Bun Web Crypto and `node:crypto` cost the same per byte on an

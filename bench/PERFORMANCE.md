@@ -856,6 +856,11 @@ Remaining gaps and their causes:
 - Bun UUIDv4 text stays 2–5 ns above its floor. The package adds the public text-case check, the
   trusted-identity branch, and the `try` that keeps native failures on the portable fallback.
   Only the `try` was ablated: removing it saved about 1 ns and would break that fallback guarantee.
+- Bun UUIDv7 text costs about 79 ns against 27 ns for native UUIDv4 text: about 42 ns draws the
+  timestamp, sequence, and random bits, and 37 ns formats them through the Latin-1 `Buffer` path.
+  With every result's last character read, formatting the same bytes through `toHex`, `Buffer`
+  `hexSlice`, or a byte-table concatenation cost 86–94 ns on Bun 1.4.2. No drift-free native UUIDv7
+  exists on Bun to delegate to.
 - Bun UUIDv4 caller-buffer output costs 28–29 ns against 17–18 ns. The floor fills a view prepared
   outside the timed call; the package checks the caller range, copies from the package pool into
   private storage, then copies into caller storage, so entropy failure cannot partly write caller
