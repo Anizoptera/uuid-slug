@@ -513,7 +513,28 @@ change, while its byte routes were unchanged. Direct calls restored parity. `ben
 gates zero errors on the codec plain-slug read and on parsed-UUID text and masked conversion; the
 pre-change source fails both rows. Remeasure if engine error construction stops capturing stacks.
 
-### UUID text formatting
+### Generation option reading
+
+Generation options are copied into one object by assigning each accepted own property. The
+previous reader spread one conditional object literal per option, allocating a temporary object for
+every key. Calls without an options object never reach the reader.
+
+Two packed `2251e8f`-to-candidate replays on 2026-09-16 measured median ratios; every listed pair
+had its 95% interval below 1 unless marked unresolved:
+
+| Runtime | `v7.at` | `v7.slug.selected-generator` | `masked.generate.selected-generator` |
+| --- | ---: | ---: | ---: |
+| Node 26.8.2 | 0.78, 0.79 | 0.90, 0.90 | 0.91, 0.97 unresolved |
+| Bun 1.4.2 | 0.31, 0.33 | 0.53, 0.52 | 0.68, 0.70 |
+| Node 24.21.0 | 0.80, 0.77 | 0.93, 0.92 | 0.95, 0.92 |
+| Chromium 153 | 0.82, 0.84 | 0.91 unresolved, 0.91 | unresolved, unresolved |
+| Deno 2.9.6 | 0.77, 0.79 | unresolved, unresolved | 0.72, 0.94 |
+| Node 26.8.2 JITless | 0.95, 0.93 | unresolved, unresolved | unresolved, unresolved |
+
+One Node 26.8.2 replay was disturbed, with no interval resolved on any row, and was replaced by a
+third. Argument-free `masked.generate` read 1.06 slower in two Node 26.8.2 runs, but seven
+candidate runs had a median ratio of 0.99, and three HEAD-against-HEAD runs spread from 0.98 to
+1.03, so it is unresolved. Bytes and caller-buffer variants of `v7.at` improved by similar ratios.
 
 Node, Bun, and Deno format UUID bytes by writing ASCII hex codes into a reused 36-byte `Buffer` and
 reading it back with one `toString("latin1")` call. The runtime adapter supplies that capability;

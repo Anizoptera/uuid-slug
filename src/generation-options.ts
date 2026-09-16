@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { findUnknownOption, INVALID_OPTIONS, stringInput, UuidSlugError } from "./errors.ts";
+import { findUnknownOption, INVALID_OPTIONS, UuidSlugError } from "./errors.ts";
 
 export interface GenerationOptionValues {
   readonly alphabet?: unknown;
@@ -30,25 +30,21 @@ export function readGenerationOptions(
     if (unknown !== undefined)
       return new UuidSlugError(INVALID_OPTIONS, `Unknown ${operation} option: ${unknown}.`);
     const source = options as GenerationOptionValues;
-    return {
-      ...(accepted.alphabet && Object.hasOwn(source, "alphabet")
-        ? { alphabet: stringInput(source.alphabet) ?? source.alphabet }
-        : {}),
-      ...(accepted.at && Object.hasOwn(source, "at") ? { at: source.at } : {}),
-      ...(accepted.generator && Object.hasOwn(source, "generator")
-        ? { generator: source.generator }
-        : {}),
-      ...(accepted.maskingCodec && Object.hasOwn(source, "maskingCodec")
-        ? { maskingCodec: source.maskingCodec }
-        : {}),
-      ...(accepted.output && Object.hasOwn(source, "output") ? { output: source.output } : {}),
-      ...(accepted.outputOffset && Object.hasOwn(source, "outputOffset")
-        ? { outputOffset: source.outputOffset }
-        : {}),
-      ...(accepted.textCase && Object.hasOwn(source, "textCase")
-        ? { textCase: stringInput(source.textCase) ?? source.textCase }
-        : {}),
-    };
+    // Direct assignments build one object; a conditional spread per option allocated a temporary
+    // object for each (bench/PERFORMANCE.md). Each accepted own property is read once, in this
+    // order. Callers resolve `alphabet` and `textCase`, which also unwraps `String` objects.
+    const values: { -readonly [Key in keyof GenerationOptionValues]: unknown } = {};
+    if (accepted.alphabet && Object.hasOwn(source, "alphabet")) values.alphabet = source.alphabet;
+    if (accepted.at && Object.hasOwn(source, "at")) values.at = source.at;
+    if (accepted.generator && Object.hasOwn(source, "generator"))
+      values.generator = source.generator;
+    if (accepted.maskingCodec && Object.hasOwn(source, "maskingCodec"))
+      values.maskingCodec = source.maskingCodec;
+    if (accepted.output && Object.hasOwn(source, "output")) values.output = source.output;
+    if (accepted.outputOffset && Object.hasOwn(source, "outputOffset"))
+      values.outputOffset = source.outputOffset;
+    if (accepted.textCase && Object.hasOwn(source, "textCase")) values.textCase = source.textCase;
+    return values;
   } catch (cause) {
     return new UuidSlugError(INVALID_OPTIONS, `Reading ${operation} options failed.`, { cause });
   }
