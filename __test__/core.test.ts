@@ -1156,6 +1156,26 @@ describe("plain UUID slugs", () => {
     expect(codec.uuidToMaskedSlug(owned)).toBe(masked);
   });
 
+  it("reparses a value through another codec without losing its layout or sharing codec bytes", () => {
+    const first = unwrap(createCodec({ mask: UUID_V7_TEST_MASK }));
+    const second = unwrap(createCodec({ mask: { seed: "fine-test-seed-0000" } }));
+    const viaFirst = unwrap(parseUuid(SAMPLE_V7_A, first));
+    const viaSecond = unwrap(parseUuid(viaFirst, second));
+    expect(viaSecond.toMaskedSlug()).toBe(second.uuidToMaskedSlug(SAMPLE_V7_A));
+    expect(viaSecond.toMaskedSlug()).not.toBe(first.uuidToMaskedSlug(SAMPLE_V7_A));
+
+    const generated = unwrap(generateUuidV7Value({ at: 123 }));
+    const reparsed = unwrap(parseUuid(generated, second));
+    // @ts-expect-error The reparsed type does not record the layout that the value keeps.
+    expect(reparsed.extractV7Payload()).toMatchObject({ unixMs: 123 });
+
+    const retained = unwrap(uuidStringToBytes(SAMPLE_V7_A));
+    const retainingCodec = { uuidToBytes: () => retained } as never;
+    const parsed = unwrap(parseUuid(SAMPLE_V7_A, retainingCodec));
+    retained.fill(0);
+    expect(parsed.toString()).toBe(SAMPLE_V7_A);
+  });
+
   it("retains generated layout and an explicit codec without retaining generator state", () => {
     const codec = unwrap(createCodec({ mask: UUID_V7_TEST_MASK }));
     const generator = unwrap(
