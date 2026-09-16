@@ -1094,9 +1094,9 @@ change the ranking. Browser performance comparisons use Chromium; Firefox and We
 | Evidence | Scope | Current result |
 | --- | --- | --- |
 | UUIDv7 text | Node, Bun, Deno, Chromium | Leads the compared packages. Module calls use Bun's native generator on Bun and portable generation elsewhere, without cross-form ordering; created generators add an explicit ordering contract and clock controls. |
-| UUIDv4 text | Node, Bun, Deno, Chromium | Uses native generation on Node, Bun, and Deno. Trails the fastest compared package on Bun, Deno, and Chromium. |
-| UUIDv4/v7 bytes | New arrays and caller buffers on Node, Bun, Deno, Chromium | Leads the compared packages except Bun's UUIDv4 caller-buffer writes, which trail `uuid`, and Deno's new UUIDv7 arrays, which are unresolved against `uuidv7`. |
-| Conversion | UUID text, bytes, both plain-slug alphabets, timestamp extraction | Text timestamp extraction trails `uuidv7-js` on all four runtimes. The study has no comparable package for extraction from bytes or slugs. |
+| UUIDv4 text | Node, Bun, Deno, Chromium | Uses native generation on Node, Bun, and Deno. Trails the fastest compared package on Bun and Chromium. |
+| UUIDv4/v7 bytes | New arrays and caller buffers on Node, Bun, Deno, Chromium | Leads the compared packages on Node and Chromium. On Bun, UUIDv4 caller-buffer writes and both UUIDv7 byte forms trail `uuid`. On Deno, both UUIDv7 byte forms are unresolved against `uuidv7` and `uniku`. |
+| Conversion | UUID text, bytes, both plain-slug alphabets, timestamp extraction | Text timestamp extraction trails `uuidv7-js` on Node, Bun, and Deno and is unresolved on Chromium. The study has no comparable package for extraction from bytes or slugs. |
 | Bundling | Bun, esbuild, Parcel, Rollup, Rolldown, Rspack, webpack | A named root import keeps only the code it needs. |
 
 See the [performance study](bench/PERFORMANCE.md) for measurements, competitors, and rejected
