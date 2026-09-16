@@ -110,7 +110,7 @@ minimum its contract needs; every remaining gap needs a named cause.
 - [x] Record floors, remaining gaps, causes, and the unresolved Bun explicit-time byte signal in
       `bench/PERFORMANCE.md`.
 - [x] Refresh the tracked reports with `bun run bench:results`.
-- [ ] Run `bun run check`.
+- [x] Run `bun run check`.
 - [ ] Find why Bun UUIDv7 bytes trail `uuid` (package 44–46 ns new and 44–45 ns caller-owned against
       40–41 and 37 in three competitor runs) and UUIDv4 caller-buffer writes trail it (28–29 against
       26–27). Not the entropy source: Bun Web Crypto and `node:crypto` cost the same per byte on an
