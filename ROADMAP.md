@@ -20,15 +20,18 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
 - `parseUuid` and `generateUuidV7Value` add 100–230 ns per value over the byte routes: `WeakMap`
   state, spread, freeze, and a copy of already-owned decoded bytes (`src/uuid-value.ts`).
 - `extractUuidV7Payload(text)` costs 412–508 ns against 104–125 ns for the timestamp.
-- The profile corpus has no rows for parsed values, codec plain-slug reads, canonical-text
-  normalization, or payload extraction.
+- The profile corpus now has rows for parsed values, codec plain-slug reads, canonical-text
+  normalization, and payload extraction (`1a5dd32`); the filter accepts comma-separated terms.
+- Retained: removing the discarded errors made those codec and parsed-value routes 16–30 times
+  faster on Node and 1.7–2.9 times on Bun (bench/PERFORMANCE.md). Host load near 14 from unrelated
+  processes widens intervals; discard replays whose intervals span the whole row.
 
 ## Tasks
 
-- [ ] Remove the discarded error from non-byte object input and codec plain-slug reads; add
+- [x] Remove the discarded error from non-byte object input and codec plain-slug reads; add
       resource-gate rows proving zero errors on those successful routes.
 - [ ] Return canonical lowercase UUID text from `uuidToString` without reformatting.
 - [ ] Measure a private-field `Uuid` value against the `WeakMap` protocol; remove the redundant
       byte copy in `parseUuid`.
-- [ ] Add corpus rows for the routes above; packed compare on Node, Bun, Chromium, Deno, JITless.
+- [ ] Packed compare each remaining change on Node and Bun, then Chromium, Deno, and JITless.
 - [ ] Record retained results in `bench/PERFORMANCE.md`; run `bun run check`.
