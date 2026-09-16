@@ -347,6 +347,17 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
             : undefined,
         }),
       );
+      // One readable verdict per row on stderr, so a reader needs no script to see the release,
+      // the medians, and whether the interval excludes no change; stdout stays JSON Lines.
+      const interval = medianRatio95
+        ? `[${medianRatio95[0].toFixed(2)}, ${medianRatio95[1].toFixed(2)}] ` +
+          (medianRatio95[0] > 1 ? "slower" : medianRatio95[1] < 1 ? "faster" : "unresolved")
+        : "no interval from this few rounds";
+      console.error(
+        `${runtime} ${runtimeVersions.get(runtime)} ${name}: ` +
+          `${median(baseline).toFixed(0)} -> ${median(candidate).toFixed(0)} ns, ` +
+          `ratio ${(median(candidate) / median(baseline)).toFixed(3)} ${interval}`,
+      );
     }
   }
 }
@@ -356,7 +367,8 @@ async function main(): Promise<void> {
     if (runtime === "chromium") continue;
     const executable = runtime === "bun" || runtime === "deno" ? runtime : nodeExecutable;
     const output = await command(executable, ["--version"], project);
-    runtimeVersions.set(runtime, output.trim().split("\n")[0] ?? "");
+    // Node prints `v26.8.2` and Deno `deno 2.9.6 (stable, ...)`; keep only the release number.
+    runtimeVersions.set(runtime, /\d+\.\d+\.\d+\S*/.exec(output)?.[0] ?? output.trim());
   }
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-compare-"));
   const baselineRoot = join(scratch, "baseline");

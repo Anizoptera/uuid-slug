@@ -174,6 +174,8 @@ Set `UUID_SLUG_COMPARE_RUNTIMES` to a distinct colon-separated subset of
 `node:bun:chromium:deno:node-jitless` for a narrow comparison. Use all runtimes before retaining a change.
 Set `UUID_SLUG_COMPARE_NODE_EXECUTABLE` to compare with a specific Node release; without it the
 driver runs the `node` that the project directory resolves, which may not be Node Current. Every record
-and summary carries `runtimeVersion`; take the release named in a result from that field.
+and summary carries `runtimeVersion`; take the release named in a result from that field. Stderr also
+prints one line per summarized row: release, baseline and candidate medians, the median ratio, and its
+95% interval with `faster`, `slower`, or `unresolved`, which a smoke run has too few rounds to compute.
 The current worktree owns the comparison corpus and drivers; packed revisions supply only the code
 under test. A baseline must not remove the newer case intended to distinguish it.
