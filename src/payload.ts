@@ -176,12 +176,14 @@ export function ownedUuidV7BytesToMaskedSlug(
   if (failed) return failed;
   const tail = tag & ((1 << OUTER_TAG_BITS) - 1);
   // Raw sentinels have zero outer bits. Only that tail can collide with retained base64 reads;
-  // other safe writes need no second encoding to check a collision that cannot occur.
+  // other writes need neither a second encoding nor a lookup for a collision that cannot occur.
+  // Skipping the lookup matters: on V8 it hashed and flattened every base64url slug
+  // (bench/PERFORMANCE.md).
   const canonical =
     alphabet === BASE64URL_NAME || (tail === 0 && reserved?.size)
       ? encode(raw, BASE64URL, tail, OUTER_TAG_BITS)
       : undefined;
-  if (canonical !== undefined && reserved?.has(canonical))
+  if (tail === 0 && canonical !== undefined && reserved?.has(canonical))
     return new UuidSlugError(
       INVALID_MASK,
       "Masked output collides with a reserved sentinel. Configure a different mask or sentinel set.",

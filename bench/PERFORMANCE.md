@@ -443,6 +443,22 @@ replays. `DataView` comparison was 5–15 times slower because it created two vi
 early-exit byte loop. Reopen packed equality only if an engine supplies allocation-free unaligned
 loads or JITless no longer pays for the required word assembly.
 
+### Masked sentinel collision check
+
+Masked encoding looks up its canonical base64url slug among the codec's sentinel slugs only when the
+outer check tail is zero. Sentinel slugs are plain encodings with zero trailing bits, so a slug
+with any other tail cannot collide. Before this, every base64url write ran the lookup.
+
+Two packed `17e2f97`-to-candidate replays on 2026-09-16 measured argument-free `masked.generate`
+at 0.60 and 0.62 of baseline on Node 26.8.2, 0.64 and 0.74 on Chromium 153, 0.81 and 0.77 on Deno
+2.9.6, and 0.88 and 0.87 on Node 24.21.0, every interval below 1. Bun 1.4.2 and Node 26.8.2
+JITless were unresolved. `masked.encode.bytes` improved by 7–18% on Deno 2.9.6 and Node 24.21.0
+and was unresolved on Node 26.8.2. Node CPU profiles put the encoding function's self time near
+180 ns before and 20 ns after on generation, and 66 ns before and 12 ns after on byte encoding. On
+byte encoding the row total did not move while the benchmark loop's own share rose from 1.3% to
+8.7%. That is consistent with the lookup flattening the V8 base64url result, which is built by
+string concatenation, so that without the lookup the caller's first read pays for flattening.
+
 ### Previous-key attempt storage
 
 Preserve the decoded ciphertext as four scalar words, then restore the mutable block between failed
