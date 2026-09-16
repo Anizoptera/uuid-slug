@@ -26,6 +26,18 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
   and 1.1–2.2 from text on every runtime (bench/PERFORMANCE.md).
 - The profile corpus now has rows for parsed values, codec plain-slug reads, canonical-text
   normalization, and payload extraction (`1a5dd32`); the filter accepts comma-separated terms.
+- Timing probes must read each result: a loop that discards results let V8 skip work, reading native
+  `randomUUID` at 23 ns. With a one-character sink like the corpus runner's, native and
+  `generateUuidV4()` both cost 139 ns on Node 26.8.2 and 26 ns on Bun, so v4 text generation is
+  bound by the native call. The corpus runner's sink is realistic; per-row call sites made no
+  difference to `v4.string` (145 ns alone, 139–143 ns among other rows).
+- Retained: byte-pair formatting makes `uuidV7StringBounds` about 6 times faster on Node, Chromium,
+  and Deno and 2.5 times on Bun (bench/PERFORMANCE.md).
+- UUID text parsing costs about 190 ns of the 304 ns `uuidStringToPlainSlug` call on Node. A
+  one-pass decode that ORs an invalid-character flag screened at 65 ns against 141 ns on Node and
+  27 against 145 ns on Bun; retained after packed replays (bench/PERFORMANCE.md).
+- Options objects cost more than the work: `generateUuidV7({ at })` 673 ns against 160 ns
+  without options, and `{ generator }` adds about 240 ns to slug and masked generation, on Bun too.
 - Retained: removing the discarded errors made those codec and parsed-value routes 16–30 times
   faster on Node and 1.7–2.9 times on Bun (bench/PERFORMANCE.md). Host load near 14 from unrelated
   processes widens intervals; discard replays whose intervals span the whole row.
@@ -40,3 +52,7 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
 - [x] Packed compare each remaining change on Node and Bun, then Chromium, Deno, and JITless.
 - [x] Record retained results in `bench/PERFORMANCE.md`; run `bun run check`.
 - [x] Measure `extractUuidV7Payload(text)` against the timestamp route and remove avoidable work.
+- [x] Retain the one-pass UUID text parser after packed replays on every runtime.
+- [ ] Redo the canonical-text guard screen (regex against a character loop) with results consumed.
+- [ ] Find the option-object cost in `{ at }` and `{ generator }` generation calls.
+- [ ] Replay the value-state and payload changes on Node 24.21.0.
