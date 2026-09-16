@@ -140,15 +140,24 @@ function print(runtime: string, rows: readonly Measurement[]): void {
   }
 }
 
-async function build(entry: string, target: "browser" | "node", outdir: string): Promise<string> {
+/**
+ * Bundle one entry per runtime with the export conditions its consumers resolve. One shared host
+ * bundle selected the Node adapter on Bun and Deno, so their rows measured Node crypto instead of
+ * the Bun and Deno native routes the package publishes.
+ */
+async function build(
+  entry: string,
+  name: "browser" | "bun" | "deno" | "node",
+  outdir: string,
+): Promise<string> {
   const result = await Bun.build({
     entrypoints: [join(import.meta.dir, entry)],
-    target,
     outdir,
-    naming: `${target}.mjs`,
+    naming: `${name}.mjs`,
+    ...(name === "deno" ? { conditions: ["deno"], target: "node" as const } : { target: name }),
   });
-  if (!result.success) throw new AggregateError(result.logs, `${target} benchmark build failed`);
-  return join(outdir, `${target}.mjs`);
+  if (!result.success) throw new AggregateError(result.logs, `${name} benchmark build failed`);
+  return join(outdir, `${name}.mjs`);
 }
 
 async function runBrowser(entry: string): Promise<Measurement[]> {
@@ -195,17 +204,19 @@ async function runBrowser(entry: string): Promise<Measurement[]> {
 
 const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-generation-"));
 try {
-  const [host, browser] = await Promise.all([
+  const [nodeHost, bunHost, denoHost, browser] = await Promise.all([
     build("generation-host.ts", "node", scratch),
+    build("generation-host.ts", "bun", scratch),
+    build("generation-host.ts", "deno", scratch),
     build("generation-browser.ts", "browser", scratch),
   ]);
   // CPU workloads run sequentially; concurrent runtimes contend for cores and turn scheduler
   // interference into apparent implementation variance.
   const hostRuns = [];
   const runtimes: readonly [string, string[]][] = [
-    ["node", [host, ...(smoke ? ["--smoke"] : [])]],
-    ["bun", [host, ...(smoke ? ["--smoke"] : [])]],
-    ["deno", ["run", "--allow-env", "--allow-read", host]],
+    ["node", [nodeHost, ...(smoke ? ["--smoke"] : [])]],
+    ["bun", [bunHost, ...(smoke ? ["--smoke"] : [])]],
+    ["deno", ["run", "--allow-env", "--allow-read", denoHost]],
   ];
   for (const [executable, arguments_] of runtimes)
     hostRuns.push(await command(executable, arguments_, project, environment));
