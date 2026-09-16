@@ -9,6 +9,7 @@ import {
   UuidSlugError,
 } from "./errors.ts";
 import type { UuidV7Generator, UuidV7Instant, UuidV7PayloadLayout } from "./types.ts";
+import type { PortableUuidV7Generator } from "./v7.ts";
 import { readUuidV7Instant } from "./instant.ts";
 import { readUuidV7PayloadLayout, uuidV7PayloadFromBytesUnchecked } from "./v7-payload.ts";
 import { isUuidV7Bytes, uuidTimestampFromBytesUnchecked } from "./uuid.ts";
@@ -25,22 +26,29 @@ export interface UuidV7GenerationValues {
 export interface ValidatedUuidV7Generator {
   readonly generateUuidV7Bytes: UuidV7Generator["generateUuidV7Bytes"];
   readonly payloadLayout: UuidV7PayloadLayout;
+  /** Present only on package generators, whose bytes need no validation or defensive copy. */
+  readonly drawUuidV7Bytes?: PortableUuidV7Generator["drawUuidV7Bytes"];
 }
 
 /**
- * Generators this package copy created. Each is frozen and its layout was validated when it was
- * built, so reading it again proves nothing.
+ * Public generators this package copy created, mapped to their sequences. Each public object is
+ * frozen and its layout was validated when it was built, so reading it again proves nothing, and its
+ * sequence writes fresh or caller-owned bytes that nothing else retains.
  *
  * Structural validation allocated a validated object and rescanned the layout keys on every call
- * that passed `generator` (bench/PERFORMANCE.md). A generator from another package copy misses
- * this set and still takes the structural read. Remeasure if `WeakSet#has` stops being cheaper
- * than that read.
+ * that passed `generator`, and the untrusted-generator call then needed a scratch buffer, byte
+ * validation, an `at` check, and a copy (bench/PERFORMANCE.md). A generator from another package
+ * copy misses this map and still takes those steps. Remeasure if `WeakMap#get` stops being cheaper
+ * than the structural read.
  */
-const packageUuidV7Generators = new WeakSet();
+const packageUuidV7Generators = new WeakMap<object, ValidatedUuidV7Generator>();
 
-/** Record a frozen generator whose `generateUuidV7Bytes` and validated layout never change. */
-export function registerPackageUuidV7Generator(generator: ValidatedUuidV7Generator): void {
-  packageUuidV7Generators.add(generator);
+/** Record a frozen public generator and the sequence behind its methods. */
+export function registerPackageUuidV7Generator(
+  generator: object,
+  sequence: PortableUuidV7Generator,
+): void {
+  packageUuidV7Generators.set(generator, sequence);
 }
 
 /** Narrow an untrusted generator without relying on package-copy identity. */
@@ -48,7 +56,8 @@ export function readUuidV7Generator(
   value: unknown,
 ): ValidatedUuidV7Generator | UuidSlugError | undefined {
   if (value === undefined) return undefined;
-  if (packageUuidV7Generators.has(value as object)) return value as ValidatedUuidV7Generator;
+  const packaged = packageUuidV7Generators.get(value as object);
+  if (packaged) return packaged;
   try {
     if (value === null || typeof value !== "object")
       return new UuidSlugError(INVALID_OPTIONS, UUID_V7_GENERATOR_REQUIRED);
@@ -88,6 +97,13 @@ export function generateUuidV7BytesWithGenerator(
     const rangeError = checkByteRange(options.output, outputOffset, 16);
     if (rangeError) return rangeError;
   }
+  const drawUuidV7Bytes = generator.drawUuidV7Bytes;
+  if (drawUuidV7Bytes)
+    return drawUuidV7Bytes(
+      requested,
+      hasOutput ? (options.output as Uint8Array) : undefined,
+      outputOffset,
+    );
   let generated: unknown;
   const generatedOutput = new Uint8Array(16);
   try {

@@ -48,7 +48,18 @@ interface PortableUuidV7GeneratorOptions {
 export type PortableUuidV7Generator = Omit<
   UuidV7Generator,
   "generatePlainUuidV7Slug" | "generateUuidV7Value" | "generateUuidV7WithPlainSlug"
->;
+> & {
+  /**
+   * Draw after the caller has read its options: `instant` is already normalized and `output` is
+   * checked again here. Package callers use it to avoid rebuilding and rereading an options object;
+   * it must never reach a public object.
+   */
+  readonly drawUuidV7Bytes: (
+    instant: NormalizedUuidV7Instant | undefined,
+    output?: Uint8Array,
+    outputOffset?: number,
+  ) => Uint8Array | UuidSlugError;
+};
 
 const UUID_V7_TEXT_OPTIONS = {
   at: true,
@@ -364,6 +375,16 @@ export function createPortableUuidV7Generator(
     return instant instanceof Error ? instant : bytesAt(instant, output, outputOffset);
   }
 
+  function drawUuidV7Bytes(
+    instant: NormalizedUuidV7Instant | undefined,
+    output?: Uint8Array,
+    outputOffset?: number,
+  ): Uint8Array | UuidSlugError {
+    return instant === undefined
+      ? bytes(output, outputOffset)
+      : bytesAt(instant, output, outputOffset);
+  }
+
   function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     textCase?: Case,
   ): UuidV7StringFor<Case> | UuidSlugError;
@@ -404,5 +425,6 @@ export function createPortableUuidV7Generator(
     payloadLayout,
     generateUuidV7,
     generateUuidV7Bytes,
+    drawUuidV7Bytes,
   };
 }

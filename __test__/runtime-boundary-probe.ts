@@ -75,6 +75,15 @@ export const runtimeBoundaryCases = [
       const first = unwrap(uuidStringToBytes(generator.generateUuidV7()));
       const second = unwrap(generator.generateUuidV7Bytes());
       assert.ok(compareBytes(second, first) > 0);
+      assert.ok(Object.isFrozen(generator));
+      assert.deepEqual(Reflect.ownKeys(generator), [
+        "payloadLayout",
+        "generateUuidV7",
+        "generateUuidV7Bytes",
+        "generatePlainUuidV7Slug",
+        "generateUuidV7WithPlainSlug",
+        "generateUuidV7Value",
+      ]);
     },
   },
   {
