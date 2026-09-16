@@ -705,13 +705,8 @@ export interface UuidSlugMigrationDecoder<
   ): readonly UuidStringFor<Case>[] | UuidSlugError;
 }
 
-/** Configure one immutable UUIDv7 masking codec for writing, key rotation, and sentinels. */
-export interface UuidV7MaskingCodecOptions {
-  /**
-   * The writer mask and first reader. Supply a private seed or explicitly choose
-   * `UUID_V7_TEST_MASK` for public test data. A returned `UuidSlugError` passes through unchanged.
-   */
-  readonly mask: UuidV7Mask | UuidV7MaskOptions | UuidSlugError;
+/** Key rotation, sentinel, and output options shared by both ways of supplying the writer mask. */
+export interface UuidV7MaskingCodecSharedOptions {
   /**
    * First Unix millisecond accepted by masking. The inclusive end is this value plus
    * `MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`. Changing it changes masked slugs, so retain the old
@@ -721,7 +716,7 @@ export interface UuidV7MaskingCodecOptions {
    */
   readonly timestampRangeStartUnixMs?: number;
   /**
-   * Decode-only masks tried after `mask`, in caller order. Each item accepts a mask or its
+   * Decode-only masks tried after the writer mask, in caller order. Each item accepts a mask or its
    * derivation options. A returned `UuidSlugError` passes through unchanged. Keep the list short:
    * every mask adds decoding work and another chance for a random input to pass its 16-bit check.
    *
@@ -749,6 +744,32 @@ export interface UuidV7MaskingCodecOptions {
    */
   readonly maskedSlugAlphabet?: SlugAlphabet;
 }
+
+/**
+ * Configure one immutable UUIDv7 masking codec for writing, key rotation, and sentinels. Supply the
+ * writer mask exactly one way: `maskSeed` for private key material, or `mask` for a shared derived
+ * mask, `UUID_V7_TEST_MASK`, or seed material that also needs a label or a key-derivation work factor.
+ */
+export type UuidV7MaskingCodecOptions =
+  | (UuidV7MaskingCodecSharedOptions & {
+      /**
+       * The writer mask and first reader. Supply a derived mask, its derivation options, or
+       * explicitly choose `UUID_V7_TEST_MASK` for public test data. A returned `UuidSlugError`
+       * passes through unchanged.
+       */
+      readonly mask: UuidV7Mask | UuidV7MaskOptions | UuidSlugError;
+      readonly maskSeed?: never;
+    })
+  | (UuidV7MaskingCodecSharedOptions & {
+      readonly mask?: never;
+      /**
+       * Stable secret key material for the writer mask, derived with the default work factor.
+       * Generate at least 16 bytes, keep it outside source control, and retain old values in
+       * `previousMasks`; a known UUID/slug pair permits offline guesses. JavaScript also accepts a
+       * genuine `String` object.
+       */
+      readonly maskSeed: string | Uint8Array;
+    });
 
 /** A retained mask and the timestamp-range start used to create its stored slugs. */
 export interface UuidV7PreviousMask {

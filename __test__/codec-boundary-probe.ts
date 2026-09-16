@@ -191,7 +191,7 @@ export const codecBoundaryCases = [
     },
   },
   {
-    name: "requires an explicit mask before reading any other codec option",
+    name: "requires exactly one writer mask before reading any other codec option",
     run() {
       for (const value of [undefined, null, {}, { mask: undefined }]) {
         let observed = false;
@@ -215,6 +215,21 @@ export const codecBoundaryCases = [
       assert.ok(forged instanceof UuidSlugError);
       assert.equal(forged.code, "invalid_mask");
       assert.ok(!(createCodec({ mask: UUID_V7_TEST_MASK }) instanceof Error));
+      // maskSeed and mask reach the same derivation, so supplying both leaves no writer mask the
+      // codec may prefer, and the seed form must produce the mask its nested spelling produces.
+      const seed = "codec-seed-for-both-writer-mask-forms";
+      const both = Reflect.apply(createCodec, undefined, [
+        { mask: UUID_V7_TEST_MASK, maskSeed: seed },
+      ]);
+      assert.ok(both instanceof UuidSlugError);
+      assert.equal(both.code, "invalid_mask");
+      const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
+      const fromSeed = unwrap(createCodec({ maskSeed: seed }));
+      const fromMaskOptions = unwrap(createCodec({ mask: { seed } }));
+      assert.equal(
+        unwrap(fromSeed.uuidToMaskedSlug(uuid)),
+        unwrap(fromMaskOptions.uuidToMaskedSlug(uuid)),
+      );
     },
   },
   {

@@ -97,6 +97,7 @@ const AT_OPTION = "at";
 const CODEC_OPTIONS = {
   mask: true,
   maskedSlugAlphabet: true,
+  maskSeed: true,
   previousMasks: true,
   sentinels: true,
   timestampRangeStartUnixMs: true,
@@ -354,15 +355,21 @@ function buildUuidSlugCodec(
 ): UuidV7MaskingCodec | UuidSlugError {
   const validOptions = typeof options === "object" && options !== null && !Array.isArray(options);
   const mask = validOptions ? options.mask : undefined;
-  if (mask === undefined || mask === null)
+  const maskSeed = validOptions ? options.maskSeed : undefined;
+  // Both keys reach the same derivation, so accepting both would leave the writer mask ambiguous.
+  const hasMask = mask !== undefined && mask !== null;
+  const hasSeed = maskSeed !== undefined && maskSeed !== null;
+  if (hasMask === hasSeed)
     return new UuidSlugError(
       INVALID_MASK,
-      "Pass { mask: { seed } } for private masking or { mask: UUID_V7_TEST_MASK } for public examples.",
+      hasMask
+        ? "Pass maskSeed for private key material or mask for a derived mask, never both."
+        : "Pass { maskSeed } for private masking or { mask: UUID_V7_TEST_MASK } for public examples.",
     );
   const unknown = findUnknownOption(options, CODEC_OPTIONS);
   if (unknown !== undefined)
     return new UuidSlugError(INVALID_MASK, `Unknown UUIDv7 masking-codec option: ${unknown}.`);
-  const maskResult = maskFromOption(mask);
+  const maskResult = maskFromOption(hasMask ? mask : { seed: maskSeed as string | Uint8Array });
   if (isUuidSlugError(maskResult)) return maskResult;
   const handle = maskResult;
   const currentTimestampRangeStartResult = timestampRangeStart(

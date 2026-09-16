@@ -409,7 +409,7 @@ import {
 } from "@anizoptera/uuid-slug";
 
 function createPublicIdGenerator(seed: string) {
-  const maskingCodec = createUuidV7MaskingCodec({ mask: { seed } });
+  const maskingCodec = createUuidV7MaskingCodec({ maskSeed: seed });
   if (isUuidSlugError(maskingCodec)) return maskingCodec;
   return maskingCodec.generateMaskedUuidV7Slug;
 }
@@ -474,7 +474,7 @@ import { createUuidV7MaskingCodec, isUuidSlugError } from "@anizoptera/uuid-slug
 
 function createSentinels(seed: string) {
   const maskingCodec = createUuidV7MaskingCodec({
-    mask: { seed },
+    maskSeed: seed,
     sentinels: [{ name: "unknownUser", uuid: "00000000-0002-7000-8000-000000000000" }],
   });
   return isUuidSlugError(maskingCodec) ? maskingCodec : maskingCodec.sentinels;
@@ -561,7 +561,10 @@ async function findAuthorizedRecord<Record>(
 ```
 
 **Supply your own secret seed for real identifiers.** Masking-codec construction fails with
-`invalid_mask` when `mask` is missing. For tests and demos that need stable public bytes,
+`invalid_mask` when neither `maskSeed` nor `mask` is supplied, and when both are supplied. Pass
+`maskSeed` for a plain secret. Pass `mask` for a mask you derived separately, for
+`UUID_V7_TEST_MASK`, or for seed material that also needs a label or a key-derivation work factor.
+For tests and demos that need stable public bytes,
 select `UUID_V7_TEST_MASK` explicitly; anyone can decode identifiers produced with it.
 The masked examples in the TL;DR use this test mask; every row there identifies the same UUIDv7.
 
@@ -923,7 +926,7 @@ import { createUuidV7MaskingCodec } from "@anizoptera/uuid-slug";
 
 function createRotatedCodec(currentSeed: string, previousSeed: string) {
   return createUuidV7MaskingCodec({
-    mask: { seed: currentSeed },
+    maskSeed: currentSeed,
     previousMasks: [{ mask: { seed: previousSeed }, timestampRangeStartUnixMs: 0 }],
   });
 }

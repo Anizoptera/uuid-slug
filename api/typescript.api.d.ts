@@ -682,8 +682,16 @@ export declare interface UuidV7MaskingCodec {
     window: UuidV7TimestampWindow,
   ): (Input & MaskedOrSentinelUuidV7Slug) | UuidSlugError;
 }
-export declare interface UuidV7MaskingCodecOptions {
-  readonly mask: UuidV7Mask | UuidV7MaskOptions | UuidSlugError;
+export declare type UuidV7MaskingCodecOptions =
+  | (UuidV7MaskingCodecSharedOptions & {
+      readonly mask: UuidV7Mask | UuidV7MaskOptions | UuidSlugError;
+      readonly maskSeed?: never;
+    })
+  | (UuidV7MaskingCodecSharedOptions & {
+      readonly mask?: never;
+      readonly maskSeed: string | Uint8Array;
+    });
+declare interface UuidV7MaskingCodecSharedOptions {
   readonly timestampRangeStartUnixMs?: number;
   readonly previousMasks?: readonly (
     | UuidV7Mask
