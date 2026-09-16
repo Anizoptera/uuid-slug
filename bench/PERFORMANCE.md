@@ -836,6 +836,14 @@ Node 26.8.2 JITless default text is 2.56–2.57 times slower (567–570 to 1,456
 without the JIT native text wins; the JIT rungs outrank it, and one `--jitless` probe for every
 Node selection remains open. The Node floor-table cells above predate this change.
 
+UUIDv4 slugs encode from that same scratch through one shared draw instead of owned bytes. Two
+packed replays against `bf95bbb` measured base64url slugs at 0.794–0.824 on Node 26.8.2, 0.820–0.854
+on Chromium, 0.412–0.455 on Deno, and 0.896–0.908 on Bun, with base32hex slugs at 0.83–0.92 on
+the same lanes. The shared draw is a call Bun does not inline: portable UUIDv4 text read 1.103 and
+1.032 on Bun and 1.043 and 1.032 on Deno, where native text is the default and portable text only
+serves fallback. It stayed unresolved on Node and Chromium, where portable text is the default.
+Inline the draw into the text writer if Bun or Deno portable text becomes a default.
+
 Patching Bun's native UUIDv7 output with the package clock produces correct values but loses: text
 cost 91–94 ns and slugs 103–106 ns against 70–73 and 66–71 ns for the package generator in two
 one-process screens on Bun 1.4.2, because slicing and concatenating the native string costs more
