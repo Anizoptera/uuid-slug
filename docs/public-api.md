@@ -481,6 +481,8 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
   input can cause it and no supported runtime produces it, so the declaration carries no union
   and states the throw with `@throws`. Validate a preset before drawing so untyped misuse still
   returns its error value.
+- Keep the stack trace on every `UuidSlugError`. Omit it only where the stack carries no
+  information, never to make a failure cheaper; failures are not a performance target.
 - Name each error code for the caller's recovery action. Each message identifies the failed
   condition, includes the safe offending value or bound when it helps, and gives the correction
   when the caller can act. Preserve external failures in `cause`; do not guess what caused them.

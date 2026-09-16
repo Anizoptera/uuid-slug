@@ -56,6 +56,9 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   unfinished atomic task there as a Markdown task, update it when evidence or scope changes, replace
   superseded state in place, and compress completed work to the facts later phases still need.
   Never create a shadow, staging, renamed, or temporary roadmap file in this repository.
+- Write each maintainer ruling into the repository file that owns its subject when it is made.
+  Plan files, agent memory, and session notes outside this repository track progress only; a ruling
+  kept there is lost to the next session.
 - Read README §Guarantees before changing generation or tests; it owns the consumer guarantees.
   New guarantees require a maintainer ruling before code or tests impose them. Intra-millisecond ordering
   is explicitly not guaranteed: do not gate it or reject a native generator for lacking it.
@@ -239,6 +242,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   Node LTS and Chromium second, latest Deno third. Older supported Node versions gate correctness
   and compatibility, not performance trade-offs. Node Current JITless is the final rung: retain a
   JITless-only win when every higher rung is unchanged and its lifetime cost is justified.
+- Optimize successful consumer calls. Invalid input, rejected configuration, and other failures
+  are rare by design and are not performance targets: spend no code or measurement on their speed.
 - After every Bun or Deno version change, and before each periodic runtime review, follow
   `bench/README.md` §Capability review. Recheck native, Node-compatible, and web-compatible APIs;
   prove semantics and both selected and fallback paths. Names and API presence prove nothing else.

@@ -1049,8 +1049,8 @@ the encoder path is unchanged, so these small differences are not attributed to 
 Baseline CPU samples included encoding, parsing, hashing, GC and error construction. Equal-duration
 cases overrepresent rare errors relative to many applications; their sample shares are not a traffic
 model, and the repository contains no caller trace or telemetry that supplies invalid-input
-frequency. Synthetic frequency would encode the result into the workload. Keep `UuidSlugError`
-construction until real traffic and complete-route attribution show material cost; `Error` identity,
+frequency. Synthetic frequency would encode the result into the workload. Failures are not a
+performance target, so `UuidSlugError` construction stays as it is; `Error` identity,
 stack, cause, code, and diagnostics remain public behavior, not removable work. Removing diagnostic
 errors or callback-owned buffers would change contracts, not remove waste.
 
