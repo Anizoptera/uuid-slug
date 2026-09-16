@@ -34,7 +34,9 @@ Rules:
 
 Run `bun run bench:competitors --smoke` to validate the competitor matrix, or
 `bun run bench:competitors` for repeated measurements. The matrix compares equal v4/v7 text,
-allocated-byte, caller-buffer, and timestamp-extraction calls on Node, Bun, Deno, and Chromium.
+allocated-byte, caller-buffer, base64url slug, and timestamp-extraction calls on Node, Bun, Deno,
+and Chromium, building its host corpus once per runtime with that runtime's export condition so
+each runtime measures the adapter its consumers load.
 It reports unsupported runtime rows instead of dropping them. Each comparable group emits the
 fastest package route, fastest external or platform reference, and their median ratio so a local
 optimum cannot hide in raw rows.

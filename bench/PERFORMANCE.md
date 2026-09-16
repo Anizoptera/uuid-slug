@@ -778,8 +778,8 @@ The 2026-09-12 review probed Node 26.8.2, Bun 1.4.2, Deno 2.9.6, and Chromium
 153 twice. Node and Bun expose `node:crypto.randomUUIDv7`; Deno does not. The probe detected no
 counter in Node's 74 payload bits, and consecutive same-millisecond values ordered near chance.
 Bun's generator advances a 12-bit counter (50,000-sample entropy probe of 2026-08-12 on Node
-26.7.0 and Bun 1.3.14). Module-level text promises no ordering, but every returned value must still
-pass package validation before publication. Bun also exposes
+26.7.0 and Bun 1.3.14). Module-level text promises no ordering. A native text or slug function is
+validated until one of its own values passes, then trusted by identity; see Native floors. Bun also exposes
 `Bun.randomUUIDv7`: its buffer form is a `Buffer`, explicit zero is accepted, and NaN throws
 `ERR_OUT_OF_RANGE`. Keep runtime dispatch capability-based because shared Node API names do not
 imply shared implementation.
@@ -792,9 +792,73 @@ same counters used by the profiler. Re-run the review after either runtime chang
 before runtime performance work; release notes and property presence are candidate discovery, not
 semantic evidence.
 
-Two packed Bun comparisons initially favored native UUIDv7 text while routing bytes and slugs
-through the portable generator. That result omitted the required validation on repeated native
-calls. The complete public route instead favors portable text, as recorded under UUIDv7 generation.
+### Native floors
+
+Every simple generation call must cost no more than the nearest runtime primitive, or only the
+work its contract needs. `bench/generation-cases.ts` and `bench/generation-host.ts` hold the floor
+rows: Web Crypto `randomUUID`, Web Crypto bytes with version bits for allocated and caller-owned
+output, those bytes encoded by native `toBase64` for UUIDv4 slugs, Node `crypto.randomUUIDv7`, and
+`Bun.randomUUIDv7` text, `Buffer`, and base64url output. The competitor matrix builds its host
+corpus once per runtime with that runtime's export condition. A single node-target bundle ran the
+Node adapter on Bun and Deno, so competitor results before 2026-09-16 do not describe the Bun or
+Deno routes. Deno 2.9.6 has no native UUIDv7. Chromium 153 exposes only `getRandomValues` and, in
+secure contexts, `randomUUID`; the package keeps its own UUIDv4 text there because it is faster.
+
+Two full competitor runs on 2026-09-16 measured Node 24.21.0, Bun 1.4.2, Deno 2.9.6, and Chromium;
+one-row-per-process probes added Node 26.8.2. Medians in nanoseconds, package against floor:
+
+| Call | Node 26.8.2 | Node 24.21.0 | Bun 1.4.2 | Deno 2.9.6 | Chromium |
+| --- | --- | --- | --- | --- | --- |
+| UUIDv4 text | 139–149 / 144–152 | 120–123 / 119 | 31–36 / 27–32 | 32 / 32 | 146–148 / 543–549 |
+| UUIDv4 new bytes | 47–51 / 601–634 | 50–52 / 642–655 | 22 / 22 | 160 / 175–192 | 50 / 484–494 |
+| UUIDv4 caller buffer | 34–35 | 38–40 / 553–560 | 28–29 / 17–18 | 37–38 / 62–63 | 37 / 296–299 |
+| UUIDv4 base64url slug | 102–105 / 728–732 | 100–105 | 53–54 / 50–52 | 210–215 / 268–272 | 145–148 / 602–613 |
+| UUIDv7 text | 108–111 / 164–165 | 111–114 / 150–153 | 46–49 / 43–47 | 112–113 | 143–145 |
+| UUIDv7 new bytes | 67 | 72–75 | 44–45 / 50–51 | 173–174 | 74 |
+| UUIDv7 base64url slug | 138–144 | 140 | 59–62 / 55–60 | 237–248 | 179–182 |
+
+Node 26.8.2 figures come from probes that consume every result; the other columns come from the
+matrix. A cell without a floor has no native primitive for that output on that runtime. Node's
+unpooled Web Crypto and `randomFillSync` calls cost far more than the pooled draw, and Node's native
+UUIDv7 text is slower than the portable generator, so Node keeps portable UUIDv7 and bytes.
+
+Bun publishes `Bun.randomUUIDv7` for argument-free UUIDv7 text and default-alphabet plain slugs.
+Two packed replays against `b8ac9d5` measured Bun UUIDv7 text at 0.559 and 0.574 of the portable
+cost and the slug at 0.583 and 0.688; every other runtime was unresolved on every generation row.
+Calls with options, base32hex, bytes, values, and pairs keep the package generator: `at` and
+`generator` need sequence state, Bun's byte output is a `Buffer`, and Bun's `Buffer` bytes were
+slower than the portable draw. Bun's generator counts within a millisecond and draws from BoringSSL
+according to a DeepWiki summary of its source read 2026-09-16; the package validates the first
+value from each native function either way. Validating every native value cost 61–63 ns against a
+41–43 ns floor, still faster than the 77–80 ns portable text, but trusting a validated function
+reached the floor. A shared trust helper added a call Bun did not inline, costing 38–40 ns for
+UUIDv4 text against 31–33 ns with the trusted call at each call site, so call sites publish trusted
+values directly and the helper owns only validation and fallback. Remeasure if Bun changes
+`randomUUIDv7`, if Node's native UUIDv7 text overtakes the portable generator, or if a runtime adds
+native UUIDv7 bytes.
+
+The corpus replays also marked Bun explicit-time caller output and selected-generator bytes 10–17%
+slower twice. Neither reproduced alone or after warming keyless text, slug, and byte calls: three
+alternating rounds of eight process pairs gave overlapping explicit-time byte ranges, and one round
+suggested at most 3 ns. Treat the effect as unresolved warm-up history, not a retained regression.
+
+Remaining gaps and their causes:
+
+- Bun UUIDv4 text and UUIDv7 text and slugs stay 2–5 ns above their floors. The package adds the
+  public text-case or alphabet check, the trusted-identity branch, and the `try` that keeps native
+  failures on the portable fallback. Only the `try` was ablated: removing it saved about 1 ns and
+  would break that fallback guarantee.
+- Bun UUIDv4 caller-buffer output costs 28–29 ns against 17–18 ns. The floor fills a view prepared
+  outside the timed call; the package checks the caller range, copies from the package pool into
+  private storage, then copies into caller storage, so entropy failure cannot partly write caller
+  data and Web Crypto never receives a caller view. A 16-byte loop in place of `set` was
+  inconclusive, and drawing into a per-call `subarray` cost 36 ns on Bun and 49–53 ns on Node 26.
+  The strongest remaining candidate lets the pool write at a caller offset, removing the private
+  copy; it changes every adapter's `fillRandom` for a secondary path. Try it if caller-buffer output
+  becomes a primary workload.
+- Bun UUIDv4 slugs cost 2–4 ns more than Web Crypto bytes encoded with `toBase64`. The package
+  path copies from its pool and uses its own slug writer; neither was profiled separately. Node 24
+  has no `toBase64` floor.
 
 ### Feistel round function
 
@@ -1208,11 +1272,10 @@ A fresh-random-payload module candidate cost 226 ns on Node, 334 ns on Bun, 176 
 counter path. Smoke timings are directional only, but the large Bun loss and no reproduced win on
 higher-priority Node reject the extra entropy work.
 
-Validating every native result rejected native dispatch. Two focused replays measured Node native
-at 234 ns and 240 ns against 147 ns and 156 ns portable. Two broader UUIDv7-text replays measured
-Bun native at 121 ns in both runs against 111 ns and 112 ns portable. The comparison uses one
-machine and nine samples per row; it establishes the current dispatch choice, not a bound or stable
-ratio. Remeasure when a host adds secure UUIDv7 bytes or changes its text primitive or validation cost.
+Validating every native result rejected native dispatch on 2026-09-12: two focused replays measured
+Node native at 234 ns and 240 ns against 147 ns and 156 ns portable, and two broader replays
+measured Bun native at 121 ns against 111 ns and 112 ns portable. Native floors supersedes the Bun
+decision: Bun now trusts a validated native function by identity. Node keeps portable UUIDv7 text.
 
 ### Portable UUIDv4 ownership paths
 
