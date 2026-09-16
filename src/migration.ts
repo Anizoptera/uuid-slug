@@ -5,8 +5,9 @@ import {
   INVALID_OPTIONS,
   INVALID_UUID_SLUG,
   findUnknownOption,
-  invalidUuidSlugInput,
   isUuidSlugError,
+  normalizeUuidSlugInput,
+  stringInput,
   UuidSlugError,
 } from "./errors.ts";
 import { decodeFirstMaskedCandidate, decodeMaskedCandidates } from "./payload.ts";
@@ -28,7 +29,7 @@ import {
   UUID_TEXT_LOWERCASE,
   UUID_TEXT_UPPERCASE,
 } from "./types.ts";
-import { bytesToUuidString, invalidUuidTextCase, isUuidTextCase } from "./uuid.ts";
+import { bytesToUuidString, isUuidTextCase, resolveUuidTextCase } from "./uuid.ts";
 
 // These tables and the four-bit checksum define the original wire format.
 // Changing them would change the UUID recovered from an existing slug.
@@ -95,7 +96,11 @@ export function createMigration(
     format: UuidSlugMigrationFormat | undefined,
     firstOnly: boolean,
   ) {
-    if (typeof uuidSlug !== "string") return invalidUuidSlugInput(uuidSlug);
+    let slug = uuidSlug;
+    if (typeof slug !== "string") {
+      slug = normalizeUuidSlugInput(slug);
+      if (typeof slug !== "string") return slug;
+    }
     if (
       (format !== undefined &&
         format !== SEEDED_MASK_FORMAT &&
@@ -113,17 +118,17 @@ export function createMigration(
             : `Unknown migration format: ${String(format)}.`,
       );
 
-    const sentinel = sentinels.get(uuidSlug);
+    const sentinel = sentinels.get(slug);
     if (sentinel) return [sentinel.uuid];
     const useCurrent = format === undefined || format === SEEDED_MASK_FORMAT;
     const useOriginal = original && (format === undefined || format === FIXED_MASK_FORMAT);
     const usePlain = plain && (format === undefined || format === PLAIN_SLUG_FORMAT);
     const bytes = new Uint8Array(16);
     // Original readers ignored the four trailing bits. Keep those aliases confined to migration.
-    const base32 = uuidSlug.length === 26 && usePlain;
-    const safeMasked = uuidSlug.length === 27 && useCurrent;
+    const base32 = slug.length === 26 && usePlain;
+    const safeMasked = slug.length === 27 && useCurrent;
     const tail = decodeInto(
-      uuidSlug,
+      slug,
       base32 || safeMasked ? BASE32HEX : BASE64URL,
       bytes,
       0,
@@ -140,8 +145,8 @@ export function createMigration(
         base32
           ? encode(bytes, BASE64URL)
           : tail === 0
-            ? uuidSlug
-            : uuidSlug.slice(0, 21) + BASE64URL.chars[((bytes[15] as number) & 3) << 4],
+            ? slug
+            : slug.slice(0, 21) + BASE64URL.chars[((bytes[15] as number) & 3) << 4],
       );
     if (reserved && firstOnly) return [reserved.uuid];
     const candidates: UuidString[] = reserved ? [reserved.uuid] : [];
@@ -160,7 +165,7 @@ export function createMigration(
     }
     // Legacy aliases reserve the raw identity, but their check bits can also encode a current ID.
     if (reserved) return candidates;
-    if (useOriginal && uuidSlug.length === 22) {
+    if (useOriginal && slug.length === 22) {
       const match = decodeOriginalMask(bytes);
       if (match) {
         const failed = add(match);
@@ -193,11 +198,16 @@ export function createMigration(
     formatOrCase?: UuidSlugMigrationFormat | Case,
     textCase?: Case,
   ): UuidStringFor<Case> | UuidSlugError {
-    const format = isUuidTextCase(formatOrCase) ? undefined : formatOrCase;
-    const selectedCase =
-      (isUuidTextCase(formatOrCase) ? formatOrCase : textCase) ?? (UUID_TEXT_LOWERCASE as Case);
-    if (!isUuidTextCase(selectedCase)) return invalidUuidTextCase();
-    const result = read(uuidSlug, format, true);
+    const second =
+      formatOrCase === undefined || typeof formatOrCase === "string"
+        ? formatOrCase
+        : (stringInput(formatOrCase) ?? formatOrCase);
+    const format = isUuidTextCase(second) ? undefined : second;
+    const selectedCase = resolveUuidTextCase(
+      (isUuidTextCase(second) ? second : textCase) ?? UUID_TEXT_LOWERCASE,
+    );
+    if (selectedCase instanceof Error) return selectedCase;
+    const result = read(uuidSlug, format as UuidSlugMigrationFormat | undefined, true);
     if (isUuidSlugError(result)) return result;
     const uuid = result[0];
     if (uuid === undefined)
@@ -225,11 +235,16 @@ export function createMigration(
     formatOrCase?: UuidSlugMigrationFormat | UuidTextCase,
     textCase?: UuidTextCase,
   ): readonly UuidString[] | readonly UppercaseUuidString[] | UuidSlugError {
-    const format = isUuidTextCase(formatOrCase) ? undefined : formatOrCase;
-    const selectedCase =
-      (isUuidTextCase(formatOrCase) ? formatOrCase : textCase) ?? UUID_TEXT_LOWERCASE;
-    if (!isUuidTextCase(selectedCase)) return invalidUuidTextCase();
-    const result = read(uuidSlug, format, false);
+    const second =
+      formatOrCase === undefined || typeof formatOrCase === "string"
+        ? formatOrCase
+        : (stringInput(formatOrCase) ?? formatOrCase);
+    const format = isUuidTextCase(second) ? undefined : second;
+    const selectedCase = resolveUuidTextCase(
+      (isUuidTextCase(second) ? second : textCase) ?? UUID_TEXT_LOWERCASE,
+    );
+    if (selectedCase instanceof Error) return selectedCase;
+    const result = read(uuidSlug, format as UuidSlugMigrationFormat | undefined, false);
     if (isUuidSlugError(result)) return result;
     if (selectedCase === UUID_TEXT_LOWERCASE) return result;
     return result.map((uuid) => uuid.toUpperCase() as UppercaseUuidString);

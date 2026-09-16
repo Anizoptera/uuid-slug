@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { ABORTED, findUnknownOption, INVALID_MASK, isUint8Array, UuidSlugError } from "./errors.ts";
+import {
+  ABORTED,
+  findUnknownOption,
+  INVALID_MASK,
+  isUint8Array,
+  stringInput,
+  UuidSlugError,
+} from "./errors.ts";
 import { FEISTEL_KEY_WORDS, feistel16 } from "./feistel.ts";
 import { createMaskHandle } from "./mask-handle.ts";
 import { halfSipHash } from "./siphash.ts";
@@ -66,18 +73,22 @@ function validateOptions(options: unknown, accepted: Readonly<Record<string, tru
   const unknown = findUnknownOption(input, accepted);
   if (unknown !== undefined)
     return new UuidSlugError(INVALID_MASK, `Unknown mask option: ${unknown}.`);
-  const seed = input.seed;
+  const seed =
+    typeof input.seed === "string" || isUint8Array(input.seed)
+      ? input.seed
+      : (stringInput(input.seed) ?? input.seed);
   if (typeof seed !== "string" && !isUint8Array(seed))
     return new UuidSlugError(INVALID_MASK, "Mask seed must be a string or Uint8Array.");
   const givenLabel = input.diagnosticLabel;
   const diagnosticLabel = givenLabel === undefined ? "seeded" : givenLabel;
-  if (typeof diagnosticLabel !== "string")
+  const normalizedLabel = stringInput(diagnosticLabel);
+  if (normalizedLabel === undefined)
     return new UuidSlugError(INVALID_MASK, "Mask diagnosticLabel must be a string.");
   const givenIterations = input.keyDerivationIterations;
   const keyDerivationIterations = givenIterations === undefined ? 1 : givenIterations;
   const iterations = validatedIterations(keyDerivationIterations);
   if (typeof iterations !== "number") return iterations;
-  return { diagnosticLabel, iterations, seed };
+  return { diagnosticLabel: normalizedLabel, iterations, seed };
 }
 
 /** Repack bytes as the little-endian 32-bit words `halfSipHash` absorbs. */

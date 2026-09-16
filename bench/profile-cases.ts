@@ -596,6 +596,9 @@ export function createProfileCases(
     },
     "plain.encode": (index) => api.uuidStringToPlainSlug(ids[index & 255] as string),
     "plain.decode": (index) => api.uuidToString(slugs[index & 255] as string),
+    "uuid.toString.bytes": (index) => api.uuidToString(bytes[index & 255] as Uint8Array),
+    "uuid.toBytes.bytes": (index) => api.uuidToBytes(bytes[index & 255] as Uint8Array),
+    "uuid.toPlainSlug.bytes": (index) => api.uuidToPlainSlug(bytes[index & 255] as Uint8Array),
     "base32.encode": (index) =>
       api.uuidStringToPlainSlug(ids[index & 255] as string, base32hexName),
     "base32.decode": (index) => api.uuidToString(base32[index & 255] as string),
@@ -651,26 +654,31 @@ export function createProfileCases(
       codec.generateUuidV7WithMaskedSlug({ generator: selectedGenerator }),
     "masked.encode": (index) => codec.uuidToMaskedSlug(ids[index & 255] as string),
     "masked.encode.bytes": (index) => codec.uuidToMaskedSlug(bytes[index & 255] as Uint8Array),
-    "masked.decode": (index) => codec.uuidToString(masked[index & 255] as string),
-    "masked.decode.bytes": (index) => codec.uuidToBytes(masked[index & 255] as string),
-    "masked.decode.into": (index) => codec.uuidToBytes(masked[index & 255] as string, into, 4),
+    "codec.toString.uuid": (index) => codec.uuidToString(ids[index & 255] as string),
+    "codec.toString.bytes": (index) => codec.uuidToString(bytes[index & 255] as Uint8Array),
+    "codec.toBytes.bytes": (index) => codec.uuidToBytes(bytes[index & 255] as Uint8Array),
+    "codec.toPlainSlug.bytes": (index) => codec.uuidToPlainSlug(bytes[index & 255] as Uint8Array),
+    "masked.decode": (index) => codec.maskedSlugToUuidString(masked[index & 255] as string),
+    "masked.decode.bytes": (index) => codec.maskedSlugToUuidBytes(masked[index & 255] as string),
+    "masked.decode.into": (index) =>
+      codec.maskedSlugToUuidBytes(masked[index & 255] as string, into, 4),
     "masked.base32.encode": (index) => base32Codec.uuidToMaskedSlug(ids[index & 255] as string),
     "masked.base32.encode.bytes": (index) =>
       base32Codec.uuidToMaskedSlug(bytes[index & 255] as Uint8Array),
     "masked.base32.decode": (index) =>
-      base32Codec.uuidToString(maskedBase32[index & 255] as string),
+      base32Codec.maskedSlugToUuidString(maskedBase32[index & 255] as string),
     "masked.base32.decode.bytes": (index) =>
-      base32Codec.uuidToBytes(maskedBase32[index & 255] as string),
+      base32Codec.maskedSlugToUuidBytes(maskedBase32[index & 255] as string),
     "masked.base32.decode.into": (index) =>
-      base32Codec.uuidToBytes(maskedBase32[index & 255] as string, into, 4),
+      base32Codec.maskedSlugToUuidBytes(maskedBase32[index & 255] as string, into, 4),
     "masked.custom.encode": (index) =>
       customCodec.uuidToMaskedSlug(bytes[index & 255] as Uint8Array),
     "masked.custom.decode": (index) =>
-      customCodec.uuidToString(maskedCustom[index & 255] as string),
+      customCodec.maskedSlugToUuidString(maskedCustom[index & 255] as string),
     "masked.custom.decode.bytes": (index) =>
-      customCodec.uuidToBytes(maskedCustom[index & 255] as string),
+      customCodec.maskedSlugToUuidBytes(maskedCustom[index & 255] as string),
     "masked.custom.decode.into": (index) =>
-      customCodec.uuidToBytes(maskedCustom[index & 255] as string, into, 4),
+      customCodec.maskedSlugToUuidBytes(maskedCustom[index & 255] as string, into, 4),
     "rotation.current": (index) => rotated.uuidToString(masked[index & 255] as string),
     "rotation.previous": (index) => rotated.uuidToString(oldOnly[index % oldOnly.length] as string),
     "rotation.current.bytes": (index) => rotated.uuidToBytes(masked[index & 255] as string),

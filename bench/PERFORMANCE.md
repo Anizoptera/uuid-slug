@@ -1171,6 +1171,15 @@ constant. Direct encode and decode showed no statistically distinct change on No
 1.4.2, Chromium, Deno 2.9.6, or Node JITless. This covers warm complete direct conversions; it does
 not establish cold module initialization cost.
 
+On 2026-09-16, packed comparisons against `a3833fa` kept JavaScript `String`-object recovery behind
+primitive checks. Two six-round Bun 1.4.2 replays found no statistically distinct change in native
+or portable UUIDv4 text generation. Two complete-runtime migration replays and two additional Bun
+replays measured current masked-slug decoding with the optional format omitted. One Bun interval
+favored the baseline, while the other three overlapped no change; no repeatable regression is
+established. Node 24.21.0, Chromium, Deno 2.9.6, and Node JITless also found no reproduced
+regression. These warm single-operation comparisons cover primitive inputs and default selectors;
+they do not measure wrapper recovery, construction, cold start, or other hardware.
+
 ### Consumer graph
 
 Packed browser production builds on 2026-09-12 gave Bun, esbuild, Parcel, Rollup, Rolldown, Rspack,

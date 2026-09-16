@@ -14,7 +14,7 @@ import {
 } from "./errors.ts";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
 import type { UuidRandomFill, UuidTextCase, UuidV4Bytes, UuidV4StringFor } from "./types.ts";
-import { bytesToUuidString, invalidUuidTextCase, isUuidV4String, isUuidTextCase } from "./uuid.ts";
+import { bytesToUuidString, isUuidTextCase, isUuidV4String, resolveUuidTextCase } from "./uuid.ts";
 
 export { isUuidSlugError } from "./errors.ts";
 export { UuidSlugError };
@@ -92,11 +92,20 @@ function generateOwnedUuidV4Bytes(outputOffset: number): UuidV4Bytes | UuidSlugE
 export function generatePortableUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   textCase: Case = UUID_TEXT_LOWERCASE as Case,
 ): UuidV4StringFor<Case> | UuidSlugError {
-  if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
+  if (!isUuidTextCase(textCase)) {
+    const selectedCase = resolveUuidTextCase(textCase);
+    if (selectedCase instanceof Error) return selectedCase;
+    textCase = selectedCase as Case;
+  }
   const bytes = generateUuidV4Bytes();
   return bytes instanceof Error
     ? bytes
     : (bytesToUuidString(bytes, textCase) as UuidV4StringFor<Case> | UuidSlugError);
+}
+
+function generateUuidV4FromUnknown(value: unknown): UuidV4StringFor<UuidTextCase> | UuidSlugError {
+  const textCase = resolveUuidTextCase(value);
+  return textCase instanceof Error ? textCase : generateUuidV4(textCase);
 }
 
 /**
@@ -107,7 +116,8 @@ export function generatePortableUuidV4<Case extends UuidTextCase = typeof UUID_T
 export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   textCase: Case = UUID_TEXT_LOWERCASE as Case,
 ): UuidV4StringFor<Case> | UuidSlugError {
-  if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
+  if (!isUuidTextCase(textCase))
+    return generateUuidV4FromUnknown(textCase) as UuidV4StringFor<Case> | UuidSlugError;
   // Native generation is useful only for text, which the host returns directly. Byte and slug
   // routes stay portable because parsing native text adds work and complicates atomic output.
   // Recheck each output form when host APIs change; bench/PERFORMANCE.md owns the evidence.
@@ -156,7 +166,11 @@ export function generateUuidV4WithRandomFill<
 ): UuidV4StringFor<Case> | UuidSlugError {
   if (typeof fillRandom !== "function")
     return new UuidSlugError(INVALID_OPTIONS, "UUIDv4 fillRandom must be a function.");
-  if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
+  if (!isUuidTextCase(textCase)) {
+    const selectedCase = resolveUuidTextCase(textCase);
+    if (selectedCase instanceof Error) return selectedCase;
+    textCase = selectedCase as Case;
+  }
   if (generating) return new UuidSlugError(RNG_UNAVAILABLE, REENTRANT_GENERATION_MESSAGE);
   const bytes = new Uint8Array(16);
   generating = true;

@@ -401,15 +401,14 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 - Accept ergonomic raw input at the package seam, validate it once, and return the narrowest type
   established by that successful operation. Keep format, UUID version, plain or masked spelling,
   and ownership distinctions when consumers use them.
-- Only primitive JavaScript strings enter a text parser. Reject `String` wrapper objects without
-  coercion, even when the wrapped text is valid; explicitly documented byte and error inputs keep
-  their own paths. TypeScript rejects the wrapper at compile time, while runtime rejection keeps
-  that contract intact for JavaScript and avoids making an object wrapper part of every
-  string-taking API. JavaScript can read a genuine wrapper with
-  `String.prototype.valueOf.call(value)` without invoking caller-defined coercion hooks, so
-  rejection is an interface choice, not a runtime limitation.
-  If measured consumer demand ever justifies wrappers, normalize them once at every public string
-  seam with that intrinsic operation; never call caller-owned coercion hooks.
+- Every public identifier, configuration, and selector string input accepts primitive strings and
+  genuine `String` objects. This includes UUIDs and slugs, timestamp text, mask seeds and labels,
+  sentinel names, and migration formats. Normalize a wrapper once with
+  `String.prototype.valueOf.call(value)`, which
+  works across realms without invoking caller-defined coercion hooks. Keep primitive strings on the
+  direct path. TypeScript continues to guide callers to primitive strings because its structural
+  `String` type cannot prove a genuine wrapper. String guards remain primitive-only because
+  narrowing an object to a branded primitive would be unsound.
 - Make invalid combinations unrepresentable when TypeScript can infer the distinction without a
   cast or annotation. Do not move runtime-only uncertainty into elaborate caller-facing generics.
 - Name generics by their job: `Input` captures a value for branded validation, while `Output`

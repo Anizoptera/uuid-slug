@@ -48,6 +48,7 @@ suite.verify();
 const { cases } = suite;
 let sink = 0;
 function batch(
+  name: string,
   fn: (i: number) => ReturnType<(typeof cases)[string]>,
   count: number,
   expectedError: boolean,
@@ -55,9 +56,10 @@ function batch(
   for (let i = 0; i < count; i += 1) {
     const value = fn(i);
     if (expectedError !== value instanceof Error)
-      throw new Error("Profile operation changed its expected success/failure outcome", {
-        cause: value,
-      });
+      throw new Error(
+        `Profile operation changed its expected success/failure outcome: ${name} at index ${i}${value instanceof Error ? `: ${value.message}` : ""}`,
+        { cause: value },
+      );
     if (typeof value === "string") sink ^= value.charCodeAt(i % value.length);
     else if (typeof value === "number") sink ^= value;
     else if (typeof value === "boolean") sink ^= Number(value);
@@ -87,7 +89,7 @@ if (selected.length === 0) throw new Error("Profile filter selected no cases");
 for (const [name, fn] of selected) {
   const expectedError = assertProfileOutcome(name, fn(0));
   const started = performance.now();
-  do batch(fn, 64, expectedError);
+  do batch(name, fn, 64, expectedError);
   while (performance.now() - started < warmup);
 }
 if (session) {
@@ -135,7 +137,7 @@ for (const [name, fn] of selected) {
     let elapsed = 0;
     do {
       const began = performance.now();
-      batch(fn, 64, expectedError);
+      batch(name, fn, 64, expectedError);
       maxBatchMs = Math.max(maxBatchMs, performance.now() - began);
       count += 64;
       elapsed = performance.now() - start;

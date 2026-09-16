@@ -17,7 +17,7 @@ export const UUID_V7_ROLLBACK_RESET = "reset";
 /** Return `invalid_timestamp` after the configured rollback tolerance. */
 export const UUID_V7_ROLLBACK_ERROR = "error";
 
-/** Select the hexadecimal letter case of UUID text output. */
+/** Select the hexadecimal letter case of UUID text output. JavaScript also accepts genuine `String` objects. */
 export type UuidTextCase = typeof UUID_TEXT_LOWERCASE | typeof UUID_TEXT_UPPERCASE;
 
 /** The complete four-bit UUID version field, whether assigned or reserved. */
@@ -39,7 +39,7 @@ export type UuidVariant =
   | typeof UUID_VARIANT_MICROSOFT
   | typeof UUID_VARIANT_FUTURE;
 
-/** Choose how one created generator handles a clock reading below its accepted high-water mark. */
+/** Choose how one created generator handles a clock reading below its accepted high-water mark. JavaScript also accepts a genuine `String` object for `action`. */
 export type UuidV7ClockRollbackPolicy =
   | { readonly action: typeof UUID_V7_ROLLBACK_PRESERVE }
   | {
@@ -321,7 +321,10 @@ type AnyUuidForVersion<Version extends UuidVersion> =
 type AnyUuid =
   | AnyUuidForVersion<UuidVersion>
   | { [Version in UuidVersion]: AnyUuidForVersion<Version> }[UuidVersion];
-/** Any supported UUID text, byte, or slug input, plus a preceding package error. */
+/**
+ * Any supported UUID text, byte, or slug input, plus a preceding package error. JavaScript
+ * implementations also normalize genuine `String` objects; TypeScript uses primitive strings.
+ */
 export type UuidInput = string | UuidByteInput | AnyUuid | UuidSlugError;
 /** Reject a branded masked slug where no masking codec is available. */
 export type KeylessUuidInput<Input> = [
@@ -409,7 +412,10 @@ export interface UuidV7Generator {
   ): Output | UuidSlugError;
 }
 
-/** A standard host instant; generation uses every sub-millisecond fraction bit its layout provides. */
+/**
+ * A standard host instant; generation uses every sub-millisecond fraction bit its layout provides.
+ * JavaScript also accepts genuine `String` objects for zoned timestamp text.
+ */
 export type UuidV7Instant =
   | number
   | bigint
@@ -517,7 +523,7 @@ export interface CustomUuidV7MaskOptions {
   /**
    * Names this mask in the error returned when a callback fails after construction, which is why
    * it is required here and optional for seeded masks, whose transform cannot fail. It does not
-   * select the mask during decoding.
+   * select the mask during decoding. JavaScript also accepts a genuine `String` object.
    */
   readonly diagnosticLabel: string;
   /** Transform an isolated 16-byte array; return exactly 16 bytes or `UuidSlugError`. */
@@ -532,7 +538,8 @@ export interface CustomUuidV7MaskOptions {
  */
 export interface UuidV7MaskOptions {
   /**
-   * Diagnostic label only; decoding uses the mask object and caller-specified order.
+   * Diagnostic label only; decoding uses the mask object and caller-specified order. JavaScript
+   * also accepts a genuine `String` object.
    *
    * @defaultValue `"seeded"`
    */
@@ -540,6 +547,7 @@ export interface UuidV7MaskOptions {
   /**
    * Stable secret key material. Generate at least 16 bytes, keep it outside source control, and
    * retain old values in `previousMasks`; a known UUID/slug pair permits offline guesses.
+   * JavaScript also accepts a genuine `String` object.
    */
   readonly seed: string | Uint8Array;
   /**
@@ -564,7 +572,7 @@ export interface AsyncUuidV7MaskOptions extends UuidV7MaskOptions {
 
 /** Define a named UUIDv7 that must bypass masking. */
 export interface UuidV7SentinelConfig {
-  /** Nonempty application-facing name, unique within one masking codec. */
+  /** Nonempty application-facing name, unique within one masking codec. JavaScript also accepts a genuine `String` object. */
   readonly name: string;
   /**
    * UUIDv7 text in an accepted spelling, unique after normalization. Sentinels bypass
@@ -632,7 +640,8 @@ export type EnabledMigrationFormat<Options extends UuidSlugMigrationOptions> =
 /**
  * Decode current and explicitly enabled old formats without changing masking-codec output.
  * Methods may be detached. A successful decode identifies a candidate UUID, not the issuing format
- * or a stored record. A preceding `UuidSlugError` is returned unchanged.
+ * or a stored record. A preceding `UuidSlugError` is returned unchanged. JavaScript callers may
+ * pass genuine `String` objects; TypeScript uses primitive strings.
  */
 export interface UuidSlugMigrationDecoder<
   in Format extends UuidSlugMigrationFormat = UuidSlugMigrationFormat,
@@ -642,7 +651,7 @@ export interface UuidSlugMigrationDecoder<
    * Pass `format` when its origin is known to avoid trying unrelated readers.
    *
    * @param uuidSlug - Identifier accepted by one enabled migration reader.
-   * @param format - Known source format. Omit to try enabled readers in documented order.
+   * @param format - Known source format. Omit to try enabled readers in documented order. JavaScript also accepts a genuine `String` object.
    * @param textCase - UUID text spelling. Pass it after `uuidSlug` when format is unknown, or after a
    * known format. Omit for lowercase.
    */
@@ -671,7 +680,7 @@ export interface UuidSlugMigrationDecoder<
    * A preceding `UuidSlugError` is returned unchanged.
    *
    * @param uuidSlug - Identifier accepted by one or more enabled migration readers.
-   * @param format - Known source format. Omit to try enabled readers in documented order.
+   * @param format - Known source format. Omit to try enabled readers in documented order. JavaScript also accepts a genuine `String` object.
    * @param textCase - UUID text spelling. Pass it after `uuidSlug` when format is unknown, or after a
    * known format. Omit for lowercase.
    */
@@ -752,6 +761,7 @@ export interface UuidV7PreviousMask {
 /**
  * An immutable UUIDv7 masking codec that owns its masks, sentinels, output alphabet, and byte source.
  * Methods may be detached. Decoding proves format integrity, not issuance or authorization.
+ * JavaScript UUID and slug text inputs normalize genuine `String` objects; TypeScript uses primitives.
  */
 export interface UuidV7MaskingCodec {
   /** Frozen sentinel metadata in the masking codec's configured masked-slug alphabet. */

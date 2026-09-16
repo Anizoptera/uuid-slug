@@ -3,12 +3,13 @@
 import {
   checkByteRange,
   checkRange,
-  invalidUuidStringInput,
   INVALID_BUFFER,
   INVALID_OPTIONS,
   INVALID_UUID,
   isUuidSlugError,
   isUint8Array,
+  normalizeUuidStringInput,
+  stringInput,
   uuidByteView,
   UuidSlugError,
 } from "./errors.ts";
@@ -58,6 +59,13 @@ const UUID_SEPARATOR = "-";
 /** Keep case-option validation identical across every UUID-text writer. */
 export const isUuidTextCase = (value: unknown): value is UuidTextCase =>
   value === UUID_TEXT_LOWERCASE || value === UUID_TEXT_UPPERCASE;
+
+/** Normalize a JavaScript string wrapper, then validate the public UUID text spelling. */
+export function resolveUuidTextCase(value: unknown): UuidTextCase | UuidSlugError {
+  if (value === UUID_TEXT_LOWERCASE || value === UUID_TEXT_UPPERCASE) return value;
+  const textCase = stringInput(value);
+  return isUuidTextCase(textCase) ? textCase : invalidUuidTextCase();
+}
 export function invalidUuidTextCase(): UuidSlugError {
   return new UuidSlugError(INVALID_OPTIONS, "UUID text case must be lowercase or uppercase.");
 }
@@ -131,7 +139,7 @@ export function uuidByteAtUnchecked(uuid: string, byteIndex: number): number {
  * compact text, a UUID URN, or brace-wrapped canonical text. Known slug values are rejected by
  * TypeScript; invalid text returns `UuidSlugError`. A preceding `UuidSlugError` is returned unchanged.
  *
- * @param uuid - UUID text in an accepted spelling.
+ * @param uuid - UUID text in an accepted spelling. JavaScript also accepts a genuine `String` object.
  */
 export function uuidStringToBytes<Input extends string | UuidSlugError>(
   uuid: UuidStringInput<Input>,
@@ -140,7 +148,7 @@ export function uuidStringToBytes<Input extends string | UuidSlugError>(
  * Parse accepted mixed-case UUID text into caller-owned storage after validating the full input.
  * A preceding `UuidSlugError` is returned unchanged without writing.
  *
- * @param uuid - UUID text in an accepted spelling.
+ * @param uuid - UUID text in an accepted spelling. JavaScript also accepts a genuine `String` object.
  * @param output - Caller-owned array that receives the 16 UUID bytes.
  * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
  * outside the written range stay unchanged.
@@ -155,8 +163,12 @@ export function uuidStringToBytes(
   out?: Uint8Array,
   offset = 0,
 ): Uint8Array | UuidSlugError {
-  if (typeof uuid !== "string") return invalidUuidStringInput(uuid);
-  const textStart = uuidTextStart(uuid);
+  let uuidText = uuid;
+  if (typeof uuidText !== "string") {
+    uuidText = normalizeUuidStringInput(uuidText);
+    if (typeof uuidText !== "string") return uuidText;
+  }
+  const textStart = uuidTextStart(uuidText);
   if (textStart === INVALID_UUID_TEXT_START)
     return new UuidSlugError(
       INVALID_UUID,
@@ -165,10 +177,10 @@ export function uuidStringToBytes(
   const hyphenated = textStart !== COMPACT_UUID_TEXT_START;
   if (
     hyphenated &&
-    (uuid[textStart + 8] !== UUID_SEPARATOR ||
-      uuid[textStart + 13] !== UUID_SEPARATOR ||
-      uuid[textStart + 18] !== UUID_SEPARATOR ||
-      uuid[textStart + 23] !== UUID_SEPARATOR)
+    (uuidText[textStart + 8] !== UUID_SEPARATOR ||
+      uuidText[textStart + 13] !== UUID_SEPARATOR ||
+      uuidText[textStart + 18] !== UUID_SEPARATOR ||
+      uuidText[textStart + 23] !== UUID_SEPARATOR)
   )
     return new UuidSlugError(INVALID_UUID, "UUID hyphen positions are invalid.");
 
@@ -180,8 +192,8 @@ export function uuidStringToBytes(
       ? textStart + (UUID_BYTE_OFFSETS[byteIndex] as number)
       : byteIndex * 2;
     if (
-      parsedHexValue(uuid.charCodeAt(textOffset)) < 0 ||
-      parsedHexValue(uuid.charCodeAt(textOffset + 1)) < 0
+      parsedHexValue(uuidText.charCodeAt(textOffset)) < 0 ||
+      parsedHexValue(uuidText.charCodeAt(textOffset + 1)) < 0
     )
       return new UuidSlugError(
         INVALID_UUID,
@@ -194,8 +206,8 @@ export function uuidStringToBytes(
       ? textStart + (UUID_BYTE_OFFSETS[byteIndex] as number)
       : byteIndex * 2;
     target[offset + byteIndex] =
-      (parsedHexValue(uuid.charCodeAt(textOffset)) << 4) |
-      parsedHexValue(uuid.charCodeAt(textOffset + 1));
+      (parsedHexValue(uuidText.charCodeAt(textOffset)) << 4) |
+      parsedHexValue(uuidText.charCodeAt(textOffset + 1));
   }
   return target;
 }
@@ -233,8 +245,8 @@ export function bytesToUuidString(
       ? Number.isNaN(Number(offsetOrCase))
       : typeof offsetOrCase !== "number";
   const byteOffset = (caseIsSecond ? 0 : offsetOrCase) as number;
-  const selectedCase = caseIsSecond ? offsetOrCase : textCase;
-  if (!isUuidTextCase(selectedCase)) return invalidUuidTextCase();
+  const selectedCase = resolveUuidTextCase(caseIsSecond ? offsetOrCase : textCase);
+  if (selectedCase instanceof Error) return selectedCase;
   const badRange = checkRange(view.length, byteOffset, 16);
   if (badRange) return badRange;
   if (nativeToHex && selectedCase === UUID_TEXT_LOWERCASE) {

@@ -35,13 +35,14 @@ function consume(value: ProfileValue, index: number): void {
   else sink ^= 1;
 }
 
-function batch(operation: ProfileCase, count: number, expectedError: boolean): void {
+function batch(name: string, operation: ProfileCase, count: number, expectedError: boolean): void {
   for (let index = 0; index < count; index += 1) {
     const value = operation(index);
     if (expectedError !== value instanceof Error)
-      throw new Error("Profile operation changed its expected success/failure outcome", {
-        cause: value,
-      });
+      throw new Error(
+        `Profile operation changed its expected success/failure outcome: ${name} at index ${index}${value instanceof Error ? `: ${value.message}` : ""}`,
+        { cause: value },
+      );
     consume(value, index);
   }
 }
@@ -90,7 +91,7 @@ function selectProfileCases(options: BrowserProfileOptions): readonly [string, P
   for (const [name, operation] of selected) {
     const expectedError = assertProfileOutcome(name, operation(0));
     const started = performance.now();
-    do batch(operation, 64, expectedError);
+    do batch(name, operation, 64, expectedError);
     while (performance.now() - started < options.warmup);
   }
   return selected;
@@ -113,7 +114,7 @@ async function measureProfileCases(
       let elapsed = 0;
       do {
         const began = performance.now();
-        batch(operation, 64, expectedError);
+        batch(name, operation, 64, expectedError);
         maxBatchMs = Math.max(maxBatchMs, performance.now() - began);
         count += 64;
         elapsed = performance.now() - start;

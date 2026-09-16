@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { BASE64URL_NAME } from "./alphabet.ts";
-import { checkByteRange, INVALID_OPTIONS, UuidSlugError } from "./errors.ts";
+import { checkByteRange, INVALID_OPTIONS, isUuidSlugError, UuidSlugError } from "./errors.ts";
 import type { SlugAlphabet } from "./slug.ts";
 import { decodeKeylessUuid, extractUuidV7Payload, uuidBytesToPlainSlug } from "./slug.ts";
 import {
@@ -30,8 +30,7 @@ import type {
 } from "./types.ts";
 import {
   bytesToUuidString,
-  invalidUuidTextCase,
-  isUuidTextCase,
+  resolveUuidTextCase,
   uuidTimestampFromBytesUnchecked,
   uuidVersion,
 } from "./uuid.ts";
@@ -86,11 +85,12 @@ class ParsedUuidValue<
   toString(
     textCase: unknown = UUID_TEXT_LOWERCASE,
   ): UuidStringForVersion<Version, UuidTextCase> | UuidSlugError {
-    if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
-    return bytesToUuidString(localUuidValueState(this)!.bytes, textCase) as UuidStringForVersion<
-      Version,
-      UuidTextCase
-    >;
+    const selectedCase = resolveUuidTextCase(textCase);
+    if (selectedCase instanceof Error) return selectedCase;
+    return bytesToUuidString(
+      localUuidValueState(this)!.bytes,
+      selectedCase,
+    ) as UuidStringForVersion<Version, UuidTextCase>;
   }
 
   toBytes(): UuidBytesForVersion<Version>;
@@ -197,7 +197,7 @@ export function parseUuid(uuid: unknown, maskingCodec?: UuidV7MaskingCodec): Uui
       return new UuidSlugError(INVALID_OPTIONS, "Masking codec UUID parsing failed.", { cause });
     }
   }
-  if (parsed instanceof Error) return parsed;
+  if (isUuidSlugError(parsed)) return parsed;
   return createUuidValue(new Uint8Array(parsed), maskingCodec, existing?.payloadLayout);
 }
 

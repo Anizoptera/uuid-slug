@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { findUnknownOption, INVALID_OPTIONS, UuidSlugError } from "./errors.ts";
+import { findUnknownOption, INVALID_OPTIONS, stringInput, UuidSlugError } from "./errors.ts";
 
 export interface GenerationOptionValues {
   readonly alphabet?: unknown;
@@ -32,7 +32,7 @@ export function readGenerationOptions(
     const source = options as GenerationOptionValues;
     return {
       ...(accepted.alphabet && Object.hasOwn(source, "alphabet")
-        ? { alphabet: source.alphabet }
+        ? { alphabet: stringInput(source.alphabet) ?? source.alphabet }
         : {}),
       ...(accepted.at && Object.hasOwn(source, "at") ? { at: source.at } : {}),
       ...(accepted.generator && Object.hasOwn(source, "generator")
@@ -46,7 +46,7 @@ export function readGenerationOptions(
         ? { outputOffset: source.outputOffset }
         : {}),
       ...(accepted.textCase && Object.hasOwn(source, "textCase")
-        ? { textCase: source.textCase }
+        ? { textCase: stringInput(source.textCase) ?? source.textCase }
         : {}),
     };
   } catch (cause) {

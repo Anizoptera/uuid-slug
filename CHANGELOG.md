@@ -51,7 +51,9 @@ notes: the section for a version is published verbatim when its tag is pushed.
   `validatePlainUuidV7SlugUnixMs`. Validation requires `maxTimestampDeltaMs`; only
   `referenceUnixMs` defaults to the current clock. `hasUuidV7Entropy` is removed.
 - Expected generation, conversion, masking, and configuration failures return `UuidSlugError | T`.
-  Use `isUuidSlugError` instead of relying on `instanceof` or `UuidRuntimeError`.
+  Compatible calls return preceding package errors unchanged, including errors from another realm
+  or package copy. Use `isUuidSlugError` instead of relying on `instanceof` or `UuidRuntimeError`.
+- Identifier, configuration, and selector string inputs normalize genuine JavaScript `String` objects without calling custom coercion hooks.
 - Error codes `invalid_mask_schema` and `invalid_base32` are now `invalid_mask` and
   `invalid_base32hex`. An unknown alphabet name returns `invalid_options` instead of
   `invalid_uuid_slug`.

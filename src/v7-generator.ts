@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { runtime } from "#runtime";
-import { findUnknownOption, INVALID_OPTIONS, isError, UuidSlugError } from "./errors.ts";
+import {
+  findUnknownOption,
+  INVALID_OPTIONS,
+  isError,
+  stringInput,
+  UuidSlugError,
+} from "./errors.ts";
 import {
   UUID_V7_ROLLBACK_ERROR,
   UUID_V7_ROLLBACK_PRESERVE,
@@ -76,7 +82,8 @@ function validatedRollback(
     return new UuidSlugError(INVALID_OPTIONS, INVALID_ROLLBACK_POLICY);
   try {
     if (Array.isArray(value)) return new UuidSlugError(INVALID_OPTIONS, INVALID_ROLLBACK_POLICY);
-    const action = (value as { readonly action?: unknown }).action;
+    const rawAction = (value as { readonly action?: unknown }).action;
+    const action = stringInput(rawAction) ?? rawAction;
     const accepted =
       action === UUID_V7_ROLLBACK_PRESERVE
         ? ({ action: true } as const)

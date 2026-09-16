@@ -3,7 +3,7 @@
 import { INVALID_TIMESTAMP, UuidSlugError } from "./errors.ts";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
 import type { UuidTextCase, UuidV7Bounds, UuidV7Bytes, UuidV7StringFor } from "./types.ts";
-import { invalidUuidTextCase, isUuidTextCase } from "./uuid.ts";
+import { resolveUuidTextCase } from "./uuid.ts";
 import { rejectUuidV7UnixMs } from "./v7-timestamp.ts";
 
 function intervalEnd(startUnixMs: number, endUnixMs: number): number | UuidSlugError {
@@ -96,8 +96,8 @@ export function uuidV7StringBounds(
   requestedCase: UuidTextCase = UUID_TEXT_LOWERCASE,
 ): UuidV7Bounds<UuidV7StringFor<UuidTextCase>> | UuidSlugError {
   const endUnixMs = typeof endOrCase === "number" ? endOrCase : startUnixMs;
-  const textCase = typeof endOrCase === "number" ? requestedCase : endOrCase;
-  if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
+  const textCase = resolveUuidTextCase(typeof endOrCase === "number" ? requestedCase : endOrCase);
+  if (textCase instanceof Error) return textCase;
   const end = intervalEnd(startUnixMs, endUnixMs);
   if (typeof end !== "number") return end;
   // Direct formatting avoids two temporary byte arrays. Keep the byte writer independent unless

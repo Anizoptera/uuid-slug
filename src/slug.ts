@@ -14,14 +14,16 @@ import type { Alphabet } from "./alphabet.ts";
 import {
   checkByteRange,
   checkRange,
+  exactLocalUuidBytes,
   INVALID_OPTIONS,
   INVALID_UUID,
   INVALID_UUID_SLUG,
   INVALID_UUID_VERSION,
-  invalidUuidSlugInput,
-  invalidUuidStringInput,
   isUuidSlugError,
   isUint8Array,
+  normalizeUuidSlugInput,
+  normalizeUuidStringInput,
+  stringInput,
   UuidSlugError,
 } from "./errors.ts";
 import type {
@@ -60,9 +62,9 @@ import { validateTimestampBytes } from "./timestamp.ts";
 import {
   bytesToUuidString,
   exactUuidByteView,
-  invalidUuidTextCase,
+  formatUuidBytesUnchecked,
   isUuidText,
-  isUuidTextCase,
+  resolveUuidTextCase,
   isUuidV7Text,
   isRfcVariant,
   uuidByteAtUnchecked,
@@ -91,7 +93,8 @@ const ALTERNATIVE_SEPARATOR = " or ";
 /**
  * Select plain-slug output: 22-character base64url, or 26-character lowercase base32hex.
  * Base64url is shorter. Base32hex UUIDv7 slugs sort by timestamp as plain strings and are safe on
- * case-insensitive filesystems. Decoders infer the alphabet from length.
+ * case-insensitive filesystems. Decoders infer the alphabet from length. JavaScript also accepts
+ * genuine `String` objects where an alphabet is selected.
  */
 export type SlugAlphabet = typeof BASE64URL_NAME | typeof BASE32HEX_NAME;
 
@@ -103,11 +106,9 @@ const SLUG_ALPHABET_CODECS = {
 /** Reject values outside the public alphabet union when untyped JavaScript bypasses TypeScript. */
 /*#__NO_SIDE_EFFECTS__*/
 export function resolveSlugAlphabet(alphabet: SlugAlphabet): Alphabet | UuidSlugError {
-  if (
-    typeof alphabet === "string" &&
-    Object.prototype.hasOwnProperty.call(SLUG_ALPHABET_CODECS, alphabet)
-  )
-    return SLUG_ALPHABET_CODECS[alphabet];
+  const name = typeof alphabet === "string" ? alphabet : stringInput(alphabet);
+  if (name !== undefined && Object.prototype.hasOwnProperty.call(SLUG_ALPHABET_CODECS, name))
+    return SLUG_ALPHABET_CODECS[name as SlugAlphabet];
   return new UuidSlugError(
     INVALID_OPTIONS,
     `Unknown slug alphabet; expected ${BASE64URL_NAME}${ALTERNATIVE_SEPARATOR}${BASE32HEX_NAME}.`,
@@ -242,6 +243,7 @@ export function uuidBytesToPlainSlug(
  * returns `UuidSlugError`. A preceding `UuidSlugError` is returned unchanged.
  *
  * @param plainUuidSlug - Canonical 22-character base64url or 26-character base32hex plain UUID slug.
+ * JavaScript also accepts a genuine `String` object.
  */
 export function plainSlugToUuidBytes<Input extends string | UuidSlugError>(
   plainUuidSlug: PlainUuidSlugInput<Input>,
@@ -251,6 +253,7 @@ export function plainSlugToUuidBytes<Input extends string | UuidSlugError>(
  * preceding `UuidSlugError` is returned unchanged without writing.
  *
  * @param plainUuidSlug - Canonical 22-character base64url or 26-character base32hex plain UUID slug.
+ * JavaScript also accepts a genuine `String` object.
  * @param output - Caller-owned array that receives the 16 UUID bytes.
  * @param outputOffset - Zero-based index where writing starts. Omit to start at index 0. Bytes
  * outside the written range stay unchanged.
@@ -268,14 +271,18 @@ export function plainSlugToUuidBytes(
   output?: Uint8Array,
   outputOffset = 0,
 ): Uint8Array | UuidSlugError {
-  if (typeof plainUuidSlug !== "string") return invalidUuidSlugInput(plainUuidSlug);
-  const alpha = SLUG_ALPHABET_BY_LENGTH[plainUuidSlug.length];
+  let slug = plainUuidSlug;
+  if (typeof slug !== "string") {
+    slug = normalizeUuidSlugInput(slug);
+    if (typeof slug !== "string") return slug;
+  }
+  const alpha = SLUG_ALPHABET_BY_LENGTH[slug.length];
   if (!alpha)
     return new UuidSlugError(
       INVALID_UUID_SLUG,
-      plainUuidSlug.length === 27
+      slug.length === 27
         ? "27 characters is a masked base32hex slug; decode it with the codec that issued it."
-        : `UUID slug must be ${SLUG_LENGTHS} characters, got ${plainUuidSlug.length}.`,
+        : `UUID slug must be ${SLUG_LENGTHS} characters, got ${slug.length}.`,
     );
   const target = output ?? new Uint8Array(16);
   const badRange =
@@ -283,18 +290,18 @@ export function plainSlugToUuidBytes(
       ? checkRange(16, outputOffset, 16)
       : checkByteRange(output, outputOffset, 16);
   if (badRange) return badRange;
-  if (output && !isEncoded(plainUuidSlug, alpha, 16)) {
-    for (let i = 0; i < plainUuidSlug.length; i += 1) {
-      const code = plainUuidSlug.charCodeAt(i);
+  if (output && !isEncoded(slug, alpha, 16)) {
+    for (let i = 0; i < slug.length; i += 1) {
+      const code = slug.charCodeAt(i);
       if (code >= 128 || (alpha.decode[code] as number) < 0)
         return new UuidSlugError(
           alpha.code,
-          `Invalid ${alpha.name} character ${JSON.stringify(plainUuidSlug[i])} at offset ${i}.`,
+          `Invalid ${alpha.name} character ${JSON.stringify(slug[i])} at offset ${i}.`,
         );
     }
     return new UuidSlugError(alpha.code, `${alpha.name} value has non-canonical trailing bits.`);
   }
-  const result = decodeInto(plainUuidSlug, alpha, target, outputOffset, 16);
+  const result = decodeInto(slug, alpha, target, outputOffset, 16);
   return result instanceof Error ? result : target;
 }
 
@@ -304,7 +311,7 @@ export function plainSlugToUuidBytes(
  * values; invalid text or alphabet returns `UuidSlugError`. A preceding `UuidSlugError` is returned
  * unchanged.
  *
- * @param uuid - UUID text in an accepted spelling.
+ * @param uuid - UUID text in an accepted spelling. JavaScript also accepts a genuine `String` object.
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  */
 export function uuidStringToPlainSlug<Input extends string | UuidSlugError>(
@@ -316,17 +323,21 @@ export function uuidStringToPlainSlug(
   uuid: string | UuidSlugError,
   alphabet: SlugAlphabet = BASE64URL_NAME,
 ): PlainUuidSlug | UuidSlugError {
-  if (typeof uuid !== "string") return invalidUuidStringInput(uuid);
+  let uuidText = uuid;
+  if (typeof uuidText !== "string") {
+    uuidText = normalizeUuidStringInput(uuidText);
+    if (typeof uuidText !== "string") return uuidText;
+  }
   if (
     !hasNativeBase64urlEncoder &&
     alphabet === BASE64URL_NAME &&
-    isUuidText(uuid) &&
-    uuid.length === 36
+    isUuidText(uuidText) &&
+    uuidText.length === 36
   )
-    return uuidStringToBase64url(uuid);
-  if (alphabet === BASE32HEX_NAME && isUuidText(uuid) && uuid.length === 36)
-    return uuidStringToBase32hex(uuid);
-  const bytes = uuidStringToBytes(uuid);
+    return uuidStringToBase64url(uuidText);
+  if (alphabet === BASE32HEX_NAME && isUuidText(uuidText) && uuidText.length === 36)
+    return uuidStringToBase32hex(uuidText);
+  const bytes = uuidStringToBytes(uuidText);
   if (bytes instanceof Error) return bytes;
   return uuidBytesToPlainSlug(bytes, alphabet);
 }
@@ -354,16 +365,28 @@ export function plainSlugToUuidString(
   plainUuidSlug: string | UuidSlugError,
   textCase: UuidTextCase = UUID_TEXT_LOWERCASE,
 ): string | UuidSlugError {
-  if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
+  const selectedCase = resolveUuidTextCase(textCase);
+  if (selectedCase instanceof Error) return selectedCase;
   const bytes = plainSlugToUuidBytes(plainUuidSlug);
   if (bytes instanceof Error) return bytes;
-  return bytesToUuidString(bytes, textCase);
+  return bytesToUuidString(bytes, selectedCase);
 }
 
+// Package-created decode failures are local Errors. A caller-owned cross-realm package error is
+// the only failure arm that can bypass `instanceof`, and this function returns it unchanged;
+// identity keeps marker recognition off successful conversion paths.
 export function decodeKeylessUuid(uuid: unknown): Uint8Array | UuidSlugError {
   if (typeof uuid !== "string") {
     const bytes = exactUuidByteView(uuid);
-    return bytes instanceof Error ? (uuidValueBytes(uuid) ?? bytes) : bytes;
+    if (!(bytes instanceof Error)) return bytes;
+    const valueBytes = uuidValueBytes(uuid);
+    if (valueBytes) return valueBytes;
+    if (isUuidSlugError(uuid)) return uuid;
+    const normalized = stringInput(uuid);
+    if (normalized === undefined) return bytes;
+    return normalized.length === 22 || normalized.length === 26
+      ? plainSlugToUuidBytes(normalized)
+      : uuidStringToBytes(normalized);
   }
   return uuid.length === 22 || uuid.length === 26
     ? plainSlugToUuidBytes(uuid)
@@ -380,8 +403,11 @@ export function decodeKeylessUuid(uuid: unknown): Uint8Array | UuidSlugError {
 export function extractUuidVersion<Input extends UuidInput>(
   uuid: KeylessUuidInput<Input>,
 ): UuidVersion | UuidSlugError {
+  const localBytes = exactLocalUuidBytes(uuid);
+  if (localBytes) return uuidVersion(localBytes, 0);
   const bytes = decodeKeylessUuid(uuid);
-  return bytes instanceof Error ? bytes : uuidVersion(bytes, 0);
+  if (bytes instanceof Error || (bytes === uuid && isUuidSlugError(bytes))) return bytes;
+  return uuidVersion(bytes, 0);
 }
 
 /** Convert UUID text, bytes, or a plain UUID slug to new or caller-owned UUID bytes. */
@@ -401,8 +427,14 @@ export function uuidToBytes(
   const badRange = output === undefined ? undefined : checkByteRange(output, outputOffset, 16);
   if (badRange) return badRange;
   const destination = output as Uint8Array | undefined;
+  const localBytes = exactLocalUuidBytes(uuid);
+  if (localBytes) {
+    if (!destination) return new Uint8Array(localBytes);
+    destination.set(localBytes, outputOffset);
+    return destination;
+  }
   const bytes = decodeKeylessUuid(uuid);
-  if (bytes instanceof Error) return bytes;
+  if (bytes instanceof Error || (bytes === uuid && isUuidSlugError(bytes))) return bytes;
   if (!destination) return new Uint8Array(bytes);
   destination.set(bytes, outputOffset);
   return destination;
@@ -417,8 +449,15 @@ export function uuidToString(
   uuid: unknown,
   textCase: UuidTextCase = UUID_TEXT_LOWERCASE,
 ): string | UuidSlugError {
+  const localBytes = exactLocalUuidBytes(uuid);
+  if (localBytes) {
+    const selectedCase = resolveUuidTextCase(textCase);
+    if (selectedCase instanceof Error) return selectedCase;
+    return formatUuidBytesUnchecked(localBytes, 0, selectedCase);
+  }
   const bytes = decodeKeylessUuid(uuid);
-  return bytes instanceof Error ? bytes : bytesToUuidString(bytes, textCase);
+  if (bytes instanceof Error || (bytes === uuid && isUuidSlugError(bytes))) return bytes;
+  return bytesToUuidString(bytes, textCase);
 }
 
 /** Convert UUID text, bytes, or a plain UUID slug to a plain slug. */
@@ -430,8 +469,11 @@ export function uuidToPlainSlug(
   uuid: unknown,
   alphabet: SlugAlphabet = BASE64URL_NAME,
 ): PlainUuidSlug | UuidSlugError {
+  const localBytes = exactLocalUuidBytes(uuid);
+  if (localBytes) return uuidBytesToPlainSlug(localBytes, alphabet);
   const bytes = decodeKeylessUuid(uuid);
-  return bytes instanceof Error ? bytes : uuidBytesToPlainSlug(bytes, alphabet);
+  if (bytes instanceof Error || (bytes === uuid && isUuidSlugError(bytes))) return bytes;
+  return uuidBytesToPlainSlug(bytes, alphabet);
 }
 
 /** Check a canonical 22-character base64url or 26-character lowercase base32hex plain slug. */
@@ -527,7 +569,10 @@ export function extractUuidV7UnixMs(
   if (typeof value === "string") return extractStringTimestamp(value);
   if (isUuidSlugError(value)) return value;
   const bytes = isUint8Array(value) ? value : exactUuidByteView(value);
-  if (bytes instanceof Error) return bytes;
+  if (bytes instanceof Error) {
+    const text = stringInput(value);
+    return text === undefined ? bytes : extractStringTimestamp(text);
+  }
   const badRange = checkRange(bytes.length, byteOffset, 16);
   if (badRange) return badRange;
   if (uuidVersion(bytes, byteOffset) !== 7 || !isRfcVariant(bytes, byteOffset))
@@ -572,6 +617,13 @@ export function extractUuidV7Payload(
     return value;
   } else {
     bytes = isUint8Array(value) ? value : exactUuidByteView(value);
+    if (bytes instanceof Error) {
+      const text = stringInput(value);
+      if (text !== undefined) {
+        bytes = uuidToBytes(text);
+        offset = 0;
+      }
+    }
   }
   if (bytes instanceof Error) return bytes;
   const badRange = checkRange(bytes.length, offset, 16);
@@ -592,17 +644,28 @@ export function extractUuidV7Payload(
  * input. TypeScript rejects known UUID text, masked slugs, and UUIDv4 slugs. A preceding
  * `UuidSlugError` is returned unchanged.
  *
- * @param slug - Canonical plain UUIDv7 slug to validate and return.
+ * @param slug - Canonical plain UUIDv7 slug to validate and return. JavaScript also accepts a
+ * genuine `String` object.
  * @param window - Inclusive maximum distance from an explicit or current reference time.
  */
 export function validatePlainUuidV7SlugUnixMs<Input extends string | UuidSlugError>(
   slug: PlainUuidV7SlugInput<Input>,
   window: UuidV7TimestampWindow,
-): (Input & PlainUuidV7Slug) | UuidSlugError {
-  if (typeof slug !== "string") return invalidUuidSlugInput(slug);
-  const plainSlug: string = slug;
+): (Input & PlainUuidV7Slug) | UuidSlugError;
+export function validatePlainUuidV7SlugUnixMs(
+  slug: unknown,
+  window: UuidV7TimestampWindow,
+): PlainUuidV7Slug | UuidSlugError {
+  let plainSlug: string;
+  if (typeof slug === "string") {
+    plainSlug = slug;
+  } else {
+    const normalized = normalizeUuidSlugInput(slug);
+    if (typeof normalized !== "string") return normalized;
+    plainSlug = normalized;
+  }
   const bytes = plainSlugToUuidBytes(plainSlug);
   if (bytes instanceof Error) return bytes;
   const valid = validateTimestampBytes(bytes, window);
-  return valid instanceof Error ? valid : (plainSlug as Input & PlainUuidV7Slug);
+  return valid instanceof Error ? valid : (plainSlug as PlainUuidV7Slug);
 }

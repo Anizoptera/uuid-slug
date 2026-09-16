@@ -163,11 +163,49 @@ export function isUuidSlugError(value: unknown): value is UuidSlugError {
   }
 }
 
+/**
+ * Universal conversions otherwise recognize the same local bytes before and after dispatch. Keep
+ * this shortcut exact; views and cross-realm arrays need the general path. Remeasure if dispatch
+ * stops repeating byte recognition.
+ */
+/*#__NO_SIDE_EFFECTS__*/
+export function exactLocalUuidBytes(value: unknown): Uint8Array | undefined {
+  try {
+    return value instanceof Uint8Array && value.length === 16 ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Recognize local Errors first, then use native or portable cross-realm recognition. */
 /*#__NO_SIDE_EFFECTS__*/
 export function isError(value: unknown): value is Error {
   if (typeof value !== OBJECT_TYPE || value === null) return false;
   return hasErrorBrand(value as object);
+}
+
+/** Read primitive or genuine boxed text without invoking caller-defined coercion hooks. */
+/*#__NO_SIDE_EFFECTS__*/
+export function stringInput(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (typeof value !== "object" || value === null) return undefined;
+  try {
+    return String.prototype.valueOf.call(value);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Normalize a non-primitive UUID string input while preserving a preceding package failure. */
+export function normalizeUuidStringInput(value: unknown): string | UuidSlugError {
+  if (isUuidSlugError(value)) return value;
+  return stringInput(value) ?? invalidUuidStringInput(value);
+}
+
+/** Normalize a non-primitive slug input while preserving a preceding package failure. */
+export function normalizeUuidSlugInput(value: unknown): string | UuidSlugError {
+  if (isUuidSlugError(value)) return value;
+  return stringInput(value) ?? invalidUuidSlugInput(value);
 }
 
 /** Use fast local identity, then an unspoofable intrinsic brand for cross-realm Uint8Array values. */

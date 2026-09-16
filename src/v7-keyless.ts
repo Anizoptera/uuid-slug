@@ -2,7 +2,7 @@
 
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
-import { UuidSlugError } from "./errors.ts";
+import { stringInput, UuidSlugError } from "./errors.ts";
 import { readGenerationOptions } from "./generation-options.ts";
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
 import type {
@@ -14,7 +14,7 @@ import type {
   UuidV7StringFor,
 } from "./types.ts";
 import type { UuidV7PayloadLayout } from "./types.ts";
-import { formatUuidBytesUnchecked, invalidUuidTextCase, isUuidTextCase } from "./uuid.ts";
+import { formatUuidBytesUnchecked, resolveUuidTextCase } from "./uuid.ts";
 import { createPortableUuidV7Generator } from "./v7.ts";
 import type { PortableUuidV7Generator } from "./v7.ts";
 import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
@@ -79,16 +79,35 @@ export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
 export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   textCaseOrOptions?: Case | GenerateUuidV7Options<Case>,
 ): UuidV7StringFor<Case> | UuidSlugError {
-  if (textCaseOrOptions === undefined || isUuidTextCase(textCaseOrOptions))
-    return (generateDefaultUuidV7 ??= v7Text().generateUuidV7)(textCaseOrOptions);
-  const values = readGenerationOptions(
-    textCaseOrOptions,
-    UUID_V7_TEXT_OPTIONS,
-    "UUIDv7 generation",
-  );
+  const directCase =
+    textCaseOrOptions === undefined
+      ? UUID_TEXT_LOWERCASE
+      : typeof textCaseOrOptions === "string"
+        ? textCaseOrOptions
+        : undefined;
+  if (directCase !== undefined) {
+    const selectedCase = resolveUuidTextCase(directCase);
+    return selectedCase instanceof Error
+      ? selectedCase
+      : ((generateDefaultUuidV7 ??= v7Text().generateUuidV7)(
+          selectedCase,
+        ) as UuidV7StringFor<Case>);
+  }
+  let values = readGenerationOptions(textCaseOrOptions, UUID_V7_TEXT_OPTIONS, "UUIDv7 generation");
+  if (values instanceof Error) {
+    const wrappedCase = stringInput(textCaseOrOptions);
+    if (wrappedCase !== undefined) {
+      const selectedCase = resolveUuidTextCase(wrappedCase);
+      return selectedCase instanceof Error
+        ? selectedCase
+        : ((generateDefaultUuidV7 ??= v7Text().generateUuidV7)(
+            selectedCase,
+          ) as UuidV7StringFor<Case>);
+    }
+  }
   if (values instanceof Error) return values;
-  const textCase = values.textCase ?? UUID_TEXT_LOWERCASE;
-  if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
+  const textCase = resolveUuidTextCase(values.textCase ?? UUID_TEXT_LOWERCASE);
+  if (textCase instanceof Error) return textCase;
   const generator = readUuidV7Generator(values.generator);
   if (generator instanceof Error) return generator;
   if (!generator)

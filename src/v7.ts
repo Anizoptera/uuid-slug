@@ -9,6 +9,7 @@ import {
   isUuidSlugError,
   isUint8Array,
   readClock,
+  stringInput,
   UuidSlugError,
 } from "./errors.ts";
 import { readGenerationOptions } from "./generation-options.ts";
@@ -25,7 +26,7 @@ import type {
   UuidV7Generator,
   UuidV7StringFor,
 } from "./types.ts";
-import { formatUuidBytesUnchecked, invalidUuidTextCase, isUuidTextCase } from "./uuid.ts";
+import { formatUuidBytesUnchecked, resolveUuidTextCase } from "./uuid.ts";
 import { MAX_UUID_V7_UNIX_MS, isValidUuidV7UnixMs } from "./v7-timestamp.ts";
 
 /** Internal controls for exercising the portable UUIDv7 state machine. */
@@ -369,15 +370,20 @@ export function createPortableUuidV7Generator(
       | Case
       | Omit<GenerateUuidV7Options<Case>, "generator"> = UUID_TEXT_LOWERCASE as Case,
   ): UuidV7StringFor<Case> | UuidSlugError {
-    if (isUuidTextCase(textCaseOrOptions)) return formatUuidV7(bytes(textBytes), textCaseOrOptions);
-    const values = readGenerationOptions(
+    if (typeof textCaseOrOptions === "string")
+      return formatUuidV7(bytes(textBytes), textCaseOrOptions);
+    let values = readGenerationOptions(
       textCaseOrOptions,
       UUID_V7_TEXT_OPTIONS,
       "UUIDv7 generation",
     );
+    if (values instanceof Error) {
+      const wrappedCase = stringInput(textCaseOrOptions);
+      if (wrappedCase !== undefined) values = { textCase: wrappedCase };
+    }
     if (values instanceof Error) return values;
-    const textCase = values.textCase ?? UUID_TEXT_LOWERCASE;
-    if (!isUuidTextCase(textCase)) return invalidUuidTextCase();
+    const textCase = resolveUuidTextCase(values.textCase ?? UUID_TEXT_LOWERCASE);
+    if (textCase instanceof Error) return textCase;
     if (!Object.hasOwn(values, AT_OPTION))
       return formatUuidV7(bytes(textBytes), textCase) as UuidV7StringFor<Case>;
     const instant = readUuidV7Instant(values.at);

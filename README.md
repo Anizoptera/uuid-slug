@@ -614,8 +614,10 @@ you need to retain the narrowed type. A brand proves format, not issuance or per
 JavaScript consumers do not need TypeScript. The shipped declarations compile with TypeScript 5.0
 and newer.
 
-String inputs accept primitive JavaScript strings, not `String` wrapper objects. The package never
-coerces objects into strings, even when a wrapper contains valid UUID text.
+Public identifier, configuration, and selector string inputs accept primitive JavaScript strings
+and genuine `String` objects. This includes identifiers, output selectors, timestamp text, mask seeds and labels, sentinel names,
+and migration formats. The package reads a wrapper's intrinsic value without invoking custom
+coercion; TypeScript callers use primitive strings.
 
 Use `BASE64URL`, `BASE32HEX`, `UUID_TEXT_LOWERCASE`, `UUID_TEXT_UPPERCASE`, `NIL_UUID`, `MAX_UUID`,
 `MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`, and the named error-code constants instead of copying their values.

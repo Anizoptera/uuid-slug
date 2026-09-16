@@ -5,6 +5,7 @@ import {
   INVALID_MASK,
   isUint8Array,
   isUuidSlugError,
+  stringInput,
   UuidSlugError,
 } from "./errors.ts";
 import type { CustomUuidV7MaskOptions, UuidV7Mask } from "./types.ts";
@@ -93,7 +94,8 @@ export function createCustomUuidV7Mask(
     const unknown = findUnknownOption(options, CUSTOM_MASK_OPTIONS);
     if (unknown !== undefined)
       return new UuidSlugError(INVALID_MASK, `Unknown custom mask option: ${unknown}.`);
-    const { diagnosticLabel, mask, unmask } = options;
+    const { mask, unmask } = options;
+    const diagnosticLabel = stringInput(options.diagnosticLabel);
     if (
       typeof diagnosticLabel !== "string" ||
       typeof mask !== "function" ||

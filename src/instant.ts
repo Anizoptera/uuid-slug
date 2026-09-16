@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { INVALID_TIMESTAMP, UuidSlugError } from "./errors.ts";
+import { INVALID_TIMESTAMP, stringInput, UuidSlugError } from "./errors.ts";
 import type { UuidV7Instant } from "./types.ts";
 import { MAX_UUID_V7_UNIX_MS } from "./v7-timestamp.ts";
 
@@ -139,6 +139,9 @@ export function readUuidV7Instant(instant: unknown): NormalizedUuidV7Instant | U
   } catch (cause) {
     dateCause = cause;
   }
+
+  const timestamp = stringInput(instant);
+  if (timestamp !== undefined) return readZonedTimestamp(timestamp);
 
   try {
     const source = instant as {

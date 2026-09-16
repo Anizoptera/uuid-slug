@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { isUuidSlugError } from "./errors.ts";
+import { isUuidSlugError, stringInput } from "./errors.ts";
 import type { UuidSlugError } from "./errors.ts";
 import { BASE64URL_NAME, encode } from "./alphabet.ts";
 import { readGenerationOptions } from "./generation-options.ts";
@@ -17,7 +17,7 @@ import type {
 import { generateUuidV7Bytes } from "./v7-keyless.ts";
 import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
 import { resolveSlugAlphabet } from "./slug.ts";
-import { formatUuidBytesUnchecked, invalidUuidTextCase, isUuidTextCase } from "./uuid.ts";
+import { formatUuidBytesUnchecked, isUuidTextCase, resolveUuidTextCase } from "./uuid.ts";
 import type { SlugAlphabet } from "./slug.ts";
 
 const PLAIN_UUID_V7_SLUG_OPTIONS = {
@@ -47,7 +47,7 @@ export function generatePlainUuidV7Slug(
 export function generatePlainUuidV7Slug(
   alphabetOrOptions: SlugAlphabet | GeneratePlainUuidV7SlugOptions = BASE64URL_NAME,
 ): PlainUuidV7Slug | UuidSlugError {
-  const values =
+  let values =
     typeof alphabetOrOptions === "string"
       ? { alphabet: alphabetOrOptions }
       : readGenerationOptions(
@@ -55,6 +55,10 @@ export function generatePlainUuidV7Slug(
           PLAIN_UUID_V7_SLUG_OPTIONS,
           "plain UUIDv7 slug generation",
         );
+  if (values instanceof Error) {
+    const alphabet = stringInput(alphabetOrOptions);
+    if (alphabet !== undefined) values = { alphabet };
+  }
   if (values instanceof Error) return values;
   const resolved = resolveSlugAlphabet((values.alphabet ?? BASE64URL_NAME) as SlugAlphabet);
   if (resolved instanceof Error) return resolved;
@@ -98,7 +102,7 @@ export function generateUuidV7WithPlainSlug(
     | GenerateUuidV7WithPlainSlugOptions = BASE64URL_NAME,
   textCase: UuidTextCase = UUID_TEXT_LOWERCASE,
 ): GeneratedUuidV7<PlainUuidV7Slug, UuidTextCase> | UuidSlugError {
-  const values =
+  let values =
     typeof alphabetOrCaseOrOptions === "string"
       ? isUuidTextCase(alphabetOrCaseOrOptions)
         ? { alphabet: BASE64URL_NAME, textCase: alphabetOrCaseOrOptions }
@@ -108,9 +112,16 @@ export function generateUuidV7WithPlainSlug(
           UUID_V7_WITH_PLAIN_SLUG_OPTIONS,
           "UUIDv7 pair generation",
         );
+  if (values instanceof Error) {
+    const selector = stringInput(alphabetOrCaseOrOptions);
+    if (selector !== undefined)
+      values = isUuidTextCase(selector)
+        ? { alphabet: BASE64URL_NAME, textCase: selector }
+        : { alphabet: selector, textCase };
+  }
   if (values instanceof Error) return values;
-  const selectedCase = values.textCase ?? UUID_TEXT_LOWERCASE;
-  if (!isUuidTextCase(selectedCase)) return invalidUuidTextCase();
+  const selectedCase = resolveUuidTextCase(values.textCase ?? UUID_TEXT_LOWERCASE);
+  if (selectedCase instanceof Error) return selectedCase;
   const resolved = resolveSlugAlphabet((values.alphabet ?? BASE64URL_NAME) as SlugAlphabet);
   if (resolved instanceof Error) return resolved;
   const generator = readUuidV7Generator(values.generator);
