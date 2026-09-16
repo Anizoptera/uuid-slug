@@ -46,6 +46,9 @@ const duration = process.env.UUID_SLUG_PROFILE_MS ?? (smoke ? "1" : "5");
 const warmup = process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (smoke ? "2" : "16");
 const filter = process.env.UUID_SLUG_PROFILE_FILTER ?? "";
 const nodeExecutable = process.env.UUID_SLUG_COMPARE_NODE_EXECUTABLE ?? "node";
+// Every record names the runtime release it measured, so a result file cannot be attributed to a
+// release other than the one that produced it.
+const runtimeVersions = new Map<Runtime, string>();
 const selectedRuntimes = (process.env.UUID_SLUG_COMPARE_RUNTIMES?.split(":").filter(Boolean) ?? [
   ...RUNTIMES,
 ]) as Runtime[];
@@ -293,7 +296,16 @@ function emit(
     const values = observations.get(key) ?? [];
     values.push(...row.ns);
     observations.set(key, values);
-    console.log(JSON.stringify({ runtime, revision, round, order, ...row }));
+    console.log(
+      JSON.stringify({
+        runtime,
+        runtimeVersion: runtimeVersions.get(runtime),
+        revision,
+        round,
+        order,
+        ...row,
+      }),
+    );
   }
 }
 
@@ -323,6 +335,7 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
         JSON.stringify({
           kind: "summary",
           runtime,
+          runtimeVersion: runtimeVersions.get(runtime),
           name,
           baseline,
           candidate,
@@ -339,10 +352,12 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
 }
 
 async function main(): Promise<void> {
-  if (selectedRuntimes.includes("node") || selectedRuntimes.includes("node-jitless"))
-    console.error(
-      `Node comparison runtime: ${await command(nodeExecutable, ["--version"], project)}`,
-    );
+  for (const runtime of selectedRuntimes) {
+    if (runtime === "chromium") continue;
+    const executable = runtime === "bun" || runtime === "deno" ? runtime : nodeExecutable;
+    const output = await command(executable, ["--version"], project);
+    runtimeVersions.set(runtime, output.trim().split("\n")[0] ?? "");
+  }
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-compare-"));
   const baselineRoot = join(scratch, "baseline");
   const candidateRoot = candidateRef ? join(scratch, "candidate") : project;
@@ -395,6 +410,9 @@ async function main(): Promise<void> {
       },
     });
     const browser = await chromium.launch({ headless: true });
+    if (selectedRuntimes.includes("chromium")) runtimeVersions.set("chromium", browser.version());
+    for (const [runtime, version] of runtimeVersions)
+      console.error(`Comparison runtime ${runtime}: ${version}`);
     try {
       const page = await browser.newPage();
       const observations = new Map<string, number[]>();
