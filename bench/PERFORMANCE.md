@@ -166,14 +166,21 @@ workloads, and they do not turn development bridges into npm distribution candid
   demonstrated consumer-path gain. Callbacks fill the supplied view and must not depend on its
   current length; revisit the internal draw size only with a measured end-to-end improvement.
 - Object inputs reach the wrapper and buffer slot probes in `stringInput` and `uuidByteView`. Calling
-  a probe on anything else throws a native `TypeError`, and building it dominated the call: measured
-  on 2026-09-16 over seven rounds of 200,000 calls each, a plain object cost 1,449 ns on Node 24.21.0
-  and 214 ns on Bun 1.4.2 per `stringInput`, and 1,536 ns and 211 ns per `uuidByteView`. Reading the
-  object tag first, and probing anyway when the value carries its own `Symbol.toStringTag`, left
-  those at 11 ns and 2.6 ns while genuine wrappers and buffers stayed inside the identical-code noise
-  band. The counters in `bench/resources.ts` cannot gate this: a native `TypeError` is built from the
-  intrinsic, so it never passes the `globalThis.Error` construct trap. Acceptance is gated by the
-  cross-realm and hidden-tag cases in the test lanes instead. Remeasure if a probe stops throwing.
+  a probe on anything else throws a native `TypeError`, and building it dominated the call. Measured
+  2026-09-16, nine rounds of 300,000 calls, medians, Node 24.21.0 and Bun 1.4.2: a plain object cost
+  1,447 ns and 220 ns per `stringInput` call and 1,597 ns and 221 ns per `uuidByteView` call.
+  Deciding by local identity and then the object tag, and looking for a caller's own
+  `Symbol.toStringTag` only after the tag misses, left those at 10.3 ns and 7.9 ns, and 11.5 ns and
+  6.1 ns. Valid buffers kept their cost: `ArrayBuffer` 22.60 to 22.64 ns and `DataView` 29.93 to
+  30.83 ns on Node, both unchanged on Bun. A primitive string is unchanged. A genuine `String`
+  wrapper pays the tag read it did not pay before, 4.82 to 7.54 ns on Node and 2.12 to 6.41 ns on
+  Bun; that input already costs hundreds of nanoseconds through a public call, and no primitive
+  reaches this branch. Keep the identity check first and the own-tag lookup last: reading the tag
+  before local identity, and computing that lookup eagerly, costs valid `ArrayBuffer` input 65 ns and
+  `DataView` input 76 ns on Node. The counters in `bench/resources.ts` cannot gate any of this: a native
+  `TypeError` is built from the intrinsic, so it never passes the `globalThis.Error` construct trap.
+  Acceptance is gated by the cross-realm and hidden-tag cases in the test lanes instead. Remeasure
+  if a probe stops throwing.
 - Node's earlier mixed-workload parser regression did not survive controlled order tests. Two
   fresh-process replays on 2026-09-12 used Node 26.8.2 to compare `37f6258` with `2c5ba55` after
   generation, formatting, decoding, valid and invalid guards, errors, construction, and reversed

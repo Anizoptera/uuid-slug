@@ -188,15 +188,20 @@ export function isError(value: unknown): value is Error {
 }
 
 // A slot probe is the only proof of a genuine wrapper or buffer, but calling one on anything else
-// throws, and building that native TypeError costs three orders of magnitude more than reading the
-// object tag (bench/PERFORMANCE.md). The tag decides first. It is caller-visible, so an object
-// carrying its own Symbol.toStringTag still reaches the probe and keeps its acceptance; only a
-// value whose realm re-tagged the prototype itself is lost, and a tag getter that throws lands in
-// the same catch the probe already needed. Remeasure this ordering if a probe stops throwing.
+// throws, and building that native TypeError costs three orders of magnitude more than the checks
+// below (bench/PERFORMANCE.md). For buffers, local identity answers the common case without reading
+// the tag at all; the tag then recognizes another realm's value. The tag is caller-visible, so a value
+// carrying its own Symbol.toStringTag still reaches the probe and keeps its acceptance, and that
+// own-property lookup runs only after the tag misses. Only a value whose realm re-tagged the
+// prototype itself is lost, and a tag getter that throws lands in the catch the probe already
+// needed. Every clause is ordered by measured cost; remeasure if a probe stops throwing.
 /*#__NO_SIDE_EFFECTS__*/
-function mayHideItsTag(value: unknown): boolean {
-  // The literal is required: TypeScript narrows from `typeof x === "object"`, not from a constant.
-  return typeof value === "object" && value !== null && Object.hasOwn(value, Symbol.toStringTag);
+function isTagged(value: unknown, tag: string): boolean {
+  return (
+    Object.prototype.toString.call(value) === tag ||
+    // The literal is required: TypeScript narrows from `typeof x === "object"`, not from a constant.
+    (typeof value === "object" && value !== null && Object.hasOwn(value, Symbol.toStringTag))
+  );
 }
 
 /** Read primitive or genuine boxed text without invoking caller-defined coercion hooks. */
@@ -205,8 +210,7 @@ export function stringInput(value: unknown): string | undefined {
   if (typeof value === "string") return value;
   if (typeof value !== "object" || value === null) return undefined;
   try {
-    if (Object.prototype.toString.call(value) !== STRING_TAG && !mayHideItsTag(value))
-      return undefined;
+    if (!isTagged(value, STRING_TAG)) return undefined;
     return String.prototype.valueOf.call(value);
   } catch {
     return undefined;
@@ -240,11 +244,9 @@ export function isUint8Array(value: unknown): value is Uint8Array {
 export function uuidByteView(value: unknown): Uint8Array | undefined {
   if (isUint8Array(value)) return value;
   try {
-    const tag = Object.prototype.toString.call(value);
-    const probeAnyway = mayHideItsTag(value);
     if (
       ArrayBuffer.isView(value) &&
-      (tag === DATA_VIEW_TAG || probeAnyway) &&
+      (value instanceof DataView || isTagged(value, DATA_VIEW_TAG)) &&
       dataViewByteLengthDescriptor?.get?.call(value) !== undefined
     ) {
       return new Uint8Array(
@@ -254,7 +256,7 @@ export function uuidByteView(value: unknown): Uint8Array | undefined {
       );
     }
     if (
-      (tag === ARRAY_BUFFER_TAG || probeAnyway) &&
+      (value instanceof ArrayBuffer || isTagged(value, ARRAY_BUFFER_TAG)) &&
       arrayBufferByteLengthDescriptor?.get?.call(value) !== undefined
     )
       return new Uint8Array(value as ArrayBuffer);
