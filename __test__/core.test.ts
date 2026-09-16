@@ -328,9 +328,10 @@ describe("UUIDv7 timestamp extraction", () => {
       startInclusive: "00000000-0000-7000-8000-000000000000",
       endInclusive: "00000000-0000-7fff-bfff-ffffffffffff",
     });
-    expect(uuidV7StringBounds(1, 2)).toEqual({
+    // Every timestamp byte differs, so a swapped, dropped, or unmasked byte changes the text.
+    expect(uuidV7StringBounds(1, 0x0123_4567_89ab)).toEqual({
       startInclusive: "00000000-0001-7000-8000-000000000000",
-      endInclusive: "00000000-0002-7fff-bfff-ffffffffffff",
+      endInclusive: "01234567-89ab-7fff-bfff-ffffffffffff",
     });
     expect(uuidV7StringBounds(0xffff_ffff_ffff)).toEqual({
       startInclusive: "ffffffff-ffff-7000-8000-000000000000",
