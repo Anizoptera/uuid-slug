@@ -27,6 +27,9 @@ import {
   generateUuidV4Bytes,
   generateUuidV7,
   generateUuidV7Bytes,
+  generatePlainUuidV4Slug,
+  generatePlainUuidV7Slug,
+  plainSlugToUuidBytes,
   UUID_V7_TEST_MASK,
   uuidStringToBytes,
 } from "../src/index";
@@ -66,6 +69,15 @@ const randomV7 = new Uint8Array(16);
 const fillV4 = () => globalThis.crypto.getRandomValues(randomV4);
 const fillV7 = () => globalThis.crypto.getRandomValues(randomV7);
 const portableV4Options = { rng: fillV4 };
+const platformV4Into = new Uint8Array(24);
+const platformV4IntoView = platformV4Into.subarray(4, 20);
+/** Set the UUIDv4 version and variant bits that a raw platform draw lacks. */
+function asUuidV4<Bytes extends Uint8Array>(bytes: Bytes, offset = 0): Bytes {
+  bytes[offset + 6] = (bytes[offset + 6]! & 0x0f) | 0x40;
+  bytes[offset + 8] = (bytes[offset + 8]! & 0x3f) | 0x80;
+  return bytes;
+}
+const hasToBase64 = typeof (Uint8Array.prototype as { toBase64?: unknown }).toBase64 === "function";
 const portableV7Options = { rng: fillV7 };
 const portableV7 = unwrap(createUuidV7Generator({}));
 const timestamp = 1_756_864_833_024;
@@ -159,6 +171,34 @@ export const generationCases: readonly GenerationCase[] = [
     () => unwrap(generateUuidV4Bytes(intoV4, 4)),
     { outputOffset: 4, secure: true },
   ),
+  row("platform.webcrypto.v4.bytes.allocate", 4, "v4.bytes.allocate.secure", "platform", () =>
+    asUuidV4(globalThis.crypto.getRandomValues(new Uint8Array(16))),
+  ),
+  row(
+    "platform.webcrypto.v4.bytes.into",
+    4,
+    "v4.bytes.into.secure",
+    "platform",
+    () => {
+      globalThis.crypto.getRandomValues(platformV4IntoView);
+      return asUuidV4(platformV4Into, 4);
+    },
+    { outputOffset: 4, secure: true },
+  ),
+  row("package.v4.slug.base64url", 4, "v4.slug.base64url.secure", "portable", () =>
+    generatePlainUuidV4Slug(),
+  ),
+  ...(hasToBase64
+    ? [
+        row("platform.webcrypto.v4.slug.base64url", 4, "v4.slug.base64url.secure", "platform", () =>
+          (
+            asUuidV4(globalThis.crypto.getRandomValues(new Uint8Array(16))) as Uint8Array & {
+              toBase64(options: { alphabet: "base64url"; omitPadding: true }): string;
+            }
+          ).toBase64({ alphabet: "base64url", omitPadding: true }),
+        ),
+      ]
+    : []),
   row("uuid.v4.text.default", 4, "v4.text.secure", "native-when-available", () => uuidV4()),
   row("uuid.v4.text.portable", 4, "v4.text.secure", "portable", () => uuidV4(portableV4Options)),
   row("uuid.v4.bytes.allocate", 4, "v4.bytes.allocate.secure", "portable", () =>
@@ -215,6 +255,9 @@ export const generationCases: readonly GenerationCase[] = [
     "portable",
     () => unwrap(generateUuidV7Bytes(intoV7, 4)),
     { outputOffset: 4, secure: true },
+  ),
+  row("package.v7.slug.base64url", 7, "v7.slug.base64url.secure", "module-default", () =>
+    generatePlainUuidV7Slug(),
   ),
   row("uuid.v7.text.default", 7, "v7.text.secure", "portable-stateful", () => uuidV7()),
   row("uuid.v7.text.options", 7, "v7.text.secure", "portable-stateless-options", () =>
@@ -356,6 +399,19 @@ export function verifyGenerationCase(candidate: GenerationCase): void {
       value[14] !== String(candidate.version)
     )
       throw new Error(`${candidate.name} did not return canonical UUIDv${candidate.version} text`);
+    return;
+  }
+  if (candidate.comparable.includes(".slug.")) {
+    const bytes = typeof value === "string" ? plainSlugToUuidBytes(value) : undefined;
+    if (
+      typeof value !== "string" ||
+      value.length !== 22 ||
+      !(bytes instanceof Uint8Array) ||
+      bytes[6]! >>> 4 !== candidate.version
+    )
+      throw new Error(
+        `${candidate.name} did not return a base64url UUIDv${candidate.version} slug`,
+      );
     return;
   }
   const offset = candidate.outputOffset ?? 0;
