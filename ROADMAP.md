@@ -18,8 +18,10 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
 - Retained: canonical lowercase text returns unchanged from both `uuidToString` methods, 4 times
   faster on Node and 6.5 on Bun; Bun codec sentinel reads lose about 4 ns to JavaScriptCore
   inlining limits (bench/PERFORMANCE.md).
-- `parseUuid` and `generateUuidV7Value` add 100–230 ns per value over the byte routes: `WeakMap`
-  state, spread, freeze, and a copy of already-owned decoded bytes (`src/uuid-value.ts`).
+- Retained: private-field value state makes parsing and value generation 1.4–3.6 times faster on
+  Node, Bun, Chromium, and Deno (bench/PERFORMANCE.md).
+- Compare records now carry `runtimeVersion`; pass `UUID_SLUG_COMPARE_NODE_EXECUTABLE` for Node
+  Current, since the project pins Node 24.21.0.
 - `extractUuidV7Payload(text)` costs 412–508 ns against 104–125 ns for the timestamp.
 - The profile corpus now has rows for parsed values, codec plain-slug reads, canonical-text
   normalization, and payload extraction (`1a5dd32`); the filter accepts comma-separated terms.
@@ -32,7 +34,8 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
 - [x] Remove the discarded error from non-byte object input and codec plain-slug reads; add
       resource-gate rows proving zero errors on those successful routes.
 - [x] Return canonical lowercase UUID text from `uuidToString` without reformatting.
-- [ ] Measure a private-field `Uuid` value against the `WeakMap` protocol; remove the redundant
+- [x] Measure a private-field `Uuid` value against the `WeakMap` protocol; remove the redundant
       byte copy in `parseUuid`.
-- [ ] Packed compare each remaining change on Node and Bun, then Chromium, Deno, and JITless.
-- [ ] Record retained results in `bench/PERFORMANCE.md`; run `bun run check`.
+- [x] Packed compare each remaining change on Node and Bun, then Chromium, Deno, and JITless.
+- [x] Record retained results in `bench/PERFORMANCE.md`; run `bun run check`.
+- [ ] Measure `extractUuidV7Payload(text)` against the timestamp route and remove avoidable work.
