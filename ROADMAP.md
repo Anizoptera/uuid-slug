@@ -143,9 +143,8 @@ Status from the 2026-09-16 floors and reports, ns package / floor or rival:
       0.41–0.46 on Deno; Bun and Deno fallback text 3–10% slower (bench/PERFORMANCE.md).
 - [x] Keyless UUIDv7 slugs and pairs draw into the text scratch: slugs 0.89 on Node 26.8.2, 0.90
       on Chromium, 0.56 on Deno, unresolved on Bun (bench/PERFORMANCE.md).
-- [ ] Bun UUIDv7 slug (about 92–96 ns in the compare corpus against 55 ns native): a primitive
-      alphabet still builds `{ alphabet }`, reads options and generator, and checks `at`. Add a
-      direct preset path and measure it on Bun first.
+- [x] Primitive UUIDv7 slug presets skip option reads: 0.85–0.94 on Node, Chromium, JITless, and
+      Deno; Bun unresolved in one of two replays (bench/PERFORMANCE.md).
 - [ ] Add a keyless `generateUuidV7WithPlainSlug()` row to the compare corpus; only the
       selected-generator pair is measured.
 

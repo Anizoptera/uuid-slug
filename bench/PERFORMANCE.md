@@ -851,6 +851,12 @@ at 0.883–0.912, 0.932 unresolved, and 0.548–0.560. Bun stayed unresolved at 
 allocation is not where Bun's slug cost sits. Generator rows, text, and bytes stayed unresolved; the
 corpus has no row for the keyless pair.
 
+A primitive alphabet preset skips the `{ alphabet }` object, option reads, generator check, and `at`
+check in `generatePlainUuidV7Slug`. Two packed replays against `6b5bcc9` measured base64url slugs at
+0.897 and 0.936 on Node 26.8.2, 0.875 and 0.849 on Chromium, 0.877 and 0.902 JITless, and 0.930
+unresolved then 0.926 on Deno. Bun read 0.961 unresolved then 0.891, so the Bun effect is not
+established; base32hex slugs followed on every lane. Generator rows stayed unresolved.
+
 Patching Bun's native UUIDv7 output with the package clock produces correct values but loses: text
 cost 91–94 ns and slugs 103–106 ns against 70–73 and 66–71 ns for the package generator in two
 one-process screens on Bun 1.4.2, because slicing and concatenating the native string costs more
