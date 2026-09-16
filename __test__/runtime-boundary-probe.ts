@@ -184,10 +184,6 @@ export const runtimeBoundaryCases = [
         throw cause;
       };
       assert.equal(runtime.fillRandom(new Uint8Array(POOL_BYTES)), undefined);
-      // Native UUIDv7 hooks draw below the patched primitive; removing them keeps every listed
-      // route on the package draw that this case fails. The native route case covers their failures.
-      const nativeUuidV7 = runtime.uuidV7;
-      delete runtime.uuidV7;
       webCrypto.getRandomValues = failing;
       nodeCrypto.randomFillSync = failing;
       const out = new Uint8Array(24).fill(0xa5);
@@ -247,7 +243,6 @@ export const runtimeBoundaryCases = [
       } finally {
         webCrypto.getRandomValues = originalWebFill;
         nodeCrypto.randomFillSync = originalNodeFill;
-        if (nativeUuidV7) runtime.uuidV7 = nativeUuidV7;
       }
       assert.equal(isUuidV7String(generateUuidV7()), true);
     },
@@ -338,120 +333,6 @@ export const runtimeBoundaryCases = [
         assert.equal(isUuidV7String(generateUuidV7()), true);
       } finally {
         failPortable = false;
-        for (const key of Object.keys(runtime) as (keyof typeof runtime)[]) delete runtime[key];
-        Object.assign(runtime, saved);
-      }
-    },
-  },
-  {
-    name: "publishes validated native UUIDv7 text and base64url slugs only on their argument-free routes",
-    run(this: void) {
-      const saved = { ...runtime };
-      const portableCause = new Error("portable route failed");
-      const nativeCause = new Error("native route failed");
-      const nativeText = "01990d4d-e600-7000-8000-000000000000";
-      const nativeSlug = unwrap(uuidStringToPlainSlug(nativeText));
-      let textCalls = 0;
-      let slugCalls = 0;
-      // Module-level UUIDv7 generators bind the pooled fill once, so portable failure is injected at
-      // the platform primitives after the pool is drained.
-      const webCrypto = globalThis.crypto;
-      // eslint-disable-next-line typescript/unbound-method -- saved for restoration, never called
-      const originalWebFill = webCrypto.getRandomValues;
-      // eslint-disable-next-line typescript/unbound-method -- saved for restoration, never called
-      const originalNodeFill = nodeCrypto.randomFillSync;
-      const failing = (): never => {
-        throw portableCause;
-      };
-      const failPortable = (fail: boolean) => {
-        if (fail) assert.equal(runtime.fillRandom(new Uint8Array(POOL_BYTES)), undefined);
-        webCrypto.getRandomValues = fail ? failing : originalWebFill;
-        nodeCrypto.randomFillSync = fail ? failing : originalNodeFill;
-      };
-      const native = (text: string, slug: string) => (encoding?: "base64url") => {
-        if (encoding === undefined) textCalls += 1;
-        else slugCalls += 1;
-        return encoding === undefined ? text : slug;
-      };
-      const assertDualFailure = (result: unknown) => {
-        assert.ok(result instanceof UuidSlugError);
-        assert.equal(hasCause(result, nativeCause), true);
-        assert.equal(hasCause(result, portableCause), true);
-      };
-      try {
-        runtime.uuidV7 = native(nativeText, nativeSlug);
-        assert.equal(generateUuidV7(), nativeText);
-        assert.equal(generateUuidV7(), nativeText);
-        assert.equal(generateUuidV7(UUID_TEXT_UPPERCASE), nativeText.toUpperCase());
-        assert.equal(generatePlainUuidV7Slug(), nativeSlug);
-        assert.equal(generatePlainUuidV7Slug("base64url"), nativeSlug);
-        assert.equal(textCalls, 3);
-        // Routes with options, other spellings, or other output forms keep the package generator.
-        const others: readonly (() => unknown)[] = [
-          () => generateUuidV7({}),
-          () => generateUuidV7({ at: timestamp }),
-          () => generateUuidV7Bytes(),
-          () => generateUuidV7Value(),
-          () => generatePlainUuidV7Slug("base32hex"),
-          () => generatePlainUuidV7Slug({}),
-          () => generateUuidV7WithPlainSlug(),
-        ];
-        for (const call of others) {
-          const result = call();
-          assert.equal(result === nativeText || result === nativeSlug, false);
-        }
-        assert.equal(textCalls, 3);
-        assert.equal(slugCalls, 2);
-
-        // Invalid values fall back on every call; a rejected adapter never becomes trusted.
-        const uuidV4Text = "01990d4d-e600-4000-8000-000000000000";
-        runtime.uuidV7 = native(uuidV4Text, unwrap(uuidStringToPlainSlug(uuidV4Text)));
-        for (let call = 0; call < 3; call += 1) {
-          const generated = unwrap(generateUuidV7());
-          assert.equal(isUuidV7String(generated) && generated !== nativeText, true);
-          const generatedSlug = generatePlainUuidV7Slug();
-          assert.equal(isPlainUuidV7Slug(generatedSlug) && generatedSlug.length === 22, true);
-        }
-        assert.equal(textCalls, 6);
-        assert.equal(slugCalls, 5);
-
-        // Replacing a trusted adapter validates the replacement.
-        runtime.uuidV7 = native(nativeText, nativeSlug);
-        assert.equal(generateUuidV7(), nativeText);
-        assert.equal(generatePlainUuidV7Slug(), nativeSlug);
-        runtime.uuidV7 = native("not-a-uuid", "not-a-slug");
-        assert.equal(isUuidV7String(generateUuidV7()), true);
-        assert.equal(isPlainUuidV7Slug(generatePlainUuidV7Slug()), true);
-
-        // A trusted function that later throws still falls back, and joins a portable failure.
-        let throwTrusted = false;
-        const trustedNative = native(nativeText, nativeSlug);
-        runtime.uuidV7 = (encoding) => {
-          if (throwTrusted) throw nativeCause;
-          return trustedNative(encoding);
-        };
-        assert.equal(generateUuidV7(), nativeText);
-        assert.equal(generatePlainUuidV7Slug(), nativeSlug);
-        throwTrusted = true;
-        assert.equal(isUuidV7String(generateUuidV7()), true);
-        assert.equal(isPlainUuidV7Slug(generatePlainUuidV7Slug()), true);
-        failPortable(true);
-        assertDualFailure(thrownBy(() => generateUuidV7()));
-        assertDualFailure(thrownBy(() => generatePlainUuidV7Slug()));
-        failPortable(false);
-
-        const throwNative = (): never => {
-          throw nativeCause;
-        };
-        runtime.uuidV7 = throwNative;
-        failPortable(true);
-        assertDualFailure(thrownBy(() => generateUuidV7()));
-        assertDualFailure(thrownBy(() => generatePlainUuidV7Slug()));
-        failPortable(false);
-        assert.equal(isUuidV7String(generateUuidV7()), true);
-        assert.equal(isPlainUuidV7Slug(generatePlainUuidV7Slug()), true);
-      } finally {
-        failPortable(false);
         for (const key of Object.keys(runtime) as (keyof typeof runtime)[]) delete runtime[key];
         Object.assign(runtime, saved);
       }

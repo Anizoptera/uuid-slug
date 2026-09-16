@@ -2,16 +2,9 @@
 
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
-import {
-  generatedOrThrow,
-  portableAfterNative,
-  stringInput,
-  UuidSlugError,
-  validatedNativeOrFallback,
-} from "./errors.ts";
-import type { NativeTrust } from "./errors.ts";
+import { generatedOrThrow, stringInput, UuidSlugError } from "./errors.ts";
 import { readGenerationOptions } from "./generation-options.ts";
-import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
+import { UUID_TEXT_LOWERCASE } from "./types.ts";
 import type {
   GenerateUuidV7Options,
   GenerateUuidV7BytesIntoOptions,
@@ -22,7 +15,7 @@ import type {
 } from "./types.ts";
 import type { UuidV7PayloadLayout } from "./types.ts";
 import { readUuidV7Instant } from "./instant.ts";
-import { formatUuidBytesUnchecked, isUuidV7String, resolveUuidTextCase } from "./uuid.ts";
+import { formatUuidBytesUnchecked, resolveUuidTextCase } from "./uuid.ts";
 import { createPortableUuidV7Generator } from "./v7.ts";
 import type { PortableUuidV7Generator } from "./v7.ts";
 import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
@@ -33,7 +26,6 @@ const UUID_V7_TEXT_OPTIONS = {
   textCase: true,
 } as const satisfies Record<keyof GenerateUuidV7Options, true>;
 const AT_OPTION = "at";
-const UUID_V7_GENERATION = "UUIDv7 generation";
 const UUID_V7_BYTE_OPTIONS = {
   at: true,
   generator: true,
@@ -43,8 +35,9 @@ const UUID_V7_BYTE_OPTIONS = {
 
 /**
  * Text and bytes keep independent lazy state so neither output form pays cross-form coordination.
- * An adapter's native text replaces the text generator only on argument-free and spelling-preset
- * calls; bench/PERFORMANCE.md owns which hosts provide it and why.
+ * No native UUIDv7 text replaces the text generator: Node's validated native text is slower, and
+ * Bun's native generator encodes timestamps ahead of the clock during bursts. bench/PERFORMANCE.md
+ * owns the comparison and remeasurement trigger.
  */
 let textGenerator: PortableUuidV7Generator | undefined;
 let byteGenerator: PortableUuidV7Generator | undefined;
@@ -93,43 +86,6 @@ function drawAt(
 export const uuidV7BytesAt = (at: unknown): Uint8Array | UuidSlugError => drawAt(v7Bytes(), at);
 let generateDefaultUuidV7: PortableUuidV7Generator["generateUuidV7"] | undefined;
 let generateDefaultUuidV7Bytes: PortableUuidV7Generator["generateUuidV7Bytes"] | undefined;
-const nativeUuidV7Trust: NativeTrust = { trusted: undefined };
-const portableUuidV7Text = (textCase: UuidTextCase): string | UuidSlugError =>
-  (generateDefaultUuidV7 ??= v7Text().generateUuidV7)(textCase);
-
-/**
- * Current-time text for calls without options. Module-level text promises no ordering, so a native
- * generator's sequence strategy does not matter; options keep the package generator because `at`
- * and `generator` need its sequence state.
- */
-function currentUuidV7Text(textCase: UuidTextCase): string | UuidSlugError {
-  const native = runtime.uuidV7;
-  if (!native) return portableUuidV7Text(textCase);
-  let uuid: string | UuidSlugError;
-  if (native === nativeUuidV7Trust.trusted) {
-    try {
-      uuid = native();
-    } catch (nativeCause) {
-      uuid = portableAfterNative<UuidTextCase>(
-        nativeCause,
-        portableUuidV7Text,
-        UUID_TEXT_LOWERCASE,
-        UUID_V7_GENERATION,
-      );
-    }
-  } else {
-    uuid = validatedNativeOrFallback<undefined, UuidTextCase>(
-      nativeUuidV7Trust,
-      native,
-      undefined,
-      isUuidV7String,
-      portableUuidV7Text,
-      UUID_TEXT_LOWERCASE,
-      UUID_V7_GENERATION,
-    );
-  }
-  return textCase === UUID_TEXT_UPPERCASE && typeof uuid === "string" ? uuid.toUpperCase() : uuid;
-}
 
 /*
  * Return types are DECLARED, not inferred, on all four. Inference reads them off the generator, so
@@ -171,16 +127,20 @@ export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
     const selectedCase = resolveUuidTextCase(directCase);
     return selectedCase instanceof Error
       ? selectedCase
-      : (generatedOrThrow(currentUuidV7Text(selectedCase)) as UuidV7StringFor<Case>);
+      : (generatedOrThrow(
+          (generateDefaultUuidV7 ??= v7Text().generateUuidV7)(selectedCase),
+        ) as UuidV7StringFor<Case>);
   }
-  let values = readGenerationOptions(textCaseOrOptions, UUID_V7_TEXT_OPTIONS, UUID_V7_GENERATION);
+  let values = readGenerationOptions(textCaseOrOptions, UUID_V7_TEXT_OPTIONS, "UUIDv7 generation");
   if (values instanceof Error) {
     const wrappedCase = stringInput(textCaseOrOptions);
     if (wrappedCase !== undefined) {
       const selectedCase = resolveUuidTextCase(wrappedCase);
       return selectedCase instanceof Error
         ? selectedCase
-        : (generatedOrThrow(currentUuidV7Text(selectedCase)) as UuidV7StringFor<Case>);
+        : (generatedOrThrow(
+            (generateDefaultUuidV7 ??= v7Text().generateUuidV7)(selectedCase),
+          ) as UuidV7StringFor<Case>);
     }
   }
   if (values instanceof Error) return values;

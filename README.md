@@ -1093,7 +1093,7 @@ change the ranking. Browser performance comparisons use Chromium; Firefox and We
 
 | Evidence | Scope | Current result |
 | --- | --- | --- |
-| UUIDv7 text | Node, Bun, Deno, Chromium | Leads the compared packages. Module calls use Bun's native generator on Bun and portable generation elsewhere, without cross-form ordering; created generators add an explicit ordering contract and clock controls. |
+| UUIDv7 text | Node, Bun, Deno, Chromium | Leads the compared packages. Module calls use portable generation without cross-form ordering; created generators add an explicit ordering contract and clock controls. |
 | UUIDv4 text | Node, Bun, Deno, Chromium | Uses native generation on Node, Bun, and Deno. Trails the fastest compared package on Bun and Chromium. |
 | UUIDv4/v7 bytes | New arrays and caller buffers on Node, Bun, Deno, Chromium | Leads the compared packages on Node and Chromium. On Bun, UUIDv4 caller-buffer writes and both UUIDv7 byte forms trail `uuid`. On Deno, both UUIDv7 byte forms are unresolved against `uuidv7` and `uniku`. |
 | Conversion | UUID text, bytes, both plain-slug alphabets, timestamp extraction | Text timestamp extraction trails `uuidv7-js` on Node, Bun, and Deno and is unresolved on Chromium. The study has no comparable package for extraction from bytes or slugs. |
@@ -1153,15 +1153,15 @@ corpus runs against both implementations in CI. The npm package remains TypeScri
 | Runtime | Loads | Generation |
 | --- | --- | --- |
 | Node 20 and newer | compiled JavaScript | native UUIDv4 text; pooled native entropy for bytes and UUIDv7 |
-| Bun | published TypeScript | native UUIDv4 and UUIDv7 text and base64url UUIDv7 slugs; pooled Web Crypto for bytes and other UUIDv7 forms |
+| Bun | published TypeScript | native UUIDv4 text; pooled Web Crypto for bytes and UUIDv7 |
 | Deno | published TypeScript | native UUIDv4 text; pooled Web Crypto for bytes and UUIDv7; no flag or import map needed |
 | Browsers, other runtimes | compiled JavaScript | the package's own generator over Web Crypto |
 
 The npm package has no runtime dependencies or native addons to install.
 
 - Bun loads the published TypeScript source, uses Web Crypto `randomUUID` for UUIDv4 text, and
-  uses `Bun.randomUUIDv7` for UUIDv7 text and base64url plain slugs generated without options.
-  Other UUIDv7 calls run the package's own generator over pooled Web Crypto entropy.
+  runs the package's own generator over pooled Web Crypto entropy for UUIDv7. `Bun.randomUUIDv7`
+  is faster but encodes timestamps ahead of the clock during bursts of calls.
   If Bun loads the compiled JavaScript directly, it still uses the Bun-specific source and native
   functions. Tooling that opts into the `development` condition loads the same source.
 - Node uses native `crypto.randomUUID` for UUIDv4 text and the bundled generator over pooled

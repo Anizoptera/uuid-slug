@@ -16,11 +16,9 @@ const bunRuntime: Runtime = {
 if (globalThis.crypto.randomUUID)
   bunRuntime.uuidV4 = globalThis.crypto.randomUUID.bind(globalThis.crypto);
 
-// Bun's native UUIDv7 text and base64url output skip the package draw and formatter. Node's native
-// UUIDv7 text is slower than the package generator and Deno has none, so this also belongs to Bun;
-// bench/PERFORMANCE.md owns the comparison. Bytes stay portable: Bun returns a `Buffer`.
-const bunUuidV7 = (globalThis as { Bun?: { randomUUIDv7?: NonNullable<Runtime["uuidV7"]> } }).Bun
-  ?.randomUUIDv7;
-if (bunUuidV7) bunRuntime.uuidV7 = (encoding) => bunUuidV7(encoding);
+// `Bun.randomUUIDv7` is faster than the package generator but must not replace it: when its 12-bit
+// counter overflows it advances the encoded millisecond, so a sustained burst encodes timestamps
+// ahead of the clock, and passing `Date.now()` as its time leaves them ahead. Recheck when Bun changes
+// that overflow policy; bench/PERFORMANCE.md owns the measurements.
 
 export const runtime = bunRuntime;

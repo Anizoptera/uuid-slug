@@ -1,14 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { runtime } from "#runtime";
-import {
-  generatedOrThrow,
-  isUuidSlugError,
-  portableAfterNative,
-  stringInput,
-  validatedNativeOrFallback,
-} from "./errors.ts";
-import type { NativeTrust, UuidSlugError } from "./errors.ts";
+import { isUuidSlugError, stringInput } from "./errors.ts";
+import type { UuidSlugError } from "./errors.ts";
 import { BASE64URL_NAME, encode } from "./alphabet.ts";
 import { readGenerationOptions } from "./generation-options.ts";
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
@@ -23,7 +16,7 @@ import type {
 } from "./types.ts";
 import { currentUuidV7Bytes, uuidV7BytesAt } from "./v7-keyless.ts";
 import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
-import { isPlainUuidV7Slug, resolveSlugAlphabet } from "./slug.ts";
+import { resolveSlugAlphabet } from "./slug.ts";
 import { formatUuidBytesUnchecked, isUuidTextCase, resolveUuidTextCase } from "./uuid.ts";
 import type { SlugAlphabet } from "./slug.ts";
 
@@ -48,7 +41,6 @@ const GENERATOR_WITH_PLAIN_SLUG_OPTIONS = {
   textCase: true,
 } as const satisfies Record<keyof Omit<GenerateUuidV7WithPlainSlugOptions, "generator">, true>;
 const AT_OPTION = "at";
-const PLAIN_UUID_V7_SLUG_GENERATION = "plain UUIDv7 slug generation";
 
 /** Supply the UUIDv7 bytes one slug operation encodes, from a sequence or from the module clock. */
 type DrawUuidV7Bytes = (values: { readonly at?: unknown }) => Uint8Array | UuidSlugError;
@@ -81,7 +73,7 @@ function plainUuidV7SlugFrom(
   let alphabetOnly = typeof alphabetOrOptions === "string";
   let values = alphabetOnly
     ? { alphabet: alphabetOrOptions as SlugAlphabet }
-    : readGenerationOptions(alphabetOrOptions, accepted, PLAIN_UUID_V7_SLUG_GENERATION);
+    : readGenerationOptions(alphabetOrOptions, accepted, "plain UUIDv7 slug generation");
   if (values instanceof Error) {
     const alphabet = stringInput(alphabetOrOptions);
     if (alphabet !== undefined) {
@@ -189,34 +181,6 @@ export function generatePlainUuidV7Slug(
 export function generatePlainUuidV7Slug(
   alphabetOrOptions: SlugAlphabet | GeneratePlainUuidV7SlugOptions = BASE64URL_NAME,
 ): PlainUuidV7Slug | UuidSlugError {
-  const native = runtime.uuidV7;
-  if (native && alphabetOrOptions === BASE64URL_NAME) {
-    if (native === nativePlainUuidV7SlugTrust.trusted) {
-      try {
-        return native(BASE64URL_NAME) as PlainUuidV7Slug;
-      } catch (nativeCause) {
-        return generatedOrThrow(
-          portableAfterNative(
-            nativeCause,
-            portablePlainUuidV7Slug,
-            BASE64URL_NAME,
-            PLAIN_UUID_V7_SLUG_GENERATION,
-          ),
-        ) as PlainUuidV7Slug;
-      }
-    }
-    return generatedOrThrow(
-      validatedNativeOrFallback<typeof BASE64URL_NAME, SlugAlphabet>(
-        nativePlainUuidV7SlugTrust,
-        native,
-        BASE64URL_NAME,
-        isBase64urlPlainUuidV7Slug,
-        portablePlainUuidV7Slug,
-        BASE64URL_NAME,
-        PLAIN_UUID_V7_SLUG_GENERATION,
-      ),
-    ) as PlainUuidV7Slug;
-  }
   return plainUuidV7SlugFrom(
     alphabetOrOptions,
     PLAIN_UUID_V7_SLUG_OPTIONS,
@@ -224,17 +188,6 @@ export function generatePlainUuidV7Slug(
     true,
   );
 }
-
-/**
- * A native base64url slug replaces the package draw only for the default alphabet without options,
- * the one form a host encodes directly; bench/PERFORMANCE.md owns which hosts provide it and why.
- */
-const nativePlainUuidV7SlugTrust: NativeTrust = { trusted: undefined };
-const isBase64urlPlainUuidV7Slug = (value: unknown): boolean =>
-  typeof value === "string" && value.length === 22 && isPlainUuidV7Slug(value);
-// Returns a failed draw instead of throwing it, so a native failure can join its cause.
-const portablePlainUuidV7Slug = (alphabet: SlugAlphabet): PlainUuidV7Slug | UuidSlugError =>
-  plainUuidV7SlugFrom(alphabet, PLAIN_UUID_V7_SLUG_OPTIONS, drawKeylessUuidV7Bytes, false);
 
 /**
  * Generate UUIDv7 text and a plain slug for the same UUID. Select a generator when this result must

@@ -16,10 +16,10 @@ Built-in generation covers UUIDv4 and UUIDv7 only. Version-neutral parsing and p
 accept other UUID versions but add no generation or security behavior for them.
 
 UUIDv4 uses 122 bits for random data. UUIDv7 uses 48 bits for its timestamp and allows its other 74
-bits to combine random data and counters. Native UUIDv7 text and slug generators decide how to use
-those 74 bits. The portable generator uses a 42-bit counter with a random starting value and generates 32
-new random bits for each UUID. A UUID does not identify which method produced its payload, so the
-package does not report those bits as random or predictable. Collisions remain possible.
+bits to combine random data and counters. The portable generator uses a 42-bit counter with a
+random starting value and generates 32 new random bits for each UUID. A UUID does not identify which
+method produced its payload, so the package does not report those bits as random or predictable.
+Collisions remain possible.
 
 Generation selects secure sources separately for text and byte output:
 

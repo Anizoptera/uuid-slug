@@ -137,10 +137,9 @@ function nativeOrPortableUuidV4<Case extends UuidTextCase>(
       );
     }
   } else {
-    uuid = validatedNativeOrFallback<undefined, UuidTextCase>(
+    uuid = validatedNativeOrFallback<UuidTextCase>(
       nativeUuidV4Trust,
       native,
-      undefined,
       isUuidV4String,
       generatePortableUuidV4,
       UUID_TEXT_LOWERCASE,
