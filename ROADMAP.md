@@ -47,12 +47,18 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
   times faster there; Node JITless is 1.06–2.4 times slower (bench/PERFORMANCE.md).
 - Rejected: calling `crypto.randomUUID` directly instead of through the Node adapter wrapper read
   0.95 unresolved on Node 26.8.2 and 1.08 slower on Node 24.21.0.
-- Single-call paths outrank batch writes into caller-owned buffers (AGENTS.md). Masked slug
-  generation, encoding, and decoding are the costliest single calls: about 450, 380, and 310 ns on
-  Node 26.8.2, and they have not been CPU-profiled.
-- Retained: removing the discarded errors made those codec and parsed-value routes 16–30 times
-  faster on Node and 1.7–2.9 times on Bun (bench/PERFORMANCE.md). Host load near 14 from unrelated
-  processes widens intervals; discard replays whose intervals span the whole row.
+- Single-call paths outrank batch writes into caller-owned buffers (AGENTS.md).
+- Retained (bench/PERFORMANCE.md): the sentinel collision lookup runs only for a zero check tail
+  (argument-free masked generation 0.60 on Node 26.8.2); fixed slug decoders check validity once
+  (base32hex 0.77-0.92 everywhere); Node, Bun, and Deno write 16-byte slugs through one Latin-1
+  read; text-to-slug parses into scratch and uses the shared writer, deleting the direct writers
+  (text to base32hex 0.29 on Bun, 0.48 on Node 26.8.2); the Feistel round writes HalfSipHash out
+  (masked rows 0.65-0.98). Node 26.8.2 JITless trades 1.05-1.64 slower base64url slug writing.
+- After these, Node 26.8.2 CPU profiles put Feistel work at about half of masked encode and decode
+  time; the frozen round count sets that floor. Node's `Buffer#toString` wrapper plus
+  `latin1Slice` is about a fifth of masked byte encoding.
+- A packed compare can fail while packing when Parcel crashes (SIGSEGV) in the consumer-graph
+  check; rerun that replay.
 
 ## Tasks
 
@@ -67,8 +73,10 @@ Bun 1.4.2, one machine. A screen chooses what to measure; it retains nothing.
 - [x] Retain the one-pass UUID text parser after packed replays on every runtime.
 - [ ] Redo the canonical-text guard screen (regex against a character loop) with results consumed.
 - [x] Find the option-object cost in `{ at }` and `{ generator }` generation calls.
-- [ ] Profile `masked.generate`, `masked.encode`, and `masked.decode` on Node 26.8.2 and Bun;
+- [x] Profile `masked.generate`, `masked.encode`, and `masked.decode` on Node 26.8.2 and Bun;
       screen the candidates together, then replay the survivors on every runtime.
+- [ ] Re-rank the primary single-call rows on Node 26.8.2 and Bun after the retained changes.
+- [ ] Run `bun run check` before final delivery.
 - [ ] Remove the second option read from keyless `generateUuidV7({ at })` without exposing a new
       method on public generators.
 - [ ] Replay the value-state and payload changes on Node 24.21.0.
