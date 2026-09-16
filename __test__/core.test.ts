@@ -1298,11 +1298,15 @@ describe("plain UUID slugs", () => {
     }
     const compact = SAMPLE_V7_A.replaceAll("-", "");
     const output = new Uint8Array(16).fill(0x5a);
-    for (let index = 0; index < compact.length; index += 1) {
-      const invalid = `${compact.slice(0, index)}!${compact.slice(index + 1)}`;
-      expect(uuidStringToBytes(invalid, output)).toBeInstanceOf(Error);
-      expect(output.every((byte) => byte === 0x5a)).toBe(true);
-    }
+    // U+0130 keeps the low seven bits of "0", so it catches a lookup that masks the code to ASCII.
+    for (let index = 0; index < compact.length; index += 1)
+      for (const character of ["!", "\u0130"]) {
+        const invalid = `${compact.slice(0, index)}${character}${compact.slice(index + 1)}`;
+        expect(uuidStringToBytes(invalid, output)).toMatchObject({
+          message: expect.stringContaining(`offset ${index - (index % 2)};`),
+        });
+        expect(output.every((byte) => byte === 0x5a)).toBe(true);
+      }
     for (const invalid of [
       compact.slice(1),
       `${compact}0`,
