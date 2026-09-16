@@ -7,6 +7,7 @@ import {
   deriveUuidV7Mask,
   deriveUuidV7MaskAsync,
   createUuidV7MaskingCodec as createCodec,
+  extractUuidV7Payload,
   extractUuidV7UnixMs,
   UUID_V7_TEST_MASK,
   isUuidSlugError,
@@ -100,7 +101,14 @@ export const codecBoundaryCases = [
       assert.ok(uuidToBytes(packed, 9) instanceof UuidSlugError);
       assert.ok(codec.uuidToPlainSlug(packed, 9) instanceof UuidSlugError);
       // Every other accepted form holds one UUID, so a non-zero offset with one is a caller mistake.
-      for (const read of [uuidToString, uuidToBytes, uuidToPlainSlug, codec.uuidToString]) {
+      // The timestamp readers follow the same rule: ignoring the offset would answer about byte 0.
+      for (const read of [
+        uuidToString,
+        uuidToBytes,
+        uuidToPlainSlug,
+        codec.uuidToString,
+        extractUuidV7UnixMs,
+      ]) {
         for (const value of [uuid, slug, packed.buffer, new DataView(packed.buffer)]) {
           const result = Reflect.apply(read, undefined, [value, 5]);
           assert.ok(result instanceof UuidSlugError);
@@ -109,9 +117,22 @@ export const codecBoundaryCases = [
       }
       // Offset zero is the spelling of "no offset", so it reads every form the standalone call does.
       const exact = unwrap(uuidStringToBytes(uuid));
+      const layout = { subMillisecondFractionBits: 0, counterBits: 0 };
+      const unixMs = unwrap(extractUuidV7UnixMs(exact));
       for (const value of [uuid, slug, exact.buffer, new DataView(exact.buffer)]) {
         assert.equal(Reflect.apply(uuidToString, undefined, [value, 0]), uuid);
         assert.equal(Reflect.apply(uuidToPlainSlug, undefined, [value, 0]), slug);
+        assert.equal(Reflect.apply(extractUuidV7UnixMs, undefined, [value, 0]), unixMs);
+        assert.equal(
+          unwrap(Reflect.apply(extractUuidV7Payload, undefined, [value, layout, 0])).unixMs,
+          unixMs,
+        );
+      }
+      // The payload reader takes its offset third, so it cannot join the loop above.
+      for (const value of [uuid, slug, packed.buffer, new DataView(packed.buffer)]) {
+        const result = Reflect.apply(extractUuidV7Payload, undefined, [value, layout, 5]);
+        assert.ok(result instanceof UuidSlugError);
+        assert.equal(result.code, "invalid_options");
       }
       assert.equal(
         Reflect.apply(uuidToString, undefined, [uuid, 0, "uppercase"]),

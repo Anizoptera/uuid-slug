@@ -627,7 +627,8 @@ export function extractUuidV7UnixMs<Input extends string | UuidSlugError>(
 ): number | UuidSlugError;
 /**
  * Return the 48-bit Unix millisecond encoded by UUIDv7 bytes. An `ArrayBuffer` uses its whole
- * contents; a `DataView` uses its declared range. Only `Uint8Array` input accepts an offset.
+ * contents; a `DataView` uses its declared range. Only `Uint8Array` input accepts a non-zero
+ * offset; `0` means the same as omitting it.
  *
  * @param value - One supported UUIDv7 byte source.
  * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
@@ -641,8 +642,13 @@ export function extractUuidV7UnixMs(
   value: string | UuidByteInput | UuidSlugError,
   byteOffset = 0,
 ): number | UuidSlugError {
-  if (typeof value === "string") return extractStringTimestamp(value);
+  if (typeof value === "string")
+    return byteOffset === 0
+      ? extractStringTimestamp(value)
+      : new UuidSlugError(INVALID_OPTIONS, BYTE_OFFSET_NEEDS_BYTES);
   if (isUuidSlugError(value)) return value;
+  if (byteOffset !== 0 && !isUint8Array(value))
+    return new UuidSlugError(INVALID_OPTIONS, BYTE_OFFSET_NEEDS_BYTES);
   const bytes = isUint8Array(value) ? value : exactUuidByteView(value);
   if (bytes instanceof Error) {
     const text = stringInput(value);
@@ -671,7 +677,12 @@ export function extractUuidV7Payload<Input extends string | UuidSlugError>(
   value: UuidV7TimestampInput<Input>,
   layout: UuidV7PayloadLayout,
 ): UuidV7Payload | UuidSlugError;
-/** Decode a UUIDv7 byte source under the same caller-supplied payload layout. */
+/**
+ * Decode a UUIDv7 byte source under the same caller-supplied payload layout. Only `Uint8Array`
+ * input accepts a non-zero offset; `0` means the same as omitting it.
+ *
+ * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
+ */
 export function extractUuidV7Payload<Input extends UuidByteInput | UuidSlugError>(
   value: UuidV7BytesInput<Input>,
   layout: UuidV7PayloadLayout,
@@ -684,31 +695,29 @@ export function extractUuidV7Payload(
   byteOffset = 0,
 ): UuidV7Payload | UuidSlugError {
   let bytes: Uint8Array | UuidSlugError;
-  let offset = byteOffset;
   if (typeof value === "string") {
+    if (byteOffset !== 0) return new UuidSlugError(INVALID_OPTIONS, BYTE_OFFSET_NEEDS_BYTES);
     bytes = uuidToBytes(value);
-    offset = 0;
   } else if (isUuidSlugError(value)) {
     return value;
   } else {
+    if (byteOffset !== 0 && !isUint8Array(value))
+      return new UuidSlugError(INVALID_OPTIONS, BYTE_OFFSET_NEEDS_BYTES);
     bytes = isUint8Array(value) ? value : exactUuidByteView(value);
     if (bytes instanceof Error) {
       const text = stringInput(value);
-      if (text !== undefined) {
-        bytes = uuidToBytes(text);
-        offset = 0;
-      }
+      if (text !== undefined) bytes = uuidToBytes(text);
     }
   }
   if (bytes instanceof Error) return bytes;
-  const badRange = checkRange(bytes.length, offset, 16);
+  const badRange = checkRange(bytes.length, byteOffset, 16);
   if (badRange) return badRange;
-  if (uuidVersion(bytes, offset) !== 7 || !isRfcVariant(bytes, offset))
+  if (uuidVersion(bytes, byteOffset) !== 7 || !isRfcVariant(bytes, byteOffset))
     return new UuidSlugError(INVALID_UUID_VERSION, UUID_V7_TIMESTAMP_ONLY);
   return extractPayloadFields(
     bytes,
-    offset,
-    uuidTimestampFromBytesUnchecked(bytes, offset),
+    byteOffset,
+    uuidTimestampFromBytesUnchecked(bytes, byteOffset),
     layout,
   );
 }

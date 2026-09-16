@@ -15,7 +15,8 @@ notes: the section for a version is published verbatim when its tag is pushed.
   a `byteOffset`, at the package root and on a masking codec. Bytes carry no masked spelling, so a
   codec offset read returns what the keyless reader returns. An offset of `0` always means the same
   as omitting it; only `Uint8Array` input accepts a non-zero offset, and passing one with UUID text,
-  a slug, or another buffer view returns `invalid_options`.
+  a slug, or another buffer view returns `invalid_options`. `extractUuidV7UnixMs` and
+  `extractUuidV7Payload` follow the same rule instead of answering about byte 0.
 - UUIDv7 generators generate slugs directly: `generatePlainUuidV7Slug` and
   `generateUuidV7WithPlainSlug` take the same spellings and `at` as their root functions, without
   the `generator` option and without revalidating the sequence on every call.
