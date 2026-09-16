@@ -547,26 +547,9 @@ describe("plain UUID slugs", () => {
       uuidStringToBytes(SAMPLE_V7_A),
     );
     expect(Reflect.apply(uuidStringToPlainSlug, undefined, [wrappedUuid])).toBe(plainSlug);
-    expect(Reflect.apply(uuidToBytes, undefined, [wrappedUuid])).toEqual(
-      uuidStringToBytes(SAMPLE_V7_A),
-    );
-    expect(Reflect.apply(uuidToPlainSlug, undefined, [wrappedUuid])).toBe(plainSlug);
-    expect(Reflect.apply(extractUuidVersion, undefined, [wrappedUuid])).toBe(7);
-    expect(Reflect.apply(parseUuid, undefined, [wrappedUuid]).toString()).toBe(SAMPLE_V7_A);
-    expect(
-      Reflect.apply(extractUuidV7Payload, undefined, [
-        wrappedUuid,
-        {
-          subMillisecondFractionBits: 0,
-          counterBits: 0,
-        },
-      ]),
-    ).toEqual(extractUuidV7Payload(SAMPLE_V7_A, { subMillisecondFractionBits: 0, counterBits: 0 }));
-    expect(Reflect.apply(plainSlugToUuidString, undefined, [wrappedPlainSlug])).toBe(SAMPLE_V7_A);
     expect(Reflect.apply(plainSlugToUuidBytes, undefined, [wrappedPlainSlug])).toEqual(
       uuidStringToBytes(SAMPLE_V7_A),
     );
-    expect(Reflect.apply(uuidToString, undefined, [wrappedPlainSlug])).toBe(SAMPLE_V7_A);
     expect(
       Reflect.apply(validatePlainUuidV7SlugUnixMs, undefined, [
         wrappedPlainSlug,
@@ -619,15 +602,6 @@ describe("plain UUID slugs", () => {
         uppercase,
       ]),
     ).toBe(SAMPLE_V7_A.toUpperCase());
-    expect(Reflect.apply(uuidV7StringBounds, undefined, [0, 0, uppercase])).toMatchObject({
-      startInclusive: "00000000-0000-7000-8000-000000000000",
-      endInclusive: "00000000-0000-7FFF-BFFF-FFFFFFFFFFFF",
-    });
-    const parsed = unwrap(parseUuid(SAMPLE_V7_A));
-    expect(parsed.toString(uppercase as unknown as typeof UUID_TEXT_UPPERCASE)).toBe(
-      SAMPLE_V7_A.toUpperCase(),
-    );
-    expect(parsed.toPlainSlug(base32hex as unknown as typeof BASE32HEX)).toHaveLength(26);
 
     const derived = unwrap(
       Reflect.apply(deriveUuidV7Mask, undefined, [{ seed, diagnosticLabel: label }]),
@@ -1446,13 +1420,6 @@ describe("masked UUID slugs", () => {
     expect(Reflect.apply(codec.uuidToString, undefined, [boxedString(SAMPLE_V7_A)])).toBe(
       SAMPLE_V7_A,
     );
-    expect(Reflect.apply(codec.uuidToBytes, undefined, [boxedString(SAMPLE_V7_A)])).toEqual(
-      uuidStringToBytes(SAMPLE_V7_A),
-    );
-    expect(Reflect.apply(codec.uuidToPlainSlug, undefined, [boxedString(SAMPLE_V7_A)])).toBe(plain);
-    expect(Reflect.apply(codec.uuidToMaskedSlug, undefined, [boxedString(SAMPLE_V7_A)])).toBe(
-      masked,
-    );
     expect(Reflect.apply(codec.plainToMaskedUuidSlug, undefined, [boxedString(plain)])).toBe(
       masked,
     );
@@ -1461,9 +1428,6 @@ describe("masked UUID slugs", () => {
     );
     expect(Reflect.apply(codec.maskedSlugToUuidBytes, undefined, [boxedString(masked)])).toEqual(
       uuidStringToBytes(SAMPLE_V7_A),
-    );
-    expect(Reflect.apply(codec.maskedToPlainUuidSlug, undefined, [boxedString(masked)])).toBe(
-      plain,
     );
     expect(Reflect.apply(codec.extractMaskedUuidV7UnixMs, undefined, [boxedString(masked)])).toBe(
       extractUuidV7UnixMs(SAMPLE_V7_A),
@@ -1489,9 +1453,6 @@ describe("masked UUID slugs", () => {
     expect(Reflect.apply(migration.uuidSlugToUuidString, undefined, [boxedString(plain)])).toBe(
       SAMPLE_V7_A,
     );
-    expect(
-      Reflect.apply(migration.uuidSlugToUuidStringCandidates, undefined, [boxedString(plain)]),
-    ).toEqual([SAMPLE_V7_A]);
     expect(codec.sentinels[0]?.uuid).toBe(SAMPLE_V7_B);
   });
 

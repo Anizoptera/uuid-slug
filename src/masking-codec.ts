@@ -587,11 +587,8 @@ function buildUuidSlugCodec(
   function plainToMaskedUuidSlug(
     plainUuidSlug: string | UuidSlugError,
   ): MaskedOrSentinelUuidV7Slug | UuidSlugError {
-    let slug = plainUuidSlug;
-    if (typeof slug !== "string") {
-      slug = normalizeUuidSlugInput(slug);
-      if (typeof slug !== "string") return slug;
-    }
+    const slug = normalizeUuidSlugInput(plainUuidSlug);
+    if (typeof slug !== "string") return slug;
     const bytes = decodePlainSlugToBytes(slug, encodeScratch);
     return bytes instanceof Error ? bytes : encodeMasked(encodeScratch, true);
   }
@@ -600,11 +597,8 @@ function buildUuidSlugCodec(
     maskedUuidSlug: string | UuidSlugError,
     textCase: Case = UUID_TEXT_LOWERCASE as Case,
   ): UuidV7StringFor<Case> | UuidSlugError {
-    let slug = maskedUuidSlug;
-    if (typeof slug !== "string") {
-      slug = normalizeUuidSlugInput(slug);
-      if (typeof slug !== "string") return slug;
-    }
+    const slug = normalizeUuidSlugInput(maskedUuidSlug);
+    if (typeof slug !== "string") return slug;
     const selectedCase = resolveUuidTextCase(textCase);
     if (selectedCase instanceof Error) return selectedCase;
     const sentinel = sentinels.bySlug.get(slug);
@@ -632,11 +626,8 @@ function buildUuidSlugCodec(
     output?: Uint8Array,
     outputOffset = 0,
   ): Uint8Array | UuidSlugError {
-    let slug = maskedUuidSlug;
-    if (typeof slug !== "string") {
-      slug = normalizeUuidSlugInput(slug);
-      if (typeof slug !== "string") return slug;
-    }
+    const slug = normalizeUuidSlugInput(maskedUuidSlug);
+    if (typeof slug !== "string") return slug;
     const badRange = output === undefined ? undefined : checkByteRange(output, outputOffset, 16);
     if (badRange) return badRange;
     const sentinelBytes = sentinels.bySlug.get(slug)?.bytes;
@@ -730,11 +721,8 @@ function buildUuidSlugCodec(
   function extractMaskedUuidV7UnixMs(
     maskedUuidSlug: string | UuidSlugError,
   ): number | UuidSlugError {
-    let slug = maskedUuidSlug;
-    if (typeof slug !== "string") {
-      slug = normalizeUuidSlugInput(slug);
-      if (typeof slug !== "string") return slug;
-    }
+    const slug = normalizeUuidSlugInput(maskedUuidSlug);
+    if (typeof slug !== "string") return slug;
     const bytes =
       sentinels.bySlug.get(slug)?.bytes ?? decodeMaskedSlug(slug, current, previousMasks);
     return bytes instanceof Error ? bytes : extractUuidV7UnixMs(bytes);
@@ -744,11 +732,8 @@ function buildUuidSlugCodec(
     maskedUuidSlug: string | UuidSlugError,
     layout: UuidV7PayloadLayout,
   ): UuidV7Payload | UuidSlugError {
-    let slug = maskedUuidSlug;
-    if (typeof slug !== "string") {
-      slug = normalizeUuidSlugInput(slug);
-      if (typeof slug !== "string") return slug;
-    }
+    const slug = normalizeUuidSlugInput(maskedUuidSlug);
+    if (typeof slug !== "string") return slug;
     const bytes =
       sentinels.bySlug.get(slug)?.bytes ?? decodeMaskedSlug(slug, current, previousMasks);
     return bytes instanceof Error ? bytes : extractUuidV7Payload(bytes, layout);
@@ -767,11 +752,8 @@ function buildUuidSlugCodec(
     maskedUuidSlug: Input,
     window: UuidV7TimestampWindow,
   ): (Input & MaskedOrSentinelUuidV7Slug) | UuidSlugError {
-    let slug: string | UuidSlugError = maskedUuidSlug;
-    if (typeof slug !== "string") {
-      slug = normalizeUuidSlugInput(slug);
-      if (typeof slug !== "string") return slug;
-    }
+    const slug = normalizeUuidSlugInput(maskedUuidSlug);
+    if (typeof slug !== "string") return slug;
     const bytes =
       sentinels.bySlug.get(slug)?.bytes ?? decodeMaskedSlug(slug, current, previousMasks);
     if (bytes instanceof Error) return bytes;

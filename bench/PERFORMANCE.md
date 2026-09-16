@@ -1180,6 +1180,14 @@ established. Node 24.21.0, Chromium, Deno 2.9.6, and Node JITless also found no 
 regression. These warm single-operation comparisons cover primitive inputs and default selectors;
 they do not measure wrapper recovery, construction, cold start, or other hardware.
 
+The same date's six-round packed comparison against `7cf7e61` moved the primitive-string exit into
+the shared UUID string normalizers and removed duplicate checks from decode-heavy masked and
+migration readers. Node 24.21.0 and Bun 1.4.2 found no statistically distinct regression in masked
+string, owned-byte, caller-buffer, or current migration decoding. One Bun caller-buffer interval
+favored the candidate, but no improvement is established because the related rows overlapped no
+change. These warm profiles cover primitive base64url input; wrapper inputs, base32hex, sentinels,
+rotation, cold start, other runtimes, and other hardware remain unmeasured.
+
 ### Consumer graph
 
 Packed browser production builds on 2026-09-12 gave Bun, esbuild, Parcel, Rollup, Rolldown, Rspack,

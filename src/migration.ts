@@ -96,11 +96,8 @@ export function createMigration(
     format: UuidSlugMigrationFormat | undefined,
     firstOnly: boolean,
   ) {
-    let slug = uuidSlug;
-    if (typeof slug !== "string") {
-      slug = normalizeUuidSlugInput(slug);
-      if (typeof slug !== "string") return slug;
-    }
+    const slug = normalizeUuidSlugInput(uuidSlug);
+    if (typeof slug !== "string") return slug;
     if (
       (format !== undefined &&
         format !== SEEDED_MASK_FORMAT &&

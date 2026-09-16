@@ -196,14 +196,16 @@ export function stringInput(value: unknown): string | undefined {
   }
 }
 
-/** Normalize a non-primitive UUID string input while preserving a preceding package failure. */
+/** Normalize UUID string input while preserving a preceding package failure. */
 export function normalizeUuidStringInput(value: unknown): string | UuidSlugError {
+  if (typeof value === "string") return value;
   if (isUuidSlugError(value)) return value;
   return stringInput(value) ?? invalidUuidStringInput(value);
 }
 
-/** Normalize a non-primitive slug input while preserving a preceding package failure. */
+/** Normalize slug input while preserving a preceding package failure. */
 export function normalizeUuidSlugInput(value: unknown): string | UuidSlugError {
+  if (typeof value === "string") return value;
   if (isUuidSlugError(value)) return value;
   return stringInput(value) ?? invalidUuidSlugInput(value);
 }
