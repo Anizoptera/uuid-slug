@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { isUuidSlugError, stringInput } from "./errors.ts";
+import { generatedOrThrow, isUuidSlugError, stringInput } from "./errors.ts";
 import type { UuidSlugError } from "./errors.ts";
 import { BASE64URL_NAME, encode } from "./alphabet.ts";
 import { readGenerationOptions } from "./generation-options.ts";
@@ -181,6 +181,14 @@ export function generatePlainUuidV7Slug(
 export function generatePlainUuidV7Slug(
   alphabetOrOptions: SlugAlphabet | GeneratePlainUuidV7SlugOptions = BASE64URL_NAME,
 ): PlainUuidV7Slug | UuidSlugError {
+  // A primitive alphabet carries no time or generator, so it skips the option object and reads that
+  // cost about 5 ns on Bun (bench/PERFORMANCE.md). Wrapped strings still take the option path.
+  if (typeof alphabetOrOptions === "string") {
+    const alphabet = resolveSlugAlphabet(alphabetOrOptions);
+    return alphabet instanceof Error
+      ? alphabet
+      : (encode(generatedOrThrow(currentUuidV7Scratch()), alphabet) as PlainUuidV7Slug);
+  }
   return plainUuidV7SlugFrom(
     alphabetOrOptions,
     PLAIN_UUID_V7_SLUG_OPTIONS,
