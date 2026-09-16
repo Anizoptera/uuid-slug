@@ -11,6 +11,10 @@ notes: the section for a version is published verbatim when its tag is pushed.
   and throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
   source. Calls with an explicit time, a generator, caller-owned output, or custom entropy, and
   every generator or masking-codec method, keep returning `UuidSlugError`.
+- `uuidToString`, `uuidToBytes`, and `uuidToPlainSlug` read one UUID out of a larger `Uint8Array` at
+  a `byteOffset`, at the package root and on a masking codec. Bytes carry no masked spelling, so a
+  codec offset read returns what the keyless reader returns. Only `Uint8Array` input accepts an
+  offset; passing one with UUID text, a slug, or another buffer view returns `invalid_options`.
 - UUIDv7 generators generate slugs directly: `generatePlainUuidV7Slug` and
   `generateUuidV7WithPlainSlug` take the same spellings and `at` as their root functions, without
   the `generator` option and without revalidating the sequence on every call.

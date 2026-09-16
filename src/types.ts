@@ -843,6 +843,17 @@ export interface UuidV7MaskingCodec {
     textCase?: Case,
   ): UuidStringResult<Input, Case>;
   /**
+   * Read one UUID out of a larger array as normalized UUID text. Bytes carry no masked spelling.
+   *
+   * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
+   */
+  uuidToString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    this: void,
+    uuid: Uint8Array,
+    byteOffset: number,
+    textCase?: Case,
+  ): UuidStringResult<Uint8Array, Case>;
+  /**
    * Convert any accepted UUID form to a new plain 16-byte array. A 22-character slug is read as
    * masked when it passes this codec's check and as plain otherwise.
    */
@@ -855,6 +866,20 @@ export interface UuidV7MaskingCodec {
     outputOffset?: number,
   ): Output | UuidSlugError;
   /**
+   * Copy one UUID out of a larger array. Bytes carry no masked spelling.
+   *
+   * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
+   */
+  uuidToBytes(this: void, uuid: Uint8Array, byteOffset: number): UuidBytesResult<Uint8Array>;
+  /** Copy one UUID out of a larger array into caller-owned storage. */
+  uuidToBytes<Output extends Uint8Array>(
+    this: void,
+    uuid: Uint8Array,
+    byteOffset: number,
+    output: Output,
+    outputOffset?: number,
+  ): Output | UuidSlugError;
+  /**
    * Convert any accepted UUID form to a plain UUID slug. A 22-character slug is read as masked
    * when it passes this codec's check and as plain otherwise.
    */
@@ -863,6 +888,17 @@ export interface UuidV7MaskingCodec {
     uuid: Input,
     alphabet?: SlugAlphabet,
   ): PlainUuidSlugResult<Input>;
+  /**
+   * Read one UUID out of a larger array as a plain UUID slug. Bytes carry no masked spelling.
+   *
+   * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
+   */
+  uuidToPlainSlug(
+    this: void,
+    uuid: Uint8Array,
+    byteOffset: number,
+    alphabet?: SlugAlphabet,
+  ): PlainUuidSlugResult<Uint8Array>;
   /**
    * Create a reader for current and explicitly enabled old formats without changing this codec.
    * Untyped calls with invalid options return `UuidSlugError`; decode failures return it from the

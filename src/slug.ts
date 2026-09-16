@@ -89,6 +89,8 @@ const UUID_V7_TIMESTAMP_ONLY = "Timestamp is only defined for UUIDv7.";
  * but sorting masked ciphertext does not recover chronological order.
  */
 const ALTERNATIVE_SEPARATOR = " or ";
+const BYTE_OFFSET_NEEDS_BYTES =
+  "Only Uint8Array input accepts a byteOffset. Wrap another buffer in a Uint8Array, or omit the offset.";
 
 /**
  * Select plain-slug output: 22-character base64url, or 26-character lowercase base32hex.
@@ -410,7 +412,12 @@ export function extractUuidVersion<Input extends UuidInput>(
   return uuidVersion(bytes, 0);
 }
 
-/** Convert UUID text, bytes, or a plain UUID slug to new or caller-owned UUID bytes. */
+/**
+ * Convert UUID text, bytes, or a plain UUID slug to new or caller-owned UUID bytes.
+ * Only `Uint8Array` input accepts an explicit offset.
+ *
+ * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
+ */
 export function uuidToBytes<Input extends UuidInput>(
   uuid: KeylessUuidInput<Input>,
 ): UuidBytesResult<Input>;
@@ -419,14 +426,37 @@ export function uuidToBytes<Input extends UuidInput, Output extends Uint8Array>(
   output: Output,
   outputOffset?: number,
 ): Output | UuidSlugError;
+export function uuidToBytes(uuid: Uint8Array, byteOffset: number): UuidBytesResult<Uint8Array>;
+export function uuidToBytes<Output extends Uint8Array>(
+  uuid: Uint8Array,
+  byteOffset: number,
+  output: Output,
+  outputOffset?: number,
+): Output | UuidSlugError;
 export function uuidToBytes(
   uuid: unknown,
-  output?: unknown,
-  outputOffset = 0,
+  outputOrByteOffset?: unknown,
+  outputOrOutputOffset?: unknown,
+  offsetAfterOutput = 0,
 ): Uint8Array | UuidSlugError {
+  const readsAtOffset = typeof outputOrByteOffset === "number";
+  const output = readsAtOffset ? outputOrOutputOffset : outputOrByteOffset;
+  const outputOffset = readsAtOffset
+    ? offsetAfterOutput
+    : ((outputOrOutputOffset as number | undefined) ?? 0);
   const badRange = output === undefined ? undefined : checkByteRange(output, outputOffset, 16);
   if (badRange) return badRange;
   const destination = output as Uint8Array | undefined;
+  if (readsAtOffset) {
+    if (!isUint8Array(uuid)) return new UuidSlugError(INVALID_OPTIONS, BYTE_OFFSET_NEEDS_BYTES);
+    const byteOffset = outputOrByteOffset;
+    const badSource = checkRange(uuid.length, byteOffset, 16);
+    if (badSource) return badSource;
+    const source = uuid.subarray(byteOffset, byteOffset + 16);
+    if (!destination) return new Uint8Array(source);
+    destination.set(source, outputOffset);
+    return destination;
+  }
   const localBytes = exactLocalUuidBytes(uuid);
   if (localBytes) {
     if (!destination) return new Uint8Array(localBytes);
@@ -440,15 +470,31 @@ export function uuidToBytes(
   return destination;
 }
 
-/** Convert UUID text, bytes, or a plain UUID slug to normalized UUID text. */
+/**
+ * Convert UUID text, bytes, or a plain UUID slug to normalized UUID text.
+ * Only `Uint8Array` input accepts an explicit offset.
+ *
+ * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
+ */
 export function uuidToString<
   Input extends UuidInput,
   Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
 >(uuid: KeylessUuidInput<Input>, textCase?: Case): UuidStringResult<Input, Case>;
+export function uuidToString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  uuid: Uint8Array,
+  byteOffset: number,
+  textCase?: Case,
+): UuidStringResult<Uint8Array, Case>;
 export function uuidToString(
   uuid: unknown,
-  textCase: UuidTextCase = UUID_TEXT_LOWERCASE,
+  byteOffsetOrCase: number | UuidTextCase = UUID_TEXT_LOWERCASE,
+  caseAfterOffset: UuidTextCase = UUID_TEXT_LOWERCASE,
 ): string | UuidSlugError {
+  if (typeof byteOffsetOrCase === "number")
+    return isUint8Array(uuid)
+      ? bytesToUuidString(uuid, byteOffsetOrCase, caseAfterOffset)
+      : new UuidSlugError(INVALID_OPTIONS, BYTE_OFFSET_NEEDS_BYTES);
+  const textCase = byteOffsetOrCase;
   const localBytes = exactLocalUuidBytes(uuid);
   if (localBytes) {
     const selectedCase = resolveUuidTextCase(textCase);
@@ -460,15 +506,31 @@ export function uuidToString(
   return bytesToUuidString(bytes, textCase);
 }
 
-/** Convert UUID text, bytes, or a plain UUID slug to a plain slug. */
+/**
+ * Convert UUID text, bytes, or a plain UUID slug to a plain slug.
+ * Only `Uint8Array` input accepts an explicit offset.
+ *
+ * @param byteOffset - Zero-based index where the UUID starts. Omit for a standalone UUID.
+ */
 export function uuidToPlainSlug<Input extends UuidInput>(
   uuid: KeylessUuidInput<Input>,
   alphabet?: SlugAlphabet,
 ): PlainUuidSlugResult<Input>;
 export function uuidToPlainSlug(
+  uuid: Uint8Array,
+  byteOffset: number,
+  alphabet?: SlugAlphabet,
+): PlainUuidSlugResult<Uint8Array>;
+export function uuidToPlainSlug(
   uuid: unknown,
-  alphabet: SlugAlphabet = BASE64URL_NAME,
+  byteOffsetOrAlphabet: number | SlugAlphabet = BASE64URL_NAME,
+  alphabetAfterOffset: SlugAlphabet = BASE64URL_NAME,
 ): PlainUuidSlug | UuidSlugError {
+  if (typeof byteOffsetOrAlphabet === "number")
+    return isUint8Array(uuid)
+      ? uuidBytesToPlainSlug(uuid, byteOffsetOrAlphabet, alphabetAfterOffset)
+      : new UuidSlugError(INVALID_OPTIONS, BYTE_OFFSET_NEEDS_BYTES);
+  const alphabet = byteOffsetOrAlphabet;
   const localBytes = exactLocalUuidBytes(uuid);
   if (localBytes) return uuidBytesToPlainSlug(localBytes, alphabet);
   const bytes = decodeKeylessUuid(uuid);

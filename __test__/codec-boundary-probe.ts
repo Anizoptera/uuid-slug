@@ -25,6 +25,8 @@ import {
   uuidStringToBytes,
   uuidStringToPlainSlug,
   generatePlainUuidV7Slug,
+  uuidToBytes,
+  uuidToPlainSlug,
   uuidToString,
   UuidSlugError,
 } from "../src/index";
@@ -75,6 +77,36 @@ export const codecBoundaryCases = [
       assert.ok(!(codec.generateMaskedUuidV7Slug() instanceof Error));
       assert.equal(Object.isFrozen(codec), true);
       assert.equal("uuidV7MaskedSlug" in codec, false);
+    },
+  },
+  {
+    name: "reads one UUID out of a packed array through every universal converter",
+    run() {
+      const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
+      const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
+      const slug = unwrap(uuidStringToPlainSlug(uuid));
+      const packed = new Uint8Array(24).fill(0xee);
+      packed.set(unwrap(uuidStringToBytes(uuid)), 5);
+      assert.equal(uuidToString(packed, 5), uuid);
+      assert.equal(codec.uuidToString(packed, 5, "uppercase"), uuid.toUpperCase());
+      assert.equal(uuidToPlainSlug(packed, 5), slug);
+      assert.equal(codec.uuidToPlainSlug(packed, 5), slug);
+      assert.deepEqual(uuidToBytes(packed, 5), unwrap(uuidStringToBytes(uuid)));
+      const output = new Uint8Array(20).fill(0x11);
+      assert.equal(codec.uuidToBytes(packed, 5, output, 3), output);
+      assert.equal(bytesToUuidString(output, 3), uuid);
+      assert.equal(output[2], 0x11);
+      // An offset past the end is a buffer error, never a short read.
+      assert.ok(uuidToBytes(packed, 9) instanceof UuidSlugError);
+      assert.ok(codec.uuidToPlainSlug(packed, 9) instanceof UuidSlugError);
+      // Every other accepted form carries no offset, so an offset with one is a caller mistake.
+      for (const read of [uuidToString, uuidToBytes, uuidToPlainSlug, codec.uuidToString]) {
+        for (const value of [uuid, slug, packed.buffer, new DataView(packed.buffer)]) {
+          const result = Reflect.apply(read, undefined, [value, 5]);
+          assert.ok(result instanceof UuidSlugError);
+          assert.equal(result.code, "invalid_options");
+        }
+      }
     },
   },
   {

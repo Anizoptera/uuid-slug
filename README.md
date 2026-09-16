@@ -712,9 +712,9 @@ known UUID version remains in the result type.
 
 | Call | Successful result |
 | --- | --- |
-| `uuidToString(uuid, textCase?)` | Canonical UUID text from UUID text, bytes, or a plain slug. |
-| `uuidToBytes(uuid, output?, outputOffset?)` | New UUID bytes or the exact supplied output array. |
-| `uuidToPlainSlug(uuid, alphabet?)` | A plain slug from UUID text, bytes, or a plain slug. |
+| `uuidToString(uuid, textCase?)` / `(bytes, byteOffset, textCase?)` | Canonical UUID text from UUID text, bytes, or a plain slug, or from one UUID inside a larger array. |
+| `uuidToBytes(uuid, output?, outputOffset?)` / `(bytes, byteOffset, output?, outputOffset?)` | New UUID bytes or the exact supplied output array, read from a standalone array or from one UUID inside a larger array. |
+| `uuidToPlainSlug(uuid, alphabet?)` / `(bytes, byteOffset, alphabet?)` | A plain slug from UUID text, bytes, or a plain slug, or from one UUID inside a larger array. |
 | `parseUuid(uuid, maskingCodec?)` | An immutable UUID for repeated inspection and conversion; the optional codec also accepts masked input and stays available to the value. |
 | `extractUuidVersion(uuid)` | The UUID version nibble from UUID text, exact bytes, or a plain slug. |
 | `extractUuidV7UnixMs(value, offset?)` | Unix milliseconds from UUIDv7 text, a plain slug, or bytes. |
@@ -745,9 +745,9 @@ readers also try its configured previous masks.
 | `generateMaskedUuidV7Slug(options?)` | A new `MaskedOrSentinelUuidV7Slug`; options may set `at` or select a generator. |
 | `generateUuidV7WithMaskedSlug(textCaseOrOptions?)` | UUIDv7 text and its masked or sentinel slug from one generated value; options may set `at`, select a generator, or select UUID text case. |
 | `parseUuid(uuid)` | The same parsed value as top-level `parseUuid(uuid, codec)`, with this codec retained. |
-| `uuidToString(uuid, textCase?)` | UUID text from any supported UUID form. |
-| `uuidToBytes(uuid, output?, outputOffset?)` | UUID bytes from any supported UUID form. |
-| `uuidToPlainSlug(uuid, alphabet?)` | A plain slug from any supported UUID form. |
+| `uuidToString(uuid, textCase?)` / `(bytes, byteOffset, textCase?)` | UUID text from any supported UUID form, or from one UUID inside a larger array. |
+| `uuidToBytes(uuid, output?, outputOffset?)` / `(bytes, byteOffset, output?, outputOffset?)` | UUID bytes from any supported UUID form, or from one UUID inside a larger array. |
+| `uuidToPlainSlug(uuid, alphabet?)` / `(bytes, byteOffset, alphabet?)` | A plain slug from any supported UUID form, or from one UUID inside a larger array. |
 | `uuidToMaskedSlug(uuid)` | A masked or sentinel slug from any supported UUIDv7 form. |
 | `plainToMaskedUuidSlug(plainUuidSlug)` | A `MaskedOrSentinelUuidV7Slug` from either plain UUIDv7 slug spelling. |
 | `maskedToPlainUuidSlug(maskedUuidSlug, alphabet?)` | A plain UUIDv7 slug from a masked slug or registered sentinel. |
@@ -765,7 +765,8 @@ instead, because that string cannot identify its meaning itself.
 
 A byte offset is the zero-based index where one 16-byte UUID starts inside a larger `Uint8Array`.
 Omit it for a standalone 16-byte array. Output offsets select where a method writes; input offsets
-select where it reads. Bytes outside that 16-byte range stay unchanged.
+select where it reads. Bytes outside that 16-byte range stay unchanged. Only `Uint8Array` input
+accepts an input offset, because UUID text and slugs carry no surrounding bytes.
 
 Masking is possible for any UUID version, but this library supports it only for UUIDv7.
 Its fixed version, variant, and 42-bit timestamp offset leave room for a 16-bit check without

@@ -270,7 +270,10 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 - Use `byteOffset` for the zero-based start of a 16-byte UUID read from a larger array, and
   `outputOffset` for its write position in caller-owned storage. Omission means zero. Equivalent
   read and write operations must explain this contract with the same terms in each overload's
-  declaration documentation.
+  declaration documentation. Accept `byteOffset` only with `Uint8Array` input: every other accepted
+  form carries no surrounding bytes, so an offset beside one is a caller mistake and returns
+  `invalid_options`. On a masking codec an offset read has no masked spelling to resolve, so it
+  returns exactly what the keyless reader returns.
 - Keep generic, v4, and v7 byte guards together. The generic guard proves only the 16-byte shape;
   version guards also prove their version and RFC variant bits.
 - Do not add aliases before a published contract needs a migration path. Before 1.0, make an

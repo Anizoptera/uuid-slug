@@ -491,14 +491,34 @@ export declare function uuidToBytes<Input extends UuidInput, Output extends Uint
   output: Output,
   outputOffset?: number,
 ): Output | UuidSlugError;
+export declare function uuidToBytes(
+  uuid: Uint8Array,
+  byteOffset: number,
+): UuidBytesResult<Uint8Array>;
+export declare function uuidToBytes<Output extends Uint8Array>(
+  uuid: Uint8Array,
+  byteOffset: number,
+  output: Output,
+  outputOffset?: number,
+): Output | UuidSlugError;
 export declare function uuidToPlainSlug<Input extends UuidInput>(
   uuid: KeylessUuidInput<Input>,
   alphabet?: SlugAlphabet,
 ): PlainUuidSlugResult<Input>;
+export declare function uuidToPlainSlug(
+  uuid: Uint8Array,
+  byteOffset: number,
+  alphabet?: SlugAlphabet,
+): PlainUuidSlugResult<Uint8Array>;
 export declare function uuidToString<
   Input extends UuidInput,
   Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
 >(uuid: KeylessUuidInput<Input>, textCase?: Case): UuidStringResult<Input, Case>;
+export declare function uuidToString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  uuid: Uint8Array,
+  byteOffset: number,
+  textCase?: Case,
+): UuidStringResult<Uint8Array, Case>;
 export declare type UuidV4Bytes = Brand<UuidBytes, "UuidV4Bytes">;
 export declare type UuidV4String = Brand<UuidString & UuidV4Text, "UuidV4String">;
 export declare type UuidV4StringFor<Case extends UuidTextCase> =
@@ -629,10 +649,24 @@ export declare interface UuidV7MaskingCodec {
     uuid: Input,
     textCase?: Case,
   ): UuidStringResult<Input, Case>;
+  uuidToString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    this: void,
+    uuid: Uint8Array,
+    byteOffset: number,
+    textCase?: Case,
+  ): UuidStringResult<Uint8Array, Case>;
   uuidToBytes<Input extends UuidInput>(this: void, uuid: Input): UuidBytesResult<Input>;
   uuidToBytes<Output extends Uint8Array>(
     this: void,
     uuid: UuidInput,
+    output: Output,
+    outputOffset?: number,
+  ): Output | UuidSlugError;
+  uuidToBytes(this: void, uuid: Uint8Array, byteOffset: number): UuidBytesResult<Uint8Array>;
+  uuidToBytes<Output extends Uint8Array>(
+    this: void,
+    uuid: Uint8Array,
+    byteOffset: number,
     output: Output,
     outputOffset?: number,
   ): Output | UuidSlugError;
@@ -641,6 +675,12 @@ export declare interface UuidV7MaskingCodec {
     uuid: Input,
     alphabet?: SlugAlphabet,
   ): PlainUuidSlugResult<Input>;
+  uuidToPlainSlug(
+    this: void,
+    uuid: Uint8Array,
+    byteOffset: number,
+    alphabet?: SlugAlphabet,
+  ): PlainUuidSlugResult<Uint8Array>;
   createUuidSlugMigrationDecoder<const Options extends UuidSlugMigrationOptions = {}>(
     this: void,
     options?: Options,
