@@ -141,11 +141,14 @@ Status from the 2026-09-16 floors and reports, ns package / floor or rival:
 
 - [x] UUIDv4 slugs encode from the shared scratch draw: 0.79–0.91 on Node, Chromium, and Bun and
       0.41–0.46 on Deno; Bun and Deno fallback text 3–10% slower (bench/PERFORMANCE.md).
-- [ ] Default string writers that allocate or recheck settled input: `generatePlainUuidV7Slug()` builds an `{ alphabet }`
-      object, runs option and generator reads, and allocates owned bytes; `generateUuidV7WithPlainSlug`
-      draws owned bytes for two encodings. Draw into generator-owned scratch and encode directly, as
-      UUIDv4 and UUIDv7 text do. Breaks reentrancy if a nested draw can overwrite scratch before
-      encoding; extend the reentrancy tests to each writer and mutate their guards.
+- [x] Keyless UUIDv7 slugs and pairs draw into the text scratch: slugs 0.89 on Node 26.8.2, 0.90
+      on Chromium, 0.56 on Deno, unresolved on Bun (bench/PERFORMANCE.md).
+- [ ] Bun UUIDv7 slug (about 92–96 ns in the compare corpus against 55 ns native): a primitive
+      alphabet still builds `{ alphabet }`, reads options and generator, and checks `at`. Add a
+      direct preset path and measure it on Bun first.
+- [ ] Add a keyless `generateUuidV7WithPlainSlug()` row to the compare corpus; only the
+      selected-generator pair is measured.
+
 - [ ] UUIDv7 draw on Bun (about 42 ns against 22 ns for UUIDv4 bytes): ablate the reentrancy
       `try`, `readClock` wrapper, per-call clock validation for the built-in `Date.now`, rollback
       checks the module generator never enables, the four-byte `randomTail` intermediate copy, and

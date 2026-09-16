@@ -844,6 +844,13 @@ the same lanes. The shared draw is a call Bun does not inline: portable UUIDv4 t
 serves fallback. It stayed unresolved on Node and Chromium, where portable text is the default.
 Inline the draw into the text writer if Bun or Deno portable text becomes a default.
 
+Module-level UUIDv7 slugs and text-plus-slug pairs without a generator draw into the keyless text
+scratch instead of owned bytes. Two packed replays against `aba4ec0` measured base64url slugs at
+0.885–0.887 on Node 26.8.2, 0.904–0.907 on Chromium, and 0.558–0.562 on Deno, with base32hex slugs
+at 0.883–0.912, 0.932 unresolved, and 0.548–0.560. Bun stayed unresolved at 0.950 and 1.021, so
+allocation is not where Bun's slug cost sits. Generator rows, text, and bytes stayed unresolved; the
+corpus has no row for the keyless pair.
+
 Patching Bun's native UUIDv7 output with the package clock produces correct values but loses: text
 cost 91–94 ns and slugs 103–106 ns against 70–73 and 66–71 ns for the package generator in two
 one-process screens on Bun 1.4.2, because slicing and concatenating the native string costs more
