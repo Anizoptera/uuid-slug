@@ -244,6 +244,10 @@ Preserve the published identifier contracts and verify the runtime paths that ea
   JITless-only win when every higher rung is unchanged and its lifetime cost is justified.
 - Optimize successful consumer calls. Invalid input, rejected configuration, and other failures
   are rare by design and are not performance targets: spend no code or measurement on their speed.
+- Rank one-ID-per-call paths above batch paths. Most consumers generate, parse, or convert one
+  identifier per call; writing many IDs into caller-owned buffers through `output` and
+  `outputOffset` is a secondary job. Keep batch paths efficient, but never slow a single-call
+  path to speed them up, and optimize them only after the single-call paths.
 - After every Bun or Deno version change, and before each periodic runtime review, follow
   `bench/README.md` §Capability review. Recheck native, Node-compatible, and web-compatible APIs;
   prove semantics and both selected and fallback paths. Names and API presence prove nothing else.
