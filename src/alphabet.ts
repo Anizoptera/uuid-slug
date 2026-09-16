@@ -85,6 +85,7 @@ const BASE64_OPTIONS = { alphabet: BASE64URL_NAME, omitPadding: true } as const;
 const createLatin1Scratch = runtime.latin1Scratch;
 let base64urlScratch: Latin1Scratch | undefined;
 let base32hexScratch: Latin1Scratch | undefined;
+let maskedBase32hexScratch: Latin1Scratch | undefined;
 let base64urlCodes: Uint8Array | undefined;
 let base32hexCodes: Uint8Array | undefined;
 
@@ -150,8 +151,8 @@ export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 
   if (createLatin1Scratch && bytes.length === 16) {
     if (alpha === BASE64URL && (tailBits === 0 || tailBits === 4))
       return encodeBase64urlLatin1(createLatin1Scratch, bytes, tail);
-    if (alpha === BASE32HEX && (tailBits === 0 || tailBits === 2))
-      return encodeBase32hexLatin1(createLatin1Scratch, bytes, tail);
+    if (alpha === BASE32HEX && (tailBits === 0 || tailBits === 2 || tailBits === 4))
+      return encodeBase32hexLatin1(createLatin1Scratch, bytes, tail, tailBits);
   }
   if (
     nativeToBase64 &&
@@ -201,13 +202,18 @@ function encodeBase64urlLatin1(
   return scratch.text();
 }
 
-/** The base32hex counterpart of `encodeBase64urlLatin1`. */
+/**
+ * The base32hex counterpart of `encodeBase64urlLatin1`. A 4-bit tail needs a 27th character, which
+ * holds the tail's low two bits followed by three zero bits.
+ */
 function encodeBase32hexLatin1(
   create: NonNullable<typeof createLatin1Scratch>,
   bytes: Uint8Array,
   tail: number,
+  tailBits: number,
 ): string {
-  const scratch = (base32hexScratch ??= create(26));
+  const scratch =
+    tailBits === 4 ? (maskedBase32hexScratch ??= create(27)) : (base32hexScratch ??= create(26));
   const codes = (base32hexCodes ??= characterCodes(BASE32HEX));
   const text = scratch.bytes;
   for (let offset = 0, written = 0; offset < 15; offset += 5, written += 8) {
@@ -227,7 +233,10 @@ function encodeBase32hexLatin1(
   }
   const last = bytes[15] as number;
   text[24] = codes[last >>> 3] as number;
-  text[25] = codes[((last & 7) << 2) | (tail & 3)] as number;
+  if (tailBits === 4) {
+    text[25] = codes[((last & 7) << 2) | ((tail >>> 2) & 3)] as number;
+    text[26] = codes[(tail & 3) << 3] as number;
+  } else text[25] = codes[((last & 7) << 2) | (tail & 3)] as number;
   return scratch.text();
 }
 
@@ -256,7 +265,11 @@ export function encodePortable(bytes: Uint8Array, alpha: Alphabet, tail = 0, tai
       (alpha.chars[((last & 3) << 4) | (tail & 15)] as string)
     );
   }
-  if (alpha === BASE32HEX && bytes.length === 16 && (tailBits === 0 || tailBits === 2)) {
+  if (
+    alpha === BASE32HEX &&
+    bytes.length === 16 &&
+    (tailBits === 0 || tailBits === 2 || tailBits === 4)
+  ) {
     let encoded = "";
     const chars = alpha.chars;
     for (let offset = 0; offset < 15; offset += 5) {
@@ -276,6 +289,13 @@ export function encodePortable(bytes: Uint8Array, alpha: Alphabet, tail = 0, tai
         (chars[e & 31] as string);
     }
     const last = bytes[15] as number;
+    if (tailBits === 4)
+      return (
+        encoded +
+        chars[last >>> 3] +
+        chars[((last & 7) << 2) | ((tail >>> 2) & 3)] +
+        chars[(tail & 3) << 3]
+      );
     return encoded + chars[last >>> 3] + chars[((last & 7) << 2) | (tail & 3)];
   }
   const { bitsPerChar, chars } = alpha;
@@ -371,9 +391,13 @@ export function decodeInto(
     return 0;
   }
 
-  // UUID base32hex has three complete eight-character groups and one byte. Resetting the
-  // accumulator per group removes general length and output guards without changing bit packing.
-  if (alpha === BASE32HEX && byteLength === 16 && (tailBits === 0 || tailBits === 2)) {
+  // UUID base32hex has three complete eight-character groups and one byte; a 4-bit masked tail adds
+  // a 27th character. Fixed byte formulas remove the general accumulator and its length guards.
+  if (
+    alpha === BASE32HEX &&
+    byteLength === 16 &&
+    (tailBits === 0 || tailBits === 2 || tailBits === 4)
+  ) {
     let codes = 0;
     let digits = 0;
     let written = offset;
@@ -406,11 +430,19 @@ export function decodeInto(
     }
     const firstCode = value.charCodeAt(24);
     const lastCode = value.charCodeAt(25);
+    // Only a 27-character value has this code; reading past a 26-character value would return NaN.
+    const paddingCode = tailBits === 4 ? value.charCodeAt(26) : 48;
     const first = table[firstCode & 127] as number;
     const last = table[lastCode & 127] as number;
-    if ((codes | firstCode | lastCode) > 127 || (digits | first | last) < 0)
+    const padding = table[paddingCode & 127] as number;
+    if ((codes | firstCode | lastCode | paddingCode) > 127 || (digits | first | last | padding) < 0)
       return firstInvalidCharacter(alpha, value);
     out[written] = (first << 3) | (last >>> 2);
+    if (tailBits === 4) {
+      if ((padding & 7) !== 0)
+        return new UuidSlugError(code, `${name} value has non-canonical trailing bits.`);
+      return ((last & 3) << 2) | (padding >>> 3);
+    }
     if (tailBits === 2) return last & 3;
     if ((last & 3) !== 0)
       return new UuidSlugError(code, `${name} value has non-canonical trailing bits.`);

@@ -14,11 +14,12 @@ import golden from "../rust/uuid-slug/tests/fixtures/fixtures-wire-format.json";
 const bytesFrom = (length: number) =>
   Uint8Array.from({ length }, (_, index) => (Math.imul(length + 1, 131) + index * 197) & 0xff);
 
-function encodeBase32Reference(bytes: Uint8Array): string {
+function encodeBase32Reference(bytes: Uint8Array, tail = 0, tailBits = 0): string {
   let value = 0n;
   for (const byte of bytes) value = (value << 8n) | BigInt(byte);
-  const chars = Math.ceil((bytes.length * 8) / 5);
-  value <<= BigInt(chars * 5 - bytes.length * 8);
+  value = (value << BigInt(tailBits)) | BigInt(tail);
+  const chars = Math.ceil((bytes.length * 8 + tailBits) / 5);
+  value <<= BigInt(chars * 5 - bytes.length * 8 - tailBits);
   let expected = "";
   for (let i = chars - 1; i >= 0; i -= 1)
     expected += BASE32HEX.chars[Number((value >> BigInt(i * 5)) & 31n)];
@@ -119,6 +120,31 @@ describe("bit-packing codec", () => {
           message: `Invalid base32hex character ${JSON.stringify(character)} at offset ${index}.`,
         });
       }
+  });
+
+  it("writes and reads the 27-character base32hex masked tail against a bit-level reference", () => {
+    const bytes = bytesFrom(16);
+    for (let tail = 0; tail < 16; tail += 1) {
+      const expected = encodeBase32Reference(bytes, tail, 4);
+      expect(encode(bytes, BASE32HEX, tail, 4)).toBe(expected);
+      for (const spelling of [expected, expected.toUpperCase()]) {
+        const out = new Uint8Array(16);
+        expect(decodeInto(spelling, BASE32HEX, out, 0, 16, 4)).toBe(tail);
+        expect(out).toEqual(bytes);
+      }
+    }
+    const valid = encodeBase32Reference(bytes, 5, 4);
+    expect(
+      decodeInto(`${valid.slice(0, 26)}1`, BASE32HEX, new Uint8Array(16), 0, 16, 4),
+    ).toMatchObject({
+      message: "base32hex value has non-canonical trailing bits.",
+    });
+    for (const character of ["w", "\u0130"])
+      expect(
+        decodeInto(`${valid.slice(0, 26)}${character}`, BASE32HEX, new Uint8Array(16), 0, 16, 4),
+      ).toMatchObject({
+        message: `Invalid base32hex character ${JSON.stringify(character)} at offset 26.`,
+      });
   });
 
   it("preserves every base32hex UUID tail and rejects non-canonical plain tails", () => {

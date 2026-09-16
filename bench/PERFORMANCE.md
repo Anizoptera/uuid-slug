@@ -744,6 +744,29 @@ an earlier replay did not reproduce. Node JITless interprets the 22 typed-array 
 the gains on every higher-priority runtime outweigh that final rung. Recheck if native `toBase64`
 stops trailing this writer on Bun, or if a runtime gains a native base32hex encoder.
 
+### Masked base32hex slugs
+
+The 27-character masked base32hex spelling uses the fixed writers and decoder: characters 24 and 25
+hold the last byte and the check tail's top two bits, and character 26 holds the tail's low two bits
+followed by three zero bits, which decoding requires. It previously used the generic bit
+accumulator in both directions.
+
+Two packed `6db699c`-to-candidate replays on 2026-09-16 measured median ratios; every listed pair
+had its 95% interval below 1 unless marked unresolved:
+
+| Runtime | `masked.base32.encode` | `masked.base32.encode.bytes` | `masked.base32.decode` | `masked.base32.generate` |
+| --- | ---: | ---: | ---: | ---: |
+| Node 26.8.2 | 0.70, 0.65 | 0.59, 0.57 | 0.86, 0.80 | 0.65, 0.66 |
+| Bun 1.4.2 | 0.57, 0.54 | 0.48, 0.50 | unresolved, unresolved | 0.58, 0.57 |
+| Node 24.21.0 | 0.65, 0.65 | 0.57, 0.56 | 0.82, 0.81 | 0.68, 0.66 |
+| Chromium 153 | 0.94, 0.95 | unresolved, unresolved | 0.89, 0.87 | unresolved, unresolved |
+| Deno 2.9.6 | 0.74, 0.74 | 0.63, 0.62 | 0.86, 0.87 | 0.78, 0.76 |
+| Node 26.8.2 JITless | 0.97, 0.97 | 0.95, 0.96 | unresolved, unresolved | 0.94, unresolved |
+
+Trade-off: in a process that encodes both masked alphabets, base64url `masked.encode.bytes` read
+1.05 and 1.02 slower on Node 26.8.2 and 1.04 once on Deno 2.9.6, because both alphabets now share
+one branch of `encode`. Three runs of the base64url rows alone were unresolved at 0.98–1.05.
+
 ### Native base64url encoding
 
 Browsers use `Uint8Array.prototype.toBase64` when it exists; probe once at module load and keep
