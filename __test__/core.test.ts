@@ -543,6 +543,12 @@ describe("plain UUID slugs", () => {
     let coerced = false;
     const coercible = { toString: () => ((coerced = true), SAMPLE_V7_A) };
 
+    // The object tag selects the slot probe, and a caller can set its own, so a genuine wrapper
+    // that hides its tag must still be read rather than dismissed by the cheaper check.
+    const retaggedUuid = runInNewContext(
+      `Object.assign(new String(${JSON.stringify(SAMPLE_V7_A)}), { [Symbol.toStringTag]: "Spoofed" })`,
+    );
+    expect(Reflect.apply(uuidToString, undefined, [retaggedUuid])).toBe(SAMPLE_V7_A);
     expect(Reflect.apply(uuidToString, undefined, [wrappedUuid])).toBe(SAMPLE_V7_A);
     expect(Reflect.apply(uuidStringToBytes, undefined, [wrappedUuid])).toEqual(
       uuidStringToBytes(SAMPLE_V7_A),

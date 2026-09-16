@@ -347,6 +347,15 @@ export const runtimeBoundaryCases = [
       assert.equal(bytesToUuidString(bytes), "00000000-0000-0000-0000-000000000000");
       assert.equal(bytesToUuidString(buffer), "00000000-0000-0000-0000-000000000000");
       assert.equal(bytesToUuidString(view), "00000000-0000-0000-0000-000000000000");
+      // The object tag selects the slot probe, and a caller can set its own, so a genuine container
+      // that hides its tag must still be read rather than dismissed by the cheaper check.
+      for (const source of ["new ArrayBuffer(16)", "new DataView(new ArrayBuffer(16))"]) {
+        // Their prototype tag is non-writable, so shadowing it takes a property definition.
+        const retagged = vm.runInNewContext(
+          `Object.defineProperty(${source}, Symbol.toStringTag, { value: "Spoofed" })`,
+        ) as ArrayBuffer;
+        assert.equal(bytesToUuidString(retagged), "00000000-0000-0000-0000-000000000000");
+      }
       const transferred = structuredClone(buffer, { transfer: [buffer] });
       assert.equal(bytesToUuidString(transferred), "00000000-0000-0000-0000-000000000000");
       assert.equal(isUuidSlugError(bytesToUuidString(buffer)), true);

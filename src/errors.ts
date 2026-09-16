@@ -64,6 +64,9 @@ const ERROR_NAME = "UuidSlugError";
 const ERROR_MARKER = "__failure";
 const OBJECT_TYPE = "object";
 const ERROR_TAG = "[object Error]";
+const STRING_TAG = "[object String]";
+const ARRAY_BUFFER_TAG = "[object ArrayBuffer]";
+const DATA_VIEW_TAG = "[object DataView]";
 const BYTE_LENGTH_PROPERTY = "byteLength";
 const BUFFER_TYPE_MESSAGE = "Buffer must be a Uint8Array.";
 const RANDOM_FAILURE_MESSAGE = "Random byte generation failed.";
@@ -184,12 +187,26 @@ export function isError(value: unknown): value is Error {
   return hasErrorBrand(value as object);
 }
 
+// A slot probe is the only proof of a genuine wrapper or buffer, but calling one on anything else
+// throws, and building that native TypeError costs three orders of magnitude more than reading the
+// object tag (bench/PERFORMANCE.md). The tag decides first. It is caller-visible, so an object
+// carrying its own Symbol.toStringTag still reaches the probe and keeps its acceptance; only a
+// value whose realm re-tagged the prototype itself is lost, and a tag getter that throws lands in
+// the same catch the probe already needed. Remeasure this ordering if a probe stops throwing.
+/*#__NO_SIDE_EFFECTS__*/
+function mayHideItsTag(value: unknown): boolean {
+  // The literal is required: TypeScript narrows from `typeof x === "object"`, not from a constant.
+  return typeof value === "object" && value !== null && Object.hasOwn(value, Symbol.toStringTag);
+}
+
 /** Read primitive or genuine boxed text without invoking caller-defined coercion hooks. */
 /*#__NO_SIDE_EFFECTS__*/
 export function stringInput(value: unknown): string | undefined {
   if (typeof value === "string") return value;
   if (typeof value !== "object" || value === null) return undefined;
   try {
+    if (Object.prototype.toString.call(value) !== STRING_TAG && !mayHideItsTag(value))
+      return undefined;
     return String.prototype.valueOf.call(value);
   } catch {
     return undefined;
@@ -223,14 +240,23 @@ export function isUint8Array(value: unknown): value is Uint8Array {
 export function uuidByteView(value: unknown): Uint8Array | undefined {
   if (isUint8Array(value)) return value;
   try {
-    if (ArrayBuffer.isView(value) && dataViewByteLengthDescriptor?.get?.call(value) !== undefined) {
+    const tag = Object.prototype.toString.call(value);
+    const probeAnyway = mayHideItsTag(value);
+    if (
+      ArrayBuffer.isView(value) &&
+      (tag === DATA_VIEW_TAG || probeAnyway) &&
+      dataViewByteLengthDescriptor?.get?.call(value) !== undefined
+    ) {
       return new Uint8Array(
         dataViewBufferDescriptor?.get?.call(value) as ArrayBuffer,
         dataViewByteOffsetDescriptor?.get?.call(value) as number,
         dataViewByteLengthDescriptor.get.call(value) as number,
       );
     }
-    if (arrayBufferByteLengthDescriptor?.get?.call(value) !== undefined)
+    if (
+      (tag === ARRAY_BUFFER_TAG || probeAnyway) &&
+      arrayBufferByteLengthDescriptor?.get?.call(value) !== undefined
+    )
       return new Uint8Array(value as ArrayBuffer);
   } catch {
     // Detached buffers and hostile objects are invalid byte inputs.
