@@ -34,7 +34,7 @@ import {
   uuidTimestampFromBytesUnchecked,
   uuidVersion,
 } from "./uuid.ts";
-import { localUuidValueState, registerUuidValue, UUID_VALUE_BYTES } from "./uuid-value-protocol.ts";
+import { LocalUuidValue, UUID_VALUE_BYTES } from "./uuid-value-protocol.ts";
 
 const MASKING_CODEC_REQUIRED = "A masking codec is required for masked UUID output.";
 const PAYLOAD_LAYOUT_REQUIRED = "A UUIDv7 payload layout is required.";
@@ -50,13 +50,16 @@ class ParsedUuidValue<
   Version extends UuidVersion,
   HasMaskingCodec extends boolean,
   HasPayloadLayout extends boolean,
-> implements Uuid<Version, HasMaskingCodec, HasPayloadLayout> {
+>
+  extends LocalUuidValue
+  implements Uuid<Version, HasMaskingCodec, HasPayloadLayout>
+{
   get version(): Version {
-    return uuidVersion(localUuidValueState(this)!.bytes, 0) as Version;
+    return uuidVersion(LocalUuidValue.ownBytes(this), 0) as Version;
   }
 
   inspect(): UuidInspection<Version> {
-    const { bytes } = localUuidValueState(this)!;
+    const bytes = LocalUuidValue.ownBytes(this);
     const version = uuidVersion(bytes, 0);
     const variant = variantOf(bytes);
     let isNil = true;
@@ -87,16 +90,16 @@ class ParsedUuidValue<
   ): UuidStringForVersion<Version, UuidTextCase> | UuidSlugError {
     const selectedCase = resolveUuidTextCase(textCase);
     if (selectedCase instanceof Error) return selectedCase;
-    return bytesToUuidString(
-      localUuidValueState(this)!.bytes,
-      selectedCase,
-    ) as UuidStringForVersion<Version, UuidTextCase>;
+    return bytesToUuidString(LocalUuidValue.ownBytes(this), selectedCase) as UuidStringForVersion<
+      Version,
+      UuidTextCase
+    >;
   }
 
   toBytes(): UuidBytesForVersion<Version>;
   toBytes<Output extends Uint8Array>(output: Output, outputOffset?: number): Output | UuidSlugError;
   toBytes(output?: Uint8Array, outputOffset = 0): Uint8Array | UuidSlugError {
-    const { bytes } = localUuidValueState(this)!;
+    const bytes = LocalUuidValue.ownBytes(this);
     if (!output) return new Uint8Array(bytes);
     const badRange = checkByteRange(output, outputOffset, 16);
     if (badRange) return badRange;
@@ -106,7 +109,7 @@ class ParsedUuidValue<
 
   toPlainSlug(alphabet: SlugAlphabet = BASE64URL_NAME): PlainUuidSlugForVersion<Version> {
     return uuidBytesToPlainSlug(
-      localUuidValueState(this)!.bytes,
+      LocalUuidValue.ownBytes(this),
       alphabet,
     ) as PlainUuidSlugForVersion<Version>;
   }
@@ -116,10 +119,10 @@ class ParsedUuidValue<
       ? readonly [maskingCodec?: UuidV7MaskingCodec]
       : readonly [maskingCodec: UuidV7MaskingCodec]
   ): MaskedOrSentinelUuidV7Slug | UuidSlugError {
-    const state = localUuidValueState(this)!;
-    const codec = codecArgument[0] ?? state.maskingCodec;
+    const bytes = LocalUuidValue.ownBytes(this);
+    const codec = codecArgument[0] ?? LocalUuidValue.ownMaskingCodec(this);
     return codec
-      ? codec.uuidToMaskedSlug(state.bytes)
+      ? codec.uuidToMaskedSlug(bytes)
       : new UuidSlugError(INVALID_OPTIONS, MASKING_CODEC_REQUIRED);
   }
 
@@ -128,15 +131,15 @@ class ParsedUuidValue<
       ? readonly [payloadLayout?: UuidV7PayloadLayout]
       : readonly [payloadLayout: UuidV7PayloadLayout]
   ): UuidV7Payload | UuidSlugError {
-    const state = localUuidValueState(this)!;
-    const layout = layoutArgument[0] ?? state.payloadLayout;
+    const bytes = LocalUuidValue.ownBytes(this);
+    const layout = layoutArgument[0] ?? LocalUuidValue.ownPayloadLayout(this);
     return layout
-      ? extractUuidV7Payload(state.bytes, layout)
+      ? extractUuidV7Payload(bytes, layout)
       : new UuidSlugError(INVALID_OPTIONS, PAYLOAD_LAYOUT_REQUIRED);
   }
 
   toJSON(): UuidStringForVersion<Version, typeof UUID_TEXT_LOWERCASE> {
-    return bytesToUuidString(localUuidValueState(this)!.bytes) as UuidStringForVersion<
+    return bytesToUuidString(LocalUuidValue.ownBytes(this)) as UuidStringForVersion<
       Version,
       typeof UUID_TEXT_LOWERCASE
     >;
@@ -148,8 +151,12 @@ class ParsedUuidValue<
 }
 
 Object.freeze(ParsedUuidValue.prototype);
+Object.freeze(LocalUuidValue.prototype);
 
-/** Build an immutable parsed UUID from validated package-owned bytes. */
+/**
+ * Build an immutable parsed UUID. The value keeps `bytes` and `payloadLayout` without copying, so
+ * both must be package-owned: nothing may write the bytes, and no caller may reach the layout.
+ */
 export function createUuidValue<
   Version extends UuidVersion = UuidVersion,
   HasMaskingCodec extends boolean = false,
@@ -159,13 +166,13 @@ export function createUuidValue<
   maskingCodec?: UuidV7MaskingCodec,
   payloadLayout?: UuidV7PayloadLayout,
 ): Uuid<Version, HasMaskingCodec, HasPayloadLayout> {
-  const value = new ParsedUuidValue<Version, HasMaskingCodec, HasPayloadLayout>();
-  registerUuidValue(value, {
-    bytes,
-    ...(maskingCodec ? { maskingCodec } : {}),
-    ...(payloadLayout ? { payloadLayout: Object.freeze({ ...payloadLayout }) } : {}),
-  });
-  return Object.freeze(value);
+  return Object.freeze(
+    new ParsedUuidValue<Version, HasMaskingCodec, HasPayloadLayout>(
+      bytes,
+      maskingCodec,
+      payloadLayout,
+    ),
+  );
 }
 
 /** Parse any keyless UUID form once into an immutable reusable UUID value. */
@@ -178,8 +185,9 @@ export function parseUuid<Input extends UuidInput>(
   maskingCodec: UuidV7MaskingCodec,
 ): Uuid<UuidVersionOf<Input>, true> | UuidSlugError;
 export function parseUuid(uuid: unknown, maskingCodec?: UuidV7MaskingCodec): Uuid | UuidSlugError {
-  const existing = localUuidValueState(uuid);
-  if (existing && (!maskingCodec || existing.maskingCodec === maskingCodec)) return uuid as Uuid;
+  const existing = LocalUuidValue.is(uuid) ? uuid : undefined;
+  if (existing && (!maskingCodec || LocalUuidValue.ownMaskingCodec(existing) === maskingCodec))
+    return uuid as Uuid;
   let parsed: Uint8Array | UuidSlugError;
   if (!maskingCodec) parsed = decodeKeylessUuid(uuid);
   else {
@@ -198,7 +206,13 @@ export function parseUuid(uuid: unknown, maskingCodec?: UuidV7MaskingCodec): Uui
     }
   }
   if (isUuidSlugError(parsed)) return parsed;
-  return createUuidValue(new Uint8Array(parsed), maskingCodec, existing?.payloadLayout);
+  // Keyless text always decodes into fresh bytes. Byte input is the caller's array, and a codec is a
+  // caller-reachable callback, so both are copied.
+  return createUuidValue(
+    !maskingCodec && typeof uuid === "string" ? parsed : new Uint8Array(parsed),
+    maskingCodec,
+    existing ? LocalUuidValue.ownPayloadLayout(existing) : undefined,
+  );
 }
 
 /** Parse with the supplied masking codec preset by an owner method. */
