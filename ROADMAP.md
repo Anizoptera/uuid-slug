@@ -99,14 +99,14 @@ negligibly more. Where a call ends in a native primitive, the package overhead a
 minimum its contract needs; every remaining gap needs a named cause.
 
 - [x] Inventory native UUID and random APIs on every runtime. Probed presence, output form,
-      version and variant bits, UUIDv7 ordering, arguments, and buffer type; native failure
-      behaviour and native entropy caches were not probed because every native route keeps the
-      portable fallback.
+      version and variant bits, UUIDv7 ordering and timestamps under burst, arguments, and buffer
+      type. Native failure behaviour and native entropy caches were not probed; a portable fallback
+      covers thrown or malformed native values, not weaker values that pass validation.
 - [x] Pair simple calls with native floors in the competitor corpus and build that corpus per
       runtime, so Bun and Deno measure their own adapters.
 - [x] Measure package against floor twice on every runtime, Node 26.8.2 through probes.
-- [x] Bun native UUIDv7 text and default slugs, validated-once trust with the UUIDv4 trust defect
-      fixed, and trusted calls at each call site; Bun UUIDv7 text and slug replays repeated gains.
+- [x] Reject Bun native UUIDv7 text and slugs: counter overflow encodes timestamps ahead of the
+      clock. Keep validated-once UUIDv4 trust with its defect fixed and trusted calls at each call site.
 - [x] Record floors, remaining gaps, causes, and the unresolved Bun explicit-time byte signal in
       `bench/PERFORMANCE.md`.
 - [x] Refresh the tracked reports with `bun run bench:results`.

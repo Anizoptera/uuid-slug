@@ -813,29 +813,38 @@ one-row-per-process probes added Node 26.8.2. Medians in nanoseconds, package ag
 | UUIDv4 new bytes | 47–51 / 601–634 | 50–52 / 642–655 | 22 / 22 | 160 / 175–192 | 50 / 484–494 |
 | UUIDv4 caller buffer | 34–35 | 38–40 / 553–560 | 28–29 / 17–18 | 37–38 / 62–63 | 37 / 296–299 |
 | UUIDv4 base64url slug | 102–105 / 728–732 | 100–105 | 53–54 / 50–52 | 210–215 / 268–272 | 145–148 / 602–613 |
-| UUIDv7 text | 108–111 / 164–165 | 111–114 / 150–153 | 46–49 / 43–47 | 112–113 | 143–145 |
+| UUIDv7 text | 108–111 / 164–165 | 111–114 / 150–153 | 75–82 / 39–45 | 112–113 | 143–145 |
 | UUIDv7 new bytes | 67 | 72–75 | 44–45 / 50–51 | 173–174 | 74 |
-| UUIDv7 base64url slug | 138–144 | 140 | 59–62 / 55–60 | 237–248 | 179–182 |
+| UUIDv7 base64url slug | 138–144 | 140 | 77–82 / 54–58 | 237–248 | 179–182 |
 
-Node 26.8.2 figures come from probes that consume every result; the other columns come from the
-matrix. A cell without a floor has no native primitive for that output on that runtime. Node's
+Node 26.8.2 figures and Bun's UUIDv7 text and slug figures come from probes that consume every
+result; the other cells come from the matrix. A cell without a floor has no native primitive for that output on that runtime. Node's
 unpooled Web Crypto and `randomFillSync` calls cost far more than the pooled draw, and Node's native
 UUIDv7 text is slower than the portable generator, so Node keeps portable UUIDv7 and bytes.
 
-Bun publishes `Bun.randomUUIDv7` for argument-free UUIDv7 text and default-alphabet plain slugs.
-Two packed replays against `b8ac9d5` measured Bun UUIDv7 text at 0.559 and 0.574 of the portable
-cost and the slug at 0.583 and 0.688; every other runtime was unresolved on every generation row.
-Calls with options, base32hex, bytes, values, and pairs keep the package generator: `at` and
-`generator` need sequence state, Bun's byte output is a `Buffer`, and Bun's `Buffer` bytes were
-slower than the portable draw. Bun's generator counts within a millisecond and draws from BoringSSL
-according to a DeepWiki summary of its source read 2026-09-16; the package validates the first
-value from each native function either way. Validating every native value cost 61–63 ns against a
-41–43 ns floor, still faster than the 77–80 ns portable text, but trusting a validated function
-reached the floor. A shared trust helper added a call Bun did not inline, costing 38–40 ns for
-UUIDv4 text against 31–33 ns with the trusted call at each call site, so call sites publish trusted
-values directly and the helper owns only validation and fallback. Remeasure if Bun changes
-`randomUUIDv7`, if Node's native UUIDv7 text overtakes the portable generator, or if a runtime adds
-native UUIDv7 bytes.
+`Bun.randomUUIDv7` is the fastest UUIDv7 text and slug on Bun, but it cannot replace module-level
+generation because it encodes timestamps ahead of the clock. When its 12-bit counter overflows
+within one millisecond it advances the encoded millisecond, and repeated overflow compounds. After
+a burst of 2 million calls on Bun 1.4.2, native text and slugs encoded timestamps 567–576 ms ahead of
+`Date.now()`, while the package generator stayed at or behind the clock. Passing `Date.now()` as its
+timestamp cost 51 ns and still encoded up to 8 ms ahead during a one-second burst of 20 million
+reads, with about 85% of samples at least 1 ms ahead. Rejecting values ahead of the clock cost 94 ns
+and rejected 99.8% of them. Bun's `node:crypto.randomUUIDv7` ran 429 ms ahead after the same burst.
+Every UUIDv7 form on Bun therefore uses the package generator, whose median text and slug costs stay
+about 36 ns and 23 ns above the native floor. That gap buys timestamps that stay at the clock during
+bursts; it is not a validation or dispatch cost.
+
+Node 26.8.2's `crypto.randomUUIDv7` draws its 12 bits after the timestamp randomly on every call
+and encoded no timestamp ahead of the clock during a burst of 2 million calls, but it is slower than
+the package generator.
+
+Native UUIDv4 text needs a trust step instead of per-call validation. Validating every native
+UUIDv7 value cost 61–63 ns against a 41–43 ns floor on Bun, while trusting a validated function reached the floor. A shared trust helper
+added a call Bun did not inline, costing 38–40 ns for UUIDv4 text against 31–33 ns with the trusted
+call at each call site, so call sites publish trusted values directly and the helper owns only
+validation and fallback. Remeasure if Bun changes the `randomUUIDv7` overflow policy or clock
+argument, if Node's native UUIDv7 text overtakes the portable generator, or if a runtime adds native
+UUIDv7 bytes.
 
 The corpus replays also marked Bun explicit-time caller output and selected-generator bytes 10–17%
 slower twice. Neither reproduced alone or after warming keyless text, slug, and byte calls: three
@@ -844,10 +853,9 @@ suggested at most 3 ns. Treat the effect as unresolved warm-up history, not a re
 
 Remaining gaps and their causes:
 
-- Bun UUIDv4 text and UUIDv7 text and slugs stay 2–5 ns above their floors. The package adds the
-  public text-case or alphabet check, the trusted-identity branch, and the `try` that keeps native
-  failures on the portable fallback. Only the `try` was ablated: removing it saved about 1 ns and
-  would break that fallback guarantee.
+- Bun UUIDv4 text stays 2–5 ns above its floor. The package adds the public text-case check, the
+  trusted-identity branch, and the `try` that keeps native failures on the portable fallback.
+  Only the `try` was ablated: removing it saved about 1 ns and would break that fallback guarantee.
 - Bun UUIDv4 caller-buffer output costs 28–29 ns against 17–18 ns. The floor fills a view prepared
   outside the timed call; the package checks the caller range, copies from the package pool into
   private storage, then copies into caller storage, so entropy failure cannot partly write caller
