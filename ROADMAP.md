@@ -15,12 +15,12 @@ measure lane durations, isolate timings from competing work, and retain only def
 - [x] Normalize retained codec alphabet options and accept equivalent base32hex sentinels in both languages and migration readers.
 - [x] Reject invalid generator presets before clocks, entropy and sequence changes; reject host/class constructor options while accepting cross-realm and null-prototype records.
 - [x] Reject malformed offsets, clocks and migration formats without invoking caller coercion hooks.
-- [ ] Compile positive and negative consumers for known UUIDv4 plain slugs in every UUIDv7-only operation; repair declarations and editor help.
+- [x] Compile positive and negative consumers for known UUIDv4 plain slugs in every UUIDv7-only operation; repair declarations and editor help.
 - [x] Preserve Rust enum identity while removing incompatible Borrow<str>; test real collections and update API reports and owning guidance.
 - [x] Return fresh decoded arrays without redundant copies; instrument owned conversion allocations and preserve borrowed-input ownership.
-- [ ] Run regressions against their original mechanisms and isolated mutations; retain restoration copies and verify restoration byte-for-byte.
-- [ ] Update affected source JSDoc, README and durable contract owners; avoid parallel inventories and unrelated rewrites.
-- [ ] Resolve Rust API extraction prerequisites, then run complete checks and packed compiler-floor consumers.
+- [x] Run regressions against their original mechanisms and isolated mutations; retain restoration copies and verify restoration byte-for-byte.
+- [x] Update affected source JSDoc, README and durable contract owners; avoid parallel inventories and unrelated rewrites.
+- [x] Resolve Rust API extraction prerequisites, then run complete checks and packed compiler-floor consumers.
 - [ ] Exercise packed browser and debug/release WebAssembly in every configured browser engine.
 - [ ] Run repeated packed benchmarks and profiles for affected successful calls across ranked runtimes; record results and limitations in bench/PERFORMANCE.md.
 - [ ] Audit the full repair diff against baseline e6ab40d47587e032446686ee7dd95a8792ec939e; verify every approved repair, comment and changed line, and commit verified groups without remote writes.

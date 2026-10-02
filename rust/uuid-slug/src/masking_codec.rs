@@ -71,6 +71,11 @@ mod tests {
                     sentinel.to_plain_uuid_slug(masked_slug_alphabet)
                 )
             );
+            let plain = sentinel.to_plain_uuid_slug(masked_slug_alphabet);
+            assert_eq!(codec.masked_slug_to_uuid(&plain)?, sentinel);
+            if masked_slug_alphabet == UuidSlugAlphabet::Base32Hex {
+                assert_eq!(codec.masked_slug_to_uuid(&plain.to_uppercase())?, sentinel);
+            }
         }
         Ok(())
     }

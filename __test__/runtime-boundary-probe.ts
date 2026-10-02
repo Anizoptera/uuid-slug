@@ -313,10 +313,12 @@ export const runtimeBoundaryCases = [
       assert.ok(error instanceof UuidSlugError);
       assert.equal(error.code, "invalid_buffer");
       assert.ok(output.every((byte) => byte === 0xee));
-      const generator = createUuidV7Generator({
-        readUnixMs: () => hostile as unknown as number,
-        fillRandom: (bytes) => bytes.fill(0),
-      });
+      const generator = Reflect.apply(createUuidV7Generator, undefined, [
+        {
+          readUnixMs: () => hostile,
+          fillRandom: (bytes: Uint8Array) => bytes.fill(0),
+        },
+      ]);
       assert.ok(generator.generateUuidV7() instanceof UuidSlugError);
       const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
       const decoder = codec.createUuidSlugMigrationDecoder();

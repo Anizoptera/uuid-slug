@@ -115,6 +115,19 @@ fn main() -> Result<(), Error> {
         masked_slug_alphabet: UuidSlugAlphabet::Base32Hex,
         ..UuidV7MaskingCodecOptions::new(mask)
     })?;
+    let reserved = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+        masked_slug_alphabet: UuidSlugAlphabet::Base32Hex,
+        sentinels: vec![("reserved".to_owned(), ids[0])],
+        ..UuidV7MaskingCodecOptions::new(uuid_slug::uuid_v7_test_mask())
+    })?;
+    let sentinel = &reserved.sentinels()[0].plain_uuid_slug;
+    let uppercase_sentinel = sentinel.to_uppercase();
+    sample("sentinel/base32/canonical", &ids, |_| {
+        reserved.masked_slug_to_uuid(sentinel).unwrap()
+    });
+    sample("sentinel/base32/uppercase", &ids, |_| {
+        reserved.masked_slug_to_uuid(&uppercase_sentinel).unwrap()
+    });
     sample("plain/base64", &ids, |id| {
         id.to_plain_uuid_slug(UuidSlugAlphabet::Base64Url)
     });
