@@ -89,6 +89,9 @@ other successful calls. `bench/PERFORMANCE.md` owns repeated results and their l
       independent runtime oracles and one-string resource evidence; retain generic lengths.
 - [ ] Compare a fixed timestamp writer with the byte-pair table in `src/v7-bounds.ts`; preserve
       inclusive endpoints, full timestamp range and both text cases without temporary byte arrays.
+      The consumed-string comparison improves Node, Chromium and Deno but loses on JITless Node;
+      keep byte pairs until the shared JITless selection below is measured. Bounds workloads must
+      read both endpoints; the resource gate rejects an object-only sink.
 - [x] Run two packed seven-runtime replays of the retained writer: no successful row is slower in
       both. The predicted 0.6 ratio is not reached by every Node or Deno row; retain the measured
       improvement, without claiming the native-parity goal is closed.

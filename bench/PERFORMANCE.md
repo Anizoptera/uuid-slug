@@ -1245,6 +1245,20 @@ Text-to-slug conversion allocates no array; the resource gate holds that budget 
 
 ### UUIDv7 text bounds
 
+Bounds timings must read both returned endpoint strings. Object-only consumption does not measure
+the cost of reading or flattening those strings; the older packed bounds timings below use that
+weaker sink and cannot establish the consumer formatting cost.
+
+Two packed comparisons against `40f3628` on 2026-10-02 read changing character positions in both
+endpoints and compared a fixed character-code prefix with the byte-pair writer. Bun retained byte
+pairs. Lowercase, uppercase and interval calls improved on Node 26.10.0 (ratios 0.64–0.71), Chromium
+153.0.8010.12 (0.60–0.66) and Deno 2.9.7 (0.63–0.68). Firefox 155.0 and WebKit 26.6 did not separate
+in both runs. Node 26.10.0 JITless regressed for lowercase and uppercase in both runs (1.09–1.12);
+the interval regression separated in only one. Reject this selection; retain byte pairs until a
+shared runtime selection can preserve JITless performance without per-call probing. Each comparison
+used six alternating rounds; these local observations do not prove other releases or cold-start
+cost. The resource gate requires both endpoint reads and no per-call byte-array allocation.
+
 UUIDv7 text bounds format the timestamp directly instead of allocating byte bounds and passing them
 through the generic formatter. Three million-call rounds on 2026-09-14 measured the direct form at
 about 42% of the composed path's time on Node 24.21.0 and about 90% on Bun 1.4.2. This isolated local

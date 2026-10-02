@@ -2,6 +2,7 @@
 
 // Count avoidable work in a fresh process; wrappers forward real operations and are never timed.
 import { strict as assert } from "node:assert";
+import { createBoundsProfileCases } from "./profile-bounds";
 import crypto from "node:crypto";
 
 const counts = {
@@ -228,6 +229,11 @@ try {
     views: 0,
     errors: 0,
   });
+  for (const [name, call] of Object.entries(createBoundsProfileCases(api, time))) {
+    if (!name.includes(".text")) continue;
+    check(`consumed ${name}`, () => call(31), { buffers: 0, views: 0, errors: 0 });
+    assert.equal(counts.chars, 2, "bounds timing must read both returned endpoint strings");
+  }
   assert.equal(clocks, 1, "one generator call must observe the clock once");
   assert.equal(api.generateUuidV7Bytes(into, 4), into, "initialize the package generator");
   check("caller-owned v7 generation", () => api.generateUuidV7Bytes(into, 4), {

@@ -14,6 +14,8 @@ import {
   extractUuidV7UnixMs,
   bytesToUuidString,
   UUID_TEXT_UPPERCASE,
+  UUID_TEXT_LOWERCASE,
+  uuidV7StringBounds,
   uuidBytesToPlainSlug,
   isUuidV4String,
   isUuidV7Bytes,
@@ -87,6 +89,28 @@ const hasCause = (value: unknown, target: unknown): boolean =>
   (value instanceof Error && hasCause(value.cause, target));
 
 export const runtimeBoundaryCases = [
+  {
+    name: "preserves UUIDv7 bounds across timestamp byte carries and both text cases",
+    run: () => {
+      const timestamps = [0, 1, 0x0123_4567_89ab, 0xffff_ffff_ffff];
+      for (const bits of [8, 16, 24, 32, 40])
+        timestamps.push(2 ** bits - 1, 2 ** bits, 2 ** bits + 1);
+      for (const boundUnixMs of timestamps)
+        for (const textCase of [UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE] as const) {
+          const hex = boundUnixMs.toString(16).padStart(12, "0");
+          const prefix = `${hex.slice(0, 8)}-${hex.slice(8)}`;
+          const expected = {
+            startInclusive: `${prefix}-7000-8000-000000000000`,
+            endInclusive: `${prefix}-7fff-bfff-ffffffffffff`,
+          };
+          if (textCase === UUID_TEXT_UPPERCASE) {
+            expected.startInclusive = expected.startInclusive.toUpperCase();
+            expected.endInclusive = expected.endInclusive.toUpperCase();
+          }
+          assert.deepEqual(uuidV7StringBounds(boundUnixMs, textCase), expected);
+        }
+    },
+  },
   {
     name: "preserves UUID byte positions, text case and every slug check tail against independent encoders",
     run: () => {

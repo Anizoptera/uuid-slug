@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { unwrap } from "../dev/unwrap";
+import { createBoundsProfileCases } from "./profile-bounds";
 type Api = typeof import("../src/index");
 type PrivateV4Api = Pick<typeof import("../src/v4"), "generatePortableUuidV4">;
 type PrivateAlphabetApi = Pick<
@@ -561,8 +562,7 @@ export function createProfileCases(
         }
       : {}),
     "v7.string": () => api.generateUuidV7(),
-    "v7.bounds.text": (index) => api.uuidV7StringBounds(instant + index),
-    "v7.bounds.bytes": (index) => api.uuidV7ByteBounds(instant, instant + index),
+    ...createBoundsProfileCases(api, instant),
     "v4.bytes": () => api.generateUuidV4Bytes(),
     "v4.into": () => api.generateUuidV4Bytes(into, 4),
     "v7.bytes": () => api.generateUuidV7Bytes(),
