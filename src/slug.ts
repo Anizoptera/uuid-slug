@@ -59,6 +59,7 @@ import { uuidValueBytes } from "./uuid-value-protocol.ts";
 import { extractPayloadFields } from "./v7-payload.ts";
 
 import { validateTimestampBytes } from "./timestamp.ts";
+import { runtime } from "#runtime";
 import {
   bytesToUuidString,
   exactUuidByteView,
@@ -559,14 +560,54 @@ export function isPlainUuidV7Slug(value: unknown): value is PlainUuidV7Slug {
   return isVersionedSlug(value, 7);
 }
 
+function validatedHexNibble(text: string, index: number): number {
+  // Full text validation precedes this read; both ASCII hex cases share their low four bits.
+  const code = text.charCodeAt(index);
+  return (code & 15) + (code > 57 ? 9 : 0);
+}
+
+function fixedCanonicalUuidV7UnixMs(text: string): number {
+  // Fixed reads avoid parseInt's sliced/joined strings. Split at 32 bits and unsigned-coerce the
+  // low word so timestamps above its sign bit preserve all 48 bits. Only validated canonical text
+  // reaches this helper; compact text retains its contiguous parse. Table reads slightly favor
+  // Bun but lose on Node in the source screen; remeasure complete calls after parser or engine
+  // changes (bench/PERFORMANCE.md).
+  const high =
+    (validatedHexNibble(text, 0) << 12) |
+    (validatedHexNibble(text, 1) << 8) |
+    (validatedHexNibble(text, 2) << 4) |
+    validatedHexNibble(text, 3);
+  const low =
+    ((validatedHexNibble(text, 4) << 28) |
+      (validatedHexNibble(text, 5) << 24) |
+      (validatedHexNibble(text, 6) << 20) |
+      (validatedHexNibble(text, 7) << 16) |
+      (validatedHexNibble(text, 9) << 12) |
+      (validatedHexNibble(text, 10) << 8) |
+      (validatedHexNibble(text, 11) << 4) |
+      validatedHexNibble(text, 12)) >>>
+    0;
+  return high * 0x1_0000_0000 + low;
+}
+
+function parsedCanonicalUuidV7UnixMs(text: string): number {
+  // Native radix parsing avoids interpreted digit calls when Node disables its JIT.
+  return parseInt(text.slice(0, 8) + text.slice(9, 13), 16);
+}
+
+// Reuse the runtime's settled JIT selection; no flag parsing or table construction belongs here.
+// Recheck both complete calls after engine changes against bench/PERFORMANCE.md.
+const canonicalUuidV7UnixMsUnchecked = runtime.jitless
+  ? parsedCanonicalUuidV7UnixMs
+  : fixedCanonicalUuidV7UnixMs;
+
 /*#__NO_SIDE_EFFECTS__*/
 function extractStringTimestamp(value: string): number | UuidSlugError {
   let timestamp = 0;
   if (isUuidV7Text(value) && (value.length === 32 || value.length === 36))
-    return parseInt(
-      value.length === 36 ? value.slice(0, 8) + value.slice(9, 13) : value.slice(0, 12),
-      16,
-    );
+    return value.length === 36
+      ? canonicalUuidV7UnixMsUnchecked(value)
+      : parseInt(value.slice(0, 12), 16);
   if (isPlainUuidV7Slug(value)) {
     const alpha = SLUG_ALPHABET_BY_LENGTH[value.length] as Alphabet;
     for (let index = 0; index < 6; index += 1)

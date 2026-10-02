@@ -2212,6 +2212,54 @@ derives from the canonical syntax once; repeated construction would charge every
 Recheck the complete calls, fallback spellings, allocations and startup after engine or syntax
 changes. The native parse-only floor and the remaining competitor gaps still require work.
 
+#### Canonical timestamp parsing screen
+
+Read validated canonical timestamp digits without constructing intermediate strings if packed
+calls retain the gain. Two 2026-10-02 source screens compare ten parsing choices with the same
+UUIDv7 text guard: joined and split `parseInt`, arithmetic and table digit loops, arithmetic and
+table fixed words, hexadecimal `Number` and `BigInt`, Buffer decoding, and native `fromHex`.
+Each uses six fresh processes on Node 26.10.0 and Bun 1.4.2, seven 5 ms batches after 16 ms
+warm-up, lowercase and uppercase inputs, and exact witnesses including zero and the 48-bit ceiling.
+Fixed arithmetic costs 66.05–69.27 ns on Node and 35.12–37.49 ns on Bun, against public
+extraction at 87.10–90.88 and 66.10–68.19 ns. Fixed table reads are slightly slower on Node
+and faster on Bun; split parsing and digit loops lose to fixed reads. Hexadecimal Number,
+BigInt and native byte decoding do not beat fixed reads in either screen. These observations
+select a portable candidate; they do not prove packed performance or allocation volume.
+
+Keep fixed arithmetic for canonical UUIDv7 timestamp extraction with the JIT, and retain native
+radix parsing on JITless Node. Two packed replays against `9ccfd29` use six fresh-process pairs
+per runtime, alternating revisions, seven 5 ms batches and 16 ms warm-up. Canonical lowercase
+and mixed-case ratios are 0.804–0.837 and 0.819–0.823 on Node 26.10.0, 0.645–0.663 and
+0.607–0.649 on Bun 1.4.2, 0.814–0.862 and 0.830–0.871 on Chromium 153.0.8010.12,
+0.797–0.812 and 0.790–0.801 on Deno 2.9.7, and 0.614–0.666 and 0.591–0.612 on
+WebKit 26.6. Their paired 95% intervals exclude parity in both replays. Firefox 155.0 separates
+the lowercase gain in both; its mixed-case intervals remain unresolved. Two additional Node
+24.21.0 replays separate both canonical gains. These are batch throughput comparisons, not p99.
+
+Do not apply fixed digit reads unconditionally: two earlier packed replays slow JITless Node
+canonical extraction by 36–40%. Reusing its existing startup selection retains native parsing;
+the final JITless ratios are 1.011–1.018 and 1.009–1.015, with all intervals spanning parity.
+A Node base64url extraction control reads 1.049 in one final replay; a focused twelve-pair replay
+reads 0.991 with interval 0.97–1.01 and does not reproduce the loss. Compact and slug results
+do not justify a universal improvement claim. Recheck this selection after parser or engine changes.
+
+Use native allocation sampling alongside CPU profiles and direct operation counts. One complete
+Node, Bun, Deno and Chromium profile pair records all four selected cases. Canonical lowercase
+and mixed-case sampled bytes per timed operation fall from 95.87/97.18 to 15.90/15.42 on Node,
+97.49/96.27 to 16.00/15.95 on Deno, and 71.21/71.56 to 12.24/11.80 on Chromium.
+The compact controls remain near their prior allocation costs. Chromium capture includes warm-up,
+while its denominator counts timed calls; neither these estimates nor retained heap prove an exact
+allocation floor. Bun canonical CPU cost falls from 66.38/64.65 to 39.37/38.31 ns per operation;
+its heap snapshots measure retention and do not establish gross allocation. Successful rows record
+no filesystem reads or writes. The resource gate observes zero substring calls on Node and Bun,
+and restoring sliced parsing fails it without changing the timestamp result.
+
+Preserve full text validation and the complete 48-bit result. The existing independent timestamp
+carry oracle fails for signed low words and a misplaced digit in both Node and Bun. Real child
+processes check parser selection against V8 executable-heap state across CLI and environment
+precedence; forcing fixed parsing fails that regression. No new table or capability probe is
+initialized for this reader. Native parse-only floors and competitor resource comparisons remain open.
+
 #### Uppercase writer screen
 
 Keep the direct uppercase writer unless a complete successful-call comparison favors lowercase

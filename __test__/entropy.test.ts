@@ -35,7 +35,7 @@ describe("entropy source", () => {
       import { strict as assert } from 'node:assert';
       import { getHeapStatistics } from 'node:v8';
       import { runtime } from './dist/node/runtime.js';
-      import { generateUuidV4, isUuidV4String, uuidV7StringBounds } from './dist/index.js';
+      import { generateUuidV4, isUuidV4String, uuidV7StringBounds, extractUuidV7UnixMs } from './dist/index.js';
       const disabled = getHeapStatistics().total_heap_size_executable === 0;
       assert.equal(Boolean(runtime.jitless), disabled);
       assert.equal(typeof runtime.uuidV4 === 'function', disabled);
@@ -48,6 +48,13 @@ describe("entropy source", () => {
       assert.ok(!(bounds instanceof Error));
       assert.equal(bounds.startInclusive.charCodeAt(12) + bounds.endInclusive.charCodeAt(12), 'f'.charCodeAt(0) * 2);
       assert.equal(fixedWrites, disabled ? 0 : 2);
+      // The timestamp reader makes the opposite choice: native parsing avoids interpreted digits.
+      const originalParseInt = globalThis.parseInt;
+      let parsedTimestamps = 0;
+      globalThis.parseInt = (...args) => { parsedTimestamps += 1; return originalParseInt(...args); };
+      assert.equal(extractUuidV7UnixMs(bounds.startInclusive), 0xffffffffffff);
+      assert.equal(extractUuidV7UnixMs(bounds.endInclusive), 0xffffffffffff);
+      assert.equal(parsedTimestamps, disabled ? 2 : 0);
     `;
     for (const [options, flags] of [
       ["", []],

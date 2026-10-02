@@ -132,6 +132,8 @@ export const runtimeBoundaryCases = [
             expected.endInclusive = expected.endInclusive.toUpperCase();
           }
           assert.deepEqual(uuidV7StringBounds(boundUnixMs, textCase), expected);
+          assert.equal(extractUuidV7UnixMs(expected.startInclusive), boundUnixMs);
+          assert.equal(extractUuidV7UnixMs(expected.endInclusive), boundUnixMs);
         }
     },
   },

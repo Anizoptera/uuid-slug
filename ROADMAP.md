@@ -215,6 +215,10 @@ competitor. Caller buffers miss that, ns package / `uuid`: Bun UUIDv4 27.9 / 26.
       repeated packed calls improve canonical extraction on Node and Bun, alternate spellings
       have no repeated resolved loss, and mutation tests and native resource profiles preserve
       full validation. Keep the remaining native and competitor gaps open.
+- [x] Retain fixed canonical timestamp reads after full UUIDv7 validation; the independent carry
+      oracle rejects signed low words and displaced digits in both runners. Two packed replays
+      and native profiles reproduce speed and allocation gains; reuse native parsing on JITless
+      Node, with real-process selection and resource mutations. Competitor resource gaps stay open.
 
 ## Phase 6: deliver (after every source change)
 

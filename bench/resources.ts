@@ -15,6 +15,7 @@ const counts = {
   latin1: 0,
   fromCharCodes: 0,
   chars: 0,
+  textSlices: 0,
   draws: 0,
 };
 const OriginalBytes = Uint8Array;
@@ -63,6 +64,7 @@ const expectTextFormatter = (message: string) => {
   else assert.equal(counts.fromCharCodes, 1, `fixed character-code text: ${message}`);
 };
 assert.ok(wrapMethod(String.prototype, "charCodeAt", "chars"));
+assert.ok(wrapMethod(String.prototype, "slice", "textSlices"));
 assert.ok(wrapMethod(crypto, "randomFillSync", "draws"));
 assert.ok(wrapMethod(globalThis.crypto, "getRandomValues", "draws"));
 
@@ -151,6 +153,7 @@ try {
   new Uint8Array(16).subarray().slice();
   assert.ok(new api.UuidSlugError("invalid_uuid", "resource control") instanceof OriginalError);
   assert.ok(id.charCodeAt(process.pid % id.length) > 0);
+  assert.equal(id.slice(0, 1), "0");
   assert.equal(String.fromCharCode(65), "A");
   assert.ok(
     counts.buffers > 0 &&
@@ -158,6 +161,7 @@ try {
       counts.views > 0 &&
       counts.errors > 0 &&
       counts.chars > 0 &&
+      counts.textSlices > 0 &&
       counts.fromCharCodes > 0,
     JSON.stringify(counts),
   );
@@ -189,6 +193,15 @@ try {
       buffers: 0,
       errors: 0,
       views: 0,
+    });
+  // Canonical extraction must not recreate substrings after validating the complete UUID.
+  // Native JITless parsing is checked separately by the real-process selection regression.
+  for (const value of [id, id.toUpperCase()])
+    check("canonical UUIDv7 timestamp", () => assert.equal(api.extractUuidV7UnixMs(value), time), {
+      buffers: 0,
+      views: 0,
+      errors: 0,
+      textSlices: 0,
     });
   check("caller-owned UUID conversion", () => api.uuidStringToBytes(id, into, 4), {
     buffers: 0,
