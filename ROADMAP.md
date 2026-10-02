@@ -177,6 +177,9 @@ floor is clock (22 ns) plus entropy plus formatting, so UUIDv7 parity may be imp
       entropy source: Bun Web Crypto and `node:crypto` cost the same per byte on an 8 KiB pool, and
       a 256-byte pool costs more. Done when two replays retain a cut, including UUIDv7 new bytes
       against `uuid`, or §Native floors records the cost that remains and why.
+- [x] Screen zero-fraction comparison skipping and private timestamp-byte caching before broad
+      replays. Reject both shapes: the first has no worthwhile reproduced gain; the second slows
+      primary calls. Keep clock-wrapper, validation, reentrancy and tail-copy work open.
 - [ ] Bun UUIDv4 text: ablate the default parameter plus `isUuidTextCase` check and the
       trusted-identity comparison separately; try an argument-count fast path. Rejected: removing
       the `try` (saves 1 ns, breaks native-failure fallback) and import-time validation (draws

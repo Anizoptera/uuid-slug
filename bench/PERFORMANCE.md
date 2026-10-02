@@ -1084,6 +1084,13 @@ Remaining gaps and their causes:
   each process after 16 ms warmup do not establish a worthwhile improvement. The fractional-clock
   oracle checks the actual new bucket, not merely increasing byte order; disabling advancement
   fails its Node test and the direct Bun witness. This screen does not settle the other draw costs.
+  Two further alternating source-bundle screens cached timestamp bytes in the private text buffer
+  and copied them to byte outputs. Node owned bytes rose from 81–82 to 85–86 ns, and fractional
+  caller-buffer draws from 47 to 52 ns. Bun text rose from 83–86 to 88–90 ns and owned bytes from
+  47–49 to 51 ns. Reject this cache: the repeated successful-call losses outweigh its small Node
+  fixed-clock buffer gain. The same short-batch limits apply. A stale-cache mutation fails the
+  Node timestamp cases and direct Bun clock-advance witness; caller-buffer mutation and offset
+  witnesses pass with the candidate. Different cache shapes remain unmeasured.
 - Bun UUIDv4 caller-buffer output costs 28–29 ns against 17–18 ns. The floor fills a view prepared
   outside the timed call; the package checks the caller range, copies from the package pool into
   private storage, then copies into caller storage, so entropy failure cannot partly write caller
