@@ -10,6 +10,7 @@ import {
   selectProfileCases as selectByFilter,
 } from "./profile-cases";
 import type { ProfileCase, ProfileValue } from "./profile-cases";
+import { sampleCallLatency } from "./call-latency";
 
 interface BrowserProfileOptions {
   readonly duration: number;
@@ -17,6 +18,7 @@ interface BrowserProfileOptions {
   readonly samples: number;
   readonly warmup: number;
   readonly privateImplementations?: boolean;
+  readonly latencySamples?: number;
 }
 
 interface BrowserProfileRow {
@@ -26,6 +28,7 @@ interface BrowserProfileRow {
   readonly ns: readonly number[];
   readonly operations: number;
   readonly sink: number;
+  readonly callLatency?: Awaited<ReturnType<typeof sampleCallLatency>>;
 }
 
 let sink = 0;
@@ -76,7 +79,9 @@ function selectProfileCases(options: BrowserProfileOptions): readonly [string, P
     !Number.isFinite(options.duration) ||
     options.duration <= 0 ||
     !Number.isFinite(options.warmup) ||
-    options.warmup <= 0
+    options.warmup <= 0 ||
+    (options.latencySamples !== undefined &&
+      (!Number.isSafeInteger(options.latencySamples) || options.latencySamples < 1))
   )
     throw new Error(
       "Profile samples must be positive, with positive duration and warm-up milliseconds",
@@ -128,6 +133,28 @@ async function measureProfileCases(
     ns.sort((left, right) => left - right);
     rows.push({ name, ns, operations, maxBatchMs, maxUninterruptedMs, sink });
   }
+  // Finish every throughput row before per-call clocks can alter another row's engine state.
+  if (options.latencySamples !== undefined) {
+    for (const [caseIndex, [name, operation]] of selected.entries()) {
+      const witness = operation(0);
+      if (typeof witness === "object" && !(witness instanceof Uint8Array))
+        throw new Error(
+          `Call latency requires a scalar or byte result; narrow the filter: ${name}`,
+        );
+      const callLatency = await sampleCallLatency(
+        operation,
+        (value, index) => {
+          if (value instanceof Error) throw value;
+          if (typeof value === "object" && !(value instanceof Uint8Array))
+            throw new Error(`Call latency result changed shape: ${name}`);
+          consume(value, index);
+        },
+        options.latencySamples,
+        yieldToBrowser,
+      );
+      rows[caseIndex] = { ...rows[caseIndex]!, callLatency, sink };
+    }
+  }
   return rows;
 }
 
@@ -138,6 +165,9 @@ const options = {
   samples: Number(parameters.get("samples") ?? 7),
   warmup: Number(parameters.get("warmup") ?? 16),
   privateImplementations: parameters.get("private") === "1",
+  ...(parameters.has("latencySamples")
+    ? { latencySamples: Number(parameters.get("latencySamples")) }
+    : {}),
   ...(filter === null ? {} : { filter }),
 };
 const selected = selectProfileCases(options);

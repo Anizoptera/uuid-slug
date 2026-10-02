@@ -8,6 +8,7 @@ import inspector from "node:inspector/promises";
 import * as v8 from "node:v8";
 import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json" with { type: "json" };
 import { assertProfileOutcome, createProfileCases, selectProfileCases } from "./profile-cases";
+import { sampleCallLatency } from "./call-latency";
 
 const nativeDirectory = process.env.UUID_SLUG_PROFILE_NATIVE_DIR;
 const nativeName = process.env.UUID_SLUG_PROFILE_NATIVE_NAME;
@@ -73,6 +74,17 @@ const filter = process.env.UUID_SLUG_PROFILE_FILTER;
 const samples = Number(process.env.UUID_SLUG_PROFILE_SAMPLES ?? 7);
 const duration = Number(process.env.UUID_SLUG_PROFILE_MS ?? 20);
 const warmup = Number(process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? 16);
+const latencySamples =
+  process.env.UUID_SLUG_PROFILE_LATENCY_SAMPLES === undefined
+    ? undefined
+    : Number(process.env.UUID_SLUG_PROFILE_LATENCY_SAMPLES);
+if (
+  latencySamples !== undefined &&
+  (!Number.isSafeInteger(latencySamples) || latencySamples < 1 || session)
+)
+  throw new Error(
+    "Latency samples must be a positive safe integer and run without native profiling",
+  );
 if (
   !Number.isSafeInteger(samples) ||
   samples < 1 ||
@@ -177,6 +189,30 @@ for (const [name, fn] of selected) {
       arrayBuffers: retained.arrayBuffers,
     }),
   );
+}
+// Keep per-call clocks out of throughput batches and native profiler captures.
+if (latencySamples !== undefined) {
+  for (const [name, fn] of selected) {
+    const witness = fn(0);
+    if (typeof witness === "object" && !(witness instanceof Uint8Array))
+      throw new Error(`Call latency requires a scalar or byte result; narrow the filter: ${name}`);
+    const latency = await sampleCallLatency(
+      fn,
+      (value, index) => {
+        if (value instanceof Error) throw value;
+        if (typeof value === "string") sink ^= value.charCodeAt(index % value.length);
+        else if (typeof value === "number") sink ^= value;
+        else if (typeof value === "boolean") sink ^= Number(value);
+        else if (value instanceof Uint8Array) sink ^= value[index % value.length] as number;
+        else throw new Error(`Call latency result changed shape: ${name}`);
+      },
+      latencySamples,
+      yieldToLoop,
+    );
+    console.log(
+      JSON.stringify({ name, measurement: "instrumented-call-latency", ...latency, sink }),
+    );
+  }
 }
 if (session && nativeDirectory) {
   const [cpu, heap] = await Promise.all([

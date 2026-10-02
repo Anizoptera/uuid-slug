@@ -10,6 +10,8 @@ import { renderGenerationReport, verdict } from "../bench/generation-report";
 import type { ReportRecord } from "../bench/generation-report";
 import { parseReport } from "../bench/matrix";
 import { describeSamples, medianConfidence95 } from "../bench/statistics";
+import { describeCallLatency, sampleCallLatency } from "../bench/call-latency";
+import { setImmediate as yieldToLoop } from "node:timers/promises";
 
 const speed = {
   runtime: "fixture 1",
@@ -86,6 +88,61 @@ test("sample spread and mean uncertainty preserve translation and scale", () => 
   expect(shifted?.sampleStandardDeviation).toBe(original?.sampleStandardDeviation);
   expect(scaled?.sampleStandardDeviation).toBe(2);
   expect(scaled?.meanStandardError).toBeCloseTo(2 / Math.sqrt(3), 12);
+});
+
+test("call percentiles retain rare pauses and do not mutate acquisition order", () => {
+  const ns = [50_000, ...Array<number>(99).fill(0)];
+  expect(describeCallLatency(ns)).toEqual({
+    sampleCount: 100,
+    zeroCount: 99,
+    p50Ns: 0,
+    p99Ns: 0,
+    p99Interpretation: "below-clock-resolution",
+    maxNs: 50_000,
+  });
+  expect(ns[0]).toBe(50_000);
+  expect(() => describeCallLatency([])).toThrow();
+  expect(() => describeCallLatency([NaN])).toThrow();
+  expect(() => describeCallLatency([-1])).toThrow();
+});
+
+test("call sampling brackets actual work and preserves every result and timer control", async () => {
+  const consumed: number[] = [];
+  let loopProgress = false;
+  const progress = yieldToLoop().then(() => {
+    loopProgress = true;
+    return loopProgress;
+  });
+  const result = await sampleCallLatency(
+    (index) => {
+      const started = performance.now();
+      while (performance.now() - started < 1) {
+        /* Real elapsed work exposes an omitted call window. */
+      }
+      return index;
+    },
+    (value) => {
+      consumed.push(value);
+    },
+    8,
+    yieldToLoop,
+  );
+  expect(consumed).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+  expect(result.ns).toHaveLength(8);
+  expect(result.timerNs).toHaveLength(8);
+  expect(Math.min(...result.ns)).toBeGreaterThanOrEqual(1e6);
+  expect(loopProgress).toBe(true);
+  await progress;
+  const rejected = await sampleCallLatency(
+    () => 0,
+    () => {},
+    0,
+    yieldToLoop,
+  ).then(
+    () => false,
+    (error: unknown) => error instanceof Error && error.message.includes("positive safe integer"),
+  );
+  expect(rejected).toBe(true);
 });
 
 test.each([

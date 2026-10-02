@@ -10,6 +10,8 @@ const project = join(import.meta.dir, "..");
 const reports = join(import.meta.dir, "reports");
 const smoke = process.argv.includes("--smoke");
 const native = process.argv.includes("--native");
+if (native && process.env.UUID_SLUG_PROFILE_LATENCY_SAMPLES !== undefined)
+  throw new Error("Sample call latency separately from native profiling");
 const samples = process.env.UUID_SLUG_PROFILE_SAMPLES ?? (smoke ? "1" : "7");
 const duration = process.env.UUID_SLUG_PROFILE_MS ?? "2";
 const warmup = process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (smoke ? "2" : "16");
@@ -22,6 +24,9 @@ const environment: Readonly<Record<string, string>> = {
   UUID_SLUG_PROFILE_SAMPLES: samples,
   UUID_SLUG_PROFILE_WARMUP_MS: warmup,
   UUID_SLUG_PROFILE_PRIVATE: "1",
+  ...(process.env.UUID_SLUG_PROFILE_LATENCY_SAMPLES === undefined
+    ? {}
+    : { UUID_SLUG_PROFILE_LATENCY_SAMPLES: process.env.UUID_SLUG_PROFILE_LATENCY_SAMPLES }),
 };
 const nodeEnvironment = nodeOptions ? { ...environment, NODE_OPTIONS: nodeOptions } : environment;
 
@@ -140,7 +145,7 @@ async function runHost(
   if (lines.length <= headerRows || lines.some((line) => !JSON.parse(line)))
     throw new Error(`${name} emitted no complete profile`);
   await Bun.write(join(reports, `${name}.jsonl`), `${output.trim()}\n`);
-  console.log(`${name}: ${lines.length - headerRows} operations`);
+  console.log(`${name}: ${lines.length - headerRows} measurement records`);
 }
 
 async function runBrowser(entry: string, asyncEntry: string) {
@@ -168,6 +173,8 @@ async function runBrowser(entry: string, asyncEntry: string) {
     session.on("Tracing.dataCollected", ({ value }) => traceEvents.push(...value));
     session.on("HeapProfiler.addHeapSnapshotChunk", ({ chunk }) => snapshotChunks.push(chunk));
     const query = new URLSearchParams({ samples, duration, warmup });
+    if (process.env.UUID_SLUG_PROFILE_LATENCY_SAMPLES !== undefined)
+      query.set("latencySamples", process.env.UUID_SLUG_PROFILE_LATENCY_SAMPLES);
     query.set("private", "1");
     if (filter) query.set("filter", filter);
     await page.goto(`${server.url.href}?${query}`);

@@ -95,6 +95,15 @@ revision in each round so one revision cannot train the other's engine state. In
 errors remain conditional on independence; host scheduling and thermal drift can violate it too.
 Standard error does not replace the raw samples, repeated replays or practical effect size.
 
+Set `UUID_SLUG_PROFILE_LATENCY_SAMPLES` to a positive call count for a separate sampled-latency
+pass in `bench:profile`. Select successful scalar or byte results with a narrow filter; object
+results need a separate consumer workload. Each observation brackets one call; result
+consumption follows the ending timestamp. The report retains acquisition order, an adjacent-clock
+control, zero counts and empirical p50/p99. These instrumented timings include clock overhead
+and quantization; do not subtract control percentiles or treat calls from one process as independent
+confidence samples. This pass does not change the throughput measurement or run by default.
+An observed zero p99 is below clock resolution, not a zero-cost call; the report labels it explicitly.
+
 ## Regression protection
 
 Run `bun run build && bun run perf:check` to check the package under the selected Node and Bun.

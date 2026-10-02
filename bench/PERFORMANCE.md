@@ -2155,4 +2155,15 @@ This single uncalibrated probe includes loop warm-up and quantization. It is not
 bound, but shows that naive per-call timestamps can be on the same scale as UUID conversion.
 Subtracting its median from a call's p99 would not recover the call-latency distribution.
 
+The opt-in call-timing pass brackets individual successful scalar or byte calls and consumes each
+result after the ending timestamp. Raw samples retain acquisition order and pauses; an adjacent-clock
+control rotates before and after calls. Empirical percentiles carry no independent-run confidence.
+Native profiling runs separately. An omitted call-window mutation fails the elapsed-work regression.
+
+On 2026-10-02, `format.uppercase` produced 10,000 call observations and 10,000 timer controls per
+process on Node 24.21.0, Node 26.10.0, Bun 1.4.2 and Deno 2.9.7. Separate Chromium 153.0.8010.12,
+Firefox 155.0 and WebKit 26.6 probes retained the same counts. All three browser call p99 observations
+were zero under their clocks; this establishes a resolution limit, not zero call latency. Host
+observations include timer overhead and do not establish uninstrumented p99 or a performance ranking.
+
 The gates do not prove all performance properties. Relative timing cannot detect a slowdown shared by both sides. Constructor counters cannot see every engine allocation. Latest-runtime CI complements pinned runs, but this study did not execute hosted CI or measure every OS/architecture. Keep these limits when interpreting a pass.
