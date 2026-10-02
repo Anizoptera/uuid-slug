@@ -215,7 +215,12 @@ export function createPortableUuidV7Generator(
   ) {
     writeTimestamp(target, ms, offset);
     writeCounter(target, sequenceHi, sequenceLo, offset);
-    for (let i = 12; i < 16; i += 1) target[offset + i] = randomTail[i - 12] as number;
+    // The tail always has four bytes; fixed stores avoid loop setup without changing entropy use.
+    // Compare complete generation calls with the loop after engine changes (bench/PERFORMANCE.md).
+    target[offset + 12] = randomTail[0] as number;
+    target[offset + 13] = randomTail[1] as number;
+    target[offset + 14] = randomTail[2] as number;
+    target[offset + 15] = randomTail[3] as number;
     return target;
   }
 

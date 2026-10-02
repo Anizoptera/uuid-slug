@@ -91,6 +91,34 @@ const hasCause = (value: unknown, target: unknown): boolean =>
 
 export const runtimeBoundaryCases = [
   {
+    name: "preserves every fresh UUIDv7 tail byte across output forms",
+    run(this: void) {
+      // Distinct bytes and their complements expose displaced, duplicated and pinned entropy bits.
+      for (const tail of [
+        [0x12, 0x34, 0x56, 0x78],
+        [0xed, 0xcb, 0xa9, 0x87],
+      ]) {
+        const generator = createUuidV7Generator({
+          readUnixMs: () => timestamp,
+          fillRandom: (bytes) => {
+            bytes.fill(0);
+            bytes.set(tail, bytes.length - tail.length);
+          },
+        });
+        assert.deepEqual([...unwrap(generator.generateUuidV7Bytes()).slice(12)], tail);
+        const output = new Uint8Array(24).fill(0xee);
+        assert.equal(generator.generateUuidV7Bytes(output, 4), output);
+        assert.deepEqual([...output.slice(16, 20)], tail);
+        assert.deepEqual([...output.slice(0, 4)], [0xee, 0xee, 0xee, 0xee]);
+        assert.deepEqual([...output.slice(20)], [0xee, 0xee, 0xee, 0xee]);
+        const text = unwrap(generator.generateUuidV7());
+        assert.deepEqual([...unwrap(uuidStringToBytes(text)).slice(12)], tail);
+        const explicit = unwrap(generator.generateUuidV7Bytes({ at: timestamp + 1 }));
+        assert.deepEqual([...explicit.slice(12)], tail);
+      }
+    },
+  },
+  {
     name: "UUIDv7 timestamp text validates the full payload in either case",
     run(this: void) {
       for (const valid of [uuid, uuid.toUpperCase()]) {
