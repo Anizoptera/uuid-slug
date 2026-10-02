@@ -1,0 +1,223 @@
+// SPDX-License-Identifier: Apache-2.0
+
+import { mkdtemp, mkdir, writeFile, symlink, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { execFile } from "node:child_process";
+import { promisify, stripVTControlCharacters } from "node:util";
+import { command } from "../scripts/command";
+import { CANDIDATE_GROUPS, createSourceCandidates } from "./candidate-sources";
+import type { CandidateGroup } from "./candidate-sources";
+import { sampleMedian } from "./statistics";
+
+const project = join(import.meta.dir, "..");
+const execute = promisify(execFile);
+async function proof(args: string[], cwd: string): Promise<string> {
+  // Test runners place evidence on different pipes; retain both and fail on absent execution.
+  const result = await execute("bun", args, { cwd, timeout: 30_000, maxBuffer: 4 * 1024 * 1024 });
+  const output = result.stdout + result.stderr;
+  if (!output.trim()) throw new Error(`No proof output from bun ${args.join(" ")}`);
+  return output;
+}
+const groupInput = process.argv[2];
+if (!CANDIDATE_GROUPS.some((group) => group === groupInput) || process.argv.length < 4)
+  throw new Error(
+    `Usage: bun bench/source-candidates.ts <${CANDIDATE_GROUPS.join("|")}> <candidate names>. Baseline is always included; pass baseline alone for a harness control.`,
+  );
+const group = groupInput as CandidateGroup;
+const expectedNames =
+  group === "v4"
+    ? [
+        "package.v4.text.native",
+        "package.v4.text.portable",
+        "package.v4.bytes.allocate",
+        "package.v4.bytes.into",
+        "package.v4.slug.base64url",
+      ]
+    : [
+        "v7.string",
+        "v7.bytes",
+        "v7.into",
+        "v7.slug",
+        "portable.into",
+        "portable.subms12.into",
+        "v7.string.selected-generator",
+        "v7.bytes.selected-generator",
+        "v7.slug.selected-generator",
+        "v7.slug.structural-generator",
+      ];
+const filename = group === "v4" ? "src/v4.ts" : "src/v7.ts";
+// A committed production graph makes the detached checkout match the source being screened.
+if (
+  (
+    await command(
+      "git",
+      ["status", "--porcelain", "--", "src", "__test__", "package.json", "bun.lock"],
+      project,
+    )
+  ).trim()
+)
+  throw new Error(
+    "Commit production, test and dependency changes before screening; the isolated checkout must use the same graph as its baseline.",
+  );
+const revision = (await command("git", ["rev-parse", "HEAD"], project)).trim();
+const source = await command("git", ["show", `${revision}:${filename}`], project);
+const candidates = createSourceCandidates(group, source);
+const requested = new Set(process.argv.slice(3));
+for (const name of requested)
+  if (!candidates.some((candidate) => candidate.name === name))
+    throw new Error(
+      `Unknown candidate ${name}; choose ${candidates.map((candidate) => candidate.name).join(", ")}.`,
+    );
+const selected = candidates.filter(({ name }) => name === "baseline" || requested.has(name));
+const runtimeInputs = (process.env.UUID_SLUG_CANDIDATE_RUNTIMES ?? "node:bun").split(":");
+if (
+  !runtimeInputs.length ||
+  new Set(runtimeInputs).size !== runtimeInputs.length ||
+  runtimeInputs.some((value) => !["node", "bun", "deno"].includes(value))
+)
+  throw new Error(
+    "UUID_SLUG_CANDIDATE_RUNTIMES must list distinct node, bun or deno values separated by colons.",
+  );
+const runtimes = runtimeInputs as ("node" | "bun" | "deno")[];
+const workRoot = await mkdtemp(join(tmpdir(), "uuid-slug-candidates-"));
+const tree = join(workRoot, "tree");
+const report = join(project, "bench/reports", `candidates-${group}-${Date.now()}`);
+await mkdir(report, { recursive: true });
+let added = false;
+try {
+  // Proof edits never touch the shared working tree; failures cannot erase another agent's edits.
+  await command("git", ["worktree", "add", "--detach", tree, revision], project);
+  added = true;
+  await symlink(join(project, "node_modules"), join(tree, "node_modules"), "dir");
+  await command("bun", ["run", "build"], tree);
+  // Snapshots are text artifacts, not extra compiler inputs under bench/**/*.ts.
+  await writeFile(join(report, "source.txt"), source);
+  await writeFile(
+    join(report, "manifest.json"),
+    JSON.stringify({
+      revision,
+      group,
+      filename,
+      candidates: selected.map(({ name }) => name),
+      runtimes,
+      sampleUnit: "within-process batches",
+      durationMs: 5,
+      samples: 3,
+      warmupMs: 16,
+    }),
+  );
+  for (const candidate of selected) {
+    const candidateSource = candidate.source;
+    await Promise.all([
+      writeFile(join(tree, filename), candidateSource),
+      writeFile(join(report, `${candidate.name}-source.txt`), candidateSource),
+    ]);
+    await command(
+      "bun",
+      ["node_modules/typescript/bin/tsc", "-p", "tsconfig.json", "--noEmit", "--pretty", "false"],
+      tree,
+    );
+    const tests = ["__test__/core.test.ts", "__test__/runtime-boundary.test.ts"];
+    if (group === "v7-draw") tests.push("__test__/v7.test.ts");
+    for (const [lane, args] of [
+      ["node", ["run", "test:node", "--", ...tests]],
+      ["bun", ["test", "__test__/runtime-boundary.bun.test.ts"]],
+    ] as const) {
+      const output = await proof([...args], tree);
+      await writeFile(join(report, `${candidate.name}-${lane}-proof.log`), output);
+      if (
+        !(lane === "bun" ? /\b[1-9]\d* pass\b/ : /Tests\s+[1-9]\d* passed/).test(
+          stripVTControlCharacters(output),
+        )
+      )
+        throw new Error(
+          `No executed tests in ${candidate.name}/${lane}; inspect its proof log in ${report} before timing.`,
+        );
+    }
+    console.log(JSON.stringify({ candidate: candidate.name, proof: "passed" }));
+    for (const runtime of runtimes) {
+      const entry = group === "v4" ? "bench/generation-host.ts" : "src/index.ts";
+      const result = await Bun.build({
+        entrypoints: [join(tree, entry)],
+        target: runtime === "deno" ? "node" : runtime,
+        ...(runtime === "deno" ? { conditions: ["deno"] } : {}),
+        format: "esm",
+      });
+      if (!result.success || result.outputs.length !== 1)
+        throw new AggregateError(
+          result.logs,
+          `Candidate build failed: ${candidate.name}/${runtime}`,
+        );
+      await Bun.write(join(report, `${candidate.name}-${runtime}.mjs`), result.outputs[0]!);
+    }
+  }
+  const driverFile = join(report, "profile.mjs");
+  if (group === "v7-draw") {
+    const driver = await Bun.build({
+      entrypoints: [join(project, "bench/profile.ts")],
+      target: "node",
+      format: "esm",
+    });
+    if (!driver.success || driver.outputs.length !== 1)
+      throw new AggregateError(driver.logs, "Candidate profile driver build failed");
+    await Bun.write(driverFile, driver.outputs[0]!);
+  }
+  // Fresh processes and reversed second-pass order expose warmup/order sensitivity. These short
+  // batches select candidates; only packed comparisons and resource profiles can retain a change.
+  for (let round = 0; round < 2; round++)
+    for (const runtime of runtimes) {
+      const executable =
+        runtime === "node" ? (process.env.UUID_SLUG_COMPARE_NODE_EXECUTABLE ?? "node") : runtime;
+      for (let step = 0; step < selected.length; step++) {
+        const candidate = selected[round === 0 ? step : selected.length - step - 1]!;
+        const module = join(report, `${candidate.name}-${runtime}.mjs`);
+        const entry = group === "v4" ? module : driverFile;
+        const args = runtime === "deno" ? ["run", "-A", entry] : [entry];
+        const output = await command(executable, args, project, {
+          UUID_SLUG_PROFILE_MODULE: module,
+          UUID_SLUG_PROFILE_FILTER: expectedNames.map((name) => `=${name}`).join(","),
+          UUID_SLUG_PROFILE_MS: "5",
+          UUID_SLUG_PROFILE_SAMPLES: "3",
+          UUID_SLUG_PROFILE_WARMUP_MS: "16",
+          UUID_SLUG_GENERATION_FILTER: "package.v4.",
+          UUID_SLUG_GENERATION_MS: "5",
+          UUID_SLUG_GENERATION_SAMPLES: "3",
+          UUID_SLUG_GENERATION_WARMUP_MS: "16",
+        });
+        await writeFile(join(report, `${candidate.name}-${runtime}-${round}.jsonl`), output);
+        const rows = output
+          .trim()
+          .split("\n")
+          .map((line) => JSON.parse(line) as { name?: string; ns?: readonly number[] });
+        const measurements = rows.filter((row) => row.name !== undefined);
+        if (
+          measurements.length !== expectedNames.length ||
+          expectedNames.some(
+            (name) => measurements.filter((row) => row.name === name).length !== 1,
+          ) ||
+          measurements.some(
+            (row) =>
+              !Array.isArray(row.ns) ||
+              row.ns.length !== 3 ||
+              row.ns.some((value) => !Number.isFinite(value) || value <= 0),
+          )
+        )
+          throw new Error(
+            `Incomplete candidate measurements: ${candidate.name}/${runtime}. Every selected case must occur once with all finite positive samples; inspect the runtime output and filter.`,
+          );
+        console.log(
+          JSON.stringify({
+            runtime,
+            candidate: candidate.name,
+            round,
+            rows: measurements.map((row) => ({ name: row.name, medianNs: sampleMedian(row.ns!) })),
+          }),
+        );
+      }
+    }
+  console.log(JSON.stringify({ report }));
+} finally {
+  if (added) await command("git", ["worktree", "remove", "--force", tree], project);
+  await rm(workRoot, { recursive: true, force: true });
+}
