@@ -262,6 +262,9 @@ efficiency. A reproducible misuse alone does not justify that cost.
   JITless-only win when every higher rung is unchanged and its lifetime cost is justified.
 - Optimize successful consumer calls. Invalid input, rejected configuration, and other failures
   are rare by design and are not performance targets: spend no code or measurement on their speed.
+- Choose performance workloads from ordinary README consumer jobs: single-ID generation, parsing
+  and conversion first. An unusual input or convenient probe never establishes workload priority;
+  keep its verification bounded to the correctness defect it can expose.
 - Rank one-ID-per-call paths above batch paths. Most consumers generate, parse, or convert one
   identifier per call; writing many IDs into caller-owned buffers through `output` and
   `outputOffset` is a secondary job. Keep batch paths efficient, but never slow a single-call
