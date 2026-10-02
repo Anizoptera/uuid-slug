@@ -2,9 +2,10 @@
 
 import { unwrap } from "../dev/unwrap";
 import { UUIDv7 as UuidV7Js } from "uuidv7-js";
+import { validate as validateRivalUuid } from "uuid";
 import { createBoundsProfileCases } from "./profile-bounds";
 import { createUuidV4ProfileCases } from "./profile-v4";
-import { assertProfileOutcome } from "./profile-case";
+import { assertNormalizedUuidProfileOutcome, assertProfileOutcome } from "./profile-case";
 import type { ProfileCase } from "./profile-case";
 export { assertProfileOutcome, selectProfileCases } from "./profile-case";
 export type { ProfileValue, ProfileCase } from "./profile-case";
@@ -614,6 +615,7 @@ export function createProfileCases(
     "slug.into": (index) => api.uuidToBytes(slugs[index & 255] as string, into, 4),
     "slug.base32.into": (index) => api.uuidToBytes(base32[index & 255] as string, into, 4),
     "guard.uuid.any": (index) => api.isUuidString(ids[index & 255]),
+    "guard.uuid.any.rival": (index) => validateRivalUuid(ids[index & 255]),
     "guard.uuid.v4": () => api.isUuidV4String(v4Uuid),
     "guard.invalid.uuid": () => api.isUuidV7String(badUuid),
     "guard.invalid.slug": () => api.isPlainUuidV7Slug(badSlug),
@@ -674,12 +676,16 @@ export function createProfileCases(
     "masked.encode": (index) => codec.uuidToMaskedSlug(ids[index & 255] as string),
     "masked.encode.bytes": (index) => codec.uuidToMaskedSlug(bytes[index & 255] as Uint8Array),
     "codec.toString.uuid": (index) => codec.uuidToString(ids[index & 255] as string),
+    "codec.toString.mixed": (index) => codec.uuidToString(mixedIds[index & 255] as string),
     "codec.toString.plain": (index) =>
       codec.uuidToString(plainOnlySlugs[index % plainOnlySlugs.length] as string),
     "codec.toBytes.plain": (index) =>
       codec.uuidToBytes(plainOnlySlugs[index % plainOnlySlugs.length] as string),
     "uuid.toString.canonical": (index) => api.uuidToString(ids[index & 255] as string),
     "uuid.toString.mixed": (index) => api.uuidToString(mixedIds[index & 255] as string),
+    "uuid.toString.compact": (index) => api.uuidToString(compactIds[index & 255] as string),
+    "uuid.toString.urn": (index) => api.uuidToString(urnIds[index & 255] as string),
+    "uuid.toString.braced": (index) => api.uuidToString(bracedIds[index & 255] as string),
     "plain.toString": (index) => api.plainSlugToUuidString(slugs[index & 255] as string),
     "value.parse.uuid": (index) => api.parseUuid(ids[index & 255] as string),
     "value.parse.slug": (index) => api.parseUuid(slugs[index & 255] as string),
@@ -965,6 +971,7 @@ export function createProfileCases(
             throw new Error(`${name} modified caller storage before returning an error`);
           continue;
         }
+        assertNormalizedUuidProfileOutcome(name, value, ids, index);
         if (typeof value === "string") {
           const valid =
             api.isUuidString(value) ||

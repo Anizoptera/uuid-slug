@@ -16,6 +16,22 @@ export function assertProfileOutcome(name: string, value: ProfileValue): boolean
   return expectedError;
 }
 
+// Normalization must preserve the fixture UUID, rather than return another valid value or type.
+export function assertNormalizedUuidProfileOutcome(
+  name: string,
+  value: ProfileValue,
+  ids: readonly string[],
+  index: number,
+): void {
+  if (
+    (name.startsWith("uuid.toString.") || name === "codec.toString.mixed") &&
+    value !== ids[index & 255]
+  )
+    throw new Error(
+      `${name} returned a different UUID; check its input and conversion before timing`,
+    );
+}
+
 /** Select cases whose names contain any comma-separated filter substring; fail when none match. */
 export function selectProfileCases<Case>(
   cases: Record<string, Case>,
