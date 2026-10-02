@@ -44,8 +44,6 @@ measure lane durations, isolate timings from competing work, and retain only def
   Runtime rank: Node Current and Bun, then Node LTS and Chromium, then Deno, then Node JITless.
 - Correctness first: map contracts, add falsifiers, and mutate before timing. Keep a change only
   when two packed replays reproduce it. Wire formats and README §Guarantees stay fixed.
-- `fastv7` is not a proper competitor. Its entropy is secure (`crypto.getRandomValues`); its
-  defects are 62 random bits and timestamps ahead of the clock.
 
 ## Needs ruling
 
@@ -55,6 +53,9 @@ measure lane durations, isolate timings from competing work, and retain only def
    nothing. Until ruled, write no test that imposes it (asked 2026-09-16, no answer).
 
 ## Derived doctrine (agent decisions)
+
+- Keep `fastv7` timed but exclude it from comparable ranking because measured bursts encode
+  future timestamps. Its secure entropy and random-bit count do not disqualify it.
 
 - Same output means the same bytes or text, secure entropy, and a truthful clock. A floor or rival
   row that fails one of these stays timed but cannot close a gap.
@@ -113,6 +114,14 @@ other successful calls. `bench/PERFORMANCE.md` owns repeated results and their l
 
 ## Phase 2: instrument every call family
 
+- [x] Report sample means, sample standard deviations and standard errors beside paired medians;
+      reject a population-variance mutation and run an identical-revision control. Label existing
+      competitor intervals as within-process screens and document browser process reuse.
+- [ ] Complete throughput and latency statistics: use fresh processes as independent comparison units,
+      preserve raw samples and outliers, report sample counts and uncertainty, and measure timer
+      overhead before individual-call latency. Never label batch-average percentiles as call p99.
+      Prove the report cannot turn correlated batches into independent-run confidence.
+
 Why: conversions, parses, guards, and extraction have no native or competitor rows, so their parity
 is unknown; Phase 5 needs them. Masked calls have no native or competitor equivalent: the frozen
 Feistel rounds (about half their time) set their floor.
@@ -132,7 +141,7 @@ Feistel rounds (about half their time) set their floor.
       `short-uuid`); rank only those producing the same 128-bit lossless form.
 - [ ] Make the generated report print package / floor and package / best rival per call and
       runtime with a parity verdict. Done when gap numbers come from the report, not hand copies.
-- [ ] Replace `fastv7`'s rejection reason with its clock drift (47–88 ms ahead after 2M calls):
+- [x] Replace `fastv7`'s rejection reason with its clock drift (47–88 ms ahead after 2M calls):
       `@kripod/uuidv7` has the same 62 random bits and is not rejected, so bits cannot disqualify.
       Add the burst drift probe as a bench row, whatever the clock ruling decides.
 

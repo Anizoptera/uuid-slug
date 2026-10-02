@@ -5,9 +5,10 @@
  *
  * The report is generated, never edited: every figure comes from the records that
  * `generation-matrix.ts` emits, so re-running that driver replaces the file and a stale report
- * shows its own date. Each verdict compares the exact 95% intervals of two median costs: "leads"
+ * shows its own date. Each verdict compares within-process 95% intervals of two median costs: "leads"
  * and "trails" mean the intervals do not overlap, "unresolved" means they do. That keeps the
- * verdict mechanical; nobody reads a ratio and decides by eye.
+ * verdict mechanical. The intervals assume independent batches; shared process effects can
+ * violate that assumption, so these verdicts require fresh-process replay before selecting code.
  */
 
 export interface ReportMeasurement {
@@ -84,12 +85,15 @@ export function renderGenerationReport(
     `${String(options.warmupMs)} ms warm-up, one process per runtime, cases run one at a time.`,
     "",
     "How to read it: the ratio is the package's median cost per call divided by the fastest other",
-    "row, so below 1 means the package is faster. A verdict compares the exact 95% intervals of the",
+    "row, so below 1 means the package is faster. A verdict compares within-process 95% intervals of the",
     'two medians: "leads" and "trails" mean the intervals do not overlap; "unresolved" means they',
     "do, and one run cannot separate the rows. Platform rows are the runtime's own primitive; the",
     "package validates its output and returns typed errors, so that column is a floor, not a rival.",
     "Figures are one machine's and move between engine versions: read the direction of each",
     "difference, not its digits.",
+    "The intervals assume independent batches. Shared JIT, GC and thermal effects can violate that",
+    "assumption; these are screening verdicts, not confidence across independent runs or call p99.",
+    "Repeat the comparison in fresh processes before retaining a change.",
     "",
   ];
   for (const runtime of runtimes) {

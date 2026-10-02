@@ -1,6 +1,32 @@
 // SPDX-License-Identifier: Apache-2.0
 
-/** Return the exact distribution-free 95% interval for a population median. */
+/** Describe observations; standard error assumes independent samples, not calls within a batch. */
+export function describeSamples(values: readonly number[]) {
+  if (values.length === 0) return undefined;
+  let mean = 0;
+  let squaredDeviations = 0;
+  let sampleCount = 0;
+  // Center each update to avoid subtracting two large squared totals for nearly equal timings.
+  for (const value of values) {
+    sampleCount += 1;
+    const difference = value - mean;
+    mean += difference / sampleCount;
+    squaredDeviations += difference * (value - mean);
+  }
+  const sampleStandardDeviation =
+    sampleCount > 1 ? Math.sqrt(squaredDeviations / (sampleCount - 1)) : undefined;
+  return {
+    sampleCount,
+    mean,
+    sampleStandardDeviation,
+    meanStandardError:
+      sampleStandardDeviation === undefined
+        ? undefined
+        : sampleStandardDeviation / Math.sqrt(sampleCount),
+  };
+}
+
+/** Return a distribution-free 95% median interval, assuming independent, identically distributed observations. */
 export function medianConfidence95(
   values: readonly number[],
 ): readonly [number, number] | undefined {

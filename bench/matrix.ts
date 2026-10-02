@@ -155,6 +155,9 @@ function validRecord(value: unknown, entry: "run" | "entropy"): value is Record<
       (record.iterations as number) > 0
     );
   return (
+    Number.isSafeInteger(record.burstClockChangeMs) &&
+    Number.isSafeInteger(record.burstEndUnixMs) &&
+    Number.isSafeInteger(record.latestEncodedUnixMs) &&
     Number.isSafeInteger(record.samples) &&
     (record.samples as number) > 0 &&
     [
@@ -235,11 +238,15 @@ export async function runMatrix(
         "distinct",
         "in-tick",
         "peak/ms",
+        "encoded − end/ms",
+        "Δclock/ms",
         "counter",
         "P(1) range",
       ]),
     );
-    console.log(markdownRow(["---", "---", "---:", "---:", "---:", "---:", "---:"]));
+    console.log(
+      markdownRow(["---", "---", "---:", "---:", "---:", "---:", "---:", "---:", "---:"]),
+    );
     for (const r of records) {
       const sources = r.sources as string[];
       const sameTickPairs = r.sameTickPairs as number;
@@ -254,6 +261,8 @@ export async function runMatrix(
             ? "n/a"
             : `${(((r.orderedWithinTick as number) / sameTickPairs) * 100).toFixed(2)}%`,
           String(r.peakDrawsPerTick),
+          String((r.latestEncodedUnixMs as number) - (r.burstEndUnixMs as number)),
+          String(r.burstClockChangeMs),
           `${String(r.counterBits)}b @ ${((r.counterHolds as number) * 100).toFixed(2)}%`,
           `${String(r.minOnesRatio)}-${String(r.maxOnesRatio)}`,
         ]),

@@ -46,11 +46,16 @@ interface Report {
   orderedWithinTick: number;
   sameTickPairs: number;
   /**
-   * Most values drawn inside a single millisecond. It is what decides whether a counter can wrap:
-   * a 12-bit counter holds 4096 per tick, so this figure crossing that is the measured explanation
-   * for the fraction of pairs out of order, rather than an inferred one.
+   * Most values sharing an encoded millisecond. A generator may advance that timestamp on
+   * counter overflow, so this count does not measure draws per wall-clock millisecond.
    */
   peakDrawsPerTick: number;
+  /** Endpoint clock change; neither sign proves that the clock stayed monotonic within the burst. */
+  burstClockChangeMs: number;
+  /** Wall clock immediately after the last draw, before analysis changes the elapsed time. */
+  burstEndUnixMs: number;
+  /** Largest timestamp among the returned values, independently parsed after drawing. */
+  latestEncodedUnixMs: number;
   counterBits: number;
   counterHolds: number;
   minOnesRatio: number;
@@ -62,7 +67,9 @@ function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>
 
   sources.reset();
   const values: string[] = [];
+  const burstStartUnixMs = Date.now();
   for (let i = 0; i < samples; i += 1) values.push(candidate.uuidV7());
+  const burstEndUnixMs = Date.now();
   const used = sources.used();
   // Normalize after sampling so reporting work cannot change the observed draw rate.
   for (let i = 0; i < values.length; i++) values[i] = (values[i] as string).replaceAll("-", "");
@@ -72,11 +79,13 @@ function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>
 
   let conformingValues = 0;
   let peakDrawsPerTick = 0;
+  let latestEncodedUnixMs = 0;
   const drawsPerTick = new Map<string, number>();
   const ones = Array.from<number>({ length: 74 }).fill(0);
   for (let i = 0; i < samples; i += 1) {
     const hex = values[i] ?? "";
     const tick = timestamp(hex);
+    latestEncodedUnixMs = Math.max(latestEncodedUnixMs, Number.parseInt(tick, 16));
     const count = (drawsPerTick.get(tick) ?? 0) + 1;
     drawsPerTick.set(tick, count);
     peakDrawsPerTick = Math.max(peakDrawsPerTick, count);
@@ -86,11 +95,11 @@ function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>
       ones[b] = (ones[b] ?? 0) + Number((field >> BigInt(73 - b)) & 1n);
   }
 
-  // Same-millisecond pairs only: across a millisecond boundary every implementation reseeds, so a
-  // pair spanning one says nothing about whether a counter is running inside a tick.
+  // Compare pairs sharing an encoded timestamp: crossing that boundary can reset a counter,
+  // so its leading-field transition does not describe behavior inside one encoded tick.
   //
   // ORDERING IS COUNTED HERE, over the same pairs, for the same reason. Counting every consecutive
-  // pair instead — which this did — mixes in the cross-millisecond ones, and those order by their
+  // pair instead mixes in the cross-millisecond ones, and those order by their
   // timestamp prefix whatever the generator does below it, so the figure rose with the draw rate
   // and reported the clock rather than the generator. Strict `>` rather than `>=`: two equal
   // canonical forms are one value seen twice, which a database index does not order and
@@ -105,13 +114,11 @@ function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>
   }
 
   // The width whose leading slice advances by exactly one most often, with the share of pairs that
-  // obey it reported beside it instead of thresholded. Two properties of this scan are worth
-  // stating because both were got wrong first. The +1 property does NOT grow with width: it peaks
+  // obey it reported beside it instead of thresholded. The +1 property does NOT grow with width: it peaks
   // AT the counter's true width and fails on either side, since a narrower slice holds only the
   // counter's high bits (which do not step by one) and a wider one drags in random bits. And
-  // unanimity is the wrong bar: a 12-bit counter holds 4096 values per millisecond, so a fast
-  // generator exhausts and wraps inside one tick, and a single wrap among 200,000 pairs erased the
-  // whole measurement. A share near 1 means a counter of that width; the low shares an
+  // unanimity is the wrong bar: an overflow that retains the timestamp breaks one transition
+  // without disproving the counter mechanism. A share near 1 supports that counter width; the low shares an
   // unstructured field yields are printed too, so no rule in this file decides which is which.
   let counterBits = 0;
   let counterHolds = 0;
@@ -141,6 +148,9 @@ function audit(candidate: BenchCandidate, sources: ReturnType<typeof instrument>
     orderedWithinTick,
     sameTickPairs: pairs.length,
     peakDrawsPerTick,
+    burstClockChangeMs: burstEndUnixMs - burstStartUnixMs,
+    burstEndUnixMs,
+    latestEncodedUnixMs,
     counterBits,
     counterHolds: Number(counterHolds.toFixed(4)),
     minOnesRatio: Number(Math.min(...ratios).toFixed(3)),

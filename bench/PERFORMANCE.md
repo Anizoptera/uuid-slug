@@ -2109,13 +2109,13 @@ trailed `crypto-randomuuid` by about 10% and the native generator by 5%; on Deno
 by about 30% and paid 34% over the native generator for validation and the error-value boundary; on Chromium
 it trailed the pooled portable generator in `@lukeed/uuid` by 13–15%. A single 2026-09-12 run had
 put the Chromium gap at about 4% and found no Bun caller-buffer loss; the paired runs supersede it.
-`fastv7` remains timed but cannot be the reference: independent processes and restarted state
-reuse sequence zero, leaving 62 random bits per value, and its 12-bit counter advances the encoded
+`fastv7` remains timed but cannot be the reference because its 12-bit counter advances the encoded
 millisecond on overflow. After a burst of 2 million calls it encoded timestamps up to 47 ms ahead of
 `Date.now()` on Node 26.8.2 and 88 ms ahead on Bun 1.4.2, with 95–97% of values ahead; `uuid`,
 `uuidv7`, `uniku`, `uuidv7-js`, `@kripod/uuidv7`, and this package stayed at or behind the clock. This package also starts its 42-bit sequence
-from a random seed. Its clock, sequence, buffer, and failure strategies are not
-disqualifying by themselves. Its faster mechanism is worth adopting only if that margin survives.
+from a random seed. `fastv7` and `@kripod/uuidv7` both use a zero-start counter with 62 random bits;
+that shared choice does not disqualify one of them. Faster mechanisms remain candidates when
+they preserve the requested identifier and avoid future-dated timestamps.
 Validated text timestamp extraction trailed `uuidv7-js` by 3–8% on Node, Bun, and Deno and by
 14–15% on Chromium in both runs. `uniku` timestamp results are not ranked because its call accepts
 non-v7 UUID text.
@@ -2128,9 +2128,23 @@ package's failure contract.
 Rejected rows remain timed and are reconsidered after every package update. The insecure
 `@lukeed/uuid` entry uses `Math.random`, so it cannot establish secure UUIDv4 performance. The
 `uniku` timestamp call does not verify UUIDv7, so it cannot establish validated UUIDv7 extraction
-performance. `fastv7` does not preserve this package's same-timestamp cross-process collision margin, and it
-encodes timestamps ahead of the clock during bursts.
+performance. `fastv7` encodes timestamps ahead of the clock during measured bursts.
 Native platform rows are always qualified floors; error handling around them is package overhead,
 not a reason to hide them.
+
+The 2026-10-02 entropy report brackets 50,000 draws per candidate with two wall-clock reads,
+then parses the largest encoded timestamp outside the burst. `fastv7` exceeded the ending clock
+by 8 ms on Bun 1.4.2, 5 ms on Node 24.21.0 and 6 ms on Node 26.10.0; the package matched the
+ending clock in these samples. Separate replays observed 8 ms on Bun and 4 ms on Node Current.
+These signed differences do not prove that the clock stayed monotonic between endpoints or
+measure the fraction of values ahead at issuance. They add no clock guarantee. The existing
+encoded-timestamp counts alone could not measure this difference.
+
+Competitor report intervals describe batches within one process, conditional on independent
+observations. JIT, GC, shared caches and thermal drift can violate that assumption. Treat their
+verdicts as screening evidence; paired fresh-process replays govern retained changes. Standard
+error in those replays describes uncertainty in a mean, not call-latency spread. No individual-call
+p99 is established by the batch averages, and browser page reloads do not create fresh browser
+processes. See `bench/README.md` for the measurement boundaries.
 
 The gates do not prove all performance properties. Relative timing cannot detect a slowdown shared by both sides. Constructor counters cannot see every engine allocation. Latest-runtime CI complements pinned runs, but this study did not execute hosted CI or measure every OS/architecture. Keep these limits when interpreting a pass.

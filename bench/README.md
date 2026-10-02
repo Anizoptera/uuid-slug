@@ -30,6 +30,10 @@ Rules:
 - `UUID_SLUG_BENCH_ITERATIONS` and `UUID_SLUG_ENTROPY_SAMPLES` accept positive safe integers.
 - Conversion rows use fixed inputs and include returned-error handling. Rotation rows distinguish
   current-key success from previous-key success; key derivation is outside the measured calls.
+- The entropy audit brackets its existing draw burst with wall-clock reads. Compare the largest
+  encoded timestamp with the ending clock. The difference and clock change are observations,
+  not proof that the wall clock stayed monotonic throughout the burst. Encoded-timestamp counts
+  alone cannot establish wall-clock drift.
 - Node runs bundles of the benchmark source; Bun runs the TypeScript directly. Inlining may affect
   the comparison. These measurements do not establish the cost of an installed package import.
 - Do not publish benchmark reports as package claims.
@@ -67,6 +71,29 @@ command runs full settings only.
 Set `UUID_SLUG_BENCH_NODE_CURRENT_EXECUTABLE` to the Node Current executable when refreshing
 tracked results. The reports include that executable beside the project's Node LTS and record
 each process's actual version; both Node releases reuse the same compiled benchmark.
+
+## Measurement limits
+
+Keep [throughput, sampled latency and cold-start measurements](https://github.com/openjdk/jmh/blob/master/jmh-samples/src/main/java/org/openjdk/jmh/samples/JMHSample_02_BenchmarkModes.java)
+separate, as JMH does; each answers a different question.
+
+Measure throughput and individual-call latency separately. Timed batches amortize clock and
+loop overhead; their per-call averages cannot establish individual-call p99. Keep raw samples,
+warm-up settings, runtime versions and execution order. Repeat comparisons in fresh processes
+with alternating order; samples from one process can share JIT, GC and thermal effects.
+
+Report uncertainty for the statistic actually used. A standard error describes uncertainty in a
+mean under its independence assumptions; it is not latency spread or a percentile. Median intervals
+require independent observations too. Do not count calls inside one timed batch as independent
+samples or claim a reliable tail percentile from a handful of batches. Retain pauses and outliers;
+investigate them with profiles rather than deleting them to improve the result. Measure timer and
+result-consumption overhead before using individual-call timing for these short operations.
+
+`bench:compare` reports the mean, sample standard deviation and mean standard error of its
+paired observations beside the median interval. Each host observation comes from a fresh process;
+browser observations reload the page in one browser process. Browser intervals and all standard
+errors remain conditional on independence; host scheduling and thermal drift can violate it too.
+Standard error does not replace the raw samples, repeated replays or practical effect size.
 
 ## Regression protection
 

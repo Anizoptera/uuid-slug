@@ -246,6 +246,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
   cannot be selected directly; never infer its cost or coverage from another path.
 - Read `bench/README.md` before benchmark work. Scope exploratory comparisons with its maintained
   filters; run all applicable runtimes only after a candidate survives the focused mechanism test.
+- Before using a benchmark statistic to select code, apply `bench/README.md` §Measurement limits:
+  identify the independent sample unit and distinguish batch throughput from individual-call latency.
 - Rank performance evidence by current user value: latest stable Node Current and Bun first, latest
   Node LTS and Chromium second, latest Deno third. Older supported Node versions gate correctness
   and compatibility, not performance trade-offs. Node Current JITless is the final rung: retain a

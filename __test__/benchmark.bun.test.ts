@@ -9,7 +9,7 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { renderGenerationReport, verdict } from "../bench/generation-report";
 import type { ReportRecord } from "../bench/generation-report";
 import { parseReport } from "../bench/matrix";
-import { medianConfidence95 } from "../bench/statistics";
+import { describeSamples, medianConfidence95 } from "../bench/statistics";
 
 const speed = {
   runtime: "fixture 1",
@@ -27,6 +27,9 @@ const entropy = {
   sameTickPairs: 1,
   orderedWithinTick: 0,
   peakDrawsPerTick: 2,
+  burstClockChangeMs: 0,
+  burstEndUnixMs: 0,
+  latestEncodedUnixMs: 0,
   counterBits: 0,
   counterHolds: 0,
   minOnesRatio: 0,
@@ -71,6 +74,20 @@ test("median inference requires enough rounds and uses exact order-statistic bou
   expect(values).toEqual([16, 3, 8, 11, 1, 15, 6, 13, 4, 10, 2, 14, 7, 12, 5, 9]);
 });
 
+test("sample spread and mean uncertainty preserve translation and scale", () => {
+  expect(describeSamples([])).toBeUndefined();
+  expect(describeSamples([9])?.meanStandardError).toBeUndefined();
+  const original = describeSamples([1, 2, 3]);
+  const shifted = describeSamples([1e12 + 1, 1e12 + 2, 1e12 + 3]);
+  const scaled = describeSamples([2, 4, 6]);
+  expect(original?.mean).toBe(2);
+  expect(original?.sampleStandardDeviation).toBe(1);
+  expect(original?.meanStandardError).toBeCloseTo(1 / Math.sqrt(3), 12);
+  expect(shifted?.sampleStandardDeviation).toBe(original?.sampleStandardDeviation);
+  expect(scaled?.sampleStandardDeviation).toBe(2);
+  expect(scaled?.meanStandardError).toBeCloseTo(2 / Math.sqrt(3), 12);
+});
+
 test.each([
   ["malformed JSON", "run", "not JSON", "line 1"],
   ["missing fields", "run", JSON.stringify({ runtime: "fixture 1" }), "invalid measurement fields"],
@@ -110,6 +127,12 @@ test.each([
     JSON.stringify({ ...entropy, sources: [3] }),
     "invalid measurement fields",
   ],
+  [
+    "invalid clock observations",
+    "entropy",
+    JSON.stringify({ ...entropy, burstEndUnixMs: null }),
+    "invalid measurement fields",
+  ],
 ] as const)("report parsing rejects %s", (_case, entry, output, diagnostic) => {
   const parsed = parseReport("subject", entry, output);
   expect(parsed.errors.join("\n")).toContain(diagnostic);
@@ -144,7 +167,8 @@ const speed = target.endsWith("run.ts");
 const record = speed
   ? { runtime: "fixture 1", name: "measured", opsPerSecond: 100, elapsedMs: 10, iterations: 1 }
   : { runtime: "fixture 1", candidate: "measured", samples: 2, sources: [], distinctFields: 2,
-      sameTickPairs: 1, orderedWithinTick: 0, peakDrawsPerTick: 2, counterBits: 0,
+      sameTickPairs: 1, orderedWithinTick: 0, peakDrawsPerTick: 2,
+      burstClockChangeMs: 0, burstEndUnixMs: 0, latestEncodedUnixMs: 0, counterBits: 0,
       counterHolds: 0, minOnesRatio: 0, maxOnesRatio: 1 };
 if (mode === "hang") { setInterval(() => {}, 1000); await new Promise(() => {}); }
 if (mode === "entries" && !speed) record.runtime = "different 2";

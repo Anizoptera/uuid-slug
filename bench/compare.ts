@@ -8,7 +8,7 @@ import { chromium, firefox, webkit } from "playwright";
 import type { Browser, Page } from "playwright";
 
 import { command } from "../scripts/command";
-import { medianConfidence95 } from "./statistics";
+import { describeSamples, medianConfidence95 } from "./statistics";
 
 type Revision = "baseline" | "candidate";
 type BrowserRuntime = "chromium" | "firefox" | "webkit";
@@ -347,6 +347,9 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
           candidate,
           medianRatio: median(candidate) / median(baseline),
           pairedMedianRatio: median(pairedRatios),
+          baselineStatistics: describeSamples(baseline),
+          candidateStatistics: describeSamples(candidate),
+          pairedRatioStatistics: describeSamples(pairedRatios),
           medianRatio95,
           statisticallyDistinct: medianRatio95
             ? medianRatio95[0] > 1 || medianRatio95[1] < 1
