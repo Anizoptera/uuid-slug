@@ -190,9 +190,9 @@ a physical lower bound for the complete call.
 - [x] Compare fixed tail stores in two packed seven-runtime replays. Reject the rewrite:
       only a small fractional-clock caller-buffer gain reproduces. Keep the shared entropy
       placement witness; the intermediate entropy-copy mechanism remains open.
-- [ ] Compare independent module draws and direct payload writing without weakening created
-      generators. Extend the bit-placement oracle to the module mode and prove it catches a lost
-      bit before timing; measure extra entropy consumption alongside throughput before retention.
+- [x] Compare independent module draws and direct payload writing without weakening created
+      generators. Reject the extra secure-source refills despite modest Bun text and slug gains;
+      keep the module-mode bit oracle and its maintained lost-bit falsifier.
 - [ ] Bun UUIDv4 text: ablate the default parameter plus `isUuidTextCase` check and the
       trusted-identity comparison separately; try an argument-count fast path. Rejected: removing
       the `try` (saves 1 ns, breaks native-failure fallback) and import-time validation (draws

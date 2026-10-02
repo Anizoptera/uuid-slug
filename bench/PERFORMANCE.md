@@ -1108,6 +1108,14 @@ Remaining gaps and their causes:
   one 5 ms batch after 16 ms warmup; fresh-process medians, not calls, are the comparison units.
   The shared Node/Bun entropy witness rejects a duplicated tail byte and checks both complementary
   byte patterns across text, owned bytes, explicit timestamps and offset caller storage.
+  The maintained independent-draw screen on 2026-10-02 measured Node 26.10.0 and Bun 1.4.2
+  with three 5 ms batches after 16 ms warmup and reversed second-pass order. Node results were
+  mixed; Bun text fell from 93 to 86–89 ns and slugs from 84–86 to 79 ns. Over 4,096
+  instrumented caller-buffer draws, both hosts required five secure-source refills instead of two.
+  Reject this shape: its modest Bun gain increases entropy-source work on both primary hosts.
+  These counts cover the instrumented burst, not total CPU or allocation. The candidate requests
+  ten entropy bytes per call instead of four on sequence continuation. A maintained lost-bit
+  mutation fails the independent module-mode oracle in both runtime lanes before timing.
 - Two alternating allocation screens on 2026-10-02 compared owned UUIDv7 generation using
   `new Uint8Array(16)`, an explicit `ArrayBuffer`, and a copy of the private text buffer.
   Node 26.10.0 owned calls cost about 78 ns, 150–152 ns, and 87 ns respectively; Bun 1.4.2

@@ -62,6 +62,9 @@ Prefix a `UUID_SLUG_PROFILE_FILTER` term with `=` to select that exact case; oth
 substrings. Use exact terms when a successful-call comparison must exclude similarly named failures.
 Use `v7-draw independent-direct-lost-bit` to check the payload oracle: both runtime tests must
 reject it before timing, with their failure output retained in the report directory.
+Set `UUID_SLUG_RESOURCE_ENTROPY_BURST` to a positive call count when running `bench/resources.ts`
+against a candidate module to compare secure-source refills over successful caller-buffer draws.
+Keep these instrumented counts separate from throughput; the ordinary resource lane omits the burst.
 
 Run `bun run bench:competitors --smoke` to validate the competitor matrix, or
 `bun run bench:competitors` for repeated measurements. The matrix compares equal v4/v7 text,

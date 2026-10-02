@@ -255,6 +255,27 @@ try {
     views: 0,
     errors: 0,
   });
+  const entropyBurst = Number(process.env.UUID_SLUG_RESOURCE_ENTROPY_BURST ?? 0);
+  if (
+    !Number.isSafeInteger(entropyBurst) ||
+    (process.env.UUID_SLUG_RESOURCE_ENTROPY_BURST !== undefined && entropyBurst <= 0)
+  )
+    throw new Error("UUID_SLUG_RESOURCE_ENTROPY_BURST must be a positive safe call count when set");
+  if (entropyBurst) {
+    // Real pooled refills expose entropy cost that a warmed single draw can hide; this is not timed.
+    check(
+      "caller-owned v7 entropy burst",
+      () => {
+        let sink = 0;
+        for (let index = 0; index < entropyBurst; index++) {
+          assert.equal(api.generateUuidV7Bytes(into, 4), into);
+          sink ^= into[4 + (index & 15)] as number;
+        }
+        return sink;
+      },
+      { buffers: 0, views: 0, errors: 0 },
+    );
+  }
   check(
     "selected-generator owned v7 generation",
     () => api.generateUuidV7Bytes({ generator: selectedGenerator }),
