@@ -1,10 +1,14 @@
 # Native parity
 
+Complete the remaining performance work without changing identifier formats, secure entropy,
+validation, ownership, or published generation guarantees. Preserve the unresolved clock guarantee;
+measure clock drift without imposing a new promise. Keep remote writes unauthorized.
+
 ## Identifier integrity repairs
 
 Restore lossless conversion, immutable UUID ownership, safe normalization, transactional writes,
 typed failures, and version-aware consumer types without changing issued identifiers. Preserve the
-native-parity tasks below; they are independent of these approved repairs. Limit active implementation
+native-parity tasks below; they continue after these repairs. Limit active implementation
 to one repair group, with verification proceeding on its completed dependencies.
 Keep complete routine lanes below five minutes without dropping runtime or artifact coverage;
 measure lane durations, isolate timings from competing work, and retain only defect-discriminating checks.
@@ -63,6 +67,11 @@ measure lane durations, isolate timings from competing work, and retain only def
   irremovable), then configured and batch calls, which rank below single default calls.
 
 ## Phase 1: per-engine text and slug writers
+
+- [ ] Retain the fixed writers only after repeated mixed and isolated packed comparisons exclude the observed masked-base32 read regression; compare a single flat 27-character write against the two-string candidate.
+- [ ] Locate the Chromium mixed-workload sentinel slowdown with formatter-only and slug-only comparisons; retain the formatter without a separate helper only if repeated measurements remove that slowdown and preserve formatting gains.
+- [ ] Exercise every check-tail value with an independent bit-packing oracle in both runners; require one string construction for plain and masked output through the resource counters.
+- [ ] Repeat the retained writer comparison on installed Node and Bun releases, then profile the selected and portable paths; keep version-specific results and uncertainty in bench/PERFORMANCE.md.
 
 Why: V8 formats fastest with one fixed-argument `String.fromCharCode` call over byte-to-code tables.
 It returns one flat string, as the Latin-1 read does. Screens, ns per call, current → candidate,

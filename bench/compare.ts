@@ -4,19 +4,22 @@ import { mkdir, mkdtemp, readFile, readdir, rm, symlink } from "node:fs/promises
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { chromium } from "playwright";
-import type { Page } from "playwright";
+import { chromium, firefox, webkit } from "playwright";
+import type { Browser, Page } from "playwright";
 
 import { command } from "../scripts/command";
 import { medianConfidence95 } from "./statistics";
 
 type Revision = "baseline" | "candidate";
-type Runtime = "node" | "bun" | "chromium" | "deno" | "node-jitless";
-type ArtifactRuntime = Exclude<Runtime, "node-jitless">;
+type BrowserRuntime = "chromium" | "firefox" | "webkit";
+type Runtime = "node" | "bun" | BrowserRuntime | "deno" | "node-jitless";
+type ArtifactRuntime = "node" | "bun" | "chromium" | "deno";
 const RUNTIMES = [
   "node",
   "bun",
   "chromium",
+  "firefox",
+  "webkit",
   "deno",
   "node-jitless",
 ] as const satisfies readonly Runtime[];
@@ -60,7 +63,7 @@ if (
   selectedRuntimes.some((runtime) => !RUNTIMES.includes(runtime))
 )
   throw new Error(
-    "UUID_SLUG_COMPARE_RUNTIMES must list distinct node:bun:chromium:deno:node-jitless values",
+    `UUID_SLUG_COMPARE_RUNTIMES must list distinct values from ${RUNTIMES.join(":")}`,
   );
 
 function shuffledRuntimes(seed: number): Runtime[] {
@@ -78,8 +81,11 @@ function shuffledRuntimes(seed: number): Runtime[] {
   return values;
 }
 
+const browserEngines = { chromium, firefox, webkit };
+const isBrowserRuntime = (runtime: Runtime): runtime is BrowserRuntime =>
+  runtime === "chromium" || runtime === "firefox" || runtime === "webkit";
 const artifactRuntime = (runtime: Runtime): ArtifactRuntime =>
-  runtime === "node-jitless" ? "node" : runtime;
+  isBrowserRuntime(runtime) ? "chromium" : runtime === "node-jitless" ? "node" : runtime;
 
 async function packArtifacts(root: string, outdir: string): Promise<ArtifactSet> {
   await command("bun", [join(project, "node_modules/.bin/tsdown")], root);
@@ -220,7 +226,7 @@ function parseHost(output: string): ProfileRow[] {
 }
 
 async function runHost(
-  runtime: Exclude<Runtime, "chromium">,
+  runtime: Exclude<Runtime, BrowserRuntime>,
   driver: string,
   api: string,
   privateAlphabetApi: string,
@@ -364,7 +370,7 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
 
 async function main(): Promise<void> {
   for (const runtime of selectedRuntimes) {
-    if (runtime === "chromium") continue;
+    if (isBrowserRuntime(runtime)) continue;
     const executable = runtime === "bun" || runtime === "deno" ? runtime : nodeExecutable;
     const output = await command(executable, ["--version"], project);
     // Node prints `v26.8.2` and Deno `deno 2.9.6 (stable, ...)`; keep only the release number.
@@ -388,45 +394,60 @@ async function main(): Promise<void> {
       packArtifacts(candidateRoot, candidateOut),
       buildHostDriver(driverRoot, scratch),
     ]);
-    const [baselineBrowser, candidateBrowser] = await Promise.all([
-      buildBrowserDriver(
-        driverRoot,
-        baseline.api.chromium,
-        baseline.privateAlphabetApi.chromium,
-        baseline.privateV4Api.chromium,
-        scratch,
-        "baseline",
-      ),
-      buildBrowserDriver(
-        driverRoot,
-        candidate.api.chromium,
-        candidate.privateAlphabetApi.chromium,
-        candidate.privateV4Api.chromium,
-        scratch,
-        "candidate",
-      ),
-    ]);
+    // Browser engines share one compiled corpus per revision. Host-only comparisons need neither
+    // that compilation nor browser startup; this matters when comparing several installed hosts.
+    const needsBrowser = selectedRuntimes.some(isBrowserRuntime);
+    const [baselineBrowser, candidateBrowser] = await Promise.all(
+      needsBrowser
+        ? [
+            buildBrowserDriver(
+              driverRoot,
+              baseline.api.chromium,
+              baseline.privateAlphabetApi.chromium,
+              baseline.privateV4Api.chromium,
+              scratch,
+              "baseline",
+            ),
+            buildBrowserDriver(
+              driverRoot,
+              candidate.api.chromium,
+              candidate.privateAlphabetApi.chromium,
+              candidate.privateV4Api.chromium,
+              scratch,
+              "candidate",
+            ),
+          ]
+        : [],
+    );
     const scripts = {
-      baseline: await readFile(baselineBrowser, "utf8"),
-      candidate: await readFile(candidateBrowser, "utf8"),
+      baseline: baselineBrowser ? await readFile(baselineBrowser, "utf8") : "",
+      candidate: candidateBrowser ? await readFile(candidateBrowser, "utf8") : "",
     };
-    const server = Bun.serve({
-      port: 0,
-      fetch(request) {
-        const name = new URL(request.url).pathname;
-        if (name === "/baseline.mjs" || name === "/candidate.mjs")
-          return new Response(scripts[name === "/baseline.mjs" ? "baseline" : "candidate"], {
-            headers: { "content-type": "text/javascript" },
-          });
-        return new Response("<!doctype html>", { headers: { "content-type": "text/html" } });
-      },
-    });
-    const browser = await chromium.launch({ headless: true });
-    if (selectedRuntimes.includes("chromium")) runtimeVersions.set("chromium", browser.version());
-    for (const [runtime, version] of runtimeVersions)
-      console.error(`Comparison runtime ${runtime}: ${version}`);
+    const server = needsBrowser
+      ? Bun.serve({
+          port: 0,
+          fetch(request) {
+            const name = new URL(request.url).pathname;
+            if (name === "/baseline.mjs" || name === "/candidate.mjs")
+              return new Response(scripts[name === "/baseline.mjs" ? "baseline" : "candidate"], {
+                headers: { "content-type": "text/javascript" },
+              });
+            return new Response("<!doctype html>", { headers: { "content-type": "text/html" } });
+          },
+        })
+      : undefined;
+    const browsers = new Map<BrowserRuntime, Browser>();
+    const pages = new Map<BrowserRuntime, Page>();
     try {
-      const page = await browser.newPage();
+      for (const runtime of selectedRuntimes) {
+        if (!isBrowserRuntime(runtime)) continue;
+        const browser = await browserEngines[runtime].launch({ headless: true });
+        browsers.set(runtime, browser);
+        pages.set(runtime, await browser.newPage());
+        runtimeVersions.set(runtime, browser.version());
+      }
+      for (const [runtime, version] of runtimeVersions)
+        console.error(`Comparison runtime ${runtime}: ${version}`);
       const observations = new Map<string, number[]>();
       for (let round = 0; round < rounds; round += 1) {
         const runtimeOrder = shuffledRuntimes(0x9e3779b9 ^ round);
@@ -436,25 +457,29 @@ async function main(): Promise<void> {
           for (const revision of revisionOrder) {
             const artifacts = revision === "baseline" ? baseline : candidate;
             const target = artifactRuntime(runtime);
-            const rows =
-              runtime === "chromium"
-                ? await runBrowser(page, server.url.href, revision)
-                : await runHost(
-                    runtime,
-                    driver,
-                    artifacts.api[target],
-                    artifacts.privateAlphabetApi[target],
-                    artifacts.privateV4Api[target],
-                    artifacts.denoImportMap,
-                  );
+            let rows: ProfileRow[];
+            if (isBrowserRuntime(runtime)) {
+              const page = pages.get(runtime);
+              if (!page || !server) throw new Error(`${runtime} comparison did not prepare`);
+              rows = await runBrowser(page, server.url.href, revision);
+            } else {
+              rows = await runHost(
+                runtime,
+                driver,
+                artifacts.api[target],
+                artifacts.privateAlphabetApi[target],
+                artifacts.privateV4Api[target],
+                artifacts.denoImportMap,
+              );
+            }
             emit(runtime, revision, round, order, rows, observations);
           }
         }
       }
       emitSummary(observations);
     } finally {
-      await browser.close();
-      await server.stop(true);
+      await Promise.all([...browsers.values()].map((browser) => browser.close()));
+      await server?.stop(true);
     }
     console.error(`Compared ${baselineRef} with ${candidateRef ?? "the current worktree"}.`);
   } finally {

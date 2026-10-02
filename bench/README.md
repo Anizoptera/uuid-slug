@@ -71,7 +71,8 @@ The current-runtime CI lane also runs it with the newest Node and Bun.
   processes. Positive controls must reach each instrument before a zero count can pass. Guards must
   allocate no decoded arrays or errors; rotation must decode text once and avoid mismatch errors on
   success; timestamp validation must avoid formatting and reparsing; caller-owned paths must avoid temporary
-  arrays/views; repeated v4 draws must remain pooled. Native encoders must be used when available.
+  arrays/views; repeated v4 draws must remain pooled. Fixed-size writers must construct one string;
+  native encoding remains an alternative to measure, not a requirement based on availability.
 - These counts cover JavaScript-visible operations, not allocations inside an engine, `.slice()`
   species construction, JIT storage, or arbitrary object literals. They do not establish total bytes
   allocated or absence of leaks. Byte ownership and wire correctness remain separate functional tests.
@@ -173,7 +174,8 @@ rotates runtime order, and emits JSON Lines containing raw samples and per-opera
 retention, not gross allocation; sampled profiles are estimates; forced GC changes the workload;
 `maxBatchMs` and `maxUninterruptedMs` are observations, not universal latency bounds.
 Set `UUID_SLUG_COMPARE_RUNTIMES` to a distinct colon-separated subset of
-`node:bun:chromium:deno:node-jitless` for a narrow comparison. Use all runtimes before retaining a change.
+`node:bun:chromium:firefox:webkit:deno:node-jitless` for a narrow comparison. Use all runtimes before retaining a change.
+Browser engines share one built corpus per revision; host-only comparisons skip browser compilation and startup.
 Set `UUID_SLUG_COMPARE_NODE_EXECUTABLE` to compare with a specific Node release; without it the
 driver runs the `node` that the project directory resolves, which may not be Node Current. Every record
 and summary carries `runtimeVersion`; take the release named in a result from that field. Stderr also
