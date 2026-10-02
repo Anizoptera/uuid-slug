@@ -34,6 +34,12 @@ interface Environment {
   readonly kind: "environment";
   readonly runtime: string;
   readonly samples: number;
+  readonly unsupported?: readonly { readonly name: string; readonly reason: string }[];
+}
+
+interface BenchmarkRun {
+  readonly rows: Measurement[];
+  readonly unsupported: NonNullable<Environment["unsupported"]>;
 }
 
 const project = join(import.meta.dir, "..");
@@ -53,7 +59,7 @@ const environment = {
   UUID_SLUG_GENERATION_WARMUP_MS: warmup,
 };
 
-function parseMeasurements(output: string, runtime: string): Measurement[] {
+function parseMeasurements(output: string, runtime: string): BenchmarkRun {
   const values: unknown[] = output
     .trim()
     .split("\n")
@@ -89,7 +95,7 @@ function parseMeasurements(output: string, runtime: string): Measurement[] {
     )
   )
     throw new Error(`${runtime} emitted incomplete or malformed benchmark measurements`);
-  return rows;
+  return { rows, unsupported: inventory.unsupported ?? [] };
 }
 
 function print(runtime: string, rows: readonly Measurement[]): void {
@@ -162,14 +168,14 @@ async function build(
   return join(outdir, `${name}.mjs`);
 }
 
-async function runBrowser(origin: string): Promise<Measurement[]> {
+async function runBrowser(origin: string): Promise<BenchmarkRun> {
   const browser = await chromium.launch({ headless: true });
   const runtime = `chromium ${browser.version()}`;
   try {
     const page = await browser.newPage();
     await page.goto(origin);
     await page.addScriptTag({ type: "module", url: "/bench.mjs" });
-    const rows: unknown = await page.evaluate(
+    const result = (await page.evaluate(
       async (parameters) => {
         const run = (globalThis as { runGenerationBenchmark?: (query: string) => Promise<unknown> })
           .runGenerationBenchmark;
@@ -177,18 +183,17 @@ async function runBrowser(origin: string): Promise<Measurement[]> {
         return run(new URLSearchParams(parameters).toString());
       },
       { duration, filter, samples, warmup },
-    );
+    )) as BenchmarkRun;
     return parseMeasurements(
       [
         JSON.stringify({
-          caseNames: (rows as Measurement[]).map(({ name }) => name),
+          caseNames: result.rows.map(({ name }) => name),
           kind: "environment",
           runtime,
           samples: Number(samples),
+          unsupported: result.unsupported,
         }),
-        ...(rows as Measurement[]).map((row) =>
-          JSON.stringify({ ...row, kind: "measurement", runtime }),
-        ),
+        ...result.rows.map((row) => JSON.stringify({ ...row, kind: "measurement", runtime })),
       ].join("\n"),
       "chromium",
     );
@@ -197,11 +202,16 @@ async function runBrowser(origin: string): Promise<Measurement[]> {
   }
 }
 
-async function collectForks(run: () => Promise<Measurement[]>): Promise<Measurement[]> {
+async function collectForks(run: () => Promise<BenchmarkRun>): Promise<Measurement[]> {
   // Each fresh process supplies one observation; extra batches do not create independent runs.
   const runs: Measurement[][] = [];
   for (let index = 0; index < forks; index += 1) {
-    const rows = await run();
+    const { rows, unsupported } = await run();
+    if (index === 0)
+      for (const exclusion of unsupported)
+        console.log(
+          JSON.stringify({ ...exclusion, kind: "unsupported", runtime: rows[0]?.runtime }),
+        );
     if (runs[0] && runs[0][0]?.runtime !== rows[0]?.runtime)
       throw new Error("Runtime version changed between benchmark processes");
     runs.push(rows);

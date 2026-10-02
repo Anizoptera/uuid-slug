@@ -127,7 +127,7 @@ export function renderGenerationReport(
       table.push(
         `| ${code(group)} | ${code(subject.name)} | ${
           rival ? `${code(rival.name)} | ${ratio(subject, rival)} | ${outcome}` : "none | | "
-        } | ${platform ? ratio(subject, platform) : ""} |`,
+        } | ${platform ? `${code(platform.name)} | ${ratio(subject, platform)} | ${verdict(subject, platform)}` : "none | | "} |`,
       );
     }
     if (table.length === 0) continue;
@@ -138,8 +138,8 @@ export function renderGenerationReport(
         trailing.length ? `. Trails on ${trailing.map(code).join(", ")}` : ""
       }.`,
       "",
-      "| Group | Package route | Fastest package | Ratio | Verdict | Ratio to platform |",
-      "| --- | --- | --- | ---: | --- | ---: |",
+      "| Group | Package call | Fastest rival | Ratio to rival | Rival verdict | Native floor | Ratio to floor | Floor verdict |",
+      "| --- | --- | --- | ---: | --- | --- | ---: | --- |",
       ...table,
       "",
     );
@@ -152,10 +152,10 @@ export function renderGenerationReport(
   }
   if (exclusions.size > 0)
     lines.push(
-      "## Timed but not ranked",
+      "## Excluded comparisons",
       "",
-      "These rows stay in the raw records so a faster mechanism is never hidden, but they cannot",
-      "win a group: each gave up something the package guarantees, or cannot run on that runtime.",
+      "Rejected rows remain timed; unavailable rows identify a missing capability and are not timed.",
+      "Neither can win a group that requires the package's result and guarantees.",
       "",
       "| Row | Why | Runtimes |",
       "| --- | --- | --- |",

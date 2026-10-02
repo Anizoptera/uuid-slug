@@ -2,7 +2,7 @@
 
 import { plainSlugToUuidBytes } from "../src/index";
 
-export type GenerationValue = number | string | Uint8Array | Readonly<Uint8Array>;
+export type GenerationValue = number | string | boolean | Uint8Array | Readonly<Uint8Array>;
 
 export interface GenerationCase {
   readonly comparable: string;
@@ -12,6 +12,7 @@ export interface GenerationCase {
   readonly outputOffset?: number;
   readonly operation: () => GenerationValue;
   readonly expectedTimestamps?: readonly number[];
+  readonly expectedValues?: readonly GenerationValue[];
   readonly secure?: boolean;
   readonly qualification: "qualified" | "rejected";
   readonly rejectionReason?: string;
@@ -20,6 +21,22 @@ export interface GenerationCase {
 
 /** Fail before timing when a row no longer returns the representation it claims. */
 export function verifyGenerationCase(candidate: GenerationCase): void {
+  // Fixed conversions need exact payload witnesses; a version nibble cannot detect lost bytes.
+  if (candidate.expectedValues) {
+    if (candidate.expectedValues.length === 0)
+      throw new Error(`${candidate.name} has no fixed conversion witnesses`);
+    for (const expected of candidate.expectedValues) {
+      const value = candidate.operation();
+      const matches =
+        expected instanceof Uint8Array
+          ? value instanceof Uint8Array &&
+            value.length === expected.length &&
+            expected.every((byte, index) => byte === value[index])
+          : value === expected;
+      if (!matches) throw new Error(`${candidate.name} returned the wrong fixed conversion value`);
+    }
+    return;
+  }
   const value = candidate.operation();
   if (candidate.expectedTimestamps !== undefined) {
     if (typeof value !== "number" || !candidate.expectedTimestamps.includes(value))

@@ -2,11 +2,13 @@
 
 import { setImmediate as yieldToLoop } from "node:timers/promises";
 import crypto from "node:crypto";
+import { Buffer } from "node:buffer";
 import cryptoRandomUuid from "crypto-randomuuid";
 
 import { generationCases } from "./generation-cases";
 import type { GenerationCase } from "./generation-case";
 import { measureGenerationCases } from "./generation-measure";
+import { createConversionCases } from "./conversion-cases";
 
 const nativeUuidV7 = (crypto as { randomUUIDv7?: () => string }).randomUUIDv7?.bind(crypto);
 
@@ -16,8 +18,10 @@ const bunUuidV7 = (
   }
 ).Bun?.randomUUIDv7;
 
+const conversions = createConversionCases(Buffer);
 const hostCases: readonly GenerationCase[] = [
   ...generationCases,
+  ...conversions.cases,
   ...(bunUuidV7
     ? (
         [
@@ -87,6 +91,7 @@ console.log(
     kind: "environment",
     runtime,
     samples: options.samples,
+    unsupported: conversions.unsupported.filter(({ name }) => !filter || name.includes(filter)),
   }),
 );
 for (const row of await measureGenerationCases(selected, options))

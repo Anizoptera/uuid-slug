@@ -9,6 +9,8 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { renderGenerationReport, verdict } from "../bench/generation-report";
 import type { ReportRecord } from "../bench/generation-report";
 import { parseReport } from "../bench/matrix";
+import { verifyGenerationCase } from "../bench/generation-case";
+import type { GenerationCase } from "../bench/generation-case";
 import {
   aggregateForkSamples,
   describeSamples,
@@ -26,6 +28,32 @@ const speed = {
   elapsedMs: 10,
   iterations: 1,
 };
+
+test("conversion witnesses reject lost payload bits after a valid first result", () => {
+  const first = new Uint8Array(16);
+  first[6] = 0x70;
+  first[8] = 0x80;
+  const second = new Uint8Array(first);
+  second[15] = 1;
+  let calls = 0;
+  const candidate: GenerationCase = {
+    comparable: "conversion.text.bytes",
+    implementation: "fixture",
+    name: "payload loss",
+    expectedValues: [first, second],
+    operation: () => {
+      calls += 1;
+      return first;
+    },
+    qualification: "qualified",
+    version: 7,
+  };
+  expect(() => verifyGenerationCase(candidate)).toThrow("wrong fixed conversion value");
+  expect(calls).toBe(2);
+  expect(() => verifyGenerationCase({ ...candidate, expectedValues: [] })).toThrow(
+    "no fixed conversion witnesses",
+  );
+});
 const entropy = {
   runtime: "fixture 1",
   candidate: "measured",
@@ -526,7 +554,7 @@ test("generation report ranks the fastest package route against the fastest riva
   const report = renderGenerationReport(records, options);
   expect(report).toContain("## node");
   expect(report).toContain(
-    "| `v7.text` | `package.v7.text` | `uuid.v7.text` | 0.50 | leads | 1.11 |",
+    "| `v7.text` | `package.v7.text` | `uuid.v7.text` | 0.50 | leads | `platform.v7.text` | 1.11 | unresolved |",
   );
   expect(report).toContain("leads 1, trails 0, unresolved 0");
   expect(report).toContain("| `fastv7.v7.text` | sequence reuse | node |");

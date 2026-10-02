@@ -30,9 +30,11 @@ function consume(value: GenerationValue, index: number): void {
   sink ^=
     typeof value === "number"
       ? value & 0xff
-      : typeof value === "string"
-        ? value.charCodeAt(index % value.length)
-        : (value[index % value.length] ?? 0);
+      : typeof value === "boolean"
+        ? Number(value)
+        : typeof value === "string"
+          ? value.charCodeAt(index % value.length)
+          : (value[index % value.length] ?? 0);
 }
 
 function batch(candidate: GenerationCase, count: number): void {
@@ -93,9 +95,10 @@ export async function measureGenerationCases(
     }
   }
 
-  return candidates.map(({ operation, expectedTimestamps, ...candidate }) => {
+  return candidates.map(({ operation, expectedTimestamps, expectedValues, ...candidate }) => {
     void operation;
     void expectedTimestamps;
+    void expectedValues;
     const ns = observations.get(candidate.name);
     const count = operations.get(candidate.name);
     if (!ns || ns.length !== options.samples || !count)

@@ -129,23 +129,24 @@ other successful calls. `bench/PERFORMANCE.md` owns repeated results and their l
       overhead before individual-call latency. Never label batch-average percentiles as call p99.
       Prove the report cannot turn correlated batches into independent-run confidence.
 
-Why: conversions, parses, guards, and extraction have no native or competitor rows, so their parity
-is unknown; Phase 5 needs them. Masked calls have no native or competitor equivalent: the frozen
+Why: conversion, guard and extraction comparisons identify the remaining default-call gaps;
+Phase 5 needs repeated measurements before choosing a change. Masked calls have no native or competitor equivalent: the frozen
 Feistel rounds (about half their time) set their floor.
 
 - [x] Add Node Current to `bench:results` beside the pinned LTS. Done when tracked reports carry a
       Node Current column, so the first-ranked runtime needs no scratch probes.
-- [ ] Add native floor rows for conversions on every runtime where the primitive exists:
+- [x] Add native floor rows for conversions on every runtime where the primitive exists:
       Extend the existing competitor driver with exact fixed-output witnesses and explicit absent
       capabilities; keep generation checks intact and setup outside timing.
-      `plainSlugToUuidBytes` against `Uint8Array.fromBase64(slug, { alphabet: "base64url",
+      `plainSlugToUuidBytes` against `Uint8Array.fromBase64(slug + "==", { alphabet: "base64url",
     lastChunkHandling: "strict" })` plus a length check; `uuidBytesToPlainSlug` against
       `toBase64({ alphabet: "base64url", omitPadding: true })`; `uuidStringToBytes` against
       `Uint8Array.fromHex` and `Buffer.from(hex, "hex")` over dehyphenated text; `bytesToUuidString`
       against `toHex` or `Buffer` hex plus hyphens; `uuidStringToPlainSlug` and
       `plainSlugToUuidString` against those pairs; `isUuidString` against a canonical regex;
       `extractUuidV7UnixMs(text)` against `parseInt` over the 12 timestamp digits.
-- [ ] Add competitor rows for conversions (`uuid` `parse`, `stringify`, `validate`) and census UUID
+- [x] Add competitor rows for conversions (`uuid` `parse`, `stringify`, `validate`).
+- [ ] Census UUID
       slug packages (search the registry for base64url UUID encoders such as `slugid` and
       `short-uuid`); rank only those producing the same 128-bit lossless form.
 - [ ] Make the generated report print package / floor and package / best rival per call and

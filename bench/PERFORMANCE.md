@@ -2156,6 +2156,31 @@ This checks the evidence unit, not runtime superiority; shared machine condition
 Reports leave unlike observation units unresolved. A flattened-batch mutation must fail the
 sample-count regression, even when its medians look plausible.
 
+### Fixed conversion comparisons
+
+Compare successful conversion calls with `UUID_SLUG_GENERATION_FILTER=conversion` and
+`UUID_SLUG_GENERATION_FORKS=6`; exact fixed outputs must pass before timing begins.
+Two 2026-10-02 runs use six fresh processes, three 5 ms batches per process and 16 ms warm-up
+on Node 24.21.0, Node 26.10.0, Bun 1.4.2, Deno 2.9.7 and Chromium 153.0.8010.12.
+Each run has 113 measurement rows. Each row retains eighteen batches and six process observations.
+The corpus alternates two canonical UUIDv7 values with distinct payload tails; it does not measure
+all UUID versions, normalization, caller-owned buffers, cold startup or packed consumers.
+
+`bench/conversion-cases.ts` supplies six text/byte/base64url conversions, text validation and timestamp
+extraction, with `uuid` parse/stringify/validate comparisons. Native hex and base64url comparisons
+include required dehyphenation, padding and output formatting. Strict native base64url decoding
+requires `slug + "=="`; the unpadded spelling fails on the probed Bun implementation. Absent
+methods are reported without timing. Node 24.21.0 reports six unavailable native byte methods;
+the other ranked hosts expose them. Buffer results retain their native ownership difference.
+Regex and `parseInt` are lower bounds without the package's complete semantic validation.
+
+Repeated package/native median ratios expose Bun byte-to-slug costs of 1.14–1.17 and Deno
+slug-to-byte costs of 1.16–1.20. Timestamp extraction costs 2.13–3.41 times the `parseInt` lower
+bound across these runtimes. These ranges identify work to investigate; they do not establish
+statistical separation, consumer harm or a safe replacement. The fixed-output regression rejects
+a second result with lost payload bits even when the UUID version remains correct; disabling that
+comparison fails the regression. No production optimization follows from this harness alone.
+
 A 2026-10-02 timer-only probe took 100,000 adjacent `performance.now()` pairs on this machine.
 The median difference was 41 ns on Bun 1.4.2 and 42 ns on Node 26.10.0; their observed p99
 differences were 42 ns and 125 ns. There were 34,210 and 12,576 zero differences respectively.
