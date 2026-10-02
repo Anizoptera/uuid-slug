@@ -1091,6 +1091,36 @@ Remaining gaps and their causes:
   fixed-clock buffer gain. The same short-batch limits apply. A stale-cache mutation fails the
   Node timestamp cases and direct Bun clock-advance witness; caller-buffer mutation and offset
   witnesses pass with the candidate. Different cache shapes remain unmeasured.
+  Two alternating source-bundle screens compared clock-call inlining, counter-write inlining,
+  direct zero-fraction seeding, a separate zero-fraction continuation, and their combination.
+  Node 26.10.0 direct seeding raised owned-byte cost from 82 to 85 ns; clock inlining raised
+  fractional caller-buffer cost from 48 to 49–50 ns. Counter-write inlining raised Bun 1.4.2
+  owned-byte cost in both screens, while the combined candidate raised caller-buffer cost on both
+  hosts. Separate continuation duplicated sequence logic without a repeated primary-call gain.
+  Reject these shapes. Each candidate passed the existing Node state-machine cases and direct
+  Bun fraction, clock-advance and caller-buffer witnesses before timing. Three 5 ms batches per
+  process after 16 ms warmup are selection evidence, not independent confidence samples.
+  Four direct tail stores also survived the source screens, but two packed six-pair replays
+  across Node, Bun, Chromium, Firefox, WebKit, Deno and Node JITless reproduced a separated gain
+  only for Node's fractional-clock caller-buffer case: ratios 0.970 and 0.973, with 95% intervals
+  [0.936, 0.993] and [0.965, 0.988]. Default text and owned-byte gains remained unresolved.
+  Reject the rewrite: this small secondary gain does not justify more code. Each process measured
+  one 5 ms batch after 16 ms warmup; fresh-process medians, not calls, are the comparison units.
+  The shared Node/Bun entropy witness rejects a duplicated tail byte and checks both complementary
+  byte patterns across text, owned bytes, explicit timestamps and offset caller storage.
+- Two alternating allocation screens on 2026-10-02 compared owned UUIDv7 generation using
+  `new Uint8Array(16)`, an explicit `ArrayBuffer`, and a copy of the private text buffer.
+  Node 26.10.0 owned calls cost about 78 ns, 150–152 ns, and 87 ns respectively; Bun 1.4.2
+  cost 48–50 ns, 142–150 ns, and 64–67 ns. Deno 2.9.7's explicit-buffer direction varied,
+  while the copied buffer lost twice. Retain the ordinary constructor. Preflight checks require
+  plain arrays, independent backing storage and unchanged earlier results after later draws.
+  These source-bundle screens use the same short-batch settings as the draw comparisons above;
+  they do not settle UUIDv4 allocation or Deno's remaining owned-output gap.
+  Two separate Deno allocation-and-fixed-write screens also compared plain views over
+  `Buffer.allocUnsafeSlow(16)` and `Buffer.alloc(16)`. Their medians were 132–134 ns against
+  112 ns for the ordinary constructor. Reject these alternatives without adding a Deno
+  dependency or dispatch branch. Seven batches within each process do not establish independent
+  confidence, and allocation plus a fixed write does not measure complete UUID generation.
 - Bun UUIDv4 caller-buffer output costs 28–29 ns against 17–18 ns. The floor fills a view prepared
   outside the timed call; the package checks the caller range, copies from the package pool into
   private storage, then copies into caller storage, so entropy failure cannot partly write caller

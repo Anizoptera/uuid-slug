@@ -180,6 +180,12 @@ floor is clock (22 ns) plus entropy plus formatting, so UUIDv7 parity may be imp
 - [x] Screen zero-fraction comparison skipping and private timestamp-byte caching before broad
       replays. Reject both shapes: the first has no worthwhile reproduced gain; the second slows
       primary calls. Keep clock-wrapper, validation, reentrancy and tail-copy work open.
+- [x] Screen clock-call and counter-write inlining, direct zero-fraction seeding, separate
+      continuation and their combination together. Reject reproduced losses and duplicated
+      sequence logic without a repeated primary-call gain; keep other mechanisms open.
+- [x] Compare fixed tail stores in two packed seven-runtime replays. Reject the rewrite:
+      only a small fractional-clock caller-buffer gain reproduces. Keep the shared entropy
+      placement witness; the intermediate entropy-copy mechanism remains open.
 - [ ] Bun UUIDv4 text: ablate the default parameter plus `isUuidTextCase` check and the
       trusted-identity comparison separately; try an argument-count fast path. Rejected: removing
       the `try` (saves 1 ns, breaks native-failure fallback) and import-time validation (draws
@@ -188,6 +194,9 @@ floor is clock (22 ns) plus entropy plus formatting, so UUIDv7 parity may be imp
       47–51 against 34–38. Compare `new Uint8Array(16)`, `pool.slice`, and
       `new Uint8Array(new ArrayBuffer(16))` per runtime; keep the fastest after two replays. Views
       onto a shared slab are rejected: their `.buffer` exposes other issued IDs.
+- [x] Screen owned UUIDv7 array construction on Node, Bun and Deno, including Deno's plain
+      views over native buffers. Retain ordinary construction; the alternatives lose or remain
+      unresolved. Keep UUIDv4 and the remaining owned-output gaps open.
 
 ## Phase 4: configured calls
 
