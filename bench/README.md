@@ -60,6 +60,8 @@ These short batch samples select experiments, not retained optimizations or indi
 add any missing mechanism falsifier before using a candidate's timings to decide a change.
 Prefix a `UUID_SLUG_PROFILE_FILTER` term with `=` to select that exact case; other terms match
 substrings. Use exact terms when a successful-call comparison must exclude similarly named failures.
+Use `v7-draw independent-direct-lost-bit` to check the payload oracle: both runtime tests must
+reject it before timing, with their failure output retained in the report directory.
 
 Run `bun run bench:competitors --smoke` to validate the competitor matrix, or
 `bun run bench:competitors` for repeated measurements. The matrix compares equal v4/v7 text,

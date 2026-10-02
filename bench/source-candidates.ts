@@ -4,20 +4,40 @@ import { mkdtemp, mkdir, writeFile, symlink, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFile } from "node:child_process";
-import { promisify, stripVTControlCharacters } from "node:util";
+import { stripVTControlCharacters } from "node:util";
 import { command } from "../scripts/command";
 import { CANDIDATE_GROUPS, createSourceCandidates } from "./candidate-sources";
 import type { CandidateGroup } from "./candidate-sources";
 import { sampleMedian } from "./statistics";
 
 const project = join(import.meta.dir, "..");
-const execute = promisify(execFile);
-async function proof(args: string[], cwd: string): Promise<string> {
+async function proof(
+  args: string[],
+  cwd: string,
+  log: string,
+  lane: "node" | "bun",
+): Promise<void> {
   // Test runners place evidence on different pipes; retain both and fail on absent execution.
-  const result = await execute("bun", args, { cwd, timeout: 30_000, maxBuffer: 4 * 1024 * 1024 });
+  const result = await new Promise<{ error: Error | null; stdout: string; stderr: string }>(
+    (resolve) => {
+      execFile(
+        "bun",
+        args,
+        { cwd, timeout: 30_000, maxBuffer: 4 * 1024 * 1024 },
+        (error, stdout, stderr) => resolve({ error, stdout, stderr }),
+      );
+    },
+  );
   const output = result.stdout + result.stderr;
-  if (!output.trim()) throw new Error(`No proof output from bun ${args.join(" ")}`);
-  return output;
+  await writeFile(log, output);
+  if (result.error)
+    throw new Error(`Candidate proof failed; inspect ${log}`, { cause: result.error });
+  if (
+    !(lane === "bun" ? /\b[1-9]\d* pass\b/ : /Tests\s+[1-9]\d* passed/).test(
+      stripVTControlCharacters(output),
+    )
+  )
+    throw new Error(`No executed tests; inspect ${log} before timing.`);
 }
 const groupInput = process.argv[2];
 if (!CANDIDATE_GROUPS.some((group) => group === groupInput) || process.argv.length < 4)
@@ -120,21 +140,22 @@ try {
     );
     const tests = ["__test__/core.test.ts", "__test__/runtime-boundary.test.ts"];
     if (group === "v7-draw") tests.push("__test__/v7.test.ts");
-    for (const [lane, args] of [
-      ["node", ["run", "test:node", "--", ...tests]],
-      ["bun", ["test", "__test__/runtime-boundary.bun.test.ts"]],
-    ] as const) {
-      const output = await proof([...args], tree);
-      await writeFile(join(report, `${candidate.name}-${lane}-proof.log`), output);
-      if (
-        !(lane === "bun" ? /\b[1-9]\d* pass\b/ : /Tests\s+[1-9]\d* passed/).test(
-          stripVTControlCharacters(output),
-        )
-      )
-        throw new Error(
-          `No executed tests in ${candidate.name}/${lane}; inspect its proof log in ${report} before timing.`,
-        );
-    }
+    const proofs = await Promise.allSettled(
+      (
+        [
+          ["node", ["run", "test:node", "--", ...tests]],
+          ["bun", ["test", "__test__/runtime-boundary.bun.test.ts"]],
+        ] as const
+      ).map(([lane, args]) =>
+        proof([...args], tree, join(report, `${candidate.name}-${lane}-proof.log`), lane),
+      ),
+    );
+    const failures = proofs.filter((result) => result.status === "rejected");
+    if (failures.length)
+      throw new AggregateError(
+        failures.map((result) => result.reason),
+        `Candidate rejected before timing: ${candidate.name}`,
+      );
     console.log(JSON.stringify({ candidate: candidate.name, proof: "passed" }));
     for (const runtime of runtimes) {
       const entry = group === "v4" ? "bench/generation-host.ts" : "src/index.ts";

@@ -158,6 +158,17 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
       },
     },
     {
+      // This falsifier must fail both bit oracles before the runner starts any timing.
+      name: "independent-direct-lost-bit",
+      get source() {
+        return replaceOnce(
+          direct(),
+          "((random[1] as number) & 15)",
+          "((random[1] as number) & 14)",
+        );
+      },
+    },
+    {
       name: "independent-full-block",
       get source() {
         return replaceOnce(
