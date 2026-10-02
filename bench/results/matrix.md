@@ -36,78 +36,78 @@ and randomness quality beyond these measures; that needs a battery such as Pract
 
 | operation | bun (bun 1.4.2) | node (node v24.21.0) | node-current (node v26.10.0) |
 | --- | ---: | ---: | ---: |
-| package.v4.string | 35.81M | 15.50M | 15.39M |
-| package.v7.string | 11.85M | 12.18M | 11.51M |
-| uuid.v4.string | 35.66M | 7.35M | 7.03M |
-| uuid.v7.string | 6.97M | 1.40M | 1.41M |
-| uuidv7.v7.string | 3.94M | 3.11M | 3.03M |
-| uniku.v7.string | 6.75M | 5.40M | 5.39M |
-| fastv7.v7.string | 9.51M | 8.12M | 8.13M |
-| uuidv7-js.v7.string | 4.28M | 1.29M | 1.29M |
-| @kripod/uuidv7.v7.string | 2.19M | 0.70M | 0.71M |
-| bun-native.v7.string | 15.44M | n/a | n/a |
-| node-native.v7.string | 19.73M | 7.08M | 7.03M |
-| package.v7.slug | 13.75M | 12.97M | 12.52M |
-| package.v7.maskedSlug | 5.33M | 4.39M | 4.32M |
-| package.base64url.encode | 13.71M | 10.83M | 10.22M |
-| package.base64url.decode | 13.97M | 10.03M | 9.92M |
-| package.base32hex.encode | 13.02M | 10.05M | 9.71M |
-| package.base32hex.decode | 13.09M | 9.49M | 8.75M |
-| package.v7.timestamp | 14.22M | 8.89M | 7.51M |
-| package.masked.encode | 5.69M | 4.66M | 4.59M |
-| package.masked.encode.bytes | 7.27M | 7.30M | 7.34M |
-| package.masked.decode | 5.83M | 5.12M | 5.11M |
-| package.rotation.current | 5.69M | 4.78M | 4.77M |
-| package.rotation.previous | 3.77M | 3.30M | 3.26M |
-| package.masked.invalid | 6.55M | 0.35M | 0.73M |
-| package.v7.bytes | 23.68M | 13.84M | 13.43M |
-| native.bun.v7.hex | 15.32M | n/a | n/a |
-| native.bun.v7.base64url | 16.60M | n/a | n/a |
-| native.bun.v7.base64 | 16.50M | n/a | n/a |
-| native.bun.v7.buffer | 20.91M | n/a | n/a |
-| native.bun.v5 | 8.29M | n/a | n/a |
-| native.node.v7 | 20.79M | 7.15M | 6.83M |
-| native.node.v7.nocache | 3.61M | 1.49M | 1.50M |
-| native.node.v4 | 14.85M | 8.68M | 8.61M |
-| native.node.v4.nocache | 3.09M | 1.55M | 1.56M |
-| native.web.v4 | 32.64M | 7.67M | 7.65M |
+| package.v4.string | 35.47M | 15.03M | 15.39M |
+| package.v7.string | 13.07M | 11.76M | 11.86M |
+| uuid.v4.string | 36.13M | 6.96M | 7.16M |
+| uuid.v7.string | 6.84M | 1.38M | 1.43M |
+| uuidv7.v7.string | 3.91M | 3.14M | 3.01M |
+| uniku.v7.string | 6.88M | 5.39M | 5.45M |
+| fastv7.v7.string | 9.39M | 8.20M | 8.18M |
+| uuidv7-js.v7.string | 4.25M | 1.30M | 1.32M |
+| @kripod/uuidv7.v7.string | 2.19M | 0.69M | 0.70M |
+| bun-native.v7.string | 14.65M | n/a | n/a |
+| node-native.v7.string | 20.09M | 7.16M | 7.14M |
+| package.v7.slug | 13.73M | 12.79M | 12.59M |
+| package.v7.maskedSlug | 5.34M | 4.40M | 4.34M |
+| package.base64url.encode | 13.61M | 10.77M | 10.59M |
+| package.base64url.decode | 13.71M | 10.03M | 10.16M |
+| package.base32hex.encode | 13.27M | 10.00M | 9.77M |
+| package.base32hex.decode | 13.23M | 9.52M | 8.83M |
+| package.v7.timestamp | 14.42M | 9.00M | 7.61M |
+| package.masked.encode | 5.70M | 4.66M | 4.61M |
+| package.masked.encode.bytes | 7.27M | 7.36M | 7.39M |
+| package.masked.decode | 5.91M | 5.16M | 5.06M |
+| package.rotation.current | 5.74M | 4.82M | 4.63M |
+| package.rotation.previous | 3.78M | 3.32M | 2.76M |
+| package.masked.invalid | 6.58M | 0.37M | 0.73M |
+| package.v7.bytes | 23.60M | 14.08M | 13.65M |
+| native.bun.v7.hex | 14.75M | n/a | n/a |
+| native.bun.v7.base64url | 16.24M | n/a | n/a |
+| native.bun.v7.base64 | 16.52M | n/a | n/a |
+| native.bun.v7.buffer | 20.65M | n/a | n/a |
+| native.bun.v5 | 8.73M | n/a | n/a |
+| native.node.v7 | 21.17M | 7.26M | 7.02M |
+| native.node.v7.nocache | 3.66M | 1.49M | 1.52M |
+| native.node.v4 | 32.53M | 8.62M | 8.63M |
+| native.node.v4.nocache | 3.87M | 1.56M | 1.54M |
+| native.web.v4 | 32.58M | 8.15M | 7.64M |
 
 ## Randomness: bun (bun 1.4.2)
 
 | candidate | entropy source | distinct | in-tick | peak/ms | encoded − end/ms | Δclock/ms | counter | P(1) range |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| package | crypto.getRandomValues | 50000 | 100.00% | 11156 | 0 | 7 | 42b @ 100.00% | 0.149-0.789 |
-| uuid | crypto.getRandomValues | 50000 | 100.00% | 6608 | 0 | 10 | 32b @ 100.00% | 0-0.738 |
-| uuidv7 | crypto.getRandomValues | 50000 | 100.00% | 6835 | 0 | 12 | 42b @ 100.00% | 0.205-0.698 |
-| uniku | unobserved | 50000 | 100.00% | 10287 | 0 | 6 | 32b @ 100.00% | 0-1 |
-| fastv7 | crypto.getRandomValues | 50000 | 100.00% | 4096 | 9 | 4 | 12b @ 100.00% | 0.492-0.505 |
-| uuidv7-js | crypto.getRandomValues | 50000 | 100.00% | 5387 | 0 | 13 | 43b @ 50.25% | 0.193-0.706 |
-| @kripod/uuidv7 | unobserved | 50000 | 100.00% | 2561 | 0 | 21 | 12b @ 100.00% | 0.165-0.504 |
-| bun-native | unobserved | 50000 | 100.00% | 3940 | 13 | 4 | 12b @ 100.00% | 0.494-0.664 |
-| node-native | unobserved | 50000 | 100.00% | 4024 | 13 | 2 | 12b @ 100.00% | 0.496-0.614 |
+| package | crypto.getRandomValues | 50000 | 100.00% | 10586 | 0 | 7 | 42b @ 100.00% | 0-0.908 |
+| uuid | crypto.getRandomValues | 50000 | 100.00% | 6793 | 0 | 10 | 32b @ 100.00% | 0-0.83 |
+| uuidv7 | crypto.getRandomValues | 50000 | 100.00% | 6800 | 0 | 12 | 42b @ 100.00% | 0.068-0.679 |
+| uniku | unobserved | 50000 | 100.00% | 10993 | 0 | 6 | 32b @ 100.00% | 0-0.834 |
+| fastv7 | crypto.getRandomValues | 50000 | 100.00% | 4096 | 7 | 5 | 12b @ 100.00% | 0.476-0.506 |
+| uuidv7-js | crypto.getRandomValues | 50000 | 100.00% | 5292 | 0 | 13 | 43b @ 50.20% | 0.288-0.89 |
+| @kripod/uuidv7 | unobserved | 50000 | 100.00% | 2715 | 0 | 21 | 12b @ 100.00% | 0.175-0.504 |
+| bun-native | unobserved | 50000 | 100.00% | 3797 | 13 | 3 | 12b @ 100.00% | 0.493-0.681 |
+| node-native | unobserved | 50000 | 100.00% | 3949 | 13 | 3 | 12b @ 100.00% | 0.495-0.675 |
 
 ## Randomness: node (node v24.21.0)
 
 | candidate | entropy source | distinct | in-tick | peak/ms | encoded − end/ms | Δclock/ms | counter | P(1) range |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| package | node:crypto.randomFillSync | 50000 | 100.00% | 10388 | 0 | 9 | 42b @ 100.00% | 0.213-0.899 |
-| uuid | crypto.getRandomValues | 50000 | 100.00% | 1389 | 0 | 47 | 32b @ 100.00% | 0-0.603 |
-| uuidv7 | crypto.getRandomValues | 50000 | 100.00% | 3700 | 0 | 22 | 42b @ 100.00% | 0.268-0.909 |
-| uniku | unobserved | 50000 | 100.00% | 7168 | 0 | 8 | 32b @ 100.00% | 0-0.802 |
-| fastv7 | crypto.getRandomValues | 50000 | 100.00% | 4096 | 6 | 7 | 12b @ 100.00% | 0.492-0.505 |
-| uuidv7-js | crypto.getRandomValues | 50000 | 100.00% | 1337 | 0 | 41 | 42b @ 50.07% | 0.355-0.708 |
-| @kripod/uuidv7 | unobserved | 50000 | 100.00% | 734 | 0 | 74 | 12b @ 100.00% | 0-0.507 |
-| node-native | unobserved | 50000 | 49.89% | 9683 | 0 | 7 | 1b @ 25.13% | 0.495-0.507 |
+| package | node:crypto.randomFillSync | 50000 | 100.00% | 10958 | 0 | 9 | 42b @ 100.00% | 0.197-0.868 |
+| uuid | crypto.getRandomValues | 50000 | 100.00% | 1402 | 0 | 44 | 32b @ 100.00% | 0-0.656 |
+| uuidv7 | crypto.getRandomValues | 50000 | 100.00% | 3580 | 0 | 22 | 42b @ 100.00% | 0.151-0.726 |
+| uniku | unobserved | 50000 | 100.00% | 6993 | 0 | 9 | 32b @ 100.00% | 0-0.869 |
+| fastv7 | crypto.getRandomValues | 50000 | 100.00% | 4096 | 7 | 5 | 12b @ 100.00% | 0.468-0.506 |
+| uuidv7-js | crypto.getRandomValues | 50000 | 100.00% | 1365 | 0 | 40 | 43b @ 50.28% | 0.306-0.653 |
+| @kripod/uuidv7 | unobserved | 50000 | 100.00% | 757 | 0 | 71 | 12b @ 100.00% | 0-0.504 |
+| node-native | unobserved | 50000 | 50.03% | 9298 | 0 | 6 | 1b @ 24.95% | 0.494-0.507 |
 
 ## Randomness: node-current (node v26.10.0)
 
 | candidate | entropy source | distinct | in-tick | peak/ms | encoded − end/ms | Δclock/ms | counter | P(1) range |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| package | node:crypto.randomFillSync | 50000 | 100.00% | 10555 | 0 | 8 | 42b @ 100.00% | 0.161-1 |
-| uuid | crypto.getRandomValues | 50000 | 100.00% | 1581 | 0 | 42 | 32b @ 100.00% | 0-0.667 |
-| uuidv7 | crypto.getRandomValues | 50000 | 100.00% | 4059 | 0 | 24 | 42b @ 100.00% | 0.119-0.741 |
-| uniku | unobserved | 50000 | 100.00% | 7008 | 0 | 13 | 32b @ 100.00% | 0-0.875 |
-| fastv7 | crypto.getRandomValues | 50000 | 100.00% | 4096 | 7 | 6 | 12b @ 100.00% | 0.492-0.505 |
-| uuidv7-js | crypto.getRandomValues | 50000 | 100.00% | 1457 | 0 | 43 | 43b @ 49.94% | 0.384-0.719 |
-| @kripod/uuidv7 | unobserved | 50000 | 100.00% | 767 | 0 | 74 | 12b @ 100.00% | 0-0.504 |
-| node-native | unobserved | 50000 | 49.68% | 8389 | 0 | 10 | 1b @ 25.10% | 0.495-0.505 |
+| package | node:crypto.randomFillSync | 50000 | 100.00% | 9471 | 0 | 8 | 42b @ 100.00% | 0.2-0.85 |
+| uuid | crypto.getRandomValues | 50000 | 100.00% | 1517 | 0 | 42 | 32b @ 100.00% | 0-0.627 |
+| uuidv7 | crypto.getRandomValues | 50000 | 100.00% | 3470 | 0 | 57 | 42b @ 100.00% | 0.353-0.813 |
+| uniku | unobserved | 50000 | 100.00% | 6800 | 0 | 24 | 32b @ 100.00% | 0-0.75 |
+| fastv7 | crypto.getRandomValues | 50000 | 100.00% | 4096 | 0 | 12 | 12b @ 100.00% | 0.468-0.505 |
+| uuidv7-js | crypto.getRandomValues | 50000 | 100.00% | 1371 | 0 | 96 | 42b @ 50.09% | 0.35-0.634 |
+| @kripod/uuidv7 | unobserved | 50000 | 100.00% | 729 | 0 | 234 | 12b @ 100.00% | 0-0.505 |
+| node-native | unobserved | 50000 | 50.10% | 8229 | 0 | 38 | 1b @ 24.89% | 0.495-0.506 |

@@ -21,72 +21,72 @@ Repeat the comparison in fresh processes before retaining a change.
 
 ## node v24.21.0
 
-Against the fastest package: leads 8, trails 2, unresolved 0. Trails on `conversion.text.guard`, `v7.timestamp.text`.
+Against the fastest package: leads 4, trails 0, unresolved 6.
 
 | Group | Package call | Fastest rival | Ratio to rival | Rival verdict | Native floor | Ratio to floor | Floor verdict |
 | --- | --- | --- | ---: | --- | --- | ---: | --- |
-| `conversion.bytes.slug` | `package.conversion.bytes.slug` | none | |  | `platform.buffer.conversion.bytes.slug` | 0.54 | leads |
-| `conversion.bytes.text` | `package.conversion.bytes.text` | `uuid.conversion.bytes.text` | 0.28 | leads | `platform.buffer.conversion.bytes.text` | 0.37 | leads |
-| `conversion.slug.bytes` | `package.conversion.slug.bytes` | none | |  | `platform.buffer.conversion.slug.bytes` | 0.53 | leads |
-| `conversion.slug.text` | `package.conversion.slug.text` | none | |  | `platform.buffer.conversion.slug.text` | 0.45 | leads |
-| `conversion.text.bytes` | `package.conversion.text.bytes` | `uuid.conversion.text.bytes` | 0.34 | leads | `platform.buffer.conversion.text.bytes` | 0.44 | leads |
-| `conversion.text.guard` | `package.conversion.text.guard` | `uuid.conversion.text.guard` | 1.23 | trails | `platform.regex.conversion.text.guard` | 1.00 | unresolved |
-| `conversion.text.slug` | `package.conversion.text.slug` | none | |  | `platform.buffer.conversion.text.slug` | 0.46 | leads |
-| `conversion.text.timestamp` | `package.conversion.text.timestamp` | none | |  | `platform.parseint.conversion.text.timestamp` | 2.85 | trails |
+| `conversion.bytes.slug` | `package.conversion.bytes.slug` | none | |  | `platform.buffer.conversion.bytes.slug` | 0.56 | unresolved |
+| `conversion.bytes.text` | `package.conversion.bytes.text` | `uuid.conversion.bytes.text` | 0.26 | leads | `platform.buffer.conversion.bytes.text` | 0.36 | unresolved |
+| `conversion.slug.bytes` | `package.conversion.slug.bytes` | none | |  | `platform.buffer.conversion.slug.bytes` | 0.53 | unresolved |
+| `conversion.slug.text` | `package.conversion.slug.text` | none | |  | `platform.buffer.conversion.slug.text` | 0.42 | unresolved |
+| `conversion.text.bytes` | `package.conversion.text.bytes` | `uuid.conversion.text.bytes` | 0.34 | leads | `platform.buffer.conversion.text.bytes` | 0.40 | leads |
+| `conversion.text.guard` | `package.conversion.text.guard` | `uuid.conversion.text.guard` | 1.25 | unresolved | `platform.regex.conversion.text.guard` | 0.96 | unresolved |
+| `conversion.text.slug` | `package.conversion.text.slug` | none | |  | `platform.buffer.conversion.text.slug` | 0.47 | unresolved |
+| `conversion.text.timestamp` | `package.conversion.text.timestamp` | none | |  | `platform.parseint.conversion.text.timestamp` | 2.25 | trails |
 | `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuidv7.v4.bytes.allocate` | 0.12 | leads | `platform.webcrypto.v4.bytes.allocate` | 0.08 | leads |
-| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.54 | leads | `platform.webcrypto.v4.bytes.into` | 0.07 | leads |
-| `v4.text.secure` | `package.v4.text.native` | `uniku.v4.text` | 0.59 | leads | `platform.webcrypto.v4.text` | 0.59 | leads |
-| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 0.61 | leads | none | |  |
-| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.69 | leads | none | |  |
-| `v7.text.secure` | `package.v7.text.portable` | `uniku.v7.text` | 0.51 | leads | `platform.node-crypto.v7.text` | 0.64 | leads |
-| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.26 | trails | none | |  |
+| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.54 | unresolved | `platform.webcrypto.v4.bytes.into` | 0.08 | leads |
+| `v4.text.secure` | `package.v4.text.portable` | `crypto-randomuuid.v4.text` | 0.56 | unresolved | `platform.webcrypto.v4.text` | 0.53 | unresolved |
+| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 0.60 | unresolved | none | |  |
+| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.68 | unresolved | none | |  |
+| `v7.text.secure` | `package.v7.text.default` | `uniku.v7.text` | 0.47 | leads | `platform.node-crypto.v7.text` | 0.57 | unresolved |
+| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.17 | unresolved | none | |  |
 
 ## node v26.10.0
 
-Against the fastest package: leads 8, trails 2, unresolved 0. Trails on `conversion.text.guard`, `v7.timestamp.text`.
+Against the fastest package: leads 5, trails 0, unresolved 5.
 
 | Group | Package call | Fastest rival | Ratio to rival | Rival verdict | Native floor | Ratio to floor | Floor verdict |
 | --- | --- | --- | ---: | --- | --- | ---: | --- |
-| `conversion.bytes.slug` | `package.conversion.bytes.slug` | none | |  | `platform.buffer.conversion.bytes.slug` | 0.55 | leads |
-| `conversion.bytes.text` | `package.conversion.bytes.text` | `uuid.conversion.bytes.text` | 0.28 | leads | `platform.tohex.conversion.bytes.text` | 0.58 | leads |
-| `conversion.slug.bytes` | `package.conversion.slug.bytes` | none | |  | `platform.buffer.conversion.slug.bytes` | 0.55 | leads |
-| `conversion.slug.text` | `package.conversion.slug.text` | none | |  | `platform.buffer.conversion.slug.text` | 0.44 | leads |
-| `conversion.text.bytes` | `package.conversion.text.bytes` | `uuid.conversion.text.bytes` | 0.36 | leads | `platform.buffer.conversion.text.bytes` | 0.57 | leads |
-| `conversion.text.guard` | `package.conversion.text.guard` | `uuid.conversion.text.guard` | 1.29 | trails | `platform.regex.conversion.text.guard` | 1.01 | unresolved |
-| `conversion.text.slug` | `package.conversion.text.slug` | none | |  | `platform.buffer.conversion.text.slug` | 0.54 | leads |
-| `conversion.text.timestamp` | `package.conversion.text.timestamp` | none | |  | `platform.parseint.conversion.text.timestamp` | 2.81 | trails |
+| `conversion.bytes.slug` | `package.conversion.bytes.slug` | none | |  | `platform.buffer.conversion.bytes.slug` | 0.53 | unresolved |
+| `conversion.bytes.text` | `package.conversion.bytes.text` | `uuid.conversion.bytes.text` | 0.27 | leads | `platform.tohex.conversion.bytes.text` | 0.58 | unresolved |
+| `conversion.slug.bytes` | `package.conversion.slug.bytes` | none | |  | `platform.buffer.conversion.slug.bytes` | 0.56 | leads |
+| `conversion.slug.text` | `package.conversion.slug.text` | none | |  | `platform.buffer.conversion.slug.text` | 0.45 | unresolved |
+| `conversion.text.bytes` | `package.conversion.text.bytes` | `uuid.conversion.text.bytes` | 0.35 | leads | `platform.buffer.conversion.text.bytes` | 0.55 | unresolved |
+| `conversion.text.guard` | `package.conversion.text.guard` | `uuid.conversion.text.guard` | 1.23 | unresolved | `platform.regex.conversion.text.guard` | 1.02 | unresolved |
+| `conversion.text.slug` | `package.conversion.text.slug` | none | |  | `platform.buffer.conversion.text.slug` | 0.56 | unresolved |
+| `conversion.text.timestamp` | `package.conversion.text.timestamp` | none | |  | `platform.parseint.conversion.text.timestamp` | 2.28 | trails |
 | `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuidv7.v4.bytes.allocate` | 0.12 | leads | `platform.webcrypto.v4.bytes.allocate` | 0.08 | leads |
-| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.56 | leads | `platform.webcrypto.v4.bytes.into` | 0.08 | leads |
+| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.57 | unresolved | `platform.webcrypto.v4.bytes.into` | 0.08 | leads |
 | `v4.slug.base64url.secure` | `package.v4.slug.base64url` | none | |  | `platform.webcrypto.v4.slug.base64url` | 0.09 | leads |
-| `v4.text.secure` | `package.v4.text.portable` | `crypto-randomuuid.v4.text` | 0.58 | leads | `platform.webcrypto.v4.text` | 0.59 | leads |
-| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 0.63 | leads | none | |  |
-| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.69 | leads | none | |  |
-| `v7.text.secure` | `package.v7.text.portable` | `uniku.v7.text` | 0.51 | leads | `platform.node-crypto.v7.text` | 0.65 | leads |
-| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.29 | trails | none | |  |
+| `v4.text.secure` | `package.v4.text.portable` | `crypto-randomuuid.v4.text` | 0.58 | leads | `platform.webcrypto.v4.text` | 0.57 | leads |
+| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 0.60 | unresolved | none | |  |
+| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.73 | unresolved | none | |  |
+| `v7.text.secure` | `package.v7.text.portable` | `uniku.v7.text` | 0.47 | leads | `platform.node-crypto.v7.text` | 0.66 | unresolved |
+| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.05 | unresolved | none | |  |
 
 ## bun 1.4.2
 
-Against the fastest package: leads 4, trails 3, unresolved 3. Trails on `v4.bytes.into.secure`, `v4.text.secure`, `v7.timestamp.text`.
+Against the fastest package: leads 4, trails 5, unresolved 1. Trails on `v4.bytes.into.secure`, `v4.text.secure`, `v7.bytes.allocate.secure`, `v7.bytes.into.secure`, `v7.timestamp.text`.
 
 | Group | Package call | Fastest rival | Ratio to rival | Rival verdict | Native floor | Ratio to floor | Floor verdict |
 | --- | --- | --- | ---: | --- | --- | ---: | --- |
 | `conversion.bytes.slug` | `package.conversion.bytes.slug` | none | |  | `platform.tobase64.conversion.bytes.slug` | 1.25 | trails |
-| `conversion.bytes.text` | `package.conversion.bytes.text` | `uuid.conversion.bytes.text` | 0.38 | leads | `platform.tohex.conversion.bytes.text` | 0.73 | leads |
-| `conversion.slug.bytes` | `package.conversion.slug.bytes` | none | |  | `platform.frombase64.conversion.slug.bytes` | 0.38 | leads |
+| `conversion.bytes.text` | `package.conversion.bytes.text` | `uuid.conversion.bytes.text` | 0.37 | leads | `platform.tohex.conversion.bytes.text` | 0.68 | leads |
+| `conversion.slug.bytes` | `package.conversion.slug.bytes` | none | |  | `platform.frombase64.conversion.slug.bytes` | 0.37 | leads |
 | `conversion.slug.text` | `package.conversion.slug.text` | none | |  | `platform.base64hex.conversion.slug.text` | 0.47 | leads |
-| `conversion.text.bytes` | `package.conversion.text.bytes` | `uuid.conversion.text.bytes` | 0.33 | leads | `platform.fromhex.conversion.text.bytes` | 0.42 | leads |
-| `conversion.text.guard` | `package.conversion.text.guard` | `uuid.conversion.text.guard` | 1.08 | unresolved | `platform.regex.conversion.text.guard` | 1.03 | unresolved |
-| `conversion.text.slug` | `package.conversion.text.slug` | none | |  | `platform.hexbase64.conversion.text.slug` | 0.60 | leads |
-| `conversion.text.timestamp` | `package.conversion.text.timestamp` | none | |  | `platform.parseint.conversion.text.timestamp` | 2.21 | trails |
+| `conversion.text.bytes` | `package.conversion.text.bytes` | `uuid.conversion.text.bytes` | 0.32 | leads | `platform.fromhex.conversion.text.bytes` | 0.41 | leads |
+| `conversion.text.guard` | `package.conversion.text.guard` | `uuid.conversion.text.guard` | 1.02 | unresolved | `platform.regex.conversion.text.guard` | 1.03 | unresolved |
+| `conversion.text.slug` | `package.conversion.text.slug` | none | |  | `platform.hexbase64.conversion.text.slug` | 0.56 | leads |
+| `conversion.text.timestamp` | `package.conversion.text.timestamp` | none | |  | `platform.parseint.conversion.text.timestamp` | 1.59 | trails |
 | `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuid.v4.bytes.allocate` | 0.75 | leads | `platform.webcrypto.v4.bytes.allocate` | 1.06 | unresolved |
-| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uuid.v4.bytes.into` | 1.13 | trails | `platform.webcrypto.v4.bytes.into` | 1.68 | trails |
-| `v4.slug.base64url.secure` | `package.v4.slug.base64url` | none | |  | `platform.webcrypto.v4.slug.base64url` | 0.99 | unresolved |
-| `v4.text.secure` | `package.v4.text.native` | `crypto-randomuuid.v4.text` | 1.19 | trails | `platform.webcrypto.v4.text` | 1.13 | trails |
-| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuid.v7.bytes.allocate` | 1.10 | unresolved | `platform.bun.v7.bytes.allocate` | 0.92 | unresolved |
-| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uuid.v7.bytes.into` | 1.19 | unresolved | none | |  |
+| `v4.bytes.into.secure` | `package.v4.bytes.into` | `uuid.v4.bytes.into` | 1.14 | trails | `platform.webcrypto.v4.bytes.into` | 1.69 | trails |
+| `v4.slug.base64url.secure` | `package.v4.slug.base64url` | none | |  | `platform.webcrypto.v4.slug.base64url` | 1.03 | unresolved |
+| `v4.text.secure` | `package.v4.text.native` | `crypto-randomuuid.v4.text` | 1.19 | trails | `platform.webcrypto.v4.text` | 1.15 | trails |
+| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuid.v7.bytes.allocate` | 1.11 | trails | `platform.bun.v7.bytes.allocate` | 0.90 | leads |
+| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uuid.v7.bytes.into` | 1.19 | trails | none | |  |
 | `v7.slug.base64url.secure` | `package.v7.slug.base64url` | none | |  | `platform.bun.v7.slug.base64url` | 1.25 | trails |
-| `v7.text.secure` | `package.v7.text.portable` | `uuid.v7.text.default` | 0.44 | leads | `platform.bun.v7.text` | 1.77 | trails |
-| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.36 | trails | none | |  |
+| `v7.text.secure` | `package.v7.text.portable` | `uuid.v7.text.default` | 0.43 | leads | `platform.bun.v7.text` | 1.80 | trails |
+| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.11 | trails | none | |  |
 
 ## deno 2.9.7
 
@@ -95,44 +95,44 @@ Against the fastest package: leads 7, trails 2, unresolved 1. Trails on `convers
 | Group | Package call | Fastest rival | Ratio to rival | Rival verdict | Native floor | Ratio to floor | Floor verdict |
 | --- | --- | --- | ---: | --- | --- | ---: | --- |
 | `conversion.bytes.slug` | `package.conversion.bytes.slug` | none | |  | `platform.tobase64.conversion.bytes.slug` | 0.44 | leads |
-| `conversion.bytes.text` | `package.conversion.bytes.text` | `uuid.conversion.bytes.text` | 0.28 | leads | `platform.tohex.conversion.bytes.text` | 0.55 | leads |
-| `conversion.slug.bytes` | `package.conversion.slug.bytes` | none | |  | `platform.buffer.conversion.slug.bytes` | 1.27 | trails |
-| `conversion.slug.text` | `package.conversion.slug.text` | none | |  | `platform.buffer.conversion.slug.text` | 0.81 | leads |
-| `conversion.text.bytes` | `package.conversion.text.bytes` | `uuid.conversion.text.bytes` | 0.50 | leads | `platform.buffer.conversion.text.bytes` | 1.04 | trails |
-| `conversion.text.guard` | `package.conversion.text.guard` | `uuid.conversion.text.guard` | 1.29 | trails | `platform.regex.conversion.text.guard` | 1.03 | unresolved |
-| `conversion.text.slug` | `package.conversion.text.slug` | none | |  | `platform.buffer.conversion.text.slug` | 0.38 | leads |
-| `conversion.text.timestamp` | `package.conversion.text.timestamp` | none | |  | `platform.parseint.conversion.text.timestamp` | 2.49 | trails |
-| `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuid.v4.bytes.allocate` | 0.88 | leads | `platform.webcrypto.v4.bytes.allocate` | 0.88 | leads |
+| `conversion.bytes.text` | `package.conversion.bytes.text` | `uuid.conversion.bytes.text` | 0.28 | leads | `platform.tohex.conversion.bytes.text` | 0.54 | leads |
+| `conversion.slug.bytes` | `package.conversion.slug.bytes` | none | |  | `platform.buffer.conversion.slug.bytes` | 1.24 | trails |
+| `conversion.slug.text` | `package.conversion.slug.text` | none | |  | `platform.buffer.conversion.slug.text` | 0.84 | leads |
+| `conversion.text.bytes` | `package.conversion.text.bytes` | `uuid.conversion.text.bytes` | 0.50 | leads | `platform.buffer.conversion.text.bytes` | 1.03 | unresolved |
+| `conversion.text.guard` | `package.conversion.text.guard` | `uuid.conversion.text.guard` | 1.25 | trails | `platform.regex.conversion.text.guard` | 0.99 | unresolved |
+| `conversion.text.slug` | `package.conversion.text.slug` | none | |  | `platform.buffer.conversion.text.slug` | 0.37 | leads |
+| `conversion.text.timestamp` | `package.conversion.text.timestamp` | none | |  | `platform.parseint.conversion.text.timestamp` | 2.26 | trails |
+| `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuid.v4.bytes.allocate` | 0.87 | leads | `platform.webcrypto.v4.bytes.allocate` | 0.89 | leads |
 | `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.85 | leads | `platform.webcrypto.v4.bytes.into` | 0.66 | leads |
 | `v4.slug.base64url.secure` | `package.v4.slug.base64url` | none | |  | `platform.webcrypto.v4.slug.base64url` | 0.22 | leads |
-| `v4.text.secure` | `package.v4.text.native` | `uniku.v4.text` | 0.94 | leads | `platform.webcrypto.v4.text` | 0.98 | unresolved |
-| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 1.02 | unresolved | none | |  |
-| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.95 | leads | none | |  |
-| `v7.text.secure` | `package.v7.text.portable` | `uniku.v7.text` | 0.57 | leads | none | |  |
-| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.07 | trails | none | |  |
+| `v4.text.secure` | `package.v4.text.native` | `uniku.v4.text` | 0.95 | leads | `platform.webcrypto.v4.text` | 0.99 | unresolved |
+| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 1.05 | unresolved | none | |  |
+| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.94 | leads | none | |  |
+| `v7.text.secure` | `package.v7.text.portable` | `uniku.v7.text` | 0.61 | leads | none | |  |
+| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.06 | trails | none | |  |
 
 ## chromium 153.0.8010.12
 
-Against the fastest package: leads 7, trails 1, unresolved 2. Trails on `conversion.text.guard`.
+Against the fastest package: leads 7, trails 2, unresolved 1. Trails on `conversion.text.guard`, `v7.timestamp.text`.
 
 | Group | Package call | Fastest rival | Ratio to rival | Rival verdict | Native floor | Ratio to floor | Floor verdict |
 | --- | --- | --- | ---: | --- | --- | ---: | --- |
 | `conversion.bytes.slug` | `package.conversion.bytes.slug` | none | |  | `platform.tobase64.conversion.bytes.slug` | 0.39 | leads |
-| `conversion.bytes.text` | `package.conversion.bytes.text` | `uuid.conversion.bytes.text` | 0.26 | leads | `platform.tohex.conversion.bytes.text` | 0.48 | leads |
+| `conversion.bytes.text` | `package.conversion.bytes.text` | `uuid.conversion.bytes.text` | 0.26 | leads | `platform.tohex.conversion.bytes.text` | 0.47 | leads |
 | `conversion.slug.bytes` | `package.conversion.slug.bytes` | none | |  | `platform.frombase64.conversion.slug.bytes` | 0.18 | leads |
-| `conversion.slug.text` | `package.conversion.slug.text` | none | |  | `platform.base64hex.conversion.slug.text` | 0.19 | leads |
-| `conversion.text.bytes` | `package.conversion.text.bytes` | `uuid.conversion.text.bytes` | 0.29 | leads | `platform.fromhex.conversion.text.bytes` | 0.20 | leads |
-| `conversion.text.guard` | `package.conversion.text.guard` | `uuid.conversion.text.guard` | 1.23 | trails | `platform.regex.conversion.text.guard` | 1.00 | unresolved |
-| `conversion.text.slug` | `package.conversion.text.slug` | none | |  | `platform.hexbase64.conversion.text.slug` | 0.23 | leads |
-| `conversion.text.timestamp` | `package.conversion.text.timestamp` | none | |  | `platform.parseint.conversion.text.timestamp` | 2.49 | trails |
-| `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuid.v4.bytes.allocate` | 0.14 | leads | `platform.webcrypto.v4.bytes.allocate` | 0.10 | leads |
+| `conversion.slug.text` | `package.conversion.slug.text` | none | |  | `platform.base64hex.conversion.slug.text` | 0.21 | leads |
+| `conversion.text.bytes` | `package.conversion.text.bytes` | `uuid.conversion.text.bytes` | 0.29 | leads | `platform.fromhex.conversion.text.bytes` | 0.21 | leads |
+| `conversion.text.guard` | `package.conversion.text.guard` | `uuid.conversion.text.guard` | 1.35 | trails | `platform.regex.conversion.text.guard` | 1.01 | unresolved |
+| `conversion.text.slug` | `package.conversion.text.slug` | none | |  | `platform.hexbase64.conversion.text.slug` | 0.21 | leads |
+| `conversion.text.timestamp` | `package.conversion.text.timestamp` | none | |  | `platform.parseint.conversion.text.timestamp` | 2.51 | trails |
+| `v4.bytes.allocate.secure` | `package.v4.bytes.allocate` | `uuid.v4.bytes.allocate` | 0.15 | leads | `platform.webcrypto.v4.bytes.allocate` | 0.10 | leads |
 | `v4.bytes.into.secure` | `package.v4.bytes.into` | `uniku.v4.bytes.into` | 0.79 | leads | `platform.webcrypto.v4.bytes.into` | 0.14 | leads |
 | `v4.slug.base64url.secure` | `package.v4.slug.base64url` | none | |  | `platform.webcrypto.v4.slug.base64url` | 0.09 | leads |
-| `v4.text.secure` | `package.v4.text.native` | `lukeed.v4.text.secure` | 0.53 | leads | `platform.webcrypto.v4.text` | 0.11 | leads |
-| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 0.83 | leads | none | |  |
-| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 0.91 | unresolved | none | |  |
-| `v7.text.secure` | `package.v7.text.default` | `uniku.v7.text` | 0.60 | leads | none | |  |
-| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.02 | unresolved | none | |  |
+| `v4.text.secure` | `package.v4.text.portable` | `lukeed.v4.text.secure` | 0.51 | leads | `platform.webcrypto.v4.text` | 0.11 | leads |
+| `v7.bytes.allocate.secure` | `package.v7.bytes.allocate` | `uuidv7.v7.bytes.allocate` | 0.80 | leads | none | |  |
+| `v7.bytes.into.secure` | `package.v7.bytes.into` | `uniku.v7.bytes.into` | 1.05 | unresolved | none | |  |
+| `v7.text.secure` | `package.v7.text.portable` | `uniku.v7.text` | 0.58 | leads | none | |  |
+| `v7.timestamp.text` | `package.v7.timestamp.text` | `uuidv7-js.v7.timestamp.text` | 1.10 | trails | none | |  |
 
 ## Excluded comparisons
 
