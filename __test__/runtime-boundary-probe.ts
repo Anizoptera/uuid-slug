@@ -21,6 +21,7 @@ import {
   isUuidV7Bytes,
   isPlainUuidV7Slug,
   isUuidV7String,
+  isUuidV7Text,
   isUuidSlugError,
   uuidStringToBytes,
   plainSlugToUuidBytes,
@@ -89,6 +90,29 @@ const hasCause = (value: unknown, target: unknown): boolean =>
   (value instanceof Error && hasCause(value.cause, target));
 
 export const runtimeBoundaryCases = [
+  {
+    name: "UUIDv7 timestamp text validates the full payload in either case",
+    run(this: void) {
+      for (const valid of [uuid, uuid.toUpperCase()]) {
+        assert.equal(isUuidV7Text(valid), true);
+        assert.equal(extractUuidV7UnixMs(valid), timestamp);
+        // A timestamp prefix alone cannot establish a valid UUID payload.
+        for (let index = 0; index < valid.length; index += 1) {
+          const invalid = valid.slice(0, index) + "g" + valid.slice(index + 1);
+          assert.equal(isUuidV7Text(invalid), false);
+          assert.ok(extractUuidV7UnixMs(invalid) instanceof UuidSlugError);
+        }
+        for (const [index, digit] of [
+          [14, "4"],
+          [19, "c"],
+        ] as const) {
+          const invalid = valid.slice(0, index) + digit + valid.slice(index + 1);
+          assert.equal(isUuidV7Text(invalid), false);
+          assert.ok(extractUuidV7UnixMs(invalid) instanceof UuidSlugError);
+        }
+      }
+    },
+  },
   {
     name: "preserves UUIDv7 bounds across timestamp byte carries and both text cases",
     run: () => {

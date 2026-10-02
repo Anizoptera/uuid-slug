@@ -409,7 +409,7 @@ export function isRfcVariant(bytes: Uint8Array, offset = 0): boolean {
   return (bytes[offset + 8] ?? 0) >>> 6 === 0b10;
 }
 
-// Predicates inspect the same hex table as parsing without allocating output bytes or Errors.
+// Accepted-text parsing uses the shared hex table without allocating output bytes or Errors.
 /** Check accepted UUID text without claiming a version, variant, or issuance. */
 /*#__NO_SIDE_EFFECTS__*/
 export function isUuidText(value: unknown): value is UuidText {
@@ -441,6 +441,7 @@ export function isUuidText(value: unknown): value is UuidText {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const UUID_V7_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const UUID_V7_TEXT_RE = /*#__PURE__*/ new RegExp(UUID_V7_RE.source, "i");
 
 /** Check accepted UUID text with version 4 and RFC variant bits. */
 /*#__NO_SIDE_EFFECTS__*/
@@ -462,6 +463,10 @@ export function isUuidV4Text(value: unknown): value is UuidV4Text {
 /** Check accepted UUID text with version 7 and RFC variant bits. */
 /*#__NO_SIDE_EFFECTS__*/
 export function isUuidV7Text(value: unknown): value is UuidV7Text {
+  // Canonical text uses the same syntax with either case, avoiding the full digit loop before
+  // timestamp parsing. Other spellings retain their existing checks; remeasure after engine or
+  // accepted-syntax changes (bench/PERFORMANCE.md).
+  if (typeof value === "string" && value.length === UUID_LENGTH) return UUID_V7_TEXT_RE.test(value);
   if (!isUuidText(value)) return false;
   const textStart = uuidTextStart(value);
   const variant = parsedHexValue(

@@ -2158,6 +2158,60 @@ sample-count regression, even when its medians look plausible.
 
 ### Fixed conversion comparisons
 
+#### UUIDv4 draw and encoder isolation
+
+Use separate draw, fixed-input encoder and complete-generation rows to locate Bun slug costs;
+component timings cannot select a public implementation. Two 2026-10-02 Bun 1.4.2 screens use
+six fresh processes, seven 5 ms batches and 16 ms warm-up. Pooled copy-and-erase draws cost
+15.16–15.22 ns and direct scratch draws 15.28–15.45 ns. Selected fixed encoding costs
+34.12–34.78 ns versus native encoding at 30.47–30.55 ns. Complete package slugs cost
+43.92–44.24 ns, pooled-native slugs 40.85–41.20 ns, direct-scratch-native slugs 42.47–42.74 ns,
+and direct-owned-native slugs 46.94–46.96 ns. Generation checks precede timing; fixed encoding
+uses an exact slug witness. These source-only screens do not establish allocation volume or
+statistical separation. The prior packed native-encoding comparison remains the retention
+decision; the refreshed single-process native UUIDv4 slug floor is unresolved.
+
+#### Canonical UUIDv7 timestamp validation screen
+
+Compare full UUIDv7 validation before timestamp parsing; parsing alone is a lower bound.
+The installed `uuidv7-js` parser uses a case-inclusive canonical regex then `parseInt`.
+The baseline accepted-text guard scans every hexadecimal digit before parsing.
+Two 2026-10-02 screens on Node 26.10.0 and Bun 1.4.2 use six fresh processes and seven 5 ms
+batches after 16 ms warm-up, with 256 varying timestamps in lowercase, uppercase and compact text.
+Every timestamp is checked before timing. A case-insensitive canonical regex plus parsing costs
+84.40–86.34 ns versus 111.09–111.25 ns on lowercase Node input, and 58.78–59.84 ns versus
+82.67–84.51 ns on Bun. Uppercase inputs show the same direction; compact fallback stays near
+its current cost. Explicit-case classes and the case-insensitive flag are close, so deriving the
+case-insensitive regex from the existing canonical pattern avoids a second syntax definition.
+These source-only screens motivate a candidate, not retention; packed calls, malformed payloads,
+accepted alternate spellings and resource costs must decide it.
+
+Keep case-insensitive canonical validation in `isUuidV7Text`; preserve the shared parser for
+compact, URN and braced spellings. Against `55815a2`, two six-round packed replays on
+2026-10-02 measure canonical extraction ratios of 0.739/0.793 on Node 26.10.0 and
+0.659/0.624 on Bun 1.4.2, with both intervals below 1. Mixed-case extraction also improves
+in both. Canonical guard ratios are 0.643/0.606 and 0.462/0.458 respectively. Chromium
+153.0.8010.12, Firefox 155.0, WebKit 26.6, Deno 2.9.7 and Node Current JITless favor the
+canonical calls, although some browser intervals remain unresolved. Compact and wrapped
+guards have no repeated resolved loss; isolated control losses do not reproduce. Each round
+uses fresh processes, alternating revision order, one 5 ms sample and 16 ms warm-up.
+
+Host records show lower canonical-call CPU cost and no measured filesystem I/O. One native
+profile pair estimates canonical extraction at 95.71/96.69 sampled bytes per operation on
+Node, 95.90/94.96 on Deno and 72.06/72.62 on Chromium, baseline/candidate. Guard allocation
+samples remain near zero. Sampling error and GC make these estimates insufficient to rank
+small allocation differences; live-heap deltas are not allocation volume. Bun's native CPU,
+heap and allocator artifacts cover the same successful calls. Full-payload corruption and
+wrong-version/variant regressions fail a validation-bypass mutation in both Node and Bun.
+
+Six alternating fresh imports per revision measure median root import at 12.06/12.28 ms on
+Node and 5.41/4.47 ms on Bun, with median live-heap increases about 15/17 KiB. Imports use
+warm filesystem caches and include module parsing; these observations do not attribute that
+increase solely to the additional regex or establish a startup speed difference. The regex
+derives from the canonical syntax once; repeated construction would charge every call.
+Recheck the complete calls, fallback spellings, allocations and startup after engine or syntax
+changes. The native parse-only floor and the remaining competitor gaps still require work.
+
 #### Uppercase writer screen
 
 Keep the direct uppercase writer unless a complete successful-call comparison favors lowercase

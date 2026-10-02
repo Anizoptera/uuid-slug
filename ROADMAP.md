@@ -211,6 +211,10 @@ competitor. Caller buffers miss that, ns package / `uuid`: Bun UUIDv4 27.9 / 26.
       one-pass parser and package formatter with hyphen positions and mixed case still accepted.
 - [ ] Guards and timestamp extraction: close the `uuidv7-js` text extraction gap (1.12–1.32 on
       Node, Bun, and Deno); find its mechanism before copying it.
+- [x] Retain case-insensitive canonical UUIDv7 validation through the existing text guard;
+      repeated packed calls improve canonical extraction on Node and Bun, alternate spellings
+      have no repeated resolved loss, and mutation tests and native resource profiles preserve
+      full validation. Keep the remaining native and competitor gaps open.
 
 ## Phase 6: deliver (after every source change)
 
