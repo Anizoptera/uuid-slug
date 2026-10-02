@@ -520,6 +520,16 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 
 ## Capabilities and runtime work
 
+- Preserve normal-call speed and resource efficiency when defending against rare misuse. Art's
+  ruling: "We can do some improvements for correctness and for prevention of misuse, but only up
+  to extent while it does not damage the performance and resource efficiency of the primary use
+  cases which are actually the ones relevant and important." A reproducible unusual input is not
+  enough to justify more work on ordinary generation, parsing, conversion, or caller-buffer calls.
+  Compare the unchanged implementation and the proposed defense through those complete calls on
+  every affected runtime and tested release, including allocation and resource evidence. Keep a
+  defense only when repeated evidence shows no normal-call speed or resource regression; unresolved cost is not
+  permission to retain it. Prefer a defense that removes work or confines it to an exceptional path.
+  Preserve existing validation of ordinary malformed input and all supported wire formats.
 - Preserve the union of useful host capabilities behind one semantic interface. Detect optional
   native capabilities once, use the cheapest valid path, and retain a portable fallback with the
   same result and error meaning.

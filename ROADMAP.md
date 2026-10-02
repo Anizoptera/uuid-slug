@@ -13,6 +13,8 @@ to one repair group, with verification proceeding on its completed dependencies.
 Keep complete routine lanes below five minutes without dropping runtime or artifact coverage;
 measure lane durations, isolate timings from competing work, and retain only defect-discriminating checks.
 
+- [ ] Evaluate the reproduced shadowed-length misuse only after the normal writer work: do not retain the shared intrinsic-length experiment without repeated normal-call speed and resource evidence across affected runtimes and tested releases. Restore the unchanged checks if the defense slows or adds resource cost to primary use. Keep supported-format correctness and ordinary invalid-input checks intact; do not expand the unusual-input corpus without a decision-relevant need.
+
 - [x] Reproduce wrapper reentrancy and hostile tags; normalize strings intrinsically and resolve selectors before shared scratch becomes live.
 - [x] Reproduce structural codec mutation, malformed bytes, retained storage and throws; isolate private UUID bytes and validate callback results with causes.
 - [x] Reproduce uppercase caller-buffer decoding; accept mixed-case base32hex while retaining strict padding and atomic writes.

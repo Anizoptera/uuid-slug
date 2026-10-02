@@ -2,6 +2,11 @@
 
 Preserve the published identifier contracts and verify the runtime paths that each change reaches.
 
+Protect normal consumer calls from the cost of rare misuse defenses. Before changing a shared hot
+path to handle an unusual input, read `docs/public-api.md` §Capabilities and runtime work; retain
+the defense only when repeated runtime measurements show no loss of normal-call speed or resource
+efficiency. A reproducible misuse alone does not justify that cost.
+
 ## Contract owners
 
 - README owns the consumer model: define each term before first use, state when this package is
@@ -262,7 +267,8 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 - Never act on one performance run. Repeat the decision-relevant workload and retain an optimization
   only when the effect reproduces and its uncertainty excludes no material change; otherwise report
   the result as unresolved. A statistically detectable but negligible effect does not earn code.
-- Correctness outranks every performance result. Before timing a candidate, map the contracts and
+- Correctness of supported normal calls outranks every performance result. Rare misuse defenses
+  must also satisfy the no-regression rule above. Before timing a candidate, map the contracts and
   failure modes its changed mechanism can break, inspect whether existing tests distinguish them,
   add the smallest missing falsifiers, and mutate the mechanism to prove those tests reach it. Run
   the owning runtime tests before and after measurement; reject speedups with an unsecured invariant.
