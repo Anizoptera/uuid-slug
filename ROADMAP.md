@@ -72,6 +72,12 @@ measure lane durations, isolate timings from competing work, and retain only def
 - [ ] Locate the Chromium mixed-workload sentinel slowdown with formatter-only and slug-only comparisons; retain the formatter without a separate helper only if repeated measurements remove that slowdown and preserve formatting gains.
 - [ ] Exercise every check-tail value with an independent bit-packing oracle in both runners; require one string construction for plain and masked output through the resource counters.
 - [ ] Repeat the retained writer comparison on installed Node and Bun releases, then profile the selected and portable paths; keep version-specific results and uncertainty in bench/PERFORMANCE.md.
+- [x] Include private alphabet encoders in Bun's existing memory-profile corpus; the real filtered regression fails when its argument is removed, and completes with a fresh sampling artifact when restored.
+- [ ] Resolve WebKit's conflicting mixed-workload losses with a baseline-versus-identical-baseline control before attributing unchanged byte-generation or guard costs to the new writers.
+- [ ] Resolve the formatter-only WebKit byte-guard loss; compare a same-file helper with the direct writer on WebKit and Chromium, then repeat any surviving shape across the runtime and installed-release matrix.
+- [ ] Compare WebKit native hex formatting with the fixed writer behind the portable adapter; retain runtime-specific selection only if mixed and isolated public calls remove the WebKit losses without slowing other engines.
+- [ ] Compare WebKit's native ASCII decoder through the existing scratch-buffer interface with native hex and fixed writers; require valid bytes, every check tail and repeated mixed-workload evidence before selecting it.
+- [ ] Resolve latest stable runtime releases from their official indexes before ranking results; verify downloaded executable checksums and add newer Node Current to the retained-writer replays rather than calling an installed older release Current.
 
 Why: V8 formats fastest with one fixed-argument `String.fromCharCode` call over byte-to-code tables.
 It returns one flat string, as the Latin-1 read does. Screens, ns per call, current → candidate,

@@ -4,6 +4,7 @@ import { heapStats, memoryUsage, profile } from "bun:jsc";
 import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json" with { type: "json" };
 import * as api from "../src/index";
 import * as privateApi from "../src/v4";
+import * as privateAlphabetApi from "../src/alphabet";
 import { createProfileCases, selectProfileCases } from "./profile-cases";
 
 const reports = process.env.UUID_SLUG_PROFILE_NATIVE_DIR;
@@ -13,6 +14,7 @@ const suite = createProfileCases(
   api,
   originalFixtures.issued,
   process.env.UUID_SLUG_PROFILE_PRIVATE === "1" ? privateApi : undefined,
+  process.env.UUID_SLUG_PROFILE_PRIVATE === "1" ? privateAlphabetApi : undefined,
 );
 suite.verify();
 const cases = selectProfileCases(suite.cases, filter);

@@ -33,6 +33,37 @@ const entropy = {
   maxOnesRatio: 1,
 };
 
+test("Bun memory profiling executes private portable encoders", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "uuid-slug-memory-corpus-"));
+  try {
+    const child = Bun.spawn(
+      [process.execPath, join(import.meta.dir, "..", "bench", "profile-bun-memory.ts")],
+      {
+        env: {
+          ...process.env,
+          UUID_SLUG_PROFILE_NATIVE_DIR: directory,
+          UUID_SLUG_PROFILE_PRIVATE: "1",
+          UUID_SLUG_PROFILE_FILTER: "portable.base64.encode,portable.base32.encode",
+        },
+        stdout: "pipe",
+        stderr: "pipe",
+      },
+    );
+    const [stdout, stderr, status] = await Promise.all([
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+      child.exited,
+    ]);
+    expect({ status, diagnostic: status === 0 ? "" : stdout + stderr }).toEqual({
+      status: 0,
+      diagnostic: "",
+    });
+    expect(await Bun.file(join(directory, "bun-jsc-sampling.json")).exists()).toBe(true);
+  } finally {
+    await rm(directory, { force: true, recursive: true });
+  }
+});
+
 test("median inference requires enough rounds and uses exact order-statistic bounds", () => {
   expect(medianConfidence95([1, 2, 3, 4, 5])).toBeUndefined();
   const values = [16, 3, 8, 11, 1, 15, 6, 13, 4, 10, 2, 14, 7, 12, 5, 9];
