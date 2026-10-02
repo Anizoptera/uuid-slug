@@ -168,8 +168,9 @@ Why: default generation misses parity, ns package / target. Bun: UUIDv4 text 31�
 75–82 / 39–45 and slug 77–82 / 54–58 native; UUIDv7 new bytes 44.9 / `uuid` 40.6. UUIDv7 text is
 about 42 ns draw plus 37 ns Latin-1 formatting. The UUIDv7 target is native, but native drifts:
 rejected (§Native floors) are `Bun.randomUUIDv7` (567–576 ms ahead after 2M calls), the same with a
-`Date.now()` argument (51 ns, up to 8 ms ahead), and patching its text (91–94 ns). A truthful
-floor is clock (22 ns) plus entropy plus formatting, so UUIDv7 parity may be impossible.
+`Date.now()` argument (51 ns, up to 8 ms ahead), and patching its text (91–94 ns).
+Clock, entropy and formatting need separate measurements; their summed timings do not establish
+a physical lower bound for the complete call.
 
 - [ ] UUIDv7 draw (about 42 ns against 22 ns for UUIDv4 bytes): ablate the reentrancy
       `try`, `readClock` wrapper, per-call clock validation for the built-in `Date.now`, rollback
@@ -189,6 +190,9 @@ floor is clock (22 ns) plus entropy plus formatting, so UUIDv7 parity may be imp
 - [x] Compare fixed tail stores in two packed seven-runtime replays. Reject the rewrite:
       only a small fractional-clock caller-buffer gain reproduces. Keep the shared entropy
       placement witness; the intermediate entropy-copy mechanism remains open.
+- [ ] Compare independent module draws and direct payload writing without weakening created
+      generators. Extend the bit-placement oracle to the module mode and prove it catches a lost
+      bit before timing; measure extra entropy consumption alongside throughput before retention.
 - [ ] Bun UUIDv4 text: ablate the default parameter plus `isUuidTextCase` check and the
       trusted-identity comparison separately; try an argument-count fast path. Rejected: removing
       the `try` (saves 1 ns, breaks native-failure fallback) and import-time validation (draws

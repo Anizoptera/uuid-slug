@@ -878,10 +878,17 @@ export const runtimeBoundaryCases = [
   {
     name: "preserves all portable v7 payload bits without merging input bits",
     run(this: void) {
-      for (const explicit of [false, true]) {
+      // Module draws and created generators may use different writers; both must retain every bit.
+      for (const [explicit, coordinateExplicitInstants] of [
+        [false, true],
+        [true, true],
+        [false, false],
+        [true, false],
+      ] as const) {
         let entropyBytes = 0;
         const generate = (input?: Uint8Array) => {
           const generator = createUuidV7Generator({
+            coordinateExplicitInstants,
             readUnixMs: () => 0,
             fillRandom: (bytes) => {
               entropyBytes = bytes.length;
