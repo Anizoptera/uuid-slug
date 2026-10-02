@@ -3,44 +3,20 @@
 import { unwrap } from "../dev/unwrap";
 import { createBoundsProfileCases } from "./profile-bounds";
 import { createUuidV4ProfileCases } from "./profile-v4";
+import { assertProfileOutcome } from "./profile-case";
+import type { ProfileCase } from "./profile-case";
+export { assertProfileOutcome, selectProfileCases } from "./profile-case";
+export type { ProfileValue, ProfileCase } from "./profile-case";
 type Api = typeof import("../src/index");
 type PrivateV4Api = Pick<typeof import("../src/v4"), "generatePortableUuidV4">;
 type PrivateAlphabetApi = Pick<
   typeof import("../src/alphabet"),
   "BASE32HEX" | "BASE64URL" | "decodeInto" | "encodePortable"
 >;
-export type ProfileValue = string | number | boolean | Uint8Array | Error | object;
-export type ProfileCase = (index: number) => ProfileValue;
 
 interface ProfileSuite {
   readonly cases: Record<string, ProfileCase>;
   verify(): void;
-}
-
-/** Reject a corpus witness that does not reach its named success or failure path. */
-export function assertProfileOutcome(name: string, value: ProfileValue): boolean {
-  const expectedError = name.startsWith("invalid.");
-  if (expectedError !== value instanceof Error)
-    throw new Error(`Unexpected success/failure outcome for ${name}`, { cause: value });
-  const expectedGuard = name.startsWith("guard.invalid.")
-    ? false
-    : name.startsWith("guard.") || undefined;
-  if (expectedGuard !== undefined && value !== expectedGuard)
-    throw new Error(`Guard corpus did not reach its named path: ${name}`);
-  return expectedError;
-}
-
-/** Select cases whose names contain any comma-separated filter substring; fail when none match. */
-export function selectProfileCases<Case>(
-  cases: Record<string, Case>,
-  filter: string | null | undefined,
-): [string, Case][] {
-  const terms = filter ? filter.split(",").filter(Boolean) : [];
-  const selected = Object.entries(cases).filter(
-    ([name]) => terms.length === 0 || terms.some((term) => name.includes(term)),
-  );
-  if (selected.length === 0) throw new Error("Profile filter selected no cases");
-  return selected;
 }
 
 interface OriginalFixture {
@@ -210,6 +186,8 @@ export function createProfileCases(
   const ids = Array.from({ length: 256 }, (_, index) => profileUuid(index));
   const compactIds = ids.map((uuid) => uuid.replaceAll("-", ""));
   const mixedIds = ids.map((uuid) => uuid.slice(0, 18).toUpperCase() + uuid.slice(18));
+  const urnIds = ids.map((uuid) => "urn:uuid:" + uuid);
+  const bracedIds = ids.map((uuid) => "{" + uuid + "}");
   const bytes = ids.map((id) => unwrap(api.uuidStringToBytes(id)));
   const packageFailure = api.uuidStringToBytes("invalid");
   if (!(packageFailure instanceof Error)) throw new Error("Error profile fixture did not fail");
@@ -641,6 +619,10 @@ export function createProfileCases(
     "guard.uuid": (index) => api.isUuidV7String(ids[index & 255]),
     "guard.uuid.compact": (index) => api.isUuidV7Text(compactIds[index & 255]),
     "guard.uuid.mixed": (index) => api.isUuidV7Text(mixedIds[index & 255]),
+    // Accepted spellings distinguish the canonical fast path from the retained text parser.
+    "guard.uuid.text": (index) => api.isUuidV7Text(ids[index & 255]),
+    "guard.uuid.urn": (index) => api.isUuidV7Text(urnIds[index & 255]),
+    "guard.uuid.braced": (index) => api.isUuidV7Text(bracedIds[index & 255]),
     "guard.bytes.any": (index) => api.isUuidBytes(bytes[index & 255]),
     "guard.bytes.v4": () =>
       api.isUuidV4Bytes(
@@ -660,6 +642,10 @@ export function createProfileCases(
       return api.extractUuidV7UnixMs(into, 4);
     },
     "timestamp.extract.uuid": (index) => api.extractUuidV7UnixMs(ids[index & 255] as string),
+    "timestamp.extract.uuid.mixed": (index) =>
+      api.extractUuidV7UnixMs(mixedIds[index & 255] as string),
+    "timestamp.extract.uuid.compact": (index) =>
+      api.extractUuidV7UnixMs(compactIds[index & 255] as string),
     "timestamp.extract.slug": (index) => api.extractUuidV7UnixMs(slugs[index & 255] as string),
     "timestamp.extract.slug.base32": (index) =>
       api.extractUuidV7UnixMs(base32[index & 255] as string),
