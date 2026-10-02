@@ -12,8 +12,8 @@ export const BASE64URL_NAME = "base64url";
 
 /**
  * A power-of-two alphabet plus its reverse lookup. Encoding is pure bit packing, so the only
- * thing that varies between base64url and base32 is the character set and how many bits each
- * character carries — one routine serves both rather than two hand-unrolled loops.
+ * character set and bits per character define the wire format. Fixed UUID writers specialize
+ * that format; the generic accumulator uses the same tables for other payload lengths.
  */
 export interface Alphabet {
   readonly bitsPerChar: number;
@@ -163,6 +163,12 @@ export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 
       return encodeBase64urlLatin1(createLatin1Scratch, bytes, tail);
     if (alpha === BASE32HEX && (tailBits === 0 || tailBits === 2 || tailBits === 4))
       return encodeBase32hexLatin1(createLatin1Scratch, bytes, tail, tailBits);
+  }
+  if (bytes.length === 16) {
+    if (alpha === BASE64URL && (tailBits === 0 || tailBits === 4))
+      return writeBase64url(bytes, (base64urlCodes ??= characterCodes(BASE64URL)), tail);
+    if (alpha === BASE32HEX && (tailBits === 0 || tailBits === 2 || tailBits === 4))
+      return writeBase32hex(bytes, (base32hexCodes ??= characterCodes(BASE32HEX)), tail, tailBits);
   }
   if (
     nativeToBase64 &&
@@ -482,4 +488,129 @@ export function decodeInto(
   if (bits > 0 && (acc & ((1 << bits) - 1)) !== 0)
     return new UuidSlugError(code, `${name} value has non-canonical trailing bits.`);
   return tail;
+}
+
+// Fixed 16-byte groups avoid per-character concatenation and temporary text buffers on V8.
+// Bun keeps its Latin-1 writer; remeasure after engine changes (bench/PERFORMANCE.md).
+// Character tables belong to the alphabet owner; callers select only supported tail widths.
+/*#__NO_SIDE_EFFECTS__*/
+function writeBase64url(bytes: Uint8Array, codes: Uint8Array, tail: number): string {
+  const a = ((bytes[0] as number) << 16) | ((bytes[1] as number) << 8) | (bytes[2] as number);
+  const b = ((bytes[3] as number) << 16) | ((bytes[4] as number) << 8) | (bytes[5] as number);
+  const c = ((bytes[6] as number) << 16) | ((bytes[7] as number) << 8) | (bytes[8] as number);
+  const d = ((bytes[9] as number) << 16) | ((bytes[10] as number) << 8) | (bytes[11] as number);
+  const e = ((bytes[12] as number) << 16) | ((bytes[13] as number) << 8) | (bytes[14] as number);
+  const f = bytes[15] as number;
+  return String.fromCharCode(
+    codes[a >>> 18] as number,
+    codes[(a >>> 12) & 63] as number,
+    codes[(a >>> 6) & 63] as number,
+    codes[a & 63] as number,
+    codes[b >>> 18] as number,
+    codes[(b >>> 12) & 63] as number,
+    codes[(b >>> 6) & 63] as number,
+    codes[b & 63] as number,
+    codes[c >>> 18] as number,
+    codes[(c >>> 12) & 63] as number,
+    codes[(c >>> 6) & 63] as number,
+    codes[c & 63] as number,
+    codes[d >>> 18] as number,
+    codes[(d >>> 12) & 63] as number,
+    codes[(d >>> 6) & 63] as number,
+    codes[d & 63] as number,
+    codes[e >>> 18] as number,
+    codes[(e >>> 12) & 63] as number,
+    codes[(e >>> 6) & 63] as number,
+    codes[e & 63] as number,
+    codes[f >>> 2] as number,
+    codes[((f & 3) << 4) | (tail & 15)] as number,
+  );
+}
+
+/*#__NO_SIDE_EFFECTS__*/
+function writeBase32hex(
+  bytes: Uint8Array,
+  codes: Uint8Array,
+  tail: number,
+  tailBits: number,
+): string {
+  const a = bytes[0] as number,
+    b = bytes[1] as number,
+    c = bytes[2] as number;
+  const d = bytes[3] as number,
+    e = bytes[4] as number,
+    f = bytes[5] as number;
+  const g = bytes[6] as number,
+    h = bytes[7] as number,
+    i = bytes[8] as number;
+  const j = bytes[9] as number,
+    k = bytes[10] as number,
+    l = bytes[11] as number;
+  const m = bytes[12] as number,
+    n = bytes[13] as number,
+    o = bytes[14] as number;
+  const p = bytes[15] as number;
+  // A four-bit check extends the payload to 27 digits. Keep three padding bits zero;
+  // a plain payload has only two spare bits and must remain 26 digits.
+  const last = codes[((p & 7) << 2) | (tailBits === 4 ? (tail >>> 2) & 3 : tail & 3)] as number;
+  // Keep masked output flat too: a concatenated check character changes the string shape seen
+  // by decoders. The two fixed arities avoid an argument array or a substring on plain output.
+  if (tailBits === 4)
+    return String.fromCharCode(
+      codes[a >>> 3] as number,
+      codes[((a & 7) << 2) | (b >>> 6)] as number,
+      codes[(b >>> 1) & 31] as number,
+      codes[((b & 1) << 4) | (c >>> 4)] as number,
+      codes[((c & 15) << 1) | (d >>> 7)] as number,
+      codes[(d >>> 2) & 31] as number,
+      codes[((d & 3) << 3) | (e >>> 5)] as number,
+      codes[e & 31] as number,
+      codes[f >>> 3] as number,
+      codes[((f & 7) << 2) | (g >>> 6)] as number,
+      codes[(g >>> 1) & 31] as number,
+      codes[((g & 1) << 4) | (h >>> 4)] as number,
+      codes[((h & 15) << 1) | (i >>> 7)] as number,
+      codes[(i >>> 2) & 31] as number,
+      codes[((i & 3) << 3) | (j >>> 5)] as number,
+      codes[j & 31] as number,
+      codes[k >>> 3] as number,
+      codes[((k & 7) << 2) | (l >>> 6)] as number,
+      codes[(l >>> 1) & 31] as number,
+      codes[((l & 1) << 4) | (m >>> 4)] as number,
+      codes[((m & 15) << 1) | (n >>> 7)] as number,
+      codes[(n >>> 2) & 31] as number,
+      codes[((n & 3) << 3) | (o >>> 5)] as number,
+      codes[o & 31] as number,
+      codes[p >>> 3] as number,
+      last,
+      codes[(tail & 3) << 3] as number,
+    );
+  return String.fromCharCode(
+    codes[a >>> 3] as number,
+    codes[((a & 7) << 2) | (b >>> 6)] as number,
+    codes[(b >>> 1) & 31] as number,
+    codes[((b & 1) << 4) | (c >>> 4)] as number,
+    codes[((c & 15) << 1) | (d >>> 7)] as number,
+    codes[(d >>> 2) & 31] as number,
+    codes[((d & 3) << 3) | (e >>> 5)] as number,
+    codes[e & 31] as number,
+    codes[f >>> 3] as number,
+    codes[((f & 7) << 2) | (g >>> 6)] as number,
+    codes[(g >>> 1) & 31] as number,
+    codes[((g & 1) << 4) | (h >>> 4)] as number,
+    codes[((h & 15) << 1) | (i >>> 7)] as number,
+    codes[(i >>> 2) & 31] as number,
+    codes[((i & 3) << 3) | (j >>> 5)] as number,
+    codes[j & 31] as number,
+    codes[k >>> 3] as number,
+    codes[((k & 7) << 2) | (l >>> 6)] as number,
+    codes[(l >>> 1) & 31] as number,
+    codes[((l & 1) << 4) | (m >>> 4)] as number,
+    codes[((m & 15) << 1) | (n >>> 7)] as number,
+    codes[(n >>> 2) & 31] as number,
+    codes[((n & 3) << 3) | (o >>> 5)] as number,
+    codes[o & 31] as number,
+    codes[p >>> 3] as number,
+    last,
+  );
 }

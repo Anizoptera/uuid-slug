@@ -44,6 +44,11 @@ import {
 import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
 import { createUuidV7MaskingCodecWithGenerator } from "../src/masking-codec";
 import { NIL_TEST_SENTINEL } from "./sentinel-fixtures";
+import {
+  BASE32HEX as BASE32HEX_ALPHABET,
+  BASE64URL as BASE64URL_ALPHABET,
+  encode,
+} from "../src/alphabet";
 
 /** Capture what a call throws; a call that returns instead fails the probe. */
 function thrownBy(call: () => unknown): unknown {
@@ -82,6 +87,42 @@ const hasCause = (value: unknown, target: unknown): boolean =>
   (value instanceof Error && hasCause(value.cause, target));
 
 export const runtimeBoundaryCases = [
+  {
+    name: "preserves UUID byte positions, text case and every slug check tail against independent encoders",
+    run: () => {
+      for (let seed = 0; seed < 64; seed += 1) {
+        const bytes = Uint8Array.from({ length: 16 }, (_, index) =>
+          Math.imul(seed + 1, index * 197 + 131),
+        );
+        const hex = Buffer.from(bytes).toString("hex");
+        const expected = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+        const storage = new Uint8Array(24);
+        storage.set(bytes, 3);
+        assert.equal(bytesToUuidString(storage, 3), expected);
+        assert.equal(bytesToUuidString(storage, 3, UUID_TEXT_UPPERCASE), expected.toUpperCase());
+        assert.equal(encode(bytes, BASE64URL_ALPHABET), Buffer.from(bytes).toString("base64url"));
+        for (const [alphabet, widths] of [
+          [BASE32HEX_ALPHABET, [0, 2, 4]],
+          [BASE64URL_ALPHABET, [0, 4]],
+        ] as const)
+          for (const tailBits of widths) {
+            for (let tail = 0; tail < 1 << tailBits; tail += 1) {
+              let bits = 0n;
+              for (const byte of bytes) bits = (bits << 8n) | BigInt(byte);
+              bits = (bits << BigInt(tailBits)) | BigInt(tail);
+              const width = alphabet.bitsPerChar;
+              const mask = (1n << BigInt(width)) - 1n;
+              const length = Math.ceil((128 + tailBits) / width);
+              bits <<= BigInt(length * width - 128 - tailBits);
+              let text = "";
+              for (let digit = length - 1; digit >= 0; digit -= 1)
+                text += alphabet.chars[Number((bits >> BigInt(digit * width)) & mask)];
+              assert.equal(encode(bytes, alphabet, tail, tailBits), text);
+            }
+          }
+      }
+    },
+  },
   {
     name: "contains structural codec callbacks without exposing immutable UUID storage",
     run(this: void) {

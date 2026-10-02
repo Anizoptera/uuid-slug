@@ -3,7 +3,6 @@
 import crypto from "node:crypto";
 import { Buffer } from "node:buffer";
 import { pooledFill } from "./pool.ts";
-import { bufferLatin1Scratch } from "./portable.ts";
 import type { Runtime } from "./types.ts";
 
 /**
@@ -26,7 +25,6 @@ const nodeRuntime: Runtime = {
   }),
   // No `uuidV4`: formatting pooled `randomFillSync` bytes beats `crypto.randomUUID` on Node 24 and 26
   // with the JIT, and loses without it; bench/PERFORMANCE.md owns both results and the recheck.
-  latin1Scratch: bufferLatin1Scratch(Buffer),
 };
 
 export const runtime = nodeRuntime;

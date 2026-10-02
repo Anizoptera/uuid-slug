@@ -70,39 +70,28 @@ measure lane durations, isolate timings from competing work, and retain only def
 
 ## Phase 1: per-engine text and slug writers
 
-- [ ] Retain the fixed writers only after repeated mixed and isolated packed comparisons exclude the observed masked-base32 read regression; compare a single flat 27-character write against the two-string candidate.
-- [ ] Locate the Chromium mixed-workload sentinel slowdown with formatter-only and slug-only comparisons; retain the formatter without a separate helper only if repeated measurements remove that slowdown and preserve formatting gains.
-- [ ] Exercise every check-tail value with an independent bit-packing oracle in both runners; require one string construction for plain and masked output through the resource counters.
-- [ ] Repeat the retained writer comparison on installed Node and Bun releases, then profile the selected and portable paths; keep version-specific results and uncertainty in bench/PERFORMANCE.md.
+- [x] Retain flat 27-character masked output: repeated mixed comparisons remove the earlier read loss; the resource mutation rejects two string constructions.
+- [x] Keep the fixed formatter in its owner: helper-only comparisons reproduce Chromium sentinel losses; the selected writer's mixed comparisons do not.
+- [x] Exercise every check tail against independent bit packing in Node and Bun; byte-position, shift and tail mutations fail the oracle, and resource counters require one string construction.
+- [x] Repeat the selected writer on installed Node and Bun releases; profile selected and portable paths on Node, Bun, Deno and Chromium. Record WebKit's native-profile gap and measurement limits in bench/PERFORMANCE.md.
 - [x] Include private alphabet encoders in Bun's existing memory-profile corpus; the real filtered regression fails when its argument is removed, and completes with a fresh sampling artifact when restored.
-- [ ] Resolve WebKit's conflicting mixed-workload losses with a baseline-versus-identical-baseline control before attributing unchanged byte-generation or guard costs to the new writers.
-- [ ] Resolve the formatter-only WebKit byte-guard loss; compare a same-file helper with the direct writer on WebKit and Chromium, then repeat any surviving shape across the runtime and installed-release matrix.
-- [ ] Compare WebKit native hex formatting with the fixed writer behind the portable adapter; retain runtime-specific selection only if mixed and isolated public calls remove the WebKit losses without slowing other engines.
-- [ ] Compare WebKit's native ASCII decoder through the existing scratch-buffer interface with native hex and fixed writers; require valid bytes, every check tail and repeated mixed-workload evidence before selecting it.
-- [ ] Resolve latest stable runtime releases from their official indexes before ranking results; verify downloaded executable checksums and add newer Node Current to the retained-writer replays rather than calling an installed older release Current.
+- [x] Run identical-baseline controls and formatter/slug separation on WebKit; the formatter reproduces the loss, while the selected native-hex hybrid does not in two mixed replays.
+- [x] Reject the same-file helper and packed hex-pair alternatives after repeated mixed losses; repeat the surviving shape across runtime and installed-release comparisons.
+- [x] Select WebKit native hex only when available; real Node Current mutation proves selection, capability-absent tests prove fallback, and repeated packed browser calls cover the selected engine.
+- [x] Reject the shared native ASCII decoder: its mixed base64url and generation losses outweigh its base32hex gain.
+- [x] Verify the official Node Current archive checksum and include Node 26.10.0 in final replays; label older observations by actual release.
 
-Why: V8 formats fastest with one fixed-argument `String.fromCharCode` call over byte-to-code tables.
-It returns one flat string, as the Latin-1 read does. Screens, ns per call, current → candidate,
-results read, two runs each: UUID text Node 26 60 → 29, Node 24 49 → 31, JITless 775 → 433, Bun
-33 → 40; base64url slug Node 26 54 → 22, Node 24 42 → 23, JITless 612 → 332, Bun 28 → 31. An
-earlier, not repeated screen favoured it on Chromium and WebKit; Firefox slugs lost a few ns
-(unranked). Base32hex and Deno are unscreened. Bun keeps its Latin-1 `Buffer` read. Rejected on V8:
-the Latin-1 read, `toHex` plus hyphens, byte-pair strings.
+Why: fixed character-code writers improve measured UUID conversion on Node, Chromium and Deno.
+Bun retains Latin-1; WebKit retains native hex when present because the all-fixed formatter slowed
+other successful calls. `bench/PERFORMANCE.md` owns repeated results and their limits.
 
-- [ ] Add `fromCharCode` writers for 16-byte input: UUID text in both cases, base64url with a 0- or
-      4-bit tail, base32hex with a 0-, 2-, or 4-bit tail (27 characters for 4). Select them wherever
-      `runtime.latin1Scratch` is absent. Remove `latin1Scratch` from `src/runtime/node.ts` and from
-      Deno in `src/runtime/portable.ts`. For 16 bytes, they replace the `toHex`, native `toBase64`,
-      byte-pair, and concatenation branches in `src/uuid.ts` and `src/alphabet.ts`, and the byte-pair
-      timestamp table in `src/v7-bounds.ts`; other lengths keep the generic accumulator. Rewrite each
-      changed frame's comment: why, rejected alternative, recheck trigger.
-- [ ] Before timing: prove output equals the generic accumulator over random bytes for every case
-      and tail width in Vitest (new writer) and Bun tests (Latin-1). Plant one wrong table entry, shift,
-      and tail mask in turn; each plant must fail a test. Update `bench/resources.ts` expectations.
-- [ ] Run two packed replays on all runtimes with
-      `UUID_SLUG_PROFILE_FILTER=string,String,slug,base32,encode,bounds`. Predict ≤ 0.6 on Node,
-      Chromium, and Deno text and slug rows, Bun unresolved, JITless faster. Reject the change if any
-      ranked-runtime row is slower in both.
+- [x] Add fixed UUID and slug writers with per-engine selection, every supported check tail,
+      independent runtime oracles and one-string resource evidence; retain generic lengths.
+- [ ] Compare a fixed timestamp writer with the byte-pair table in `src/v7-bounds.ts`; preserve
+      inclusive endpoints, full timestamp range and both text cases without temporary byte arrays.
+- [x] Run two packed seven-runtime replays of the retained writer: no successful row is slower in
+      both. The predicted 0.6 ratio is not reached by every Node or Deno row; retain the measured
+      improvement, without claiming the native-parity goal is closed.
 - [ ] Record the result in `bench/PERFORMANCE.md` (§UUID text formatting, §Latin-1 slug writing).
       Done when Chromium UUIDv4 text is measured against `@lukeed/uuid` (147 / 118 before); if it
       still trails, screen formatting from the pool without the private copy.

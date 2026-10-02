@@ -1,4 +1,4 @@
-Use runtime-native encoding and avoid intermediate decoding work; measure mixed workloads as well as isolated calls before changing the parser.
+Choose each runtime's writer from repeated consumer-call measurements, including mixed workloads and isolated calls.
 
 # Performance study
 
@@ -10,7 +10,7 @@ Two packed replays on 2026-10-02 compare `e6ab40d` with the production code in `
 
 Reproduce the comparable calls with `bun bench/compare.ts e6ab40d` and `UUID_SLUG_PROFILE_FILTER=plain.encode,base32.encode,slug.bytes,slug.base32,slug.into,uuid.toBytes,value.parse,value.toMaskedSlug,sentinel.decode,sentinel.base32,v7.string.selected,construct.codec,guard.slug`. Select the Node executable through `UUID_SLUG_COMPARE_NODE_EXECUTABLE`. The table gives candidate/baseline median ratios from both replays; a range alone does not establish statistical separation.
 
-| Consumer call | Node Current | Bun | Node LTS | Chromium | Deno | Node JITless |
+| Consumer call | Node 26.8.2 | Bun | Node LTS | Chromium | Deno | Node JITless |
 | --- | --- | --- | --- | --- | --- | --- |
 | UUID text to owned bytes | 0.80–0.84 | 0.77–0.81 | 0.79–0.80 | 0.74–0.78 | 0.63–0.67 | 0.94–0.98 |
 | Base64url plain slug to owned bytes | 0.74–0.76 | 0.71–0.73 | 0.76–0.76 | 0.75–0.76 | 0.59–0.60 | 0.97–0.97 |
@@ -21,9 +21,9 @@ Reproduce the comparable calls with `bun bench/compare.ts e6ab40d` and `UUID_SLU
 
 Owned text and slug decoding removes one redundant array construction. Node and Bun constructor counters require one array, and deliberately restoring the copy fails that check. Both replays' 95% ratio intervals lie below 1 for owned text and plain-slug decoding on the JIT-enabled runtimes; JITless gains remain unresolved except where an individual replay separates them. Borrowed bytes still require isolation.
 
-Package codecs use a private ownership stamp to borrow immutable UUID storage. WeakSet registration instead raised codec construction cost in the first replay; the private stamp leaves construction unresolved in the two final replays. Its recognition adds 14–17 ns to Node Current parsed masking and 5–7 ns on LTS. External callbacks require a byte copy, original-version validation and returned-spelling validation: they could previously mutate private storage or return malformed branded results. Their slower calls are safety costs, not optimizations; removing those checks fails the ownership and malformed-result regressions. Revisit the stamp if engine private-field costs change.
+Package codecs use a private ownership stamp to borrow immutable UUID storage. WeakSet registration instead raised codec construction cost in the first replay; the private stamp leaves construction unresolved in the two final replays. Its recognition adds 14–17 ns to Node 26.8.2 parsed masking and 5–7 ns on LTS. External callbacks require a byte copy, original-version validation and returned-spelling validation: they could previously mutate private storage or return malformed branded results. Their slower calls are safety costs, not optimizations; removing those checks fails the ownership and malformed-result regressions. Revisit the stamp if engine private-field costs change.
 
-Native CPU, allocation, retained-heap and process-resource profiles cover the same filtered calls on Node Current, Bun, Deno and Chromium. Separate profiles use precomputed uppercase base32hex inputs for caller-owned decoding and sentinel text/byte reads. Host counters show no filesystem reads, writes or major faults in those uppercase rows; their largest timed batch is below 0.3 ms. Profile timings include instrumentation and cannot substitute for packed replay ratios. Sampled allocation and retained heap do not prove total allocation volume or leak freedom; error rows and construction also affect sampled CPU shares.
+Native CPU, allocation, retained-heap and process-resource profiles cover the same filtered calls on Node 26.8.2, Bun, Deno and Chromium. Separate profiles use precomputed uppercase base32hex inputs for caller-owned decoding and sentinel text/byte reads. Host counters show no filesystem reads, writes or major faults in those uppercase rows; their largest timed batch is below 0.3 ms. Profile timings include instrumentation and cannot substitute for packed replay ratios. Sampled allocation and retained heap do not prove total allocation volume or leak freedom; error rows and construction also affect sampled CPU shares.
 
 Rust 1.98.1 sentinel measurements use `UUID_SLUG_PROFILE_FILTER=sentinel/base32 UUID_SLUG_RUST_BENCH_RAW=1 bun bench/rust.ts`. Inputs pass through `black_box` before decoding. Three fresh core processes provide fifteen samples per spelling: canonical reads span 2.0–3.9 ns and uppercase reads 11.3–20.3 ns. Core process peak RSS spans 1.78–1.81 MiB and CPU totals 8.3–13.5 ms. The same command measures every discovered Node-API and FFI host separately. These fixed-input observations establish costs under this workload, not improvement over a baseline that rejected uppercase sentinels, scalability across sentinel counts, or kernel syscall counts.
 
@@ -178,7 +178,7 @@ workloads, and they do not turn development bridges into npm distribution candid
 
 ## Costs removed and alternatives rejected
 
-- Node, Bun, and Deno write UUID text as ASCII bytes and convert them with one `Buffer` Latin-1 call; browsers use native hexadecimal encoding where supported. Native base64 encoding replaces JavaScript assembly where supported. Older runtimes keep portable paths. Exact-sized buffers bypass redundant views; caller-owned generation writes at the requested offset.
+- Bun writes UUID text and slugs through reused Latin-1 scratch; other engines construct fixed UUID spellings with one character-code call. Generic payload lengths retain native or portable encoding. Caller-owned generation writes at the requested offset.
 - Boolean validation no longer constructs decoded buffers or discarded errors. A scanner shared with parsing regressed Bun in the measured trial and was rejected; both paths retain the same character table and contract corpus.
 - Rotation decodes text once and constructs a mismatch error only after all explicit keys fail. Custom callbacks still receive owned bytes. Removing those copies would alter ownership semantics.
 - TimestampValidation consumes decoded bytes directly. Formatting remains at string-returning boundaries; it is not part of validation.
@@ -661,11 +661,95 @@ packed corpus; three isolated probes of the same call measured 228–230 ns agai
 
 ### UUID text formatting
 
-Node, Bun, and Deno format UUID bytes by writing ASCII hex codes into a reused 36-byte `Buffer` and
-reading it back with one `toString("latin1")` call. The runtime adapter supplies that capability;
-the portable adapter enables it only on Deno because a browser bundle may define a slow JavaScript
-`Buffer`. Browsers keep `toHex` or byte-pair strings. The loop lives in a helper so the shared
-formatter stays small: inlined into it, Chromium value conversion was 3–5% slower in two replays.
+Bun formats UUID bytes through reused ASCII scratch and one `toString("latin1")` call.
+WebKit uses native hex plus hyphen insertion when native hex is available. Other engines use
+one fixed-argument `String.fromCharCode` call, with lowercase or uppercase
+character codes selected before writing. The fixed writer stays in the formatter: a separate
+helper slowed Chromium sentinel decoding in two mixed-workload comparisons, while slug-only
+comparisons did not reproduce that loss. This finding identifies the changed formatter, not an
+engine mechanism; sampled profiles are needed before attributing it to inlining or optimization.
+
+Two earlier six-round packed comparisons of the all-fixed candidate against `44679d0`, read 2026-10-02, measured the following
+candidate/baseline median ratios. Each pair has both 95% intervals below 1 unless marked.
+The corpus varied bytes, case, offset, alphabet and check tail, consumed each result, and
+alternated revision order in fresh processes. It does not prove results on other hardware or
+runtime releases. The installed Node release below is not latest Current.
+
+| Runtime | UUID text | Uppercase text | Base64url bytes | Base32hex bytes |
+| --- | ---: | ---: | ---: | ---: |
+| Node 26.8.2 | 0.63, 0.62 | 0.71, 0.69 | 0.57, 0.57 | 0.63, 0.63 |
+| Bun 1.4.2 | 1.08 unresolved, 1.04 slower | unresolved | unresolved | unresolved |
+| Chromium 153.0.8010.12 | 0.48, 0.48 | 0.25, 0.25 | 0.39, 0.40 | 0.28, 0.28 |
+| Firefox 155.0 | 0.89, 0.89 | 0.53, 0.51 | 0.92, 1.03 unresolved | 0.43, 0.48 |
+| WebKit 26.6 | 0.64, 0.62 | 0.47, 0.46 | unresolved | 0.32, 0.32 |
+| Deno 2.9.7 | 0.69, 0.71 | 0.76, 0.76 | 0.63, 0.63 | 0.69, 0.69 |
+| Node 26.8.2 JITless | 0.57, 0.56 | 0.59, 0.58 | 0.66, 0.66 | 0.69, 0.68 |
+| Node 26.10.0 | 0.63, 0.64 | 0.70, 0.71 | 0.60, 0.59 | 0.64, 0.64 |
+| Node 26.10.0 JITless | 0.56, 0.58 | 0.58, 0.58 | 0.67, 0.68 | 0.69, 0.69 |
+
+The all-fixed candidate is rejected: WebKit `v4.bytes` measured 1.08 and 1.07,
+with both intervals above 1. Chromium sentinel base32hex decoding was unresolved in both
+comparisons (0.99 and 1.00), after the direct formatter replaced the separate helper.
+The byte-position, case and tail oracle rejected three targeted writer mutations; the resource
+counter rejected a valid masked slug constructed through two string calls.
+
+The official Node release index lists 26.10.0 as Current, read 2026-10-02. Its macOS Arm64
+archive matched the SHA-256 in the release's `SHASUMS256.txt` before execution. Two additional
+packed replays per installed release covered Node 22.23.2, 24.20.0, 24.21.0, 26.8.1 and 26.8.2,
+and Bun 1.3.14, 1.4.0, 1.4.1 and 1.4.2. Each emitted 30 selected operation summaries; no successful
+operation was slower with both intervals above 1. This installed-release corpus is narrower than
+the mixed seven-runtime corpus and does not cover every supported Node major.
+
+Two isolated WebKit comparisons did not reproduce the byte-generation loss: 0.95 and 1.10,
+with both intervals spanning 1. The mixed-corpus loss remains unresolved; isolation alone does
+not establish that it was noise.
+
+Two further mixed WebKit comparisons measured `guard.bytes.any` at 1.28 and 1.43,
+with both intervals above 1. Two identical-baseline controls left that guard unresolved.
+Splitting the changes located the loss in the formatter: formatter-only comparisons measured
+1.23 and 1.31, both separated from parity; slug-only comparisons measured 1.02 and 1.00,
+both unresolved. These results identify the changed function, not the engine mechanism.
+
+A same-file formatter helper did not resolve the trade-off: two Chromium comparisons made
+sentinel base32hex decoding 1.33 and 1.31 times baseline. Packing each hex pair into one
+16-bit table entry reduced table reads but made WebKit `v4.bytes` 1.13 and 1.17 times
+baseline, with both intervals above 1. Neither candidate is retained.
+
+Selecting native hex only for WebKit avoids those repeated losses in two further six-round packed
+comparisons against `44679d0`. Each comparison emitted 973 summaries across seven runtimes.
+No successful production call had both 95% intervals above 1; individual slower rows remain
+unresolved rather than evidence of no regression. The only repeated slower row was invalid-slug
+rejection on Node, which is not a performance target. Default generation, byte guards, sentinel
+decoding, conversions and portable encoders were measured together, not inferred from formatter cost.
+
+| Runtime | UUID text | Uppercase text | Base64url bytes | Base32hex bytes |
+| --- | ---: | ---: | ---: | ---: |
+| Node 26.10.0 | 0.68, 0.63 | 0.74, 0.72 | 0.61, 0.58 | 0.65, 0.65 |
+| Bun 1.4.2 | unresolved | unresolved | unresolved | 1.06 slower, 1.01 unresolved |
+| Chromium 153.0.8010.12 | 0.48, 0.48 | 0.25, 0.27 | 0.37, 0.41 | 0.28, 0.29 |
+| Firefox 155.0 | unresolved | 0.44, 0.46 | 0.91 faster, 0.87 unresolved | 0.50, 0.50 |
+| WebKit 26.6 | unresolved | unresolved | unresolved | 0.28, 0.30 |
+| Deno 2.9.7 | 0.71, 0.73 | 0.76, 0.81 | 0.63, 0.62 | 0.67, 0.70 |
+| Node 26.10.0 JITless | 0.58, 0.58 | 0.59, 0.59 | 0.67, 0.66 | 0.67, 0.69 |
+
+Unmarked numeric pairs have both intervals below 1. WebKit byte generation measured 0.98 and
+0.98; its byte guard measured 0.89 and 1.11, all unresolved. Native hex gives up the isolated fixed
+formatter gain to avoid its repeated mixed-workload losses. A native ASCII decoder through shared
+scratch is rejected: its first mixed comparison made WebKit base64url byte conversion 2.04 times
+baseline and UUIDv4 slug generation 2.13 times baseline, despite faster base32hex output.
+Two fresh replays of the selected native-hex candidate on each installed Node and Bun release
+listed above emitted 30 summaries each; none had a repeated slower interval. These checks do
+not cover every release. Fresh native CPU and memory profiles cover selected and portable writers
+on Node 26.10.0, Bun, Deno and Chromium; WebKit has packed-call evidence, not a native profile.
+The instrumented UUID-format batches stayed below 0.3 ms with no filesystem reads, writes or
+major faults. Heap samples do not establish total allocation volume or leak freedom.
+The native-selection regression fails when selection is removed on Node 26.10.0, where hex
+exists, and passes after byte-identical restoration. An older worker lacking hex cannot prove it.
+The two seven-runtime replays took 261 and 258 seconds, below the five-minute ceiling but above
+the four-minute warning. These measurements cover one macOS Arm64 host, the named releases and
+the tested corpus; they neither establish performance on every release nor prove a native floor.
+
+The following Latin-1 comparison describes the earlier implementation, not the selected writers.
 
 Two packed `35ad052`-to-candidate replays on 2026-09-16 measured median ratios; every listed pair
 had its 95% interval below 1 unless marked unresolved:
@@ -959,11 +1043,13 @@ count sets that floor.
 
 ### Latin-1 slug writing
 
-Node, Bun, and Deno write a 16-byte UUID payload's 22 base64url or 26 base32hex character codes into
-reused scratch and read them back with one `Buffer#toString("latin1")` call. This takes precedence
-over native `toBase64`, whose masked result also needs a slice and a concatenation for the check
-tail, and over portable writers that concatenate characters. Either alternative returns
-concatenated text that a reader must flatten. Browsers keep the selection described below.
+Bun writes UUID slug character codes into reused scratch and reads them with one
+`Buffer#toString("latin1")` call. Other engines use fixed character-code arguments for 16-byte
+payloads, including the complete 27-character masked base32hex spelling. The generic accumulator
+still handles other lengths. Native encoding remains a measured alternative; its presence alone
+does not establish a faster consumer call.
+
+The following comparison describes the earlier Latin-1 implementation.
 
 Two packed `22d3055`-to-candidate replays on 2026-09-16 measured median ratios; every listed pair
 had its 95% interval below 1 unless marked:
@@ -1006,9 +1092,9 @@ one branch of `encode`. Three runs of the base64url rows alone were unresolved a
 
 ### Native base64url encoding
 
-Browsers use `Uint8Array.prototype.toBase64` when it exists; probe once at module load and keep
-the fixed-size portable encoder as the fallback. Node, Bun, and Deno select the Latin-1 writer above
-for UUID payloads. Two 24-round comparisons on 2026-09-12 disabled
+Native `Uint8Array.prototype.toBase64` is probed once for generic payload lengths. UUID payloads
+select the fixed writers described above. The following earlier native comparison does not rank
+those fixed writers: two 24-round comparisons on 2026-09-12 disabled
 only native encoding on the public plain-encode route. The portable path was 2.29–2.34 times slower
 on Bun 1.4.1, 13–15% slower on Deno 2.9.6, and 14–29% slower on Chromium 151; every 95% median
 interval excluded parity in both replays. Node 24.20.0 was unresolved because both revisions used
@@ -1385,9 +1471,8 @@ caller-owned output regresses reproducibly.
 Use the unchecked formatter only behind the generator-owned 16-byte text buffer. The earlier isolated
 screen found no gain, but it omitted the allocation removal and direct competitor floor; the combined
 public route was retained after the competitor matrix exposed that interaction. A direct byte-pair
-formatter was re-screened after that discovery and lost on Chromium without closing Node or Deno, so
-browsers with `Uint8Array.toHex` keep the native intermediate string; Node, Bun, and Deno now use the
-Latin-1 formatter described under UUID text formatting.
+formatter was re-screened after that discovery and lost on Chromium without closing Node or Deno.
+The selected formatter and its later comparisons are described under UUID text formatting.
 Replacing the entropy pool's copy-and-erase loop with `set(subarray)` plus ranged `fill` regressed
 UUIDv4 byte routes by 57–88% on Node, 60–95% on Bun, 20–108% on Deno, and 65–87% on Chromium.
 The allocated view and two native calls cost more than one 16-byte JavaScript loop.

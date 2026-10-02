@@ -62,22 +62,19 @@ describe("portable runtime capability probe", () => {
     expect(runtime.uuidV4?.()).toBe("00000000-0000-4000-8000-000000000000");
     expect(randomUUID).toHaveBeenCalledOnce();
   });
-
-  it("selects Buffer text on Deno but never a browser's Buffer", async () => {
-    // Node's global Buffer stands in for a bundler polyfill: without Deno it must stay unused.
-    expect((await adapterWith({ getRandomValues: fill })).latin1Scratch).toBeUndefined();
-    const scratch = (await adapterWith({ getRandomValues: fill }, {})).latin1Scratch?.(3);
-    scratch?.bytes.set([0x41, 0xe9, 0x2d]);
-    expect(scratch?.text()).toBe("A\u00e9-");
-  });
 });
 
 describe("portable UUID text and slug writing", () => {
-  // Node, Bun, and Deno lanes write through the native Latin-1 capability, so only this case
-  // reaches the browser paths: native hex and base64 where they exist, portable writers where not.
-  it.each([false, true])(
-    "writes canonical text and slugs with native hex and base64 removed: %s",
-    async (removeNative) => {
+  // Optional engine encoders must not change the fixed UUID wire output.
+  it.each([
+    [false, false],
+    [false, true],
+    [true, false],
+    [true, true],
+  ])(
+    "writes canonical text and slugs with native removal %s and WebKit selection %s",
+    async (removeNative, webkit) => {
+      vi.stubGlobal("navigator", { vendor: webkit ? "Apple Computer, Inc." : "" });
       const toHex = Object.getOwnPropertyDescriptor(Uint8Array.prototype, "toHex");
       const toBase64 = Object.getOwnPropertyDescriptor(Uint8Array.prototype, "toBase64");
       if (removeNative) {
@@ -87,6 +84,10 @@ describe("portable UUID text and slug writing", () => {
       try {
         vi.resetModules();
         vi.doMock("#runtime", () => import("../src/runtime/portable"));
+        const adapter = await import("../src/runtime/portable");
+        expect(typeof adapter.runtime.uuidHex === "function").toBe(
+          webkit && !removeNative && typeof toHex?.value === "function",
+        );
         const api = await import("../src/index");
         const bytes = Uint8Array.from({ length: 20 }, (_, index) => (index - 2) * 17);
         const lower = "00112233-4455-6677-8899-aabbccddeeff";
@@ -95,6 +96,10 @@ describe("portable UUID text and slug writing", () => {
         expect(api.uuidToString(bytes.slice(2, 18))).toBe(lower);
         const alphabet = await import("../src/alphabet");
         const uuid = bytes.slice(2, 18);
+        const oversized = new Uint8Array(64).fill(0xee);
+        oversized.set(uuid, 24);
+        expect(api.bytesToUuidString(oversized, 24)).toBe(lower);
+        expect(api.bytesToUuidString(oversized, 24, "uppercase")).toBe(lower.toUpperCase());
         expect(api.uuidBytesToPlainSlug(uuid)).toBe(Buffer.from(uuid).toString("base64url"));
         expect(api.uuidBytesToPlainSlug(uuid, "base32hex")).toBe("008i4cq4alj7f24platspnfevs");
         expect(alphabet.encode(uuid, alphabet.BASE64URL, 9, 4)).toBe("ABEiM0RVZneImaq7zN3u_5");

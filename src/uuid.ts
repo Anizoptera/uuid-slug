@@ -73,23 +73,8 @@ export function resolveUuidTextCase(value: unknown): UuidTextCase | UuidSlugErro
 export function invalidUuidTextCase(): UuidSlugError {
   return new UuidSlugError(INVALID_OPTIONS, "UUID text case must be lowercase or uppercase.");
 }
-// Probe once and allocate the byte-pair fallback only on engines that need it.
-const nativeToHex = (Uint8Array.prototype as { toHex?: () => string }).toHex;
 const createLatin1Scratch = runtime.latin1Scratch;
-const HEX_BYTES =
-  nativeToHex || createLatin1Scratch
-    ? []
-    : /*#__PURE__*/ Array.from(
-        { length: 256 },
-        (_, byte) => (HEX[byte >>> 4] as string) + (HEX[byte & 15] as string),
-      );
-const hexByte = /* @__NO_SIDE_EFFECTS__ */ (byte: number) => HEX_BYTES[byte] ?? "";
-let uppercaseHexBytes: string[] | undefined;
-const uppercaseHexByte = (byte: number) =>
-  (uppercaseHexBytes ??= Array.from(
-    { length: 256 },
-    (_, value) => (UPPERCASE_HEX[value >>> 4] as string) + (UPPERCASE_HEX[value & 15] as string),
-  ))[byte] ?? "";
+const nativeToHex = runtime.uuidHex;
 const HEX_DECODE = new Int8Array(128).fill(-1);
 for (let i = 0; i < 10; i += 1) HEX_DECODE[48 + i] = i;
 for (let i = 0; i < 6; i += 1) HEX_DECODE[97 + i] = 10 + i;
@@ -99,9 +84,8 @@ for (let i = 0; i < 16; i += 1) {
   HEX_NIBBLES[HEX.charCodeAt(i)] = i;
   HEX_NIBBLES[UPPERCASE_HEX.charCodeAt(i)] = i;
 }
-// Node, Bun, and Deno format UUID text through a native Latin-1 conversion, which measured faster
-// than native hex plus hyphenation and than string concatenation; browsers keep those paths
-// (bench/PERFORMANCE.md). Buffers and tables are built on first use.
+// Bun's Latin-1 writer and the fixed writer share lazily built case tables; native hex needs none.
+// bench/PERFORMANCE.md owns the comparison and recheck conditions. Tables are built on first use.
 let uuidTextScratch: Latin1Scratch | undefined;
 let lowercaseHexCodes: Uint8Array | undefined;
 let uppercaseHexCodes: Uint8Array | undefined;
@@ -170,9 +154,6 @@ function uuidTextStart(value: string): number {
   }
   return INVALID_UUID_TEXT_START;
 }
-
-const hyphenateHex = /* @__NO_SIDE_EFFECTS__ */ (hex: string, offset: number): UuidString =>
-  `${hex.slice(offset, offset + 8)}-${hex.slice(offset + 8, offset + 12)}-${hex.slice(offset + 12, offset + 16)}-${hex.slice(offset + 16, offset + 20)}-${hex.slice(offset + 20, offset + 32)}` as UuidString;
 
 /*#__NO_SIDE_EFFECTS__*/
 function lowercaseHexValue(code: number) {
@@ -320,29 +301,33 @@ export function bytesToUuidString(
   if (selectedCase instanceof Error) return selectedCase;
   const badRange = checkRange(view.length, byteOffset, 16);
   if (badRange) return badRange;
-  if (!createLatin1Scratch && nativeToHex && selectedCase === UUID_TEXT_LOWERCASE) {
-    let offset = 0;
-    let hex: string;
-    if (view.length <= 32) {
-      hex = nativeToHex.call(view);
-      offset = byteOffset * 2;
-    } else {
-      hex = nativeToHex.call(view.subarray(byteOffset, byteOffset + 16));
-    }
-    return hyphenateHex(hex, offset);
+  if (nativeToHex) {
+    // A small existing view avoids another view; a larger buffer must not encode unrelated bytes.
+    const hex =
+      view.length <= 32
+        ? nativeToHex(view)
+        : nativeToHex(view.subarray(byteOffset, byteOffset + 16));
+    const offset = view.length <= 32 ? byteOffset * 2 : 0;
+    const uuid = hyphenateHex(hex, offset);
+    return selectedCase === UUID_TEXT_UPPERCASE ? uuid.toUpperCase() : uuid;
   }
   return formatUuidBytesUnchecked(view, byteOffset, selectedCase);
 }
 
-/** Format a UUID range already proved writable by its caller. */
+const hyphenateHex = /* @__NO_SIDE_EFFECTS__ */ (hex: string, offset: number): UuidString =>
+  `${hex.slice(offset, offset + 8)}-${hex.slice(offset + 8, offset + 12)}-${hex.slice(offset + 12, offset + 16)}-${hex.slice(offset + 16, offset + 20)}-${hex.slice(offset + 20, offset + 32)}` as UuidString;
+
+/** Format a complete UUID byte range already validated by its caller. */
 /*#__NO_SIDE_EFFECTS__*/
 export function formatUuidBytesUnchecked<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   bytes: Uint8Array,
   offset = 0,
   textCase: Case = UUID_TEXT_LOWERCASE as Case,
 ): UuidStringFor<Case> {
-  // A separate function keeps this one small enough for V8 to inline where browsers never take the
-  // Latin-1 branch; inlining the loop here slowed Chromium value conversion (bench/PERFORMANCE.md).
+  // Bun retains its Latin-1 writer. A fixed argument list makes one flat string without
+  // temporary bytes, intermediate hex or concatenation. WebKit selects native hex to avoid
+  // repeated mixed-workload losses; remeasure both paths after engine changes
+  // (bench/PERFORMANCE.md). Keep case selection and fixed writing together to avoid another call.
   if (createLatin1Scratch)
     return formatUuidBytesLatin1(
       createLatin1Scratch,
@@ -350,29 +335,68 @@ export function formatUuidBytesUnchecked<Case extends UuidTextCase = typeof UUID
       offset,
       textCase,
     ) as UuidStringFor<Case>;
-  if (nativeToHex && textCase === UUID_TEXT_LOWERCASE)
-    return hyphenateHex(nativeToHex.call(bytes), offset * 2) as UuidStringFor<Case>;
-  const byte = textCase === UUID_TEXT_UPPERCASE ? uppercaseHexByte : hexByte;
-  return (byte(bytes[offset] as number) +
-    byte(bytes[offset + 1] as number) +
-    byte(bytes[offset + 2] as number) +
-    byte(bytes[offset + 3] as number) +
-    UUID_SEPARATOR +
-    byte(bytes[offset + 4] as number) +
-    byte(bytes[offset + 5] as number) +
-    UUID_SEPARATOR +
-    byte(bytes[offset + 6] as number) +
-    byte(bytes[offset + 7] as number) +
-    UUID_SEPARATOR +
-    byte(bytes[offset + 8] as number) +
-    byte(bytes[offset + 9] as number) +
-    UUID_SEPARATOR +
-    byte(bytes[offset + 10] as number) +
-    byte(bytes[offset + 11] as number) +
-    byte(bytes[offset + 12] as number) +
-    byte(bytes[offset + 13] as number) +
-    byte(bytes[offset + 14] as number) +
-    byte(bytes[offset + 15] as number)) as UuidStringFor<Case>;
+  if (nativeToHex) {
+    const uuid = hyphenateHex(nativeToHex(bytes), offset * 2);
+    return (textCase === UUID_TEXT_UPPERCASE ? uuid.toUpperCase() : uuid) as UuidStringFor<Case>;
+  }
+  const codes =
+    textCase === UUID_TEXT_UPPERCASE
+      ? (uppercaseHexCodes ??= hexCodes(UPPERCASE_HEX))
+      : (lowercaseHexCodes ??= hexCodes(HEX));
+  const a = (bytes[offset] as number) * 2;
+  const b = (bytes[offset + 1] as number) * 2;
+  const c = (bytes[offset + 2] as number) * 2;
+  const d = (bytes[offset + 3] as number) * 2;
+  const e = (bytes[offset + 4] as number) * 2;
+  const f = (bytes[offset + 5] as number) * 2;
+  const g = (bytes[offset + 6] as number) * 2;
+  const h = (bytes[offset + 7] as number) * 2;
+  const i = (bytes[offset + 8] as number) * 2;
+  const j = (bytes[offset + 9] as number) * 2;
+  const k = (bytes[offset + 10] as number) * 2;
+  const l = (bytes[offset + 11] as number) * 2;
+  const m = (bytes[offset + 12] as number) * 2;
+  const n = (bytes[offset + 13] as number) * 2;
+  const o = (bytes[offset + 14] as number) * 2;
+  const p = (bytes[offset + 15] as number) * 2;
+  return String.fromCharCode(
+    codes[a] as number,
+    codes[a + 1] as number,
+    codes[b] as number,
+    codes[b + 1] as number,
+    codes[c] as number,
+    codes[c + 1] as number,
+    codes[d] as number,
+    codes[d + 1] as number,
+    45,
+    codes[e] as number,
+    codes[e + 1] as number,
+    codes[f] as number,
+    codes[f + 1] as number,
+    45,
+    codes[g] as number,
+    codes[g + 1] as number,
+    codes[h] as number,
+    codes[h + 1] as number,
+    45,
+    codes[i] as number,
+    codes[i + 1] as number,
+    codes[j] as number,
+    codes[j + 1] as number,
+    45,
+    codes[k] as number,
+    codes[k + 1] as number,
+    codes[l] as number,
+    codes[l + 1] as number,
+    codes[m] as number,
+    codes[m + 1] as number,
+    codes[n] as number,
+    codes[n + 1] as number,
+    codes[o] as number,
+    codes[o + 1] as number,
+    codes[p] as number,
+    codes[p + 1] as number,
+  ) as UuidStringFor<Case>;
 }
 
 /*#__NO_SIDE_EFFECTS__*/

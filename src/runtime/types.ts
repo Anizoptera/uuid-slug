@@ -15,6 +15,8 @@ export interface Runtime {
    */
   /** Native values are untrusted until the public generator validates their representation. */
   uuidV4?(this: void): string;
+  /** Optional native hex conversion for the runtime's selected UUID text writer. */
+  uuidHex?(this: void, bytes: Uint8Array): string;
   /**
    * Create a reusable buffer whose bytes a native call turns into a flat Latin-1 string. Adapters
    * provide it only where that call beats building text from JavaScript strings.

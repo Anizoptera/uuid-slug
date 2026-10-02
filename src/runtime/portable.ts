@@ -5,6 +5,7 @@ import { pooledFill } from "./pool.ts";
 import type { Latin1Scratch, Runtime } from "./types.ts";
 
 let utf8Encoder: TextEncoder | undefined;
+const nativeToHex = (Uint8Array.prototype as { toHex?: () => string }).toHex;
 
 /** Create the shared encoder only when mask construction needs it; generation imports this adapter too. */
 export const encodeUtf8 = (text: string): Uint8Array =>
@@ -25,6 +26,17 @@ const runtimeCapabilities: Runtime = {
   }),
 };
 
+// WebKit's fixed formatter slowed unrelated successful calls in mixed comparisons. Native hex
+// did not reproduce a repeated loss while other engines retain their fixed writers. This identity
+// selects cost only; absent hex support still uses the portable writer. Remeasure after browser
+// changes (bench/PERFORMANCE.md); the shared ASCII decoder also slowed slug output.
+if (
+  typeof navigator !== "undefined" &&
+  navigator.vendor === "Apple Computer, Inc." &&
+  typeof nativeToHex === "function"
+)
+  runtimeCapabilities.uuidHex = (bytes) => nativeToHex.call(bytes);
+
 type Latin1Buffer = Uint8Array & {
   toString(encoding: "latin1", start: number, end: number): string;
 };
@@ -44,10 +56,6 @@ export function bufferLatin1Scratch(hostBuffer: NonNullable<HostBuffer>) {
 if (typeof (globalThis as { Deno?: unknown }).Deno !== "undefined") {
   if (globalThis.crypto?.randomUUID)
     runtimeCapabilities.uuidV4 = globalThis.crypto.randomUUID.bind(globalThis.crypto);
-  // Deno's global `Buffer` measured faster than native hex. A browser bundle can define a
-  // JavaScript `Buffer` polyfill that is slower than string building, so only Deno selects it.
-  const hostBuffer = (globalThis as { Buffer?: HostBuffer }).Buffer;
-  if (hostBuffer) runtimeCapabilities.latin1Scratch = bufferLatin1Scratch(hostBuffer);
 }
 
 /**

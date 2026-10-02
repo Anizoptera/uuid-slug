@@ -12,6 +12,7 @@ const counts = {
   hex: 0,
   base64: 0,
   latin1: 0,
+  fromCharCodes: 0,
   chars: 0,
   draws: 0,
 };
@@ -48,16 +49,17 @@ globalThis.Error = new Proxy(OriginalError, {
 });
 assert.ok(wrapMethod(OriginalBytes.prototype, "subarray", "views"));
 assert.ok(wrapMethod(OriginalBytes.prototype, "slice", "slices"));
-const hasHex = wrapMethod(OriginalBytes.prototype, "toHex", "hex");
-const hasBase64 = wrapMethod(OriginalBytes.prototype, "toBase64", "base64");
-// Node and Bun write UUID text and 16-byte slugs through `Buffer#toString("latin1")` instead of
-// native hex or base64.
+wrapMethod(OriginalBytes.prototype, "toHex", "hex");
+wrapMethod(OriginalBytes.prototype, "toBase64", "base64");
+// This Node/Bun harness checks Node's character-code writer and Bun's Latin-1 writer separately.
 const hasLatin1Text =
   typeof globalThis.Buffer === "function" &&
   wrapMethod(globalThis.Buffer.prototype, "toString", "latin1");
+const usesLatin1Text = typeof Bun !== "undefined" && hasLatin1Text;
+assert.ok(wrapMethod(String, "fromCharCode", "fromCharCodes"));
 const expectTextFormatter = (message: string) => {
-  if (hasLatin1Text) assert.equal(counts.latin1, 1, `native Latin-1 text: ${message}`);
-  else if (hasHex) assert.equal(counts.hex, 1, `native hex: ${message}`);
+  if (usesLatin1Text) assert.equal(counts.latin1, 1, `native Latin-1 text: ${message}`);
+  else assert.equal(counts.fromCharCodes, 1, `fixed character-code text: ${message}`);
 };
 assert.ok(wrapMethod(String.prototype, "charCodeAt", "chars"));
 assert.ok(wrapMethod(crypto, "randomFillSync", "draws"));
@@ -90,6 +92,10 @@ try {
   });
   const rotated = api.createUuidV7MaskingCodec({ mask: primary, previousMasks: [previous] });
   const older = api.createUuidV7MaskingCodec({ mask: previous });
+  const base32Codec = api.createUuidV7MaskingCodec({
+    mask: primary,
+    maskedSlugAlphabet: api.BASE32HEX,
+  });
   const migrationMasks = Array.from({ length: 16 }, (_, index) => ({
     seed: `profile-migration-seed-${index}`,
   }));
@@ -102,6 +108,8 @@ try {
   assert.ok(!(indexedSentinelCodec instanceof Error));
   assert.ok(!(rotated instanceof Error));
   assert.ok(!(older instanceof Error));
+  assert.ok(!(base32Codec instanceof Error));
+  assert.equal(typeof base32Codec.uuidToMaskedSlug(bytes), "string");
   assert.ok(!(migrationMany instanceof Error));
   assert.ok(!(migrationLast instanceof Error));
   const migration = rotated.createUuidSlugMigrationDecoder({
@@ -142,12 +150,14 @@ try {
   new Uint8Array(16).subarray().slice();
   assert.ok(new api.UuidSlugError("invalid_uuid", "resource control") instanceof OriginalError);
   assert.ok(id.charCodeAt(process.pid % id.length) > 0);
+  assert.equal(String.fromCharCode(65), "A");
   assert.ok(
     counts.buffers > 0 &&
       counts.slices > 0 &&
       counts.views > 0 &&
       counts.errors > 0 &&
-      counts.chars > 0,
+      counts.chars > 0 &&
+      counts.fromCharCodes > 0,
     JSON.stringify(counts),
   );
   function check(name: string, call: () => unknown, budgets: Partial<typeof counts>) {
@@ -256,7 +266,7 @@ try {
   oversized.set(bytes, 120);
   check("oversized offset UUID text conversion", () => api.bytesToUuidString(oversized, 120), {
     buffers: 0,
-    views: hasHex && !hasLatin1Text ? 1 : 0,
+    views: 0,
     errors: 0,
   });
   expectTextFormatter("oversized offsets must convert only the UUID window");
@@ -265,8 +275,13 @@ try {
     views: 0,
     errors: 0,
   });
-  if (hasLatin1Text) assert.equal(counts.latin1, 1, "native Latin-1 slug text must be used once");
-  else if (hasBase64) assert.equal(counts.base64, 1, "available native base64 must be used once");
+  expectTextFormatter("slug text must be constructed once");
+  check("masked base32hex formatting", () => base32Codec.uuidToMaskedSlug(bytes), {
+    buffers: 0,
+    views: 0,
+    errors: 0,
+  });
+  expectTextFormatter("the 27-character masked slug must be constructed once");
   check("UUID text to slug", () => api.uuidStringToPlainSlug(id), {
     buffers: 0,
     views: 0,
