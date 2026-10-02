@@ -21,9 +21,9 @@ measure lane durations, isolate timings from competing work, and retain only def
 - [x] Run regressions against their original mechanisms and isolated mutations; retain restoration copies and verify restoration byte-for-byte.
 - [x] Update affected source JSDoc, README and durable contract owners; avoid parallel inventories and unrelated rewrites.
 - [x] Resolve Rust API extraction prerequisites, then run complete checks and packed compiler-floor consumers.
-- [ ] Exercise packed browser and debug/release WebAssembly in every configured browser engine.
-- [ ] Run repeated packed benchmarks and profiles for affected successful calls across ranked runtimes; record results and limitations in bench/PERFORMANCE.md.
-- [ ] Audit the full repair diff against baseline e6ab40d47587e032446686ee7dd95a8792ec939e; verify every approved repair, comment and changed line, and commit verified groups without remote writes.
+- [x] Exercise packed browser and debug/release WebAssembly in every configured browser engine.
+- [x] Run repeated packed benchmarks and profiles for affected successful calls across ranked runtimes; record results and limitations in bench/PERFORMANCE.md.
+- [x] Audit the full repair diff against baseline e6ab40d47587e032446686ee7dd95a8792ec939e; verify every approved repair, comment and changed line, and commit verified groups without remote writes.
 
 ## Maintainer rulings (agents never change these; attack them only by asking)
 

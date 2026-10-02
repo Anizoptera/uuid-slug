@@ -4,6 +4,29 @@ Use runtime-native encoding and avoid intermediate decoding work; measure mixed 
 
 This measurement compares performance baseline `37f6258` with `2c5ba55` on an Apple M4 Max with 128 GiB RAM, Node 26.8.1 and Bun 1.4.2. It is a local experiment, not a cross-hardware speed guarantee. Runtime dependencies and public wire formats are unchanged.
 
+## Identifier integrity boundaries
+
+Two packed replays on 2026-10-02 compare `e6ab40d` with the production code in `85ff386` on an Apple M4 Max. Each replay alternates six fresh process pairs per runtime, with one 5 ms sample after 16 ms warm-up per process. Node 26.8.2, Bun 1.4.2, Chromium 153.0.8010.12, Deno 2.9.7 and Node 26.8.2 JITless use the same corpus; two additional Node 24.21.0 replays cover LTS. These are filtered, warm-throughput measurements on one machine, not native-floor or competitor comparisons.
+
+Reproduce the comparable calls with `bun bench/compare.ts e6ab40d` and `UUID_SLUG_PROFILE_FILTER=plain.encode,base32.encode,slug.bytes,slug.base32,slug.into,uuid.toBytes,value.parse,value.toMaskedSlug,sentinel.decode,sentinel.base32,v7.string.selected,construct.codec,guard.slug`. Select the Node executable through `UUID_SLUG_COMPARE_NODE_EXECUTABLE`. The table gives candidate/baseline median ratios from both replays; a range alone does not establish statistical separation.
+
+| Consumer call | Node Current | Bun | Node LTS | Chromium | Deno | Node JITless |
+| --- | --- | --- | --- | --- | --- | --- |
+| UUID text to owned bytes | 0.80–0.84 | 0.77–0.81 | 0.79–0.80 | 0.74–0.78 | 0.63–0.67 | 0.94–0.98 |
+| Base64url plain slug to owned bytes | 0.74–0.76 | 0.71–0.73 | 0.76–0.76 | 0.75–0.76 | 0.59–0.60 | 0.97–0.97 |
+| Base32hex plain slug to owned bytes | 0.77–0.78 | 0.75–0.76 | 0.78–0.78 | 0.78–0.78 | 0.60–0.60 | 0.98–0.98 |
+| Parse with a package codec | 0.94–0.94 | 0.94–0.95 | 0.98–0.99 | 0.95–0.96 | 0.81–0.82 | 1.00–1.00 |
+| Parsed UUID masking with a package codec | 1.08–1.10 | 0.99–1.01 | 1.03–1.04 | 1.02–1.03 | 1.01–1.04 | 1.00–1.01 |
+| Parsed UUID masking with an external codec | 1.27–1.29 | 1.29–1.30 | 1.41–1.41 | 1.30–1.35 | 1.78–1.81 | 1.07–1.10 |
+
+Owned text and slug decoding removes one redundant array construction. Node and Bun constructor counters require one array, and deliberately restoring the copy fails that check. Both replays' 95% ratio intervals lie below 1 for owned text and plain-slug decoding on the JIT-enabled runtimes; JITless gains remain unresolved except where an individual replay separates them. Borrowed bytes still require isolation.
+
+Package codecs use a private ownership stamp to borrow immutable UUID storage. WeakSet registration instead raised codec construction cost in the first replay; the private stamp leaves construction unresolved in the two final replays. Its recognition adds 14–17 ns to Node Current parsed masking and 5–7 ns on LTS. External callbacks require a byte copy, original-version validation and returned-spelling validation: they could previously mutate private storage or return malformed branded results. Their slower calls are safety costs, not optimizations; removing those checks fails the ownership and malformed-result regressions. Revisit the stamp if engine private-field costs change.
+
+Native CPU, allocation, retained-heap and process-resource profiles cover the same filtered calls on Node Current, Bun, Deno and Chromium. Separate profiles use precomputed uppercase base32hex inputs for caller-owned decoding and sentinel text/byte reads. Host counters show no filesystem reads, writes or major faults in those uppercase rows; their largest timed batch is below 0.3 ms. Profile timings include instrumentation and cannot substitute for packed replay ratios. Sampled allocation and retained heap do not prove total allocation volume or leak freedom; error rows and construction also affect sampled CPU shares.
+
+Rust 1.98.1 sentinel measurements use `UUID_SLUG_PROFILE_FILTER=sentinel/base32 UUID_SLUG_RUST_BENCH_RAW=1 bun bench/rust.ts`. Inputs pass through `black_box` before decoding. Three fresh core processes provide fifteen samples per spelling: canonical reads span 2.0–3.9 ns and uppercase reads 11.3–20.3 ns. Core process peak RSS spans 1.78–1.81 MiB and CPU totals 8.3–13.5 ms. The same command measures every discovered Node-API and FFI host separately. These fixed-input observations establish costs under this workload, not improvement over a baseline that rejected uppercase sentinels, scalability across sentinel counts, or kernel syscall counts.
+
 ## Method
 
 Follow the package-import commands in [the benchmark guide](README.md#profiling). For this replay set `UUID_SLUG_PROFILE_MS=5`; retain the default seven samples. Use three fresh process pairs per runtime, alternate before/after order, and run CPU measurements sequentially. Each process exercises the same 256 deterministic inputs and all cases. The table gives the median of the three per-process medians in nanoseconds per call, including driver consumption and error classification. Small differences can reflect JIT state, scheduler noise and clock overhead; these are not confidence intervals.
