@@ -3,6 +3,8 @@
 import type { UuidSlugError } from "../errors.ts";
 
 export interface Runtime {
+  /** Node has disabled executable JavaScript code generation for this process. */
+  readonly jitless?: true;
   /**
    * The buffer is pinned to a plain `ArrayBuffer` because Web Crypto's `getRandomValues`
    * rejects a `SharedArrayBuffer` view at runtime, and the unparameterised `Uint8Array`

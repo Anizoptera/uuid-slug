@@ -952,9 +952,14 @@ of its previous cost on Node 26.8.2 (151–160 to 100 ns) and 0.700–0.713 on N
 Chromium, where default text improved to 0.753–0.795. Bun and Deno keep native text: it stayed
 unresolved there at 37–41 ns against 60–63 and 91–92 ns portable. UUIDv4 bytes, slugs, and guards
 stayed unresolved, except one Deno byte-guard replay at 1.178 that the other replay did not repeat.
-Node 26.8.2 JITless default text is 2.56–2.57 times slower (567–570 to 1,456–1,457 ns), because
-without the JIT native text wins; the JIT rungs outrank it, and one `--jitless` probe for every
-Node selection remains open. The Node floor-table cells above predate this change.
+Those older Node 26.8.2 JITless measurements selected pooled formatting. Startup selection now
+uses native UUIDv4 text without the JIT and retains pooled formatting with it. Two packed
+six-round comparisons against `40f3628` on 2026-10-02 measured Node 26.10.0 JITless default text
+at 0.545 and 0.544 of its former cost (1,031–1,052 to 562–572 ns), and uppercase at 0.571 and
+0.556 (1,051–1,054 to 586–600 ns). Both comparisons separate the improvements. The measured
+`native.v4.string` reference calls Web Crypto, not Node's fastest crypto primitive: its 503–513 ns
+still leaves a wrapper gap, so this selection does not close native parity. The Node floor-table
+cells above predate both changes.
 
 UUIDv4 slugs encode from that same scratch through one shared draw instead of owned bytes. Two
 packed replays against `bf95bbb` measured base64url slugs at 0.794–0.824 on Node 26.8.2, 0.820–0.854
@@ -1254,10 +1259,30 @@ endpoints and compared a fixed character-code prefix with the byte-pair writer. 
 pairs. Lowercase, uppercase and interval calls improved on Node 26.10.0 (ratios 0.64–0.71), Chromium
 153.0.8010.12 (0.60–0.66) and Deno 2.9.7 (0.63–0.68). Firefox 155.0 and WebKit 26.6 did not separate
 in both runs. Node 26.10.0 JITless regressed for lowercase and uppercase in both runs (1.09–1.12);
-the interval regression separated in only one. Reject this selection; retain byte pairs until a
-shared runtime selection can preserve JITless performance without per-call probing. Each comparison
+the interval regression separated in only one. Reject this selection without a JITless exception. Each comparison
 used six alternating rounds; these local observations do not prove other releases or cold-start
 cost. The resource gate requires both endpoint reads and no per-call byte-array allocation.
+
+The retained selection shares Node's startup JITless flag with UUIDv4 generation: byte pairs on
+Bun and JITless Node, fixed character codes elsewhere. Two further seven-runtime packed replays
+against `40f3628` retained the bounds gains on Node 26.10.0 (0.629–0.712), Chromium (0.59–0.66)
+and Deno 2.9.7 (0.64–0.68). Bun, JITless Node, Firefox and WebKit did not show a repeated separated
+bounds loss. Two additional replays include uppercase UUIDv4 and Web Crypto references; no
+successful measured row is slower in both. These filtered warm comparisons do not establish
+whole-package parity, cold initialization cost, other hardware, or all runtime releases.
+
+Installed-release replays cover Node 22.23.2, 24.20.0, 24.21.0, 26.8.1, 26.8.2 and 26.10.0,
+with and without the JIT, and Bun 1.3.14, 1.4.0, 1.4.1 and 1.4.2. Each has two six-round packed
+comparisons of bounds, UUIDv4 text and bytes, and formatting. No successful measured row is
+slower in both replays; individual separated losses do not establish identical cost or a repeatable
+regression. Real compiled-package child processes check CLI and `NODE_OPTIONS`
+precedence against V8 executable-heap state; removing JITless bounds selection fails that oracle.
+
+Warm constructor counters require zero temporary byte arrays for text bounds and reads of both
+endpoints. Native profiles complete the selected corpus on Node, Bun, Deno and Chromium, with a
+separate compiled Node JITless capture. Short heap deltas include collector noise; Deno lacks
+forced collection, and these captures do not prove leak freedom or compare first-use table cost.
+Firefox and WebKit native profiling remains unmeasured.
 
 UUIDv7 text bounds format the timestamp directly instead of allocating byte bounds and passing them
 through the generic formatter. Three million-call rounds on 2026-09-14 measured the direct form at

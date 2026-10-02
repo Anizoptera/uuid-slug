@@ -219,6 +219,7 @@ try {
     () => portableSubMillisecond.generateUuidV7Bytes(into, 4),
     { buffers: 0, views: 0, errors: 0 },
   );
+  assert.ok(!(api.uuidV7StringBounds(time) instanceof Error), "initialize the lazy bounds table");
   check("UUIDv7 text bounds", () => api.uuidV7StringBounds(time), {
     buffers: 0,
     views: 0,

@@ -5,6 +5,22 @@ import { Buffer } from "node:buffer";
 import { pooledFill } from "./pool.ts";
 import type { Runtime } from "./types.ts";
 
+const JITLESS_FLAG = "--jitless";
+const JIT_ENABLED_FLAG = "--no-jitless";
+let jitless = false;
+// NODE_OPTIONS is applied before command-line flags; the final explicit setting wins. Keep this
+// startup-only so bounds and generation share the selection without probing each identifier.
+// Quoted option words remain whole: a filename containing a flag is not a flag.
+for (const flag of [
+  ...(process.env.NODE_OPTIONS?.match(/(?:[^\s"\\]|\\.|"(?:[^"\\]|\\.)*")+/g)?.map((word) =>
+    word.replace(/"|\\(?=.)/g, ""),
+  ) ?? []),
+  ...process.execArgv,
+]) {
+  if (flag === JITLESS_FLAG) jitless = true;
+  else if (flag === JIT_ENABLED_FLAG) jitless = false;
+}
+
 /**
  * Node's native UTF-8 encoder materially reduces string-seed construction; the portable adapter
  * remains the compatibility boundary. bench/PERFORMANCE.md owns the measured runtime scope.
@@ -23,8 +39,10 @@ const nodeRuntime: Runtime = {
     crypto.randomFillSync(into);
     return undefined;
   }),
-  // No `uuidV4`: formatting pooled `randomFillSync` bytes beats `crypto.randomUUID` on Node 24 and 26
-  // with the JIT, and loses without it; bench/PERFORMANCE.md owns both results and the recheck.
+  // Pooled formatting wins with the JIT; native text wins without it. Missing native capability
+  // stays undefined so the generator uses its tested portable fallback. Remeasure both modes
+  // after Node changes; bench/PERFORMANCE.md owns the compared calls and resource limits.
+  ...(jitless ? { jitless: true, uuidV4: crypto.randomUUID } : {}),
 };
 
 export const runtime = nodeRuntime;

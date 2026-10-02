@@ -13,6 +13,7 @@
  * perfectly random.
  */
 import { describe, expect, it, vi } from "vitest";
+import { spawnSync } from "node:child_process";
 
 import { instrument } from "./instrument";
 import {
@@ -27,8 +28,46 @@ import { generateUuidV4, generateUuidV4Bytes } from "../src/index";
 import { runtime as nodeRuntime } from "../src/runtime/node";
 
 describe("entropy source", () => {
-  it("generates UUIDv4 text from the package's attributable pool on Node", () => {
-    // Node's native text is slower than the pooled portable path, so the adapter omits it and text
+  it("selects native UUIDv4 only when Node actually runs without the JIT", () => {
+    // Real processes distinguish NODE_OPTIONS from CLI overrides. The V8 executable heap is an
+    // independent observation of the process mode, not a copy of the adapter's flag parser.
+    const script = `
+      import { strict as assert } from 'node:assert';
+      import { getHeapStatistics } from 'node:v8';
+      import { runtime } from './dist/node/runtime.js';
+      import { generateUuidV4, isUuidV4String, uuidV7StringBounds } from './dist/index.js';
+      const disabled = getHeapStatistics().total_heap_size_executable === 0;
+      assert.equal(Boolean(runtime.jitless), disabled);
+      assert.equal(typeof runtime.uuidV4 === 'function', disabled);
+      assert.equal(isUuidV4String(generateUuidV4()), true);
+      // Reading both strings must not select the slower fixed writer in JITless mode.
+      const fromCharCode = String.fromCharCode;
+      let fixedWrites = 0;
+      String.fromCharCode = (...codes) => { fixedWrites += 1; return fromCharCode(...codes); };
+      const bounds = uuidV7StringBounds(0xffffffffffff);
+      assert.ok(!(bounds instanceof Error));
+      assert.equal(bounds.startInclusive.charCodeAt(12) + bounds.endInclusive.charCodeAt(12), 'f'.charCodeAt(0) * 2);
+      assert.equal(fixedWrites, disabled ? 0 : 2);
+    `;
+    for (const [options, flags] of [
+      ["", []],
+      ["--jitless", []],
+      ['"--jitless"', []],
+      ["--jitless", ["--no-jitless"]],
+      ["--no-jitless", ["--jitless"]],
+      ["", ["--jitless", "--no-jitless"]],
+      ["", ["--no-jitless", "--jitless"]],
+    ] as const) {
+      const result = spawnSync(process.execPath, [...flags, "--input-type=module", "-e", script], {
+        cwd: new URL("..", import.meta.url),
+        env: { ...process.env, NODE_OPTIONS: options },
+        encoding: "utf8",
+      });
+      expect([result.status, result.stderr]).toEqual([0, ""]);
+    }
+  });
+  it("generates UUIDv4 text from the package's attributable pool on Node with the JIT", () => {
+    // With the JIT, native text is slower than the pooled portable path, so the adapter omits it and text
     // must draw through `fillRandom`, where the source can be attributed.
     expect(nodeRuntime.uuidV4).toBeUndefined();
     const used = attributedSourcesFor(() => generateUuidV4());

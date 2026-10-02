@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { INVALID_TIMESTAMP, UuidSlugError } from "./errors.ts";
+import { runtime } from "#runtime";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
 import type { UuidTextCase, UuidV7Bounds, UuidV7Bytes, UuidV7StringFor } from "./types.ts";
 import { resolveUuidTextCase } from "./uuid.ts";
@@ -52,6 +53,40 @@ export function uuidV7ByteBounds(
   };
 }
 
+const START_SUFFIX = "-7000-8000-000000000000";
+const END_SUFFIX = "-7fff-bfff-ffffffffffff";
+let hexCodes: Uint8Array | undefined;
+
+function fixedTextEndpoint<Case extends UuidTextCase>(
+  unixMs: number,
+  upper: boolean,
+  textCase: Case,
+): UuidV7StringFor<Case> {
+  // Fixed character arguments reduce consumed bounds costs on V8 with the JIT. Byte pairs remain
+  // faster on Bun and JITless Node; selection is outside per-ID calls. Remeasure engine changes
+  // against bench/PERFORMANCE.md, including both endpoint reads and lazy table construction.
+  const hex = (hexCodes ??= Uint8Array.from("0123456789abcdef", (digit) => digit.charCodeAt(0)));
+  // Validated timestamps have 48 bits; splitting avoids truncating their upper 16 bits.
+  const high = Math.floor(unixMs / 0x1_0000_0000);
+  const value =
+    String.fromCharCode(
+      hex[high >>> 12] as number,
+      hex[(high >>> 8) & 15] as number,
+      hex[(high >>> 4) & 15] as number,
+      hex[high & 15] as number,
+      hex[unixMs >>> 28] as number,
+      hex[(unixMs >>> 24) & 15] as number,
+      hex[(unixMs >>> 20) & 15] as number,
+      hex[(unixMs >>> 16) & 15] as number,
+      45,
+      hex[(unixMs >>> 12) & 15] as number,
+      hex[(unixMs >>> 8) & 15] as number,
+      hex[(unixMs >>> 4) & 15] as number,
+      hex[unixMs & 15] as number,
+    ) + (upper ? END_SUFFIX : START_SUFFIX);
+  return (textCase === UUID_TEXT_UPPERCASE ? value.toUpperCase() : value) as UuidV7StringFor<Case>;
+}
+
 let hexBytes: string[] | undefined;
 
 function textEndpoint<Case extends UuidTextCase>(
@@ -59,18 +94,16 @@ function textEndpoint<Case extends UuidTextCase>(
   upper: boolean,
   textCase: Case,
 ): UuidV7StringFor<Case> {
-  // Byte-pair lookups replace `unixMs.toString(16)`, which on V8 cost several times the rest of the
-  // call for a millisecond timestamp. Nibble
-  // lookups need no table but were slower on Node Current and Bun. Built on first use so an import
-  // that never formats bounds pays nothing. Recheck if V8 speeds up radix formatting
-  // (bench/PERFORMANCE.md).
+  // Byte pairs avoid radix formatting and beat fixed character arguments on Bun and JITless Node.
+  // Build the table on first use so imports that never request bounds pay no table construction.
+  // Remeasure radix formatting and fixed arguments after engine changes (bench/PERFORMANCE.md).
   const hex = (hexBytes ??= Array.from({ length: 256 }, (_, byte) =>
     byte.toString(16).padStart(2, "0"),
   ));
   // `rejectUuidV7UnixMs` admits only whole milliseconds below 2^48, so `high` holds 16 bits and
   // the unsigned shifts read the low 32 bits exactly.
   const high = Math.floor(unixMs / 0x1_0000_0000);
-  const suffix = upper ? "-7fff-bfff-ffffffffffff" : "-7000-8000-000000000000";
+  const suffix = upper ? END_SUFFIX : START_SUFFIX;
   const value =
     (hex[high >>> 8] as string) +
     (hex[high & 0xff] as string) +
@@ -82,6 +115,9 @@ function textEndpoint<Case extends UuidTextCase>(
     suffix;
   return (textCase === UUID_TEXT_UPPERCASE ? value.toUpperCase() : value) as UuidV7StringFor<Case>;
 }
+
+const selectedTextEndpoint =
+  runtime.latin1Scratch || runtime.jitless ? textEndpoint : fixedTextEndpoint;
 
 /**
  * Return canonical bounds containing every RFC-variant UUIDv7 at one Unix millisecond. The
@@ -123,7 +159,7 @@ export function uuidV7StringBounds(
   // Direct formatting avoids two temporary byte arrays. Keep the byte writer independent unless
   // repeated public-route measurements reverse this result; bench/PERFORMANCE.md owns that trigger.
   return {
-    startInclusive: textEndpoint(startUnixMs, false, textCase),
-    endInclusive: textEndpoint(end, true, textCase),
+    startInclusive: selectedTextEndpoint(startUnixMs, false, textCase),
+    endInclusive: selectedTextEndpoint(end, true, textCase),
   };
 }

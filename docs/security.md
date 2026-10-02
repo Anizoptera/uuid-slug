@@ -23,7 +23,8 @@ Collisions remain possible.
 
 Generation selects secure sources separately for text and byte output:
 
-- Node uses pooled `crypto.randomFillSync()` for UUIDv4 and UUIDv7 text and byte output.
+- Node uses `crypto.randomUUID()` for UUIDv4 text without JIT compilation and pooled
+  `crypto.randomFillSync()` for other output.
 - Bun uses Web Crypto `randomUUID()` for UUIDv4 text and pooled `getRandomValues()` for byte
   output and UUIDv7.
 - Deno uses Web Crypto `randomUUID()` for UUIDv4 text and pooled `getRandomValues()` for byte

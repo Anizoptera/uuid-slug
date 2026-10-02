@@ -2,6 +2,7 @@
 
 import { unwrap } from "../dev/unwrap";
 import { createBoundsProfileCases } from "./profile-bounds";
+import { createUuidV4ProfileCases } from "./profile-v4";
 type Api = typeof import("../src/index");
 type PrivateV4Api = Pick<typeof import("../src/v4"), "generatePortableUuidV4">;
 type PrivateAlphabetApi = Pick<
@@ -529,8 +530,7 @@ export function createProfileCases(
   const cases = {
     ...migrationScalingCases,
     control: (index) => ids[index & 255] as string,
-    "v4.string": () => api.generateUuidV4(),
-    ...(privateV4Api ? { "portable.v4.string": () => privateV4Api.generatePortableUuidV4() } : {}),
+    ...createUuidV4ProfileCases(api, into, privateV4Api),
     ...(privateAlphabetApi
       ? {
           "portable.base64.encode": (index: number) =>
@@ -563,8 +563,6 @@ export function createProfileCases(
       : {}),
     "v7.string": () => api.generateUuidV7(),
     ...createBoundsProfileCases(api, instant),
-    "v4.bytes": () => api.generateUuidV4Bytes(),
-    "v4.into": () => api.generateUuidV4Bytes(into, 4),
     "v7.bytes": () => api.generateUuidV7Bytes(),
     "v7.into": () => api.generateUuidV7Bytes(into, 4),
     "v7.at": (index) => api.generateUuidV7({ at: instant + (index & 255) }),
