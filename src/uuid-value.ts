@@ -4,6 +4,7 @@ import { BASE32HEX, BASE64URL, BASE64URL_NAME, isEncoded } from "./alphabet.ts";
 import {
   checkByteRange,
   INVALID_OPTIONS,
+  INVALID_UUID_VERSION,
   isUint8Array,
   isUuidSlugError,
   UuidSlugError,
@@ -37,6 +38,7 @@ import type {
 } from "./types.ts";
 import {
   bytesToUuidString,
+  isUuidV7Bytes,
   resolveUuidTextCase,
   uuidTimestampFromBytesUnchecked,
   uuidVersion,
@@ -130,6 +132,11 @@ class ParsedUuidValue<
     const codec = codecArgument[0] ?? LocalUuidValue.ownMaskingCodec(this);
     if (!codec) return new UuidSlugError(INVALID_OPTIONS, MASKING_CODEC_REQUIRED);
     if (isLocalMaskingCodec(codec)) return codec.uuidToMaskedSlug(bytes);
+    if (!isUuidV7Bytes(bytes))
+      return new UuidSlugError(
+        INVALID_UUID_VERSION,
+        "Masked output requires RFC-variant UUIDv7 bytes.",
+      );
     try {
       const encode = codec.uuidToMaskedSlug;
       if (typeof encode !== "function")
@@ -206,7 +213,11 @@ export function createUuidValue<
 export function parseUuid<Input extends UuidInput>(
   uuid: KeylessUuidInput<Input>,
 ): Uuid<UuidVersionOf<Input>> | UuidSlugError;
-/** Parse through a masking codec and retain that codec for later masked conversions. */
+/**
+ * Parse through a masking codec and retain that codec for later masked conversions.
+ * External codec bytes are validated and copied. Malformed results return `invalid_options`;
+ * thrown exceptions remain available as the error's `cause`.
+ */
 export function parseUuid<Input extends UuidInput>(
   uuid: Input,
   maskingCodec: UuidV7MaskingCodec,
@@ -218,6 +229,8 @@ export function parseUuid(uuid: unknown, maskingCodec?: UuidV7MaskingCodec): Uui
   let parsed: Uint8Array | UuidSlugError;
   if (!maskingCodec) parsed = decodeKeylessUuid(uuid);
   else {
+    const localCodec = isLocalMaskingCodec(maskingCodec);
+    if (!localCodec && isUuidSlugError(uuid)) return uuid;
     let decode: unknown;
     try {
       decode = maskingCodec.uuidToBytes;
@@ -229,7 +242,7 @@ export function parseUuid(uuid: unknown, maskingCodec?: UuidV7MaskingCodec): Uui
     try {
       parsed = Reflect.apply(decode, undefined, [uuid]);
       if (isUint8Array(parsed) && parsed.length === 16) {
-        if (!isLocalMaskingCodec(maskingCodec)) parsed = new Uint8Array(parsed);
+        if (!localCodec) parsed = new Uint8Array(parsed);
       } else if (!isUuidSlugError(parsed))
         return new UuidSlugError(
           INVALID_OPTIONS,

@@ -110,6 +110,29 @@ export const runtimeBoundaryCases = [
       const failure = value.toMaskedSlug(throwing);
       assert.ok(failure instanceof UuidSlugError);
       assert.equal(failure.cause, cause);
+      for (const result of [null, "wrong", uuid, new Uint8Array(16)]) {
+        const malformed = { ...codec };
+        Object.defineProperty(malformed, "uuidToMaskedSlug", { value: () => result });
+        assert.ok(value.toMaskedSlug(malformed) instanceof UuidSlugError);
+      }
+      const v4 = unwrap(parseUuid("ffffffff-ffff-4fff-bfff-ffffffffffff"));
+      let calls = 0;
+      const unexpected = {
+        ...codec,
+        uuidToMaskedSlug() {
+          calls += 1;
+          return codec.uuidToMaskedSlug(uuid);
+        },
+        uuidToBytes() {
+          calls += 1;
+          return new Uint8Array(16);
+        },
+      };
+      const rejected = Reflect.apply(Reflect.get(v4, "toMaskedSlug"), v4, [unexpected]);
+      assert.ok(rejected instanceof UuidSlugError);
+      assert.equal(rejected.code, "invalid_uuid_version");
+      assert.equal(Reflect.apply(parseUuid, undefined, [failure, unexpected]), failure);
+      assert.equal(calls, 0);
       for (const result of [null, new Uint8Array(0), new Uint8Array(17), "wrong"]) {
         assert.ok(
           Reflect.apply(parseUuid, undefined, [

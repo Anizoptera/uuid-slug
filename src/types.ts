@@ -232,7 +232,11 @@ export interface Uuid<
     this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
     alphabet?: SlugAlphabet,
   ): PlainUuidSlugForVersion<Version>;
-  /** Return the masked UUIDv7 spelling using an explicit or preset masking codec. */
+  /**
+   * Return the masked UUIDv7 spelling using an explicit or preset masking codec.
+   * External codec callbacks receive isolated bytes; malformed results return `invalid_options`,
+   * and thrown exceptions remain available as the error's `cause`.
+   */
   toMaskedSlug(
     this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
     ...codec: Version extends 4

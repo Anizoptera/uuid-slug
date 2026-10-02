@@ -486,6 +486,7 @@ export function createProfileCases(
   if (plainOnlySlugs.some((slug) => codec.uuidToString(slug) !== api.uuidToString(slug)))
     throw new Error("Codec plain-slug fixture did not take the plain reading");
   const values = ids.map((id) => unwrap(api.parseUuid(id)));
+  const structuralCodec: typeof codec = { ...codec };
   const payloadLayout = { subMillisecondFractionBits: 0, counterBits: 42 };
 
   const migrationScalingCases: Record<string, ProfileCase> = {};
@@ -626,6 +627,7 @@ export function createProfileCases(
     "plain.decode": (index) => api.uuidToString(slugs[index & 255] as string),
     "uuid.toString.bytes": (index) => api.uuidToString(bytes[index & 255] as Uint8Array),
     "uuid.toBytes.bytes": (index) => api.uuidToBytes(bytes[index & 255] as Uint8Array),
+    "uuid.toBytes.uuid": (index) => api.uuidToBytes(ids[index & 255] as string),
     "uuid.toPlainSlug.bytes": (index) => api.uuidToPlainSlug(bytes[index & 255] as Uint8Array),
     "base32.encode": (index) =>
       api.uuidStringToPlainSlug(ids[index & 255] as string, base32hexName),
@@ -694,10 +696,13 @@ export function createProfileCases(
     "value.parse.slug": (index) => api.parseUuid(slugs[index & 255] as string),
     "value.parse.bytes": (index) => api.parseUuid(bytes[index & 255] as Uint8Array),
     "value.parse.masked": (index) => codec.parseUuid(masked[index & 255] as string),
+    "value.parse.structural": (index) => api.parseUuid(ids[index & 255] as string, structuralCodec),
     "value.generate": () => api.generateUuidV7Value(),
     "value.generate.at": (index) => api.generateUuidV7Value({ at: instant + (index & 255) }),
     "value.toString": (index) => values[index & 255]!.toString(),
     "value.toPlainSlug": (index) => values[index & 255]!.toPlainSlug(),
+    "value.toMaskedSlug": (index) => values[index & 255]!.toMaskedSlug(codec),
+    "value.toMaskedSlug.structural": (index) => values[index & 255]!.toMaskedSlug(structuralCodec),
     "value.convert.string": (index) => api.uuidToString(values[index & 255]!),
     "value.convert.masked": (index) => codec.uuidToMaskedSlug(values[index & 255]!),
     "payload.extract.uuid": (index) =>

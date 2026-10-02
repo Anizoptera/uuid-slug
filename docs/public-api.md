@@ -324,6 +324,9 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 - Keep direct functions as the least-work path for one-shot calls. Also provide an opt-in immutable
   parsed UUID for workflows that inspect or convert one UUID repeatedly. It owns its validated UUID
   data. UUID bits alone determine equality; attached construction context only presets later calls.
+  Structural masking codecs are untrusted callbacks: isolate private bytes, validate returned
+  representations, and contain exceptions with their causes. Trust only package-created immutable
+  codecs to borrow private storage; a matching interface does not establish ownership.
 - Keep parsed construction symmetric. The top-level parser accepts keyless UUID forms and may
   receive a masking codec to accept that codec's masked forms; the masking codec exposes the same
   operation with itself preset. Equivalent calls accept the same forms, return the same parsed UUID,
