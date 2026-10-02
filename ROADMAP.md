@@ -199,10 +199,12 @@ a physical lower bound for the complete call.
       trusted-identity work open. Rejected: removing
       the `try` (saves 1 ns, breaks native-failure fallback) and import-time validation (draws
       entropy before a heap snapshot).
-- [ ] New 16-byte arrays: Deno UUIDv4 bytes cost 159 ns against 37 ns into a caller buffer, Node
-      47–51 against 34–38. Compare `new Uint8Array(16)`, `pool.slice`, and
-      `new Uint8Array(new ArrayBuffer(16))` per runtime; keep the fastest after two replays. Views
-      onto a shared slab are rejected: their `.buffer` exposes other issued IDs.
+- [x] Screen owned UUIDv4 construction on Node, Bun and Deno. Reject explicit buffers and scratch
+      copies after repeated primary-host losses and unresolved Deno direction; retain ordinary
+      construction without another dispatch branch. Shared slab views cannot satisfy private
+      backing-storage ownership. The owned-output performance gap remains open below.
+- [ ] Close the remaining owned UUIDv4 output gap through the complete allocation, secure draw
+      and version-bit write; constructor substitutions alone do not explain Deno's cost.
 - [x] Screen owned UUIDv7 array construction on Node, Bun and Deno, including Deno's plain
       views over native buffers. Retain ordinary construction; the alternatives lose or remain
       unresolved. Keep UUIDv4 and the remaining owned-output gaps open.

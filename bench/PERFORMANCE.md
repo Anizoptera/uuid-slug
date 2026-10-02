@@ -1138,6 +1138,14 @@ Remaining gaps and their causes:
   112 ns for the ordinary constructor. Reject these alternatives without adding a Deno
   dependency or dispatch branch. Seven batches within each process do not establish independent
   confidence, and allocation plus a fixed write does not measure complete UUID generation.
+  The maintained UUIDv4 constructor screen used Node 26.10.0, Bun 1.4.2 and Deno 2.9.7 with
+  the same three-batch settings and reversed second-pass order. Ordinary, explicit-buffer and
+  scratch-copy medians were respectively 51, 132–157 and 61 ns on Node, and 22, 116–122 and
+  36 ns on Bun. Deno's explicit-buffer result changed from faster to slightly slower against
+  its baseline; the scratch copy lost twice. Reject both substitutions without a dispatch branch.
+  Existing Node/Bun ownership and runtime tests passed before timing. These screens do not
+  establish resource parity or close the owned-output gap; raw evidence is in
+  `bench/reports/candidates-v4-1790977421904/`.
 - Bun UUIDv4 caller-buffer output costs 28–29 ns against 17–18 ns. The floor fills a view prepared
   outside the timed call; the package checks the caller range, copies from the package pool into
   private storage, then copies into caller storage, so entropy failure cannot partly write caller
