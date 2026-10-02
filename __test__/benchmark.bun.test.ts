@@ -19,6 +19,7 @@ import {
   WITHIN_PROCESS_BATCH_SAMPLE_UNIT,
 } from "../bench/statistics";
 import { describeCallLatency, sampleCallLatency } from "../bench/call-latency";
+import { selectProfileCases } from "../bench/profile-case";
 import { setImmediate as yieldToLoop } from "node:timers/promises";
 
 const speed = {
@@ -28,6 +29,13 @@ const speed = {
   elapsedMs: 10,
   iterations: 1,
 };
+
+test("exact profile filters exclude similarly named failure and configured calls", () => {
+  const cases = { "v7.into": 1, "invalid.v7.into.range": 2, "v7.into.configured": 3 };
+  expect(selectProfileCases(cases, "=v7.into")).toEqual([["v7.into", 1]]);
+  expect(selectProfileCases(cases, "v7.into")).toHaveLength(3);
+  expect(() => selectProfileCases(cases, "=absent")).toThrow("selected no cases");
+});
 
 test("conversion witnesses reject lost payload bits after a valid first result", () => {
   const first = new Uint8Array(16);

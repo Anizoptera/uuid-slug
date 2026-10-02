@@ -32,14 +32,16 @@ export function assertNormalizedUuidProfileOutcome(
     );
 }
 
-/** Select cases whose names contain any comma-separated filter substring; fail when none match. */
+/** Select comma-separated substrings or exact names prefixed with `=`; fail when none match. */
 export function selectProfileCases<Case>(
   cases: Record<string, Case>,
   filter: string | null | undefined,
 ): [string, Case][] {
   const terms = filter ? filter.split(",").filter(Boolean) : [];
   const selected = Object.entries(cases).filter(
-    ([name]) => terms.length === 0 || terms.some((term) => name.includes(term)),
+    ([name]) =>
+      terms.length === 0 ||
+      terms.some((term) => (term.startsWith("=") ? name === term.slice(1) : name.includes(term))),
   );
   if (selected.length === 0) throw new Error("Profile filter selected no cases");
   return selected;
