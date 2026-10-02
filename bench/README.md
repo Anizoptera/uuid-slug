@@ -4,6 +4,10 @@ Measure each runtime separately; a failed or missing measurement must fail the h
 
 Rules:
 
+- Keep useful experiment drivers in this repository before running them. Extend an existing
+  measurement owner instead of duplicating its clocks, samples or statistics in a temporary script.
+  Isolate source substitutions from the shared working tree; retain raw output in `bench/reports/`
+  and record the measured conclusion in `bench/PERFORMANCE.md`.
 - Measure latest stable Node Current and Bun first, latest Node LTS and Chromium second, and latest
   Deno third. Measure Node Current JITless last; a JITless-only win may survive when every higher
   rung is unchanged. Older supported Node versions prove compatibility, not performance priority.
@@ -44,6 +48,18 @@ Rules:
   the comparison. These measurements do not establish the cost of an installed package import.
 - Do not publish benchmark reports as package claims.
 - Use smoke runs in CI and heavy runs manually.
+
+Run `bun bench/source-candidates.ts v7-draw independent-direct` to screen that source substitution
+against its baseline, or use `v4 argument-fast` for the UUIDv4 default-call comparison. Candidate
+names select only those substitutions; the baseline is always included. The runner uses a detached
+checkout, checks types and the owning Node and Bun tests before timing, and preserves source,
+proof output and measurements in `bench/reports/`. Set `UUID_SLUG_CANDIDATE_RUNTIMES` to a
+colon-separated selection of `node`, `bun` and `deno`; set `UUID_SLUG_COMPARE_NODE_EXECUTABLE`
+to select a Node executable. Each comparison runs in fresh processes with reversed second-pass order.
+These short batch samples select experiments, not retained optimizations or individual-call p99;
+add any missing mechanism falsifier before using a candidate's timings to decide a change.
+Prefix a `UUID_SLUG_PROFILE_FILTER` term with `=` to select that exact case; other terms match
+substrings. Use exact terms when a successful-call comparison must exclude similarly named failures.
 
 Run `bun run bench:competitors --smoke` to validate the competitor matrix, or
 `bun run bench:competitors` for repeated measurements. The matrix compares equal v4/v7 text,

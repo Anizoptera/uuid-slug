@@ -4,6 +4,9 @@ Complete the remaining performance work without changing identifier formats, sec
 validation, ownership, or published generation guarantees. Preserve the unresolved clock guarantee;
 measure clock drift without imposing a new promise. Keep remote writes unauthorized.
 
+- [ ] Consolidate useful source experiments into the maintained benchmark harness, prove complete
+      measurement output and isolated substitutions, preserve raw evidence, and document rerunning.
+
 ## Identifier integrity repairs
 
 Restore lossless conversion, immutable UUID ownership, safe normalization, transactional writes,

@@ -226,6 +226,14 @@ efficiency. A reproducible misuse alone does not justify that cost.
 
 ## Runtime boundaries and evidence
 
+- Before writing an experiment driver, extend its maintained owner in `bench/` or `scripts/`.
+  Inspect the owner's exports and callers before editing it; a matching filename is not permission
+  to replace a different job. Separate a driver only when its measurement or isolation boundary differs.
+  Temporary directories may hold isolated checkouts and generated artifacts, never the only copy
+  of useful experiment logic or evidence. Keep rerun instructions in `bench/README.md` and raw
+  benchmark output in ignored `bench/reports/`; conclusions belong in `bench/PERFORMANCE.md`.
+- Repair missing or ineffective guidance in its auto-loaded owner before the plan and code.
+  Enforce mechanically decidable failures in the existing harness, not a prose-alignment checker.
 - Use the `typescript` package for project checking; TypeScript 7 is the main compiler.
   `typescript-floor` is limited to the TypeScript 5.0 packed-consumer check and tooling that needs
   legacy in-process compiler APIs such as the parser, printer, or language service.
