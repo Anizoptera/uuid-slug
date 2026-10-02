@@ -438,10 +438,12 @@ export function isUuidText(value: unknown): value is UuidText {
 
 // Canonical guards stay regular expressions: a character loop measured slower on Node and Bun
 // (bench/PERFORMANCE.md, Canonical UUID text).
-// Pair repetition preserves the syntax without a startup-built pattern or character loop.
-// Retain only with canonical and mixed-case normalization evidence (bench/PERFORMANCE.md).
-const UUID_RE =
-  /^(?:[0-9a-f][0-9a-f]){4}-(?:[0-9a-f][0-9a-f]){2}-(?:[0-9a-f][0-9a-f]){2}-(?:[0-9a-f][0-9a-f]){2}-(?:[0-9a-f][0-9a-f]){6}$/;
+// Pair repetition improves canonical calls, but slows Bun's successful base32 normalization.
+// Reuse its existing Latin-1 selection once; neither pattern needs a builder or per-call dispatch.
+// Remeasure normalization if this capability moves to another adapter (bench/PERFORMANCE.md).
+const UUID_RE = createLatin1Scratch
+  ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+  : /^(?:[0-9a-f][0-9a-f]){4}-(?:[0-9a-f][0-9a-f]){2}-(?:[0-9a-f][0-9a-f]){2}-(?:[0-9a-f][0-9a-f]){2}-(?:[0-9a-f][0-9a-f]){6}$/;
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const UUID_V7_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const UUID_V7_TEXT_RE = /*#__PURE__*/ new RegExp(UUID_V7_RE.source, "i");
