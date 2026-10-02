@@ -54,18 +54,7 @@ const expectedNames =
         "package.v4.bytes.into",
         "package.v4.slug.base64url",
       ]
-    : [
-        "v7.string",
-        "v7.bytes",
-        "v7.into",
-        "v7.slug",
-        "portable.into",
-        "portable.subms12.into",
-        "v7.string.selected-generator",
-        "v7.bytes.selected-generator",
-        "v7.slug.selected-generator",
-        "v7.slug.structural-generator",
-      ];
+    : ["v7.string", "v7.bytes", "v7.slug"];
 const filename = group === "v4" ? "src/v4.ts" : "src/v7.ts";
 // A committed production graph makes the detached checkout match the source being screened.
 if (

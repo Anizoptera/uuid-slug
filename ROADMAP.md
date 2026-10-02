@@ -181,6 +181,8 @@ a physical lower bound for the complete call.
       entropy source: Bun Web Crypto and `node:crypto` cost the same per byte on an 8 KiB pool, and
       a 256-byte pool costs more. Done when two replays retain a cut, including UUIDv7 new bytes
       against `uuid`, or §Native floors records the cost that remains and why.
+- [x] Screen the known-lowercase shortcut in UUIDv7's inner preset resolver on ordinary
+      text, owned bytes and slug calls. Reject mixed text results and repeated owned-byte losses.
 - [x] Screen zero-fraction comparison skipping and private timestamp-byte caching before broad
       replays. Reject both shapes: the first has no worthwhile reproduced gain; the second slows
       primary calls. Keep clock-wrapper, validation, reentrancy and tail-copy work open.

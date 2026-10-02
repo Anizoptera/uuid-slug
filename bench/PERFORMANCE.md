@@ -1125,6 +1125,13 @@ Remaining gaps and their causes:
   These counts cover the instrumented burst, not total CPU or allocation. The candidate requests
   ten entropy bytes per call instead of four on sequence continuation. A maintained lost-bit
   mutation fails the independent module-mode oracle in both runtime lanes before timing.
+  A primary-call-only screen on 2026-10-02 bypassed the inner text-case resolver for the known
+  lowercase constant. Node 26.10.0 text changed from 95 to 94 ns, then from 92 to 95 ns;
+  Bun 1.4.2 text changed from 91 to 99 ns, then from 98 to 93 ns. Reject the shortcut:
+  the decision-relevant text gain does not reproduce. Owned-byte calls also lost in both passes.
+  Existing Node/Bun behavior tests passed before timing. Three 5 ms batches after 16 ms warmup
+  remain screening evidence, not independent confidence or resource parity; raw evidence is in
+  `bench/reports/candidates-v7-draw-1790977930802/`.
 - Two alternating allocation screens on 2026-10-02 compared owned UUIDv7 generation using
   `new Uint8Array(16)`, an explicit `ArrayBuffer`, and a copy of the private text buffer.
   Node 26.10.0 owned calls cost about 78 ns, 150–152 ns, and 87 ns respectively; Bun 1.4.2

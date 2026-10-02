@@ -98,6 +98,17 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
+      // The known default needs no normalization; other inputs retain the shared resolver.
+      name: "lowercase-fast",
+      get source() {
+        return replaceOnce(
+          source,
+          "const textCase = resolveUuidTextCase(textCaseOrOptions);",
+          "const textCase = textCaseOrOptions === UUID_TEXT_LOWERCASE ? UUID_TEXT_LOWERCASE : resolveUuidTextCase(textCaseOrOptions);",
+        );
+      },
+    },
+    {
       name: "inline-clock",
       get source() {
         return inlineClock(source);

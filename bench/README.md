@@ -56,6 +56,8 @@ checkout, checks types and the owning Node and Bun tests before timing, and pres
 proof output and measurements in `bench/reports/`. Set `UUID_SLUG_CANDIDATE_RUNTIMES` to a
 colon-separated selection of `node`, `bun` and `deno`; set `UUID_SLUG_COMPARE_NODE_EXECUTABLE`
 to select a Node executable. Each comparison runs in fresh processes with reversed second-pass order.
+UUIDv7 source screens time ordinary single-ID text, owned bytes and slugs first; configured and
+caller-buffer timing belongs in the later packed comparison after a primary-call gain survives.
 These short batch samples select experiments, not retained optimizations or individual-call p99;
 add any missing mechanism falsifier before using a candidate's timings to decide a change.
 Use `v4 native-zero-hex native-zero-base64` to compare native decoding of fixed zero bytes
