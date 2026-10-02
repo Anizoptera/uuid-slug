@@ -186,6 +186,16 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
 }
 
 function v4Candidates(source: string): readonly SourceCandidate[] {
+  const nativeAllocation = (method: "fromHex" | "fromBase64", input: string) =>
+    replaceOnce(
+      replaceOnce(
+        source,
+        "const UUID_V4_GENERATION =",
+        `const allocateUuidV4Bytes = (Uint8Array as { ${method}?: (value: string) => Uint8Array<ArrayBuffer> }).${method}?.bind(Uint8Array, "${input}") ?? (() => new Uint8Array(16));\nconst UUID_V4_GENERATION =`,
+      ),
+      "const output = new Uint8Array(16);",
+      "const output = allocateUuidV4Bytes();",
+    );
   const anchor =
     "export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(\n  textCase: Case = UUID_TEXT_LOWERCASE as Case,\n): UuidV4StringFor<Case> | UuidSlugError {\n  if (!isUuidTextCase(textCase)) {";
   const fast = (condition: string) =>
@@ -203,6 +213,19 @@ function v4Candidates(source: string): readonly SourceCandidate[] {
     );
   return [
     { name: "baseline", source },
+    {
+      // Engine-native decoders allocate owned arrays; secure fill still supplies every UUID bit.
+      name: "native-zero-hex",
+      get source() {
+        return nativeAllocation("fromHex", "00000000000000000000000000000000");
+      },
+    },
+    {
+      name: "native-zero-base64",
+      get source() {
+        return nativeAllocation("fromBase64", "AAAAAAAAAAAAAAAAAAAAAA==");
+      },
+    },
     {
       name: "undefined-fast",
       get source() {

@@ -1146,6 +1146,11 @@ Remaining gaps and their causes:
   Existing Node/Bun ownership and runtime tests passed before timing. These screens do not
   establish resource parity or close the owned-output gap; raw evidence is in
   `bench/reports/candidates-v4-1790977421904/`.
+  Native decoding of fixed zero bytes before secure filling also loses in both passes on all
+  three hosts. Hex and base64 allocation cost respectively 138–149 and 208–220 ns on Node,
+  29 and 57–58 ns on Bun, and 143–157 and 211–224 ns on Deno. Reject both shapes. Decoder
+  selection runs once at module load without consuming entropy. The same Node/Bun preflight
+  and short-sample limits apply; raw evidence is in `bench/reports/candidates-v4-1790977591482/`.
 - Bun UUIDv4 caller-buffer output costs 28–29 ns against 17–18 ns. The floor fills a view prepared
   outside the timed call; the package checks the caller range, copies from the package pool into
   private storage, then copies into caller storage, so entropy failure cannot partly write caller

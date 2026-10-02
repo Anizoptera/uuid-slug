@@ -205,6 +205,8 @@ a physical lower bound for the complete call.
       backing-storage ownership. The owned-output performance gap remains open below.
 - [ ] Close the remaining owned UUIDv4 output gap through the complete allocation, secure draw
       and version-bit write; constructor substitutions alone do not explain Deno's cost.
+- [x] Screen native decoding of fixed zero bytes before the unchanged secure fill. Reject both
+      hex and base64 allocation after repeated complete-call losses on Node, Bun and Deno.
 - [x] Screen owned UUIDv7 array construction on Node, Bun and Deno, including Deno's plain
       views over native buffers. Retain ordinary construction; the alternatives lose or remain
       unresolved. Keep UUIDv4 and the remaining owned-output gaps open.

@@ -58,6 +58,9 @@ colon-separated selection of `node`, `bun` and `deno`; set `UUID_SLUG_COMPARE_NO
 to select a Node executable. Each comparison runs in fresh processes with reversed second-pass order.
 These short batch samples select experiments, not retained optimizations or individual-call p99;
 add any missing mechanism falsifier before using a candidate's timings to decide a change.
+Use `v4 native-zero-hex native-zero-base64` to compare native decoding of fixed zero bytes
+before the unchanged secure fill; capability selection runs once and absent decoders use the
+ordinary constructor. These candidates measure complete owned-byte generation, not decoder speed.
 Prefix a `UUID_SLUG_PROFILE_FILTER` term with `=` to select that exact case; other terms match
 substrings. Use exact terms when a successful-call comparison must exclude similarly named failures.
 Use `v7-draw independent-direct-lost-bit` to check the payload oracle: both runtime tests must
