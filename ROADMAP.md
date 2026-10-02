@@ -92,9 +92,8 @@ other successful calls. `bench/PERFORMANCE.md` owns repeated results and their l
 - [x] Run two packed seven-runtime replays of the retained writer: no successful row is slower in
       both. The predicted 0.6 ratio is not reached by every Node or Deno row; retain the measured
       improvement, without claiming the native-parity goal is closed.
-- [ ] Record the result in `bench/PERFORMANCE.md` (§UUID text formatting, §Latin-1 slug writing).
-      Done when Chromium UUIDv4 text is measured against `@lukeed/uuid` (147 / 118 before); if it
-      still trails, screen formatting from the pool without the private copy.
+- [x] Record writer results and compare Chromium default UUIDv4 text against `@lukeed/uuid`:
+      two competitor runs separate the package below the rival. Other runtime gaps remain open.
 - [ ] Bun slug gap (53–54 against 50–52 ns for `toBase64` over Web Crypto bytes): screen native
       `toBase64` over pooled bytes against the Latin-1 writer; adopt only if two replays agree.
 - [ ] Uppercase: screen the uppercase table against lowercase output plus `toUpperCase()` on Node

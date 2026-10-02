@@ -1090,12 +1090,12 @@ Those checks cannot see every engine allocation or prove lower memory use than e
 Memory remaining after GC is not total memory allocated.
 
 These results come from repeated runs on one machine. Workload, hardware, and engine version can
-change the ranking. Browser performance comparisons use Chromium; Firefox and WebKit run correctness checks.
+change the ranking. Browser competitor comparisons use Chromium; UUID text and slug comparisons and correctness checks also cover Firefox and WebKit.
 
 | Evidence | Scope | Current result |
 | --- | --- | --- |
 | UUIDv7 text | Node, Bun, Deno, Chromium | Leads the compared packages. Module calls use portable generation without cross-form ordering; created generators add an explicit ordering contract and clock controls. |
-| UUIDv4 text | Node, Bun, Deno, Chromium | Uses native generation on Bun and Deno and pooled entropy on Node and Chromium. Trails the fastest compared package on Bun and Chromium. |
+| UUIDv4 text | Node, Bun, Deno, Chromium | Uses native generation on Bun and Deno and pooled entropy on Node and Chromium. Leads the compared packages on Chromium; trails the fastest compared package on Bun. |
 | UUIDv4/v7 bytes | New arrays and caller buffers on Node, Bun, Deno, Chromium | Leads the compared packages on Node and Chromium. On Bun, UUIDv4 caller-buffer writes and both UUIDv7 byte forms trail `uuid`. On Deno, both UUIDv7 byte forms are unresolved against `uuidv7` and `uniku`. |
 | Conversion | UUID text, bytes, both plain-slug alphabets, timestamp extraction | Text timestamp extraction trails `uuidv7-js` on Node, Bun, and Deno and is unresolved on Chromium. The study has no comparable package for extraction from bytes or slugs. |
 | Bundling | Bun, esbuild, Parcel, Rollup, Rolldown, Rspack, webpack | A named root import keeps only the code it needs. |

@@ -749,6 +749,14 @@ The two seven-runtime replays took 261 and 258 seconds, below the five-minute ce
 the four-minute warning. These measurements cover one macOS Arm64 host, the named releases and
 the tested corpus; they neither establish performance on every release nor prove a native floor.
 
+Two fresh nine-sample competitor runs with `UUID_SLUG_GENERATION_FILTER=v4.text`, read
+2026-10-02, measured Chromium's default UUIDv4 text call at 58.43 and 58.58 ns against
+116.39 and 116.47 ns for `@lukeed/uuid/secure`; their median intervals do not overlap in
+either run. These are runtime-conditioned source bundles, not packed import or allocation
+measurements. Bun's fastest package call still trails its fastest reference by median ratios
+1.17 and 1.19; Deno's 1.00 ratios do not establish superiority. These remaining default-call
+gaps stay open rather than inheriting the Chromium result.
+
 The following Latin-1 comparison describes the earlier implementation, not the selected writers.
 
 Two packed `35ad052`-to-candidate replays on 2026-09-16 measured median ratios; every listed pair
