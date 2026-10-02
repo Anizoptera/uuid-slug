@@ -2158,6 +2158,21 @@ sample-count regression, even when its medians look plausible.
 
 ### Fixed conversion comparisons
 
+#### Uppercase writer screen
+
+Keep the direct uppercase writer unless a complete successful-call comparison favors lowercase
+formatting followed by `toUpperCase()`. Two 2026-10-02 screens on Node 26.10.0 and Bun 1.4.2
+use six fresh processes per runtime, seven 5 ms batches after 16 ms warm-up, and 256 varied
+16-byte inputs. Each output is checked against independently constructed uppercase hex before
+timing; both candidates include public byte validation and result handling.
+
+Lowercase-then-uppercase/direct-uppercase median process ratios are 1.107 and 1.094 on Node,
+and 1.040 and 1.048 on Bun. Node's twelve process ratios exceed 1; Bun has individual ratios
+below 1, so its small difference remains unresolved. These are source-corpus screens with fixed
+candidate order and rotating batch order, not packed retention evidence or allocation profiles.
+The alternative earns no production change; its extra case conversion offers no repeated speed
+benefit here. Recheck after a formatter or engine change.
+
 Compare successful conversion calls with `UUID_SLUG_GENERATION_FILTER=conversion` and
 `UUID_SLUG_GENERATION_FORKS=6`; exact fixed outputs must pass before timing begins.
 Two 2026-10-02 runs use six fresh processes, three 5 ms batches per process and 16 ms warm-up

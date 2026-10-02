@@ -106,8 +106,9 @@ other successful calls. `bench/PERFORMANCE.md` owns repeated results and their l
       replays show no separated gain. Reject the added branch; keep the remaining slug gap open.
 - [ ] Close Bun's UUIDv4 slug gap against native encoding over Web Crypto bytes; isolate entropy
       copying from encoding before selecting another candidate.
-- [ ] Uppercase: screen the uppercase table against lowercase output plus `toUpperCase()` on Node
-      and Bun; keep the faster per engine.
+- [x] Uppercase: screen the uppercase table against lowercase output plus `toUpperCase()` on Node
+      and Bun. Keep direct uppercase: Node's repeated screens favor it; Bun's smaller difference
+      is unresolved. No production change follows from the source-only screens.
 - [x] Select native UUIDv4 text for JITless Node once at startup; prove CLI and `NODE_OPTIONS`
       precedence through compiled child processes and repeat default and uppercase calls across
       installed releases. Keep pooled formatting with the JIT.
