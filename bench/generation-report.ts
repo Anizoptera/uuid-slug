@@ -5,11 +5,13 @@
  *
  * The report is generated, never edited: every figure comes from the records that
  * `generation-matrix.ts` emits, so re-running that driver replaces the file and a stale report
- * shows its own date. Each verdict compares within-process 95% intervals of two median costs: "leads"
- * and "trails" mean the intervals do not overlap, "unresolved" means they do. That keeps the
- * verdict mechanical. The intervals assume independent batches; shared process effects can
- * violate that assumption, so these verdicts require fresh-process replay before selecting code.
+ * shows its own date. Each verdict compares 95% intervals from the same observation unit: "leads"
+ * and "trails" mean the intervals do not overlap; missing or unlike units remain unresolved. That keeps the
+ * verdict mechanical. Intervals assume independent observations; batches in one process can
+ * share JIT and GC effects, and fresh processes still share machine conditions.
  */
+
+import type { BenchmarkObservationUnit } from "./statistics";
 
 export interface ReportMeasurement {
   readonly comparable: string;
@@ -20,6 +22,7 @@ export interface ReportMeasurement {
   readonly name: string;
   readonly qualification: "qualified" | "rejected";
   readonly runtime: string;
+  readonly sampleUnit: BenchmarkObservationUnit;
 }
 
 export interface ReportExclusion {
@@ -47,6 +50,8 @@ export type Verdict = "leads" | "trails" | "unresolved";
 
 /** Compare two median intervals; overlapping intervals prove nothing either way. */
 export function verdict(subject: ReportMeasurement, reference: ReportMeasurement): Verdict {
+  // Equal-looking intervals from different statistical units are not comparable evidence.
+  if (!subject.sampleUnit || subject.sampleUnit !== reference.sampleUnit) return "unresolved";
   if (!subject.median95 || !reference.median95) return "unresolved";
   if (subject.median95[1] < reference.median95[0]) return "leads";
   if (subject.median95[0] > reference.median95[1]) return "trails";
@@ -81,18 +86,19 @@ export function renderGenerationReport(
     "package change so the figures below describe the current code.",
     "",
     `Run on ${options.generatedOn} (${options.machine}). Runtimes: ${runtimes.join(", ")}.`,
-    `${String(options.samples)} samples of ${String(options.durationMs)} ms per case after`,
-    `${String(options.warmupMs)} ms warm-up, one process per runtime, cases run one at a time.`,
+    `${String(options.samples)} batches of ${String(options.durationMs)} ms per case and process after`,
+    `${String(options.warmupMs)} ms warm-up; cases run one at a time.`,
     "",
     "How to read it: the ratio is the package's median cost per call divided by the fastest other",
-    "row, so below 1 means the package is faster. A verdict compares within-process 95% intervals of the",
+    "row, so below 1 means the package is faster. A verdict compares conditional 95% intervals of the",
     'two medians: "leads" and "trails" mean the intervals do not overlap; "unresolved" means they',
-    "do, and one run cannot separate the rows. Platform rows are the runtime's own primitive; the",
+    "do or the observation units differ. Platform rows are the runtime's own primitive; the",
     "package validates its output and returns typed errors, so that column is a floor, not a rival.",
     "Figures are one machine's and move between engine versions: read the direction of each",
     "difference, not its digits.",
-    "The intervals assume independent batches. Shared JIT, GC and thermal effects can violate that",
-    "assumption; these are screening verdicts, not confidence across independent runs or call p99.",
+    "Fresh-process rows use one median per process; their raw batches do not increase the independent sample count.",
+    "Within-process rows assume independent batches and provide screening evidence only.",
+    "Process samples still share scheduling and thermal conditions; neither mode establishes call p99.",
     "Repeat the comparison in fresh processes before retaining a change.",
     "",
   ];

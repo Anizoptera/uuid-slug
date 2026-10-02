@@ -1,5 +1,54 @@
 // SPDX-License-Identifier: Apache-2.0
 
+export const FRESH_PROCESS_SAMPLE_UNIT = "fresh-process";
+export const WITHIN_PROCESS_BATCH_SAMPLE_UNIT = "within-process-batch";
+export type BenchmarkObservationUnit =
+  | typeof FRESH_PROCESS_SAMPLE_UNIT
+  | typeof WITHIN_PROCESS_BATCH_SAMPLE_UNIT;
+
+/** Select a numeric median without changing the acquisition order. */
+export function sampleMedian(values: readonly number[]): number {
+  if (values.length === 0) throw new Error("Cannot select a median from an empty sample");
+  // eslint-disable-next-line unicorn/no-array-sort -- Sort a private copy under the compiler floor.
+  const sorted = Float64Array.from(values).sort();
+  return sorted[Math.floor(sorted.length / 2)]!;
+}
+
+/** Keep each process as one statistical unit, regardless of the number of batches it contains. */
+export function aggregateForkSamples<
+  Row extends {
+    readonly name: string;
+    readonly ns: readonly number[];
+    readonly operations: number;
+  },
+>(forks: readonly (readonly Row[])[]) {
+  const first = forks[0];
+  if (!first?.length) throw new Error("Fresh-process comparison requires nonempty measurements");
+  const names = new Set(first.map(({ name }) => name));
+  const indexed = forks.map((rows) => {
+    const index = new Map(rows.map((row) => [row.name, row]));
+    if (
+      index.size !== names.size ||
+      index.size !== rows.length ||
+      [...names].some((name) => !index.has(name))
+    )
+      throw new Error("Benchmark case inventory changed between fresh processes");
+    return index;
+  });
+  // Keep raw fork records reusable; overwriting their batches would change the evidence unit.
+  // eslint-disable-next-line oxc/no-map-spread -- Aggregate into new records; inputs remain raw evidence.
+  return first.map((row) => {
+    const observations = indexed.map((index) => index.get(row.name)!);
+    return {
+      ...row,
+      ns: observations.map(({ ns }) => sampleMedian(ns)),
+      withinProcessNs: observations.map(({ ns }) => ns),
+      operations: observations.reduce((sum, value) => sum + value.operations, 0),
+      sampleUnit: FRESH_PROCESS_SAMPLE_UNIT,
+    };
+  });
+}
+
 /** Describe observations; standard error assumes independent samples, not calls within a batch. */
 export function describeSamples(values: readonly number[]) {
   if (values.length === 0) return undefined;

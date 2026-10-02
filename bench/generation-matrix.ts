@@ -6,7 +6,14 @@ import { join } from "node:path";
 import { chromium } from "playwright";
 
 import { command } from "../scripts/command";
-import { medianConfidence95 } from "./statistics";
+import type { BenchmarkObservationUnit } from "./statistics";
+import {
+  WITHIN_PROCESS_BATCH_SAMPLE_UNIT,
+  aggregateForkSamples,
+  describeSamples,
+  medianConfidence95,
+  sampleMedian,
+} from "./statistics";
 
 interface Measurement {
   readonly comparable: string;
@@ -19,6 +26,7 @@ interface Measurement {
   readonly rejectionReason?: string;
   readonly runtime: string;
   readonly secure?: boolean;
+  readonly sampleUnit?: BenchmarkObservationUnit;
 }
 
 interface Environment {
@@ -34,6 +42,9 @@ const duration = process.env.UUID_SLUG_GENERATION_MS ?? (smoke ? "1" : "20");
 const samples = process.env.UUID_SLUG_GENERATION_SAMPLES ?? (smoke ? "1" : "9");
 const warmup = process.env.UUID_SLUG_GENERATION_WARMUP_MS ?? (smoke ? "2" : "32");
 const filter = process.env.UUID_SLUG_GENERATION_FILTER ?? "";
+const forks = Number(process.env.UUID_SLUG_GENERATION_FORKS ?? 1);
+if (!Number.isSafeInteger(forks) || forks < 1)
+  throw new Error("UUID_SLUG_GENERATION_FORKS must be a positive safe integer");
 const nodeCurrentExecutable = process.env.UUID_SLUG_BENCH_NODE_CURRENT_EXECUTABLE;
 const environment = {
   UUID_SLUG_GENERATION_FILTER: filter,
@@ -81,48 +92,38 @@ function parseMeasurements(output: string, runtime: string): Measurement[] {
   return rows;
 }
 
-function median(values: readonly number[]): number {
-  const middle = Math.floor(values.length / 2);
-  for (const candidate of values) {
-    const below = values.reduce((count, value) => count + Number(value < candidate), 0);
-    const through = values.reduce((count, value) => count + Number(value <= candidate), 0);
-    if (below <= middle && through > middle) return candidate;
-  }
-  throw new Error("Cannot select a median from an empty sample");
-}
-
 function print(runtime: string, rows: readonly Measurement[]): void {
-  for (const row of rows) {
+  const measured = rows.map((row) => ({ ...row, medianNs: sampleMedian(row.ns) }));
+  for (const row of measured) {
     const interval = medianConfidence95(row.ns);
     console.log(
       JSON.stringify({
         ...row,
         runtime,
-        medianNs: median(row.ns),
-        medianOpsPerSecond: Math.round(1e9 / median(row.ns)),
+        medianOpsPerSecond: Math.round(1e9 / row.medianNs),
         median95: interval,
+        sampleUnit: row.sampleUnit ?? WITHIN_PROCESS_BATCH_SAMPLE_UNIT,
+        statistics: describeSamples(row.ns),
       }),
     );
   }
-  for (const group of new Set(rows.map(({ comparable }) => comparable))) {
-    const candidates = rows.filter(
+  for (const group of new Set(measured.map(({ comparable }) => comparable))) {
+    const candidates = measured.filter(
       (row) => row.comparable === group && row.qualification === "qualified",
     );
     const packageRows = candidates.filter(({ name }) => name.startsWith("package."));
     const otherRows = candidates.filter(({ name }) => !name.startsWith("package."));
     if (packageRows.length === 0 || otherRows.length === 0) continue;
     const packageBest = packageRows.reduce((best, row) =>
-      median(row.ns) < median(best.ns) ? row : best,
+      row.medianNs < best.medianNs ? row : best,
     );
-    const otherBest = otherRows.reduce((best, row) =>
-      median(row.ns) < median(best.ns) ? row : best,
-    );
+    const otherBest = otherRows.reduce((best, row) => (row.medianNs < best.medianNs ? row : best));
     console.log(
       JSON.stringify({
         comparable: group,
         kind: "comparison",
         packageBest: packageBest.name,
-        packageToBestRatio: median(packageBest.ns) / median(otherBest.ns),
+        packageToBestRatio: packageBest.medianNs / otherBest.medianNs,
         referenceBest: otherBest.name,
         runtime,
       }),
@@ -161,20 +162,12 @@ async function build(
   return join(outdir, `${name}.mjs`);
 }
 
-async function runBrowser(entry: string): Promise<Measurement[]> {
-  const source = await Bun.file(entry).text();
-  const server = Bun.serve({
-    port: 0,
-    fetch(request) {
-      return new URL(request.url).pathname === "/bench.mjs"
-        ? new Response(source, { headers: { "content-type": "text/javascript" } })
-        : new Response("<!doctype html>");
-    },
-  });
+async function runBrowser(origin: string): Promise<Measurement[]> {
   const browser = await chromium.launch({ headless: true });
+  const runtime = `chromium ${browser.version()}`;
   try {
     const page = await browser.newPage();
-    await page.goto(server.url.href);
+    await page.goto(origin);
     await page.addScriptTag({ type: "module", url: "/bench.mjs" });
     const rows: unknown = await page.evaluate(
       async (parameters) => {
@@ -190,17 +183,30 @@ async function runBrowser(entry: string): Promise<Measurement[]> {
         JSON.stringify({
           caseNames: (rows as Measurement[]).map(({ name }) => name),
           kind: "environment",
-          runtime: "chromium",
+          runtime,
           samples: Number(samples),
         }),
-        ...(rows as Measurement[]).map((row) => JSON.stringify({ ...row, kind: "measurement" })),
+        ...(rows as Measurement[]).map((row) =>
+          JSON.stringify({ ...row, kind: "measurement", runtime }),
+        ),
       ].join("\n"),
       "chromium",
     );
   } finally {
     await browser.close();
-    await server.stop(true);
   }
+}
+
+async function collectForks(run: () => Promise<Measurement[]>): Promise<Measurement[]> {
+  // Each fresh process supplies one observation; extra batches do not create independent runs.
+  const runs: Measurement[][] = [];
+  for (let index = 0; index < forks; index += 1) {
+    const rows = await run();
+    if (runs[0] && runs[0][0]?.runtime !== rows[0]?.runtime)
+      throw new Error("Runtime version changed between benchmark processes");
+    runs.push(rows);
+  }
+  return forks === 1 ? runs[0]! : aggregateForkSamples(runs);
 }
 
 const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-generation-"));
@@ -213,7 +219,6 @@ try {
   ]);
   // CPU workloads run sequentially; concurrent runtimes contend for cores and turn scheduler
   // interference into apparent implementation variance.
-  const hostRuns = [];
   const nodeArguments = [nodeHost, ...(smoke ? ["--smoke"] : [])];
   const runtimes: readonly [string, string[]][] = [
     ["node", nodeArguments],
@@ -223,13 +228,27 @@ try {
     ["bun", [bunHost, ...(smoke ? ["--smoke"] : [])]],
     ["deno", ["run", "--allow-env", "--allow-read", denoHost]],
   ];
-  for (const [executable, arguments_] of runtimes)
-    hostRuns.push(await command(executable, arguments_, project, environment));
-  for (const output of hostRuns) {
-    const rows = parseMeasurements(output, "host");
+  for (const [executable, arguments_] of runtimes) {
+    const rows = await collectForks(async () =>
+      parseMeasurements(await command(executable, arguments_, project, environment), "host"),
+    );
     print(rows[0]?.runtime ?? "unknown", rows);
   }
-  print("chromium", await runBrowser(browser));
+  const source = await Bun.file(browser).text();
+  const server = Bun.serve({
+    port: 0,
+    fetch(request) {
+      return new URL(request.url).pathname === "/bench.mjs"
+        ? new Response(source, { headers: { "content-type": "text/javascript" } })
+        : new Response("<!doctype html>");
+    },
+  });
+  try {
+    const rows = await collectForks(() => runBrowser(server.url.href));
+    print(rows[0]!.runtime, rows);
+  } finally {
+    await server.stop(true);
+  }
   console.log(
     JSON.stringify({
       kind: "unsupported",

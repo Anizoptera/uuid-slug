@@ -121,7 +121,10 @@ other successful calls. `bench/PERFORMANCE.md` owns repeated results and their l
       controls complete in Chromium, Firefox and WebKit without a resolved timing difference.
 - [x] Add a separate opt-in call-timing pass with raw acquisition order, timer controls and
       empirical p50/p99. Reject an omitted call-window mutation; label clock-censored p99.
-- [ ] Complete throughput and latency statistics: use fresh processes as independent comparison units,
+- [x] Extend the existing competitor driver with fresh-process sampling; retain raw batches,
+      count one median per process, and reject a flattened-batch mutation. Exercise both Node
+      releases, Bun, Deno and Chromium; keep unlike statistical units unresolved.
+- [x] Complete throughput and latency statistics: use fresh processes as independent comparison units,
       preserve raw samples and outliers, report sample counts and uncertainty, and measure timer
       overhead before individual-call latency. Never label batch-average percentiles as call p99.
       Prove the report cannot turn correlated batches into independent-run confidence.

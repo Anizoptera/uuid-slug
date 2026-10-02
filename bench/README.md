@@ -48,6 +48,11 @@ It reports unsupported runtime rows instead of dropping them. Each comparable gr
 fastest package route, fastest external or platform reference, and their median ratio so a local
 optimum cannot hide in raw rows.
 
+Set `UUID_SLUG_GENERATION_FORKS` to repeat the competitor matrix in fresh host and browser
+processes. Each process contributes one median per case; retain its batches separately instead
+of counting them as independent runs. Keep the filter narrow for exploration. The default remains
+one process for screening; fresh processes still share the machine's scheduling and thermal state.
+
 Run `bun run bench:competitors:rust` for one isolated Rust generator timing process. Its own
 lockfile pins the inspected releases without adding benchmark-only crates to the product workspace.
 

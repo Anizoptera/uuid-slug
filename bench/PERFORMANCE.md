@@ -2140,13 +2140,21 @@ These signed differences do not prove that the clock stayed monotonic between en
 measure the fraction of values ahead at issuance. They add no clock guarantee. The existing
 encoded-timestamp counts alone could not measure this difference.
 
-Competitor report intervals describe batches within one process, conditional on independent
-observations. JIT, GC, shared caches and thermal drift can violate that assumption. Treat their
+Default competitor report intervals describe batches within one process, conditional on independent
+observations. Opt-in fresh-process runs use one median per process and retain every raw batch.
+JIT, GC, shared caches and thermal drift can violate independence. Treat single-process
 verdicts as screening evidence; paired fresh-process replays govern retained changes. Standard
 error in those replays describes uncertainty in a mean, not call-latency spread. No individual-call
 p99 is established by the batch averages. The paired comparison starts a fresh browser process
 per revision and round; reloading a page alone would retain shared process state. See
 `bench/README.md` for the measurement boundaries.
+
+A focused 2026-10-02 replay used six fresh processes per runtime and three batches per process
+for UUIDv4 text on Node 24.21.0, Node 26.10.0, Bun 1.4.2, Deno 2.9.7 and Chromium 153.0.8010.12.
+Every measurement row retained eighteen batches but reported six statistical observations.
+This checks the evidence unit, not runtime superiority; shared machine conditions remain.
+Reports leave unlike observation units unresolved. A flattened-batch mutation must fail the
+sample-count regression, even when its medians look plausible.
 
 A 2026-10-02 timer-only probe took 100,000 adjacent `performance.now()` pairs on this machine.
 The median difference was 41 ns on Bun 1.4.2 and 42 ns on Node 26.10.0; their observed p99

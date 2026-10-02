@@ -9,7 +9,13 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { renderGenerationReport, verdict } from "../bench/generation-report";
 import type { ReportRecord } from "../bench/generation-report";
 import { parseReport } from "../bench/matrix";
-import { describeSamples, medianConfidence95 } from "../bench/statistics";
+import {
+  aggregateForkSamples,
+  describeSamples,
+  FRESH_PROCESS_SAMPLE_UNIT,
+  medianConfidence95,
+  WITHIN_PROCESS_BATCH_SAMPLE_UNIT,
+} from "../bench/statistics";
 import { describeCallLatency, sampleCallLatency } from "../bench/call-latency";
 import { setImmediate as yieldToLoop } from "node:timers/promises";
 
@@ -438,6 +444,7 @@ const row = (medianNs: number, median95?: readonly [number, number]) =>
     name: "package.v7.text",
     qualification: "qualified",
     runtime: "node",
+    sampleUnit: WITHIN_PROCESS_BATCH_SAMPLE_UNIT,
   }) as const;
 
 const measurement = (
@@ -453,14 +460,45 @@ const measurement = (
   name,
   qualification: "qualified",
   runtime: "node",
+  sampleUnit: WITHIN_PROCESS_BATCH_SAMPLE_UNIT,
 });
 
-// Verdicts must come from interval overlap alone, never from which median is smaller.
+// Disjoint intervals only distinguish costs when both describe the same observation unit.
 test("generation report verdicts come from interval overlap", () => {
   expect(verdict(row(10, [9, 11]), row(20, [19, 21]))).toBe("leads");
   expect(verdict(row(20, [19, 21]), row(10, [9, 11]))).toBe("trails");
   expect(verdict(row(10, [9, 15]), row(12, [11, 20]))).toBe("unresolved");
   expect(verdict(row(10), row(20, [19, 21]))).toBe("unresolved");
+  expect(
+    verdict({ ...row(10, [9, 11]), sampleUnit: FRESH_PROCESS_SAMPLE_UNIT }, row(20, [19, 21])),
+  ).toBe("unresolved");
+});
+
+test("fork statistics preserve processes instead of inflating the sample count with batches", () => {
+  const a = { name: "a", ns: [9, 1, 5], operations: 3 };
+  const b = { name: "b", ns: [20], operations: 1 };
+  const forks = [
+    [a, b],
+    [
+      { ...b, ns: [30, 40, 50] },
+      { ...a, ns: [7] },
+    ],
+  ];
+  const before = JSON.stringify(forks);
+  const result = aggregateForkSamples(forks);
+  expect(result[0]?.ns).toEqual([5, 7]);
+  expect(result[1]?.ns).toEqual([20, 40]);
+  expect(result[0]?.withinProcessNs).toEqual([[9, 1, 5], [7]]);
+  expect(result[0]?.sampleUnit).toBe(FRESH_PROCESS_SAMPLE_UNIT);
+  expect(describeSamples(result[0]!.ns)?.sampleCount).toBe(2);
+  expect(JSON.stringify(forks)).toBe(before);
+  expect(() => aggregateForkSamples([[a, b], [a]])).toThrow("inventory");
+  expect(() =>
+    aggregateForkSamples([
+      [a, b],
+      [a, a],
+    ]),
+  ).toThrow("inventory");
 });
 
 test("generation report ranks the fastest package route against the fastest rival", () => {
