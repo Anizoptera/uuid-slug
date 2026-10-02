@@ -81,6 +81,31 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     const slug = api.uuidStringToPlainSlug(uuid, alphabet);
     if (slug instanceof Error) throw slug;
     equal(api.uuidToString(slug), uuid, `${alphabet} conversion`);
+    if (alphabet === api.BASE32HEX) {
+      const output = new Uint8Array(20).fill(0x55);
+      equal(
+        api.plainSlugToUuidBytes(slug.toUpperCase(), output, 2),
+        output,
+        "uppercase caller storage",
+      );
+      equal(api.bytesToUuidString(output, 2), uuid, "uppercase caller bytes");
+      equal(output[0], 0x55, "uppercase caller prefix");
+      equal(output[19], 0x55, "uppercase caller suffix");
+      const reserved = unwrap(
+        api.createUuidV7MaskingCodec({
+          mask: api.UUID_V7_TEST_MASK,
+          maskedSlugAlphabet: alphabet,
+          sentinels: [{ name: "reserved", uuid }],
+        }),
+      );
+      const upper = unwrap(reserved.uuidToMaskedSlug(uuid)).toUpperCase();
+      equal(reserved.maskedSlugToUuidString(upper), uuid, "uppercase sentinel");
+      equal(
+        reserved.createUuidSlugMigrationDecoder().uuidSlugToUuidString(upper),
+        uuid,
+        "uppercase sentinel migration",
+      );
+    }
     const generator = api.createUuidV7Generator({ readUnixMs: () => 1234567890000 });
     if (generator instanceof Error) throw generator;
     const codec = unwrap(
@@ -137,6 +162,35 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     channel.port2.close();
   }
   const codec = unwrap(api.createUuidV7MaskingCodec({ mask: api.UUID_V7_TEST_MASK }));
+  const parsed = unwrap(api.parseUuid(uuid));
+  const external = { ...codec };
+  Object.defineProperty(external, "uuidToMaskedSlug", {
+    value(bytes: Uint8Array) {
+      const slug = codec.uuidToMaskedSlug(bytes);
+      bytes.fill(0);
+      return slug;
+    },
+  });
+  equal(parsed.toMaskedSlug(external), codec.uuidToMaskedSlug(uuid), "structural masking result");
+  equal(parsed.toString(), uuid, "private UUID ownership");
+  const borrowed = unwrap(api.uuidStringToBytes(uuid));
+  const decoder = { ...codec };
+  Object.defineProperty(decoder, "uuidToBytes", { value: () => borrowed });
+  const decoded = unwrap(api.parseUuid(uuid, decoder));
+  borrowed.fill(0);
+  equal(decoded.toString(), uuid, "structural decoding ownership");
+  const malformed = Reflect.apply(api.parseUuid, undefined, [
+    uuid,
+    {
+      ...codec,
+      uuidToBytes: () => new Uint8Array(0),
+    },
+  ]);
+  equal(
+    malformed instanceof api.UuidSlugError && malformed.code,
+    api.INVALID_OPTIONS,
+    "malformed codec bytes",
+  );
   const { seed, slug: overlap, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
   const migrating = unwrap(api.createUuidV7MaskingCodec({ mask: { seed } }));
   const reader = migrating.createUuidSlugMigrationDecoder({

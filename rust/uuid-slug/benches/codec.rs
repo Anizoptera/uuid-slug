@@ -122,11 +122,16 @@ fn main() -> Result<(), Error> {
     })?;
     let sentinel = &reserved.sentinels()[0].plain_uuid_slug;
     let uppercase_sentinel = sentinel.to_uppercase();
+    // Opaque inputs prevent folding a repeated sentinel lookup into a precomputed UUID.
     sample("sentinel/base32/canonical", &ids, |_| {
-        reserved.masked_slug_to_uuid(sentinel).unwrap()
+        reserved
+            .masked_slug_to_uuid(black_box(sentinel.as_str()))
+            .unwrap()
     });
     sample("sentinel/base32/uppercase", &ids, |_| {
-        reserved.masked_slug_to_uuid(&uppercase_sentinel).unwrap()
+        reserved
+            .masked_slug_to_uuid(black_box(uppercase_sentinel.as_str()))
+            .unwrap()
     });
     sample("plain/base64", &ids, |id| {
         id.to_plain_uuid_slug(UuidSlugAlphabet::Base64Url)
