@@ -90,8 +90,8 @@ investigate them with profiles rather than deleting them to improve the result. 
 result-consumption overhead before using individual-call timing for these short operations.
 
 `bench:compare` reports the mean, sample standard deviation and mean standard error of its
-paired observations beside the median interval. Each host observation comes from a fresh process;
-browser observations reload the page in one browser process. Browser intervals and all standard
+paired observations beside the median interval. Launch a fresh host or browser process for each
+revision in each round so one revision cannot train the other's engine state. Intervals and standard
 errors remain conditional on independence; host scheduling and thermal drift can violate it too.
 Standard error does not replace the raw samples, repeated replays or practical effect size.
 

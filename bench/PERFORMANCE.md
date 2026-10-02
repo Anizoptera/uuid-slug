@@ -2144,7 +2144,15 @@ Competitor report intervals describe batches within one process, conditional on 
 observations. JIT, GC, shared caches and thermal drift can violate that assumption. Treat their
 verdicts as screening evidence; paired fresh-process replays govern retained changes. Standard
 error in those replays describes uncertainty in a mean, not call-latency spread. No individual-call
-p99 is established by the batch averages, and browser page reloads do not create fresh browser
-processes. See `bench/README.md` for the measurement boundaries.
+p99 is established by the batch averages. The paired comparison starts a fresh browser process
+per revision and round; reloading a page alone would retain shared process state. See
+`bench/README.md` for the measurement boundaries.
+
+A 2026-10-02 timer-only probe took 100,000 adjacent `performance.now()` pairs on this machine.
+The median difference was 41 ns on Bun 1.4.2 and 42 ns on Node 26.10.0; their observed p99
+differences were 42 ns and 125 ns. There were 34,210 and 12,576 zero differences respectively.
+This single uncalibrated probe includes loop warm-up and quantization. It is not a timer-cost
+bound, but shows that naive per-call timestamps can be on the same scale as UUID conversion.
+Subtracting its median from a call's p99 would not recover the call-latency distribution.
 
 The gates do not prove all performance properties. Relative timing cannot detect a slowdown shared by both sides. Constructor counters cannot see every engine allocation. Latest-runtime CI complements pinned runs, but this study did not execute hosted CI or measure every OS/architecture. Keep these limits when interpreting a pass.

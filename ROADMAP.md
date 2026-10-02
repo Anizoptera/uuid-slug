@@ -116,7 +116,9 @@ other successful calls. `bench/PERFORMANCE.md` owns repeated results and their l
 
 - [x] Report sample means, sample standard deviations and standard errors beside paired medians;
       reject a population-variance mutation and run an identical-revision control. Label existing
-      competitor intervals as within-process screens and document browser process reuse.
+      competitor intervals as within-process screens.
+- [x] Isolate each browser comparison observation in a fresh process; identical-revision
+      controls complete in Chromium, Firefox and WebKit without a resolved timing difference.
 - [ ] Complete throughput and latency statistics: use fresh processes as independent comparison units,
       preserve raw samples and outliers, report sample counts and uncertainty, and measure timer
       overhead before individual-call latency. Never label batch-average percentiles as call p99.

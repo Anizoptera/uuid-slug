@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { chromium, firefox, webkit } from "playwright";
-import type { Browser, Page } from "playwright";
+import type { Page } from "playwright";
 
 import { command } from "../scripts/command";
 import { describeSamples, medianConfidence95 } from "./statistics";
@@ -289,6 +289,25 @@ async function runBrowser(page: Page, origin: string, revision: Revision): Promi
   return validateRows(rows, "Browser comparison");
 }
 
+async function runFreshBrowser(
+  runtime: BrowserRuntime,
+  origin: string,
+  revision: Revision,
+): Promise<ProfileRow[]> {
+  // A new page alone can share engine caches with the preceding revision; fork before warm-up.
+  const browser = await browserEngines[runtime].launch({ headless: true });
+  try {
+    const version = browser.version();
+    const previous = runtimeVersions.get(runtime);
+    if (previous !== undefined && previous !== version)
+      throw new Error(`${runtime} changed version between comparison rounds`);
+    runtimeVersions.set(runtime, version);
+    return await runBrowser(await browser.newPage(), origin, revision);
+  } finally {
+    await browser.close();
+  }
+}
+
 function emit(
   runtime: Runtime,
   revision: Revision,
@@ -439,16 +458,7 @@ async function main(): Promise<void> {
           },
         })
       : undefined;
-    const browsers = new Map<BrowserRuntime, Browser>();
-    const pages = new Map<BrowserRuntime, Page>();
     try {
-      for (const runtime of selectedRuntimes) {
-        if (!isBrowserRuntime(runtime)) continue;
-        const browser = await browserEngines[runtime].launch({ headless: true });
-        browsers.set(runtime, browser);
-        pages.set(runtime, await browser.newPage());
-        runtimeVersions.set(runtime, browser.version());
-      }
       for (const [runtime, version] of runtimeVersions)
         console.error(`Comparison runtime ${runtime}: ${version}`);
       const observations = new Map<string, number[]>();
@@ -462,9 +472,8 @@ async function main(): Promise<void> {
             const target = artifactRuntime(runtime);
             let rows: ProfileRow[];
             if (isBrowserRuntime(runtime)) {
-              const page = pages.get(runtime);
-              if (!page || !server) throw new Error(`${runtime} comparison did not prepare`);
-              rows = await runBrowser(page, server.url.href, revision);
+              if (!server) throw new Error(`${runtime} comparison did not prepare`);
+              rows = await runFreshBrowser(runtime, server.url.href, revision);
             } else {
               rows = await runHost(
                 runtime,
@@ -481,7 +490,6 @@ async function main(): Promise<void> {
       }
       emitSummary(observations);
     } finally {
-      await Promise.all([...browsers.values()].map((browser) => browser.close()));
       await server?.stop(true);
     }
     console.error(`Compared ${baselineRef} with ${candidateRef ?? "the current worktree"}.`);
