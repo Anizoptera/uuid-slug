@@ -314,6 +314,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
   and inspect faster mechanisms that could preserve our guarantees; keep native primitives as floors.
 - Probe optional capabilities once at module load; absent methods remain undefined. A defined
   method that throws for an absent capability creates exception-driven fallback on every call.
+- Minimize startup work too: reuse existing inputs, stop when precedence settles the answer, and
+  skip parsing, allocation and initialization that the selected capability does not need.
 - Cast probes to narrow optional capability shapes, not intersections with ambient types that
   may already declare the method required.
 - Runtime values must carry strict brands that reject unchecked strings and bytes. Keep raw

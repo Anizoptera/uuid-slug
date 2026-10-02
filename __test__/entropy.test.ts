@@ -53,6 +53,8 @@ describe("entropy source", () => {
       ["", []],
       ["--jitless", []],
       ['"--jitless"', []],
+      ["--jitless --no-jitless", []],
+      ["--no-jitless --jitless", []],
       ["--jitless", ["--no-jitless"]],
       ["--no-jitless", ["--jitless"]],
       ["", ["--jitless", "--no-jitless"]],

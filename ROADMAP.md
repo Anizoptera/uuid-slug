@@ -98,8 +98,10 @@ other successful calls. `bench/PERFORMANCE.md` owns repeated results and their l
       improvement, without claiming the native-parity goal is closed.
 - [x] Record writer results and compare Chromium default UUIDv4 text against `@lukeed/uuid`:
       two competitor runs separate the package below the rival. Other runtime gaps remain open.
-- [ ] Bun slug gap (53–54 against 50–52 ns for `toBase64` over Web Crypto bytes): screen native
-      `toBase64` over pooled bytes against the Latin-1 writer; adopt only if two replays agree.
+- [x] Screen native `toBase64` over package bytes against the Latin-1 writer on Bun; two packed
+      replays show no separated gain. Reject the added branch; keep the remaining slug gap open.
+- [ ] Close Bun's UUIDv4 slug gap against native encoding over Web Crypto bytes; isolate entropy
+      copying from encoding before selecting another candidate.
 - [ ] Uppercase: screen the uppercase table against lowercase output plus `toUpperCase()` on Node
       and Bun; keep the faster per engine.
 - [x] Select native UUIDv4 text for JITless Node once at startup; prove CLI and `NODE_OPTIONS`

@@ -7,18 +7,30 @@ import type { Runtime } from "./types.ts";
 
 const JITLESS_FLAG = "--jitless";
 const JIT_ENABLED_FLAG = "--no-jitless";
-let jitless = false;
+let jitless: boolean | undefined;
 // NODE_OPTIONS is applied before command-line flags; the final explicit setting wins. Keep this
 // startup-only so bounds and generation share the selection without probing each identifier.
 // Quoted option words remain whole: a filename containing a flag is not a flag.
-for (const flag of [
-  ...(process.env.NODE_OPTIONS?.match(/(?:[^\s"\\]|\\.|"(?:[^"\\]|\\.)*")+/g)?.map((word) =>
-    word.replace(/"|\\(?=.)/g, ""),
-  ) ?? []),
-  ...process.execArgv,
-]) {
-  if (flag === JITLESS_FLAG) jitless = true;
-  else if (flag === JIT_ENABLED_FLAG) jitless = false;
+for (let index = process.execArgv.length - 1; index >= 0; index -= 1) {
+  const flag = process.execArgv[index];
+  if (flag === JITLESS_FLAG || flag === JIT_ENABLED_FLAG) {
+    jitless = flag === JITLESS_FLAG;
+    break;
+  }
+}
+
+// CLI overrides settle the answer without parsing the environment. Ordinary imports allocate no
+// token array; quoted environment words need tokenization only when a mode flag could be present.
+const nodeOptions = jitless === undefined ? process.env.NODE_OPTIONS : undefined;
+if (nodeOptions?.includes("jitless")) {
+  const words = nodeOptions.match(/(?:[^\s"\\]|\\.|"(?:[^"\\]|\\.)*")+/g);
+  for (let index = (words?.length ?? 0) - 1; index >= 0; index -= 1) {
+    const flag = words?.[index]?.replace(/"|\\(?=.)/g, "");
+    if (flag === JITLESS_FLAG || flag === JIT_ENABLED_FLAG) {
+      jitless = flag === JITLESS_FLAG;
+      break;
+    }
+  }
 }
 
 /**

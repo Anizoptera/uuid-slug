@@ -961,6 +961,19 @@ at 0.545 and 0.544 of its former cost (1,031–1,052 to 562–572 ns), and upper
 still leaves a wrapper gap, so this selection does not close native parity. The Node floor-table
 cells above predate both changes.
 
+Startup mode detection scans existing CLI arguments backwards and stops at the last explicit
+setting. It parses `NODE_OPTIONS` only when no CLI setting settles the answer and the environment
+contains a possible mode flag; ordinary imports create no token array. Two six-round packed
+comparisons against `da09017` on each installed Node release listed under UUIDv7 text bounds
+cover default and uppercase UUIDv4 and all bounds forms in both modes. No row has a repeated
+separated gain or loss. These warm measurements do not quantify import-time savings; avoiding
+the combined argument array, mapped token array and unnecessary parsing is the reason for the
+shape. Real child processes also check both environment flag orders against V8 mode observation.
+Fresh native profiles cover the filtered calls on Node 26.10.0, Bun 1.4.2, Deno 2.9.7 and
+Chromium, plus a separate compiled JITless Node capture. The latter has eight operation records
+and nonempty CPU, allocation, heap, GC and V8-state artifacts; their format checks establish
+capture completion, not a cold-start allocation count or a measured startup speedup.
+
 UUIDv4 slugs encode from that same scratch through one shared draw instead of owned bytes. Two
 packed replays against `bf95bbb` measured base64url slugs at 0.794–0.824 on Node 26.8.2, 0.820–0.854
 on Chromium, 0.412–0.455 on Deno, and 0.896–0.908 on Bun, with base32hex slugs at 0.83–0.92 on
@@ -1035,8 +1048,12 @@ Remaining gaps and their causes:
   copy; it changes every adapter's `fillRandom` for a secondary path. Try it if caller-buffer output
   becomes a primary workload.
 - Bun UUIDv4 slugs cost 2–4 ns more than Web Crypto bytes encoded with `toBase64`. The package
-  path copies from its pool and uses its own slug writer; neither was profiled separately. Node 24
-  has no `toBase64` floor.
+  path copies from its pool and uses its own slug writer. Two six-round packed Bun 1.4.2
+  comparisons on 2026-10-02 against `da09017` replaced only plain base64url encoding with
+  native `toBase64` over the package bytes. UUIDv4 slug ratios were 0.998 and 1.005; plain
+  encoding ratios were 1.022 and 1.010, all unresolved. Masked and sentinel controls had no
+  repeated separated loss. Reject the extra branch because it has no reproduced gain; this
+  does not prove no native encoding design can improve the call. Node 24 has no `toBase64` floor.
 
 ### Feistel round function
 
