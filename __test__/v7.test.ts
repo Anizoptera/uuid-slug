@@ -86,6 +86,8 @@ describe("uuidv7 sequence state", () => {
     now = 100.75;
     const second = bytesOf(generator);
     expect(timestampOf(second)).toBe(100);
+    // Ordering alone also passes when the old fraction merely increments its counter.
+    expect(Math.floor(payloadPrefixOf(second) / 2 ** 30)).toBe(Math.floor(0.75 * 2 ** 12));
     expectAfter(second, first);
   });
 

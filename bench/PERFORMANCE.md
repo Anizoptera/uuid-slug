@@ -1077,6 +1077,13 @@ Remaining gaps and their causes:
   With every result's last character read, formatting the same bytes through `toHex`, `Buffer`
   `hexSlice`, or a byte-table concatenation cost 86–94 ns on Bun 1.4.2. No drift-free native UUIDv7
   exists on Bun to delegate to.
+  Two alternating source-bundle screens on 2026-10-02 skipped the fraction comparison when its
+  width was zero. Node 26.10.0 default text remained about 93 ns and owned bytes about 80–82 ns.
+  Bun 1.4.2 owned bytes improved from 51 to 47 ns in one screen but only 48 to 47 ns in the other;
+  text and configured calls had mixed directions. Reject the extra branch: three 5 ms batches in
+  each process after 16 ms warmup do not establish a worthwhile improvement. The fractional-clock
+  oracle checks the actual new bucket, not merely increasing byte order; disabling advancement
+  fails its Node test and the direct Bun witness. This screen does not settle the other draw costs.
 - Bun UUIDv4 caller-buffer output costs 28–29 ns against 17–18 ns. The floor fills a view prepared
   outside the timed call; the package checks the caller range, copies from the package pool into
   private storage, then copies into caller storage, so entropy failure cannot partly write caller
