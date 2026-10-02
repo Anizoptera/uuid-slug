@@ -42,6 +42,9 @@ measure lane durations, isolate timings from competing work, and retain only def
   a change or by a cause in `bench/PERFORMANCE.md` that no implementation can remove.
 - Scope: successful calls in real use only; single-call paths before caller-buffer batches.
   Runtime rank: Node Current and Bun, then Node LTS and Chromium, then Deno, then Node JITless.
+- Goal: "at minimum to surpass the performance and resource efficiency on every main use case
+  and be reasonably fast and efficient on others." Timing alone cannot close a main-use gap;
+  compare the complete successful call's allocation and resource costs against qualified alternatives.
 - Correctness first: map contracts, add falsifiers, and mutate before timing. Keep a change only
   when two packed replays reproduce it. Wire formats and README §Guarantees stay fixed.
 
@@ -149,7 +152,7 @@ Feistel rounds (about half their time) set their floor.
 - [ ] Census UUID
       slug packages (search the registry for base64url UUID encoders such as `slugid` and
       `short-uuid`); rank only those producing the same 128-bit lossless form.
-- [ ] Make the generated report print package / floor and package / best rival per call and
+- [x] Make the generated report print package / floor and package / best rival per call and
       runtime with a parity verdict. Done when gap numbers come from the report, not hand copies.
 - [x] Replace `fastv7`'s rejection reason with its clock drift (47–88 ms ahead after 2M calls):
       `@kripod/uuidv7` has the same 62 random bits and is not rejected, so bits cannot disqualify.

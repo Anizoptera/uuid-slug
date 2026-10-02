@@ -8,6 +8,9 @@ Rules:
   Deno third. Measure Node Current JITless last; a JITless-only win may survive when every higher
   rung is unchanged. Older supported Node versions prove compatibility, not performance priority.
 - Keep direct runtime operations separate from composed pipeline operations.
+- Compare performance and resource efficiency against qualified alternatives for each main use
+  case. A throughput win with worse allocation or resource costs does not meet the main-use goal;
+  keep secondary uses reasonably fast and efficient.
 - For a rare-misuse defense, measure ordinary successful calls against the unchanged implementation
   before retaining it. Faster rejection is not a benefit that offsets slower normal calls or more
   resource use. Apply the acceptance rule in [public-api.md](../docs/public-api.md#capabilities-and-runtime-work).

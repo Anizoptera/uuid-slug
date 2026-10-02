@@ -258,6 +258,9 @@ efficiency. A reproducible misuse alone does not justify that cost.
   identifier per call; writing many IDs into caller-owned buffers through `output` and
   `outputOffset` is a secondary job. Keep batch paths efficient, but never slow a single-call
   path to speed them up, and optimize them only after the single-call paths.
+- Surpass qualified alternatives in both performance and resource efficiency for every main use
+  case; keep secondary uses reasonably fast and efficient. A throughput win alone does not close
+  a main-use gap: compare complete successful calls and their allocation and resource costs.
 - After every Bun or Deno version change, and before each periodic runtime review, follow
   `bench/README.md` §Capability review. Recheck native, Node-compatible, and web-compatible APIs;
   prove semantics and both selected and fallback paths. Names and API presence prove nothing else.
