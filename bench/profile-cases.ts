@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { unwrap } from "../dev/unwrap";
+import { UUIDv7 as UuidV7Js } from "uuidv7-js";
 import { createBoundsProfileCases } from "./profile-bounds";
 import { createUuidV4ProfileCases } from "./profile-v4";
 import { assertProfileOutcome } from "./profile-case";
@@ -646,6 +647,10 @@ export function createProfileCases(
       api.extractUuidV7UnixMs(mixedIds[index & 255] as string),
     "timestamp.extract.uuid.compact": (index) =>
       api.extractUuidV7UnixMs(compactIds[index & 255] as string),
+    // Compare rival allocation and CPU costs on the same complete successful text calls.
+    "timestamp.extract.uuid.rival": (index) => UuidV7Js.timestamp(ids[index & 255]!) ?? NaN,
+    "timestamp.extract.uuid.rival.mixed": (index) =>
+      UuidV7Js.timestamp(mixedIds[index & 255]!) ?? NaN,
     "timestamp.extract.slug": (index) => api.extractUuidV7UnixMs(slugs[index & 255] as string),
     "timestamp.extract.slug.base32": (index) =>
       api.extractUuidV7UnixMs(base32[index & 255] as string),
@@ -973,8 +978,10 @@ export function createProfileCases(
             throw new Error(`${name} violated caller-owned output identity or boundaries`);
           const payload = name.endsWith(".into") ? value.subarray(4, 20) : value;
           if (!api.isUuidBytes(payload)) throw new Error(`${name} returned malformed UUID bytes`);
-        } else if (typeof value === "number" && !Number.isFinite(value)) {
-          throw new Error(`${name} returned a nonfinite number`);
+        } else if (typeof value === "number") {
+          if (!Number.isFinite(value)) throw new Error(`${name} returned a nonfinite number`);
+          if (name.startsWith("timestamp.extract.uuid") && value !== instant + index)
+            throw new Error(`${name} returned the wrong Unix millisecond`);
         }
       }
     }

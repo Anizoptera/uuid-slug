@@ -1097,7 +1097,7 @@ change the ranking. Browser competitor comparisons use Chromium; UUID text and s
 | UUIDv7 text | Node, Bun, Deno, Chromium | Leads the compared packages. Module calls use portable generation without cross-form ordering; created generators add an explicit ordering contract and clock controls. |
 | UUIDv4 text | Node, Bun, Deno, Chromium | Uses native generation on Bun, Deno and Node without JIT compilation; uses pooled entropy on Node with JIT compilation and Chromium. Leads the compared packages on Chromium; trails the fastest compared package on Bun. |
 | UUIDv4/v7 bytes | New arrays and caller buffers on Node, Bun, Deno, Chromium | Leads the compared packages on Node and Chromium. On Bun, UUIDv4 caller-buffer writes and both UUIDv7 byte forms trail `uuid`. On Deno, both UUIDv7 byte forms are unresolved against `uuidv7` and `uniku`. |
-| Conversion | UUID text, bytes, both plain-slug alphabets, timestamp extraction | Text timestamp extraction trails `uuidv7-js` on Node, Bun, and Deno and is unresolved on Chromium. The study has no comparable package for extraction from bytes or slugs. |
+| Conversion | UUID text, bytes, both plain-slug alphabets, timestamp extraction | Text timestamp extraction leads `uuidv7-js` on Node, Bun, Deno, and Chromium. The study has no comparable package for extraction from bytes or slugs. |
 | Bundling | Bun, esbuild, Parcel, Rollup, Rolldown, Rspack, webpack | A named root import keeps only the code it needs. |
 
 See the [performance study](bench/PERFORMANCE.md) for measurements, competitors, and rejected

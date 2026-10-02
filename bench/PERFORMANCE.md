@@ -2258,7 +2258,25 @@ Preserve full text validation and the complete 48-bit result. The existing indep
 carry oracle fails for signed low words and a misplaced digit in both Node and Bun. Real child
 processes check parser selection against V8 executable-heap state across CLI and environment
 precedence; forcing fixed parsing fails that regression. No new table or capability probe is
-initialized for this reader. Native parse-only floors and competitor resource comparisons remain open.
+initialized for this reader. Native parse-only floors and Bun gross allocation volume remain open.
+
+Compare the complete timestamp call against the qualified `uuidv7-js` call, not bare parsing.
+Two six-process competitor replays on the same installed releases report package/rival ratios
+of 0.759–0.813 on Node LTS, 0.758–0.771 on Node Current, 0.600–0.613 on Bun,
+0.731–0.750 on Deno and 0.787–0.818 on Chromium. Each process contributes one median
+from nine batches; raw batches, standard deviations, mean standard errors and median intervals
+remain in the fresh-process records. These comparisons measure throughput, not individual-call tails.
+
+Keep the real rival call in the shared profiling corpus with identical lowercase and mixed-case
+inputs and independently constructed timestamps. Two native profile runs sample 15.56–16.36
+bytes per timed operation for package canonical calls against 95.07–96.76 for the rival on Node,
+15.81–16.26 against 94.12–96.28 on Deno, and 11.75–12.07 against 71.62–72.11 on
+Chromium. The warm-up and sampling limits above still apply. Package CPU cost is lower in both
+Node and Deno runs; Bun records 36.70–41.77 ns per operation against 62.80–68.11 for the
+rival. A Bun probe forwarding real `String.prototype.slice` calls observes zero package slices
+and two rival slices in both text cases; its positive control sees one. Bun gross allocation
+volume remains unmeasured. A wrong finite rival timestamp fails corpus verification on Node
+and Bun before timing starts. Preserve these distinctions when rechecking upgraded rivals.
 
 #### Uppercase writer screen
 

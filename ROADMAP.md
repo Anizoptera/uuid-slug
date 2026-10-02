@@ -209,8 +209,14 @@ competitor. Caller buffers miss that, ns package / `uuid`: Bun UUIDv4 27.9 / 26.
       beats the package decoder with length, padding, and trailing-bit checks kept.
 - [ ] UUID text to bytes and back: adopt `fromHex`, `toHex`, or `Buffer` hex wherever they beat the
       one-pass parser and package formatter with hyphen positions and mixed case still accepted.
-- [ ] Guards and timestamp extraction: close the `uuidv7-js` text extraction gap (1.12–1.32 on
-      Node, Bun, and Deno); find its mechanism before copying it.
+- [x] Close the qualified `uuidv7-js` text extraction gap: two fresh-process comparisons favor
+      the package on all ranked competitor runtimes. Two native profile runs show lower CPU
+      cost and sampled allocation on Node and Deno; Chromium allocation and Bun CPU and actual
+      substring counts favor the package. Bun gross allocation volume remains unmeasured.
+- [ ] Close the canonical UUID guard gap against `uuid.validate`; retain compact and wrapped
+      input, nil/max handling, version-neutral acceptance, and every existing validation boundary.
+- [ ] Close the validated timestamp call's gap against the parse-only native floor without
+      weakening full UUIDv7 validation; keep the lower bound distinct from a qualified competitor.
 - [x] Retain case-insensitive canonical UUIDv7 validation through the existing text guard;
       repeated packed calls improve canonical extraction on Node and Bun, alternate spellings
       have no repeated resolved loss, and mutation tests and native resource profiles preserve
@@ -218,7 +224,7 @@ competitor. Caller buffers miss that, ns package / `uuid`: Bun UUIDv4 27.9 / 26.
 - [x] Retain fixed canonical timestamp reads after full UUIDv7 validation; the independent carry
       oracle rejects signed low words and displaced digits in both runners. Two packed replays
       and native profiles reproduce speed and allocation gains; reuse native parsing on JITless
-      Node, with real-process selection and resource mutations. Competitor resource gaps stay open.
+      Node, with real-process selection and resource mutations. Native-floor gaps stay open.
 
 ## Phase 6: deliver (after every source change)
 
