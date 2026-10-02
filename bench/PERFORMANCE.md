@@ -1084,8 +1084,17 @@ Remaining gaps and their causes:
 - Bun UUIDv7 text costs about 79 ns against 27 ns for native UUIDv4 text: about 42 ns draws the
   timestamp, sequence, and random bits, and 37 ns formats them through the Latin-1 `Buffer` path.
   With every result's last character read, formatting the same bytes through `toHex`, `Buffer`
-  `hexSlice`, or a byte-table concatenation cost 86–94 ns on Bun 1.4.2. No drift-free native UUIDv7
-  exists on Bun to delegate to.
+  `hexSlice`, or a byte-table concatenation cost 86–94 ns on Bun 1.4.2. The measured Bun native
+  generators advance their timestamps during sustained bursts.
+  A focused default-text comparison on 2026-10-02 retained three fresh-process observations per
+  implementation on Node 24.21.0, Node 26.10.0, Bun 1.4.2, Deno 2.9.7 and Chromium
+  153.0.8010.12. Each process ran nine 5 ms batches after 16 ms warmup. Bun module-default
+  text measured 83 ns, with mean standard error 1.53 ns, against 47 ns and 0.66 ns for
+  `Bun.randomUUIDv7`. The package's created-generator text measured 79 ns; that separate
+  workflow must not hide the module-default gap. Bun native text remains the timing target,
+  with its previously measured timestamp behavior kept separate from cost. Three processes
+  give limited uncertainty evidence and do not establish call p99 or resource parity. Raw
+  batches, process medians and statistics are in `bench/reports/v7-primary-rivals.jsonl`.
   Two alternating source-bundle screens on 2026-10-02 skipped the fraction comparison when its
   width was zero. Node 26.10.0 default text remained about 93 ns and owned bytes about 80–82 ns.
   Bun 1.4.2 owned bytes improved from 51 to 47 ns in one screen but only 48 to 47 ns in the other;
