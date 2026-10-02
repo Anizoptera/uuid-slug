@@ -845,6 +845,44 @@ limits.
 The canonical text guards keep regular expressions: a character loop took 135 ns on Node 26.8.2 and
 64 ns on Bun against 72 and 24 ns for `UUID_RE`, results consumed.
 
+Pairing hexadecimal digits in the expression reduces canonical guard work on the measured V8
+engines and Firefox; Bun keeps the original expression because pairing slowed successful base32hex
+normalization in repeated packed comparisons. Fully expanding every digit also lost on mixed-case
+normalization in Chromium and Deno, despite faster canonical calls.
+
+Two packed comparisons on 2026-10-02 used six fresh process pairs per engine, alternating revision
+order, against `08790fb`. Each process had one 5 ms throughput batch after 16 ms warmup. The retained
+`0dd6cfe` expression changed `isUuidString` from about 75–78 to 38–42 ns on Node 26.10.0 and Deno
+2.9.7, 81–82 to 44 ns on Chromium 153.0.8010.12, and 78–83 to 46–47 ns on Firefox 155.
+Node 24.21.0's paired median ratios were 0.507 in both further comparisons; both 95% intervals
+excluded parity. JITless Node also improved; WebKit 26.6's smaller guard gain reproduced. Bun 1.4.2
+keeps its former pattern and has no reproduced canonical gain. No successful comparison row had a
+resolved loss in both replays, although individual replays contained losses. These are batch
+throughput results, not individual-call p99. Reports retain raw observations, sample standard
+deviations, standard errors, and paired median intervals; six process pairs give limited precision.
+
+Two independent competitor comparisons used six fresh processes per implementation. The first
+used nine 20 ms batches and 32 ms warmup; the second used three 5 ms batches and 16 ms warmup.
+Package / best-reference median ratios were 0.724/0.656 on Node Current, 0.586/0.594 on Node LTS,
+0.634/0.619 on Deno, and 0.630/0.621 on Chromium. Their best reference was `uuid.validate`.
+Bun's ratios were 0.992 against the direct expression and 1.055 against `uuid.validate`; the
+Bun gap remains unresolved. Different batch settings are separate observations, not pooled samples.
+
+Two native profile comparisons covered Node, Bun, Deno and Chromium. Node and Deno guard CPU cost
+fell in both; Bun's did not. Node and Chromium attributed no allocation samples to the package
+guard, while Deno attributed at most 0.011 bytes per call. Missing samples do not prove zero
+allocation. Mixed-case conversion retained similar sampled allocation bands on Node, Deno and
+Chromium; Bun gross allocation volume remains unmeasured. Profiling includes instrumentation costs
+and cannot establish resource superiority over the rival from these small samples.
+
+Twelve alternating fresh-process import pairs per Node Current and Bun measured direct built and
+source entries respectively, excluding process launch. Node import and first-call timing were
+unresolved. Bun's candidate import was faster, but its net heap delta was 711,680 versus 694,272
+bytes in every pair. This 17,408-byte increase remains unexplained: source paths and cache conditions
+were not isolated, and net heap delta is not allocation volume. The measurements do not close
+startup resource parity. Recheck with matched entry paths and cache conditions before attributing
+the difference to the expression selection.
+
 ### Parsed UUID value state
 
 A parsed or generated `Uuid` keeps its bytes, codec, and payload layout in private fields of

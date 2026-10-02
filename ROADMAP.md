@@ -215,6 +215,9 @@ competitor. Caller buffers miss that, ns package / `uuid`: Bun UUIDv4 27.9 / 26.
       substring counts favor the package. Bun gross allocation volume remains unmeasured.
 - [ ] Close the canonical UUID guard gap against `uuid.validate`; retain compact and wrapped
       input, nil/max handling, version-neutral acceptance, and every existing validation boundary.
+      Paired expressions improve the measured non-Bun canonical calls in repeated packed comparisons;
+      Bun keeps its original expression to avoid reproduced normalization losses. Resolve Bun's
+      rival gap and the unexplained cold-import heap increase before claiming full resource parity.
 - [ ] Close the validated timestamp call's gap against the parse-only native floor without
       weakening full UUIDv7 validation; keep the lower bound distinct from a qualified competitor.
 - [x] Retain case-insensitive canonical UUIDv7 validation through the existing text guard;
