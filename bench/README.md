@@ -30,6 +30,9 @@ Rules:
 - `UUID_SLUG_BENCH_ITERATIONS` and `UUID_SLUG_ENTROPY_SAMPLES` accept positive safe integers.
 - Conversion rows use fixed inputs and include returned-error handling. Rotation rows distinguish
   current-key success from previous-key success; key derivation is outside the measured calls.
+- Conversion comparisons must check exact bytes or text against fixed expected values before
+  timing. Native floors include dehyphenation, padding rejection and output formatting where the
+  requested result needs them; report an absent capability instead of timing a substitute as native.
 - The entropy audit brackets its existing draw burst with wall-clock reads. Compare the largest
   encoded timestamp with the ending clock. The difference and clock change are observations,
   not proof that the wall clock stayed monotonic throughout the burst. Encoded-timestamp counts

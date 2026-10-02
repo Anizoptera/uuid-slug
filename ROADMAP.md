@@ -136,6 +136,8 @@ Feistel rounds (about half their time) set their floor.
 - [x] Add Node Current to `bench:results` beside the pinned LTS. Done when tracked reports carry a
       Node Current column, so the first-ranked runtime needs no scratch probes.
 - [ ] Add native floor rows for conversions on every runtime where the primitive exists:
+      Extend the existing competitor driver with exact fixed-output witnesses and explicit absent
+      capabilities; keep generation checks intact and setup outside timing.
       `plainSlugToUuidBytes` against `Uint8Array.fromBase64(slug, { alphabet: "base64url",
     lastChunkHandling: "strict" })` plus a length check; `uuidBytesToPlainSlug` against
       `toBase64({ alphabet: "base64url", omitPadding: true })`; `uuidStringToBytes` against

@@ -5,7 +5,7 @@ import crypto from "node:crypto";
 import cryptoRandomUuid from "crypto-randomuuid";
 
 import { generationCases } from "./generation-cases";
-import type { GenerationCase } from "./generation-cases";
+import type { GenerationCase } from "./generation-case";
 import { measureGenerationCases } from "./generation-measure";
 
 const nativeUuidV7 = (crypto as { randomUUIDv7?: () => string }).randomUUIDv7?.bind(crypto);

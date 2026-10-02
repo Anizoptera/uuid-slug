@@ -17,6 +17,7 @@ import {
 } from "uuidv7";
 import { UUIDv7 as UuidV7Js, uuidv7 as uuidv7Js } from "uuidv7-js";
 
+import type { GenerationCase, GenerationValue } from "./generation-case";
 import { unwrap } from "../dev/unwrap";
 import {
   createUuidV7Generator,
@@ -29,27 +30,10 @@ import {
   generateUuidV7Bytes,
   generatePlainUuidV4Slug,
   generatePlainUuidV7Slug,
-  plainSlugToUuidBytes,
   UUID_V7_TEST_MASK,
   uuidStringToBytes,
 } from "../src/index";
 import { generatePortableUuidV4 } from "../src/v4";
-
-export type GenerationValue = number | string | Uint8Array | Readonly<Uint8Array>;
-
-export interface GenerationCase {
-  readonly comparable: string;
-  readonly implementation: string;
-  readonly name: string;
-  readonly note?: string;
-  readonly outputOffset?: number;
-  readonly operation: () => GenerationValue;
-  readonly expectedTimestamps?: readonly number[];
-  readonly secure?: boolean;
-  readonly qualification: "qualified" | "rejected";
-  readonly rejectionReason?: string;
-  readonly version: 4 | 7;
-}
 
 type RowOptions = Partial<
   Pick<
@@ -383,43 +367,3 @@ export const generationCases: readonly GenerationCase[] = [
     },
   ),
 ];
-
-/** Fail before timing when a row no longer returns the representation it claims. */
-export function verifyGenerationCase(candidate: GenerationCase): void {
-  const value = candidate.operation();
-  if (candidate.expectedTimestamps !== undefined) {
-    if (typeof value !== "number" || !candidate.expectedTimestamps.includes(value))
-      throw new Error(`${candidate.name} returned the wrong UUIDv7 timestamp`);
-    return;
-  }
-  if (candidate.comparable.includes(".text.")) {
-    if (
-      typeof value !== "string" ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[47][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value) ||
-      value[14] !== String(candidate.version)
-    )
-      throw new Error(`${candidate.name} did not return canonical UUIDv${candidate.version} text`);
-    return;
-  }
-  if (candidate.comparable.includes(".slug.")) {
-    const bytes = typeof value === "string" ? plainSlugToUuidBytes(value) : undefined;
-    if (
-      typeof value !== "string" ||
-      value.length !== 22 ||
-      !(bytes instanceof Uint8Array) ||
-      bytes[6]! >>> 4 !== candidate.version
-    )
-      throw new Error(
-        `${candidate.name} did not return a base64url UUIDv${candidate.version} slug`,
-      );
-    return;
-  }
-  const offset = candidate.outputOffset ?? 0;
-  if (
-    !(value instanceof Uint8Array) ||
-    value.length < offset + 16 ||
-    value[offset + 6]! >>> 4 !== candidate.version ||
-    (value[offset + 8]! & 0xc0) !== 0x80
-  )
-    throw new Error(`${candidate.name} did not return UUID bytes`);
-}

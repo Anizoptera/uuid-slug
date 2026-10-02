@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import type { GenerationCase, GenerationValue } from "./generation-cases";
-import { verifyGenerationCase } from "./generation-cases";
+import type { GenerationCase, GenerationValue } from "./generation-case";
+import { verifyGenerationCase } from "./generation-case";
 
 interface GenerationMeasureOptions {
   readonly durationMs: number;
