@@ -1071,7 +1071,16 @@ Remaining gaps and their causes:
 
 - Bun UUIDv4 text stays 2–5 ns above its floor. The package adds the public text-case check, the
   trusted-identity branch, and the `try` that keeps native failures on the portable fallback.
-  Only the `try` was ablated: removing it saved about 1 ns and would break that fallback guarantee.
+  Removing the `try` saved about 1 ns and would break that fallback guarantee.
+  The maintained UUIDv4 screen on 2026-10-02 compared an undefined fast path, an argument-count
+  fast path and direct preset comparisons on Node 26.10.0 and Bun 1.4.2. Each candidate passed
+  the owning Node and Bun tests before timing. Node default text stayed at 70–74 ns against
+  70–71 ns for the baseline. Bun's undefined fast path measured 37–38 ns against 38–40 ns,
+  while the other candidates varied by pass. Keep the existing implementation: these short
+  samples do not establish a worthwhile gain on both primary runtimes. Three 5 ms batches per
+  process after 16 ms warmup, with reversed second-pass order, are screening evidence; they do
+  not establish independent-run confidence, individual-call p99 or resource parity. Raw samples
+  and proof output are in `bench/reports/candidates-v4-1790977311163/`.
 - Bun UUIDv7 text costs about 79 ns against 27 ns for native UUIDv4 text: about 42 ns draws the
   timestamp, sequence, and random bits, and 37 ns formats them through the Latin-1 `Buffer` path.
   With every result's last character read, formatting the same bytes through `toHex`, `Buffer`

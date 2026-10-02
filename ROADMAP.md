@@ -194,7 +194,9 @@ a physical lower bound for the complete call.
       generators. Reject the extra secure-source refills despite modest Bun text and slug gains;
       keep the module-mode bit oracle and its maintained lost-bit falsifier.
 - [ ] Bun UUIDv4 text: ablate the default parameter plus `isUuidTextCase` check and the
-      trusted-identity comparison separately; try an argument-count fast path. Rejected: removing
+      trusted-identity comparison separately. The maintained default-parameter, argument-count and
+      direct-preset screens do not establish a worthwhile gain on both primary runtimes; keep
+      trusted-identity work open. Rejected: removing
       the `try` (saves 1 ns, breaks native-failure fallback) and import-time validation (draws
       entropy before a heap snapshot).
 - [ ] New 16-byte arrays: Deno UUIDv4 bytes cost 159 ns against 37 ns into a caller buffer, Node
