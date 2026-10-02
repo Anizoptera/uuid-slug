@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const extras = (process.env.UUID_SLUG_BENCH_RUNTIMES ?? "").split(":").filter(Boolean);
+const nodeCurrentExecutable = process.env.UUID_SLUG_BENCH_NODE_CURRENT_EXECUTABLE;
 
 interface Runtime {
   readonly label: string;
@@ -30,6 +31,9 @@ interface ParsedReport {
 const runtimes: readonly Runtime[] = [
   { label: "bun", command: ["bun"], bundled: false },
   { label: "node", command: ["node"], bundled: true },
+  ...(nodeCurrentExecutable
+    ? [{ label: "node-current", command: [nodeCurrentExecutable], bundled: true }]
+    : []),
   ...extras.map((executable) => ({
     label: executable.split("/").pop() ?? executable,
     command: [executable],

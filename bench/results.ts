@@ -28,6 +28,10 @@ if (process.argv.includes("--smoke"))
 
 const project = join(import.meta.dir, "..");
 const results = join(import.meta.dir, "results");
+if (!process.env.UUID_SLUG_BENCH_NODE_CURRENT_EXECUTABLE)
+  throw new Error(
+    "Set UUID_SLUG_BENCH_NODE_CURRENT_EXECUTABLE to Node Current so tracked results include it beside Node LTS",
+  );
 
 /** The competitor driver's full-run settings, passed down so the report states what actually ran. */
 const competitors = { durationMs: 20, samples: 9, warmupMs: 32 };

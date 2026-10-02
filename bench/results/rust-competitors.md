@@ -5,7 +5,7 @@ each of three fresh processes. The target table compiles the actual generation c
 isolated consumer with the crate's selected features and caller-selected WebAssembly entropy
 backends. Unsupported means that strongest tested configuration did not compile.
 
-Run on 2026-09-16 (Apple M4 Max, darwin 25.5.0). Different entropy, ordering, state-sharing, allocation, and
+Run on 2026-10-02 (Apple M4 Max, darwin 25.5.0). Different entropy, ordering, state-sharing, allocation, and
 output contracts are not ranked as interchangeable. Figures are one machine's; read repeated
 direction, not digits.
 
@@ -13,65 +13,65 @@ direction, not digits.
 
 | Call | Mode | UUID | Median ns/call | Observed range |
 | --- | --- | ---: | ---: | ---: |
-| `fast-uuid-v7.v7.u128` | scalar | v7 | 3.34 | 3.25–3.61 |
-| `hyperuuid.v4.value` | scalar | v4 | 985.83 | 978.75–1008.19 |
-| `hyperuuid.v7.caller-batch` | batch 256 | v7 | 25.13 | 24.64–25.85 |
-| `hyperuuid.v7.global` | 4 threads | v7 | 266.19 | 189.65–324.89 |
-| `hyperuuid.v7.value` | scalar | v7 | 861.30 | 853.14–895.29 |
-| `id-forge.v4.value` | scalar | v4 | 3.32 | 3.26–3.50 |
-| `id-forge.v7.value` | scalar | v7 | 23.50 | 22.82–25.71 |
-| `leachuuid7.v7.value` | scalar | v7 | 35.29 | 34.73–36.92 |
-| `nativelite-uid.v7.global` | 4 threads | v7 | 84.40 | 76.63–91.92 |
-| `nativelite-uid.v7.value` | scalar | v7 | 28.47 | 27.71–29.74 |
-| `nexus-id.v4.value` | scalar | v4 | 5.50 | 5.26–7.90 |
-| `nexus-id.v7.value` | scalar | v7 | 9.22 | 9.11–9.62 |
-| `package.v4.base64url` | scalar | v4 | 1006.90 | 998.83–1029.79 |
-| `package.v4.value` | scalar | v4 | 983.98 | 975.14–1155.16 |
-| `package.v7.base64url` | scalar | v7 | 856.01 | 849.58–866.03 |
-| `package.v7.caller-batch` | batch 256 | v7 | 835.16 | 828.48–839.06 |
-| `package.v7.per-thread` | 4 threads | v7 | 273.38 | 192.91–348.11 |
-| `package.v7.value` | scalar | v7 | 862.60 | 855.89–880.02 |
-| `philiprehberger-id-gen.v7.value` | scalar | v7 | 22.03 | 21.64–22.89 |
-| `qubit-id.v4.value` | scalar | v4 | 981.93 | 974.53–986.83 |
-| `rivid-core.v7.bytes` | scalar | v7 | 29.38 | 28.72–29.92 |
-| `rivid-core.v7.caller-batch` | batch 256 | v7 | 13.51 | 13.33–14.17 |
-| `rivid-core.v7.thread-local` | 4 threads | v7 | 7.94 | 7.59–10.18 |
-| `rok-ids.v7.value` | scalar | v7 | 32.35 | 31.54–32.79 |
-| `uniqer-rs.v4.text` | scalar | v4 | 32.72 | 30.68–37.74 |
-| `uniqer-rs.v7.text` | scalar | v7 | 49.08 | 48.01–50.97 |
-| `uuid-extra.v4.base64url` | scalar | v4 | 31.38 | 30.70–32.24 |
-| `uuid-extra.v7.base64url` | scalar | v7 | 47.94 | 47.51–49.48 |
-| `uuid-lite.v4.value` | scalar | v4 | 991.80 | 978.23–1135.35 |
-| `uuid-lite2.v4.value` | scalar | v4 | 986.84 | 980.78–1153.91 |
-| `uuid.v4.value` | scalar | v4 | 10.55 | 10.32–13.64 |
-| `uuid.v7.value` | scalar | v7 | 34.81 | 33.52–46.85 |
-| `uuid64rs.v4.base64` | scalar | v4 | 1386.47 | 1352.26–1734.49 |
-| `uuid7.v7.global` | 4 threads | v7 | 94.62 | 87.94–98.84 |
-| `uuid7.v7.value` | scalar | v7 | 30.93 | 30.09–32.59 |
-| `uuidv4.v4.text` | scalar | v4 | 247.56 | 242.03–259.44 |
-| `uuidv7.v7.bytes` | scalar | v7 | 857.84 | 851.39–928.54 |
+| `fast-uuid-v7.v7.u128` | scalar | v7 | 3.33 | 3.26–3.50 |
+| `hyperuuid.v4.value` | scalar | v4 | 977.04 | 967.78–984.66 |
+| `hyperuuid.v7.caller-batch` | batch 256 | v7 | 24.65 | 23.39–25.37 |
+| `hyperuuid.v7.global` | 4 threads | v7 | 268.40 | 188.55–330.19 |
+| `hyperuuid.v7.value` | scalar | v7 | 852.97 | 840.66–863.63 |
+| `id-forge.v4.value` | scalar | v4 | 3.23 | 3.17–3.41 |
+| `id-forge.v7.value` | scalar | v7 | 23.91 | 23.26–24.87 |
+| `leachuuid7.v7.value` | scalar | v7 | 35.01 | 34.38–35.64 |
+| `nativelite-uid.v7.global` | 4 threads | v7 | 84.75 | 76.68–90.41 |
+| `nativelite-uid.v7.value` | scalar | v7 | 28.56 | 27.25–29.54 |
+| `nexus-id.v4.value` | scalar | v4 | 5.34 | 5.22–5.59 |
+| `nexus-id.v7.value` | scalar | v7 | 9.23 | 8.99–9.46 |
+| `package.v4.base64url` | scalar | v4 | 1002.61 | 995.46–1016.20 |
+| `package.v4.value` | scalar | v4 | 976.47 | 964.82–999.92 |
+| `package.v7.base64url` | scalar | v7 | 850.02 | 833.13–857.35 |
+| `package.v7.caller-batch` | batch 256 | v7 | 818.96 | 810.57–829.19 |
+| `package.v7.per-thread` | 4 threads | v7 | 261.57 | 170.95–332.20 |
+| `package.v7.value` | scalar | v7 | 852.13 | 843.70–858.18 |
+| `philiprehberger-id-gen.v7.value` | scalar | v7 | 22.25 | 21.97–23.15 |
+| `qubit-id.v4.value` | scalar | v4 | 971.05 | 963.42–982.88 |
+| `rivid-core.v7.bytes` | scalar | v7 | 29.27 | 29.08–29.83 |
+| `rivid-core.v7.caller-batch` | batch 256 | v7 | 13.19 | 12.59–14.51 |
+| `rivid-core.v7.thread-local` | 4 threads | v7 | 7.82 | 7.60–8.46 |
+| `rok-ids.v7.value` | scalar | v7 | 32.12 | 31.48–32.73 |
+| `uniqer-rs.v4.text` | scalar | v4 | 31.52 | 30.68–35.06 |
+| `uniqer-rs.v7.text` | scalar | v7 | 51.69 | 49.13–52.60 |
+| `uuid-extra.v4.base64url` | scalar | v4 | 30.97 | 29.95–32.00 |
+| `uuid-extra.v7.base64url` | scalar | v7 | 47.47 | 46.18–48.50 |
+| `uuid-lite.v4.value` | scalar | v4 | 978.06 | 971.14–986.48 |
+| `uuid-lite2.v4.value` | scalar | v4 | 978.86 | 969.24–1026.27 |
+| `uuid.v4.value` | scalar | v4 | 10.59 | 10.29–10.79 |
+| `uuid.v7.value` | scalar | v7 | 34.62 | 33.39–35.69 |
+| `uuid64rs.v4.base64` | scalar | v4 | 1377.69 | 1367.05–1405.10 |
+| `uuid7.v7.global` | 4 threads | v7 | 101.18 | 93.69–110.63 |
+| `uuid7.v7.value` | scalar | v7 | 31.16 | 30.49–31.86 |
+| `uuidv4.v4.text` | scalar | v4 | 246.69 | 242.37–254.33 |
+| `uuidv7.v7.bytes` | scalar | v7 | 847.91 | 840.13–854.47 |
 
 ## Compile targets
 
 | Crate | Native | wasm32-unknown-unknown |
 | --- | --- | --- |
-| `fast-uuid-v7` | supported | supported |
-| `hyperuuid` | supported | supported |
-| `id-forge` | supported | supported |
-| `leachuuid7` | supported | supported |
-| `nativelite-uid` | supported | unsupported: cannot find function `fill_random` in this scope: not found in this scope |
-| `nexus-id` | supported | supported |
-| `package` | supported | supported |
-| `philiprehberger-id-gen` | supported | supported |
-| `qubit-id` | supported | supported |
-| `rivid-core` | supported | supported |
-| `rok-ids` | supported | supported |
-| `uniqer-rs` | supported | supported |
-| `uuid` | supported | supported |
-| `uuid-extra` | supported | supported |
-| `uuid-lite` | supported | supported |
-| `uuid-lite2` | supported | supported |
-| `uuid64rs` | supported | supported |
-| `uuid7` | supported | supported |
-| `uuidv4` | supported | supported |
-| `uuidv7` | supported | supported |
+| `fast-uuid-v7` | supported | unsupported: can't find crate for `core` |
+| `hyperuuid` | supported | unsupported: can't find crate for `core` |
+| `id-forge` | supported | unsupported: can't find crate for `core` |
+| `leachuuid7` | supported | unsupported: can't find crate for `core` |
+| `nativelite-uid` | supported | unsupported: can't find crate for `core` |
+| `nexus-id` | supported | unsupported: can't find crate for `core` |
+| `package` | supported | unsupported: can't find crate for `core` |
+| `philiprehberger-id-gen` | supported | unsupported: can't find crate for `core` |
+| `qubit-id` | supported | unsupported: can't find crate for `core` |
+| `rivid-core` | supported | unsupported: can't find crate for `core` |
+| `rok-ids` | supported | unsupported: can't find crate for `core` |
+| `uniqer-rs` | supported | unsupported: can't find crate for `core` |
+| `uuid` | supported | unsupported: can't find crate for `core` |
+| `uuid-extra` | supported | unsupported: can't find crate for `core` |
+| `uuid-lite` | supported | unsupported: can't find crate for `core` |
+| `uuid-lite2` | supported | unsupported: can't find crate for `core` |
+| `uuid64rs` | supported | unsupported: can't find crate for `core` |
+| `uuid7` | supported | unsupported: can't find crate for `core` |
+| `uuidv4` | supported | unsupported: can't find crate for `core` |
+| `uuidv7` | supported | unsupported: can't find crate for `core` |

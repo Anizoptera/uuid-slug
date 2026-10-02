@@ -117,7 +117,7 @@ Why: conversions, parses, guards, and extraction have no native or competitor ro
 is unknown; Phase 5 needs them. Masked calls have no native or competitor equivalent: the frozen
 Feistel rounds (about half their time) set their floor.
 
-- [ ] Add Node Current to `bench:results` beside the pinned LTS. Done when tracked reports carry a
+- [x] Add Node Current to `bench:results` beside the pinned LTS. Done when tracked reports carry a
       Node Current column, so the first-ranked runtime needs no scratch probes.
 - [ ] Add native floor rows for conversions on every runtime where the primitive exists:
       `plainSlugToUuidBytes` against `Uint8Array.fromBase64(slug, { alphabet: "base64url",

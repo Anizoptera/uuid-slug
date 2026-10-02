@@ -64,6 +64,10 @@ They are evidence for `bench/PERFORMANCE.md`, which owns conclusions; a figure i
 machine's and moves between runs, so read the direction of a difference, not its digits. The
 command runs full settings only.
 
+Set `UUID_SLUG_BENCH_NODE_CURRENT_EXECUTABLE` to the Node Current executable when refreshing
+tracked results. The reports include that executable beside the project's Node LTS and record
+each process's actual version; both Node releases reuse the same compiled benchmark.
+
 ## Regression protection
 
 Run `bun run build && bun run perf:check` to check the package under the selected Node and Bun.

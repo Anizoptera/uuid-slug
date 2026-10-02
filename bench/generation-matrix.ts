@@ -34,6 +34,7 @@ const duration = process.env.UUID_SLUG_GENERATION_MS ?? (smoke ? "1" : "20");
 const samples = process.env.UUID_SLUG_GENERATION_SAMPLES ?? (smoke ? "1" : "9");
 const warmup = process.env.UUID_SLUG_GENERATION_WARMUP_MS ?? (smoke ? "2" : "32");
 const filter = process.env.UUID_SLUG_GENERATION_FILTER ?? "";
+const nodeCurrentExecutable = process.env.UUID_SLUG_BENCH_NODE_CURRENT_EXECUTABLE;
 const environment = {
   UUID_SLUG_GENERATION_FILTER: filter,
   UUID_SLUG_GENERATION_MS: duration,
@@ -213,8 +214,12 @@ try {
   // CPU workloads run sequentially; concurrent runtimes contend for cores and turn scheduler
   // interference into apparent implementation variance.
   const hostRuns = [];
+  const nodeArguments = [nodeHost, ...(smoke ? ["--smoke"] : [])];
   const runtimes: readonly [string, string[]][] = [
-    ["node", [nodeHost, ...(smoke ? ["--smoke"] : [])]],
+    ["node", nodeArguments],
+    ...(nodeCurrentExecutable
+      ? ([[nodeCurrentExecutable, nodeArguments]] satisfies [string, string[]][])
+      : []),
     ["bun", [bunHost, ...(smoke ? ["--smoke"] : [])]],
     ["deno", ["run", "--allow-env", "--allow-read", denoHost]],
   ];
