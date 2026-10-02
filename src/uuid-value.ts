@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { BASE64URL_NAME } from "./alphabet.ts";
-import { checkByteRange, INVALID_OPTIONS, isUuidSlugError, UuidSlugError } from "./errors.ts";
+import { BASE32HEX, BASE64URL, BASE64URL_NAME, isEncoded } from "./alphabet.ts";
+import {
+  checkByteRange,
+  INVALID_OPTIONS,
+  isUint8Array,
+  isUuidSlugError,
+  UuidSlugError,
+} from "./errors.ts";
+import { isLocalMaskingCodec } from "./masking-codec-protocol.ts";
 import type { SlugAlphabet } from "./slug.ts";
 import { decodeKeylessUuid, extractUuidV7Payload, uuidBytesToPlainSlug } from "./slug.ts";
 import {
@@ -121,9 +128,29 @@ class ParsedUuidValue<
   ): MaskedOrSentinelUuidV7Slug | UuidSlugError {
     const bytes = LocalUuidValue.ownBytes(this);
     const codec = codecArgument[0] ?? LocalUuidValue.ownMaskingCodec(this);
-    return codec
-      ? codec.uuidToMaskedSlug(bytes)
-      : new UuidSlugError(INVALID_OPTIONS, MASKING_CODEC_REQUIRED);
+    if (!codec) return new UuidSlugError(INVALID_OPTIONS, MASKING_CODEC_REQUIRED);
+    if (isLocalMaskingCodec(codec)) return codec.uuidToMaskedSlug(bytes);
+    try {
+      const encode = codec.uuidToMaskedSlug;
+      if (typeof encode !== "function")
+        return new UuidSlugError(INVALID_OPTIONS, MASKING_CODEC_REQUIRED);
+      // A callback may keep its argument beyond this call; freezing the UUID does not freeze bytes.
+      const result: unknown = Reflect.apply(encode, undefined, [new Uint8Array(bytes)]);
+      if (isUuidSlugError(result)) return result;
+      if (
+        typeof result === "string" &&
+        (isEncoded(result, BASE64URL, 16, false, 4) ||
+          isEncoded(result, BASE32HEX, 16, false, 4) ||
+          isEncoded(result, BASE32HEX, 16))
+      )
+        return result as MaskedOrSentinelUuidV7Slug;
+      return new UuidSlugError(
+        INVALID_OPTIONS,
+        "Masking codec must return a canonical masked slug or sentinel.",
+      );
+    } catch (cause) {
+      return new UuidSlugError(INVALID_OPTIONS, "Masking codec UUID encoding failed.", { cause });
+    }
   }
 
   extractV7Payload(
@@ -201,15 +228,21 @@ export function parseUuid(uuid: unknown, maskingCodec?: UuidV7MaskingCodec): Uui
       return new UuidSlugError(INVALID_OPTIONS, "maskingCodec must be a UUIDv7 masking codec.");
     try {
       parsed = Reflect.apply(decode, undefined, [uuid]);
+      if (isUint8Array(parsed) && parsed.length === 16) {
+        if (!isLocalMaskingCodec(maskingCodec)) parsed = new Uint8Array(parsed);
+      } else if (!isUuidSlugError(parsed))
+        return new UuidSlugError(
+          INVALID_OPTIONS,
+          "Masking codec must return exactly 16 UUID bytes.",
+        );
     } catch (cause) {
       return new UuidSlugError(INVALID_OPTIONS, "Masking codec UUID parsing failed.", { cause });
     }
   }
   if (isUuidSlugError(parsed)) return parsed;
-  // Keyless text always decodes into fresh bytes. Byte input is the caller's array, and a codec is a
-  // caller-reachable callback, so both are copied.
+  // Text decoders and local codecs own fresh bytes; external codec storage was isolated above.
   return createUuidValue(
-    !maskingCodec && typeof uuid === "string" ? parsed : new Uint8Array(parsed),
+    maskingCodec || typeof uuid === "string" ? parsed : new Uint8Array(parsed),
     maskingCodec,
     existing ? LocalUuidValue.ownPayloadLayout(existing) : undefined,
   );

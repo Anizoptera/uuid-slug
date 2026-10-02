@@ -28,6 +28,8 @@ import {
   unmaskSlug,
 } from "./payload.ts";
 import { createMigration } from "./migration.ts";
+import { findSentinel } from "./sentinel.ts";
+import { registerMaskingCodec } from "./masking-codec-protocol.ts";
 import { isMaskHandle } from "./mask-handle.ts";
 import { deriveUuidV7Mask } from "./mask.ts";
 import { validateTimestampBytes } from "./timestamp.ts";
@@ -412,9 +414,11 @@ function buildUuidSlugCodec(
     if (typeof start !== "number") return start;
     previousMasks.push({ mask: previous, timestampRangeStartUnixMs: start });
   }
-  const maskedSlugAlphabet = options.maskedSlugAlphabet ?? BASE64URL_NAME;
-  const maskedSlugAlphabetResult = resolveSlugAlphabet(maskedSlugAlphabet);
+  const maskedSlugAlphabetResult = resolveSlugAlphabet(
+    options.maskedSlugAlphabet ?? BASE64URL_NAME,
+  );
   if (maskedSlugAlphabetResult instanceof Error) return maskedSlugAlphabetResult;
+  const maskedSlugAlphabet = maskedSlugAlphabetResult.name as SlugAlphabet;
   const sentinelDefinitions = options.sentinels ?? EMPTY_SENTINELS;
   if (!Array.isArray(sentinelDefinitions))
     return new UuidSlugError(
@@ -442,7 +446,7 @@ function buildUuidSlugCodec(
       if (typeof input !== "string") return input;
       text = input;
     }
-    const sentinel = sentinels.bySlug.get(text)?.bytes;
+    const sentinel = findSentinel(sentinels.bySlug, text)?.bytes;
     if (sentinel) return sentinel;
     if (text.length === 26) return decodePlainSlugToBytes(text);
     if (text.length === 27) return unmaskSlug(text, current, previousMasks) ?? noMaskedSlugMatch();
@@ -541,7 +545,7 @@ function buildUuidSlugCodec(
         if (selectedCase === UUID_TEXT_LOWERCASE && isUuidString(uuid))
           return uuid as UuidStringFor<Case>;
       } else {
-        const sentinel = sentinels.bySlug.get(uuid);
+        const sentinel = findSentinel(sentinels.bySlug, uuid);
         if (sentinel)
           return (
             selectedCase === UUID_TEXT_LOWERCASE
@@ -670,7 +674,7 @@ function buildUuidSlugCodec(
     if (typeof slug !== "string") return slug;
     const selectedCase = resolveUuidTextCase(textCase);
     if (selectedCase instanceof Error) return selectedCase;
-    const sentinel = sentinels.bySlug.get(slug);
+    const sentinel = findSentinel(sentinels.bySlug, slug);
     if (sentinel)
       return (
         selectedCase === UUID_TEXT_LOWERCASE
@@ -699,7 +703,7 @@ function buildUuidSlugCodec(
     if (typeof slug !== "string") return slug;
     const badRange = output === undefined ? undefined : checkByteRange(output, outputOffset, 16);
     if (badRange) return badRange;
-    const sentinelBytes = sentinels.bySlug.get(slug)?.bytes;
+    const sentinelBytes = findSentinel(sentinels.bySlug, slug)?.bytes;
     const decoded =
       sentinelBytes ?? unmaskSlug(slug, current, previousMasks) ?? noMaskedSlugMatch();
     if (decoded instanceof Error) return decoded;
@@ -794,7 +798,7 @@ function buildUuidSlugCodec(
     const slug = normalizeUuidSlugInput(maskedUuidSlug);
     if (typeof slug !== "string") return slug;
     const bytes =
-      sentinels.bySlug.get(slug)?.bytes ??
+      findSentinel(sentinels.bySlug, slug)?.bytes ??
       unmaskSlug(slug, current, previousMasks) ??
       noMaskedSlugMatch();
     return bytes instanceof Error ? bytes : extractUuidV7UnixMs(bytes);
@@ -807,7 +811,7 @@ function buildUuidSlugCodec(
     const slug = normalizeUuidSlugInput(maskedUuidSlug);
     if (typeof slug !== "string") return slug;
     const bytes =
-      sentinels.bySlug.get(slug)?.bytes ??
+      findSentinel(sentinels.bySlug, slug)?.bytes ??
       unmaskSlug(slug, current, previousMasks) ??
       noMaskedSlugMatch();
     return bytes instanceof Error ? bytes : extractUuidV7Payload(bytes, layout);
@@ -829,7 +833,7 @@ function buildUuidSlugCodec(
     const slug = normalizeUuidSlugInput(maskedUuidSlug);
     if (typeof slug !== "string") return slug;
     const bytes =
-      sentinels.bySlug.get(slug)?.bytes ??
+      findSentinel(sentinels.bySlug, slug)?.bytes ??
       unmaskSlug(slug, current, previousMasks) ??
       noMaskedSlugMatch();
     if (bytes instanceof Error) return bytes;
@@ -875,5 +879,5 @@ function buildUuidSlugCodec(
     extractMaskedUuidV7Payload,
     validateMaskedUuidV7SlugUnixMs,
   };
-  return Object.freeze(maskingCodec);
+  return Object.freeze(registerMaskingCodec(maskingCodec));
 }

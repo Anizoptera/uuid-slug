@@ -169,6 +169,12 @@ try {
     "--include",
     "function-parameter-names",
   ];
+  // Homebrew cargo is not a rustup proxy; a nightly installation alone cannot select rustdoc.
+  // Bind only API extraction so normal product checks keep the repository's stable toolchain.
+  const rustApiEnvironment = {
+    RUSTC: (await command("rustup", ["which", "--toolchain", "nightly", "rustc"], root)).trim(),
+    RUSTDOC: (await command("rustup", ["which", "--toolchain", "nightly", "rustdoc"], root)).trim(),
+  };
   const rustTarget = (
     JSON.parse(
       await command(
@@ -188,11 +194,11 @@ try {
   ).target_directory;
   // cargo-public-api owns one rustdoc JSON path, so feature selections must not write it concurrently.
   const rustDefault = annotateRustApi(
-    await command("cargo", [...rustArgs, "--all-features"], root),
+    await command("cargo", [...rustArgs, "--all-features"], root, rustApiEnvironment),
     new Set(await readRustDeprecations(rustTarget)),
   );
   const rustMinimal = annotateRustApi(
-    await command("cargo", [...rustArgs, "--no-default-features"], root),
+    await command("cargo", [...rustArgs, "--no-default-features"], root, rustApiEnvironment),
     new Set(await readRustDeprecations(rustTarget)),
   );
   const rust = report("Rust", [

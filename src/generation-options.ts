@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { findUnknownOption, INVALID_OPTIONS, UuidSlugError } from "./errors.ts";
+import { findUnknownOption, INVALID_OPTIONS, isPlainRecord, UuidSlugError } from "./errors.ts";
 
 export interface GenerationOptionValues {
   readonly alphabet?: unknown;
@@ -21,10 +21,7 @@ export function readGenerationOptions(
   if (options === null || typeof options !== "object")
     return new UuidSlugError(INVALID_OPTIONS, `${operation} options must be a plain object.`);
   try {
-    if (Array.isArray(options))
-      return new UuidSlugError(INVALID_OPTIONS, `${operation} options must be a plain object.`);
-    const prototype = Object.getPrototypeOf(options);
-    if (prototype !== null && Object.getPrototypeOf(prototype) !== null)
+    if (!isPlainRecord(options))
       return new UuidSlugError(INVALID_OPTIONS, `${operation} options must be a plain object.`);
     const unknown = findUnknownOption(options, accepted);
     if (unknown !== undefined)

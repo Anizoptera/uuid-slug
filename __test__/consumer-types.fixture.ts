@@ -393,6 +393,16 @@ expectType<UuidV7MaskingCodec | UuidSlugError>()(
 );
 if (codecResult instanceof Error) throw codecResult;
 const codec = codecResult;
+// @ts-expect-error A plain UUIDv4 slug cannot become a masked UUIDv7 slug.
+codec.uuidToMaskedSlug(generatedV4Slug);
+// @ts-expect-error Known plain UUIDv4 provenance must survive the source-specific call.
+codec.plainToMaskedUuidSlug(generatedV4Slug);
+expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(
+  codec.uuidToMaskedSlug(generatePlainUuidV7Slug()),
+);
+expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(
+  codec.plainToMaskedUuidSlug(generatePlainUuidV7Slug()),
+);
 expectType<UuidV7MaskingCodec>()(codec);
 const codecParsedValue = codec.parseUuid(codec.generateMaskedUuidV7Slug());
 expectType<Uuid<7, true> | UuidSlugError>()(codecParsedValue);

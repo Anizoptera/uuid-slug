@@ -3,6 +3,7 @@
 import {
   checkByteRange,
   checkRange,
+  diagnosticValue,
   fillRandomBytes,
   INVALID_TIMESTAMP,
   RNG_UNAVAILABLE,
@@ -292,7 +293,7 @@ export function createPortableUuidV7Generator(
       if (typeof reading !== "number" || reading < 0 || !isValidUuidV7UnixMs(now))
         return new UuidSlugError(
           INVALID_TIMESTAMP,
-          `Clock returned ${String(reading)}, which is not a millisecond in 0..${MAX_UUID_V7_UNIX_MS}.`,
+          `Clock returned ${diagnosticValue(reading)}, which is not a millisecond in 0..${MAX_UUID_V7_UNIX_MS}.`,
         );
       const fraction =
         fractionBits === 0
@@ -396,8 +397,12 @@ export function createPortableUuidV7Generator(
       | Case
       | Omit<GenerateUuidV7Options<Case>, "generator"> = UUID_TEXT_LOWERCASE as Case,
   ): UuidV7StringFor<Case> | UuidSlugError {
-    if (typeof textCaseOrOptions === "string")
-      return formatUuidV7(bytes(textBytes), textCaseOrOptions);
+    if (typeof textCaseOrOptions === "string") {
+      const textCase = resolveUuidTextCase(textCaseOrOptions);
+      return textCase instanceof Error
+        ? textCase
+        : formatUuidV7(bytes(textBytes), textCase as Case);
+    }
     let values = readGenerationOptions(
       textCaseOrOptions,
       UUID_V7_TEXT_OPTIONS,

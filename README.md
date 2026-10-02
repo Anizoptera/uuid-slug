@@ -601,7 +601,8 @@ transform calls preserve the original exception as `cause`.
 
 `uuidBytesToPlainSlug` and `plainSlugToUuidBytes` convert one 16-byte UUID, not arbitrary binary data. Without an
 offset, `uuidBytesToPlainSlug` requires exactly 16 bytes; an explicit offset selects 16 bytes from a larger
-array. `plainSlugToUuidBytes` rejects noncanonical spelling. `isPlainUuidSlug` returns a boolean, not an error.
+array. `plainSlugToUuidBytes` accepts mixed-case base32hex and rejects nonzero padding bits.
+`isPlainUuidSlug` checks canonical output spelling and returns a boolean, not an error.
 
 ```ts
 import { BASE32HEX, uuidBytesToPlainSlug } from "@anizoptera/uuid-slug";

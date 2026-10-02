@@ -36,6 +36,10 @@ import {
   generatePlainUuidV7Slug,
   generateUuidV7WithPlainSlug,
   generateUuidV4WithRandomFill,
+  BASE32HEX,
+  BASE64URL,
+  createUuidV7GeneratorWithRandomFill,
+  parseUuid,
 } from "../src/index";
 import { createPortableUuidV7Generator as createUuidV7Generator } from "../src/v7";
 import { createUuidV7MaskingCodecWithGenerator } from "../src/masking-codec";
@@ -78,6 +82,230 @@ const hasCause = (value: unknown, target: unknown): boolean =>
   (value instanceof Error && hasCause(value.cause, target));
 
 export const runtimeBoundaryCases = [
+  {
+    name: "contains structural codec callbacks without exposing immutable UUID storage",
+    run(this: void) {
+      const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
+      const value = unwrap(parseUuid(uuid));
+      let retained: Uint8Array | undefined;
+      const external = { ...codec };
+      Object.defineProperty(external, "uuidToMaskedSlug", {
+        value(bytes: Uint8Array) {
+          retained = bytes;
+          const result = codec.uuidToMaskedSlug(bytes);
+          bytes.fill(0);
+          return result;
+        },
+      });
+      assert.equal(value.toMaskedSlug(external), codec.uuidToMaskedSlug(uuid));
+      retained?.fill(255);
+      assert.equal(value.toString(), uuid);
+      const cause = new Error("external codec failed");
+      const throwing = {
+        ...codec,
+        uuidToMaskedSlug() {
+          throw cause;
+        },
+      };
+      const failure = value.toMaskedSlug(throwing);
+      assert.ok(failure instanceof UuidSlugError);
+      assert.equal(failure.cause, cause);
+      for (const result of [null, new Uint8Array(0), new Uint8Array(17), "wrong"]) {
+        assert.ok(
+          Reflect.apply(parseUuid, undefined, [
+            uuid,
+            { ...codec, uuidToBytes: () => result },
+          ]) instanceof UuidSlugError,
+        );
+      }
+      const borrowed = unwrap(uuidStringToBytes(uuid));
+      const parsed = unwrap(
+        Reflect.apply(parseUuid, undefined, [uuid, { ...codec, uuidToBytes: () => borrowed }]),
+      );
+      borrowed.fill(0);
+      assert.equal(parsed.toString(), uuid);
+    },
+  },
+  {
+    name: "reads equivalent base32hex sentinels before masked decoding and migration",
+    run() {
+      const codec = unwrap(
+        createUuidV7MaskingCodec({
+          mask: UUID_V7_TEST_MASK,
+          maskedSlugAlphabet: BASE32HEX,
+          sentinels: [{ name: "reserved", uuid }],
+        }),
+      );
+      const entry = codec.sentinels[0];
+      assert.ok(entry);
+      const upper = entry.slug.toUpperCase();
+      assert.equal(unwrap(codec.maskedSlugToUuidString(upper)), entry.uuid);
+      assert.equal(unwrap(codec.uuidToString(upper)), entry.uuid);
+      assert.deepEqual(
+        unwrap(codec.maskedSlugToUuidBytes(upper)),
+        unwrap(uuidStringToBytes(entry.uuid)),
+      );
+      assert.equal(
+        unwrap(codec.createUuidSlugMigrationDecoder().uuidSlugToUuidString(upper)),
+        entry.uuid,
+      );
+    },
+  },
+  {
+    name: "normalizes boxed selectors without reading tags or reentering scratch conversion",
+    run() {
+      const other = "ffffffff-ffff-4fff-bfff-ffffffffffff";
+      let tags = 0;
+      for (const wrapped of [
+        new String(BASE64URL),
+        vm.runInNewContext('new String("base64url")'),
+      ]) {
+        Object.defineProperty(wrapped, Symbol.toStringTag, {
+          get() {
+            tags += 1;
+            uuidStringToPlainSlug(other);
+            throw new Error("tag must not be read");
+          },
+        });
+        assert.equal(
+          Reflect.apply(uuidStringToPlainSlug, undefined, [uuid, wrapped]),
+          uuidStringToPlainSlug(uuid),
+        );
+      }
+      assert.equal(tags, 0);
+      const prototype = vm.runInNewContext(
+        'String.prototype[Symbol.toStringTag] = "Other"; new String("base32hex")',
+      );
+      assert.equal(
+        Reflect.apply(uuidStringToPlainSlug, undefined, [uuid, prototype]),
+        uuidStringToPlainSlug(uuid, BASE32HEX),
+      );
+    },
+  },
+  {
+    name: "accepts mixed-case base32hex in transactional caller-buffer and masked conversions",
+    run() {
+      const slug = unwrap(uuidStringToPlainSlug(uuid, BASE32HEX));
+      const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
+      for (const spelling of [
+        slug,
+        slug.toUpperCase(),
+        slug.replace(/[a-v]/g, (char, offset) => (offset % 2 ? char.toUpperCase() : char)),
+      ]) {
+        const output = new Uint8Array(20).fill(0xee);
+        assert.equal(plainSlugToUuidBytes(spelling, output, 2), output);
+        assert.equal(bytesToUuidString(output, 2), uuid);
+        assert.equal(output[1], 0xee);
+        assert.equal(output[18], 0xee);
+        assert.equal(codec.maskedSlugToUuidString(codec.plainToMaskedUuidSlug(spelling)), uuid);
+      }
+      for (const invalid of [slug.slice(0, 25) + "1", slug.slice(0, 12) + "!" + slug.slice(13)]) {
+        const output = new Uint8Array(20).fill(0xee);
+        assert.ok(plainSlugToUuidBytes(invalid, output, 2) instanceof UuidSlugError);
+        assert.ok(output.every((byte) => byte === 0xee));
+      }
+    },
+  },
+  {
+    name: "captures normalized boxed codec alphabets",
+    run() {
+      for (const alphabet of [BASE64URL, BASE32HEX] as const) {
+        const primitive = unwrap(
+          createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK, maskedSlugAlphabet: alphabet }),
+        );
+        const boxed = unwrap(
+          Reflect.apply(createUuidV7MaskingCodec, undefined, [
+            { mask: UUID_V7_TEST_MASK, maskedSlugAlphabet: new String(alphabet) },
+          ]),
+        );
+        assert.equal(boxed.uuidToMaskedSlug(uuid), primitive.uuidToMaskedSlug(uuid));
+      }
+    },
+  },
+  {
+    name: "rejects generator presets before observing clocks or consuming entropy and sequence",
+    run() {
+      let clocks = 0;
+      let draws = 0;
+      const generator = unwrap(
+        createUuidV7GeneratorWithRandomFill(
+          (bytes) => {
+            draws += 1;
+            bytes.fill(0);
+          },
+          {
+            readUnixMs: () => {
+              clocks += 1;
+              return 100;
+            },
+          },
+        ),
+      );
+      const control = unwrap(
+        createUuidV7GeneratorWithRandomFill(
+          (bytes) => {
+            bytes.fill(0);
+          },
+          { readUnixMs: () => 100 },
+        ),
+      );
+      const error = Reflect.apply(generator.generateUuidV7, undefined, ["garbage"]);
+      assert.ok(error instanceof UuidSlugError);
+      assert.equal(error.code, "invalid_options");
+      assert.equal(clocks, 0);
+      assert.equal(draws, 0);
+      assert.equal(generator.generateUuidV7(), control.generateUuidV7());
+    },
+  },
+  {
+    name: "rejects host and class generator options while accepting plain records from any realm",
+    run() {
+      class Options {
+        readonly marker = true;
+      }
+      for (const options of [new Date(), new Options()]) {
+        const error = Reflect.apply(createSecureUuidV7Generator, undefined, [options]);
+        assert.ok(error instanceof UuidSlugError);
+        assert.equal(error.code, "invalid_options");
+      }
+      for (const options of [{}, Object.create(null), vm.runInNewContext("({})")]) {
+        assert.ok(
+          !(Reflect.apply(createSecureUuidV7Generator, undefined, [options]) instanceof Error),
+        );
+      }
+    },
+  },
+  {
+    name: "rejects hostile diagnostic values without invoking their coercion",
+    run() {
+      let coercions = 0;
+      const hostile = {
+        [Symbol.toPrimitive]() {
+          coercions += 1;
+          throw new Error("coercion must not run");
+        },
+      };
+      const output = new Uint8Array(16).fill(0xee);
+      const error = Reflect.apply(uuidStringToBytes, undefined, [uuid, output, hostile]);
+      assert.ok(error instanceof UuidSlugError);
+      assert.equal(error.code, "invalid_buffer");
+      assert.ok(output.every((byte) => byte === 0xee));
+      const generator = createUuidV7Generator({
+        readUnixMs: () => hostile as unknown as number,
+        fillRandom: (bytes) => bytes.fill(0),
+      });
+      assert.ok(generator.generateUuidV7() instanceof UuidSlugError);
+      const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
+      const decoder = codec.createUuidSlugMigrationDecoder();
+      assert.ok(
+        Reflect.apply(decoder.uuidSlugToUuidString, undefined, [
+          uuidStringToPlainSlug(uuid),
+          hostile,
+        ]) instanceof UuidSlugError,
+      );
+      assert.equal(coercions, 0);
+    },
+  },
   {
     name: "orders successful current-time calls across one created generator's output forms",
     run(this: void) {

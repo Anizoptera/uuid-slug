@@ -5,12 +5,14 @@ import {
   INVALID_OPTIONS,
   INVALID_UUID_SLUG,
   findUnknownOption,
+  diagnosticValue,
   isUuidSlugError,
   normalizeUuidSlugInput,
   stringInput,
   UuidSlugError,
 } from "./errors.ts";
 import { decodeFirstMaskedCandidate, decodeMaskedCandidates } from "./payload.ts";
+import { findSentinel } from "./sentinel.ts";
 import type { UuidV7MaskRange } from "./payload.ts";
 import type {
   UuidSlugMigrationDecoder,
@@ -112,10 +114,10 @@ export function createMigration(
           ? "Fixed-mask decoding is disabled; create the migration reader with acceptFixedMask: true."
           : format === PLAIN_SLUG_FORMAT
             ? "Plain-slug decoding is disabled; create the migration reader with acceptPlainSlug: true."
-            : `Unknown migration format: ${String(format)}.`,
+            : `Unknown migration format: ${diagnosticValue(format)}.`,
       );
 
-    const sentinel = sentinels.get(slug);
+    const sentinel = findSentinel(sentinels, slug);
     if (sentinel) return [sentinel.uuid];
     const useCurrent = format === undefined || format === SEEDED_MASK_FORMAT;
     const useOriginal = original && (format === undefined || format === FIXED_MASK_FORMAT);

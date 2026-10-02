@@ -1,5 +1,30 @@
 # Native parity
 
+## Identifier integrity repairs
+
+Restore lossless conversion, immutable UUID ownership, safe normalization, transactional writes,
+typed failures, and version-aware consumer types without changing issued identifiers. Preserve the
+native-parity tasks below; they are independent of these approved repairs. Limit active implementation
+to one repair group, with verification proceeding on its completed dependencies.
+Keep complete routine lanes below five minutes without dropping runtime or artifact coverage;
+measure lane durations, isolate timings from competing work, and retain only defect-discriminating checks.
+
+- [ ] Reproduce wrapper reentrancy and hostile tags; normalize strings intrinsically and resolve selectors before shared scratch becomes live.
+- [ ] Reproduce structural codec mutation, malformed bytes, retained storage and throws; isolate private UUID bytes and validate callback results with causes.
+- [ ] Reproduce uppercase caller-buffer decoding; accept mixed-case base32hex while retaining strict padding and atomic writes.
+- [ ] Normalize retained codec alphabet options and accept equivalent base32hex sentinels in both languages and migration readers.
+- [ ] Reject invalid generator presets before clocks, entropy and sequence changes; reject host/class constructor options while accepting cross-realm and null-prototype records.
+- [ ] Reject malformed offsets, clocks and migration formats without invoking caller coercion hooks.
+- [ ] Compile positive and negative consumers for known UUIDv4 plain slugs in every UUIDv7-only operation; repair declarations and editor help.
+- [ ] Preserve Rust enum identity while removing incompatible Borrow<str>; test real collections and update API reports and owning guidance.
+- [ ] Return fresh decoded arrays without redundant copies; instrument owned conversion allocations and preserve borrowed-input ownership.
+- [ ] Run regressions against their original mechanisms and isolated mutations; retain restoration copies and verify restoration byte-for-byte.
+- [ ] Update affected source JSDoc, README and durable contract owners; avoid parallel inventories and unrelated rewrites.
+- [ ] Resolve Rust API extraction prerequisites, then run complete checks and packed compiler-floor consumers.
+- [ ] Exercise packed browser and debug/release WebAssembly in every configured browser engine.
+- [ ] Run repeated packed benchmarks and profiles for affected successful calls across ranked runtimes; record results and limitations in bench/PERFORMANCE.md.
+- [ ] Audit the full repair diff against baseline e6ab40d47587e032446686ee7dd95a8792ec939e; verify every approved repair, comment and changed line, and commit verified groups without remote writes.
+
 ## Maintainer rulings (agents never change these; attack them only by asking)
 
 - Goal, 2026-09-16 (AGENTS.md): every default call (no arguments, or only a text-case or alphabet

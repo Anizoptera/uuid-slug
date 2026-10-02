@@ -254,7 +254,7 @@ export function plainSlugToUuidBytes(
       ? checkRange(16, outputOffset, 16)
       : checkByteRange(output, outputOffset, 16);
   if (badRange) return badRange;
-  if (output && !isEncoded(slug, alpha, 16)) {
+  if (output && !isEncoded(slug, alpha, 16, true)) {
     for (let i = 0; i < slug.length; i += 1) {
       const code = slug.charCodeAt(i);
       if (code >= 128 || (alpha.decode[code] as number) < 0)
@@ -292,12 +292,15 @@ export function uuidStringToPlainSlug(
     uuidText = normalizeUuidStringInput(uuidText);
     if (typeof uuidText !== "string") return uuidText;
   }
-  // Parse into shared scratch, then encode: one pass each, no per-call array. Separate text-to-slug
+  const alpha = resolveSlugAlphabet(alphabet);
+  if (alpha instanceof Error) return alpha;
+  // Resolve caller selectors before scratch is live, then parse and encode without callbacks.
+  // Separate text-to-slug
   // writers read hex pairs and concatenated characters, and were slower on every runtime
-  // (bench/PERFORMANCE.md). Nothing between the parse and the encode can re-enter this function.
+  // (bench/PERFORMANCE.md). Reassess scratch ownership if encoding adds caller-controlled work.
   const bytes = uuidStringToBytes(uuidText, textSlugScratch);
   if (bytes instanceof Error) return bytes;
-  return uuidBytesToPlainSlug(bytes, alphabet);
+  return encode(bytes, alpha) as PlainUuidSlug;
 }
 
 /**
@@ -433,7 +436,8 @@ export function uuidToBytes(
   }
   const bytes = decodeKeylessUuid(uuid);
   if (bytes instanceof Error || (bytes === uuid && isUuidSlugError(bytes))) return bytes;
-  if (!destination) return new Uint8Array(bytes);
+  // Text decoders already own fresh bytes; only borrowed binary or parsed input needs a copy.
+  if (!destination) return typeof uuid === "string" ? bytes : new Uint8Array(bytes);
   destination.set(bytes, outputOffset);
   return destination;
 }

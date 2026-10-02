@@ -703,7 +703,7 @@ export declare interface UuidV7MaskingCodec {
   ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
   plainToMaskedUuidSlug<Input extends string | UuidSlugError>(
     this: void,
-    plainUuidSlug: PlainUuidSlugInput<Input>,
+    plainUuidSlug: PlainUuidV7SlugInput<Input>,
   ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
   maskedToPlainUuidSlug<Input extends string | UuidSlugError>(
     this: void,
@@ -835,7 +835,7 @@ export declare interface UuidV7TimestampWindow {
 }
 declare type UuidV7ValueInput<Input extends UuidInput> = RejectKnownInput<
   Input,
-  UuidV4Text | UuidV4Bytes | Uuid<4, boolean, boolean>
+  UuidV4Text | UuidV4Bytes | PlainUuidV4Slug | Uuid<4, boolean, boolean>
 >;
 export declare interface UuidV7ValueOptions extends UuidV7GeneratorValueOptions {
   readonly generator?: UuidV7Generator;

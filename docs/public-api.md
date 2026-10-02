@@ -55,8 +55,9 @@ justifies a generic public helper such as `parse_slug`, `encode_uuid`, `decode_s
 `timestamp`; those names hide a representation, masking requirement, or unit that changes the call.
 
 Rust returns `PlainUuidSlug`, `MaskedUuidV7Slug`, or `MaskedOrSentinelUuidV7Slug` instead of an
-untyped `String`. Each type borrows as `str` without allocation, dereferences to `str`, implements
-`Display`, and converts into `String` without copying the slug bytes. Keep construction private so
+untyped `String`. Each type exposes `as_str()` and `AsRef<str>` without allocation, dereferences to `str`, implements
+`Display`, and converts into `String` without copying the slug bytes. Scalar slug types implement
+`Borrow<str>`; the enum does not because its equality and hashing include the variant. Keep construction private so
 only validated canonical output receives these types. Use the enum variant when a masking codec can
 return either a masked payload or a sentinel's plain slug; do not erase that distinction merely to
 make two strings fit one collection.

@@ -444,7 +444,11 @@ impl UuidV7MaskingCodec {
     fn sentinel(&self, slug: &str) -> Option<Uuid> {
         self.reserved
             .iter()
-            .find(|(text, _)| text.as_str() == slug)
+            // Case folding is valid only for the plain base32hex spelling, never base64url.
+            .find(|(text, _)| {
+                text.as_str() == slug
+                    || (slug.len() == 26 && text.len() == 26 && text.eq_ignore_ascii_case(slug))
+            })
             .map(|(_, uuid)| *uuid)
     }
 

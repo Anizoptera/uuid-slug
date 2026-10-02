@@ -23,10 +23,10 @@ pub uuid_slug::ErrorCode::TimestampOutsideWindow
 impl uuid_slug::ErrorCode
 pub const fn uuid_slug::ErrorCode::as_str(self) -> &'static str
 impl core::clone::Clone for uuid_slug::ErrorCode
-pub fn uuid_slug::ErrorCode::clone(&self) -> uuid_slug::ErrorCode
+pub fn uuid_slug::ErrorCode::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::ErrorCode
 impl core::cmp::PartialEq for uuid_slug::ErrorCode
-pub fn uuid_slug::ErrorCode::eq(&self, other: &uuid_slug::ErrorCode) -> bool
+pub fn uuid_slug::ErrorCode::eq(&self, other: &Self) -> bool
 impl core::fmt::Debug for uuid_slug::ErrorCode
 pub fn uuid_slug::ErrorCode::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for uuid_slug::ErrorCode
@@ -46,17 +46,15 @@ pub uuid_slug::MaskedOrSentinelUuidV7Slug::Sentinel(uuid_slug::PlainUuidSlug)
 impl uuid_slug::MaskedOrSentinelUuidV7Slug
 pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::as_str(&self) -> &str
 pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::into_string(self) -> alloc::string::String
-impl core::borrow::Borrow<str> for uuid_slug::MaskedOrSentinelUuidV7Slug
-pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::borrow(&self) -> &str
 impl core::clone::Clone for uuid_slug::MaskedOrSentinelUuidV7Slug
-pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::clone(&self) -> uuid_slug::MaskedOrSentinelUuidV7Slug
+pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::MaskedOrSentinelUuidV7Slug
 impl core::cmp::Ord for uuid_slug::MaskedOrSentinelUuidV7Slug
-pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::cmp(&self, other: &uuid_slug::MaskedOrSentinelUuidV7Slug) -> core::cmp::Ordering
+pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::cmp(&self, other: &Self) -> core::cmp::Ordering
 impl core::cmp::PartialEq for uuid_slug::MaskedOrSentinelUuidV7Slug
-pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::eq(&self, other: &uuid_slug::MaskedOrSentinelUuidV7Slug) -> bool
+pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::eq(&self, other: &Self) -> bool
 impl core::cmp::PartialOrd for uuid_slug::MaskedOrSentinelUuidV7Slug
-pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::partial_cmp(&self, other: &uuid_slug::MaskedOrSentinelUuidV7Slug) -> core::option::Option<core::cmp::Ordering>
+pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::partial_cmp(&self, other: &Self) -> core::option::Option<core::cmp::Ordering>
 impl core::convert::AsRef<str> for uuid_slug::MaskedOrSentinelUuidV7Slug
 pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::as_ref(&self) -> &str
 impl core::convert::From<uuid_slug::MaskedOrSentinelUuidV7Slug> for alloc::string::String
@@ -87,12 +85,12 @@ pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes(self, plain_uuid_sl
 pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes_into<'a>(self, plain_uuid_slug: &str, output: &'a mut [u8], output_offset: usize) -> core::result::Result<&'a mut [u8], uuid_slug::Error>
 pub fn uuid_slug::UuidSlugAlphabet::uuid_bytes_to_plain_slug(self, uuid_bytes: &[u8; 16]) -> uuid_slug::PlainUuidSlug
 impl core::clone::Clone for uuid_slug::UuidSlugAlphabet
-pub fn uuid_slug::UuidSlugAlphabet::clone(&self) -> uuid_slug::UuidSlugAlphabet
+pub fn uuid_slug::UuidSlugAlphabet::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::UuidSlugAlphabet
 impl core::cmp::PartialEq for uuid_slug::UuidSlugAlphabet
-pub fn uuid_slug::UuidSlugAlphabet::eq(&self, other: &uuid_slug::UuidSlugAlphabet) -> bool
+pub fn uuid_slug::UuidSlugAlphabet::eq(&self, other: &Self) -> bool
 impl core::default::Default for uuid_slug::UuidSlugAlphabet
-pub fn uuid_slug::UuidSlugAlphabet::default() -> uuid_slug::UuidSlugAlphabet
+pub fn uuid_slug::UuidSlugAlphabet::default() -> Self
 impl core::fmt::Debug for uuid_slug::UuidSlugAlphabet
 pub fn uuid_slug::UuidSlugAlphabet::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidSlugAlphabet
@@ -109,10 +107,10 @@ pub uuid_slug::UuidSlugMigrationFormat::CurrentMaskedSlug
 pub uuid_slug::UuidSlugMigrationFormat::OriginalMaskedSlug
 pub uuid_slug::UuidSlugMigrationFormat::PlainUuidSlug
 impl core::clone::Clone for uuid_slug::UuidSlugMigrationFormat
-pub fn uuid_slug::UuidSlugMigrationFormat::clone(&self) -> uuid_slug::UuidSlugMigrationFormat
+pub fn uuid_slug::UuidSlugMigrationFormat::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::UuidSlugMigrationFormat
 impl core::cmp::PartialEq for uuid_slug::UuidSlugMigrationFormat
-pub fn uuid_slug::UuidSlugMigrationFormat::eq(&self, other: &uuid_slug::UuidSlugMigrationFormat) -> bool
+pub fn uuid_slug::UuidSlugMigrationFormat::eq(&self, other: &Self) -> bool
 impl core::fmt::Debug for uuid_slug::UuidSlugMigrationFormat
 pub fn uuid_slug::UuidSlugMigrationFormat::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidSlugMigrationFormat
@@ -131,12 +129,12 @@ pub uuid_slug::UuidV7ClockRollbackPolicy::Preserve
 pub uuid_slug::UuidV7ClockRollbackPolicy::Reset
 pub uuid_slug::UuidV7ClockRollbackPolicy::Reset::tolerance_ms: u64
 impl core::clone::Clone for uuid_slug::UuidV7ClockRollbackPolicy
-pub fn uuid_slug::UuidV7ClockRollbackPolicy::clone(&self) -> uuid_slug::UuidV7ClockRollbackPolicy
+pub fn uuid_slug::UuidV7ClockRollbackPolicy::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::UuidV7ClockRollbackPolicy
 impl core::cmp::PartialEq for uuid_slug::UuidV7ClockRollbackPolicy
-pub fn uuid_slug::UuidV7ClockRollbackPolicy::eq(&self, other: &uuid_slug::UuidV7ClockRollbackPolicy) -> bool
+pub fn uuid_slug::UuidV7ClockRollbackPolicy::eq(&self, other: &Self) -> bool
 impl core::default::Default for uuid_slug::UuidV7ClockRollbackPolicy
-pub fn uuid_slug::UuidV7ClockRollbackPolicy::default() -> uuid_slug::UuidV7ClockRollbackPolicy
+pub fn uuid_slug::UuidV7ClockRollbackPolicy::default() -> Self
 impl core::fmt::Debug for uuid_slug::UuidV7ClockRollbackPolicy
 pub fn uuid_slug::UuidV7ClockRollbackPolicy::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidV7ClockRollbackPolicy
@@ -173,14 +171,14 @@ pub fn uuid_slug::MaskedUuidV7Slug::into_string(self) -> alloc::string::String
 impl core::borrow::Borrow<str> for uuid_slug::MaskedUuidV7Slug
 pub fn uuid_slug::MaskedUuidV7Slug::borrow(&self) -> &str
 impl core::clone::Clone for uuid_slug::MaskedUuidV7Slug
-pub fn uuid_slug::MaskedUuidV7Slug::clone(&self) -> uuid_slug::MaskedUuidV7Slug
+pub fn uuid_slug::MaskedUuidV7Slug::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::MaskedUuidV7Slug
 impl core::cmp::Ord for uuid_slug::MaskedUuidV7Slug
-pub fn uuid_slug::MaskedUuidV7Slug::cmp(&self, other: &uuid_slug::MaskedUuidV7Slug) -> core::cmp::Ordering
+pub fn uuid_slug::MaskedUuidV7Slug::cmp(&self, other: &Self) -> core::cmp::Ordering
 impl core::cmp::PartialEq for uuid_slug::MaskedUuidV7Slug
-pub fn uuid_slug::MaskedUuidV7Slug::eq(&self, other: &uuid_slug::MaskedUuidV7Slug) -> bool
+pub fn uuid_slug::MaskedUuidV7Slug::eq(&self, other: &Self) -> bool
 impl core::cmp::PartialOrd for uuid_slug::MaskedUuidV7Slug
-pub fn uuid_slug::MaskedUuidV7Slug::partial_cmp(&self, other: &uuid_slug::MaskedUuidV7Slug) -> core::option::Option<core::cmp::Ordering>
+pub fn uuid_slug::MaskedUuidV7Slug::partial_cmp(&self, other: &Self) -> core::option::Option<core::cmp::Ordering>
 impl core::convert::AsRef<str> for uuid_slug::MaskedUuidV7Slug
 pub fn uuid_slug::MaskedUuidV7Slug::as_ref(&self) -> &str
 impl core::convert::From<uuid_slug::MaskedUuidV7Slug> for alloc::string::String
@@ -209,14 +207,14 @@ pub fn uuid_slug::PlainUuidSlug::into_string(self) -> alloc::string::String
 impl core::borrow::Borrow<str> for uuid_slug::PlainUuidSlug
 pub fn uuid_slug::PlainUuidSlug::borrow(&self) -> &str
 impl core::clone::Clone for uuid_slug::PlainUuidSlug
-pub fn uuid_slug::PlainUuidSlug::clone(&self) -> uuid_slug::PlainUuidSlug
+pub fn uuid_slug::PlainUuidSlug::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::PlainUuidSlug
 impl core::cmp::Ord for uuid_slug::PlainUuidSlug
-pub fn uuid_slug::PlainUuidSlug::cmp(&self, other: &uuid_slug::PlainUuidSlug) -> core::cmp::Ordering
+pub fn uuid_slug::PlainUuidSlug::cmp(&self, other: &Self) -> core::cmp::Ordering
 impl core::cmp::PartialEq for uuid_slug::PlainUuidSlug
-pub fn uuid_slug::PlainUuidSlug::eq(&self, other: &uuid_slug::PlainUuidSlug) -> bool
+pub fn uuid_slug::PlainUuidSlug::eq(&self, other: &Self) -> bool
 impl core::cmp::PartialOrd for uuid_slug::PlainUuidSlug
-pub fn uuid_slug::PlainUuidSlug::partial_cmp(&self, other: &uuid_slug::PlainUuidSlug) -> core::option::Option<core::cmp::Ordering>
+pub fn uuid_slug::PlainUuidSlug::partial_cmp(&self, other: &Self) -> core::option::Option<core::cmp::Ordering>
 impl core::convert::AsRef<str> for uuid_slug::PlainUuidSlug
 pub fn uuid_slug::PlainUuidSlug::as_ref(&self) -> &str
 impl core::convert::From<uuid_slug::PlainUuidSlug> for alloc::string::String
@@ -254,14 +252,14 @@ pub fn uuid_slug::Uuid::to_plain_uuid_slug(&self, alphabet: uuid_slug::UuidSlugA
 pub const fn uuid_slug::Uuid::uuid_version(&self) -> u8
 pub fn uuid_slug::Uuid::write_uuid_bytes(&self, out: &mut [u8], offset: usize) -> core::result::Result<(), uuid_slug::Error>
 impl core::clone::Clone for uuid_slug::Uuid
-pub fn uuid_slug::Uuid::clone(&self) -> uuid_slug::Uuid
+pub fn uuid_slug::Uuid::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::Uuid
 impl core::cmp::Ord for uuid_slug::Uuid
-pub fn uuid_slug::Uuid::cmp(&self, other: &uuid_slug::Uuid) -> core::cmp::Ordering
+pub fn uuid_slug::Uuid::cmp(&self, other: &Self) -> core::cmp::Ordering
 impl core::cmp::PartialEq for uuid_slug::Uuid
-pub fn uuid_slug::Uuid::eq(&self, other: &uuid_slug::Uuid) -> bool
+pub fn uuid_slug::Uuid::eq(&self, other: &Self) -> bool
 impl core::cmp::PartialOrd for uuid_slug::Uuid
-pub fn uuid_slug::Uuid::partial_cmp(&self, other: &uuid_slug::Uuid) -> core::option::Option<core::cmp::Ordering>
+pub fn uuid_slug::Uuid::partial_cmp(&self, other: &Self) -> core::option::Option<core::cmp::Ordering>
 impl core::fmt::Debug for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::fmt::Display for uuid_slug::Uuid
@@ -295,9 +293,9 @@ pub struct uuid_slug::UuidSlugMigrationOptions
 pub uuid_slug::UuidSlugMigrationOptions::accept_original_masked_slug: bool
 pub uuid_slug::UuidSlugMigrationOptions::accept_plain_uuid_slug: bool
 impl core::clone::Clone for uuid_slug::UuidSlugMigrationOptions
-pub fn uuid_slug::UuidSlugMigrationOptions::clone(&self) -> uuid_slug::UuidSlugMigrationOptions
+pub fn uuid_slug::UuidSlugMigrationOptions::clone(&self) -> Self
 impl core::default::Default for uuid_slug::UuidSlugMigrationOptions
-pub fn uuid_slug::UuidSlugMigrationOptions::default() -> uuid_slug::UuidSlugMigrationOptions
+pub fn uuid_slug::UuidSlugMigrationOptions::default() -> Self
 impl core::fmt::Debug for uuid_slug::UuidSlugMigrationOptions
 pub fn uuid_slug::UuidSlugMigrationOptions::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidSlugMigrationOptions
@@ -312,10 +310,10 @@ pub struct uuid_slug::UuidV7Bounds
 pub uuid_slug::UuidV7Bounds::end_inclusive: uuid_slug::Uuid
 pub uuid_slug::UuidV7Bounds::start_inclusive: uuid_slug::Uuid
 impl core::clone::Clone for uuid_slug::UuidV7Bounds
-pub fn uuid_slug::UuidV7Bounds::clone(&self) -> uuid_slug::UuidV7Bounds
+pub fn uuid_slug::UuidV7Bounds::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::UuidV7Bounds
 impl core::cmp::PartialEq for uuid_slug::UuidV7Bounds
-pub fn uuid_slug::UuidV7Bounds::eq(&self, other: &uuid_slug::UuidV7Bounds) -> bool
+pub fn uuid_slug::UuidV7Bounds::eq(&self, other: &Self) -> bool
 impl core::fmt::Debug for uuid_slug::UuidV7Bounds
 pub fn uuid_slug::UuidV7Bounds::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidV7Bounds
@@ -341,7 +339,7 @@ pub fn uuid_slug::UuidV7Generator::payload_layout(&self) -> uuid_slug::UuidV7Pay
 pub const fn uuid_slug::UuidV7Generator::with_clock_rollback_policy(self, policy: uuid_slug::UuidV7ClockRollbackPolicy) -> Self
 pub fn uuid_slug::UuidV7Generator::with_sub_millisecond_fraction_bits(self, bits: u8) -> core::result::Result<Self, uuid_slug::Error>
 impl core::default::Default for uuid_slug::UuidV7Generator
-pub fn uuid_slug::UuidV7Generator::default() -> uuid_slug::UuidV7Generator
+pub fn uuid_slug::UuidV7Generator::default() -> Self
 impl core::fmt::Debug for uuid_slug::UuidV7Generator
 pub fn uuid_slug::UuidV7Generator::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::UuidV7Generator
@@ -356,7 +354,7 @@ impl uuid_slug::UuidV7Mask
 pub fn uuid_slug::UuidV7Mask::diagnostic_label(&self) -> &str
 pub fn uuid_slug::UuidV7Mask::from_permutation_functions(diagnostic_label: impl core::convert::Into<alloc::string::String>, mask_uuid_bytes: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::Error> + core::marker::Send + core::marker::Sync + 'static, unmask_uuid_bytes: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::Error>
 impl core::clone::Clone for uuid_slug::UuidV7Mask
-pub fn uuid_slug::UuidV7Mask::clone(&self) -> uuid_slug::UuidV7Mask
+pub fn uuid_slug::UuidV7Mask::clone(&self) -> Self
 impl core::fmt::Debug for uuid_slug::UuidV7Mask
 pub fn uuid_slug::UuidV7Mask::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::UuidV7Mask
@@ -371,9 +369,9 @@ impl uuid_slug::UuidV7MaskDerivationCancellation
 pub fn uuid_slug::UuidV7MaskDerivationCancellation::cancel(&self)
 pub fn uuid_slug::UuidV7MaskDerivationCancellation::is_cancelled(&self) -> bool
 impl core::clone::Clone for uuid_slug::UuidV7MaskDerivationCancellation
-pub fn uuid_slug::UuidV7MaskDerivationCancellation::clone(&self) -> uuid_slug::UuidV7MaskDerivationCancellation
+pub fn uuid_slug::UuidV7MaskDerivationCancellation::clone(&self) -> Self
 impl core::default::Default for uuid_slug::UuidV7MaskDerivationCancellation
-pub fn uuid_slug::UuidV7MaskDerivationCancellation::default() -> uuid_slug::UuidV7MaskDerivationCancellation
+pub fn uuid_slug::UuidV7MaskDerivationCancellation::default() -> Self
 impl core::fmt::Debug for uuid_slug::UuidV7MaskDerivationCancellation
 pub fn uuid_slug::UuidV7MaskDerivationCancellation::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::UuidV7MaskDerivationCancellation
@@ -420,10 +418,10 @@ pub uuid_slug::UuidV7Payload::remaining: uuid_slug::UuidV7PayloadField<u128>
 pub uuid_slug::UuidV7Payload::sub_millisecond_fraction: core::option::Option<uuid_slug::UuidV7PayloadField<u16>>
 pub uuid_slug::UuidV7Payload::unix_ms: u64
 impl core::clone::Clone for uuid_slug::UuidV7Payload
-pub fn uuid_slug::UuidV7Payload::clone(&self) -> uuid_slug::UuidV7Payload
+pub fn uuid_slug::UuidV7Payload::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::UuidV7Payload
 impl core::cmp::PartialEq for uuid_slug::UuidV7Payload
-pub fn uuid_slug::UuidV7Payload::eq(&self, other: &uuid_slug::UuidV7Payload) -> bool
+pub fn uuid_slug::UuidV7Payload::eq(&self, other: &Self) -> bool
 impl core::fmt::Debug for uuid_slug::UuidV7Payload
 pub fn uuid_slug::UuidV7Payload::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidV7Payload
@@ -439,10 +437,10 @@ pub struct uuid_slug::UuidV7PayloadField<Value>
 pub uuid_slug::UuidV7PayloadField::bits: u8
 pub uuid_slug::UuidV7PayloadField::value: Value
 impl<Value: core::clone::Clone> core::clone::Clone for uuid_slug::UuidV7PayloadField<Value>
-pub fn uuid_slug::UuidV7PayloadField<Value>::clone(&self) -> uuid_slug::UuidV7PayloadField<Value>
+pub fn uuid_slug::UuidV7PayloadField<Value>::clone(&self) -> Self
 impl<Value: core::cmp::Eq> core::cmp::Eq for uuid_slug::UuidV7PayloadField<Value>
 impl<Value: core::cmp::PartialEq> core::cmp::PartialEq for uuid_slug::UuidV7PayloadField<Value>
-pub fn uuid_slug::UuidV7PayloadField<Value>::eq(&self, other: &uuid_slug::UuidV7PayloadField<Value>) -> bool
+pub fn uuid_slug::UuidV7PayloadField<Value>::eq(&self, other: &Self) -> bool
 impl<Value: core::cmp::PartialEq> core::marker::StructuralPartialEq for uuid_slug::UuidV7PayloadField<Value>
 impl<Value: core::fmt::Debug> core::fmt::Debug for uuid_slug::UuidV7PayloadField<Value>
 pub fn uuid_slug::UuidV7PayloadField<Value>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
@@ -460,10 +458,10 @@ pub const fn uuid_slug::UuidV7PayloadLayout::counter_bits(self) -> u8
 pub fn uuid_slug::UuidV7PayloadLayout::new(sub_millisecond_fraction_bits: u8, counter_bits: u8) -> core::result::Result<Self, uuid_slug::Error>
 pub const fn uuid_slug::UuidV7PayloadLayout::sub_millisecond_fraction_bits(self) -> u8
 impl core::clone::Clone for uuid_slug::UuidV7PayloadLayout
-pub fn uuid_slug::UuidV7PayloadLayout::clone(&self) -> uuid_slug::UuidV7PayloadLayout
+pub fn uuid_slug::UuidV7PayloadLayout::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::UuidV7PayloadLayout
 impl core::cmp::PartialEq for uuid_slug::UuidV7PayloadLayout
-pub fn uuid_slug::UuidV7PayloadLayout::eq(&self, other: &uuid_slug::UuidV7PayloadLayout) -> bool
+pub fn uuid_slug::UuidV7PayloadLayout::eq(&self, other: &Self) -> bool
 impl core::fmt::Debug for uuid_slug::UuidV7PayloadLayout
 pub fn uuid_slug::UuidV7PayloadLayout::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidV7PayloadLayout
@@ -492,7 +490,7 @@ pub uuid_slug::UuidV7Sentinel::name: alloc::string::String
 pub uuid_slug::UuidV7Sentinel::plain_uuid_slug: uuid_slug::PlainUuidSlug
 pub uuid_slug::UuidV7Sentinel::uuid: uuid_slug::Uuid
 impl core::clone::Clone for uuid_slug::UuidV7Sentinel
-pub fn uuid_slug::UuidV7Sentinel::clone(&self) -> uuid_slug::UuidV7Sentinel
+pub fn uuid_slug::UuidV7Sentinel::clone(&self) -> Self
 impl core::fmt::Debug for uuid_slug::UuidV7Sentinel
 pub fn uuid_slug::UuidV7Sentinel::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::UuidV7Sentinel
@@ -508,7 +506,7 @@ pub uuid_slug::UuidV7TimestampWindow::reference_unix_ms: f64
 impl uuid_slug::UuidV7TimestampWindow
 pub fn uuid_slug::UuidV7TimestampWindow::validate_uuid_v7(self, uuid: uuid_slug::Uuid) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 impl core::clone::Clone for uuid_slug::UuidV7TimestampWindow
-pub fn uuid_slug::UuidV7TimestampWindow::clone(&self) -> uuid_slug::UuidV7TimestampWindow
+pub fn uuid_slug::UuidV7TimestampWindow::clone(&self) -> Self
 impl core::fmt::Debug for uuid_slug::UuidV7TimestampWindow
 pub fn uuid_slug::UuidV7TimestampWindow::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidV7TimestampWindow
@@ -554,10 +552,10 @@ pub uuid_slug::ErrorCode::TimestampOutsideWindow
 impl uuid_slug::ErrorCode
 pub const fn uuid_slug::ErrorCode::as_str(self) -> &'static str
 impl core::clone::Clone for uuid_slug::ErrorCode
-pub fn uuid_slug::ErrorCode::clone(&self) -> uuid_slug::ErrorCode
+pub fn uuid_slug::ErrorCode::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::ErrorCode
 impl core::cmp::PartialEq for uuid_slug::ErrorCode
-pub fn uuid_slug::ErrorCode::eq(&self, other: &uuid_slug::ErrorCode) -> bool
+pub fn uuid_slug::ErrorCode::eq(&self, other: &Self) -> bool
 impl core::fmt::Debug for uuid_slug::ErrorCode
 pub fn uuid_slug::ErrorCode::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::hash::Hash for uuid_slug::ErrorCode
@@ -577,17 +575,15 @@ pub uuid_slug::MaskedOrSentinelUuidV7Slug::Sentinel(uuid_slug::PlainUuidSlug)
 impl uuid_slug::MaskedOrSentinelUuidV7Slug
 pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::as_str(&self) -> &str
 pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::into_string(self) -> alloc::string::String
-impl core::borrow::Borrow<str> for uuid_slug::MaskedOrSentinelUuidV7Slug
-pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::borrow(&self) -> &str
 impl core::clone::Clone for uuid_slug::MaskedOrSentinelUuidV7Slug
-pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::clone(&self) -> uuid_slug::MaskedOrSentinelUuidV7Slug
+pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::MaskedOrSentinelUuidV7Slug
 impl core::cmp::Ord for uuid_slug::MaskedOrSentinelUuidV7Slug
-pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::cmp(&self, other: &uuid_slug::MaskedOrSentinelUuidV7Slug) -> core::cmp::Ordering
+pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::cmp(&self, other: &Self) -> core::cmp::Ordering
 impl core::cmp::PartialEq for uuid_slug::MaskedOrSentinelUuidV7Slug
-pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::eq(&self, other: &uuid_slug::MaskedOrSentinelUuidV7Slug) -> bool
+pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::eq(&self, other: &Self) -> bool
 impl core::cmp::PartialOrd for uuid_slug::MaskedOrSentinelUuidV7Slug
-pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::partial_cmp(&self, other: &uuid_slug::MaskedOrSentinelUuidV7Slug) -> core::option::Option<core::cmp::Ordering>
+pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::partial_cmp(&self, other: &Self) -> core::option::Option<core::cmp::Ordering>
 impl core::convert::AsRef<str> for uuid_slug::MaskedOrSentinelUuidV7Slug
 pub fn uuid_slug::MaskedOrSentinelUuidV7Slug::as_ref(&self) -> &str
 impl core::convert::From<uuid_slug::MaskedOrSentinelUuidV7Slug> for alloc::string::String
@@ -618,12 +614,12 @@ pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes(self, plain_uuid_sl
 pub fn uuid_slug::UuidSlugAlphabet::plain_slug_to_uuid_bytes_into<'a>(self, plain_uuid_slug: &str, output: &'a mut [u8], output_offset: usize) -> core::result::Result<&'a mut [u8], uuid_slug::Error>
 pub fn uuid_slug::UuidSlugAlphabet::uuid_bytes_to_plain_slug(self, uuid_bytes: &[u8; 16]) -> uuid_slug::PlainUuidSlug
 impl core::clone::Clone for uuid_slug::UuidSlugAlphabet
-pub fn uuid_slug::UuidSlugAlphabet::clone(&self) -> uuid_slug::UuidSlugAlphabet
+pub fn uuid_slug::UuidSlugAlphabet::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::UuidSlugAlphabet
 impl core::cmp::PartialEq for uuid_slug::UuidSlugAlphabet
-pub fn uuid_slug::UuidSlugAlphabet::eq(&self, other: &uuid_slug::UuidSlugAlphabet) -> bool
+pub fn uuid_slug::UuidSlugAlphabet::eq(&self, other: &Self) -> bool
 impl core::default::Default for uuid_slug::UuidSlugAlphabet
-pub fn uuid_slug::UuidSlugAlphabet::default() -> uuid_slug::UuidSlugAlphabet
+pub fn uuid_slug::UuidSlugAlphabet::default() -> Self
 impl core::fmt::Debug for uuid_slug::UuidSlugAlphabet
 pub fn uuid_slug::UuidSlugAlphabet::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidSlugAlphabet
@@ -640,10 +636,10 @@ pub uuid_slug::UuidSlugMigrationFormat::CurrentMaskedSlug
 pub uuid_slug::UuidSlugMigrationFormat::OriginalMaskedSlug
 pub uuid_slug::UuidSlugMigrationFormat::PlainUuidSlug
 impl core::clone::Clone for uuid_slug::UuidSlugMigrationFormat
-pub fn uuid_slug::UuidSlugMigrationFormat::clone(&self) -> uuid_slug::UuidSlugMigrationFormat
+pub fn uuid_slug::UuidSlugMigrationFormat::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::UuidSlugMigrationFormat
 impl core::cmp::PartialEq for uuid_slug::UuidSlugMigrationFormat
-pub fn uuid_slug::UuidSlugMigrationFormat::eq(&self, other: &uuid_slug::UuidSlugMigrationFormat) -> bool
+pub fn uuid_slug::UuidSlugMigrationFormat::eq(&self, other: &Self) -> bool
 impl core::fmt::Debug for uuid_slug::UuidSlugMigrationFormat
 pub fn uuid_slug::UuidSlugMigrationFormat::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidSlugMigrationFormat
@@ -662,12 +658,12 @@ pub uuid_slug::UuidV7ClockRollbackPolicy::Preserve
 pub uuid_slug::UuidV7ClockRollbackPolicy::Reset
 pub uuid_slug::UuidV7ClockRollbackPolicy::Reset::tolerance_ms: u64
 impl core::clone::Clone for uuid_slug::UuidV7ClockRollbackPolicy
-pub fn uuid_slug::UuidV7ClockRollbackPolicy::clone(&self) -> uuid_slug::UuidV7ClockRollbackPolicy
+pub fn uuid_slug::UuidV7ClockRollbackPolicy::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::UuidV7ClockRollbackPolicy
 impl core::cmp::PartialEq for uuid_slug::UuidV7ClockRollbackPolicy
-pub fn uuid_slug::UuidV7ClockRollbackPolicy::eq(&self, other: &uuid_slug::UuidV7ClockRollbackPolicy) -> bool
+pub fn uuid_slug::UuidV7ClockRollbackPolicy::eq(&self, other: &Self) -> bool
 impl core::default::Default for uuid_slug::UuidV7ClockRollbackPolicy
-pub fn uuid_slug::UuidV7ClockRollbackPolicy::default() -> uuid_slug::UuidV7ClockRollbackPolicy
+pub fn uuid_slug::UuidV7ClockRollbackPolicy::default() -> Self
 impl core::fmt::Debug for uuid_slug::UuidV7ClockRollbackPolicy
 pub fn uuid_slug::UuidV7ClockRollbackPolicy::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidV7ClockRollbackPolicy
@@ -704,14 +700,14 @@ pub fn uuid_slug::MaskedUuidV7Slug::into_string(self) -> alloc::string::String
 impl core::borrow::Borrow<str> for uuid_slug::MaskedUuidV7Slug
 pub fn uuid_slug::MaskedUuidV7Slug::borrow(&self) -> &str
 impl core::clone::Clone for uuid_slug::MaskedUuidV7Slug
-pub fn uuid_slug::MaskedUuidV7Slug::clone(&self) -> uuid_slug::MaskedUuidV7Slug
+pub fn uuid_slug::MaskedUuidV7Slug::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::MaskedUuidV7Slug
 impl core::cmp::Ord for uuid_slug::MaskedUuidV7Slug
-pub fn uuid_slug::MaskedUuidV7Slug::cmp(&self, other: &uuid_slug::MaskedUuidV7Slug) -> core::cmp::Ordering
+pub fn uuid_slug::MaskedUuidV7Slug::cmp(&self, other: &Self) -> core::cmp::Ordering
 impl core::cmp::PartialEq for uuid_slug::MaskedUuidV7Slug
-pub fn uuid_slug::MaskedUuidV7Slug::eq(&self, other: &uuid_slug::MaskedUuidV7Slug) -> bool
+pub fn uuid_slug::MaskedUuidV7Slug::eq(&self, other: &Self) -> bool
 impl core::cmp::PartialOrd for uuid_slug::MaskedUuidV7Slug
-pub fn uuid_slug::MaskedUuidV7Slug::partial_cmp(&self, other: &uuid_slug::MaskedUuidV7Slug) -> core::option::Option<core::cmp::Ordering>
+pub fn uuid_slug::MaskedUuidV7Slug::partial_cmp(&self, other: &Self) -> core::option::Option<core::cmp::Ordering>
 impl core::convert::AsRef<str> for uuid_slug::MaskedUuidV7Slug
 pub fn uuid_slug::MaskedUuidV7Slug::as_ref(&self) -> &str
 impl core::convert::From<uuid_slug::MaskedUuidV7Slug> for alloc::string::String
@@ -740,14 +736,14 @@ pub fn uuid_slug::PlainUuidSlug::into_string(self) -> alloc::string::String
 impl core::borrow::Borrow<str> for uuid_slug::PlainUuidSlug
 pub fn uuid_slug::PlainUuidSlug::borrow(&self) -> &str
 impl core::clone::Clone for uuid_slug::PlainUuidSlug
-pub fn uuid_slug::PlainUuidSlug::clone(&self) -> uuid_slug::PlainUuidSlug
+pub fn uuid_slug::PlainUuidSlug::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::PlainUuidSlug
 impl core::cmp::Ord for uuid_slug::PlainUuidSlug
-pub fn uuid_slug::PlainUuidSlug::cmp(&self, other: &uuid_slug::PlainUuidSlug) -> core::cmp::Ordering
+pub fn uuid_slug::PlainUuidSlug::cmp(&self, other: &Self) -> core::cmp::Ordering
 impl core::cmp::PartialEq for uuid_slug::PlainUuidSlug
-pub fn uuid_slug::PlainUuidSlug::eq(&self, other: &uuid_slug::PlainUuidSlug) -> bool
+pub fn uuid_slug::PlainUuidSlug::eq(&self, other: &Self) -> bool
 impl core::cmp::PartialOrd for uuid_slug::PlainUuidSlug
-pub fn uuid_slug::PlainUuidSlug::partial_cmp(&self, other: &uuid_slug::PlainUuidSlug) -> core::option::Option<core::cmp::Ordering>
+pub fn uuid_slug::PlainUuidSlug::partial_cmp(&self, other: &Self) -> core::option::Option<core::cmp::Ordering>
 impl core::convert::AsRef<str> for uuid_slug::PlainUuidSlug
 pub fn uuid_slug::PlainUuidSlug::as_ref(&self) -> &str
 impl core::convert::From<uuid_slug::PlainUuidSlug> for alloc::string::String
@@ -785,14 +781,14 @@ pub fn uuid_slug::Uuid::to_plain_uuid_slug(&self, alphabet: uuid_slug::UuidSlugA
 pub const fn uuid_slug::Uuid::uuid_version(&self) -> u8
 pub fn uuid_slug::Uuid::write_uuid_bytes(&self, out: &mut [u8], offset: usize) -> core::result::Result<(), uuid_slug::Error>
 impl core::clone::Clone for uuid_slug::Uuid
-pub fn uuid_slug::Uuid::clone(&self) -> uuid_slug::Uuid
+pub fn uuid_slug::Uuid::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::Uuid
 impl core::cmp::Ord for uuid_slug::Uuid
-pub fn uuid_slug::Uuid::cmp(&self, other: &uuid_slug::Uuid) -> core::cmp::Ordering
+pub fn uuid_slug::Uuid::cmp(&self, other: &Self) -> core::cmp::Ordering
 impl core::cmp::PartialEq for uuid_slug::Uuid
-pub fn uuid_slug::Uuid::eq(&self, other: &uuid_slug::Uuid) -> bool
+pub fn uuid_slug::Uuid::eq(&self, other: &Self) -> bool
 impl core::cmp::PartialOrd for uuid_slug::Uuid
-pub fn uuid_slug::Uuid::partial_cmp(&self, other: &uuid_slug::Uuid) -> core::option::Option<core::cmp::Ordering>
+pub fn uuid_slug::Uuid::partial_cmp(&self, other: &Self) -> core::option::Option<core::cmp::Ordering>
 impl core::fmt::Debug for uuid_slug::Uuid
 pub fn uuid_slug::Uuid::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::fmt::Display for uuid_slug::Uuid
@@ -826,9 +822,9 @@ pub struct uuid_slug::UuidSlugMigrationOptions
 pub uuid_slug::UuidSlugMigrationOptions::accept_original_masked_slug: bool
 pub uuid_slug::UuidSlugMigrationOptions::accept_plain_uuid_slug: bool
 impl core::clone::Clone for uuid_slug::UuidSlugMigrationOptions
-pub fn uuid_slug::UuidSlugMigrationOptions::clone(&self) -> uuid_slug::UuidSlugMigrationOptions
+pub fn uuid_slug::UuidSlugMigrationOptions::clone(&self) -> Self
 impl core::default::Default for uuid_slug::UuidSlugMigrationOptions
-pub fn uuid_slug::UuidSlugMigrationOptions::default() -> uuid_slug::UuidSlugMigrationOptions
+pub fn uuid_slug::UuidSlugMigrationOptions::default() -> Self
 impl core::fmt::Debug for uuid_slug::UuidSlugMigrationOptions
 pub fn uuid_slug::UuidSlugMigrationOptions::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidSlugMigrationOptions
@@ -843,10 +839,10 @@ pub struct uuid_slug::UuidV7Bounds
 pub uuid_slug::UuidV7Bounds::end_inclusive: uuid_slug::Uuid
 pub uuid_slug::UuidV7Bounds::start_inclusive: uuid_slug::Uuid
 impl core::clone::Clone for uuid_slug::UuidV7Bounds
-pub fn uuid_slug::UuidV7Bounds::clone(&self) -> uuid_slug::UuidV7Bounds
+pub fn uuid_slug::UuidV7Bounds::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::UuidV7Bounds
 impl core::cmp::PartialEq for uuid_slug::UuidV7Bounds
-pub fn uuid_slug::UuidV7Bounds::eq(&self, other: &uuid_slug::UuidV7Bounds) -> bool
+pub fn uuid_slug::UuidV7Bounds::eq(&self, other: &Self) -> bool
 impl core::fmt::Debug for uuid_slug::UuidV7Bounds
 pub fn uuid_slug::UuidV7Bounds::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidV7Bounds
@@ -869,7 +865,7 @@ pub fn uuid_slug::UuidV7Generator::payload_layout(&self) -> uuid_slug::UuidV7Pay
 pub const fn uuid_slug::UuidV7Generator::with_clock_rollback_policy(self, policy: uuid_slug::UuidV7ClockRollbackPolicy) -> Self
 pub fn uuid_slug::UuidV7Generator::with_sub_millisecond_fraction_bits(self, bits: u8) -> core::result::Result<Self, uuid_slug::Error>
 impl core::default::Default for uuid_slug::UuidV7Generator
-pub fn uuid_slug::UuidV7Generator::default() -> uuid_slug::UuidV7Generator
+pub fn uuid_slug::UuidV7Generator::default() -> Self
 impl core::fmt::Debug for uuid_slug::UuidV7Generator
 pub fn uuid_slug::UuidV7Generator::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::UuidV7Generator
@@ -884,7 +880,7 @@ impl uuid_slug::UuidV7Mask
 pub fn uuid_slug::UuidV7Mask::diagnostic_label(&self) -> &str
 pub fn uuid_slug::UuidV7Mask::from_permutation_functions(diagnostic_label: impl core::convert::Into<alloc::string::String>, mask_uuid_bytes: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::Error> + core::marker::Send + core::marker::Sync + 'static, unmask_uuid_bytes: impl core::ops::function::Fn([u8; 16]) -> core::result::Result<[u8; 16], uuid_slug::Error> + core::marker::Send + core::marker::Sync + 'static) -> core::result::Result<Self, uuid_slug::Error>
 impl core::clone::Clone for uuid_slug::UuidV7Mask
-pub fn uuid_slug::UuidV7Mask::clone(&self) -> uuid_slug::UuidV7Mask
+pub fn uuid_slug::UuidV7Mask::clone(&self) -> Self
 impl core::fmt::Debug for uuid_slug::UuidV7Mask
 pub fn uuid_slug::UuidV7Mask::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::UuidV7Mask
@@ -899,9 +895,9 @@ impl uuid_slug::UuidV7MaskDerivationCancellation
 pub fn uuid_slug::UuidV7MaskDerivationCancellation::cancel(&self)
 pub fn uuid_slug::UuidV7MaskDerivationCancellation::is_cancelled(&self) -> bool
 impl core::clone::Clone for uuid_slug::UuidV7MaskDerivationCancellation
-pub fn uuid_slug::UuidV7MaskDerivationCancellation::clone(&self) -> uuid_slug::UuidV7MaskDerivationCancellation
+pub fn uuid_slug::UuidV7MaskDerivationCancellation::clone(&self) -> Self
 impl core::default::Default for uuid_slug::UuidV7MaskDerivationCancellation
-pub fn uuid_slug::UuidV7MaskDerivationCancellation::default() -> uuid_slug::UuidV7MaskDerivationCancellation
+pub fn uuid_slug::UuidV7MaskDerivationCancellation::default() -> Self
 impl core::fmt::Debug for uuid_slug::UuidV7MaskDerivationCancellation
 pub fn uuid_slug::UuidV7MaskDerivationCancellation::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::UuidV7MaskDerivationCancellation
@@ -948,10 +944,10 @@ pub uuid_slug::UuidV7Payload::remaining: uuid_slug::UuidV7PayloadField<u128>
 pub uuid_slug::UuidV7Payload::sub_millisecond_fraction: core::option::Option<uuid_slug::UuidV7PayloadField<u16>>
 pub uuid_slug::UuidV7Payload::unix_ms: u64
 impl core::clone::Clone for uuid_slug::UuidV7Payload
-pub fn uuid_slug::UuidV7Payload::clone(&self) -> uuid_slug::UuidV7Payload
+pub fn uuid_slug::UuidV7Payload::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::UuidV7Payload
 impl core::cmp::PartialEq for uuid_slug::UuidV7Payload
-pub fn uuid_slug::UuidV7Payload::eq(&self, other: &uuid_slug::UuidV7Payload) -> bool
+pub fn uuid_slug::UuidV7Payload::eq(&self, other: &Self) -> bool
 impl core::fmt::Debug for uuid_slug::UuidV7Payload
 pub fn uuid_slug::UuidV7Payload::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidV7Payload
@@ -967,10 +963,10 @@ pub struct uuid_slug::UuidV7PayloadField<Value>
 pub uuid_slug::UuidV7PayloadField::bits: u8
 pub uuid_slug::UuidV7PayloadField::value: Value
 impl<Value: core::clone::Clone> core::clone::Clone for uuid_slug::UuidV7PayloadField<Value>
-pub fn uuid_slug::UuidV7PayloadField<Value>::clone(&self) -> uuid_slug::UuidV7PayloadField<Value>
+pub fn uuid_slug::UuidV7PayloadField<Value>::clone(&self) -> Self
 impl<Value: core::cmp::Eq> core::cmp::Eq for uuid_slug::UuidV7PayloadField<Value>
 impl<Value: core::cmp::PartialEq> core::cmp::PartialEq for uuid_slug::UuidV7PayloadField<Value>
-pub fn uuid_slug::UuidV7PayloadField<Value>::eq(&self, other: &uuid_slug::UuidV7PayloadField<Value>) -> bool
+pub fn uuid_slug::UuidV7PayloadField<Value>::eq(&self, other: &Self) -> bool
 impl<Value: core::cmp::PartialEq> core::marker::StructuralPartialEq for uuid_slug::UuidV7PayloadField<Value>
 impl<Value: core::fmt::Debug> core::fmt::Debug for uuid_slug::UuidV7PayloadField<Value>
 pub fn uuid_slug::UuidV7PayloadField<Value>::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
@@ -988,10 +984,10 @@ pub const fn uuid_slug::UuidV7PayloadLayout::counter_bits(self) -> u8
 pub fn uuid_slug::UuidV7PayloadLayout::new(sub_millisecond_fraction_bits: u8, counter_bits: u8) -> core::result::Result<Self, uuid_slug::Error>
 pub const fn uuid_slug::UuidV7PayloadLayout::sub_millisecond_fraction_bits(self) -> u8
 impl core::clone::Clone for uuid_slug::UuidV7PayloadLayout
-pub fn uuid_slug::UuidV7PayloadLayout::clone(&self) -> uuid_slug::UuidV7PayloadLayout
+pub fn uuid_slug::UuidV7PayloadLayout::clone(&self) -> Self
 impl core::cmp::Eq for uuid_slug::UuidV7PayloadLayout
 impl core::cmp::PartialEq for uuid_slug::UuidV7PayloadLayout
-pub fn uuid_slug::UuidV7PayloadLayout::eq(&self, other: &uuid_slug::UuidV7PayloadLayout) -> bool
+pub fn uuid_slug::UuidV7PayloadLayout::eq(&self, other: &Self) -> bool
 impl core::fmt::Debug for uuid_slug::UuidV7PayloadLayout
 pub fn uuid_slug::UuidV7PayloadLayout::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidV7PayloadLayout
@@ -1020,7 +1016,7 @@ pub uuid_slug::UuidV7Sentinel::name: alloc::string::String
 pub uuid_slug::UuidV7Sentinel::plain_uuid_slug: uuid_slug::PlainUuidSlug
 pub uuid_slug::UuidV7Sentinel::uuid: uuid_slug::Uuid
 impl core::clone::Clone for uuid_slug::UuidV7Sentinel
-pub fn uuid_slug::UuidV7Sentinel::clone(&self) -> uuid_slug::UuidV7Sentinel
+pub fn uuid_slug::UuidV7Sentinel::clone(&self) -> Self
 impl core::fmt::Debug for uuid_slug::UuidV7Sentinel
 pub fn uuid_slug::UuidV7Sentinel::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for uuid_slug::UuidV7Sentinel
@@ -1036,7 +1032,7 @@ pub uuid_slug::UuidV7TimestampWindow::reference_unix_ms: f64
 impl uuid_slug::UuidV7TimestampWindow
 pub fn uuid_slug::UuidV7TimestampWindow::validate_uuid_v7(self, uuid: uuid_slug::Uuid) -> core::result::Result<uuid_slug::Uuid, uuid_slug::Error>
 impl core::clone::Clone for uuid_slug::UuidV7TimestampWindow
-pub fn uuid_slug::UuidV7TimestampWindow::clone(&self) -> uuid_slug::UuidV7TimestampWindow
+pub fn uuid_slug::UuidV7TimestampWindow::clone(&self) -> Self
 impl core::fmt::Debug for uuid_slug::UuidV7TimestampWindow
 pub fn uuid_slug::UuidV7TimestampWindow::fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Copy for uuid_slug::UuidV7TimestampWindow

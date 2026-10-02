@@ -23,6 +23,7 @@ export interface Alphabet {
   readonly decode: Int16Array;
   readonly name: string;
   readonly invalidChars: RegExp;
+  readonly invalidInputChars: RegExp;
 }
 
 /*#__NO_SIDE_EFFECTS__*/
@@ -39,13 +40,15 @@ function alphabet(
     decode[charCode] = i;
     if (acceptUppercase && charCode >= 97 && charCode <= 122) decode[charCode - 32] = i;
   }
+  const invalidCharacterPattern = `[^${chars.replaceAll("-", "\\-")}]`;
   return {
     bitsPerChar,
     chars,
     code,
     decode,
     name,
-    invalidChars: new RegExp(`[^${chars.replaceAll("-", "\\-")}]`),
+    invalidChars: new RegExp(invalidCharacterPattern),
+    invalidInputChars: new RegExp(invalidCharacterPattern, acceptUppercase ? "i" : ""),
   };
 }
 
@@ -108,13 +111,20 @@ export function spareBits(alpha: Alphabet, byteLength: number): number {
 
 /** Boolean validation needs no output buffer or diagnostic allocation. */
 /*#__NO_SIDE_EFFECTS__*/
-export function isEncoded(value: string, alpha: Alphabet, byteLength: number): boolean {
+export function isEncoded(
+  value: string,
+  alpha: Alphabet,
+  byteLength: number,
+  acceptsMixedCase = false,
+  tailBits = 0,
+): boolean {
   if (
-    value.length !== Math.ceil((byteLength * 8) / alpha.bitsPerChar) ||
-    alpha.invalidChars.test(value)
+    value.length !== Math.ceil((byteLength * 8 + tailBits) / alpha.bitsPerChar) ||
+    (acceptsMixedCase ? alpha.invalidInputChars : alpha.invalidChars).test(value)
   )
     return false;
-  const spare = spareBits(alpha, byteLength);
+  const spare =
+    (alpha.bitsPerChar - ((byteLength * 8 + tailBits) % alpha.bitsPerChar)) % alpha.bitsPerChar;
   return (
     spare === 0 ||
     ((alpha.decode[value.charCodeAt(value.length - 1)] as number) & ((1 << spare) - 1)) === 0

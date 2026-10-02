@@ -64,7 +64,6 @@ const ERROR_NAME = "UuidSlugError";
 const ERROR_MARKER = "__failure";
 const OBJECT_TYPE = "object";
 const ERROR_TAG = "[object Error]";
-const STRING_TAG = "[object String]";
 const ARRAY_BUFFER_TAG = "[object ArrayBuffer]";
 const DATA_VIEW_TAG = "[object DataView]";
 const BYTE_LENGTH_PROPERTY = "byteLength";
@@ -187,7 +186,7 @@ export function isError(value: unknown): value is Error {
   return hasErrorBrand(value as object);
 }
 
-// A slot probe is the only proof of a genuine wrapper or buffer, but calling one on anything else
+// A slot probe is the only proof of a genuine buffer, but calling one on anything else
 // throws, and building that native TypeError costs three orders of magnitude more than the checks
 // below (bench/PERFORMANCE.md). For buffers, local identity answers the common case without reading
 // the tag at all; the tag then recognizes another realm's value. The tag is caller-visible, so a value
@@ -210,7 +209,8 @@ export function stringInput(value: unknown): string | undefined {
   if (typeof value === "string") return value;
   if (typeof value !== "object" || value === null) return undefined;
   try {
-    if (!isTagged(value, STRING_TAG)) return undefined;
+    // The intrinsic checks the string slot across realms. A tag or prototype precheck can invoke
+    // caller getters, reject retagged wrappers, or reenter a conversion using shared scratch.
     return String.prototype.valueOf.call(value);
   } catch {
     return undefined;
@@ -220,15 +220,33 @@ export function stringInput(value: unknown): string | undefined {
 /** Normalize UUID string input while preserving a preceding package failure. */
 export function normalizeUuidStringInput(value: unknown): string | UuidSlugError {
   if (typeof value === "string") return value;
-  if (isUuidSlugError(value)) return value;
   return stringInput(value) ?? invalidUuidStringInput(value);
 }
 
 /** Normalize slug input while preserving a preceding package failure. */
 export function normalizeUuidSlugInput(value: unknown): string | UuidSlugError {
   if (typeof value === "string") return value;
-  if (isUuidSlugError(value)) return value;
   return stringInput(value) ?? invalidUuidSlugInput(value);
+}
+
+/** Describe rejected values without executing object coercion or inspecting caller properties. */
+export function diagnosticValue(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (
+    typeof value === "number" ||
+    typeof value === "bigint" ||
+    typeof value === "boolean" ||
+    typeof value === "symbol"
+  )
+    return String(value);
+  return value === null ? "null" : typeof value;
+}
+
+/** Accept cross-realm and null-prototype records; callers contain proxy failures at their boundary. */
+export function isPlainRecord(value: object): boolean {
+  if (Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === null || Object.getPrototypeOf(prototype) === null;
 }
 
 /** Use fast local identity, then an unspoofable intrinsic brand for cross-realm Uint8Array values. */
@@ -299,7 +317,7 @@ export function checkRange(
   if (!Number.isInteger(offset))
     return new UuidSlugError(
       INVALID_BUFFER,
-      `Buffer offset must be a whole number, got ${typeof offset} ${String(offset)}.`,
+      `Buffer offset must be a whole number, got ${typeof offset} ${diagnosticValue(offset)}.`,
     );
   if (offset < 0 || offset + need > capacity)
     return new UuidSlugError(

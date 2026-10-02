@@ -302,7 +302,7 @@ export type UuidV7BytesInput<Input extends UuidByteInput | UuidSlugError> = Reje
 /** Reject known UUIDv4 values; a masking codec accepts every UUIDv7 form. */
 type UuidV7ValueInput<Input extends UuidInput> = RejectKnownInput<
   Input,
-  UuidV4Text | UuidV4Bytes | Uuid<4, boolean, boolean>
+  UuidV4Text | UuidV4Bytes | PlainUuidV4Slug | Uuid<4, boolean, boolean>
 >;
 /** Exactly 16 validated UUID bytes. Package-owned values are plain `Uint8Array`. */
 export type UuidBytes = Brand<Uint8Array, "UuidBytes">;
@@ -958,14 +958,15 @@ export interface UuidV7MaskingCodec {
   ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
   /**
    * Convert either plain UUIDv7 slug spelling to this codec's current masked or sentinel spelling.
-   * UUIDv4 returns `invalid_uuid_version`; an out-of-range UUIDv7 returns `invalid_timestamp`; a
+   * TypeScript rejects known UUIDv4 slugs. Other UUIDv4 input returns `invalid_uuid_version`;
+   * an out-of-range UUIDv7 returns `invalid_timestamp`; a
    * preceding `UuidSlugError` is returned unchanged.
    *
    * @param plainUuidSlug - Plain UUID slug whose source representation is known by the caller.
    */
   plainToMaskedUuidSlug<Input extends string | UuidSlugError>(
     this: void,
-    plainUuidSlug: PlainUuidSlugInput<Input>,
+    plainUuidSlug: PlainUuidV7SlugInput<Input>,
   ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
   /**
    * Convert a masked slug or registered sentinel to a plain UUIDv7 slug. The codec selects the

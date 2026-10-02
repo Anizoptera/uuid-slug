@@ -361,6 +361,8 @@ try {
   assert.ok(codec.maskedSlugToUuidString(slug as string) instanceof Error);
   check("codec plain slug read", () => codec.uuidToString(slug as string), { errors: 0 });
   const parsed = api.parseUuid(id);
+  check("owned generic UUID text decode", () => api.uuidToBytes(id), { buffers: 1, errors: 0 });
+  check("owned generic plain slug decode", () => api.uuidToBytes(slug), { buffers: 1, errors: 0 });
   assert.ok(!(parsed instanceof Error));
   check("parsed UUID text conversion", () => api.uuidToString(parsed), { buffers: 0, errors: 0 });
   check("parsed UUID masked encode", () => codec.uuidToMaskedSlug(parsed), { errors: 0 });

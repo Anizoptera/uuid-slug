@@ -444,6 +444,13 @@ export async function contractRequests(): Promise<Request[]> {
         { ...options, op: "candidates", input: encoded.value },
         { ...options, op: "sentinels" },
       );
+      if (encoded.value.length === 26) {
+        for (const op of ["unmask", "migration", "candidates"]) {
+          const upper: Request = { ...options, op, input: encoded.value.toUpperCase() };
+          deepStrictEqual(evaluate(upper), evaluate({ ...upper, input: encoded.value }));
+          requests.push(upper);
+        }
+      }
       if (encoded.value.length === 27) {
         const last = "0123456789abcdefghijklmnopqrstuv".indexOf(encoded.value.at(-1) as string);
         for (let bits = 1; bits < 8; bits++)

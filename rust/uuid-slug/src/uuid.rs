@@ -103,6 +103,16 @@ impl fmt::Display for MaskedUuidV7Slug {
 }
 
 /// A masking-codec output: either a masked payload or a registered sentinel's plain slug.
+/// Equality, ordering and hashing include the variant; use `as_str()` for a textual view.
+/// Unlike the scalar slug types, this enum cannot implement `Borrow<str>` because strings
+/// do not carry that variant and therefore have different equality and hash semantics.
+///
+/// ```compile_fail
+/// use std::borrow::Borrow;
+/// use uuid_slug::MaskedOrSentinelUuidV7Slug;
+/// fn requires_string_identity<T: Borrow<str>>() {}
+/// requires_string_identity::<MaskedOrSentinelUuidV7Slug>();
+/// ```
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum MaskedOrSentinelUuidV7Slug {
     /// A keyed masked UUIDv7 payload.
@@ -131,12 +141,6 @@ impl MaskedOrSentinelUuidV7Slug {
 
 impl AsRef<str> for MaskedOrSentinelUuidV7Slug {
     fn as_ref(&self) -> &str {
-        self.as_str()
-    }
-}
-
-impl Borrow<str> for MaskedOrSentinelUuidV7Slug {
-    fn borrow(&self) -> &str {
         self.as_str()
     }
 }
@@ -378,6 +382,28 @@ impl fmt::Display for Uuid {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn collections_preserve_slug_variants() {
+        use std::collections::{BTreeMap, HashMap};
+        let text = "AAAAAAAAAAAAAAAAAAAAAA".to_owned();
+        let masked = MaskedOrSentinelUuidV7Slug::Masked(MaskedUuidV7Slug(text.clone()));
+        let sentinel = MaskedOrSentinelUuidV7Slug::Sentinel(PlainUuidSlug(text));
+        let hash = HashMap::from([(masked.clone(), 1), (sentinel.clone(), 2)]);
+        let ordered = BTreeMap::from([(masked.clone(), 1), (sentinel.clone(), 2)]);
+        assert_eq!(hash.get(&masked), Some(&1));
+        assert_eq!(hash.get(&sentinel), Some(&2));
+        assert_eq!(ordered.get(&masked), Some(&1));
+        assert_eq!(ordered.get(&sentinel), Some(&2));
+        assert_eq!(masked.as_str(), sentinel.as_str());
+        let scalar = match sentinel {
+            MaskedOrSentinelUuidV7Slug::Sentinel(slug) => slug,
+            _ => unreachable!(),
+        };
+        assert_eq!(
+            HashMap::from([(scalar, 3)]).get("AAAAAAAAAAAAAAAAAAAAAA"),
+            Some(&3)
+        );
+    }
     #[test]
     fn accepts_generic_bits_but_requires_v7_for_timestamp() -> Result<(), Error> {
         for text in [

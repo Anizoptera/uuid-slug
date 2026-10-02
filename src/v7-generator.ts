@@ -5,6 +5,7 @@ import {
   findUnknownOption,
   INVALID_OPTIONS,
   isError,
+  isPlainRecord,
   stringInput,
   UuidSlugError,
 } from "./errors.ts";
@@ -119,7 +120,7 @@ function buildGenerator(
   let clockRollback: unknown;
   let subMillisecondFractionBits: unknown;
   try {
-    if (Array.isArray(options))
+    if (!isPlainRecord(options))
       return new UuidSlugError(INVALID_OPTIONS, INVALID_GENERATOR_OPTIONS);
     const unknown = findUnknownOption(options, GENERATOR_OPTIONS);
     if (unknown !== undefined)
