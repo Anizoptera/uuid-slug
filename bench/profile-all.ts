@@ -22,6 +22,10 @@ const filter = process.env.UUID_SLUG_PROFILE_FILTER ?? "";
 const nodeExecutable = process.env.UUID_SLUG_PROFILE_NODE_EXECUTABLE ?? "node";
 const nodeOptions = process.env.UUID_SLUG_PROFILE_NODE_OPTIONS;
 const environment: Readonly<Record<string, string>> = {
+  // A parent destination controls this driver, not whether an ordinary child enables profiling.
+  // Native children receive both directory and name together from nativeEnvironment().
+  UUID_SLUG_PROFILE_NATIVE_DIR: "",
+  UUID_SLUG_PROFILE_NATIVE_NAME: "",
   UUID_SLUG_PROFILE_FILTER: filter,
   UUID_SLUG_PROFILE_MS: duration,
   UUID_SLUG_PROFILE_SAMPLES: samples,
