@@ -4,6 +4,21 @@ Choose each runtime's writer from repeated consumer-call measurements, including
 
 ## Primary TypeScript call review
 
+Argument-free immutable UUIDv7 generation has no caller configuration to read. The
+`primary-value-consumed-screen.log` and `primary-value-consumed-repeat.log` source screens
+on 2026-10-03 compare an early default branch with unchanged generation on Node 26.10.0,
+Bun 1.4.2 and Deno 2.9.7. Each candidate has two fresh processes per runtime, reversed order,
+three 5 ms batches and 16 ms warm-up. The timing loop reads the generated version; verification
+checks frozen values and UUIDv7 bytes. Older `primary-value-screen.log` timings only consume
+object shape and cannot support a field-consumption claim. The `default-lost-throw` mutation
+fails the shared entropy test in both Node and Bun before timing (`primary-value-mutation.log`).
+These are selection screens, not independent confidence intervals or resource-parity evidence.
+Node and Bun favor the early branch in both field-consuming screens; Deno observations and
+explicit-time controls vary. The follow-up `primary-value-split-screen.log` also compares a
+small default wrapper with a separate configured helper. Its default-call results favor that
+split on Node, show a small or unresolved Bun effect, and do not settle Deno. Packed comparisons
+must decide retention; no production optimization follows from these samples alone.
+
 Two competitor matrices on 2026-10-03 retain three fresh-process medians per row, each from
 five 5 ms batches after 16 ms warm-up. The raw files are
 `bench/reports/primary-review.jsonl` and `bench/reports/primary-review-repeat.jsonl`.

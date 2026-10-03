@@ -87,6 +87,10 @@ Use `keyless cached-draw` to compare cached detached generation with repeated lo
 and paired output; `cached-draw-lost-byte` must fail the generated-payload oracle before timing.
 Use `keyless direct-owned-draw cached-owned-draw` to compare the private byte draw with default
 option dispatch. `direct-owned-lost-byte` must fail the module-byte oracle in both runners.
+Use `value default-fast default-split` to compare argument-free immutable generation without
+an empty options record; the second candidate keeps configured calls in a separate helper.
+The timing loop reads the UUID version and verification checks frozen values and UUIDv7 bytes.
+`value default-lost-throw` must fail both runtime entropy tests before timing.
 For a source candidate that survives its owning proof, pass
 `--source-candidate=keyless:thin-configured` to `bench/compare.ts` with the same revision for
 baseline and candidate. The replacement lives only in its detached checkout; both revisions

@@ -6,7 +6,14 @@ export interface SourceCandidate {
   readonly source: string;
 }
 
-export const CANDIDATE_GROUPS = ["v7-draw", "v4", "alphabet", "keyless", "format"] as const;
+export const CANDIDATE_GROUPS = [
+  "v7-draw",
+  "v4",
+  "alphabet",
+  "keyless",
+  "format",
+  "value",
+] as const;
 export type CandidateGroup = (typeof CANDIDATE_GROUPS)[number];
 export const CANDIDATE_FILES = {
   "v7-draw": "src/v7.ts",
@@ -14,6 +21,7 @@ export const CANDIDATE_FILES = {
   alphabet: "src/alphabet.ts",
   keyless: "src/v7-keyless.ts",
   format: "src/uuid.ts",
+  value: "src/v7-value.ts",
 } as const satisfies Record<CandidateGroup, string>;
 
 function replaceOnce(source: string, from: string, to: string): string {
@@ -368,8 +376,50 @@ export function createSourceCandidates(
     alphabet: alphabetCandidates,
     keyless: keylessCandidates,
     format: formatCandidates,
+    value: valueCandidates,
   } satisfies Record<CandidateGroup, (source: string) => readonly SourceCandidate[]>;
   return builders[group](source);
+}
+
+function valueCandidates(source: string): readonly SourceCandidate[] {
+  // No caller options exist on this path. Skip the empty record and configuration readers,
+  // but preserve the same owned draw, payload layout, immutable value and entropy failure.
+  // Compare complete value calls; inlining may already remove much of the apparent work.
+  const anchor = "  const values = readUuidV7ValueOptions(options, UUID_V7_VALUE_OPTIONS);";
+  const fast = replaceOnce(
+    source,
+    anchor,
+    `  if (options === undefined) {
+    const generated = currentUuidV7Bytes();
+    if (generated instanceof Error) throw generated;
+    return createUuidValue<7, boolean, true>(generated, undefined, uuidV7DefaultPayloadLayout());
+  }
+${anchor}`,
+  );
+  const split = replaceOnce(
+    fast,
+    `  }
+${anchor}`,
+    `  }
+  return generateConfiguredUuidV7Value(options);
+}
+
+function generateConfiguredUuidV7Value(options: UuidV7ValueOptions): Uuid<7, boolean, true> | UuidSlugError {
+${anchor}`,
+  );
+  return [
+    { name: "baseline", source },
+    { name: "default-fast", source: fast },
+    { name: "default-split", source: split },
+    {
+      name: "default-lost-throw",
+      source: replaceOnce(
+        fast,
+        "    if (generated instanceof Error) throw generated;",
+        "    if (generated instanceof Error) return generated;",
+      ),
+    },
+  ];
 }
 
 function keylessCandidates(source: string): readonly SourceCandidate[] {

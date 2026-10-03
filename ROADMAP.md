@@ -147,6 +147,11 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       Bun, Chromium and Deno defaults. Native profiles cover all presets and controls. Resolve the
       second replay's unchanged Node control losses before closure; Firefox and WebKit default effects
       remain unresolved. Preserve selected-generator behavior.
+- [ ] Screen the argument-free UUIDv7 value call without its empty options record and absent-field
+      readers; preserve the owned bytes, immutable value, payload layout and thrown entropy failure.
+      Require the lost-throw mutation to fail both runtime tests before timing. Compare the full
+      value call twice with explicit-time value and owned-byte controls; replay packed consumers
+      and profiles only if the gain survives.
 - [x] Add equivalent slugid and short-uuid conversion comparisons to the existing matrix;
       inspect their implementations, match alphabets and ownership, and exclude setup from per-ID calls.
       Compare canonical v4 conversion against slugid; retain short-uuid's numeric radix-64 spelling

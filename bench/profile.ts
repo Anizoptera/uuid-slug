@@ -67,7 +67,13 @@ function batch(
     else if (typeof value === "boolean") sink ^= Number(value);
     else if (value instanceof Uint8Array) sink ^= value[i % value.length] as number;
     else if (value instanceof Error) sink ^= value.message.length;
-    else sink ^= uuidPairChecksum(value, i) ?? 1;
+    else if (name.startsWith("value.generate")) {
+      // Reading an identifier field keeps immutable construction observable without charging
+      // an unrelated text conversion to a caller that only needs the generated value.
+      if (!("version" in value) || typeof value.version !== "number")
+        throw new Error(`${name} did not return an immutable UUID value`);
+      sink ^= value.version;
+    } else sink ^= uuidPairChecksum(value, i) ?? 1;
   }
 }
 const gc = (globalThis as { gc?: () => void }).gc;

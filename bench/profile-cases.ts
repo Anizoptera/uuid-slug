@@ -1000,6 +1000,18 @@ export function createProfileCases(
           continue;
         }
         assertNormalizedUuidProfileOutcome(name, value, ids, index);
+        if (name.startsWith("value.generate")) {
+          if (
+            typeof value !== "object" ||
+            !("toBytes" in value) ||
+            typeof value.toBytes !== "function" ||
+            !Object.isFrozen(value)
+          )
+            throw new Error(`${name} did not return an immutable UUID value`);
+          const generated: unknown = value.toBytes();
+          if (!api.isUuidV7Bytes(generated))
+            throw new Error(`${name} did not preserve UUIDv7 bytes`);
+        }
         if (
           name === "v7.string.uppercase" &&
           (typeof value !== "string" || !api.isUuidV7Text(value) || value !== value.toUpperCase())
