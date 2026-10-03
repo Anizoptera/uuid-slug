@@ -661,11 +661,13 @@ export const runtimeBoundaryCases = [
         assert.equal(isUuidV4String(bytesToUuidString(unwrap(generateUuidV4Bytes()))), true);
         assert.equal(typeof generatePlainUuidV4Slug(), "string");
         assert.equal(isUuidV7String(generateUuidV7()), true);
-        assert.equal(
-          isUuidV7String(unwrap(generateUuidV7(UUID_TEXT_UPPERCASE)).toLowerCase()),
-          true,
-        );
-        assert.equal(isUuidV7String(generateUuidV7({ at: timestamp })), true);
+        const uppercaseV7 = unwrap(generateUuidV7(UUID_TEXT_UPPERCASE));
+        assert.equal(isUuidV7String(uppercaseV7.toLowerCase()), true);
+        // Normalizing before inspection must not conceal a writer ignoring its requested case.
+        assert.equal(uppercaseV7, uppercaseV7.toUpperCase());
+        const explicitV7 = generateUuidV7({ at: timestamp });
+        assert.equal(isUuidV7String(explicitV7), true);
+        assert.equal(extractUuidV7UnixMs(explicitV7), timestamp);
         const thirdV7 = unwrap(generateUuidV7Bytes());
         assert.equal(isUuidV7Bytes(thirdV7), true);
         assert.equal(isUuidV7Bytes(generateUuidV7Bytes({ at: timestamp })), true);
