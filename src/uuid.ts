@@ -120,12 +120,57 @@ function formatUuidBytesLatin1(
       ? (uppercaseHexCodes ??= hexCodes(UPPERCASE_HEX))
       : (lowercaseHexCodes ??= hexCodes(HEX));
   const text = scratch.bytes;
-  for (let byteIndex = 0; byteIndex < 16; byteIndex += 1) {
-    const textOffset = UUID_BYTE_OFFSETS[byteIndex] as number;
-    const code = (bytes[offset + byteIndex] as number) * 2;
-    text[textOffset] = codes[code] as number;
-    text[textOffset + 1] = codes[code + 1] as number;
-  }
+  // Fixed positions remove the loop and offset-table reads on Bun's selected writer.
+  // The indexed loop loses repeated complete text calls; bench/PERFORMANCE.md owns the evidence.
+  // Keep native string construction and shared storage; remeasure after JSC or writer changes.
+  const code0 = (bytes[offset + 0] as number) * 2;
+  text[0] = codes[code0] as number;
+  text[1] = codes[code0 + 1] as number;
+  const code1 = (bytes[offset + 1] as number) * 2;
+  text[2] = codes[code1] as number;
+  text[3] = codes[code1 + 1] as number;
+  const code2 = (bytes[offset + 2] as number) * 2;
+  text[4] = codes[code2] as number;
+  text[5] = codes[code2 + 1] as number;
+  const code3 = (bytes[offset + 3] as number) * 2;
+  text[6] = codes[code3] as number;
+  text[7] = codes[code3 + 1] as number;
+  const code4 = (bytes[offset + 4] as number) * 2;
+  text[9] = codes[code4] as number;
+  text[10] = codes[code4 + 1] as number;
+  const code5 = (bytes[offset + 5] as number) * 2;
+  text[11] = codes[code5] as number;
+  text[12] = codes[code5 + 1] as number;
+  const code6 = (bytes[offset + 6] as number) * 2;
+  text[14] = codes[code6] as number;
+  text[15] = codes[code6 + 1] as number;
+  const code7 = (bytes[offset + 7] as number) * 2;
+  text[16] = codes[code7] as number;
+  text[17] = codes[code7 + 1] as number;
+  const code8 = (bytes[offset + 8] as number) * 2;
+  text[19] = codes[code8] as number;
+  text[20] = codes[code8 + 1] as number;
+  const code9 = (bytes[offset + 9] as number) * 2;
+  text[21] = codes[code9] as number;
+  text[22] = codes[code9 + 1] as number;
+  const code10 = (bytes[offset + 10] as number) * 2;
+  text[24] = codes[code10] as number;
+  text[25] = codes[code10 + 1] as number;
+  const code11 = (bytes[offset + 11] as number) * 2;
+  text[26] = codes[code11] as number;
+  text[27] = codes[code11 + 1] as number;
+  const code12 = (bytes[offset + 12] as number) * 2;
+  text[28] = codes[code12] as number;
+  text[29] = codes[code12 + 1] as number;
+  const code13 = (bytes[offset + 13] as number) * 2;
+  text[30] = codes[code13] as number;
+  text[31] = codes[code13 + 1] as number;
+  const code14 = (bytes[offset + 14] as number) * 2;
+  text[32] = codes[code14] as number;
+  text[33] = codes[code14 + 1] as number;
+  const code15 = (bytes[offset + 15] as number) * 2;
+  text[34] = codes[code15] as number;
+  text[35] = codes[code15 + 1] as number;
   return scratch.text();
 }
 // Caller-owned output must stay unchanged when text fails, so its bytes are decoded here first.

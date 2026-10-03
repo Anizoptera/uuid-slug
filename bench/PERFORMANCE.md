@@ -887,10 +887,24 @@ Bun default UUIDv7 text falls from 96–101 ns to 90–92 ns in all four compari
 byte-to-text conversion falls from 47–51 ns to 41–42 ns. Node/Deno controls vary and do not
 establish equivalence. Node and Bun behavior tests and resource counters pass the valid candidate;
 the corrupted last digit fails Bun's independently constructed offset-output assertion before timing.
-Keep this a candidate until packed replays cover affected generation, conversion and parsed writers;
-the short screens establish neither total allocation parity nor individual-call latency.
+Retain fixed writes after two six-pair packed replays on the seven engines listed in the wrapper
+comparison below. Each pair uses one 5 ms batch after 16 ms warmup. Bun candidate/baseline
+median ratios are 0.90 and 0.92 for default UUIDv7 text, 0.91 and 0.89 for uppercase text,
+0.89 and 0.88 for byte-to-text conversion, and 0.85 and 0.86 for parsed lowercase text;
+every corresponding reported 95% interval excludes 1. Other Bun results remain unresolved
+unless their intervals exclude 1; the second uppercase parsed result remains unresolved.
+The first Firefox byte-to-text loss and second WebKit uppercase parsed loss do not reproduce
+in the other full replay or focused browser comparison. The focused intervals still allow
+losses up to 20% for Firefox byte-to-text and 6% for WebKit uppercase parsed text; absence of
+a repeated loss does not prove equivalence. No other full-replay row reports a distinct loss.
+Fresh retained-source checks pass 133 Node cases and 42 Bun cases. The native profile driver
+completes its Node, Bun, Deno and Chromium CPU, heap and resource captures in
+`bench/reports/primary-format-native/`; instrumented costs do not replace packed timings.
+Neither sampled heaps nor the source counters establish total allocation parity or individual-call
+latency. The retained change adds fixed writes, not arrays, views, imports or another dispatch.
 Raw evidence is in `bench/reports/primary-format-screen.log`, `primary-format-repeat.log` and
-`primary-format-mutation.log`.
+`primary-format-mutation.log`; packed output is in `primary-format-packed.jsonl`,
+`primary-format-packed-repeat.jsonl` and `primary-format-browser-controls.jsonl`.
 
 The following Latin-1 comparison describes the earlier implementation, not the selected writers.
 

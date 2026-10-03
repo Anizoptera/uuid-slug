@@ -454,18 +454,19 @@ function formatCandidates(source: string): readonly SourceCandidate[] {
         `  const code${byteIndex} = (bytes[offset + ${byteIndex}] as number) * 2;\n  text[${textOffset}] = codes[code${byteIndex}] as number;\n  text[${textOffset + 1}] = codes[code${byteIndex} + 1] as number;`,
     )
     .join("\n");
+  const fixedSelected = source.includes(fixed);
   return [
     { name: "baseline", source },
     {
-      name: "fixed-writes",
+      name: fixedSelected ? "indexed-loop" : "fixed-writes",
       get source() {
-        return replaceOnce(source, loop, fixed);
+        return fixedSelected ? replaceOnce(source, fixed, loop) : replaceOnce(source, loop, fixed);
       },
     },
     {
       name: "fixed-writes-lost-byte",
       get source() {
-        return replaceOnce(source, loop, fixed + "\n  text[35] = 0;");
+        return replaceOnce(source, fixedSelected ? fixed : loop, fixed + "\n  text[35] = 0;");
       },
     },
   ];
