@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve as resolveReportDirectory } from "node:path";
 import { chromium } from "playwright";
 
 import { command } from "../scripts/command";
 
 const project = join(import.meta.dir, "..");
-const reports = join(import.meta.dir, "reports");
+// Separate studies must retain their raw profiles instead of overwriting another candidate's proof.
+const reports = process.env.UUID_SLUG_PROFILE_NATIVE_DIR
+  ? resolveReportDirectory(process.env.UUID_SLUG_PROFILE_NATIVE_DIR)
+  : join(import.meta.dir, "reports");
 const smoke = process.argv.includes("--smoke");
 const native = process.argv.includes("--native");
 if (native && process.env.UUID_SLUG_PROFILE_LATENCY_SAMPLES !== undefined)
