@@ -74,7 +74,10 @@ Default text median ratios are 0.703–0.706 on Node Current, 0.785–0.808 on B
 0.941–0.943 on Chromium and 0.677–0.697 on Deno. Firefox, WebKit and JITless
 also reproduce default-text gains. JSON, inspection and alternate spellings do not all show
 statistical separation on every engine. Chromium's first parse control interval slightly
-excludes one; the second includes one. That movement remains unresolved, not proof of equivalence.
+excludes one; the second includes one. A twelve-process-pair focused replay
+(`primary-value-chromium-control.jsonl`) gives parsing ratio 0.999 [0.97, 1.03],
+text 0.943 [0.91, 0.96] and slug 0.931 [0.90, 0.94]. Parsing remains unresolved,
+not proven equivalent; the focused observations reproduce the writer gains.
 Native profiles cover the changed methods on Node, Bun, Deno and Chromium.
 `primary-value-resource-check.log` records passing Node and Bun resource and latency gates;
 the changed methods create no counted arrays, views or errors. These counters do not measure

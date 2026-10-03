@@ -19,6 +19,9 @@ Keep one implementation candidate active; screen narrowly, then retain only afte
       native output repair and pooled generation without changing timestamp or entropy contracts.
       Clock-number-first recognition and fixed timestamp stores fail the repeated primary-call screen;
       keep the existing production implementation while investigating other mechanisms.
+      Test a private generator scratch draw: module-default text must resolve its preset once,
+      and module-default slug/pair must not validate package-owned storage as caller output.
+      Reject it if reentrancy, transactional failures, ownership or another primary call deteriorates.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
       Screen `owned-range-zero`: skip range validation only for package-owned fresh 16-byte output
@@ -45,8 +48,9 @@ Keep one implementation candidate active; screen narrowly, then retain only afte
       Two complete packed replays reproduce default-text gains across every tested engine and
       cover uppercase, JSON, all inspection fields and both slug alphabets. Node/Bun resource
       gates pass without counted arrays, views or errors; native profiles cover changed methods.
-      Resolve the small Chromium parse-control movement before closure; unresolved method effects
-      and total allocation remain explicit. Caller selectors and immutable ownership stay validated.
+      A focused Chromium replay leaves parsing unresolved around parity and reproduces writer gains.
+      Retain the direct writers; comparison against alternatives and total allocation remain open.
+      Caller selectors and immutable ownership stay validated.
 - [ ] Investigate generation failure-handling friction with executable caller examples; preserve
       the approved default/configured distinction and submit any consumer-visible alternative for Art's ruling.
 - [ ] Compare primary-call resources and import costs against qualified alternatives through the

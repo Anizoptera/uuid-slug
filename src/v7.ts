@@ -60,6 +60,9 @@ export type PortableUuidV7Generator = Omit<
     output?: Uint8Array,
     outputOffset?: number,
   ) => Uint8Array | UuidSlugError;
+  // Only package writers may borrow this buffer, and they must finish before another draw.
+  // The existing bytes() guard still contains clock/entropy reentrancy and failed draws.
+  readonly drawCurrentUuidV7Scratch: () => Uint8Array | UuidSlugError;
 };
 
 const UUID_V7_TEXT_OPTIONS = {
@@ -431,5 +434,6 @@ export function createPortableUuidV7Generator(
     generateUuidV7,
     generateUuidV7Bytes,
     drawUuidV7Bytes,
+    drawCurrentUuidV7Scratch: () => bytes(textBytes),
   };
 }
