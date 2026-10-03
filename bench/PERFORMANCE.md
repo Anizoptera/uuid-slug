@@ -1371,6 +1371,24 @@ one branch of `encode`. Three runs of the base64url rows alone were unresolved a
 
 ### Native base64url encoding
 
+Keep the fixed UUID writer until native encoding lowers complete caller cost without moving cost
+onto other primary calls. Two source screens on 2026-10-03 compare `native-branch` and
+`native-dispatch` on Node 26.10.0, Bun 1.4.2 and Deno 2.9.7, with reversed acquisition order,
+three 5 ms batches per process and 16 ms warm-up. The raw files are
+`primary-native-encoder-screen-repeat.log` and `primary-native-encoder-screen-independent.log`
+under `bench/reports/`; each names its source, runtime proof and resource artifacts.
+Bun conversion and pair costs do not improve consistently. Module-selected dispatch raises
+Bun base32hex slug medians in both orders of both screens despite leaving its writer unchanged.
+Neither shape earns a production change. These short screens do not establish equivalence or
+a physical limit; the earlier packed UUIDv4 comparison also rejected an early native branch.
+
+`primary-native-encoder-oracle.log` retains the fresh-process capability proofs and corrupted
+native-return check. Each candidate selects native for the varied plain corpus, keeps masked
+tails outside it, and falls back after a native throw. Replacing only the last native digit fails
+the independent Buffer oracle for both candidates. Resource counters require one constructed
+plain-slug string and two pair strings, whether Latin-1 or base64 constructs the plain result;
+they do not measure total allocation bytes or native-internal work.
+
 Native `Uint8Array.prototype.toBase64` is probed once for generic payload lengths. UUID payloads
 select the fixed writers described above. The following earlier native comparison does not rank
 those fixed writers: two 24-round comparisons on 2026-09-12 disabled

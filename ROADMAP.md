@@ -63,9 +63,12 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       the ranked runtimes. Numeric short-uuid costs remain separately measured; resource parity stays open.
 - [ ] Close Bun base64url encoding and Deno owned decoding gaps; compare native conversion with
       full validation and plain Uint8Array ownership rather than an incomplete Buffer-only floor.
-  - [ ] Screen Bun native plain encoding with an early branch and module-selected dispatch;
-        preserve masked tails and native-failure fallback, and measure validated conversion,
-        UUIDv7 slug/pair calls and unchanged base32hex controls before retaining either shape.
+  - [x] Screen Bun native plain encoding with an early branch and module-selected dispatch;
+        both pass payload, absence, native-throw and resource proofs, and the corrupted-output
+        oracle fails as intended. Two independent host screens leave conversion and pair gains
+        inconsistent; module dispatch raises Bun base32hex cost. Keep production unchanged.
+  - [ ] Compare owned Deno decoding against native methods returning a plain, privately owned
+        Uint8Array; account for validation, backing storage and copies before changing the decoder.
 - [ ] Measure parsed UUID formatting and slug conversion against direct conversion of the same
       validated private bytes; remove repeated public-boundary work without adding unused representation caches.
       Two complete packed replays reproduce default-text gains across every tested engine and
