@@ -353,6 +353,12 @@ export function createSourceCandidates(
 }
 
 function keylessCandidates(source: string): readonly SourceCandidate[] {
+  // The draw closure is receiver-free and the module generator never changes after creation.
+  // Compare caching that existing closure rather than adding a generator method or buffer.
+  const scratch =
+    "export const currentUuidV7Scratch = (): Uint8Array | UuidSlugError =>\n  v7Text().drawUuidV7Bytes(undefined, keylessTextBytes);";
+  const cachedScratch =
+    'let generateDefaultUuidV7Scratch: PortableUuidV7Generator["drawUuidV7Bytes"] | undefined;\nexport const currentUuidV7Scratch = (): Uint8Array | UuidSlugError =>\n  (generateDefaultUuidV7Scratch ??= v7Text().drawUuidV7Bytes)(undefined, keylessTextBytes);';
   // Change hot-wrapper size separately from selector work. Copy the original implementation
   // intact into the configured helper so a speed result cannot buy different failure behavior.
   const declaration =
@@ -398,6 +404,25 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
   };
   return [
     { name: "baseline", source },
+    {
+      name: "cached-draw",
+      get source() {
+        return replaceOnce(source, scratch, cachedScratch);
+      },
+    },
+    {
+      name: "cached-draw-lost-byte",
+      get source() {
+        return replaceOnce(
+          source,
+          scratch,
+          cachedScratch.replace(
+            "=>\n  (generateDefaultUuidV7Scratch",
+            "=> {\n  const bytes = (generateDefaultUuidV7Scratch",
+          ) + "\n  if (!(bytes instanceof Error)) bytes[15] = 0;\n  return bytes;\n};",
+        );
+      },
+    },
     { name: "thin-wrapper", source: thin },
     { name: "thin-configured", source: cold },
     {

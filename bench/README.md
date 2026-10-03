@@ -78,6 +78,8 @@ from known-preset validation. The configured implementation remains unchanged; s
 and explicit-time calls are controls alongside ordinary text, owned bytes and slug generation.
 Use `keyless thin-configured` to remove the duplicated preset branch from that cold helper;
 `thin-configured-lost-options` must fail the explicit-time oracle before any timing.
+Use `keyless cached-draw` to compare cached detached generation with repeated lookup for slugs
+and paired output; `cached-draw-lost-byte` must fail the generated-payload oracle before timing.
 For a source candidate that survives its owning proof, pass
 `--source-candidate=keyless:thin-configured` to `bench/compare.ts` with the same revision for
 baseline and candidate. The replacement lives only in its detached checkout; both revisions

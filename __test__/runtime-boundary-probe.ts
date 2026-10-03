@@ -91,6 +91,39 @@ const hasCause = (value: unknown, target: unknown): boolean =>
 
 export const runtimeBoundaryCases = [
   {
+    name: "keeps every random tail bit changing in module-default slugs and pairs",
+    run(this: void) {
+      // Created-generator fixtures bypass the module draw. Exercise its real entropy and both
+      // encodings so a pinned tail cannot hide behind otherwise valid, distinct identifiers.
+      // Under independent unbiased draws, a particular bit stays fixed with probability 2^-255;
+      // this detects stuck bits, not bias, correlation or cryptographic source quality.
+      for (const alphabet of [BASE64URL, BASE32HEX] as const) {
+        for (const paired of [false, true]) {
+          let seenOnes = 0;
+          let alwaysOnes = -1;
+          for (let draw = 0; draw < 256; draw += 1) {
+            const slug = paired
+              ? generateUuidV7WithPlainSlug(alphabet).slug
+              : generatePlainUuidV7Slug(alphabet);
+            const bytes = unwrap(plainSlugToUuidBytes(slug));
+            const tail =
+              ((bytes[12] as number) << 24) |
+              ((bytes[13] as number) << 16) |
+              ((bytes[14] as number) << 8) |
+              (bytes[15] as number);
+            seenOnes |= tail;
+            alwaysOnes &= tail;
+          }
+          assert.equal(
+            seenOnes ^ alwaysOnes,
+            -1,
+            `${alphabet} ${paired ? "pair" : "slug"} lost tail entropy`,
+          );
+        }
+      }
+    },
+  },
+  {
     name: "preserves every fresh UUIDv7 tail byte across output forms",
     run(this: void) {
       // Distinct bytes and their complements expose displaced, duplicated and pinned entropy bits.
