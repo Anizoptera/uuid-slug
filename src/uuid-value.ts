@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { BASE32HEX, BASE64URL, BASE64URL_NAME, isEncoded } from "./alphabet.ts";
+import {
+  BASE32HEX,
+  BASE64URL,
+  BASE64URL_NAME,
+  encode as encodeUuidBytes,
+  isEncoded,
+} from "./alphabet.ts";
 import {
   checkByteRange,
   INVALID_OPTIONS,
@@ -11,7 +17,7 @@ import {
 } from "./errors.ts";
 import { isLocalMaskingCodec } from "./masking-codec-protocol.ts";
 import type { SlugAlphabet } from "./slug.ts";
-import { decodeKeylessUuid, extractUuidV7Payload, uuidBytesToPlainSlug } from "./slug.ts";
+import { decodeKeylessUuid, extractUuidV7Payload, resolveSlugAlphabet } from "./slug.ts";
 import {
   UUID_TEXT_LOWERCASE,
   UUID_VARIANT_FUTURE,
@@ -37,7 +43,7 @@ import type {
   UuidVersionOf,
 } from "./types.ts";
 import {
-  bytesToUuidString,
+  formatUuidBytesUnchecked,
   isUuidV7Bytes,
   resolveUuidTextCase,
   uuidTimestampFromBytesUnchecked,
@@ -63,6 +69,9 @@ class ParsedUuidValue<
   extends LocalUuidValue
   implements Uuid<Version, HasMaskingCodec, HasPayloadLayout>
 {
+  // Private bytes are already a complete immutable UUID; public conversion would validate them
+  // again. Resolve caller selectors, then use the same writers directly without caching spellings.
+  // Revisit if private storage becomes mutable or borrowed; measurements live in bench/PERFORMANCE.md.
   get version(): Version {
     return uuidVersion(LocalUuidValue.ownBytes(this), 0) as Version;
   }
@@ -79,7 +88,10 @@ class ParsedUuidValue<
       isMax &&= byte === 255;
     }
     return Object.freeze({
-      uuid: bytesToUuidString(bytes) as UuidStringForVersion<Version, typeof UUID_TEXT_LOWERCASE>,
+      uuid: formatUuidBytesUnchecked(bytes) as UuidStringForVersion<
+        Version,
+        typeof UUID_TEXT_LOWERCASE
+      >,
       version: version as Version,
       variant,
       unixMs:
@@ -99,10 +111,11 @@ class ParsedUuidValue<
   ): UuidStringForVersion<Version, UuidTextCase> | UuidSlugError {
     const selectedCase = resolveUuidTextCase(textCase);
     if (selectedCase instanceof Error) return selectedCase;
-    return bytesToUuidString(LocalUuidValue.ownBytes(this), selectedCase) as UuidStringForVersion<
-      Version,
-      UuidTextCase
-    >;
+    return formatUuidBytesUnchecked(
+      LocalUuidValue.ownBytes(this),
+      0,
+      selectedCase,
+    ) as UuidStringForVersion<Version, UuidTextCase>;
   }
 
   toBytes(): UuidBytesForVersion<Version>;
@@ -116,10 +129,15 @@ class ParsedUuidValue<
     return output;
   }
 
-  toPlainSlug(alphabet: SlugAlphabet = BASE64URL_NAME): PlainUuidSlugForVersion<Version> {
-    return uuidBytesToPlainSlug(
+  toPlainSlug(alphabet?: SlugAlphabet): PlainUuidSlugForVersion<Version>;
+  toPlainSlug(
+    alphabet: SlugAlphabet = BASE64URL_NAME,
+  ): PlainUuidSlugForVersion<Version> | UuidSlugError {
+    const selectedAlphabet = resolveSlugAlphabet(alphabet);
+    if (selectedAlphabet instanceof Error) return selectedAlphabet;
+    return encodeUuidBytes(
       LocalUuidValue.ownBytes(this),
-      alphabet,
+      selectedAlphabet,
     ) as PlainUuidSlugForVersion<Version>;
   }
 
@@ -173,7 +191,7 @@ class ParsedUuidValue<
   }
 
   toJSON(): UuidStringForVersion<Version, typeof UUID_TEXT_LOWERCASE> {
-    return bytesToUuidString(LocalUuidValue.ownBytes(this)) as UuidStringForVersion<
+    return formatUuidBytesUnchecked(LocalUuidValue.ownBytes(this)) as UuidStringForVersion<
       Version,
       typeof UUID_TEXT_LOWERCASE
     >;
