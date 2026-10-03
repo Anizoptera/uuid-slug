@@ -146,6 +146,7 @@ try {
     );
     const tests = ["__test__/core.test.ts", "__test__/runtime-boundary.test.ts"];
     if (group === "v7-draw") tests.push("__test__/v7.test.ts");
+    if (group === "alphabet") tests.push("__test__/alphabet.test.ts");
     const proofs = await Promise.allSettled(
       (
         [
@@ -162,6 +163,15 @@ try {
         failures.map((result) => result.reason),
         `Candidate rejected before timing: ${candidate.name}`,
       );
+    if (group === "alphabet")
+      for (const mode of ["present", "absent", "throw"]) {
+        const output = await command("bun", ["__test__/alphabet-native-probe.ts", mode], tree, {
+          UUID_SLUG_EXPECT_NATIVE_PLAIN: candidate.name === "baseline" ? "0" : "1",
+        });
+        await writeFile(join(report, `${candidate.name}-native-${mode}.jsonl`), output);
+        if (!output.includes('"proof":"native plain encoding"'))
+          throw new Error(`Native ${mode} proof produced no witness: ${candidate.name}`);
+      }
     for (const runtime of runtimes) {
       const entry = group === "v4" ? "bench/generation-host.ts" : "src/index.ts";
       const result = await Bun.build({
