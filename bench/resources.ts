@@ -250,7 +250,13 @@ try {
   }
   assert.equal(clocks, 1, "one generator call must observe the clock once");
   assert.equal(api.generateUuidV7Bytes(into, 4), into, "initialize the package generator");
-  api.generateUuidV7WithPlainSlug();
+  // The entropy pool is warm, but the text generator is still lazy. Sharing the module scratch
+  // must remove its duplicate text array; steady-state checks alone cannot see retained setup.
+  check("default UUIDv7 text-generator initialization", () => api.generateUuidV7WithPlainSlug(), {
+    buffers: 1,
+    views: 1,
+    errors: 0,
+  });
   check("default UUIDv7 pair", () => api.generateUuidV7WithPlainSlug(), {
     buffers: 0,
     views: 0,

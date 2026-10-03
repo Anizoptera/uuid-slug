@@ -15,7 +15,8 @@ async function proof(
   args: string[],
   cwd: string,
   log: string,
-  lane: "node" | "bun",
+  lane: "node" | "bun" | "resources",
+  env?: Readonly<Record<string, string>>,
 ): Promise<void> {
   // Test runners place evidence on different pipes; retain both and fail on absent execution.
   const result = await new Promise<{ error: Error | null; stdout: string; stderr: string }>(
@@ -23,7 +24,7 @@ async function proof(
       execFile(
         "bun",
         args,
-        { cwd, timeout: 30_000, maxBuffer: 4 * 1024 * 1024 },
+        { cwd, env: { ...process.env, ...env }, timeout: 30_000, maxBuffer: 4 * 1024 * 1024 },
         (error, stdout, stderr) => resolve({ error, stdout, stderr }),
       );
     },
@@ -33,11 +34,17 @@ async function proof(
   if (result.error)
     throw new Error(`Candidate proof failed; inspect ${log}`, { cause: result.error });
   if (
-    !(lane === "bun" ? /\b[1-9]\d* pass\b/ : /Tests\s+[1-9]\d* passed/).test(
-      stripVTControlCharacters(output),
-    )
+    !(
+      lane === "resources"
+        ? /"name":"default UUIDv7 text-generator initialization"/
+        : lane === "bun"
+          ? /\b[1-9]\d* pass\b/
+          : /Tests\s+[1-9]\d* passed/
+    ).test(stripVTControlCharacters(output))
   )
-    throw new Error(`No executed tests; inspect ${log} before timing.`);
+    throw new Error(
+      `No executed ${lane === "resources" ? "resource witness" : "tests"}; inspect ${log} before timing.`,
+    );
 }
 const groupInput = process.argv[2];
 if (!CANDIDATE_GROUPS.some((group) => group === groupInput) || process.argv.length < 4)
@@ -145,7 +152,6 @@ try {
         failures.map((result) => result.reason),
         `Candidate rejected before timing: ${candidate.name}`,
       );
-    console.log(JSON.stringify({ candidate: candidate.name, proof: "passed" }));
     for (const runtime of runtimes) {
       const entry = group === "v4" ? "bench/generation-host.ts" : "src/index.ts";
       const result = await Bun.build({
@@ -161,6 +167,16 @@ try {
         );
       await Bun.write(join(report, `${candidate.name}-${runtime}.mjs`), result.outputs[0]!);
     }
+    // Timing cannot justify a candidate that creates avoidable arrays or diagnostics. Use the
+    // existing real-operation counter after behavioral proof and before any timed process.
+    await proof(
+      ["bench/resources.ts"],
+      tree,
+      join(report, `${candidate.name}-resources.log`),
+      "resources",
+      { UUID_SLUG_PROFILE_MODULE: join(tree, "src/index.ts") },
+    );
+    console.log(JSON.stringify({ candidate: candidate.name, proof: "passed" }));
   }
   const driverFile = join(report, "profile.mjs");
   if (group === "v7-draw") {

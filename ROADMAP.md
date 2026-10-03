@@ -31,6 +31,8 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       remove the added method and duplicate retained array, then repeat without competing hooks.
       Restore cached text delegation: direct formatting has no reproduced primary Bun gain and
       the shared replay reports a Firefox text loss. Test buffer sharing independently.
+      Prove the cold resource witness rejects restored duplicate storage through the maintained
+      source-candidate harness, then finish the isolated packed replays and native profiles.
       Reject it if reentrancy, transactional failures, ownership or another primary call deteriorates.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.

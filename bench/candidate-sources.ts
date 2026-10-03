@@ -98,6 +98,17 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
+      // Restore the old retained array so the cold resource witness must reject it before timing.
+      name: "duplicate-text-scratch",
+      get source() {
+        return replaceOnce(
+          source,
+          "const textBytes = options.textScratch ?? new Uint8Array(16);",
+          "const textBytes = new Uint8Array(16);",
+        );
+      },
+    },
+    {
       // A fresh fixed-size output at offset zero already satisfies the range contract.
       // Other offsets and caller-owned output must retain their existing validation.
       name: "owned-range-zero",

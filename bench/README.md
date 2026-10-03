@@ -56,6 +56,9 @@ checkout, checks types and the owning Node and Bun tests before timing, and pres
 proof output and measurements in `bench/reports/`. Set `UUID_SLUG_CANDIDATE_RUNTIMES` to a
 colon-separated selection of `node`, `bun` and `deno`; set `UUID_SLUG_COMPARE_NODE_EXECUTABLE`
 to select a Node executable. Each comparison runs in fresh processes with reversed second-pass order.
+The source screen runs the maintained resource counters before timing and retains their complete
+output, including rejected candidates. Use `v7-draw duplicate-text-scratch` to restore the
+redundant private array; the cold text-generator resource witness must reject it before timing.
 UUIDv7 source screens time ordinary single-ID text, owned bytes and slugs first; configured and
 caller-buffer timing belongs in the later packed comparison after a primary-call gain survives.
 These short batch samples select experiments, not retained optimizations or individual-call p99;
