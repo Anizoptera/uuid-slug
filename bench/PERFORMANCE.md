@@ -33,6 +33,11 @@ has large uncertainty intervals. `primary-scratch-all-repeat.jsonl` is excluded 
 because a commit hook started before its process was observed complete. Prefer testing whether
 the module's existing scratch can serve as the generator's text buffer: that avoids the extra
 method and a duplicate retained array without changing caller-owned output validation.
+The shared-buffer replay (`primary-shared-scratch-all-replay.jsonl`) leaves Bun text and
+slug effects unresolved and reports slower Firefox default text. The direct module formatter
+therefore has not earned replacing cached generator text delegation. Keep the buffer-sharing
+candidate separate from that text change; its resource benefit is one fewer retained 16-byte
+array, while complete-call speed still requires repeated evidence.
 
 The `owned-range-zero` screen skips range validation only for fresh package-owned UUIDv7
 bytes at offset zero. Its Node and Bun byte medians improve in both acquisition orders, but

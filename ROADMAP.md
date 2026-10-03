@@ -29,6 +29,8 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       generator construction because the private draw method adds one function per generator.
       Refine the candidate by sharing the module's existing scratch with its private text generator;
       remove the added method and duplicate retained array, then repeat without competing hooks.
+      Restore cached text delegation: direct formatting has no reproduced primary Bun gain and
+      the shared replay reports a Firefox text loss. Test buffer sharing independently.
       Reject it if reentrancy, transactional failures, ownership or another primary call deteriorates.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.

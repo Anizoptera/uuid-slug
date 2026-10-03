@@ -89,7 +89,8 @@ export const uuidV7BytesAt = (at: unknown): Uint8Array | UuidSlugError => drawAt
 /*
  * Slug and pair writers encode their bytes before returning and draw nothing in between, so they
  * borrow the generator's private text scratch instead of validating a second module buffer as
- * caller output. Current-time text also uses this draw after resolving its selector once.
+ * caller output. Text keeps cached generator delegation; replacing it with a direct module
+ * formatter has not earned its cost on the primary calls (bench/PERFORMANCE.md).
  * Keep configured output validation and the generator's reentrancy guard; a borrowed buffer
  * must never escape or survive another draw. Remeasure complete calls when either writer changes
  * (bench/PERFORMANCE.md), rather than assuming fewer checks improve every runtime.
@@ -98,6 +99,7 @@ export const currentUuidV7Scratch = (): Uint8Array | UuidSlugError =>
   v7Text().drawUuidV7Bytes(undefined, keylessTextBytes);
 export const uuidV7ScratchAt = (at: unknown): Uint8Array | UuidSlugError =>
   drawAt(v7Text(), at, keylessTextBytes);
+let generateDefaultUuidV7: PortableUuidV7Generator["generateUuidV7"] | undefined;
 let generateDefaultUuidV7Bytes: PortableUuidV7Generator["generateUuidV7Bytes"] | undefined;
 
 /*
@@ -140,10 +142,8 @@ export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
     const selectedCase = resolveUuidTextCase(directCase);
     return selectedCase instanceof Error
       ? selectedCase
-      : (formatUuidBytesUnchecked(
-          generatedOrThrow(currentUuidV7Scratch()),
-          0,
-          selectedCase,
+      : (generatedOrThrow(
+          (generateDefaultUuidV7 ??= v7Text().generateUuidV7)(selectedCase),
         ) as UuidV7StringFor<Case>);
   }
   let values = readGenerationOptions(textCaseOrOptions, UUID_V7_TEXT_OPTIONS, "UUIDv7 generation");
@@ -153,10 +153,8 @@ export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
       const selectedCase = resolveUuidTextCase(wrappedCase);
       return selectedCase instanceof Error
         ? selectedCase
-        : (formatUuidBytesUnchecked(
-            generatedOrThrow(currentUuidV7Scratch()),
-            0,
-            selectedCase,
+        : (generatedOrThrow(
+            (generateDefaultUuidV7 ??= v7Text().generateUuidV7)(selectedCase),
           ) as UuidV7StringFor<Case>);
     }
   }
