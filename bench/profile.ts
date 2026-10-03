@@ -9,6 +9,7 @@ import * as v8 from "node:v8";
 import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json" with { type: "json" };
 import { assertProfileOutcome, createProfileCases, selectProfileCases } from "./profile-cases";
 import { sampleCallLatency } from "./call-latency";
+import { uuidPairChecksum } from "./profile-case";
 
 const nativeDirectory = process.env.UUID_SLUG_PROFILE_NATIVE_DIR;
 const nativeName = process.env.UUID_SLUG_PROFILE_NATIVE_NAME;
@@ -66,7 +67,7 @@ function batch(
     else if (typeof value === "boolean") sink ^= Number(value);
     else if (value instanceof Uint8Array) sink ^= value[i % value.length] as number;
     else if (value instanceof Error) sink ^= value.message.length;
-    else sink ^= 1;
+    else sink ^= uuidPairChecksum(value, i) ?? 1;
   }
 }
 const gc = (globalThis as { gc?: () => void }).gc;

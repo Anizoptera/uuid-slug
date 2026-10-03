@@ -573,6 +573,14 @@ export function createProfileCases(
     "v7.base32": () => api.generatePlainUuidV7Slug(base32hexName),
     "v7.slug.selected-generator": () =>
       api.generatePlainUuidV7Slug({ generator: selectedGenerator }),
+    "v7.pair.default": () => api.generateUuidV7WithPlainSlug(),
+    "v7.pair.composed": () => {
+      const uuidBytes = api.generateUuidV7Bytes();
+      return {
+        uuid: unwrap(api.bytesToUuidString(uuidBytes)),
+        slug: unwrap(api.uuidBytesToPlainSlug(uuidBytes)),
+      };
+    },
     "v7.pair.selected-generator": () =>
       api.generateUuidV7WithPlainSlug({ generator: selectedGenerator }),
     "v7.slug.structural-generator": () =>
@@ -972,6 +980,17 @@ export function createProfileCases(
           continue;
         }
         assertNormalizedUuidProfileOutcome(name, value, ids, index);
+        if (name.startsWith("v7.pair.")) {
+          if (
+            typeof value !== "object" ||
+            !("uuid" in value) ||
+            !("slug" in value) ||
+            !api.isUuidV7String(value.uuid) ||
+            typeof value.slug !== "string" ||
+            api.plainSlugToUuidString(value.slug as string) !== value.uuid
+          )
+            throw new Error(`${name} returned mismatched UUID and slug payloads`);
+        }
         if (typeof value === "string") {
           const valid =
             api.isUuidString(value) ||

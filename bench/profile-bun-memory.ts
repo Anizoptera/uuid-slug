@@ -6,6 +6,7 @@ import * as api from "../src/index";
 import * as privateApi from "../src/v4";
 import * as privateAlphabetApi from "../src/alphabet";
 import { createProfileCases, selectProfileCases } from "./profile-cases";
+import { uuidPairChecksum } from "./profile-case";
 
 const reports = process.env.UUID_SLUG_PROFILE_NATIVE_DIR;
 if (!reports) throw new Error("UUID_SLUG_PROFILE_NATIVE_DIR is required");
@@ -27,7 +28,7 @@ function consume(value: ReturnType<(typeof cases)[number][1]>, index: number): v
   else if (typeof value === "boolean") sink ^= Number(value);
   else if (value instanceof Uint8Array) sink ^= value[index % value.length] as number;
   else if (value instanceof Error) sink ^= value.message.length;
-  else sink ^= 1;
+  else sink ^= uuidPairChecksum(value, index) ?? 1;
 }
 
 Bun.gc(true);

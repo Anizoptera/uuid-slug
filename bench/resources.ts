@@ -250,6 +250,17 @@ try {
   }
   assert.equal(clocks, 1, "one generator call must observe the clock once");
   assert.equal(api.generateUuidV7Bytes(into, 4), into, "initialize the package generator");
+  api.generateUuidV7WithPlainSlug();
+  check("default UUIDv7 pair", () => api.generateUuidV7WithPlainSlug(), {
+    buffers: 0,
+    views: 0,
+    errors: 0,
+  });
+  assert.equal(
+    usesLatin1Text ? counts.latin1 : counts.fromCharCodes,
+    2,
+    "the pair must construct exactly its UUID and slug strings",
+  );
   check("caller-owned v7 generation", () => api.generateUuidV7Bytes(into, 4), {
     buffers: 0,
     views: 0,

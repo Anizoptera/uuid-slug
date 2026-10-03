@@ -3,6 +3,21 @@
 export type ProfileValue = string | number | boolean | Uint8Array | Error | object;
 export type ProfileCase = (index: number) => ProfileValue;
 
+/** Read both pair strings so a profiler cannot discard either representation's construction. */
+export function uuidPairChecksum(value: object, index: number): number | undefined {
+  if (
+    "uuid" in value &&
+    typeof value.uuid === "string" &&
+    "slug" in value &&
+    typeof value.slug === "string"
+  )
+    return (
+      value.uuid.charCodeAt(index % value.uuid.length) ^
+      value.slug.charCodeAt(index % value.slug.length)
+    );
+  return undefined;
+}
+
 /** Reject a corpus witness that does not reach its named success or failure path. */
 export function assertProfileOutcome(name: string, value: ProfileValue): boolean {
   const expectedError = name.startsWith("invalid.");

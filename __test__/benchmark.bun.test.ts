@@ -20,7 +20,7 @@ import {
   WITHIN_PROCESS_BATCH_SAMPLE_UNIT,
 } from "../bench/statistics";
 import { describeCallLatency, sampleCallLatency } from "../bench/call-latency";
-import { selectProfileCases } from "../bench/profile-case";
+import { selectProfileCases, uuidPairChecksum } from "../bench/profile-case";
 import { setImmediate as yieldToLoop } from "node:timers/promises";
 
 const speed = {
@@ -63,6 +63,15 @@ test("conversion witnesses reject lost payload bits after a valid first result",
     "no fixed conversion witnesses",
   );
 });
+test("pair profiling consumes each returned spelling", () => {
+  expect(uuidPairChecksum({ uuid: "a", slug: "b" }, 0)).not.toBe(
+    uuidPairChecksum({ uuid: "c", slug: "b" }, 0),
+  );
+  expect(uuidPairChecksum({ uuid: "a", slug: "b" }, 0)).not.toBe(
+    uuidPairChecksum({ uuid: "a", slug: "d" }, 0),
+  );
+});
+
 test("pair witnesses reject two valid spellings of different UUIDs", () => {
   const uuid = "01990d4d-e600-7000-8000-000000000000";
   const slug = uuidStringToPlainSlug(uuid);

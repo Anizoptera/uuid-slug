@@ -232,6 +232,21 @@ export function generateUuidV7WithPlainSlug(
     | GenerateUuidV7WithPlainSlugOptions = BASE64URL_NAME,
   textCase: UuidTextCase = UUID_TEXT_LOWERCASE,
 ): GeneratedUuidV7<PlainUuidV7Slug, UuidTextCase> | UuidSlugError {
+  // Primitive presets cannot select a clock or generator. Resolve them before the shared scratch
+  // draw, then derive both requested spellings without constructing an internal options record.
+  // Wrapped strings and configured calls retain their existing normalization and failure path.
+  if (typeof alphabetOrCaseOrOptions === "string") {
+    const caseOnly = isUuidTextCase(alphabetOrCaseOrOptions);
+    const selectedCase = resolveUuidTextCase(caseOnly ? alphabetOrCaseOrOptions : textCase);
+    if (selectedCase instanceof Error) return selectedCase;
+    const alphabet = resolveSlugAlphabet(caseOnly ? BASE64URL_NAME : alphabetOrCaseOrOptions);
+    if (alphabet instanceof Error) return alphabet;
+    const bytes = generatedOrThrow(currentUuidV7Scratch());
+    return {
+      uuid: formatUuidBytesUnchecked(bytes, 0, selectedCase) as UuidV7StringFor<UuidTextCase>,
+      slug: encode(bytes, alphabet) as PlainUuidV7Slug,
+    };
+  }
   return uuidV7WithPlainSlugFrom(
     alphabetOrCaseOrOptions,
     textCase,
