@@ -82,6 +82,9 @@ are packed normally, and the shared production tree remains unchanged.
 Use `v4 native-zero-hex native-zero-base64` to compare native decoding of fixed zero bytes
 before the unchanged secure fill; capability selection runs once and absent decoders use the
 ordinary constructor. These candidates measure complete owned-byte generation, not decoder speed.
+Use `format fixed-writes` to compare Bun's fixed UUID-text writes with its indexed loop through
+ordinary generation and byte-to-text conversion; `fixed-writes-lost-byte` must fail the last-byte
+oracle before timing. Tables, storage, case selection and string construction stay unchanged.
 Prefix a `UUID_SLUG_PROFILE_FILTER` term with `=` to select that exact case; other terms match
 substrings. Use exact terms when a successful-call comparison must exclude similarly named failures.
 Use `v7-draw independent-direct-lost-bit` to check the payload oracle: both runtime tests must

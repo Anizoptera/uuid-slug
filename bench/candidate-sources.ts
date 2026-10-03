@@ -6,13 +6,14 @@ export interface SourceCandidate {
   readonly source: string;
 }
 
-export const CANDIDATE_GROUPS = ["v7-draw", "v4", "alphabet", "keyless"] as const;
+export const CANDIDATE_GROUPS = ["v7-draw", "v4", "alphabet", "keyless", "format"] as const;
 export type CandidateGroup = (typeof CANDIDATE_GROUPS)[number];
 export const CANDIDATE_FILES = {
   "v7-draw": "src/v7.ts",
   v4: "src/v4.ts",
   alphabet: "src/alphabet.ts",
   keyless: "src/v7-keyless.ts",
+  format: "src/uuid.ts",
 } as const satisfies Record<CandidateGroup, string>;
 
 function replaceOnce(source: string, from: string, to: string): string {
@@ -346,6 +347,7 @@ export function createSourceCandidates(
     "v7-draw": v7Candidates,
     alphabet: alphabetCandidates,
     keyless: keylessCandidates,
+    format: formatCandidates,
   } satisfies Record<CandidateGroup, (source: string) => readonly SourceCandidate[]>;
   return builders[group](source);
 }
@@ -429,6 +431,41 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
           "? directCase : resolveUuidTextCase(directCase)",
           "? UUID_TEXT_LOWERCASE : resolveUuidTextCase(directCase)",
         );
+      },
+    },
+  ];
+}
+
+function formatCandidates(source: string): readonly SourceCandidate[] {
+  // Keep tables, retained storage and string construction identical; only remove loop indexing.
+  // Complete caller measurements decide whether the larger fixed body pays for itself.
+  const loop = [
+    "  for (let byteIndex = 0; byteIndex < 16; byteIndex += 1) {",
+    "    const textOffset = UUID_BYTE_OFFSETS[byteIndex] as number;",
+    "    const code = (bytes[offset + byteIndex] as number) * 2;",
+    "    text[textOffset] = codes[code] as number;",
+    "    text[textOffset + 1] = codes[code + 1] as number;",
+    "  }",
+  ].join("\n");
+  const offsets = [0, 2, 4, 6, 9, 11, 14, 16, 19, 21, 24, 26, 28, 30, 32, 34];
+  const fixed = offsets
+    .map(
+      (textOffset, byteIndex) =>
+        `  const code${byteIndex} = (bytes[offset + ${byteIndex}] as number) * 2;\n  text[${textOffset}] = codes[code${byteIndex}] as number;\n  text[${textOffset + 1}] = codes[code${byteIndex} + 1] as number;`,
+    )
+    .join("\n");
+  return [
+    { name: "baseline", source },
+    {
+      name: "fixed-writes",
+      get source() {
+        return replaceOnce(source, loop, fixed);
+      },
+    },
+    {
+      name: "fixed-writes-lost-byte",
+      get source() {
+        return replaceOnce(source, loop, fixed + "\n  text[35] = 0;");
       },
     },
   ];

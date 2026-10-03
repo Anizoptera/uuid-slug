@@ -60,6 +60,14 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         tree. Reject reproduced configured or primary-call losses; do not infer retention from
         source bundling, noisy controls or an unavailable clock ruling. The complete paired
         comparison rejects retention; keep the production wrapper unchanged.
+  - [ ] Compare direct fixed writes with Bun's indexed UUID-text loop through complete default
+        generation and ordinary byte-to-text conversion. Keep case tables, storage and native
+        string construction unchanged so the experiment isolates indexing work. Reject it if
+        gains do not repeat, uppercase or offsets break, or another primary call loses. Prove
+        the last output byte reaches Bun's independent formatter oracle; Node checks preserve
+        its unchanged selected formatter. The mutation fails Bun's offset-output assertion.
+        Two source screens favor Bun text and conversion with unchanged counted resources;
+        packed replays and affected conversion controls still decide retention.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
       Screen `owned-range-zero`: skip range validation only for package-owned fresh 16-byte output

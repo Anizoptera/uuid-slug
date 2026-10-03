@@ -91,6 +91,10 @@ const groups = {
     ],
     tests: ["__test__/v7.test.ts"],
   },
+  format: {
+    names: ["v7.string", "v7.string.uppercase", "uuid.toString.bytes", "v7.bytes", "v7.slug"],
+    tests: [],
+  },
 } satisfies Record<CandidateGroup, { names: readonly string[]; tests: readonly string[] }>;
 const filename = CANDIDATE_FILES[group];
 const { names: expectedNames } = groups[group];

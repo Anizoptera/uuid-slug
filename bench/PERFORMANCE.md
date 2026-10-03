@@ -879,6 +879,19 @@ measurements. Bun's fastest package call still trails its fastest reference by m
 1.17 and 1.19; Deno's 1.00 ratios do not establish superiority. These remaining default-call
 gaps stay open rather than inheriting the Chromium result.
 
+Two fixed-write source screens on 2026-10-03 compare Bun's UUID-text indexing loop with direct
+writes while preserving its case tables, scratch storage and native string conversion.
+Each screen uses two fresh processes per candidate/runtime in reversed acquisition order,
+three 5 ms batches and 16 ms warmup on Node 26.10.0, Bun 1.4.2 and Deno 2.9.7.
+Bun default UUIDv7 text falls from 96–101 ns to 90–92 ns in all four comparisons;
+byte-to-text conversion falls from 47–51 ns to 41–42 ns. Node/Deno controls vary and do not
+establish equivalence. Node and Bun behavior tests and resource counters pass the valid candidate;
+the corrupted last digit fails Bun's independently constructed offset-output assertion before timing.
+Keep this a candidate until packed replays cover affected generation, conversion and parsed writers;
+the short screens establish neither total allocation parity nor individual-call latency.
+Raw evidence is in `bench/reports/primary-format-screen.log`, `primary-format-repeat.log` and
+`primary-format-mutation.log`.
+
 The following Latin-1 comparison describes the earlier implementation, not the selected writers.
 
 Two packed `35ad052`-to-candidate replays on 2026-09-16 measured median ratios; every listed pair
