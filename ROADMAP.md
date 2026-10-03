@@ -21,9 +21,17 @@ Keep one implementation candidate active; screen narrowly, then retain only afte
       keep the existing production implementation while investigating other mechanisms.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
+      Screen `owned-range-zero`: skip range validation only for package-owned fresh 16-byte output
+      at zero offset; reject the candidate if unchanged text/slug calls lose or byte gains fail to repeat.
+      Reject the shared candidate: both Deno byte screens lose and Bun text costs rise; keep its
+      source substitution for reproduction rather than changing production from Node byte results alone.
 - [ ] Close Bun default UUIDv4 text and plain-slug gaps without weakening native-failure fallback.
 - [ ] Measure the module-default UUID-plus-slug call against one draw followed by both conversions;
       remove internal option allocation or repeated validation only when complete-call evidence supports it.
+      Primitive presets bypass the option record; both all-runtime packed replays improve Node,
+      Bun, Chromium and Deno defaults. Native profiles cover all presets and controls. Resolve the
+      second replay's unchanged Node control losses before closure; Firefox and WebKit default effects
+      remain unresolved. Preserve selected-generator behavior.
 - [ ] Add equivalent slugid and short-uuid conversion comparisons to the existing matrix;
       inspect their implementations, match alphabets and ownership, and exclude setup from per-ID calls.
 - [ ] Close Bun base64url encoding and Deno owned decoding gaps; compare native conversion with

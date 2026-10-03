@@ -574,6 +574,10 @@ export function createProfileCases(
     "v7.slug.selected-generator": () =>
       api.generatePlainUuidV7Slug({ generator: selectedGenerator }),
     "v7.pair.default": () => api.generateUuidV7WithPlainSlug(),
+    "v7.pair.uppercase": () => api.generateUuidV7WithPlainSlug(api.UUID_TEXT_UPPERCASE),
+    "v7.pair.base32": () => api.generateUuidV7WithPlainSlug(base32hexName),
+    "v7.pair.base32.uppercase": () =>
+      api.generateUuidV7WithPlainSlug(base32hexName, api.UUID_TEXT_UPPERCASE),
     "v7.pair.composed": () => {
       const uuidBytes = api.generateUuidV7Bytes();
       return {
@@ -985,9 +989,10 @@ export function createProfileCases(
             typeof value !== "object" ||
             !("uuid" in value) ||
             !("slug" in value) ||
-            !api.isUuidV7String(value.uuid) ||
+            !api.isUuidV7Text(value.uuid) ||
+            value.uuid.length !== 36 ||
             typeof value.slug !== "string" ||
-            api.plainSlugToUuidString(value.slug as string) !== value.uuid
+            api.plainSlugToUuidString(value.slug as string) !== value.uuid.toLowerCase()
           )
             throw new Error(`${name} returned mismatched UUID and slug payloads`);
         }

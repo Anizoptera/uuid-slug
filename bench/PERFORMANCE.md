@@ -26,6 +26,24 @@ Numeric-first clock recognition has inconsistent Node direction and loses Bun ow
 fixed timestamp stores lose Bun owned-byte and slug calls. Neither earns a production change.
 Three short batches per process cannot establish small-effect equivalence or a physical floor.
 
+The `owned-range-zero` screen skips range validation only for fresh package-owned UUIDv7
+bytes at offset zero. Its Node and Bun byte medians improve in both acquisition orders, but
+Deno byte medians rise from 152–153 ns to 156 ns and Bun text medians also rise. The raw
+observations are in `bench/reports/primary-owned-range-screen.log`; the reported artifact
+directory preserves source substitutions and passing Node/Bun proofs. This screen does not
+justify a shared production branch: it moves cost onto other primary calls.
+
+Two six-process-pair packed replays compare `6700c49` with the primitive-preset pair path
+in `f61ff8f`, using `primary-pair-all-replay.jsonl` and `primary-pair-all-repeat.jsonl`.
+Both default-pair ratio intervals lie below one on Node Current, Bun, Chromium and Deno:
+median ratios are respectively 0.858–0.866, 0.853–0.859, 0.795–0.814 and 0.815–0.873.
+Uppercase and base32hex cases are measured separately; Firefox and WebKit default effects
+remain unresolved. One replay also reports slower unchanged Node controls, so it cannot
+establish absence of collateral loss. Native profiles in `primary-pair-native.log` cover
+both returned strings, all four presets and composed/selected-generator controls on Node,
+Bun, Deno and Chromium. Profile timings include instrumentation; retained heap does not
+measure total allocation. Further Node control evidence is required before closure.
+
 Default-pair comparisons retain seven fresh-process medians per row, each from five 10 ms
 batches after 32 ms warm-up, in `primary-pair-baseline.jsonl` and `primary-pair-repeat.jsonl`.
 The dedicated pair costs 137–137 ns on Node Current versus 151–151 ns for one owned-byte draw

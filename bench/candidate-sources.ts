@@ -98,6 +98,18 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
+      // A fresh fixed-size output at offset zero already satisfies the range contract.
+      // Other offsets and caller-owned output must retain their existing validation.
+      name: "owned-range-zero",
+      get source() {
+        return replaceOnce(
+          source,
+          "target === textBytes\n          ? undefined",
+          "target === textBytes || (out === undefined && offset === 0)\n          ? undefined",
+        );
+      },
+    },
+    {
       // Ordinary clock numbers need no cross-realm error recognition; keep it for other readings.
       name: "numeric-clock-first",
       get source() {
