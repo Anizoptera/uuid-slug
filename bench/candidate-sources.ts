@@ -373,6 +373,14 @@ export function createSourceCandidates(
 }
 
 function keylessCandidates(source: string): readonly SourceCandidate[] {
+  const owned =
+    "export const currentUuidV7Bytes = (): UuidV7Bytes | UuidSlugError =>\n  (generateDefaultUuidV7Bytes ??= v7Bytes().generateUuidV7Bytes)();";
+  // This default has no options to parse. Reuse the existing private draw without changing
+  // clocks, entropy, ownership or configured calls; compare lookup with a retained reference.
+  const directOwned =
+    "export const currentUuidV7Bytes = (): UuidV7Bytes | UuidSlugError =>\n  v7Bytes().drawUuidV7Bytes(undefined) as UuidV7Bytes | UuidSlugError;";
+  const cachedOwned =
+    'let drawDefaultOwnedBytes: PortableUuidV7Generator["drawUuidV7Bytes"] | undefined;\nexport const currentUuidV7Bytes = (): UuidV7Bytes | UuidSlugError =>\n  (drawDefaultOwnedBytes ??= v7Bytes().drawUuidV7Bytes)(undefined) as UuidV7Bytes | UuidSlugError;';
   // The draw closure is receiver-free and the module generator never changes after creation.
   // Compare caching that existing closure rather than adding a generator method or buffer.
   const scratch =
@@ -424,6 +432,16 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
   };
   return [
     { name: "baseline", source },
+    { name: "direct-owned-draw", source: replaceOnce(source, owned, directOwned) },
+    { name: "cached-owned-draw", source: replaceOnce(source, owned, cachedOwned) },
+    {
+      name: "direct-owned-lost-byte",
+      source: replaceOnce(
+        source,
+        owned,
+        "export const currentUuidV7Bytes = (): UuidV7Bytes | UuidSlugError => {\n  const value = v7Bytes().drawUuidV7Bytes(undefined);\n  if (!(value instanceof Error)) value[15] = 0;\n  return value as UuidV7Bytes | UuidSlugError;\n};",
+      ),
+    },
     {
       name: "cached-draw",
       get source() {

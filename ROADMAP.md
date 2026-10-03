@@ -108,6 +108,19 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         in the repeat. Reject caching; preserve the current generator lookup.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
+  - [x] Profile the exact module-default owned-byte call before choosing another substitution;
+        separate setup from samples beneath the public generation frame, inspect allocation
+        and entropy evidence, and compare the observed costs with the faster rivals' mechanisms.
+        CPU and heap captures include Deno source separately from compiled output. Wrapper/body
+        samples support a default-dispatch experiment but do not isolate each check or establish
+        allocation parity; rivals also return fresh arrays. Keep ownership unchanged.
+  - [x] Compare the existing private owned-byte draw with default generator option dispatch;
+        screen direct lookup and a cached reference separately. Preserve fresh plain-array
+        ownership, all tail bits and configured calls. The lost-byte mutation must fail the
+        module-default Node/Bun oracle before timing; retain only repeated complete-call gains.
+        The module byte case rejects a pinned tail in both runners. Direct lookup's Bun gain
+        reverses in the repeat; cached-reference effects vary on Node and Deno. Neither earns
+        a shared change or packed replay; preserve the default method and configured cache.
   - [x] Screen bounded clock validation: after truncation, a nonnegative value below the
         48-bit ceiling needs no separate safe-integer check. Preserve callback type checks,
         negative fractions and entropy state. The overflow mutation must fail the clock oracle

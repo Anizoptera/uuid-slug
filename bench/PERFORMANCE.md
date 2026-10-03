@@ -42,6 +42,30 @@ this default-text call. It does not establish exact time fractions: sampling is 
 inlining can hide frames, and both captures share one machine. No allocation total, improvement,
 native parity or conclusion about byte and slug calls follows from these profiles.
 
+Owned bytes require separate attribution. The 2026-10-03 exact `=v7.bytes` capture uses
+seven 20 ms batches after 16 ms warm-up; `bench/reports/primary-owned-v7-profile/` retains
+CPU, heap and resource output for Node, Bun, Deno and Chromium. Bun has 83/129 samples beneath
+the public byte call, including 30 in its wrapper and 33 in the generator body. Inlining prevents
+assigning those samples to individual checks or allocation. The Deno source follow-up
+(`deno-source.cpuprofile` and `deno-source.heapprofile` in that directory) profiles `src/index.ts`
+separately from the driver's compiled entry. It assigns 814/1092 CPU samples and about 147 MB
+of sampled allocation to `bytes`; no separate public-wrapper frame appears. Allocation includes warm-up
+and instrumentation and cannot establish bytes allocated per ordinary call or competitor parity.
+The inspected `uuid` and `uuidv7` byte implementations also allocate fresh arrays. Compare
+bypassing default option dispatch through the existing private draw before changing ownership
+or pooling: profiles locate work, but only complete-call replays can justify that substitution.
+
+The private default-byte draw does not earn retention. Two 2026-10-03 source screens compare
+`keyless direct-owned-draw cached-owned-draw` on Node 26.10.0, Bun 1.4.2 and Deno 2.9.7, with
+two fresh processes per candidate/runtime in reversed order, three 5 ms batches and 16 ms warm-up.
+Direct lookup first lowers Bun bytes from 50.08/50.11 ns to 48.08/47.53 ns; the repeat reads
+50.52/49.95 ns against 48.83/50.54 ns. Cached-reference directions vary on Node and Deno.
+Keep the existing method; these short samples do not establish a reproducible shared gain,
+small-effect equivalence, total resource parity or a physical floor. Source, behavior and
+counted-resource proofs are in the artifact directories named by `primary-owned-draw-screen.log`
+and `primary-owned-draw-repeat.log` in `bench/reports/`. The lost-byte mutation fails the
+module-default byte oracle on Node and Bun before timing (`primary-owned-draw-mutation.log`).
+
 Before the fixed text writes, the earlier matrices measured Bun default UUIDv7 text at
 86–87 ns against native 44–47 ns, and plain slugs at 76–78 ns against native 60–61 ns.
 Native burst timestamp drift keeps those rows as floors rather
