@@ -193,15 +193,17 @@ try {
         `Candidate rejected before timing: ${candidate.name}`,
       );
     if (group === "alphabet") {
+      const nativePlain =
+        candidate.name === "native-branch" || candidate.name === "native-dispatch";
       for (const mode of ["present", "absent", "throw"]) {
         const output = await command("bun", ["__test__/alphabet-native-probe.ts", mode], tree, {
-          UUID_SLUG_EXPECT_NATIVE_PLAIN: candidate.name === "baseline" ? "0" : "1",
+          UUID_SLUG_EXPECT_NATIVE_PLAIN: nativePlain ? "1" : "0",
         });
         await writeFile(join(report, `${candidate.name}-native-${mode}.jsonl`), output);
         if (!output.includes('"proof":"native plain encoding"'))
           throw new Error(`Native ${mode} proof produced no witness: ${candidate.name}`);
       }
-      if (candidate.name !== "baseline") {
+      if (nativePlain) {
         // The injected output defect changes only the native return value. Require the fixed
         // byte oracle to reject it; a green baseline that never selected native proves nothing.
         const mutation = Bun.spawn(["bun", "__test__/alphabet-native-probe.ts", "corrupt"], {

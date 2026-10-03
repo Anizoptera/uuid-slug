@@ -96,6 +96,15 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         both pass payload, absence, native-throw and resource proofs, and the corrupted-output
         oracle fails as intended. Two independent host screens leave conversion and pair gains
         inconsistent; module dispatch raises Bun base32hex cost. Keep production unchanged.
+  - [x] Compare fixed base64url block writes with Bun's indexed loop through complete default
+        slug generation, validated conversion and paired output. Keep tables, buffers, entropy,
+        masking tails and native string construction unchanged. The independent payload oracle
+        must reject a lost output byte before timing. Reject inconsistent gains, added resources
+        or another primary-call loss; retain only after repeated packed comparisons.
+        The byte mutation fails Bun's independent encoder oracle. Both source screens pass
+        behavior and counted resources, but the repeat reverses the default-slug gain in one
+        order and conversion/pair effects vary. Reject fixed blocks without a packed replay;
+        keep the smaller production loop and the overall slug gap open.
   - [x] Compare owned Deno decoding against native arrays, writes and Buffer copies;
         two ownership-checked matrices favor the package on Deno. Buffer-only results remain
         faster but do not supply the promised owned array; total resource parity stays unmeasured.

@@ -1424,6 +1424,21 @@ one branch of `encode`. Three runs of the base64url rows alone were unresolved a
 
 ### Native base64url encoding
 
+Keep Bun's indexed base64url block writer: fixed block positions do not reproduce a complete-call
+gain. Two 2026-10-03 source screens compare `alphabet fixed-blocks` on Node 26.10.0 and Bun 1.4.2,
+with two fresh processes per candidate/runtime in reversed order, three 5 ms batches per process
+and 16 ms warm-up. `primary-slug-fixed-screen.log` and `primary-slug-fixed-repeat.log` retain
+all six caller rows and name their isolated source, behavior and resource artifacts.
+The first Bun default-slug comparison reads 96.23/92.98 and 91.48/89.73 ns, baseline/candidate;
+the repeat reads 92.51/90.87 and 88.52/90.01 ns. Conversion and paired-output effects also change
+direction. These short screens do not bound equivalence or establish individual-call latency,
+but they fail the repeatability needed to justify a larger production body; no packed retention
+comparison follows. Tables, buffers, entropy, tails and native string construction are unchanged.
+`primary-slug-fixed-mutation.log` records the isolated lost-byte candidate failing Bun's independent
+Buffer encoder assertion at `__test__/runtime-boundary-probe.ts:181` before timing. Both intact
+screens pass Node/Bun behavior and JavaScript-visible resource counters; those counters do not
+measure engine-internal allocation. Native parity remains open.
+
 Keep the fixed UUID writer until native encoding lowers complete caller cost without moving cost
 onto other primary calls. Two source screens on 2026-10-03 compare `native-branch` and
 `native-dispatch` on Node 26.10.0, Bun 1.4.2 and Deno 2.9.7, with reversed acquisition order,

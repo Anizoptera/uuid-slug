@@ -70,6 +70,9 @@ add any missing mechanism falsifier before using a candidate's timings to decide
 Use `alphabet native-branch native-dispatch` to compare Bun native plain base64url encoding
 through validated conversion, UUIDv7 generation and pair calls. Both candidates keep masked
 tails and base32hex on the existing writer and fall back if native encoding throws.
+Use `alphabet fixed-blocks` to compare fixed base64url writes with the indexed loop while keeping
+buffers and string construction unchanged; `fixed-blocks-lost-byte` must fail the payload oracle
+before timing. Complete slug generation and conversion determine whether the larger body pays.
 Use `keyless thin-wrapper preset-fast thin-preset` to separate default UUIDv7 wrapper size
 from known-preset validation. The configured implementation remains unchanged; selected-generator
 and explicit-time calls are controls alongside ordinary text, owned bytes and slug generation.
