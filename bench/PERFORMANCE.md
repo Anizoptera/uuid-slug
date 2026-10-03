@@ -1276,6 +1276,18 @@ Remaining gaps and their causes:
   uncertainty, packed behavior, allocation parity or call p99. Raw output is in
   `bench/reports/primary-keyless-screen.log` and `primary-keyless-repeat.log`; the failed mutation
   is in `primary-keyless-mutation.log`.
+  Reject the refined wrapper with only the configured tail in its helper. The packed comparison
+  on 2026-10-03 uses six fresh-process pairs per call, one 5 ms batch and 16 ms warmup across
+  Node 26.10.0, Bun 1.4.2, Deno 2.9.7, Chromium, Firefox, WebKit and Node JITless.
+  Node explicit-time paired candidate/baseline median ratio is 1.21 with a reported 95% interval
+  of 1.03–1.23; Deno default text is 1.10 (1.03–1.11), and explicit time is 1.19 (1.15–1.24).
+  Bun default text is 0.90 (0.69–1.04), which does not establish an improvement.
+  These results reinforce the configured-call losses from the source screens; outlining this
+  helper does not earn production code. Other intervals do not prove equivalence, and this
+  comparison does not measure total allocation or individual-call latency. The packed output is
+  `bench/reports/primary-keyless-packed-retry.jsonl`. An earlier packing attempt failed with
+  Parcel SIGSEGV before timing; the unchanged retry passed packaging and completed all pairs.
+  Its cause remains unresolved; the failed attempt provides no performance evidence.
 - Two alternating allocation screens on 2026-10-02 compared owned UUIDv7 generation using
   `new Uint8Array(16)`, an explicit `ArrayBuffer`, and a copy of the private text buffer.
   Node 26.10.0 owned calls cost about 78 ns, 150–152 ns, and 87 ns respectively; Bun 1.4.2

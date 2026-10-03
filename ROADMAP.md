@@ -42,7 +42,7 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         caller-owned storage, native fallback branches and resource costs before closing it.
         Node/Bun/Deno/Chromium native files remain in a separate report directory; Node/Bun
         resource counters and a restored-allocation mutation prove the retained-storage reduction.
-  - [ ] Screen a small module-default text wrapper against the unchanged combined function;
+  - [x] Screen a small module-default text wrapper against the unchanged combined function;
         isolate wrapper size from known-preset validation, then compare their combination.
         Expect lower complete-call cost without added retained state. Reject unchanged gains,
         configured-call losses or altered preset errors, wrapper normalization and entropy failures;
@@ -50,14 +50,16 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         Both screens favor smaller wrappers for Bun text but slow Node/Deno explicit-time calls.
         Test a cold helper containing only the configured tail, removing the duplicated preset
         branch; retain it only if the primary gain survives without that configured-call loss.
-        The refined repeat has large swings in unchanged controls; packed retention remains open.
+        Reject the refined wrapper: packed Node explicit-time and Deno default/explicit-time
+        calls lose, while Bun default-text uncertainty still includes no improvement.
         Both preset and option mutations fail the intended Node and Bun assertions in unique
         report directories. Preserve these proofs; do not use collided report manifests.
-  - [ ] Compare the surviving thin configured wrapper through isolated packed artifacts on every
+  - [x] Compare the surviving thin configured wrapper through isolated packed artifacts on every
         affected engine; reuse the existing paired comparison and its confidence bounds.
         Extend it to consume maintained source candidates without changing the shared production
         tree. Reject reproduced configured or primary-call losses; do not infer retention from
-        source bundling, noisy controls or an unavailable clock ruling.
+        source bundling, noisy controls or an unavailable clock ruling. The complete paired
+        comparison rejects retention; keep the production wrapper unchanged.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
       Screen `owned-range-zero`: skip range validation only for package-owned fresh 16-byte output
