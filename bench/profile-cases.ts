@@ -707,7 +707,22 @@ export function createProfileCases(
     "value.generate": () => api.generateUuidV7Value(),
     "value.generate.at": (index) => api.generateUuidV7Value({ at: instant + (index & 255) }),
     "value.toString": (index) => values[index & 255]!.toString(),
+    "value.toString.uppercase": (index) => values[index & 255]!.toString(api.UUID_TEXT_UPPERCASE),
+    "value.toJSON": (index) => values[index & 255]!.toJSON(),
+    "value.inspect.fields": (index) => {
+      // Read every returned field; an object-only sink could discard the inspection work.
+      const value = values[index & 255]!.inspect();
+      return (
+        value.uuid.charCodeAt(index % 36) ^
+        value.version ^
+        (value.unixMs ?? 0) ^
+        Number(value.variant === api.UUID_VARIANT_RFC) ^
+        Number(value.isNil) ^
+        Number(value.isMax)
+      );
+    },
     "value.toPlainSlug": (index) => values[index & 255]!.toPlainSlug(),
+    "value.toPlainSlug.base32": (index) => values[index & 255]!.toPlainSlug(base32hexName),
     "value.toMaskedSlug": (index) => values[index & 255]!.toMaskedSlug(codec),
     "value.toMaskedSlug.structural": (index) => values[index & 255]!.toMaskedSlug(structuralCodec),
     "value.convert.string": (index) => api.uuidToString(values[index & 255]!),
@@ -984,6 +999,16 @@ export function createProfileCases(
           continue;
         }
         assertNormalizedUuidProfileOutcome(name, value, ids, index);
+        if (
+          ((name === "value.toString" || name === "value.toJSON") && value !== ids[index & 255]) ||
+          (name === "value.toString.uppercase" && value !== ids[index & 255]!.toUpperCase()) ||
+          (name.startsWith("value.toPlainSlug") &&
+            (typeof value !== "string" || api.plainSlugToUuidString(value) !== ids[index & 255])) ||
+          (name === "value.inspect.fields" &&
+            value !==
+              (ids[index & 255]!.charCodeAt(index % 36) ^ 7 ^ (instant + (index & 255)) ^ 1))
+        )
+          throw new Error(`${name} did not preserve the parsed UUID fields`);
         if (name.startsWith("v7.pair.")) {
           if (
             typeof value !== "object" ||

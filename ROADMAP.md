@@ -42,9 +42,11 @@ Keep one implementation candidate active; screen narrowly, then retain only afte
       full validation and plain Uint8Array ownership rather than an incomplete Buffer-only floor.
 - [ ] Measure parsed UUID formatting and slug conversion against direct conversion of the same
       validated private bytes; remove repeated public-boundary work without adding unused representation caches.
-      Direct private-byte writers reproduce text and slug gains on Node, Bun and Deno; Chromium
-      slug conversion also improves. Resolve browser parse-control movement and profile the changed
-      formatting methods before retaining; caller selectors and immutable ownership remain validated.
+      Two complete packed replays reproduce default-text gains across every tested engine and
+      cover uppercase, JSON, all inspection fields and both slug alphabets. Node/Bun resource
+      gates pass without counted arrays, views or errors; native profiles cover changed methods.
+      Resolve the small Chromium parse-control movement before closure; unresolved method effects
+      and total allocation remain explicit. Caller selectors and immutable ownership stay validated.
 - [ ] Investigate generation failure-handling friction with executable caller examples; preserve
       the approved default/configured distinction and submit any consumer-visible alternative for Art's ruling.
 - [ ] Compare primary-call resources and import costs against qualified alternatives through the

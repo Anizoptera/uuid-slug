@@ -66,6 +66,20 @@ malformed-input equivalence, allocation comparisons or performance for every UUI
 short-uuid's numeric conversion is timed separately; its output is not an interchangeable
 canonical plain slug. Fixed-value witnesses run before timing.
 
+Parsed UUID writers format their immutable private bytes directly instead of repeating public
+byte validation. Two six-process-pair packed replays against `dad0cc6` cover lowercase,
+uppercase, JSON, every inspection field, both slug alphabets and unchanged parsing controls:
+`primary-value-complete-replay.jsonl` and `primary-value-complete-repeat.jsonl`.
+Default text median ratios are 0.703–0.706 on Node Current, 0.785–0.808 on Bun,
+0.941–0.943 on Chromium and 0.677–0.697 on Deno. Firefox, WebKit and JITless
+also reproduce default-text gains. JSON, inspection and alternate spellings do not all show
+statistical separation on every engine. Chromium's first parse control interval slightly
+excludes one; the second includes one. That movement remains unresolved, not proof of equivalence.
+Native profiles cover the changed methods on Node, Bun, Deno and Chromium.
+`primary-value-resource-check.log` records passing Node and Bun resource and latency gates;
+the changed methods create no counted arrays, views or errors. These counters do not measure
+inspection objects or total allocated bytes. Selector validation and private ownership remain intact.
+
 Default-pair comparisons retain seven fresh-process medians per row, each from five 10 ms
 batches after 32 ms warm-up, in `primary-pair-baseline.jsonl` and `primary-pair-repeat.jsonl`.
 The dedicated pair costs 137–137 ns on Node Current versus 151–151 ns for one owned-byte draw

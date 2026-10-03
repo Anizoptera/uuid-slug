@@ -431,6 +431,16 @@ try {
   check("owned generic UUID text decode", () => api.uuidToBytes(id), { buffers: 1, errors: 0 });
   check("owned generic plain slug decode", () => api.uuidToBytes(slug), { buffers: 1, errors: 0 });
   assert.ok(!(parsed instanceof Error));
+  // Private validated bytes need no decoding arrays, views or diagnostic objects.
+  for (const [name, call] of [
+    ["parsed UUID direct text", () => parsed.toString()],
+    ["parsed UUID uppercase text", () => parsed.toString(api.UUID_TEXT_UPPERCASE)],
+    ["parsed UUID JSON text", () => parsed.toJSON()],
+    ["parsed UUID inspection", () => parsed.inspect()],
+    ["parsed UUID direct slug", () => parsed.toPlainSlug()],
+    ["parsed UUID base32 slug", () => parsed.toPlainSlug(api.BASE32HEX)],
+  ] as const)
+    check(name, call, { buffers: 0, views: 0, errors: 0 });
   check("parsed UUID text conversion", () => api.uuidToString(parsed), { buffers: 0, errors: 0 });
   check("parsed UUID masked encode", () => codec.uuidToMaskedSlug(parsed), { errors: 0 });
   check("parsed UUID from text", () => api.parseUuid(id), { buffers: 1, errors: 0 });
