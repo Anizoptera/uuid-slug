@@ -121,6 +121,10 @@ Set `UUID_SLUG_GENERATION_FORKS` to repeat the competitor matrix in fresh host a
 processes. Each process contributes one median per case; retain its batches separately instead
 of counting them as independent runs. Keep the filter narrow for exploration. The default remains
 one process for screening; fresh processes still share the machine's scheduling and thermal state.
+Use `UUID_SLUG_GENERATION_FILTER=v7.text` to include native UUIDv4 text repaired to UUIDv7
+alongside package generation, native UUIDv7 and libraries. Host rows compare hexadecimal timestamp
+slices with fixed character prefixes. Independent byte witnesses check timestamp carries and
+retained payload bits before timing; these lower bounds omit package validation and fallback.
 
 Run `bun run bench:competitors:rust` for one isolated Rust generator timing process. Its own
 lockfile pins the inspected releases without adding benchmark-only crates to the product workspace.

@@ -32,6 +32,15 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       Restore cached text delegation: direct formatting has no reproduced primary Bun gain and
       the shared replay reports a Firefox text loss. Test buffer sharing independently.
       Reject it if reentrancy, transactional failures, ownership or another primary call deteriorates.
+  - [x] Compare native UUIDv4 text repaired to UUIDv7 against native UUIDv7, package generation
+        and qualified libraries. Preserve all 74 payload bits and the current clock timestamp;
+        compare numeric hexadecimal prefixes with fixed character prefixes on complete calls.
+        Prove timestamp carries and retained bytes independently before timing. Include secure
+        generation and formatting cost; keep adoption and any payload-layout ruling separate.
+        Independent byte witnesses pass timestamp carries and both retained payload patterns.
+        Two five-process matrices reproduce slower repaired output on Bun, Node and Deno;
+        reject both prefix mechanisms. Bun default text leads every measured library while
+        its native UUIDv7 floor remains substantially lower. Keep native parity open.
   - [x] Prove the cold resource witness rejects restored duplicate storage: behavioral tests pass,
         then the isolated source experiment fails with two arrays against one on Bun.
   - [x] Retain buffer sharing through two isolated packed replays including generator

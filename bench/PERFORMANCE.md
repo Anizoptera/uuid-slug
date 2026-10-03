@@ -10,8 +10,28 @@ five 5 ms batches after 16 ms warm-up. The raw files are
 Node 26.10.0, Node 24.21.0, Bun 1.4.2, Deno 2.9.7 and Chromium 153.0.8010.12 run on one M4 Max.
 These short observations screen throughput; they do not establish resource parity or individual-call latency.
 
-Bun default UUIDv7 text costs 86–87 ns against native 44–47 ns, and its plain slug costs
-76–78 ns against native 60–61 ns. Native burst timestamp drift keeps those rows as floors rather
+Two refreshed default-text matrices (`primary-native-v4-repair-matrix.jsonl` and
+`primary-native-v4-repair-repeat.jsonl`) on 2026-10-03 use five fresh processes per runtime,
+seven 5 ms batches per process and 16 ms warm-up. Each independent observation is the process
+median. Node 24.21.0, Node 26.10.0, Bun 1.4.2, Deno 2.9.7 and Chromium 153.0.8010.12 complete
+the ordinary library comparison; host processes also measure native UUIDv4 timestamp repair.
+An independent Buffer writer checks timestamp boundaries and two complementary payload patterns
+before timing either repair. Replacing the timestamp and version retains all 74 UUIDv7 payload bits.
+
+Bun default text reads 73.61/72.31 ns across the matrices, against native Bun UUIDv7 at
+47.02/46.12 ns: the remaining package/native ratio is about 1.57 in both. The fastest qualified
+measured library, `uniku`, reads 188.38/184.48 ns; `fastv7` reads 125.45/123.16 ns but retains
+its timestamp-drift rejection. The package leads these measured libraries on this workload;
+that does not close the native gap or establish resource parity. Native UUIDv4 repair costs
+173.26/161.54 ns using hexadecimal slicing and 112.69/106.61 ns using fixed character prefixes.
+Both lose before adding package validation or native-failure fallback. Node and Deno also favor
+the package over both repaired forms. Reject those two mechanisms, not every possible native
+repair. The small process sample does not establish small-effect equivalence, call p99, startup
+cost or a physical floor; the matrices share one machine and fixed within-process case order.
+
+Before the fixed text writes, the earlier matrices measured Bun default UUIDv7 text at
+86–87 ns against native 44–47 ns, and plain slugs at 76–78 ns against native 60–61 ns.
+Native burst timestamp drift keeps those rows as floors rather
 than approved replacements. Owned UUIDv7 bytes trail `uuid` on Bun and `uuidv7` on Deno.
 Bun base64url encoding trails native encoding; Deno decoding trails a Buffer-only floor
 that does not supply the promised owned plain Uint8Array. The owned native comparison below
