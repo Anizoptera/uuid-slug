@@ -60,6 +60,22 @@ Numeric-first clock recognition has inconsistent Node direction and loses Bun ow
 fixed timestamp stores lose Bun owned-byte and slug calls. Neither earns a production change.
 Three short batches per process cannot establish small-effect equivalence or a physical floor.
 
+Removing the separate safe-integer check after truncation does not earn a shared production
+change. Two 2026-10-03 source screens compare `v7-draw bounded-clock` on Node 26.10.0, Bun
+1.4.2 and Deno 2.9.7, using two fresh processes per candidate/runtime in reversed order,
+three 5 ms batches and 16 ms warm-up. Deno byte effects reverse within both screens; Bun
+text reads 83.03 ns against 78.13 ns in the repeat's second order. The short samples cannot
+establish small-effect equivalence, resource parity or a physical limit. Keep the existing
+validation and owned-byte gaps open. Raw files are `primary-bounded-clock-screen.log` and
+`primary-bounded-clock-repeat.log` in `bench/reports/`.
+
+Clock overflow must reach both runtime proofs. The initial overflow mutation fails Node's
+clock test while Bun's previous corpus accepts it. The shared numeric-clock case checks invalid
+readings, valid endpoints, fractional truncation and unchanged caller storage. Unchanged source
+passes 44 cases in each runner; the same overflow mutation fails that case in both runners
+before timing (`bench/reports/primary-bounded-clock-shared-mutation.log`). This witness proves
+the timestamp bound, not secure entropy or every generation contract.
+
 The private scratch-draw method in `199a1b9` removes repeated selector and buffer work,
 but adds a function to every constructed generator. `primary-scratch-screen.jsonl` and
 `primary-scratch-all-replay.jsonl` leave most Bun effects unresolved; the broad Node replay

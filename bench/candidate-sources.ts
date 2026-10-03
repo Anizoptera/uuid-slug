@@ -26,6 +26,14 @@ function replaceOnce(source: string, from: string, to: string): string {
 }
 
 function v7Candidates(source: string): readonly SourceCandidate[] {
+  // Math.trunc plus the nonnegative 48-bit bound already proves a safe integer. Keep the
+  // original number and negative-reading guards so invalid callbacks never gain coercion.
+  const boundedClock = (ceiling: string) =>
+    replaceOnce(
+      source,
+      'typeof reading !== "number" || reading < 0 || !isValidUuidV7UnixMs(now)',
+      `typeof reading !== "number" || reading < 0 || !(now <= ${ceiling})`,
+    );
   const inlineClock = (value: string) =>
     replaceOnce(
       value,
@@ -104,6 +112,18 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
   };
   return [
     { name: "baseline", source },
+    {
+      name: "bounded-clock",
+      get source() {
+        return boundedClock("MAX_UUID_V7_UNIX_MS");
+      },
+    },
+    {
+      name: "bounded-clock-overflow",
+      get source() {
+        return boundedClock("MAX_UUID_V7_UNIX_MS + 1");
+      },
+    },
     {
       // Restore the old retained array so the cold resource witness must reject it before timing.
       name: "duplicate-text-scratch",

@@ -108,6 +108,13 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         in the repeat. Reject caching; preserve the current generator lookup.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
+  - [x] Screen bounded clock validation: after truncation, a nonnegative value below the
+        48-bit ceiling needs no separate safe-integer check. Preserve callback type checks,
+        negative fractions and entropy state. The overflow mutation must fail the clock oracle
+        before timing; reject inconsistent byte gains or text/slug losses before packed replay.
+        The shared clock case rejects overflow on Node and Bun and preserves caller storage.
+        Both screens leave byte gains inconsistent and the repeat raises Bun text costs;
+        reject the substitution before packed replay and keep the owned-byte gaps open.
   - [x] Require fresh plain-array ownership in allocated-generation comparisons, prove rejection
         of Buffer and repeated backing storage, then repeat the owned-byte matrix before ranking.
         Fixed-input decoding already checks this distinction; generated rows must check it too.

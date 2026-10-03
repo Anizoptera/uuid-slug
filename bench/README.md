@@ -68,6 +68,8 @@ output, including rejected candidates. Use `v7-draw duplicate-text-scratch` to r
 redundant private array; the cold text-generator resource witness must reject it before timing.
 UUIDv7 source screens time ordinary single-ID text, owned bytes and slugs first; configured and
 caller-buffer timing belongs in the later packed comparison after a primary-call gain survives.
+Use `v7-draw bounded-clock` to compare a truncation plus timestamp bound with the separate
+safe-integer check; `bounded-clock-overflow` must fail the shared Node/Bun clock oracle.
 These short batch samples select experiments, not retained optimizations or individual-call p99;
 add any missing mechanism falsifier before using a candidate's timings to decide a change.
 Use `alphabet native-branch native-dispatch` to compare Bun native plain base64url encoding
