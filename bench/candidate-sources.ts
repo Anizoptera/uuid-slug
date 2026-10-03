@@ -6,7 +6,7 @@ export interface SourceCandidate {
   readonly source: string;
 }
 
-export const CANDIDATE_GROUPS = ["v7-draw", "v4", "alphabet"] as const;
+export const CANDIDATE_GROUPS = ["v7-draw", "v4", "alphabet", "keyless"] as const;
 export type CandidateGroup = (typeof CANDIDATE_GROUPS)[number];
 
 function replaceOnce(source: string, from: string, to: string): string {
@@ -339,8 +339,75 @@ export function createSourceCandidates(
     v4: v4Candidates,
     "v7-draw": v7Candidates,
     alphabet: alphabetCandidates,
+    keyless: keylessCandidates,
   } satisfies Record<CandidateGroup, (source: string) => readonly SourceCandidate[]>;
   return builders[group](source);
+}
+
+function keylessCandidates(source: string): readonly SourceCandidate[] {
+  // Change hot-wrapper size separately from selector work. Copy the original implementation
+  // intact into the configured helper so a speed result cannot buy different failure behavior.
+  const declaration =
+    "export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(\n  textCaseOrOptions?: Case | GenerateUuidV7Options<Case>,\n): UuidV7StringFor<Case> | UuidSlugError {";
+  const configured =
+    '  let values = readGenerationOptions(textCaseOrOptions, UUID_V7_TEXT_OPTIONS, "UUIDv7 generation");';
+  const start = source.indexOf(declaration);
+  const end = source.indexOf(configured, start);
+  if (start < 0 || end < start)
+    throw new Error("Module UUIDv7 text implementation moved; update its wrapper experiment.");
+  const direct = source.slice(start + declaration.length, end);
+  const thin = replaceOnce(
+    source,
+    declaration,
+    declaration +
+      direct +
+      "  return generateConfiguredUuidV7(textCaseOrOptions);\n}\n\n" +
+      declaration.replace("export function generateUuidV7", "function generateConfiguredUuidV7"),
+  );
+  const preset = (value: string) =>
+    replaceOnce(
+      value,
+      "const selectedCase = resolveUuidTextCase(directCase);",
+      "const selectedCase = directCase === UUID_TEXT_LOWERCASE || directCase === UUID_TEXT_UPPERCASE ? directCase : resolveUuidTextCase(directCase);",
+    );
+  const withUppercase = (value: string) =>
+    replaceOnce(
+      value,
+      'import { UUID_TEXT_LOWERCASE } from "./types.ts";',
+      'import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";',
+    );
+  const thinPreset = () => {
+    // Only the new wrapper changes; the helper retains its original selector validation.
+    const header = thin.slice(0, thin.indexOf("function generateConfiguredUuidV7"));
+    return preset(withUppercase(header)) + thin.slice(header.length);
+  };
+  return [
+    { name: "baseline", source },
+    { name: "thin-wrapper", source: thin },
+    {
+      name: "preset-fast",
+      get source() {
+        return preset(withUppercase(source));
+      },
+    },
+    {
+      name: "thin-preset",
+      get source() {
+        return thinPreset();
+      },
+    },
+    {
+      // The existing uppercase consumer oracle must reach the new default wrapper before timing.
+      name: "thin-preset-wrong-case",
+      get source() {
+        return replaceOnce(
+          thinPreset(),
+          "? directCase : resolveUuidTextCase(directCase)",
+          "? UUID_TEXT_LOWERCASE : resolveUuidTextCase(directCase)",
+        );
+      },
+    },
+  ];
 }
 
 function alphabetCandidates(source: string): readonly SourceCandidate[] {

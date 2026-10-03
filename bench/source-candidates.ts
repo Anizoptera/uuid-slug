@@ -52,27 +52,54 @@ if (!CANDIDATE_GROUPS.some((group) => group === groupInput) || process.argv.leng
     `Usage: bun bench/source-candidates.ts <${CANDIDATE_GROUPS.join("|")}> <candidate names>. Baseline is always included; pass baseline alone for a harness control.`,
   );
 const group = groupInput as CandidateGroup;
-const expectedNames =
-  group === "v4"
-    ? [
-        "package.v4.text.native",
-        "package.v4.text.portable",
-        "package.v4.bytes.allocate",
-        "package.v4.bytes.into",
-        "package.v4.slug.base64url",
-      ]
-    : group === "alphabet"
-      ? [
-          "bytes.base64",
-          "plain.encode",
-          "v7.slug",
-          "v7.base32",
-          "v7.pair.default",
-          "v7.pair.base32",
-        ]
-      : ["v7.string", "v7.bytes", "v7.slug"];
-const filename =
-  group === "v4" ? "src/v4.ts" : group === "alphabet" ? "src/alphabet.ts" : "src/v7.ts";
+// Each source owner names its own caller corpus. Exhaustiveness prevents a new group silently
+// inheriting another group's file or measurements while reporting a successful screen.
+const groups = {
+  v4: {
+    filename: "src/v4.ts",
+    names: [
+      "package.v4.text.native",
+      "package.v4.text.portable",
+      "package.v4.bytes.allocate",
+      "package.v4.bytes.into",
+      "package.v4.slug.base64url",
+    ],
+    tests: [],
+  },
+  alphabet: {
+    filename: "src/alphabet.ts",
+    names: [
+      "bytes.base64",
+      "plain.encode",
+      "v7.slug",
+      "v7.base32",
+      "v7.pair.default",
+      "v7.pair.base32",
+    ],
+    tests: ["__test__/alphabet.test.ts"],
+  },
+  "v7-draw": {
+    filename: "src/v7.ts",
+    names: ["v7.string", "v7.bytes", "v7.slug"],
+    tests: ["__test__/v7.test.ts"],
+  },
+  keyless: {
+    filename: "src/v7-keyless.ts",
+    names: [
+      "v7.string",
+      "v7.string.uppercase",
+      "v7.at",
+      "v7.string.selected-generator",
+      "v7.bytes",
+      "v7.slug",
+    ],
+    tests: ["__test__/v7.test.ts"],
+  },
+} satisfies Record<
+  CandidateGroup,
+  { filename: string; names: readonly string[]; tests: readonly string[] }
+>;
+const { filename, names: expectedNames } = groups[group];
 // A committed production graph makes the detached checkout match the source being screened.
 if (
   (
@@ -144,9 +171,11 @@ try {
       ["node_modules/typescript/bin/tsc", "-p", "tsconfig.json", "--noEmit", "--pretty", "false"],
       tree,
     );
-    const tests = ["__test__/core.test.ts", "__test__/runtime-boundary.test.ts"];
-    if (group === "v7-draw") tests.push("__test__/v7.test.ts");
-    if (group === "alphabet") tests.push("__test__/alphabet.test.ts");
+    const tests = [
+      "__test__/core.test.ts",
+      "__test__/runtime-boundary.test.ts",
+      ...groups[group].tests,
+    ];
     const proofs = await Promise.allSettled(
       (
         [

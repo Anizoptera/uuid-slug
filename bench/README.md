@@ -68,6 +68,9 @@ add any missing mechanism falsifier before using a candidate's timings to decide
 Use `alphabet native-branch native-dispatch` to compare Bun native plain base64url encoding
 through validated conversion, UUIDv7 generation and pair calls. Both candidates keep masked
 tails and base32hex on the existing writer and fall back if native encoding throws.
+Use `keyless thin-wrapper preset-fast thin-preset` to separate default UUIDv7 wrapper size
+from known-preset validation. The configured implementation remains unchanged; selected-generator
+and explicit-time calls are controls alongside ordinary text, owned bytes and slug generation.
 Use `v4 native-zero-hex native-zero-base64` to compare native decoding of fixed zero bytes
 before the unchanged secure fill; capability selection runs once and absent decoders use the
 ordinary constructor. These candidates measure complete owned-byte generation, not decoder speed.

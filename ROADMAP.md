@@ -42,6 +42,11 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         caller-owned storage, native fallback branches and resource costs before closing it.
         Node/Bun/Deno/Chromium native files remain in a separate report directory; Node/Bun
         resource counters and a restored-allocation mutation prove the retained-storage reduction.
+  - [ ] Screen a small module-default text wrapper against the unchanged combined function;
+        isolate wrapper size from known-preset validation, then compare their combination.
+        Expect lower complete-call cost without added retained state. Reject unchanged gains,
+        configured-call losses or altered preset errors, wrapper normalization and entropy failures;
+        preserve the original configured implementation byte-for-byte in the source experiment.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
       Screen `owned-range-zero`: skip range validation only for package-owned fresh 16-byte output
