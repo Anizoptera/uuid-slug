@@ -67,8 +67,11 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         both pass payload, absence, native-throw and resource proofs, and the corrupted-output
         oracle fails as intended. Two independent host screens leave conversion and pair gains
         inconsistent; module dispatch raises Bun base32hex cost. Keep production unchanged.
-  - [ ] Compare owned Deno decoding against native methods returning a plain, privately owned
-        Uint8Array; account for validation, backing storage and copies before changing the decoder.
+  - [x] Compare owned Deno decoding against native arrays, writes and Buffer copies;
+        two ownership-checked matrices favor the package on Deno. Buffer-only results remain
+        faster but do not supply the promised owned array; total resource parity stays unmeasured.
+  - [ ] Compare Deno decoding resources against the equivalent native methods; retain the
+        current decoder unless another complete, owned result reproduces a worthwhile advantage.
 - [ ] Measure parsed UUID formatting and slug conversion against direct conversion of the same
       validated private bytes; remove repeated public-boundary work without adding unused representation caches.
       Two complete packed replays reproduce default-text gains across every tested engine and

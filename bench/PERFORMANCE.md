@@ -13,8 +13,9 @@ These short observations screen throughput; they do not establish resource parit
 Bun default UUIDv7 text costs 86–87 ns against native 44–47 ns, and its plain slug costs
 76–78 ns against native 60–61 ns. Native burst timestamp drift keeps those rows as floors rather
 than approved replacements. Owned UUIDv7 bytes trail `uuid` on Bun and `uuidv7` on Deno.
-Bun base64url encoding trails native encoding; Deno owned decoding trails a Buffer-only floor
-that does not supply the promised plain Uint8Array. Most ordinary Node and Chromium generation
+Bun base64url encoding trails native encoding; Deno decoding trails a Buffer-only floor
+that does not supply the promised owned plain Uint8Array. The owned native comparison below
+favors the package on Deno. Most ordinary Node and Chromium generation
 and conversion calls lead the measured libraries; earlier timestamp-library losses are superseded.
 
 The maintained source screen compares `numeric-clock-first` and `timestamp-words` with its
@@ -2424,6 +2425,33 @@ Reports leave unlike observation units unresolved. A flattened-batch mutation mu
 sample-count regression, even when its medians look plausible.
 
 ### Fixed conversion comparisons
+
+#### Owned plain-slug decoding
+
+Compare the complete owned array, not Buffer bytes with the same payload. The native rows
+validate canonical padding before decoding; Buffer output needs a copy to prevent exposing
+pooled backing storage. `ownedBytes` witnesses reject Buffer subclasses and reused backing
+storage before timing. Identical-payload mutations fail those witnesses in
+`primary-owned-decode-witness.log`; byte equality alone would pass them.
+
+Three matrices on 2026-10-03 use seven fresh-process medians per row, five 10 ms batches and
+32 ms warm-up on Node 24.21.0, Node 26.10.0, Bun 1.4.2, Deno 2.9.7 and Chromium 153.0.8010.12.
+The raw files are `primary-owned-decode-comparison.jsonl`, `primary-owned-decode-repeat.jsonl`
+and `primary-owned-decode-independent.jsonl` in `bench/reports/`. The last two execute the
+ownership witnesses. Costs vary broadly between runs; these processes share machine conditions.
+
+On Deno the last two package medians are 292 and 160 ns, against 452 and 244 ns for Buffer
+decoding plus copying, 550 and 293 ns for `fromBase64`, and 521 and 286 ns for native writes
+into fresh arrays. Each corresponding package median interval ends below its owned native
+alternative's interval. Buffer-only medians remain lower at 219 and 119 ns, with overlapping
+intervals in the broader repeat. Keep the current decoder: no measured owned native alternative
+earns replacement. This does not establish total allocation parity, every input form, call p99
+or a mathematical floor. The Buffer-only cost remains a target for investigating less owned work.
+
+The installed Bun declaration gives `setFromBase64` a numeric offset parameter. Bun 1.4.2
+and Deno 2.9.7 accept decoding options and reject the numeric control; the fixed-input matrix
+exercises the real options form on each available runtime. A narrow optional capability type
+contains that declaration mismatch rather than weakening other prototype methods.
 
 #### UUIDv4 draw and encoder isolation
 
