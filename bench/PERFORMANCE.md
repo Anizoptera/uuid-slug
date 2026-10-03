@@ -44,6 +44,17 @@ original array allocation, passes behavioral tests, then fails the Bun resource 
 two arrays against its limit of one. `primary-buffer-resource-mutation.log` identifies the
 preserved source and proof directory. This isolates retained setup storage; it does not measure
 total allocated bytes, startup latency or competitor resource parity.
+Two six-process-pair buffer-only replays (`primary-buffer-only-all-replay.jsonl` and
+`primary-buffer-only-all-repeat.jsonl`) reproduce default-slug gains on Node Current
+at ratios 0.954–0.957 and WebKit at 0.933–0.950. Bun remains unresolved at
+0.968–0.970. The focused Deno replay gives slug ratio 0.947 [0.94, 0.97],
+with explicit-time slug 0.999 [1.00, 1.05]; the focused Node LTS replay gives
+slug 0.940 [0.92, 0.99] and explicit-time slug 1.003 [0.96, 1.02]. Neither
+control establishes equivalence. Native profiling completes on Node, Bun, Deno and Chromium
+in `primary-buffer-native-complete.log`, with raw files preserved under `primary-buffer-native/`.
+These profiles include instrumentation and do not substitute for comparative throughput.
+Retain scratch sharing for the measured storage reduction and reproduced slug gains; the
+Bun native-floor gap and competitor resource comparisons remain open.
 
 The `owned-range-zero` screen skips range validation only for fresh package-owned UUIDv7
 bytes at offset zero. Its Node and Bun byte medians improve in both acquisition orders, but

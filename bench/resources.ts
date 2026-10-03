@@ -257,6 +257,8 @@ try {
     views: 1,
     errors: 0,
   });
+  assert.equal(counts.buffers, 1, "keep this witness before the first module text draw");
+  assert.equal(counts.views, 1, "the cold witness must reach the generator's entropy view");
   check("default UUIDv7 pair", () => api.generateUuidV7WithPlainSlug(), {
     buffers: 0,
     views: 0,

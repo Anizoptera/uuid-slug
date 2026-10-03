@@ -34,10 +34,14 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       Reject it if reentrancy, transactional failures, ownership or another primary call deteriorates.
   - [x] Prove the cold resource witness rejects restored duplicate storage: behavioral tests pass,
         then the isolated source experiment fails with two arrays against one on Bun.
-  - [ ] Retain or reject buffer sharing through two isolated packed replays including generator
+  - [x] Retain buffer sharing through two isolated packed replays including generator
         construction, affected presets, explicit instants and unchanged owned-byte controls.
-  - [ ] Profile the surviving buffer-sharing candidate on each selected runtime and verify
+        Node/WebKit slug gains reproduce; focused Deno and LTS controls resolve earlier reported
+        losses to uncertain effects around parity. Bun throughput remains unresolved.
+  - [x] Profile the surviving buffer-sharing candidate on each selected runtime and verify
         caller-owned storage, native fallback branches and resource costs before closing it.
+        Node/Bun/Deno/Chromium native files remain in a separate report directory; Node/Bun
+        resource counters and a restored-allocation mutation prove the retained-storage reduction.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
       Screen `owned-range-zero`: skip range validation only for package-owned fresh 16-byte output
