@@ -108,6 +108,14 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         in the repeat. Reject caching; preserve the current generator lookup.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
+  - [x] Require fresh plain-array ownership in allocated-generation comparisons, prove rejection
+        of Buffer and repeated backing storage, then repeat the owned-byte matrix before ranking.
+        Fixed-input decoding already checks this distinction; generated rows must check it too.
+        The new check rejects the existing Bun native Buffer row despite its floor-only comment;
+        keep it timed and rejected, and compare three native copying methods with owned results.
+        Fresh-array fixtures pass; Buffer and shared-backing fixtures fail. Two five-process
+        ownership-checked matrices still show Bun trailing uuid and Deno trailing uuidv7;
+        keep both production gaps and total resource comparisons open.
       Screen `owned-range-zero`: skip range validation only for package-owned fresh 16-byte output
       at zero offset; reject the candidate if unchanged text/slug calls lose or byte gains fail to repeat.
       Reject the shared candidate: both Deno byte screens lose and Bun text costs rise; keep its

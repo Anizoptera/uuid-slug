@@ -107,4 +107,21 @@ export function verifyGenerationCase(candidate: GenerationCase): void {
     (value[offset + 8]! & 0xc0) !== 0x80
   )
     throw new Error(`${candidate.name} did not return UUID bytes`);
+  // Qualified allocated-byte rows promise caller-private plain storage. Checking only the
+  // version bits would let a reused scratch or Buffer win a comparison for a different result.
+  if (
+    candidate.ownedBytes ||
+    (candidate.qualification === "qualified" && candidate.comparable.includes(".bytes.allocate."))
+  ) {
+    const next = candidate.operation();
+    if (
+      value.constructor !== Uint8Array ||
+      !(next instanceof Uint8Array) ||
+      next.constructor !== Uint8Array ||
+      next.length !== 16 ||
+      value.length !== 16 ||
+      next.buffer === value.buffer
+    )
+      throw new Error(`${candidate.name} must return fresh plain Uint8Array storage`);
+  }
 }

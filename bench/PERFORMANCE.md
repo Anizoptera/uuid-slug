@@ -956,6 +956,27 @@ Raw evidence is in `bench/reports/primary-format-screen.log`, `primary-format-re
 `primary-format-mutation.log`; packed output is in `primary-format-packed.jsonl`,
 `primary-format-packed-repeat.jsonl` and `primary-format-browser-controls.jsonl`.
 
+Allocated-generation witnesses require a plain Uint8Array and different backing storage on
+successive calls for every qualified allocated-byte row. The earlier witness enforced this only
+for fixed-input decoding: the Bun native Buffer row remained qualified despite its floor-only
+comment. The stronger witness rejects that row before timing
+(`bench/reports/primary-owned-v7-bytes-checked.log`). Buffer-only generation stays timed and
+rejected; native copies provide the owned-output floors. Fresh-array fixtures pass while Buffer,
+reused-array and reused-backing fixtures fail in `__test__/benchmark.bun.test.ts`.
+
+Two ownership-checked matrices on 2026-10-03 use five fresh processes per runtime, seven 5 ms
+batches and 16 ms warm-up on Node 24.21.0, Node 26.10.0, Bun 1.4.2, Deno 2.9.7 and Chromium
+153.0.8010.12. Raw files are `bench/reports/primary-owned-v7-bytes-copies.jsonl` and
+`primary-owned-v7-bytes-copies-repeat.jsonl`. Bun package bytes read 48.05/45.36 ns, against
+`uuid` at 41.39/40.34 ns. Deno package bytes read 161.11/148.50 ns, against `uuidv7` at
+150.27/135.36 ns. Those library gaps remain open. Bun native Buffer reads 55.08/53.22 ns;
+copying it through `Uint8Array.from` reads 223.26/213.14 ns, the copying constructor reads
+68.97/65.14 ns, and a fresh array plus `set` reads 65.73/63.68 ns. Compare the fastest complete
+copy rather than imposing generic iteration on a native floor. These samples preserve ownership
+and ordinary UUID structure; they do not establish total allocation parity, small-effect
+equivalence, individual-call latency or native timestamp compatibility with package generation.
+Each statistical observation is a process median; the processes still share machine conditions.
+
 Two wider-write source screens on 2026-10-03 retain the existing tables and native Latin-1
 conversion, replacing fixed byte stores with 16-bit or 32-bit DataView stores. Explicit
 little-endian stores preserve all characters and hyphens. One DataView remains over the existing

@@ -44,6 +44,9 @@ Rules:
   followed by a copy. A view over Buffer's pooled storage does not provide private backing storage.
   Keep Buffer-only decoding timed with an explicit ownership rejection; it cannot win the
   equivalent-result ranking for an owned plain array.
+  Qualified allocated-generation rows must also return fresh plain arrays with separate backing
+  storage. Bun's Buffer-only generation stays timed but rejected; native copying comparisons
+  include `Uint8Array.from`, the copying constructor and a fresh array followed by `set`.
 - The entropy audit brackets its existing draw burst with wall-clock reads. Compare the largest
   encoded timestamp with the ending clock. The difference and clock change are observations,
   not proof that the wall clock stayed monotonic throughout the burst. Encoded-timestamp counts

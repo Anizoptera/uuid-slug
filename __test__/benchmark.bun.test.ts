@@ -96,6 +96,39 @@ test("owned decoding witnesses reject Buffer subclasses and shared backing stora
     );
 });
 
+test("allocated generation witnesses reject Buffer and reused backing storage", () => {
+  const shared = new Uint8Array(16);
+  shared[6] = 0x70;
+  shared[8] = 0x80;
+  const fresh = () => Uint8Array.from(shared);
+  const candidate: GenerationCase = {
+    comparable: "v7.bytes.allocate.secure",
+    implementation: "fixture",
+    name: "owned generation",
+    operation: fresh,
+    qualification: "qualified",
+    version: 7,
+  };
+  expect(() => verifyGenerationCase(candidate)).not.toThrow();
+  for (const operation of [
+    () => Buffer.from(shared),
+    () => shared,
+    () => new Uint8Array(shared.buffer),
+  ])
+    expect(() => verifyGenerationCase({ ...candidate, operation })).toThrow(
+      "fresh plain Uint8Array storage",
+    );
+  // An incomplete native floor remains measurable without entering the equivalent ranking.
+  expect(() =>
+    verifyGenerationCase({
+      ...candidate,
+      operation: () => Buffer.from(shared),
+      qualification: "rejected",
+      rejectionReason: "Buffer is not a plain owned array",
+    }),
+  ).not.toThrow();
+});
+
 test("native Buffer decoding remains timed without qualifying as an owned result", () => {
   const { cases } = createConversionCases(Buffer);
   const borrowed = cases.find(({ name }) => name === "platform.buffer.conversion.slug.bytes");

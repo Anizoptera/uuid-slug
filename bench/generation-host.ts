@@ -91,20 +91,47 @@ const hostCases: readonly GenerationCase[] = [
           // A Node `Buffer`, not the plain `Uint8Array` this package returns; timed as a floor only.
           ["platform.bun.v7.bytes.allocate", "v7.bytes.allocate.secure", () => bunUuidV7("buffer")],
           [
+            "platform.bun-copy.v7.bytes.allocate",
+            "v7.bytes.allocate.secure",
+            () => Uint8Array.from(bunUuidV7("buffer") as Uint8Array),
+          ],
+          [
+            "platform.bun-constructor-copy.v7.bytes.allocate",
+            "v7.bytes.allocate.secure",
+            () => new Uint8Array(bunUuidV7("buffer") as Uint8Array),
+          ],
+          [
+            "platform.bun-set-copy.v7.bytes.allocate",
+            "v7.bytes.allocate.secure",
+            () => {
+              const owned = new Uint8Array(16);
+              owned.set(bunUuidV7("buffer") as Uint8Array);
+              return owned;
+            },
+          ],
+          [
             "platform.bun.v7.slug.base64url",
             "v7.slug.base64url.secure",
             () => bunUuidV7("base64url"),
           ],
         ] as const
-      ).map(([name, comparable, operation]) => ({
-        comparable,
-        implementation: "platform",
-        name,
-        operation,
-        qualification: "qualified" as const,
-        secure: true,
-        version: 7 as const,
-      }))
+      ).map(([name, comparable, operation]): GenerationCase => {
+        const candidate: GenerationCase = {
+          comparable,
+          implementation: "platform",
+          name,
+          operation,
+          qualification: "qualified",
+          secure: true,
+          version: 7,
+        };
+        if (name === "platform.bun.v7.bytes.allocate")
+          Object.assign(candidate, {
+            qualification: "rejected",
+            rejectionReason: "Native Buffer is not a caller-private plain Uint8Array result.",
+          });
+        return candidate;
+      })
     : []),
   ...(nativeUuidV7
     ? [
