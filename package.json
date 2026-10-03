@@ -142,6 +142,8 @@
     "pnpm": "^12.4.1",
     "publint": "^0.3.24",
     "rollup": "4.63.2",
+    "short-uuid": "6.0.3",
+    "slugid": "5.0.1",
     "tsdown": "^0.23.0",
     "typescript": "^7.0.2",
     "typescript-floor": "npm:typescript@5.0.4",

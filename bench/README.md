@@ -84,6 +84,11 @@ with one owned-byte draw followed by both public conversions. The witness reject
 UUID and slug payloads, and timing consumes both strings rather than only the returned object.
 The generated comparison report names the fastest rival and native floor separately and gives
 each its own ratio and uncertainty verdict; an unavailable method is not a timed result.
+Use `UUID_SLUG_GENERATION_FILTER=uuid.slug` for UUID-text conversion against slugid and
+short-uuid. Construct the short-uuid translator once. Its numeric radix-64 spelling uses the
+same alphabet but different bit alignment, so it has a separate comparison group. Fixed-input
+witnesses require every output bit to survive. The generation filter accepts one substring;
+comma-separated terms belong to `UUID_SLUG_PROFILE_FILTER`, not this filter.
 
 Set `UUID_SLUG_GENERATION_FORKS` to repeat the competitor matrix in fresh host and browser
 processes. Each process contributes one median per case; retain its batches separately instead

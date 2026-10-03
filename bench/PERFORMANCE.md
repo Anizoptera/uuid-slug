@@ -42,7 +42,29 @@ remain unresolved. One replay also reports slower unchanged Node controls, so it
 establish absence of collateral loss. Native profiles in `primary-pair-native.log` cover
 both returned strings, all four presets and composed/selected-generator controls on Node,
 Bun, Deno and Chromium. Profile timings include instrumentation; retained heap does not
-measure total allocation. Further Node control evidence is required before closure.
+measure total allocation. A twelve-process-pair Node control replay (`primary-pair-node-control.jsonl`)
+reproduces the default-pair gain at ratio 0.851 [0.84, 0.87]; default text, owned bytes and
+composed-pair controls remain unresolved. Selected-generator text costs 1.018 [1.00, 1.05]
+despite unchanged implementation; its small effect remains a retention uncertainty.
+
+Conversion comparisons use slugid 5.0.1 and short-uuid 6.0.3, with reusable setup outside
+each call. Their published interfaces are described at
+[slugid](https://www.npmjs.com/package/slugid) and
+[short-uuid](https://www.npmjs.com/package/short-uuid); installed code supplies the mechanism
+evidence. slugid parses UUID text, encodes base64, replaces alphabet characters and removes
+padding; decoding reverses those steps before UUID formatting. short-uuid uses `any-base`
+numeric conversion, so the same alphabet gives different bit alignment from canonical base64url.
+Its separate group uses independently computed integer witnesses. No representation change is
+implied for issued package slugs.
+
+`primary-slug-comparison.jsonl` and `primary-slug-repeat.jsonl` retain seven fresh-process
+medians per row from five 10 ms batches after 32 ms warm-up. They measure two canonical v4
+inputs on Node Current, Node LTS, Bun, Deno and Chromium. Package/slugid median ratios span
+0.096–0.213 for encoding and 0.077–0.332 for decoding in the first run, and 0.097–0.213 and
+0.078–0.327 respectively in the repeat. These are valid-input throughput observations, not
+malformed-input equivalence, allocation comparisons or performance for every UUID version.
+short-uuid's numeric conversion is timed separately; its output is not an interchangeable
+canonical plain slug. Fixed-value witnesses run before timing.
 
 Default-pair comparisons retain seven fresh-process medians per row, each from five 10 ms
 batches after 32 ms warm-up, in `primary-pair-baseline.jsonl` and `primary-pair-repeat.jsonl`.

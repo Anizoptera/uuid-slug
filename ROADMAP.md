@@ -32,12 +32,19 @@ Keep one implementation candidate active; screen narrowly, then retain only afte
       Bun, Chromium and Deno defaults. Native profiles cover all presets and controls. Resolve the
       second replay's unchanged Node control losses before closure; Firefox and WebKit default effects
       remain unresolved. Preserve selected-generator behavior.
-- [ ] Add equivalent slugid and short-uuid conversion comparisons to the existing matrix;
+- [x] Add equivalent slugid and short-uuid conversion comparisons to the existing matrix;
       inspect their implementations, match alphabets and ownership, and exclude setup from per-ID calls.
+      Compare canonical v4 conversion against slugid; retain short-uuid's numeric radix-64 spelling
+      as a separate measured alternative, because the same alphabet does not give the same wire output.
+      Two fresh-process matrices reproduce lower canonical conversion costs against slugid across
+      the ranked runtimes. Numeric short-uuid costs remain separately measured; resource parity stays open.
 - [ ] Close Bun base64url encoding and Deno owned decoding gaps; compare native conversion with
       full validation and plain Uint8Array ownership rather than an incomplete Buffer-only floor.
 - [ ] Measure parsed UUID formatting and slug conversion against direct conversion of the same
       validated private bytes; remove repeated public-boundary work without adding unused representation caches.
+      Direct private-byte writers reproduce text and slug gains on Node, Bun and Deno; Chromium
+      slug conversion also improves. Resolve browser parse-control movement and profile the changed
+      formatting methods before retaining; caller selectors and immutable ownership remain validated.
 - [ ] Investigate generation failure-handling friction with executable caller examples; preserve
       the approved default/configured distinction and submit any consumer-visible alternative for Art's ruling.
 - [ ] Compare primary-call resources and import costs against qualified alternatives through the

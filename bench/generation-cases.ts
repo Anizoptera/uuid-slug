@@ -5,6 +5,8 @@ import { v4 as lukeedSecureV4 } from "@lukeed/uuid/secure";
 import { v4 as smithyV4 } from "@smithy/uuid";
 import { uuidv7 as kripodV7 } from "@kripod/uuidv7";
 import { uuid as fastV7 } from "fastv7";
+import * as slugid from "slugid";
+import { createTranslator } from "short-uuid";
 import { v4 as uuidV4, v7 as uuidV7 } from "uuid";
 import uuidRandom from "uuid-random";
 import { uuidv4 as unikuV4 } from "uniku/uuid/v4";
@@ -34,13 +36,15 @@ import {
   generatePlainUuidV7Slug,
   UUID_V7_TEST_MASK,
   uuidStringToBytes,
+  uuidStringToPlainSlug,
+  plainSlugToUuidString,
 } from "../src/index";
 import { generatePortableUuidV4 } from "../src/v4";
 
 type RowOptions = Partial<
   Pick<
     GenerationCase,
-    "expectedTimestamps" | "note" | "outputOffset" | "rejectionReason" | "secure"
+    "expectedTimestamps" | "expectedValues" | "note" | "outputOffset" | "rejectionReason" | "secure"
   >
 > & { readonly qualification?: GenerationCase["qualification"] };
 
@@ -76,6 +80,29 @@ const timestampBytes = [
   unwrap(uuidStringToBytes(timestampUuids[0])),
   unwrap(uuidStringToBytes(timestampUuids[1])),
 ] as const;
+// slugid's bundled UUID parser accepts v4, so use the common supported version for conversions.
+const conversionUuids = [
+  "550e8400-e29b-41d4-a716-446655440000",
+  "ffffffff-ffff-4fff-bfff-ffffffffffff",
+] as const;
+const conversionSlugs = [
+  unwrap(uuidStringToPlainSlug(conversionUuids[0])),
+  unwrap(uuidStringToPlainSlug(conversionUuids[1])),
+] as const;
+const shortAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+const shortTranslator = createTranslator(shortAlphabet);
+// Numeric radix-64 pads on the left; UUID base64url pads trailing bits. The alphabet alone
+// cannot make these wire formats identical. Build independent witnesses outside timed calls.
+function numericSlug(value: string): string {
+  let bits = BigInt("0x" + value.replaceAll("-", ""));
+  let encoded = "";
+  for (let index = 0; index < 22; index += 1) {
+    encoded = shortAlphabet.charAt(Number(bits & 63n)) + encoded;
+    bits >>= 6n;
+  }
+  return encoded;
+}
+const numericSlugs = [numericSlug(conversionUuids[0]), numericSlug(conversionUuids[1])] as const;
 const offsetTimestampBytes = new Uint8Array(24);
 const offsetTimestampBytesSecond = new Uint8Array(24);
 offsetTimestampBytes.set(timestampBytes[0], 4);
@@ -132,6 +159,64 @@ const row = (
  * Other strategy differences matter only when they materially weaken the requested result.
  */
 export const generationCases: readonly GenerationCase[] = [
+  row(
+    "package.uuid.slug.encode",
+    4,
+    "uuid.slug.base64url.encode",
+    "validated-text",
+    alternating(conversionUuids, (value) => unwrap(uuidStringToPlainSlug(value))),
+    { expectedValues: [conversionSlugs[1], conversionSlugs[0]] },
+  ),
+  row(
+    "slugid.uuid.slug.encode",
+    4,
+    "uuid.slug.base64url.encode",
+    "validated-text",
+    alternating(conversionUuids, slugid.encode),
+    { expectedValues: [conversionSlugs[1], conversionSlugs[0]] },
+  ),
+  row(
+    "package.uuid.slug.decode",
+    4,
+    "uuid.slug.base64url.decode",
+    "validated-slug",
+    alternating(conversionSlugs, (value) => unwrap(plainSlugToUuidString(value))),
+    { expectedValues: [conversionUuids[1], conversionUuids[0]] },
+  ),
+  row(
+    "slugid.uuid.slug.decode",
+    4,
+    "uuid.slug.base64url.decode",
+    "validated-uuid-output",
+    alternating(conversionSlugs, slugid.decode),
+    {
+      expectedValues: [conversionUuids[1], conversionUuids[0]],
+      note: "Canonical valid input only; permissive slug padding is not compared.",
+    },
+  ),
+  row(
+    "short-uuid.uuid.slug.encode",
+    4,
+    "uuid.slug.numeric-base64url.encode",
+    "numeric-radix",
+    alternating(conversionUuids, (value) => shortTranslator.fromUUID(value)),
+    {
+      expectedValues: [numericSlugs[1], numericSlugs[0]],
+      note: "Same alphabet and lossless UUID job; different numeric wire format, not canonical base64url.",
+    },
+  ),
+  row(
+    "short-uuid.uuid.slug.decode",
+    4,
+    "uuid.slug.numeric-base64url.decode",
+    "numeric-radix",
+    alternating(numericSlugs, (value) => shortTranslator.toUUID(value)),
+    {
+      expectedValues: [conversionUuids[1], conversionUuids[0]],
+      note: "Translator setup is outside each call; input uses its numeric wire format.",
+    },
+  ),
+  row("slugid.v4.slug.base64url", 4, "v4.slug.base64url.secure", "pooled-portable", slugid.v4),
   row(
     "platform.webcrypto.v4.text",
     4,
