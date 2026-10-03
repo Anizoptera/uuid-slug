@@ -956,6 +956,26 @@ Raw evidence is in `bench/reports/primary-format-screen.log`, `primary-format-re
 `primary-format-mutation.log`; packed output is in `primary-format-packed.jsonl`,
 `primary-format-packed-repeat.jsonl` and `primary-format-browser-controls.jsonl`.
 
+Two wider-write source screens on 2026-10-03 retain the existing tables and native Latin-1
+conversion, replacing fixed byte stores with 16-bit or 32-bit DataView stores. Explicit
+little-endian stores preserve all characters and hyphens. One DataView remains over the existing
+scratch; no backing buffer is added, but the resource counters do not establish total view cost.
+Each screen runs two fresh processes per candidate on Node 26.10.0 and Bun 1.4.2, reversing the
+second acquisition order, with three 5 ms batches and 16 ms warm-up. The owning runtime tests and
+counted resources pass both intact candidates. Zeroing the final character fails Bun's independent
+offset-output assertion at `__test__/runtime-boundary-probe.ts:212` before timing.
+
+Bun default text reads 92.21/89.10 ns for the baseline, 91.61/94.08 ns for 16-bit writes and
+100.90/102.23 ns for 32-bit writes in the first screen. The repeat reads 91.34/87.08 ns,
+89.41/90.63 ns and 88.05/88.59 ns respectively. Byte-to-text conversion reads 41.86/41.88 ns,
+43.67/42.63 ns and 73.72/79.58 ns initially; the repeat reads 41.52/41.53 ns,
+42.91/41.24 ns and 40.84/41.67 ns. Neither candidate yields a consistent default-text and
+conversion gain, so neither earns a production change or packed replay. The first 32-bit losses
+do not reproduce; these short samples do not identify their cause or prove equivalence. Node
+controls also vary, including a large first-screen outlier on an unchanged selected formatter.
+Raw evidence is `bench/reports/primary-format-word-screen.log`, `primary-format-word-repeat.log`
+and `primary-format-word-mutation.log`; each names its isolated source and proof directory.
+
 The following Latin-1 comparison describes the earlier implementation, not the selected writers.
 
 Two packed `35ad052`-to-candidate replays on 2026-09-16 measured median ratios; every listed pair

@@ -90,6 +90,10 @@ ordinary constructor. These candidates measure complete owned-byte generation, n
 Use `format indexed-loop` to compare Bun's fixed UUID-text writes with its indexed loop through
 ordinary generation and byte-to-text conversion; `fixed-writes-lost-byte` must fail the last-byte
 oracle before timing. Tables, storage, case selection and string construction stay unchanged.
+Use `format word16 word32` to compare wider scratch writes with the fixed byte writer;
+`word32-lost-byte` must fail the independent last-byte oracle before timing. Both wider writers
+retain one DataView over the existing scratch; the counters do not establish its total heap cost.
+Explicit little-endian stores preserve character order independently of host byte order.
 Prefix a `UUID_SLUG_PROFILE_FILTER` term with `=` to select that exact case; other terms match
 substrings. Use exact terms when a successful-call comparison must exclude similarly named failures.
 Use `v7-draw independent-direct-lost-bit` to check the payload oracle: both runtime tests must

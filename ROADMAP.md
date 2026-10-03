@@ -32,6 +32,16 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       Restore cached text delegation: direct formatting has no reproduced primary Bun gain and
       the shared replay reports a Firefox text loss. Test buffer sharing independently.
       Reject it if reentrancy, transactional failures, ownership or another primary call deteriorates.
+  - [x] Compare Bun scratch writes at byte, 16-bit and 32-bit widths through complete default
+        generation, uppercase generation and byte-to-text conversion. Preserve tables, offsets,
+        hyphens and native string construction; account for the added retained DataView and
+        measure its initialization cost only if a repeated throughput gain survives.
+        Prove the independent formatter oracle rejects a missing final byte before timing.
+        Reject inconsistent gains, extra per-call allocation or another primary-call loss.
+        The missing-byte mutation fails Bun's independent offset-output oracle. Both intact
+        screens pass behavior and counted resources, but neither wider writer produces a
+        repeated default-text and conversion gain. The initial 32-bit losses do not repeat;
+        reject both candidates without attributing the variation to an engine mechanism.
   - [x] Isolate the default Bun text CPU profile before selecting another overhead candidate.
         Follow sampled parent links beneath the public call to exclude corpus setup and other
         operations. Both captures put text construction ahead of pooled copying; investigate

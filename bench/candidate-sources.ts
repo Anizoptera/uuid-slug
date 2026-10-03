@@ -480,8 +480,60 @@ function formatCandidates(source: string): readonly SourceCandidate[] {
     )
     .join("\n");
   const fixedSelected = source.includes(fixed);
+  // Wider stores exchange byte writes for packing and one retained view; complete calls decide
+  // whether that trade pays. Explicit little-endian stores preserve text on every host.
+  const wide = (width: 2 | 4, corrupt = false): string => {
+    const positions = new Map<number, string>();
+    const declarations = offsets.map((textOffset, byteIndex) => {
+      positions.set(textOffset, `codes[code${byteIndex}] as number`);
+      positions.set(textOffset + 1, `codes[code${byteIndex} + 1] as number`);
+      return `  const code${byteIndex} = (bytes[offset + ${byteIndex}] as number) * 2;`;
+    });
+    const stores =
+      width === 2
+        ? offsets.map(
+            (textOffset, byteIndex) =>
+              `  words.setUint16(${textOffset}, (codes[code${byteIndex}] as number) | ((codes[code${byteIndex} + 1] as number) << 8), true);`,
+          )
+        : Array.from({ length: 9 }, (_, block) => {
+            const packed = Array.from({ length: 4 }, (_character, index) => {
+              const value = positions.get(block * 4 + index) ?? "45";
+              return index === 0 ? `(${value})` : `((${value}) << ${index * 8})`;
+            }).join(" | ");
+            return `  words.setUint32(${block * 4}, ${packed}, true);`;
+          });
+    const body = [
+      "  const words = (uuidTextScratchWords ??= new DataView(text.buffer, text.byteOffset, text.byteLength));",
+      ...declarations,
+      ...stores,
+      ...(corrupt ? ["  text[35] = 0;"] : []),
+    ].join("\n");
+    return replaceOnce(
+      replaceOnce(source, fixedSelected ? fixed : loop, body),
+      "let uuidTextScratch: Latin1Scratch | undefined;",
+      "let uuidTextScratch: Latin1Scratch | undefined;\nlet uuidTextScratchWords: DataView | undefined;",
+    );
+  };
   return [
     { name: "baseline", source },
+    {
+      name: "word16",
+      get source() {
+        return wide(2);
+      },
+    },
+    {
+      name: "word32",
+      get source() {
+        return wide(4);
+      },
+    },
+    {
+      name: "word32-lost-byte",
+      get source() {
+        return wide(4, true);
+      },
+    },
     {
       name: fixedSelected ? "indexed-loop" : "fixed-writes",
       get source() {
