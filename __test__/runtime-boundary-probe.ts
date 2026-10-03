@@ -91,6 +91,34 @@ const hasCause = (value: unknown, target: unknown): boolean =>
 
 export const runtimeBoundaryCases = [
   {
+    name: "preserves owned module-default UUIDv7 bytes and every random tail bit",
+    run(this: void) {
+      // The created-generator corpus does not reach the module's cached default draw.
+      // Keep an early result alive to distinguish private output from reused scratch storage.
+      const first = generateUuidV7Bytes();
+      const snapshot = Uint8Array.from(first);
+      assert.equal(first.constructor, Uint8Array);
+      let seenOnes = 0;
+      let alwaysOnes = -1;
+      for (let draw = 0; draw < 256; draw += 1) {
+        const bytes = generateUuidV7Bytes();
+        assert.equal(bytes.constructor, Uint8Array);
+        assert.notEqual(bytes.buffer, first.buffer);
+        const tail =
+          ((bytes[12] as number) << 24) |
+          ((bytes[13] as number) << 16) |
+          ((bytes[14] as number) << 8) |
+          (bytes[15] as number);
+        seenOnes |= tail;
+        alwaysOnes &= tail;
+      }
+      assert.deepEqual(first, snapshot);
+      // A fixed bit has probability 2^-255 under independent unbiased draws. This detects
+      // lost bits, not bias, independence or cryptographic quality.
+      assert.equal(seenOnes ^ alwaysOnes, -1, "owned module bytes lost tail entropy");
+    },
+  },
+  {
     name: "keeps every random tail bit changing in module-default slugs and pairs",
     run(this: void) {
       // Created-generator fixtures bypass the module draw. Exercise its real entropy and both
