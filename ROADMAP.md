@@ -12,6 +12,10 @@ negligible remaining gap, preferably a reproduced advantage. Failure to detect a
 not equivalence: retain independent process observations and bound the remaining effect before
 closing a gap. Record measurements, rejected mechanisms and limits in `bench/PERFORMANCE.md`.
 Keep one implementation candidate active; screen narrowly, then retain only after packed replays.
+Measure the complete caller result before attributing a bottleneck to a component. For each
+candidate, state the removable work and its falsifier before changing code; include setup costs
+when a faster repeated call adds retained state. A runtime policy is not a physical limit:
+keep contract changes reserved for Art, and claim impossibility only with a named bound.
 
 - [x] Refresh the primary-call baseline from two maintained competitor runs; keep owned-byte,
       Bun default generation, encoding and Deno decoding gaps open, with resource parity unmeasured.
@@ -21,6 +25,8 @@ Keep one implementation candidate active; screen narrowly, then retain only afte
       keep the existing production implementation while investigating other mechanisms.
       Test a private generator scratch draw: module-default text must resolve its preset once,
       and module-default slug/pair must not validate package-owned storage as caller output.
+      Early evidence must show lower complete-call cost without new output allocation; compare
+      generator construction because the private draw method adds one function per generator.
       Reject it if reentrancy, transactional failures, ownership or another primary call deteriorates.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
