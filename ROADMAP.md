@@ -118,6 +118,8 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       retain only changes that do not regress primary calls or transactional writes.
 - [ ] Reconcile every retained change with owning comments, declarations and consumer docs;
       run full checks once for final delivery and commit each completed part with targeted intermediate checks.
+  - [x] Correct README's ambiguous-slug guidance to match the existing mask-first contract;
+        execute the dual-valid consumer test and preserve explicit source selection advice.
 
 - [x] Consolidate useful source experiments into the maintained benchmark harness, prove complete
       measurement output and isolated substitutions, preserve raw evidence, and document rerunning.

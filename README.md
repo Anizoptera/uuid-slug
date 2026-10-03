@@ -101,7 +101,8 @@ Operational contracts:
 Critical boundaries:
 
 - A 22-character base64url value can be a plain slug and a masked slug for different UUIDs.
-  On a masking codec, the requested output can select one meaning; UUID text and byte conversions reject a conflict.
+  A masking codec uses the first passing mask, then tries plain decoding if every mask rejects it.
+  Use a source-specific converter when you know the slug is plain or masked.
 - Masking hides recognizable UUIDv7 fields. It is not encryption, authentication, authorization,
   proof of issuance, or a replacement for record lookup and access checks.
 - Mask checks can accept a wrong key by chance. Readers try only the configured current and previous masks;
