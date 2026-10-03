@@ -38,6 +38,12 @@ slug effects unresolved and reports slower Firefox default text. The direct modu
 therefore has not earned replacing cached generator text delegation. Keep the buffer-sharing
 candidate separate from that text change; its resource benefit is one fewer retained 16-byte
 array, while complete-call speed still requires repeated evidence.
+`primary-buffer-only-resource-check.log` measures one array and one view for lazy text-generator
+initialization on Node and Bun. The maintained `duplicate-text-scratch` experiment restores the
+original array allocation, passes behavioral tests, then fails the Bun resource witness at
+two arrays against its limit of one. `primary-buffer-resource-mutation.log` identifies the
+preserved source and proof directory. This isolates retained setup storage; it does not measure
+total allocated bytes, startup latency or competitor resource parity.
 
 The `owned-range-zero` screen skips range validation only for fresh package-owned UUIDv7
 bytes at offset zero. Its Node and Bun byte medians improve in both acquisition orders, but
