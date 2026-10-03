@@ -135,8 +135,10 @@ if (
 const runtimes = runtimeInputs as ("node" | "bun" | "deno")[];
 const workRoot = await mkdtemp(join(tmpdir(), "uuid-slug-candidates-"));
 const tree = join(workRoot, "tree");
-const report = join(project, "bench/reports", `candidates-${group}-${Date.now()}`);
-await mkdir(report, { recursive: true });
+// Parallel proof runs must not overwrite each other's source, manifest or failure evidence.
+const reportRoot = join(project, "bench/reports");
+await mkdir(reportRoot, { recursive: true });
+const report = await mkdtemp(join(reportRoot, `candidates-${group}-`));
 let added = false;
 try {
   // Proof edits never touch the shared working tree; failures cannot erase another agent's edits.
