@@ -5,7 +5,7 @@ import { strict as assert } from "node:assert";
 // Change the capability before import in a fresh process: cached module selection cannot be
 // tested by replacing a method after the encoder has already captured it.
 const mode = process.argv[2];
-assert.ok(mode === "present" || mode === "absent" || mode === "throw");
+assert.ok(mode === "present" || mode === "absent" || mode === "throw" || mode === "corrupt");
 const descriptor = Object.getOwnPropertyDescriptor(Uint8Array.prototype, "toBase64");
 const original = descriptor?.value as
   | ((this: Uint8Array, options: { alphabet: "base64url"; omitPadding: boolean }) => string)
@@ -21,7 +21,8 @@ Object.defineProperty(Uint8Array.prototype, "toBase64", {
           calls += 1;
           if (mode === "throw") throw new Error("native encoding unavailable");
           assert.ok(original, "present-capability proof requires the real native encoder");
-          return original.call(this, options);
+          const result = original.call(this, options);
+          return mode === "corrupt" ? result.slice(0, 21) + "A" : result;
         },
 });
 const { encode, BASE64URL, BASE32HEX } = await import("../src/alphabet");

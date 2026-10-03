@@ -163,7 +163,7 @@ try {
         failures.map((result) => result.reason),
         `Candidate rejected before timing: ${candidate.name}`,
       );
-    if (group === "alphabet")
+    if (group === "alphabet") {
       for (const mode of ["present", "absent", "throw"]) {
         const output = await command("bun", ["__test__/alphabet-native-probe.ts", mode], tree, {
           UUID_SLUG_EXPECT_NATIVE_PLAIN: candidate.name === "baseline" ? "0" : "1",
@@ -172,6 +172,26 @@ try {
         if (!output.includes('"proof":"native plain encoding"'))
           throw new Error(`Native ${mode} proof produced no witness: ${candidate.name}`);
       }
+      if (candidate.name !== "baseline") {
+        // The injected output defect changes only the native return value. Require the fixed
+        // byte oracle to reject it; a green baseline that never selected native proves nothing.
+        const mutation = Bun.spawn(["bun", "__test__/alphabet-native-probe.ts", "corrupt"], {
+          cwd: tree,
+          timeout: 30_000,
+          env: { ...process.env, UUID_SLUG_EXPECT_NATIVE_PLAIN: "1" },
+          stdout: "pipe",
+          stderr: "pipe",
+        });
+        const [stdout, stderr, exitCode] = await Promise.all([
+          new Response(mutation.stdout).text(),
+          new Response(mutation.stderr).text(),
+          mutation.exited,
+        ]);
+        await writeFile(join(report, `${candidate.name}-native-corrupt.log`), stdout + stderr);
+        if (exitCode === 0 || !stderr.includes("AssertionError"))
+          throw new Error(`Native payload oracle did not reject corruption: ${candidate.name}`);
+      }
+    }
     for (const runtime of runtimes) {
       const entry = group === "v4" ? "bench/generation-host.ts" : "src/index.ts";
       const result = await Bun.build({
