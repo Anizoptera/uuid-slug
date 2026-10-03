@@ -4,6 +4,39 @@ Complete the remaining performance work without changing identifier formats, sec
 validation, ownership, or published generation guarantees. Preserve the unresolved clock guarantee;
 measure clock drift without imposing a new promise. Keep remote writes unauthorized.
 
+## Primary-call hillclimb
+
+Close the researched TypeScript gaps against the fastest equivalent runtime or library result,
+with no material speed or resource loss in another primary call. Art's target is a statistically
+negligible remaining gap, preferably a reproduced advantage. Failure to detect a difference is
+not equivalence: retain independent process observations and bound the remaining effect before
+closing a gap. Record measurements, rejected mechanisms and limits in `bench/PERFORMANCE.md`.
+Keep one implementation candidate active; screen narrowly, then retain only after packed replays.
+
+- [ ] Refresh the primary-call baseline from the maintained competitor matrix; distinguish module
+      defaults from created generators, equivalent rivals from native floors, and timing from resource evidence.
+- [ ] Close Bun default UUIDv7 text and plain-slug gaps: compare trusted-default specialization,
+      native output repair and pooled generation without changing timestamp or entropy contracts.
+- [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
+      allocation, secure-source work and sequence costs over the complete returned result.
+- [ ] Close Bun default UUIDv4 text and plain-slug gaps without weakening native-failure fallback.
+- [ ] Measure the module-default UUID-plus-slug call against one draw followed by both conversions;
+      remove internal option allocation or repeated validation only when complete-call evidence supports it.
+- [ ] Add equivalent slugid and short-uuid conversion comparisons to the existing matrix;
+      inspect their implementations, match alphabets and ownership, and exclude setup from per-ID calls.
+- [ ] Close Bun base64url encoding and Deno owned decoding gaps; compare native conversion with
+      full validation and plain Uint8Array ownership rather than an incomplete Buffer-only floor.
+- [ ] Measure parsed UUID formatting and slug conversion against direct conversion of the same
+      validated private bytes; remove repeated public-boundary work without adding unused representation caches.
+- [ ] Investigate generation failure-handling friction with executable caller examples; preserve
+      the approved default/configured distinction and submit any consumer-visible alternative for Art's ruling.
+- [ ] Compare primary-call resources and import costs against qualified alternatives through the
+      maintained profile and resource owners; keep unmeasured axes explicitly open.
+- [ ] Run secondary guard, timestamp and caller-buffer comparisons after the primary calls;
+      retain only changes that do not regress primary calls or transactional writes.
+- [ ] Reconcile every retained change with owning comments, declarations and consumer docs;
+      run full checks once for final delivery and commit each completed part with targeted intermediate checks.
+
 - [x] Consolidate useful source experiments into the maintained benchmark harness, prove complete
       measurement output and isolated substitutions, preserve raw evidence, and document rerunning.
 
