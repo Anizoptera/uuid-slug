@@ -3,8 +3,8 @@
 export type ProfileValue = string | number | boolean | Uint8Array | Error | object;
 export type ProfileCase = (index: number) => ProfileValue;
 
-/** Read both pair strings so a profiler cannot discard either representation's construction. */
-export function uuidPairChecksum(value: object, index: number): number | undefined {
+/** Read identifier fields so timing retains pair strings and immutable UUID construction. */
+export function uuidObjectChecksum(value: object, index: number): number | undefined {
   if (
     "uuid" in value &&
     typeof value.uuid === "string" &&
@@ -15,6 +15,10 @@ export function uuidPairChecksum(value: object, index: number): number | undefin
       value.uuid.charCodeAt(index % value.uuid.length) ^
       value.slug.charCodeAt(index % value.slug.length)
     );
+  if ("version" in value) {
+    const version: unknown = value.version;
+    if (typeof version === "number") return version;
+  }
   return undefined;
 }
 

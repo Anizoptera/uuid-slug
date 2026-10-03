@@ -21,7 +21,7 @@ import {
   WITHIN_PROCESS_BATCH_SAMPLE_UNIT,
 } from "../bench/statistics";
 import { describeCallLatency, sampleCallLatency } from "../bench/call-latency";
-import { selectProfileCases, uuidPairChecksum } from "../bench/profile-case";
+import { selectProfileCases, uuidObjectChecksum } from "../bench/profile-case";
 import { setImmediate as yieldToLoop } from "node:timers/promises";
 
 const speed = {
@@ -65,12 +65,26 @@ test("conversion witnesses reject lost payload bits after a valid first result",
   );
 });
 test("pair profiling consumes each returned spelling", () => {
-  expect(uuidPairChecksum({ uuid: "a", slug: "b" }, 0)).not.toBe(
-    uuidPairChecksum({ uuid: "c", slug: "b" }, 0),
+  expect(uuidObjectChecksum({ uuid: "a", slug: "b" }, 0)).not.toBe(
+    uuidObjectChecksum({ uuid: "c", slug: "b" }, 0),
   );
-  expect(uuidPairChecksum({ uuid: "a", slug: "b" }, 0)).not.toBe(
-    uuidPairChecksum({ uuid: "a", slug: "d" }, 0),
+  expect(uuidObjectChecksum({ uuid: "a", slug: "b" }, 0)).not.toBe(
+    uuidObjectChecksum({ uuid: "a", slug: "d" }, 0),
   );
+});
+
+test("immutable UUID profiling reads the generated version once", () => {
+  let reads = 0;
+  const value = {
+    get version() {
+      reads += 1;
+      return 7;
+    },
+  };
+  expect(uuidObjectChecksum(value, 0)).toBe(7);
+  expect(reads).toBe(1);
+  expect(uuidObjectChecksum({ version: 4 }, 0)).toBe(4);
+  expect(uuidObjectChecksum({ version: "7" }, 0)).toBeUndefined();
 });
 
 test("owned decoding witnesses reject Buffer subclasses and shared backing storage", () => {
