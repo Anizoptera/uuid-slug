@@ -542,6 +542,7 @@ export function createProfileCases(
         }
       : {}),
     "v7.string": () => api.generateUuidV7(),
+    "v7.string.uppercase": () => api.generateUuidV7(api.UUID_TEXT_UPPERCASE),
     ...createBoundsProfileCases(api, instant),
     "v7.bytes": () => api.generateUuidV7Bytes(),
     "v7.into": () => api.generateUuidV7Bytes(into, 4),
@@ -999,6 +1000,11 @@ export function createProfileCases(
           continue;
         }
         assertNormalizedUuidProfileOutcome(name, value, ids, index);
+        if (
+          name === "v7.string.uppercase" &&
+          (typeof value !== "string" || !api.isUuidV7Text(value) || value !== value.toUpperCase())
+        )
+          throw new Error("UUIDv7 uppercase generation did not preserve its text preset");
         if (
           ((name === "value.toString" || name === "value.toJSON") && value !== ids[index & 255]) ||
           (name === "value.toString.uppercase" && value !== ids[index & 255]!.toUpperCase()) ||
