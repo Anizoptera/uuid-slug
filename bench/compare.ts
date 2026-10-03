@@ -9,6 +9,8 @@ import type { Page } from "playwright";
 
 import { command } from "../scripts/command";
 import { describeSamples, medianConfidence95 } from "./statistics";
+import { CANDIDATE_FILES, CANDIDATE_GROUPS, createSourceCandidates } from "./candidate-sources";
+import type { CandidateGroup } from "./candidate-sources";
 
 type Revision = "baseline" | "candidate";
 type BrowserRuntime = "chromium" | "firefox" | "webkit";
@@ -39,11 +41,30 @@ interface ProfileRow {
 
 const project = join(import.meta.dir, "..");
 const smoke = process.argv.includes("--smoke");
-const positional = process.argv.slice(2).filter((value) => value !== "--smoke");
+const sourceOptions = process.argv
+  .slice(2)
+  .filter((value) => value.startsWith("--source-candidate="));
+if (sourceOptions.length > 1) throw new Error("Choose one source candidate per packed comparison.");
+const sourceOption = sourceOptions[0];
+const positional = process.argv
+  .slice(2)
+  .filter((value) => value !== "--smoke" && value !== sourceOption);
 const baselineRef = positional[0] ?? "HEAD^";
 const candidateRef = positional[1];
 if (positional.length > 2)
-  throw new Error("Usage: bun bench/compare.ts [baseline-ref] [candidate-ref] [--smoke]");
+  throw new Error(
+    "Usage: bun bench/compare.ts [baseline-ref] [candidate-ref] [--smoke] [--source-candidate=group:name]",
+  );
+const sourceParts = sourceOption?.slice("--source-candidate=".length).split(":");
+if (
+  sourceParts &&
+  (sourceParts.length !== 2 ||
+    !CANDIDATE_GROUPS.some((group) => group === sourceParts[0]) ||
+    !sourceParts[1])
+)
+  throw new Error(
+    `Source candidates require a known group and name: ${CANDIDATE_GROUPS.join(", ")}.`,
+  );
 const rounds = Number(process.env.UUID_SLUG_COMPARE_ROUNDS ?? (smoke ? 2 : 6));
 const duration = process.env.UUID_SLUG_PROFILE_MS ?? (smoke ? "1" : "5");
 const warmup = process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (smoke ? "2" : "16");
@@ -400,13 +421,46 @@ async function main(): Promise<void> {
   }
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-compare-"));
   const baselineRoot = join(scratch, "baseline");
-  const candidateRoot = candidateRef ? join(scratch, "candidate") : project;
+  const isolatedCandidate = candidateRef !== undefined || sourceParts !== undefined;
+  const candidateRoot = isolatedCandidate ? join(scratch, "candidate") : project;
   try {
     await command("git", ["worktree", "add", "--detach", baselineRoot, baselineRef], project);
     await symlink(join(project, "node_modules"), join(baselineRoot, "node_modules"), "dir");
-    if (candidateRef) {
-      await command("git", ["worktree", "add", "--detach", candidateRoot, candidateRef], project);
+    if (isolatedCandidate) {
+      await command(
+        "git",
+        ["worktree", "add", "--detach", candidateRoot, candidateRef ?? "HEAD"],
+        project,
+      );
       await symlink(join(project, "node_modules"), join(candidateRoot, "node_modules"), "dir");
+    }
+    if (sourceParts) {
+      // Pack the same committed graph with one maintained substitution. Never edit production
+      // merely to measure a candidate, and retain the exact replacement outside the scratch tree.
+      const group = sourceParts[0] as CandidateGroup;
+      const filename = CANDIDATE_FILES[group];
+      const source = await readFile(join(candidateRoot, filename), "utf8");
+      const candidate = createSourceCandidates(group, source).find(
+        ({ name }) => name === sourceParts[1],
+      );
+      if (!candidate) throw new Error(`Unknown ${group} source candidate: ${sourceParts[1]}`);
+      const candidateSource = candidate.source;
+      const reportRoot = join(project, "bench/reports");
+      await mkdir(reportRoot, { recursive: true });
+      const report = await mkdtemp(join(reportRoot, "packed-source-"));
+      await Bun.write(join(report, "source.txt"), candidateSource);
+      await Bun.write(
+        join(report, "manifest.json"),
+        JSON.stringify({
+          baselineRef,
+          candidateRef: candidateRef ?? "HEAD",
+          group,
+          name: candidate.name,
+          filename,
+        }),
+      );
+      await Bun.write(join(candidateRoot, filename), candidateSource);
+      console.error(`Packed source candidate evidence: ${report}`);
     }
     const baselineOut = join(scratch, "baseline-artifacts");
     const candidateOut = join(scratch, "candidate-artifacts");
@@ -495,7 +549,7 @@ async function main(): Promise<void> {
     console.error(`Compared ${baselineRef} with ${candidateRef ?? "the current worktree"}.`);
   } finally {
     await command("git", ["worktree", "remove", "--force", baselineRoot], project).catch(() => {});
-    if (candidateRef)
+    if (isolatedCandidate)
       await command("git", ["worktree", "remove", "--force", candidateRoot], project).catch(
         () => {},
       );

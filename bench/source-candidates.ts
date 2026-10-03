@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { execFile } from "node:child_process";
 import { stripVTControlCharacters } from "node:util";
 import { command } from "../scripts/command";
-import { CANDIDATE_GROUPS, createSourceCandidates } from "./candidate-sources";
+import { CANDIDATE_FILES, CANDIDATE_GROUPS, createSourceCandidates } from "./candidate-sources";
 import type { CandidateGroup } from "./candidate-sources";
 import { sampleMedian } from "./statistics";
 
@@ -56,7 +56,6 @@ const group = groupInput as CandidateGroup;
 // inheriting another group's file or measurements while reporting a successful screen.
 const groups = {
   v4: {
-    filename: "src/v4.ts",
     names: [
       "package.v4.text.native",
       "package.v4.text.portable",
@@ -67,7 +66,6 @@ const groups = {
     tests: [],
   },
   alphabet: {
-    filename: "src/alphabet.ts",
     names: [
       "bytes.base64",
       "plain.encode",
@@ -79,12 +77,10 @@ const groups = {
     tests: ["__test__/alphabet.test.ts"],
   },
   "v7-draw": {
-    filename: "src/v7.ts",
     names: ["v7.string", "v7.bytes", "v7.slug"],
     tests: ["__test__/v7.test.ts"],
   },
   keyless: {
-    filename: "src/v7-keyless.ts",
     names: [
       "v7.string",
       "v7.string.uppercase",
@@ -95,11 +91,9 @@ const groups = {
     ],
     tests: ["__test__/v7.test.ts"],
   },
-} satisfies Record<
-  CandidateGroup,
-  { filename: string; names: readonly string[]; tests: readonly string[] }
->;
-const { filename, names: expectedNames } = groups[group];
+} satisfies Record<CandidateGroup, { names: readonly string[]; tests: readonly string[] }>;
+const filename = CANDIDATE_FILES[group];
+const { names: expectedNames } = groups[group];
 // A committed production graph makes the detached checkout match the source being screened.
 if (
   (

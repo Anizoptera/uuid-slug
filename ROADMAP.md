@@ -53,6 +53,11 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         The refined repeat has large swings in unchanged controls; packed retention remains open.
         Both preset and option mutations fail the intended Node and Bun assertions in unique
         report directories. Preserve these proofs; do not use collided report manifests.
+  - [ ] Compare the surviving thin configured wrapper through isolated packed artifacts on every
+        affected engine; reuse the existing paired comparison and its confidence bounds.
+        Extend it to consume maintained source candidates without changing the shared production
+        tree. Reject reproduced configured or primary-call losses; do not infer retention from
+        source bundling, noisy controls or an unavailable clock ruling.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
       Screen `owned-range-zero`: skip range validation only for package-owned fresh 16-byte output

@@ -8,6 +8,12 @@ export interface SourceCandidate {
 
 export const CANDIDATE_GROUPS = ["v7-draw", "v4", "alphabet", "keyless"] as const;
 export type CandidateGroup = (typeof CANDIDATE_GROUPS)[number];
+export const CANDIDATE_FILES = {
+  "v7-draw": "src/v7.ts",
+  v4: "src/v4.ts",
+  alphabet: "src/alphabet.ts",
+  keyless: "src/v7-keyless.ts",
+} as const satisfies Record<CandidateGroup, string>;
 
 function replaceOnce(source: string, from: string, to: string): string {
   // An old experiment must fail after its mechanism moves, never time an unchanged replacement.
