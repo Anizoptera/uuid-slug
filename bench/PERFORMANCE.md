@@ -2,6 +2,40 @@ Choose each runtime's writer from repeated consumer-call measurements, including
 
 # Performance study
 
+## Primary TypeScript call review
+
+Two competitor matrices on 2026-10-03 retain three fresh-process medians per row, each from
+five 5 ms batches after 16 ms warm-up. The raw files are
+`bench/reports/primary-review.jsonl` and `bench/reports/primary-review-repeat.jsonl`.
+Node 26.10.0, Node 24.21.0, Bun 1.4.2, Deno 2.9.7 and Chromium 153.0.8010.12 run on one M4 Max.
+These short observations screen throughput; they do not establish resource parity or individual-call latency.
+
+Bun default UUIDv7 text costs 86–87 ns against native 44–47 ns, and its plain slug costs
+76–78 ns against native 60–61 ns. Native burst timestamp drift keeps those rows as floors rather
+than approved replacements. Owned UUIDv7 bytes trail `uuid` on Bun and `uuidv7` on Deno.
+Bun base64url encoding trails native encoding; Deno owned decoding trails a Buffer-only floor
+that does not supply the promised plain Uint8Array. Most ordinary Node and Chromium generation
+and conversion calls lead the measured libraries; earlier timestamp-library losses are superseded.
+
+The maintained source screen compares `numeric-clock-first` and `timestamp-words` with its
+unchanged baseline in both acquisition orders on Node 26.10.0 and Bun 1.4.2. Run
+`bun bench/source-candidates.ts v7-draw numeric-clock-first timestamp-words` with the desired
+`UUID_SLUG_COMPARE_NODE_EXECUTABLE`. Both owning runtime proofs pass before timing.
+The raw screen is `bench/reports/primary-clock-screen.log` and its reported artifact directory.
+Numeric-first clock recognition has inconsistent Node direction and loses Bun owned-byte calls;
+fixed timestamp stores lose Bun owned-byte and slug calls. Neither earns a production change.
+Three short batches per process cannot establish small-effect equivalence or a physical floor.
+
+Default-pair comparisons retain seven fresh-process medians per row, each from five 10 ms
+batches after 32 ms warm-up, in `primary-pair-baseline.jsonl` and `primary-pair-repeat.jsonl`.
+The dedicated pair costs 137–137 ns on Node Current versus 151–151 ns for one owned-byte draw
+and both public conversions; Node LTS costs 134–135 versus 147–147, Chromium 134–134 versus
+139–139, and Deno 124–124 versus 216–216. Bun costs 120–126 versus 125–126 with inconsistent
+separation. Both strings are consumed and an independent decoding witness requires equal UUID
+payloads. Caller composition does not replace the dedicated pair; the Bun internal preset-path
+cost remains a candidate, not an established defect. These are same-machine throughput results,
+not packed-revision improvement or allocation measurements.
+
 This measurement compares performance baseline `37f6258` with `2c5ba55` on an Apple M4 Max with 128 GiB RAM, Node 26.8.1 and Bun 1.4.2. It is a local experiment, not a cross-hardware speed guarantee. Runtime dependencies and public wire formats are unchanged.
 
 ## Identifier integrity boundaries

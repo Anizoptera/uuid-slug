@@ -98,6 +98,28 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
+      // Ordinary clock numbers need no cross-realm error recognition; keep it for other readings.
+      name: "numeric-clock-first",
+      get source() {
+        return replaceOnce(
+          source,
+          "if (isUuidSlugError(reading)) return reading;",
+          'if (typeof reading !== "number" && isUuidSlugError(reading)) return reading;',
+        );
+      },
+    },
+    {
+      // Compare complete draws: a writer-only win may disappear behind clock and entropy costs.
+      name: "timestamp-words",
+      get source() {
+        return replaceOnce(
+          source,
+          "const writeTimestamp = (globalThis as { Bun?: object }).Bun\n  ? writeTimestampLoop\n  : writeTimestampWords;",
+          "const writeTimestamp = writeTimestampWords;",
+        );
+      },
+    },
+    {
       // The known default needs no normalization; other inputs retain the shared resolver.
       name: "lowercase-fast",
       get source() {

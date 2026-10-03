@@ -28,6 +28,8 @@ import {
   generateUuidV4Bytes,
   generateUuidV7,
   generateUuidV7Bytes,
+  generateUuidV7WithPlainSlug,
+  bytesToUuidString,
   generatePlainUuidV4Slug,
   generatePlainUuidV7Slug,
   UUID_V7_TEST_MASK,
@@ -226,6 +228,14 @@ export const generationCases: readonly GenerationCase[] = [
   row("package.v7.text.default", 7, "v7.text.secure", "module-default", () =>
     unwrap(generateUuidV7()),
   ),
+  row("package.v7.pair.default", 7, "v7.pair.secure", "module-default", () =>
+    unwrap(generateUuidV7WithPlainSlug()),
+  ),
+  row("package.v7.pair.composed", 7, "v7.pair.secure", "composed", () => {
+    // One draw is the equivalent consumer job; separate generators would produce unrelated IDs.
+    const bytes = unwrap(generateUuidV7Bytes());
+    return { uuid: unwrap(bytesToUuidString(bytes)), slug: unwrap(uuidBytesToPlainSlug(bytes)) };
+  }),
   row("package.v7.text.portable", 7, "v7.text.secure", "portable", () =>
     unwrap(portableV7.generateUuidV7()),
   ),

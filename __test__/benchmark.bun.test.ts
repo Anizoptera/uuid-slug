@@ -11,6 +11,7 @@ import type { ReportRecord } from "../bench/generation-report";
 import { parseReport } from "../bench/matrix";
 import { verifyGenerationCase } from "../bench/generation-case";
 import type { GenerationCase } from "../bench/generation-case";
+import { uuidStringToPlainSlug } from "../src/index";
 import {
   aggregateForkSamples,
   describeSamples,
@@ -62,6 +63,27 @@ test("conversion witnesses reject lost payload bits after a valid first result",
     "no fixed conversion witnesses",
   );
 });
+test("pair witnesses reject two valid spellings of different UUIDs", () => {
+  const uuid = "01990d4d-e600-7000-8000-000000000000";
+  const slug = uuidStringToPlainSlug(uuid);
+  if (slug instanceof Error) throw slug;
+  const candidate: GenerationCase = {
+    comparable: "v7.pair.secure",
+    implementation: "fixture",
+    name: "pair",
+    operation: () => ({ uuid, slug }),
+    qualification: "qualified",
+    version: 7,
+  };
+  expect(() => verifyGenerationCase(candidate)).not.toThrow();
+  expect(() =>
+    verifyGenerationCase({
+      ...candidate,
+      operation: () => ({ uuid: "01990d4d-e600-7000-8000-000000000001", slug }),
+    }),
+  ).toThrow("mismatched UUID and slug payloads");
+});
+
 const entropy = {
   runtime: "fixture 1",
   candidate: "measured",

@@ -13,10 +13,12 @@ not equivalence: retain independent process observations and bound the remaining
 closing a gap. Record measurements, rejected mechanisms and limits in `bench/PERFORMANCE.md`.
 Keep one implementation candidate active; screen narrowly, then retain only after packed replays.
 
-- [ ] Refresh the primary-call baseline from the maintained competitor matrix; distinguish module
-      defaults from created generators, equivalent rivals from native floors, and timing from resource evidence.
+- [x] Refresh the primary-call baseline from two maintained competitor runs; keep owned-byte,
+      Bun default generation, encoding and Deno decoding gaps open, with resource parity unmeasured.
 - [ ] Close Bun default UUIDv7 text and plain-slug gaps: compare trusted-default specialization,
       native output repair and pooled generation without changing timestamp or entropy contracts.
+      Clock-number-first recognition and fixed timestamp stores fail the repeated primary-call screen;
+      keep the existing production implementation while investigating other mechanisms.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
 - [ ] Close Bun default UUIDv4 text and plain-slug gaps without weakening native-failure fallback.

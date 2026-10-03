@@ -1,8 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { plainSlugToUuidBytes } from "../src/index";
+import { bytesToUuidString, plainSlugToUuidBytes } from "../src/index";
 
-export type GenerationValue = number | string | boolean | Uint8Array | Readonly<Uint8Array>;
+export type GenerationValue =
+  | number
+  | string
+  | boolean
+  | Uint8Array
+  | Readonly<Uint8Array>
+  | { readonly uuid: string; readonly slug: string };
 
 export interface GenerationCase {
   readonly comparable: string;
@@ -38,6 +44,20 @@ export function verifyGenerationCase(candidate: GenerationCase): void {
     return;
   }
   const value = candidate.operation();
+  if (candidate.comparable.includes(".pair.")) {
+    // Valid independent identifiers are not a pair: both spellings must preserve the same bits.
+    if (typeof value !== "object" || !("uuid" in value) || !("slug" in value))
+      throw new Error(`${candidate.name} did not return a UUID and slug pair`);
+    const bytes = plainSlugToUuidBytes(value.slug);
+    if (
+      !(bytes instanceof Uint8Array) ||
+      bytes[6]! >>> 4 !== candidate.version ||
+      (bytes[8]! & 0xc0) !== 0x80 ||
+      bytesToUuidString(bytes) !== value.uuid
+    )
+      throw new Error(`${candidate.name} returned mismatched UUID and slug payloads`);
+    return;
+  }
   if (candidate.expectedTimestamps !== undefined) {
     if (typeof value !== "number" || !candidate.expectedTimestamps.includes(value))
       throw new Error(`${candidate.name} returned the wrong UUIDv7 timestamp`);

@@ -34,7 +34,10 @@ function consume(value: GenerationValue, index: number): void {
         ? Number(value)
         : typeof value === "string"
           ? value.charCodeAt(index % value.length)
-          : (value[index % value.length] ?? 0);
+          : "uuid" in value
+            ? value.uuid.charCodeAt(index % value.uuid.length) ^
+              value.slug.charCodeAt(index % value.slug.length)
+            : (value[index % value.length] ?? 0);
 }
 
 function batch(candidate: GenerationCase, count: number): void {
