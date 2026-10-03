@@ -29,6 +29,19 @@ the package over both repaired forms. Reject those two mechanisms, not every pos
 repair. The small process sample does not establish small-effect equivalence, call p99, startup
 cost or a physical floor; the matrices share one machine and fixed within-process case order.
 
+Two Bun 1.4.2 CPU captures on 2026-10-03 select only `=v7.string` through the maintained
+`bench/profile.ts` corpus, with seven 20 ms batches and 16 ms warm-up. Raw files are
+`bench/reports/primary-v7-default-only.cpuprofile` and
+`bench/reports/primary-v7-default-only-repeat.cpuprofile`, with matching JSONL records.
+The CLI profiler includes import and corpus verification, so attribution follows parent links
+and counts only samples beneath the public `generateUuidV7` frame in `src/v7-keyless.ts`.
+That frame contains 93/119 and 88/114 total samples. Native string conversion plus the Latin-1
+formatter account for 56/93 and 51/88 of those caller samples; pooled copying accounts for two
+in each capture. This supports investigating text construction before pool-copy changes for
+this default-text call. It does not establish exact time fractions: sampling is coarse,
+inlining can hide frames, and both captures share one machine. No allocation total, improvement,
+native parity or conclusion about byte and slug calls follows from these profiles.
+
 Before the fixed text writes, the earlier matrices measured Bun default UUIDv7 text at
 86–87 ns against native 44–47 ns, and plain slugs at 76–78 ns against native 60–61 ns.
 Native burst timestamp drift keeps those rows as floors rather

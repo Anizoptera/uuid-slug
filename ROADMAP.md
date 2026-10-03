@@ -32,6 +32,11 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       Restore cached text delegation: direct formatting has no reproduced primary Bun gain and
       the shared replay reports a Firefox text loss. Test buffer sharing independently.
       Reject it if reentrancy, transactional failures, ownership or another primary call deteriorates.
+  - [x] Isolate the default Bun text CPU profile before selecting another overhead candidate.
+        Follow sampled parent links beneath the public call to exclude corpus setup and other
+        operations. Both captures put text construction ahead of pooled copying; investigate
+        fewer formatting writes or native string work before changing the entropy pool for text.
+        Coarse sampling does not establish exact costs or justify a production change.
   - [x] Compare native UUIDv4 text repaired to UUIDv7 against native UUIDv7, package generation
         and qualified libraries. Preserve all 74 payload bits and the current clock timestamp;
         compare numeric hexadecimal prefixes with fixed character prefixes on complete calls.
