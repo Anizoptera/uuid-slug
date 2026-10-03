@@ -45,6 +45,7 @@ const v7Text = () =>
   (textGenerator ??= createPortableUuidV7Generator({
     coordinateExplicitInstants: false,
     fillRandom: runtime.fillRandom,
+    textScratch: keylessTextBytes,
   }));
 const v7Bytes = () =>
   (byteGenerator ??= createPortableUuidV7Generator({
@@ -94,7 +95,7 @@ export const uuidV7BytesAt = (at: unknown): Uint8Array | UuidSlugError => drawAt
  * (bench/PERFORMANCE.md), rather than assuming fewer checks improve every runtime.
  */
 export const currentUuidV7Scratch = (): Uint8Array | UuidSlugError =>
-  v7Text().drawCurrentUuidV7Scratch();
+  v7Text().drawUuidV7Bytes(undefined, keylessTextBytes);
 export const uuidV7ScratchAt = (at: unknown): Uint8Array | UuidSlugError =>
   drawAt(v7Text(), at, keylessTextBytes);
 let generateDefaultUuidV7Bytes: PortableUuidV7Generator["generateUuidV7Bytes"] | undefined;

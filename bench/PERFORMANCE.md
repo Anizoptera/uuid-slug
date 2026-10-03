@@ -26,6 +26,14 @@ Numeric-first clock recognition has inconsistent Node direction and loses Bun ow
 fixed timestamp stores lose Bun owned-byte and slug calls. Neither earns a production change.
 Three short batches per process cannot establish small-effect equivalence or a physical floor.
 
+The private scratch-draw method in `199a1b9` removes repeated selector and buffer work,
+but adds a function to every constructed generator. `primary-scratch-screen.jsonl` and
+`primary-scratch-all-replay.jsonl` leave most Bun effects unresolved; the broad Node replay
+has large uncertainty intervals. `primary-scratch-all-repeat.jsonl` is excluded from retention
+because a commit hook started before its process was observed complete. Prefer testing whether
+the module's existing scratch can serve as the generator's text buffer: that avoids the extra
+method and a duplicate retained array without changing caller-owned output validation.
+
 The `owned-range-zero` screen skips range validation only for fresh package-owned UUIDv7
 bytes at offset zero. Its Node and Bun byte medians improve in both acquisition orders, but
 Deno byte medians rise from 152–153 ns to 156 ns and Bun text medians also rise. The raw

@@ -42,6 +42,9 @@ interface PortableUuidV7GeneratorOptions {
   readonly subMillisecondFractionBits?: number;
   /** Keep explicit instants in this generator's ordering and rollback state. */
   readonly coordinateExplicitInstants?: boolean;
+  // Module writers share their private 16-byte storage with text generation. Public construction
+  // never supplies this control; caller buffers must continue through the range checks below.
+  readonly textScratch?: Uint8Array<ArrayBuffer>;
 }
 
 // The slug and value methods are attached by the public seam, which owns the slug encoder and the
@@ -60,9 +63,6 @@ export type PortableUuidV7Generator = Omit<
     output?: Uint8Array,
     outputOffset?: number,
   ) => Uint8Array | UuidSlugError;
-  // Only package writers may borrow this buffer, and they must finish before another draw.
-  // The existing bytes() guard still contains clock/entropy reentrancy and failed draws.
-  readonly drawCurrentUuidV7Scratch: () => Uint8Array | UuidSlugError;
 };
 
 const UUID_V7_TEXT_OPTIONS = {
@@ -196,7 +196,7 @@ export function createPortableUuidV7Generator(
   let counterHi = 0;
   let counterLo = 0;
   let generating = false;
-  const textBytes = new Uint8Array(16);
+  const textBytes = options.textScratch ?? new Uint8Array(16);
 
   function reseed(ms: number, fraction: number) {
     const failed = fillRandomBytes(fill, random);
@@ -434,6 +434,5 @@ export function createPortableUuidV7Generator(
     generateUuidV7,
     generateUuidV7Bytes,
     drawUuidV7Bytes,
-    drawCurrentUuidV7Scratch: () => bytes(textBytes),
   };
 }

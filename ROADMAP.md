@@ -27,6 +27,8 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       and module-default slug/pair must not validate package-owned storage as caller output.
       Early evidence must show lower complete-call cost without new output allocation; compare
       generator construction because the private draw method adds one function per generator.
+      Refine the candidate by sharing the module's existing scratch with its private text generator;
+      remove the added method and duplicate retained array, then repeat without competing hooks.
       Reject it if reentrancy, transactional failures, ownership or another primary call deteriorates.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
