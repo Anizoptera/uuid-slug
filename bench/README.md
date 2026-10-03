@@ -42,6 +42,8 @@ Rules:
   requested result needs them; report an absent capability instead of timing a substitute as native.
   Owned decoding compares native arrays, native writes into a fresh array, and Buffer decoding
   followed by a copy. A view over Buffer's pooled storage does not provide private backing storage.
+  Keep Buffer-only decoding timed with an explicit ownership rejection; it cannot win the
+  equivalent-result ranking for an owned plain array.
 - The entropy audit brackets its existing draw burst with wall-clock reads. Compare the largest
   encoded timestamp with the ending clock. The difference and clock change are observations,
   not proof that the wall clock stayed monotonic throughout the burst. Encoded-timestamp counts

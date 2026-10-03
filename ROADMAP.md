@@ -50,6 +50,9 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         Both screens favor smaller wrappers for Bun text but slow Node/Deno explicit-time calls.
         Test a cold helper containing only the configured tail, removing the duplicated preset
         branch; retain it only if the primary gain survives without that configured-call loss.
+        The refined repeat has large swings in unchanged controls; packed retention remains open.
+        Both preset and option mutations fail the intended Node and Bun assertions in unique
+        report directories. Preserve these proofs; do not use collided report manifests.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
       Screen `owned-range-zero`: skip range validation only for package-owned fresh 16-byte output
@@ -80,6 +83,10 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         faster but do not supply the promised owned array; total resource parity stays unmeasured.
   - [ ] Compare Deno decoding resources against the equivalent native methods; retain the
         current decoder unless another complete, owned result reproduces a worthwhile advantage.
+  - [x] Exclude Buffer-only slug decoding from equivalent-result ranking while keeping it timed;
+        require the native copy when comparing caller-private plain arrays, and prove the report
+        does not declare the incomplete Buffer result its qualified winner. The five-runtime
+        smoke comparison selects only owned alternatives; the incomplete floor remains visible.
 - [ ] Measure parsed UUID formatting and slug conversion against direct conversion of the same
       validated private bytes; remove repeated public-boundary work without adding unused representation caches.
       Two complete packed replays reproduce default-text gains across every tested engine and

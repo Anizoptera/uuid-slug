@@ -11,6 +11,7 @@ import type { ReportRecord } from "../bench/generation-report";
 import { parseReport } from "../bench/matrix";
 import { verifyGenerationCase } from "../bench/generation-case";
 import type { GenerationCase } from "../bench/generation-case";
+import { createConversionCases } from "../bench/conversion-cases";
 import { uuidStringToPlainSlug } from "../src/index";
 import {
   aggregateForkSamples,
@@ -93,6 +94,23 @@ test("owned decoding witnesses reject Buffer subclasses and shared backing stora
     expect(() => verifyGenerationCase({ ...candidate, operation })).toThrow(
       "fresh plain Uint8Array storage",
     );
+});
+
+test("native Buffer decoding remains timed without qualifying as an owned result", () => {
+  const { cases } = createConversionCases(Buffer);
+  const borrowed = cases.find(({ name }) => name === "platform.buffer.conversion.slug.bytes");
+  const owned = cases.find(({ name }) => name === "platform.buffer-copy.conversion.slug.bytes");
+  expect(borrowed).toBeDefined();
+  expect(owned).toBeDefined();
+  expect(borrowed!.qualification).toBe("rejected");
+  expect(borrowed!.rejectionReason).toContain("caller-private plain Uint8Array");
+  expect(() => verifyGenerationCase(borrowed!)).not.toThrow();
+  // Matching bytes do not establish the ownership the qualified comparison requires.
+  expect(() => verifyGenerationCase({ ...borrowed!, ownedBytes: true })).toThrow(
+    "fresh plain Uint8Array storage",
+  );
+  expect(owned!.qualification).toBe("qualified");
+  expect(() => verifyGenerationCase(owned!)).not.toThrow();
 });
 
 test("pair witnesses reject two valid spellings of different UUIDs", () => {

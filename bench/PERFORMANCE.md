@@ -2452,6 +2452,12 @@ Three matrices on 2026-10-03 use seven fresh-process medians per row, five 10 ms
 The raw files are `primary-owned-decode-comparison.jsonl`, `primary-owned-decode-repeat.jsonl`
 and `primary-owned-decode-independent.jsonl` in `bench/reports/`. The last two execute the
 ownership witnesses. Costs vary broadly between runs; these processes share machine conditions.
+Their automatic comparison summaries include the Buffer-only result and do not rank equal
+ownership contracts; compare the individual owned rows. The qualification smoke in
+`primary-owned-ranking-smoke.jsonl` excludes Buffer-only results from all five runtime rankings
+and retains an explicit rejection on each runtime offering Buffer. Its short smoke timings prove
+report routing, not performance. `primary-owned-ranking-proof.log` records 40 passing tests,
+including actual Buffer bytes rejected by the owned-storage witness.
 
 On Deno the last two package medians are 292 and 160 ns, against 452 and 244 ns for Buffer
 decoding plus copying, 550 and 293 ns for `fromBase64`, and 521 and 286 ns for native writes

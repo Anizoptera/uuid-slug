@@ -69,6 +69,7 @@ export function createConversionCases(nodeBuffer?: typeof Buffer) {
     expectedValues: readonly GenerationValue[],
     operation: (input: Input) => GenerationValue,
     ownedBytes = false,
+    rejectionReason?: string,
   ): void {
     let next = 0;
     cases.push({
@@ -77,7 +78,8 @@ export function createConversionCases(nodeBuffer?: typeof Buffer) {
       name,
       expectedValues,
       operation: () => operation(inputs[next++ % inputs.length]!),
-      qualification: "qualified",
+      qualification: rejectionReason === undefined ? "qualified" : "rejected",
+      ...(rejectionReason === undefined ? {} : { rejectionReason }),
       ...(ownedBytes ? { ownedBytes: true as const } : {}),
       // All rows share this UUIDv7 input corpus; these are conversions, not generation promises.
       version: 7,
@@ -229,7 +231,15 @@ export function createConversionCases(nodeBuffer?: typeof Buffer) {
     add("platform.buffer.conversion.bytes.slug", "conversion.bytes.slug", bytes, slugs, (input) =>
       view(input).toString("base64url"),
     );
-    add("platform.buffer.conversion.slug.bytes", "conversion.slug.bytes", slugs, bytes, decodeSlug);
+    add(
+      "platform.buffer.conversion.slug.bytes",
+      "conversion.slug.bytes",
+      slugs,
+      bytes,
+      decodeSlug,
+      false,
+      "Returns a Buffer rather than a caller-private plain Uint8Array; keep its cost as an incomplete native floor.",
+    );
     add(
       "platform.buffer-copy.conversion.slug.bytes",
       "conversion.slug.bytes",
