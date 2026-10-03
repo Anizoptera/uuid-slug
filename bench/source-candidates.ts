@@ -102,6 +102,17 @@ const groups = {
     names: ["value.generate", "value.generate.at", "v7.bytes"],
     tests: ["__test__/v7.test.ts"],
   },
+  "value-options": {
+    names: [
+      "value.generate",
+      "value.generate.at",
+      "value.generate.generator",
+      "value.generate.codec",
+      "masked.generate",
+      "masked.base32.generate",
+    ],
+    tests: ["__test__/v7.test.ts", "__test__/mask.test.ts"],
+  },
 } satisfies Record<CandidateGroup, { names: readonly string[]; tests: readonly string[] }>;
 const filename = CANDIDATE_FILES[group];
 const { names: expectedNames } = groups[group];

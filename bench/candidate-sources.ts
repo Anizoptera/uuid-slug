@@ -13,6 +13,7 @@ export const CANDIDATE_GROUPS = [
   "keyless",
   "format",
   "value",
+  "value-options",
 ] as const;
 export type CandidateGroup = (typeof CANDIDATE_GROUPS)[number];
 export const CANDIDATE_FILES = {
@@ -22,6 +23,7 @@ export const CANDIDATE_FILES = {
   keyless: "src/v7-keyless.ts",
   format: "src/uuid.ts",
   value: "src/v7-value.ts",
+  "value-options": "src/v7-value-options.ts",
 } as const satisfies Record<CandidateGroup, string>;
 
 function replaceOnce(source: string, from: string, to: string): string {
@@ -377,8 +379,27 @@ export function createSourceCandidates(
     keyless: keylessCandidates,
     format: formatCandidates,
     value: valueCandidates,
+    "value-options": valueOptionCandidates,
   } satisfies Record<CandidateGroup, (source: string) => readonly SourceCandidate[]>;
   return builders[group](source);
+}
+
+function valueOptionCandidates(source: string): readonly SourceCandidate[] {
+  // All consumers only read this record. Compare one frozen empty record with per-call
+  // allocation while leaving public control flow and configured reads intact.
+  const shared = replaceOnce(
+    replaceOnce(
+      source,
+      "/** Read untrusted value-generation options once and reject every unsupported key. */",
+      "const EMPTY_UUID_V7_VALUE_OPTIONS: UuidV7ValueOptionValues = Object.freeze({});\n\n/** Read untrusted value-generation options once and reject every unsupported key. */",
+    ),
+    "if (options === undefined) return {};",
+    "if (options === undefined) return EMPTY_UUID_V7_VALUE_OPTIONS;",
+  );
+  return [
+    { name: "baseline", source },
+    { name: "shared-empty", source: shared },
+  ];
 }
 
 function valueCandidates(source: string): readonly SourceCandidate[] {

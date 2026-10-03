@@ -707,6 +707,8 @@ export function createProfileCases(
     "value.parse.structural": (index) => api.parseUuid(ids[index & 255] as string, structuralCodec),
     "value.generate": () => api.generateUuidV7Value(),
     "value.generate.at": (index) => api.generateUuidV7Value({ at: instant + (index & 255) }),
+    "value.generate.generator": () => selectedGenerator.generateUuidV7Value(),
+    "value.generate.codec": () => codec.generateUuidV7Value(),
     "value.toString": (index) => values[index & 255]!.toString(),
     "value.toString.uppercase": (index) => values[index & 255]!.toString(api.UUID_TEXT_UPPERCASE),
     "value.toJSON": (index) => values[index & 255]!.toJSON(),

@@ -147,11 +147,20 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       Bun, Chromium and Deno defaults. Native profiles cover all presets and controls. Resolve the
       second replay's unchanged Node control losses before closure; Firefox and WebKit default effects
       remain unresolved. Preserve selected-generator behavior.
-- [ ] Screen the argument-free UUIDv7 value call without its empty options record and absent-field
+- [x] Screen the argument-free UUIDv7 value call without its empty options record and absent-field
       readers; preserve the owned bytes, immutable value, payload layout and thrown entropy failure.
       Require the lost-throw mutation to fail both runtime tests before timing. Compare the full
       value call twice with explicit-time value and owned-byte controls; replay packed consumers
       and profiles only if the gain survives.
+      The lost throw fails both runtime oracles. Packed early-branch and split-helper calls raise
+      configured Node costs; reject both despite default-call gains. Shared field consumption
+      now covers host, browser and Bun memory profiling; older shape-only rows do not prove that job.
+  - [x] Compare a shared frozen empty record without changing public generation control flow;
+        include generator and codec values and both masked alphabets because they share the reader.
+        Reject any primary-call loss; one record must not retain caller data or become mutable.
+        Both screens pass behavior/resources but codec-value costs rise in three of four Bun
+        processes and Node effects vary. Reject the record before packed replay; retain no
+        production substitution. Phase 4's complete value comparison and resource goals stay open.
 - [x] Add equivalent slugid and short-uuid conversion comparisons to the existing matrix;
       inspect their implementations, match alphabets and ownership, and exclude setup from per-ID calls.
       Compare canonical v4 conversion against slugid; retain short-uuid's numeric radix-64 spelling

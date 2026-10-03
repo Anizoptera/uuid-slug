@@ -19,6 +19,30 @@ small default wrapper with a separate configured helper. Its default-call result
 split on Node, show a small or unresolved Bun effect, and do not settle Deno. Packed comparisons
 must decide retention; no production optimization follows from these samples alone.
 
+The six-pair packed `primary-value-packed.jsonl` comparison selects `default-split`, while
+`primary-value-shared-packed.jsonl` selects `default-fast`. Both use normal packed imports,
+alternating revision order, rotated runtime order, fresh processes, 5 ms batches and 16 ms warm-up.
+The second comparison shares UUID field consumption across host and browser timing; the first
+comparison's browser results still consume only object shape and cannot establish the same job.
+Node 26.10.0 explicit-time calls cost 1.108 times baseline with the split and 1.129 times with
+the early branch; their reported 95% median-ratio intervals are [1.06, 1.15] and [1.10, 1.19].
+The early branch's Node default ratio is 0.959 [0.91, 0.98], but that gain does not offset the
+configured-call loss. Reject both. The second comparison also shows slower explicit-time calls
+on Firefox 155.0; Bun 1.4.2 and Deno 2.9.7 intervals remain unresolved. Chromium 153.0.8010.12,
+WebKit 26.6 and Node Current JITless cannot override the Node configured-call rejection.
+Six pairs give coarse intervals conditional on independence, not general regression bounds.
+No new native profile or Node LTS retention replay is justified after this rejection.
+
+`primary-value-empty-screen.log` and `primary-value-empty-repeat.log` compare a shared frozen
+empty options record while preserving public generation control flow. They use the same source
+screen settings on Node 26.10.0, Bun 1.4.2 and Deno 2.9.7, including generator and codec values
+and masked base64url and base32hex generation because all share the reader. Both screens pass
+their behavior and resource checks. Bun default-value medians favor the shared record, but its
+codec-value medians lose in three of four fresh processes; Node effects vary. Reject it before
+packed replay. These short observations cannot establish resource parity, small-effect
+equivalence or a cause for the variation. Private-field value construction and generation
+remain unchanged; this does not settle the remaining value-generation or native-floor gaps.
+
 Two competitor matrices on 2026-10-03 retain three fresh-process medians per row, each from
 five 5 ms batches after 16 ms warm-up. The raw files are
 `bench/reports/primary-review.jsonl` and `bench/reports/primary-review-repeat.jsonl`.

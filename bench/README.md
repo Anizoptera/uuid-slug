@@ -91,6 +91,9 @@ Use `value default-fast default-split` to compare argument-free immutable genera
 an empty options record; the second candidate keeps configured calls in a separate helper.
 The timing loop reads the UUID version and verification checks frozen values and UUIDv7 bytes.
 `value default-lost-throw` must fail both runtime entropy tests before timing.
+Use `value-options shared-empty` to compare a shared frozen empty options record across default,
+explicit-time, generator and codec values and both masked alphabets. All of them share the reader;
+a default-value gain cannot justify slowing another successful consumer call.
 For a source candidate that survives its owning proof, pass
 `--source-candidate=keyless:thin-configured` to `bench/compare.ts` with the same revision for
 baseline and candidate. The replacement lives only in its detached checkout; both revisions
