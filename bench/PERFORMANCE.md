@@ -1263,6 +1263,19 @@ Remaining gaps and their causes:
   Existing Node/Bun behavior tests passed before timing. Three 5 ms batches after 16 ms warmup
   remain screening evidence, not independent confidence or resource parity; raw evidence is in
   `bench/reports/candidates-v7-draw-1790977930802/`.
+  Two module-wrapper screens on 2026-10-03 separate function size from known-preset validation.
+  Node 26.10.0, Bun 1.4.2 and Deno 2.9.7 each run three 5 ms batches after 16 ms warmup,
+  with reversed second-pass acquisition order. A smaller wrapper forwarding configured calls
+  to the complete original implementation lowers Bun default-text cost in all four comparisons:
+  99–110 ns baselines against 84–88 ns. The preset shortcut alone does not reproduce that gain.
+  Node explicit-time calls rise from 144–162 ns to 175–194 ns; Deno explicit-time costs also rise.
+  Reject the duplicated configured dispatch as a production shape; test a helper containing only
+  the configured tail before attributing those losses to outlining itself. The uppercase mutation
+  fails `core.test.ts`'s consumer assertion before timing. Existing Node/Bun cases and resource
+  counters pass each valid source variant. These short batches do not establish independent-process
+  uncertainty, packed behavior, allocation parity or call p99. Raw output is in
+  `bench/reports/primary-keyless-screen.log` and `primary-keyless-repeat.log`; the failed mutation
+  is in `primary-keyless-mutation.log`.
 - Two alternating allocation screens on 2026-10-02 compared owned UUIDv7 generation using
   `new Uint8Array(16)`, an explicit `ArrayBuffer`, and a copy of the private text buffer.
   Node 26.10.0 owned calls cost about 78 ns, 150–152 ns, and 87 ns respectively; Bun 1.4.2

@@ -47,6 +47,9 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         Expect lower complete-call cost without added retained state. Reject unchanged gains,
         configured-call losses or altered preset errors, wrapper normalization and entropy failures;
         preserve the original configured implementation byte-for-byte in the source experiment.
+        Both screens favor smaller wrappers for Bun text but slow Node/Deno explicit-time calls.
+        Test a cold helper containing only the configured tail, removing the duplicated preset
+        branch; retain it only if the primary gain survives without that configured-call loss.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
       Screen `owned-range-zero`: skip range validation only for package-owned fresh 16-byte output

@@ -356,14 +356,21 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
   if (start < 0 || end < start)
     throw new Error("Module UUIDv7 text implementation moved; update its wrapper experiment.");
   const direct = source.slice(start + declaration.length, end);
+  const helperDeclaration = declaration.replace(
+    "export function generateUuidV7",
+    "function generateConfiguredUuidV7",
+  );
   const thin = replaceOnce(
     source,
     declaration,
     declaration +
       direct +
       "  return generateConfiguredUuidV7(textCaseOrOptions);\n}\n\n" +
-      declaration.replace("export function generateUuidV7", "function generateConfiguredUuidV7"),
+      helperDeclaration,
   );
+  // The wrapper already routes all primitive strings. Keep only the unchanged configured tail
+  // in the helper, avoiding a second preset dispatch on every options call.
+  const cold = replaceOnce(thin, helperDeclaration + direct, helperDeclaration + "\n");
   const preset = (value: string) =>
     replaceOnce(
       value,
@@ -384,6 +391,17 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     { name: "thin-wrapper", source: thin },
+    { name: "thin-configured", source: cold },
+    {
+      name: "thin-configured-lost-options",
+      get source() {
+        return replaceOnce(
+          cold,
+          "return generateConfiguredUuidV7(textCaseOrOptions);",
+          "return generateConfiguredUuidV7({} as GenerateUuidV7Options<Case>);",
+        );
+      },
+    },
     {
       name: "preset-fast",
       get source() {
