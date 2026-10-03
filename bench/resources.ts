@@ -335,7 +335,13 @@ try {
     views: 0,
     errors: 0,
   });
-  expectTextFormatter("slug text must be constructed once");
+  // Plain base64url may use either native conversion; count the required string rather than
+  // imposing Latin-1 as an implementation contract. UUID text and masked tails stay separate.
+  assert.equal(
+    (usesLatin1Text ? counts.latin1 : counts.fromCharCodes) + counts.base64,
+    1,
+    "plain slug text must be constructed once",
+  );
   check("masked base32hex formatting", () => base32Codec.uuidToMaskedSlug(bytes), {
     buffers: 0,
     views: 0,
