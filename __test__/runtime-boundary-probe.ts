@@ -1112,6 +1112,32 @@ export const runtimeBoundaryCases = [
     },
   },
   {
+    name: "rejects clock readings outside UUIDv7 bounds before writing caller storage",
+    run(this: void) {
+      // Both runtime adapters must reject overflow before its high timestamp bits are lost.
+      for (const reading of [NaN, Infinity, -Infinity, -0.5, 2 ** 48]) {
+        const generator = createUuidV7Generator({
+          readUnixMs: () => reading,
+          fillRandom: (bytes) => bytes.fill(0),
+        });
+        const output = new Uint8Array(24).fill(0x55);
+        const result = generator.generateUuidV7Bytes(output, 4);
+        assert.ok(result instanceof UuidSlugError);
+        assert.equal(result.code, "invalid_timestamp");
+        assert.ok(output.every((byte) => byte === 0x55));
+      }
+      for (const reading of [0, 0.5, 2 ** 48 - 1]) {
+        const generator = createUuidV7Generator({
+          readUnixMs: () => reading,
+          fillRandom: (bytes) => bytes.fill(0),
+        });
+        const result = generator.generateUuidV7Bytes();
+        assert.ok(result instanceof Uint8Array);
+        assert.equal(extractUuidV7UnixMs(result), Math.trunc(reading));
+      }
+    },
+  },
+  {
     name: "rejects non-number readUnixMs results at the JavaScript boundary",
     run(this: void) {
       for (const value of ["123", 1n, Symbol("readUnixMs")]) {
