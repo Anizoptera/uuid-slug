@@ -37,6 +37,13 @@ interface BytePrototypeCapabilities {
   toBase64?: (this: Uint8Array, options: typeof base64Options) => string;
   toHex?: (this: Uint8Array) => string;
 }
+interface ByteDecodeIntoCapability {
+  setFromBase64?: (
+    this: Uint8Array,
+    text: string,
+    options: typeof decodeOptions,
+  ) => { read: number; written: number };
+}
 
 function hyphenate(hex: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
@@ -50,6 +57,10 @@ export function createConversionCases(nodeBuffer?: typeof Buffer) {
   const fromHex = (Uint8Array as ByteCapabilities).fromHex?.bind(Uint8Array);
   const toBase64 = (Uint8Array.prototype as BytePrototypeCapabilities).toBase64;
   const toHex = (Uint8Array.prototype as BytePrototypeCapabilities).toHex;
+  // The installed Bun declaration gives an offset argument, but real Node-compatible and
+  // web-compatible runtimes consume decoding options. Keep that mismatched boundary narrow;
+  // the fixed-output witness must validate the actual method before any timing.
+  const setFromBase64 = (Uint8Array.prototype as unknown as ByteDecodeIntoCapability).setFromBase64;
 
   function add<Input>(
     name: string,
@@ -126,13 +137,34 @@ export function createConversionCases(nodeBuffer?: typeof Buffer) {
       bytes,
       (input) => {
         // Strict decoding requires a complete padded chunk, while the public slug is unpadded.
-        if (input.length !== 22) throw new Error("Native UUID decoding requires a canonical slug");
+        if (!canonicalSlug.test(input))
+          throw new Error("Native UUID decoding requires a canonical slug");
         const result = fromBase64(input + "==", decodeOptions);
         if (result.length !== 16) throw new Error("Native UUID decoding returned the wrong length");
         return result;
       },
     );
   } else absent("platform.frombase64.conversion.slug.bytes", "Uint8Array.fromBase64");
+  if (setFromBase64) {
+    add(
+      "platform.setfrombase64.conversion.slug.bytes",
+      "conversion.slug.bytes",
+      slugs,
+      bytes,
+      (input) => {
+        // Allocate the promised private array before native decoding; a reused output would
+        // measure a different ownership contract. Strict native chunks need explicit padding.
+        if (!canonicalSlug.test(input))
+          throw new Error("Native UUID decoding requires a canonical slug");
+        const output = new Uint8Array(16);
+        const { read, written } = setFromBase64.call(output, input + "==", decodeOptions);
+        if (read !== 24 || written !== 16)
+          throw new Error("Native UUID decoding did not consume the complete payload");
+        return output;
+      },
+    );
+  } else
+    absent("platform.setfrombase64.conversion.slug.bytes", "Uint8Array.prototype.setFromBase64");
   if (toBase64) {
     add("platform.tobase64.conversion.bytes.slug", "conversion.bytes.slug", bytes, slugs, (input) =>
       toBase64.call(input, base64Options),
@@ -189,6 +221,15 @@ export function createConversionCases(nodeBuffer?: typeof Buffer) {
       view(input).toString("base64url"),
     );
     add("platform.buffer.conversion.slug.bytes", "conversion.slug.bytes", slugs, bytes, decodeSlug);
+    add(
+      "platform.buffer-copy.conversion.slug.bytes",
+      "conversion.slug.bytes",
+      slugs,
+      bytes,
+      // Buffer's pooled backing store is not caller-private. Copy rather than publishing a
+      // view that lets one result expose another identifier through its ArrayBuffer.
+      (input) => new Uint8Array(decodeSlug(input)),
+    );
     add("platform.buffer.conversion.text.slug", "conversion.text.slug", texts, slugs, (input) =>
       nodeBuffer.from(input.replaceAll("-", ""), "hex").toString("base64url"),
     );
