@@ -57,6 +57,23 @@ These profiles include instrumentation and do not substitute for comparative thr
 Retain scratch sharing for the measured storage reduction and reproduced slug gains; the
 Bun native-floor gap and competitor resource comparisons remain open.
 
+Keep the module-default scratch draw uncached: its complete-call gains do not reproduce.
+Two 2026-10-03 screens (`primary-slug-cache-screen.log` and `primary-slug-cache-repeat.log`)
+compare `keyless cached-draw` on Node 26.10.0 and Bun 1.4.2 with two fresh processes per
+candidate/runtime in reversed order, three 5 ms batches and 16 ms warm-up. Bun slug medians
+first read 81.65/80.07 and 82.23/78.70 ns, baseline/candidate; the repeat reads 78.93/80.42
+and 78.56/83.70 ns. Pair gains also reverse. This does not justify a retained function reference
+or packed retention comparison; it does not establish equivalence or a physical limit.
+Both intact screens pass behavior and counted resources, not total allocation parity.
+
+Created-generator payload fixtures do not protect the module-default slug draw.
+`primary-slug-cache-mutation.log` records a pinned final byte passing the earlier proof; its
+timings cannot justify preservation. The shared real-entropy test now exercises both alphabets
+and paired output. Unchanged production passes 134 Node and 43 Bun cases, and
+`primary-slug-cache-mutation-secured.log` identifies both runners rejecting that same mutation
+at `__test__/runtime-boundary-probe.ts:117` before timing. The test detects fixed tail bits;
+it does not prove unbiased or independent entropy.
+
 The `owned-range-zero` screen skips range validation only for fresh package-owned UUIDv7
 bytes at offset zero. Its Node and Bun byte medians improve in both acquisition orders, but
 Deno byte medians rise from 152–153 ns to 156 ns and Bun text medians also rise. The raw

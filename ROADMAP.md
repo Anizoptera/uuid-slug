@@ -71,7 +71,7 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         conversion loss does not repeat; the focused browser comparison also does not reproduce
         WebKit's uppercase parsed-writer loss. Retain fixed writes; profiles cover Node, Bun,
         Deno and Chromium, with fresh Node/Bun behavior checks. Overall native parity stays open.
-  - [ ] Compare caching the existing detached scratch draw with repeated generator lookup in
+  - [x] Compare caching the existing detached scratch draw with repeated generator lookup in
         default slug and paired generation. Preserve text delegation, buffers, selected generators
         and explicit-time behavior; add no generator method. Reject a lost entropy byte through
         the owning Node/Bun oracle, then screen full calls and counted resources in both orders.
@@ -79,6 +79,9 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         Existing created-generator payload checks let the module-default lost-byte mutation pass;
         secure-source tail-bit checks must exercise both slug alphabets and paired output before
         timing. Discard the mutation's green screen as evidence of preservation.
+        The new case passes unchanged production and rejects the mutation on Node and Bun.
+        Two intact screens pass behavior/resources but Bun default slug and pair gains reverse
+        in the repeat. Reject caching; preserve the current generator lookup.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
       Screen `owned-range-zero`: skip range validation only for package-owned fresh 16-byte output
