@@ -19,6 +19,8 @@ export interface GenerationCase {
   readonly operation: () => GenerationValue;
   readonly expectedTimestamps?: readonly number[];
   readonly expectedValues?: readonly GenerationValue[];
+  /** Require fresh plain arrays, rather than Buffer subclasses or reused backing storage. */
+  readonly ownedBytes?: true;
   readonly secure?: boolean;
   readonly qualification: "qualified" | "rejected";
   readonly rejectionReason?: string;
@@ -31,6 +33,7 @@ export function verifyGenerationCase(candidate: GenerationCase): void {
   if (candidate.expectedValues) {
     if (candidate.expectedValues.length === 0)
       throw new Error(`${candidate.name} has no fixed conversion witnesses`);
+    let previousBuffer: ArrayBufferLike | undefined;
     for (const expected of candidate.expectedValues) {
       const value = candidate.operation();
       const matches =
@@ -40,6 +43,17 @@ export function verifyGenerationCase(candidate: GenerationCase): void {
             expected.every((byte, index) => byte === value[index])
           : value === expected;
       if (!matches) throw new Error(`${candidate.name} returned the wrong fixed conversion value`);
+      // Payload equality alone lets pooled Buffer views or a reused scratch masquerade as
+      // owned results. Keep this proof outside timing and apply it only to rows promising ownership.
+      if (candidate.ownedBytes) {
+        if (
+          !(value instanceof Uint8Array) ||
+          value.constructor !== Uint8Array ||
+          value.buffer === previousBuffer
+        )
+          throw new Error(`${candidate.name} must return fresh plain Uint8Array storage`);
+        previousBuffer = value.buffer;
+      }
     }
     return;
   }

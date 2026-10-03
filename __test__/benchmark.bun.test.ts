@@ -72,6 +72,29 @@ test("pair profiling consumes each returned spelling", () => {
   );
 });
 
+test("owned decoding witnesses reject Buffer subclasses and shared backing storage", () => {
+  const expected = new Uint8Array(16);
+  const candidate: GenerationCase = {
+    comparable: "conversion.slug.bytes",
+    implementation: "fixture",
+    name: "owned decoding",
+    expectedValues: [expected, expected],
+    ownedBytes: true,
+    operation: () => new Uint8Array(16),
+    qualification: "qualified",
+    version: 7,
+  };
+  expect(() => verifyGenerationCase(candidate)).not.toThrow();
+  for (const operation of [
+    () => Buffer.alloc(16),
+    () => expected,
+    () => new Uint8Array(expected.buffer),
+  ])
+    expect(() => verifyGenerationCase({ ...candidate, operation })).toThrow(
+      "fresh plain Uint8Array storage",
+    );
+});
+
 test("pair witnesses reject two valid spellings of different UUIDs", () => {
   const uuid = "01990d4d-e600-7000-8000-000000000000";
   const slug = uuidStringToPlainSlug(uuid);

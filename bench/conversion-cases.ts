@@ -68,6 +68,7 @@ export function createConversionCases(nodeBuffer?: typeof Buffer) {
     inputs: readonly Input[],
     expectedValues: readonly GenerationValue[],
     operation: (input: Input) => GenerationValue,
+    ownedBytes = false,
   ): void {
     let next = 0;
     cases.push({
@@ -77,6 +78,7 @@ export function createConversionCases(nodeBuffer?: typeof Buffer) {
       expectedValues,
       operation: () => operation(inputs[next++ % inputs.length]!),
       qualification: "qualified",
+      ...(ownedBytes ? { ownedBytes: true as const } : {}),
       // All rows share this UUIDv7 input corpus; these are conversions, not generation promises.
       version: 7,
     });
@@ -94,8 +96,13 @@ export function createConversionCases(nodeBuffer?: typeof Buffer) {
   add("package.conversion.bytes.slug", "conversion.bytes.slug", bytes, slugs, (input) =>
     unwrap(uuidBytesToPlainSlug(input)),
   );
-  add("package.conversion.slug.bytes", "conversion.slug.bytes", slugs, bytes, (input) =>
-    unwrap(plainSlugToUuidBytes(input)),
+  add(
+    "package.conversion.slug.bytes",
+    "conversion.slug.bytes",
+    slugs,
+    bytes,
+    (input) => unwrap(plainSlugToUuidBytes(input)),
+    true,
   );
   add("package.conversion.text.slug", "conversion.text.slug", texts, slugs, (input) =>
     unwrap(uuidStringToPlainSlug(input)),
@@ -143,6 +150,7 @@ export function createConversionCases(nodeBuffer?: typeof Buffer) {
         if (result.length !== 16) throw new Error("Native UUID decoding returned the wrong length");
         return result;
       },
+      true,
     );
   } else absent("platform.frombase64.conversion.slug.bytes", "Uint8Array.fromBase64");
   if (setFromBase64) {
@@ -162,6 +170,7 @@ export function createConversionCases(nodeBuffer?: typeof Buffer) {
           throw new Error("Native UUID decoding did not consume the complete payload");
         return output;
       },
+      true,
     );
   } else
     absent("platform.setfrombase64.conversion.slug.bytes", "Uint8Array.prototype.setFromBase64");
@@ -229,6 +238,7 @@ export function createConversionCases(nodeBuffer?: typeof Buffer) {
       // Buffer's pooled backing store is not caller-private. Copy rather than publishing a
       // view that lets one result expose another identifier through its ArrayBuffer.
       (input) => new Uint8Array(decodeSlug(input)),
+      true,
     );
     add("platform.buffer.conversion.text.slug", "conversion.text.slug", texts, slugs, (input) =>
       nodeBuffer.from(input.replaceAll("-", ""), "hex").toString("base64url"),
