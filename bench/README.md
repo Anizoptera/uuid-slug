@@ -63,6 +63,9 @@ UUIDv7 source screens time ordinary single-ID text, owned bytes and slugs first;
 caller-buffer timing belongs in the later packed comparison after a primary-call gain survives.
 These short batch samples select experiments, not retained optimizations or individual-call p99;
 add any missing mechanism falsifier before using a candidate's timings to decide a change.
+Use `alphabet native-branch native-dispatch` to compare Bun native plain base64url encoding
+through validated conversion, UUIDv7 generation and pair calls. Both candidates keep masked
+tails and base32hex on the existing writer and fall back if native encoding throws.
 Use `v4 native-zero-hex native-zero-base64` to compare native decoding of fixed zero bytes
 before the unchanged secure fill; capability selection runs once and absent decoders use the
 ordinary constructor. These candidates measure complete owned-byte generation, not decoder speed.

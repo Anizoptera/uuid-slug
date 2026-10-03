@@ -6,7 +6,7 @@ export interface SourceCandidate {
   readonly source: string;
 }
 
-export const CANDIDATE_GROUPS = ["v7-draw", "v4"] as const;
+export const CANDIDATE_GROUPS = ["v7-draw", "v4", "alphabet"] as const;
 export type CandidateGroup = (typeof CANDIDATE_GROUPS)[number];
 
 function replaceOnce(source: string, from: string, to: string): string {
@@ -335,5 +335,50 @@ export function createSourceCandidates(
   group: CandidateGroup,
   source: string,
 ): readonly SourceCandidate[] {
-  return group === "v4" ? v4Candidates(source) : v7Candidates(source);
+  const builders = {
+    v4: v4Candidates,
+    "v7-draw": v7Candidates,
+    alphabet: alphabetCandidates,
+  } satisfies Record<CandidateGroup, (source: string) => readonly SourceCandidate[]>;
+  return builders[group](source);
+}
+
+function alphabetCandidates(source: string): readonly SourceCandidate[] {
+  // Compare complete calls: a native kernel can lose once dispatch and exception containment
+  // are included. Non-Bun runtimes must keep their original writer without a per-call Bun test.
+  const declaration =
+    "export function encode(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {";
+  const capability = "const createLatin1Scratch = runtime.latin1Scratch;";
+  const native =
+    'const bunPlainToBase64 = typeof Bun !== "undefined" ? nativeToBase64 : undefined;\n';
+  const call =
+    "if (bunPlainToBase64 && bytes.length === 16 && alpha === BASE64URL && tailBits === 0) {\n    try { return bunPlainToBase64.call(bytes, BASE64_OPTIONS); } catch { /* Keep the existing writer when the optional native capability fails. */ }\n  }\n";
+  return [
+    { name: "baseline", source },
+    {
+      name: "native-branch",
+      get source() {
+        return replaceOnce(
+          replaceOnce(source, capability, native + capability),
+          declaration,
+          declaration + "\n  " + call,
+        );
+      },
+    },
+    {
+      name: "native-dispatch",
+      get source() {
+        return (
+          replaceOnce(
+            replaceOnce(source, capability, native + capability),
+            declaration,
+            "function encodeFixed(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {",
+          ) +
+          "\n/*#__NO_SIDE_EFFECTS__*/\nfunction encodeNativePlain(bytes: Uint8Array, alpha: Alphabet, tail = 0, tailBits = 0): string {\n  " +
+          call +
+          "  return encodeFixed(bytes, alpha, tail, tailBits);\n}\nexport const encode = bunPlainToBase64 ? encodeNativePlain : encodeFixed;\n"
+        );
+      },
+    },
+  ];
 }

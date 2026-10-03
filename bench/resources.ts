@@ -265,7 +265,7 @@ try {
     errors: 0,
   });
   assert.equal(
-    usesLatin1Text ? counts.latin1 : counts.fromCharCodes,
+    (usesLatin1Text ? counts.latin1 : counts.fromCharCodes) + counts.base64,
     2,
     "the pair must construct exactly its UUID and slug strings",
   );

@@ -61,8 +61,18 @@ const expectedNames =
         "package.v4.bytes.into",
         "package.v4.slug.base64url",
       ]
-    : ["v7.string", "v7.bytes", "v7.slug"];
-const filename = group === "v4" ? "src/v4.ts" : "src/v7.ts";
+    : group === "alphabet"
+      ? [
+          "bytes.base64",
+          "plain.encode",
+          "v7.slug",
+          "v7.base32",
+          "v7.pair.default",
+          "v7.pair.base32",
+        ]
+      : ["v7.string", "v7.bytes", "v7.slug"];
+const filename =
+  group === "v4" ? "src/v4.ts" : group === "alphabet" ? "src/alphabet.ts" : "src/v7.ts";
 // A committed production graph makes the detached checkout match the source being screened.
 if (
   (
@@ -179,7 +189,7 @@ try {
     console.log(JSON.stringify({ candidate: candidate.name, proof: "passed" }));
   }
   const driverFile = join(report, "profile.mjs");
-  if (group === "v7-draw") {
+  if (group !== "v4") {
     const driver = await Bun.build({
       entrypoints: [join(project, "bench/profile.ts")],
       target: "node",
