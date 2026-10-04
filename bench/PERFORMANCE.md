@@ -277,6 +277,19 @@ payloads. Caller composition does not replace the dedicated pair; the Bun intern
 cost remains a candidate, not an established defect. These are same-machine throughput results,
 not packed-revision improvement or allocation measurements.
 
+The current dedicated pair is faster than composing the same result in two refreshed matrices
+on 2026-10-04 (`current-pair-job.jsonl` and `current-pair-job-repeat.jsonl`). Each row retains five
+fresh-process medians from nine 20 ms batches after 32 ms warm-up; both returned strings are
+consumed and the existing independent decoding witness checks their equal payloads. Node 26.10.0
+measures 117/119 ns against 147/149 ns for composition, Node 24.21.0 120/118 against 148/147,
+Bun 1.4.2 105/109 against 119/122, Deno 2.9.7 110/112 against 213/222, and Chromium
+153.0.8010.12 113/109 against 138/135. Keep the dedicated call rather than replacing it with
+public conversion composition. These observations do not establish total allocation, performance
+against every external implementation, or an improvement attributable to one intervening change.
+Five processes and fixed row order limit small-effect confidence; Bun's repeat includes one fast
+composition process overlapping dedicated-call observations. Immutable-value comparisons remain
+separate from this two-string job.
+
 This measurement compares performance baseline `37f6258` with `2c5ba55` on an Apple M4 Max with 128 GiB RAM, Node 26.8.1 and Bun 1.4.2. It is a local experiment, not a cross-hardware speed guarantee. Runtime dependencies and public wire formats are unchanged.
 
 ## Identifier integrity boundaries

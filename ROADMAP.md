@@ -459,6 +459,10 @@ competitor. Caller buffers miss that, ns package / `uuid`: Bun UUIDv4 27.9 / 26.
       each call has a verdict against its best rival.
 - [ ] Pairs and values: `generateUuidV7WithPlainSlug` and `generateUuidV7Value` must cost less than
       the separate text, slug, and byte calls a consumer would combine; measure and fix any loss.
+  - [x] Refresh the default UUID-plus-slug comparison against one owned-byte draw and both
+        public conversions after retained generation changes. Both fresh-process matrices favor
+        the dedicated pair on every measured runtime; preserve it. Total allocation and the
+        immutable-value consumer comparison remain open.
 - [ ] Caller buffers: copy from the pool straight into the caller range after the refill succeeds,
       removing the private copy; this changes every adapter's `fillRandom`. Caller bytes must stay
       unchanged when entropy fails: prove with the transactional buffer tests and entropy-failure
