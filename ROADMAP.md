@@ -46,11 +46,19 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       Restore cached text delegation: direct formatting has no reproduced primary Bun gain and
       the shared replay reports a Firefox text loss. Test buffer sharing independently.
       Reject it if reentrancy, transactional failures, ownership or another primary call deteriorates.
-  - [ ] Compare cached native UUIDv7 timestamp repair, conditional and unconditional, with and
+  - [x] Compare cached native UUIDv7 timestamp repair, conditional and unconditional, with and
         without the captured clock passed to Bun. Prove matching and mismatching prefixes,
         rollback, carry boundaries and payload preservation before timing. Reject the mechanism
         unless repeated complete-call gains survive sustained counter overflow; keep native
         failure fallback and full package adoption as separate, required proof before retention.
+        All four lower bounds lose to package text in both bundled and normal Bun source
+        comparisons. Reject these repairs before adding validation, fallback or resource studies;
+        native parity stays open and this does not exclude different repair mechanisms.
+  - [ ] Compare direct UUIDv7 text construction with generating intermediate bytes and formatting
+        them on Bun. Preserve the shared sequence, clock, entropy-failure and reentrancy behavior;
+        keep owned-byte and configured calls as controls. Prove every timestamp, counter and tail
+        bit before timing. Retain specialization only for repeated complete-call gains that
+        justify its code and retained storage, with no loss on other runtime paths.
   - [x] Compare Bun scratch writes at byte, 16-bit and 32-bit widths through complete default
         generation, uppercase generation and byte-to-text conversion. Preserve tables, offsets,
         hyphens and native string construction; account for the added retained DataView and

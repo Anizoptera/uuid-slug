@@ -92,6 +92,31 @@ the package over both repaired forms. Reject those two mechanisms, not every pos
 repair. The small process sample does not establish small-effect equivalence, call p99, startup
 cost or a physical floor; the matrices share one machine and fixed within-process case order.
 
+Cached native UUIDv7 clock repair also loses before package validation or fallback. On
+2026-10-04, `native-v7-clock-repair-matrix.jsonl` retains five fresh processes per runtime,
+each with nine 20 ms batches and 32 ms warm-up. It uses each runtime's bundled benchmark graph.
+Five `native-v7-clock-repair-source-*.jsonl` files repeat the Bun comparison through its normal
+TypeScript entry. Every call consumes the returned string; the independent Buffer oracle checks
+matching and mismatching timestamps, rollback, carry boundaries and unchanged payload bits.
+Timestamp-loss and payload-loss mutations fail that oracle (`native-v7-repair-oracle.log`).
+
+| Bun 1.4.2 text result | Bundled median ns | Source median ns |
+| --- | ---: | ---: |
+| Package default | 73.80 | 74.79 |
+| Native UUIDv7 without repair | 48.25 | 52.29 |
+| Default native clock, unconditional repair | 113.12 | 114.23 |
+| Default native clock, conditional repair | 112.43 | 114.87 |
+| Explicit native clock, unconditional repair | 109.47 | 111.87 |
+| Explicit native clock, conditional repair | 101.13 | 104.04 |
+
+Each table value is the median of five process medians, not five independent call latencies.
+The fastest repair still loses in every source process against that process's package default.
+Reject these four repairs before paying for package integration or an allocation study: their
+lower bounds already lose. This does not reject other repair mechanisms, establish a physical
+floor or close native parity. Bundled and source runs share a machine and engine; they test graph
+sensitivity rather than independent platforms. Neither gross allocation, cold-start cost nor
+individual-call tail latency was measured for these rejected candidates.
+
 Two Bun 1.4.2 CPU captures on 2026-10-03 select only `=v7.string` through the maintained
 `bench/profile.ts` corpus, with seven 20 ms batches and 16 ms warm-up. Raw files are
 `bench/reports/primary-v7-default-only.cpuprofile` and
