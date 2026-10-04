@@ -11,6 +11,7 @@ import type { ReportRecord } from "../bench/generation-report";
 import { parseReport } from "../bench/matrix";
 import { verifyGenerationCase } from "../bench/generation-case";
 import type { GenerationCase } from "../bench/generation-case";
+import { generationCases } from "../bench/generation-cases";
 import { createConversionCases } from "../bench/conversion-cases";
 import { uuidStringToPlainSlug } from "../src/index";
 import * as profilingApi from "../src/index";
@@ -32,6 +33,13 @@ const speed = {
   elapsedMs: 10,
   iterations: 1,
 };
+
+test("fastv7 stays informational and cannot enter competitor rankings", () => {
+  const candidate = generationCases.find(({ name }) => name === "fastv7.v7.text");
+  expect(candidate).toBeDefined();
+  expect(candidate!.qualification).toBe("rejected");
+  expect(candidate!.rejectionReason).toBe("Informational only; not an approved competitor.");
+});
 
 test("exact profile filters exclude similarly named failure and configured calls", () => {
   const cases = { "v7.into": 1, "invalid.v7.into.range": 2, "v7.into.configured": 3 };

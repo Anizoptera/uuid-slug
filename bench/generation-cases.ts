@@ -370,10 +370,10 @@ export const generationCases: readonly GenerationCase[] = [
     "portable-stateful",
     () => packageUuidV7V7Object().bytes,
   ),
+  // Keep this informational measurement out of the approved competitor ranking.
   row("fastv7.v7.text", 7, "v7.text.secure", "pooled-portable", fastV7, {
     qualification: "rejected",
-    rejectionReason:
-      "The counter advances the encoded millisecond on overflow; measured bursts produce timestamps ahead of the clock.",
+    rejectionReason: "Informational only; not an approved competitor.",
   }),
   row("uuidv7-js.v7.text", 7, "v7.text.secure", "portable-stateful", uuidv7Js),
   row("kripod.v7.text", 7, "v7.text.secure", "portable-stateful", kripodV7),

@@ -11,7 +11,8 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
 
 - [ ] Finish guidance repair before resuming the pending production candidate: audit Markdown
       contract owners for invented guarantees, stale qualification and instructions invisible at
-      the decision point. Correct only identified defects; leave generated reports to their writer.
+      the decision point. Public documents require explicit approval; propose their exact edits.
+      Exclude `fastv7` from competitor rankings while retaining informational measurements.
 - [ ] Finish the active native Bun UUIDv7 text candidate before reopening formatter experiments.
       The focused repeated comparison resolves a Bun default-text gain and a Node default-text
       loss. Reject the shared implementation shape; isolate native dispatch from the portable
