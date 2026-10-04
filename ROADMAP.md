@@ -69,13 +69,15 @@ keep contract changes reserved for Art, and claim impossibility only with a name
           construction loses Bun text; paired lookups fail to reproduce their apparent gain
           and plain-slug controls lose in the repeat. Keep production unchanged and do not
           fund shared formatter storage from these unresolved throughput observations.
-  - [ ] Compare cached timestamp repair of native Bun base64url plain slugs with package slug
+  - [x] Compare cached timestamp repair of native Bun base64url plain slugs with package slug
         generation. Test unconditional and conditional repair with default and explicit native
         clocks. Independently encode patched UUID bytes to prove timestamp carries, rollback,
         version, variant and all payload bits; prove the oracle rejects timestamp and tail loss
         before timing. Treat complete native-generation-plus-repair calls as lower bounds that
         still lack package validation and fallback. Repeat only survivors; reject losses before
         integration, and keep adoption, overflow behavior and resource proof separate.
+        Every repaired form loses to the package in every fresh-process comparison before
+        validation or fallback. Reject these mechanisms; the native gap remains open.
   - [x] Compare Bun scratch writes at byte, 16-bit and 32-bit widths through complete default
         generation, uppercase generation and byte-to-text conversion. Preserve tables, offsets,
         hyphens and native string construction; account for the added retained DataView and

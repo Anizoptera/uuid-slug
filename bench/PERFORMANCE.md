@@ -117,6 +117,32 @@ floor or close native parity. Bundled and source runs share a machine and engine
 sensitivity rather than independent platforms. Neither gross allocation, cold-start cost nor
 individual-call tail latency was measured for these rejected candidates.
 
+Cached native UUIDv7 slug clock repair also loses before package integration. On 2026-10-04,
+five fresh Bun 1.4.2 processes use normal TypeScript imports, nine 20 ms batches per case and
+32 ms warm-up. `native-v7-slug-repair-source-*.jsonl` retains each process's complete output;
+`native-v7-slug-repair-source-summary.jsonl` retains their medians. The independent Buffer
+encoder checks timestamp boundaries, rollback, matching prefixes and each of the 74 payload
+bits. Timestamp-prefix and suffix-loss mutations fail before timing; their logs are
+`native-v7-slug-repair-timestamp-mutation.log` and
+`native-v7-slug-repair-payload-mutation.log`.
+
+| Bun base64url slug result | Median of process medians ns |
+| --- | ---: |
+| Package default | 79.10 |
+| Native UUIDv7 without repair | 64.74 |
+| Default native clock, unconditional repair | 123.25 |
+| Default native clock, conditional repair | 128.66 |
+| Explicit native clock, unconditional repair | 118.75 |
+| Explicit native clock, conditional repair | 109.85 |
+
+Every repaired form loses against the package in every process. Reject these four mechanisms
+before adding package validation, failure fallback or resource studies. The shorter slug prefix
+does not rescue this cached native-repair design. The native floor remains faster and its
+timestamp-overflow mismatch remains a separate adoption constraint. These process medians
+measure throughput on one machine, with case order rotating within each process. They do not
+establish individual-call latency, gross allocation, cold-start cost, other runtimes or a
+physical limit on different repairs.
+
 Direct UUIDv7 text construction does not earn production retention from the current screens.
 The maintained `v7-draw` candidates eliminate intermediate byte writes using character codes,
 native Latin-1 text with individual hexadecimal lookups, or native Latin-1 text with paired
