@@ -203,6 +203,21 @@ and `candidates-v7-draw-ZFXxkn/` under `bench/reports/`. The earlier stores-only
 Repeated source throughput supports a packed comparison, not retention: added case tables,
 native storage, generator closures, total allocation and other runtime effects remain open.
 
+Keep reused-prefix production retention unresolved after the packed comparisons.
+Two six-round packed comparisons on the same Node and Bun releases use 20 ms batches and
+32 ms warm-up. `reused-prefix-packed-retry.jsonl` gives Bun lowercase/uppercase ratios
+0.877/0.885 with intervals below one, but Node slug ratio 1.022 [1.01, 1.05] is slower.
+`reused-prefix-packed-repeat.jsonl` gives text medians 0.893/0.883 on Bun and Node slug
+1.019, with broad intervals; Bun slug is slower at 1.074 [1.00, 17.05].
+Round four includes long wall-time pauses on Bun candidate and Node baseline calls. Bun
+candidate bytes take 112.58 ms with 4.56 ms CPU; Node baseline explicit-time text takes
+103.66 ms with 0.30 ms CPU. These counters expose elapsed time outside measured CPU work,
+not its cause. Keep the pauses in the evidence. The text gain does not establish resource
+parity or justify other primary-call losses. Profiles must resolve those losses before retention.
+Packed source snapshots are `packed-source-gsQPt5/` and `packed-source-C8u1w9/`.
+The first attempt (`reused-prefix-packed.log`) fails before timing when Parcel receives
+SIGSEGV during the candidate consumer check; it supplies no performance evidence.
+
 Two Bun 1.4.2 CPU captures on 2026-10-03 select only `=v7.string` through the maintained
 `bench/profile.ts` corpus, with seven 20 ms batches and 16 ms warm-up. Raw files are
 `bench/reports/primary-v7-default-only.cpuprofile` and

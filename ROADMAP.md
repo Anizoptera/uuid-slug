@@ -152,8 +152,9 @@ keep contract changes reserved for Art, and claim impossibility only with a name
           compare cold storage and generator construction only if the candidate survives.
           The stale-prefix mutation fails the intended Bun text assertions. Moving prefix
           calculations into the refresh branch improves Bun text in both repeated source screens;
-          unchanged controls vary and Node byte losses remain unresolved. Compare packed calls
-          before retention, then account for duplicate formatter storage if the gain survives.
+          packed text medians also improve, but Node slug medians are slower and the repeat
+          contains long wall-time pauses. Resolve primary-call losses with profiles before
+          retention, then account for duplicate formatter storage if the gain survives.
     - [x] Compare prepacked hexadecimal pairs through independent payload witnesses and
           packed calls. Default-generation gains remain unresolved; the small conversion-only
           gain does not justify retention. Keep the larger native-generation gap open.
