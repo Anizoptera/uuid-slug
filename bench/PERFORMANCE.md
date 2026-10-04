@@ -226,6 +226,17 @@ the cause of the packed slug loss, prove identical generated machine code, or es
 allocation parity. Raw CPU, allocation, GC, heap and completed-call records remain in
 `bench/reports/reused-prefix-profiles/`.
 
+Reject capability-gated draw creation as a demonstrated fix for the primary-call losses.
+`direct-text-reused-prefix-native-only` creates the extra draw function only when native
+Latin-1 formatting is available. The intact Node/Bun suites and resource checks pass before
+two fresh processes in reversed order, using nine 20 ms batches and 32 ms warm-up.
+Node slug medians are 85.12/86.08 ns baseline and 85.67/88.54 ns candidate; Bun owned bytes
+are 45.54/46.49 ns baseline and 46.81/48.28 ns candidate. Bun text remains lower at
+71.19/75.18 ns against 79.18/76.55 ns. The small sample does not establish the cause of
+the losses or equivalence, but gives no reason to run a packed replay of this refinement.
+`reused-prefix-native-only-screen.log` and `candidates-v7-draw-x068RE/` retain the proof,
+source and measurements. Conditional closure creation alone is insufficient for retention.
+
 Two Bun 1.4.2 CPU captures on 2026-10-03 select only `=v7.string` through the maintained
 `bench/profile.ts` corpus, with seven 20 ms batches and 16 ms warm-up. Raw files are
 `bench/reports/primary-v7-default-only.cpuprofile` and

@@ -485,6 +485,26 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
       },
     },
     {
+      name: "direct-text-reused-prefix-native-only",
+      get source() {
+        // Absent native formatting must not create another per-generator draw closure.
+        // Compare complete calls; removing a closure alone does not prove a speed benefit.
+        return replaceOnce(
+          replaceOnce(
+            replaceOnce(
+              directText(true, true, true),
+              "function directClockText<Case extends UuidTextCase>",
+              "const directClockText = createDirectLatin1Scratch ? function directClockText<Case extends UuidTextCase>",
+            ),
+            "\n  function bytesAt(",
+            " : undefined;\n  function bytesAt(",
+          ),
+          "createDirectLatin1Scratch ? directClockText(textCase as Case)",
+          "directClockText ? directClockText(textCase as Case)",
+        );
+      },
+    },
+    {
       name: "direct-text-reused-prefix-stale",
       get source() {
         return replaceOnce(

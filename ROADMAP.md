@@ -155,6 +155,10 @@ keep contract changes reserved for Art, and claim impossibility only with a name
           packed text medians also improve, but Node slug medians are slower and the repeat
           contains long wall-time pauses. Resolve primary-call losses with profiles before
           retention, then account for duplicate formatter storage if the gain survives.
+      - [x] Compare capability-gated draw creation with the original generator.
+            Behavior and resource proofs pass, but both Node slug orders and Bun byte
+            orders remain slower. Reject this refinement as a demonstrated fix; the
+            measured screen does not identify the cause of the primary-call losses.
     - [x] Compare prepacked hexadecimal pairs through independent payload witnesses and
           packed calls. Default-generation gains remain unresolved; the small conversion-only
           gain does not justify retention. Keep the larger native-generation gap open.
