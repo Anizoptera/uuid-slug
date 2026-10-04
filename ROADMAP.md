@@ -12,6 +12,8 @@ negligible remaining gap, preferably a reproduced advantage. Failure to detect a
 not equivalence: retain independent process observations and bound the remaining effect before
 closing a gap. Record measurements, rejected mechanisms and limits in `bench/PERFORMANCE.md`.
 Keep one implementation candidate active; screen narrowly, then retain only after packed replays.
+Prioritize Bun default UUIDv7 text construction before further counter refinements: the native
+gap is larger, and repeated public-call profiles put formatting and string construction first.
 Measure the complete caller result before attributing a bottleneck to a component. For each
 candidate, state the removable work and its falsifier before changing code; include setup costs
 when a faster repeated call adds retained state. A runtime policy is not a physical limit:
@@ -56,6 +58,9 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         execution interference. Node LTS and Chromium comparisons remain unresolved; Deno text
         gains need replication. Preserve every observation, bound remaining primary-call and
         construction losses, and measure any runtime dispatch before deciding retention.
+        Defer direct narrow-word byte writes until the larger Bun default-text gap is addressed.
+        The lost-bit mutation fails both owning runtime oracles; intact screens pass behavior and
+        resource checks, but do not establish a reproduced Bun primary-call benefit.
         Uint32 storage raises Node text costs in every screening process and earns no shared change.
 - [x] Exercise the package in a local Cloudflare workerd runtime. Prove imports, entropy,
       clocks and representation round trips before adding a maintained correctness lane.

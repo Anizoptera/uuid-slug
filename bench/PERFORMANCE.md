@@ -2533,6 +2533,26 @@ packed comparisons, but the remaining intervals still permit primary-call or con
 Runtime-specific selection also remains unmeasured; its dispatch and ownership costs cannot be
 inferred from these shared source substitutions.
 
+Defer further counter refinements while the larger Bun default-text gap remains open.
+`counter-direct-screen.log` and `counter-direct-repeat.log` compare reconstructed and direct
+31/11 counter writes in two fresh process orders on Node, Bun and Deno, with seven 15 ms
+batches and 16 ms warm-up. Both intact candidates pass behavior and counted resources.
+The direct writer's lost-bit mutation in `candidates-v7-draw-6ZeOjC` fails the shared payload-bit
+oracle in Node and Bun; Node also rejects explicit-time fraction loss. Node byte screens improve
+against baseline, but Bun primary-call effects vary. These small screens establish no packed
+advantage, construction parity or negligible loss; they do not justify adoption.
+
+Two fresh Bun default-text captures in `v7-bun-priority/first` and `repeat` use seven 40 ms
+batches after 32 ms warm-up. Parent-linked samples beneath the public `generateUuidV7` call
+total 240/237 out of 267/271 profile samples. The Latin-1 formatter and native `toString`
+contribute 108/116 combined self samples; `readClock` contributes 56/61. This ranking supports
+text construction before counter or pool-copy work. CLI profiles include startup and corpus
+checks; parent restriction excludes unrelated frames but cannot separate setup calls to the same
+function. Inlining and coarse CPU sampling also limit exact cost attribution.
+Bun's Buffer `latin1Slice` is callable and preserves the probed ASCII text; ordinary
+`toString("latin1")` does not call an overridden `latin1Slice` property. That positive probe
+identifies a direct-string-construction experiment, not a speedup or a supported public capability.
+
 Local workerd evidence (2026-10-04): `workerd-public-repeat.jsonl` runs the compiled public entry
 with the portable implementation in both plain-web and `nodejs_compat` configurations. The bundle
 input manifest contains `dist/index.js` and `dist/runtime/portable.js`, with no production source

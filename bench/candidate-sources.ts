@@ -69,6 +69,30 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
       `writeBytes(target, offset, lastMs, counterHi >>> ${32 - lowBits}, (counterLo | ((counterHi & ${2 ** (32 - lowBits) - 1}) << ${lowBits})) >>> 0)`,
     );
   };
+  const directNarrowCounter = () => {
+    // Keep the narrow state experiment fixed while removing reconstruction of a wider low word.
+    // Every byte writer must receive the same split, including independently seeded instants;
+    // otherwise successful default calls could hide a different explicit-time wire format.
+    let value = narrowCounter(31);
+    const reconstructed =
+      "writeBytes(target, offset, lastMs, counterHi >>> 1, (counterLo | ((counterHi & 1) << 31)) >>> 0)";
+    if (value.split(reconstructed).length !== 3)
+      throw new Error("Narrow counter consumers moved; repair the direct writer experiment.");
+    value = value.replaceAll(
+      reconstructed,
+      "writeBytes(target, offset, lastMs, counterHi, counterLo)",
+    );
+    value = replaceOnce(
+      value,
+      "Math.floor(payloadPrefix / 0x1_0000_0000),\n        payloadPrefix >>> 0,",
+      "Math.floor(payloadPrefix / 0x80000000),\n        payloadPrefix & 0x7fffffff,",
+    );
+    return replaceOnce(
+      value,
+      "writeCounter(target, sequenceHi, sequenceLo, offset);",
+      "target[offset + 6] = 0x70 | (sequenceHi >>> 7);\n    target[offset + 7] = ((sequenceHi & 0x7f) << 1) | (sequenceLo >>> 30);\n    target[offset + 8] = 0x80 | ((sequenceLo >>> 24) & 0x3f);\n    target[offset + 9] = (sequenceLo >>> 16) & 0xff;\n    target[offset + 10] = (sequenceLo >>> 8) & 0xff;\n    target[offset + 11] = sequenceLo & 0xff;",
+    );
+  };
   const counterStorage = (array: "Float64Array" | "Uint32Array") => {
     // Hold timestamps fixed while testing whether counter writes account for sequence allocation.
     // Both stores preserve unsigned words; Uint32 omits Float64's unused precision. Neither
@@ -355,6 +379,22 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
       name: "counter-low31",
       get source() {
         return narrowCounter(31);
+      },
+    },
+    {
+      name: "counter-low31-direct",
+      get source() {
+        return directNarrowCounter();
+      },
+    },
+    {
+      name: "counter-low31-direct-lost-bit",
+      get source() {
+        return replaceOnce(
+          directNarrowCounter(),
+          "((sequenceHi & 0x7f) << 1)",
+          "((sequenceHi & 0x3f) << 1)",
+        );
       },
     },
     {

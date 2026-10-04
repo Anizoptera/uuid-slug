@@ -15,6 +15,9 @@ Rules:
 - Compare performance and resource efficiency against qualified alternatives for each main use
   case. A throughput win with worse allocation or resource costs does not meet the main-use goal;
   keep secondary uses reasonably fast and efficient.
+- Target the largest unresolved primary-call cost on the primary runtimes before small gains or
+  auxiliary hosts. Use current public-call profiles to choose the mechanism; defer smaller
+  experiments while a more prominent cost remains unexplained or untested.
 - For a rare-misuse defense, measure ordinary successful calls against the unchanged implementation
   before retaining it. Faster rejection is not a benefit that offsets slower normal calls or more
   resource use. Apply the acceptance rule in [public-api.md](../docs/public-api.md#capabilities-and-runtime-work).
@@ -91,6 +94,10 @@ Use `v7-draw counter-low30 counter-low31` to compare narrower closure words with
 array. They reconstruct the existing writer inputs and preserve the full counter. The
 `counter-low30-lost-carry` mutation must fail the shared ceiling oracle before timing; compare
 sampled allocation and complete calls before attributing a benefit to integer representation.
+Use `v7-draw counter-low31 counter-low31-direct` to isolate reconstructing wider writer inputs
+from writing the same bytes directly. The direct writer must also preserve independently seeded
+explicit instants; `counter-low31-direct-lost-bit` must fail the shared payload-bit oracle before
+timing. The candidate adds no storage or runtime dispatch.
 Compare sampled allocation beneath scratch-backed calls only after complete-call throughput
 survives; lower collected heap alone cannot identify removed per-call allocation.
 Use `v7-draw inline-clock` to isolate the clock wrapper while preserving callback failures.
