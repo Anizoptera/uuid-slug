@@ -252,6 +252,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
   benchmark output in ignored `bench/reports/`; conclusions belong in `bench/PERFORMANCE.md`.
   Extract executable baseline source outside this repository; ignored source trees can still enter
   compiler and test discovery. Keep only generated evidence and archives in `bench/reports/`.
+  Keep failed check artifacts available for the reproduction command in the error; clean up
+  successful checks. A command naming a deleted bundle cannot diagnose the failure.
 - Repair missing or ineffective guidance before changing the plan or implementation. Put the
   trigger, required action and reason in the nearest `AGENTS.md` visible when the work starts;
   a rule buried in another document cannot prevent a mistake unless that file is explicitly loaded.

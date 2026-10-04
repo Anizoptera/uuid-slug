@@ -15,29 +15,16 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       the decision point. Public documents require explicit approval; propose their exact edits.
       Exclude `fastv7` from competitor rankings while retaining informational measurements.
 - [ ] Finish the active native Bun UUIDv7 text candidate before reopening formatter experiments.
-      The focused repeated comparison resolves a Bun default-text gain and a Node default-text
-      loss. Reject the shared implementation shape; isolate native dispatch from the portable
-      default-call boundary, then repeat the exact affected calls. Do not attribute the Node loss
-      to inlining without a distinguishing observation. Profiles support removed portable work
-      on Bun; generated competitor ranking and affected-call evidence still gate retention.
-      Check Node's optimization and inlining traces for the same default call against the
-      unchanged baseline before another variant. A candidate-only deoptimization or rejected
-      caller inlining supports a compiler explanation; matching traces leave it unresolved.
-      Trace-enabled timings are not performance evidence.
-      Both Node Current captures inline public and delegated generation into the batch caller,
-      with no generation deoptimization recorded. Lost caller inlining does not explain these
-      captures. Next isolate once-selected default dispatch from per-call capability lookup;
-      preserve fallback behavior and reject primary-call losses before wider replay.
-      Lazy selection keeps the Bun default gain, but configured-generator text still loses.
-      Isolate the unchanged configured body from default dispatch before retention; require
-      the exact configured-clock and failure tests, then repeat the affected complete calls.
-      The split's first packed comparison favors Bun text; configured and Node intervals cross
-      parity. Repeat it with owned bytes and explicit-time controls before retention; unresolved
-      controls are not proof of equivalence. Keep the native resource and profile proofs required.
-      The repeated comparison exposes a Node explicit-time loss with the split. Remove that
-      extra call boundary and compare the inline configured body on the same six calls; reject
-      another explicit-time loss or a reproduced configured-generator loss before wider replay.
-      Reject the split: Node explicit-time wall and CPU costs both increase. The inline replay
+      Keep default selection lazy and configured options inline. Shared native handling slowed
+      Node defaults; extracting configured options increased Node explicit-time wall and CPU cost.
+      Both Node optimization captures inline public and delegated generation; they do not support
+      lost caller inlining as the cause. Do not use trace-enabled timings as performance evidence.
+      Repeated packed calls favor Bun default and uppercase text. The expanded comparison's
+      owned-byte wall loss is not resolved in the isolated control; CPU intervals cross parity.
+      Isolated Node default and explicit-time controls remain scheduling-limited, not equivalent.
+      Keep raw comparisons and exact candidate source in `bench/reports/native-v7-inline-*`.
+      Use the prepared README/security patch for approval; public text remains held.
+      Reject any reproduced material primary-call loss before retaining the candidate. The inline replay
       suffers large scheduling interruptions; CPU time supports Bun text savings but leaves
       configured controls unresolved. Fresh equal-call Bun profiles and operation counters
       show native generation replaces portable drawing and formatting without temporary arrays.
