@@ -345,7 +345,9 @@ function emit(
   for (const row of rows) {
     const key = `${runtime}\0${revision}\0${row.name}`;
     const values = observations.get(key) ?? [];
-    values.push(...row.ns);
+    // Batches in one process share engine state; only that process's median enters uncertainty.
+    // Keep the complete batch array in the raw record below so pauses remain inspectable.
+    values.push(median(row.ns));
     observations.set(key, values);
     console.log(
       JSON.stringify({
@@ -380,6 +382,8 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
       if (!candidate?.length) throw new Error(`${runtime} candidate omitted ${name}`);
       if (candidate.length !== baseline.length)
         throw new Error(`${runtime} ${name} has unpaired baseline and candidate samples`);
+      if (baseline.length !== rounds)
+        throw new Error(`${runtime} ${name} must have one observation per fresh-process round`);
       const pairedRatios = candidate.map((value, index) => value / (baseline[index] as number));
       const medianRatio95 = medianConfidence95(pairedRatios);
       console.log(

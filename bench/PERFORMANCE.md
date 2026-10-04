@@ -2730,6 +2730,11 @@ larger count: the host environment and browser URL hard-coded one sample. Their 
 ratios remain observations, but they do not represent medians over the requested batches. Source
 screens honor the count and are unaffected by this correction. Retain pauses and use fresh
 processes as independent observations; extra batches do not increase that independent count.
+The sample-count control (`packed-sample-count-control.log`) returns the requested batches
+on Node, Bun and Chromium, but exposes pooled batches in summary uncertainty. Summaries must
+instead use one median per fresh process and reject a process count different from the rounds;
+raw records retain every batch. Earlier single-batch comparisons are unaffected by this second
+correction. The control is an instrument check, not evidence of a production improvement.
 
 Two Bun 1.4.2 chunk-construction screens on 2026-10-04 (`v7-chunks-join-proofed-screen.log`
 and `v7-chunks-join-proofed-repeat.log`) compare public caller-buffer generation followed by
