@@ -10,6 +10,20 @@ propose public-document changes and hold them for explicit approval, including g
 
 Deliver retained improvements to ordinary single-ID calls; a rejected experiment does not close a performance gap.
 
+- [ ] Close the Bun owned UUIDv7 byte gap before another default-slug tweak. The maintained
+      owned-byte screens trail `uuid`; equal-call memory captures retain more heap and resident
+      memory, while caller CPU disagrees. Profiles repeatedly rank result allocation first.
+      Preserve `primary-owned-bytes-*` and `bun-owned-v7-resource-*`; sample attribution alone
+      does not establish a cause. Do not repeat the allocation shapes: separate-helper and
+      wrapper CPU gains do not reproduce, while scratch-copy increases CPU in every comparison.
+      `owned-v7-{helper,copy,wrapper}-screen-*` retains equal-call captures; intact Node/Bun
+      tests pass, and short-array or shared-output mutations fail the existing payload or
+      private-storage oracles. No allocation shape earns a production change.
+      Inspect the rival's selected entropy and sequence implementation, then reassess independent
+      default draws with complete-call CPU and memory. Earlier higher source-refill counts are
+      a cost to measure, not proof of higher total resource cost; keep secure entropy, all payload
+      bits, configured generator behavior and failure transactionality as constraints.
+
 - [ ] Close the Bun default base64url UUIDv7 slug gap. Compare the complete public call with
       native slug output in the maintained generation corpus, then profile the package call.
       Portable clock, entropy and encoding work may dominate; preset validation may instead
