@@ -2709,11 +2709,20 @@ Bun default-text median ratios are 0.936 [0.925, 0.989] and 0.961 [0.871, 0.968]
 ratios are 0.954 [0.942, 0.975] and 0.950 [0.912, 0.975]. Conversion ratios are 0.921
 [0.886, 0.964] and 0.947 [0.881, 0.955]. Node and Bun byte/slug controls have unresolved
 intervals; those intervals do not establish negligible loss. Primary timing warrants integration
-checks, not adoption: other measured runtimes, fallback behavior, construction resources and
-affected-call profiles remain unverified. The native UUIDv7 gap stays open. These are batch
+checks, not adoption: fallback behavior, construction resources and affected-call profiles
+remain unverified. The native UUIDv7 gap stays open. These are batch
 throughput observations from one machine, not independent-call latency or total allocation.
 `primary-direct-latin1-packed.log` and `primary-direct-latin1-packed-repeat.log` retain raw
 observations; `packed-source-uHpPDY/` and `packed-source-JKb0I0/` retain the packed sources.
+
+The remaining-runtime replay prevents adoption of this source form. Six fresh-process pairs
+with the same settings compare Chromium 153.0.8010.12, Firefox 155.0, WebKit 26.6, Deno 2.9.7
+and Node 26.10.0 JITless. Their primary-call intervals are unresolved except JITless byte-to-text
+conversion, whose ratio is 1.030 [1.01, 1.05], slower. These results do not identify the engine
+cause or reject the native method itself. Moving the method selection into the Buffer
+implementation can preserve the portable formatter and avoid the added scratch-wrapper object;
+that alternative remains unmeasured. `primary-direct-latin1-secondary-packed.log` and
+`packed-source-YKi2aH/` retain the observations and sources. No production path selects the candidate.
 
 Two Bun 1.4.2 chunk-construction screens on 2026-10-04 (`v7-chunks-join-proofed-screen.log`
 and `v7-chunks-join-proofed-repeat.log`) compare public caller-buffer generation followed by

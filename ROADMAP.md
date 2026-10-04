@@ -51,9 +51,11 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
         regression. Resolve Node uppercase and Bun byte/slug controls in packed comparisons
         before retaining the Bun text saving. Two packed comparisons reproduce the Bun text
         and conversion saving; other primary-call intervals remain unresolved.
-  - [ ] Integrate the surviving direct Latin-1 method only after proving absent-method behavior,
-        construction resources and affected-call profiles. Complete the remaining runtime
-        comparisons and bound unresolved primary controls; native parity stays open.
+  - [ ] Test direct Latin-1 construction in the Buffer implementation instead of wrapping UUID
+        scratch creation. Primary packed gains survive, but the remaining-runtime comparison
+        finds a JITless conversion loss; do not adopt the current source form. Keep the portable
+        formatter unchanged and avoid a second scratch-wrapper object. Prove absent-method
+        behavior, construction resources and affected-call profiles; native parity stays open.
 - [ ] Retain a survivor only after the existing packed replays, affected-runtime profiles,
       behavior/resource proofs and full check support it. Commit the production improvement
       and record its measured benefit and limits in `bench/PERFORMANCE.md`; otherwise keep
