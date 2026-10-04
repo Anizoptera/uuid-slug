@@ -58,6 +58,19 @@ const hasLatin1Text =
   typeof globalThis.Buffer === "function" &&
   wrapMethod(globalThis.Buffer.prototype, "toString", "latin1");
 const usesLatin1Text = typeof Bun !== "undefined" && hasLatin1Text;
+if (usesLatin1Text && wrapMethod(globalThis.Buffer.prototype, "latin1Slice", "latin1")) {
+  // Bun's generic toString does not call this property; count either native entry once.
+  // The independent control proves direct string construction reaches the added instrument.
+  const probe = globalThis.Buffer.from("x") as Uint8Array & {
+    latin1Slice?: (this: Uint8Array, start: number, end: number) => string;
+  };
+  const slice = probe.latin1Slice;
+  assert.equal(typeof slice, "function");
+  assert.ok(slice);
+  const before = counts.latin1;
+  assert.equal(slice.call(probe, 0, 1), "x");
+  assert.equal(counts.latin1, before + 1);
+}
 assert.ok(wrapMethod(String, "fromCharCode", "fromCharCodes"));
 const expectTextFormatter = (message: string) => {
   if (usesLatin1Text) assert.equal(counts.latin1, 1, `native Latin-1 text: ${message}`);
