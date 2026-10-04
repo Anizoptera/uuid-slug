@@ -294,6 +294,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
   bottleneck moves because a component gain can disappear in dispatch, formatting or allocation.
 - Before using a benchmark statistic to select code, apply `bench/README.md` §Measurement limits:
   identify the independent sample unit and distinguish batch throughput from individual-call latency.
+- When collecting workload memory and CPU samples in one driver, capture memory first. Retained
+  sample records are harness memory, not package state; record each pass's call count.
 - Rank performance evidence by current user value: latest stable Node Current and Bun first, latest
   Node LTS and Chromium second, latest Deno third. Older supported Node versions gate correctness
   and compatibility, not performance trade-offs. Node Current JITless is the final rung: retain a

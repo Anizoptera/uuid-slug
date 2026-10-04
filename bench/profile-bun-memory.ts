@@ -43,7 +43,7 @@ const before = heapStats();
 const nativeBefore = memoryUsage();
 console.error("UUID_SLUG_MIMALLOC_BEFORE");
 Bun.unsafe.mimallocDump();
-const sampling = profile(() => {
+function runCases(): void {
   for (const [name, operation] of cases) {
     const expectedError = name.startsWith("invalid.");
     for (let index = 0; index < calls; index += 1) {
@@ -53,7 +53,10 @@ const sampling = profile(() => {
       consume(value, index);
     }
   }
-}, 100);
+}
+// Measure the workload without retaining CPU sample records in its final heap reading.
+// Sampling needs its own pass: its returned arrays and strings are harness-owned memory.
+runCases();
 Bun.gc(true);
 const after = heapStats();
 const nativeAfter = memoryUsage();
@@ -70,9 +73,12 @@ await Promise.all([
       nativeAfter,
       sink,
       calls,
+      // Each selected case executes this many calls in each pass.
+      memoryCalls: calls,
+      samplingCalls: calls,
       cases: cases.map(([name]) => name),
     }),
   ),
-  Bun.write(`${reports}/bun-jsc-sampling.json`, JSON.stringify(sampling)),
   Bun.write(`${reports}/bun-jsc.heapsnapshot`, JSON.stringify(Bun.generateHeapSnapshot())),
 ]);
+await Bun.write(`${reports}/bun-jsc-sampling.json`, JSON.stringify(profile(runCases, 100)));

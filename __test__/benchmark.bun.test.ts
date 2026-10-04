@@ -231,7 +231,7 @@ const entropy = {
   maxOnesRatio: 1,
 };
 
-test("Bun memory profiling executes private portable encoders", async () => {
+test("Bun portable-encoder memory excludes CPU sample records", async () => {
   const directory = await mkdtemp(join(tmpdir(), "uuid-slug-memory-corpus-"));
   try {
     const child = Bun.spawn(
@@ -257,6 +257,11 @@ test("Bun memory profiling executes private portable encoders", async () => {
       diagnostic: "",
     });
     expect(await Bun.file(join(directory, "bun-jsc-sampling.json")).exists()).toBe(true);
+    // Profile records can dwarf retained package state; the snapshot must precede their creation.
+    const snapshot: { edgeNames: string[] } = await Bun.file(
+      join(directory, "bun-jsc.heapsnapshot"),
+    ).json();
+    expect(snapshot.edgeNames).not.toContain("stackTraces");
   } finally {
     await rm(directory, { force: true, recursive: true });
   }

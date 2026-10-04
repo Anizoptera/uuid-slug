@@ -63,6 +63,10 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       Matched default-text captures in both orders disagree on retained heap, RSS and committed
       memory growth. Keep `native-v7-folded*-profile*` captures;
       neither page totals nor retained heap measure gross native allocation per identifier.
+      Measure memory before CPU sampling; retained profile records otherwise enter the workload
+      snapshot. The separated captures in both orders favor native retained heap growth;
+      keep `native-v7-memory-separated-*`. Record each pass's calls and require snapshots to
+      exclude CPU sample records. Gross allocation and complete-call control parity stay open.
       Reject it if repeated complete calls show a material primary-call regression, resource
       costs grow without a requested benefit, or a published contract fails. Preserve configured
       generators and the native-absent path; do not infer their behavior from native success.
