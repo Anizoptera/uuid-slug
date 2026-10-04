@@ -2516,6 +2516,23 @@ individual-call latency, and these conditional intervals do not establish equiva
 reproduced throughput gain. Lower sampled Node allocation remains a reason to investigate,
 not sufficient evidence to change production or select a runtime-specific implementation.
 
+`counter-low31-packed-long.log` extends the same five-case Node Current/Bun comparison to
+120 ms observations and 128 ms warm-up, preserving twelve fresh process pairs.
+The Node byte median ratio is 0.962; the paired median ratio is 0.973 with a
+95% interval [0.932, 0.990]. Every other interval includes parity. Longer windows do not
+remove execution interference: minimum process-CPU/wall ratios across retained observations
+are 0.030 on Node and 0.006 on Bun. Do not interpret unresolved Bun results as equivalence.
+
+`counter-low31-packed-secondary.log` checks the same exact cases and sample counts on
+Node v24.21.0, Chromium and Deno v2.9.7 with 60 ms observations and 64 ms warm-up.
+Every Node LTS and Chromium interval includes parity. Deno text has paired median ratio
+0.983 [0.944, 0.998]; its other cases remain unresolved. This single Deno comparison does
+not establish a reproduced gain. All requested case names and per-revision observation counts
+match in both reports. Keep shared retention open: the Node byte gain appears in two
+packed comparisons, but the remaining intervals still permit primary-call or construction losses.
+Runtime-specific selection also remains unmeasured; its dispatch and ownership costs cannot be
+inferred from these shared source substitutions.
+
 Local workerd evidence (2026-10-04): `workerd-public-repeat.jsonl` runs the compiled public entry
 with the portable implementation in both plain-web and `nodejs_compat` configurations. The bundle
 input manifest contains `dist/index.js` and `dist/runtime/portable.js`, with no production source
