@@ -153,6 +153,60 @@ export const runtimeBoundaryCases = [
     },
   },
   {
+    name: "UUIDv7 text preserves byte generation across timestamp and counter boundaries",
+    run(this: void) {
+      // Separate generators receive identical clocks and entropy. The unchanged byte writer
+      // supplies the expected payload; ordinary hexadecimal conversion is an independent encoder.
+      for (const time of [0, 0xffff, 0xffffffff, 0x1_0000_0000, timestamp, 2 ** 48 - 1]) {
+        for (const fractionBits of [0, 1, 6, 12]) {
+          for (const seed of [0x12, 0xed, 0xff]) {
+            for (const textCase of [UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE] as const) {
+              let now = time;
+              const options = {
+                readUnixMs: () => now,
+                subMillisecondFractionBits: fractionBits,
+                fillRandom: (bytes: Uint8Array) => bytes.fill(seed),
+              };
+              const byteGenerator = createUuidV7Generator(options);
+              const textGenerator = createUuidV7Generator(options);
+              // Equal clocks exercise continuation and carry; rollback and advance reuse state.
+              for (const reading of [
+                time,
+                time,
+                Math.max(0, time - 1),
+                time,
+                Math.min(2 ** 48 - 1, time + 1),
+              ]) {
+                now = reading;
+                const expected = byteGenerator.generateUuidV7Bytes();
+                const actual = textGenerator.generateUuidV7(textCase);
+                if (expected instanceof Error) {
+                  assert.ok(actual instanceof Error);
+                  assert.equal(actual.code, expected.code);
+                  continue;
+                }
+                const hex = [...expected]
+                  .map((byte) => byte.toString(16).padStart(2, "0"))
+                  .join("");
+                const text =
+                  hex.slice(0, 8) +
+                  "-" +
+                  hex.slice(8, 12) +
+                  "-" +
+                  hex.slice(12, 16) +
+                  "-" +
+                  hex.slice(16, 20) +
+                  "-" +
+                  hex.slice(20);
+                assert.equal(actual, textCase === UUID_TEXT_UPPERCASE ? text.toUpperCase() : text);
+              }
+            }
+          }
+        }
+      }
+    },
+  },
+  {
     name: "preserves every fresh UUIDv7 tail byte across output forms",
     run(this: void) {
       // Distinct bytes and their complements expose displaced, duplicated and pinned entropy bits.
@@ -949,34 +1003,44 @@ export const runtimeBoundaryCases = [
         [false, false],
         [true, false],
       ] as const) {
-        let entropyBytes = 0;
-        const generate = (input?: Uint8Array) => {
-          const generator = createUuidV7Generator({
-            coordinateExplicitInstants,
-            readUnixMs: () => 0,
-            fillRandom: (bytes) => {
-              entropyBytes = bytes.length;
-              if (input) bytes.set(input);
-            },
-          });
-          const bytes = explicit
-            ? generator.generateUuidV7Bytes({ at: 0 })
-            : generator.generateUuidV7Bytes();
-          assert.ok(bytes instanceof Uint8Array);
-          return bytes.reduce((bits, byte) => (bits << 8n) | BigInt(byte), 0n);
-        };
-        const baseline = generate();
-        let seen = 0n;
-        for (let bit = 0; bit < entropyBytes * 8; bit += 1) {
-          const input = new Uint8Array(entropyBytes);
-          input[bit >> 3] = 1 << (bit & 7);
-          const changed = generate(input) ^ baseline;
-          assert.equal(changed & (changed - 1n), 0n, "one input bit changed multiple bits");
-          assert.equal(seen & changed, 0n, "input bits merged into one output bit");
-          seen |= changed;
+        for (const textCase of [undefined, UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE] as const) {
+          let entropyBytes = 0;
+          const generate = (input?: Uint8Array) => {
+            const generator = createUuidV7Generator({
+              coordinateExplicitInstants,
+              readUnixMs: () => 0,
+              fillRandom: (bytes) => {
+                entropyBytes = bytes.length;
+                if (input) bytes.set(input);
+              },
+            });
+            if (textCase !== undefined) {
+              const text = explicit
+                ? generator.generateUuidV7({ at: 0, textCase })
+                : generator.generateUuidV7(textCase);
+              assert.equal(typeof text, "string");
+              assert.ok(typeof text === "string");
+              return BigInt("0x" + text.replaceAll("-", ""));
+            }
+            const bytes = explicit
+              ? generator.generateUuidV7Bytes({ at: 0 })
+              : generator.generateUuidV7Bytes();
+            assert.ok(bytes instanceof Uint8Array);
+            return bytes.reduce((bits, byte) => (bits << 8n) | BigInt(byte), 0n);
+          };
+          const baseline = generate();
+          let seen = 0n;
+          for (let bit = 0; bit < entropyBytes * 8; bit += 1) {
+            const input = new Uint8Array(entropyBytes);
+            input[bit >> 3] = 1 << (bit & 7);
+            const changed = generate(input) ^ baseline;
+            assert.equal(changed & (changed - 1n), 0n, "one input bit changed multiple bits");
+            assert.equal(seen & changed, 0n, "input bits merged into one output bit");
+            seen |= changed;
+          }
+          const structural = (15n << 76n) | (3n << 62n);
+          assert.equal(seen, ((1n << 80n) - 1n) & ~structural);
         }
-        const structural = (15n << 76n) | (3n << 62n);
-        assert.equal(seen, ((1n << 80n) - 1n) & ~structural);
       }
     },
   },

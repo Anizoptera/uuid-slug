@@ -38,6 +38,76 @@ function replaceOnce(source: string, from: string, to: string): string {
 }
 
 function v7Candidates(source: string): readonly SourceCandidate[] {
+  const directText = () => {
+    // Remove intermediate stores without changing sequence policy or adding tables and buffers.
+    // A separate function leaves owned-byte calls unchanged; its extra closure is a cold cost
+    // to measure only if complete text calls survive the screen (bench/PERFORMANCE.md).
+    const start = source.indexOf("  function bytes(out?: Uint8Array, offset = 0)");
+    const end = source.indexOf("\n  function bytesAt(", start);
+    if (start < 0 || end < start) throw new Error("Clock draw moved; repair the text experiment.");
+    const original = source.slice(start, end);
+    let draw = replaceOnce(
+      original,
+      "function bytes(out?: Uint8Array, offset = 0): Uint8Array | UuidSlugError",
+      "function directClockText<Case extends UuidTextCase>(textCase: Case): UuidV7StringFor<Case> | UuidSlugError",
+    );
+    const rangeStart = draw.indexOf("      const target = out ?? new Uint8Array(16);");
+    const rangeEnd = draw.indexOf("      // Split THEN validated", rangeStart);
+    if (rangeStart < 0 || rangeEnd < rangeStart)
+      throw new Error("Private output checks moved; repair the text experiment.");
+    draw = draw.slice(0, rangeStart) + draw.slice(rangeEnd);
+    draw = replaceOnce(
+      draw,
+      "return writeBytes(target, offset, lastMs, counterHi, counterLo);",
+      "return directUuidV7Text(lastMs, counterHi, counterLo, randomTail, textCase);",
+    );
+    const byteExpressions = [
+      "high >>> 8",
+      "high & 255",
+      "(ms >>> 24) & 255",
+      "(ms >>> 16) & 255",
+      "(ms >>> 8) & 255",
+      "ms & 255",
+      "0x70 | ((hi >>> 6) & 15)",
+      "((hi & 63) << 2) | (lo >>> 30)",
+      "0x80 | ((lo >>> 24) & 63)",
+      "(lo >>> 16) & 255",
+      "(lo >>> 8) & 255",
+      "lo & 255",
+      "tail[0] as number",
+      "tail[1] as number",
+      "tail[2] as number",
+      "tail[3] as number",
+    ];
+    const characters: string[] = [];
+    for (let index = 0; index < byteExpressions.length; index++) {
+      if ([4, 6, 8, 10].includes(index)) characters.push("45");
+      characters.push(
+        `digits.charCodeAt(byte${index} >>> 4)`,
+        `digits.charCodeAt(byte${index} & 15)`,
+      );
+    }
+    const writer = [
+      "// Direct text avoids the 16-byte write/read round trip; no callback runs during formatting.",
+      "// Compare complete calls with native Latin-1 formatting before retaining this specialization.",
+      "function directUuidV7Text<Case extends UuidTextCase>(ms: number, hi: number, lo: number, tail: Uint8Array, textCase: Case): UuidV7StringFor<Case> {",
+      '  const digits = textCase === UUID_TEXT_LOWERCASE ? "0123456789abcdef" : "0123456789ABCDEF";',
+      "  const high = Math.floor(ms / 0x1_0000_0000);",
+      ...byteExpressions.map((expression, index) => `  const byte${index} = ${expression};`),
+      `  return String.fromCharCode(${characters.join(", ")}) as UuidV7StringFor<Case>;`,
+      "}",
+      "",
+    ].join("\n");
+    return (
+      replaceOnce(
+        replaceOnce(source, original, original + "\n" + draw),
+        "formatUuidV7(bytes(textBytes), textCase as Case)",
+        "directClockText(textCase as Case)",
+      ) +
+      "\n" +
+      writer
+    );
+  };
   // Math.trunc plus the nonnegative 48-bit bound already proves a safe integer. Keep the
   // original number and negative-reading guards so invalid callbacks never gain coercion.
   const boundedClock = (ceiling: string) =>
@@ -153,6 +223,24 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
   };
   return [
     { name: "baseline", source },
+    {
+      name: "direct-text",
+      get source() {
+        return directText();
+      },
+    },
+    {
+      name: "direct-text-lost-tail",
+      get source() {
+        return replaceOnce(directText(), "const byte15 = tail[3] as number;", "const byte15 = 0;");
+      },
+    },
+    {
+      name: "direct-text-lost-timestamp",
+      get source() {
+        return replaceOnce(directText(), "const byte0 = high >>> 8;", "const byte0 = 0;");
+      },
+    },
     {
       name: "number-counter",
       get source() {

@@ -76,6 +76,11 @@ Use `v7-draw number-counter` to compare an exact 42-bit number with split counte
 `number-counter-overflow` must fail the timestamp-ceiling oracle before timing.
 Use `v7-draw inline-clock` to isolate the clock wrapper while preserving callback failures.
 `inline-clock-lost-catch` must fail the shared throwing-clock witness in both runners.
+Use `v7-draw direct-text` to construct preset UUIDv7 text directly from timestamp, counter and
+tail values without intermediate bytes. Configured text and owned bytes retain their existing
+functions. `direct-text-lost-tail` and `direct-text-lost-timestamp` must fail the shared text
+payload witnesses before timing. The candidate adds a private function per generator; measure
+construction before retention if repeated complete-call gains survive.
 For allocation attribution, run the retained report's `profile.mjs` against each candidate module
 with `UUID_SLUG_PROFILE_MODULE` and a separate native directory and name. Retain that process's
 call records, alternate candidate order, and await its exit before starting another capture.
