@@ -212,8 +212,10 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         The new case passes unchanged production and rejects the mutation on Node and Bun.
         Two intact screens pass behavior/resources but Bun default slug and pair gains reverse
         in the repeat. Reject caching; preserve the current generator lookup.
-- [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
+- [ ] Resolve Bun owned UUIDv7 byte parity and close Deno's gap against qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
+      Fresh Bun owned-byte comparisons change direction around parity; do not use the older
+      clear loss to prioritize another byte rewrite ahead of the remaining native text gap.
   - [x] Compare one unaligned four-byte DataView read and erase with individual pooled byte
         reads and erasures. Preserve lazy initialization, byte order, unaligned reseed offsets,
         erasure and refill failures. The lost-byte mutation must fail Node and Bun before timing.
@@ -608,6 +610,8 @@ competitor. Caller buffers miss that, ns package / `uuid`: Bun UUIDv4 27.9 / 26.
       Paired expressions improve the measured non-Bun canonical calls in repeated packed comparisons;
       Bun keeps its original expression to avoid reproduced normalization losses. Resolve Bun's
       rival gap and the unexplained cold-import heap increase before claiming full resource parity.
+      Fresh V8 comparisons favor the retained guard over the library; Bun remains mixed.
+      Keep resource parity open rather than treating the superseded V8 loss as current work.
 - [ ] Close the validated timestamp call's gap against the parse-only native floor without
       weakening full UUIDv7 validation; keep the lower bound distinct from a qualified competitor.
 - [x] Retain case-insensitive canonical UUIDv7 validation through the existing text guard;

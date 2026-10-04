@@ -223,11 +223,43 @@ module-default byte oracle on Node and Bun before timing (`primary-owned-draw-mu
 Before the fixed text writes, the earlier matrices measured Bun default UUIDv7 text at
 86–87 ns against native 44–47 ns, and plain slugs at 76–78 ns against native 60–61 ns.
 Native burst timestamp drift keeps those rows as floors rather
-than approved replacements. Owned UUIDv7 bytes trail `uuid` on Bun and `uuidv7` on Deno.
+than approved replacements. The earlier owned UUIDv7 comparisons favor `uuid` on Bun and
+`uuidv7` on Deno; use the fresh Bun comparison below before selecting another byte optimization.
 Bun base64url encoding trails native encoding; Deno decoding trails a Buffer-only floor
 that does not supply the promised owned plain Uint8Array. The owned native comparison below
 favors the package on Deno. Most ordinary Node and Chromium generation
 and conversion calls lead the measured libraries; earlier timestamp-library losses are superseded.
+
+Prioritize Bun's remaining native text gap rather than the older owned-byte loss.
+Two fresh-process comparisons on 2026-10-04 use nine 20 ms batches after 32 ms warm-up.
+`primary-text-rivals.jsonl` records Bun 1.4.2 default UUIDv7 text at 73.45/72.66 ns against
+native 49.12/49.16 ns. Node 26.10.0, Node 24.21.0, Deno 2.9.7 and Chromium 153.0.8010.12
+also execute the maintained text corpus. Package text is faster than every qualified library
+in these observations; native Bun timestamp behavior still prevents direct adoption.
+`primary-v7-bytes-rivals-first.log` and `primary-v7-bytes-rivals-repeat.log` record Bun owned
+bytes at 39.74/39.77 ns against `uuid` at 39.89/39.27 ns. Their changed direction supersedes
+the earlier clear Bun loss without establishing equivalence. Caller-buffer calls remain slower:
+38.75/39.88 ns against 33.65/34.06 ns. Keep that secondary job behind default text.
+
+The retained canonical guard no longer shows the earlier V8 library loss in the fresh corpus.
+`primary-guard-rivals.jsonl` uses the same process and batch settings: package/`uuid.validate`
+medians are 36.30/52.85 and 34.99/51.50 ns on Node Current, 37.81/54.53 and 36.28/55.42 ns
+on Node LTS, 35.15/54.16 and 35.43/54.07 ns on Deno, and 34.61/51.71 and 35.35/54.50 ns
+on Chromium. Bun reads 24.76/25.44 and 27.69/26.22 ns, so its direction remains mixed.
+These comparisons cover the maintained canonical input corpus, not every accepted spelling.
+Two process observations cannot establish small-effect equivalence, individual-call tails,
+or allocation parity; the earlier cold-import heap increase remains unresolved.
+
+Reject a reused native buffer copy as a replacement for ordinary Bun plain-slug encoding.
+The exploratory candidate allocates `Buffer.alloc(16)` once, then calls `scratch.set(bytes)`
+and `scratch.toString("base64url")` after the existing alphabet resolution and scratch draw.
+On Bun 1.4.2, two reversed-order processes read 68.83/67.58 ns against the public call's
+61.03/63.34 ns; a wrapper retaining the existing encoder reads 60.71/63.12 ns.
+`native-buffer-slug-first.json` and `native-buffer-slug-repeat.json` retain all nine 20 ms
+batches per process after 32 ms warm-up and 128 walking-bit round-trip witnesses.
+This exploratory comparison lacks a mutation proof and packed failure/resource coverage;
+it does not license adoption or attribute the loss to a specific native instruction.
+It rejects the copy-based proposal, not direct encoding from native generation storage.
 
 The maintained source screen compares `numeric-clock-first` and `timestamp-words` with its
 unchanged baseline in both acquisition orders on Node 26.10.0 and Bun 1.4.2. Run
