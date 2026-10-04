@@ -2586,6 +2586,20 @@ The experiment source is retained as `bench/reports/v7-chunks-source.patch` agai
 its final labels exclude the rejected candidates from package rankings. The measured mechanisms
 are unchanged by those labels. The maintained benchmark excludes these rejected experiments.
 
+Prepacked hexadecimal pairs remain a screening candidate, not a production optimization.
+Bun 1.4.2 screens on 2026-10-04 retain source, proofs, counters and raw samples in
+`candidates-format-cKPCHB` and `candidates-format-wwlhwE`. Default text baseline/candidate
+medians are 78.84/76.45 and 82.44/75.65 ns in the first screen, then 81.51/76.65 and
+77.54/76.91 ns in the repeat. Conversion medians are 36.75/36.39 and 41.07/37.72 ns,
+then 38.45/36.31 and 37.38/35.93 ns. Unchanged byte and slug controls also move;
+these four process pairs do not bound the gain or establish installed-package performance.
+Each process uses nine 20 ms batches after 32 ms warm-up, with reversed candidate order
+in its second round. The lost-byte mutation fails Bun's independent offset and payload
+oracles in `candidates-format-2doXyK`; intact Node/Bun behavior and Bun resource proofs pass
+before timing. Warm counters preserve one Latin-1 call per text result, but do not count
+all table allocations or the added DataView. Packed replication, cold costs and affected
+runtime profiles remain required before retention; the native gap remains open.
+
 Local workerd evidence (2026-10-04): `workerd-public-repeat.jsonl` runs the compiled public entry
 with the portable implementation in both plain-web and `nodejs_compat` configurations. The bundle
 input manifest contains `dist/index.js` and `dist/runtime/portable.js`, with no production source

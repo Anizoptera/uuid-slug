@@ -145,6 +145,9 @@ keep contract changes reserved for Art, and claim impossibility only with a name
   - [ ] Identify a text-construction change that removes a substantial part of the Bun default
         generation gap. Compare existing rejected mechanisms before another screen; test whole
         construction or generation work rather than another small dispatch refinement.
+    - [ ] Compare prepacked hexadecimal pairs with per-call byte lookups and packing. Prove
+          offsets, case and the last payload byte before measuring complete generation and
+          conversion; retained tables and the added view must earn repeated primary-call gains.
     - [x] Compare hexadecimal-chunk concatenation and native join over reused string parts.
           Each lost-tail mutation fails the independent payload oracle. Both repeated Bun
           generation screens lose; matching conversion screens also lose without generation

@@ -1199,8 +1199,60 @@ function formatCandidates(source: string): readonly SourceCandidate[] {
       "let uuidTextScratch: Latin1Scratch | undefined;\nlet uuidTextScratchWords: DataView | undefined;",
     );
   };
+  // Prepack outside the call: the previous word16 experiment still packed two characters for
+  // every byte. This removes that work but retains a view and separate case tables; complete
+  // generation and conversion must justify those costs before any production change.
+  const packedPairs = (corrupt = false): string => {
+    const table = [
+      "let lowercaseHexPairs: Uint16Array | undefined;",
+      "let uppercaseHexPairs: Uint16Array | undefined;",
+      "let uuidTextScratchWords: DataView | undefined;",
+      "function hexPairs(digits: string): Uint16Array {",
+      "  const pairs = new Uint16Array(256);",
+      "  for (let byte = 0; byte < 256; byte += 1)",
+      "    pairs[byte] = digits.charCodeAt(byte >>> 4) | (digits.charCodeAt(byte & 15) << 8);",
+      "  return pairs;",
+      "}",
+    ].join("\n");
+    const selection = [
+      "  const scratch = (uuidTextScratch ??= createUuidTextScratch(create));",
+      "  const codes =",
+      "    textCase === UUID_TEXT_UPPERCASE",
+      "      ? (uppercaseHexCodes ??= hexCodes(UPPERCASE_HEX))",
+      "      : (lowercaseHexCodes ??= hexCodes(HEX));",
+    ].join("\n");
+    const body = [
+      "  const words = (uuidTextScratchWords ??= new DataView(text.buffer, text.byteOffset, text.byteLength));",
+      ...offsets.map(
+        (position, byte) =>
+          `  words.setUint16(${position}, codes[bytes[offset + ${byte}] as number] as number, true);`,
+      ),
+      ...(corrupt ? ["  text[35] = 0;"] : []),
+    ].join("\n");
+    return replaceOnce(
+      replaceOnce(
+        replaceOnce(source, fixedSelected ? fixed : loop, body),
+        selection,
+        selection.replaceAll("HexCodes", "HexPairs").replaceAll("hexCodes", "hexPairs"),
+      ),
+      "let uuidTextScratch: Latin1Scratch | undefined;",
+      "let uuidTextScratch: Latin1Scratch | undefined;\n" + table,
+    );
+  };
   return [
     { name: "baseline", source },
+    {
+      name: "packed-pairs",
+      get source() {
+        return packedPairs();
+      },
+    },
+    {
+      name: "packed-pairs-lost-byte",
+      get source() {
+        return packedPairs(true);
+      },
+    },
     {
       name: "direct-latin1",
       get source() {
