@@ -451,10 +451,31 @@ function poolCandidates(source: string): readonly SourceCandidate[] {
     fixedStart < 0
       ? replaceOnce(source, loop, `if (length === 4) {\n      ${four}\n    } else ${loop}`)
       : source;
+  // Reseeds consume ten bytes, so subsequent four-byte reads can be unaligned. A DataView
+  // handles both offsets without padding or discarding entropy; compare its retained view and
+  // unpacking work against the existing byte stores through complete generation calls.
+  const word = replaceOnce(
+    replaceOnce(
+      replaceOnce(
+        fixed,
+        "let pool: Uint8Array<ArrayBuffer> | undefined;",
+        "let pool: Uint8Array<ArrayBuffer> | undefined;\n  let poolView: DataView | undefined;",
+      ),
+      "pool ??= new Uint8Array(POOL_BYTES);",
+      "if (pool === undefined) { pool = new Uint8Array(POOL_BYTES); poolView = new DataView(pool.buffer); }",
+    ),
+    four,
+    "const word = (poolView as DataView).getUint32(offset, false);\n      (poolView as DataView).setUint32(offset, 0, false);\n      bytes[0] = word >>> 24;\n      bytes[1] = (word >>> 16) & 0xff;\n      bytes[2] = (word >>> 8) & 0xff;\n      bytes[3] = word & 0xff;",
+  );
   return [
     { name: "baseline", source },
     { name: "indexed-loop", source: indexed },
     { name: "fixed-four", source: fixed },
+    { name: "word-four", source: word },
+    {
+      name: "word-four-lost-byte",
+      source: replaceOnce(word, "bytes[3] = word & 0xff;", "bytes[3] = 0;"),
+    },
     {
       name: "fixed-four-lost-byte",
       source: replaceOnce(fixed, "bytes[3] = pool[offset + 3] as number;", "bytes[3] = 0;"),

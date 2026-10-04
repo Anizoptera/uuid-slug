@@ -116,6 +116,9 @@ Use `v7-draw independent-direct-lost-bit` to check the payload oracle: both runt
 reject it before timing, with their failure output retained in the report directory.
 Use `pool fixed-four source-cursor` to compare pool copying through complete v4 and v7 calls.
 Use `pool indexed-loop` to compare the retained stores with the former indexed copy-and-erase loop.
+Use `pool word-four` to compare one unaligned DataView read and erase with four byte stores;
+`word-four-lost-byte` must fail the shared payload-and-erasure witness before timing.
+The candidate retains one view per initialized pool; account for that cost if throughput survives.
 `pool fixed-four-lost-byte` must fail the shared four-byte copy-and-erasure witness before timing.
 Set `UUID_SLUG_RESOURCE_ENTROPY_BURST` to a positive call count when running `bench/resources.ts`
 against a candidate module to compare secure-source refills over successful caller-buffer draws.

@@ -108,6 +108,11 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         in the repeat. Reject caching; preserve the current generator lookup.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
+  - [ ] Compare one unaligned four-byte DataView read and erase with individual pooled byte
+        reads and erasures. Preserve lazy initialization, byte order, unaligned reseed offsets,
+        erasure and refill failures. The lost-byte mutation must fail Node and Bun before timing.
+        Reject inconsistent complete-call gains or another primary-call loss; measure the
+        retained view and cold initialization only if repeated throughput gains survive.
   - [x] Compare one exact 42-bit Number counter with split high/low words; preserve fractional
         layouts, transactional entropy failures, rollover and writer bytes. The widened-overflow
         mutation must fail the ceiling oracle before timing. Reject inconsistent primary-call gains;
