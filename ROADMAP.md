@@ -1,8 +1,9 @@
 # Native parity
 
 Complete the remaining performance work without changing identifier formats, secure entropy,
-validation, ownership, or published generation guarantees. Preserve the unresolved clock guarantee;
-measure clock drift without imposing a new promise. Keep remote writes unauthorized.
+validation, ownership, or published generation guarantees. Optimize defaults under
+`docs/public-api.md` §Generation and codecs; measure clock drift without imposing an unrequested
+never-ahead promise. Keep remote writes unauthorized.
 
 ## Next production decision
 
@@ -10,6 +11,13 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
 
 - [ ] Resolve the current Bun default UUIDv7 text gap first. Reuse the existing complete-call
       observations and profiles; refresh only evidence that cannot decide the current choice.
+  - [ ] Evaluate native Bun UUIDv7 text for ordinary defaults without timestamp repair; retain
+        created-generator controls for explicit ordering, clock and layout requirements. Prove
+        native success, absence, malformed output, fallback and dual failure before timing;
+        compare repeated complete calls and resources, then update consumer expectations.
+  - [ ] Remove drift-only disqualification from benchmark ranking and stale implementation
+        comments before evaluating native defaults. Preserve drift measurements, secure-entropy
+        qualification and published-contract checks; verify the actual generated report.
       Compare the package, same-output native floor and qualified rivals with matching output,
       entropy and ownership. Keep native contract failures visible without adopting them.
 - [ ] Identify the largest removable cost in that call before choosing another implementation.
@@ -501,24 +509,15 @@ measure lane durations, isolate timings from competing work, and retain only def
 - Correctness first: map contracts, add falsifiers, and mutate before timing. Keep a change only
   when two packed replays reproduce it. Wire formats and README §Guarantees stay fixed.
 
-## Needs ruling
-
-1. Clock guarantee. Proposed README guarantee: "Current-time UUIDv7 generation never encodes a
-   timestamp ahead of the clock, unless the clock moved backwards under the preserve policy."
-   If yes: add a burst test on Node and Bun. If bench-only: add a drift row, no test. If neither:
-   nothing. Until ruled, write no test that imposes it (asked 2026-09-16, no answer).
-
 ## Derived doctrine (agent decisions)
 
-- Keep `fastv7` timed but exclude it from comparable ranking because measured bursts encode
-  future timestamps. Its secure entropy and random-bit count do not disqualify it.
-
-- Same output means the same bytes or text, secure entropy, and a truthful clock. A floor or rival
-  row that fails one of these stays timed but cannot close a gap.
+- Qualify generation by the requested output, secure entropy and published guarantees. Report
+  timestamp advancement separately; it does not automatically disqualify native or rival defaults.
+  The default/configured trade-off follows `docs/public-api.md` §Generation and codecs.
 - Screen first (one process per row, every result read, twice), then run two packed replays on all
   runtimes. A screen chooses; only replays retain.
-- Physical limit vs choice: Bun `Date.now()` costs about 22 ns and is the cheapest truthful clock
-  in JavaScript. A timer-cached clock is rejected: it lags during synchronous bursts.
+- Keep clock-cost measurements in `bench/PERFORMANCE.md`. Compare clock mechanisms against the
+  requested generation contract; observed latency does not establish a physical lower bound.
 - Tool limits: Deno cannot screen through the symlinked source (`#runtime` does not resolve), so
   replays decide Deno; the Bash tool cuts the middle of long output, so log commit-hook output.
 - Choose the next task by the priority rule above, using current evidence rather than phase
@@ -608,17 +607,16 @@ Feistel rounds (about half their time) set their floor.
       `short-uuid`); rank only those producing the same 128-bit lossless form.
 - [x] Make the generated report print package / floor and package / best rival per call and
       runtime with a parity verdict. Done when gap numbers come from the report, not hand copies.
-- [x] Replace `fastv7`'s rejection reason with its clock drift (47–88 ms ahead after 2M calls):
-      `@kripod/uuidv7` has the same 62 random bits and is not rejected, so bits cannot disqualify.
-      Add the burst drift probe as a bench row, whatever the clock ruling decides.
+- [x] Measure `fastv7` clock drift separately from entropy and payload layout. Keep the burst
+      probe informational; qualify the requested consumer result under the generation policy.
 
 ## Phase 3: default generation gaps
 
 Why: default generation misses parity, ns package / target. Bun: UUIDv4 text 31–36 / 27–32 native; UUIDv7 text
 75–82 / 39–45 and slug 77–82 / 54–58 native; UUIDv7 new bytes 44.9 / `uuid` 40.6. UUIDv7 text is
-about 42 ns draw plus 37 ns Latin-1 formatting. The UUIDv7 target is native, but native drifts:
-rejected (§Native floors) are `Bun.randomUUIDv7` (567–576 ms ahead after 2M calls), the same with a
-`Date.now()` argument (51 ns, up to 8 ms ahead), and patching its text (91–94 ns).
+about 42 ns draw plus 37 ns Latin-1 formatting. Native timestamp advancement is measured in
+`bench/PERFORMANCE.md`; it is not a default disqualification. Timestamp repair costs more than
+unrepaired native output, so evaluate the latter under the approved default/configured distinction.
 Clock, entropy and formatting need separate measurements; their summed timings do not establish
 a physical lower bound for the complete call.
 

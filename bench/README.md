@@ -35,6 +35,9 @@ Rules:
   published guarantees are mandatory; weigh other differences by measured consumer harm. Keep a
   materially weaker result out of the comparable ranking, but inspect any faster mechanism that could
   preserve our guarantees. Record the exact mismatch and recheck it after updates.
+  Name the violated contract when rejecting a row. Timestamp advancement alone does not violate
+  a module-level never-ahead guarantee: that guarantee is not published. Keep drift observations
+  separate from qualification; apply [generation policy](../docs/public-api.md#generation-and-codecs).
 - Run `bun run bench:matrix --smoke` for a short comparison. Set `UUID_SLUG_BENCH_RUNTIMES` to
   colon-separated executable paths to add runtimes. Each requested runtime must produce both reports.
 - `UUID_SLUG_BENCH_ITERATIONS` and `UUID_SLUG_ENTROPY_SAMPLES` accept positive safe integers.

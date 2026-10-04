@@ -83,8 +83,9 @@ before timing either repair. Replacing the timestamp and version retains all 74 
 
 Bun default text reads 73.61/72.31 ns across the matrices, against native Bun UUIDv7 at
 47.02/46.12 ns: the remaining package/native ratio is about 1.57 in both. The fastest qualified
-measured library, `uniku`, reads 188.38/184.48 ns; `fastv7` reads 125.45/123.16 ns but retains
-its timestamp-drift rejection. The package leads these measured libraries on this workload;
+measured library, `uniku`, reads 188.38/184.48 ns; `fastv7` reads 125.45/123.16 ns.
+Timestamp drift alone does not disqualify default generation under the generation policy in
+`docs/public-api.md`. The package leads these measured libraries on this workload;
 that does not close the native gap or establish resource parity. Native UUIDv4 repair costs
 173.26/161.54 ns using hexadecimal slicing and 112.69/106.61 ns using fixed character prefixes.
 Both lose before adding package validation or native-failure fallback. Node and Deno also favor
@@ -1618,8 +1619,8 @@ cost 91–94 ns and slugs 103–106 ns against 70–73 and 66–71 ns for the pa
 one-process screens on Bun 1.4.2, because slicing and concatenating the native string costs more
 than the native call saves.
 
-`Bun.randomUUIDv7` is the fastest UUIDv7 text and slug on Bun, but it cannot replace module-level
-generation because it encodes timestamps ahead of the clock. When its 12-bit counter overflows
+`Bun.randomUUIDv7` is the fastest measured UUIDv7 text and slug on Bun and encodes timestamps
+ahead of the clock. When its 12-bit counter overflows
 within one millisecond it advances the encoded millisecond, and repeated overflow compounds. After
 a burst of 2 million calls on Bun 1.4.2, native text and slugs encoded timestamps 567–576 ms ahead of
 `Date.now()`, while the package generator stayed at or behind the clock. Passing `Date.now()` as its
@@ -1627,8 +1628,10 @@ timestamp cost 51 ns and still encoded up to 8 ms ahead during a one-second burs
 reads, with about 85% of samples at least 1 ms ahead. Rejecting values ahead of the clock cost 94 ns
 and rejected 99.8% of them. Bun's `node:crypto.randomUUIDv7` ran 429 ms ahead after the same burst.
 Every UUIDv7 form on Bun therefore uses the package generator, whose median text and slug costs stay
-about 36 ns and 23 ns above the native floor. That gap buys timestamps that stay at the clock during
-bursts; it is not a validation or dispatch cost.
+about 36 ns and 23 ns above the native floor. In these bursts, that gap accompanies timestamps
+that stay at the clock; it does not establish an unavoidable validation or dispatch cost.
+Art's default-generation policy in `docs/public-api.md` supersedes rejection solely for timestamp
+advancement. The measurements remain evidence of the trade-off, not a never-ahead contract.
 
 Node 26.8.2's `crypto.randomUUIDv7` draws its 12 bits after the timestamp randomly on every call
 and encoded no timestamp ahead of the clock during a burst of 2 million calls, but it is slower than
@@ -3297,19 +3300,19 @@ Chromium, and Deno, and Bun's owned-byte groups. Bun's UUIDv4 caller-buffer writ
 by about 10% in both runs. Deno's owned UUIDv7 bytes were unresolved against `uuidv7`: 12% behind,
 then 2% ahead. UUIDv7 text led every package on all four runtimes. Raw platform generation was 5%
 faster on Node and 2.07 times faster on Bun. Bun's native generator encodes timestamps ahead of the
-clock during bursts, so it cannot replace the package generator; see Native floors. UUIDv4 text matched
+clock during bursts; see Native floors for measurements and the current qualification policy. UUIDv4 text matched
 Node's native generator within 1% before portable text replaced it (see Native floors); on Bun it
 trailed `crypto-randomuuid` by about 10% and the native generator by 5%; on Deno it trailed `uniku`
 by about 30% and paid 34% over the native generator for validation and the error-value boundary; on Chromium
 it trailed the pooled portable generator in `@lukeed/uuid` by 13–15%. A single 2026-09-12 run had
 put the Chromium gap at about 4% and found no Bun caller-buffer loss; the paired runs supersede it.
-`fastv7` remains timed but cannot be the reference because its 12-bit counter advances the encoded
-millisecond on overflow. After a burst of 2 million calls it encoded timestamps up to 47 ms ahead of
+`fastv7`'s 12-bit counter advances the encoded millisecond on overflow. That difference is
+informational for module-level defaults, not a qualification failure. After a burst of 2 million calls it encoded timestamps up to 47 ms ahead of
 `Date.now()` on Node 26.8.2 and 88 ms ahead on Bun 1.4.2, with 95–97% of values ahead; `uuid`,
 `uuidv7`, `uniku`, `uuidv7-js`, `@kripod/uuidv7`, and this package stayed at or behind the clock. This package also starts its 42-bit sequence
 from a random seed. `fastv7` and `@kripod/uuidv7` both use a zero-start counter with 62 random bits;
 that shared choice does not disqualify one of them. Faster mechanisms remain candidates when
-they preserve the requested identifier and avoid future-dated timestamps.
+they preserve the requested identifier and published guarantees.
 Validated text timestamp extraction trailed `uuidv7-js` by 3–8% on Node, Bun, and Deno and by
 14–15% on Chromium in both runs. `uniku` timestamp results are not ranked because its call accepts
 non-v7 UUID text.

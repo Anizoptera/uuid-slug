@@ -65,6 +65,12 @@ efficiency. A reproducible misuse alone does not justify that cost.
   Plan files, agent memory, and session notes outside this repository track progress only; a ruling
   kept there is lost to the next session.
 - Read README §Guarantees before changing generation or tests; it owns the consumer guarantees.
+  Before rejecting a faster implementation, name the published promise or explicit maintainer
+  requirement it violates. An unanswered proposal, existing test, or agent-derived plan constraint
+  is not a new guarantee. Fix conflicting contract text and the roadmap before implementation.
+  Art, 2026-10-04: prioritize ordinary defaults' performance and resource efficiency; keep costly,
+  rarely needed additional guarantees opt-in. Read `docs/public-api.md` §Generation and codecs
+  before deciding which generation properties belong on defaults or configured generators.
   New guarantees require a maintainer ruling before code or tests impose them. Intra-millisecond ordering
   is explicitly not guaranteed: do not gate it or reject a native generator for lacking it. The
   exemption covers order only. Before adopting a native or alternative generator, compare every

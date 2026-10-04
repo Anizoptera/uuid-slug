@@ -285,6 +285,17 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 
 ### Generation and codecs
 
+Ordinary generation defaults must not pay for additional guarantees the caller did not request.
+
+Art, 2026-10-04: choose defaults for end-user performance and resource efficiency across the
+measured trade-offs; offer costly, rarely needed stronger guarantees through explicit configuration.
+Preserve published identifier, secure-entropy, ownership, validation, and failure contracts.
+An unanswered guarantee proposal or an agent-derived constraint does not extend those contracts.
+Measure native timestamp advancement and explain its consumer consequences; do not reject native
+generation solely to enforce the unapproved promise that a timestamp never runs ahead of the clock.
+Use the existing created-generator controls for callers needing ordering, clock policy, or payload
+layout, rather than making ordinary calls pay for those controls or adding a duplicate switch.
+
 - Generate only UUIDv4 and UUIDv7. Keep parsing, version inspection, and plain conversion generic
   for every structurally valid UUID version. Do not add generation, constants, bounds, fields,
   guards, or helpers for another version. Reconsider that boundary only after concrete demand and
