@@ -1561,8 +1561,8 @@ Remaining gaps and their causes:
   remains possible. WebKit uppercase reads 0.940 [0.896, 0.974]. Portable-text controls remain
   unresolved on both runtimes. CPU profiles and equal-call resource observations below accompany
   the timing decision. Packed observations are fresh processes on one machine;
-  within-process batches are not independent call latencies. Cold cost and total resource parity
-  remain unmeasured for this candidate.
+  within-process batches are not independent call latencies. Packed startup and gross allocation
+  parity remain unmeasured for this candidate.
 
   The eight-pair Node 24.21.0 replay in `v4-native-inline-packed-lts.jsonl` leaves every selected
   case unresolved: default text reads 1.012 [0.99, 1.02], uppercase 0.998 [0.96, 1.03], and portable
@@ -1610,6 +1610,12 @@ Remaining gaps and their causes:
   success Error check. It does not establish native-floor parity, gross allocation parity or absence
   of small cross-runtime differences; those remain open. Preserve native identity validation,
   fallback and dual-failure causes when remeasuring.
+  The committed implementation's packed replay (`v4-inline-production-floors.jsonl`) uses
+  eight fresh-process pairs on Node 26.10.0 and Bun 1.4.2, 20 ms batches and 32 ms warm-up.
+  Bun default text reads 38 to 35 ns, ratio 0.933 [0.92, 0.96]; uppercase is unresolved.
+  Node default text is unresolved. The unchanged Node native control reads slower in this replay,
+  so small changes in unrelated controls cannot be attributed to the implementation.
+  Native rows here include the corpus's property call; they do not close the fastest native-floor gap.
 - Bun UUIDv7 text costs about 79 ns against 27 ns for native UUIDv4 text: about 42 ns draws the
   timestamp, sequence, and random bits, and 37 ns formats them through the Latin-1 `Buffer` path.
   With every result's last character read, formatting the same bytes through `toHex`, `Buffer`
@@ -2413,6 +2419,36 @@ with three 5 ms batches after 16 ms warm-up. Both behavior and counted-resource 
 Bun text and slug directions reverse in the first screen; the repeat's owned bytes lose at
 52.90/54.25 ns against 49.94/50.25 ns. Node and Deno effects vary. Reject this shared substitution;
 these short samples establish neither equivalence nor an engine-level limit.
+
+Fixed Float64 storage isolates mutable numeric state from the same clock, entropy, sequence and
+formatting work (`v7-numeric-state-screen.log`, `v7-numeric-state-repeat.log`, 2026-10-04).
+Node 26.10.0, Bun 1.4.2 and Deno 2.9.7 each use two fresh processes per screen, reversed second
+order, seven 10 ms batches and 32 ms warm-up. The timestamp mutation fails both owning runtime
+clock witnesses before timing (`v7-numeric-state-mutation.log`). Intact behavior and counted
+resources pass. Node owned bytes favor the candidate in all four processes, but Bun text and
+byte gains do not reproduce: one repeat reads 88.99 versus 81.96 ns for text and 62.51 versus
+45.65 ns for bytes. Deno slug directions also vary. Reject shared retention rather than funding
+broader timing or generator-construction work from these inconsistent primary-call effects.
+
+Four sequential Node inspector captures use only `v7.string`, five 100 ms batches, 32 ms warm-up,
+a 4,096-byte allocation sampling interval and collected-object sampling. Order is baseline,
+candidate, candidate, baseline; adjacent call counts are 4,080,000, 4,305,664, 4,135,424 and
+4,163,584 (`candidates-v7-draw-vgbib6/node-state-*/`). `advanceSequence` self allocation estimates
+33,061,872 and 30,915,472 bytes for the baseline, versus 4,352 and zero for the candidate.
+The byte-generator frame still estimates 131,713,936 and 132,657,872 baseline bytes versus
+137,225,616 and 133,093,448 candidate bytes: about 32 bytes per completed call on both sides.
+Profile-wide estimates fall from about 97–98 to 90 bytes per call, including harness and reporting.
+The unchanged string-construction frame stays about 56 bytes per call, so the sequence reduction
+is not merely a matching increase there. These sampled estimates identify an effect of state
+representation; they do not prove numeric boxing, gross allocation, or cross-runtime resource parity.
+Isolate counter storage from timestamp storage before choosing a smaller retained representation.
+
+The five-process competitor refresh (`v7-text-priority-current.jsonl`) uses nine 20 ms batches and
+32 ms warm-up on the same observed runtime releases plus Chromium 153.0.8010.12 and Node 24.21.0.
+Bun package/default text medians range from 70.90 to 75.22 ns; native Bun medians range from
+46.47 to 56.88 ns, with package/native median ratio 1.468. Native clock-overflow behavior remains
+a separate adoption constraint; its lower cost remains the target. This bundled corpus checks
+priority, not installed-package cost, allocation parity, or individual-call latency.
 
 Two clean Node inspector process pairs use the retained candidate bundles and the same filtered
 public calls, seven 15 ms batches, 16 ms warm-up and a 4,096-byte allocation sampling interval.

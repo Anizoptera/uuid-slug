@@ -29,10 +29,22 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       substitution. Compare required output allocation separately; reject improvements that
       merely relocate samples or regress another primary call. Extend attribution to generation,
       parsing and conversion jobs with open gaps.
-  - [ ] Compare mutable numeric closure state with fixed Float64 storage while retaining the
+  - [x] Compare mutable numeric closure state with fixed Float64 storage while retaining the
         same clock, entropy and sequence transitions. The timestamp mutation must fail both
         owning runtime witnesses before timing. Reject primary-call regressions; if throughput
         survives, compare sampled allocation and generator construction before retention.
+        Reject shared retention: Bun gains fail to reproduce. Node owned-byte screens improve
+        in all four processes; matched allocation captures reduce sampled sequence-helper allocation
+        while byte-generator allocation remains. This identifies a storage experiment, not boxing
+        as its cause or native-floor parity.
+  - [ ] Isolate counter storage from timestamp and high-water storage. Compare the smallest
+        representation that removes sequence-helper allocation, including construction cost;
+        preserve every sequence bit and transactional update, and reject other primary-call losses.
+- [ ] Exercise the package in a local Cloudflare workerd runtime. Prove imports, entropy,
+      clocks and representation round trips before adding a maintained correctness lane.
+      Validate benchmark timers against a host clock, separate request overhead from identifier
+      work, and probe inspector CPU and allocation capture. Compare plain web capabilities with
+      Node compatibility; record local-versus-production limits without claiming deployed performance.
   - [x] Isolate the clock wrapper with the maintained inline-clock substitution. Its removal
         leaves generation allocation in matched Node captures, and Bun throughput gains reverse
         or become losses. Keep production unchanged; the wrapper alone does not explain the
