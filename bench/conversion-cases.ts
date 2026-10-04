@@ -50,7 +50,19 @@ function hyphenate(hex: string): string {
 }
 
 /** Reuse the competitor timer while keeping conversion setup and exact witnesses outside timing. */
-export function createConversionCases(nodeBuffer?: typeof Buffer) {
+export function createConversionCases(
+  nodeBuffer?: typeof Buffer,
+  api = {
+    bytesToUuidString,
+    extractUuidV7UnixMs,
+    isUuidString,
+    plainSlugToUuidBytes,
+    plainSlugToUuidString,
+    uuidBytesToPlainSlug,
+    uuidStringToBytes,
+    uuidStringToPlainSlug,
+  },
+) {
   const cases: GenerationCase[] = [];
   const unsupported: { readonly name: string; readonly reason: string }[] = [];
   const fromBase64 = (Uint8Array as ByteCapabilities).fromBase64?.bind(Uint8Array);
@@ -90,35 +102,41 @@ export function createConversionCases(nodeBuffer?: typeof Buffer) {
   }
 
   add("package.conversion.text.bytes", "conversion.text.bytes", texts, bytes, (input) =>
-    unwrap(uuidStringToBytes(input)),
+    unwrap(api.uuidStringToBytes(input)),
   );
   add("package.conversion.bytes.text", "conversion.bytes.text", bytes, texts, (input) =>
-    unwrap(bytesToUuidString(input)),
+    unwrap(api.bytesToUuidString(input)),
   );
   add("package.conversion.bytes.slug", "conversion.bytes.slug", bytes, slugs, (input) =>
-    unwrap(uuidBytesToPlainSlug(input)),
+    unwrap(api.uuidBytesToPlainSlug(input)),
   );
   add(
     "package.conversion.slug.bytes",
     "conversion.slug.bytes",
     slugs,
     bytes,
-    (input) => unwrap(plainSlugToUuidBytes(input)),
+    (input) => unwrap(api.plainSlugToUuidBytes(input)),
     true,
   );
   add("package.conversion.text.slug", "conversion.text.slug", texts, slugs, (input) =>
-    unwrap(uuidStringToPlainSlug(input)),
+    unwrap(api.uuidStringToPlainSlug(input)),
   );
   add("package.conversion.slug.text", "conversion.slug.text", slugs, texts, (input) =>
-    unwrap(plainSlugToUuidString(input)),
+    unwrap(api.plainSlugToUuidString(input)),
   );
-  add("package.conversion.text.guard", "conversion.text.guard", texts, [true, true], isUuidString);
+  add(
+    "package.conversion.text.guard",
+    "conversion.text.guard",
+    texts,
+    [true, true],
+    api.isUuidString,
+  );
   add(
     "package.conversion.text.timestamp",
     "conversion.text.timestamp",
     texts,
     timestamps,
-    (input) => unwrap(extractUuidV7UnixMs(input)),
+    (input) => unwrap(api.extractUuidV7UnixMs(input)),
   );
   add("uuid.conversion.text.bytes", "conversion.text.bytes", texts, bytes, parse);
   add("uuid.conversion.bytes.text", "conversion.bytes.text", bytes, texts, stringify);

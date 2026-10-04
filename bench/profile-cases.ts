@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { unwrap } from "../dev/unwrap";
+import type { Buffer } from "node:buffer";
+import { createConversionCases } from "./conversion-cases";
+import { verifyGenerationCase } from "./generation-case";
 import { UUIDv7 as UuidV7Js } from "uuidv7-js";
 import { validate as validateRivalUuid } from "uuid";
 import { createBoundsProfileCases } from "./profile-bounds";
@@ -32,7 +35,16 @@ export function createProfileCases(
   originalFixtures: readonly OriginalFixture[],
   privateV4Api: PrivateV4Api | undefined,
   privateAlphabetApi?: PrivateAlphabetApi,
+  nodeBuffer?: typeof Buffer,
 ): ProfileSuite {
+  // Reuse exact-byte and private-array witnesses; pass the loaded package so packed profiles
+  // cannot silently measure the factory's source import instead of their selected artifact.
+  const ownedDecoders = createConversionCases(nodeBuffer, api).cases.filter(
+    (candidate) => candidate.comparable === "conversion.slug.bytes" && candidate.ownedBytes,
+  );
+  const decoderProfiles = Object.fromEntries(
+    ownedDecoders.map((candidate) => [candidate.name, () => candidate.operation()]),
+  );
   const base32hexName = api.BASE32HEX;
   const base64urlName = api.BASE64URL;
   const plainSlugFormat = api.PLAIN_SLUG_FORMAT;
@@ -508,6 +520,7 @@ export function createProfileCases(
   }
 
   const cases = {
+    ...decoderProfiles,
     ...migrationScalingCases,
     control: (index) => ids[index & 255] as string,
     ...createUuidV4ProfileCases(api, into, privateV4Api),
@@ -991,6 +1004,7 @@ export function createProfileCases(
   } satisfies Record<string, ProfileCase>;
 
   function verify(): void {
+    for (const candidate of ownedDecoders) verifyGenerationCase(candidate);
     for (const [name, operation] of Object.entries(cases)) {
       for (const index of [0, 255]) {
         into.fill(0x55);

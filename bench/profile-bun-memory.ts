@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { heapStats, memoryUsage, profile } from "bun:jsc";
+import { Buffer } from "node:buffer";
 import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json" with { type: "json" };
 import * as api from "../src/index";
 import * as privateApi from "../src/v4";
@@ -16,6 +17,7 @@ const suite = createProfileCases(
   originalFixtures.issued,
   process.env.UUID_SLUG_PROFILE_PRIVATE === "1" ? privateApi : undefined,
   process.env.UUID_SLUG_PROFILE_PRIVATE === "1" ? privateAlphabetApi : undefined,
+  Buffer,
 );
 suite.verify();
 const cases = selectProfileCases(suite.cases, filter);

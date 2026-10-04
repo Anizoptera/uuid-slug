@@ -2,6 +2,7 @@
 
 // Profile the public package with varying inputs; keep setup, GC and reporting outside timed batches.
 import { performance } from "node:perf_hooks";
+import { Buffer } from "node:buffer";
 import { setImmediate as yieldToLoop } from "node:timers/promises";
 import { writeFile } from "node:fs/promises";
 import inspector from "node:inspector/promises";
@@ -45,7 +46,13 @@ const privateAlphabetApi = process.env.UUID_SLUG_PROFILE_ALPHABET_MODULE
     ? await import("../src/alphabet")
     : undefined;
 const importMs = performance.now() - beforeImport;
-const suite = createProfileCases(api, originalFixtures.issued, privateV4Api, privateAlphabetApi);
+const suite = createProfileCases(
+  api,
+  originalFixtures.issued,
+  privateV4Api,
+  privateAlphabetApi,
+  Buffer,
+);
 suite.verify();
 const { cases } = suite;
 let sink = 0;

@@ -13,6 +13,7 @@ import { verifyGenerationCase } from "../bench/generation-case";
 import type { GenerationCase } from "../bench/generation-case";
 import { createConversionCases } from "../bench/conversion-cases";
 import { uuidStringToPlainSlug } from "../src/index";
+import * as profilingApi from "../src/index";
 import {
   aggregateForkSamples,
   describeSamples,
@@ -158,6 +159,25 @@ test("native Buffer decoding remains timed without qualifying as an owned result
   );
   expect(owned!.qualification).toBe("qualified");
   expect(() => verifyGenerationCase(owned!)).not.toThrow();
+});
+
+test("conversion profiles use the selected package implementation", () => {
+  let calls = 0;
+  const selected = {
+    ...profilingApi,
+    plainSlugToUuidBytes: new Proxy(profilingApi.plainSlugToUuidBytes, {
+      apply(target, receiver, args) {
+        calls += 1;
+        return Reflect.apply(target, receiver, args);
+      },
+    }),
+  };
+  const candidate = createConversionCases(undefined, selected).cases.find(
+    ({ name }) => name === "package.conversion.slug.bytes",
+  );
+  expect(candidate).toBeDefined();
+  verifyGenerationCase(candidate!);
+  expect(calls).toBeGreaterThan(0);
 });
 
 test("pair witnesses reject two valid spellings of different UUIDs", () => {
