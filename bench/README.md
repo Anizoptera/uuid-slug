@@ -176,6 +176,9 @@ Use `format direct-latin1` to compare the generic Buffer text call
 with a directly captured Latin-1 method. `direct-latin1-lost-byte` must fail the Bun text oracle
 before timing; the resource control must count the direct method independently. Keep absent
 capabilities on the existing text function and measure cold construction before retention.
+Use `format utf8-text ascii-text` to compare native decoding of the unchanged ASCII UUID buffer.
+`utf8-text-lost-byte` must fail the independent text oracle before timing; general Latin-1 scratch
+semantics remain unchanged. Complete generation and conversion calls decide retention.
 Use `format word16 word32` to compare wider scratch writes with the fixed byte writer;
 `word32-lost-byte` must fail the independent last-byte oracle before timing. Both wider writers
 retain one DataView over the existing scratch; the counters do not establish its total heap cost.

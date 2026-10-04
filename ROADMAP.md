@@ -18,6 +18,14 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       existing profiler and the smallest causal substitution that distinguishes live explanations.
       Sampling a hot function does not identify an expensive expression; timings of separate
       components do not establish the complete call's lower bound.
+  - [x] Isolate native string conversion with UTF-8 and ASCII decoding of the unchanged UUID
+        character buffer. UUID output contains only ASCII; preserve every digit, case and offset,
+        and require the lost-byte mutation to fail the independent formatter oracle before timing.
+        Compare complete Bun/Node generation and conversion, not decoder calls alone. Reject
+        negligible gains or primary-call losses before packed replay; count cold construction
+        and retained resources if a survivor justifies integration. Keep general Latin-1 scratch
+        semantics unchanged. Both native-decoder substitutions slow Bun generation and conversion
+        in both process orders; reject them before packed replay. Byte elimination remains open.
 - [ ] Select one substantial change from the attributed work. Weigh direct generator-field
       formatting with shared storage, native generation and repair, secure pooled draws,
       default specialization, and their coherent combinations against unchanged production.

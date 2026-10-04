@@ -1208,6 +1208,18 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
 }
 
 function formatCandidates(source: string): readonly SourceCandidate[] {
+  const asciiText = (encoding: "utf8" | "ascii", corrupt = false) =>
+    replaceOnce(
+      source,
+      "  return scratch;\n}\n/**\n * Format through one native byte-to-string call",
+      `  // UUID characters are ASCII; compare native decoding without changing any digit writes.
+  // This experiment changes UUID text only, never the general Latin-1 scratch contract.
+  const bytes = scratch.bytes as Uint8Array & {
+    toString(encoding: "utf8" | "ascii", start: number, end: number): string;
+  };
+  return { bytes, text: () => bytes.toString("${encoding}", 0, ${corrupt ? "UUID_LENGTH - 1" : "UUID_LENGTH"}) };
+}\n/**\n * Format through one native byte-to-string call`,
+    );
   const directLatin1 = (corrupt = false) =>
     replaceOnce(
       source,
@@ -1300,6 +1312,24 @@ function formatCandidates(source: string): readonly SourceCandidate[] {
   };
   return [
     { name: "baseline", source },
+    {
+      name: "utf8-text",
+      get source() {
+        return asciiText("utf8");
+      },
+    },
+    {
+      name: "ascii-text",
+      get source() {
+        return asciiText("ascii");
+      },
+    },
+    {
+      name: "utf8-text-lost-byte",
+      get source() {
+        return asciiText("utf8", true);
+      },
+    },
     {
       name: "reused-prefix",
       get source() {

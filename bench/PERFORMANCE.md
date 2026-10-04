@@ -251,6 +251,20 @@ the small generation gain. Preserve the second Node candidate's long pauses, inc
 `candidates-format-7LR3Ox/` retain the exact proofs and samples. This screen rejects the
 tested general formatter, not a shared formatter accepting generator fields directly.
 
+Keep Latin-1 conversion for the measured Bun UUID text calls rather than the tested UTF-8 or ASCII substitutions.
+The `format utf8-text ascii-text` source experiment changes only the UUID scratch's native
+text reader, retaining its byte writes, case tables and character buffer. Node's selected
+formatter remains unchanged. The lost-final-byte mutation fails Bun's independent timestamp
+and byte-position text witnesses before timing; intact behavior and resource proofs pass.
+Two fresh processes per candidate and runtime use reversed order, nine 20 ms batches and
+32 ms warm-up on Bun 1.4.2 and Node 26.10.0. Bun UTF-8 text takes 85.71/87.28 ns and ASCII
+text 81.06/85.20 ns against baseline 79.64/78.61 ns. UTF-8 conversion takes 46.80/47.77 ns
+and ASCII conversion 44.50/45.11 ns against 37.11/38.56 ns. Reject both before packed replay
+or cold-construction studies. These source screens do not establish exact native decoder
+cost, independent-call latency or an unavoidable string-allocation floor.
+`uuid-ascii-mutation.log`, `uuid-ascii-screen.log`, `candidates-format-OBrQxV/` and
+`candidates-format-JdUouZ/` retain the proofs, source and raw observations.
+
 Two Bun 1.4.2 CPU captures on 2026-10-03 select only `=v7.string` through the maintained
 `bench/profile.ts` corpus, with seven 20 ms batches and 16 ms warm-up. Raw files are
 `bench/reports/primary-v7-default-only.cpuprofile` and
