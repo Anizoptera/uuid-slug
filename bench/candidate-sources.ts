@@ -1277,27 +1277,28 @@ ${anchor}`,
 }
 
 function keylessCandidates(source: string): readonly SourceCandidate[] {
-  // Reuse secure owned allocation rather than adding a second entropy implementation. Only
+  // Reuse the secure fill rather than retaining UUIDv4 generation in unrelated consumers. Only
   // the no-argument public byte path changes; immutable values still use their declared layout.
   // More copied entropy and the extra call can erase the removed sequence work.
-  const v4Owned = () => {
+  const randomOwned = () => {
     const helper = [
-      'import { generateOwnedUuidV4Bytes } from "./v4.ts";',
-      'import { readClock, INVALID_TIMESTAMP } from "./errors.ts";',
+      'import { fillRandomBytes, readClock, INVALID_TIMESTAMP } from "./errors.ts";',
       "function generateDefaultOwnedUuidV7Bytes(): UuidV7Bytes | UuidSlugError {",
       "  const clock = readClock(Date.now);",
       "  if (clock instanceof Error) return clock;",
       "  const ms = Math.trunc(clock);",
       '  if (typeof clock !== "number" || clock < 0 || !Number.isSafeInteger(ms) || ms > 0xffffffffffff)',
       '    return new UuidSlugError(INVALID_TIMESTAMP, "Clock must fit the UUIDv7 timestamp.");',
-      "  const bytes = generateOwnedUuidV4Bytes();",
-      "  if (bytes instanceof Error) return bytes;",
+      "  const bytes = new Uint8Array(16);",
+      "  const failed = fillRandomBytes(runtime.fillRandom, bytes);",
+      "  if (failed) return failed;",
       "  let timestamp = ms;",
       "  for (let i = 5; i >= 0; i--) {",
       "    bytes[i] = timestamp & 0xff;",
       "    timestamp = Math.floor(timestamp / 256);",
       "  }",
       "  bytes[6] = (bytes[6]! & 0x0f) | 0x70;",
+      "  bytes[8] = (bytes[8]! & 0x3f) | 0x80;",
       "  return bytes as unknown as UuidV7Bytes;",
       "}",
       "",
@@ -1371,16 +1372,26 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
-      name: "v4-owned-timestamp",
+      name: "random-owned-timestamp",
       get source() {
-        return v4Owned();
+        return randomOwned();
       },
     },
     {
-      name: "v4-owned-timestamp-lost-byte",
+      name: "random-owned-timestamp-lost-clock",
       get source() {
         return replaceOnce(
-          v4Owned(),
+          randomOwned(),
+          "  return bytes as unknown as UuidV7Bytes;",
+          "  bytes[0] = 0;\n  return bytes as unknown as UuidV7Bytes;",
+        );
+      },
+    },
+    {
+      name: "random-owned-timestamp-lost-byte",
+      get source() {
+        return replaceOnce(
+          randomOwned(),
           "  return bytes as unknown as UuidV7Bytes;",
           "  bytes[15] = 0;\n  return bytes as unknown as UuidV7Bytes;",
         );

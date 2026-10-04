@@ -33,6 +33,12 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       immutable-value generation unchanged so their declared layouts stay truthful. Reject on
       payload loss, incorrect timestamps, ownership loss, changed entropy failures, or no repeated
       complete-call gain; inspect equal-call resources before retention.
+      `owned-v7-v4-fixed-*` reduces caller CPU and retained heap in each equal-call Bun pair,
+      but resident memory varies. Both runtimes reject its lost-byte mutation. Packed qualification
+      rejects the UUIDv4 dependency because Parcel retains that generation owner in slug and
+      masking consumers; preserve `owned-v7-v4-packed.log`. Continue the same default-byte
+      mechanism using the existing secure fill directly, without the UUIDv4 dependency or its
+      redundant version write. Requalify the package boundary; do not weaken its graph checks.
 
 - [ ] Close the Bun default base64url UUIDv7 slug gap. Compare the complete public call with
       native slug output in the maintained generation corpus, then profile the package call.

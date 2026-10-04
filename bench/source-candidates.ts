@@ -298,6 +298,34 @@ try {
           `Candidate build failed: ${candidate.name}/${runtime}`,
         );
       await Bun.write(join(report, `${candidate.name}-${runtime}.mjs`), result.outputs[0]!);
+      if (group === "keyless" && candidate.name.startsWith("random-owned-timestamp")) {
+        // Generator clock tests cannot reach a new module-default writer. Isolate the process
+        // so its captured clock and timestamp ceiling cannot alter another proof or timing run.
+        const clockProof = [
+          "let clock = 0;",
+          "Date.now = () => clock;",
+          "const api = await import(process.env.UUID_SLUG_PROFILE_MODULE);",
+          "for (const instant of [0, 255, 256, 65535, 65536, 4294967295, 4294967296, 281474976710655]) {",
+          "  clock = instant;",
+          "  const bytes = api.generateUuidV7Bytes();",
+          "  let encoded = 0n;",
+          "  for (let i = 0; i < 6; i++) encoded = (encoded << 8n) | BigInt(bytes[i]);",
+          '  if (encoded !== BigInt(instant)) throw new Error("Default UUIDv7 bytes lost timestamp bits");',
+          "}",
+          'console.log(JSON.stringify({proof: "default UUIDv7 timestamp boundaries"}));',
+        ].join("\n");
+        const executable =
+          runtime === "node" ? (process.env.UUID_SLUG_COMPARE_NODE_EXECUTABLE ?? "node") : runtime;
+        const output = await command(
+          executable,
+          runtime === "deno" ? ["eval", clockProof] : ["--input-type=module", "-e", clockProof],
+          project,
+          { UUID_SLUG_PROFILE_MODULE: join(report, `${candidate.name}-${runtime}.mjs`) },
+        );
+        await writeFile(join(report, `${candidate.name}-${runtime}-clock.jsonl`), output);
+        if (!output.includes('"proof":"default UUIDv7 timestamp boundaries"'))
+          throw new Error(`Default clock proof produced no witness: ${candidate.name}/${runtime}`);
+      }
       if (group === "v4") {
         // The v4 timing artifact executes its corpus at import. Preserve a separate public API
         // graph for the existing profiler so its call counts and stacks measure the candidate.
