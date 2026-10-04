@@ -81,6 +81,13 @@ tail values without intermediate bytes. Configured text and owned bytes retain t
 functions. `direct-text-lost-tail` and `direct-text-lost-timestamp` must fail the shared text
 payload witnesses before timing. The candidate adds a private function per generator; measure
 construction before retention if repeated complete-call gains survive.
+Use `v7-draw direct-text-latin1` to keep intermediate-byte elimination while selecting native
+Latin-1 string construction where available. Other runtimes keep the original formatter.
+`direct-text-latin1-lost-tail` must fail the shared tail witness on Bun. Mixed preset and
+configured calls can initialize both text buffers; a gain must pay for that retained storage.
+Use `v7-draw direct-text-latin1-pairs` to preserve the original paired hex-code lookups while
+removing intermediate bytes. Its `-lost-tail` mutation must fail Bun's payload witnesses before
+timing. The resource report distinguishes preset-text initialization from repeated calls.
 For allocation attribution, run the retained report's `profile.mjs` against each candidate module
 with `UUID_SLUG_PROFILE_MODULE` and a separate native directory and name. Retain that process's
 call records, alternate candidate order, and await its exit before starting another capture.

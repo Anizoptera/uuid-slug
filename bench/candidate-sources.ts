@@ -38,7 +38,7 @@ function replaceOnce(source: string, from: string, to: string): string {
 }
 
 function v7Candidates(source: string): readonly SourceCandidate[] {
-  const directText = () => {
+  const directText = (latin1 = false, pairs = false) => {
     // Remove intermediate stores without changing sequence policy or adding tables and buffers.
     // A separate function leaves owned-byte calls unchanged; its extra closure is a cold cost
     // to measure only if complete text calls survive the screen (bench/PERFORMANCE.md).
@@ -83,18 +83,60 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
     for (let index = 0; index < byteExpressions.length; index++) {
       if ([4, 6, 8, 10].includes(index)) characters.push("45");
       characters.push(
-        `digits.charCodeAt(byte${index} >>> 4)`,
-        `digits.charCodeAt(byte${index} & 15)`,
+        ...(pairs
+          ? [`codes[byte${index} * 2] as number`, `codes[byte${index} * 2 + 1] as number`]
+          : [`digits.charCodeAt(byte${index} >>> 4)`, `digits.charCodeAt(byte${index} & 15)`]),
       );
     }
+    const characterWriter = `return String.fromCharCode(${characters.join(", ")}) as UuidV7StringFor<Case>;`;
+    const nativeWriter = [
+      "const create = createDirectLatin1Scratch;",
+      `if (!create) ${characterWriter}`,
+      "let scratch = directLatin1Scratch;",
+      "if (!scratch) {",
+      "  scratch = directLatin1Scratch = create(36);",
+      "  for (const index of [8, 13, 18, 23]) scratch.bytes[index] = 45;",
+      "}",
+      "const text = scratch.bytes;",
+      ...characters.flatMap((character, index) =>
+        character === "45" ? [] : [`text[${index}] = ${character};`],
+      ),
+      "return scratch.text() as UuidV7StringFor<Case>;",
+    ].join("\n  ");
     const writer = [
+      ...(latin1
+        ? [
+            'import { runtime } from "#runtime";',
+            'import type { Latin1Scratch } from "./runtime/types.ts";',
+            "// Select native string construction once; defer its storage until preset text is requested.",
+            "const createDirectLatin1Scratch = runtime.latin1Scratch;",
+            "let directLatin1Scratch: Latin1Scratch | undefined;",
+          ]
+        : []),
+      ...(pairs
+        ? [
+            "// Paired codes keep the original formatter's lookup strategy; only byte stores disappear.",
+            "let directLowercaseCodes: Uint8Array | undefined;",
+            "let directUppercaseCodes: Uint8Array | undefined;",
+            "function directHexCodes(digits: string): Uint8Array {",
+            "  const codes = new Uint8Array(512);",
+            "  for (let byte = 0; byte < 256; byte++) { codes[byte * 2] = digits.charCodeAt(byte >>> 4); codes[byte * 2 + 1] = digits.charCodeAt(byte & 15); }",
+            "  return codes;",
+            "}",
+          ]
+        : []),
       "// Direct text avoids the 16-byte write/read round trip; no callback runs during formatting.",
       "// Compare complete calls with native Latin-1 formatting before retaining this specialization.",
       "function directUuidV7Text<Case extends UuidTextCase>(ms: number, hi: number, lo: number, tail: Uint8Array, textCase: Case): UuidV7StringFor<Case> {",
       '  const digits = textCase === UUID_TEXT_LOWERCASE ? "0123456789abcdef" : "0123456789ABCDEF";',
+      ...(pairs
+        ? [
+            "  const codes = textCase === UUID_TEXT_LOWERCASE ? (directLowercaseCodes ??= directHexCodes(digits)) : (directUppercaseCodes ??= directHexCodes(digits));",
+          ]
+        : []),
       "  const high = Math.floor(ms / 0x1_0000_0000);",
       ...byteExpressions.map((expression, index) => `  const byte${index} = ${expression};`),
-      `  return String.fromCharCode(${characters.join(", ")}) as UuidV7StringFor<Case>;`,
+      "  " + (latin1 ? nativeWriter : characterWriter),
       "}",
       "",
     ].join("\n");
@@ -102,7 +144,9 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
       replaceOnce(
         replaceOnce(source, original, original + "\n" + draw),
         "formatUuidV7(bytes(textBytes), textCase as Case)",
-        "directClockText(textCase as Case)",
+        latin1
+          ? "createDirectLatin1Scratch ? directClockText(textCase as Case) : formatUuidV7(bytes(textBytes), textCase as Case)"
+          : "directClockText(textCase as Case)",
       ) +
       "\n" +
       writer
@@ -223,6 +267,41 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
   };
   return [
     { name: "baseline", source },
+    {
+      name: "direct-text-latin1-pairs",
+      get source() {
+        return directText(true, true);
+      },
+    },
+    {
+      name: "direct-text-latin1-pairs-lost-tail",
+      get source() {
+        return replaceOnce(
+          directText(true, true),
+          "const byte15 = tail[3] as number;",
+          "const byte15 = 0;",
+        );
+      },
+    },
+    {
+      // Keep byte elimination fixed while changing string construction. Native storage replaces
+      // the generic formatter's storage for preset-only consumers, but mixed calls can retain
+      // both buffers; that cost must be measured before retention (bench/PERFORMANCE.md).
+      name: "direct-text-latin1",
+      get source() {
+        return directText(true);
+      },
+    },
+    {
+      name: "direct-text-latin1-lost-tail",
+      get source() {
+        return replaceOnce(
+          directText(true),
+          "const byte15 = tail[3] as number;",
+          "const byte15 = 0;",
+        );
+      },
+    },
     {
       name: "direct-text",
       get source() {

@@ -59,10 +59,13 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         keep owned-byte and configured calls as controls. Prove every timestamp, counter and tail
         bit before timing. Retain specialization only for repeated complete-call gains that
         justify its code and retained storage, with no loss on other runtime paths.
-    - [ ] Screen direct character construction without new tables or buffers. A separate clock
-          function isolates owned-byte controls; compare a shared function only if gains survive.
-          First prove timestamp/counter carries and tail preservation with independent text
-          encoding and targeted mutations, then repeat complete Node/Bun calls.
+    - [x] Prove timestamp/counter carries and tail preservation with independent text encoding,
+          walking input bits and targeted mutations. Both runners reject missing tail and
+          timestamp fields; Bun also rejects the missing tail in both direct Latin-1 writers.
+    - [ ] Compare direct character construction, direct Latin-1 construction and paired-code
+          lookups while preserving byte elimination. Record preset-text initialization separately
+          from warm resource counts. The separate clock function isolates owned-byte controls;
+          consider sharing only after a reproduced gain justifies further work.
   - [x] Compare Bun scratch writes at byte, 16-bit and 32-bit widths through complete default
         generation, uppercase generation and byte-to-text conversion. Preserve tables, offsets,
         hyphens and native string construction; account for the added retained DataView and

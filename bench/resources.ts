@@ -269,6 +269,23 @@ try {
     2,
     "the pair must construct exactly its UUID and slug strings",
   );
+  // A preset-only formatter can differ from pair formatting. Record its lazy storage separately
+  // so a warm steady-state pass cannot hide extra tables; do not infer native allocation volume.
+  check("default UUIDv7 preset text initialization", () => api.generateUuidV7(), {
+    views: 0,
+    errors: 0,
+  });
+  check("default UUIDv7 preset text", () => api.generateUuidV7(), {
+    buffers: 0,
+    views: 0,
+    errors: 0,
+    textSlices: 0,
+  });
+  assert.equal(
+    counts.latin1 + counts.fromCharCodes + counts.base64,
+    1,
+    "preset generation must construct exactly one returned string",
+  );
   check("caller-owned v7 generation", () => api.generateUuidV7Bytes(into, 4), {
     buffers: 0,
     views: 0,
