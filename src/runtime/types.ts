@@ -17,6 +17,8 @@ export interface Runtime {
    */
   /** Native values are untrusted until the public generator validates their representation. */
   uuidV4?(this: void): string;
+  /** Native current-time UUIDv7 text; configured clocks and sequence state stay on generators. */
+  uuidV7?(this: void): string;
   /** Optional native hex conversion for the runtime's selected UUID text writer. */
   uuidHex?(this: void, bytes: Uint8Array): string;
   /**

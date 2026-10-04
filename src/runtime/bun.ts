@@ -19,5 +19,7 @@ if (globalThis.crypto.randomUUID)
 // Native UUIDv7 can advance logical time during counter overflow; defaults do not forbid that.
 // Select it only when complete-call gains preserve configured-call speed and resource efficiency.
 // Explicit generators keep their clock controls; bench/PERFORMANCE.md owns drift and cost evidence.
+const nativeUuidV7 = (globalThis as { Bun?: { randomUUIDv7?: () => string } }).Bun?.randomUUIDv7;
+if (typeof nativeUuidV7 === "function") bunRuntime.uuidV7 = nativeUuidV7;
 
 export const runtime = bunRuntime;

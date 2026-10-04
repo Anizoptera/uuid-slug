@@ -10,6 +10,26 @@ propose public-document changes and hold them for explicit approval, including g
 
 Deliver retained improvements to ordinary single-ID calls; a rejected experiment does not close a performance gap.
 
+- [ ] Qualify Bun native default UUIDv7 text with equal executed preparation instead of elapsed
+      warm-up alone. Add an opt-in call count to the existing profiler, then revisit the preserved
+      import-selected candidate: prior explicit-time controls lacked preparation counts, and a
+      current Node observation executes only 128 warm-up calls during 111 ms elapsed. Preserve
+      all controls and raw pauses; reject a reproduced configured-call loss after matched work.
+      Matched primary CPU observations favor Bun default and uppercase text; isolated configured
+      controls center near parity but still permit small losses. Ranked and LTS captures do not
+      resolve a slowdown. Full checks and native-selection mutations pass their intended oracles.
+      Six fresh rival processes favor the candidate against every qualified library; native-floor
+      parity and gross allocation remain unresolved. Preserve `native-v7-matched-*` evidence.
+      Retain the tested code independently of the held public-document patch. Keep native-floor
+      and rival RSS gaps open; next profile Bun slug generation rather than smaller text changes.
+- [x] Compare equal-call Bun default text resource profiles with qualified `uniku` text using
+      the existing generation corpus and Bun memory profiler. Native generation may move cost
+      into unobserved runtime storage; lower throughput cost alone does not settle that risk.
+      Reuse the corpus's qualification and output oracle. Retained heap, allocator commitment
+      and sampled stacks can expose a resource loss, but cannot establish gross allocation parity.
+      `native-v7-qualified-resource-*` shows lower CPU and retained heap for native package text,
+      but higher RSS than `uniku`; portable package text has still higher CPU, retained heap and
+      RSS than native text. These captures do not establish gross allocation or resource parity.
 - [x] Screen removing repeated range validation for generator-owned explicit-time text scratch. The same
       fixed storage already bypasses validation for current-time text; caller-owned output must
       retain all range and atomic-failure checks. Prove both paths in the existing Node/Bun cases,

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
+import { nativeUuidV7CapabilityCanary } from "./native-v7-capability-fixture";
+
 import { strict as assert } from "node:assert";
 import vm from "node:vm";
 import nodeCrypto from "node:crypto";
@@ -681,6 +683,7 @@ export const runtimeBoundaryCases = [
       const originalWebFill = webCrypto.getRandomValues;
       // eslint-disable-next-line typescript/unbound-method -- saved for restoration, never called
       const originalNodeFill = nodeCrypto.randomFillSync;
+      const originalV7 = runtime.uuidV7;
       const failing = (): never => {
         throw cause;
       };
@@ -694,6 +697,9 @@ export const runtimeBoundaryCases = [
         assert.equal(failure.cause, cause);
       };
       try {
+        // Native text has its own entropy source. Select the portable branch explicitly;
+        // the native success/fallback/dual-failure witness below covers the other branch.
+        delete runtime.uuidV7;
         const generator = createSecureUuidV7Generator({ readUnixMs: () => timestamp });
         assert.ok(!(generator instanceof Error));
         const maskingCodec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
@@ -744,6 +750,7 @@ export const runtimeBoundaryCases = [
       } finally {
         webCrypto.getRandomValues = originalWebFill;
         nodeCrypto.randomFillSync = originalNodeFill;
+        if (originalV7) runtime.uuidV7 = originalV7;
       }
       assert.equal(isUuidV7String(generateUuidV7()), true);
     },
@@ -836,6 +843,111 @@ export const runtimeBoundaryCases = [
         assert.equal(isUuidV7String(generateUuidV7()), true);
       } finally {
         failPortable = false;
+        for (const key of Object.keys(runtime) as (keyof typeof runtime)[]) delete runtime[key];
+        Object.assign(runtime, saved);
+      }
+    },
+  },
+  {
+    name: "native UUIDv7 defaults preserve payload, configured clocks and fallback causes",
+    async run(this: void) {
+      if (process.env.UUID_SLUG_NATIVE_V7_PROBE !== "1") {
+        // The fixture exposes capability before public imports; cached selection needs a fresh host.
+        const { execFileSync } = await import("node:child_process");
+        const args = process.versions.bun
+          ? ["test", "__test__/runtime-boundary.bun.test.ts"]
+          : ["node_modules/vitest/vitest.mjs", "run", "__test__/runtime-boundary.test.ts"];
+        execFileSync(process.execPath, [...args, "-t", "native UUIDv7 defaults"], {
+          cwd: new URL("..", import.meta.url),
+          env: { ...process.env, UUID_SLUG_NATIVE_V7_PROBE: "1" },
+          stdio: "pipe",
+        });
+        return;
+      }
+      assert.equal(runtime.uuidV7, nativeUuidV7CapabilityCanary);
+      const saved = { ...runtime };
+      const nativeValue = "ffffffff-ffff-7fff-bfff-ffffffffffff";
+      const nativeCause = new Error("native v7 failed");
+      const portableCause = new Error("portable v7 failed");
+      let nativeCalls = 0;
+      let failNative = false;
+      const native = () => {
+        nativeCalls += 1;
+        if (failNative) throw nativeCause;
+        return nativeValue;
+      };
+      try {
+        runtime.uuidV7 = native;
+        assert.equal(generateUuidV7(), nativeValue);
+        assert.equal(generateUuidV7(UUID_TEXT_UPPERCASE), nativeValue.toUpperCase());
+        assert.equal(
+          Reflect.apply(generateUuidV7, undefined, [new String(UUID_TEXT_LOWERCASE)]),
+          nativeValue,
+        );
+        assert.equal(nativeCalls, 3);
+        // Native logical time is deliberately unrelated to the requested explicit clock here:
+        // delegation or clock repair would fail this independent timestamp oracle.
+        assert.equal(extractUuidV7UnixMs(generateUuidV7({ at: timestamp })), timestamp);
+        const generator = unwrap(createSecureUuidV7Generator({ readUnixMs: () => timestamp }));
+        assert.equal(extractUuidV7UnixMs(generateUuidV7({ generator })), timestamp);
+        assert.equal(nativeCalls, 3);
+        const badPreset = Reflect.apply(generateUuidV7, undefined, ["sideways"]);
+        assert.equal(isUuidSlugError(badPreset) && badPreset.code, "invalid_options");
+        assert.equal(nativeCalls, 3);
+
+        failNative = true;
+        assert.equal(isUuidV7String(generateUuidV7()), true);
+        const upper = generateUuidV7(UUID_TEXT_UPPERCASE);
+        assert.equal(upper, upper.toUpperCase());
+        // Module portable generators capture fillRandom when created; fail the platform draw
+        // after exhausting its pool so an already-created fallback is reached too.
+        // eslint-disable-next-line typescript/unbound-method -- saved for restoration, never called
+        const webFill = globalThis.crypto.getRandomValues;
+        const nodeFill = nodeCrypto.randomFillSync;
+        assert.equal(runtime.fillRandom(new Uint8Array(POOL_BYTES)), undefined);
+        globalThis.crypto.getRandomValues = () => {
+          throw portableCause;
+        };
+        nodeCrypto.randomFillSync = () => {
+          throw portableCause;
+        };
+        let dual: unknown;
+        try {
+          dual = thrownBy(() => generateUuidV7());
+        } finally {
+          globalThis.crypto.getRandomValues = webFill;
+          nodeCrypto.randomFillSync = nodeFill;
+        }
+        assert.ok(dual instanceof UuidSlugError);
+        assert.equal(hasCause(dual, nativeCause), true);
+        assert.equal(hasCause(dual, portableCause), true);
+        runtime.fillRandom = saved.fillRandom;
+
+        // Invalid replacements must not gain trust, including valid UUID text of another version.
+        for (const invalid of ["not-a-uuid", "123e4567-e89b-42d3-a456-426614174000"]) {
+          runtime.uuidV7 = () => invalid;
+          for (let call = 0; call < 3; call += 1)
+            assert.equal(isUuidV7String(generateUuidV7()), true);
+        }
+        delete runtime.uuidV7;
+        assert.equal(isUuidV7String(generateUuidV7()), true);
+        assert.equal(runtime.fillRandom(new Uint8Array(POOL_BYTES)), undefined);
+        globalThis.crypto.getRandomValues = () => {
+          throw portableCause;
+        };
+        nodeCrypto.randomFillSync = () => {
+          throw portableCause;
+        };
+        let absent: unknown;
+        try {
+          absent = thrownBy(() => generateUuidV7());
+        } finally {
+          globalThis.crypto.getRandomValues = webFill;
+          nodeCrypto.randomFillSync = nodeFill;
+        }
+        assert.ok(absent instanceof UuidSlugError);
+        assert.equal(absent.cause, portableCause);
+      } finally {
         for (const key of Object.keys(runtime) as (keyof typeof runtime)[]) delete runtime[key];
         Object.assign(runtime, saved);
       }
