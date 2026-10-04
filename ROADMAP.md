@@ -41,6 +41,17 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       The named-function comparison cannot qualify retention: Bun explicit-time and selected-
       generator calls show losses, while owned-byte observations vary widely. Preserve
       `native-v7-named-default-controls.log`; do not repeat this setup or claim control parity.
+      Use the existing workload corpus for a fixed-call, same-process ABBA screen before another
+      packed replay. Identical-baseline blocks also alternate owned-byte CPU cost with order;
+      this falsifies attributing that pattern to the candidate. Shared-process results do not
+      establish packed parity or an allocation mechanism. Keep both interleaved raw logs.
+      Fold the forwarding native function into its helper: retain one lazy selected call,
+      native replacement validation and portable fallback, with configured handling unchanged.
+      The folded native boundary and full check pass. Keep `native-v7-folded-candidate.patch`
+      and its interleaved screen; require the packed controls before retaining the cut.
+      Both folded packed replays favor Bun default text. Uppercase and control uncertainty
+      remain open; keep `native-v7-folded-packed-controls.log` and `native-v7-folded-packed-repeat.log`.
+      Use `native-v7-folded-profile/` for the current complete-call profile, not an older source form.
       Keep raw comparisons and exact candidate source in `bench/reports/native-v7-inline-*`.
       Use the prepared README/security patch for approval; public text remains held.
       Native text profiles and counters show replaced portable generation and formatting without

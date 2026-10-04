@@ -251,7 +251,9 @@ efficiency. A reproducible misuse alone does not justify that cost.
   of useful experiment logic or evidence. Keep rerun instructions in `bench/README.md` and raw
   benchmark output in ignored `bench/reports/`; conclusions belong in `bench/PERFORMANCE.md`.
   Extract executable baseline source outside this repository; ignored source trees can still enter
-  compiler and test discovery. Keep only generated evidence and archives in `bench/reports/`.
+  compiler and test discovery. Keep only generated evidence and archives in `bench/reports/`;
+  retain TypeScript source captures as `.ts.txt` or archives, never `.ts`, because Git ignores do
+  not exclude them from project type checking.
   Keep failed check artifacts available for the reproduction command in the error; clean up
   successful checks. A command naming a deleted bundle cannot diagnose the failure.
 - Repair missing or ineffective guidance before changing the plan or implementation. Put the
