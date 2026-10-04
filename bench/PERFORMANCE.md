@@ -2897,6 +2897,35 @@ were zero under their clocks; this establishes a resolution limit, not zero call
 observations include timer overhead and do not establish uninstrumented p99 or a performance ranking.
 
 The gates do not prove all performance properties. Relative timing cannot detect a slowdown shared by both sides. Constructor counters cannot see every engine allocation. Latest-runtime CI complements pinned runs, but this study did not execute hosted CI or measure every OS/architecture. Keep these limits when interpreting a pass.
+# Numeric UUIDv7 counter comparison
+
+A single exact Number counter does not reproduce the focused Bun slug gain through packed calls.
+
+Observed 2026-10-04: `number-counter-screen-shared.log` and `number-counter-screen-repeat.log`
+compare one 42-bit Number with the current split words in two fresh processes per runtime per
+screen, reversing second-pass order. The candidate keeps seed bits, fractional layouts, entropy
+failure transactionality and writer bytes. Both behavior and resource proofs pass. The widened
+overflow mutant fails Node and Bun's shared timestamp-ceiling witness; the original Bun corpus
+did not reject it, so its timing evidence is superseded by the shared-witness runs.
+
+Bun slug costs favor the candidate in all four focused observations, but
+`number-counter-packed.jsonl` does not reproduce that gain: Bun candidate/baseline is 1.016
+with paired median-ratio 95% interval [0.934, 1.148]. Owned bytes are 0.978 [0.921, 1.037].
+The packed comparison contains 77 summaries across seven runtimes, each using six fresh process
+pairs and consuming complete returned results. Node text, bytes and slugs remain unresolved.
+Reject the rewrite because no worthwhile primary Bun gain survives; this is not proof that one
+Number is intrinsically slower. No production counter change follows.
+
+`pool-four-owned-rivals.jsonl` and `pool-four-owned-rivals-repeat.jsonl` each compare five fresh
+processes on Node 24.21.0, Node 26.10.0, Bun 1.4.2, Deno 2.9.7 and Chromium 153.0.8010.12.
+Owned UUIDv7 generation trails `uuid` on Bun at package/best ratios 1.170 and 1.203, and
+`uuidv7` on Deno at 1.080 and 1.089. The package leads the measured qualified rivals on Node
+and Chromium. These comparisons check fresh plain-array ownership and secure generation;
+they do not measure total allocation or establish parity with every possible implementation.
+The installed `uuidv7` counter uses one Number and pooled Uint32 entropy, while the package
+erases consumed entropy and preserves its configured failure behavior. The aggregate gap does
+not identify which difference causes it.
+
 # Four-byte entropy copying
 
 Fixed four-byte copies reduce measured Node generation cost while preserving consumed-byte erasure.

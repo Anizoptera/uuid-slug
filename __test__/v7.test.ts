@@ -350,31 +350,6 @@ describe("uuidv7 readUnixMs contract", () => {
     });
     expect(timestampOf(bytesOf(generator))).toBe(1_700_000_000_000);
   });
-
-  it("refuses to borrow past the last representable millisecond instead of wrapping to 1970", () => {
-    // All-ones fill seeds the 42-bit sequence at its maximum — `seedHi` 0x3ff and `seedLo`
-    // 0xffffffff — so the second call increments into the borrow branch. At the ceiling there is
-    // no millisecond to borrow: `writeTimestamp` truncates to six bytes, so `lastMs + 1` wrapped
-    // to 0 and every id after it carried a 1970 timestamp, below every id already issued.
-    const atCeiling = createUuidV7Generator({
-      readUnixMs: fixedClock(2 ** 48 - 1),
-      fillRandom: constantFill(0xff),
-    });
-    expect(timestampOf(bytesOf(atCeiling))).toBe(2 ** 48 - 1);
-    const output = new Uint8Array(16).fill(0x55);
-    expect(atCeiling.generateUuidV7Bytes(output)).toMatchObject({ code: INVALID_TIMESTAMP });
-    expect(output).toEqual(new Uint8Array(16).fill(0x55));
-    expect(atCeiling.generateUuidV7Bytes()).toMatchObject({ code: INVALID_TIMESTAMP });
-
-    // The control that proves the refusal is about the ceiling and not about the borrow itself:
-    // one millisecond lower, the same sequence borrows and lands ON the ceiling.
-    const belowCeiling = createUuidV7Generator({
-      readUnixMs: fixedClock(2 ** 48 - 2),
-      fillRandom: constantFill(0xff),
-    });
-    expect(timestampOf(bytesOf(belowCeiling))).toBe(2 ** 48 - 2);
-    expect(timestampOf(bytesOf(belowCeiling))).toBe(2 ** 48 - 1);
-  });
 });
 
 describe("uuidv7 buffer handling", () => {

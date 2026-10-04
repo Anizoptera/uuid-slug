@@ -108,10 +108,13 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         in the repeat. Reject caching; preserve the current generator lookup.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
-  - [ ] Compare one exact 42-bit Number counter with split high/low words; preserve fractional
+  - [x] Compare one exact 42-bit Number counter with split high/low words; preserve fractional
         layouts, transactional entropy failures, rollover and writer bytes. The widened-overflow
         mutation must fail the ceiling oracle before timing. Reject inconsistent primary-call gains;
         compare packed configured calls only after repeated Node/Bun/Deno screens survive.
+        The widened-overflow mutation fails the shared Node/Bun witness. Focused Bun slug gains
+        do not survive the packed comparison; reject the rewrite without claiming a resolved loss.
+        Repeated owned-byte rival comparisons preserve Bun's uuid and Deno's uuidv7 gaps.
   - [x] Compare fixed four-byte pool copying and a separate source cursor against the current
         indexed copy-and-erase loop. Preserve lazy draws, all bytes, erasure, refill failures
         and resource counts. The lost-fourth-byte mutation must fail the shared runtime oracle

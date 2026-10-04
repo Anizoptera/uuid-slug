@@ -4,6 +4,7 @@ import { strict as assert } from "node:assert";
 import vm from "node:vm";
 import nodeCrypto from "node:crypto";
 import { POOL_BYTES, pooledFill } from "../src/runtime/pool";
+import { INVALID_TIMESTAMP } from "../src/errors";
 import { runtime } from "#runtime";
 import { unwrap } from "../dev/unwrap";
 import {
@@ -984,6 +985,8 @@ export const runtimeBoundaryCases = [
     run(this: void) {
       // All ones force overflow on the second draw. A lower-clock control distinguishes valid
       // borrowing from a refusal caused by the final representable timestamp.
+      // The six-byte timestamp writer would otherwise wrap a borrowed millisecond to 1970,
+      // placing subsequent identifiers before those already issued.
       const maximum = 2 ** 48 - 1;
       const ceiling = createUuidV7Generator({
         readUnixMs: () => maximum,
@@ -995,8 +998,11 @@ export const runtimeBoundaryCases = [
       const output = new Uint8Array(16).fill(0x55);
       const failed = ceiling.generateUuidV7Bytes(output);
       assert.ok(failed instanceof UuidSlugError);
+      assert.equal(failed.code, INVALID_TIMESTAMP);
       assert.deepEqual(output, new Uint8Array(16).fill(0x55));
-      assert.ok(ceiling.generateUuidV7Bytes() instanceof UuidSlugError);
+      const repeated = ceiling.generateUuidV7Bytes();
+      assert.ok(repeated instanceof UuidSlugError);
+      assert.equal(repeated.code, INVALID_TIMESTAMP);
       const below = createUuidV7Generator({
         readUnixMs: () => maximum - 1,
         fillRandom: (bytes) => {
