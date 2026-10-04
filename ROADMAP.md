@@ -9,6 +9,15 @@ never-ahead promise. Keep remote writes unauthorized.
 
 Deliver retained improvements to ordinary single-ID calls; a rejected experiment does not close a performance gap.
 
+- [ ] Finish guidance repair before resuming the pending production candidate: audit Markdown
+      contract owners for invented guarantees, stale qualification and instructions invisible at
+      the decision point. Correct only identified defects; leave generated reports to their writer.
+- [ ] Finish the active native Bun UUIDv7 text candidate before reopening formatter experiments.
+      Its first packed comparison favors default text, but repeated evidence, current profiles,
+      the generated competitor ranking and a successful full check still gate retention.
+      Reject it if repeated complete calls show a material primary-call regression, resource
+      costs grow without a requested benefit, or a published contract fails. Preserve configured
+      generators and the native-absent path; do not infer their behavior from native success.
 - [ ] Resolve the current Bun default UUIDv7 text gap first. Reuse the existing complete-call
       observations and profiles; refresh only evidence that cannot decide the current choice.
   - [ ] Evaluate native Bun UUIDv7 text for ordinary defaults without timestamp repair; retain

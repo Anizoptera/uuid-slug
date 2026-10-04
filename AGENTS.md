@@ -68,7 +68,7 @@ efficiency. A reproducible misuse alone does not justify that cost.
   Before rejecting a faster implementation, name the published promise or explicit maintainer
   requirement it violates. An unanswered proposal, existing test, or agent-derived plan constraint
   is not a new guarantee. Fix conflicting contract text and the roadmap before implementation.
-  Art, 2026-10-04: prioritize ordinary defaults' performance and resource efficiency; keep costly,
+  Prioritize ordinary defaults' performance and resource efficiency; keep costly,
   rarely needed additional guarantees opt-in. Read `docs/public-api.md` §Generation and codecs
   before deciding which generation properties belong on defaults or configured generators.
   New guarantees require a maintainer ruling before code or tests impose them. Intra-millisecond ordering
@@ -260,6 +260,12 @@ efficiency. A reproducible misuse alone does not justify that cost.
   cannot be selected directly; never infer its cost or coverage from another path.
 - Read `bench/README.md` before benchmark work. Scope exploratory comparisons with its maintained
   filters; run all applicable runtimes only after a candidate survives the focused mechanism test.
+- Before any performance experiment, record the successful consumer call, current removable cost,
+  competing explanations, result that would reject the candidate, and next production decision in
+  `ROADMAP.md`. Reuse valid evidence; do not run a measurement whose possible results leave that
+  decision unchanged. Read `bench/README.md` §Decision before measurement for the execution order.
+  Keep only one implementation candidate active until it is retained, rejected, or explicitly blocked;
+  benchmark infrastructure and rejected experiments do not close production performance tasks.
 - Before using a benchmark statistic to select code, apply `bench/README.md` §Measurement limits:
   identify the independent sample unit and distinguish batch throughput from individual-call latency.
 - Rank performance evidence by current user value: latest stable Node Current and Bun first, latest

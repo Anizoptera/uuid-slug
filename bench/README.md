@@ -2,6 +2,25 @@
 
 Measure each runtime separately; a failed or missing measurement must fail the harness.
 
+## Decision before measurement
+
+Use each measurement to decide whether to retain a specific production improvement.
+
+Choose the largest unresolved cost in an ordinary successful call on Node Current or Bun.
+Record the call, current evidence, competing explanations, rejection condition and next action in
+`ROADMAP.md` before execution. Inspect the faster native or competing implementation; a local
+candidate ranking cannot establish that the best available mechanism was considered.
+
+Use the existing tests and profiler to distinguish the explanations, then screen one candidate
+through the complete call. Repeat a survivor in independent packed processes and inspect resource
+costs before retention. Parallelize preparation, not competing timing processes. Reuse builds and
+observations when their inputs remain unchanged. Investigate conflicting instruments before another
+replay; more samples do not repair a comparison that measures different work.
+
+Stop the experiment when evidence supports retention or rejection. An unresolved comparison keeps
+the gap open; name the missing observation instead of starting a wider matrix or another candidate.
+Complete the required correctness checks before committing. Failure or interruption is not a pass.
+
 Rules:
 
 - Keep useful experiment drivers in this repository before running them. Extend an existing

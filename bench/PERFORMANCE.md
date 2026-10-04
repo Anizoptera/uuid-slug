@@ -1627,7 +1627,7 @@ a burst of 2 million calls on Bun 1.4.2, native text and slugs encoded timestamp
 timestamp cost 51 ns and still encoded up to 8 ms ahead during a one-second burst of 20 million
 reads, with about 85% of samples at least 1 ms ahead. Rejecting values ahead of the clock cost 94 ns
 and rejected 99.8% of them. Bun's `node:crypto.randomUUIDv7` ran 429 ms ahead after the same burst.
-Every UUIDv7 form on Bun therefore uses the package generator, whose median text and slug costs stay
+The measured portable UUIDv7 text and slug calls cost
 about 36 ns and 23 ns above the native floor. In these bursts, that gap accompanies timestamps
 that stay at the clock; it does not establish an unavoidable validation or dispatch cost.
 Art's default-generation policy in `docs/public-api.md` supersedes rejection solely for timestamp

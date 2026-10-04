@@ -287,7 +287,7 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 
 Ordinary generation defaults must not pay for additional guarantees the caller did not request.
 
-Art, 2026-10-04: choose defaults for end-user performance and resource efficiency across the
+Choose defaults for end-user performance and resource efficiency across the
 measured trade-offs; offer costly, rarely needed stronger guarantees through explicit configuration.
 Preserve published identifier, secure-entropy, ownership, validation, and failure contracts.
 An unanswered guarantee proposal or an agent-derived constraint does not extend those contracts.
