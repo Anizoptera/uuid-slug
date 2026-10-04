@@ -22,10 +22,19 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       because it overlaps the complete check. The original screen times out before its first row:
       its corpus imports its own timing entry through the module override. Clearing only that
       override on the same bundle restores every expected row; keep the driver correction.
-      Next distinguish Bun's Web Crypto UUID call from its Node-compatible UUID call through the
-      existing native corpus before changing selection. Faster native work must preserve the same
-      secure text result and support absent-capability and failure fallback; no extra public option
-      or routine verifier is required.
+      `bun-node-v4-packed.log` separates a small text gain, but `bun-node-v4-resource-*` does not
+      establish combined resource improvement: caller CPU changes direction and resident growth
+      increases in all pairs. Reject the extra Node-compatible import.
+      Bun rejects the detached function with `ERR_INVALID_THIS`; the receiver requirement rejects
+      unbinding before timing.
+      `bun-call-v4-packed.log` completes six fresh-process pairs after the full check, with no
+      separated gain for either text case. Reject the wrapper; retain the original bound function.
+      Neither native selection nor binding earns a production change. Next inspect the trusted
+      success path's remaining result discrimination: moving package-error handling to the cold
+      validation and native-failure branches could remove ordinary-call work without changing the
+      selected capability. Screen only that branch placement, preserving every failure cause and
+      both output cases; reject if existing failure mutations or repeated complete calls do not
+      support it. Keep this gap open and do not rerun these rejected native shapes unchanged.
 
 - [ ] Close the Bun owned UUIDv7 byte gap before another default-slug tweak. The maintained
       owned-byte screens trail `uuid`; equal-call memory captures retain more heap and resident
