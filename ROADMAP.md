@@ -46,6 +46,14 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       execution. Include uppercase, slug and owned-byte controls when the change reaches them;
       count added allocation, retained storage, initialization and generator construction.
       Reject a material primary-call loss or a negligible saving before broad replays.
+  - [x] Reassess direct Latin-1 string construction against the retained fixed formatter.
+        The earlier rejection names a small saving, not a correctness failure or established
+        regression. Resolve Node uppercase and Bun byte/slug controls in packed comparisons
+        before retaining the Bun text saving. Two packed comparisons reproduce the Bun text
+        and conversion saving; other primary-call intervals remain unresolved.
+  - [ ] Integrate the surviving direct Latin-1 method only after proving absent-method behavior,
+        construction resources and affected-call profiles. Complete the remaining runtime
+        comparisons and bound unresolved primary controls; native parity stays open.
 - [ ] Retain a survivor only after the existing packed replays, affected-runtime profiles,
       behavior/resource proofs and full check support it. Commit the production improvement
       and record its measured benefit and limits in `bench/PERFORMANCE.md`; otherwise keep

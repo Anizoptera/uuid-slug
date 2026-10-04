@@ -2694,9 +2694,26 @@ Default UUIDv7 text reads 85.23/88.49 ns against 91.34/90.81 ns; uppercase reads
 the owning behavior tests and counted resources; `candidates-format-jV2RlI` rejects the
 missing-final-character mutation in Bun's independent text oracle before timing.
 These process orders are a screen, not an uncertainty bound or retained-heap comparison.
-Reject the candidate: its small default-call saving agrees with the earlier isolated probe
-above and does not address the larger native-generation gap. Cold construction, absent-method
-behavior and native exceptions remain unmeasured; no production implementation selects it.
+The source screen alone does not establish retention. The packed comparisons below supersede
+the rejection based only on the saving's size; a reproduced saving in the hottest default-call
+component can reduce the gap without closing it. Cold construction, absent-method behavior
+and native exceptions still require evidence before production selection.
+
+Direct Latin-1 construction survives the primary-host packed timing comparison.
+On 2026-10-04, `primary-direct-latin1-current-screen.log` compares the retained fixed formatter
+with `format direct-latin1` on Node 26.10.0 and Bun 1.4.2. Both intact forms pass behavior and
+counted resources. `primary-direct-latin1-current-mutation.log` rejects the missing final
+character at the independent Bun text assertion before packed timing.
+Two packed comparisons each use six fresh-process pairs, nine 20 ms batches and 32 ms warm-up.
+Bun default-text median ratios are 0.936 [0.925, 0.989] and 0.961 [0.871, 0.968]; uppercase
+ratios are 0.954 [0.942, 0.975] and 0.950 [0.912, 0.975]. Conversion ratios are 0.921
+[0.886, 0.964] and 0.947 [0.881, 0.955]. Node and Bun byte/slug controls have unresolved
+intervals; those intervals do not establish negligible loss. Primary timing warrants integration
+checks, not adoption: other measured runtimes, fallback behavior, construction resources and
+affected-call profiles remain unverified. The native UUIDv7 gap stays open. These are batch
+throughput observations from one machine, not independent-call latency or total allocation.
+`primary-direct-latin1-packed.log` and `primary-direct-latin1-packed-repeat.log` retain raw
+observations; `packed-source-uHpPDY/` and `packed-source-JKb0I0/` retain the packed sources.
 
 Two Bun 1.4.2 chunk-construction screens on 2026-10-04 (`v7-chunks-join-proofed-screen.log`
 and `v7-chunks-join-proofed-repeat.log`) compare public caller-buffer generation followed by
