@@ -143,6 +143,11 @@ keep contract changes reserved for Art, and claim impossibility only with a name
   - [ ] Identify a text-construction change that removes a substantial part of the Bun default
         generation gap. Compare existing rejected mechanisms before another screen; test whole
         construction or generation work rather than another small dispatch refinement.
+    - [x] Compare hexadecimal-chunk concatenation and native join over reused string parts.
+          Each lost-tail mutation fails the independent payload oracle. Both repeated Bun
+          generation screens lose; matching conversion screens also lose without generation
+          dispatch. Reject these composed calls; they do not prove a fused generator's cost
+          or identify the engine-level cause. Preserve the native gap as unresolved.
   - [x] Compare native UUIDv4 text repaired to UUIDv7 against native UUIDv7, package generation
         and qualified libraries. Preserve all 74 payload bits and the current clock timestamp;
         compare numeric hexadecimal prefixes with fixed character prefixes on complete calls.

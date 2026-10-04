@@ -2565,6 +2565,27 @@ Reject the candidate: its small default-call saving agrees with the earlier isol
 above and does not address the larger native-generation gap. Cold construction, absent-method
 behavior and native exceptions remain unmeasured; no production implementation selects it.
 
+Two Bun 1.4.2 chunk-construction screens on 2026-10-04 (`v7-chunks-join-proofed-screen.log`
+and `v7-chunks-join-proofed-repeat.log`) compare public caller-buffer generation followed by
+hexadecimal chunks with ordinary package text. Concatenation reads 186.68/147.45 ns and native
+join over reused parts reads 150.31/122.80 ns, against 88.44/72.02 ns for default text.
+Two matching conversion screens (`v7-chunks-join-conversion.log` and its `-repeat`) alternate
+the same bytes and consume returned characters. Concatenation reads 106.62/117.41 ns and join
+reads 77.82/78.76 ns, against 40.61/41.08 ns for the package formatter. This isolates a loss
+outside generation dispatch; it does not identify rope allocation, flattening or native join
+as the cause. Reject both composed calls without broadening to auxiliary runtimes.
+Independent native hexadecimal encoding checks all 128 walking input bits. The `lost-tail`
+and `joined-lost-tail` mutations fail that oracle before timing, with captures in
+`v7-chunks-mutation.log` and `v7-chunks-join-mutation.log`. Exclude the initial join screen
+from selection because its dedicated mutation proof follows it. Each retained screen uses
+nine 20 ms batches after 32 ms warm-up, rotating case order; each process median is one
+observation. Pauses remain in the raw samples, including a conversion batch average near
+47 microseconds. These one-machine screens do not bound negligible effects or a fused
+generator's cost, and do not establish retained-heap or allocation parity.
+The experiment source is retained as `bench/reports/v7-chunks-source.patch` against `d79d3ae`;
+its final labels exclude the rejected candidates from package rankings. The measured mechanisms
+are unchanged by those labels. The maintained benchmark excludes these rejected experiments.
+
 Local workerd evidence (2026-10-04): `workerd-public-repeat.jsonl` runs the compiled public entry
 with the portable implementation in both plain-web and `nodejs_compat` configurations. The bundle
 input manifest contains `dist/index.js` and `dist/runtime/portable.js`, with no production source
