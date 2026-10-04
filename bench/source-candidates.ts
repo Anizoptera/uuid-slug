@@ -130,7 +130,7 @@ const groups = {
 } satisfies Record<CandidateGroup, { names: readonly string[]; tests: readonly string[] }>;
 const filename = CANDIDATE_FILES[group];
 const { names: expectedNames } = groups[group];
-// A committed production graph makes the detached checkout match the source being screened.
+// A committed production graph makes the isolated snapshot match the source being screened.
 if (
   (
     await command(
@@ -141,7 +141,7 @@ if (
   ).trim()
 )
   throw new Error(
-    "Commit production, test and dependency changes before screening; the isolated checkout must use the same graph as its baseline.",
+    "Commit production, test and dependency changes before screening; the isolated snapshot must use the same graph as its baseline.",
   );
 const revision = (await command("git", ["rev-parse", "HEAD"], project)).trim();
 const source = await command("git", ["show", `${revision}:${filename}`], project);
@@ -169,11 +169,13 @@ const tree = join(workRoot, "tree");
 const reportRoot = join(project, "bench/reports");
 await mkdir(reportRoot, { recursive: true });
 const report = await mkdtemp(join(reportRoot, `candidates-${group}-`));
-let added = false;
 try {
   // Proof edits never touch the shared working tree; failures cannot erase another agent's edits.
-  await command("git", ["worktree", "add", "--detach", tree, revision], project);
-  added = true;
+  // An archive preserves the committed graph without creating a branch or Git worktree.
+  const archive = join(workRoot, "source.tar");
+  await command("git", ["archive", "--format=tar", "--output", archive, revision], project);
+  await mkdir(tree);
+  await command("tar", ["-xf", archive, "-C", tree], project);
   await symlink(join(project, "node_modules"), join(tree, "node_modules"), "dir");
   await command("bun", ["run", "build"], tree);
   // Snapshots are text artifacts, not extra compiler inputs under bench/**/*.ts.
@@ -363,6 +365,5 @@ try {
     }
   console.log(JSON.stringify({ report }));
 } finally {
-  if (added) await command("git", ["worktree", "remove", "--force", tree], project);
   await rm(workRoot, { recursive: true, force: true });
 }

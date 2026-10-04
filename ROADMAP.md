@@ -19,6 +19,8 @@ candidate, state the removable work and its falsifier before changing code; incl
 when a faster repeated call adds retained state. A runtime policy is not a physical limit:
 keep contract changes reserved for Art, and claim impossibility only with a named bound.
 
+- [x] Isolate source screens with a committed archive instead of creating a Git worktree;
+      the baseline control must execute its owning proofs and every selected timing case.
 - [x] Refresh the primary-call baseline from two maintained competitor runs; keep owned-byte,
       Bun default generation, encoding and Deno decoding gaps open, with resource parity unmeasured.
 - [x] Attribute current primary UUIDv7 costs before another candidate screen. Preserve each

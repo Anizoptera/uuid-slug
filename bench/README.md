@@ -61,8 +61,8 @@ Rules:
 
 Run `bun bench/source-candidates.ts v7-draw independent-direct` to screen that source substitution
 against its baseline, or use `v4 argument-fast` for the UUIDv4 default-call comparison. Candidate
-names select only those substitutions; the baseline is always included. The runner uses a detached
-checkout, checks types and the owning Node and Bun tests before timing, and preserves source,
+names select only those substitutions; the baseline is always included. The runner extracts a
+committed-source archive, checks types and the owning Node and Bun tests before timing, and preserves source,
 proof output and measurements in `bench/reports/`. Set `UUID_SLUG_CANDIDATE_RUNTIMES` to a
 colon-separated selection of `node`, `bun` and `deno`; set `UUID_SLUG_COMPARE_NODE_EXECUTABLE`
 to select a Node executable. Each comparison runs in fresh processes with reversed second-pass order.
