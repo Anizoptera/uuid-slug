@@ -252,8 +252,11 @@ efficiency. A reproducible misuse alone does not justify that cost.
   benchmark output in ignored `bench/reports/`; conclusions belong in `bench/PERFORMANCE.md`.
   Extract executable baseline source outside this repository; ignored source trees can still enter
   compiler and test discovery. Keep only generated evidence and archives in `bench/reports/`.
-- Repair missing or ineffective guidance in its auto-loaded owner before the plan and code.
-  Enforce mechanically decidable failures in the existing harness, not a prose-alignment checker.
+- Repair missing or ineffective guidance before changing the plan or implementation. Put the
+  trigger, required action and reason in the nearest `AGENTS.md` visible when the work starts;
+  a rule buried in another document cannot prevent a mistake unless that file is explicitly loaded.
+  Read the changed text and its dependents before proceeding. Public-document repairs still need
+  approval. Enforce mechanically decidable failures in the existing harness, not a prose checker.
 - Use the `typescript` package for project checking; TypeScript 7 is the main compiler.
   `typescript-floor` is limited to the TypeScript 5.0 packed-consumer check and tooling that needs
   legacy in-process compiler APIs such as the parser, printer, or language service.

@@ -3,7 +3,8 @@
 Complete the remaining performance work without changing identifier formats, secure entropy,
 validation, ownership, or published generation guarantees. Optimize defaults under
 `docs/public-api.md` §Generation and codecs; measure clock drift without imposing an unrequested
-never-ahead promise. Keep remote writes unauthorized.
+never-ahead promise. Keep remote writes unauthorized. Repair agent guidance before implementation;
+propose public-document changes and hold them for explicit approval, including generated reports.
 
 ## Next production decision
 
@@ -27,6 +28,9 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       with no generation deoptimization recorded. Lost caller inlining does not explain these
       captures. Next isolate once-selected default dispatch from per-call capability lookup;
       preserve fallback behavior and reject primary-call losses before wider replay.
+      Lazy selection keeps the Bun default gain, but configured-generator text still loses.
+      Isolate the unchanged configured body from default dispatch before retention; require
+      the exact configured-clock and failure tests, then repeat the affected complete calls.
       Reject it if repeated complete calls show a material primary-call regression, resource
       costs grow without a requested benefit, or a published contract fails. Preserve configured
       generators and the native-absent path; do not infer their behavior from native success.
@@ -35,7 +39,7 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
   - [ ] Evaluate native Bun UUIDv7 text for ordinary defaults without timestamp repair; retain
         created-generator controls for explicit ordering, clock and layout requirements. Prove
         native success, absence, malformed output, fallback and dual failure before timing;
-        compare repeated complete calls and resources, then update consumer expectations.
+        compare repeated complete calls and resources, then propose any consumer-document changes.
   - [ ] Remove drift-only disqualification from benchmark ranking and stale implementation
         comments before evaluating native defaults. Preserve drift measurements, secure-entropy
         qualification and published-contract checks; verify the actual generated report.
@@ -99,7 +103,7 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
           reject absent default-call gains or another primary-call loss before wider comparisons.
 - [ ] Retain a survivor only after the existing packed replays, affected-runtime profiles,
       behavior/resource proofs and full check support it. Commit the production improvement
-      and record its measured benefit and limits in `bench/PERFORMANCE.md`; otherwise keep
+      and obtain approval to record its benefit and limits in `bench/PERFORMANCE.md`; otherwise keep
       the gap open and choose a different attributed mechanism.
 - [ ] Then rank the remaining open generation, parsing and conversion gaps by ordinary-call
       importance, runtime rank, measured avoidable cost and expected benefit per implementation
@@ -733,10 +737,10 @@ competitor. Caller buffers miss that, ns package / `uuid`: Bun UUIDv4 27.9 / 26.
 
 ## Phase 6: deliver (after every source change)
 
-- [ ] Run `bun run bench:results`; update the Node cells of the §Native floors table, which
-      predate pooled UUIDv4 text on Node.
-- [ ] Update README direction words (leads, trails, unresolved; no numbers) only where the
-      refreshed reports reproduce the change.
+- [ ] Propose the generated-report and §Native floors updates before running `bun run bench:results`,
+      which writes public documents. Hold those writes for explicit approval.
+- [ ] Propose README direction words (leads, trails, unresolved; no numbers) only where repeated
+      comparisons support the change. Hold the edit for explicit approval.
 - [ ] Run `bun run check > log 2>&1`; done when it exits 0 and the parity report shows no gap
       without a task here or a recorded cause.
 
