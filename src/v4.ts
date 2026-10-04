@@ -142,14 +142,34 @@ export function drawUuidV4Scratch(): Uint8Array | UuidSlugError {
   }
 }
 
-function nativeOrPortableUuidV4<Case extends UuidTextCase>(
-  textCase: Case,
+/**
+ * Generate UUIDv4 text with platform cryptographic randomness, lowercase by default.
+ *
+ * @param textCase - Built-in output spelling. Omit for lowercase.
+ * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
+ * source. No supported runtime lacks one, so this is not expected during normal operation.
+ */
+export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  textCase?: Case,
+): UuidV4StringFor<Case>;
+export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+  textCase: Case = UUID_TEXT_LOWERCASE as Case,
 ): UuidV4StringFor<Case> | UuidSlugError {
+  if (!isUuidTextCase(textCase)) {
+    // Only an untyped call reaches an unknown spelling; that misuse stays an error value.
+    const selectedCase = resolveUuidTextCase(textCase);
+    if (selectedCase instanceof Error) return selectedCase;
+    textCase = selectedCase as Case;
+  }
   // Native generation is useful only for text, which the host returns directly. Byte and slug
   // routes stay portable because parsing native text adds work and complicates atomic output.
-  // Recheck each output form when host APIs change; bench/PERFORMANCE.md owns the evidence.
+  // Keep native generation in this public function instead of another helper call; the complete
+  // Bun text call improves with this shape. Portable-first runtimes leave before native handling.
+  // A successful string needs no local Error check; only a failed result reaches the throw seam.
+  // Remeasure each output form if native trust, case normalization, host APIs or engine inlining
+  // changes; bench/PERFORMANCE.md owns the evidence.
   const native = runtime.uuidV4;
-  if (!native) return generatePortableUuidV4(textCase);
+  if (!native) return generatedOrThrow(generatePortableUuidV4(textCase));
   let uuid: string | UuidSlugError;
   if (native === nativeUuidV4Trust.trusted) {
     try {
@@ -172,31 +192,8 @@ function nativeOrPortableUuidV4<Case extends UuidTextCase>(
       UUID_V4_GENERATION,
     );
   }
-  return (
-    textCase === UUID_TEXT_UPPERCASE && typeof uuid === "string" ? uuid.toUpperCase() : uuid
-  ) as UuidV4StringFor<Case> | UuidSlugError;
-}
-
-/**
- * Generate UUIDv4 text with platform cryptographic randomness, lowercase by default.
- *
- * @param textCase - Built-in output spelling. Omit for lowercase.
- * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
- * source. No supported runtime lacks one, so this is not expected during normal operation.
- */
-export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-  textCase?: Case,
-): UuidV4StringFor<Case>;
-export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-  textCase: Case = UUID_TEXT_LOWERCASE as Case,
-): UuidV4StringFor<Case> | UuidSlugError {
-  if (!isUuidTextCase(textCase)) {
-    // Only an untyped call reaches an unknown spelling; that misuse stays an error value.
-    const selectedCase = resolveUuidTextCase(textCase);
-    if (selectedCase instanceof Error) return selectedCase;
-    textCase = selectedCase as Case;
-  }
-  return generatedOrThrow(nativeOrPortableUuidV4(textCase));
+  if (typeof uuid !== "string") return generatedOrThrow(uuid);
+  return (textCase === UUID_TEXT_UPPERCASE ? uuid.toUpperCase() : uuid) as UuidV4StringFor<Case>;
 }
 
 /**

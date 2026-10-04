@@ -124,12 +124,15 @@ are packed normally, and the shared production tree remains unchanged.
 Use `v4 native-zero-hex native-zero-base64` to compare native decoding of fixed zero bytes
 before the unchanged secure fill; capability selection runs once and absent decoders use the
 ordinary constructor. These candidates measure complete owned-byte generation, not decoder speed.
-Use `v4 inline-native inline-native-string-first` to separate native helper placement from
+On a revision with the native text helper, use `v4 inline-native inline-native-string-first` to separate native helper placement from
 successful-string recognition. Preset normalization, native identity validation, portable
 fallback and dual-failure causes stay intact. `inline-native-lost-fallback` must fail the
 shared trusted-native failure witness in Node and Bun before timing.
 `inline-native-extra-buffer` must fail the default-text resource counter on Bun before timing;
 the mutation preserves output and exposes work that byte-generation counters cannot see.
+Both native mutations also apply to the retained public-function implementation. Historical
+helper-placement candidates reject an already-inlined source; reproduce them with
+`bench/compare.ts <helper-ref> <helper-ref> --source-candidate=v4:inline-native-string-first`.
 Use `v4 string-first` to change only successful-string recognition while keeping the native
 helper in place. `string-first-lost-throw` must fail the shared generation-failure witness;
 otherwise a fast success check could conceal a changed default-call failure contract.

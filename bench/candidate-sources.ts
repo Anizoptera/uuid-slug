@@ -504,19 +504,21 @@ function v4Candidates(source: string): readonly SourceCandidate[] {
   // Isolate the extra native helper call from preset checks and failure containment. Copy its
   // entire body and comments into the public implementation; only its return boundary changes.
   // The string-first variant tests recognition cost separately from helper placement.
-  const nativeStart = source.indexOf("function nativeOrPortableUuidV4<");
-  const nativeEnd = source.indexOf("\n/**\n * Generate UUIDv4 text with platform", nativeStart);
-  if (nativeStart < 0 || nativeEnd < 0) throw new Error("UUIDv4 native helper span is missing");
-  const nativeSpan = source.slice(nativeStart, nativeEnd);
-  const bodyStart = nativeSpan.indexOf("\n): UuidV4StringFor<Case> | UuidSlugError {\n");
-  if (bodyStart < 0) throw new Error("UUIDv4 native helper signature is missing");
-  const nativeBody = nativeSpan.slice(nativeSpan.indexOf("{\n", bodyStart) + 2, -2);
   const nativeReturn = [
     "  return (",
     '    textCase === UUID_TEXT_UPPERCASE && typeof uuid === "string" ? uuid.toUpperCase() : uuid',
     "  ) as UuidV4StringFor<Case> | UuidSlugError;",
   ].join("\n");
   const inlineNative = (stringFirst = false): string => {
+    // Retained inlining removes this historical helper; reject that experiment explicitly
+    // without preventing baseline or independent byte-allocation candidates from running.
+    const nativeStart = source.indexOf("function nativeOrPortableUuidV4<");
+    const nativeEnd = source.indexOf("\n/**\n * Generate UUIDv4 text with platform", nativeStart);
+    if (nativeStart < 0 || nativeEnd < 0) throw new Error("UUIDv4 native helper span is missing");
+    const nativeSpan = source.slice(nativeStart, nativeEnd);
+    const bodyStart = nativeSpan.indexOf("\n): UuidV4StringFor<Case> | UuidSlugError {\n");
+    if (bodyStart < 0) throw new Error("UUIDv4 native helper signature is missing");
+    const nativeBody = nativeSpan.slice(nativeSpan.indexOf("{\n", bodyStart) + 2, -2);
     const body = replaceOnce(
       replaceOnce(
         nativeBody,
@@ -584,7 +586,7 @@ function v4Candidates(source: string): readonly SourceCandidate[] {
       name: "inline-native-extra-buffer",
       get source() {
         return replaceOnce(
-          inlineNative(true),
+          source.includes("function nativeOrPortableUuidV4<") ? inlineNative(true) : source,
           '  if (typeof uuid !== "string") return generatedOrThrow(uuid);',
           '  if (typeof uuid !== "string") return generatedOrThrow(uuid);\n  new Uint8Array(16);',
         );
@@ -617,7 +619,7 @@ function v4Candidates(source: string): readonly SourceCandidate[] {
       name: "inline-native-lost-fallback",
       get source() {
         return replaceOnce(
-          inlineNative(),
+          source.includes("function nativeOrPortableUuidV4<") ? inlineNative() : source,
           [
             "      uuid = portableAfterNative<UuidTextCase>(",
             "        nativeCause,",

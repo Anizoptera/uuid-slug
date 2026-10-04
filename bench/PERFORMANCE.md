@@ -1528,8 +1528,9 @@ Remaining gaps and their causes:
   process after 16 ms warmup, with reversed second-pass order, are screening evidence; they do
   not establish independent-run confidence, individual-call p99 or resource parity. Raw samples
   and proof output are in `bench/reports/candidates-v4-1790977311163/`.
-  Native helper inlining with string-first success recognition remains a candidate, not a retained
-  change. The 2026-10-04 `v4-native-inline-screen.log` compares helper inlining alone with that
+  Native helper inlining with string-first success recognition is retained for its repeated Bun
+  gain without adding public options or removing fallback. The 2026-10-04
+  `v4-native-inline-screen.log` compares helper inlining alone with that
   combination; `v4-native-inline-repeat.log` repeats the combination. Node 26.10.0 and Bun 1.4.2
   each use two fresh processes per candidate per screen, nine 20 ms batches and 32 ms warm-up.
   Bun default native text favors the combination in all four processes. The trusted-native
@@ -1558,8 +1559,8 @@ Remaining gaps and their causes:
   Bun default text at 0.965 [0.946, 0.981] and uppercase at 0.980 [0.971, 0.993]. WebKit default
   text reads 0.990 [0.929, 1.029], so the earlier slowdown does not repeat but a small regression
   remains possible. WebKit uppercase reads 0.940 [0.896, 0.974]. Portable-text controls remain
-  unresolved on both runtimes. Retention still requires profile and resource evidence, rather
-  than another throughput replay alone. Packed observations are fresh processes on one machine;
+  unresolved on both runtimes. CPU profiles and equal-call resource observations below accompany
+  the timing decision. Packed observations are fresh processes on one machine;
   within-process batches are not independent call latencies. Cold cost and total resource parity
   remain unmeasured for this candidate.
 
@@ -1600,6 +1601,15 @@ Remaining gaps and their causes:
   driver's `importMs`. Baseline reads 1.931–1.969 ms and candidate reads 1.915–2.024 ms; each
   direction occurs twice. The one-batch timing settings only verify execution. These observations
   exclude process startup and packed resolution and leave small import-cost differences unresolved.
+
+  The text-allocation mutation fails the new default-text resource witness with `buffers=1 exceeds
+  0` before timing (`v4-native-text-resource-mutation.log`). The intact candidate passes both
+  owning runtime suites and both text counters with zero observed arrays, views or diagnostics
+  (`v4-native-text-resource-intact.log`, `candidates-v4-p8bvne/`). Together with repeated throughput
+  and collected-heap observations, this earns removal of the private helper and the ordinary native
+  success Error check. It does not establish native-floor parity, gross allocation parity or absence
+  of small cross-runtime differences; those remain open. Preserve native identity validation,
+  fallback and dual-failure causes when remeasuring.
 - Bun UUIDv7 text costs about 79 ns against 27 ns for native UUIDv4 text: about 42 ns draws the
   timestamp, sequence, and random bits, and 37 ns formats them through the Latin-1 `Buffer` path.
   With every result's last character read, formatting the same bytes through `toHex`, `Buffer`
