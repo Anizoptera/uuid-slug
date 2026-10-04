@@ -2500,6 +2500,22 @@ Counter representation changes this combined allocation without adding retained 
 allocating expression and packed throughput remain unresolved. The slower first candidate capture
 has its own lower call count; it does not license borrowing another process's denominator.
 
+Keep the narrower counter unresolved until independent packed measurements bound its trade-offs.
+`counter-low31-packed.log` and `counter-low31-packed-repeat.log` each compare twelve fresh
+process pairs on Node v26.10.0 and Bun v1.4.2, with 45 ms observations after 64 ms warm-up.
+Both return every requested case: ordinary text, owned bytes, slugs, explicit-time bytes and
+default generator construction. Each summary contains twelve baseline and candidate observations.
+The first Node owned-byte ratio is 0.972 [0.964, 0.988]; its repeat is
+0.971 [0.904, 1.013]. Every other interval includes parity in both comparisons.
+The repeat contains substantial lost execution time: a Node baseline byte batch receives
+355 microseconds of process CPU time over 67.469 ms of wall time, and a Bun baseline byte batch
+receives 21,918 microseconds over 450.324 ms. Process CPU includes all process threads;
+these discrepancies establish lost execution time without identifying its host cause.
+Retain those observations rather than filtering them away. Batch averages do not prove
+individual-call latency, and these conditional intervals do not establish equivalence or a
+reproduced throughput gain. Lower sampled Node allocation remains a reason to investigate,
+not sufficient evidence to change production or select a runtime-specific implementation.
+
 Local workerd evidence (2026-10-04): `workerd-public-repeat.jsonl` runs the compiled public entry
 with the portable implementation in both plain-web and `nodejs_compat` configurations. The bundle
 input manifest contains `dist/index.js` and `dist/runtime/portable.js`, with no production source
