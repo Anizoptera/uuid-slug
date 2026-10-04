@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterAll, beforeAll, expect, test } from "bun:test";
+import type { SamplingProfile } from "bun:jsc";
 import { renderGenerationReport, verdict } from "../bench/generation-report";
 import type { ReportRecord } from "../bench/generation-report";
 import { parseReport } from "../bench/matrix";
@@ -256,7 +257,10 @@ test("Bun portable-encoder memory excludes CPU sample records", async () => {
       status: 0,
       diagnostic: "",
     });
-    expect(await Bun.file(join(directory, "bun-jsc-sampling.json")).exists()).toBe(true);
+    const sampling: Pick<SamplingProfile, "stackTraces"> = await Bun.file(
+      join(directory, "bun-jsc-sampling.json"),
+    ).json();
+    expect(sampling.stackTraces).toBeDefined();
     // Profile records can dwarf retained package state; the snapshot must precede their creation.
     const snapshot: { edgeNames: string[] } = await Bun.file(
       join(directory, "bun-jsc.heapsnapshot"),

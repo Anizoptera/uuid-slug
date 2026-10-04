@@ -67,6 +67,11 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       snapshot. The separated captures in both orders favor native retained heap growth;
       keep `native-v7-memory-separated-*`. Record each pass's calls and require snapshots to
       exclude CPU sample records. Gross allocation and complete-call control parity stay open.
+      Isolate explicit-time generation in fresh packed Node/Bun processes before repeating the
+      mixed corpus. A persistent loss requires correcting its public-call boundary; a bounded
+      no-loss result clears that control only, not the other cases or their mixed warm-up effects.
+      The isolated replay separates Bun wall time only; Bun CPU and both Node measures remain
+      unresolved. Keep `native-v7-folded-explicit-time-isolated*`; the run does not clear this control.
       Reject it if repeated complete calls show a material primary-call regression, resource
       costs grow without a requested benefit, or a published contract fails. Preserve configured
       generators and the native-absent path; do not infer their behavior from native success.
