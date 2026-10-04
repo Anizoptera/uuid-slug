@@ -34,6 +34,17 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       profiles of the unchanged configured call and its baseline: increased wrapper/dispatch work
       supports a source-shape cost, while unchanged stacks and CPU challenge that explanation.
       Resolve that control before another throughput replay or claiming retention qualified.
+      Initial fixed-call profiles show no added wrapper samples; sample totals alone are not CPU
+      evidence. Record caller-thread and process CPU around the existing unsampled memory pass,
+      then repeat equal calls in both orders to distinguish code cost from sampler scheduling.
+      Repeated candidate stacks change with inlining, so frame counts do not establish a wrapper
+      cost. Exclude CPU captures overlapped by analysis or type checking; run six fresh fixed-call
+      pairs sequentially, alternating order, with no competing measurement or verification work.
+      Six sequential pairs center caller-thread CPU near parity; their interval still permits a
+      small loss. Retained heap rises slightly in most candidate captures, while resident growth
+      varies. Preserve `configured-slug-fixed-*`; no added wrapper-cost mechanism is established.
+      Stop replaying this unchanged control. Next compare default native slug calls with the native
+      floor and qualified rivals, including retained memory; the configured small-loss limit stays open.
 - [ ] Qualify Bun native default UUIDv7 text with equal executed preparation instead of elapsed
       warm-up alone. Add an opt-in call count to the existing profiler, then revisit the preserved
       import-selected candidate: prior explicit-time controls lacked preparation counts, and a

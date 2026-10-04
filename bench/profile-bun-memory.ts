@@ -15,6 +15,11 @@ const api: typeof import("../src/index") = await import(
   process.env.UUID_SLUG_PROFILE_MODULE ?? "../src/index"
 );
 const calls = Number(process.env.UUID_SLUG_PROFILE_CALLS ?? 32_768);
+// Sampling counts depend on profiler scheduling; use caller CPU for the unsampled fixed-call pass.
+// Process CPU also includes helper threads, so keep the two observations distinct.
+const threadCpuUsage = (
+  process as { threadCpuUsage?: (previous?: NodeJS.CpuUsage) => NodeJS.CpuUsage }
+).threadCpuUsage?.bind(process);
 if (!Number.isSafeInteger(calls) || calls < 1)
   throw new Error("UUID_SLUG_PROFILE_CALLS must be a positive safe integer");
 const filter = process.env.UUID_SLUG_PROFILE_FILTER;
@@ -75,7 +80,11 @@ function runCases(): void {
 }
 // Measure the workload without retaining CPU sample records in its final heap reading.
 // Sampling needs its own pass: its returned arrays and strings are harness-owned memory.
+const cpuBefore = process.cpuUsage();
+const threadBefore = threadCpuUsage?.();
 runCases();
+const threadCpu = threadBefore && threadCpuUsage?.(threadBefore);
+const cpu = process.cpuUsage(cpuBefore);
 Bun.gc(true);
 const after = heapStats();
 const nativeAfter = memoryUsage();
@@ -94,6 +103,8 @@ await Promise.all([
       calls,
       // Each selected case executes this many calls in each pass.
       memoryCalls: calls,
+      cpuUs: cpu.user + cpu.system,
+      threadCpuUs: threadCpu && threadCpu.user + threadCpu.system,
       samplingCalls: calls,
       cases: cases.map(([name]) => name),
     }),
