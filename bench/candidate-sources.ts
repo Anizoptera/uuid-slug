@@ -1277,6 +1277,40 @@ ${anchor}`,
 }
 
 function keylessCandidates(source: string): readonly SourceCandidate[] {
+  // Reuse secure owned allocation rather than adding a second entropy implementation. Only
+  // the no-argument public byte path changes; immutable values still use their declared layout.
+  // More copied entropy and the extra call can erase the removed sequence work.
+  const v4Owned = () => {
+    const helper = [
+      'import { generateOwnedUuidV4Bytes } from "./v4.ts";',
+      'import { readClock, INVALID_TIMESTAMP } from "./errors.ts";',
+      "function generateDefaultOwnedUuidV7Bytes(): UuidV7Bytes | UuidSlugError {",
+      "  const clock = readClock(Date.now);",
+      "  if (clock instanceof Error) return clock;",
+      "  const ms = Math.trunc(clock);",
+      '  if (typeof clock !== "number" || clock < 0 || !Number.isSafeInteger(ms) || ms > 0xffffffffffff)',
+      '    return new UuidSlugError(INVALID_TIMESTAMP, "Clock must fit the UUIDv7 timestamp.");',
+      "  const bytes = generateOwnedUuidV4Bytes();",
+      "  if (bytes instanceof Error) return bytes;",
+      "  let timestamp = ms;",
+      "  for (let i = 5; i >= 0; i--) {",
+      "    bytes[i] = timestamp & 0xff;",
+      "    timestamp = Math.floor(timestamp / 256);",
+      "  }",
+      "  bytes[6] = (bytes[6]! & 0x0f) | 0x70;",
+      "  return bytes as unknown as UuidV7Bytes;",
+      "}",
+      "",
+    ].join("\n");
+    return (
+      helper +
+      replaceOnce(
+        source,
+        "return generatedOrThrow(currentUuidV7Bytes());",
+        "return generatedOrThrow(generateDefaultOwnedUuidV7Bytes());",
+      )
+    );
+  };
   const owned =
     "export const currentUuidV7Bytes = (): UuidV7Bytes | UuidSlugError =>\n  (generateDefaultUuidV7Bytes ??= v7Bytes().generateUuidV7Bytes)();";
   // This default has no options to parse. Reuse the existing private draw without changing
@@ -1296,7 +1330,7 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
   const declaration =
     "export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(\n  textCaseOrOptions?: Case | GenerateUuidV7Options<Case>,\n): UuidV7StringFor<Case> | UuidSlugError {";
   const configured =
-    '  let values = readGenerationOptions(textCaseOrOptions, UUID_V7_TEXT_OPTIONS, "UUIDv7 generation");';
+    "  let values = readGenerationOptions(textCaseOrOptions, UUID_V7_TEXT_OPTIONS, UUID_V7_GENERATION);";
   const start = source.indexOf(declaration);
   const end = source.indexOf(configured, start);
   if (start < 0 || end < start)
@@ -1336,6 +1370,22 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
   };
   return [
     { name: "baseline", source },
+    {
+      name: "v4-owned-timestamp",
+      get source() {
+        return v4Owned();
+      },
+    },
+    {
+      name: "v4-owned-timestamp-lost-byte",
+      get source() {
+        return replaceOnce(
+          v4Owned(),
+          "  return bytes as unknown as UuidV7Bytes;",
+          "  bytes[15] = 0;\n  return bytes as unknown as UuidV7Bytes;",
+        );
+      },
+    },
     { name: "direct-owned-draw", source: replaceOnce(source, owned, directOwned) },
     { name: "cached-owned-draw", source: replaceOnce(source, owned, cachedOwned) },
     {

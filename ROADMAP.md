@@ -23,6 +23,16 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       default draws with complete-call CPU and memory. Earlier higher source-refill counts are
       a cost to measure, not proof of higher total resource cost; keep secure entropy, all payload
       bits, configured generator behavior and failure transactionality as constraints.
+      Reject the independent-direct screen: `candidates-v7-draw-UKqaoh` contains paused batches,
+      and `owned-v7-independent-fixed-*` caller-CPU ratios change direction across equal-call
+      comparisons. Retained-memory differences do not establish a useful combined gain. Its
+      unchanged payload metadata also calls freshly random bits a fixed counter.
+      Next screen only argument-free owned bytes built from the existing secure UUIDv4 byte
+      generator, then timestamp and version replacement. Sequence state may explain removable
+      cost; extra entropy copying or wrapper work may erase the gain. Keep configured calls and
+      immutable-value generation unchanged so their declared layouts stay truthful. Reject on
+      payload loss, incorrect timestamps, ownership loss, changed entropy failures, or no repeated
+      complete-call gain; inspect equal-call resources before retention.
 
 - [ ] Close the Bun default base64url UUIDv7 slug gap. Compare the complete public call with
       native slug output in the maintained generation corpus, then profile the package call.
