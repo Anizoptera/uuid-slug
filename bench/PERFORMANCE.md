@@ -2704,7 +2704,7 @@ On 2026-10-04, `primary-direct-latin1-current-screen.log` compares the retained 
 with `format direct-latin1` on Node 26.10.0 and Bun 1.4.2. Both intact forms pass behavior and
 counted resources. `primary-direct-latin1-current-mutation.log` rejects the missing final
 character at the independent Bun text assertion before packed timing.
-Two packed comparisons each use six fresh-process pairs, nine 20 ms batches and 32 ms warm-up.
+Two packed comparisons each use six fresh-process pairs, one 20 ms batch and 32 ms warm-up.
 Bun default-text median ratios are 0.936 [0.925, 0.989] and 0.961 [0.871, 0.968]; uppercase
 ratios are 0.954 [0.942, 0.975] and 0.950 [0.912, 0.975]. Conversion ratios are 0.921
 [0.886, 0.964] and 0.947 [0.881, 0.955]. Node and Bun byte/slug controls have unresolved
@@ -2716,13 +2716,20 @@ throughput observations from one machine, not independent-call latency or total 
 observations; `packed-source-uHpPDY/` and `packed-source-JKb0I0/` retain the packed sources.
 
 The remaining-runtime replay prevents adoption of this source form. Six fresh-process pairs
-with the same settings compare Chromium 153.0.8010.12, Firefox 155.0, WebKit 26.6, Deno 2.9.7
+with one batch per process compare Chromium 153.0.8010.12, Firefox 155.0, WebKit 26.6, Deno 2.9.7
 and Node 26.10.0 JITless. Their primary-call intervals are unresolved except JITless byte-to-text
 conversion, whose ratio is 1.030 [1.01, 1.05], slower. These results do not identify the engine
 cause or reject the native method itself. Moving the method selection into the Buffer
 implementation can preserve the portable formatter and avoid the added scratch-wrapper object;
-that alternative remains unmeasured. `primary-direct-latin1-secondary-packed.log` and
+that alternative needs a verified multi-batch comparison before retention. `primary-direct-latin1-secondary-packed.log` and
 `packed-source-YKi2aH/` retain the observations and sources. No production path selects the candidate.
+
+The packed driver must verify the requested batch count before its data can select production code.
+The earlier direct-Latin-1 packed records contain one `ns` value per process despite a requested
+larger count: the host environment and browser URL hard-coded one sample. Their six process-pair
+ratios remain observations, but they do not represent medians over the requested batches. Source
+screens honor the count and are unaffected by this correction. Retain pauses and use fresh
+processes as independent observations; extra batches do not increase that independent count.
 
 Two Bun 1.4.2 chunk-construction screens on 2026-10-04 (`v7-chunks-join-proofed-screen.log`
 and `v7-chunks-join-proofed-repeat.log`) compare public caller-buffer generation followed by

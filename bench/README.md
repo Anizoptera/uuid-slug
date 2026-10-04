@@ -289,6 +289,9 @@ paired observations beside the median interval. Launch a fresh host or browser p
 revision in each round so one revision cannot train the other's engine state. Intervals and standard
 errors remain conditional on independence; host scheduling and thermal drift can violate it too.
 Standard error does not replace the raw samples, repeated replays or practical effect size.
+Set `UUID_SLUG_PROFILE_SAMPLES` to control batches per process in packed comparisons; each host
+and browser must return that exact count. Summaries record it separately from independent
+process observations. Retain every batch; the process median does not make batches independent.
 
 Set `UUID_SLUG_PROFILE_LATENCY_SAMPLES` to a positive call count for a separate sampled-latency
 pass in `bench:profile`. Select successful scalar or byte results with a narrow filter; object

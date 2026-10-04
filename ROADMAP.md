@@ -56,6 +56,10 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
         finds a JITless conversion loss; do not adopt the current source form. Keep the portable
         formatter unchanged and avoid a second scratch-wrapper object. Prove absent-method
         behavior, construction resources and affected-call profiles; native parity stays open.
+    - [ ] Prove requested batch counts reach the packed host and browser measurements, then
+          repeat the Buffer candidate with process medians. The prior packed driver forced
+          one batch despite its supplied setting; those ratios cannot prove the intended
+          multi-batch comparison. Keep all raw batches and independent process counts separate.
 - [ ] Retain a survivor only after the existing packed replays, affected-runtime profiles,
       behavior/resource proofs and full check support it. Commit the production improvement
       and record its measured benefit and limits in `bench/PERFORMANCE.md`; otherwise keep

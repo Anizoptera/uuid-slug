@@ -66,6 +66,9 @@ if (
     `Source candidates require a known group and name: ${CANDIDATE_GROUPS.join(", ")}.`,
   );
 const rounds = Number(process.env.UUID_SLUG_COMPARE_ROUNDS ?? (smoke ? 2 : 6));
+// Processes remain the independent observations; extra batches improve each process median,
+// never its statistical sample count. Check the returned count to catch lost configuration.
+const samples = Number(process.env.UUID_SLUG_PROFILE_SAMPLES ?? "1");
 const duration = process.env.UUID_SLUG_PROFILE_MS ?? (smoke ? "1" : "5");
 const warmup = process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (smoke ? "2" : "16");
 const filter = process.env.UUID_SLUG_PROFILE_FILTER ?? "";
@@ -78,6 +81,8 @@ const selectedRuntimes = (process.env.UUID_SLUG_COMPARE_RUNTIMES?.split(":").fil
 ]) as Runtime[];
 if (!Number.isSafeInteger(rounds) || rounds < 1)
   throw new Error("UUID_SLUG_COMPARE_ROUNDS must be a positive safe integer");
+if (!Number.isSafeInteger(samples) || samples < 1)
+  throw new Error("UUID_SLUG_PROFILE_SAMPLES must be a positive safe integer");
 if (
   selectedRuntimes.length === 0 ||
   new Set(selectedRuntimes).size !== selectedRuntimes.length ||
@@ -224,7 +229,7 @@ function isProfileRow(value: unknown): value is ProfileRow {
     typeof row.operations === "number" &&
     row.operations > 0 &&
     Array.isArray(row.ns) &&
-    row.ns.length > 0 &&
+    row.ns.length === samples &&
     row.ns.every((sample) => typeof sample === "number" && Number.isFinite(sample) && sample > 0)
   );
 }
@@ -271,7 +276,7 @@ async function runHost(
         UUID_SLUG_PROFILE_MODULE: pathToFileURL(api).href,
         UUID_SLUG_PROFILE_PRIVATE_MODULE: pathToFileURL(privateV4Api).href,
         UUID_SLUG_PROFILE_MS: duration,
-        UUID_SLUG_PROFILE_SAMPLES: "1",
+        UUID_SLUG_PROFILE_SAMPLES: String(samples),
         UUID_SLUG_PROFILE_WARMUP_MS: warmup,
       },
     ),
@@ -283,7 +288,7 @@ async function runBrowser(page: Page, origin: string, revision: Revision): Promi
   const onPageError = (error: Error) => errors.push(error);
   page.on("pageerror", onPageError);
   await page.goto(
-    `${origin}?duration=${duration}&warmup=${warmup}&samples=1&private=1&filter=${encodeURIComponent(filter)}`,
+    `${origin}?duration=${duration}&warmup=${warmup}&samples=${samples}&private=1&filter=${encodeURIComponent(filter)}`,
   );
   try {
     await page.addScriptTag({ type: "module", url: `/${revision}.mjs` });
@@ -380,6 +385,7 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
       console.log(
         JSON.stringify({
           kind: "summary",
+          batchesPerProcess: samples,
           runtime,
           runtimeVersion: runtimeVersions.get(runtime),
           name,
