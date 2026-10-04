@@ -15,7 +15,12 @@ const nativeUuidV7 = (crypto as { randomUUIDv7?: () => string }).randomUUIDv7?.b
 
 const bunUuidV7 = (
   globalThis as {
-    Bun?: { randomUUIDv7?: (encoding?: "base64url" | "buffer" | "hex") => string | Uint8Array };
+    Bun?: {
+      randomUUIDv7?: (
+        encoding?: "base64url" | "buffer" | "hex",
+        timestamp?: number,
+      ) => string | Uint8Array;
+    };
   }
 ).Bun?.randomUUIDv7;
 
@@ -67,6 +72,46 @@ for (const patch of [v7FromNativeV4Hex, v7FromNativeV4Codes]) {
         patch(source, unixMs).replaceAll("-", ""),
         expected,
         "native-v4 timestamp repair must preserve all UUIDv7 payload bits",
+      );
+    }
+  }
+}
+// Native counter overflow can advance the timestamp. Cache only the clock prefix, never an ID,
+// and compare conditional repair with unconditional repair using the same cache. Passing the
+// captured clock to Bun is a separate axis: neither mode may retain native timestamp drift.
+function createNativeV7ClockRepair(conditional: boolean) {
+  let lastMs = -1;
+  let prefix = "";
+  return (uuid: string, unixMs: number): string => {
+    if (unixMs !== lastMs) {
+      const digits = unixMs.toString(16).padStart(12, "0");
+      prefix = digits.slice(0, 8) + "-" + digits.slice(8) + "-";
+      lastMs = unixMs;
+    }
+    if (conditional && uuid.startsWith(prefix)) return uuid;
+    return prefix + uuid.slice(14);
+  };
+}
+// Distinct suffixes and carry boundaries distinguish preserving the native payload from merely
+// returning syntactically valid UUIDv7 text. Repeated clocks exercise cached and matching paths.
+for (const conditional of [false, true]) {
+  const patch = createNativeV7ClockRepair(conditional);
+  for (const unixMs of [0, 0xffff_ffff, 0x1_0000_0000, 1_700_000_000_000, 0xffff_ffff_ffff, 0]) {
+    for (const hex of ["00112233445576778899aabbccddeeff", "ffeeddccbbaa7987b6543210fedcba98"]) {
+      const source = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+      const bytes = Buffer.from(hex, "hex");
+      bytes.writeUIntBE(unixMs, 0, 6);
+      const expected = bytes.toString("hex");
+      const repaired = patch(source, unixMs);
+      assert.equal(
+        repaired.replaceAll("-", ""),
+        expected,
+        "native-v7 clock repair lost payload or timestamp bits",
+      );
+      assert.equal(
+        patch(repaired, unixMs),
+        repaired,
+        "matching native timestamps must preserve the complete UUID",
       );
     }
   }
@@ -132,6 +177,26 @@ const hostCases: readonly GenerationCase[] = [
           });
         return candidate;
       })
+    : []),
+  ...(bunUuidV7
+    ? [false, true].flatMap((explicitTime) =>
+        [false, true].map((conditional): GenerationCase => {
+          const repair = createNativeV7ClockRepair(conditional);
+          return {
+            comparable: "v7.text.secure",
+            implementation: "platform-v7-clock-repair",
+            name: `platform.bun-repair.v7.text.${explicitTime ? "explicit" : "default"}.${conditional ? "conditional" : "always"}`,
+            operation: () => {
+              const now = Date.now();
+              return repair(bunUuidV7("hex", explicitTime ? now : undefined) as string, now);
+            },
+            qualification: "qualified",
+            secure: true,
+            version: 7,
+            note: "Cached package-clock timestamp with native UUIDv7 payload; lower bound without package validation or native-failure fallback.",
+          };
+        }),
+      )
     : []),
   ...(nativeUuidV7
     ? [
