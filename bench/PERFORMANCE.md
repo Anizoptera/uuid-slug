@@ -1560,8 +1560,13 @@ Remaining gaps and their causes:
   remains possible. WebKit uppercase reads 0.940 [0.896, 0.974]. Portable-text controls remain
   unresolved on both runtimes. Retention still requires profile and resource evidence, rather
   than another throughput replay alone. Packed observations are fresh processes on one machine;
-  within-process batches are not independent call latencies. Cold cost, Node LTS replay, new
-  total resource parity remain unmeasured for this candidate.
+  within-process batches are not independent call latencies. Cold cost and total resource parity
+  remain unmeasured for this candidate.
+
+  The eight-pair Node 24.21.0 replay in `v4-native-inline-packed-lts.jsonl` leaves every selected
+  case unresolved: default text reads 1.012 [0.99, 1.02], uppercase 0.998 [0.96, 1.03], and portable
+  text 0.992 [0.95, 1.03]. Owned bytes, caller-buffer bytes and both slug alphabets also remain
+  unresolved. This supplies the missing LTS observation, not proof that small differences are absent.
 
   Native CPU captures in `candidates-v4-vJ4kFK/` use the retained API modules and the existing
   profile corpus. Only `*-serial-*` captures enter this comparison; the earlier captures were

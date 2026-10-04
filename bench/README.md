@@ -134,6 +134,10 @@ otherwise a fast success check could conceal a changed default-call failure cont
 For UUIDv4 native profiling, point `UUID_SLUG_PROFILE_MODULE` at the retained
 `<candidate>-<runtime>-api.mjs` and execute the report's `profile.mjs`.
 The UUIDv4 artifact without `-api` executes its timing corpus and is not an importable package API.
+For equal-call Bun memory comparisons, run `bench/profile-bun-memory.ts` with the candidate API
+in `UUID_SLUG_PROFILE_MODULE`, one exact case filter, and `UUID_SLUG_PROFILE_CALLS`.
+Use a separate `UUID_SLUG_PROFILE_NATIVE_DIR` for each capture. The report records calls and
+selected cases; its collected heap and allocator states measure retention, not gross allocation.
 Use `format indexed-loop` to compare Bun's fixed UUID-text writes with its indexed loop through
 ordinary generation and byte-to-text conversion; `fixed-writes-lost-byte` must fail the last-byte
 oracle before timing. Tables, storage, case selection and string construction stay unchanged.

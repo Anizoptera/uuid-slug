@@ -220,13 +220,15 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         change. Recognition alone fails to reproduce the Bun gain and is rejected.
         The focused packed repeat does not reproduce WebKit's earlier loss, but its interval
         still allows a small regression. Preserve that uncertainty; collect native profiles,
-        resource evidence and the missing LTS comparison before deciding retention.
+        resource evidence before deciding retention. The LTS comparison leaves all selected cases
+        unresolved and supplies no demonstrated regression or equivalence.
     - [x] Retain importable UUIDv4 candidate modules in the existing source runner and collect
           sequential Bun and Node CPU profiles with adjacent completed-call counts in both orders.
           Exclude captures launched without waiting for each exit. Node selects portable generation;
           Bun's changed wrapper is reached. Frame removal alone does not establish saved cost.
-    - [ ] Resolve startup and total resource costs and collect the missing LTS comparison before
-          retention; do not infer total allocation from JavaScript counters or heap retention.
+    - [ ] Resolve startup and total resource costs before retention. Use the maintained Bun memory
+          driver with isolated candidate imports and equal completed-call counts; preserve both
+          orders and do not infer total allocation from JavaScript counters or heap retention.
 - [ ] Measure the module-default UUID-plus-slug call against one draw followed by both conversions;
       remove internal option allocation or repeated validation only when complete-call evidence supports it.
       Primitive presets bypass the option record; both all-runtime packed replays improve Node,
