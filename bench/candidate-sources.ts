@@ -122,8 +122,49 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
       throw new Error("Owned UUIDv7 constructors moved; update their experiments.");
     return source.replaceAll(constructors, replacement);
   };
+  const numberCounter = () => {
+    // A 42-bit integer is exact in Number. Compare one transactional increment with split
+    // words, deriving the same writer inputs only after entropy succeeds; layouts stay unchanged.
+    let value = replaceOnce(source, "let counterHi = 0;\n  let counterLo = 0;", "let counter = 0;");
+    value = replaceOnce(
+      value,
+      "counterHi = Math.floor(payloadPrefix / 0x1_0000_0000);\n    counterLo = payloadPrefix >>> 0;",
+      "counter = payloadPrefix;",
+    );
+    value = replaceOnce(value, "counterHi * 0x1_0000_0000 + counterLo", "counter");
+    value = replaceOnce(
+      value,
+      "const nextLo = (counterLo + 1) >>> 0;\n      const nextHi = counterHi + (nextLo === 0 ? 1 : 0);",
+      "const nextCounter = counter + 1;",
+    );
+    value = replaceOnce(value, "if (nextHi > 0x3ff)", "if (nextCounter >= 2 ** 42)");
+    value = replaceOnce(
+      value,
+      "counterLo = nextLo;\n        counterHi = nextHi;",
+      "counter = nextCounter;",
+    );
+    const writer = "writeBytes(target, offset, lastMs, counterHi, counterLo)";
+    if (value.split(writer).length !== 3)
+      throw new Error("Counter consumers moved; repair the experiment.");
+    return value.replaceAll(
+      writer,
+      "writeBytes(target, offset, lastMs, Math.floor(counter / 0x1_0000_0000), counter >>> 0)",
+    );
+  };
   return [
     { name: "baseline", source },
+    {
+      name: "number-counter",
+      get source() {
+        return numberCounter();
+      },
+    },
+    {
+      name: "number-counter-overflow",
+      get source() {
+        return replaceOnce(numberCounter(), "nextCounter >= 2 ** 42", "nextCounter >= 2 ** 43");
+      },
+    },
     {
       name: "bounded-clock",
       get source() {
