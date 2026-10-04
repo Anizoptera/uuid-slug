@@ -29,6 +29,10 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       substitution. Compare required output allocation separately; reject improvements that
       merely relocate samples or regress another primary call. Extend attribution to generation,
       parsing and conversion jobs with open gaps.
+  - [x] Isolate the clock wrapper with the maintained inline-clock substitution. Its removal
+        leaves generation allocation in matched Node captures, and Bun throughput gains reverse
+        or become losses. Keep production unchanged; the wrapper alone does not explain the
+        allocation. Preserve callback-failure containment and prove its shared witness can fail.
 - [ ] Close Bun default UUIDv7 text and plain-slug gaps: compare trusted-default specialization,
       native output repair and pooled generation without changing timestamp or entropy contracts.
       Clock-number-first recognition and fixed timestamp stores fail the repeated primary-call screen;

@@ -2233,6 +2233,30 @@ parity. Investigate clock and sequence allocation and fewer string-construction 
 another entropy-copy candidate; require a causal substitution and repeated complete-call gains
 before changing production code.
 
+Removing the clock wrapper alone does not remove the sampled allocation. Two source screens on
+2026-10-04 compare `v7-draw inline-clock` with unchanged generation on Node 26.10.0, Bun 1.4.2
+and Deno 2.9.7. Each screen runs two fresh processes per candidate/runtime in reversed order,
+with three 5 ms batches after 16 ms warm-up. Both behavior and counted-resource proofs pass.
+Bun text and slug directions reverse in the first screen; the repeat's owned bytes lose at
+52.90/54.25 ns against 49.94/50.25 ns. Node and Deno effects vary. Reject this shared substitution;
+these short samples establish neither equivalence nor an engine-level limit.
+
+Two clean Node inspector process pairs use the retained candidate bundles and the same filtered
+public calls, seven 15 ms batches, 16 ms warm-up and a 4,096-byte allocation sampling interval.
+Baseline text estimates 31.1/32.4 bytes per call under the byte-generator frame, against
+32.3/32.6 for the inline-clock candidate; slug estimates 31.8/32.2 against 32.4/31.7.
+The sequence helper also remains sampled. This falsifies the claim that deleting the wrapper
+eliminates this allocation; it does not rule out allocation from clock values or captured state.
+Sampling, inlining and one-machine process pairs do not identify the allocating expression.
+
+Raw screens are `primary-inline-clock-screen.log` and `primary-inline-clock-repeat.log` in
+`bench/reports/`. Matched profiles are the `allocation-clean-forward-*` and
+`allocation-clean-reverse-*` directories under `candidates-v7-draw-YZqIen`; other allocation
+directories there are excluded because process completion was not awaited between captures.
+The exception-containment mutation fails the shared throwing-clock witness in both runners
+before its timing (`primary-inline-clock-mutation.log`, `candidates-v7-draw-wstnCj`).
+Keep production unchanged and separate required owned-output allocation from removable work.
+
 Node Inspector allocation sampling used a 1,024-byte interval with both `includeObjectsCollectedByMajorGC` and `includeObjectsCollectedByMinorGC` enabled. Each operation ran 32,768 calls (construction: 2,048), after warm-up. The empty control sampled approximately zero bytes per call. These are sampling estimates from one matched process pair, not exact allocation counts:
 
 | Operation | Before bytes/call | After bytes/call |

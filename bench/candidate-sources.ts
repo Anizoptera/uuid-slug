@@ -240,6 +240,18 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
       },
     },
     {
+      // Removing exception containment must fail the shared throwing-clock witness in both
+      // runners; successful clock readings cannot establish this fallback contract.
+      name: "inline-clock-lost-catch",
+      get source() {
+        return replaceOnce(
+          source,
+          "const reading = readClock(readUnixMs);",
+          "const reading = readUnixMs();",
+        );
+      },
+    },
+    {
       name: "unroll-tail",
       get source() {
         return unrollTail(source);

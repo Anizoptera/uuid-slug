@@ -74,6 +74,11 @@ These short batch samples select experiments, not retained optimizations or indi
 add any missing mechanism falsifier before using a candidate's timings to decide a change.
 Use `v7-draw number-counter` to compare an exact 42-bit number with split counter words.
 `number-counter-overflow` must fail the timestamp-ceiling oracle before timing.
+Use `v7-draw inline-clock` to isolate the clock wrapper while preserving callback failures.
+`inline-clock-lost-catch` must fail the shared throwing-clock witness in both runners.
+For allocation attribution, run the retained report's `profile.mjs` against each candidate module
+with `UUID_SLUG_PROFILE_MODULE` and a separate native directory and name. Retain that process's
+call records, alternate candidate order, and await its exit before starting another capture.
 Use `alphabet native-branch native-dispatch` to compare Bun native plain base64url encoding
 through validated conversion, UUIDv7 generation and pair calls. Both candidates keep masked
 tails and base32hex on the existing writer and fall back if native encoding throws.
