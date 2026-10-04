@@ -581,6 +581,29 @@ function v4Candidates(source: string): readonly SourceCandidate[] {
       },
     },
     {
+      name: "string-first",
+      get source() {
+        return replaceOnce(
+          source,
+          "  return generatedOrThrow(nativeOrPortableUuidV4(textCase));",
+          [
+            "  const uuid = nativeOrPortableUuidV4(textCase);",
+            '  return typeof uuid === "string" ? uuid : generatedOrThrow(uuid);',
+          ].join("\n"),
+        );
+      },
+    },
+    {
+      name: "string-first-lost-throw",
+      get source() {
+        return replaceOnce(
+          source,
+          "  return generatedOrThrow(nativeOrPortableUuidV4(textCase));",
+          "  return nativeOrPortableUuidV4(textCase);",
+        );
+      },
+    },
+    {
       name: "inline-native-lost-fallback",
       get source() {
         return replaceOnce(

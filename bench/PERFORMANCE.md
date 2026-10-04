@@ -1528,6 +1528,31 @@ Remaining gaps and their causes:
   process after 16 ms warmup, with reversed second-pass order, are screening evidence; they do
   not establish independent-run confidence, individual-call p99 or resource parity. Raw samples
   and proof output are in `bench/reports/candidates-v4-1790977311163/`.
+  Native helper inlining with string-first success recognition remains a candidate, not a retained
+  change. The 2026-10-04 `v4-native-inline-screen.log` compares helper inlining alone with that
+  combination; `v4-native-inline-repeat.log` repeats the combination. Node 26.10.0 and Bun 1.4.2
+  each use two fresh processes per candidate per screen, nine 20 ms batches and 32 ms warm-up.
+  Bun default native text favors the combination in all four processes. The trusted-native
+  lost-fallback mutation fails the shared failure witness in both runners
+  (`v4-native-inline-mutation-retry.log`). The first mutation attempt stops at generated TypeScript
+  syntax and supplies no behavioral proof (`v4-native-inline-mutation.log`).
+
+  `v4-native-inline-packed.jsonl` compares the combination through packed imports over eight
+  revision pairs on Node and Bun. Bun default text has median ratio 0.941 with reported 95%
+  interval [0.92, 0.97]; Node default text remains unresolved. The eight-pair broad repeat,
+  `v4-native-inline-packed-all.jsonl`, includes Chromium 153.0.8010.12, Firefox 155.0, WebKit 26.6,
+  Deno 2.9.7 and Node 26.10.0 JITless. Bun default text repeats at 0.950 [0.91, 0.96]; Deno reads
+  0.971 [0.96, 0.99], and JITless reads 0.936 [0.93, 0.95]. WebKit default text reads 1.038
+  [0.999, 1.087], with seven paired observations slower and one slightly faster. Keep this
+  possible regression unresolved; it prevents retention until a focused replay settles it.
+  Uppercase and portable calls, owned and caller-buffer bytes, and both slug alphabets remain
+  controls. Their unresolved intervals do not prove equivalence or identify an engine cause.
+
+  Test string-first recognition without moving the helper before funding profiles or production
+  integration. Its lost-throw mutation fails shared dual-failure and reentrancy witnesses on Node
+  and Bun (`v4-string-first-mutation.log`). Packed observations are fresh processes on one machine;
+  within-process batches are not independent call latencies. Cold cost, Node LTS replay, new
+  native profiles and total resource parity remain unmeasured for this candidate.
 - Bun UUIDv7 text costs about 79 ns against 27 ns for native UUIDv4 text: about 42 ns draws the
   timestamp, sequence, and random bits, and 37 ns formats them through the Latin-1 `Buffer` path.
   With every result's last character read, formatting the same bytes through `toHex`, `Buffer`
