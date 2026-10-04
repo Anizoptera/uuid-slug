@@ -65,6 +65,27 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       independent draw's repeated timestamp division with fixed high/low stores. A complete-call
       gain supports removable timestamp arithmetic; no gain rejects that rewrite. Recheck payload
       and clock mutations, private output, entropy failures, controls and ranked runtimes.
+      The fixed candidate passes both runtime proofs and timestamp/tail mutations; the first
+      all-runtime packed comparison restores JITless cost and retains primary byte gains, but
+      separates slower Node and Chromium immutable-value calls. Keep production unchanged.
+      Isolate the fixed candidate's Node value call before choosing code: a persistent CPU loss
+      supports a changed call shape; disappearance leaves the mixed-workload effect unresolved.
+      Profile that call's generator and immutable construction frames to locate any reproduced cost.
+      Isolated fixed-candidate Node value CPU does not reproduce the mixed loss. The mixed
+      timings execute different counts of the faster preceding byte call, so their controls do
+      not hold prior work constant. Extend the existing profiler to prepare one measured value
+      call with equal completed calls of the preceding operations. A remaining loss supports a
+      state/code cost; its disappearance challenges the unequal-work comparison. Keep counts
+      in the report, preserve native profiling after preparation, and reject ambiguous setup.
+      `owned-v7-fixed-node-prior-value-*` holds preceding calls constant and does not reproduce
+      a consistent value loss; one pair still permits it. Keep the cause unresolved. Compare
+      native sampled value-call stacks after that preparation: added generator/construction
+      work supports a code cost; unchanged stacks weaken that explanation without proving parity.
+      `owned-v7-fixed-node-prior-native-*` samples the same leading value frames and its CPU
+      comparison changes direction. Neither isolated instrument establishes a consistent Node
+      value cost. Chromium's mixed value loss remains unchecked. Next qualify repeated Bun
+      rival calls and fixed-call resources; a remaining rival or resource loss rejects this
+      candidate before more control investigation. Preserve every raw pair and process status.
 
 - [ ] Close the Bun default base64url UUIDv7 slug gap. Compare the complete public call with
       native slug output in the maintained generation corpus, then profile the package call.

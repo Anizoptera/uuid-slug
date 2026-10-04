@@ -116,6 +116,11 @@ if (
     "Profile samples must be positive, with positive duration and warm-up milliseconds",
   );
 const selected = selectProfileCases(cases, filter);
+const beforeCaseFilter = process.env.UUID_SLUG_PROFILE_BEFORE_CASE_FILTER;
+if (beforeCaseFilter && (selected.length !== 1 || warmupCalls === undefined))
+  throw new Error(
+    "Prior-work comparison requires one measured case and UUID_SLUG_PROFILE_WARMUP_CALLS; select the preceding operations with UUID_SLUG_PROFILE_BEFORE_CASE_FILTER.",
+  );
 // Elapsed warm-up time can include descheduling. Record executed work so comparisons can expose
 // unequal preparation; neither elapsed time nor these counts prove that an engine is optimized.
 const warmupWork = new Map<
@@ -141,6 +146,14 @@ for (const [name, fn] of selected) {
   const thread = threadBefore && threadCpuUsage?.(threadBefore);
   warmupWork.set(name, { operations, wallMs, threadCpuUs: thread && thread.user + thread.system });
 }
+// Faster preceding calls execute more work in fixed time windows. Equal completed calls expose
+// their effect on a later control without attributing unequal GC/engine preparation to its code.
+const beforeCaseWork = beforeCaseFilter
+  ? selectProfileCases(cases, beforeCaseFilter).map(([name, fn]) => {
+      batch(name, fn, warmupCalls!, assertProfileOutcome(name, fn(0)));
+      return { name, operations: warmupCalls! };
+    })
+  : undefined;
 if (session) {
   gc?.();
   gcProfiler?.start();
@@ -167,6 +180,7 @@ console.log(
     samples,
     duration,
     warmup,
+    ...(beforeCaseWork ? { beforeCaseWork } : {}),
   }),
 );
 for (const [name, fn] of selected) {
