@@ -4,6 +4,49 @@ Complete the remaining performance work without changing identifier formats, sec
 validation, ownership, or published generation guarantees. Preserve the unresolved clock guarantee;
 measure clock drift without imposing a new promise. Keep remote writes unauthorized.
 
+## Next production decision
+
+Deliver retained improvements to ordinary single-ID calls; a rejected experiment does not close a performance gap.
+
+- [ ] Resolve the current Bun default UUIDv7 text gap first. Reuse the existing complete-call
+      observations and profiles; refresh only evidence that cannot decide the current choice.
+      Compare the package, same-output native floor and qualified rivals with matching output,
+      entropy and ownership. Keep native contract failures visible without adopting them.
+- [ ] Identify the largest removable cost in that call before choosing another implementation.
+      Inspect the package and faster implementations; separate clock/sequence, secure entropy,
+      intermediate byte writes, formatting and required returned-string allocation. Use the
+      existing profiler and the smallest causal substitution that distinguishes live explanations.
+      Sampling a hot function does not identify an expensive expression; timings of separate
+      components do not establish the complete call's lower bound.
+- [ ] Select one substantial change from the attributed work. Weigh direct generator-field
+      formatting with shared storage, native generation and repair, secure pooled draws,
+      default specialization, and their coherent combinations against unchanged production.
+      Reuse prior rejection evidence; reopen a mechanism only when a changed premise predicts
+      a different observable result. Do not preselect prefix reuse or another dispatch tweak.
+- [ ] Prove and screen that change through the complete public call on Bun and Node Current.
+      State the hypothesis, counterevidence, affected contracts and retention decision before
+      execution. Include uppercase, slug and owned-byte controls when the change reaches them;
+      count added allocation, retained storage, initialization and generator construction.
+      Reject a material primary-call loss or a negligible saving before broad replays.
+- [ ] Retain a survivor only after the existing packed replays, affected-runtime profiles,
+      behavior/resource proofs and full check support it. Commit the production improvement
+      and record its measured benefit and limits in `bench/PERFORMANCE.md`; otherwise keep
+      the gap open and choose a different attributed mechanism.
+- [ ] Then rank the remaining open generation, parsing and conversion gaps by ordinary-call
+      importance, runtime rank, measured avoidable cost and expected benefit per implementation
+      effort. Keep configured/batch, edge and JITless optimization behind unresolved primary
+      Node/Bun work. Preserve their tasks below; priority changes do not erase scope.
+
+For every experiment, name the production decision that each possible result changes. If the
+results all leave the next action unchanged, do not run it. Use maintained filters and reuse
+builds and observations while their inputs remain valid. Run independent timing processes
+sequentially; parallelize only noncompeting preparation and correctness work. If interference
+makes a comparison inconclusive, validate the instrument before repeating that comparison.
+Do not respond with a wider runtime matrix or another code variant to an unexplained regression.
+Resolve the distinguishing question, reject the candidate, or report the precise remaining gap.
+Keep only the reasoning needed to choose the next action here; measurements belong in the
+performance report. Full correctness gates remain required even when exploratory feedback is short.
+
 ## Primary-call hillclimb
 
 Close the researched TypeScript gaps against the fastest equivalent runtime or library result,
@@ -80,17 +123,8 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         allocation. Preserve callback-failure containment and prove its shared witness can fail.
 - [ ] Close Bun default UUIDv7 text and plain-slug gaps: compare trusted-default specialization,
       native output repair and pooled generation without changing timestamp or entropy contracts.
-      Clock-number-first recognition and fixed timestamp stores fail the repeated primary-call screen;
-      keep the existing production implementation while investigating other mechanisms.
-      Test a private generator scratch draw: module-default text must resolve its preset once,
-      and module-default slug/pair must not validate package-owned storage as caller output.
-      Early evidence must show lower complete-call cost without new output allocation; compare
-      generator construction because the private draw method adds one function per generator.
-      Refine the candidate by sharing the module's existing scratch with its private text generator;
-      remove the added method and duplicate retained array, then repeat without competing hooks.
-      Restore cached text delegation: direct formatting has no reproduced primary Bun gain and
-      the shared replay reports a Firefox text loss. Test buffer sharing independently.
-      Reject it if reentrancy, transactional failures, ownership or another primary call deteriorates.
+      Use the next production decision above; completed experiments below supply rejection
+      evidence, not instructions to repeat rejected candidates.
   - [x] Compare cached native UUIDv7 timestamp repair, conditional and unconditional, with and
         without the captured clock passed to Bun. Prove matching and mismatching prefixes,
         rollback, carry boundaries and payload preservation before timing. Reject the mechanism
@@ -145,20 +179,21 @@ keep contract changes reserved for Art, and claim impossibility only with a name
   - [ ] Identify a text-construction change that removes a substantial part of the Bun default
         generation gap. Compare existing rejected mechanisms before another screen; test whole
         construction or generation work rather than another small dispatch refinement.
-    - [ ] Compare fused native text construction with unchanged prefix characters reused across
-          calls. Preserve timestamp, upper counter, text case and cross-generator invalidation;
-          require the stale-prefix mutation to fail Bun's independent text oracle before timing.
-          Reject inconsistent default-call gains or other primary losses before packed replay;
-          compare cold storage and generator construction only if the candidate survives.
-          The stale-prefix mutation fails the intended Bun text assertions. Moving prefix
-          calculations into the refresh branch improves Bun text in both repeated source screens;
-          packed text medians also improve, but Node slug medians are slower and the repeat
-          contains long wall-time pauses. Resolve primary-call losses with profiles before
-          retention, then account for duplicate formatter storage if the gain survives.
+    - [ ] Decide whether fused generator-field formatting can remove the attributed cost
+          without duplicate storage or primary-call regressions. Existing prefix-reuse packed
+          comparisons leave retention unresolved; source profiles do not explain the Node slug
+          loss. Do not resume that candidate without a discriminating observation. General
+          byte-formatter prefix comparisons and capability-gated closure creation are rejected
+          below; neither establishes the cost of a shared generator-field formatter.
       - [x] Compare capability-gated draw creation with the original generator.
             Behavior and resource proofs pass, but both Node slug orders and Bun byte
             orders remain slower. Reject this refinement as a demonstrated fix; the
             measured screen does not identify the cause of the primary-call losses.
+      - [x] Compare prefix reuse inside the existing native byte formatter, sharing its
+            buffer and tables. The stale mutation fails independent timestamp and byte
+            witnesses; intact behavior and resources pass. Reject both Bun conversion
+            losses against the small generation gain. Generator-field formatting remains
+            a distinct option; these byte-prefix comparisons do not measure it.
     - [x] Compare prepacked hexadecimal pairs through independent payload witnesses and
           packed calls. Default-generation gains remain unresolved; the small conversion-only
           gain does not justify retention. Keep the larger native-generation gap open.
@@ -446,9 +481,9 @@ measure lane durations, isolate timings from competing work, and retain only def
   in JavaScript. A timer-cached clock is rejected: it lags during synchronous bursts.
 - Tool limits: Deno cannot screen through the symlinked source (`#runtime` does not resolve), so
   replays decide Deno; the Bash tool cuts the middle of long output, so log commit-hook output.
-- Phase order is WSJF: the widest default win (V8 writers), then unknown gaps before
-  known Bun gaps (conversions are common default calls; Bun gaps are a few ns and may be
-  irremovable), then configured and batch calls, which rank below single default calls.
+- Choose the next task by the priority rule above, using current evidence rather than phase
+  numbering. A small measured gap is not an irremovable cost. Secondary runtime and batch
+  investigations resume after the higher-priority ordinary calls are resolved.
 
 ## Phase 1: per-engine text and slug writers
 
