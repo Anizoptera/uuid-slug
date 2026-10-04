@@ -48,6 +48,8 @@ test("exact profile filters exclude similarly named failure and configured calls
   expect(selectProfileCases(cases, "=v7.into")).toEqual([["v7.into", 1]]);
   expect(selectProfileCases(cases, "v7.into")).toHaveLength(3);
   expect(() => selectProfileCases(cases, "=absent")).toThrow("selected no cases");
+  expect(() => selectProfileCases(cases, "=v7.into,=absent")).toThrow("=absent");
+  expect(() => selectProfileCases(cases, "v7.into,absent")).toThrow("absent");
 });
 
 test("conversion witnesses reject lost payload bits after a valid first result", () => {

@@ -22,6 +22,12 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       Repeated packed calls favor Bun default and uppercase text. The expanded comparison's
       owned-byte wall loss is not resolved in the isolated control; CPU intervals cross parity.
       Isolated Node default and explicit-time controls remain scheduling-limited, not equivalent.
+      Stop paired timing under the current scheduling interference. The latest five-call replay
+      favors Bun text but exposes Bun slug wall loss and Node explicit-time CPU loss; neither
+      establishes regression-free controls. Keep `native-v7-inline-current-load.log` as partial
+      evidence: selected-generator text was omitted. Every filter term must match before timing.
+      Resolve those losses with a distinguishing profile or a usable execution environment;
+      do not widen the matrix or infer parity from an interval crossing no change.
       Keep raw comparisons and exact candidate source in `bench/reports/native-v7-inline-*`.
       Use the prepared README/security patch for approval; public text remains held.
       Reject any reproduced material primary-call loss before retaining the candidate. The inline replay

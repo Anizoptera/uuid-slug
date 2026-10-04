@@ -51,7 +51,7 @@ export function assertNormalizedUuidProfileOutcome(
     );
 }
 
-/** Select comma-separated substrings or exact names prefixed with `=`; fail when none match. */
+/** Select comma-separated substrings or exact names prefixed with `=`; every term must match. */
 export function selectProfileCases<Case>(
   cases: Record<string, Case>,
   filter: string | null | undefined,
@@ -63,5 +63,14 @@ export function selectProfileCases<Case>(
       terms.some((term) => (term.startsWith("=") ? name === term.slice(1) : name.includes(term))),
   );
   if (selected.length === 0) throw new Error("Profile filter selected no cases");
+  // A valid sibling must not hide a typo and silently omit a requested workload.
+  for (const term of terms) {
+    if (
+      !selected.some(([name]) =>
+        term.startsWith("=") ? name === term.slice(1) : name.includes(term),
+      )
+    )
+      throw new Error(`Profile filter selected no cases for ${term}; use an existing case name`);
+  }
   return selected;
 }
