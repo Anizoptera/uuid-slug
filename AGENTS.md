@@ -2,6 +2,11 @@
 
 Preserve the published identifier contracts and verify the runtime paths that each change reaches.
 
+Do not edit any public document unless the maintainer explicitly requests or approves that edit.
+This includes README and generated documentation. Propose the exact change and wait for approval;
+a code change, stale text, failed check, or instruction to keep docs synchronized grants no permission.
+This restriction overrides every documentation-update instruction below.
+
 Protect normal consumer calls from the cost of rare misuse defenses. Before changing a shared hot
 path to handle an unusual input, read `docs/public-api.md` §Capabilities and runtime work; retain
 the defense only when repeated runtime measurements show no loss of normal-call speed or resource
@@ -11,10 +16,10 @@ efficiency. A reproducible misuse alone does not justify that cost.
 
 - README owns the consumer model: define each term before first use, state when this package is
   preferable to a UUID-only library, and keep its capability and representation maps consistent
-  with the public API. Update the owning explanation with every consumer-visible change; do not
+  with the public API. Propose an update to the owning explanation for every consumer-visible change; do not
   copy implementation reasoning or create parallel inventories in other docs.
 - Keep README's TypeScript API map synchronized with every public capability, representation, and
-  decision-changing boundary; update the existing row or bullet instead of creating another inventory.
+  decision-changing boundary; propose changes to the existing row or bullet instead of another inventory.
 - Position the package by the complete consumer contract: base64url and base32hex plain slugs for
   any UUID, caller-owned storage, UUIDv7 masking and migration, typed failures, and adaptive runtime
   paths. Keep version-neutral encoding separate from UUIDv7-only masking. Generation alone is not
@@ -231,6 +236,9 @@ efficiency. A reproducible misuse alone does not justify that cost.
 - Do not mention private source project names in public files, commits, tests, fixtures, or reports.
 
 ## Runtime boundaries and evidence
+
+- Keep `fastv7` informational only. Never include it in competitor rankings or use it to judge
+  performance targets; it is not an approved competitor.
 
 - Before writing an experiment driver, extend its maintained owner in `bench/` or `scripts/`.
   Inspect the owner's exports and callers before editing it; a matching filename is not permission
