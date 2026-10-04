@@ -38,6 +38,34 @@ function replaceOnce(source: string, from: string, to: string): string {
 }
 
 function v7Candidates(source: string): readonly SourceCandidate[] {
+  const numericState = () => {
+    // Test whether mutable closure numbers explain allocation under scratch-backed generation.
+    // Float64 storage preserves every accepted timestamp and all 42 sequence bits exactly;
+    // clocks, entropy, transactional updates and formatting remain the controls. Its extra
+    // retained array must earn its construction cost if complete calls survive the screen.
+    let value = replaceOnce(
+      source,
+      "  let lastMs = -1;\n  let clockHighWaterMs = -1;\n  let counterHi = 0;\n  let counterLo = 0;",
+      [
+        "  const sequenceState = new Float64Array(4) as Float64Array<ArrayBuffer> & {",
+        "    0: number; 1: number; 2: number; 3: number;",
+        "  };",
+        "  sequenceState[0] = -1;",
+        "  sequenceState[1] = -1;",
+      ].join("\n"),
+    );
+    for (const [name, slot] of [
+      ["lastMs", 0],
+      ["clockHighWaterMs", 1],
+      ["counterHi", 2],
+      ["counterLo", 3],
+    ] as const) {
+      const pattern = new RegExp(`\\b${name}\\b`, "g");
+      if (!pattern.test(value)) throw new Error(`Sequence state consumer moved: ${name}`);
+      value = value.replaceAll(pattern, () => `sequenceState[${slot}]`);
+    }
+    return value;
+  };
   const directText = (latin1 = false, pairs = false) => {
     // Remove intermediate stores without changing sequence policy or adding tables and buffers.
     // A separate function leaves owned-byte calls unchanged; its extra closure is a cold cost
@@ -267,6 +295,22 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
   };
   return [
     { name: "baseline", source },
+    {
+      name: "numeric-state",
+      get source() {
+        return numericState();
+      },
+    },
+    {
+      name: "numeric-state-lost-timestamp",
+      get source() {
+        return replaceOnce(
+          numericState(),
+          "    sequenceState[0] = ms;",
+          "    sequenceState[0] = 0;",
+        );
+      },
+    },
     {
       name: "direct-text-latin1-pairs",
       get source() {

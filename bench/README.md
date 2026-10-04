@@ -78,6 +78,11 @@ These short batch samples select experiments, not retained optimizations or indi
 add any missing mechanism falsifier before using a candidate's timings to decide a change.
 Use `v7-draw number-counter` to compare an exact 42-bit number with split counter words.
 `number-counter-overflow` must fail the timestamp-ceiling oracle before timing.
+Use `v7-draw numeric-state` to isolate mutable numeric storage from clock, sequence and formatting
+work. Fixed Float64 storage preserves the same values but adds retained storage per generator.
+Its `numeric-state-lost-timestamp` mutation must fail the shared clock oracle before timing.
+Compare sampled allocation beneath scratch-backed calls only after complete-call throughput
+survives; lower collected heap alone cannot identify removed per-call allocation.
 Use `v7-draw inline-clock` to isolate the clock wrapper while preserving callback failures.
 `inline-clock-lost-catch` must fail the shared throwing-clock witness in both runners.
 Use `v7-draw direct-text` to construct preset UUIDv7 text directly from timestamp, counter and

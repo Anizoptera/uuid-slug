@@ -29,6 +29,10 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       substitution. Compare required output allocation separately; reject improvements that
       merely relocate samples or regress another primary call. Extend attribution to generation,
       parsing and conversion jobs with open gaps.
+  - [ ] Compare mutable numeric closure state with fixed Float64 storage while retaining the
+        same clock, entropy and sequence transitions. The timestamp mutation must fail both
+        owning runtime witnesses before timing. Reject primary-call regressions; if throughput
+        survives, compare sampled allocation and generator construction before retention.
   - [x] Isolate the clock wrapper with the maintained inline-clock substitution. Its removal
         leaves generation allocation in matched Node captures, and Bun throughput gains reverse
         or become losses. Keep production unchanged; the wrapper alone does not explain the
