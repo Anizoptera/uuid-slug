@@ -2471,7 +2471,18 @@ Timestamp storage is unchanged, so counter storage alone accounts for this sampl
 the exact allocating expression remains unresolved. Profiles still contain output strings,
 generation, harness and reporting allocation. Two pairs and sampled stacks do not prove gross
 allocation, retained storage, packed throughput or generator-construction parity. Keep production
-unchanged until those complete-call trade-offs justify the extra array.
+unchanged unless complete-call trade-offs justify the extra array.
+
+`counter-storage-packed.log` compares the same packed revision with and without Float64 counters
+on Node Current and Bun, with eight fresh process pairs and 15 ms observations. Every selected
+result is unresolved. Its filter misspells `v7.at.bytes` as `v7.bytes.at`, so it does not measure
+configured byte output. `counter-storage-packed-repeat.log` uses the correct name, asserts all five
+requested cases on both hosts, and retains twelve fresh process pairs with 45 ms observations and
+64 ms warm-up. Node default construction is 1.078 [1.057, 1.107] candidate/baseline; Bun construction
+is 1.044 [1.025, 1.052] and owned bytes are 1.024 [1.002, 1.042]. Ordinary text and slug gains remain
+unresolved. Reject shared Float64 retention: sampled sequence allocation savings do not justify
+these construction and primary-call losses. Neither comparison proves an immutable bound on other
+counter representations or a runtime-specific implementation.
 
 Local workerd evidence (2026-10-04): `workerd-public-repeat.jsonl` runs the compiled public entry
 with the portable implementation in both plain-web and `nodejs_compat` configurations. The bundle

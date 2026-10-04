@@ -42,9 +42,10 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         preserve every sequence bit and transactional update, and reject other primary-call losses.
         Counter-only Float64 storage removes nearly all sequence-frame sampled allocation in
         two matched Node process pairs. The lost-carry mutation fails Node and Bun ceiling tests.
-        Primary-call throughput remains inconsistent; construction and packed retention stay open.
-        Compare counter-only Float64 through packed primary and configured calls before retention;
-        resource savings must bound primary-call regressions and pay for retained storage.
+        Two packed primary-host comparisons leave ordinary throughput gains unresolved; the longer
+        repeat resolves slower Node/Bun construction and slower Bun owned-byte calls. Reject shared
+        Float64 retention. Compare a 31-bit low / 11-bit high closure counter without added storage;
+        preserve the 42-bit value and independently prove carries before measuring allocation.
         Uint32 storage raises Node text costs in every screening process and earns no shared change.
 - [x] Exercise the package in a local Cloudflare workerd runtime. Prove imports, entropy,
       clocks and representation round trips before adding a maintained correctness lane.
