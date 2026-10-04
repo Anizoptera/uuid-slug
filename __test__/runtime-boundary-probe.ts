@@ -980,6 +980,34 @@ export const runtimeBoundaryCases = [
     },
   },
   {
+    name: "counter overflow preserves the timestamp ceiling and caller output",
+    run(this: void) {
+      // All ones force overflow on the second draw. A lower-clock control distinguishes valid
+      // borrowing from a refusal caused by the final representable timestamp.
+      const maximum = 2 ** 48 - 1;
+      const ceiling = createUuidV7Generator({
+        readUnixMs: () => maximum,
+        fillRandom: (bytes) => {
+          bytes.fill(0xff);
+        },
+      });
+      assert.equal(unwrap(extractUuidV7UnixMs(unwrap(ceiling.generateUuidV7Bytes()))), maximum);
+      const output = new Uint8Array(16).fill(0x55);
+      const failed = ceiling.generateUuidV7Bytes(output);
+      assert.ok(failed instanceof UuidSlugError);
+      assert.deepEqual(output, new Uint8Array(16).fill(0x55));
+      assert.ok(ceiling.generateUuidV7Bytes() instanceof UuidSlugError);
+      const below = createUuidV7Generator({
+        readUnixMs: () => maximum - 1,
+        fillRandom: (bytes) => {
+          bytes.fill(0xff);
+        },
+      });
+      assert.equal(unwrap(extractUuidV7UnixMs(unwrap(below.generateUuidV7Bytes()))), maximum - 1);
+      assert.equal(unwrap(extractUuidV7UnixMs(unwrap(below.generateUuidV7Bytes()))), maximum);
+    },
+  },
+  {
     name: "never publishes a partial entropy refill and erases consumed bytes",
     run(this: void) {
       const cause = new Error("partial entropy draw");
