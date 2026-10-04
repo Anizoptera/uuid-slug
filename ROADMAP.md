@@ -10,6 +10,23 @@ propose public-document changes and hold them for explicit approval, including g
 
 Deliver retained improvements to ordinary single-ID calls; a rejected experiment does not close a performance gap.
 
+- [ ] Close the remaining Bun default UUIDv4 text gap. The current corpus repeatedly places
+      Bun default text behind native generation and qualified
+      libraries; Node default text remains faster. The complete-call Bun profile mainly samples
+      native `randomUUID`, with a smaller public-wrapper contribution. Preserve lowercase,
+      uppercase, wrapper normalization, invalid-case errors and native fallback. A candidate needs
+      repeated complete-call gains, matching resource captures and packed-runtime qualification.
+      `current-v4-literal-guards-isolated.log` passes both runtime proofs and completes the reversed
+      two-round screen, but the text effect changes direction. Reject retention of direct guards;
+      no useful helper cost is established. Discard the earlier repaired screen for comparison
+      because it overlaps the complete check. The original screen times out before its first row:
+      its corpus imports its own timing entry through the module override. Clearing only that
+      override on the same bundle restores every expected row; keep the driver correction.
+      Next distinguish Bun's Web Crypto UUID call from its Node-compatible UUID call through the
+      existing native corpus before changing selection. Faster native work must preserve the same
+      secure text result and support absent-capability and failure fallback; no extra public option
+      or routine verifier is required.
+
 - [ ] Close the Bun owned UUIDv7 byte gap before another default-slug tweak. The maintained
       owned-byte screens trail `uuid`; equal-call memory captures retain more heap and resident
       memory, while caller CPU disagrees. Profiles repeatedly rank result allocation first.

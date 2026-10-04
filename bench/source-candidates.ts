@@ -377,7 +377,9 @@ try {
         const entry = group === "v4" ? module : driverFile;
         const args = runtime === "deno" ? ["run", "-A", entry] : [entry];
         const output = await command(executable, args, project, {
-          UUID_SLUG_PROFILE_MODULE: module,
+          // The v4 corpus already bundles its candidate; importing its own timing entry stalls
+          // top-level initialization. Other groups use the separate profile driver and need it.
+          UUID_SLUG_PROFILE_MODULE: group === "v4" ? "" : module,
           UUID_SLUG_PROFILE_FILTER: expectedNames.map((name) => `=${name}`).join(","),
           UUID_SLUG_PROFILE_MS: String(durationMs),
           UUID_SLUG_PROFILE_SAMPLES: String(samples),
