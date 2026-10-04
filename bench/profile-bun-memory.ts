@@ -4,6 +4,7 @@ import { heapStats, memoryUsage, profile } from "bun:jsc";
 import { Buffer } from "node:buffer";
 import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json" with { type: "json" };
 import { createProfileCases, selectProfileCases } from "./profile-cases";
+import { createConversionCases } from "./conversion-cases";
 import { uuidObjectChecksum } from "./profile-case";
 import type { ProfileCase } from "./profile-case";
 
@@ -34,7 +35,10 @@ if (generationName) {
   // Selection precedes memory snapshots; import and corpus setup are not per-ID allocations.
   const { generationCases } = await import("./generation-cases");
   const { verifyGenerationCase } = await import("./generation-case");
-  const selected = generationCases.find(({ name }) => name === generationName);
+  const selected = [
+    ...generationCases,
+    ...createConversionCases(Buffer, undefined, generationCases).cases,
+  ].find(({ name }) => name === generationName);
   if (!selected || selected.qualification !== "qualified")
     throw new Error(`No qualified generation case named ${generationName}`);
   verifyGenerationCase(selected);

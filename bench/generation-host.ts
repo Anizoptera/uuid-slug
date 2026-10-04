@@ -24,7 +24,7 @@ const bunUuidV7 = (
   }
 ).Bun?.randomUUIDv7;
 
-const conversions = createConversionCases(Buffer);
+const conversions = createConversionCases(Buffer, undefined, generationCases);
 // Native UUIDv4 supplies exactly the 74 random bits UUIDv7 keeps after replacing its timestamp
 // and version. Compare complete text calls without depending on native UUIDv7 counter overflow.
 // These are lower-bound experiments, not adopted generators or proof of fallback behavior.

@@ -62,6 +62,7 @@ export function createConversionCases(
     uuidStringToBytes,
     uuidStringToPlainSlug,
   },
+  generators: readonly GenerationCase[] = [],
 ) {
   const cases: GenerationCase[] = [];
   const unsupported: { readonly name: string; readonly reason: string }[] = [];
@@ -231,6 +232,9 @@ export function createConversionCases(
   } else
     absent("platform.base64hex.conversion.slug.text", "Native base64url decoding and hex encoding");
   if (nodeBuffer) {
+    // These same encoders have fixed payload witnesses below; reuse them for complete rival calls.
+    const textToSlug = (input: string) =>
+      nodeBuffer.from(input.replaceAll("-", ""), "hex").toString("base64url");
     // Buffer floors retain their native ownership difference; they cannot prove plain Uint8Array ownership.
     const view = (input: Uint8Array) =>
       nodeBuffer.from(input.buffer, input.byteOffset, input.byteLength);
@@ -268,12 +272,53 @@ export function createConversionCases(
       (input) => new Uint8Array(decodeSlug(input)),
       true,
     );
-    add("platform.buffer.conversion.text.slug", "conversion.text.slug", texts, slugs, (input) =>
-      nodeBuffer.from(input.replaceAll("-", ""), "hex").toString("base64url"),
-    );
+    add("platform.buffer.conversion.text.slug", "conversion.text.slug", texts, slugs, textToSlug);
     add("platform.buffer.conversion.slug.text", "conversion.slug.text", slugs, texts, (input) =>
       hyphenate(decodeSlug(input).toString("hex")),
     );
+    for (const generator of generators) {
+      if (generator.comparable === "v7.bytes.into.secure") {
+        // These corpus calls write a caller-owned buffer; reuse its native view outside each ID.
+        const output = generator.operation() as Uint8Array;
+        if (generator.operation() !== output)
+          throw new Error(`${generator.name} must reuse its caller-owned output`);
+        const encoded = nodeBuffer.from(
+          output.buffer,
+          output.byteOffset + (generator.outputOffset ?? 0),
+          16,
+        );
+        cases.push({
+          ...generator,
+          name: generator.name.replace(".bytes.into", ".slug.base64url.from-buffer"),
+          comparable: "v7.slug.base64url.secure",
+          implementation: "caller-buffer-native-encoding",
+          operation: () => {
+            generator.operation();
+            return encoded.toString("base64url");
+          },
+        });
+        continue;
+      }
+      if (generator.comparable === "v7.bytes.allocate.secure") {
+        cases.push({
+          ...generator,
+          name: generator.name.replace(".bytes.allocate", ".slug.base64url.from-bytes"),
+          comparable: "v7.slug.base64url.secure",
+          implementation: "owned-bytes-native-encoding",
+          operation: () => view(generator.operation() as Uint8Array).toString("base64url"),
+        });
+        continue;
+      }
+      if (generator.comparable !== "v7.text.secure") continue;
+      cases.push({
+        ...generator,
+        name: generator.name.replace(".text", ".slug.base64url.from-text"),
+        comparable: "v7.slug.base64url.secure",
+        implementation: "generated-text-native-encoding",
+        // The generation corpus owns the text shape; encode all 128 bits without package parsing.
+        operation: () => textToSlug(generator.operation() as string),
+      });
+    }
   }
   return { cases, unsupported };
 }

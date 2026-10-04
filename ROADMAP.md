@@ -45,6 +45,14 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       varies. Preserve `configured-slug-fixed-*`; no added wrapper-cost mechanism is established.
       Stop replaying this unchanged control. Next compare default native slug calls with the native
       floor and qualified rivals, including retained memory; the configured small-loss limit stays open.
+      Repeated default-slug floor screens favor the package call, but the corpus has no rival
+      UUIDv7 slug rows. Compose existing qualified rival generators with the already witnessed
+      native encoders, then compare complete calls and memory before declaring rival parity.
+      `native-slug-rivals-current-*` includes text, fresh bytes and reusable-buffer compositions;
+      the package beats the fastest qualified rival in all six Bun processes. Two captures in each
+      order also show lower caller CPU, retained heap and final resident memory against that rival,
+      but not gross allocation parity. Preserve `native-slug-resource-*`; extend qualification
+      to Node Current before targeting another production mechanism.
 - [ ] Qualify Bun native default UUIDv7 text with equal executed preparation instead of elapsed
       warm-up alone. Add an opt-in call count to the existing profiler, then revisit the preserved
       import-selected candidate: prior explicit-time controls lacked preparation counts, and a
