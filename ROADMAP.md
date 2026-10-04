@@ -10,6 +10,18 @@ propose public-document changes and hold them for explicit approval, including g
 
 Deliver retained improvements to ordinary single-ID calls; a rejected experiment does not close a performance gap.
 
+- [x] Screen removing repeated range validation for generator-owned explicit-time text scratch. The same
+      fixed storage already bypasses validation for current-time text; caller-owned output must
+      retain all range and atomic-failure checks. Prove both paths in the existing Node/Bun cases,
+      then compare complete explicit-time calls with default text, bytes and slugs as controls.
+      Reject the change: `explicit-scratch-range-packed.log` shows no useful primary-host gain.
+      Both guard mutations fail the existing invalid-offset oracle; keep caller validation intact.
+- [x] Record actual warm-up calls and caller-thread CPU in the existing profiler before another
+      source comparison. Elapsed wall time alone cannot show equal engine preparation under
+      interruption; use the observations to decide whether warm-up differs, not to assert readiness.
+      Direct Bun and compiled Node runs emit both observations. Node explicit-time warm-up runs
+      only 128 calls despite 111 ms elapsed, with 405 µs caller-thread CPU; do not treat its timing
+      as prepared-engine evidence. The full check exits zero; earlier captures remain unexplained.
 - [ ] Finish guidance repair before resuming the pending production candidate: audit Markdown
       contract owners for invented guarantees, stale qualification and instructions invisible at
       the decision point. Public documents require explicit approval; propose their exact edits.

@@ -110,11 +110,24 @@ if (
     "Profile samples must be positive, with positive duration and warm-up milliseconds",
   );
 const selected = selectProfileCases(cases, filter);
+// Elapsed warm-up time can include descheduling. Record executed work so comparisons can expose
+// unequal preparation; neither elapsed time nor these counts prove that an engine is optimized.
+const warmupWork = new Map<
+  string,
+  { operations: number; wallMs: number; threadCpuUs: number | undefined }
+>();
 for (const [name, fn] of selected) {
   const expectedError = assertProfileOutcome(name, fn(0));
+  let operations = 0;
+  const threadBefore = threadCpuUsage?.();
   const started = performance.now();
-  do batch(name, fn, 64, expectedError);
-  while (performance.now() - started < warmup);
+  do {
+    batch(name, fn, 64, expectedError);
+    operations += 64;
+  } while (performance.now() - started < warmup);
+  const wallMs = performance.now() - started;
+  const thread = threadBefore && threadCpuUsage?.(threadBefore);
+  warmupWork.set(name, { operations, wallMs, threadCpuUs: thread && thread.user + thread.system });
 }
 if (session) {
   gc?.();
@@ -184,6 +197,7 @@ for (const [name, fn] of selected) {
       name,
       ns,
       operations,
+      warmupWork: warmupWork.get(name),
       maxBatchMs,
       maxUninterruptedMs,
       sink,
