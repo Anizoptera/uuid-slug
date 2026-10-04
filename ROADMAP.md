@@ -40,11 +40,16 @@ keep contract changes reserved for Art, and claim impossibility only with a name
   - [ ] Isolate counter storage from timestamp and high-water storage. Compare the smallest
         representation that removes sequence-helper allocation, including construction cost;
         preserve every sequence bit and transactional update, and reject other primary-call losses.
-- [ ] Exercise the package in a local Cloudflare workerd runtime. Prove imports, entropy,
+- [x] Exercise the package in a local Cloudflare workerd runtime. Prove imports, entropy,
       clocks and representation round trips before adding a maintained correctness lane.
       Validate benchmark timers against a host clock, separate request overhead from identifier
       work, and probe inspector CPU and allocation capture. Compare plain web capabilities with
       Node compatibility; record local-versus-production limits without claiming deployed performance.
+      The compiled portable implementation passes the shared corpus in both compatibility modes;
+      bounded timing, CPU profiles and sampled allocation work. A zero-duration control fails.
+- [ ] Extend local edge evidence to packed consumers and the owning entropy and clock witnesses;
+      integrate a correctness-only smoke lane in the existing workflow after those proofs.
+      Benchmark the qualified native floors and competitors before choosing any edge-specific path.
   - [x] Isolate the clock wrapper with the maintained inline-clock substitution. Its removal
         leaves generation allocation in matched Node captures, and Bun throughput gains reverse
         or become losses. Keep production unchanged; the wrapper alone does not explain the

@@ -2450,6 +2450,28 @@ Bun package/default text medians range from 70.90 to 75.22 ns; native Bun median
 a separate adoption constraint; its lower cost remains the target. This bundled corpus checks
 priority, not installed-package cost, allocation parity, or individual-call latency.
 
+Local workerd evidence (2026-10-04): `workerd-public-repeat.jsonl` runs the compiled public entry
+with the portable implementation in both plain-web and `nodejs_compat` configurations. The bundle
+input manifest contains `dist/index.js` and `dist/runtime/portable.js`, with no production source
+or Node implementation. Each mode passes the shared 351-case profile oracle before timing four
+successful calls, using seven batches of 262,144 calls and one equal-sized warm-up. Observed workerd
+is 2026-10-04 and the compatibility date is 2026-10-04. Native Web Crypto UUID generation, secure
+byte filling and typed-array hex/base64 methods are callable in both modes. These runs establish
+local harness feasibility, not a throughput winner, packed installation, or another provider's support.
+
+`workerd-native-prepared.jsonl` selects UUIDv7 text in separate inspector captures after correctness
+setup and warm-up finish. Plain-web CPU contains 15 nodes and 159 samples; Node-compatible CPU
+contains 15 nodes and 167 samples. Allocation profiles contain 36,168 and 35,501 samples.
+Dispatch, result consumption and response serialization remain included; profile totals cannot
+be divided by timed calls to claim per-call package allocation. The one-call
+`workerd-clock-control.stderr` run fails when batch durations are zero. Local batch durations are
+integer milliseconds; retain raw durations, enlarge batches when necessary and use fresh processes
+for decisions. Host request time includes dispatch and remains separate from identifier timing;
+preparation and inspector commands are excluded.
+[Cloudflare's timer documentation](https://developers.cloudflare.com/workers/runtime-apis/performance/)
+states that local timers advance during CPU work while deployed timers advance after I/O. The local
+clock therefore cannot establish deployed timestamp progression or production edge latency.
+
 Two clean Node inspector process pairs use the retained candidate bundles and the same filtered
 public calls, seven 15 ms batches, 16 ms warm-up and a 4,096-byte allocation sampling interval.
 Baseline text estimates 31.1/32.4 bytes per call under the byte-generator frame, against

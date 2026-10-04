@@ -311,6 +311,25 @@ Run this review after every Bun or Deno version change and before periodic runti
 
 ## Profiling
 
+Run `bun run build && bun bench/profile-workerd.ts` to exercise the compiled public package in
+local Cloudflare workerd, with and without `nodejs_compat`. Both configurations load the portable
+package implementation; enabling Node compatibility does not select the package's Node implementation.
+The driver uses `bunx workerd` unless `UUID_SLUG_WORKERD_EXECUTABLE` names an installed binary.
+It records the observed runtime and compatibility date, bundle inputs, shared correctness checks,
+completed calls and raw batch durations under a fresh `bench/reports/workerd-*` directory.
+No Cloudflare account or deployment is involved.
+
+Use the existing `UUID_SLUG_PROFILE_FILTER` and `UUID_SLUG_PROFILE_SAMPLES` controls; set
+`UUID_SLUG_PROFILE_CALLS` for a fixed batch size. Increase calls geometrically if the local timer
+cannot resolve every batch. The driver rejects zero durations and keeps HTTP request time separate
+from identifier timing. Repeat comparisons in fresh processes before selecting an implementation.
+Add `--native` to capture CPU and sampled allocation through the runtime's inspector. These profiles
+exclude correctness setup and warm-up but include dispatch and reporting; their totals are not
+per-call package allocation.
+Read [Cloudflare's timer limits](https://developers.cloudflare.com/workers/runtime-apis/performance/)
+before interpreting results: local timers advance during CPU work, while deployed timers advance
+after I/O. Local timing does not prove production latency or deployed UUIDv7 clock behavior.
+
 Run `bun bench/rust.ts` for optimized Rust calls and every native lane discovered from supported
 installed Node, Bun and Deno hosts. It builds once, rotates fresh processes, asserts the transport
 each process loaded, and prints compact medians for cold startup, fixed JSON dispatch, single and
