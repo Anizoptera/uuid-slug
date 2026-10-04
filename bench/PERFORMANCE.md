@@ -218,6 +218,14 @@ Packed source snapshots are `packed-source-gsQPt5/` and `packed-source-C8u1w9/`.
 The first attempt (`reused-prefix-packed.log`) fails before timing when Parcel receives
 SIGSEGV during the candidate consumer check; it supplies no performance evidence.
 
+Two Node source profiles select only ordinary slug generation through the retained screen
+modules, with seven 20 ms batches and 32 ms warm-up. Baseline/candidate CPU profiles have
+1106/1093 samples; base64url writing accounts for 282/275 and clock reading for 200/196.
+Both retain the same largest sampled functions. These sampled source profiles do not identify
+the cause of the packed slug loss, prove identical generated machine code, or establish
+allocation parity. Raw CPU, allocation, GC, heap and completed-call records remain in
+`bench/reports/reused-prefix-profiles/`.
+
 Two Bun 1.4.2 CPU captures on 2026-10-03 select only `=v7.string` through the maintained
 `bench/profile.ts` corpus, with seven 20 ms batches and 16 ms warm-up. Raw files are
 `bench/reports/primary-v7-default-only.cpuprofile` and
