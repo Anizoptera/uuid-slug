@@ -117,6 +117,46 @@ floor or close native parity. Bundled and source runs share a machine and engine
 sensitivity rather than independent platforms. Neither gross allocation, cold-start cost nor
 individual-call tail latency was measured for these rejected candidates.
 
+Direct UUIDv7 text construction does not earn production retention from the current screens.
+The maintained `v7-draw` candidates eliminate intermediate byte writes using character codes,
+native Latin-1 text with individual hexadecimal lookups, or native Latin-1 text with paired
+lookups. All preserve the original sequence and entropy handling. Independent text encoding
+checks timestamp and counter boundaries in both cases; walking input bits checks all 74 payload
+bits. Missing-tail and missing-timestamp mutations fail Node and Bun tests. Native-only
+missing-tail mutations fail Bun tests; Node retains the original formatter when that capability
+is absent. The mutation logs are `direct-text-tail-mutation.log`,
+`direct-text-timestamp-mutation.log`, `direct-text-native-mutation.log` and
+`direct-text-pairs-mutation.log` under `bench/reports/`.
+
+On 2026-10-04, `candidates-v7-draw-LpFeXx` and `candidates-v7-draw-KUVQDQ` retain two fresh
+processes per candidate and runtime, with reversed candidate order, nine 20 ms batches and
+32 ms warm-up. Node 26.10.0 and Bun 1.4.2 run source-derived bundles on one M4 Max. The first
+screen compares all three candidates; the repeat selects paired lookups only.
+
+| Bun text comparison | Package process medians ns | Paired lookup process medians ns |
+| --- | ---: | ---: |
+| First screen | 79.07 / 79.30 | 75.20 / 74.12 |
+| Repeat | 80.12 / 79.26 | 82.64 / 74.99 |
+
+The apparent paired-lookup gain reverses in one repeat process. Its repeat plain-slug controls
+also lose: package medians are 76.00 / 77.64 ns against 80.95 / 81.17 ns. The character-code
+candidate loses Bun text in both first-screen processes; individual Latin-1 lookups show only
+small changes. These observations do not justify another formatter or shared-table refactor.
+They do not establish which engine or scheduling mechanism explains the changes.
+
+The counted-resource witness records one additional 512-byte lookup array when preset text
+follows the existing paired-output job. Warm preset text records no new arrays, views, errors
+or slices and exactly one native string conversion. Those counters do not measure native
+buffer allocation, generator closures, gross allocation or retained heap after collection.
+Mixed use would retain both formatter implementations unless storage were shared.
+
+Each independent observation is a process median; batches within a process are not independent
+samples or individual-call latencies. These small samples do not bound negligible effects.
+Packed imports, cold construction, other runtimes and complete resource parity remain
+unmeasured for these candidates. Exclude `direct-text-native-screen.log` from native-candidate
+selection because its native-specific mutation proof follows that screen; the two named
+longer screens follow the mutation proofs. Keep native parity open.
+
 Two Bun 1.4.2 CPU captures on 2026-10-03 select only `=v7.string` through the maintained
 `bench/profile.ts` corpus, with seven 20 ms batches and 16 ms warm-up. Raw files are
 `bench/reports/primary-v7-default-only.cpuprofile` and

@@ -54,7 +54,7 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         All four lower bounds lose to package text in both bundled and normal Bun source
         comparisons. Reject these repairs before adding validation, fallback or resource studies;
         native parity stays open and this does not exclude different repair mechanisms.
-  - [ ] Compare direct UUIDv7 text construction with generating intermediate bytes and formatting
+  - [x] Compare direct UUIDv7 text construction with generating intermediate bytes and formatting
         them on Bun. Preserve the shared sequence, clock, entropy-failure and reentrancy behavior;
         keep owned-byte and configured calls as controls. Prove every timestamp, counter and tail
         bit before timing. Retain specialization only for repeated complete-call gains that
@@ -62,10 +62,20 @@ keep contract changes reserved for Art, and claim impossibility only with a name
     - [x] Prove timestamp/counter carries and tail preservation with independent text encoding,
           walking input bits and targeted mutations. Both runners reject missing tail and
           timestamp fields; Bun also rejects the missing tail in both direct Latin-1 writers.
-    - [ ] Compare direct character construction, direct Latin-1 construction and paired-code
+    - [x] Compare direct character construction, direct Latin-1 construction and paired-code
           lookups while preserving byte elimination. Record preset-text initialization separately
           from warm resource counts. The separate clock function isolates owned-byte controls;
-          consider sharing only after a reproduced gain justifies further work.
+          consider sharing only after a reproduced gain justifies further work. Character
+          construction loses Bun text; paired lookups fail to reproduce their apparent gain
+          and plain-slug controls lose in the repeat. Keep production unchanged and do not
+          fund shared formatter storage from these unresolved throughput observations.
+  - [ ] Compare cached timestamp repair of native Bun base64url plain slugs with package slug
+        generation. Test unconditional and conditional repair with default and explicit native
+        clocks. Independently encode patched UUID bytes to prove timestamp carries, rollback,
+        version, variant and all payload bits; prove the oracle rejects timestamp and tail loss
+        before timing. Treat complete native-generation-plus-repair calls as lower bounds that
+        still lack package validation and fallback. Repeat only survivors; reject losses before
+        integration, and keep adoption, overflow behavior and resource proof separate.
   - [x] Compare Bun scratch writes at byte, 16-bit and 32-bit widths through complete default
         generation, uppercase generation and byte-to-text conversion. Preserve tables, offsets,
         hyphens and native string construction; account for the added retained DataView and
