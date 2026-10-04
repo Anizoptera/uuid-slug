@@ -237,6 +237,20 @@ the losses or equivalence, but gives no reason to run a packed replay of this re
 `reused-prefix-native-only-screen.log` and `candidates-v7-draw-x068RE/` retain the proof,
 source and measurements. Conditional closure creation alone is insufficient for retention.
 
+Reject prefix comparisons in the general native byte formatter for these primary workloads.
+`format reused-prefix` shares the existing text buffer and case tables, comparing the first
+ten input bytes as two four-byte words and one two-byte word before rewriting their characters.
+The stale mutation fails independent timestamp and byte-position assertions on Bun before
+timing; intact Node/Bun behavior and resource checks pass.
+Two fresh processes in reversed order use nine 20 ms batches and 32 ms warm-up.
+Bun byte-to-text conversion takes 42.51/39.77 ns against baseline 37.81/38.74 ns;
+generation text takes 75.45/75.17 ns against 77.38/77.67 ns. The conversion losses outweigh
+the small generation gain. Preserve the second Node candidate's long pauses, including
+19310 ns slug and 2173 ns conversion observations; their cause remains unresolved.
+`format-reused-prefix-mutation.log`, `format-reused-prefix-screen.log` and
+`candidates-format-7LR3Ox/` retain the exact proofs and samples. This screen rejects the
+tested general formatter, not a shared formatter accepting generator fields directly.
+
 Two Bun 1.4.2 CPU captures on 2026-10-03 select only `=v7.string` through the maintained
 `bench/profile.ts` corpus, with seven 20 ms batches and 16 ms warm-up. Raw files are
 `bench/reports/primary-v7-default-only.cpuprofile` and

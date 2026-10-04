@@ -1234,6 +1234,36 @@ function formatCandidates(source: string): readonly SourceCandidate[] {
     )
     .join("\n");
   const fixedSelected = source.includes(fixed);
+  const reusedPrefix = (corrupt = false): string => {
+    // Keep the existing native buffer and tables; varying prefixes must pay for the comparisons.
+    // Every use of this scratch goes through this writer, so other UUIDs refresh the same keys.
+    const prefix = fixed.split("\n").slice(0, 30).join("\n");
+    const packedWords = (
+      [
+        [0, 4],
+        [4, 4],
+        [8, 2],
+      ] as const
+    ).map(([start, count]) =>
+      Array.from({ length: count }, (_, index) => {
+        const byte = `(bytes[offset + ${start + index}] as number)`;
+        const shift = (count - index - 1) * 8;
+        return shift ? `(${byte} << ${shift})` : byte;
+      }).join(" | "),
+    );
+    const guard = corrupt
+      ? "latin1PrefixCodes === undefined"
+      : "latin1Prefix0 !== prefix0 || latin1Prefix1 !== prefix1 || latin1Prefix2 !== prefix2 || latin1PrefixCodes !== codes";
+    return replaceOnce(
+      replaceOnce(
+        source,
+        "let uuidTextScratch: Latin1Scratch | undefined;",
+        "let uuidTextScratch: Latin1Scratch | undefined;\nlet latin1Prefix0: number | undefined;\nlet latin1Prefix1: number | undefined;\nlet latin1Prefix2: number | undefined;\nlet latin1PrefixCodes: Uint8Array | undefined;",
+      ),
+      prefix,
+      `  const prefix0 = ${packedWords[0]};\n  const prefix1 = ${packedWords[1]};\n  const prefix2 = ${packedWords[2]};\n  if (${guard}) {\n${prefix}\n    latin1Prefix0 = prefix0; latin1Prefix1 = prefix1; latin1Prefix2 = prefix2; latin1PrefixCodes = codes;\n  }`,
+    );
+  };
   // Wider stores exchange byte writes for packing and one retained view; complete calls decide
   // whether that trade pays. Explicit little-endian stores preserve text on every host.
   const wide = (width: 2 | 4, corrupt = false): string => {
@@ -1270,6 +1300,18 @@ function formatCandidates(source: string): readonly SourceCandidate[] {
   };
   return [
     { name: "baseline", source },
+    {
+      name: "reused-prefix",
+      get source() {
+        return reusedPrefix();
+      },
+    },
+    {
+      name: "reused-prefix-stale",
+      get source() {
+        return reusedPrefix(true);
+      },
+    },
     {
       name: "direct-latin1",
       get source() {
