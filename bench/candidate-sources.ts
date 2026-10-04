@@ -4,6 +4,8 @@
 export interface SourceCandidate {
   readonly name: string;
   readonly source: string;
+  /** Replace the formatter owner too when a generator experiment shares its storage. */
+  readonly uuidSource?: string;
 }
 
 export const CANDIDATE_GROUPS = [
@@ -37,7 +39,7 @@ function replaceOnce(source: string, from: string, to: string): string {
   return source.replace(from, to);
 }
 
-function v7Candidates(source: string): readonly SourceCandidate[] {
+function v7Candidates(source: string, uuidSource?: string): readonly SourceCandidate[] {
   const narrowCounter = (lowBits: 30 | 31) => {
     // Compare narrow closure integers with array-backed words without adding retained storage.
     // The 30-bit split also fits pointer-compressed V8 small integers; the 31-bit split tests
@@ -287,6 +289,82 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
       writer
     );
   };
+  const sharedText = (reusePrefix: boolean, corrupt = false, stale = false): SourceCandidate => {
+    if (uuidSource === undefined)
+      throw new Error("Shared text requires the committed UUID formatter source.");
+    const generated = directText(true, true, reusePrefix);
+    const writerStart = generated.indexOf('\nimport { runtime } from "#runtime";', source.length);
+    const functionStart = generated.indexOf("// Direct text avoids", writerStart);
+    if (writerStart < 0 || functionStart < writerStart)
+      throw new Error("Direct formatter boundaries moved; repair the shared-storage experiment.");
+    let generator = generated.slice(0, writerStart);
+    generator = replaceOnce(
+      generator,
+      "formatUuidBytesUnchecked, resolveUuidTextCase",
+      "formatUuidBytesUnchecked, formatUuidV7FieldsUnchecked, resolveUuidTextCase",
+    );
+    generator = generator
+      .replaceAll("createDirectLatin1Scratch", "formatUuidV7FieldsUnchecked")
+      .replaceAll("directUuidV7Text", "formatUuidV7FieldsUnchecked!");
+    generator = replaceOnce(
+      generator,
+      "function directClockText<Case extends UuidTextCase>",
+      "const directClockText = formatUuidV7FieldsUnchecked ? function directClockText<Case extends UuidTextCase>",
+    );
+    generator = replaceOnce(
+      generator,
+      "\n  }\n\n  function bytesAt(",
+      "\n  } : undefined;\n\n  function bytesAt(",
+    );
+    generator = generator.replaceAll(
+      "? directClockText(textCase as Case)",
+      "? directClockText!(textCase as Case)",
+    );
+    let writer = generated
+      .slice(functionStart)
+      .replaceAll("directUuidV7Text", "formatUuidV7FieldsUnchecked")
+      .replaceAll("createDirectLatin1Scratch", "createLatin1Scratch")
+      .replaceAll("directLatin1Scratch", "uuidTextScratch")
+      .replaceAll("directLowercaseCodes", "lowercaseHexCodes")
+      .replaceAll("directUppercaseCodes", "uppercaseHexCodes")
+      .replaceAll("directHexCodes", "hexCodes");
+    writer = replaceOnce(
+      writer,
+      "function formatUuidV7FieldsUnchecked",
+      "export const formatUuidV7FieldsUnchecked = createLatin1Scratch ? function formatUuidV7FieldsUnchecked",
+    );
+    writer = writer.trimEnd() + " : undefined;\n";
+    writer = replaceOnce(
+      writer,
+      "let scratch = uuidTextScratch;\n  if (!scratch) {\n    scratch = uuidTextScratch = create(36);\n    for (const index of [8, 13, 18, 23]) scratch.bytes[index] = 45;\n  }",
+      "const scratch = (uuidTextScratch ??= createUuidTextScratch(create));",
+    );
+    if (corrupt)
+      writer = replaceOnce(writer, "const byte15 = tail[3] as number;", "const byte15 = 0;");
+    if (stale)
+      writer = replaceOnce(
+        writer,
+        "if (directPrefixMs !== ms || directPrefixHi !== hi || directPrefixLo !== (lo >>> 16) || directPrefixCodes !== codes) {",
+        "if (directPrefixCodes === undefined) {",
+      );
+    let formatter = replaceOnce(
+      uuidSource,
+      "  UuidV7String,",
+      "  UuidV7String,\n  UuidV7StringFor,",
+    );
+    if (reusePrefix) {
+      // A generic conversion overwrites shared text. Invalidate rather than compare its input bytes.
+      formatter = replaceOnce(
+        formatter,
+        "  const text = scratch.bytes;",
+        "  directPrefixMs = -1;\n  const text = scratch.bytes;",
+      );
+      writer =
+        "let directPrefixMs = -1;\nlet directPrefixHi = -1;\nlet directPrefixLo = -1;\nlet directPrefixCodes: Uint8Array | undefined;\n" +
+        writer;
+    }
+    return { name: "shared-text", source: generator, uuidSource: formatter + "\n" + writer };
+  };
   // Math.trunc plus the nonnegative 48-bit bound already proves a safe integer. Keep the
   // original number and negative-reading guards so invalid callbacks never gain coercion.
   const boundedClock = (ceiling: string) =>
@@ -402,6 +480,34 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
   };
   return [
     { name: "baseline", source },
+    ...(
+      [
+        "shared-text",
+        "shared-text-prefix",
+        "shared-text-lost-tail",
+        "shared-text-prefix-stale",
+        "shared-text-prefix-no-invalidation",
+      ] as const
+    ).map((name) => ({
+      name,
+      get source() {
+        return sharedText(
+          name.startsWith("shared-text-prefix"),
+          name === "shared-text-lost-tail",
+          name === "shared-text-prefix-stale",
+        ).source;
+      },
+      get uuidSource() {
+        const formatter = sharedText(
+          name.startsWith("shared-text-prefix"),
+          name === "shared-text-lost-tail",
+          name === "shared-text-prefix-stale",
+        ).uuidSource!;
+        return name === "shared-text-prefix-no-invalidation"
+          ? replaceOnce(formatter, "  directPrefixMs = -1;\n", "")
+          : formatter;
+      },
+    })),
     {
       name: "counter-low30",
       get source() {
@@ -944,10 +1050,11 @@ function v4Candidates(source: string): readonly SourceCandidate[] {
 export function createSourceCandidates(
   group: CandidateGroup,
   source: string,
+  uuidSource?: string,
 ): readonly SourceCandidate[] {
   const builders = {
     v4: v4Candidates,
-    "v7-draw": v7Candidates,
+    "v7-draw": (value: string) => v7Candidates(value, uuidSource),
     alphabet: alphabetCandidates,
     keyless: keylessCandidates,
     format: formatCandidates,

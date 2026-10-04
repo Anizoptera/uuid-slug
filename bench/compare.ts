@@ -451,7 +451,11 @@ async function main(): Promise<void> {
       const group = sourceParts[0] as CandidateGroup;
       const filename = CANDIDATE_FILES[group];
       const source = await readFile(join(candidateRoot, filename), "utf8");
-      const candidate = createSourceCandidates(group, source).find(
+      const uuidSource =
+        group === "v7-draw"
+          ? await readFile(join(candidateRoot, "src/uuid.ts"), "utf8")
+          : undefined;
+      const candidate = createSourceCandidates(group, source, uuidSource).find(
         ({ name }) => name === sourceParts[1],
       );
       if (!candidate) throw new Error(`Unknown ${group} source candidate: ${sourceParts[1]}`);
@@ -471,6 +475,10 @@ async function main(): Promise<void> {
         }),
       );
       await Bun.write(join(candidateRoot, filename), candidateSource);
+      if (candidate.uuidSource !== undefined) {
+        await Bun.write(join(candidateRoot, "src/uuid.ts"), candidate.uuidSource);
+        await Bun.write(join(report, "uuid-source.txt"), candidate.uuidSource);
+      }
       console.error(`Packed source candidate evidence: ${report}`);
     }
     const baselineOut = join(scratch, "baseline-artifacts");

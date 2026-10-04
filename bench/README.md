@@ -118,6 +118,11 @@ Use `v7-draw direct-text-reused-prefix` to retain unchanged prefix characters in
 text construction. Timestamp, upper counter and text case must all invalidate the shared prefix;
 `direct-text-reused-prefix-stale` must fail Bun's independent text oracle before timing.
 Compare complete default calls before measuring the extra retained cache and generator setup.
+Use `v7-draw shared-text shared-text-prefix` to eliminate intermediate UUID bytes with the
+existing formatter's character buffer and case tables. The second candidate also reuses generator
+prefixes; ordinary UUID conversion must invalidate them. `shared-text-lost-tail`,
+`shared-text-prefix-stale` and `shared-text-prefix-no-invalidation` must fail independent text
+witnesses before timing. Both source screens and packed comparisons retain both replacement files.
 For allocation attribution, run the retained report's `profile.mjs` against each candidate module
 with `UUID_SLUG_PROFILE_MODULE` and a separate native directory and name. Retain that process's
 call records, alternate candidate order, and await its exit before starting another capture.

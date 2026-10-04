@@ -87,7 +87,7 @@ const groups = {
     tests: ["__test__/alphabet.test.ts"],
   },
   "v7-draw": {
-    names: ["v7.string", "v7.bytes", "v7.slug"],
+    names: ["v7.string", "v7.string.uppercase", "v7.bytes", "v7.slug", "uuid.toString.bytes"],
     tests: ["__test__/v7.test.ts"],
   },
   keyless: {
@@ -145,7 +145,11 @@ if (
   );
 const revision = (await command("git", ["rev-parse", "HEAD"], project)).trim();
 const source = await command("git", ["show", `${revision}:${filename}`], project);
-const candidates = createSourceCandidates(group, source);
+const uuidSource =
+  group === "v7-draw"
+    ? await command("git", ["show", `${revision}:src/uuid.ts`], project)
+    : undefined;
+const candidates = createSourceCandidates(group, source, uuidSource);
 const requested = new Set(process.argv.slice(3));
 for (const name of requested)
   if (!candidates.some((candidate) => candidate.name === name))
@@ -199,6 +203,15 @@ try {
     await Promise.all([
       writeFile(join(tree, filename), candidateSource),
       writeFile(join(report, `${candidate.name}-source.txt`), candidateSource),
+      ...(uuidSource === undefined
+        ? []
+        : [
+            writeFile(join(tree, "src/uuid.ts"), candidate.uuidSource ?? uuidSource),
+            writeFile(
+              join(report, `${candidate.name}-uuid-source.txt`),
+              candidate.uuidSource ?? uuidSource,
+            ),
+          ]),
     ]);
     await command(
       "bun",

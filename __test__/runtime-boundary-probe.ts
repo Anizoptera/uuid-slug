@@ -179,6 +179,9 @@ export const runtimeBoundaryCases = [
               ]) {
                 now = reading;
                 const expected = byteGenerator.generateUuidV7Bytes();
+                // A conversion may share formatter storage with generation; it must not leave
+                // cached generator characters valid after writing a different UUID into it.
+                bytesToUuidString(new Uint8Array(16), 0, textCase);
                 const actual = textGenerator.generateUuidV7(textCase);
                 if (expected instanceof Error) {
                   assert.ok(actual instanceof Error);
