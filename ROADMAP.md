@@ -28,14 +28,17 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       evidence: selected-generator text was omitted. Every filter term must match before timing.
       Resolve those losses with a distinguishing profile or a usable execution environment;
       do not widen the matrix or infer parity from an interval crossing no change.
+      Identical-baseline controls also show a small Node explicit-time CPU difference with a wide
+      interval; they weaken attribution to the candidate, not establish parity. Keep the raw
+      `native-v7-identical-baseline-controls.log`. Equal-call Bun slug profiles locate the same
+      portable clock, entropy, byte-writing and base64url work; they expose no added native
+      default work. Keep `native-v7-slug-*-profile/`; sampled stacks do not prove cost equality.
+      Keep the trusted native fast path: the shared validation helper parses every result.
+      Return native fallback errors unchanged; the public default call alone owns the throw.
       Keep raw comparisons and exact candidate source in `bench/reports/native-v7-inline-*`.
       Use the prepared README/security patch for approval; public text remains held.
-      Reject any reproduced material primary-call loss before retaining the candidate. The inline replay
-      suffers large scheduling interruptions; CPU time supports Bun text savings but leaves
-      configured controls unresolved. Fresh equal-call Bun profiles and operation counters
-      show native generation replaces portable drawing and formatting without temporary arrays.
-      Resolve primary controls under usable scheduling before broader timing or retention;
-      retained heap and sampled stacks do not prove total native allocation volume.
+      Native text profiles and counters show replaced portable generation and formatting without
+      temporary arrays. Retained heap and sampled stacks do not prove total allocation or parity.
       Reject it if repeated complete calls show a material primary-call regression, resource
       costs grow without a requested benefit, or a published contract fails. Preserve configured
       generators and the native-absent path; do not infer their behavior from native success.
