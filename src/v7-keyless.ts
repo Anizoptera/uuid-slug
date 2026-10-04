@@ -3,8 +3,11 @@
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
 import {
+  fillRandomBytes,
   generatedOrThrow,
+  INVALID_TIMESTAMP,
   portableAfterNative,
+  readClock,
   stringInput,
   UuidSlugError,
   validatedNativeOrFallback,
@@ -263,13 +266,21 @@ export function generateUuidV7Bytes(
 ): Uint8Array | UuidSlugError {
   // Only an untyped call reaches an offset without storage; that misuse stays an error value.
   if (outOrOptions === undefined && (offset === undefined || offset === 0))
-    return generatedOrThrow(currentUuidV7Bytes());
+    return generatedOrThrow(generateSelectedDefaultUuidV7Bytes());
   return uuidV7BytesFor(outOrOptions, offset);
 }
 
 /** Current-time bytes from the module generator with failures returned for option-taking callers. */
 export const currentUuidV7Bytes = (): UuidV7Bytes | UuidSlugError =>
   (generateDefaultUuidV7Bytes ??= v7Bytes().generateUuidV7Bytes)();
+
+// Independent draws remove unrequested sequence work from owned defaults. Keep JITless on its
+// measured generator path; configured calls and immutable values retain their declared layout.
+// Remeasure complete calls if entropy, timestamp writing or runtime selection changes;
+// bench/PERFORMANCE.md owns runtime comparisons rather than this selection comment.
+const generateSelectedDefaultUuidV7Bytes = runtime.jitless
+  ? currentUuidV7Bytes
+  : generateDefaultOwnedUuidV7Bytes;
 
 /** Every module-level byte form with failures returned; public seams without fallible input throw. */
 export function uuidV7BytesFor(
@@ -310,4 +321,30 @@ export function uuidV7BytesFor(
     outputOffset?: number,
   ) => Uint8Array | UuidSlugError;
   return generate(outOrOptions, offset);
+}
+
+function generateDefaultOwnedUuidV7Bytes(): UuidV7Bytes | UuidSlugError {
+  // The shared boundaries preserve clock and entropy failures. Fill the result directly instead
+  // of generating UUIDv4 first, which retains unrelated generation code in packed consumers.
+  const clock = readClock(Date.now);
+  if (clock instanceof Error) return clock;
+  if (typeof clock !== "number" || !(clock >= 0 && clock < 0x1_0000_0000_0000))
+    return new UuidSlugError(INVALID_TIMESTAMP, "Clock must fit the UUIDv7 timestamp.");
+  const ms = Math.trunc(clock);
+  const bytes = new Uint8Array(16);
+  const failed = fillRandomBytes(runtime.fillRandom, bytes);
+  if (failed) return failed;
+  // Fixed stores avoid repeated division while preserving all 48 timestamp bits; 32-bit shifts
+  // alone would discard the high word. Version and variant replacement leaves 74 random bits.
+  const high = Math.floor(ms / 0x1_0000_0000);
+  const low = ms >>> 0;
+  bytes[0] = high >>> 8;
+  bytes[1] = high;
+  bytes[2] = low >>> 24;
+  bytes[3] = low >>> 16;
+  bytes[4] = low >>> 8;
+  bytes[5] = low;
+  bytes[6] = (bytes[6]! & 0x0f) | 0x70;
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  return bytes as UuidV7Bytes;
 }

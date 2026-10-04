@@ -115,6 +115,23 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       question. Do not repeat these throughput screens unchanged. Before retention, inspect
       whether the final helper can reuse the existing clock and entropy boundary without adding
       work to configured calls; qualify that exact production shape and keep resource gaps open.
+      Compare the tail helper's default bytes and configured buffer calls with its own baseline
+      through the existing fixed-call Bun resource profiler. Lower primary CPU with no repeated
+      material heap or resident growth supports retention; a repeated resource or buffer loss
+      rejects it. This measures the survivor's resource cost, which the earlier placement has
+      not proved, rather than repeating its already resolved byte-throughput screen.
+      `owned-v7-tail-resource-*` lowers default-byte caller CPU and retained heap in every pair;
+      buffer CPU stays close to baseline, while resident differences vary. Retain the independent
+      draw for ordinary owned defaults and preserve configured/immutable generation. The exact
+      production helper consolidates imports and keeps the source header intact. Its full check
+      passes; repeat packed byte calls on this exact graph before committing, and leave gross
+      allocation and rival resource parity open rather than treating retention as task closure.
+      `owned-v7-production-ranked-bytes.log` reproduces gains on Node Current, Bun and all three
+      browser engines; Deno and JITless are unresolved. Both compiled Node and Bun pass timestamp
+      boundary and owned-array witnesses. `owned-v7-production-bundled-resource-*` reduces Bun
+      caller CPU, retained heap and resident growth in every matched pair, with native profiles.
+      Discard `owned-v7-production-resource-*` for attribution: it mixed source and bundled graphs.
+      Commit the verified default-byte change; keep the remaining floor/rival resource gaps open.
 
 - [ ] Close the Bun default base64url UUIDv7 slug gap. Compare the complete public call with
       native slug output in the maintained generation corpus, then profile the package call.
