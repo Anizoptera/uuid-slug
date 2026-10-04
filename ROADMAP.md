@@ -27,6 +27,13 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       Sequential fixed-call captures reduce retained heap and resident-memory growth relative
       to the portable capture, but do not prove gross allocation parity. Preserve
       `native-v7-slug-candidate-*`; the first concurrent resource captures are invalid comparisons.
+      `99b24ce` passes the full check and commit hook. The ranked packed comparison exits zero
+      with every requested case and preparation count present; Bun default-slug caller-thread CPU
+      improves again, while configured controls remain unresolved. Preserve
+      `native-v7-slug-ranked-qualification.log`. Next isolate configured Bun code shape with
+      profiles of the unchanged configured call and its baseline: increased wrapper/dispatch work
+      supports a source-shape cost, while unchanged stacks and CPU challenge that explanation.
+      Resolve that control before another throughput replay or claiming retention qualified.
 - [ ] Qualify Bun native default UUIDv7 text with equal executed preparation instead of elapsed
       warm-up alone. Add an opt-in call count to the existing profiler, then revisit the preserved
       import-selected candidate: prior explicit-time controls lacked preparation counts, and a
