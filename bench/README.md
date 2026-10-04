@@ -175,6 +175,12 @@ retained payload bits before timing; these lower bounds omit package validation 
 The host comparison also times cached native UUIDv7 clock repair on Bun, both conditional and
 unconditional, with and without an explicit native timestamp. Matching prefixes avoid rebuilding
 text only in the conditional rows; mismatches must preserve every payload bit.
+Use `UUID_SLUG_GENERATION_FILTER=v7.slug.base64url` with `bench/generation-host.ts` to compare
+native Bun slug timestamp repair with complete package and library calls. The host includes
+conditional and unconditional repair with default and explicit native clocks. Its independent
+Buffer encoder checks every retained payload bit and timestamp boundaries before timing.
+These repaired calls omit package validation and native-failure fallback; a loss rejects
+integration, while a gain requires those costs and overflow behavior to be measured separately.
 
 Run `bun run bench:competitors:rust` for one isolated Rust generator timing process. Its own
 lockfile pins the inspected releases without adding benchmark-only crates to the product workspace.

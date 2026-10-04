@@ -116,6 +116,66 @@ for (const conditional of [false, true]) {
     }
   }
 }
+// Six timestamp bytes occupy exactly eight base64url characters, so replacing this prefix
+// preserves the entire native payload without decoding it. Compare this shorter repair with
+// the slower text repair before adding package validation or fallback. Clock changes rebuild
+// the prefix; repeated clocks reuse it, and rollback must invalidate it just like forward time.
+const base64urlDigits = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+function createNativeV7SlugClockRepair(conditional: boolean) {
+  let lastMs = -1;
+  let prefix = "";
+  return (slug: string, unixMs: number): string => {
+    if (unixMs !== lastMs) {
+      const high = Math.floor(unixMs / 0x1_0000_0000);
+      const low = unixMs >>> 0;
+      prefix = String.fromCharCode(
+        base64urlDigits.charCodeAt(high >>> 10),
+        base64urlDigits.charCodeAt((high >>> 4) & 63),
+        base64urlDigits.charCodeAt(((high & 15) << 2) | (low >>> 30)),
+        base64urlDigits.charCodeAt((low >>> 24) & 63),
+        base64urlDigits.charCodeAt((low >>> 18) & 63),
+        base64urlDigits.charCodeAt((low >>> 12) & 63),
+        base64urlDigits.charCodeAt((low >>> 6) & 63),
+        base64urlDigits.charCodeAt(low & 63),
+      );
+      lastMs = unixMs;
+    }
+    if (conditional && slug.startsWith(prefix)) return slug;
+    return prefix + slug.slice(8);
+  };
+}
+// Buffer's byte writer and encoder do not share the repair's shifts or character positions.
+// Complementary payloads and every single payload bit distinguish a correct suffix from a
+// syntactically valid slug; cached, matching, carry and rollback cases check both repair modes.
+for (const conditional of [false, true]) {
+  const patch = createNativeV7SlugClockRepair(conditional);
+  const payloads = ["00112233445576778899aabbccddeeff", "ffeeddccbbaa7987b6543210fedcba98"];
+  for (let bit = 48; bit < 128; bit++) {
+    if ((bit >= 52 && bit < 56) || (bit >= 70 && bit < 72)) continue;
+    const bytes = Buffer.alloc(16);
+    bytes[6] = 0x70;
+    bytes[8] = 0x80;
+    bytes[Math.floor(bit / 8)]! |= 1 << (bit % 8);
+    payloads.push(bytes.toString("hex"));
+  }
+  for (const unixMs of [
+    0, 63, 64, 0xffff, 0xffff_ffff, 0x1_0000_0000, 1_700_000_000_000, 0xffff_ffff_ffff, 0,
+  ]) {
+    for (const hex of payloads) {
+      const bytes = Buffer.from(hex, "hex");
+      const source = bytes.toString("base64url");
+      bytes.writeUIntBE(unixMs, 0, 6);
+      const expected = bytes.toString("base64url");
+      const repaired = patch(source, unixMs);
+      assert.equal(repaired, expected, "native-v7 slug repair lost payload or timestamp bits");
+      assert.equal(
+        patch(repaired, unixMs),
+        repaired,
+        "matching slug timestamps must preserve every bit",
+      );
+    }
+  }
+}
 const hostCases: readonly GenerationCase[] = [
   ...generationCases,
   ...conversions.cases,
@@ -189,6 +249,26 @@ const hostCases: readonly GenerationCase[] = [
             operation: () => {
               const now = Date.now();
               return repair(bunUuidV7("hex", explicitTime ? now : undefined) as string, now);
+            },
+            qualification: "qualified",
+            secure: true,
+            version: 7,
+            note: "Cached package-clock timestamp with native UUIDv7 payload; lower bound without package validation or native-failure fallback.",
+          };
+        }),
+      )
+    : []),
+  ...(bunUuidV7
+    ? [false, true].flatMap((explicitTime) =>
+        [false, true].map((conditional): GenerationCase => {
+          const repair = createNativeV7SlugClockRepair(conditional);
+          return {
+            comparable: "v7.slug.base64url.secure",
+            implementation: "platform-v7-slug-clock-repair",
+            name: `platform.bun-repair.v7.slug.base64url.${explicitTime ? "explicit" : "default"}.${conditional ? "conditional" : "always"}`,
+            operation: () => {
+              const now = Date.now();
+              return repair(bunUuidV7("base64url", explicitTime ? now : undefined) as string, now);
             },
             qualification: "qualified",
             secure: true,
