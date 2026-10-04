@@ -1280,7 +1280,9 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
   // Reuse the secure fill rather than retaining UUIDv4 generation in unrelated consumers. Only
   // the no-argument public byte path changes; immutable values still use their declared layout.
   // More copied entropy and the extra call can erase the removed sequence work.
-  const randomOwned = () => {
+  // Hold helper bytes fixed while testing source order; fresh processes must decide whether
+  // placement changes complete-call cost, including configured calls that never use this helper.
+  const randomOwned = (helperAtEnd = false) => {
     const helper = [
       'import { fillRandomBytes, readClock, INVALID_TIMESTAMP } from "./errors.ts";',
       "function generateDefaultOwnedUuidV7Bytes(): UuidV7Bytes | UuidSlugError {",
@@ -1307,7 +1309,7 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
       "",
     ].join("\n");
     return (
-      helper +
+      (helperAtEnd ? "" : helper) +
       replaceOnce(
         replaceOnce(
           source,
@@ -1317,7 +1319,8 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
         ),
         "return generatedOrThrow(currentUuidV7Bytes());",
         "return generatedOrThrow(generateSelectedDefaultUuidV7Bytes());",
-      )
+      ) +
+      (helperAtEnd ? helper : "")
     );
   };
   const owned =
@@ -1383,6 +1386,12 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
       name: "random-owned-timestamp",
       get source() {
         return randomOwned();
+      },
+    },
+    {
+      name: "random-owned-timestamp-tail",
+      get source() {
+        return randomOwned(true);
       },
     },
     {

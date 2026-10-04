@@ -86,6 +86,35 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       value cost. Chromium's mixed value loss remains unchecked. Next qualify repeated Bun
       rival calls and fixed-call resources; a remaining rival or resource loss rejects this
       candidate before more control investigation. Preserve every raw pair and process status.
+      `owned-v7-fixed-writer-rivals-repeat-*` favors Bun bytes against every qualified row;
+      `owned-v7-fixed-rival-resource-valid-*` favors caller and process CPU and resident growth
+      against `uuid`, with a small retained-heap increase. This is not gross-allocation evidence.
+      Isolate Chromium immutable-value calls through the existing packed comparison next: a
+      repeated loss rejects global selection; disappearance keeps the mixed conditioning unresolved.
+      `owned-v7-fixed-chromium-value-isolated.log` does not reproduce the mixed value loss.
+      `owned-v7-fixed-baseline-resource-*` lowers Bun caller CPU in each pair; heap and resident
+      differences vary, so resource parity remains unproved. Isolate the remaining Bun buffer
+      control, then repeat only bytes across ranked runtimes before choosing production code.
+      `owned-v7-fixed-bun-into-control-*` is slower in most isolated pairs. Hold adoption and
+      the wider replay. Fixed-call CPU and sampled stacks for this same buffer call must
+      distinguish an added implementation cost from timing variation before changing the shape.
+      `owned-v7-fixed-into-resource-*` also changes CPU direction; sampled function hashes match,
+      but that does not prove equal cost. Reject retention of this layout. Screen moving only
+      the independent helper to the end of its existing owner; unchanged configured declarations
+      then keep their source order. A repeated buffer loss rejects the placement change; a byte
+      gain without it advances the same mechanism, not a second generation design.
+      `owned-v7-tail-source-screen.log` preserves the byte gain. Existing source and helper
+      bytes match the earlier candidate exactly apart from placement. `owned-v7-tail-bun-into-control-*`
+      changes CPU direction and does not qualify placement as a performance improvement. Keep
+      that uncertainty explicit; repeat only the primary byte job across ranked runtimes to
+      decide whether this ordinary private-helper layout retains the mechanism's useful gain.
+      `owned-v7-tail-ranked-bytes.log` favors bytes on Node Current, Bun and all three browser
+      engines; Deno and JITless remain unresolved. The LTS report also favors bytes, but its
+      terminal status is unavailable, so it cannot qualify completion. Primary speed supports
+      the independent draw; source placement does not resolve the buffer control or resource
+      question. Do not repeat these throughput screens unchanged. Before retention, inspect
+      whether the final helper can reuse the existing clock and entropy boundary without adding
+      work to configured calls; qualify that exact production shape and keep resource gaps open.
 
 - [ ] Close the Bun default base64url UUIDv7 slug gap. Compare the complete public call with
       native slug output in the maintained generation corpus, then profile the package call.
