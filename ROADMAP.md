@@ -19,6 +19,16 @@ keep contract changes reserved for Art, and claim impossibility only with a name
 
 - [x] Refresh the primary-call baseline from two maintained competitor runs; keep owned-byte,
       Bun default generation, encoding and Deno decoding gaps open, with resource parity unmeasured.
+- [x] Attribute current primary UUIDv7 costs before another candidate screen. Preserve each
+      native profiler process's completed-call records, follow CPU and allocation parent links
+      beneath public calls, and separate harness, startup, GC and unattributed work. Compare
+      repeated captures before ranking removable work; sampled allocation is not retained heap.
+      Two captures put text construction and clock handling ahead of entropy copying; allocation
+      remains beneath scratch-backed generation. Keep its allocating expression unresolved.
+- [ ] Isolate clock and sequence allocation beneath scratch-backed generation with a causal
+      substitution. Compare required output allocation separately; reject improvements that
+      merely relocate samples or regress another primary call. Extend attribution to generation,
+      parsing and conversion jobs with open gaps.
 - [ ] Close Bun default UUIDv7 text and plain-slug gaps: compare trusted-default specialization,
       native output repair and pooled generation without changing timestamp or entropy contracts.
       Clock-number-first recognition and fixed timestamp stores fail the repeated primary-call screen;
@@ -32,6 +42,11 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       Restore cached text delegation: direct formatting has no reproduced primary Bun gain and
       the shared replay reports a Firefox text loss. Test buffer sharing independently.
       Reject it if reentrancy, transactional failures, ownership or another primary call deteriorates.
+  - [ ] Compare cached native UUIDv7 timestamp repair, conditional and unconditional, with and
+        without the captured clock passed to Bun. Prove matching and mismatching prefixes,
+        rollback, carry boundaries and payload preservation before timing. Reject the mechanism
+        unless repeated complete-call gains survive sustained counter overflow; keep native
+        failure fallback and full package adoption as separate, required proof before retention.
   - [x] Compare Bun scratch writes at byte, 16-bit and 32-bit widths through complete default
         generation, uppercase generation and byte-to-text conversion. Preserve tables, offsets,
         hyphens and native string construction; account for the added retained DataView and

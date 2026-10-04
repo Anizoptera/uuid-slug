@@ -261,7 +261,10 @@ async function runBrowser(entry: string, asyncEntry: string) {
 
 /** Capture process-exit formats that expose data absent from inspector sampling. */
 async function runExitProfiles(nodeEntry: string, denoEntry: string): Promise<void> {
-  await command(
+  // Each profiler changes execution and call counts. Keep its own rows beside its samples;
+  // counts from the ordinary run cannot normalize another process's sampled allocations.
+  await runHost(
+    "node-exit",
     nodeExecutable,
     [
       "--cpu-prof",
@@ -272,10 +275,10 @@ async function runExitProfiles(nodeEntry: string, denoEntry: string): Promise<vo
       "--heap-prof-name=node-exit.heapprofile",
       nodeEntry,
     ],
-    project,
     nodeEnvironment,
   );
-  await command(
+  await runHost(
+    "node-v8",
     nodeExecutable,
     [
       "--prof",
@@ -285,7 +288,6 @@ async function runExitProfiles(nodeEntry: string, denoEntry: string): Promise<vo
       `--trace-event-file-pattern=${join(reports, "node-trace.json")}`,
       nodeEntry,
     ],
-    project,
     nodeEnvironment,
   );
   const processedV8 = await command(
@@ -294,7 +296,8 @@ async function runExitProfiles(nodeEntry: string, denoEntry: string): Promise<vo
     project,
   );
   await writeFile(join(reports, "node-v8.txt"), processedV8);
-  await command(
+  await runHost(
+    "deno-cli",
     "deno",
     [
       "run",
@@ -308,14 +311,14 @@ async function runExitProfiles(nodeEntry: string, denoEntry: string): Promise<vo
       "--allow-read",
       denoEntry,
     ],
-    project,
     {
       ...environment,
       UUID_SLUG_PROFILE_MODULE: new URL("../dist/index.js", import.meta.url).href,
     },
   );
   const bunProfile = join(import.meta.dir, "profile.ts");
-  await command(
+  await runHost(
+    "bun-cpu",
     "bun",
     [
       "--cpu-prof",
@@ -331,13 +334,12 @@ async function runExitProfiles(nodeEntry: string, denoEntry: string): Promise<vo
       reports,
       bunProfile,
     ],
-    project,
     environment,
   );
-  await command(
+  await runHost(
+    "bun-heap",
     "bun",
     ["--heap-prof-md", "--heap-prof-name", "bun-heap.md", "--heap-prof-dir", reports, bunProfile],
-    project,
     environment,
   );
   const bunMemory = Bun.spawn(["bun", join(import.meta.dir, "profile-bun-memory.ts")], {

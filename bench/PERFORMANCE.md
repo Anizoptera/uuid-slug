@@ -2165,8 +2165,8 @@ raising that to 100,000 moved Node by under 2%, so longer warm-up buys nothing t
 
 ### Profiler capture boundary
 
-Corpus construction, outcome verification, case selection, and warm-up finish before native CPU and
-allocation sampling starts. Chromium publishes its runner only after that preparation; the driver
+Corpus construction, outcome verification, case selection, and warm-up finish before inspector CPU and
+allocation sampling starts. Process-exit profilers also include startup and warm-up. Chromium publishes its runner only after preparation; the driver
 waits for the published runner rather than elapsed time. Profiler start and stop remain outside each
 reported operation sample, but forced collection, reporting, host-task yields, and profiler sampling
 remain inside the wider native capture.
@@ -2198,6 +2198,40 @@ in two of eight one-millisecond captures, and CPU attribution is too sparse to i
 its control run emitted 39 samples, while Chromium attributed 16.70 ms to idle time. Use focused
 filters and operation timings for comparisons; use native profiles to locate work, not to infer
 per-call latency from capture duration.
+
+### Primary UUIDv7 attribution
+
+Two sequential captures on 2026-10-04 use Node 26.10.0, Bun 1.4.2, Deno 2.9.7 and Chromium,
+with only `v7.string`, `v7.bytes` and `v7.slug` selected, seven 15 ms batches and 16 ms warm-up.
+Raw files are in `bench/reports/primary-hotspots-current/` and
+`bench/reports/primary-hotspots-repeat/`. Parent links distinguish public-call descendants from
+harness, startup and collection samples. Both captures put formatting ahead of entropy copying
+for text and slugs; owned-byte generation concentrates samples in the byte generator.
+
+Node text formatting contributes 308 self samples in each capture, while clock reading contributes
+125/149. Its slug writer contributes 216/236 and clock reading 140/146. Deno text formatting
+contributes 295/295, and its owned-byte generator 613/606. Bun text descendants include native
+string construction, the byte-to-text writer and clock reading; inlined case labels and anonymous
+native frames prevent complete per-case attribution. Do not interpret missing case labels as zero work
+or these sample counts as individual-call costs.
+
+Inspector allocation sampling includes collected objects and uses a 4,096-byte sampling interval.
+The byte-generator frame under scratch-backed text and slug calls estimates about 31–33 bytes per
+completed call on Node and Deno, and 23–24 on Chromium, in both captures. The sequence helper
+also has sampled allocation. This rules out assuming that reused output scratch eliminates all
+generation allocation. It does not identify the allocating expression: boxed numbers, engine state
+and inlined callees remain possible explanations. Owned output adds required array storage;
+heap snapshots and post-GC deltas measure retention, not this allocation volume.
+
+Process-exit profiles require their own completed-call records. The repeat preserves adjacent
+`node-exit.jsonl`, `node-v8.jsonl`, `deno-cli.jsonl`, `bun-cpu.jsonl` and `bun-heap.jsonl`;
+the first capture lacks those records and cannot support normalized allocation estimates for those
+processes. Node and Deno inspector counts and Chromium counts come from the same captured processes.
+Deno loads compiled output here, so normal TypeScript entry cost remains unmeasured. These are
+two processes on one machine with fixed case order, not confidence bounds or competitor resource
+parity. Investigate clock and sequence allocation and fewer string-construction steps before
+another entropy-copy candidate; require a causal substitution and repeated complete-call gains
+before changing production code.
 
 Node Inspector allocation sampling used a 1,024-byte interval with both `includeObjectsCollectedByMajorGC` and `includeObjectsCollectedByMinorGC` enabled. Each operation ran 32,768 calls (construction: 2,048), after warm-up. The empty control sampled approximately zero bytes per call. These are sampling estimates from one matched process pair, not exact allocation counts:
 

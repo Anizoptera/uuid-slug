@@ -151,6 +151,9 @@ Use `UUID_SLUG_GENERATION_FILTER=v7.text` to include native UUIDv4 text repaired
 alongside package generation, native UUIDv7 and libraries. Host rows compare hexadecimal timestamp
 slices with fixed character prefixes. Independent byte witnesses check timestamp carries and
 retained payload bits before timing; these lower bounds omit package validation and fallback.
+The host comparison also times cached native UUIDv7 clock repair on Bun, both conditional and
+unconditional, with and without an explicit native timestamp. Matching prefixes avoid rebuilding
+text only in the conditional rows; mismatches must preserve every payload bit.
 
 Run `bun run bench:competitors:rust` for one isolated Rust generator timing process. Its own
 lockfile pins the inspected releases without adding benchmark-only crates to the product workspace.
@@ -310,6 +313,11 @@ expose scheduling and I/O. Prefer each runtime's native source, then its inspect
 portable process counters and timings. Missing optional detail may fall back; a requested lane that
 produces no evidence must fail. Correlate independent signals before changing code. Do not count two
 front ends to the same engine profiler as independent evidence.
+Each process-exit profile retains its own timing and completed-call records in the adjacent
+JSON Lines report. Use those counts for that process only; another run has different profiler
+overhead and may complete a different number of calls. Attribute sampled stacks beneath public
+calls, retaining harness, startup, GC and unattributed samples separately. Inlining can remove
+case labels, so their absence does not prove that an operation did no work.
 
 The same command separately measures cooperative mask construction around byte-packing and UTF-8
 chunk boundaries, geometric work factors, host-task progress, and cancellation. These promise-based
