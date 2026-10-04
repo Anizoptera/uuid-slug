@@ -2897,7 +2897,27 @@ were zero under their clocks; this establishes a resolution limit, not zero call
 observations include timer overhead and do not establish uninstrumented p99 or a performance ranking.
 
 The gates do not prove all performance properties. Relative timing cannot detect a slowdown shared by both sides. Constructor counters cannot see every engine allocation. Latest-runtime CI complements pinned runs, but this study did not execute hosted CI or measure every OS/architecture. Keep these limits when interpreting a pass.
-# Numeric UUIDv7 counter comparison
+# UUIDv7 continuation comparisons
+
+## Unaligned entropy word copying
+
+One DataView read and erase does not reproduce a primary-call gain over four byte stores.
+Observed 2026-10-04: `word-four-screen.log` and `word-four-repeat.log` compare the same pooled
+entropy with a retained DataView, explicit big-endian unpacking and an unaligned four-byte erase.
+Each screen has two fresh processes per candidate on Node 26.10.0, Bun 1.4.2 and Deno 2.9.7,
+reversed second-pass order, three 5 ms batches and 16 ms warm-up. The lost-fourth-byte mutation
+fails the shared pool and generated-tail witnesses on both Node and Bun (`word-four-mutation.log`).
+Both intact candidates pass the existing behavior and counted-resource checks.
+
+Bun's first owned-byte observations are 50.02/49.15 ns against 50.73/48.78 ns; the repeat is
+51.23/48.94 ns against 50.75/48.26 ns. Bun slug costs favor the candidate in the first screen,
+then rise to 80.46/78.08 ns against 78.76/76.29 ns. Node and Deno directions also vary across
+the screens. Reject the added retained view without a packed replay or cold-initialization study;
+no reproduced primary-call gain earns that state. These short screens select candidates, not
+confidence intervals, individual-call latency or total-allocation claims. The resource counters
+do not measure DataView allocation, so their pass does not prove equal retained memory.
+
+## Exact counter storage
 
 A single exact Number counter does not reproduce the focused Bun slug gain through packed calls.
 
