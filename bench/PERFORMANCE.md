@@ -4,6 +4,30 @@ Choose each runtime's writer from repeated consumer-call measurements, including
 
 ## Primary TypeScript call review
 
+Owned slug decoding remains faster than the measured equivalent native calls in two resource
+captures on 2026-10-04. `bench/reports/owned-decoder-resource-clean/` and
+`bench/reports/owned-decoder-resource-repeat/` contain CPU, sampled allocation, heap, trace and
+process-counter artifacts from the shared profiling corpus. Each capture uses seven 20 ms
+batches after 16 ms warm-up; exact-byte and fresh plain-array witnesses run before measurement.
+The package API is supplied by the profiling driver, not the conversion factory's source default.
+The earlier `owned-decoder-resource-profile/` capture overlaps verification and is excluded.
+
+On Deno 2.9.7, compiled package decoding measures 170/172 ns, native `fromBase64` 302/319 ns,
+native `setFromBase64` into a fresh array 320/333 ns, and Buffer decoding followed by a copy
+285/296 ns. Process CPU divided by timed calls measures 228/232 ns for the package and
+356–381/370–390 ns for these native alternatives. All four rows report no filesystem reads,
+writes or major page faults. On Bun 1.4.2, package decoding measures 24/25 ns against
+74/76 ns for native array decoding, 80/82 ns for native writes and 115/120 ns for Buffer copies.
+Node 24.21.0 measures 95/93 ns for the package against 194/188 ns for Buffer copies.
+These profiled timings include instrumentation and do not replace ordinary throughput comparisons.
+
+Deno's sampled allocation attributes substantial bytes to every decoder closure, including
+the package. Buffer copies also allocate through Deno's `byteLength` and `getEncodingOps`.
+The methods complete different call counts, warm-up is included, and source attribution can
+merge inlined allocations. These captures do not establish total bytes per call, resource parity,
+or a production-source Deno verdict. Two processes with fixed case order cannot bound a small
+remaining effect. Keep the resource gap open; no production substitution follows from this study.
+
 Argument-free immutable UUIDv7 generation has no caller configuration to read. The
 `primary-value-consumed-screen.log` and `primary-value-consumed-repeat.log` source screens
 on 2026-10-03 compare an early default branch with unchanged generation on Node 26.10.0,

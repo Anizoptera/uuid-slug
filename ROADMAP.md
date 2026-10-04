@@ -187,6 +187,10 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         faster but do not supply the promised owned array; total resource parity stays unmeasured.
   - [ ] Compare Deno decoding resources against the equivalent native methods; retain the
         current decoder unless another complete, owned result reproduces a worthwhile advantage.
+        Two shared resource captures preserve exact bytes and fresh arrays. Compiled Deno
+        decoding uses less measured CPU per timed call than native arrays, native writes and
+        Buffer copies; sampled allocation remains insufficient to close total resource parity.
+        Repeat on Deno's normal source entry and isolate equal-call allocation before closure.
   - [x] Exclude Buffer-only slug decoding from equivalent-result ranking while keeping it timed;
         require the native copy when comparing caller-private plain arrays, and prove the report
         does not declare the incomplete Buffer result its qualified winner. The five-runtime
