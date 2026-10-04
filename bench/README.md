@@ -181,6 +181,10 @@ Use `format direct-latin1` to compare the generic Buffer text call
 with a directly captured Latin-1 method. `direct-latin1-lost-byte` must fail the Bun text oracle
 before timing; the resource control must count the direct method independently. Keep absent
 capabilities on the existing text function and measure cold construction before retention.
+Use `latin1 direct-latin1` to select the same method in the Buffer implementation while leaving
+the UUID formatter unchanged. Its missing-final-byte and missing-fallback mutations must fail
+before timing. The isolated native probe checks all Latin-1 bytes, both UUID text cases and
+absent or throwing methods; a throwing method must switch each scratch permanently to generic text.
 Use `format utf8-text ascii-text` to compare native decoding of the unchanged ASCII UUID buffer.
 `utf8-text-lost-byte` must fail the independent text oracle before timing; general Latin-1 scratch
 semantics remain unchanged. Complete generation and conversion calls decide retention.

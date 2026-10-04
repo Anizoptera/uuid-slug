@@ -108,6 +108,10 @@ const groups = {
     names: ["v7.string", "v7.string.uppercase", "uuid.toString.bytes", "v7.bytes", "v7.slug"],
     tests: [],
   },
+  latin1: {
+    names: ["v7.string", "v7.string.uppercase", "uuid.toString.bytes", "v7.bytes", "v7.slug"],
+    tests: [],
+  },
   value: {
     names: ["value.generate", "value.generate.at", "v7.bytes"],
     tests: ["__test__/v7.test.ts"],
@@ -268,6 +272,16 @@ try {
         await writeFile(join(report, `${candidate.name}-native-corrupt.log`), stdout + stderr);
         if (exitCode === 0 || !stderr.includes("AssertionError"))
           throw new Error(`Native payload oracle did not reject corruption: ${candidate.name}`);
+      }
+    }
+    if (group === "latin1") {
+      for (const mode of ["present", "absent", "throw"]) {
+        const output = await command("bun", ["__test__/latin1-native-probe.ts", mode], tree, {
+          UUID_SLUG_EXPECT_DIRECT_LATIN1: candidate.name === "baseline" ? "0" : "1",
+        });
+        await writeFile(join(report, `${candidate.name}-native-${mode}.jsonl`), output);
+        if (!output.includes('"proof":"native Latin-1 text"'))
+          throw new Error(`Native Latin-1 ${mode} proof produced no witness: ${candidate.name}`);
       }
     }
     for (const runtime of runtimes) {

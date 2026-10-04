@@ -14,6 +14,7 @@ export const CANDIDATE_GROUPS = [
   "alphabet",
   "keyless",
   "format",
+  "latin1",
   "value",
   "value-options",
   "pool",
@@ -25,6 +26,7 @@ export const CANDIDATE_FILES = {
   alphabet: "src/alphabet.ts",
   keyless: "src/v7-keyless.ts",
   format: "src/uuid.ts",
+  latin1: "src/runtime/portable.ts",
   value: "src/v7-value.ts",
   "value-options": "src/v7-value-options.ts",
   pool: "src/runtime/pool.ts",
@@ -1058,11 +1060,76 @@ export function createSourceCandidates(
     alphabet: alphabetCandidates,
     keyless: keylessCandidates,
     format: formatCandidates,
+    latin1: latin1Candidates,
     value: valueCandidates,
     "value-options": valueOptionCandidates,
     pool: poolCandidates,
   } satisfies Record<CandidateGroup, (source: string) => readonly SourceCandidate[]>;
   return builders[group](source);
+}
+
+function latin1Candidates(source: string): readonly SourceCandidate[] {
+  const from = `export function bufferLatin1Scratch(hostBuffer: NonNullable<HostBuffer>) {
+  return (length: number): Latin1Scratch => {
+    const bytes = hostBuffer.alloc(length);
+    return { bytes, text: () => bytes.toString("latin1", 0, length) };
+  };
+}`;
+  const direct = (corrupt = false, loseFallback = false): string =>
+    replaceOnce(
+      source,
+      from,
+      `export function bufferLatin1Scratch(hostBuffer: NonNullable<HostBuffer>) {
+  const slice = (hostBuffer as {
+    prototype?: { latin1Slice?: (this: Uint8Array, start: number, end: number) => string };
+  }).prototype?.latin1Slice;
+  return (length: number): Latin1Scratch => {
+    const bytes = hostBuffer.alloc(length);
+    if (typeof slice !== "function")
+      return { bytes, text: () => bytes.toString("latin1", 0, length) };
+    // Select at factory construction, without changing the portable UUID writer or allocating
+    // a second wrapper. Complete caller measurements must pay for the captured method.
+    const scratch: Latin1Scratch = {
+      bytes,
+      text: () => {
+        try {
+          return slice.call(bytes, 0, ${corrupt ? "length - 1" : "length"});
+        } catch {
+          ${
+            loseFallback
+              ? 'throw new Error("lost native Latin-1 fallback");'
+              : `// A failed optional method must not be retried on every subsequent read.
+          scratch.text = () => bytes.toString("latin1", 0, length);
+          return scratch.text();`
+          }
+        }
+      },
+    };
+    return scratch;
+  };
+}`,
+    );
+  return [
+    { name: "baseline", source },
+    {
+      name: "direct-latin1",
+      get source() {
+        return direct();
+      },
+    },
+    {
+      name: "direct-latin1-lost-byte",
+      get source() {
+        return direct(true);
+      },
+    },
+    {
+      name: "direct-latin1-no-fallback",
+      get source() {
+        return direct(false, true);
+      },
+    },
+  ];
 }
 
 function poolCandidates(source: string): readonly SourceCandidate[] {
