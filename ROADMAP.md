@@ -108,11 +108,16 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         in the repeat. Reject caching; preserve the current generator lookup.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
-  - [ ] Compare fixed four-byte pool copying and a separate source cursor against the current
+  - [x] Compare fixed four-byte pool copying and a separate source cursor against the current
         indexed copy-and-erase loop. Preserve lazy draws, all bytes, erasure, refill failures
         and resource counts. The lost-fourth-byte mutation must fail the shared runtime oracle
         before timing. Reject inconsistent full-call gains or v4/text/slug losses; replay packed
         consumers only after a repeated focused gain survives.
+        The lost-byte mutation fails both runtime witnesses. Two packed seven-runtime replays
+        reproduce Node owned-byte gains; the focused LTS comparison agrees. WebKit's one resolved
+        byte loss reverses in its focused replay. Retain fixed stores with unchanged storage and
+        entropy counts; preserve the indexed alternative for future runtime reviews. Native profiles
+        cover Node, Bun, Deno and Chromium. Bun/Deno byte parity and total allocation remain open.
   - [x] Profile the exact module-default owned-byte call before choosing another substitution;
         separate setup from samples beneath the public generation frame, inspect allocation
         and entropy evidence, and compare the observed costs with the faster rivals' mechanisms.

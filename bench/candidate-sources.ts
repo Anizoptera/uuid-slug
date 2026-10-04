@@ -396,9 +396,23 @@ function poolCandidates(source: string): readonly SourceCandidate[] {
     { length: 4 },
     (_, i) => `bytes[${i}] = pool[offset + ${i}] as number;\n      pool[offset + ${i}] = 0;`,
   ).join("\n      ");
-  const fixed = replaceOnce(source, loop, `if (length === 4) {\n      ${four}\n    } else ${loop}`);
+  const fixedStart = source.indexOf("    if (length === 4) {");
+  const fixedEnd = source.indexOf("    offset += length;", fixedStart);
+  // Retained production stores remain the control; preserve the old indexed alternative so
+  // later engine reviews can overturn the choice through the same complete-call comparison.
+  if (fixedStart >= 0 && fixedEnd < fixedStart)
+    throw new Error("Pool copying boundary changed; repair the source experiment before timing.");
+  const indexed =
+    fixedStart < 0
+      ? source
+      : source.slice(0, fixedStart) + `    ${loop}\n` + source.slice(fixedEnd);
+  const fixed =
+    fixedStart < 0
+      ? replaceOnce(source, loop, `if (length === 4) {\n      ${four}\n    } else ${loop}`)
+      : source;
   return [
     { name: "baseline", source },
+    { name: "indexed-loop", source: indexed },
     { name: "fixed-four", source: fixed },
     {
       name: "fixed-four-lost-byte",
@@ -407,7 +421,7 @@ function poolCandidates(source: string): readonly SourceCandidate[] {
     {
       name: "source-cursor",
       source: replaceOnce(
-        source,
+        indexed,
         loop,
         "for (let i = 0, sourceOffset = offset; i < length; i += 1, sourceOffset += 1) {\n      bytes[i] = pool[sourceOffset] as number;\n      pool[sourceOffset] = 0;\n    }",
       ),

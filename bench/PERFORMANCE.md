@@ -2897,3 +2897,49 @@ were zero under their clocks; this establishes a resolution limit, not zero call
 observations include timer overhead and do not establish uninstrumented p99 or a performance ranking.
 
 The gates do not prove all performance properties. Relative timing cannot detect a slowdown shared by both sides. Constructor counters cannot see every engine allocation. Latest-runtime CI complements pinned runs, but this study did not execute hosted CI or measure every OS/architecture. Keep these limits when interpreting a pass.
+# Four-byte entropy copying
+
+Fixed four-byte copies reduce measured Node generation cost while preserving consumed-byte erasure.
+
+The isolated `pool` comparison keeps pool capacity, entropy source, refill policy and output ownership
+unchanged. `fixed-four-lost-byte` fails the shared Node and Bun four-byte witness and the module-default
+byte and slug payload witnesses before timing. Both focused screens preserve counted arrays, views
+and entropy draws. The separate source cursor raises Node UUIDv4 owned-byte cost in all four focused
+observations, so it does not replace the indexed loop for other lengths.
+
+Observed 2026-10-04: `bench/reports/pool-four-packed.jsonl` and
+`pool-four-packed-repeat.jsonl` each contain 91 summaries from six fresh process pairs per runtime,
+with alternating revision order. Both pack the same committed baseline and apply the isolated
+`pool:fixed-four` substitution. Each covers default UUIDv4 text and bytes, caller buffers, default
+UUIDv7 text, uppercase, bytes, both slug alphabets, explicit time, paired output, a selected generator
+and immutable values. Every returned result is consumed.
+
+| Node 26.10.0 call | First candidate/baseline | Repeat candidate/baseline |
+| --- | --- | --- |
+| Owned UUIDv4 bytes | 0.821 [0.779, 0.849] | 0.842 [0.784, 0.880] |
+| Caller-buffer UUIDv4 | 0.715 [0.693, 0.803] | 0.766 [0.715, 0.785] |
+| Owned UUIDv7 bytes | 0.942 [0.897, 0.966] | 0.960 [0.948, 0.995] |
+
+Intervals are the maintained paired median-ratio 95% intervals. Node's uppercase UUIDv7 and
+immutable-value gains also reproduce. Chromium's caller-buffer UUIDv4 and base32hex UUIDv7 gains
+reproduce; owned-byte and ordinary text effects remain unresolved there. Deno 2.9.7 owned UUIDv4
+gains reproduce, but UUIDv7 owned-byte gains do not. Bun 1.4.2 owned-byte and ordinary text gains
+remain unresolved; neither replay resolves a Bun slowdown. Firefox effects remain unresolved.
+
+WebKit 26.6 owned UUIDv4 bytes resolve slower only in the second broad replay: 1.022 [1.011, 1.044].
+The focused `pool-four-lts-webkit.jsonl` comparison reverses that result to 0.955 [0.930, 0.986].
+That same comparison observes Node 24.21.0 owned UUIDv4 at 0.887 [0.857, 0.903] and owned UUIDv7
+at 0.970 [0.953, 0.995]. No slowdown reproduces across these comparisons; unresolved effects are
+not proof of equivalence, especially with the wider browser intervals.
+
+`bench/reports/pool-four-native/` contains nonempty CPU and heap evidence for Node 26.10.0,
+Bun 1.4.2, Deno 2.9.7 and Chromium. The selected corpus checks exact output and ownership before
+profiling. Production behavior checks pass 384 Node and 328 Bun tests, including lazy entropy,
+refill failures and consumed-byte erasure. Fixed stores add no array, view or retained state;
+the maintained resource counters preserve those counts. Profiles include setup and warm-up, and
+Deno profiles execute compiled output, so they do not establish total per-call allocation parity
+or the cost of Deno's normal source entry. Native and competitor parity remains open.
+
+Retain the fixed stores for four-byte draws and the indexed loop for other lengths. Recompare
+through `pool indexed-loop` when draw widths or runtime typed-array handling change; the UUIDv4
+gains arise despite its unchanged copy width, so the results do not establish a loop-only cause.

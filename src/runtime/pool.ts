@@ -52,10 +52,24 @@ export function pooledFill(
       offset = 0;
     }
     // Copy and erase in one pass; `subarray` plus `set` would allocate a view per call.
-    for (let i = 0; i < length; i += 1) {
-      bytes[i] = pool[offset + i] as number;
-      pool[offset + i] = 0;
-    }
+    // Continuation draws need four bytes. Fixed stores avoid their loop without another view
+    // or retained buffer; other lengths keep the indexed loop. Complete-call comparisons in
+    // bench/PERFORMANCE.md decide this shape, not copy-only timing. Remeasure if draw widths
+    // or the runtime's typed-array handling change.
+    if (length === 4) {
+      bytes[0] = pool[offset + 0] as number;
+      pool[offset + 0] = 0;
+      bytes[1] = pool[offset + 1] as number;
+      pool[offset + 1] = 0;
+      bytes[2] = pool[offset + 2] as number;
+      pool[offset + 2] = 0;
+      bytes[3] = pool[offset + 3] as number;
+      pool[offset + 3] = 0;
+    } else
+      for (let i = 0; i < length; i += 1) {
+        bytes[i] = pool[offset + i] as number;
+        pool[offset + i] = 0;
+      }
     offset += length;
     return undefined;
   };
