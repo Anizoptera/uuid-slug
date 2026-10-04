@@ -35,6 +35,12 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       default work. Keep `native-v7-slug-*-profile/`; sampled stacks do not prove cost equality.
       Keep the trusted native fast path: the shared validation helper parses every result.
       Return native fallback errors unchanged; the public default call alone owns the throw.
+      Replace the capture-free native selection closure with one named function; cache selection
+      in the existing public default slot. Require the native/absent/failure tests, initialization
+      counters and complete-call controls before retaining this smaller shape.
+      The named-function comparison cannot qualify retention: Bun explicit-time and selected-
+      generator calls show losses, while owned-byte observations vary widely. Preserve
+      `native-v7-named-default-controls.log`; do not repeat this setup or claim control parity.
       Keep raw comparisons and exact candidate source in `bench/reports/native-v7-inline-*`.
       Use the prepared README/security patch for approval; public text remains held.
       Native text profiles and counters show replaced portable generation and formatting without
