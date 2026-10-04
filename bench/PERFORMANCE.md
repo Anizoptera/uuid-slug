@@ -2450,6 +2450,29 @@ Bun package/default text medians range from 70.90 to 75.22 ns; native Bun median
 a separate adoption constraint; its lower cost remains the target. This bundled corpus checks
 priority, not installed-package cost, allocation parity, or individual-call latency.
 
+Counter-only state evidence (2026-10-04): `candidates-v7-draw-Adpjya` and
+`candidates-v7-draw-Xm7MsF` compare two Float64 or Uint32 counter slots against numeric closure
+words, leaving timestamp and high-water storage unchanged. Each screen passes Node and Bun
+behavior and resource checks before timing. Each runtime has two fresh processes per candidate,
+with reversed candidate order; each process records seven 15 ms batches after 16 ms warm-up.
+The first screen includes Deno; its second-order byte and baseline-text results vary substantially,
+so they do not establish a stable Deno effect. The repeat isolates Node Current and Bun.
+Uint32 text costs exceed the Node baseline in all four processes. Float64 text, byte and slug
+directions vary; these screens do not establish a complete-call throughput advantage or equivalence.
+
+The `counter-uint32-lost-carry` substitution in `candidates-v7-draw-Us5Xw7` fails the timestamp
+ceiling and caller-output assertion in both Node and Bun; Node also rejects fraction and timestamp
+overflow. No new guarantee is imposed. Four sequential Node v26.10.0 inspector captures under
+`candidates-v7-draw-Xm7MsF/counter-profile-*` select only default UUIDv7 text in baseline,
+Float64, Float64, baseline order. Completed-call counts are 831,552 / 921,344 / 892,224 / 844,928.
+Sequence-frame self allocation is 5,745,600 / 0 / 4,128 / 5,803,056 sampled bytes, approximately
+6.9 / 0 / 0.005 / 6.9 bytes per completed call. Sampling begins after correctness and warm-up.
+Timestamp storage is unchanged, so counter storage alone accounts for this sampled-frame reduction;
+the exact allocating expression remains unresolved. Profiles still contain output strings,
+generation, harness and reporting allocation. Two pairs and sampled stacks do not prove gross
+allocation, retained storage, packed throughput or generator-construction parity. Keep production
+unchanged until those complete-call trade-offs justify the extra array.
+
 Local workerd evidence (2026-10-04): `workerd-public-repeat.jsonl` runs the compiled public entry
 with the portable implementation in both plain-web and `nodejs_compat` configurations. The bundle
 input manifest contains `dist/index.js` and `dist/runtime/portable.js`, with no production source

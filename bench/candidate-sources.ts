@@ -38,6 +38,25 @@ function replaceOnce(source: string, from: string, to: string): string {
 }
 
 function v7Candidates(source: string): readonly SourceCandidate[] {
+  const counterStorage = (array: "Float64Array" | "Uint32Array") => {
+    // Hold timestamps fixed while testing whether counter writes account for sequence allocation.
+    // Both stores preserve unsigned words; Uint32 omits Float64's unused precision. Neither
+    // earns retained storage without complete-call gains and construction/resource evidence.
+    let value = replaceOnce(
+      source,
+      "  let counterHi = 0;\n  let counterLo = 0;",
+      `  const counterState = new ${array}(2) as ${array}<ArrayBuffer> & { 0: number; 1: number };`,
+    );
+    for (const [name, slot] of [
+      ["counterHi", 0],
+      ["counterLo", 1],
+    ] as const) {
+      const pattern = new RegExp(`\\b${name}\\b`, "g");
+      if (!pattern.test(value)) throw new Error(`Counter consumer moved: ${name}`);
+      value = value.replaceAll(pattern, () => `counterState[${slot}]`);
+    }
+    return value;
+  };
   const numericState = () => {
     // Test whether mutable closure numbers explain allocation under scratch-backed generation.
     // Float64 storage preserves every accepted timestamp and all 42 sequence bits exactly;
@@ -295,6 +314,28 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
   };
   return [
     { name: "baseline", source },
+    {
+      name: "counter-float64",
+      get source() {
+        return counterStorage("Float64Array");
+      },
+    },
+    {
+      name: "counter-uint32",
+      get source() {
+        return counterStorage("Uint32Array");
+      },
+    },
+    {
+      name: "counter-uint32-lost-carry",
+      get source() {
+        return replaceOnce(
+          counterStorage("Uint32Array"),
+          "const nextHi = counterState[0] + (nextLo === 0 ? 1 : 0);",
+          "const nextHi = counterState[0];",
+        );
+      },
+    },
     {
       name: "numeric-state",
       get source() {

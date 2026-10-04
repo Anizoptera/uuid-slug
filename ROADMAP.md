@@ -40,6 +40,12 @@ keep contract changes reserved for Art, and claim impossibility only with a name
   - [ ] Isolate counter storage from timestamp and high-water storage. Compare the smallest
         representation that removes sequence-helper allocation, including construction cost;
         preserve every sequence bit and transactional update, and reject other primary-call losses.
+        Counter-only Float64 storage removes nearly all sequence-frame sampled allocation in
+        two matched Node process pairs. The lost-carry mutation fails Node and Bun ceiling tests.
+        Primary-call throughput remains inconsistent; construction and packed retention stay open.
+        Compare counter-only Float64 through packed primary and configured calls before retention;
+        resource savings must bound primary-call regressions and pay for retained storage.
+        Uint32 storage raises Node text costs in every screening process and earns no shared change.
 - [x] Exercise the package in a local Cloudflare workerd runtime. Prove imports, entropy,
       clocks and representation round trips before adding a maintained correctness lane.
       Validate benchmark timers against a host clock, separate request overhead from identifier

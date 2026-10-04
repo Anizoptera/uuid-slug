@@ -81,6 +81,10 @@ Use `v7-draw number-counter` to compare an exact 42-bit number with split counte
 Use `v7-draw numeric-state` to isolate mutable numeric storage from clock, sequence and formatting
 work. Fixed Float64 storage preserves the same values but adds retained storage per generator.
 Its `numeric-state-lost-timestamp` mutation must fail the shared clock oracle before timing.
+Use `v7-draw counter-float64 counter-uint32` to isolate counter storage while leaving timestamp
+and high-water storage unchanged. Both preserve unsigned counter words; `counter-uint32-lost-carry`
+must fail the Node and Bun timestamp-ceiling oracle before timing. Measure construction and
+retained storage if complete-call gains survive; removing sampled allocation alone is insufficient.
 Compare sampled allocation beneath scratch-backed calls only after complete-call throughput
 survives; lower collected heap alone cannot identify removed per-call allocation.
 Use `v7-draw inline-clock` to isolate the clock wrapper while preserving callback failures.
