@@ -114,6 +114,10 @@ configured calls can initialize both text buffers; a gain must pay for that reta
 Use `v7-draw direct-text-latin1-pairs` to preserve the original paired hex-code lookups while
 removing intermediate bytes. Its `-lost-tail` mutation must fail Bun's payload witnesses before
 timing. The resource report distinguishes preset-text initialization from repeated calls.
+Use `v7-draw direct-text-reused-prefix` to retain unchanged prefix characters in fused native
+text construction. Timestamp, upper counter and text case must all invalidate the shared prefix;
+`direct-text-reused-prefix-stale` must fail Bun's independent text oracle before timing.
+Compare complete default calls before measuring the extra retained cache and generator setup.
 For allocation attribution, run the retained report's `profile.mjs` against each candidate module
 with `UUID_SLUG_PROFILE_MODULE` and a separate native directory and name. Retain that process's
 call records, alternate candidate order, and await its exit before starting another capture.

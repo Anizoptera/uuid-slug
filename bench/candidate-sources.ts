@@ -140,7 +140,7 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
     }
     return value;
   };
-  const directText = (latin1 = false, pairs = false) => {
+  const directText = (latin1 = false, pairs = false, reusePrefix = false) => {
     // Remove intermediate stores without changing sequence policy or adding tables and buffers.
     // A separate function leaves owned-byte calls unchanged; its extra closure is a cold cost
     // to measure only if complete text calls survive the screen (bench/PERFORMANCE.md).
@@ -191,18 +191,40 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
       );
     }
     const characterWriter = `return String.fromCharCode(${characters.join(", ")}) as UuidV7StringFor<Case>;`;
+    const prefixDeclarations = [
+      "const high = Math.floor(ms / 0x1_0000_0000);",
+      ...byteExpressions
+        .slice(0, 10)
+        .map((expression, index) => `const byte${index} = ${expression};`),
+    ];
+    const characterStores = characters.flatMap((character, index) =>
+      character === "45" ? [] : [`text[${index}] = ${character};`],
+    );
+    // Reuse only characters whose complete inputs match; generators share the text scratch.
+    // Timestamp, upper counter and case changes must refresh the prefix before reading it.
+    const prefixGuard =
+      "if (directPrefixMs !== ms || directPrefixHi !== hi || directPrefixLo !== (lo >>> 16) || directPrefixCodes !== codes) {";
     const nativeWriter = [
       "const create = createDirectLatin1Scratch;",
-      `if (!create) ${characterWriter}`,
+      reusePrefix
+        ? `if (!create) { ${prefixDeclarations.join(" ")} ${characterWriter} }`
+        : `if (!create) ${characterWriter}`,
       "let scratch = directLatin1Scratch;",
       "if (!scratch) {",
       "  scratch = directLatin1Scratch = create(36);",
       "  for (const index of [8, 13, 18, 23]) scratch.bytes[index] = 45;",
       "}",
       "const text = scratch.bytes;",
-      ...characters.flatMap((character, index) =>
-        character === "45" ? [] : [`text[${index}] = ${character};`],
-      ),
+      ...(reusePrefix
+        ? [
+            prefixGuard,
+            ...prefixDeclarations,
+            ...characterStores.slice(0, 20),
+            "directPrefixMs = ms; directPrefixHi = hi; directPrefixLo = lo >>> 16; directPrefixCodes = codes;",
+            "}",
+            ...characterStores.slice(20),
+          ]
+        : characterStores),
       "return scratch.text() as UuidV7StringFor<Case>;",
     ].join("\n  ");
     const writer = [
@@ -213,6 +235,15 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
             "// Select native string construction once; defer its storage until preset text is requested.",
             "const createDirectLatin1Scratch = runtime.latin1Scratch;",
             "let directLatin1Scratch: Latin1Scratch | undefined;",
+            ...(reusePrefix
+              ? [
+                  "// These keys describe the shared prefix; refresh it after any input changes.",
+                  "let directPrefixMs = -1;",
+                  "let directPrefixHi = -1;",
+                  "let directPrefixLo = -1;",
+                  "let directPrefixCodes: Uint8Array | undefined;",
+                ]
+              : []),
           ]
         : []),
       ...(pairs
@@ -236,8 +267,10 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
             "  const codes = textCase === UUID_TEXT_LOWERCASE ? (directLowercaseCodes ??= directHexCodes(digits)) : (directUppercaseCodes ??= directHexCodes(digits));",
           ]
         : []),
-      "  const high = Math.floor(ms / 0x1_0000_0000);",
-      ...byteExpressions.map((expression, index) => `  const byte${index} = ${expression};`),
+      ...(!reusePrefix ? ["  const high = Math.floor(ms / 0x1_0000_0000);"] : []),
+      ...byteExpressions.flatMap((expression, index) =>
+        reusePrefix && index < 10 ? [] : [`  const byte${index} = ${expression};`],
+      ),
       "  " + (latin1 ? nativeWriter : characterWriter),
       "}",
       "",
@@ -442,6 +475,22 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
           numericState(),
           "    sequenceState[0] = ms;",
           "    sequenceState[0] = 0;",
+        );
+      },
+    },
+    {
+      name: "direct-text-reused-prefix",
+      get source() {
+        return directText(true, true, true);
+      },
+    },
+    {
+      name: "direct-text-reused-prefix-stale",
+      get source() {
+        return replaceOnce(
+          directText(true, true, true),
+          "if (directPrefixMs !== ms || directPrefixHi !== hi || directPrefixLo !== (lo >>> 16) || directPrefixCodes !== codes) {",
+          "if (directPrefixMs === -1) {",
         );
       },
     },

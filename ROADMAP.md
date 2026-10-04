@@ -145,6 +145,15 @@ keep contract changes reserved for Art, and claim impossibility only with a name
   - [ ] Identify a text-construction change that removes a substantial part of the Bun default
         generation gap. Compare existing rejected mechanisms before another screen; test whole
         construction or generation work rather than another small dispatch refinement.
+    - [ ] Compare fused native text construction with unchanged prefix characters reused across
+          calls. Preserve timestamp, upper counter, text case and cross-generator invalidation;
+          require the stale-prefix mutation to fail Bun's independent text oracle before timing.
+          Reject inconsistent default-call gains or other primary losses before packed replay;
+          compare cold storage and generator construction only if the candidate survives.
+          The stale-prefix mutation fails the intended Bun text assertions. Moving prefix
+          calculations into the refresh branch improves Bun text in both repeated source screens;
+          unchanged controls vary and Node byte losses remain unresolved. Compare packed calls
+          before retention, then account for duplicate formatter storage if the gain survives.
     - [x] Compare prepacked hexadecimal pairs through independent payload witnesses and
           packed calls. Default-generation gains remain unresolved; the small conversion-only
           gain does not justify retention. Keep the larger native-generation gap open.

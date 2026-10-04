@@ -183,6 +183,26 @@ unmeasured for these candidates. Exclude `direct-text-native-screen.log` from na
 selection because its native-specific mutation proof follows that screen; the two named
 longer screens follow the mutation proofs. Keep native parity open.
 
+Compare reused prefix calculations before rejecting fused native text construction entirely.
+`v7-draw direct-text-reused-prefix` retains characters for the timestamp and upper counter
+only while the timestamp, high counter word, upper low word and selected case table all match.
+The refreshed prefix and random suffix use one shared native text buffer. Other runtimes retain
+the original formatter; configured text still uses the existing byte writer.
+The stale-prefix mutation fails Bun's timestamp, payload-bit and selected-generator assertions
+before timing (`reused-prefix-refined-mutation.log`). Intact Node and Bun proofs pass.
+
+Two 2026-10-04 refined screens use nine 20 ms batches after 32 ms warm-up and two fresh
+processes in reversed candidate order on Node 26.10.0 and Bun 1.4.2. Bun text reads
+78.31/81.01 ns against candidate 74.02/75.15 ns, then 80.19/79.60 ns against 73.90/73.54 ns.
+Slug controls change direction; the repeat Node byte controls are slower in both orders.
+The first Node observations also include 199 ns candidate text and 286 ns baseline slug;
+their source and cause remain unresolved. Preserve all observations rather than dropping them.
+Raw proofs, counted resources, source snapshots and timings are in `candidates-v7-draw-Ytd7zd/`
+and `candidates-v7-draw-ZFXxkn/` under `bench/reports/`. The earlier stores-only screen
+(`reused-prefix-screen.log`) still computes the prefix every call and gives inconsistent savings.
+Repeated source throughput supports a packed comparison, not retention: added case tables,
+native storage, generator closures, total allocation and other runtime effects remain open.
+
 Two Bun 1.4.2 CPU captures on 2026-10-03 select only `=v7.string` through the maintained
 `bench/profile.ts` corpus, with seven 20 ms batches and 16 ms warm-up. Raw files are
 `bench/reports/primary-v7-default-only.cpuprofile` and
