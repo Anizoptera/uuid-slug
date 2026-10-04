@@ -581,6 +581,16 @@ function v4Candidates(source: string): readonly SourceCandidate[] {
       },
     },
     {
+      name: "inline-native-extra-buffer",
+      get source() {
+        return replaceOnce(
+          inlineNative(true),
+          '  if (typeof uuid !== "string") return generatedOrThrow(uuid);',
+          '  if (typeof uuid !== "string") return generatedOrThrow(uuid);\n  new Uint8Array(16);',
+        );
+      },
+    },
+    {
       name: "string-first",
       get source() {
         return replaceOnce(

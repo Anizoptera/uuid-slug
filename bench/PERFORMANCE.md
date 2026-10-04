@@ -1586,6 +1586,20 @@ Remaining gaps and their causes:
   that the native-helper change does not describe normal Node's hot path; they do not supply a
   native-Node speedup or total allocation evidence. The artifact preparation uses one 1 ms batch
   only to verify driver execution, not to select code.
+
+  Equal-call Bun memory captures under `candidates-v4-vJ4kFK/*-memory-*/` execute 1,048,576 calls
+  of exactly one text case per process, with baseline/candidate order reversed in the second pair.
+  Default-text collected heap deltas are 418,737 and 417,561 bytes for baseline, versus 339,078
+  and 345,212 for the candidate. Uppercase deltas are 696,867 and 708,489 versus 559,990 and
+  572,557. Candidate collected-cell deltas are also smaller in both orders. Native committed-memory
+  deltas change direction, and peak RSS does not establish a gain. These are forced-GC retention
+  observations with setup outside the counted calls; two pairs cannot establish total allocation
+  per call, leak freedom or a population-wide resource advantage.
+
+  Four alternating Bun cold pairs use the same retained API graphs and the existing profile
+  driver's `importMs`. Baseline reads 1.931–1.969 ms and candidate reads 1.915–2.024 ms; each
+  direction occurs twice. The one-batch timing settings only verify execution. These observations
+  exclude process startup and packed resolution and leave small import-cost differences unresolved.
 - Bun UUIDv7 text costs about 79 ns against 27 ns for native UUIDv4 text: about 42 ns draws the
   timestamp, sequence, and random bits, and 37 ns formats them through the Latin-1 `Buffer` path.
   With every result's last character read, formatting the same bytes through `toHex`, `Buffer`

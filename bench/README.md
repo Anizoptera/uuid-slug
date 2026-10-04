@@ -128,6 +128,8 @@ Use `v4 inline-native inline-native-string-first` to separate native helper plac
 successful-string recognition. Preset normalization, native identity validation, portable
 fallback and dual-failure causes stay intact. `inline-native-lost-fallback` must fail the
 shared trusted-native failure witness in Node and Bun before timing.
+`inline-native-extra-buffer` must fail the default-text resource counter on Bun before timing;
+the mutation preserves output and exposes work that byte-generation counters cannot see.
 Use `v4 string-first` to change only successful-string recognition while keeping the native
 helper in place. `string-first-lost-throw` must fail the shared generation-failure witness;
 otherwise a fast success check could conceal a changed default-call failure contract.

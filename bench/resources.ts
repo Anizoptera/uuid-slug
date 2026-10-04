@@ -186,6 +186,15 @@ try {
     { draws: 64, buffers: 0, views: 0, errors: 0 },
   );
   assert.ok(counts.draws > 0, "pooled entropy must reach an observed real source");
+  // Native text and portable formatting must both avoid temporary byte arrays after setup.
+  // Byte-generation counters cannot catch work introduced only in the public text wrapper.
+  for (const [name, textCase] of [
+    ["default UUIDv4 text", api.UUID_TEXT_LOWERCASE],
+    ["uppercase UUIDv4 text", api.UUID_TEXT_UPPERCASE],
+  ] as const) {
+    assert.equal(typeof api.generateUuidV4(textCase), "string");
+    check(name, () => api.generateUuidV4(textCase), { buffers: 0, views: 0, errors: 0 });
+  }
   for (const value of [id, id.slice(0, -1) + "!", "!".repeat(36)])
     check("UUID predicate", () => api.isUuidV7String(value), { buffers: 0, errors: 0, views: 0 });
   for (const value of [slug as string, (slug as string).slice(0, -1) + "B", "!".repeat(22)])

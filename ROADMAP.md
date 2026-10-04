@@ -229,6 +229,8 @@ keep contract changes reserved for Art, and claim impossibility only with a name
     - [ ] Resolve startup and total resource costs before retention. Use the maintained Bun memory
           driver with isolated candidate imports and equal completed-call counts; preserve both
           orders and do not infer total allocation from JavaScript counters or heap retention.
+    - [ ] Add UUIDv4 text resource witnesses and prove the native text path is reached with a
+          result-preserving temporary-buffer mutation before production integration.
 - [ ] Measure the module-default UUID-plus-slug call against one draw followed by both conversions;
       remove internal option allocation or repeated validation only when complete-call evidence supports it.
       Primitive presets bypass the option record; both all-runtime packed replays improve Node,
