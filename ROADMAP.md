@@ -75,6 +75,11 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       Worker-only controls distinguish thread CPU from process CPU on Node and Bun. Retain
       both totals in the existing driver: the isolated packed thread intervals narrow the
       uncertainty but do not clear explicit-time parity. Keep `native-v7-folded-thread-cpu-controls.log`.
+      Longer complete-call observations reproduce Bun default and uppercase thread-CPU gains,
+      but Node explicit-time and Bun selected-generator intervals still permit losses. Keep
+      `native-v7-folded-thread-cpu-longer-*`; reject further equivalent timing replays.
+      Resolve the shared public-call boundary without adding work to portable or configured calls;
+      prove capability selection through fresh imports rather than late test-only replacement.
       Reject it if repeated complete calls show a material primary-call regression, resource
       costs grow without a requested benefit, or a published contract fails. Preserve configured
       generators and the native-absent path; do not infer their behavior from native success.

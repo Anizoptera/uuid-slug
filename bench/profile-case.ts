@@ -62,7 +62,10 @@ export function selectProfileCases<Case>(
       terms.length === 0 ||
       terms.some((term) => (term.startsWith("=") ? name === term.slice(1) : name.includes(term))),
   );
-  if (selected.length === 0) throw new Error("Profile filter selected no cases");
+  if (selected.length === 0)
+    throw new Error(
+      `Profile filter selected no cases for ${JSON.stringify(filter)}; separate case names with commas, prefix exact names with = (example: =v7.string,=v7.at)`,
+    );
   // A valid sibling must not hide a typo and silently omit a requested workload.
   for (const term of terms) {
     if (
@@ -70,7 +73,9 @@ export function selectProfileCases<Case>(
         term.startsWith("=") ? name === term.slice(1) : name.includes(term),
       )
     )
-      throw new Error(`Profile filter selected no cases for ${term}; use an existing case name`);
+      throw new Error(
+        `Profile filter selected no cases for ${JSON.stringify(term)}; use an existing case name, separate names with commas, and prefix exact names with =`,
+      );
   }
   return selected;
 }
