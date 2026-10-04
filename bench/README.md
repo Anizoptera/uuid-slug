@@ -124,6 +124,10 @@ are packed normally, and the shared production tree remains unchanged.
 Use `v4 native-zero-hex native-zero-base64` to compare native decoding of fixed zero bytes
 before the unchanged secure fill; capability selection runs once and absent decoders use the
 ordinary constructor. These candidates measure complete owned-byte generation, not decoder speed.
+Use `v4 inline-native inline-native-string-first` to separate native helper placement from
+successful-string recognition. Preset normalization, native identity validation, portable
+fallback and dual-failure causes stay intact. `inline-native-lost-fallback` must fail the
+shared trusted-native failure witness in Node and Bun before timing.
 Use `format indexed-loop` to compare Bun's fixed UUID-text writes with its indexed loop through
 ordinary generation and byte-to-text conversion; `fixed-writes-lost-byte` must fail the last-byte
 oracle before timing. Tables, storage, case selection and string construction stay unchanged.

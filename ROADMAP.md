@@ -211,6 +211,11 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       Reject the shared candidate: both Deno byte screens lose and Bun text costs rise; keep its
       source substitution for reproduction rather than changing production from Node byte results alone.
 - [ ] Close Bun default UUIDv4 text and plain-slug gaps without weakening native-failure fallback.
+  - [ ] Inline native text handling into its existing public function without changing preset
+        normalization or fallback. Compare unchanged failure recognition with a successful-string
+        check to isolate helper placement from recognition cost. Prove trusted-native fallback
+        with a targeted mutation before timing; keep portable and byte calls as controls and
+        require packed preset and failure-path evidence before retention.
 - [ ] Measure the module-default UUID-plus-slug call against one draw followed by both conversions;
       remove internal option allocation or repeated validation only when complete-call evidence supports it.
       Primitive presets bypass the option record; both all-runtime packed replays improve Node,

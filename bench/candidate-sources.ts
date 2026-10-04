@@ -501,6 +501,46 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
 }
 
 function v4Candidates(source: string): readonly SourceCandidate[] {
+  // Isolate the extra native helper call from preset checks and failure containment. Copy its
+  // entire body and comments into the public implementation; only its return boundary changes.
+  // The string-first variant tests recognition cost separately from helper placement.
+  const nativeStart = source.indexOf("function nativeOrPortableUuidV4<");
+  const nativeEnd = source.indexOf("\n/**\n * Generate UUIDv4 text with platform", nativeStart);
+  if (nativeStart < 0 || nativeEnd < 0) throw new Error("UUIDv4 native helper span is missing");
+  const nativeSpan = source.slice(nativeStart, nativeEnd);
+  const bodyStart = nativeSpan.indexOf("\n): UuidV4StringFor<Case> | UuidSlugError {\n");
+  if (bodyStart < 0) throw new Error("UUIDv4 native helper signature is missing");
+  const nativeBody = nativeSpan.slice(nativeSpan.indexOf("{\n", bodyStart) + 2, -2);
+  const nativeReturn = [
+    "  return (",
+    '    textCase === UUID_TEXT_UPPERCASE && typeof uuid === "string" ? uuid.toUpperCase() : uuid',
+    "  ) as UuidV4StringFor<Case> | UuidSlugError;",
+  ].join("\n");
+  const inlineNative = (stringFirst = false): string => {
+    const body = replaceOnce(
+      replaceOnce(
+        nativeBody,
+        "if (!native) return generatePortableUuidV4(textCase);",
+        "if (!native) return generatedOrThrow(generatePortableUuidV4(textCase));",
+      ),
+      nativeReturn,
+      stringFirst
+        ? [
+            '  if (typeof uuid !== "string") return generatedOrThrow(uuid);',
+            "  return (textCase === UUID_TEXT_UPPERCASE ? uuid.toUpperCase() : uuid) as UuidV4StringFor<Case>;",
+          ].join("\n")
+        : [
+            "  return generatedOrThrow(",
+            '    (textCase === UUID_TEXT_UPPERCASE && typeof uuid === "string" ? uuid.toUpperCase() : uuid) as UuidV4StringFor<Case> | UuidSlugError,',
+            "  );",
+          ].join("\n"),
+    );
+    return replaceOnce(
+      source.slice(0, nativeStart) + source.slice(nativeEnd),
+      "  return generatedOrThrow(nativeOrPortableUuidV4(textCase));",
+      body.trimEnd(),
+    );
+  };
   const nativeAllocation = (method: "fromHex" | "fromBase64", input: string) =>
     replaceOnce(
       replaceOnce(
@@ -528,6 +568,35 @@ function v4Candidates(source: string): readonly SourceCandidate[] {
     );
   return [
     { name: "baseline", source },
+    {
+      name: "inline-native",
+      get source() {
+        return inlineNative();
+      },
+    },
+    {
+      name: "inline-native-string-first",
+      get source() {
+        return inlineNative(true);
+      },
+    },
+    {
+      name: "inline-native-lost-fallback",
+      get source() {
+        return replaceOnce(
+          inlineNative(),
+          [
+            "      uuid = portableAfterNative<UuidTextCase>(",
+            "        nativeCause,",
+            "        generatePortableUuidV4,",
+            "        UUID_TEXT_LOWERCASE,",
+            "        UUID_V4_GENERATION,",
+            "      );",
+          ].join("\n"),
+          "      throw nativeCause;",
+        );
+      },
+    },
     {
       // Engine-native decoders allocate owned arrays; secure fill still supplies every UUID bit.
       name: "native-zero-hex",
