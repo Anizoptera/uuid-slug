@@ -1561,7 +1561,26 @@ Remaining gaps and their causes:
   unresolved on both runtimes. Retention still requires profile and resource evidence, rather
   than another throughput replay alone. Packed observations are fresh processes on one machine;
   within-process batches are not independent call latencies. Cold cost, Node LTS replay, new
-  native profiles and total resource parity remain unmeasured for this candidate.
+  total resource parity remain unmeasured for this candidate.
+
+  Native CPU captures in `candidates-v4-vJ4kFK/` use the retained API modules and the existing
+  profile corpus. Only `*-serial-*` captures enter this comparison; the earlier captures were
+  launched without awaiting each exit and are excluded for possible profiler contention.
+  Two sequential baseline/candidate pairs reverse execution order and retain completed calls
+  beside each profile. Each selected case uses five 100 ms batches after 32 ms warm-up.
+  Bun baseline default text completes 14.57 and 14.56 million calls; the candidate completes
+  15.70 and 15.09 million. Baseline samples include `nativeOrPortableUuidV4` and `generateUuidV4`;
+  candidate samples include the combined `generateUuidV4`. Native `randomUUID` dominates both.
+  Frame disappearance follows source inlining and alone proves no removed cost; profiles combine
+  default, uppercase and native-floor cases, so sample totals do not isolate default-call cost.
+  Import observations and heap deltas vary and do not establish cold or allocation parity.
+
+  Node 26.10.0 with JIT selects portable generation: the built runtime exposes native UUIDv4 only
+  under its JITless selection, and these normal-Node CPU profiles contain the portable formatter.
+  Its default completed-call direction changes between execution orders. These captures verify
+  that the native-helper change does not describe normal Node's hot path; they do not supply a
+  native-Node speedup or total allocation evidence. The artifact preparation uses one 1 ms batch
+  only to verify driver execution, not to select code.
 - Bun UUIDv7 text costs about 79 ns against 27 ns for native UUIDv4 text: about 42 ns draws the
   timestamp, sequence, and random bits, and 37 ns formats them through the Latin-1 `Buffer` path.
   With every result's last character read, formatting the same bytes through `toHex`, `Buffer`
