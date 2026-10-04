@@ -2484,6 +2484,22 @@ unresolved. Reject shared Float64 retention: sampled sequence allocation savings
 these construction and primary-call losses. Neither comparison proves an immutable bound on other
 counter representations or a runtime-specific implementation.
 
+`candidates-v7-draw-BGz2Hz` and `candidates-v7-draw-wNOMf3` compare 30/12 and 31/11 closure
+counter splits without an extra array, using the same screen controls on Node, Bun and Deno.
+Both splits pass behavior and resource checks. Node owned-byte medians improve in all four
+processes; text and slug direction varies, as do Bun and Deno results. The low30 lost-carry
+mutation in `candidates-v7-draw-TTkWbE` fails the shared Node/Bun ceiling and caller-output oracle;
+Node additionally rejects fraction-bucket carry loss. Four sequential Node captures under
+`candidates-v7-draw-wNOMf3/narrow-profile-*` use baseline, low31, low31, baseline order with
+741,696 / 292,736 / 753,152 / 812,736 completed text calls. Sequence-frame self allocation is
+0 / 0 / 0 / 6,233,984 bytes; byte-generator self allocation is
+29,877,216 / 9,431,008 / 23,926,352 / 25,514,608 bytes. Combining both frames yields approximately
+40.3 / 32.2 / 31.8 / 39.1 sampled bytes per completed call. The first baseline has no sequence
+samples but more byte-frame allocation, so missing sequence samples alone cannot prove elimination.
+Counter representation changes this combined allocation without adding retained storage; the
+allocating expression and packed throughput remain unresolved. The slower first candidate capture
+has its own lower call count; it does not license borrowing another process's denominator.
+
 Local workerd evidence (2026-10-04): `workerd-public-repeat.jsonl` runs the compiled public entry
 with the portable implementation in both plain-web and `nodejs_compat` configurations. The bundle
 input manifest contains `dist/index.js` and `dist/runtime/portable.js`, with no production source

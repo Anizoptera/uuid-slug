@@ -63,6 +63,8 @@ checkout, checks types and the owning Node and Bun tests before timing, and pres
 proof output and measurements in `bench/reports/`. Set `UUID_SLUG_CANDIDATE_RUNTIMES` to a
 colon-separated selection of `node`, `bun` and `deno`; set `UUID_SLUG_COMPARE_NODE_EXECUTABLE`
 to select a Node executable. Each comparison runs in fresh processes with reversed second-pass order.
+Check that every requested exact case appears in the returned rows; other matching filter terms
+do not prove that case ran.
 The source screen runs the maintained resource counters before timing and retains their complete
 output, including rejected candidates.
 Use `UUID_SLUG_PROFILE_MS`, `UUID_SLUG_PROFILE_SAMPLES` and `UUID_SLUG_PROFILE_WARMUP_MS` to
@@ -85,6 +87,10 @@ Use `v7-draw counter-float64 counter-uint32` to isolate counter storage while le
 and high-water storage unchanged. Both preserve unsigned counter words; `counter-uint32-lost-carry`
 must fail the Node and Bun timestamp-ceiling oracle before timing. Measure construction and
 retained storage if complete-call gains survive; removing sampled allocation alone is insufficient.
+Use `v7-draw counter-low30 counter-low31` to compare narrower closure words without an extra
+array. They reconstruct the existing writer inputs and preserve the full counter. The
+`counter-low30-lost-carry` mutation must fail the shared ceiling oracle before timing; compare
+sampled allocation and complete calls before attributing a benefit to integer representation.
 Compare sampled allocation beneath scratch-backed calls only after complete-call throughput
 survives; lower collected heap alone cannot identify removed per-call allocation.
 Use `v7-draw inline-clock` to isolate the clock wrapper while preserving callback failures.

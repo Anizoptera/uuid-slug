@@ -46,6 +46,10 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         repeat resolves slower Node/Bun construction and slower Bun owned-byte calls. Reject shared
         Float64 retention. Compare a 31-bit low / 11-bit high closure counter without added storage;
         preserve the 42-bit value and independently prove carries before measuring allocation.
+        Narrow closure screens preserve behavior and counted resources. Node owned bytes improve
+        in all four processes, while Bun and Deno results vary. Combined sequence/byte frame
+        allocation falls in matched Node captures; one baseline has no separate sequence samples.
+        Compare packed low31 calls and construction before deciding retention or runtime selection.
         Uint32 storage raises Node text costs in every screening process and earns no shared change.
 - [x] Exercise the package in a local Cloudflare workerd runtime. Prove imports, entropy,
       clocks and representation round trips before adding a maintained correctness lane.

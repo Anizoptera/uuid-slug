@@ -38,6 +38,37 @@ function replaceOnce(source: string, from: string, to: string): string {
 }
 
 function v7Candidates(source: string): readonly SourceCandidate[] {
+  const narrowCounter = (lowBits: 30 | 31) => {
+    // Compare narrow closure integers with array-backed words without adding retained storage.
+    // The 30-bit split also fits pointer-compressed V8 small integers; the 31-bit split tests
+    // the wider non-compressed boundary. Extra writer shifts must earn complete-call savings.
+    const modulus = `0x${(2 ** lowBits).toString(16)}`;
+    const mask = `0x${(2 ** lowBits - 1).toString(16)}`;
+    const highLimit = `0x${(2 ** (42 - lowBits) - 1).toString(16)}`;
+    let value = replaceOnce(
+      source,
+      "counterHi = Math.floor(payloadPrefix / 0x1_0000_0000);\n    counterLo = payloadPrefix >>> 0;",
+      `counterHi = Math.floor(payloadPrefix / ${modulus});\n    counterLo = payloadPrefix & ${mask};`,
+    );
+    value = replaceOnce(
+      value,
+      "counterHi * 0x1_0000_0000 + counterLo",
+      `counterHi * ${modulus} + counterLo`,
+    );
+    value = replaceOnce(
+      value,
+      "const nextLo = (counterLo + 1) >>> 0;",
+      `const nextLo = (counterLo + 1) & ${mask};`,
+    );
+    value = replaceOnce(value, "if (nextHi > 0x3ff)", `if (nextHi > ${highLimit})`);
+    const writer = "writeBytes(target, offset, lastMs, counterHi, counterLo)";
+    if (value.split(writer).length !== 3)
+      throw new Error("Counter writers moved; repair the narrow-word experiment.");
+    return value.replaceAll(
+      writer,
+      `writeBytes(target, offset, lastMs, counterHi >>> ${32 - lowBits}, (counterLo | ((counterHi & ${2 ** (32 - lowBits) - 1}) << ${lowBits})) >>> 0)`,
+    );
+  };
   const counterStorage = (array: "Float64Array" | "Uint32Array") => {
     // Hold timestamps fixed while testing whether counter writes account for sequence allocation.
     // Both stores preserve unsigned words; Uint32 omits Float64's unused precision. Neither
@@ -314,6 +345,28 @@ function v7Candidates(source: string): readonly SourceCandidate[] {
   };
   return [
     { name: "baseline", source },
+    {
+      name: "counter-low30",
+      get source() {
+        return narrowCounter(30);
+      },
+    },
+    {
+      name: "counter-low31",
+      get source() {
+        return narrowCounter(31);
+      },
+    },
+    {
+      name: "counter-low30-lost-carry",
+      get source() {
+        return replaceOnce(
+          narrowCounter(30),
+          "const nextHi = counterHi + (nextLo === 0 ? 1 : 0);",
+          "const nextHi = counterHi;",
+        );
+      },
+    },
     {
       name: "counter-float64",
       get source() {
