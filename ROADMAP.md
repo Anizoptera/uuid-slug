@@ -52,6 +52,10 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       Both folded packed replays favor Bun default text. Uppercase and control uncertainty
       remain open; keep `native-v7-folded-packed-controls.log` and `native-v7-folded-packed-repeat.log`.
       Use `native-v7-folded-profile/` for the current complete-call profile, not an older source form.
+      Measure preset initialization before the first UUID-plus-slug call: prior pair setup
+      hides unnecessary portable generator construction. Reorder the existing resource witnesses
+      without adding cases. The intact native and portable paths pass; injected portable setup
+      fails the native cold-count assertion. Keep `native-v7-cold-preset-*` evidence.
       Keep raw comparisons and exact candidate source in `bench/reports/native-v7-inline-*`.
       Use the prepared README/security patch for approval; public text remains held.
       Native text profiles and counters show replaced portable generation and formatting without

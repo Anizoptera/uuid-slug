@@ -17,6 +17,7 @@ const counts = {
   chars: 0,
   textSlices: 0,
   draws: 0,
+  nativeV7: 0,
 };
 const OriginalBytes = Uint8Array;
 const OriginalError = Error;
@@ -80,6 +81,7 @@ assert.ok(wrapMethod(String.prototype, "charCodeAt", "chars"));
 assert.ok(wrapMethod(String.prototype, "slice", "textSlices"));
 assert.ok(wrapMethod(crypto, "randomFillSync", "draws"));
 assert.ok(wrapMethod(globalThis.crypto, "getRandomValues", "draws"));
+if (typeof Bun !== "undefined") wrapMethod(Bun, "randomUUIDv7", "nativeV7");
 
 try {
   const api: typeof import("../src/index") = await import(
@@ -272,15 +274,31 @@ try {
   }
   assert.equal(clocks, 1, "one generator call must observe the clock once");
   assert.equal(api.generateUuidV7Bytes(into, 4), into, "initialize the package generator");
-  // The entropy pool is warm, but the text generator is still lazy. Sharing the module scratch
-  // must remove its duplicate text array; steady-state checks alone cannot see retained setup.
-  check("default UUIDv7 text-generator initialization", () => api.generateUuidV7WithPlainSlug(), {
-    buffers: 1,
-    views: 1,
+  // Preset initialization must precede the pair: otherwise portable setup is already paid and
+  // native defaults can construct an unnecessary generator without this witness noticing.
+  check("default UUIDv7 preset text initialization", () => api.generateUuidV7(), {
     errors: 0,
   });
-  assert.equal(counts.buffers, 1, "keep this witness before the first module text draw");
-  assert.equal(counts.views, 1, "the cold witness must reach the generator's entropy view");
+  const nativePreset = counts.nativeV7 > 0;
+  assert.equal(
+    counts.buffers,
+    nativePreset ? 0 : 1,
+    "preset text: native calls must skip portable state; portable calls construct it once",
+  );
+  assert.equal(
+    counts.views,
+    nativePreset ? 0 : 1,
+    "preset text: native calls need no entropy view; portable calls construct one",
+  );
+  // Native presets leave portable text state lazy; portable presets already constructed it.
+  // The pair must reuse shared scratch rather than allocate a duplicate text array.
+  check("default UUIDv7 text-generator initialization", () => api.generateUuidV7WithPlainSlug(), {
+    buffers: nativePreset ? 1 : 0,
+    views: nativePreset ? 1 : 0,
+    errors: 0,
+  });
+  assert.equal(counts.buffers, nativePreset ? 1 : 0, "construct portable text state only once");
+  assert.equal(counts.views, nativePreset ? 1 : 0, "construct its entropy view only once");
   check("default UUIDv7 pair", () => api.generateUuidV7WithPlainSlug(), {
     buffers: 0,
     views: 0,
@@ -291,12 +309,6 @@ try {
     2,
     "the pair must construct exactly its UUID and slug strings",
   );
-  // A preset-only formatter can differ from pair formatting. Record its lazy storage separately
-  // so a warm steady-state pass cannot hide extra tables; do not infer native allocation volume.
-  check("default UUIDv7 preset text initialization", () => api.generateUuidV7(), {
-    views: 0,
-    errors: 0,
-  });
   check("default UUIDv7 preset text", () => api.generateUuidV7(), {
     buffers: 0,
     views: 0,
@@ -304,10 +316,14 @@ try {
     textSlices: 0,
   });
   assert.equal(
-    counts.latin1 + counts.fromCharCodes + counts.base64,
+    counts.latin1 + counts.fromCharCodes + counts.base64 + counts.nativeV7,
     1,
-    "preset generation must construct exactly one returned string",
+    "preset generation must use exactly one native ID or portable string writer",
   );
+  if (counts.nativeV7) {
+    assert.equal(counts.draws, 0, "native UUIDv7 text must not also draw portable entropy");
+    assert.equal(counts.chars, 0, "trusted native UUIDv7 text must not reparse every UUID");
+  }
   check("caller-owned v7 generation", () => api.generateUuidV7Bytes(into, 4), {
     buffers: 0,
     views: 0,
