@@ -52,6 +52,16 @@ if (!CANDIDATE_GROUPS.some((group) => group === groupInput) || process.argv.leng
     `Usage: bun bench/source-candidates.ts <${CANDIDATE_GROUPS.join("|")}> <candidate names>. Baseline is always included; pass baseline alone for a harness control.`,
   );
 const group = groupInput as CandidateGroup;
+// Reuse the profile controls instead of multiplying short builds when a screen is noisy.
+// These are batch observations; longer windows do not create independent call-latency samples.
+const durationMs = Number(process.env.UUID_SLUG_PROFILE_MS ?? "5");
+const samples = Number(process.env.UUID_SLUG_PROFILE_SAMPLES ?? "3");
+const warmupMs = Number(process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? "16");
+for (const [name, value] of Object.entries({ durationMs, samples, warmupMs }))
+  if (!Number.isSafeInteger(value) || value < 1)
+    throw new Error(
+      `Candidate ${name} must be a positive safe integer; inspect profile settings before running proofs.`,
+    );
 // Each source owner names its own caller corpus. Exhaustiveness prevents a new group silently
 // inheriting another group's file or measurements while reporting a successful screen.
 const groups = {
@@ -177,9 +187,9 @@ try {
       candidates: selected.map(({ name }) => name),
       runtimes,
       sampleUnit: "within-process batches",
-      durationMs: 5,
-      samples: 3,
-      warmupMs: 16,
+      durationMs,
+      samples,
+      warmupMs,
     }),
   );
   for (const candidate of selected) {
@@ -296,13 +306,13 @@ try {
         const output = await command(executable, args, project, {
           UUID_SLUG_PROFILE_MODULE: module,
           UUID_SLUG_PROFILE_FILTER: expectedNames.map((name) => `=${name}`).join(","),
-          UUID_SLUG_PROFILE_MS: "5",
-          UUID_SLUG_PROFILE_SAMPLES: "3",
-          UUID_SLUG_PROFILE_WARMUP_MS: "16",
+          UUID_SLUG_PROFILE_MS: String(durationMs),
+          UUID_SLUG_PROFILE_SAMPLES: String(samples),
+          UUID_SLUG_PROFILE_WARMUP_MS: String(warmupMs),
           UUID_SLUG_GENERATION_FILTER: "package.v4.",
-          UUID_SLUG_GENERATION_MS: "5",
-          UUID_SLUG_GENERATION_SAMPLES: "3",
-          UUID_SLUG_GENERATION_WARMUP_MS: "16",
+          UUID_SLUG_GENERATION_MS: String(durationMs),
+          UUID_SLUG_GENERATION_SAMPLES: String(samples),
+          UUID_SLUG_GENERATION_WARMUP_MS: String(warmupMs),
         });
         await writeFile(join(report, `${candidate.name}-${runtime}-${round}.jsonl`), output);
         const rows = output
@@ -318,7 +328,7 @@ try {
           measurements.some(
             (row) =>
               !Array.isArray(row.ns) ||
-              row.ns.length !== 3 ||
+              row.ns.length !== samples ||
               row.ns.some((value) => !Number.isFinite(value) || value <= 0),
           )
         )

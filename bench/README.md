@@ -64,8 +64,12 @@ proof output and measurements in `bench/reports/`. Set `UUID_SLUG_CANDIDATE_RUNT
 colon-separated selection of `node`, `bun` and `deno`; set `UUID_SLUG_COMPARE_NODE_EXECUTABLE`
 to select a Node executable. Each comparison runs in fresh processes with reversed second-pass order.
 The source screen runs the maintained resource counters before timing and retains their complete
-output, including rejected candidates. Use `v7-draw duplicate-text-scratch` to restore the
-redundant private array; the cold text-generator resource witness must reject it before timing.
+output, including rejected candidates.
+Use `UUID_SLUG_PROFILE_MS`, `UUID_SLUG_PROFILE_SAMPLES` and `UUID_SLUG_PROFILE_WARMUP_MS` to
+extend noisy source screens without rebuilding between equivalent short runs. The manifest records
+their actual settings, and every selected case must return that sample count.
+Use `v7-draw duplicate-text-scratch` to restore the redundant private array; the cold text-generator
+resource witness must reject it before timing.
 UUIDv7 source screens time ordinary single-ID text, owned bytes and slugs first; configured and
 caller-buffer timing belongs in the later packed comparison after a primary-call gain survives.
 Use `v7-draw bounded-clock` to compare a truncation plus timestamp bound with the separate
