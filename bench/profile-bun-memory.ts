@@ -5,6 +5,7 @@ import { Buffer } from "node:buffer";
 import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json" with { type: "json" };
 import { createProfileCases, selectProfileCases } from "./profile-cases";
 import { uuidObjectChecksum } from "./profile-case";
+import type { ProfileCase } from "./profile-case";
 
 const reports = process.env.UUID_SLUG_PROFILE_NATIVE_DIR;
 if (!reports) throw new Error("UUID_SLUG_PROFILE_NATIVE_DIR is required");
@@ -17,15 +18,33 @@ const calls = Number(process.env.UUID_SLUG_PROFILE_CALLS ?? 32_768);
 if (!Number.isSafeInteger(calls) || calls < 1)
   throw new Error("UUID_SLUG_PROFILE_CALLS must be a positive safe integer");
 const filter = process.env.UUID_SLUG_PROFILE_FILTER;
-const suite = createProfileCases(
-  api,
-  originalFixtures.issued,
-  process.env.UUID_SLUG_PROFILE_PRIVATE === "1" ? await import("../src/v4") : undefined,
-  process.env.UUID_SLUG_PROFILE_PRIVATE === "1" ? await import("../src/alphabet") : undefined,
-  Buffer,
-);
-suite.verify();
-const cases = selectProfileCases(suite.cases, filter);
+const generationName = process.env.UUID_SLUG_PROFILE_GENERATION_CASE;
+const cases: [string, ProfileCase][] = [];
+if (generationName) {
+  if (process.env.UUID_SLUG_PROFILE_MODULE)
+    throw new Error(
+      "Generation-case profiles use the corpus package graph; omit UUID_SLUG_PROFILE_MODULE.",
+    );
+  // Reuse the qualified generation corpus so rival profiles measure the same complete call.
+  // Selection precedes memory snapshots; import and corpus setup are not per-ID allocations.
+  const { generationCases } = await import("./generation-cases");
+  const { verifyGenerationCase } = await import("./generation-case");
+  const selected = generationCases.find(({ name }) => name === generationName);
+  if (!selected || selected.qualification !== "qualified")
+    throw new Error(`No qualified generation case named ${generationName}`);
+  verifyGenerationCase(selected);
+  cases.push([selected.name, selected.operation]);
+} else {
+  const suite = createProfileCases(
+    api,
+    originalFixtures.issued,
+    process.env.UUID_SLUG_PROFILE_PRIVATE === "1" ? await import("../src/v4") : undefined,
+    process.env.UUID_SLUG_PROFILE_PRIVATE === "1" ? await import("../src/alphabet") : undefined,
+    Buffer,
+  );
+  suite.verify();
+  cases.push(...selectProfileCases(suite.cases, filter));
+}
 
 /** Consume results so JavaScriptCore cannot discard the public calls under study. */
 let sink = 0;

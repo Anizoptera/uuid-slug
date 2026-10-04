@@ -87,6 +87,12 @@ const filter = process.env.UUID_SLUG_PROFILE_FILTER;
 const samples = Number(process.env.UUID_SLUG_PROFILE_SAMPLES ?? 7);
 const duration = Number(process.env.UUID_SLUG_PROFILE_MS ?? 20);
 const warmup = Number(process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? 16);
+const warmupCalls =
+  process.env.UUID_SLUG_PROFILE_WARMUP_CALLS === undefined
+    ? undefined
+    : Number(process.env.UUID_SLUG_PROFILE_WARMUP_CALLS);
+if (warmupCalls !== undefined && (!Number.isSafeInteger(warmupCalls) || warmupCalls < 1))
+  throw new Error("Warm-up calls must be a positive safe integer");
 const latencySamples =
   process.env.UUID_SLUG_PROFILE_LATENCY_SAMPLES === undefined
     ? undefined
@@ -121,10 +127,16 @@ for (const [name, fn] of selected) {
   let operations = 0;
   const threadBefore = threadCpuUsage?.();
   const started = performance.now();
-  do {
-    batch(name, fn, 64, expectedError);
-    operations += 64;
-  } while (performance.now() - started < warmup);
+  if (warmupCalls !== undefined) {
+    // Equal call counts control executed preparation under interruption; they do not prove JIT readiness.
+    batch(name, fn, warmupCalls, expectedError);
+    operations = warmupCalls;
+  } else {
+    do {
+      batch(name, fn, 64, expectedError);
+      operations += 64;
+    } while (performance.now() - started < warmup);
+  }
   const wallMs = performance.now() - started;
   const thread = threadBefore && threadCpuUsage?.(threadBefore);
   warmupWork.set(name, { operations, wallMs, threadCpuUs: thread && thread.user + thread.system });
