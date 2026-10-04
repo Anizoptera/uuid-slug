@@ -72,6 +72,9 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       no-loss result clears that control only, not the other cases or their mixed warm-up effects.
       The isolated replay separates Bun wall time only; Bun CPU and both Node measures remain
       unresolved. Keep `native-v7-folded-explicit-time-isolated*`; the run does not clear this control.
+      Worker-only controls distinguish thread CPU from process CPU on Node and Bun. Retain
+      both totals in the existing driver: the isolated packed thread intervals narrow the
+      uncertainty but do not clear explicit-time parity. Keep `native-v7-folded-thread-cpu-controls.log`.
       Reject it if repeated complete calls show a material primary-call regression, resource
       costs grow without a requested benefit, or a published contract fails. Preserve configured
       generators and the native-absent path; do not infer their behavior from native success.

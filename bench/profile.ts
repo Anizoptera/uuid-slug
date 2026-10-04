@@ -17,6 +17,11 @@ const nativeName = process.env.UUID_SLUG_PROFILE_NATIVE_NAME;
 const session = nativeDirectory ? new inspector.Session() : undefined;
 const gcProfiler = session ? new v8.GCProfiler() : undefined;
 const versions = process.versions as typeof process.versions & { deno?: string };
+// Process CPU includes JIT and worker threads. Retain it, but measure the caller thread too
+// so helper work cannot be mistaken for synchronous call cost. Older hosts omit this metric.
+const threadCpuUsage = (
+  process as { threadCpuUsage?: (previous?: NodeJS.CpuUsage) => NodeJS.CpuUsage }
+).threadCpuUsage?.bind(process);
 const isNode = !versions.bun && !versions.deno;
 const captureV8State = () => ({
   code: v8.getHeapCodeStatistics(),
@@ -145,6 +150,7 @@ for (const [name, fn] of selected) {
   gc?.();
   const heapBefore = process.memoryUsage();
   const cpuBefore = process.cpuUsage();
+  const threadCpuBefore = threadCpuUsage?.();
   const resourceBefore = process.resourceUsage();
   const ns: number[] = [];
   let maxBatchMs = 0;
@@ -167,6 +173,7 @@ for (const [name, fn] of selected) {
     await yieldToLoop();
   }
   const cpu = process.cpuUsage(cpuBefore);
+  const threadCpu = threadCpuBefore && threadCpuUsage?.(threadCpuBefore);
   const resourceAfter = process.resourceUsage();
   const heapAfter = process.memoryUsage();
   gc?.();
@@ -181,6 +188,7 @@ for (const [name, fn] of selected) {
       maxUninterruptedMs,
       sink,
       cpuUs: cpu.user + cpu.system,
+      threadCpuUs: threadCpu && threadCpu.user + threadCpu.system,
       resourceDelta: {
         fsRead: resourceAfter.fsRead - resourceBefore.fsRead,
         fsWrite: resourceAfter.fsWrite - resourceBefore.fsWrite,
