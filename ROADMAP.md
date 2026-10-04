@@ -221,6 +221,10 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         The focused packed repeat does not reproduce WebKit's earlier loss, but its interval
         still allows a small regression. Preserve that uncertainty; collect native profiles,
         resource evidence and the missing LTS comparison before deciding retention.
+    - [ ] Retain importable UUIDv4 candidate modules in the existing source runner and collect
+          separate native profiles with adjacent completed-call counts in both execution orders.
+          Check wrapper attribution, startup and resources against the baseline before retention;
+          do not infer total allocation from JavaScript counters or sampled heap retention.
 - [ ] Measure the module-default UUID-plus-slug call against one draw followed by both conversions;
       remove internal option allocation or repeated validation only when complete-call evidence supports it.
       Primitive presets bypass the option record; both all-runtime packed replays improve Node,

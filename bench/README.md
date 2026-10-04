@@ -131,6 +131,9 @@ shared trusted-native failure witness in Node and Bun before timing.
 Use `v4 string-first` to change only successful-string recognition while keeping the native
 helper in place. `string-first-lost-throw` must fail the shared generation-failure witness;
 otherwise a fast success check could conceal a changed default-call failure contract.
+For UUIDv4 native profiling, point `UUID_SLUG_PROFILE_MODULE` at the retained
+`<candidate>-<runtime>-api.mjs` and execute the report's `profile.mjs`.
+The UUIDv4 artifact without `-api` executes its timing corpus and is not an importable package API.
 Use `format indexed-loop` to compare Bun's fixed UUID-text writes with its indexed loop through
 ordinary generation and byte-to-text conversion; `fixed-writes-lost-byte` must fail the last-byte
 oracle before timing. Tables, storage, case selection and string construction stay unchanged.

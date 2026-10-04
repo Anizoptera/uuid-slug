@@ -269,6 +269,22 @@ try {
           `Candidate build failed: ${candidate.name}/${runtime}`,
         );
       await Bun.write(join(report, `${candidate.name}-${runtime}.mjs`), result.outputs[0]!);
+      if (group === "v4") {
+        // The v4 timing artifact executes its corpus at import. Preserve a separate public API
+        // graph for the existing profiler so its call counts and stacks measure the candidate.
+        const api = await Bun.build({
+          entrypoints: [join(tree, "src/index.ts")],
+          target: runtime === "deno" ? "node" : runtime,
+          ...(runtime === "deno" ? { conditions: ["deno"] } : {}),
+          format: "esm",
+        });
+        if (!api.success || api.outputs.length !== 1)
+          throw new AggregateError(
+            api.logs,
+            `Candidate API build failed: ${candidate.name}/${runtime}`,
+          );
+        await Bun.write(join(report, `${candidate.name}-${runtime}-api.mjs`), api.outputs[0]!);
+      }
     }
     // Timing cannot justify a candidate that creates avoidable arrays or diagnostics. Use the
     // existing real-operation counter after behavioral proof and before any timed process.
@@ -282,7 +298,7 @@ try {
     console.log(JSON.stringify({ candidate: candidate.name, proof: "passed" }));
   }
   const driverFile = join(report, "profile.mjs");
-  if (group !== "v4") {
+  {
     const driver = await Bun.build({
       entrypoints: [join(project, "bench/profile.ts")],
       target: "node",
