@@ -1112,6 +1112,28 @@ function latin1Candidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
+      name: "whole-buffer",
+      get source() {
+        // Scratch owns exactly the requested bytes, so a whole-buffer read can avoid explicit
+        // range arguments without a new capability or allocation. Complete calls decide value.
+        return replaceOnce(
+          replaceOnce(
+            source,
+            'toString(encoding: "latin1", start: number, end: number): string;',
+            'toString(encoding: "latin1", start?: number, end?: number): string;',
+          ),
+          from,
+          from.replace('bytes.toString("latin1", 0, length)', 'bytes.toString("latin1")'),
+        );
+      },
+    },
+    {
+      name: "whole-buffer-lost-byte",
+      get source() {
+        return replaceOnce(source, from, from.replace("0, length)", "0, length - 1)"));
+      },
+    },
+    {
       name: "direct-latin1",
       get source() {
         return direct();

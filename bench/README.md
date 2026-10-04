@@ -185,6 +185,9 @@ Use `latin1 direct-latin1` to select the same method in the Buffer implementatio
 the UUID formatter unchanged. Its missing-final-byte and missing-fallback mutations must fail
 before timing. The isolated native probe checks all Latin-1 bytes, both UUID text cases and
 absent or throwing methods; a throwing method must switch each scratch permanently to generic text.
+Use `latin1 whole-buffer` to omit range arguments when the scratch owns exactly the output bytes.
+Its missing-final-byte mutation must fail the text oracle before timing; all Latin-1 bytes and
+both UUID cases must remain unchanged. Compare complete calls rather than native reads alone.
 Use `format utf8-text ascii-text` to compare native decoding of the unchanged ASCII UUID buffer.
 `utf8-text-lost-byte` must fail the independent text oracle before timing; general Latin-1 scratch
 semantics remain unchanged. Complete generation and conversion calls decide retention.

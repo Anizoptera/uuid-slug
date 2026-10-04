@@ -64,6 +64,10 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
           unresolved; unchanged controls also vary. Equal-call Bun profiles still rank the
           character writer and string construction first. Do not infer a generation gain
           from conversion, a resource gain from retained heap, or an engine cause from samples.
+    - [ ] Compare whole-buffer Latin-1 reads with explicit range arguments on exact-size scratch.
+          This removes argument work without a new native capability, retained closure or buffer.
+          Prove complete output with the missing-byte mutation and all-byte oracle before timing;
+          reject absent default-call gains or another primary-call loss before wider comparisons.
 - [ ] Retain a survivor only after the existing packed replays, affected-runtime profiles,
       behavior/resource proofs and full check support it. Commit the production improvement
       and record its measured benefit and limits in `bench/PERFORMANCE.md`; otherwise keep

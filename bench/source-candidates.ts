@@ -277,7 +277,7 @@ try {
     if (group === "latin1") {
       for (const mode of ["present", "absent", "throw"]) {
         const output = await command("bun", ["__test__/latin1-native-probe.ts", mode], tree, {
-          UUID_SLUG_EXPECT_DIRECT_LATIN1: candidate.name === "baseline" ? "0" : "1",
+          UUID_SLUG_EXPECT_DIRECT_LATIN1: candidate.name.startsWith("direct-latin1") ? "1" : "0",
         });
         await writeFile(join(report, `${candidate.name}-native-${mode}.jsonl`), output);
         if (!output.includes('"proof":"native Latin-1 text"'))
