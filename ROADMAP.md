@@ -31,6 +31,18 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       Lazy selection keeps the Bun default gain, but configured-generator text still loses.
       Isolate the unchanged configured body from default dispatch before retention; require
       the exact configured-clock and failure tests, then repeat the affected complete calls.
+      The split's first packed comparison favors Bun text; configured and Node intervals cross
+      parity. Repeat it with owned bytes and explicit-time controls before retention; unresolved
+      controls are not proof of equivalence. Keep the native resource and profile proofs required.
+      The repeated comparison exposes a Node explicit-time loss with the split. Remove that
+      extra call boundary and compare the inline configured body on the same six calls; reject
+      another explicit-time loss or a reproduced configured-generator loss before wider replay.
+      Reject the split: Node explicit-time wall and CPU costs both increase. The inline replay
+      suffers large scheduling interruptions; CPU time supports Bun text savings but leaves
+      configured controls unresolved. Fresh equal-call Bun profiles and operation counters
+      show native generation replaces portable drawing and formatting without temporary arrays.
+      Resolve primary controls under usable scheduling before broader timing or retention;
+      retained heap and sampled stacks do not prove total native allocation volume.
       Reject it if repeated complete calls show a material primary-call regression, resource
       costs grow without a requested benefit, or a published contract fails. Preserve configured
       generators and the native-absent path; do not infer their behavior from native success.
