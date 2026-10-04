@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { runtime } from "#runtime";
+import { BASE64URL_NAME } from "./base64url-name.ts";
 import { checkRange, INVALID_BASE32HEX, INVALID_BASE64URL, UuidSlugError } from "./errors.ts";
 import type { UuidSlugErrorCode } from "./errors.ts";
 import type { Latin1Scratch } from "./runtime/types.ts";
 
 /** Select lowercase base32hex slug output. */
 export const BASE32HEX_NAME = "base32hex";
-/** Select unpadded base64url slug output. */
-export const BASE64URL_NAME = "base64url";
+export { BASE64URL_NAME } from "./base64url-name.ts";
 
 /**
  * A power-of-two alphabet plus its reverse lookup. Encoding is pure bit packing, so the only

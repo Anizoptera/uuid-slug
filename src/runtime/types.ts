@@ -19,6 +19,8 @@ export interface Runtime {
   uuidV4?(this: void): string;
   /** Native current-time UUIDv7 text; configured clocks and sequence state stay on generators. */
   uuidV7?(this: void): string;
+  /** Native current-time UUIDv7 as one canonical unpadded base64url plain slug. */
+  uuidV7Slug?(this: void): string;
   /** Optional native hex conversion for the runtime's selected UUID text writer. */
   uuidHex?(this: void, bytes: Uint8Array): string;
   /**

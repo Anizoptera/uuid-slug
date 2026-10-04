@@ -8,7 +8,7 @@ import { SEEDED_MASK_FORMAT, PLAIN_SLUG_FORMAT, FIXED_MASK_FORMAT } from "../src
 const owners = new Map<string, string>([
   ...ERROR_CODES.map((code) => [code, "errors.ts"] as const),
   [BASE32HEX_NAME, "alphabet.ts"],
-  [BASE64URL_NAME, "alphabet.ts"],
+  [BASE64URL_NAME, "base64url-name.ts"],
   [SEEDED_MASK_FORMAT, "types.ts"],
   [PLAIN_SLUG_FORMAT, "types.ts"],
   [FIXED_MASK_FORMAT, "types.ts"],

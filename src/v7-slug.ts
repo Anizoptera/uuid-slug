@@ -1,8 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { generatedOrThrow, isUuidSlugError, stringInput } from "./errors.ts";
-import type { UuidSlugError } from "./errors.ts";
-import { BASE64URL_NAME, encode } from "./alphabet.ts";
+import { runtime } from "#runtime";
+import {
+  generatedOrThrow,
+  isUuidSlugError,
+  portableAfterNative,
+  stringInput,
+  validatedNativeOrFallback,
+} from "./errors.ts";
+import type { NativeTrust, UuidSlugError } from "./errors.ts";
+import { BASE64URL as BASE64URL_ALPHABET, BASE64URL_NAME, encode } from "./alphabet.ts";
 import { readGenerationOptions } from "./generation-options.ts";
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
 import type {
@@ -16,7 +23,7 @@ import type {
 } from "./types.ts";
 import { currentUuidV7Scratch, uuidV7ScratchAt } from "./v7-keyless.ts";
 import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
-import { resolveSlugAlphabet } from "./slug.ts";
+import { isPlainUuidV7Slug, resolveSlugAlphabet } from "./slug.ts";
 import { formatUuidBytesUnchecked, isUuidTextCase, resolveUuidTextCase } from "./uuid.ts";
 import type { SlugAlphabet } from "./slug.ts";
 
@@ -41,9 +48,52 @@ const GENERATOR_WITH_PLAIN_SLUG_OPTIONS = {
   textCase: true,
 } as const satisfies Record<keyof Omit<GenerateUuidV7WithPlainSlugOptions, "generator">, true>;
 const AT_OPTION = "at";
+const PLAIN_UUID_V7_SLUG_GENERATION = "plain UUIDv7 slug generation";
+const nativeUuidV7SlugTrust: NativeTrust = { trusted: undefined };
+const hasNativeUuidV7Slug = runtime.uuidV7Slug !== undefined;
 
 /** Supply the UUIDv7 bytes one slug operation encodes, from a sequence or from the module clock. */
 type DrawUuidV7Bytes = (values: { readonly at?: unknown }) => Uint8Array | UuidSlugError;
+
+// Keep failures as values until the public preset call owns the permitted entropy throw.
+const portableUuidV7Slug = (): string | UuidSlugError => {
+  const bytes = currentUuidV7Scratch();
+  return bytes instanceof Error ? bytes : encode(bytes, BASE64URL_ALPHABET);
+};
+
+// Validate canonical length, padding, version and variant before trusting each native identity.
+// A generic plain-slug guard alone also accepts base32hex, which this capability cannot emit.
+const acceptsNativeUuidV7Slug = (value: unknown): boolean =>
+  typeof value === "string" && value.length === 22 && isPlainUuidV7Slug(value);
+
+// Direct native output removes clock, entropy, byte writing and encoding from ordinary calls.
+// Configured calls and base32hex remain portable. Remeasure complete calls and resources if this
+// boundary changes; bench/PERFORMANCE.md owns evidence. Trust has the same host-identity limit
+// as native UUID text: intermittent malformed output would require per-call validation.
+function nativeUuidV7Slug(): string | UuidSlugError {
+  const native = runtime.uuidV7Slug;
+  if (!native) return portableUuidV7Slug();
+  if (native === nativeUuidV7SlugTrust.trusted) {
+    try {
+      return native();
+    } catch (cause) {
+      return portableAfterNative(
+        cause,
+        portableUuidV7Slug,
+        undefined,
+        PLAIN_UUID_V7_SLUG_GENERATION,
+      );
+    }
+  }
+  return validatedNativeOrFallback(
+    nativeUuidV7SlugTrust,
+    native,
+    acceptsNativeUuidV7Slug,
+    portableUuidV7Slug,
+    undefined,
+    PLAIN_UUID_V7_SLUG_GENERATION,
+  );
+}
 
 /** Draw for the module-level calls, where an untrusted `generator` option may select a sequence. */
 const drawKeylessUuidV7Bytes: DrawUuidV7Bytes = (values) => {
@@ -73,7 +123,7 @@ function plainUuidV7SlugFrom(
   let alphabetOnly = typeof alphabetOrOptions === "string";
   let values = alphabetOnly
     ? { alphabet: alphabetOrOptions as SlugAlphabet }
-    : readGenerationOptions(alphabetOrOptions, accepted, "plain UUIDv7 slug generation");
+    : readGenerationOptions(alphabetOrOptions, accepted, PLAIN_UUID_V7_SLUG_GENERATION);
   if (values instanceof Error) {
     const alphabet = stringInput(alphabetOrOptions);
     if (alphabet !== undefined) {
@@ -167,7 +217,8 @@ export function uuidV7GeneratorSlugMethods(
 
 /**
  * Generate a plain UUIDv7 slug. Lowercase base32hex preserves UUID byte order; base64url does not
- * preserve that order under text comparison. Select a generator when this result must join its sequence.
+ * preserve that order under text comparison. Module calls may advance their logical timestamp
+ * during bursts; select a generator when this result must join its sequence or control its clock.
  *
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
  * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
@@ -181,9 +232,12 @@ export function generatePlainUuidV7Slug(
 export function generatePlainUuidV7Slug(
   alphabetOrOptions: SlugAlphabet | GeneratePlainUuidV7SlugOptions = BASE64URL_NAME,
 ): PlainUuidV7Slug | UuidSlugError {
-  // A primitive alphabet carries no time or generator, so it skips the option object and reads that
-  // cost about 5 ns on Bun (bench/PERFORMANCE.md). Wrapped strings still take the option path.
+  // An exact base64url preset needs no further normalization. Native-capable hosts skip portable
+  // generation and encoding; other presets still validate before drawing. Wrapped strings retain
+  // their existing normalization path. Remeasure all complete calls if selection changes.
   if (typeof alphabetOrOptions === "string") {
+    if (hasNativeUuidV7Slug && alphabetOrOptions === BASE64URL_NAME)
+      return generatedOrThrow(nativeUuidV7Slug()) as PlainUuidV7Slug;
     const alphabet = resolveSlugAlphabet(alphabetOrOptions);
     return alphabet instanceof Error
       ? alphabet

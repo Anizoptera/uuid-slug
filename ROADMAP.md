@@ -19,6 +19,14 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       `native-v7-slug-next-*` locates sampled work in string construction, clock reads,
       byte generation and encoding, rather than preset validation. The repeated floor comparison
       contains severe pauses; it does not qualify retention. Screen direct native base64url output.
+      The direct-native candidate passes Node/Bun payload and fallback tests, and disabling its
+      selection fails both exact-output oracles. Primary packed caller-thread CPU favors Bun
+      slugs, but control intervals are broad. Isolate configured slug and pair controls with
+      longer CPU windows before retention; do not repeat the paused mixed workload unchanged.
+      Isolated controls still permit a Bun configured-slug loss; keep qualification open.
+      Sequential fixed-call captures reduce retained heap and resident-memory growth relative
+      to the portable capture, but do not prove gross allocation parity. Preserve
+      `native-v7-slug-candidate-*`; the first concurrent resource captures are invalid comparisons.
 - [ ] Qualify Bun native default UUIDv7 text with equal executed preparation instead of elapsed
       warm-up alone. Add an opt-in call count to the existing profiler, then revisit the preserved
       import-selected candidate: prior explicit-time controls lacked preparation counts, and a

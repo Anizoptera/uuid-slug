@@ -7,4 +7,7 @@ import { runtime } from "#runtime";
 export const nativeUuidV7CapabilityCanary = () => {
   throw new Error("UUIDv7 capability selection must not draw during import");
 };
-if (process.env.UUID_SLUG_NATIVE_V7_PROBE === "1") runtime.uuidV7 = nativeUuidV7CapabilityCanary;
+if (process.env.UUID_SLUG_NATIVE_V7_PROBE === "1") {
+  runtime.uuidV7 = nativeUuidV7CapabilityCanary;
+  runtime.uuidV7Slug = nativeUuidV7CapabilityCanary;
+}

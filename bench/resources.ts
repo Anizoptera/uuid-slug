@@ -290,15 +290,29 @@ try {
     nativePreset ? 0 : 1,
     "preset text: native calls need no entropy view; portable calls construct one",
   );
-  // Native presets leave portable text state lazy; portable presets already constructed it.
-  // The pair must reuse shared scratch rather than allocate a duplicate text array.
-  check("default UUIDv7 text-generator initialization", () => api.generateUuidV7WithPlainSlug(), {
-    buffers: nativePreset ? 1 : 0,
-    views: nativePreset ? 1 : 0,
+  check("default UUIDv7 preset slug initialization", () => api.generatePlainUuidV7Slug(), {
     errors: 0,
   });
-  assert.equal(counts.buffers, nativePreset ? 1 : 0, "construct portable text state only once");
-  assert.equal(counts.views, nativePreset ? 1 : 0, "construct its entropy view only once");
+  const nativeSlug = counts.nativeV7 > 0;
+  assert.equal(counts.buffers, nativePreset && !nativeSlug ? 1 : 0);
+  assert.equal(counts.views, nativePreset && !nativeSlug ? 1 : 0);
+  // Portable text or slug presets initialize shared state; two native presets leave it lazy.
+  // The pair must reuse shared scratch rather than allocate a duplicate text array.
+  check("default UUIDv7 text-generator initialization", () => api.generateUuidV7WithPlainSlug(), {
+    buffers: nativePreset && nativeSlug ? 1 : 0,
+    views: nativePreset && nativeSlug ? 1 : 0,
+    errors: 0,
+  });
+  assert.equal(
+    counts.buffers,
+    nativePreset && nativeSlug ? 1 : 0,
+    "construct portable text state only once",
+  );
+  assert.equal(
+    counts.views,
+    nativePreset && nativeSlug ? 1 : 0,
+    "construct its entropy view only once",
+  );
   check("default UUIDv7 pair", () => api.generateUuidV7WithPlainSlug(), {
     buffers: 0,
     views: 0,
@@ -323,6 +337,17 @@ try {
   if (counts.nativeV7) {
     assert.equal(counts.draws, 0, "native UUIDv7 text must not also draw portable entropy");
     assert.equal(counts.chars, 0, "trusted native UUIDv7 text must not reparse every UUID");
+  }
+  check("default UUIDv7 preset slug", () => api.generatePlainUuidV7Slug(), {
+    buffers: 0,
+    views: 0,
+    errors: 0,
+  });
+  if (counts.nativeV7) {
+    assert.equal(counts.draws, 0, "native UUIDv7 slugs must skip portable entropy");
+    assert.equal(counts.chars, 0, "trusted native UUIDv7 slugs must skip repeated validation");
+    assert.equal(counts.latin1 + counts.fromCharCodes + counts.base64, 0);
+    assert.equal(counts.nativeV7, 1, "one slug call must draw exactly one native UUID");
   }
   check("caller-owned v7 generation", () => api.generateUuidV7Bytes(into, 4), {
     buffers: 0,

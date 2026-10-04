@@ -684,6 +684,7 @@ export const runtimeBoundaryCases = [
       // eslint-disable-next-line typescript/unbound-method -- saved for restoration, never called
       const originalNodeFill = nodeCrypto.randomFillSync;
       const originalV7 = runtime.uuidV7;
+      const originalV7Slug = runtime.uuidV7Slug;
       const failing = (): never => {
         throw cause;
       };
@@ -700,6 +701,7 @@ export const runtimeBoundaryCases = [
         // Native text has its own entropy source. Select the portable branch explicitly;
         // the native success/fallback/dual-failure witness below covers the other branch.
         delete runtime.uuidV7;
+        delete runtime.uuidV7Slug;
         const generator = createSecureUuidV7Generator({ readUnixMs: () => timestamp });
         assert.ok(!(generator instanceof Error));
         const maskingCodec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
@@ -751,6 +753,7 @@ export const runtimeBoundaryCases = [
         webCrypto.getRandomValues = originalWebFill;
         nodeCrypto.randomFillSync = originalNodeFill;
         if (originalV7) runtime.uuidV7 = originalV7;
+        if (originalV7Slug) runtime.uuidV7Slug = originalV7Slug;
       }
       assert.equal(isUuidV7String(generateUuidV7()), true);
     },
@@ -865,11 +868,14 @@ export const runtimeBoundaryCases = [
         return;
       }
       assert.equal(runtime.uuidV7, nativeUuidV7CapabilityCanary);
+      assert.equal(runtime.uuidV7Slug, nativeUuidV7CapabilityCanary);
       const saved = { ...runtime };
       const nativeValue = "ffffffff-ffff-7fff-bfff-ffffffffffff";
+      const nativeSlugValue = unwrap(uuidStringToPlainSlug(nativeValue));
       const nativeCause = new Error("native v7 failed");
       const portableCause = new Error("portable v7 failed");
       let nativeCalls = 0;
+      let nativeSlugCalls = 0;
       let failNative = false;
       const native = () => {
         nativeCalls += 1;
@@ -878,6 +884,16 @@ export const runtimeBoundaryCases = [
       };
       try {
         runtime.uuidV7 = native;
+        runtime.uuidV7Slug = () => {
+          nativeSlugCalls += 1;
+          if (failNative) throw nativeCause;
+          return nativeSlugValue;
+        };
+        assert.equal(generatePlainUuidV7Slug(), nativeSlugValue);
+        assert.equal(generatePlainUuidV7Slug(BASE64URL), nativeSlugValue);
+        assert.equal(extractUuidV7UnixMs(generatePlainUuidV7Slug({ at: timestamp })), timestamp);
+        assert.equal(isPlainUuidV7Slug(generatePlainUuidV7Slug(BASE32HEX)), true);
+        assert.equal(nativeSlugCalls, 2);
         assert.equal(generateUuidV7(), nativeValue);
         assert.equal(generateUuidV7(UUID_TEXT_UPPERCASE), nativeValue.toUpperCase());
         assert.equal(
@@ -889,6 +905,8 @@ export const runtimeBoundaryCases = [
         // delegation or clock repair would fail this independent timestamp oracle.
         assert.equal(extractUuidV7UnixMs(generateUuidV7({ at: timestamp })), timestamp);
         const generator = unwrap(createSecureUuidV7Generator({ readUnixMs: () => timestamp }));
+        assert.equal(extractUuidV7UnixMs(generatePlainUuidV7Slug({ generator })), timestamp);
+        assert.equal(nativeSlugCalls, 2);
         assert.equal(extractUuidV7UnixMs(generateUuidV7({ generator })), timestamp);
         assert.equal(nativeCalls, 3);
         const badPreset = Reflect.apply(generateUuidV7, undefined, ["sideways"]);
@@ -896,6 +914,7 @@ export const runtimeBoundaryCases = [
         assert.equal(nativeCalls, 3);
 
         failNative = true;
+        assert.equal(isPlainUuidV7Slug(generatePlainUuidV7Slug()), true);
         assert.equal(isUuidV7String(generateUuidV7()), true);
         const upper = generateUuidV7(UUID_TEXT_UPPERCASE);
         assert.equal(upper, upper.toUpperCase());
@@ -912,8 +931,10 @@ export const runtimeBoundaryCases = [
           throw portableCause;
         };
         let dual: unknown;
+        let dualSlug: unknown;
         try {
           dual = thrownBy(() => generateUuidV7());
+          dualSlug = thrownBy(() => generatePlainUuidV7Slug());
         } finally {
           globalThis.crypto.getRandomValues = webFill;
           nodeCrypto.randomFillSync = nodeFill;
@@ -921,6 +942,9 @@ export const runtimeBoundaryCases = [
         assert.ok(dual instanceof UuidSlugError);
         assert.equal(hasCause(dual, nativeCause), true);
         assert.equal(hasCause(dual, portableCause), true);
+        assert.ok(dualSlug instanceof UuidSlugError);
+        assert.equal(hasCause(dualSlug, nativeCause), true);
+        assert.equal(hasCause(dualSlug, portableCause), true);
         runtime.fillRandom = saved.fillRandom;
 
         // Invalid replacements must not gain trust, including valid UUID text of another version.
@@ -931,6 +955,20 @@ export const runtimeBoundaryCases = [
         }
         delete runtime.uuidV7;
         assert.equal(isUuidV7String(generateUuidV7()), true);
+        // Canonical version/variant checks must reject valid plain slugs of the wrong UUID,
+        // and the native base64url capability must reject a valid base32hex spelling too.
+        for (const invalid of [
+          nativeSlugValue.slice(0, -1) + "x",
+          unwrap(uuidStringToPlainSlug("123e4567-e89b-42d3-a456-426614174000")),
+          unwrap(uuidStringToPlainSlug(nativeValue, BASE32HEX)),
+        ]) {
+          runtime.uuidV7Slug = () => invalid;
+          const fallback = generatePlainUuidV7Slug();
+          assert.equal(isPlainUuidV7Slug(fallback), true);
+          assert.equal(fallback.length, 22);
+        }
+        delete runtime.uuidV7Slug;
+        assert.equal(isPlainUuidV7Slug(generatePlainUuidV7Slug()), true);
         assert.equal(runtime.fillRandom(new Uint8Array(POOL_BYTES)), undefined);
         globalThis.crypto.getRandomValues = () => {
           throw portableCause;
@@ -939,14 +977,18 @@ export const runtimeBoundaryCases = [
           throw portableCause;
         };
         let absent: unknown;
+        let absentSlug: unknown;
         try {
           absent = thrownBy(() => generateUuidV7());
+          absentSlug = thrownBy(() => generatePlainUuidV7Slug());
         } finally {
           globalThis.crypto.getRandomValues = webFill;
           nodeCrypto.randomFillSync = nodeFill;
         }
         assert.ok(absent instanceof UuidSlugError);
         assert.equal(absent.cause, portableCause);
+        assert.ok(absentSlug instanceof UuidSlugError);
+        assert.equal(absentSlug.cause, portableCause);
       } finally {
         for (const key of Object.keys(runtime) as (keyof typeof runtime)[]) delete runtime[key];
         Object.assign(runtime, saved);
