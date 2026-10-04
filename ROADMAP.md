@@ -108,6 +108,11 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         in the repeat. Reject caching; preserve the current generator lookup.
 - [ ] Close Bun and Deno owned UUIDv7 byte gaps against the best qualified libraries; measure
       allocation, secure-source work and sequence costs over the complete returned result.
+  - [ ] Compare fixed four-byte pool copying and a separate source cursor against the current
+        indexed copy-and-erase loop. Preserve lazy draws, all bytes, erasure, refill failures
+        and resource counts. The lost-fourth-byte mutation must fail the shared runtime oracle
+        before timing. Reject inconsistent full-call gains or v4/text/slug losses; replay packed
+        consumers only after a repeated focused gain survives.
   - [x] Profile the exact module-default owned-byte call before choosing another substitution;
         separate setup from samples beneath the public generation frame, inspect allocation
         and entropy evidence, and compare the observed costs with the faster rivals' mechanisms.

@@ -113,6 +113,10 @@ const groups = {
     ],
     tests: ["__test__/v7.test.ts", "__test__/mask.test.ts"],
   },
+  pool: {
+    names: ["v7.string", "v7.bytes", "v7.slug", "v4.string", "v4.bytes"],
+    tests: ["__test__/entropy.test.ts", "__test__/v7.test.ts"],
+  },
 } satisfies Record<CandidateGroup, { names: readonly string[]; tests: readonly string[] }>;
 const filename = CANDIDATE_FILES[group];
 const { names: expectedNames } = groups[group];

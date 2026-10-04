@@ -14,6 +14,7 @@ export const CANDIDATE_GROUPS = [
   "format",
   "value",
   "value-options",
+  "pool",
 ] as const;
 export type CandidateGroup = (typeof CANDIDATE_GROUPS)[number];
 export const CANDIDATE_FILES = {
@@ -24,6 +25,7 @@ export const CANDIDATE_FILES = {
   format: "src/uuid.ts",
   value: "src/v7-value.ts",
   "value-options": "src/v7-value-options.ts",
+  pool: "src/runtime/pool.ts",
 } as const satisfies Record<CandidateGroup, string>;
 
 function replaceOnce(source: string, from: string, to: string): string {
@@ -380,8 +382,37 @@ export function createSourceCandidates(
     format: formatCandidates,
     value: valueCandidates,
     "value-options": valueOptionCandidates,
+    pool: poolCandidates,
   } satisfies Record<CandidateGroup, (source: string) => readonly SourceCandidate[]>;
   return builders[group](source);
+}
+
+function poolCandidates(source: string): readonly SourceCandidate[] {
+  const loop =
+    "for (let i = 0; i < length; i += 1) {\n      bytes[i] = pool[offset + i] as number;\n      pool[offset + i] = 0;\n    }";
+  // Four-byte continuations dominate ordinary UUIDv7 draws. Keep erasure and refill transactional;
+  // complete v4 and v7 calls decide whether the added size branch earns its cost.
+  const four = Array.from(
+    { length: 4 },
+    (_, i) => `bytes[${i}] = pool[offset + ${i}] as number;\n      pool[offset + ${i}] = 0;`,
+  ).join("\n      ");
+  const fixed = replaceOnce(source, loop, `if (length === 4) {\n      ${four}\n    } else ${loop}`);
+  return [
+    { name: "baseline", source },
+    { name: "fixed-four", source: fixed },
+    {
+      name: "fixed-four-lost-byte",
+      source: replaceOnce(fixed, "bytes[3] = pool[offset + 3] as number;", "bytes[3] = 0;"),
+    },
+    {
+      name: "source-cursor",
+      source: replaceOnce(
+        source,
+        loop,
+        "for (let i = 0, sourceOffset = offset; i < length; i += 1, sourceOffset += 1) {\n      bytes[i] = pool[sourceOffset] as number;\n      pool[sourceOffset] = 0;\n    }",
+      ),
+    },
+  ];
 }
 
 function valueOptionCandidates(source: string): readonly SourceCandidate[] {

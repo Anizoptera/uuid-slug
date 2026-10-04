@@ -1015,6 +1015,27 @@ export const runtimeBoundaryCases = [
     },
   },
   {
+    name: "four-byte pooled draws copy every byte and erase exactly the consumed range",
+    run(this: void) {
+      let source: Uint8Array | undefined;
+      const fill = pooledFill((bytes) => {
+        source = bytes;
+        for (let i = 0; i < bytes.length; i += 1) bytes[i] = (i % 251) + 1;
+      });
+      for (const offset of [0, 4, 8]) {
+        const output = new Uint8Array(4);
+        assert.equal(fill(output), undefined);
+        assert.deepEqual(
+          Array.from(output),
+          [1, 2, 3, 4].map((i) => i + offset),
+        );
+        assert.ok(source);
+        assert.ok(source.subarray(0, offset + 4).every((byte) => byte === 0));
+        assert.equal(source[offset + 4], offset + 5);
+      }
+    },
+  },
+  {
     name: "refuses UUIDv4 generation reentered from its entropy source",
     run(this: void) {
       const originalFill = runtime.fillRandom;
