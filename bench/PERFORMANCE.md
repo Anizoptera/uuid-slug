@@ -265,6 +265,25 @@ cost, independent-call latency or an unavoidable string-allocation floor.
 `uuid-ascii-mutation.log`, `uuid-ascii-screen.log`, `candidates-format-OBrQxV/` and
 `candidates-format-JdUouZ/` retain the proofs, source and raw observations.
 
+Reject the tested shared generator-field formatters before packed replay because other primary calls regress.
+`v7-draw shared-text` eliminates intermediate UUID bytes and reuses the UUID formatter's
+character buffer and case tables. `shared-text-prefix` also retains unchanged prefix characters;
+ordinary conversion invalidates the cache rather than comparing its input bytes. Native-absent
+hosts retain their byte formatter and do not create the added native draw closure.
+Lost-tail, stale-prefix and missing-invalidation mutations fail independent Bun text assertions.
+The interleaved conversion witness catches the last mutation; intact Node/Bun behavior and
+resource checks pass. The artifacts retain both replaced sources rather than only the generator.
+Two fresh process orders per candidate on Node 26.10.0 and Bun 1.4.2 use nine 20 ms batches
+and 32 ms warm-up. Uncached Bun text takes 74.28/78.62 ns against 77.41/81.88 ns, but Node
+slug takes 86.13/90.99 ns against 85.00/85.98 ns. Cached Bun text takes 76.05/73.41 ns,
+but conversion takes 38.95/40.30 ns against 36.71/38.15 ns. Reject both source forms rather
+than expanding the runtime matrix. This screen does not identify the engine-level cause of
+the control losses or prove that direct field formatting cannot work; cold construction,
+total allocation and packed performance remain unmeasured for these rejected forms.
+`shared-text-mutation.log`, `shared-text-prefix-mutation.log`,
+`shared-text-invalidation-mutation.log`, `shared-text-screen.log` and
+`candidates-v7-draw-VPcWuX/` retain the mutation proofs and comparison observations.
+
 Two Bun 1.4.2 CPU captures on 2026-10-03 select only `=v7.string` through the maintained
 `bench/profile.ts` corpus, with seven 20 ms batches and 16 ms warm-up. Raw files are
 `bench/reports/primary-v7-default-only.cpuprofile` and

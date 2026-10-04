@@ -31,12 +31,16 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       default specialization, and their coherent combinations against unchanged production.
       Reuse prior rejection evidence; reopen a mechanism only when a changed premise predicts
       a different observable result. Do not preselect prefix reuse or another dispatch tweak.
-  - [ ] Compare generator-field formatting with shared character storage and case tables,
+  - [x] Compare generator-field formatting with shared character storage and case tables,
         with and without prefix reuse. Eliminate the intermediate byte write/read cycle;
         preserve clock, sequence, all payload bits, uppercase and generic conversion. Require
         lost-tail, stale-prefix and missing-invalidation mutations to fail their intended oracles
         before timing. Keep Node's native-absent generator on the existing path and account for
         construction costs if complete-call gains survive. Reject primary-call losses before replay.
+        Tail loss, stale prefixes and missing conversion invalidation fail independent Bun text
+        assertions. Intact behavior/resources pass; reject the uncached form's Node slug losses
+        and cached form's Bun conversion losses before broader replays. Shared storage alone
+        does not resolve these losses; their engine-level cause remains unestablished.
 - [ ] Prove and screen that change through the complete public call on Bun and Node Current.
       State the hypothesis, counterevidence, affected contracts and retention decision before
       execution. Include uppercase, slug and owned-byte controls when the change reaches them;
