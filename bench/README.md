@@ -141,7 +141,7 @@ explicit-time, generator and codec values and both masked alphabets. All of them
 a default-value gain cannot justify slowing another successful consumer call.
 For a source candidate that survives its owning proof, pass
 `--source-candidate=keyless:thin-configured` to `bench/compare.ts` with the same revision for
-baseline and candidate. The replacement lives only in its detached checkout; both revisions
+baseline and candidate. The replacement lives only in its extracted source archive; both revisions
 are packed normally, and the shared production tree remains unchanged.
 Use `v4 native-zero-hex native-zero-base64` to compare native decoding of fixed zero bytes
 before the unchanged secure fill; capability selection runs once and absent decoders use the
@@ -176,9 +176,6 @@ Use `format word16 word32` to compare wider scratch writes with the fixed byte w
 `word32-lost-byte` must fail the independent last-byte oracle before timing. Both wider writers
 retain one DataView over the existing scratch; the counters do not establish its total heap cost.
 Explicit little-endian stores preserve character order independently of host byte order.
-Use `format packed-pairs` to move two-character packing into lazy case-table construction.
-`packed-pairs-lost-byte` must fail Bun's last-byte oracle before timing. Compare complete
-generation and conversion, then account for retained tables and the view if gains repeat.
 Prefix a `UUID_SLUG_PROFILE_FILTER` term with `=` to select that exact case; other terms match
 substrings. Use exact terms when a successful-call comparison must exclude similarly named failures.
 Use `v7-draw independent-direct-lost-bit` to check the payload oracle: both runtime tests must

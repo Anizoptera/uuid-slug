@@ -424,14 +424,25 @@ async function main(): Promise<void> {
   const isolatedCandidate = candidateRef !== undefined || sourceParts !== undefined;
   const candidateRoot = isolatedCandidate ? join(scratch, "candidate") : project;
   try {
-    await command("git", ["worktree", "add", "--detach", baselineRoot, baselineRef], project);
+    // Committed archives isolate package builds without changing branches or Git worktrees.
+    const baselineArchive = join(scratch, "baseline.tar");
+    await command(
+      "git",
+      ["archive", "--format=tar", "--output", baselineArchive, baselineRef],
+      project,
+    );
+    await mkdir(baselineRoot);
+    await command("tar", ["-xf", baselineArchive, "-C", baselineRoot], project);
     await symlink(join(project, "node_modules"), join(baselineRoot, "node_modules"), "dir");
     if (isolatedCandidate) {
+      const candidateArchive = join(scratch, "candidate.tar");
       await command(
         "git",
-        ["worktree", "add", "--detach", candidateRoot, candidateRef ?? "HEAD"],
+        ["archive", "--format=tar", "--output", candidateArchive, candidateRef ?? "HEAD"],
         project,
       );
+      await mkdir(candidateRoot);
+      await command("tar", ["-xf", candidateArchive, "-C", candidateRoot], project);
       await symlink(join(project, "node_modules"), join(candidateRoot, "node_modules"), "dir");
     }
     if (sourceParts) {
@@ -548,11 +559,6 @@ async function main(): Promise<void> {
     }
     console.error(`Compared ${baselineRef} with ${candidateRef ?? "the current worktree"}.`);
   } finally {
-    await command("git", ["worktree", "remove", "--force", baselineRoot], project).catch(() => {});
-    if (isolatedCandidate)
-      await command("git", ["worktree", "remove", "--force", candidateRoot], project).catch(
-        () => {},
-      );
     await rm(scratch, { recursive: true, force: true });
   }
 }

@@ -2586,7 +2586,7 @@ The experiment source is retained as `bench/reports/v7-chunks-source.patch` agai
 its final labels exclude the rejected candidates from package rankings. The measured mechanisms
 are unchanged by those labels. The maintained benchmark excludes these rejected experiments.
 
-Prepacked hexadecimal pairs remain a screening candidate, not a production optimization.
+Do not retain prepacked hexadecimal pairs: packed default-generation gains remain unresolved.
 Bun 1.4.2 screens on 2026-10-04 retain source, proofs, counters and raw samples in
 `candidates-format-cKPCHB` and `candidates-format-wwlhwE`. Default text baseline/candidate
 medians are 78.84/76.45 and 82.44/75.65 ns in the first screen, then 81.51/76.65 and
@@ -2597,8 +2597,20 @@ Each process uses nine 20 ms batches after 32 ms warm-up, with reversed candidat
 in its second round. The lost-byte mutation fails Bun's independent offset and payload
 oracles in `candidates-format-2doXyK`; intact Node/Bun behavior and Bun resource proofs pass
 before timing. Warm counters preserve one Latin-1 call per text result, but do not count
-all table allocations or the added DataView. Packed replication, cold costs and affected
-runtime profiles remain required before retention; the native gap remains open.
+all table allocations or the added DataView.
+Packed captures `packed-pairs-packed-first.jsonl` and `packed-pairs-packed-repeat.jsonl`
+use six 20 ms and eight 80 ms fresh-process pairs, with 32 ms and 64 ms warm-up respectively.
+Every compared row remains unresolved; unchanged byte and slug controls also shift.
+The repeat includes CPU/wall ratios below one and pauses of tens of milliseconds beneath
+changed and unchanged calls. These records establish lost execution time, not its cause.
+Keep those observations and reject a favorable median as sufficient evidence.
+The focused `packed-pairs-packed-focused.jsonl` uses sixteen process pairs, 40 ms windows
+and 48 ms warm-up. Default text has ratio 0.944 with a 95% median-ratio interval of
+0.89..1.01; conversion has ratio 0.979 with interval 0.94..0.99. The small conversion-only
+gain does not justify new retained tables and a view while the larger generation benefit
+remains unresolved. Cold costs, allocation parity and auxiliary runtimes remain unmeasured;
+this rejection does not prove no gain is possible. Source snapshots remain in the report
+directories above and commit `bc27861`; the maintained candidate inventory excludes it.
 
 Local workerd evidence (2026-10-04): `workerd-public-repeat.jsonl` runs the compiled public entry
 with the portable implementation in both plain-web and `nodejs_compat` configurations. The bundle
