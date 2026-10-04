@@ -1286,17 +1286,20 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
       "function generateDefaultOwnedUuidV7Bytes(): UuidV7Bytes | UuidSlugError {",
       "  const clock = readClock(Date.now);",
       "  if (clock instanceof Error) return clock;",
-      "  const ms = Math.trunc(clock);",
-      '  if (typeof clock !== "number" || clock < 0 || !Number.isSafeInteger(ms) || ms > 0xffffffffffff)',
+      '  if (typeof clock !== "number" || !(clock >= 0 && clock < 0x1_0000_0000_0000))',
       '    return new UuidSlugError(INVALID_TIMESTAMP, "Clock must fit the UUIDv7 timestamp.");',
+      "  const ms = Math.trunc(clock);",
       "  const bytes = new Uint8Array(16);",
       "  const failed = fillRandomBytes(runtime.fillRandom, bytes);",
       "  if (failed) return failed;",
-      "  let timestamp = ms;",
-      "  for (let i = 5; i >= 0; i--) {",
-      "    bytes[i] = timestamp & 0xff;",
-      "    timestamp = Math.floor(timestamp / 256);",
-      "  }",
+      "  const high = Math.floor(ms / 0x1_0000_0000);",
+      "  const low = ms >>> 0;",
+      "  bytes[0] = high >>> 8;",
+      "  bytes[1] = high;",
+      "  bytes[2] = low >>> 24;",
+      "  bytes[3] = low >>> 16;",
+      "  bytes[4] = low >>> 8;",
+      "  bytes[5] = low;",
       "  bytes[6] = (bytes[6]! & 0x0f) | 0x70;",
       "  bytes[8] = (bytes[8]! & 0x3f) | 0x80;",
       "  return bytes as unknown as UuidV7Bytes;",
@@ -1306,9 +1309,14 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
     return (
       helper +
       replaceOnce(
-        source,
+        replaceOnce(
+          source,
+          owned,
+          owned +
+            "\nconst generateSelectedDefaultUuidV7Bytes = runtime.jitless ? currentUuidV7Bytes : generateDefaultOwnedUuidV7Bytes;",
+        ),
         "return generatedOrThrow(currentUuidV7Bytes());",
-        "return generatedOrThrow(generateDefaultOwnedUuidV7Bytes());",
+        "return generatedOrThrow(generateSelectedDefaultUuidV7Bytes());",
       )
     );
   };
