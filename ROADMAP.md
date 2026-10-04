@@ -19,6 +19,14 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       default-call boundary, then repeat the exact affected calls. Do not attribute the Node loss
       to inlining without a distinguishing observation. Profiles support removed portable work
       on Bun; generated competitor ranking and affected-call evidence still gate retention.
+      Check Node's optimization and inlining traces for the same default call against the
+      unchanged baseline before another variant. A candidate-only deoptimization or rejected
+      caller inlining supports a compiler explanation; matching traces leave it unresolved.
+      Trace-enabled timings are not performance evidence.
+      Both Node Current captures inline public and delegated generation into the batch caller,
+      with no generation deoptimization recorded. Lost caller inlining does not explain these
+      captures. Next isolate once-selected default dispatch from per-call capability lookup;
+      preserve fallback behavior and reject primary-call losses before wider replay.
       Reject it if repeated complete calls show a material primary-call regression, resource
       costs grow without a requested benefit, or a published contract fails. Preserve configured
       generators and the native-absent path; do not infer their behavior from native success.
