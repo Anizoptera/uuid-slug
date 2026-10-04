@@ -13,8 +13,11 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       contract owners for invented guarantees, stale qualification and instructions invisible at
       the decision point. Correct only identified defects; leave generated reports to their writer.
 - [ ] Finish the active native Bun UUIDv7 text candidate before reopening formatter experiments.
-      Its first packed comparison favors default text, but repeated evidence, current profiles,
-      the generated competitor ranking and a successful full check still gate retention.
+      The focused repeated comparison resolves a Bun default-text gain and a Node default-text
+      loss. Reject the shared implementation shape; isolate native dispatch from the portable
+      default-call boundary, then repeat the exact affected calls. Do not attribute the Node loss
+      to inlining without a distinguishing observation. Profiles support removed portable work
+      on Bun; generated competitor ranking and affected-call evidence still gate retention.
       Reject it if repeated complete calls show a material primary-call regression, resource
       costs grow without a requested benefit, or a published contract fails. Preserve configured
       generators and the native-absent path; do not infer their behavior from native success.

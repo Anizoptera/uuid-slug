@@ -238,6 +238,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
   Temporary directories may hold isolated checkouts and generated artifacts, never the only copy
   of useful experiment logic or evidence. Keep rerun instructions in `bench/README.md` and raw
   benchmark output in ignored `bench/reports/`; conclusions belong in `bench/PERFORMANCE.md`.
+  Extract executable baseline source outside this repository; ignored source trees can still enter
+  compiler and test discovery. Keep only generated evidence and archives in `bench/reports/`.
 - Repair missing or ineffective guidance in its auto-loaded owner before the plan and code.
   Enforce mechanically decidable failures in the existing harness, not a prose-alignment checker.
 - Use the `typescript` package for project checking; TypeScript 7 is the main compiler.

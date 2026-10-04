@@ -4,6 +4,32 @@ Choose each runtime's writer from repeated consumer-call measurements, including
 
 ## Primary TypeScript call review
 
+### Native Bun default UUIDv7 text
+
+Native delegation improves Bun default text, but the shared implementation is not retained because Node default text regresses.
+
+The focused packed comparison in `bench/reports/native-v7-default-packed-isolated.log` compares
+the candidate with commit `840937b` on Bun 1.4.2 and Node 26.10.0. Each of twelve fresh process
+pairs supplies one median from nine 10 ms batches after 64 ms warm-up. Bun's paired median cost
+ratio is 0.578, with a 95% interval of 0.569–0.620; Node's is 1.061, with an interval of
+1.013–1.110. These are single-machine warm throughput observations, not individual-call latency.
+The broader repeat in `native-v7-primary-packed-repeat.log` has large outliers even in unchanged
+controls; its intervals do not establish parity. No outliers are removed.
+
+Equal-call Bun profiles in `native-v7-profile-baseline/` and `native-v7-profile-candidate/`
+execute 2,097,152 default text calls each. The baseline samples native string conversion, portable
+formatting, generation and entropy work; the candidate samples native UUIDv7 generation instead.
+One profile pair supports that changed execution path, not a universal CPU or allocation ratio.
+The resource witnesses in `native-v7-resources-baseline-bun.jsonl` and
+`native-v7-resources-bun.jsonl` replace one portable string-writer call with one native generation
+call per warmed preset-text operation. They observe no byte-array or view construction on either
+warmed path and do not measure allocations inside native generation.
+
+Keep the native Bun mechanism, but revise its shared call boundary before retention. The measured
+Node loss rejects the current shape; it does not identify inlining, branch cost or another engine
+mechanism as its cause. Configured generators, native-absent hosts, uppercase output and qualified
+competitor ranking still need their retention evidence.
+
 Owned slug decoding remains faster than the measured equivalent native calls in two resource
 captures on 2026-10-04. `bench/reports/owned-decoder-resource-clean/` and
 `bench/reports/owned-decoder-resource-repeat/` contain CPU, sampled allocation, heap, trace and
