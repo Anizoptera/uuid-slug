@@ -225,7 +225,9 @@ efficiency. A reproducible misuse alone does not justify that cost.
   entry as a cold consumer. Presence checks catch omissions only; they do not prove the published
   text is useful, correct, complete, or current.
 - Comments carry contracts and design decisions. Before deleting or rewriting one, list its useful
-  claims and verify each is still true. Keep caller-facing claims in JSDoc and move implementation
+  claims. Every non-trivial decision must retain its reason, supporting evidence or assumption,
+  the meaningful alternative it rejects, and what would change the decision beside its owner.
+  Verify each claim is still true. Keep caller-facing claims in JSDoc and move implementation
   constraints, rejected alternatives, invalidating assumptions, and measurement triggers to the
   nearest owning implementation comment. A rejected alternative must cite the symbol or evidence
   that establishes why it loses. Delete only repetition, false claims, work history, or facts made
@@ -237,8 +239,10 @@ efficiency. A reproducible misuse alone does not justify that cost.
 
 ## Runtime boundaries and evidence
 
-- Keep `fastv7` informational only. Never include it in competitor rankings or use it to judge
-  performance targets; it is not an approved competitor.
+- Keep `fastv7` informational only, never a competitor or performance target. Its payload uses
+  a predictable 12-bit counter and 62 random bits; its speed does not establish parity with
+  the required payload randomness. It uses Web Crypto; do not confuse fewer random bits with
+  a weak randomness source. Preserve the exclusion unless the maintainer reopens it.
 
 - Before writing an experiment driver, extend its maintained owner in `bench/` or `scripts/`.
   Inspect the owner's exports and callers before editing it; a matching filename is not permission
@@ -276,6 +280,11 @@ efficiency. A reproducible misuse alone does not justify that cost.
   decision unchanged. Read `bench/README.md` §Decision before measurement for the execution order.
   Keep only one implementation candidate active until it is retained, rejected, or explicitly blocked;
   benchmark infrastructure and rejected experiments do not close production performance tasks.
+- Locate the bottleneck in the complete consumer call before optimizing a component. Record
+  the observation that would support the proposed cause and the result that would reject it;
+  retain a change only when complete-call speed or resource use improves without a material loss
+  on the other axis. Reprofile after the
+  bottleneck moves because a component gain can disappear in dispatch, formatting or allocation.
 - Before using a benchmark statistic to select code, apply `bench/README.md` §Measurement limits:
   identify the independent sample unit and distinguish batch throughput from individual-call latency.
 - Rank performance evidence by current user value: latest stable Node Current and Bun first, latest
