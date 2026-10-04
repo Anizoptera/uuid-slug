@@ -1544,13 +1544,22 @@ Remaining gaps and their causes:
   Deno 2.9.7 and Node 26.10.0 JITless. Bun default text repeats at 0.950 [0.91, 0.96]; Deno reads
   0.971 [0.96, 0.99], and JITless reads 0.936 [0.93, 0.95]. WebKit default text reads 1.038
   [0.999, 1.087], with seven paired observations slower and one slightly faster. Keep this
-  possible regression unresolved; it prevents retention until a focused replay settles it.
+  possible regression unresolved; it requires a focused replay before retention.
   Uppercase and portable calls, owned and caller-buffer bytes, and both slug alphabets remain
   controls. Their unresolved intervals do not prove equivalence or identify an engine cause.
 
-  Test string-first recognition without moving the helper before funding profiles or production
-  integration. Its lost-throw mutation fails shared dual-failure and reentrancy witnesses on Node
-  and Bun (`v4-string-first-mutation.log`). Packed observations are fresh processes on one machine;
+  String-first recognition without moving the helper does not reproduce a Bun gain in
+  `v4-string-first-screen.log`: baseline process medians are 37.27 and 32.06 ns, against 32.46 and
+  32.30 ns for the candidate. Reject that substitution before packed measurement. Its lost-throw
+  mutation fails shared dual-failure and reentrancy witnesses on Node and Bun
+  (`v4-string-first-mutation.log`).
+
+  The twelve-pair focused combination replay in `v4-native-inline-packed-focused.jsonl` repeats
+  Bun default text at 0.965 [0.946, 0.981] and uppercase at 0.980 [0.971, 0.993]. WebKit default
+  text reads 0.990 [0.929, 1.029], so the earlier slowdown does not repeat but a small regression
+  remains possible. WebKit uppercase reads 0.940 [0.896, 0.974]. Portable-text controls remain
+  unresolved on both runtimes. Retention still requires profile and resource evidence, rather
+  than another throughput replay alone. Packed observations are fresh processes on one machine;
   within-process batches are not independent call latencies. Cold cost, Node LTS replay, new
   native profiles and total resource parity remain unmeasured for this candidate.
 - Bun UUIDv7 text costs about 79 ns against 27 ns for native UUIDv4 text: about 42 ns draws the

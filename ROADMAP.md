@@ -217,9 +217,10 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         with a targeted mutation before timing; keep portable and byte calls as controls and
         require packed preset and failure-path evidence before retention.
         Source repeats and packed comparisons reproduce Bun default-text gains for the combined
-        change; the broad comparison leaves a possible WebKit default-text loss unresolved.
-        Compare string-first recognition without moving the helper, then resolve WebKit's
-        direction before profiling or retaining either shape.
+        change. Recognition alone fails to reproduce the Bun gain and is rejected.
+        The focused packed repeat does not reproduce WebKit's earlier loss, but its interval
+        still allows a small regression. Preserve that uncertainty; collect native profiles,
+        resource evidence and the missing LTS comparison before deciding retention.
 - [ ] Measure the module-default UUID-plus-slug call against one draw followed by both conversions;
       remove internal option allocation or repeated validation only when complete-call evidence supports it.
       Primitive presets bypass the option record; both all-runtime packed replays improve Node,
