@@ -136,6 +136,13 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         operations. Both captures put text construction ahead of pooled copying; investigate
         fewer formatting writes or native string work before changing the entropy pool for text.
         Coarse sampling does not establish exact costs or justify a production change.
+  - [x] Test direct native Latin-1 string construction through ordinary Bun calls.
+        The missing-character mutation fails the text oracle; the intact candidate passes
+        behavior and counted resources. Reject the small default-call saving, consistent with
+        the earlier isolated rejection, rather than adding a closure and optional-method dependency.
+  - [ ] Identify a text-construction change that removes a substantial part of the Bun default
+        generation gap. Compare existing rejected mechanisms before another screen; test whole
+        construction or generation work rather than another small dispatch refinement.
   - [x] Compare native UUIDv4 text repaired to UUIDv7 against native UUIDv7, package generation
         and qualified libraries. Preserve all 74 payload bits and the current clock timestamp;
         compare numeric hexadecimal prefixes with fixed character prefixes on complete calls.

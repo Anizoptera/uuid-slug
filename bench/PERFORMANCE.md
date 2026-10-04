@@ -2553,6 +2553,18 @@ Bun's Buffer `latin1Slice` is callable and preserves the probed ASCII text; ordi
 `toString("latin1")` does not call an overridden `latin1Slice` property. That positive probe
 identifies a direct-string-construction experiment, not a speedup or a supported public capability.
 
+The complete-call screen `candidates-format-xLIUBN` on Bun 1.4.2 compares captured
+`latin1Slice` with the existing generic text call in two reversed fresh-process orders.
+Default UUIDv7 text reads 85.23/88.49 ns against 91.34/90.81 ns; uppercase reads
+71.29/75.11 against 82.42/79.49, and byte-to-text conversion reads 38.38/38.87 against
+42.21/41.29. Byte and slug controls vary without a consistent gain. Both candidates pass
+the owning behavior tests and counted resources; `candidates-format-jV2RlI` rejects the
+missing-final-character mutation in Bun's independent text oracle before timing.
+These process orders are a screen, not an uncertainty bound or retained-heap comparison.
+Reject the candidate: its small default-call saving agrees with the earlier isolated probe
+above and does not address the larger native-generation gap. Cold construction, absent-method
+behavior and native exceptions remain unmeasured; no production implementation selects it.
+
 Local workerd evidence (2026-10-04): `workerd-public-repeat.jsonl` runs the compiled public entry
 with the portable implementation in both plain-web and `nodejs_compat` configurations. The bundle
 input manifest contains `dist/index.js` and `dist/runtime/portable.js`, with no production source

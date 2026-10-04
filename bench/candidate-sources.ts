@@ -1139,6 +1139,14 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
 }
 
 function formatCandidates(source: string): readonly SourceCandidate[] {
+  const directLatin1 = (corrupt = false) =>
+    replaceOnce(
+      source,
+      "  return scratch;\n}\n/**\n * Format through one native byte-to-string call",
+      '  const bytes = scratch.bytes;\n  const slice = (bytes as Uint8Array & {\n    latin1Slice?: (this: Uint8Array, start: number, end: number) => string;\n  }).latin1Slice;\n  // Probe once at scratch construction; generic text remains the absent-capability control.\n  // Complete consumer calls must justify the extra construction closure before retention.\n  return typeof slice === "function"\n    ? { bytes, text: () => slice.call(bytes, 0, ' +
+        (corrupt ? "UUID_LENGTH - 1" : "UUID_LENGTH") +
+        ") }\n    : scratch;\n}\n/**\n * Format through one native byte-to-string call",
+    );
   // Keep tables, retained storage and string construction identical; only remove loop indexing.
   // Complete caller measurements decide whether the larger fixed body pays for itself.
   const loop = [
@@ -1193,6 +1201,18 @@ function formatCandidates(source: string): readonly SourceCandidate[] {
   };
   return [
     { name: "baseline", source },
+    {
+      name: "direct-latin1",
+      get source() {
+        return directLatin1();
+      },
+    },
+    {
+      name: "direct-latin1-lost-byte",
+      get source() {
+        return directLatin1(true);
+      },
+    },
     {
       name: "word16",
       get source() {

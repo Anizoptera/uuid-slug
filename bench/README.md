@@ -168,6 +168,10 @@ selected cases; its collected heap and allocator states measure retention, not g
 Use `format indexed-loop` to compare Bun's fixed UUID-text writes with its indexed loop through
 ordinary generation and byte-to-text conversion; `fixed-writes-lost-byte` must fail the last-byte
 oracle before timing. Tables, storage, case selection and string construction stay unchanged.
+Use `format direct-latin1` to compare the generic Buffer text call
+with a directly captured Latin-1 method. `direct-latin1-lost-byte` must fail the Bun text oracle
+before timing; the resource control must count the direct method independently. Keep absent
+capabilities on the existing text function and measure cold construction before retention.
 Use `format word16 word32` to compare wider scratch writes with the fixed byte writer;
 `word32-lost-byte` must fail the independent last-byte oracle before timing. Both wider writers
 retain one DataView over the existing scratch; the counters do not establish its total heap cost.
