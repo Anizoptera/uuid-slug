@@ -16,9 +16,8 @@ const bunRuntime: Runtime = {
 if (globalThis.crypto.randomUUID)
   bunRuntime.uuidV4 = globalThis.crypto.randomUUID.bind(globalThis.crypto);
 
-// `Bun.randomUUIDv7` is faster than the package generator but must not replace it: when its 12-bit
-// counter overflows it advances the encoded millisecond, so a sustained burst encodes timestamps
-// ahead of the clock, and passing `Date.now()` as its time leaves them ahead. Recheck when Bun changes
-// that overflow policy; bench/PERFORMANCE.md owns the measurements.
+// Native UUIDv7 can advance logical time during counter overflow; defaults do not forbid that.
+// Select it only when complete-call gains preserve configured-call speed and resource efficiency.
+// Explicit generators keep their clock controls; bench/PERFORMANCE.md owns drift and cost evidence.
 
 export const runtime = bunRuntime;

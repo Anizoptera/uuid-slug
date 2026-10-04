@@ -35,9 +35,9 @@ const UUID_V7_BYTE_OPTIONS = {
 
 /**
  * Text and bytes keep independent lazy state so neither output form pays cross-form coordination.
- * No native UUIDv7 text replaces the text generator: Node's validated native text is slower, and
- * Bun's native generator encodes timestamps ahead of the clock during bursts. bench/PERFORMANCE.md
- * owns the comparison and remeasurement trigger.
+ * Native default text must earn complete-call speed and resource gains without slowing configured
+ * calls before replacing this generator. Logical timestamp advancement alone does not disqualify
+ * defaults; explicit generators own clock and sequence controls. bench/PERFORMANCE.md owns evidence.
  */
 let textGenerator: PortableUuidV7Generator | undefined;
 let byteGenerator: PortableUuidV7Generator | undefined;

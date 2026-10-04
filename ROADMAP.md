@@ -80,6 +80,15 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       `native-v7-folded-thread-cpu-longer-*`; reject further equivalent timing replays.
       Resolve the shared public-call boundary without adding work to portable or configured calls;
       prove capability selection through fresh imports rather than late test-only replacement.
+      Select native capability at import without a draw or portable setup; restore the previous
+      lazy public body. Fresh-import boundary cases pass on both hosts, and disabling selection
+      fails their native-result oracle. The packed comparison preserves both Bun text gains but
+      separates an explicit-time thread-CPU loss; keep `native-v7-selected-at-load-controls.log`.
+      The isolated explicit-time comparison remains unresolved; keep
+      `native-v7-selected-at-load-explicit-time-isolated.log`. Reject this source form rather than
+      replaying it again: configured parity and total allocation are not established. Preserve its
+      source patch and fresh-import fixture in `native-v7-selected-at-load-rejected.patch` and
+      `native-v7-capability-fixture.ts.txt`; production keeps the previously retained implementation.
       Reject it if repeated complete calls show a material primary-call regression, resource
       costs grow without a requested benefit, or a published contract fails. Preserve configured
       generators and the native-absent path; do not infer their behavior from native success.
