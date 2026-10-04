@@ -21,7 +21,9 @@ import { UUIDv7 as UuidV7Js, uuidv7 as uuidv7Js } from "uuidv7-js";
 
 import type { GenerationCase, GenerationValue } from "./generation-case";
 import { unwrap } from "../dev/unwrap";
-import {
+// Candidate comparisons must call the requested package graph, not the working-tree baseline.
+// Keep the default import literal so browser builds still contain the ordinary package.
+const {
   createUuidV7Generator,
   createUuidV7MaskingCodec,
   uuidBytesToPlainSlug,
@@ -38,7 +40,10 @@ import {
   uuidStringToBytes,
   uuidStringToPlainSlug,
   plainSlugToUuidString,
-} from "../src/index";
+}: typeof import("../src/index") =
+  typeof process !== "undefined" && process.env.UUID_SLUG_PROFILE_MODULE
+    ? await import(process.env.UUID_SLUG_PROFILE_MODULE)
+    : await import("../src/index");
 import { generatePortableUuidV4 } from "../src/v4";
 
 type RowOptions = Partial<

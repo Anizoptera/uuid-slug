@@ -39,6 +39,32 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       masking consumers; preserve `owned-v7-v4-packed.log`. Continue the same default-byte
       mechanism using the existing secure fill directly, without the UUIDv4 dependency or its
       redundant version write. Requalify the package boundary; do not weaken its graph checks.
+      The direct-fill candidate passes packed consumers, payload mutations and independent default
+      timestamp-boundary witnesses; clock mutations fail on Node and Bun before timing.
+      `owned-v7-random-packed.log` favors Bun default bytes in every caller-CPU comparison,
+      while Node bytes and unchanged controls remain unresolved. `owned-v7-random-fixed-*`
+      reduces Bun caller CPU, retained heap and final resident memory in each equal-call pair.
+      Isolated Node immutable-value caller CPU changes direction across five matched pairs;
+      `owned-v7-node-value-control-*` weakens attribution of the mixed-workload loss to this
+      candidate, without proving parity. Its recovered measurements lack a terminal-status record.
+      Keep retention open. Isolate the same Bun control, then repeat packed bytes and unchanged
+      calls: a repeated byte gain with stable controls supports retention; a reproduced control
+      loss rejects global selection. Compare the survivor with the qualified owned-byte rivals.
+      The second packed replay reproduces the Bun byte gain and separates a Node byte gain,
+      but also separates a Node selected-generator loss. Bun isolated value CPU changes direction.
+      Isolate the Node selected-generator call next: persistent loss rejects this public-wrapper
+      shape; disappearance weakens attribution to its code and leaves workload conditioning open.
+      `owned-v7-node-selected-control-*` does not reproduce that loss in isolated calls.
+      Qualify the unchanged candidate on the remaining packed runtimes before retention; reject
+      a reproduced ordinary-call loss. Reuse the generation corpus with an explicit candidate
+      module for complete-call rival comparisons instead of timing only package-vs-baseline.
+      `owned-v7-random-packed-secondary.log` separates byte gains on Chromium and WebKit,
+      but a byte loss on Node JITless; Firefox and Deno remain unresolved. Reject universal
+      selection. `owned-v7-random-rivals-0.jsonl` still places Bun owned bytes behind `uuid`.
+      Next preserve JITless generation through its existing runtime flag and replace the
+      independent draw's repeated timestamp division with fixed high/low stores. A complete-call
+      gain supports removable timestamp arithmetic; no gain rejects that rewrite. Recheck payload
+      and clock mutations, private output, entropy failures, controls and ranked runtimes.
 
 - [ ] Close the Bun default base64url UUIDv7 slug gap. Compare the complete public call with
       native slug output in the maintained generation corpus, then profile the package call.
