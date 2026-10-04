@@ -10,6 +10,15 @@ propose public-document changes and hold them for explicit approval, including g
 
 Deliver retained improvements to ordinary single-ID calls; a rejected experiment does not close a performance gap.
 
+- [ ] Close the Bun default base64url UUIDv7 slug gap. Compare the complete public call with
+      native slug output in the maintained generation corpus, then profile the package call.
+      Portable clock, entropy and encoding work may dominate; preset validation may instead
+      explain the gap. Native delegation removes the former but not the latter. Reject a
+      candidate that loses payload bits, canonical padding, fallback causes or configured controls.
+      Repeat the focused comparison before choosing a production change; retain raw pauses.
+      `native-v7-slug-next-*` locates sampled work in string construction, clock reads,
+      byte generation and encoding, rather than preset validation. The repeated floor comparison
+      contains severe pauses; it does not qualify retention. Screen direct native base64url output.
 - [ ] Qualify Bun native default UUIDv7 text with equal executed preparation instead of elapsed
       warm-up alone. Add an opt-in call count to the existing profiler, then revisit the preserved
       import-selected candidate: prior explicit-time controls lacked preparation counts, and a
