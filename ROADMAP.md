@@ -56,10 +56,14 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
         finds a JITless conversion loss; do not adopt the current source form. Keep the portable
         formatter unchanged and avoid a second scratch-wrapper object. Prove absent-method
         behavior, construction resources and affected-call profiles; native parity stays open.
-    - [ ] Prove requested batch counts reach the packed host and browser measurements, then
-          repeat the Buffer candidate with process medians. The prior packed driver forced
-          one batch despite its supplied setting; those ratios cannot prove the intended
-          multi-batch comparison. Keep all raw batches and independent process counts separate.
+    - [x] Prove requested batch counts reach packed host and browser measurements and use
+          one median per fresh process. The same-revision Node/Bun/Chromium control checks
+          raw batch counts, process counts and medians independently. Retain raw batches.
+    - [ ] Establish a default-text benefit before broadening the Buffer candidate comparison.
+          Corrected repeated comparisons reproduce a conversion saving but leave generation
+          unresolved; unchanged controls also vary. Equal-call Bun profiles still rank the
+          character writer and string construction first. Do not infer a generation gain
+          from conversion, a resource gain from retained heap, or an engine cause from samples.
 - [ ] Retain a survivor only after the existing packed replays, affected-runtime profiles,
       behavior/resource proofs and full check support it. Commit the production improvement
       and record its measured benefit and limits in `bench/PERFORMANCE.md`; otherwise keep

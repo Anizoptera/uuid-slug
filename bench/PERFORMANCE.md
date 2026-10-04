@@ -2736,6 +2736,36 @@ instead use one median per fresh process and reject a process count different fr
 raw records retain every batch. Earlier single-batch comparisons are unaffected by this second
 correction. The control is an instrument check, not evidence of a production improvement.
 
+The corrected driver proves the requested batches and independent process medians before candidate selection.
+On 2026-10-04, `packed-process-median-control.log` contains 12 raw observations across
+Node 26.10.0, Bun 1.4.2 and Chromium, each with three batches. Each runtime summary contains
+two medians per revision for two fresh-process rounds; an independent sorted-array check
+matches each median to its raw record. This verifies host and browser count transport and
+summary units, not production speed.
+
+The Buffer-factory candidate does not yet establish a default UUIDv7 text benefit.
+`latin1-adapter-primary-process-medians.log` and its `-repeat.log` compare the same
+committed source with `latin1:direct-latin1` through packed public calls. Each uses six
+fresh-process pairs, nine 5 ms batches per process and 32 ms warm-up on Node 26.10.0 and
+Bun 1.4.2. Bun default-text paired median ratios are 0.990 [0.924, 1.090] and
+0.995 [0.311, 1.046]; uppercase and slug intervals also remain unresolved. Byte-to-text
+conversion ratios are 0.932 [0.905, 0.945] and 0.835 [0.507, 0.964]. Node owned-byte
+generation reads 1.010 [1.002, 1.018] in the first comparison but is unresolved in the repeat.
+The repeat also varies sharply in unchanged controls. Keep every batch and process observation;
+these results do not establish a generation gain, equivalence, or the cause of variation.
+
+Equal-call Bun profiles still rank character writes and string construction above clock and entropy work.
+The `latin1-adapter-profile-baseline`, `-candidate`, `-candidate-repeat` and `-baseline-repeat`
+directories each retain a JavaScriptCore profile of 2,097,152 completed `v7.string` calls,
+with reversed second-pair order and 100 microsecond sampling. Baseline function summaries
+report 255/311 samples in the Latin-1 character writer and 279/321 in native `toString`;
+candidate summaries report 212/292 in that same writer and 227/270 in `latin1Slice`.
+These sampled summaries locate remaining work; their counts are not exact cost fractions or
+independent throughput measurements. Collected heap includes engine state and does not prove
+gross allocation or resource parity. Bun rejects `HeapProfiler.enable` in the generic inspector
+capture; that failed capture supplies no profile evidence. The Bun-specific profiler completes
+all four captures. No production implementation selects this candidate.
+
 Two Bun 1.4.2 chunk-construction screens on 2026-10-04 (`v7-chunks-join-proofed-screen.log`
 and `v7-chunks-join-proofed-repeat.log`) compare public caller-buffer generation followed by
 hexadecimal chunks with ordinary package text. Concatenation reads 186.68/147.45 ns and native
