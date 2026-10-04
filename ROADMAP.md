@@ -21,8 +21,8 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       lost caller inlining as the cause. Do not use trace-enabled timings as performance evidence.
       Repeated packed calls favor Bun default and uppercase text. The expanded comparison's
       owned-byte wall loss is not resolved in the isolated control; CPU intervals cross parity.
-      Isolated Node default and explicit-time controls remain scheduling-limited, not equivalent.
-      Stop paired timing under the current scheduling interference. The latest five-call replay
+      Isolated Node default and explicit-time controls remain unresolved, not equivalent.
+      Do not repeat inconclusive timing unchanged. The earlier five-call replay
       favors Bun text but exposes Bun slug wall loss and Node explicit-time CPU loss; neither
       establishes regression-free controls. Keep `native-v7-inline-current-load.log` as partial
       evidence: selected-generator text was omitted. Every filter term must match before timing.
@@ -60,6 +60,9 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       Use the prepared README/security patch for approval; public text remains held.
       Native text profiles and counters show replaced portable generation and formatting without
       temporary arrays. Retained heap and sampled stacks do not prove total allocation or parity.
+      Matched default-text captures in both orders disagree on retained heap, RSS and committed
+      memory growth. Keep `native-v7-folded*-profile*` captures;
+      neither page totals nor retained heap measure gross native allocation per identifier.
       Reject it if repeated complete calls show a material primary-call regression, resource
       costs grow without a requested benefit, or a published contract fails. Preserve configured
       generators and the native-absent path; do not infer their behavior from native success.
