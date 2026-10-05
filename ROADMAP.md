@@ -302,6 +302,17 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `current-native-final-runtime-profiles/` records Node LTS, Bun, Deno and Chromium;
         `current-native-final-current-runtime-profiles/` supplies the explicit Node Current capture.
         Read actual runtime records before assigning either capture to the runtime ladder.
+  - [x] Screen native receiver validation against the retained shared preset dispatcher.
+        Bun's final sampling capture attributes remaining caller work to the public wrapper.
+        Compute the scalar selector once; native base64url validates its receiver and a
+        22-character result establishes the payload length. Preserve base32's existing guard
+        and writer, and disable native failure only for a valid payload. This differs from the
+        rejected intrinsic default wrapper because the general body and base32 dispatcher are
+        already separated. Reject lost receiver, length, offset or fallback behavior, repeated
+        base32 loss, or absent repeated base64url gain before wider measurements.
+        `candidates-slug-ZF9A8S` passes behavior, resource, capability and corrupted-output
+        proofs but slows base32 in both orders on Node and Bun. Bun base64url gain does not
+        repeat. Reject this shape; preserve its isolated source and raw proofs in that report.
   - [x] Profile the base32 writer before expanding its packing loop.
         `current-base32-writer-profile` completes 1,048,576 calls after 262,144 warm-up calls.
         Its sampling summary reports 277 samples in native `toString`, 48 in the base32 writer

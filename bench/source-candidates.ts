@@ -290,7 +290,10 @@ try {
         `Candidate rejected before timing: ${candidate.name}`,
       );
     if (group === "alphabet" || group === "slug") {
+      // A retained slug baseline can already delegate natively. Its public probe must exercise
+      // that selected capability rather than assume only a named candidate can use it.
       const nativePlain =
+        (group === "slug" && candidate.source.includes("let nativePlainUuidBase64")) ||
         candidate.name === "native-branch" ||
         candidate.name === "native-dispatch" ||
         candidate.name === "native-leaf" ||
