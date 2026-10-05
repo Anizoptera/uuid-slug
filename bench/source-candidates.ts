@@ -13,7 +13,7 @@ import type { CandidateCompanionCache } from "./candidate-source";
 import { sampleMedian } from "./statistics";
 
 const project = join(import.meta.dir, "..");
-const BUN_TEXT_DRAW_PREFIX = "bun-independent-text";
+const BUN_TEXT_DRAW_PREFIX = "bun-independent-step";
 async function proof(
   args: string[],
   cwd: string,

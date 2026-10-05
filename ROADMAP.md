@@ -854,7 +854,7 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         ordinary Node LTS and Deno calls regress while Chromium pairs improve. The higher-rung
         losses decide rejection without JITless timing. Remove the universal fixtures and routing;
         keep the private-buffer payload oracle and complete-call controls.
-  - [ ] Screen Bun-only independent text draws through the private runtime selection boundary.
+  - [x] Screen Bun-only independent text draws through the private runtime selection boundary.
         Prefer a selected module constant that optimizers erase on other hosts; do not infer
         this policy from an unrelated native capability or expose a new caller option.
         Require unselected packed graphs to retain the original draw, unchanged configured calls,
@@ -869,9 +869,17 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         leaves Node LTS and Deno unresolved but finds small Chromium uppercase and pair losses.
         `current-bun-independent-text-chromium-repeat.log` does not reproduce those losses;
         its intervals still admit small losses. The source screen's compiled Node graph retains
-        the false policy and disabled branch. Prove removal in optimized packed consumers and
-        collect fresh Bun resource/profile evidence before production retention; benchmark uncertainty
-        does not prove zero cost on unselected hosts. Keep the broader performance tasks open.
+        the false policy and disabled branch. `packed-source-Eyyzkp` contains the measured tarballs
+        and named-root pair consumers: Bun and esbuild both retain the disabled per-draw branch.
+        Reject this selection shape; benchmark uncertainty does not prove zero cost on unselected hosts.
+  - [ ] Select the Bun text state updater at generator construction, outside the draw body.
+        Keep the original sequence updater on unselected hosts and configured generators; retain
+        the existing guard, byte writer and entropy storage. Extra updater calls and state writes
+        can erase Bun's gain. Require prefix, tail and clock mutants to fail before timing;
+        reject a repeated complete-call loss or resource regression before packed qualification.
+        `current-bun-independent-step-prefix-proof.log` passes the intact behavior proof and
+        rejects the prefix mutation. Its tail and clock proof logs reject their intended defects.
+        Keep all production performance tasks open until a qualified change reaches production.
 - [x] Screen the argument-free UUIDv7 value call without its empty options record and absent-field
       readers; preserve the owned bytes, immutable value, payload layout and thrown entropy failure.
       Require the lost-throw mutation to fail both runtime tests before timing. Compare the full
