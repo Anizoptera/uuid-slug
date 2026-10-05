@@ -395,6 +395,22 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         accepts comma-separated case-name substrings, and a single term retains its old meaning.
 - [ ] Profile the actual complete calls with gaps and inspect their faster rivals. Name the
       removable work, the rival explanation, and the observation that would reject the attribution.
+  - [x] Compare owned UUIDv7 generation allocation on Node Current against qualified byte rivals.
+        Reuse `generation-cases.ts` and the fixed-call V8 sampler in `profile.ts`, selecting one
+        qualified case before sampling. Compare the package, `uuidv7` and `uuid` in reversed fresh
+        processes with equal warm-up and measured calls. Temporary state or entropy bookkeeping
+        may cost allocation despite a throughput lead; pooled package entropy may instead avoid
+        that work. Separate setup, harness and unattributed samples. A repeated higher package
+        allocation estimate selects attribution and a production candidate; lower cost preserves
+        generation. Profiled CPU cannot replace unsampled timing, and sampling is not total bytes.
+        `current-primary-v7-owned-node-resources/` retains the source-corpus captures and separate
+        captures selecting the normal public package through `UUID_SLUG_PROFILE_MODULE`.
+        Both public-package captures attribute generation frames to `dist/v7-keyless.js` and
+        show lower sampled allocation beneath the workload than both byte-producing rivals.
+        Preserve the generator. Most output allocation is inlined into the batch frame; do not
+        assign that frame wholly to harness overhead or claim total allocation from these samples.
+        The real forwarding-count test fails when the corpus ignores the requested module;
+        restore that mutation byte-for-byte before checking the unchanged driver.
   - [x] Compare primary owned UUID-text decoding resources on Node Current with equal calls.
         Reuse the existing V8 collected-object allocation sampler and conversion corpus; add
         fixed measured-call control to `bench/profile.ts` instead of creating another profiler.

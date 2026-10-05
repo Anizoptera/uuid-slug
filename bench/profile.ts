@@ -59,6 +59,19 @@ const suite = createProfileCases(
   Buffer,
 );
 suite.verify();
+const generationName = process.env.UUID_SLUG_PROFILE_GENERATION_CASE;
+if (generationName) {
+  // The qualified corpus owns the complete rival call and its payload/ownership witness.
+  // It honors PROFILE_MODULE for package rows too; retain the same graph as the profiler API.
+  // Select before sampling; corpus setup and imports are not per-identifier allocation.
+  const { generationCases } = await import("./generation-cases");
+  const { verifyGenerationCase } = await import("./generation-case");
+  const selected = generationCases.find(({ name }) => name === generationName);
+  if (!selected || selected.qualification !== "qualified")
+    throw new Error(`No qualified generation case named ${generationName}`);
+  verifyGenerationCase(selected);
+  suite.cases[generationName] = () => selected.operation();
+}
 const { cases } = suite;
 let sink = 0;
 function batch(
@@ -83,7 +96,7 @@ function batch(
   }
 }
 const gc = (globalThis as { gc?: () => void }).gc;
-const filter = process.env.UUID_SLUG_PROFILE_FILTER;
+const filter = generationName ? `=${generationName}` : process.env.UUID_SLUG_PROFILE_FILTER;
 const samples = Number(process.env.UUID_SLUG_PROFILE_SAMPLES ?? 7);
 const duration = Number(process.env.UUID_SLUG_PROFILE_MS ?? 20);
 const warmup = Number(process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? 16);
