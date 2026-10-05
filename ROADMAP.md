@@ -263,6 +263,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `current-native-direct-primary-packed.jsonl` resolves a Bun base32 slowdown; base64url
         gains remain unresolved across its full process interval. Put exact-array base32 presets
         on their existing writer before native dispatch, then compare the same complete calls.
+        `current-native-base32-focused-packed.jsonl` repeats the native base64url gain but leaves
+        base32 unresolved with a slower median. Test whether separating general input conversion
+        from the ordinary preset body removes that cost; retain native selection either way.
   - [x] Profile the base32 writer before expanding its packing loop.
         `current-base32-writer-profile` completes 1,048,576 calls after 262,144 warm-up calls.
         Its sampling summary reports 277 samples in native `toString`, 48 in the base32 writer

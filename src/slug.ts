@@ -91,6 +91,41 @@ let nativePlainUuidBase64 =
         }
       ).toBase64;
 const NATIVE_PLAIN_UUID_BASE64_OPTIONS = { alphabet: BASE64URL_NAME, omitPadding: true } as const;
+// Keep general normalization separate from ordinary exact-array presets so its branch count does
+// not grow their hot body. Remeasure complete calls if accepted input forms or dispatch change.
+function uuidBytesToPlainSlugGeneral(
+  bytes: UuidByteInput | UuidSlugError,
+  offsetOrAlphabet: number | SlugAlphabet,
+  alphabet?: SlugAlphabet,
+): PlainUuidSlug | UuidSlugError {
+  const alphabetIsSecond = typeof offsetOrAlphabet !== "number";
+  const offset = alphabetIsSecond ? 0 : offsetOrAlphabet;
+  const view = isUint8Array(bytes) ? bytes : exactUuidByteView(bytes);
+  if (view instanceof Error) return view;
+  const badRange = checkRange(view.length, offset, 16);
+  if (badRange) return badRange;
+  if (alphabetIsSecond && alphabet !== undefined)
+    return new UuidSlugError(
+      INVALID_OPTIONS,
+      "Pass the alphabet once: second for a whole UUID, or third after a numeric offset.",
+    );
+  // Unreachable from TypeScript, where the name is a two-member union. Reached from JavaScript,
+  // which is why it answers rather than indexing into `undefined`.
+  // Scalar presets already identify the alphabet; a resolver call repeats normalization work.
+  // Keep that resolver for boxed and invalid selectors. Remeasure if the alphabet set grows.
+  const selectedAlphabet = alphabetIsSecond ? offsetOrAlphabet : (alphabet ?? BASE64URL_NAME);
+  const alpha =
+    selectedAlphabet === BASE64URL_NAME
+      ? BASE64URL
+      : selectedAlphabet === BASE32HEX_NAME
+        ? BASE32HEX
+        : resolveSlugAlphabet(selectedAlphabet);
+  if (alpha instanceof Error) return alpha;
+  return encode(
+    view.length === 16 ? view : view.subarray(offset, offset + 16),
+    alpha,
+  ) as PlainUuidSlug;
+}
 /*
  * The alphabets a plain slug may be written in. base64url is the default and the shortest;
  * base32hex costs four more characters and buys the one property base64url cannot offer: its
@@ -219,33 +254,7 @@ export function uuidBytesToPlainSlug(
       nativePlainUuidBase64 = undefined;
     }
   }
-  const alphabetIsSecond = typeof offsetOrAlphabet !== "number";
-  const offset = alphabetIsSecond ? 0 : offsetOrAlphabet;
-  const view = isUint8Array(bytes) ? bytes : exactUuidByteView(bytes);
-  if (view instanceof Error) return view;
-  const badRange = checkRange(view.length, offset, 16);
-  if (badRange) return badRange;
-  if (alphabetIsSecond && alphabet !== undefined)
-    return new UuidSlugError(
-      INVALID_OPTIONS,
-      "Pass the alphabet once: second for a whole UUID, or third after a numeric offset.",
-    );
-  // Unreachable from TypeScript, where the name is a two-member union. Reached from JavaScript,
-  // which is why it answers rather than indexing into `undefined`.
-  // Scalar presets already identify the alphabet; a resolver call repeats normalization work.
-  // Keep that resolver for boxed and invalid selectors. Remeasure if the alphabet set grows.
-  const selectedAlphabet = alphabetIsSecond ? offsetOrAlphabet : (alphabet ?? BASE64URL_NAME);
-  const alpha =
-    selectedAlphabet === BASE64URL_NAME
-      ? BASE64URL
-      : selectedAlphabet === BASE32HEX_NAME
-        ? BASE32HEX
-        : resolveSlugAlphabet(selectedAlphabet);
-  if (alpha instanceof Error) return alpha;
-  return encode(
-    view.length === 16 ? view : view.subarray(offset, offset + 16),
-    alpha,
-  ) as PlainUuidSlug;
+  return uuidBytesToPlainSlugGeneral(bytes, offsetOrAlphabet, alphabet);
 }
 
 /**
