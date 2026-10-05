@@ -8,9 +8,12 @@ import { stripVTControlCharacters } from "node:util";
 import { command } from "../scripts/command";
 import { CANDIDATE_FILES, CANDIDATE_GROUPS, createSourceCandidates } from "./candidate-sources";
 import type { CandidateGroup } from "./candidate-sources";
+import { applyCandidateCompanions } from "./candidate-source";
+import type { CandidateCompanionCache } from "./candidate-source";
 import { sampleMedian } from "./statistics";
 
 const project = join(import.meta.dir, "..");
+const BUN_TEXT_DRAW_PREFIX = "bun-independent-text";
 async function proof(
   args: string[],
   cwd: string,
@@ -188,6 +191,7 @@ const tree = join(workRoot, "tree");
 const reportRoot = join(project, "bench/reports");
 await mkdir(reportRoot, { recursive: true });
 const report = await mkdtemp(join(reportRoot, `candidates-${group}-`));
+const companionCache: CandidateCompanionCache = new Map();
 try {
   // Proof edits never touch the shared working tree; failures cannot erase another agent's edits.
   // An archive preserves the committed graph without creating a branch or Git worktree.
@@ -215,6 +219,7 @@ try {
   );
   for (const candidate of selected) {
     const candidateSource = candidate.source;
+    await applyCandidateCompanions(candidate, tree, join(report, candidate.name), companionCache);
     await Promise.all([
       writeFile(join(tree, filename), candidateSource),
       writeFile(join(report, `${candidate.name}-source.txt`), candidateSource),
@@ -309,7 +314,12 @@ try {
           `Candidate build failed: ${candidate.name}/${runtime}`,
         );
       await Bun.write(join(report, `${candidate.name}-${runtime}.mjs`), result.outputs[0]!);
-      if (group === "keyless" && candidate.name.startsWith("random-owned-timestamp")) {
+      if (
+        (group === "keyless" && candidate.name.startsWith("random-owned-timestamp")) ||
+        (runtime === "bun" &&
+          group === "v7-draw" &&
+          candidate.name.startsWith(BUN_TEXT_DRAW_PREFIX))
+      ) {
         // Generator clock tests cannot reach a new module-default writer. Isolate the process
         // so its captured clock and timestamp ceiling cannot alter another proof or timing run.
         const clockProof = [
@@ -318,7 +328,9 @@ try {
           "const api = await import(process.env.UUID_SLUG_PROFILE_MODULE);",
           "for (const instant of [0, 255, 256, 65535, 65536, 4294967295, 4294967296, 281474976710655]) {",
           "  clock = instant;",
-          "  const bytes = api.generateUuidV7Bytes();",
+          candidate.name.startsWith(BUN_TEXT_DRAW_PREFIX)
+            ? '  const pair = api.generateUuidV7WithPlainSlug(); const bytes = api.plainSlugToUuidBytes(pair.slug); if (api.bytesToUuidString(bytes) !== pair.uuid) throw new Error("Default pair spellings disagree");'
+            : "  const bytes = api.generateUuidV7Bytes();",
           "  let encoded = 0n;",
           "  for (let i = 0; i < 6; i++) encoded = (encoded << 8n) | BigInt(bytes[i]);",
           '  if (encoded !== BigInt(instant)) throw new Error("Default UUIDv7 bytes lost timestamp bits");',

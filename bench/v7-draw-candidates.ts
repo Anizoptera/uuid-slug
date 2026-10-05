@@ -2,6 +2,7 @@
 
 import { replaceOnce } from "./candidate-source";
 import type { SourceCandidate } from "./candidate-source";
+import { bunTextDrawCandidates } from "./bun-text-draw-candidates";
 
 const inlineClock = (value: string) =>
   replaceOnce(
@@ -449,6 +450,7 @@ export function v7Candidates(source: string, uuidSource?: string): readonly Sour
   };
   return [
     { name: "baseline", source },
+    ...bunTextDrawCandidates(source),
     ...(
       [
         "shared-text",
