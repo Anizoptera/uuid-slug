@@ -10,6 +10,16 @@ propose public-document changes and hold them for explicit approval, including g
 
 Deliver retained improvements to ordinary single-ID calls; a rejected experiment does not close a performance gap.
 
+- [x] Screen Node-compatible UUIDv4 selection in the Bun adapter through `generateUuidV4()`
+      and uppercase text, with byte and UUIDv7 calls as controls. Direct-method evidence supports
+      removable method cost; public dispatch may erase it, or the added import may raise startup
+      cost. Keep validation and native-failure fallback unchanged. Reject absent repeated complete-call
+      gains or a material resource/control loss; require packed and cold-import evidence before retention.
+      `current-bun-v4-method-screen.log` passes Node/Bun behavior and resource counters,
+      then reverses the small default and uppercase differences with process order. Reject this
+      method substitution before packed/resource expansion; preserve `candidates-bun-v4-0rO1be`
+      and remove its live fixture. This screen does not establish a complete-call gain.
+
 - [x] Refresh the maintained qualified corpus in three independent processes per measured host.
       `current-primary-ranking-refresh.jsonl` retains positive fresh-process samples, rejected and
       unsupported rows. Primary default-call losses remain concentrated on Bun UUIDv4 text,
