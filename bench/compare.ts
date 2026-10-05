@@ -8,6 +8,7 @@ import { chromium, firefox, webkit } from "playwright";
 import type { Page } from "playwright";
 
 import { command } from "../scripts/command";
+import { identicalArtifacts } from "./identical-artifacts";
 import { describeSamples, medianConfidence, medianConfidence95 } from "./statistics";
 import { CANDIDATE_FILES, CANDIDATE_GROUPS, createSourceCandidates } from "./candidate-sources";
 import type { CandidateGroup } from "./candidate-sources";
@@ -21,6 +22,7 @@ type Revision = "baseline" | "candidate";
 type ArtifactRuntime = "node" | "bun" | "chromium" | "deno";
 
 interface ArtifactSet {
+  readonly root: string;
   readonly tarball: string;
   readonly denoImportMap: string;
   readonly api: Readonly<Record<ArtifactRuntime, string>>;
@@ -160,6 +162,7 @@ async function packArtifacts(root: string, outdir: string): Promise<ArtifactSet>
     }),
   );
   return {
+    root: packed,
     tarball: join(outdir, archive),
     denoImportMap,
     api: {
@@ -535,11 +538,23 @@ async function main(): Promise<void> {
     const baselineOut = join(scratch, "baseline-artifacts");
     const candidateOut = join(scratch, "candidate-artifacts");
     const driverRoot = project;
-    const [baseline, candidate, driver] = await Promise.all([
+    const [baseline, candidate] = await Promise.all([
       packArtifacts(baselineRoot, baselineOut),
       packArtifacts(candidateRoot, candidateOut),
-      buildHostDriver(driverRoot, scratch),
     ]);
+    // Explicit source experiments still run, including byte-identical timing controls.
+    if (
+      regressionCheck &&
+      !sourceParts &&
+      (await identicalArtifacts(baseline.root, candidate.root))
+    ) {
+      console.error(
+        "Packed runtime graphs and manifests are byte-identical; regression timing is unnecessary.",
+      );
+      passed = true;
+      return;
+    }
+    const driver = await buildHostDriver(driverRoot, scratch);
     if (sourceReport) {
       // Source captures cannot prove optimizer behavior through packed exports. Keep the exact
       // measured packages so graph inspection can reuse them after temporary builds are removed.

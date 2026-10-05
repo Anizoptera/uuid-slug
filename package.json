@@ -126,6 +126,7 @@
     "@microsoft/api-extractor": "7.59.1",
     "@rollup/plugin-node-resolve": "16.0.3",
     "@rspack/core": "2.2.3",
+    "@scure/base": "2.4.0",
     "@smithy/uuid": "1.4.2",
     "@types/bun": "^1.4.2",
     "@types/node": "^26.5.1",

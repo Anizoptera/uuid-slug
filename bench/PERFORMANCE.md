@@ -3720,3 +3720,44 @@ or the cost of Deno's normal source entry. Native and competitor parity remains 
 Retain the fixed stores for four-byte draws and the indexed loop for other lengths. Recompare
 through `pool indexed-loop` when draw widths or runtime typed-array handling change; the UUIDv4
 gains arise despite its unchanged copy width, so the results do not establish a loop-only cause.
+
+### Plain base32hex conversions against scure
+
+Keep the existing encoder and decoder for the measured single-UUID base32hex calls; this comparison
+finds no rival throughput gap that justifies production code.
+
+`current-base32-scure-comparison.jsonl` and `current-base32-scure-comparison-repeat.jsonl` compare
+bytes-to-slug, slug-to-owned-bytes, UUID-text-to-slug and slug-to-UUID-text against `@scure/base`
+2.4.0. Its public `base32hexnopad` uses uppercase, so the complete lowercase calls include case
+conversion. Text calls compose it with `uuid.parse` or `uuid.stringify`; test-only alphabet helpers
+are excluded. Fixed spellings from Python's RFC 4648 encoder check both payloads before timing;
+owned decoding also requires separate plain `Uint8Array` backing storage.
+
+Each replay uses three fresh processes per runtime, five batches per process, 15 ms per batch
+and 40 ms warm-up. The repeated run covers Node 24.21.0 and 26.10.0, Bun 1.4.2, Deno 2.9.7 and
+Chromium 153.0.8010.12. All 40 rows qualify. Package median costs are 0.100–0.501 times the rival
+cost across these four calls and five runtimes. The earlier replay agrees on Node LTS, Bun, Deno
+and Chromium; Node Current appears only in the repeated run, with three independent processes.
+
+These warmed calls alternate two UUIDv7 payloads in fixed case order. They do not establish a
+general-input ranking, individual-call latency, total allocation or a precise confidence interval
+from three process observations. Recompare when the public rival codec gains lowercase output,
+its implementation changes, or a changed runtime narrows this measured lead.
+
+### Unchanged packed graph checks
+
+Skip primary-call regression timing when independently packed output is byte-identical; measuring
+the same implementation again cannot distinguish a code regression.
+
+For the scure benchmark-only dependency addition, the complete `bun run check` takes 269.63 seconds
+before the identity check and 20.10 seconds after it on Node 24.21.0 and Bun 1.4.2. These individual
+wall-clock observations include builds, subprocesses, cleanup and host scheduling; they are not
+confidence bounds or the cost of checking changed production. Both executions exit zero.
+`/tmp/uuid-slug-base32-check.log` and `/tmp/uuid-slug-base32-identity-check-pass.log` retain output.
+
+Source, compiled code, manifest changes, added assets and missing files prevent the exemption;
+unsupported file kinds fail. Replacing byte comparison with unconditional success fails the
+owning mutation test in `/tmp/uuid-slug-identity-byte-defect.log`. A real changed-production
+comparison against `a52bf59^` still runs sixteen fresh processes per runtime for `bytes.base32`
+on Node and Bun and exits zero in `/tmp/uuid-slug-identity-real-change.log`. Explicit source
+experiments also retain timing. The slower changed-production lane and CI headroom remain open.

@@ -24,10 +24,20 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Measure the complete routine lane and pre-commit hook against the feedback-loop limits in
       `bench/README.md` §Regression protection. Attribute excess time to their actual commands;
       repair routing or redundant work without weakening primary-call regression detection.
-- [ ] Close the base32hex competitor comparison before another encoding rewrite. Compare the
+  - [x] Avoid packed timing when only benchmark dependencies change. `bench/check-inputs.ts`
+        treats every manifest and lock change as production work; the scure dev-only addition
+        therefore runs the whole timing comparison. Preserve detection of changed build tools,
+        package resolution and shipped code; prove unchanged output and a real production
+        change take different paths before removing any work.
+        Independently packed byte-identical graphs skip timing; real changed production reaches
+        the existing sixteen-process comparison. The byte-comparison mutation fails the owning
+        test. Full-check evidence is in `bench/PERFORMANCE.md` §Unchanged packed graph checks.
+- [x] Close the base32hex competitor comparison before another encoding rewrite. Compare the
       same lowercase, unpadded UUID payload and privately owned decoded bytes using a qualified
       external encoder in the existing corpus. A repeated material rival win requires a profile;
       parity closes the comparison without additional production code.
+      Both scure replays favor the package for the measured primary conversions; conditions and
+      limitations live in `bench/PERFORMANCE.md` §Plain base32hex conversions against scure.
 - [ ] Protect retained primary-call improvements before selecting another production candidate.
       Audit `bench/check.ts`, `bench/resources.ts` and `bench/latency.ts` against the optimized
       generation, conversion, paired, masking and parsed-value calls. Add missing normal-call
