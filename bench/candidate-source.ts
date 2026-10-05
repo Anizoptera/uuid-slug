@@ -4,7 +4,10 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 type CompanionFile = "src/runtime/bun.ts" | "src/runtime/node.ts" | "src/runtime/portable.ts";
-export type CandidateCompanionCache = Map<CompanionFile, { original: string; current: string }>;
+export type CandidateCompanionCache = Map<
+  CompanionFile,
+  { readonly original: string; current: string }
+>;
 
 /** A complete source replacement used only in an isolated benchmark checkout. */
 export interface SourceCandidate {
@@ -33,12 +36,14 @@ export async function applyCandidateCompanions(
 ): Promise<void> {
   // Always transform archived originals, and restore owners omitted by a later candidate.
   // Otherwise selecting two experiments in one screen would silently compose their policies.
-  for (const filename of Object.keys(candidate.companionEdits ?? {}) as CompanionFile[]) {
-    if (!cache.has(filename)) {
-      const original = await readFile(join(tree, filename), "utf8");
-      cache.set(filename, { original, current: original });
-    }
-  }
+  await Promise.all(
+    (Object.keys(candidate.companionEdits ?? {}) as CompanionFile[])
+      .filter((filename) => !cache.has(filename))
+      .map(async (filename) => {
+        const original = await readFile(join(tree, filename), "utf8");
+        cache.set(filename, { original, current: original });
+      }),
+  );
   await Promise.all(
     [...cache].map(async ([filename, entry]) => {
       const edit = candidate.companionEdits?.[filename];
