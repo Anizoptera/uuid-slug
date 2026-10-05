@@ -19,9 +19,20 @@ configured paths. Audit a default restriction before treating it as grounds to r
 
 Execute only this sequence; older unchecked proposals below are held, not dispatch instructions.
 
-- [ ] Map primary README consumer calls to current production code and maintained rival rows:
+- [x] Map primary README consumer calls to current production code and maintained rival rows:
       generate one identifier, parse or convert one identifier, and encode or decode one masked
       UUIDv7. Include paired or value calls only where they serve the same ordinary consumer job.
+      UUIDv4 generation uses `src/v4.ts` and `src/v4-slug.ts`; UUIDv7 generation uses
+      `src/v7-keyless.ts` and `src/v7-slug.ts`. Compare their text, owned-byte and slug calls with
+      the matching `v4.*` and `v7.*` groups in `bench/generation-cases.ts`; compare paired output
+      with its maintained composed call, which consumes both results.
+      Text/byte/plain-slug conversion uses `src/uuid.ts` and `src/slug.ts`; its maintained rival
+      rows live in `bench/conversion-cases.ts`. Immutable parsing uses `src/uuid-value.ts` and
+      `value.parse.uuid`, `value.parse.slug`, `value.parse.bytes` in `bench/profile-cases.ts`.
+      Masked generation and conversion use `src/masking-codec.ts`; profile `masked.generate`,
+      `masked.encode`, `masked.encode.bytes`, `masked.decode`, `masked.decode.bytes` and their
+      base32 counterparts in the same profiler. These are package measurements, not evidence of
+      rival parity; comparable rival evidence and resource conclusions remain open.
 - [ ] Compare each primary call with its main qualified rivals and same-output native floor.
       Reuse applicable evidence; refresh stale comparisons after retained changes. Record speed
       and resource gaps separately, and rank unresolved gaps before selecting implementation work.
@@ -182,8 +193,10 @@ scenarios in this effort. Their existing checks remain correctness checks, not p
       `bun-node-v4-packed.log` separates a small text gain, but `bun-node-v4-resource-*` does not
       establish combined resource improvement: caller CPU changes direction and resident growth
       increases in all pairs. Reject the extra Node-compatible import.
-      Bun rejects the detached function with `ERR_INVALID_THIS`; the receiver requirement rejects
-      unbinding before timing.
+      Bun's detached Web Crypto `randomUUID` fails with `ERR_INVALID_THIS`; that receiver
+      requirement applies to Web Crypto only. The detached Node-compatible function succeeds,
+      but `candidates-bun-v4-0rO1be/node-compatible-source.txt` already tests it without binding;
+      its complete-call screen does not reproduce a gain. Do not repeat either rejected mechanism.
       `bun-call-v4-packed.log` completes six fresh-process pairs after the full check, with no
       separated gain for either text case. Reject the wrapper; retain the original bound function.
       Reject the trusted-success early return: `v4-trusted-return-packed-fixed-warmup.log`
