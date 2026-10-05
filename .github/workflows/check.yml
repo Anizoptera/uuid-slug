@@ -187,7 +187,7 @@ jobs:
         with:
           bun-version-file: .tool-versions
       - id: inputs
-        run: bun -e 'import { performanceBaseline } from "./bench/check-inputs"; console.log("changed=" + Boolean(await performanceBaseline(process.cwd())));' >> "$GITHUB_OUTPUT"
+        run: bun -e 'import { performanceBaseline } from "./bench/check-inputs"; console.log("changed=" + Boolean(await performanceBaseline(process.cwd(), "regression")));' >> "$GITHUB_OUTPUT"
       - if: steps.inputs.outputs.changed == 'true'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -204,7 +204,7 @@ jobs:
       - if: steps.inputs.outputs.changed == 'true'
         env:
           UUID_SLUG_COMPARE_RUNTIMES: deno:chromium
-        run: bun run perf:check
+        run: bun run build && bun run perf:check
 
   # Packed browser/Deno consumers need external engines, so keep their setup outside local check.
   browser:

@@ -87,10 +87,13 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         and preserve its assertion; navigation alone does not prove asynchronous execution.
         This coverage is Chromium only. WebKit's unchanged paired string-count assertion fails;
         this primary-runtime task does not establish WebKit resource coverage.
-  - [ ] Run the Deno/Chromium resource proof in CI when its counter, fixtures or browser driver change.
+  - [x] Run the Deno/Chromium resource proof in CI when its counter, fixtures or browser driver change.
         Production-only change detection can skip a broken guard while product code is unchanged.
         Keep production timing selection separate so a counter-only edit does not replay identical
         package timing. Prove changed guard inputs select the job and documentation-only edits do not.
+        Real Git fixtures exercise each watched owner, nested benchmark source, committed and
+        pending changes, and missing ancestry. The workflow must build the package before the
+        packed browser counter; local workflow parsing proves that order, not remote CI execution.
   - [x] Resolve the unchanged Bun slug-guard timing failure before committing new guards.
         The retained failing bundle reports a ratio above its unchanged budget, while an isolated
         replay of those same bytes passes. A fixed short call-count warm-up may leave engine

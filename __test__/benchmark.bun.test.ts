@@ -3,7 +3,7 @@
 // A successful matrix requires measurements from every requested child, not merely one survivor.
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import type { SamplingProfile } from "bun:jsc";
@@ -68,16 +68,59 @@ test("performance routing uses real changes and refuses missing parent history",
   };
   let passed = false;
   try {
+    const guardInputs = [
+      "bench/resources.ts",
+      "bench/nested/resource-helper.ts",
+      "__test__/benchmark.bun.test.ts",
+      "__test__/resource-regression-probe.ts",
+      "__test__/resource-regression-cases.ts",
+      "scripts/check-browser-consumer.ts",
+      "scripts/browser-engines.ts",
+      "scripts/command.ts",
+      ".github/workflows/check.yml",
+    ];
+    await Promise.all(
+      [...new Set(guardInputs.map((input) => dirname(join(root, input))))].map((directory) =>
+        mkdir(directory, { recursive: true }),
+      ),
+    );
+    await Promise.all(
+      guardInputs.map((input) => Bun.write(join(root, input), "Fixture guard baseline.\n")),
+    );
     // Real Git trees distinguish pending source, committed source and absent ancestry without
     // mocking the diff or assuming a clean local checkout has the history that CI receives.
     await mkdir(join(root, "src"));
+    await Bun.write(join(root, "bench/README.md"), "Fixture instructions.\n");
     await Bun.write(join(root, "src/index.ts"), "export const value = 1;\n");
     await Bun.write(join(root, "README.md"), "Fixture documentation.\n");
     await git(["init", "--quiet"]);
     await commit("fixture baseline");
     await Bun.write(join(root, "README.md"), "Changed fixture documentation.\n");
+    await Bun.write(join(root, "bench/README.md"), "Changed fixture instructions.\n");
     await commit("fixture documentation");
     expect(await performanceBaseline(root)).toBeUndefined();
+    expect(await performanceBaseline(root, "regression")).toBeUndefined();
+    // Each watched owner must select the resource proof without selecting production timing.
+    // eslint-disable no-await-in-loop -- One Git tree must contain exactly one changed guard per observation.
+    for (const input of guardInputs) {
+      await Bun.write(join(root, input), "Changed fixture guard.\n");
+      expect({ input, timing: await performanceBaseline(root) }).toEqual({
+        input,
+        timing: undefined,
+      });
+      expect({ input, resources: await performanceBaseline(root, "regression") }).toEqual({
+        input,
+        resources: "HEAD",
+      });
+      await Bun.write(join(root, input), "Fixture guard baseline.\n");
+    }
+    // eslint-enable no-await-in-loop
+    await Bun.write(join(root, "bench/resources.ts"), "export const guard = 2;\n");
+    expect(await performanceBaseline(root)).toBeUndefined();
+    expect(await performanceBaseline(root, "regression")).toBe("HEAD");
+    await commit("fixture resource guard");
+    expect(await performanceBaseline(root)).toBeUndefined();
+    expect(await performanceBaseline(root, "regression")).toBe("HEAD^");
     await Bun.write(join(root, "src/index.ts"), "export const value = 2;\n");
     expect(await performanceBaseline(root)).toBe("HEAD");
     await commit("fixture production");
