@@ -612,6 +612,32 @@ export const runtimeBoundaryCases = [
     },
   },
   {
+    name: "codec-generated values retain the counter their preset layout describes",
+    run(this: void) {
+      const originalNow = Date.now;
+      const fixedNow = originalNow();
+      const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
+      Date.now = () => fixedNow;
+      try {
+        // Only values carrying a generator layout need this sequence witness; ordinary default
+        // UUID bytes and text have no corresponding ordering or counter promise.
+        let first = unwrap(unwrap(codec.generateUuidV7Value()).extractV7Payload());
+        let second = unwrap(unwrap(codec.generateUuidV7Value()).extractV7Payload());
+        assert.ok(first.counter);
+        assert.equal(first.counter.bits, 42);
+        if (first.counter.value === (1n << 42n) - 1n) {
+          first = second;
+          second = unwrap(unwrap(codec.generateUuidV7Value()).extractV7Payload());
+        }
+        assert.ok(first.counter);
+        assert.equal(second.unixMs, first.unixMs);
+        assert.equal(second.counter?.value, first.counter.value + 1n);
+      } finally {
+        Date.now = originalNow;
+      }
+    },
+  },
+  {
     name: "detaches selected generators and isolates their retained output",
     run(this: void) {
       const source = makeGenerator();

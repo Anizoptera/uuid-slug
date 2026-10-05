@@ -387,10 +387,27 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         accepts comma-separated case-name substrings, and a single term retains its old meaning.
 - [ ] Profile the actual complete calls with gaps and inspect their faster rivals. Name the
       removable work, the rival explanation, and the observation that would reject the attribution.
+  - [ ] Prove the codec-value layout guard rejects the faster shared-entry substitution.
+        Codec-backed values attach a sequenced layout to bytes from `uuidV7BytesFor`;
+        substituting independent payloads there makes their reported layout false.
+        Keep masked-generation changes separate from immutable-value generation.
+        `current-codec-entry-fixed-cpu-{0,1,2,3}` records lower candidate caller CPU in both
+        reversed pairs with equal measured and warm-up calls. Candidate second-window committed
+        memory is flat; this does not establish allocation parity or make the candidate correct.
+        `current-codec-entry-error-valued-packed.jsonl` resolves lower Node Current masked cost
+        in both alphabets and lower codec-backed value cost on both primary hosts. Bun masked
+        medians improve but their intervals remain unresolved; ordinary owned-byte controls are
+        unresolved. These gains cannot justify retention: codec-backed values attach the sequenced
+        layout to bytes from this changed entry. Independent payloads make that layout false.
+        Reject this shared-entry substitution before any further timing.
+        The shared Node/Bun probe freezes only the clock and checks the counter carried by
+        generated immutable values, without imposing ordering on ordinary default UUID calls.
+        Prove it rejects `keyless codec-value-lost-layout` before selecting a narrower replacement.
   - [x] Screen the existing error-valued default byte entry for ordinary masked generation.
         The Bun profile attributes substantial masked-generation work to the sequenced writer.
         The isolated substitution selects the owned writer only for argument-free internal calls;
-        explicit-time, caller storage, injected generators and immutable payload layouts stay intact.
+        explicit-time, caller storage and injected generators stay intact. Codec-backed immutable
+        values also consume this entry, so this substitution does not preserve their preset layout.
         Cipher work or shared-code effects can erase the proposed sequence saving; measure complete
         masked calls in both alphabets and immutable generation controls before selecting retention.
         `candidates-keyless-WMLQIQ` passes Node/Bun behavior and the resource counter but its short

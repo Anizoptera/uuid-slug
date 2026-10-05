@@ -112,6 +112,18 @@ export function keylessCandidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
+      name: "codec-value-lost-layout",
+      get source() {
+        // This invalid substitution gives codec values random bytes but keeps counter metadata.
+        // Retain it only as a mutation that the shared generated-layout witness must reject.
+        return replaceOnce(
+          source,
+          "  if (\n    outOrOptions !== undefined &&\n    outOrOptions !== null &&",
+          "  if (outOrOptions === undefined && offset === undefined)\n    return generateSelectedDefaultUuidV7Bytes();\n  if (\n    outOrOptions !== undefined &&\n    outOrOptions !== null &&",
+        );
+      },
+    },
+    {
       name: "random-owned-timestamp",
       get source() {
         return randomOwned();
