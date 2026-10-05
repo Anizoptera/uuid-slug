@@ -302,6 +302,10 @@ efficiency. A reproducible misuse alone does not justify that cost.
   JITless-only win when every higher rung is unchanged and its lifetime cost is justified.
 - Optimize successful consumer calls. Invalid input, rejected configuration, and other failures
   are rare by design and are not performance targets: spend no code or measurement on their speed.
+- Limit this optimization effort to primary consumer use cases. Profile actual hotspots and
+  performance and resource gaps against the main qualified rivals for each primary use case,
+  then fix those gaps. Optimizing any other scenario is outside the authorized scope; correctness
+  checks protect existing contracts but do not make those scenarios optimization targets.
 - Choose performance workloads from ordinary README consumer jobs: single-ID generation, parsing
   and conversion first. An unusual input or convenient probe never establishes workload priority;
   keep its verification bounded to the correctness defect it can expose.

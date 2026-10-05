@@ -10,6 +10,46 @@ propose public-document changes and hold them for explicit approval, including g
 
 Deliver retained improvements to ordinary single-ID calls; a rejected experiment does not close a performance gap.
 
+Optimize only primary consumer use cases. Profile every actual hotspot and performance or resource
+gap against the main qualified rivals for those calls, then fix the gaps. Other scenarios are
+excluded from optimization during this effort; existing correctness contracts remain protected.
+
+Execute only this sequence; older unchecked proposals below are held, not dispatch instructions.
+
+- [ ] Map primary README consumer calls to current production code and maintained rival rows:
+      generate one identifier, parse or convert one identifier, and encode or decode one masked
+      UUIDv7. Include paired or value calls only where they serve the same ordinary consumer job.
+- [ ] Compare each primary call with its main qualified rivals and same-output native floor.
+      Reuse applicable evidence; refresh stale comparisons after retained changes. Record speed
+      and resource gaps separately, and rank unresolved gaps before selecting implementation work.
+- [ ] Profile the actual complete calls with gaps and inspect their faster rivals. Name the
+      removable work, the rival explanation, and the observation that would reject the attribution.
+- [ ] Change one evidenced bottleneck at a time. Reject a component-only gain, a primary-call
+      regression, or a speed gain paid for by material resource loss. Never choose a mechanism
+      merely because the existing experiment driver can measure it.
+- [ ] Verify each retained change through affected runtime and packed consumer calls, preserving
+      identifier and failure contracts. Rerank remaining primary gaps; stop repeating a rejected
+      mechanism unless new evidence changes its premise. Keep missing evidence explicitly open.
+
+Do not optimize caller buffers, batch paths, rare misuse, failure speed, or secondary inspection
+scenarios in this effort. Their existing checks remain correctness checks, not performance work.
+
+- [x] Compare wider pooled reads and erasures for sixteen-byte draws with the retained byte
+      blocks through complete owned-byte and slug calls. Copying may dominate the Bun portable
+      gap, or wider access and unpacking may add more work. Preserve unaligned offsets, byte order,
+      lazy initialization, every erased byte and refill failures; retain four-byte copying unchanged.
+      Both lost-byte and lost-erasure mutations must fail existing Node/Bun pool oracles before
+      timing. Reject absent repeated gains or a primary-call loss; inspect the retained view only
+      if throughput survives. Keep production unchanged during the screen.
+      `current-pool-word-sixteen-screen.log` shows slower Bun owned bytes in both process orders;
+      reject the wider copy and retained view. Existing Node/Bun byte and erasure oracles reject
+      both mutations. Preserve `candidates-pool-826UnC`; remove the live fixture.
+
+- [ ] Refresh complete primary single-ID calls against qualified alternatives after retained
+      alphabet selection. Older rankings may overstate conversion gaps; choose the next mechanism
+      only from current generation, parsing, conversion and masking evidence. Exclude caller-buffer
+      optimization and do not repeat rejected component tweaks without a changed premise.
+
 - [x] Screen a direct base64url preset in `generatePlainUuidV4Slug()` against resolving every
       alphabet through the shared helper. The default may pay removable normalization and error
       recognition, or the engine may already inline them. Preserve boxed strings, other alphabets,
@@ -1022,8 +1062,8 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       the approved default/configured distinction and submit any consumer-visible alternative for Art's ruling.
 - [ ] Compare primary-call resources and import costs against qualified alternatives through the
       maintained profile and resource owners; keep unmeasured axes explicitly open.
-- [ ] Run secondary guard, timestamp and caller-buffer comparisons after the primary calls;
-      retain only changes that do not regress primary calls or transactional writes.
+- [ ] HELD outside this effort: secondary guard, timestamp and caller-buffer optimization.
+      Resume only if the maintainer explicitly reopens those scenarios.
 - [ ] Reconcile every retained change with owning comments, declarations and consumer docs;
       run full checks once for final delivery and commit each completed part with targeted intermediate checks.
   - [x] Correct README's ambiguous-slug guidance to match the existing mask-first contract;
@@ -1250,7 +1290,8 @@ competitor. Caller buffers miss that, ns package / `uuid`: Bun UUIDv4 27.9 / 26.
         public conversions after retained generation changes. Both fresh-process matrices favor
         the dedicated pair on every measured runtime; preserve it. Total allocation and the
         immutable-value consumer comparison remain open.
-- [ ] Caller buffers: copy from the pool straight into the caller range after the refill succeeds,
+- [ ] HELD outside this effort: caller-buffer optimization. The prior proposal copies from the pool
+      straight into the caller range after the refill succeeds,
       removing the private copy; this changes every adapter's `fillRandom`. Caller bytes must stay
       unchanged when entropy fails: prove with the transactional buffer tests and entropy-failure
       injection. Then replace §Native floors' "try it if caller-buffer output becomes primary".
