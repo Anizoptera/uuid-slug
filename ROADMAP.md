@@ -89,6 +89,11 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `candidates-v4-kg6thC` rejects returning trusted native success inside its `try` block:
         Node and Bun correctness and resource witnesses pass, but Bun text is slower in both
         reversed orders. Preserve production and do not replay that unchanged candidate.
+        `candidates-v4-uULJyw` leaves an inline lowercase-only entry unresolved and does not
+        justify retention. `candidates-v4-da6Omz` separates the cold preset body: one Bun order
+        is unchanged and the reverse order improves. Preserve its complete source and proofs;
+        compare independently packed calls before retention. Reject without repeated material
+        improvement or if uppercase, portable generation, ownership or fallback regresses.
   - [x] Refresh one complete primary-call ranking before another source candidate. Compare UUIDv4
         and UUIDv7 text, owned bytes and slugs, paired output, and the six text/byte/plain-slug
         conversions on Node Current, Bun, Node LTS, Chromium and Deno. Reuse the maintained
