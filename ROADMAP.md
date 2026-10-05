@@ -267,7 +267,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `candidates-codec-Qg1Ion` rejects caller-buffer mutation on Node and Bun. The valid
         `candidates-codec-SUwqDL` passes correctness, but does not resolve text gains and slows
         Bun byte controls in both orders. Do not retain the newly allocated owned-block route.
-  - [ ] Parse primitive UUID text directly into the codec's existing private encoding scratch.
+  - [x] Parse primitive UUID text directly into the codec's existing private encoding scratch.
         UUID text lengths cannot be slug lengths. Both supported UUID text spellings can use
         the existing transactional caller-buffer parser, eliminating its temporary array and
         the subsequent copy while preserving the reusable cipher block. Sentinels still return
@@ -279,8 +279,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         caller-byte copies. `current-scratch-text-ranked-packed.jsonl` repeats complete calls
         across ranked runtimes; Node Current, Bun, Chromium and Deno text gains survive, with no
         resolved control loss. Equal-call Bun captures in `current-scratch-text-isolated-*`
-        reduce caller CPU in both orders. Retain the private scratch path; finish the LTS replay,
-        nested text-callback witness and complete gate before marking it complete.
+        reduce caller CPU in both orders. `current-scratch-text-lts-packed.jsonl` keeps the LTS
+        comparison; its base32 gain resolves and other intervals remain open. The shared nested
+        callback witness covers text and borrowed bytes. Complete checks pass; the old allocation
+        fails the zero-buffer resource gate. `current-scratch-text-retained-native` captures both
+        masked text alphabets on Node Current, Bun, Deno and Chromium. Native base64 parity and
+        missing external masking/resource comparisons remain open; this gain does not close them.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect
