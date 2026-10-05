@@ -313,6 +313,13 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `candidates-slug-ZF9A8S` passes behavior, resource, capability and corrupted-output
         proofs but slows base32 in both orders on Node and Bun. Bun base64url gain does not
         repeat. Reject this shape; preserve its isolated source and raw proofs in that report.
+  - [x] Isolate native call-target mutability without changing preset validation or writers.
+        Keep the captured native function constant and track its failure with a separate flag.
+        A mutable call target may inhibit specialization; an extra flag may instead cost more.
+        Compare the complete calls in both orders and reject base32 loss or absent repeated
+        base64url gain. Existing native probes must prove absence and permanent failure fallback.
+        `candidates-slug-hhEo3i` passes the probes but slows Bun base64url and base32 in both
+        orders. Reject the extra flag; the recorded isolated source supports future remeasurement.
   - [x] Profile the base32 writer before expanding its packing loop.
         `current-base32-writer-profile` completes 1,048,576 calls after 262,144 warm-up calls.
         Its sampling summary reports 277 samples in native `toString`, 48 in the base32 writer
