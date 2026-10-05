@@ -49,6 +49,13 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Compare each primary call with its main qualified rivals and same-output native floor.
       Reuse applicable evidence; refresh stale comparisons after retained changes. Record speed
       and resource gaps separately, and rank unresolved gaps before selecting implementation work.
+  - [x] Refresh ordinary owned UUIDv7 bytes and primary conversion throughput comparisons.
+        `current-primary-v7-owned-ranking-repeat.jsonl` does not reproduce the old Deno loss.
+        `current-primary-conversion-ranking.jsonl` shows Deno's faster Buffer slug decoder uses
+        shared backing storage; a plain view exposes that storage rather than owning it privately.
+        `current-deno-native-owned-decode-screen.jsonl` verifies native decoding into a dedicated
+        allocation but measures it slower than the package conversion. This mechanism screen
+        does not justify replacing production or establish resource parity.
   - [x] Compare Bun's ordinary owned UUIDv7 bytes with the fastest qualified library's resources.
         The retained ranking favors package throughput over `uuidv7` and `uuid`; it does not
         prove lower resource cost. Use the existing generation-case memory profiler with the
