@@ -82,6 +82,13 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Preserve configured behavior and fallback; reject a candidate without repeated
         complete-call improvement. Then address Deno owned UUIDv7 bytes and the native-floor
         gaps already listed here. Do not reopen rejected base64 wrapper shapes unchanged.
+        `current-default-v4-text-profile-{0,1,2,3,4,5}` repeats higher package caller CPU
+        than `crypto-randomuuid` in both orders, while Web Crypto costs more caller CPU than
+        the package. Both package and library use Node-compatible native generation; isolate
+        surrounding dispatch rather than replacing entropy or optimizing the portable writer.
+        `candidates-v4-kg6thC` rejects returning trusted native success inside its `try` block:
+        Node and Bun correctness and resource witnesses pass, but Bun text is slower in both
+        reversed orders. Preserve production and do not replay that unchanged candidate.
   - [x] Refresh one complete primary-call ranking before another source candidate. Compare UUIDv4
         and UUIDv7 text, owned bytes and slugs, paired output, and the six text/byte/plain-slug
         conversions on Node Current, Bun, Node LTS, Chromium and Deno. Reuse the maintained
