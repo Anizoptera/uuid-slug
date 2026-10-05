@@ -260,6 +260,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         indirect encoder map or wrapper. Treat measured base32 losses as unfinished implementation
         work, not grounds for leaving native unused. Completion still requires resolving primary
         regressions, proving decoder-only removal and comparing ranked complete calls and resources.
+        `current-native-direct-primary-packed.jsonl` resolves a Bun base32 slowdown; base64url
+        gains remain unresolved across its full process interval. Put exact-array base32 presets
+        on their existing writer before native dispatch, then compare the same complete calls.
   - [x] Profile the base32 writer before expanding its packing loop.
         `current-base32-writer-profile` completes 1,048,576 calls after 262,144 warm-up calls.
         Its sampling summary reports 277 samples in native `toString`, 48 in the base32 writer

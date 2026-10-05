@@ -193,6 +193,16 @@ export function uuidBytesToPlainSlug(
   offsetOrAlphabet: number | SlugAlphabet = 0,
   alphabet?: SlugAlphabet,
 ): PlainUuidSlug | UuidSlugError {
+  // Ordinary base32 calls need neither native selection nor general offset normalization. Exact
+  // payloads make the range check redundant; other forms keep the validated conversion below.
+  if (
+    (offsetOrAlphabet === BASE32HEX_NAME ||
+      (offsetOrAlphabet === 0 && alphabet === BASE32HEX_NAME)) &&
+    (offsetOrAlphabet === 0 || alphabet === undefined) &&
+    isUint8Array(bytes) &&
+    bytes.length === 16
+  )
+    return encode(bytes, BASE32HEX) as PlainUuidSlug;
   // Native encoding owns this exact plain-payload job. Offset windows and non-array forms retain
   // general conversion; masked tails never enter here. Keep base32 controls in the comparison
   // when changing this dispatch (bench/PERFORMANCE.md).
