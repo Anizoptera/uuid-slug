@@ -614,26 +614,28 @@ export const runtimeBoundaryCases = [
   {
     name: "codec-generated values retain the counter their preset layout describes",
     run(this: void) {
-      const originalNow = Date.now;
-      const fixedNow = originalNow();
       const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
-      Date.now = () => fixedNow;
-      try {
+      {
         // Only values carrying a generator layout need this sequence witness; ordinary default
         // UUID bytes and text have no corresponding ordering or counter promise.
         let first = unwrap(unwrap(codec.generateUuidV7Value()).extractV7Payload());
-        let second = unwrap(unwrap(codec.generateUuidV7Value()).extractV7Payload());
         assert.ok(first.counter);
         assert.equal(first.counter.bits, 42);
-        if (first.counter.value === (1n << 42n) - 1n) {
+        let comparisons = 0;
+        // The module generator captures its clock before this test. Observe equal timestamps
+        // rather than pretending that replacing Date.now changes an already captured function.
+        for (let index = 0; index < 64; index++) {
+          const second = unwrap(unwrap(codec.generateUuidV7Value()).extractV7Payload());
+          assert.ok(first.counter);
+          assert.ok(second.counter);
+          assert.equal(second.counter.bits, 42);
+          if (second.unixMs === first.unixMs && first.counter.value !== (1n << 42n) - 1n) {
+            assert.equal(second.counter.value, first.counter.value + 1n);
+            comparisons++;
+          }
           first = second;
-          second = unwrap(unwrap(codec.generateUuidV7Value()).extractV7Payload());
         }
-        assert.ok(first.counter);
-        assert.equal(second.unixMs, first.unixMs);
-        assert.equal(second.counter?.value, first.counter.value + 1n);
-      } finally {
-        Date.now = originalNow;
+        assert.ok(comparisons > 0, "the burst must reach the same-millisecond counter witness");
       }
     },
   },

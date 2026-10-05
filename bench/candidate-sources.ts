@@ -364,7 +364,7 @@ function codecCandidates(source: string): readonly SourceCandidate[] {
         return replaceOnce(
           nativeMaskedBytes(),
           "      if (nativeMaskedBytes && !generator",
-          "      if (false && nativeMaskedBytes && !generator",
+          "      if (nativeMaskedBytes && Object.hasOwn(values, AT_OPTION) && !generator",
         );
       },
     },
