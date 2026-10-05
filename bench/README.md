@@ -198,6 +198,8 @@ helper-placement candidates reject an already-inlined source; reproduce them wit
 Use `v4 string-first` to change only successful-string recognition while keeping the native
 helper in place. `string-first-lost-throw` must fail the shared generation-failure witness;
 otherwise a fast success check could conceal a changed default-call failure contract.
+Use `v4 native-direct-return` on the direct-delegation baseline to return native success before
+fallback-error handling. Compare complete calls; preset checks and exception fallback stay intact.
 For UUIDv4 native profiling, point `UUID_SLUG_PROFILE_MODULE` at the retained
 `<candidate>-<runtime>-api.mjs` and execute the report's `profile.mjs`.
 The UUIDv4 artifact without `-api` executes its timing corpus and is not an importable package API.

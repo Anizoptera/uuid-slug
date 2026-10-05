@@ -208,6 +208,37 @@ function v4Candidates(source: string): readonly SourceCandidate[] {
       },
     },
     {
+      name: "native-direct-return",
+      get source() {
+        // Native results need no package validation; move error handling off successful calls.
+        // Exact anchors restrict this experiment to the direct-delegation baseline.
+        return replaceOnce(
+          replaceOnce(
+            source,
+            "  let uuid: string | UuidSlugError;\n  try {\n    uuid = native();",
+            "  try {\n    const uuid = native();\n    return (textCase === UUID_TEXT_UPPERCASE ? uuid.toUpperCase() : uuid) as UuidV4StringFor<Case>;",
+          ),
+          [
+            "    uuid = portableAfterNative<UuidTextCase>(",
+            "      nativeCause,",
+            "      generatePortableUuidV4,",
+            "      UUID_TEXT_LOWERCASE,",
+            "      UUID_V4_GENERATION,",
+            "    );",
+            "  }",
+            '  if (typeof uuid !== "string") return generatedOrThrow(uuid);',
+            "  return (textCase === UUID_TEXT_UPPERCASE ? uuid.toUpperCase() : uuid) as UuidV4StringFor<Case>;",
+          ].join("\n"),
+          [
+            "    return generatedOrThrow(portableAfterNative<UuidTextCase>(",
+            "      nativeCause, generatePortableUuidV4, textCase, UUID_V4_GENERATION,",
+            "    )) as UuidV4StringFor<Case>;",
+            "  }",
+          ].join("\n"),
+        );
+      },
+    },
+    {
       name: "array-buffer",
       get source() {
         return replaceOnce(

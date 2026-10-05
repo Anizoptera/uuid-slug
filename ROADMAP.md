@@ -119,6 +119,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Bun, Deno, Chromium, Firefox, WebKit and Node Current without JIT. Every timing difference
         is unresolved; native and rival parity remain open. Keep direct delegation as the ruled
         baseline, not as a claimed speedup. Default wrapper work remains the next primary target.
+  - [ ] Screen direct native success return against the baseline without identity tracking.
+        Keep preset checks and exception fallback; reject repeated primary-call losses. The
+        earlier trusted-function experiment cannot settle this changed success/error boundary.
   - [x] Test UUIDv7 default text's successful-string recognition against its native floor.
         The native helper already returns a string on success; the public preset path then
         performs an Error-instance check. Compare a string-first result branch without changing
