@@ -3765,6 +3765,35 @@ The two UUID payloads and fixed case order limit the conclusion to these warmed 
 process observations do not establish precise confidence intervals, general-input dominance,
 individual-call latency or total allocation. Recompare when either implementation or runtime changes.
 
+### Fixed-call warm-up screen
+
+Do not replace routine elapsed-time warm-up with a fixed call count on this evidence; passing
+large-slowdown fixtures does not establish equivalent preparation or sensitivity to smaller losses.
+
+The 269.63-second full-check log `/tmp/uuid-slug-base32-check.log` contains 3,072 packed timing
+rows: 48 calls, 16 process pairs and two hosts. Recorded warm-up totals 116.15 seconds; seven
+3 ms sampling windows per row require at least another 64.512 seconds. These totals exclude
+packing, startup, cleanup and other checks, so warm-up alone cannot repair the whole lane.
+
+`current-fixed-warmup-control-4096.jsonl` and `current-elapsed-warmup-control-32.jsonl` retain
+16 process pairs and seven 3 ms batches for six representative calls on Node 24.21.0 and Bun
+1.4.2. Both unchanged controls pass. Fixed preparation records 0.474 seconds of warm-up versus
+12.295 seconds for elapsed preparation, but Bun plain decoding measures 1.349 times its matched
+elapsed-control median and masked pairs measure 1.122 times. Separate acquisition epochs cannot
+attribute those differences to preparation alone.
+
+`current-fixed-warmup-codec-defect-4096.jsonl` and
+`current-fixed-warmup-pair-defect-4096.jsonl` reject discarded-draw mutations for codec values
+and masked pairs on both hosts. They inject large losses and do not establish smaller-loss
+sensitivity. `current-fixed-warmup-control-16384.jsonl` passes its unchanged control but records
+Bun sampling-window overruns and materially different costs; the cause remains unresolved.
+
+The screen's batch arrays were sorted before reporting, so their original time order is lost.
+Host and browser records must retain acquisition order; summaries compute medians separately.
+`current-acquisition-order/` exercises real Node, Bun, Deno and Chromium decoding and masked pairs
+with seven batches per call and preserves nonmonotonic arrays. This reporting check establishes
+neither adequate warm-up nor a faster complete lane. Routine timing policy remains unchanged.
+
 ### Unchanged packed graph checks
 
 Skip primary-call regression timing when independently packed output is byte-identical; measuring

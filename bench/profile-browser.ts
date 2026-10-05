@@ -131,7 +131,7 @@ async function measureProfileCases(
       operations += count;
       await yieldToBrowser();
     }
-    ns.sort((left, right) => left - right);
+    // Retain acquisition order to expose warm-up slopes and pauses; summary medians do not need it sorted.
     rows.push({ name, ns, operations, maxBatchMs, maxUninterruptedMs, sink });
   }
   // Finish every throughput row before per-call clocks can alter another row's engine state.

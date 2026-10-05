@@ -239,7 +239,7 @@ for (const [name, fn] of selected) {
   const heapAfter = process.memoryUsage();
   gc?.();
   const retained = process.memoryUsage();
-  ns.sort((a, b) => a - b);
+  // Retain acquisition order to expose warm-up slopes and pauses; summary medians do not need it sorted.
   console.log(
     JSON.stringify({
       name,

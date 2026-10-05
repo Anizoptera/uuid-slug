@@ -24,6 +24,23 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Measure the complete routine lane and pre-commit hook against the feedback-loop limits in
       `bench/README.md` §Regression protection. Attribute excess time to their actual commands;
       repair routing or redundant work without weakening primary-call regression detection.
+  - [x] Preserve batch acquisition order in host and browser profile records. In-place sorting
+        erases the timing sequence needed to distinguish preparation changes from later pauses;
+        summary functions already accept unsorted samples. Remove only the reporting sorts,
+        exercise both real profilers, and retain existing summary and regression behavior.
+        Real Node, Bun, Deno and Chromium captures retain chronological batches; evidence and
+        limits live in `bench/PERFORMANCE.md` §Fixed-call warm-up screen.
+  - [ ] Screen equal completed warm-up calls using the existing host profiler before changing
+        routine timing policy. The slow full-check log records warm-up as the largest measured
+        cost. Fixed elapsed windows may repeat unnecessary preparation; too few calls may instead
+        conceal JIT or allocation regressions. Compare unchanged packed controls and valid-output
+        waste mutations across generation, conversion, masking and immutable values; preserve
+        independent process counts, sample windows and family-wise uncertainty. Reject a setting
+        that loses targeted detection or materially changes control timing; no screen closes the
+        complete-lane or browser requirement.
+        The fixed-call pilot reduces preparation work but does not establish equivalent Bun
+        timing; the larger-count control has sampling overruns. Keep policy unchanged and resolve
+        these differences with chronological captures before selecting another setting.
   - [x] Avoid packed timing when only benchmark dependencies change. `bench/check-inputs.ts`
         treats every manifest and lock change as production work; the scure dev-only addition
         therefore runs the whole timing comparison. Preserve detection of changed build tools,
