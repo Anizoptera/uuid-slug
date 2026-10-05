@@ -25,13 +25,20 @@ Object.defineProperty(Uint8Array.prototype, "toBase64", {
           return mode === "corrupt" ? result.slice(0, 21) + "A" : result;
         },
 });
-const { encode, BASE64URL, BASE32HEX } = await import("../src/alphabet");
+const { encode, BASE64URL, BASE32HEX, BASE64URL_NAME, BASE32HEX_NAME } =
+  await import("../src/alphabet");
+const plain =
+  process.env.UUID_SLUG_NATIVE_PLAIN_BOUNDARY === "slug" ? await import("../src/slug") : undefined;
 for (let seed = 0; seed < 256; seed += 1) {
   const bytes = Uint8Array.from({ length: 16 }, (_, index) => seed * 197 + index * 131);
-  assert.equal(encode(bytes, BASE64URL), Buffer.from(bytes).toString("base64url"));
+  assert.equal(
+    plain ? plain.uuidBytesToPlainSlug(bytes, BASE64URL_NAME) : encode(bytes, BASE64URL),
+    Buffer.from(bytes).toString("base64url"),
+  );
 }
 const plainCalls = calls;
 const payload = new Uint8Array(16);
+if (plain) assert.equal(plain.uuidBytesToPlainSlug(payload, BASE32HEX_NAME), "0".repeat(26));
 for (let tail = 0; tail < 16; tail += 1) {
   assert.equal(encode(payload, BASE64URL, tail, 4), "A".repeat(21) + BASE64URL.chars[tail]);
   assert.equal(encode(payload, BASE32HEX), "0".repeat(26));

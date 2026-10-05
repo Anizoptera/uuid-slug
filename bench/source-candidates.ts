@@ -65,6 +65,10 @@ for (const [name, value] of Object.entries({ durationMs, samples, warmupMs }))
 // Each source owner names its own caller corpus. Exhaustiveness prevents a new group silently
 // inheriting another group's file or measurements while reporting a successful screen.
 const groups = {
+  "plain-conversion": {
+    names: ["bytes.base64", "plain.encode", "bytes.base32", "base32.encode"],
+    tests: ["__test__/alphabet.test.ts"],
+  },
   v4: {
     names: [
       "package.v4.text.native",
@@ -254,12 +258,15 @@ try {
         failures.map((result) => result.reason),
         `Candidate rejected before timing: ${candidate.name}`,
       );
-    if (group === "alphabet") {
+    if (group === "alphabet" || group === "plain-conversion") {
       const nativePlain =
-        candidate.name === "native-branch" || candidate.name === "native-dispatch";
+        candidate.name === "native-branch" ||
+        candidate.name === "native-dispatch" ||
+        candidate.name === "native-plain-boundary";
       for (const mode of ["present", "absent", "throw"]) {
         const output = await command("bun", ["__test__/alphabet-native-probe.ts", mode], tree, {
           UUID_SLUG_EXPECT_NATIVE_PLAIN: nativePlain ? "1" : "0",
+          UUID_SLUG_NATIVE_PLAIN_BOUNDARY: group === "plain-conversion" ? "slug" : "alphabet",
         });
         await writeFile(join(report, `${candidate.name}-native-${mode}.jsonl`), output);
         if (!output.includes('"proof":"native plain encoding"'))
@@ -271,7 +278,11 @@ try {
         const mutation = Bun.spawn(["bun", "__test__/alphabet-native-probe.ts", "corrupt"], {
           cwd: tree,
           timeout: 30_000,
-          env: { ...process.env, UUID_SLUG_EXPECT_NATIVE_PLAIN: "1" },
+          env: {
+            ...process.env,
+            UUID_SLUG_EXPECT_NATIVE_PLAIN: "1",
+            UUID_SLUG_NATIVE_PLAIN_BOUNDARY: group === "plain-conversion" ? "slug" : "alphabet",
+          },
           stdout: "pipe",
           stderr: "pipe",
         });
