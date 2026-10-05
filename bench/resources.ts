@@ -544,6 +544,15 @@ try {
     chars: 22,
   });
   // Warm lazy generator state before counting per-ID work; setup is a different resource boundary.
+  assert.ok(!(api.generateUuidV7Value() instanceof Error));
+  // One private payload array backs the retained value; discarded arrays are avoidable work.
+  check("root UUIDv7 value", () => api.generateUuidV7Value(), {
+    buffers: 1,
+    views: 0,
+    copies: 0,
+    slices: 0,
+    errors: 0,
+  });
   for (const [name, call] of [
     ["default masked UUIDv7 slug", () => codec.generateMaskedUuidV7Slug()],
     ["base32 masked UUIDv7 slug", () => base32Codec.generateMaskedUuidV7Slug()],

@@ -10,5 +10,6 @@ export const RESOURCE_REGRESSION_CASES = [
   ["masked-slug-temporary", "default masked UUIDv7 slug: buffers=2 exceeds 1"],
   ["masked-pair-temporary", "default masked UUIDv7 pair: buffers=2 exceeds 1"],
   ["codec-value-temporary", "codec UUIDv7 value: buffers=2 exceeds 1"],
+  ["root-value-temporary", "root UUIDv7 value: buffers=2 exceeds 1"],
   ["native-revalidation", "default UUIDv4 text: chars=36 exceeds 0"],
 ] as const;

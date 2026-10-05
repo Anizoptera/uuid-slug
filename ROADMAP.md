@@ -29,6 +29,13 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
       independent native or qualified-library references, measure normal variation before choosing
       a budget, and prove a material slowdown fails it. Keep timing and instrumented counts separate;
       neither establishes total allocation or protects an unmeasured runtime.
+  - [x] Protect root immutable UUIDv7 generation from extra payload allocation.
+        `value.generate` has independent timing coverage and a warmed root resource witness.
+        Its one-array ceiling permits less work and forbids extra views, copies, slices and errors.
+        The shared discarded-array mutation preserves the returned value and fails the root
+        diagnostic while unchanged Node, Bun, Deno and Chromium controls pass. Evidence is in
+        `/tmp/uuid-slug-root-value-resource-proof.log`, its `-deno.log` and `-chromium.log`.
+        This protects visible operations, not total allocation or a new generation guarantee.
   - [x] Bound avoidable allocation in masked generation and codec-value generation.
         The existing resource gate measures warmed masked strings, masked pairs in both alphabets
         and codec values. Each currently constructs one payload array; the ceiling permits fewer,

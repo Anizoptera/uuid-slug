@@ -65,6 +65,14 @@ export const parseUuid = new Proxy(api.parseUuid, {
   },
 });
 
+export const generateUuidV7Value = new Proxy(api.generateUuidV7Value, {
+  apply(target, receiver, args) {
+    // Discarded storage changes resource cost without weakening the returned immutable value.
+    if (mode === "root-value-temporary") new Uint8Array(16).fill(0);
+    return Reflect.apply(target, receiver, args);
+  },
+});
+
 export const createUuidV7MaskingCodec = new Proxy(api.createUuidV7MaskingCodec, {
   apply(target, receiver, args) {
     const codec: ReturnType<typeof target> = Reflect.apply(target, receiver, args);
