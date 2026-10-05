@@ -131,7 +131,10 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Keep preset checks and exception fallback; reject repeated primary-call losses. The
         earlier trusted-function experiment cannot settle this changed success/error boundary.
         `candidates-v4-KB0Fjw` has large variation in unchanged portable controls and native calls;
-        keep production unchanged. Resolve the measurement instability before selecting this candidate.
+        the focused repeat steadies Bun controls but leaves only a small lowercase gain and no
+        uppercase gain. Node with JIT selects the unchanged portable writer; its run cannot
+        judge this native branch. Direct profiling without JIT gives no repeated improvement.
+        Keep production unchanged; this candidate does not close the qualified-rival gap.
   - [x] Test UUIDv7 default text's successful-string recognition against its native floor.
         The native helper already returns a string on success; the public preset path then
         performs an Error-instance check. Compare a string-first result branch without changing
