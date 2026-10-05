@@ -125,6 +125,31 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
       native work concentrates in `toBase64`. Resident and committed growth vary; neither proves
       gross allocation or a leak. Inspect a direct plain-result path that avoids the shared writer
       dispatch; do not repeat rejected generic native branches or bound calls unchanged.
+  - [x] Screen a separate plain-UUID encoder for Bun byte-to-slug conversion. Select its
+        native function once; other hosts keep the existing encoder identity, and masked
+        tails keep their current writer. The hypothesis is that separating the plain call
+        avoids the failed shared dispatch shape. Reject it if repeated complete conversions
+        do not improve, base32 calls lose, or capability-failure and payload proofs fail.
+        Use the existing native probe and packed comparison before widening its callers.
+        `current-plain-native-separated-packed-fixed.jsonl` improves base64url conversion
+        but slows base32hex. Reject the shared plain helper shape. Screen a native-only optional
+        helper so base32hex reaches its original encoder directly; retain neither trade-off.
+        `current-plain-native-optional-packed.jsonl` still slows base32hex, so the public
+        conditional is also rejected. Screen selecting the plain writer on the existing
+        alphabet object once: the public call then has one writer call and no native branch.
+        This adds a fixed method per alphabet; reject any primary-call or resource regression.
+        Alphabet-selected wrappers also slow base32hex. Compare its wrapper with storing the
+        original encoder directly: recovery implicates the added call layer; continued loss
+        rejects indirect dispatch itself. Keep the same public call and native writer otherwise.
+        The direct-method screen improves base64url by 3.8% while leaving a possible base32
+        loss unresolved. Decoder-only Bun browser builds with development selection reject
+        the metadata design: minified output grows from 7,771 to 11,514 bytes and unminified
+        output retains `encodePortable`. Both bundles execute the same exact-byte oracle.
+        Reject all four shapes; remove their production and probe changes. The native gap
+        remains open, with no demonstrated physical floor or permission to slow another job.
+  - [x] Add plain-slug decoding to the existing named-root consumer graph before another
+        encoder change. Keep the consumer job visible in artifact measurements; existing
+        masking and generation exclusions do not establish removal of encoding functions.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect

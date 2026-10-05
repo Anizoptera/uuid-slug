@@ -180,6 +180,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
 - Tree-shaking checks start from named root imports for each distinct consumer job. Execute every
   result, require unrelated heavy code to be absent, and compare independent optimizer families;
   subpaths are the direct-ESM alternative, not a substitute for a removable root graph.
+  Compare decoder-only bundles before adding writer functions to shared alphabet metadata;
+  a conversion speedup cannot justify retaining encoding code for a caller that only decodes.
 - Read `docs/cross-language.md` §JavaScript packaging before changing emitted module boundaries,
   internal exports, moved code, import-time initialization, tsdown, minification, source maps,
   `sideEffects`, or optimizer annotations. Before deleting a moved file, account for every original

@@ -49,6 +49,15 @@ const jobs = [
     versions: [],
   },
   {
+    name: "slug-decode",
+    imports: "plainSlugToUuidBytes",
+    probe:
+      'const value = plainSlugToUuidBytes("sbpZnUhES7Ch7qwK64h19Q"); if (value instanceof Error || value.constructor !== Uint8Array || value.join(",") !== "177,186,89,157,72,68,75,176,161,238,172,10,235,136,117,245") throw new Error("plainSlugToUuidBytes failed");',
+    masked: false,
+    uuidValue: false,
+    versions: [],
+  },
+  {
     name: "slug-v4",
     imports: "generatePlainUuidV4Slug",
     probe:
