@@ -287,18 +287,23 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 
 Ordinary generation defaults must not pay for additional guarantees the caller did not request.
 
+Every default hot path uses the corresponding proper native implementation's guarantees as its
+ceiling. Trust native results without extra result validation, trust tracking, or repairs for
+stronger package guarantees. Offer stronger guarantees only through explicit configurable paths.
+Correct conflicting specifications and tests before implementation; no further approval is needed
+for this correction. This does not remove caller-input validation or change identifier wire formats.
+
 Default generation needs no stronger guarantees than correctly implemented primary qualified
 rivals provide. Establish those guarantees from their implementations and behavior, not names or
 existing package tests. Offer additional guarantees through optional configured generation;
 an implementation convention is not a reason to reject an otherwise correct faster default.
-Before rejecting native generation, actively try to disprove the guarantee: compare a qualified
-rival without it and identify the concrete primary-user harm its absence causes. An inherited
-guarantee is unproven until that challenge survives. Trace it to the consumer's requirement and
-test the native behavior. Remove unnecessary default guarantees rather than preserving an inherited
-restriction; stronger guarantees remain optional. Existing tests do not establish that requirement.
+When proper native behavior conflicts with a default guarantee, correct that guarantee and its
+tests instead of rejecting native output. Measure implementation differences without imposing
+stronger default requirements; existing tests cannot override the native baseline.
 
 Choose defaults for end-user performance and resource efficiency across measured trade-offs.
-Preserve published identifier, secure-entropy, ownership, validation, and failure contracts.
+Preserve identifier formats, secure entropy, caller ownership, input validation, and failure handling;
+revise any default guarantee that exceeds the corresponding proper native implementation.
 An unanswered guarantee proposal or an agent-derived constraint does not extend those contracts.
 Measure native timestamp advancement and explain its consumer consequences; do not reject native
 generation solely to enforce the unapproved promise that a timestamp never runs ahead of the clock.

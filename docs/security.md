@@ -2,6 +2,10 @@
 
 Use UUIDs as identifiers, not passwords, access tokens, or proof of authorization.
 
+Default hot paths trust proper native runtime results and provide no stronger guarantees than
+those implementations. Extra guarantees belong only to explicitly configured calls; validating
+native results does not prove the security of the platform that produced them.
+
 Built-in generation draws from platform cryptographic randomness. TypeScript uses native UUID
 methods when available, otherwise Node crypto or Web Crypto. Rust uses fallible `getrandom`;
 browser generation requires `wasm-js`. Neither implementation substitutes non-cryptographic

@@ -73,15 +73,17 @@ efficiency. A reproducible misuse alone does not justify that cost.
   Before rejecting a faster implementation, name the published promise or explicit maintainer
   requirement it violates. An unanswered proposal, existing test, or agent-derived plan constraint
   is not a new guarantee. Fix conflicting contract text and the roadmap before implementation.
+  Default hot paths must provide no guarantees beyond the corresponding proper native implementation.
+  Trust native results directly; do not add result validation, trust tracking, clock repair, or
+  other work to enforce stronger guarantees. Keep extra guarantees on explicit configurable paths.
+  Correct conflicting specs and tests before implementation; this ruling already authorizes that
+  correction, so do not request approval again. Caller-input validation and wire formats remain distinct.
   Default generation needs no stronger guarantees than correctly implemented primary qualified
   rivals provide. Put additional guarantees on optional configured paths; do not reject a rival
   for lacking an agent-added guarantee. Identify its actual behavior before choosing the default.
-  Actively try to disprove each guarantee used to reject faster native output: find a qualified
-  rival without it and show the concrete primary-user harm its absence causes. Treat inherited
-  guarantees as unproven, not presumptively correct. Trace any surviving guarantee to a consumer
-  requirement and inspect native behavior before rejecting it. Revise unnecessary default
-  guarantees to the qualified rival baseline; keep extra guarantees optional. Existing tests
-  and implementation choices cannot veto that audit.
+  When proper native behavior conflicts with a default guarantee, correct the guarantee and its
+  tests instead of rejecting native output. Existing tests and implementation choices cannot veto
+  the native baseline; measure differences without turning them into default requirements.
   Read `docs/public-api.md` §Generation and codecs
   before deciding which generation properties belong on defaults or configured generators.
   New guarantees require a maintainer ruling before code or tests impose them. Intra-millisecond ordering
@@ -389,8 +391,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
   buffers, generators, custom entropy, masking) may cost more than a native floor only by work that
   floor lacks; they must still beat every qualified competitor. Reach parity by combining native
   output, patched native output, pooled native entropy, and portable work per runtime; never settle
-  for one path everywhere. A native path that breaks a package contract is not adopted, but its cost
-  stays the target. Every call family needs a floor row, and every open gap needs a `ROADMAP.md`
+  for one path everywhere. Align default guarantees with proper native behavior instead of rejecting
+  native output for stronger package guarantees. Every call family needs a floor row, and every open gap needs a `ROADMAP.md`
   task until a change closes it or `bench/PERFORMANCE.md` records a cause no implementation can remove.
   When native output is faster, minimize the path to that native call before optimizing a portable
   replacement. Select per runtime and output; keep TypeScript as the fallback or measured faster
@@ -400,7 +402,7 @@ efficiency. A reproducible misuse alone does not justify that cost.
   if shared integration slows another primary call, fix that integration instead of abandoning
   the faster native capability. Do not close the task while either primary regression remains.
 - Rank apples-to-apples consumer outcomes, not identical internals. Correct wire output, secure
-  entropy, and published guarantees are mandatory; weigh other differences by measured consumer
+  entropy are mandatory; default guarantees must not exceed proper native behavior. Weigh other differences by measured consumer
   harm. Clock rollback, sequence, buffer, ownership, validation, and failure strategies remain
   comparable unless their effect materially weakens the requested result. Keep weaker rows timed
   and inspect faster mechanisms that could preserve our guarantees; keep native primitives as floors.

@@ -1119,8 +1119,9 @@ and masking limits.
 - UUID collisions are possible. Keep a uniqueness constraint where a duplicate could overwrite or
   misidentify data. On conflict while creating a record, keep the existing record and generate a
   new ID.
-- Native UUID text generation falls back to the portable generator if a result fails validation
-  or a call throws. If both fail, the returned error retains both causes.
+- Default generation trusts proper native runtime results and provides no stronger guarantees.
+  Stronger guarantees belong to explicitly configured calls. Native call failures fall back to
+  portable generation; if both fail, the error retains both causes.
 - A v7 carries a 48-bit millisecond timestamp in its leading bits, so UUID strings sort by their
   encoded timestamps across different milliseconds.
   Backfilled timestamps or a clock adjustment need not reflect generation order.

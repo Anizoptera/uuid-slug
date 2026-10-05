@@ -1,7 +1,8 @@
 # Native parity
 
 Complete the remaining performance work without changing identifier formats, secure entropy,
-validation, ownership, or published generation guarantees. Optimize defaults under
+caller-input validation or ownership. Default hot paths provide no guarantees beyond proper native
+implementations; stronger guarantees require explicit configuration. Optimize defaults under
 `docs/public-api.md` §Generation and codecs; measure clock drift without imposing an unrequested
 never-ahead promise. Keep remote writes unauthorized. Repair agent guidance before implementation;
 propose public-document changes and hold them for explicit approval, including generated reports.
@@ -103,18 +104,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Current; the native kernel and configured entropy paths are not this experiment's target.
         `candidates-v4-CVrsro` is slower on Bun in both orders. Keep the existing predicate;
         another spelling of its checks does not close the native-call wrapper gap.
-  - [ ] Obtain approval for the exact README native UUIDv4 guarantee change before testing
-        direct delegation without first-result validation and function-identity trust tracking.
-        Proposed replacement for the native-generation guarantee: "Default UUIDv4 text generation
-        trusts the runtime's native UUID result. Native call failures fall back to portable
-        generation; if both fail, the error retains both causes. Native UUIDv7 text generation
-        also falls back when its first result fails validation."
-        The faster qualified UUIDv4 rival exports the native function without validating results.
-        This change removes protection against a malformed replacement of the platform method;
-        it preserves secure randomness, output spelling and failure fallback. No speed gain is
-        established until a candidate survives complete-call and resource comparisons. Hold this
-        contract-dependent candidate under the root public-document approval rule; do not spend
-        further experiments rearranging the rejected wrappers while this decision is pending.
+  - [ ] Remove native-result validation and function-identity trust tracking from default UUIDv4
+        and UUIDv7 calls after reconciling their documentation. Trust proper native results;
+        preserve caller-input validation, secure randomness, output spelling and native-exception
+        fallback. Extra guarantees belong only on explicit configurable paths. This ruling is
+        settled and must not be raised for approval again.
+  - [ ] Verify direct native delegation in Node and Bun, then compare complete primary calls
+        with the same-output native implementations and qualified rivals. Record repeated speed
+        and resource evidence; removing unnecessary guarantees alone does not prove a speed gain.
   - [x] Test UUIDv7 default text's successful-string recognition against its native floor.
         The native helper already returns a string on success; the public preset path then
         performs an Error-instance check. Compare a string-first result branch without changing
@@ -1618,8 +1615,8 @@ measure lane durations, isolate timings from competing work, and retain only def
   preset) costs no more than the fastest native path with the same output on every ranked runtime,
   and beats every qualified competitor. Configured calls may exceed native only by work native
   lacks, and still beat every competitor. Combine native, patched native, pooled entropy, and
-  portable work per runtime; never one path everywhere. A native path that breaks a contract is not
-  adopted, but its cost stays the target. Every call family needs a floor row. A gap closes only by
+  portable work per runtime; never one path everywhere. Default guarantees follow proper native
+  behavior; extra guarantees require explicit configuration. Every call family needs a floor row. A gap closes only by
   a change or by a cause in `bench/PERFORMANCE.md` that no implementation can remove.
 - Scope: optimize primary successful consumer calls only; secondary scenarios are held.
   Runtime rank: Node Current and Bun, then Node LTS and Chromium, then Deno, then Node JITless.
@@ -1627,7 +1624,7 @@ measure lane durations, isolate timings from competing work, and retain only def
   cannot close a primary-use gap;
   compare the complete successful call's allocation and resource costs against qualified alternatives.
 - Correctness first: map contracts, add falsifiers, and mutate before timing. Keep a change only
-  when two packed replays reproduce it. Wire formats and README §Guarantees stay fixed.
+  when two packed replays reproduce it. Wire formats stay fixed; default guarantees follow proper native behavior.
 
 ## Derived doctrine (agent decisions)
 

@@ -54,10 +54,12 @@ Rules:
   tests fail for the intended defect. A faster result has no standing until those tests pass again.
 - Competitor and randomness figures are informational. Process failures, empty output and
   malformed records fail the matrix while successful measurements remain visible.
-- Compare consumer outcomes, not implementation choices. Correct wire output, secure entropy, and
-  published guarantees are mandatory; weigh other differences by measured consumer harm. Keep a
+- Compare consumer outcomes, not implementation choices. Correct wire output and secure entropy
+  remain required; default guarantees must not exceed proper native behavior. Weigh other differences
+  by measured consumer harm. Keep a
   materially weaker result out of the comparable ranking, but inspect any faster mechanism that could
-  preserve our guarantees. Record the exact mismatch and recheck it after updates.
+  preserve the requested result. Correct stronger default guarantees instead of rejecting proper
+  native behavior. Record the exact mismatch and recheck it after updates.
   Name the violated contract when rejecting a row. Timestamp advancement alone does not violate
   a module-level never-ahead guarantee: that guarantee is not published. Keep drift observations
   separate from qualification; apply [generation policy](../docs/public-api.md#generation-and-codecs).
@@ -185,9 +187,9 @@ Use `v4 native-zero-hex native-zero-base64` to compare native decoding of fixed 
 before the unchanged secure fill; capability selection runs once and absent decoders use the
 ordinary constructor. These candidates measure complete owned-byte generation, not decoder speed.
 On a revision with the native text helper, use `v4 inline-native inline-native-string-first` to separate native helper placement from
-successful-string recognition. Preset normalization, native identity validation, portable
+successful-string recognition. Preset normalization, direct native delegation, portable
 fallback and dual-failure causes stay intact. `inline-native-lost-fallback` must fail the
-shared trusted-native failure witness in Node and Bun before timing.
+shared native-exception failure witness in Node and Bun before timing.
 `inline-native-extra-buffer` must fail the default-text resource counter on Bun before timing;
 the mutation preserves output and exposes work that byte-generation counters cannot see.
 Both native mutations also apply to the retained public-function implementation. Historical
