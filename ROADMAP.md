@@ -835,6 +835,16 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         configured calls, and full entropy draws can erase sequence savings; include those controls.
         Reject on payload, clock, failure, reentrancy or allocation regression before timing;
         require repeated complete-call gains and matched resources before production retention.
+        `current-independent-default-text-packed.log` contains every selected Node and Bun call,
+        with independent paired processes and the requested batches. Pair gains survive packing;
+        configured controls remain unresolved. Lost-prefix, lost-tail and lost-clock mutations
+        reach their intended oracles before timing. Retain no production substitution yet.
+  - [ ] Distinguish recurring allocation from allocator or JIT growth for independent text draws.
+        `current-independent-default-text-fixed-*` and `current-independent-default-text-memory-repeat-*`
+        show lower caller CPU and retained heap for pairs, but committed-memory growth conflicts.
+        Compare equal successive call windows after identical preparation in the existing profiler;
+        recurring growth rejects the candidate, while bounded initialization permits qualification
+        on the remaining runtimes. More throughput samples cannot resolve this resource question.
 - [x] Screen the argument-free UUIDv7 value call without its empty options record and absent-field
       readers; preserve the owned bytes, immutable value, payload layout and thrown entropy failure.
       Require the lost-throw mutation to fail both runtime tests before timing. Compare the full
