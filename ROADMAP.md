@@ -790,6 +790,13 @@ keep contract changes reserved for Art, and claim impossibility only with a name
           Bun's changed wrapper is reached. Frame removal alone does not establish saved cost.
     - [ ] Resolve packed startup and total allocation parity against qualified references; the
           equal-call memory comparison measures collected heap, not gross allocation.
+      - [x] Compare exact Bun `v4.string` and `native.v4.string` through equal warmed call windows
+            in reversed process order. `current-v4-native-floor-exact-{0,1,2,3}-*` records one
+            selected case per capture. First-window package CPU is higher; later windows overlap
+            and committed memory does not grow. The captures do not isolate a persistent wrapper
+            cost or establish total allocation or packed startup parity. Exclude the earlier
+            non-exact `current-v4-native-floor-{0,1}-*` captures: their recorded case sets differ.
+            Keep the native floor gap open; prioritize a larger attributed complete-call cost.
     - [x] Add UUIDv4 text resource witnesses and prove the native text path is reached with a
           result-preserving temporary-buffer mutation before production integration.
 - [ ] Measure the module-default UUID-plus-slug call against one draw followed by both conversions;
