@@ -381,6 +381,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         | Small remaining difference | Bun UUIDv7 text | `Bun.randomUUIDv7` text output | `current-native-baseline-v7-ranking-repeat.jsonl` shows a small native-floor difference and a lead over tested qualified libraries, including `fastv7`. Preserve native delegation rather than adding another wrapper. |
         | Preserve | Deno owned UUIDv7 bytes | `uuidv7` | `current-primary-v7-owned-ranking-repeat.jsonl` does not reproduce the old qualified-rival loss. Preserve the independent writer; do not select a rewrite from the stale ranking. |
         | Preserve | Deno UUID text to bytes | Buffer hex decoding | `current-primary-text-owned/` retains the raw floor separately and measures equivalent native output with a private plain-array copy. The copy-inclusive decoder and native `fromHex` trail the package in each fresh process; preserve parsing. This does not establish total allocation parity. |
+        | Preserve | Base64url plain slug to lowercase UUID text on ranked hosts | Native base64url decoding plus hex, or Buffer decoding plus hex | `current-primary-slug-text-ranked-repeat.jsonl` favors the package in every measured fresh process. The short Bun smoke loss does not reproduce; preserve the complete conversion. Allocation parity and other input forms remain unverified by this comparison. |
 
         The corrected default-call report above supersedes older generation ordering. Node Current,
         Node LTS and Chromium favor the package on the compared generation and conversion calls;
@@ -399,6 +400,22 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         accepts comma-separated case-name substrings, and a single term retains its old meaning.
 - [ ] Profile the actual complete calls with gaps and inspect their faster rivals. Name the
       removable work, the rival explanation, and the observation that would reject the attribution.
+  - [x] Resolve the Bun base64url plain-slug-to-UUID-text gap against native decoding plus hex.
+        The latest complete-call smoke comparison exposes a loss omitted from the current ranking;
+        repeat this exact primary conversion in fresh processes before choosing code. The package
+        allocates decoded bytes and uses the UUID writer; native decoding plus native hex
+        may remove formatter work, while input validation and string joining may erase the gain.
+        Preserve canonical padding rejection, both text cases, base32 and recoverable inputs.
+        A nonreproducing gap preserves the current implementation; a persistent material loss
+        selects public-call profiling and one isolated native conversion candidate, with resource
+        and unaffected primary-call controls required before production retention.
+        `current-primary-bun-slug-text-{0,1,2}.jsonl` favors the package in fresh source runs.
+        `current-primary-slug-text-ranked-repeat.jsonl` repeats the maintained bundled matrix
+        and favors the package against every timed qualified native composition in each process
+        on Node Current, Node LTS, Bun, Deno and Chromium. Preserve decoding and formatting;
+        the short smoke loss does not justify a native rewrite. Keep all raw outliers. This
+        two-input canonical lowercase corpus does not establish allocation parity, cold-start
+        cost, normalization cost, base32 conversion or individual-call tails.
   - [x] Screen native Bun UUIDv7 bytes as private input to ordinary masked generation and pairs.
         The current masked-generation profile attributes substantial work to the sequenced byte
         writer. Native Buffer input may remove that work without a public ownership copy; native
