@@ -25,7 +25,8 @@ Object.defineProperty(Uint8Array.prototype, "toBase64", {
           return mode === "corrupt" ? result.slice(0, 21) + "A" : result;
         },
 });
-const { encode, BASE64URL, BASE32HEX } = await import("../src/alphabet");
+const { encode, BASE64URL, BASE32HEX, BASE64URL_NAME, BASE32HEX_NAME } =
+  await import("../src/alphabet");
 const { uuidBytesToPlainSlug } = await import("../src/slug");
 const publicCall = process.env.UUID_SLUG_PROBE_PUBLIC_PLAIN === "1";
 for (let seed = 0; seed < 256; seed += 1) {
@@ -34,12 +35,23 @@ for (let seed = 0; seed < 256; seed += 1) {
     publicCall ? uuidBytesToPlainSlug(bytes) : encode(bytes, BASE64URL),
     Buffer.from(bytes).toString("base64url"),
   );
+  if (publicCall) {
+    assert.equal(
+      uuidBytesToPlainSlug(bytes, BASE64URL_NAME),
+      Buffer.from(bytes).toString("base64url"),
+    );
+    assert.equal(
+      uuidBytesToPlainSlug(bytes, 0, BASE64URL_NAME),
+      Buffer.from(bytes).toString("base64url"),
+    );
+  }
 }
 const plainCalls = calls;
 const payload = new Uint8Array(16);
 for (let tail = 0; tail < 16; tail += 1) {
   assert.equal(encode(payload, BASE64URL, tail, 4), "A".repeat(21) + BASE64URL.chars[tail]);
   assert.equal(encode(payload, BASE32HEX), "0".repeat(26));
+  if (publicCall) assert.equal(uuidBytesToPlainSlug(payload, BASE32HEX_NAME), "0".repeat(26));
 }
 assert.equal(calls, plainCalls, "masked tails and base32hex must keep the existing writer");
 assert.equal(
@@ -47,7 +59,9 @@ assert.equal(
   process.env.UUID_SLUG_EXPECT_NATIVE_PLAIN === "1" && mode !== "absent"
     ? mode === "throw" && publicCall
       ? 1
-      : 256
+      : publicCall
+        ? 768
+        : 256
     : 0,
   "the proof must reach exactly the selected native plain calls",
 );

@@ -184,6 +184,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Capture the native capability once outside shared alphabet metadata; preserve the original
         encoder for other hosts, base32 and native failure. Use the existing native probe through
         the public conversion, and reject base32 loss, decoder retention or absent repeated gain.
+        `candidates-slug-Xd0mcf` improves base64url but slows base32 in both orders, so reject
+        the post-normalization native branch. Next compare an exact valid default/preset path
+        before general normalization, with inline native failure handling versus a small helper.
+        Length and input-kind checks must prove the selected UUID before calling native code;
+        boxed selectors, offsets and other byte forms keep the existing path. Base32 still decides
+        whether the public shape is acceptable; a native-only kernel result cannot override it.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect

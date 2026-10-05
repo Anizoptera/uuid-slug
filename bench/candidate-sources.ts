@@ -259,13 +259,48 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
   ].join("\n");
   const selected =
     "  const selectedAlphabet = alphabetIsSecond ? offsetOrAlphabet : (alphabet ?? BASE64URL_NAME);\n";
-  const nativePlain = (): string => {
+  const nativePlain = (
+    placement: "resolved" | "default-inline" | "default-helper" = "resolved",
+  ): string => {
     // Keep writer functions out of decoder metadata; the public conversion owns this selection.
     const capability = [
       'let nativePlainUuidBase64 = typeof Bun === "undefined" ? undefined : (Uint8Array.prototype as { toBase64?: (options: { alphabet: typeof BASE64URL_NAME; omitPadding: boolean }) => string }).toBase64;',
       "const NATIVE_PLAIN_UUID_BASE64_OPTIONS = { alphabet: BASE64URL_NAME, omitPadding: true } as const;",
       "",
     ].join("\n");
+    if (placement !== "resolved") {
+      const signature = "): PlainUuidSlug | UuidSlugError {\n  const alphabetIsSecond";
+      const selectedNative = [
+        "  if (nativePlainUuidBase64 &&",
+        "      (offsetOrAlphabet === 0 || offsetOrAlphabet === BASE64URL_NAME) &&",
+        "      (alphabet === undefined || (offsetOrAlphabet === 0 && alphabet === BASE64URL_NAME)) &&",
+        "      isUint8Array(bytes) && bytes.length === 16) {",
+        placement === "default-helper"
+          ? "    return nativeDefaultPlainUuid(bytes, nativePlainUuidBase64);"
+          : "    try { return nativePlainUuidBase64.call(bytes, NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug; } catch { nativePlainUuidBase64 = undefined; }",
+        "  }",
+        "  const alphabetIsSecond",
+      ].join("\n");
+      const helper =
+        placement === "default-helper"
+          ? [
+              "function nativeDefaultPlainUuid(bytes: Uint8Array, native: (options: { alphabet: typeof BASE64URL_NAME; omitPadding: boolean }) => string): PlainUuidSlug {",
+              "  try { return native.call(bytes, NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug; }",
+              "  catch { nativePlainUuidBase64 = undefined; return encode(bytes, BASE64URL) as PlainUuidSlug; }",
+              "}",
+              "",
+            ].join("\n")
+          : "";
+      return replaceOnce(
+        replaceOnce(
+          source,
+          "const SLUG_ALPHABET_BY_LENGTH:",
+          capability + helper + "const SLUG_ALPHABET_BY_LENGTH:",
+        ),
+        signature,
+        "): PlainUuidSlug | UuidSlugError {\n" + selectedNative,
+      );
+    }
     const before = "  if (alpha instanceof Error) return alpha;\n  return encode(\n";
     const after = before.replace(
       "  return encode(\n",
@@ -293,6 +328,18 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
       name: "native-public",
       get source() {
         return nativePlain();
+      },
+    },
+    {
+      name: "native-default-inline",
+      get source() {
+        return nativePlain("default-inline");
+      },
+    },
+    {
+      name: "native-default-helper",
+      get source() {
+        return nativePlain("default-helper");
       },
     },
     {
