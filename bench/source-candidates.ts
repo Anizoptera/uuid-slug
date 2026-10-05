@@ -269,6 +269,7 @@ try {
         candidate.name === "native-public" ||
         candidate.name === "native-preset-returns" ||
         candidate.name === "native-default-inline" ||
+        candidate.name === "native-default-intrinsic" ||
         candidate.name === "native-default-split" ||
         candidate.name === "native-presets-split" ||
         candidate.name === "native-presets-helper" ||

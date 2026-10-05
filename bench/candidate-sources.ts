@@ -264,6 +264,7 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
       | "resolved"
       | "default-inline"
       | "default-helper"
+      | "default-intrinsic"
       | "default-split"
       | "presets-split" = "resolved",
   ): string => {
@@ -293,10 +294,14 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
               "  if (nativePlainUuidBase64 &&",
               "      (offsetOrAlphabet === 0 || offsetOrAlphabet === BASE64URL_NAME) &&",
               "      (alphabet === undefined || (offsetOrAlphabet === 0 && alphabet === BASE64URL_NAME)) &&",
-              "      isUint8Array(bytes) && bytes.length === 16) {",
-              placement === "default-helper"
-                ? "    return nativeDefaultPlainUuid(bytes, nativePlainUuidBase64);"
-                : "    try { return nativePlainUuidBase64.call(bytes, NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug; } catch { nativePlainUuidBase64 = undefined; }",
+              placement === "default-intrinsic"
+                ? "      true) {"
+                : "      isUint8Array(bytes) && bytes.length === 16) {",
+              placement === "default-intrinsic"
+                ? "    try { const encoded = nativePlainUuidBase64.call(bytes, NATIVE_PLAIN_UUID_BASE64_OPTIONS); if (encoded.length === 22) return encoded as PlainUuidSlug; } catch { if (isUint8Array(bytes) && bytes.length === 16) nativePlainUuidBase64 = undefined; }"
+                : placement === "default-helper"
+                  ? "    return nativeDefaultPlainUuid(bytes, nativePlainUuidBase64);"
+                  : "    try { return nativePlainUuidBase64.call(bytes, NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug; } catch { nativePlainUuidBase64 = undefined; }",
               "  }",
               "  const alphabetIsSecond",
             ].join("\n");
@@ -436,6 +441,12 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
           "  const badRange = checkRange(view.length, offset, 16);",
           "  const badRange = view.length === 16 ? undefined : checkRange(view.length, offset, 16);",
         );
+      },
+    },
+    {
+      name: "native-default-intrinsic",
+      get source() {
+        return nativePlain("default-intrinsic");
       },
     },
     {

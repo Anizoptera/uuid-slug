@@ -224,11 +224,19 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `candidates-slug-9YGVww` rejects the lost-offset mutant in both Node and Bun through the
         shared bounds test. `candidates-slug-EJIeif` passes correctness for the valid shortcut,
         but slows base32 in both orders and does not reproduce a base64url gain. Reject it.
-  - [ ] Screen direct returns for validated scalar alphabets before adding native encoding.
+  - [x] Screen direct returns for validated scalar alphabets before adding native encoding.
         Known base32 and base64 selectors need no error-result recognition. Keep byte and offset
         validation intact; boxed selectors retain normalization. Compare a direct-return control
         with native encoding only in the validated base64 branch, after the base32 return.
         Reject a primary regression or an unrepeated gain before widening the runtime comparison.
+        `candidates-slug-AImfzK` slows base32 in both orders for both shapes. Reject them.
+  - [ ] Let native plain encoding validate its own byte-array brand on default calls.
+        The native intrinsic already rejects fake and unsupported receivers. A canonical
+        22-character result establishes a 16-byte input without repeating package brand checks.
+        Other lengths, offset calls and supported non-array sources retain general conversion.
+        Disable a throwing native capability only after proving its receiver was a valid payload;
+        invalid input must not change future dispatch. Prove fallback and payload corruption,
+        then reject a repeated base32 loss or absent complete-call gain before wider measurement.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect
