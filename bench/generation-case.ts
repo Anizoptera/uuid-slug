@@ -27,6 +27,15 @@ export interface GenerationCase {
   readonly version: 4 | 7;
 }
 
+/** Select related complete jobs in one build; a single term retains its substring meaning. */
+export function generationNameFilter(filter: string | null | undefined): (name: string) => boolean {
+  if (!filter) return () => true;
+  const terms = filter.split(",").map((term) => term.trim());
+  if (terms.some((term) => term.length === 0))
+    throw new Error("Generation filters must contain nonempty comma-separated name terms.");
+  return (name) => terms.some((term) => name.includes(term));
+}
+
 /** Fail before timing when a row no longer returns the representation it claims. */
 export function verifyGenerationCase(candidate: GenerationCase): void {
   // Fixed conversions need exact payload witnesses; a version nibble cannot detect lost bytes.

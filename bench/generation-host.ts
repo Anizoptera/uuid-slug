@@ -8,6 +8,7 @@ import cryptoRandomUuid from "crypto-randomuuid";
 
 import { generationCases } from "./generation-cases";
 import type { GenerationCase } from "./generation-case";
+import { generationNameFilter } from "./generation-case";
 import { measureGenerationCases } from "./generation-measure";
 import { createConversionCases } from "./conversion-cases";
 
@@ -310,7 +311,8 @@ const options = {
   yieldControl: () => yieldToLoop(),
 };
 const filter = process.env.UUID_SLUG_GENERATION_FILTER;
-const selected = hostCases.filter((candidate) => !filter || candidate.name.includes(filter));
+const matchesName = generationNameFilter(filter);
+const selected = hostCases.filter((candidate) => matchesName(candidate.name));
 if (selected.length === 0) throw new Error("Generation benchmark filter selected no cases");
 const versions = process.versions as typeof process.versions & { deno?: string };
 const runtime = versions.bun
@@ -325,7 +327,7 @@ console.log(
     kind: "environment",
     runtime,
     samples: options.samples,
-    unsupported: conversions.unsupported.filter(({ name }) => !filter || name.includes(filter)),
+    unsupported: conversions.unsupported.filter(({ name }) => matchesName(name)),
   }),
 );
 for (const row of await measureGenerationCases(selected, options))

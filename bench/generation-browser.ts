@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { generationCases } from "./generation-cases";
+import { generationNameFilter } from "./generation-case";
 import { measureGenerationCases } from "./generation-measure";
 import { createConversionCases } from "./conversion-cases";
 
@@ -27,9 +28,8 @@ const yieldControl = () =>
 async function runGenerationBenchmark(search: string) {
   const parameters = new URLSearchParams(search);
   const filter = parameters.get("filter");
-  const selected = browserCases.filter(
-    (candidate) => filter === null || candidate.name.includes(filter),
-  );
+  const matchesName = generationNameFilter(filter);
+  const selected = browserCases.filter((candidate) => matchesName(candidate.name));
   if (selected.length === 0) throw new Error("Generation benchmark filter selected no cases");
   const rows = await measureGenerationCases(selected, {
     durationMs: Number(parameters.get("duration") ?? 20),
@@ -39,9 +39,7 @@ async function runGenerationBenchmark(search: string) {
   });
   return {
     rows,
-    unsupported: conversions.unsupported.filter(
-      ({ name }) => filter === null || name.includes(filter),
-    ),
+    unsupported: conversions.unsupported.filter(({ name }) => matchesName(name)),
   };
 }
 

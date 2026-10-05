@@ -312,6 +312,9 @@ efficiency. A reproducible misuse alone does not justify that cost.
   current rival evidence. Read the current execution sequence in `ROADMAP.md`; older unchecked
   proposals do not authorize work. Repair conflicting instructions and specifications first,
   then the plan, then code, so subsequent agents receive the same scope before acting.
+  Rank the primary calls together before selecting a component change. Keep their named fastest
+  qualified rivals, native floors, speed gaps and resource-evidence limits in `ROADMAP.md`;
+  missing comparisons stay missing, and a convenient candidate cannot replace that ranking.
 - Choose performance workloads from ordinary README consumer jobs: single-ID generation, parsing
   and conversion first. An unusual input or convenient probe never establishes workload priority;
   keep its verification bounded to the correctness defect it can expose.

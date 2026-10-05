@@ -36,6 +36,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Compare each primary call with its main qualified rivals and same-output native floor.
       Reuse applicable evidence; refresh stale comparisons after retained changes. Record speed
       and resource gaps separately, and rank unresolved gaps before selecting implementation work.
+  - [ ] Refresh one complete primary-call ranking before another source candidate. Compare UUIDv4
+        and UUIDv7 text, owned bytes and slugs, paired output, and the six text/byte/plain-slug
+        conversions on Node Current, Bun, Node LTS, Chromium and Deno. Reuse the maintained
+        matrix with comma-separated name filters so one build measures only these jobs; preserve
+        single-term filtering. Three fresh processes per runtime distinguish persistent gaps
+        from order-sensitive differences. Show named qualified rivals and native floors separately,
+        keep their process medians, and label missing masking or value comparisons and resource
+        parity explicitly. Rank by runtime priority and complete-call loss before changing code.
       Refresh `generateUuidV4()` and `generatePlainUuidV7Slug()` first with the maintained
       `v4.text` and `v7.slug.base64url` filters in independent processes. Prior losses may persist,
       or retained changes may have closed them. A current loss selects complete-call profiling;
