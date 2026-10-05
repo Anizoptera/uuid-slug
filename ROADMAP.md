@@ -50,13 +50,22 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Compare each primary call with its main qualified rivals and same-output native floor.
       Reuse applicable evidence; refresh stale comparisons after retained changes. Record speed
       and resource gaps separately, and rank unresolved gaps before selecting implementation work.
-  - [ ] Compare UUIDv7 text-plus-plain-slug generation with qualified rival compositions.
-        The current pair rows compare package calls only. Extend the existing conversion corpus
+  - [x] Compare UUIDv7 text-plus-plain-slug generation with qualified rival compositions.
+        Do not infer rival parity from package-only pair rows. Use the existing conversion corpus
         with one generator call followed by native encoding and UUID text formatting where needed;
         the existing pair witness must reject different identities before timing. Include text
         and owned-byte generators with Buffer and typed-array encoders when available. A repeated
         material rival lead selects production profiling; parity closes this comparison without
         another implementation. Measure only paired results on the ranked runtimes.
+        `current-primary-v7-pair-ranking.jsonl` favors the actual package pair over every tested
+        qualified library composition on every ranked runtime across fresh processes. Before
+        closing the resource comparison, capture equal completed and warm-up calls on Bun against
+        its fastest library composition in reversed order. A repeated caller-CPU or continuing
+        committed-memory loss selects profiling; retained heap cannot establish gross allocation.
+        `current-primary-v7-pair-resource-{0,1,2,3}` records lower package caller CPU in both
+        reversed pairs and flat second-window committed memory for both implementations. Keep
+        production unchanged; these warmed comparisons establish neither total allocation nor
+        cold-start parity, and select no material gap for another paired-generation experiment.
   - [x] Inspect engine CPU and sampled-allocation profiles for primary UUID text/byte conversion
         against `uuid`. Repeated unsampled caller CPU favors the package, but retained heap can
         hide temporary allocation. Reuse the existing native profiler with only those four complete
@@ -261,8 +270,8 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Node LTS and Chromium favor the package on the compared generation and conversion calls;
         this does not prove missing native floors. Slugid loses both text/slug conversions on every
         measured host. Short-uuid also costs more, but uses a different numeric wire spelling.
-        Paired output has only a package composition control; immutable values and masking lack
-        qualified external comparisons. Chromium UUIDv7 slug comparisons use the refreshed report above. Resource parity remains
+        Paired output uses the qualified library compositions and Bun resource captures above;
+        immutable values and masking lack qualified external comparisons. Chromium UUIDv7 slug comparisons use the refreshed report above. Resource parity remains
         open; timing and instrumented operation counts cannot establish total allocation.
       `current-primary-v4-text-refresh.jsonl` retains a Bun default-text loss in three processes.
       `current-primary-v7-slug-refresh.jsonl` does not reproduce the old Bun native-slug loss;
