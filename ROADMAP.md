@@ -36,7 +36,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Compare each primary call with its main qualified rivals and same-output native floor.
       Reuse applicable evidence; refresh stale comparisons after retained changes. Record speed
       and resource gaps separately, and rank unresolved gaps before selecting implementation work.
-  - [ ] Refresh one complete primary-call ranking before another source candidate. Compare UUIDv4
+  - [x] Refresh one complete primary-call ranking before another source candidate. Compare UUIDv4
         and UUIDv7 text, owned bytes and slugs, paired output, and the six text/byte/plain-slug
         conversions on Node Current, Bun, Node LTS, Chromium and Deno. Reuse the maintained
         matrix with comma-separated name filters so one build measures only these jobs; preserve
@@ -44,16 +44,37 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         from order-sensitive differences. Show named qualified rivals and native floors separately,
         keep their process medians, and label missing masking or value comparisons and resource
         parity explicitly. Rank by runtime priority and complete-call loss before changing code.
-      Refresh `generateUuidV4()` and `generatePlainUuidV7Slug()` first with the maintained
-      `v4.text` and `v7.slug.base64url` filters in independent processes. Prior losses may persist,
-      or retained changes may have closed them. A current loss selects complete-call profiling;
-      parity rejects another rewrite of that call. Timing alone does not close resource parity.
+        `current-primary-complete-ranking.jsonl` preserves three process medians per measured
+        call on each ranked host; `current-primary-slug-rivals-ranking.jsonl` supplies the
+        separately named slugid and short-uuid conversion rows. Compare actual public defaults,
+        not the fastest private or composed package alternative. These are warmed successful
+        call measurements, not installed-package startup, individual-call latency or resource parity.
+        Current ordering of measured primary-call gaps:
+
+        | Priority | Consumer call | Faster reference | Evidence and next decision |
+        | --- | --- | --- | --- |
+        | First | Bun UUIDv4 text | `crypto-randomuuid` | Package 36.98 ns versus 31.33 ns; each process loses, with ratios 1.164–1.201. Inspect the complete rival call before another trust-check candidate. |
+        | First | Bun bytes to plain base64url slug | Native `toBase64` | Package 48.10 ns versus 39.68 ns; each process loses, with ratios 1.199–1.258. Earlier reversed equal-call profiles also show higher package CPU; reject repeating the unsuccessful generic native branch or character-code writer. |
+        | Next | Bun UUIDv4 plain slug generation | Web Crypto draw plus native base64url encoding | Package 60.78 ns versus 55.77 ns; each process loses, with ratios 1.073–1.090. Profile generation and encoding together; do not attribute the whole gap to the converter. |
+        | Verify before changing | Bun UUIDv7 plain slug generation | `Bun.randomUUIDv7` base64url output | Package 64.56 ns versus 62.00 ns; this run loses in each process, but the preceding focused comparison favored the package. The direction across comparisons remains unresolved. |
+        | Hold | Bun UUIDv7 text | `Bun.randomUUIDv7` text output | Package 48.97 ns versus 47.84 ns; process ratios cross parity. No confirmed optimization target. |
+        | Lower runtime priority | Deno UUID text to bytes | Buffer hex decoding | Package 177.73 ns versus 166.36 ns; this floor returns Buffer rather than the package's plain owned array. Compare equivalent ownership before treating it as a qualified loss. |
+
+        No other measured public default loses to a qualified library in this corpus. Node Current,
+        Node LTS and Chromium favor the package on the compared generation and conversion calls;
+        this does not prove missing native floors. Slugid loses both text/slug conversions on every
+        measured host. Short-uuid also costs more, but uses a different numeric wire spelling.
+        Paired output has only a package composition control; Chromium UUIDv7 slug generation,
+        immutable values and masking lack qualified external comparisons. Resource parity remains
+        open; timing and instrumented operation counts cannot establish total allocation.
       `current-primary-v4-text-refresh.jsonl` retains a Bun default-text loss in three processes.
       `current-primary-v7-slug-refresh.jsonl` does not reproduce the old Bun native-slug loss;
       do not choose another slug-generation tweak from that stale ranking.
       `current-primary-conversions-refresh.jsonl` retains Bun byte-to-plain-slug loss against
       native `toBase64`; other conversion results favor the package apart from small Deno parsing
       uncertainty. Guard and timestamp rows are incidental corpus output, not optimization targets.
+  - [ ] Propose the exact `bench/README.md` filter correction for approval: the generation filter
+        accepts comma-separated case-name substrings, and a single term retains its old meaning.
 - [ ] Profile the actual complete calls with gaps and inspect their faster rivals. Name the
       removable work, the rival explanation, and the observation that would reject the attribution.
       Compare equal-call Bun `package.conversion.bytes.slug` and
