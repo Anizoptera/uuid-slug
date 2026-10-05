@@ -94,6 +94,28 @@ const hasCause = (value: unknown, target: unknown): boolean =>
 
 export const runtimeBoundaryCases = [
   {
+    name: "plain slug conversion validates offsets even on an exact UUID payload",
+    run(this: void) {
+      const bytes = Uint8Array.from({ length: 16 }, (_, index) => index);
+      for (const alphabet of [BASE64URL, BASE32HEX] as const) {
+        const expected = encode(
+          bytes,
+          alphabet === BASE64URL ? BASE64URL_ALPHABET : BASE32HEX_ALPHABET,
+        );
+        assert.equal(uuidBytesToPlainSlug(bytes, 0, alphabet), expected);
+        const padded = new Uint8Array(20);
+        padded.set(bytes, 4);
+        assert.equal(uuidBytesToPlainSlug(padded, 4, alphabet), expected);
+        // An exact payload proves capacity, but cannot make an invalid offset valid.
+        for (const offset of [1, -1, 0.5, NaN, Infinity]) {
+          const result = uuidBytesToPlainSlug(bytes, offset, alphabet);
+          assert.ok(result instanceof UuidSlugError);
+          assert.equal(result.code, "invalid_buffer");
+        }
+      }
+    },
+  },
+  {
     name: "preserves owned module-default UUIDv7 bytes and every random tail bit",
     run(this: void) {
       // The created-generator corpus does not reach the module's cached default draw.

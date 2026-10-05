@@ -216,6 +216,8 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Reject these wrapper shapes; no production change is justified by their base64url gain.
   - [ ] Remove repeated range validation for exact 16-byte inputs at numeric offset zero.
         Those two facts prove the complete range; all other inputs retain the original check.
+        The shared Node and Bun conversion tests must reject nonzero, negative, fractional and
+        nonfinite offsets on an exact payload before the invalid-offset mutant can be timed.
         Screen the existing conversion without native dispatch changes. Prove invalid offsets
         still fail by removing that condition in an isolated mutant, then compare both alphabets.
         Retain only repeated complete-call gain without another primary loss or resource cost.
