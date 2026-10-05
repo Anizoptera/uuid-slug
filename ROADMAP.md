@@ -2,8 +2,9 @@
 
 Complete the remaining performance work without changing identifier formats, secure entropy,
 caller-input validation or ownership. Default hot paths provide no guarantees beyond proper native
-implementations; stronger guarantees require explicit configuration. Optimize defaults under
-`docs/public-api.md` §Generation and codecs; measure clock drift without imposing an unrequested
+implementations; stronger guarantees require explicit configuration. Do not add code solely
+to erase a negligible remaining gap. Optimize defaults under `docs/public-api.md` §Generation
+and codecs; measure clock drift without imposing an unrequested
 never-ahead promise. Keep remote writes unauthorized. Repair agent guidance before implementation;
 propose public-document changes and hold them for explicit approval, including generated reports.
 

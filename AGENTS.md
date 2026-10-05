@@ -384,7 +384,7 @@ efficiency. A reproducible misuse alone does not justify that cost.
   method name identifies the code under test. Compare byte keys with `join(",")` or hex,
   never platform-dependent string coercion or UTF-8 decoding.
 - Preserve an unpinned newest-Node CI lane: pinned runtimes cannot expose newly added native APIs.
-- Maintainer ruling, 2026-09-16: every default call (no arguments, or only a text-case or alphabet
+- Every default call (no arguments, or only a text-case or alphabet
   preset) must approach the fastest runtime-native path producing the same output on every
   ranked runtime and the best qualified competitors; negligible remaining differences are acceptable.
   Do not add code or continue tuning solely to close a negligible gap. Configured calls (options, caller

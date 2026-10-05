@@ -1559,9 +1559,9 @@ semantic evidence.
 
 ### Native floors
 
-Every default call must cost no more than the fastest runtime-native path producing the same
-output, and every call must beat each qualified competitor; configured calls may exceed a native
-floor only by work that floor lacks (AGENTS.md). `bench/generation-cases.ts` and `bench/generation-host.ts` hold the floor
+Compare complete calls with the fastest proper native implementations and qualified competitors;
+negligible remaining differences are acceptable and do not justify extra code or continued tuning.
+Configured calls may exceed a native floor by work that floor lacks (AGENTS.md). `bench/generation-cases.ts` and `bench/generation-host.ts` hold the floor
 rows: Web Crypto `randomUUID`, Web Crypto bytes with version bits for allocated and caller-owned
 output, those bytes encoded by native `toBase64` for UUIDv4 slugs, Node `crypto.randomUUIDv7`, and
 `Bun.randomUUIDv7` text, `Buffer`, and base64url output. The competitor matrix builds its host
