@@ -73,8 +73,10 @@ efficiency. A reproducible misuse alone does not justify that cost.
   Before rejecting a faster implementation, name the published promise or explicit maintainer
   requirement it violates. An unanswered proposal, existing test, or agent-derived plan constraint
   is not a new guarantee. Fix conflicting contract text and the roadmap before implementation.
-  Prioritize ordinary defaults' performance and resource efficiency; keep costly,
-  rarely needed additional guarantees opt-in. Read `docs/public-api.md` §Generation and codecs
+  Default generation needs no stronger guarantees than correctly implemented primary qualified
+  rivals provide. Put additional guarantees on optional configured paths; do not reject a rival
+  for lacking an agent-added guarantee. Identify its actual behavior before choosing the default.
+  Read `docs/public-api.md` §Generation and codecs
   before deciding which generation properties belong on defaults or configured generators.
   New guarantees require a maintainer ruling before code or tests impose them. Intra-millisecond ordering
   is explicitly not guaranteed: do not gate it or reject a native generator for lacking it. The
@@ -306,15 +308,19 @@ efficiency. A reproducible misuse alone does not justify that cost.
   performance and resource gaps against the main qualified rivals for each primary use case,
   then fix those gaps. Optimizing any other scenario is outside the authorized scope; correctness
   checks protect existing contracts but do not make those scenarios optimization targets.
+- Before choosing an experiment, map its complete consumer call to a primary README job and
+  current rival evidence. Read the current execution sequence in `ROADMAP.md`; older unchecked
+  proposals do not authorize work. Repair conflicting instructions and specifications first,
+  then the plan, then code, so subsequent agents receive the same scope before acting.
 - Choose performance workloads from ordinary README consumer jobs: single-ID generation, parsing
   and conversion first. An unusual input or convenient probe never establishes workload priority;
   keep its verification bounded to the correctness defect it can expose.
 - Rank one-ID-per-call paths above batch paths. Most consumers generate, parse, or convert one
   identifier per call; writing many IDs into caller-owned buffers through `output` and
-  `outputOffset` is a secondary job. Keep batch paths efficient, but never slow a single-call
-  path to speed them up, and optimize them only after the single-call paths.
+  `outputOffset` is a secondary job, excluded from this optimization effort. Never slow a
+  single-call path to speed a batch path.
 - Surpass qualified alternatives in both performance and resource efficiency for every main use
-  case; keep secondary uses reasonably fast and efficient. A throughput win alone does not close
+  case; secondary optimization is excluded from this effort. A throughput win alone does not close
   a main-use gap: compare complete successful calls and their allocation and resource costs.
 - After every Bun or Deno version change, and before each periodic runtime review, follow
   `bench/README.md` §Capability review. Recheck native, Node-compatible, and web-compatible APIs;

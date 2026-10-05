@@ -7,6 +7,10 @@ Measure each runtime separately; a failed or missing measurement must fail the h
 Use each measurement to decide whether to retain a specific production improvement.
 
 Choose the largest unresolved cost in an ordinary successful call on Node Current or Bun.
+Limit optimization to primary README consumer jobs. Compare current complete calls with the main
+qualified rivals, profile their actual hotspots and resource gaps, and select the largest evidenced
+gap before changing a component. Secondary scenarios are excluded from this effort; correctness
+checks do not authorize performance work on them. Follow the current sequence in `ROADMAP.md`.
 Record the call, current evidence, competing explanations, rejection condition and next action in
 `ROADMAP.md` before execution. Inspect the faster native or competing implementation; a local
 candidate ranking cannot establish that the best available mechanism was considered.
@@ -33,7 +37,7 @@ Rules:
 - Keep direct runtime operations separate from composed pipeline operations.
 - Compare performance and resource efficiency against qualified alternatives for each main use
   case. A throughput win with worse allocation or resource costs does not meet the main-use goal;
-  keep secondary uses reasonably fast and efficient.
+  do not optimize secondary scenarios during the primary-only effort.
 - Target the largest unresolved primary-call cost on the primary runtimes before small gains or
   auxiliary hosts. Use current public-call profiles to choose the mechanism; defer smaller
   experiments while a more prominent cost remains unexplained or untested.
@@ -57,6 +61,9 @@ Rules:
   Name the violated contract when rejecting a row. Timestamp advancement alone does not violate
   a module-level never-ahead guarantee: that guarantee is not published. Keep drift observations
   separate from qualification; apply [generation policy](../docs/public-api.md#generation-and-codecs).
+  Default generation needs no stronger guarantees than correctly implemented primary qualified
+  rivals provide; additional guarantees belong on optional configured paths. A package test or
+  resource count does not establish a consumer requirement that disqualifies a rival.
 - Run `bun run bench:matrix --smoke` for a short comparison. Set `UUID_SLUG_BENCH_RUNTIMES` to
   colon-separated executable paths to add runtimes. Each requested runtime must produce both reports.
 - `UUID_SLUG_BENCH_ITERATIONS` and `UUID_SLUG_ENTROPY_SAMPLES` accept positive safe integers.
@@ -97,8 +104,8 @@ extend noisy source screens without rebuilding between equivalent short runs. Th
 their actual settings, and every selected case must return that sample count.
 Use `v7-draw duplicate-text-scratch` to restore the redundant private array; the cold text-generator
 resource witness must reject it before timing.
-UUIDv7 source screens time ordinary single-ID text, owned bytes and slugs first; configured and
-caller-buffer timing belongs in the later packed comparison after a primary-call gain survives.
+UUIDv7 source screens time ordinary single-ID text, owned bytes and slugs. During the primary-only
+effort, configured and caller-buffer paths remain correctness coverage, not optimization targets.
 Use `v7-draw bounded-clock` to compare a truncation plus timestamp bound with the separate
 safe-integer check; `bounded-clock-overflow` must fail the shared Node/Bun clock oracle.
 These short batch samples select experiments, not retained optimizations or individual-call p99;
@@ -337,7 +344,9 @@ The current-runtime CI lane also runs it with the newest Node and Bun.
   processes. Positive controls must reach each instrument before a zero count can pass. Guards must
   allocate no decoded arrays or errors; rotation must decode text once and avoid mismatch errors on
   success; timestamp validation must avoid formatting and reparsing; caller-owned paths must avoid temporary
-  arrays/views; repeated v4 draws must remain pooled. Fixed-size writers must construct one string;
+  arrays/views; the current repeated-v4-draw check bounds pooled entropy calls. This protects the
+  retained implementation's resource cost, not a required pooling algorithm: reassess it against
+  complete-call rival evidence before adopting another entropy mechanism. Fixed-size writers must construct one string;
   native encoding remains an alternative to measure, not a requirement based on availability.
 - These counts cover JavaScript-visible operations, not allocations inside an engine, `.slice()`
   species construction, JIT storage, or arbitrary object literals. They do not establish total bytes

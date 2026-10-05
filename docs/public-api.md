@@ -287,8 +287,12 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 
 Ordinary generation defaults must not pay for additional guarantees the caller did not request.
 
-Choose defaults for end-user performance and resource efficiency across the
-measured trade-offs; offer costly, rarely needed stronger guarantees through explicit configuration.
+Default generation needs no stronger guarantees than correctly implemented primary qualified
+rivals provide. Establish those guarantees from their implementations and behavior, not names or
+existing package tests. Offer additional guarantees through optional configured generation;
+an implementation convention is not a reason to reject an otherwise correct faster default.
+
+Choose defaults for end-user performance and resource efficiency across measured trade-offs.
 Preserve published identifier, secure-entropy, ownership, validation, and failure contracts.
 An unanswered guarantee proposal or an agent-derived constraint does not extend those contracts.
 Measure native timestamp advancement and explain its consumer consequences; do not reject native

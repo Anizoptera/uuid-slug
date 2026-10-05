@@ -13,6 +13,9 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
 Optimize only primary consumer use cases. Profile every actual hotspot and performance or resource
 gap against the main qualified rivals for those calls, then fix the gaps. Other scenarios are
 excluded from optimization during this effort; existing correctness contracts remain protected.
+Defaults need no stronger generation guarantees than correctly implemented primary qualified
+rivals provide. Establish each rival's actual guarantees; put additional guarantees on optional
+configured paths. Audit a default restriction before treating it as grounds to reject a mechanism.
 
 Execute only this sequence; older unchecked proposals below are held, not dispatch instructions.
 
@@ -1108,10 +1111,10 @@ measure lane durations, isolate timings from competing work, and retain only def
   portable work per runtime; never one path everywhere. A native path that breaks a contract is not
   adopted, but its cost stays the target. Every call family needs a floor row. A gap closes only by
   a change or by a cause in `bench/PERFORMANCE.md` that no implementation can remove.
-- Scope: successful calls in real use only; single-call paths before caller-buffer batches.
+- Scope: optimize primary successful consumer calls only; secondary scenarios are held.
   Runtime rank: Node Current and Bun, then Node LTS and Chromium, then Deno, then Node JITless.
-- Goal: "at minimum to surpass the performance and resource efficiency on every main use case
-  and be reasonably fast and efficient on others." Timing alone cannot close a main-use gap;
+- Goal: surpass performance and resource efficiency on every primary use case. Timing alone
+  cannot close a primary-use gap;
   compare the complete successful call's allocation and resource costs against qualified alternatives.
 - Correctness first: map contracts, add falsifiers, and mutate before timing. Keep a change only
   when two packed replays reproduce it. Wire formats and README §Guarantees stay fixed.
