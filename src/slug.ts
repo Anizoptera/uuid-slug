@@ -80,16 +80,19 @@ export type { UuidSlugErrorCode } from "./errors.ts";
 export type { PlainUuidSlug, PlainUuidV4Slug, PlainUuidV7Slug } from "./types.ts";
 
 const UUID_V7_TIMESTAMP_ONLY = "Timestamp is only defined for UUIDv7.";
-// Capture the intrinsic once so caller-owned methods cannot replace encoding. Other hosts keep
-// their existing writer; a throwing optional capability is disabled rather than retried per ID.
-let nativePlainUuidBase64 =
-  typeof Bun === "undefined"
+// Capture once so caller-owned methods cannot replace encoding. A named pure capture keeps the
+// build's removal annotation intact: decoder-only consumers must drop this encoding-only probe.
+/*#__NO_SIDE_EFFECTS__*/
+function captureNativePlainUuidBase64() {
+  return typeof Bun === "undefined"
     ? undefined
     : (
         Uint8Array.prototype as {
           toBase64?: (options: { alphabet: typeof BASE64URL_NAME; omitPadding: boolean }) => string;
         }
       ).toBase64;
+}
+let nativePlainUuidBase64 = /*#__PURE__*/ captureNativePlainUuidBase64();
 const NATIVE_PLAIN_UUID_BASE64_OPTIONS = { alphabet: BASE64URL_NAME, omitPadding: true } as const;
 // Keep general normalization separate from ordinary exact-array presets so its branch count does
 // not grow their hot body. Remeasure complete calls if accepted input forms or dispatch change.
@@ -249,6 +252,7 @@ export function uuidBytesToPlainSlug(
             NATIVE_PLAIN_UUID_BASE64_OPTIONS,
           ) as PlainUuidSlug;
         } catch {
+          // Valid payloads must not pay for the same unavailable host capability on every call.
           nativePlainUuidBase64 = undefined;
         }
       }

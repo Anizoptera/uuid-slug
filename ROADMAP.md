@@ -288,6 +288,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `current-native-common-{baseline,current}-graph.txt` shows small decoder-only growth
         in most optimizers. Retain the existing checker's emitted decoder bundles, identify the
         surviving code, and remove unrelated native encoding work before closing this task.
+        The retained bundles show the new `typeof Bun`/`toBase64` capability read after writers
+        are removed. Mark its named capture as removable; verify the build retains the optimizer
+        annotations and the decoder graph removes this read before rechecking complete calls.
+        `current-native-capture-decoder/` removes the new probe in every maintained optimizer.
+        Raw sizes equal the baseline except for a smaller Rollup output; the checked archive
+        preserves both capture annotations. Recheck complete calls on the final capture shape.
   - [x] Profile the base32 writer before expanding its packing loop.
         `current-base32-writer-profile` completes 1,048,576 calls after 262,144 warm-up calls.
         Its sampling summary reports 277 samples in native `toString`, 48 in the base32 writer
