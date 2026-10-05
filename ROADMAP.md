@@ -20,10 +20,13 @@ configured paths. Audit a default restriction before treating it as grounds to r
 
 Execute only this sequence; older unchecked proposals below are held, not dispatch instructions.
 
-- [ ] Remove the `fastv7` qualification exclusion for counter width and random-bit allocation.
-      Its installed implementation uses Web Crypto and writes UUIDv7 version/variant bits;
-      qualify it under the native baseline, verify the matrix ranking includes it, and refresh
-      primary UUIDv7 text comparisons before using the old qualified-rival ranking again.
+- [x] Remove the `fastv7` qualification exclusion for counter width and random-bit allocation.
+      Its installed implementation uses Web Crypto and writes UUIDv7 version/variant bits.
+      The matrix and its regression test qualify it under the native baseline; the refreshed
+      `current-native-baseline-v7-qualified-ranking.jsonl` includes it in primary text comparisons.
+- [ ] Resolve primary UUIDv7 text rankings with `fastv7` included before reusing old rankings.
+      The refreshed run has severalfold process variation in unchanged calls; it establishes
+      competitor membership, not a reliable performance winner.
 
 - [x] Map primary README consumer calls to current production code and maintained rival rows:
       generate one identifier, parse or convert one identifier, and encode or decode one masked
@@ -124,9 +127,11 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Bun, Deno, Chromium, Firefox, WebKit and Node Current without JIT. Every timing difference
         is unresolved; native and rival parity remain open. Keep direct delegation as the ruled
         baseline, not as a claimed speedup. Default wrapper work remains the next primary target.
-  - [ ] Screen direct native success return against the baseline without identity tracking.
+  - [x] Screen direct native success return against the baseline without identity tracking.
         Keep preset checks and exception fallback; reject repeated primary-call losses. The
         earlier trusted-function experiment cannot settle this changed success/error boundary.
+        `candidates-v4-KB0Fjw` has large variation in unchanged portable controls and native calls;
+        keep production unchanged. Resolve the measurement instability before selecting this candidate.
   - [x] Test UUIDv7 default text's successful-string recognition against its native floor.
         The native helper already returns a string on success; the public preset path then
         performs an Error-instance check. Compare a string-first result branch without changing

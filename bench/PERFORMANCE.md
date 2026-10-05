@@ -1691,7 +1691,7 @@ suggested at most 3 ns. Treat the effect as unresolved warm-up history, not a re
 Remaining gaps and their causes:
 
 - Bun UUIDv4 text stays 2–5 ns above its floor. The package adds the public text-case check, the
-  trusted-identity branch, and the `try` that keeps native failures on the portable fallback.
+  success-result branch, and the `try` that keeps native failures on the portable fallback.
   Removing the `try` saved about 1 ns and would break that fallback guarantee.
   The maintained UUIDv4 screen on 2026-10-02 compared an undefined fast path, an argument-count
   fast path and direct preset comparisons on Node 26.10.0 and Bun 1.4.2. Each candidate passed
