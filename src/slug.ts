@@ -195,9 +195,15 @@ export function uuidBytesToPlainSlug(
     );
   // Unreachable from TypeScript, where the name is a two-member union. Reached from JavaScript,
   // which is why it answers rather than indexing into `undefined`.
-  const alpha = resolveSlugAlphabet(
-    alphabetIsSecond ? offsetOrAlphabet : (alphabet ?? BASE64URL_NAME),
-  );
+  // Scalar presets already identify the alphabet; a resolver call repeats normalization work.
+  // Keep that resolver for boxed and invalid selectors. Remeasure if the alphabet set grows.
+  const selectedAlphabet = alphabetIsSecond ? offsetOrAlphabet : (alphabet ?? BASE64URL_NAME);
+  const alpha =
+    selectedAlphabet === BASE64URL_NAME
+      ? BASE64URL
+      : selectedAlphabet === BASE32HEX_NAME
+        ? BASE32HEX
+        : resolveSlugAlphabet(selectedAlphabet);
   if (alpha instanceof Error) return alpha;
   return encode(
     view.length === 16 ? view : view.subarray(offset, offset + 16),
