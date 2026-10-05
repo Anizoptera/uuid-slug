@@ -656,7 +656,7 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         byte loss reverses in its focused replay. Retain fixed stores with unchanged storage and
         entropy counts; preserve the indexed alternative for future runtime reviews. Native profiles
         cover Node, Bun, Deno and Chromium. Bun/Deno byte parity and total allocation remain open.
-  - [ ] Compare fixed sixteen-byte copying and erasure through complete owned v4/v7 draws.
+  - [x] Compare fixed sixteen-byte copying and erasure through complete owned v4/v7 draws.
         `current-bun-owned-v4-profile` includes pooled copying beneath the public owned call;
         a fixed-width path may remove loop work, or allocation and entropy may erase its benefit.
         Require lost-output and lost-erasure mutations to fail both owning runtime lanes before
@@ -704,6 +704,21 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         mixed losses. `current-pool-block-offset-warm-resource-*` preserves lower Bun caller
         CPU in every pair while resident and heap differences change direction; no repeated
         retained-memory loss is established. Qualify Node LTS and selected native profiles next.
+        `current-pool-block-offset-packed-lts.log` separates byte/text-v4 gains but a UUIDv7
+        text loss after preceding allocation work. Isolate that call before deciding retention.
+        `current-pool-block-offset-isolated-lts-text.log` does not reproduce the mixed text loss.
+        Apply the exact proved block copy provisionally; retain only after fresh complete checks
+        and native profiles of its selected runtime graphs. Competitive byte parity remains open.
+        `current-pool-block-offset-native/` contains successful Node, Bun, Chromium and Deno
+        compiled captures; `deno-source.jsonl` separately measures the normal TypeScript entry.
+        The production copy span matches the proved candidate byte-for-byte. Hold the exact
+        public performance-document update for approval; finish the fresh complete check before
+        committing production and the updated candidate controls.
+        The fresh complete check passes after formatting the narrowed candidate control.
+        Retain the exact proved production copy; no retained storage or per-call views are added.
+  - [ ] Obtain approval for the exact `bench/PERFORMANCE.md` update: qualify its final four-byte
+        retention paragraph to include sixteen-byte blocks, and record the packed comparisons,
+        isolated controls, counted warm-up resource captures and native/source profile limits.
   - [x] Profile the exact module-default owned-byte call before choosing another substitution;
         separate setup from samples beneath the public generation frame, inspect allocation
         and entropy evidence, and compare the observed costs with the faster rivals' mechanisms.

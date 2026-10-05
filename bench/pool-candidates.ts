@@ -22,24 +22,11 @@ export function poolCandidates(source: string): readonly SourceCandidate[] {
     fixedStart < 0
       ? source
       : source.slice(0, fixedStart) + `    ${loop}\n` + source.slice(fixedEnd);
-  const fixed =
-    fixedStart < 0
-      ? replaceOnce(source, loop, `if (length === 4) {\n      ${four}\n    } else ${loop}`)
-      : source;
-  // Four-byte blocks reduce owned-draw loop iterations without a large body or another call.
-  // Complete owned-byte and slug calls decide whether the remaining branch and indexing pay.
-  const fixedSixteen = () =>
-    replaceOnce(
-      fixed,
-      "    } else\n      for (",
-      "    } else if (length === 16) {\n      for (let i = 0; i < 16; i += 4) {\n        const sourceOffset = offset + i;\n        " +
-        Array.from({ length: 4 }, (_, i) => {
-          const output = i === 0 ? "i" : `i + ${i}`;
-          const input = i === 0 ? "sourceOffset" : `sourceOffset + ${i}`;
-          return `bytes[${output}] = pool[${input}] as number;\n        pool[${input}] = 0;`;
-        }).join("\n        ") +
-        "\n      }\n    } else\n      for (",
-    );
+  const fixed = replaceOnce(
+    indexed,
+    loop,
+    `if (length === 4) {\n      ${four}\n    } else ${loop}`,
+  );
   // Reseeds consume ten bytes, so subsequent four-byte reads can be unaligned. A DataView
   // handles both offsets without padding or discarding entropy; compare its retained view and
   // unpacking work against the existing byte stores through complete generation calls.
@@ -61,16 +48,10 @@ export function poolCandidates(source: string): readonly SourceCandidate[] {
     { name: "indexed-loop", source: indexed },
     { name: "fixed-four", source: fixed },
     {
-      name: "fixed-sixteen-block-offset",
-      get source() {
-        return fixedSixteen();
-      },
-    },
-    {
       name: "fixed-sixteen-block-offset-lost-byte",
       get source() {
         return replaceOnce(
-          fixedSixteen(),
+          source,
           "bytes[i + 3] = pool[sourceOffset + 3] as number;",
           "bytes[i + 3] = 0;",
         );
@@ -80,7 +61,7 @@ export function poolCandidates(source: string): readonly SourceCandidate[] {
       name: "fixed-sixteen-block-offset-lost-erasure",
       get source() {
         return replaceOnce(
-          fixedSixteen(),
+          source,
           "pool[sourceOffset + 3] = 0;",
           "pool[sourceOffset + 3] = pool[sourceOffset + 3] as number;",
         );

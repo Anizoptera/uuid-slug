@@ -53,8 +53,10 @@ export function pooledFill(
     }
     // Copy and erase in one pass; `subarray` plus `set` would allocate a view per call.
     // Continuation draws need four bytes. Fixed stores avoid their loop without another view
-    // or retained buffer; other lengths keep the indexed loop. Complete-call comparisons in
-    // bench/PERFORMANCE.md decide this shape, not copy-only timing. Remeasure if draw widths
+    // or retained buffer. Owned draws use four-byte blocks, reusing each source offset rather
+    // than repeating its arithmetic. Blocks keep the body smaller than fully expanded stores;
+    // other lengths keep the indexed loop. Complete-call comparisons in bench/PERFORMANCE.md
+    // decide this shape, not copy-only timing. Remeasure if draw widths
     // or the runtime's typed-array handling change.
     if (length === 4) {
       bytes[0] = pool[offset + 0] as number;
@@ -65,6 +67,18 @@ export function pooledFill(
       pool[offset + 2] = 0;
       bytes[3] = pool[offset + 3] as number;
       pool[offset + 3] = 0;
+    } else if (length === 16) {
+      for (let i = 0; i < 16; i += 4) {
+        const sourceOffset = offset + i;
+        bytes[i] = pool[sourceOffset] as number;
+        pool[sourceOffset] = 0;
+        bytes[i + 1] = pool[sourceOffset + 1] as number;
+        pool[sourceOffset + 1] = 0;
+        bytes[i + 2] = pool[sourceOffset + 2] as number;
+        pool[sourceOffset + 2] = 0;
+        bytes[i + 3] = pool[sourceOffset + 3] as number;
+        pool[sourceOffset + 3] = 0;
+      }
     } else
       for (let i = 0; i < length; i += 1) {
         bytes[i] = pool[offset + i] as number;
