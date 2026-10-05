@@ -306,28 +306,6 @@ function codecCandidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
-      name: "default-owned-generator",
-      get source() {
-        // The ordinary codec needs no sequence; preserve the configured source for parsed values.
-        const selected = replaceOnce(
-          replaceOnce(
-            source,
-            "  uuidV7BytesFor as generateDefaultUuidV7Bytes,",
-            "  generateUuidV7Bytes,\n  uuidV7BytesFor as generateDefaultUuidV7Bytes,",
-          ),
-          "    return buildUuidSlugCodec(options, generateDefaultUuidV7Bytes);",
-          "    return buildUuidSlugCodec(options, generateUuidV7Bytes);",
-        );
-        // Only the package-owned default throws its existing typed entropy failure.
-        // The injected callback keeps its original exception containment.
-        return replaceOnce(
-          selected,
-          "      return new UuidSlugError(RNG_UNAVAILABLE, UUID_V7_GENERATION_FAILED, { cause });",
-          "      if (generateBytes === generateUuidV7Bytes && cause instanceof UuidSlugError) return cause;\n      return new UuidSlugError(RNG_UNAVAILABLE, UUID_V7_GENERATION_FAILED, { cause });",
-        );
-      },
-    },
-    {
       name: "scratch-text",
       get source() {
         return scratchText();

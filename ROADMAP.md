@@ -264,7 +264,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         default byte source is `uuidV7BytesFor`, not ordinary default owned-byte generation.
         Check the codec's published generation behavior before testing that source substitution;
         sampled shared validation work alone does not select a wrapper rewrite.
-  - [ ] Screen ordinary owned-byte generation as the masking codec's default byte source.
+  - [x] Screen ordinary owned-byte generation as the masking codec's default byte source.
         The codec promises secure UUIDv7 bytes and its masked wire format, not shared ordering.
         Change only public codec construction; retain explicit-time generation, selected generators,
         immutable-value payload layout and the injected failure seam. Existing Node/Bun wire,
@@ -276,6 +276,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `current-codec-default-owned-screen-cause-preserved.jsonl` passes Node, Bun and resource
         witnesses. Bun masked generation improves in both orders, but a large baseline variation
         and slower base32 decode controls require independent packed comparisons before retention.
+        `current-codec-default-owned-packed.jsonl` and its repeat do not resolve a repeated
+        ordinary masked-generation gain. Bun immutable generation resolves slower in the first
+        comparison and has a slower median again in the noisy repeat. Reject this public-generator
+        substitution and remove its definition; source and packed archives retain the experiment.
+        This does not prove the configured writer necessary. A later candidate must change the
+        mechanism, such as an error-valued default byte entry, rather than replay this wrapper.
   - [x] Compare Bun UUIDv4 text CPU and retention for the package, `crypto-randomuuid`, and bound
         Web Crypto in equal-call reversed captures. The library directly exports Node-compatible
         `crypto.randomUUID`; native binding may explain the loss, or package dispatch and trust
