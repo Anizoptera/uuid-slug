@@ -25,6 +25,84 @@ try {
       console.log(`${runtime}: ${name}\n${output.trim()}`);
     }
   }
+  // Compare complete calls against independently packed committed code when production changes.
+  // Related-operation ratios cannot catch shared slowdowns. Skip unchanged production graphs;
+  // rebuilding and timing them on every documentation commit buys no regression evidence.
+  const inputs = ["src", "package.json", "bun.lock", "tsconfig.json", "tsdown.config.ts"];
+  const uncommitted = await command("git", ["diff", "--name-only", "HEAD", "--", ...inputs], root);
+  const committed = uncommitted.trim()
+    ? ""
+    : await command("git", ["diff", "--name-only", "HEAD^", "HEAD", "--", ...inputs], root);
+  if (uncommitted.trim() || committed.trim()) {
+    const primaryCalls = [
+      "v4.string",
+      "v4.string.uppercase",
+      "v4.bytes",
+      "v4.slug",
+      "v4.base32",
+      "v7.string",
+      "v7.string.uppercase",
+      "v7.bytes",
+      "v7.slug",
+      "v7.base32",
+      "v7.pair.default",
+      "v7.pair.uppercase",
+      "v7.pair.base32",
+      "v7.pair.base32.uppercase",
+      "format",
+      "format.uppercase",
+      "bytes.base64",
+      "bytes.base32",
+      "plain.encode",
+      "plain.decode",
+      "base32.encode",
+      "base32.decode",
+      "slug.bytes",
+      "slug.base32.bytes",
+      "uuid.toBytes.uuid",
+      "uuid.toString.bytes",
+      "masked.generate",
+      "masked.base32.generate",
+      "masked.encode",
+      "masked.encode.bytes",
+      "masked.decode",
+      "masked.decode.bytes",
+      "masked.base32.encode",
+      "masked.base32.encode.bytes",
+      "masked.base32.decode",
+      "masked.base32.decode.bytes",
+      "value.parse.uuid",
+      "value.parse.slug",
+      "value.parse.bytes",
+      "value.generate",
+      "value.toString",
+      "value.toPlainSlug",
+      "value.toPlainSlug.base32",
+      "value.toMaskedSlug",
+    ];
+    // The comparison owns bounded child commands; its whole multi-process acquisition must not
+    // inherit command()'s single-tool timeout. Stream evidence without a second buffered copy.
+    const comparison = Bun.spawn(
+      [
+        process.execPath,
+        join(import.meta.dir, "compare.ts"),
+        uncommitted.trim() ? "HEAD" : "HEAD^",
+        "--check",
+      ],
+      {
+        cwd: root,
+        env: {
+          ...process.env,
+          UUID_SLUG_COMPARE_RUNTIMES: "node:bun",
+          UUID_SLUG_PROFILE_FILTER: primaryCalls.map((name) => `=${name}`).join(","),
+        },
+        stdout: "inherit",
+        stderr: "inherit",
+      },
+    );
+    if ((await comparison.exited) !== 0)
+      throw new Error("Packed primary-call timing regression check failed");
+  }
   passed = true;
 } finally {
   // Failure output names the exact executable and bundle; deleting it would prevent that replay.

@@ -21,6 +21,7 @@ import {
   describeSamples,
   FRESH_PROCESS_SAMPLE_UNIT,
   medianConfidence95,
+  medianConfidence,
   WITHIN_PROCESS_BATCH_SAMPLE_UNIT,
 } from "../bench/statistics";
 import { describeCallLatency, sampleCallLatency } from "../bench/call-latency";
@@ -393,6 +394,27 @@ test("median inference requires enough rounds and uses exact order-statistic bou
   const values = [16, 3, 8, 11, 1, 15, 6, 13, 4, 10, 2, 14, 7, 12, 5, 9];
   expect(medianConfidence95(values)).toEqual([4, 13]);
   expect(values).toEqual([16, 3, 8, 11, 1, 15, 6, 13, 4, 10, 2, 14, 7, 12, 5, 9]);
+});
+
+test("regression intervals account for the selected comparison family", () => {
+  const observations = Array.from({ length: 16 }, (_, index) => index + 1);
+  expect(medianConfidence(observations, 0.05)).toEqual([4, 13]);
+  expect(medianConfidence(observations, 0.05 / 100)).toEqual([1, 16]);
+  expect(medianConfidence(observations.slice(0, 8), 0.05 / 100)).toBeUndefined();
+  expect(
+    medianConfidence(
+      Array.from({ length: 16 }, () => 1),
+      0.05 / 100,
+    ),
+  ).toEqual([1, 1]);
+  expect(
+    medianConfidence(
+      Array.from({ length: 16 }, () => 2),
+      0.05 / 100,
+    ),
+  ).toEqual([2, 2]);
+  expect(() => medianConfidence([Number.NaN], 0.05)).toThrow("finite observations");
+  expect(() => medianConfidence(observations, 0)).toThrow("between zero and one");
 });
 
 test("sample spread and mean uncertainty preserve translation and scale", () => {

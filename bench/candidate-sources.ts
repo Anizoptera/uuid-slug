@@ -108,6 +108,18 @@ function v4Candidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
+      name: "duplicate-generation-timing",
+      get source() {
+        // Keep the valid returned identifier while restoring observable redundant secure draws.
+        // This mutation proves a packed timing gate reaches generation, not just its reporter.
+        return replaceOnce(
+          source,
+          "  const native = runtime.uuidV4;",
+          "  for (let draw = 0; draw < 16; draw += 1) generatePortableUuidV4(textCase);\n  const native = runtime.uuidV4;",
+        );
+      },
+    },
+    {
       name: "inline-native",
       get source() {
         return inlineNative();

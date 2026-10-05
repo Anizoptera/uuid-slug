@@ -29,6 +29,25 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
       independent native or qualified-library references, measure normal variation before choosing
       a budget, and prove a material slowdown fails it. Keep timing and instrumented counts separate;
       neither establishes total allocation or protects an unmeasured runtime.
+  - [x] Make packed revision comparisons reject resolved primary-call slowdowns.
+        Reuse `bench/compare.ts` with a named committed baseline and exact successful-call filters;
+        changing two related package operations must not change the reference. Keep fresh processes
+        as the observation unit and adjust uncertainty for the whole selected comparison set.
+        Reject missing, non-finite or insufficient observations instead of treating them as parity.
+        A same-revision control must pass, and an isolated result-preserving slowdown must fail.
+        Retain failed artifacts and raw records. This gate measures warmed complete-call throughput;
+        resource counts remain separate and individual-call tail latency remains unverified.
+        `current-primary-timing-ranked-control.jsonl` passes the selected primary calls on Node
+        Current, Bun, Deno and Chromium. Short single-batch measurements hide redundant work
+        under process variation; do not reuse those settings as regression proof.
+        The established longer preparation and multi-batch settings pass the unchanged Node/Bun
+        control and reject redundant secure generation on both selected implementations in
+        `current-primary-timing-prepared-control.jsonl` and `current-primary-timing-selected-defect.jsonl`.
+  - [ ] Run the packed timing guard automatically when production inputs change.
+        `bench/check.ts` must compare an uncommitted production change with HEAD, or a committed
+        production change with its parent, using exact primary-call filters on Node and Bun.
+        Documentation-only checks must not pay for rebuilding and timing an unchanged package.
+        Keep additional-runtime comparisons explicit until their routine execution is verified.
   - [x] Extend deterministic primary-call resource protection and prove its rejection paths.
         Native UUIDv4 text must skip revalidation and extra draws; ordinary owned UUIDv4/UUIDv7
         bytes need no temporary arrays; Bun plain base64url must reach native encoding; base32

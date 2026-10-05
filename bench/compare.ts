@@ -8,7 +8,7 @@ import { chromium, firefox, webkit } from "playwright";
 import type { Page } from "playwright";
 
 import { command } from "../scripts/command";
-import { describeSamples, medianConfidence95 } from "./statistics";
+import { describeSamples, medianConfidence, medianConfidence95 } from "./statistics";
 import { CANDIDATE_FILES, CANDIDATE_GROUPS, createSourceCandidates } from "./candidate-sources";
 import type { CandidateGroup } from "./candidate-sources";
 
@@ -42,6 +42,7 @@ interface ProfileRow {
 
 const project = join(import.meta.dir, "..");
 const smoke = process.argv.includes("--smoke");
+const regressionCheck = process.argv.includes("--check");
 const sourceOptions = process.argv
   .slice(2)
   .filter((value) => value.startsWith("--source-candidate="));
@@ -49,12 +50,16 @@ if (sourceOptions.length > 1) throw new Error("Choose one source candidate per p
 const sourceOption = sourceOptions[0];
 const positional = process.argv
   .slice(2)
-  .filter((value) => value !== "--smoke" && value !== sourceOption);
+  .filter((value) => value !== "--smoke" && value !== "--check" && value !== sourceOption);
+if (positional.some((value) => value.startsWith("--")))
+  throw new Error(
+    "Unknown comparison option; use --smoke, --check or --source-candidate=group:name",
+  );
 const baselineRef = positional[0] ?? "HEAD^";
 const candidateRef = positional[1];
 if (positional.length > 2)
   throw new Error(
-    "Usage: bun bench/compare.ts [baseline-ref] [candidate-ref] [--smoke] [--source-candidate=group:name]",
+    "Usage: bun bench/compare.ts [baseline-ref] [candidate-ref] [--smoke] [--check] [--source-candidate=group:name]",
   );
 const sourceParts = sourceOption?.slice("--source-candidate=".length).split(":");
 if (
@@ -66,13 +71,23 @@ if (
   throw new Error(
     `Source candidates require a known group and name: ${CANDIDATE_GROUPS.join(", ")}.`,
   );
-const rounds = Number(process.env.UUID_SLUG_COMPARE_ROUNDS ?? (smoke ? 2 : 6));
+const rounds = Number(
+  process.env.UUID_SLUG_COMPARE_ROUNDS ?? (regressionCheck ? 16 : smoke ? 2 : 6),
+);
 // Processes remain the independent observations; extra batches improve each process median,
 // never its statistical sample count. Check the returned count to catch lost configuration.
-const samples = Number(process.env.UUID_SLUG_PROFILE_SAMPLES ?? "1");
-const duration = process.env.UUID_SLUG_PROFILE_MS ?? (smoke ? "1" : "5");
-const warmup = process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (smoke ? "2" : "16");
+// Short exploratory batches can be dominated by a pause and hide even redundant native draws.
+// Checks use the established repeated-ranking preparation and retain every within-process batch;
+// they still count only fresh processes toward the interval.
+const samples = Number(process.env.UUID_SLUG_PROFILE_SAMPLES ?? (regressionCheck ? "7" : "1"));
+const duration = process.env.UUID_SLUG_PROFILE_MS ?? (regressionCheck ? "20" : smoke ? "1" : "5");
+const warmup =
+  process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (regressionCheck ? "128" : smoke ? "2" : "16");
 const filter = process.env.UUID_SLUG_PROFILE_FILTER ?? "";
+if (regressionCheck && (!positional[0] || !filter))
+  throw new Error(
+    "--check requires an explicit committed baseline and successful primary-call filters",
+  );
 const nodeExecutable = process.env.UUID_SLUG_COMPARE_NODE_EXECUTABLE ?? "node";
 // Every record names the runtime release it measured, so a result file cannot be attributed to a
 // release other than the one that produced it.
@@ -376,6 +391,20 @@ function median(values: readonly number[]): number {
 
 function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void {
   for (const runtime of selectedRuntimes) {
+    const baselinePrefix = `${runtime}\0baseline\0`;
+    const candidatePrefix = `${runtime}\0candidate\0`;
+    const names = [...observations.keys()];
+    const baselineNames = names.filter((key) => key.startsWith(baselinePrefix));
+    const candidateNames = names.filter((key) => key.startsWith(candidatePrefix));
+    if (!baselineNames.length || baselineNames.length !== candidateNames.length)
+      throw new Error(
+        `${runtime} requires the same nonempty baseline and candidate case inventory`,
+      );
+  }
+  const comparisons = [...observations.keys()].filter((key) => key.includes("\0baseline\0")).length;
+  if (comparisons === 0) throw new Error("Packed comparison returned no baseline observations");
+  const failures: string[] = [];
+  for (const runtime of selectedRuntimes) {
     const prefix = `${runtime}\0baseline\0`;
     for (const [key, baseline] of observations) {
       if (!key.startsWith(prefix)) continue;
@@ -387,7 +416,22 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
       if (baseline.length !== rounds)
         throw new Error(`${runtime} ${name} must have one observation per fresh-process round`);
       const pairedRatios = candidate.map((value, index) => value / (baseline[index] as number));
+      if (pairedRatios.some((value) => !(value > 0 && Number.isFinite(value))))
+        throw new Error(`${runtime} ${name} requires positive finite paired timings`);
       const medianRatio95 = medianConfidence95(pairedRatios);
+      // Bonferroni bounds the selected family under the same independent-observation assumptions
+      // as the individual intervals. It cannot remove thermal drift or prove individual-call tails.
+      const regressionInterval = regressionCheck
+        ? medianConfidence(pairedRatios, 0.05 / comparisons)
+        : undefined;
+      if (regressionCheck && !regressionInterval)
+        failures.push(
+          `${runtime} ${name}: insufficient fresh processes for ${comparisons} comparisons`,
+        );
+      else if (regressionInterval && regressionInterval[0] > 1)
+        failures.push(
+          `${runtime} ${name}: resolved slowdown; interval ${JSON.stringify(regressionInterval)}`,
+        );
       console.log(
         JSON.stringify({
           kind: "summary",
@@ -403,6 +447,7 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
           candidateStatistics: describeSamples(candidate),
           pairedRatioStatistics: describeSamples(pairedRatios),
           medianRatio95,
+          regressionInterval,
           statisticallyDistinct: medianRatio95
             ? medianRatio95[0] > 1 || medianRatio95[1] < 1
             : undefined,
@@ -421,6 +466,10 @@ function emitSummary(observations: ReadonlyMap<string, readonly number[]>): void
       );
     }
   }
+  if (failures.length)
+    throw new Error(
+      `Primary-call regression check failed:\n${failures.join("\n")}\nInspect the raw paired records and reproduce in isolation; do not weaken the check to accept a slowdown.`,
+    );
 }
 
 async function main(): Promise<void> {
@@ -432,6 +481,7 @@ async function main(): Promise<void> {
     runtimeVersions.set(runtime, /\d+\.\d+\.\d+\S*/.exec(output)?.[0] ?? output.trim());
   }
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-compare-"));
+  let passed = false;
   const baselineRoot = join(scratch, "baseline");
   const isolatedCandidate = candidateRef !== undefined || sourceParts !== undefined;
   const candidateRoot = isolatedCandidate ? join(scratch, "candidate") : project;
@@ -588,8 +638,10 @@ async function main(): Promise<void> {
       await server?.stop(true);
     }
     console.error(`Compared ${baselineRef} with ${candidateRef ?? "the current worktree"}.`);
+    passed = true;
   } finally {
-    await rm(scratch, { recursive: true, force: true });
+    if (passed) await rm(scratch, { recursive: true, force: true });
+    else console.error(`Packed comparison failed; exact artifacts remain in ${scratch}.`);
   }
 }
 
