@@ -96,6 +96,25 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Reject the shared implementation and remove its experiment definition. The raw source
         and proofs remain in the reports. A later candidate must select independently for native
         defaults, uppercase and portable runtimes; do not repeat the shared helper arrangement.
+  - [x] Isolate UUIDv4 preset-check call overhead with the existing `literal-guards` candidate.
+        The native function is already shared with the faster Bun rival. Replace only the
+        successful preset predicate call with its identical two comparisons; preserve normalization,
+        native trust and failures. Reject without repeated complete-call gains on Bun and Node
+        Current; the native kernel and configured entropy paths are not this experiment's target.
+        `candidates-v4-CVrsro` is slower on Bun in both orders. Keep the existing predicate;
+        another spelling of its checks does not close the native-call wrapper gap.
+  - [ ] Obtain approval for the exact README native UUIDv4 guarantee change before testing
+        direct delegation without first-result validation and function-identity trust tracking.
+        Proposed replacement for the native-generation guarantee: "Default UUIDv4 text generation
+        trusts the runtime's native UUID result. Native call failures fall back to portable
+        generation; if both fail, the error retains both causes. Native UUIDv7 text generation
+        also falls back when its first result fails validation."
+        The faster qualified UUIDv4 rival exports the native function without validating results.
+        This change removes protection against a malformed replacement of the platform method;
+        it preserves secure randomness, output spelling and failure fallback. No speed gain is
+        established until a candidate survives complete-call and resource comparisons. Hold this
+        contract-dependent candidate under the root public-document approval rule; do not spend
+        further experiments rearranging the rejected wrappers while this decision is pending.
   - [x] Test UUIDv7 default text's successful-string recognition against its native floor.
         The native helper already returns a string on success; the public preset path then
         performs an Error-instance check. Compare a string-first result branch without changing
