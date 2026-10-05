@@ -6,7 +6,6 @@ import { poolCandidates } from "./pool-candidates";
 import { alphabetCandidates } from "./alphabet-candidates";
 import { keylessCandidates } from "./keyless-candidates";
 import { v7Candidates } from "./v7-draw-candidates";
-import { slugCandidates } from "./slug-candidates";
 
 export type { SourceCandidate } from "./candidate-source";
 
@@ -14,7 +13,6 @@ export const CANDIDATE_GROUPS = [
   "v7-draw",
   "v4",
   "alphabet",
-  "slug",
   "keyless",
   "format",
   "latin1",
@@ -27,7 +25,6 @@ export const CANDIDATE_FILES = {
   "v7-draw": "src/v7.ts",
   v4: "src/v4.ts",
   alphabet: "src/alphabet.ts",
-  slug: "src/slug.ts",
   keyless: "src/v7-keyless.ts",
   format: "src/uuid.ts",
   latin1: "src/runtime/portable.ts",
@@ -239,7 +236,6 @@ export function createSourceCandidates(
     v4: v4Candidates,
     "v7-draw": (value: string) => v7Candidates(value, uuidSource),
     alphabet: alphabetCandidates,
-    slug: slugCandidates,
     keyless: keylessCandidates,
     format: formatCandidates,
     latin1: latin1Candidates,

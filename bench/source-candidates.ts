@@ -86,10 +86,6 @@ const groups = {
     ],
     tests: ["__test__/alphabet.test.ts"],
   },
-  slug: {
-    names: ["bytes.base64", "plain.encode", "v7.slug", "v7.base32", "v7.pair.default"],
-    tests: ["__test__/alphabet.test.ts"],
-  },
   "v7-draw": {
     names: [
       "v7.string",
@@ -258,15 +254,12 @@ try {
         failures.map((result) => result.reason),
         `Candidate rejected before timing: ${candidate.name}`,
       );
-    if (group === "alphabet" || group === "slug") {
+    if (group === "alphabet") {
       const nativePlain =
-        candidate.name === "native-branch" ||
-        candidate.name === "native-dispatch" ||
-        candidate.name === "native-plain-result";
+        candidate.name === "native-branch" || candidate.name === "native-dispatch";
       for (const mode of ["present", "absent", "throw"]) {
         const output = await command("bun", ["__test__/alphabet-native-probe.ts", mode], tree, {
           UUID_SLUG_EXPECT_NATIVE_PLAIN: nativePlain ? "1" : "0",
-          UUID_SLUG_NATIVE_PROBE_TARGET: group,
         });
         await writeFile(join(report, `${candidate.name}-native-${mode}.jsonl`), output);
         if (!output.includes('"proof":"native plain encoding"'))
@@ -278,11 +271,7 @@ try {
         const mutation = Bun.spawn(["bun", "__test__/alphabet-native-probe.ts", "corrupt"], {
           cwd: tree,
           timeout: 30_000,
-          env: {
-            ...process.env,
-            UUID_SLUG_EXPECT_NATIVE_PLAIN: "1",
-            UUID_SLUG_NATIVE_PROBE_TARGET: group,
-          },
+          env: { ...process.env, UUID_SLUG_EXPECT_NATIVE_PLAIN: "1" },
           stdout: "pipe",
           stderr: "pipe",
         });
