@@ -7,7 +7,11 @@ import { Buffer } from "node:buffer";
 
 export * from "@anizoptera/uuid-slug";
 
-const mode = process.env.UUID_SLUG_RESOURCE_REGRESSION;
+// Select before measured calls so one browser bundle can exercise every isolated defect.
+const mode =
+  typeof process === "undefined"
+    ? new URL(location.href).searchParams.get("resource-regression")
+    : process.env.UUID_SLUG_RESOURCE_REGRESSION;
 const oldState = new WeakMap<object, unknown>();
 
 export const generateUuidV4 = new Proxy(api.generateUuidV4, {

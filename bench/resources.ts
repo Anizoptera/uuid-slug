@@ -3,7 +3,6 @@
 // Count avoidable work in a fresh process; wrappers forward real operations and are never timed.
 import { strict as assert } from "node:assert";
 import { createBoundsProfileCases } from "./profile-bounds";
-import crypto from "node:crypto";
 
 const counts = {
   buffers: 0,
@@ -80,7 +79,7 @@ if (
   assert.equal(slice.call(new OriginalBytes([1]), 0, 1), "AQ");
   assert.equal(counts.base64, before + 1);
 }
-// This Node/Bun harness checks Node's character-code writer and Bun's Latin-1 writer separately.
+// Count character-code and native Latin-1 writers separately where each is actually selected.
 const hasLatin1Text =
   typeof globalThis.Buffer === "function" &&
   wrapMethod(globalThis.Buffer.prototype, "toString", "latin1");
@@ -105,8 +104,13 @@ const expectTextFormatter = (message: string) => {
 };
 assert.ok(wrapMethod(String.prototype, "charCodeAt", "chars"));
 assert.ok(wrapMethod(String.prototype, "slice", "textSlices"));
-assert.ok(wrapMethod(crypto, "randomFillSync", "draws"));
-assert.ok(wrapMethod(crypto, "randomUUID", "nativeV4"));
+// Browser calls use real Web Crypto below. Loading a Node crypto polyfill would instrument
+// unrelated work and conceal which platform source the package actually selected.
+if (typeof process !== "undefined" && process.versions?.node) {
+  const { default: crypto } = await import("node:crypto");
+  assert.ok(wrapMethod(crypto, "randomFillSync", "draws"));
+  assert.ok(wrapMethod(crypto, "randomUUID", "nativeV4"));
+}
 wrapMethod(globalThis.crypto, "randomUUID", "nativeV4");
 assert.ok(wrapMethod(globalThis.crypto, "getRandomValues", "draws"));
 assert.ok(wrapMethod(WeakMap.prototype, "set", "weakWrites"));
@@ -239,7 +243,8 @@ try {
     ["uppercase UUIDv4 text", api.UUID_TEXT_UPPERCASE],
   ] as const) {
     assert.equal(typeof api.generateUuidV4(textCase), "string");
-    check(name, () => api.generateUuidV4(textCase), { buffers: 0, views: 0, errors: 0 });
+    // Neither trusted native output nor the package's own writer needs to read its result back.
+    check(name, () => api.generateUuidV4(textCase), { buffers: 0, views: 0, errors: 0, chars: 0 });
     if (typeof Bun !== "undefined")
       assert.equal(counts.nativeV4, 1, `${name}: preserve Bun's direct native selection`);
     if (counts.nativeV4) {

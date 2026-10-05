@@ -60,6 +60,10 @@ try {
     if ((await proof.exited) !== 0)
       throw new Error("Deno primary resource regression proof failed");
   }
+  if (selectedRuntimes.includes("chromium")) {
+    const { checkChromiumResources } = await import("./resource-browser");
+    await checkChromiumResources();
+  }
   // Compare complete calls against independently packed committed code when production changes.
   // Related-operation ratios cannot catch shared slowdowns. Skip unchanged production graphs;
   // rebuilding and timing them on every documentation commit buys no regression evidence.

@@ -78,10 +78,19 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         paired generation, WeakMap state, masked text temporaries and native UUIDv4 revalidation.
         Reuse the same budgets and specific failure diagnostics; print the executing runtime.
         The focused resource test and `perf:check` Deno selection pass locally; remote CI is unverified.
-  - [ ] Run the same primary resource oracles on Chromium.
-        Browser execution needs browser-compatible imports and a packed API; preserve real
-        forwarding wrappers and their same-intrinsic controls. Retain the lane only after
-        unchanged primary calls pass and redundant-work mutations fail.
+  - [x] Run the same primary resource oracles on Chromium.
+        Compile one shared counter and defect fixture against the built package, then run each
+        case in a fresh browser using real Web Crypto. The unchanged counter passes and all
+        shared redundant-work defects fail with their intended diagnostics. Apply the zero-read
+        UUIDv4 text budget to native and portable writers; native-only checks cannot protect both.
+        `perf:check` selects this lane with Chromium. Browser completion must await the module
+        and preserve its assertion; navigation alone does not prove asynchronous execution.
+        This coverage is Chromium only. WebKit's unchanged paired string-count assertion fails;
+        this primary-runtime task does not establish WebKit resource coverage.
+  - [ ] Run the Deno/Chromium resource proof in CI when its counter, fixtures or browser driver change.
+        Production-only change detection can skip a broken guard while product code is unchanged.
+        Keep production timing selection separate so a counter-only edit does not replay identical
+        package timing. Prove changed guard inputs select the job and documentation-only edits do not.
   - [x] Resolve the unchanged Bun slug-guard timing failure before committing new guards.
         The retained failing bundle reports a ratio above its unchanged budget, while an isolated
         replay of those same bytes passes. A fixed short call-count warm-up may leave engine

@@ -17,6 +17,7 @@ import { createConversionCases } from "../bench/conversion-cases";
 import { performanceBaseline } from "../bench/check-inputs";
 import { COMPARISON_RUNTIMES, selectComparisonRuntimes } from "../bench/comparison-runtimes";
 import { command } from "../scripts/command";
+import { RESOURCE_REGRESSION_CASES } from "./resource-regression-cases";
 import { uuidStringToPlainSlug } from "../src/index";
 import * as profilingApi from "../src/index";
 import {
@@ -355,17 +356,9 @@ test("primary resource guards reject restored work on the measured runtime", asy
     await Promise.all(
       runtimes.map(async (runtime) => {
         const probes = [
-          ["", ""],
-          ["owned-temporary", "default owned UUIDv4 bytes: buffers=2 exceeds 1"],
-          ["duplicate-pair", "the pair must construct exactly its UUID and slug strings"],
-          ["weak-map-state", "parsed UUID from text: weakWrites=1 exceeds 0"],
-          ["masked-temporary", "masked string encode: buffers=1 exceeds 0"],
-          ...(runtime === "deno"
-            ? [["native-revalidation", "trust native output without reparsing it"]]
-            : []),
+          ...RESOURCE_REGRESSION_CASES,
           ...(runtime === process.execPath
             ? [
-                ["native-revalidation", "trust native output without reparsing it"],
                 ["duplicate-native", "preset generation must use exactly one native ID"],
                 [
                   "lost-native-encoder",
@@ -396,7 +389,7 @@ test("primary resource guards reject restored work on the measured runtime", asy
             ]);
             expect({ runtime, mode, status, output: status === 0 ? "" : stdout + stderr }).toEqual(
               mode
-                ? { runtime, mode, status: 1, output: expect.stringContaining(diagnostic!) }
+                ? { runtime, mode, status: 1, output: expect.stringContaining(diagnostic) }
                 : { runtime, mode, status: 0, output: "" },
             );
           }),
