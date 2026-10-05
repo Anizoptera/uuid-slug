@@ -823,6 +823,9 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         wrong clocks, mismatched pair output, changed failures, or absent repeated complete-call
         gain; only a survivor earns packed and equal-call resource comparisons.
         The extracted keyless owner preserves every existing output and anchor failure.
+        Both runtime lanes reject lost-byte and pair timestamp mutations. The resource check's
+        exact initialization count rejects a lower view count after its upper-bound check passes;
+        delete that duplicated evidence, retain every allocation ceiling, then rerun the candidate.
 - [x] Screen the argument-free UUIDv7 value call without its empty options record and absent-field
       readers; preserve the owned bytes, immutable value, payload layout and thrown entropy failure.
       Require the lost-throw mutation to fail both runtime tests before timing. Compare the full

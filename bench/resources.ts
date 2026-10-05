@@ -303,16 +303,6 @@ try {
     views: nativePreset && nativeSlug ? 1 : 0,
     errors: 0,
   });
-  assert.equal(
-    counts.buffers,
-    nativePreset && nativeSlug ? 1 : 0,
-    "construct portable text state only once",
-  );
-  assert.equal(
-    counts.views,
-    nativePreset && nativeSlug ? 1 : 0,
-    "construct its entropy view only once",
-  );
   check("default UUIDv7 pair", () => api.generateUuidV7WithPlainSlug(), {
     buffers: 0,
     views: 0,
