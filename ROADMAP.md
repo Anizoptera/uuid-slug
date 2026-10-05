@@ -172,6 +172,18 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         the complete check against the final source. Preserve declarations, accepted inputs,
         normalization, offsets, errors and encoder selection. Hold public performance prose
         for exact approval; the roadmap and raw captures retain the active evidence meanwhile.
+  - [x] Refresh Bun primary rivals after retaining scalar selection. Three fresh host captures
+        in `current-scalar-retained-primary-bun-{0,1,2}.jsonl` keep byte-to-base64url conversion
+        as the largest confirmed loss: package medians are 42.07–43.78 ns versus native
+        34.15–35.46 ns. UUIDv4 text beats `crypto-randomuuid` in the first capture and loses
+        modestly in the other two; UUIDv4 slug generation no longer reproduces its prior loss consistently.
+        These complete-call observations supersede those stale Bun gap priorities, not the
+        retained scalar-selection comparison. Keep native encoding as the next target.
+  - [ ] Screen direct native encoding inside the scalar-selected public byte conversion.
+        The changed premise is reduced caller normalization, not a new generic encoder branch.
+        Capture the native capability once outside shared alphabet metadata; preserve the original
+        encoder for other hosts, base32 and native failure. Use the existing native probe through
+        the public conversion, and reject base32 loss, decoder retention or absent repeated gain.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect
