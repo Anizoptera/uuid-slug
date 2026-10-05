@@ -64,6 +64,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Web Crypto and lower caller CPU than `uuid` in both orders. Every second window keeps
         committed memory flat. First-window process CPU changes direction against Web Crypto;
         no repeated material resource loss selects a rewrite. Preserve the ordinary owned path.
+  - [ ] Remove redundant error unwrapping from argument-free generation comparisons.
+        Public default overloads return identifiers directly and throw their ruled entropy
+        failure; configured and conversion overloads retain error values. The shared corpus
+        adds `unwrap` to several defaults, so it measures extra caller work rivals do not need.
+        Remove it only from no-error-return calls, retain configured and conversion handling,
+        and refresh the affected ordinary text, owned-byte and paired-output comparisons.
+        Existing corpus validation must still reject invalid output before timing. Recheck
+        qualified rival and native-floor ordering before choosing another production change.
   - [x] Refresh one complete primary-call ranking before another source candidate. Compare UUIDv4
         and UUIDv7 text, owned bytes and slugs, paired output, and the six text/byte/plain-slug
         conversions on Node Current, Bun, Node LTS, Chromium and Deno. Reuse the maintained

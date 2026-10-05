@@ -293,6 +293,9 @@ efficiency. A reproducible misuse alone does not justify that cost.
   filters; run all applicable runtimes only after a candidate survives the focused mechanism test.
   Read each driver's runtime selector from that driver; comparison and profiling variables differ.
   Verify the runtime recorded in each result before assigning it to Current or LTS evidence.
+  Benchmark the caller code each overload requires. Defaults that return identifiers directly
+  must not pay for error-value unwrapping; retain it for conversions and configured calls that
+  return errors. Keep the existing output and failure witnesses outside timed caller work.
 - Before any performance experiment, record the successful consumer call, current removable cost,
   competing explanations, result that would reject the candidate, and next production decision in
   `ROADMAP.md`. Reuse valid evidence; do not run a measurement whose possible results leave that
