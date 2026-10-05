@@ -814,13 +814,15 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         Composed calls reduce caller CPU but raise process CPU in every pair; sampling totals
         reverse the unsampled ranking. Frames identify different draw stacks, not sequence cost
         in isolation. Do not retain public-call composition or claim combined resource improvement.
-  - [ ] Screen the independent timestamp writer into the existing borrowed default buffer.
+  - [ ] Screen the existing independent owned-byte writer for default slug and pair draws.
         Keep configured draws and owned-byte defaults intact; compare default pairs and base32hex
         slugs with unchanged text and owned-byte controls. Removing sequence work may help, while
-        entropy copying or the reentrancy boundary may erase it. Reject on lost payload bits,
+        fresh-array allocation or entropy copying may erase it. The borrowed buffer also serves
+        configured draws; independent reuse would add coordination, so measure the existing
+        owned writer before building that mechanism. Reject on lost payload bits,
         wrong clocks, mismatched pair output, changed failures, or absent repeated complete-call
         gain; only a survivor earns packed and equal-call resource comparisons.
-        Extract the keyless candidate owner before extension; preserve existing output and failures.
+        The extracted keyless owner preserves every existing output and anchor failure.
 - [x] Screen the argument-free UUIDv7 value call without its empty options record and absent-field
       readers; preserve the owned bytes, immutable value, payload layout and thrown entropy failure.
       Require the lost-throw mutation to fail both runtime tests before timing. Compare the full
