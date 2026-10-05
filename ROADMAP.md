@@ -337,8 +337,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `current-direct-native-baseline-packed.jsonl` and
         `current-direct-native-other-runtime-packed.jsonl` repeat complete calls on Node Current,
         Bun, Deno, Chromium, Firefox, WebKit and Node Current without JIT. Every timing difference
-        is unresolved; native and rival parity remain open. Keep direct delegation as the ruled
-        baseline, not as a claimed speedup. Default wrapper work remains the next primary target.
+        is unresolved; those before/after comparisons do not prove a speedup from removed checks.
+        Keep direct delegation as the ruled baseline. They do not supersede the later qualified
+        rankings: `current-native-baseline-v7-ranking-repeat.jsonl` favors default UUIDv7 text
+        over measured libraries on all ranked runtimes, and the Bun native-floor gap is negligible.
+        `current-primary-v4-outcome-ranking.jsonl` likewise leaves only an accepted small Bun
+        text difference. No wrapper experiment follows from the older unresolved comparison.
+        Resource counters prove selected work only; reconcile the native resource profiles and
+        their limits before closing this evidence task. Public conclusions await the approval below.
   - [x] Screen direct native success return against the baseline without identity tracking.
         Keep preset checks and exception fallback; reject repeated primary-call losses. The
         earlier trusted-function experiment cannot settle this changed success/error boundary.
