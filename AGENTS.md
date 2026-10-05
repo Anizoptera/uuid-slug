@@ -76,6 +76,12 @@ efficiency. A reproducible misuse alone does not justify that cost.
   Default generation needs no stronger guarantees than correctly implemented primary qualified
   rivals provide. Put additional guarantees on optional configured paths; do not reject a rival
   for lacking an agent-added guarantee. Identify its actual behavior before choosing the default.
+  Actively try to disprove each guarantee used to reject faster native output: find a qualified
+  rival without it and show the concrete primary-user harm its absence causes. Treat inherited
+  guarantees as unproven, not presumptively correct. Trace any surviving guarantee to a consumer
+  requirement and inspect native behavior before rejecting it. Revise unnecessary default
+  guarantees to the qualified rival baseline; keep extra guarantees optional. Existing tests
+  and implementation choices cannot veto that audit.
   Read `docs/public-api.md` §Generation and codecs
   before deciding which generation properties belong on defaults or configured generators.
   New guarantees require a maintainer ruling before code or tests impose them. Intra-millisecond ordering
@@ -376,6 +382,9 @@ efficiency. A reproducible misuse alone does not justify that cost.
   for one path everywhere. A native path that breaks a package contract is not adopted, but its cost
   stays the target. Every call family needs a floor row, and every open gap needs a `ROADMAP.md`
   task until a change closes it or `bench/PERFORMANCE.md` records a cause no implementation can remove.
+  When native output is faster, minimize the path to that native call before optimizing a portable
+  replacement. Select per runtime and output; keep TypeScript as the fallback or measured faster
+  choice. Native selection must include wrapper, conversion and resource costs, not kernel timing alone.
 - Rank apples-to-apples consumer outcomes, not identical internals. Correct wire output, secure
   entropy, and published guarantees are mandatory; weigh other differences by measured consumer
   harm. Clock rollback, sequence, buffer, ownership, validation, and failure strategies remain

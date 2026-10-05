@@ -254,8 +254,8 @@ each its own ratio and uncertainty verdict; an unavailable method is not a timed
 Use `UUID_SLUG_GENERATION_FILTER=uuid.slug` for UUID-text conversion against slugid and
 short-uuid. Construct the short-uuid translator once. Its numeric radix-64 spelling uses the
 same alphabet but different bit alignment, so it has a separate comparison group. Fixed-input
-witnesses require every output bit to survive. The generation filter accepts one substring;
-comma-separated terms belong to `UUID_SLUG_PROFILE_FILTER`, not this filter.
+witnesses require every output bit to survive. The generation filter accepts comma-separated
+case-name substrings; a single term retains its substring meaning.
 
 Set `UUID_SLUG_GENERATION_FORKS` to repeat the competitor matrix in fresh host and browser
 processes. Each process contributes one median per case; retain its batches separately instead

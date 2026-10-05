@@ -73,7 +73,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
       `current-primary-conversions-refresh.jsonl` retains Bun byte-to-plain-slug loss against
       native `toBase64`; other conversion results favor the package apart from small Deno parsing
       uncertainty. Guard and timestamp rows are incidental corpus output, not optimization targets.
-  - [ ] Propose the exact `bench/README.md` filter correction for approval: the generation filter
+  - [x] Correct `bench/README.md` filter guidance: the generation filter
         accepts comma-separated case-name substrings, and a single term retains its old meaning.
 - [ ] Profile the actual complete calls with gaps and inspect their faster rivals. Name the
       removable work, the rival explanation, and the observation that would reject the attribution.
@@ -83,6 +83,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         checks may add it. Reuse one qualified case definition for timing and profiling. Higher
         package CPU with equivalent bound-native CPU selects wrapper attribution; a faster library
         than both selects native method attribution. Varying memory does not prove allocation.
+        Prefer the fastest complete native call when it wins; minimize its wrapper rather than
+        requiring portable TypeScript to match it. Audit any claimed guarantee mismatch against
+        actual consumer requirements and qualified rivals before rejecting native selection.
       Compare equal-call Bun `package.conversion.bytes.slug` and
       `platform.tobase64.conversion.bytes.slug` captures in reversed order. Current encoding may
       spend removable time writing scratch and constructing text, or validation and native-call

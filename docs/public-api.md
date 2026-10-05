@@ -291,6 +291,11 @@ Default generation needs no stronger guarantees than correctly implemented prima
 rivals provide. Establish those guarantees from their implementations and behavior, not names or
 existing package tests. Offer additional guarantees through optional configured generation;
 an implementation convention is not a reason to reject an otherwise correct faster default.
+Before rejecting native generation, actively try to disprove the guarantee: compare a qualified
+rival without it and identify the concrete primary-user harm its absence causes. An inherited
+guarantee is unproven until that challenge survives. Trace it to the consumer's requirement and
+test the native behavior. Remove unnecessary default guarantees rather than preserving an inherited
+restriction; stronger guarantees remain optional. Existing tests do not establish that requirement.
 
 Choose defaults for end-user performance and resource efficiency across measured trade-offs.
 Preserve published identifier, secure-entropy, ownership, validation, and failure contracts.
@@ -548,6 +553,9 @@ layout, rather than making ordinary calls pay for those controls or adding a dup
 - Preserve the union of useful host capabilities behind one semantic interface. Detect optional
   native capabilities once, use the cheapest valid path, and retain a portable fallback with the
   same result and error meaning.
+  When the native call is faster, minimize the complete path to it before trying to match it in
+  TypeScript. Choose separately for each runtime and output; compare wrapper, conversion and
+  resource costs, not just the native function in isolation.
 - A fallback may lose only a property the public contract explicitly leaves unpromised. Expose a
   material capability difference instead of silently reducing every runtime to the weakest host.
 - Specify the full fallback order for each capability-dependent operation before implementing it:
