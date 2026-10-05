@@ -91,16 +91,6 @@ let nativePlainUuidBase64 =
         }
       ).toBase64;
 const NATIVE_PLAIN_UUID_BASE64_OPTIONS = { alphabet: BASE64URL_NAME, omitPadding: true } as const;
-// Contain the optional host's exceptions without putting its handler on base32 calls. Disable a
-// failing capability once; remeasure both alphabets when changing this call boundary.
-function encodeNativePlainUuidBase64(bytes: Uint8Array): PlainUuidSlug {
-  try {
-    return nativePlainUuidBase64!.call(bytes, NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug;
-  } catch {
-    nativePlainUuidBase64 = undefined;
-    return encode(bytes, BASE64URL) as PlainUuidSlug;
-  }
-}
 // Keep general normalization separate from ordinary exact-array presets so its branch count does
 // not grow their hot body. Remeasure complete calls if accepted input forms or dispatch change.
 function uuidBytesToPlainSlugGeneral(
@@ -238,28 +228,33 @@ export function uuidBytesToPlainSlug(
   offsetOrAlphabet: number | SlugAlphabet = 0,
   alphabet?: SlugAlphabet,
 ): PlainUuidSlug | UuidSlugError {
-  // Ordinary base32 calls need neither native selection nor general offset normalization. Exact
-  // payloads make the range check redundant; other forms keep the validated conversion below.
-  if (
-    (offsetOrAlphabet === BASE32HEX_NAME ||
-      (offsetOrAlphabet === 0 && alphabet === BASE32HEX_NAME)) &&
-    (offsetOrAlphabet === 0 || alphabet === undefined) &&
-    isUint8Array(bytes) &&
-    bytes.length === 16
-  )
-    return encode(bytes, BASE32HEX) as PlainUuidSlug;
-  // Native encoding owns this exact plain-payload job. Offset windows and non-array forms retain
-  // general conversion; masked tails never enter here. Keep base32 controls in the comparison
-  // when changing this dispatch (bench/PERFORMANCE.md).
-  if (
-    (offsetOrAlphabet === 0 || offsetOrAlphabet === BASE64URL_NAME) &&
-    (alphabet === undefined || (offsetOrAlphabet === 0 && alphabet === BASE64URL_NAME)) &&
-    isUint8Array(bytes) &&
-    bytes.length === 16
-  ) {
-    if (nativePlainUuidBase64) return encodeNativePlainUuidBase64(bytes);
-    // An absent capability must not add a normalization call for an already validated payload.
-    return encode(bytes, BASE64URL) as PlainUuidSlug;
+  // Exact-array presets share one payload check and one writer choice. Duplicate selectors and
+  // non-zero offsets must retain general validation; they cannot become successful preset calls.
+  if (isUint8Array(bytes) && bytes.length === 16) {
+    const selectedAlphabet =
+      offsetOrAlphabet === 0
+        ? (alphabet ?? BASE64URL_NAME)
+        : alphabet === undefined
+          ? offsetOrAlphabet
+          : undefined;
+    if (selectedAlphabet === BASE32HEX_NAME) return encode(bytes, BASE32HEX) as PlainUuidSlug;
+    // Native encoding owns this exact plain-payload job. Offset windows and non-array forms retain
+    // general conversion; masked tails never enter here. Keep base32 controls in the comparison
+    // when changing this dispatch (bench/PERFORMANCE.md).
+    if (selectedAlphabet === BASE64URL_NAME) {
+      if (nativePlainUuidBase64) {
+        try {
+          return nativePlainUuidBase64.call(
+            bytes,
+            NATIVE_PLAIN_UUID_BASE64_OPTIONS,
+          ) as PlainUuidSlug;
+        } catch {
+          nativePlainUuidBase64 = undefined;
+        }
+      }
+      // An absent capability must not add a normalization call for an already validated payload.
+      return encode(bytes, BASE64URL) as PlainUuidSlug;
+    }
   }
   return uuidBytesToPlainSlugGeneral(bytes, offsetOrAlphabet, alphabet);
 }
