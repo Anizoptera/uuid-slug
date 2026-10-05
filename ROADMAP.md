@@ -59,6 +59,22 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
       native work concentrates in `toBase64`. Resident and committed growth vary; neither proves
       gross allocation or a leak. Inspect a direct plain-result path that avoids the shared writer
       dispatch; do not repeat rejected generic native branches or bound calls unchanged.
+  - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
+        Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
+        may consume more work. Capture each exact call independently in reversed order; inspect
+        sampled stacks beside unsampled CPU and memory, not as allocation totals or rival parity.
+        Select a change only from the attributed primary cost; reject another encoder rewrite if
+        cipher or validation work dominates. Reuse the existing profiler and configured codec.
+        `current-primary-masking-{0-encode,1-decode,2-decode,3-encode}` captures each exact call
+        with equal completed and warm-up counts. Both decoding captures concentrate sampled work
+        in `feistel16`, then payload restoration and base decoding. Encoding divides substantial
+        work between string construction and the cipher; its sample attribution varies between
+        `feistel16`, `mix32` and `tagFor`. Memory growth varies and does not establish allocation
+        or rival parity. Inspect the shared cipher's fixed loops before selecting a candidate;
+        preserve its rounds, key order and wire vectors. Do not repeat the rejected string writer.
+        Compare any proposed loop change with `bench/PERFORMANCE.md` §Rejected TypeScript
+        hot-path shapes and §Feistel round function first; a hot frame alone does not reopen
+        rejected unrolling, key selection or word access. Name the changed mechanism or premise.
 - [ ] Change one evidenced bottleneck at a time. Reject a component-only gain, a primary-call
       regression, or a speed gain paid for by material resource loss. Never choose a mechanism
       merely because the existing experiment driver can measure it.
