@@ -64,7 +64,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Web Crypto and lower caller CPU than `uuid` in both orders. Every second window keeps
         committed memory flat. First-window process CPU changes direction against Web Crypto;
         no repeated material resource loss selects a rewrite. Preserve the ordinary owned path.
-  - [ ] Remove redundant error unwrapping from argument-free generation comparisons.
+  - [x] Remove redundant error unwrapping from argument-free generation comparisons.
         Public default overloads return identifiers directly and throw their ruled entropy
         failure; configured and conversion overloads retain error values. The shared corpus
         adds `unwrap` to several defaults, so it measures extra caller work rivals do not need.
@@ -72,6 +72,16 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         and refresh the affected ordinary text, owned-byte and paired-output comparisons.
         Existing corpus validation must still reject invalid output before timing. Recheck
         qualified rival and native-floor ordering before choosing another production change.
+        `current-default-caller-generation-ranking.jsonl` retains three fresh-process medians
+        for the corrected default calls. Bun UUIDv4 text loses to `crypto-randomuuid` in every
+        process; Deno owned UUIDv7 bytes loses to `uuidv7` in every process. Bun UUIDv7 text
+        also trails its native floor. These supersede the corresponding older ordering below.
+  - [ ] Close Bun UUIDv4 text's repeated qualified-rival loss first. Profile the corrected
+        complete caller against `crypto-randomuuid` and Web Crypto with equal work; inspect
+        native selection, trust dispatch and case handling before changing production code.
+        Preserve configured behavior and fallback; reject a candidate without repeated
+        complete-call improvement. Then address Deno owned UUIDv7 bytes and the native-floor
+        gaps already listed here. Do not reopen rejected base64 wrapper shapes unchanged.
   - [x] Refresh one complete primary-call ranking before another source candidate. Compare UUIDv4
         and UUIDv7 text, owned bytes and slugs, paired output, and the six text/byte/plain-slug
         conversions on Node Current, Bun, Node LTS, Chromium and Deno. Reuse the maintained
