@@ -666,7 +666,26 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         Packed primary and other-runtime reports reproduce owned-byte gains. Equal-call Bun
         resource pairs lower caller CPU and final RSS. WebKit slug loss in the broader replay
         becomes unresolved in `current-pool-sixteen-webkit-loss.log`; do not retain while that
-        trade-off remains unresolved. Isolate the larger copy body before another comparison.
+        trade-off remains unresolved. The separate helper passes both mutation and intact lanes
+        but raises Bun owned UUIDv7 byte cost in both source-screen orders; reject the extra call.
+        `fixed-sixteen-blocks` reduces iterations with four-byte blocks and a smaller body.
+        The larger body may change continuation optimization, or the extra branch may cost slugs.
+        Require both mutations and intact lanes before timing; reject absent Node/Bun gains
+        or repeated slug losses before retention. The block source screen preserves byte gains,
+        but `current-pool-blocks-packed-primary.log` contains wide primary-runtime variation.
+        Isolate slugs without preceding allocation workloads: persistent loss supports a copier
+        cost, disappearance weakens it and leaves prior-work conditioning unresolved.
+        `current-pool-blocks-isolated-slug.log` does not reproduce the mixed loss on Node, Bun
+        or WebKit; this weakens copier attribution, without proving parity.
+        Isolated byte gains survive on Node and Bun; Bun caller CPU and resident growth improve
+        in all equal-call pairs, while heap effects vary. Remaining engines expose a JITless
+        owned-v4 slowdown in `current-pool-blocks-packed-other.log`; reject universal selection.
+        `fixed-sixteen-block-offset` computes the source offset once per block and omits zero
+        additions. Reduced arithmetic should remove interpreter cost; absence of a repeated
+        JITless benefit rejects this refinement. Reprove both mutations and intact lanes.
+        Both mutations fail their intended Node/Bun assertions and intact lanes pass.
+        `current-pool-block-offset-jitless.log` reproduces a byte gain; requalify primary and
+        remaining runtime calls, equal-call resources and native profiles before retention.
   - [x] Profile the exact module-default owned-byte call before choosing another substitution;
         separate setup from samples beneath the public generation frame, inspect allocation
         and entropy evidence, and compare the observed costs with the faster rivals' mechanisms.

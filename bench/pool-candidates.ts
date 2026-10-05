@@ -26,18 +26,19 @@ export function poolCandidates(source: string): readonly SourceCandidate[] {
     fixedStart < 0
       ? replaceOnce(source, loop, `if (length === 4) {\n      ${four}\n    } else ${loop}`)
       : source;
-  // Owned UUID draws consume sixteen bytes. Compare removing their loop without adding views;
-  // the existing partial-refill oracle independently checks every byte and consumed erasure.
+  // Four-byte blocks reduce owned-draw loop iterations without a large body or another call.
+  // Complete owned-byte and slug calls decide whether the remaining branch and indexing pay.
   const fixedSixteen = () =>
     replaceOnce(
       fixed,
       "    } else\n      for (",
-      "    } else if (length === 16) {\n      " +
-        Array.from(
-          { length: 16 },
-          (_, i) => `bytes[${i}] = pool[offset + ${i}] as number;\n      pool[offset + ${i}] = 0;`,
-        ).join("\n      ") +
-        "\n    } else\n      for (",
+      "    } else if (length === 16) {\n      for (let i = 0; i < 16; i += 4) {\n        const sourceOffset = offset + i;\n        " +
+        Array.from({ length: 4 }, (_, i) => {
+          const output = i === 0 ? "i" : `i + ${i}`;
+          const input = i === 0 ? "sourceOffset" : `sourceOffset + ${i}`;
+          return `bytes[${output}] = pool[${input}] as number;\n        pool[${input}] = 0;`;
+        }).join("\n        ") +
+        "\n      }\n    } else\n      for (",
     );
   // Reseeds consume ten bytes, so subsequent four-byte reads can be unaligned. A DataView
   // handles both offsets without padding or discarding entropy; compare its retained view and
@@ -60,28 +61,28 @@ export function poolCandidates(source: string): readonly SourceCandidate[] {
     { name: "indexed-loop", source: indexed },
     { name: "fixed-four", source: fixed },
     {
-      name: "fixed-sixteen",
+      name: "fixed-sixteen-block-offset",
       get source() {
         return fixedSixteen();
       },
     },
     {
-      name: "fixed-sixteen-lost-byte",
+      name: "fixed-sixteen-block-offset-lost-byte",
       get source() {
         return replaceOnce(
           fixedSixteen(),
-          "bytes[15] = pool[offset + 15] as number;",
-          "bytes[15] = 0;",
+          "bytes[i + 3] = pool[sourceOffset + 3] as number;",
+          "bytes[i + 3] = 0;",
         );
       },
     },
     {
-      name: "fixed-sixteen-lost-erasure",
+      name: "fixed-sixteen-block-offset-lost-erasure",
       get source() {
         return replaceOnce(
           fixedSixteen(),
-          "pool[offset + 15] = 0;",
-          "pool[offset + 15] = pool[offset + 15] as number;",
+          "pool[sourceOffset + 3] = 0;",
+          "pool[sourceOffset + 3] = pool[sourceOffset + 3] as number;",
         );
       },
     },
