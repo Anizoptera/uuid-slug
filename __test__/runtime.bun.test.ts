@@ -23,6 +23,28 @@ import { cases as bufferContractCases } from "./buffer-contract-probe";
 import { generateUuidV4Bytes } from "../src/index";
 
 describe("bun runtime", () => {
+  test("selects direct native UUIDv4 and preserves absent-capability fallback", () => {
+    // Adapter capabilities are captured at import; a fresh process must select each real branch.
+    for (const mode of ["native", "missing-loader", "missing-method"]) {
+      const script = [
+        'import { strict as assert } from "node:assert";',
+        "const loader = process.getBuiltinModule;",
+        "const mode = process.argv.at(-1);",
+        'if (mode === "missing-loader") process.getBuiltinModule = undefined;',
+        'if (mode === "missing-method") process.getBuiltinModule = () => ({});',
+        'const { runtime } = await import("./src/runtime/bun.ts");',
+        'if (mode === "native") assert.equal(runtime.uuidV4, loader("node:crypto").randomUUID);',
+        'const { generateUuidV4, isUuidV4String } = await import("./src/index.ts");',
+        "assert.equal(isUuidV4String(generateUuidV4()), true);",
+      ].join("\n");
+      const result = Bun.spawnSync([process.execPath, "-e", script, mode], {
+        cwd: import.meta.dir + "/..",
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      expect([mode, result.exitCode, result.stderr.toString()]).toEqual([mode, 0, ""]);
+    }
+  });
   // The same list runs on Node and Bun's portable owned-byte generators, so both runtime branches
   // must preserve the public caller-buffer contract.
   for (const entry of bufferContractCases) {

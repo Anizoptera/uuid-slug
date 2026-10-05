@@ -94,7 +94,27 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         varies and does not establish allocation parity. Minimize the direct native path next,
         then measure the package call and import/retention costs before retaining it. Earlier
         rejected import selection remains counterevidence, not permission to adopt this kernel win.
-      Compare equal-call Bun `package.conversion.bytes.slug` and
+  - [x] Screen Bun native UUIDv4 selection through the existing built-in module loader rather
+        than an additional static import. Fresh reversed captures favor direct Node-compatible
+        generation; loading its module or retaining its state may erase the complete-call gain.
+        Keep Web Crypto when the loader or method is absent. Preserve ordinary case handling
+        and generation failures. Reject absent repeated public-call improvement or material
+        startup/resource loss; use existing runtime proofs, generation cases and packed comparisons.
+        `current-bun-native-loader-serial-{0,1,2}.jsonl` keeps the remaining rival loss visible:
+        default text costs 1.103–1.128 times the direct library call. Packed baseline comparisons
+        in `current-bun-native-loader-packed{,-repeat}.jsonl` favor native selection, with median
+        ratios 0.928 and 0.910; uppercase and other controls remain unresolved. Isolated cold
+        imports vary in both directions. Reversed fixed-call memory captures show small collected
+        heap differences and varying native commitment; they do not establish gross allocation.
+        `current-bun-native-loader-ranked-packed.jsonl` covers Node Current, Bun, all three
+        browser engines, Deno and Node Current JITless; the separate LTS packed comparison
+        covers Node LTS. Their intervals leave small differences unresolved, including the
+        broader Bun result. Retain the small selection change on the repeated focused evidence;
+        resource parity and the remaining default-text rival gap stay open.
+  - [ ] Close the remaining Bun default-text rival gap only after the larger byte-to-slug
+        gap below has a production decision. Reuse native-selection evidence; do not repeat
+        rejected wrapper shapes without a changed premise.
+  - [ ] Compare equal-call Bun `package.conversion.bytes.slug` and
       `platform.tobase64.conversion.bytes.slug` captures in reversed order. Current encoding may
       spend removable time writing scratch and constructing text, or validation and native-call
       containment may consume the floor gap. Attribute stacks separately from unsampled CPU;

@@ -12,9 +12,16 @@ const bunRuntime: Runtime = {
   latin1Scratch: bufferLatin1Scratch(Buffer),
 };
 
-// Bun's native v4 text is materially faster than the pooled portable formatter; browsers show the
-// opposite result, so this capability belongs to Bun rather than the portable adapter.
-if (globalThis.crypto.randomUUID)
+// Direct Node-compatible generation avoids Web Crypto's receiver binding on Bun. Probe once;
+// absence keeps the existing Web Crypto path. Compare complete calls and module retention when
+// Bun's native methods change; a faster kernel alone does not justify another static import.
+const nativeUuidV4 = (
+  process as {
+    getBuiltinModule?: (name: string) => { randomUUID?: () => string } | undefined;
+  }
+).getBuiltinModule?.("node:crypto")?.randomUUID;
+if (typeof nativeUuidV4 === "function") bunRuntime.uuidV4 = nativeUuidV4;
+else if (globalThis.crypto.randomUUID)
   bunRuntime.uuidV4 = globalThis.crypto.randomUUID.bind(globalThis.crypto);
 
 // Native UUIDv7 can advance logical time during counter overflow; defaults do not forbid that.
