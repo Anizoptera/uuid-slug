@@ -866,6 +866,13 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Verify each retained change through affected runtime and packed consumer calls, preserving
       identifier and failure contracts. Rerank remaining primary gaps; stop repeating a rejected
       mechanism unless new evidence changes its premise. Keep missing evidence explicitly open.
+  - [ ] Obtain exact approval before updating `bench/PERFORMANCE.md`'s native Bun conclusion
+        and owned UUIDv7 allocation evidence. Its opening text still says the native Bun default
+        is not retained, contradicting the current implementation and refreshed qualified ranking.
+        Correct that statement and replace its pending-retention instruction; preserve the initial
+        shared-implementation rejection evidence. Record the equal-call public-package allocation
+        comparison and its sampling limits. Root `AGENTS.md` requires explicit public-document
+        approval; this task does not authorize further experiments from that obsolete instruction.
 
 Do not optimize caller buffers, batch paths, rare misuse, failure speed, or secondary inspection
 scenarios in this effort. Their existing checks remain correctness checks, not performance work.
