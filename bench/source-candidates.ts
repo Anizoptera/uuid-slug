@@ -297,6 +297,7 @@ try {
         candidate.name === "native-slice-leaf" ||
         candidate.name === "native-public" ||
         candidate.name === "native-encoder-map" ||
+        candidate.name === "native-fixed-entry" ||
         candidate.name === "native-preset-returns" ||
         candidate.name === "native-default-inline" ||
         candidate.name === "native-default-intrinsic" ||

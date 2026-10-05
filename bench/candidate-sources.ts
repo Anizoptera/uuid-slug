@@ -483,6 +483,35 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
       },
     },
     {
+      name: "native-fixed-entry",
+      get source() {
+        const encoder = [
+          "const PLAIN_UUID_ENCODER = /*#__PURE__*/ (() => {",
+          '  const native = typeof Bun === "undefined" ? undefined : (Uint8Array.prototype as { toBase64?: (options: { alphabet: typeof BASE64URL_NAME; omitPadding: boolean }) => string }).toBase64;',
+          "  const entry: { write: (bytes: Uint8Array, alpha: Alphabet) => string } = { write: encode };",
+          "  if (!native) return entry;",
+          "  const options = { alphabet: BASE64URL_NAME, omitPadding: true } as const;",
+          "  entry.write = (bytes, alpha) => {",
+          "    if (alpha !== BASE64URL) return encode(bytes, alpha);",
+          "    try { return native.call(bytes, options); }",
+          "    catch { entry.write = encode; return encode(bytes, alpha); }",
+          "  };",
+          "  return entry;",
+          "})();",
+          "",
+        ].join("\n");
+        return replaceOnce(
+          replaceOnce(
+            source,
+            "const SLUG_ALPHABET_BY_LENGTH:",
+            encoder + "const SLUG_ALPHABET_BY_LENGTH:",
+          ),
+          "  return encode(\n    view.length === 16 ? view : view.subarray(offset, offset + 16),\n    alpha,\n  ) as PlainUuidSlug;",
+          "  return PLAIN_UUID_ENCODER.write(view.length === 16 ? view : view.subarray(offset, offset + 16), alpha) as PlainUuidSlug;",
+        );
+      },
+    },
+    {
       name: "native-encoder-map",
       get source() {
         const encoders = [
