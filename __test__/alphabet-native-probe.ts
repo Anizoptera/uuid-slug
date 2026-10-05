@@ -26,9 +26,14 @@ Object.defineProperty(Uint8Array.prototype, "toBase64", {
         },
 });
 const { encode, BASE64URL, BASE32HEX } = await import("../src/alphabet");
+const { uuidBytesToPlainSlug } = await import("../src/slug");
+const publicCall = process.env.UUID_SLUG_PROBE_PUBLIC_PLAIN === "1";
 for (let seed = 0; seed < 256; seed += 1) {
   const bytes = Uint8Array.from({ length: 16 }, (_, index) => seed * 197 + index * 131);
-  assert.equal(encode(bytes, BASE64URL), Buffer.from(bytes).toString("base64url"));
+  assert.equal(
+    publicCall ? uuidBytesToPlainSlug(bytes) : encode(bytes, BASE64URL),
+    Buffer.from(bytes).toString("base64url"),
+  );
 }
 const plainCalls = calls;
 const payload = new Uint8Array(16);
@@ -39,7 +44,11 @@ for (let tail = 0; tail < 16; tail += 1) {
 assert.equal(calls, plainCalls, "masked tails and base32hex must keep the existing writer");
 assert.equal(
   calls,
-  process.env.UUID_SLUG_EXPECT_NATIVE_PLAIN === "1" && mode !== "absent" ? 256 : 0,
+  process.env.UUID_SLUG_EXPECT_NATIVE_PLAIN === "1" && mode !== "absent"
+    ? mode === "throw" && publicCall
+      ? 1
+      : 256
+    : 0,
   "the proof must reach exactly the selected native plain calls",
 );
 console.log(JSON.stringify({ proof: "native plain encoding", mode, calls, payloads: 256 }));

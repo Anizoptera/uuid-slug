@@ -259,8 +259,42 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
   ].join("\n");
   const selected =
     "  const selectedAlphabet = alphabetIsSecond ? offsetOrAlphabet : (alphabet ?? BASE64URL_NAME);\n";
+  const nativePlain = (): string => {
+    // Keep writer functions out of decoder metadata; the public conversion owns this selection.
+    const capability = [
+      'let nativePlainUuidBase64 = typeof Bun === "undefined" ? undefined : (Uint8Array.prototype as { toBase64?: (options: { alphabet: typeof BASE64URL_NAME; omitPadding: boolean }) => string }).toBase64;',
+      "const NATIVE_PLAIN_UUID_BASE64_OPTIONS = { alphabet: BASE64URL_NAME, omitPadding: true } as const;",
+      "",
+    ].join("\n");
+    const before = "  if (alpha instanceof Error) return alpha;\n  return encode(\n";
+    const after = before.replace(
+      "  return encode(\n",
+      [
+        "  if (nativePlainUuidBase64 && alpha === BASE64URL) {",
+        "    try { return nativePlainUuidBase64.call(view.length === 16 ? view : view.subarray(offset, offset + 16), NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug; }",
+        "    catch { nativePlainUuidBase64 = undefined; }",
+        "  }",
+        "  return encode(\n",
+      ].join("\n"),
+    );
+    return replaceOnce(
+      replaceOnce(
+        source,
+        "const SLUG_ALPHABET_BY_LENGTH:",
+        capability + "const SLUG_ALPHABET_BY_LENGTH:",
+      ),
+      before,
+      after,
+    );
+  };
   return [
     { name: "baseline", source },
+    {
+      name: "native-public",
+      get source() {
+        return nativePlain();
+      },
+    },
     {
       name: "default-alphabet",
       get source() {
