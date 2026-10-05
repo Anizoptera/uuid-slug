@@ -77,12 +77,13 @@ const rounds = Number(
 // Processes remain the independent observations; extra batches improve each process median,
 // never its statistical sample count. Check the returned count to catch lost configuration.
 // Short exploratory batches can be dominated by a pause and hide even redundant native draws.
-// Checks use the established repeated-ranking preparation and retain every within-process batch;
-// they still count only fresh processes toward the interval.
+// Repeated short batches reduce pause sensitivity without paying long sampling windows for every
+// primary call. Timed preparation matches the latency guard; remeasure unchanged calls and the
+// result-preserving slowdown fixture whenever these windows or the selected inventory change.
 const samples = Number(process.env.UUID_SLUG_PROFILE_SAMPLES ?? (regressionCheck ? "7" : "1"));
-const duration = process.env.UUID_SLUG_PROFILE_MS ?? (regressionCheck ? "20" : smoke ? "1" : "5");
+const duration = process.env.UUID_SLUG_PROFILE_MS ?? (regressionCheck ? "3" : smoke ? "1" : "5");
 const warmup =
-  process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (regressionCheck ? "128" : smoke ? "2" : "16");
+  process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? (regressionCheck ? "32" : smoke ? "2" : "16");
 const filter = process.env.UUID_SLUG_PROFILE_FILTER ?? "";
 if (regressionCheck && (!positional[0] || !filter))
   throw new Error(

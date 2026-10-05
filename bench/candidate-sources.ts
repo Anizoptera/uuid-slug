@@ -508,6 +508,20 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
+      // Preserve guard results while forcing redundant validation before its normal return.
+      name: "duplicate-guard-timing",
+      get source() {
+        const anchor =
+          "export function isPlainUuidV7Slug(value: unknown): value is PlainUuidV7Slug {\n";
+        return replaceOnce(
+          source,
+          anchor,
+          anchor +
+            "  for (let repeat = 0; repeat < 64; repeat += 1) { if (!isVersionedSlug(value, 7)) return false; }\n",
+        );
+      },
+    },
+    {
       name: "preset-returns",
       get source() {
         return presetReturns(false);

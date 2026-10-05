@@ -14,6 +14,8 @@ import { verifyGenerationCase } from "../bench/generation-case";
 import type { GenerationCase } from "../bench/generation-case";
 import { generationCases } from "../bench/generation-cases";
 import { createConversionCases } from "../bench/conversion-cases";
+import { performanceBaseline } from "../bench/check-inputs";
+import { command } from "../scripts/command";
 import { uuidStringToPlainSlug } from "../src/index";
 import * as profilingApi from "../src/index";
 import {
@@ -35,6 +37,62 @@ const speed = {
   elapsedMs: 10,
   iterations: 1,
 };
+
+test("performance routing uses real changes and refuses missing parent history", async () => {
+  const root = await mkdtemp(join(tmpdir(), "uuid-slug-performance-inputs-"));
+  const git = (args: string[]) => command("git", args, root);
+  const commit = async (message: string) => {
+    await git(["add", "."]);
+    await git([
+      "-c",
+      "user.name=Performance fixture",
+      "-c",
+      "user.email=test@example.invalid",
+      "-c",
+      "commit.gpgsign=false",
+      "commit",
+      "--quiet",
+      "-m",
+      message,
+    ]);
+  };
+  let passed = false;
+  try {
+    // Real Git trees distinguish pending source, committed source and absent ancestry without
+    // mocking the diff or assuming a clean local checkout has the history that CI receives.
+    await mkdir(join(root, "src"));
+    await Bun.write(join(root, "src/index.ts"), "export const value = 1;\n");
+    await Bun.write(join(root, "README.md"), "Fixture documentation.\n");
+    await git(["init", "--quiet"]);
+    await commit("fixture baseline");
+    await Bun.write(join(root, "README.md"), "Changed fixture documentation.\n");
+    await commit("fixture documentation");
+    expect(await performanceBaseline(root)).toBeUndefined();
+    await Bun.write(join(root, "src/index.ts"), "export const value = 2;\n");
+    expect(await performanceBaseline(root)).toBe("HEAD");
+    await commit("fixture production");
+    expect(await performanceBaseline(root)).toBe("HEAD^");
+    await Bun.write(join(root, "src/index.ts"), "export const value = 3;\n");
+    expect(await performanceBaseline(root)).toBe("HEAD");
+    await Bun.write(join(root, "src/index.ts"), "export const value = 2;\n");
+    // Hide ancestry on the same object database; removing this one condition must restore routing.
+    await Bun.write(join(root, ".git/shallow"), await git(["rev-parse", "HEAD"]));
+    let missingParent: Error | undefined;
+    try {
+      await performanceBaseline(root);
+    } catch (error) {
+      if (!(error instanceof Error)) throw error;
+      missingParent = error;
+    }
+    expect(missingParent?.message).toContain("fetch-depth: 2");
+    await rm(join(root, ".git/shallow"));
+    expect(await performanceBaseline(root)).toBe("HEAD^");
+    passed = true;
+  } finally {
+    if (passed) await rm(root, { recursive: true, force: true });
+    else console.error(`Performance routing proof failed; Git fixture remains in ${root}.`);
+  }
+});
 
 test("fastv7 qualifies against the default native UUIDv7 baseline", () => {
   const candidate = generationCases.find(({ name }) => name === "fastv7.v7.text");

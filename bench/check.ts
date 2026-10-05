@@ -4,6 +4,7 @@
 import { mkdir, mkdtemp, rm, rmdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { command } from "../scripts/command";
+import { performanceBaseline } from "./check-inputs";
 
 const root = resolve(import.meta.dir, "..");
 const reports = join(import.meta.dir, "reports");
@@ -28,12 +29,8 @@ try {
   // Compare complete calls against independently packed committed code when production changes.
   // Related-operation ratios cannot catch shared slowdowns. Skip unchanged production graphs;
   // rebuilding and timing them on every documentation commit buys no regression evidence.
-  const inputs = ["src", "package.json", "bun.lock", "tsconfig.json", "tsdown.config.ts"];
-  const uncommitted = await command("git", ["diff", "--name-only", "HEAD", "--", ...inputs], root);
-  const committed = uncommitted.trim()
-    ? ""
-    : await command("git", ["diff", "--name-only", "HEAD^", "HEAD", "--", ...inputs], root);
-  if (uncommitted.trim() || committed.trim()) {
+  const baseline = await performanceBaseline(root);
+  if (baseline) {
     const primaryCalls = [
       "v4.string",
       "v4.string.uppercase",
@@ -59,6 +56,9 @@ try {
       "base32.decode",
       "slug.bytes",
       "slug.base32.bytes",
+      // Version-aware validation and version-neutral decoding do different work; compare the
+      // complete guard with its committed implementation, not an assumed guard/decoder ratio.
+      "guard.slug",
       "uuid.toBytes.uuid",
       "uuid.toString.bytes",
       "masked.generate",
@@ -83,12 +83,7 @@ try {
     // The comparison owns bounded child commands; its whole multi-process acquisition must not
     // inherit command()'s single-tool timeout. Stream evidence without a second buffered copy.
     const comparison = Bun.spawn(
-      [
-        process.execPath,
-        join(import.meta.dir, "compare.ts"),
-        uncommitted.trim() ? "HEAD" : "HEAD^",
-        "--check",
-      ],
+      [process.execPath, join(import.meta.dir, "compare.ts"), baseline, "--check"],
       {
         cwd: root,
         env: {

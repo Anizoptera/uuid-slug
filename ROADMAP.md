@@ -43,10 +43,17 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         The established longer preparation and multi-batch settings pass the unchanged Node/Bun
         control and reject redundant secure generation on both selected implementations in
         `current-primary-timing-prepared-control.jsonl` and `current-primary-timing-selected-defect.jsonl`.
-  - [ ] Run the packed timing guard automatically when production inputs change.
+  - [x] Run the packed timing guard automatically when production inputs change.
         `bench/check.ts` must compare an uncommitted production change with HEAD, or a committed
         production change with its parent, using exact primary-call filters on Node and Bun.
         Documentation-only checks must not pay for rebuilding and timing an unchanged package.
+        CI checkouts must contain the committed baseline; prove that shallow history cannot
+        silently skip a production comparison and request parent history in each gate-owning lane.
+        Keep independent process counts and uncertainty unchanged when reducing acquisition work.
+        `current-primary-timing-compact-full-control.jsonl` passes every selected primary call on
+        Node Current and Bun; `current-primary-timing-compact-defect.jsonl` rejects result-preserving
+        redundant secure generation on both. The routing fixture rejects missing parent history
+        and distinguishes pending source, committed source and documentation-only changes.
         Keep additional-runtime comparisons explicit until their routine execution is verified.
   - [x] Extend deterministic primary-call resource protection and prove its rejection paths.
         Native UUIDv4 text must skip revalidation and extra draws; ordinary owned UUIDv4/UUIDv7
@@ -65,6 +72,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         All selected calls pass their unchanged limits; the benchmark regression suite still
         rejects deliberately repeated parsing. This does not prove the cause of the earlier
         failure or add independent timing protection for primary generation and conversion.
+  - [x] Replace the unreliable slug-guard/decoder ratio with a committed slug-guard reference.
+        The retained commit-hook bundle fails the slug ratio while its isolated replay passes.
+        Paired CPU captures also cross the limit on the caller thread; selecting that metric does
+        not repair the guard. Compare the same successful slug guard against committed code in
+        the primary timing inventory. Require unchanged Node/Bun controls and a result-preserving
+        repeated-validation mutation; remove the unrelated-operation ratio only after that proof.
+        `current-primary-slug-guard-control.jsonl` passes the unchanged complete guard on both
+        runtimes; `current-primary-slug-guard-defect.jsonl` rejects repeated validation on both.
 
 - [x] Remove the `fastv7` qualification exclusion for counter width and random-bit allocation.
       Its installed implementation uses Web Crypto and writes UUIDv7 version/variant bits.
