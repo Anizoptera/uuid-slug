@@ -1139,6 +1139,12 @@ a physical lower bound for the complete call.
       trusted-identity work open. Rejected: removing
       the `try` (saves 1 ns, breaks native-failure fallback) and import-time validation (draws
       entropy before a heap snapshot).
+- [x] Reject one native UUIDv4 call site with trust validation inside its exception boundary.
+      `current-v4-single-callsite-screen.log` passes Node and Bun behavior proofs but shows slower
+      text calls in both process orders. `current-v4-single-callsite-fallback-proof.log` rejects
+      the lost-fallback mutation in both runners. Timing preceded that mutation proof, so it is
+      rejection evidence only. Preserve the captured source and raw samples; retain no fixture.
+      The remaining trusted-identity cost and native floor gap stay open.
 - [x] Screen owned UUIDv4 construction on Node, Bun and Deno. Reject explicit buffers and scratch
       copies after repeated primary-host losses and unresolved Deno direction; retain ordinary
       construction without another dispatch branch. Shared slab views cannot satisfy private
