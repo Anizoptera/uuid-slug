@@ -239,6 +239,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         then reject a repeated base32 loss or absent complete-call gain before wider measurement.
         `candidates-slug-KN2Thu` passes receiver, fallback and corruption proofs. Base64url
         improves in both orders, but base32 slows in both; reject the combined path.
+  - [ ] Select a plain encoder by alphabet without adding native checks to the public hot body.
+        Keep current byte, offset and selector validation. A private encoder map can select native
+        base64url once and replace a throwing entry with its portable writer; base32 uses its
+        existing writer. This differs from branching inside public conversion or shared metadata.
+        Reject absent complete-call gain, repeated base32 loss or decoder-only retained code.
+        Use the existing present, absent, throwing and corrupt native probes before timing.
   - [x] Profile the base32 writer before expanding its packing loop.
         `current-base32-writer-profile` completes 1,048,576 calls after 262,144 warm-up calls.
         Its sampling summary reports 277 samples in native `toString`, 48 in the base32 writer

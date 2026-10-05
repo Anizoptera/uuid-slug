@@ -483,6 +483,37 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
       },
     },
     {
+      name: "native-encoder-map",
+      get source() {
+        const encoders = [
+          "const PLAIN_UUID_ENCODERS = /*#__PURE__*/ (() => {",
+          "  const portableBase64 = (bytes: Uint8Array) => encode(bytes, BASE64URL);",
+          "  const writers = {",
+          "    [BASE64URL_NAME]: portableBase64,",
+          "    [BASE32HEX_NAME]: (bytes: Uint8Array) => encode(bytes, BASE32HEX),",
+          "  };",
+          '  const native = typeof Bun === "undefined" ? undefined : (Uint8Array.prototype as { toBase64?: (options: { alphabet: typeof BASE64URL_NAME; omitPadding: boolean }) => string }).toBase64;',
+          "  const options = { alphabet: BASE64URL_NAME, omitPadding: true } as const;",
+          "  if (native) writers[BASE64URL_NAME] = (bytes) => {",
+          "    try { return native.call(bytes, options); }",
+          "    catch { writers[BASE64URL_NAME] = portableBase64; return portableBase64(bytes); }",
+          "  };",
+          "  return writers;",
+          "})();",
+          "",
+        ].join("\n");
+        return replaceOnce(
+          replaceOnce(
+            source,
+            "const SLUG_ALPHABET_BY_LENGTH:",
+            encoders + "const SLUG_ALPHABET_BY_LENGTH:",
+          ),
+          "  return encode(\n    view.length === 16 ? view : view.subarray(offset, offset + 16),\n    alpha,\n  ) as PlainUuidSlug;",
+          "  return PLAIN_UUID_ENCODERS[alpha.name](view.length === 16 ? view : view.subarray(offset, offset + 16)) as PlainUuidSlug;",
+        );
+      },
+    },
+    {
       name: "exact-range",
       get source() {
         // Exact length and numeric zero prove the same range without calling the general guard.
