@@ -78,6 +78,7 @@ const groups = {
   alphabet: {
     names: [
       "bytes.base64",
+      "bytes.base32",
       "plain.encode",
       "v7.slug",
       "v7.base32",
@@ -126,7 +127,16 @@ const groups = {
     tests: [],
   },
   latin1: {
-    names: ["v7.string", "v7.string.uppercase", "uuid.toString.bytes", "v7.bytes", "v7.slug"],
+    names: [
+      "bytes.base64",
+      "bytes.base32",
+      "plain.encode",
+      "masked.encode",
+      "uuid.toString.bytes",
+      "v7.string",
+      "v7.bytes",
+      "v7.slug",
+    ],
     tests: [],
   },
   value: {

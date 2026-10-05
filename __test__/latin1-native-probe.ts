@@ -33,7 +33,8 @@ assert.equal(scratch.text(), expected, "scratch must preserve all Latin-1 bytes"
 assert.equal(scratch.text(), expected, "a failed method must leave reusable generic text");
 const selected = process.env.UUID_SLUG_EXPECT_DIRECT_LATIN1 === "1";
 assert.equal(calls, selected && mode !== "absent" ? (mode === "throw" ? 1 : 2) : 0);
-const { bytesToUuidString, UUID_TEXT_UPPERCASE } = await import("../src/index");
+const { bytesToUuidString, uuidBytesToPlainSlug, BASE32HEX, UUID_TEXT_UPPERCASE } =
+  await import("../src/index");
 const genericCalls = calls;
 for (let bit = 0; bit < 128; bit += 1) {
   const bytes = new Uint8Array(16);
@@ -51,9 +52,15 @@ for (let bit = 0; bit < 128; bit += 1) {
     hex.slice(20);
   assert.equal(bytesToUuidString(bytes), text);
   assert.equal(bytesToUuidString(bytes, UUID_TEXT_UPPERCASE), text.toUpperCase());
+  assert.equal(uuidBytesToPlainSlug(bytes), Buffer.from(bytes).toString("base64url"));
+  // Numeric base32 uses the same digit alphabet; shifting supplies the two zero padding bits.
+  assert.equal(
+    uuidBytesToPlainSlug(bytes, BASE32HEX),
+    (BigInt("0x" + hex) << 2n).toString(32).padStart(26, "0"),
+  );
 }
 assert.equal(
   calls - genericCalls,
-  selected && mode !== "absent" ? (mode === "throw" ? 1 : 256) : 0,
+  selected && mode !== "absent" ? (mode === "throw" ? 3 : 512) : 0,
 );
 console.log(JSON.stringify({ proof: "native Latin-1 text", mode, calls, bits: 128 }));

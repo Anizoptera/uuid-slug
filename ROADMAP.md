@@ -230,13 +230,26 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         with native encoding only in the validated base64 branch, after the base32 return.
         Reject a primary regression or an unrepeated gain before widening the runtime comparison.
         `candidates-slug-AImfzK` slows base32 in both orders for both shapes. Reject them.
-  - [ ] Let native plain encoding validate its own byte-array brand on default calls.
+  - [x] Let native plain encoding validate its own byte-array brand on default calls.
         The native intrinsic already rejects fake and unsupported receivers. A canonical
         22-character result establishes a 16-byte input without repeating package brand checks.
         Other lengths, offset calls and supported non-array sources retain general conversion.
         Disable a throwing native capability only after proving its receiver was a valid payload;
         invalid input must not change future dispatch. Prove fallback and payload corruption,
         then reject a repeated base32 loss or absent complete-call gain before wider measurement.
+        `candidates-slug-KN2Thu` passes receiver, fallback and corruption proofs. Base64url
+        improves in both orders, but base32 slows in both; reject the combined path.
+  - [x] Profile the base32 writer before expanding its packing loop.
+        `current-base32-writer-profile` completes 1,048,576 calls after 262,144 warm-up calls.
+        Its sampling summary reports 277 samples in native `toString`, 48 in the base32 writer
+        and 43 in the consumer loop. Sampling locates work, not exact cost fractions. Preserve
+        the compact packing loop; compare native string construction before enlarging it.
+  - [ ] Recompare direct Latin-1 construction through both primary byte-to-slug alphabets.
+        Earlier repeated comparisons resolve byte-to-text gains but leave generation effects
+        unresolved. Native UUIDv7 defaults bypass this factory; their unchanged timing cannot
+        establish whether primary conversions benefit. Reuse `latin1:direct-latin1`, compare
+        complete conversion calls and masked controls, and retain only repeated gains without
+        primary loss, extra resource work or broken optional-capability fallback.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect
