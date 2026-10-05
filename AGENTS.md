@@ -302,6 +302,9 @@ efficiency. A reproducible misuse alone does not justify that cost.
   bottleneck moves because a component gain can disappear in dispatch, formatting or allocation.
 - Before using a benchmark statistic to select code, apply `bench/README.md` §Measurement limits:
   identify the independent sample unit and distinguish batch throughput from individual-call latency.
+- For cold-import comparisons, isolate both package graphs from the driver's static imports.
+  Resolve both entry paths before timing; importing a graph the driver already loaded measures
+  its module cache, not startup. Keep cached-import observations out of the comparison.
 - When collecting workload memory and CPU samples in one driver, capture memory first. Retained
   sample records are harness memory, not package state; record each pass's call count.
 - Rank performance evidence by current user value: latest stable Node Current and Bun first, latest
