@@ -77,7 +77,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         accepts comma-separated case-name substrings, and a single term retains its old meaning.
 - [ ] Profile the actual complete calls with gaps and inspect their faster rivals. Name the
       removable work, the rival explanation, and the observation that would reject the attribution.
-  - [ ] Compare Bun UUIDv4 text CPU and retention for the package, `crypto-randomuuid`, and bound
+  - [x] Compare Bun UUIDv4 text CPU and retention for the package, `crypto-randomuuid`, and bound
         Web Crypto in equal-call reversed captures. The library directly exports Node-compatible
         `crypto.randomUUID`; native binding may explain the loss, or package dispatch and trust
         checks may add it. Reuse one qualified case definition for timing and profiling. Higher
@@ -86,6 +86,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Prefer the fastest complete native call when it wins; minimize its wrapper rather than
         requiring portable TypeScript to match it. Audit any claimed guarantee mismatch against
         actual consumer requirements and qualified rivals before rejecting native selection.
+        `current-v4-rival-{0-package,1-bound,2-library,3-library,4-bound,5-package}` captures
+        each exact call with 1,048,576 measured calls, 262,144 warm-up calls and two memory windows.
+        Package caller CPU is 35,839/34,689 microseconds; bound Web Crypto is 32,805/33,373;
+        the direct library is 30,568/30,229. Both native selection and the wrapper contribute
+        to the gap in these captures. Sampling concentrates in `randomUUID`; memory growth
+        varies and does not establish allocation parity. Minimize the direct native path next,
+        then measure the package call and import/retention costs before retaining it. Earlier
+        rejected import selection remains counterevidence, not permission to adopt this kernel win.
       Compare equal-call Bun `package.conversion.bytes.slug` and
       `platform.tobase64.conversion.bytes.slug` captures in reversed order. Current encoding may
       spend removable time writing scratch and constructing text, or validation and native-call

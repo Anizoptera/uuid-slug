@@ -55,7 +55,8 @@ if (generationName) {
   if (!selected || selected.qualification !== "qualified")
     throw new Error(`No qualified generation case named ${generationName}`);
   verifyGenerationCase(selected);
-  cases.push([selected.name, selected.operation]);
+  // Generation timing passes no arguments; the profiler's iteration index is not native options.
+  cases.push([selected.name, () => selected.operation()]);
 } else {
   const suite = createProfileCases(
     api,
