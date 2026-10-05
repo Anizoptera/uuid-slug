@@ -10,6 +10,17 @@ propose public-document changes and hold them for explicit approval, including g
 
 Deliver retained improvements to ordinary single-ID calls; a rejected experiment does not close a performance gap.
 
+- [x] Screen a direct base64url preset in `generatePlainUuidV4Slug()` against resolving every
+      alphabet through the shared helper. The default may pay removable normalization and error
+      recognition, or the engine may already inline them. Preserve boxed strings, other alphabets,
+      invalid-name errors and entropy failures; a wrong default alphabet must fail the existing
+      wire oracle before timing. Reject absent repeated complete-call gains or a material control
+      loss. Expand only a survivor to packed and resource evidence; leave production unchanged.
+      `current-v4-slug-preset-mutation.log` rejects the wrong default spelling on Node and Bun.
+      `current-v4-slug-preset-screen.log` shows a modest Node gain but Bun changes direction
+      with process order and controls move too. Reject the preset branch for this Bun gap;
+      retain `candidates-v4-slug-ASKF4D` and remove the live fixture without changing production.
+
 - [ ] Compare direct alphabet selection with the shared own-property lookup through ordinary
       byte/text conversion, slug generation and paired output on Node Current and Bun. The lookup
       may add removable dispatch work, or compilation may already erase it. Preserve wrapper
