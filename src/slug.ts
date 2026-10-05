@@ -80,6 +80,17 @@ export type { UuidSlugErrorCode } from "./errors.ts";
 export type { PlainUuidSlug, PlainUuidV4Slug, PlainUuidV7Slug } from "./types.ts";
 
 const UUID_V7_TIMESTAMP_ONLY = "Timestamp is only defined for UUIDv7.";
+// Capture the intrinsic once so caller-owned methods cannot replace encoding. Other hosts keep
+// their existing writer; a throwing optional capability is disabled rather than retried per ID.
+let nativePlainUuidBase64 =
+  typeof Bun === "undefined"
+    ? undefined
+    : (
+        Uint8Array.prototype as {
+          toBase64?: (options: { alphabet: typeof BASE64URL_NAME; omitPadding: boolean }) => string;
+        }
+      ).toBase64;
+const NATIVE_PLAIN_UUID_BASE64_OPTIONS = { alphabet: BASE64URL_NAME, omitPadding: true } as const;
 /*
  * The alphabets a plain slug may be written in. base64url is the default and the shortest;
  * base32hex costs four more characters and buys the one property base64url cannot offer: its
@@ -182,6 +193,22 @@ export function uuidBytesToPlainSlug(
   offsetOrAlphabet: number | SlugAlphabet = 0,
   alphabet?: SlugAlphabet,
 ): PlainUuidSlug | UuidSlugError {
+  // Native encoding owns this exact plain-payload job. Offset windows and non-array forms retain
+  // general conversion; masked tails never enter here. Keep base32 controls in the comparison
+  // when changing this dispatch (bench/PERFORMANCE.md).
+  if (
+    nativePlainUuidBase64 &&
+    (offsetOrAlphabet === 0 || offsetOrAlphabet === BASE64URL_NAME) &&
+    (alphabet === undefined || (offsetOrAlphabet === 0 && alphabet === BASE64URL_NAME)) &&
+    isUint8Array(bytes) &&
+    bytes.length === 16
+  ) {
+    try {
+      return nativePlainUuidBase64.call(bytes, NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug;
+    } catch {
+      nativePlainUuidBase64 = undefined;
+    }
+  }
   const alphabetIsSecond = typeof offsetOrAlphabet !== "number";
   const offset = alphabetIsSecond ? 0 : offsetOrAlphabet;
   const view = isUint8Array(bytes) ? bytes : exactUuidByteView(bytes);

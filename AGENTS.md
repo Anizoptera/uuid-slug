@@ -390,6 +390,10 @@ efficiency. A reproducible misuse alone does not justify that cost.
   When native output is faster, minimize the path to that native call before optimizing a portable
   replacement. Select per runtime and output; keep TypeScript as the fallback or measured faster
   choice. Native selection must include wrapper, conversion and resource costs, not kernel timing alone.
+- Use the fastest implementation separately for each runtime and output. Native base64url encoding
+  does not require native base32 encoding. Keep the best existing writer for unsupported outputs;
+  if shared integration slows another primary call, fix that integration instead of abandoning
+  the faster native capability. Do not close the task while either primary regression remains.
 - Rank apples-to-apples consumer outcomes, not identical internals. Correct wire output, secure
   entropy, and published guarantees are mandatory; weigh other differences by measured consumer
   harm. Clock rollback, sequence, buffer, ownership, validation, and failure strategies remain

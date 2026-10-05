@@ -247,11 +247,19 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Use the existing present, absent, throwing and corrupt native probes before timing.
         `candidates-slug-YgPm7b` passes those proofs but slows Node conversions and Bun base32
         in both orders. Reject the map; its small Bun base64url gain cannot justify those losses.
-  - [ ] Compare one fixed-payload encoder entry with the rejected alphabet map.
+  - [x] Compare one fixed-payload encoder entry with the rejected alphabet map.
         Use the existing encoder directly on other hosts and for base32, without name lookup or
         portable wrapper closures. Native selection handles only validated 16-byte plain payloads,
         so it needs neither length nor masked-tail checks. Disable a throwing entry once.
         Reject repeated base32 loss or absent complete-call gain before widening measurements.
+        `candidates-slug-7ayG1n` resolves no Bun base64url gain and slows base32 in both orders.
+        Reject the extra entry; keep native delegation direct.
+  - [ ] Put direct native delegation on ordinary Bun base64url conversion and finish its controls.
+        Use the already-proven native method for exact arrays and scalar base64url presets;
+        keep other forms and capability failure on the existing conversion. Do not add another
+        indirect encoder map or wrapper. Treat measured base32 losses as unfinished implementation
+        work, not grounds for leaving native unused. Completion still requires resolving primary
+        regressions, proving decoder-only removal and comparing ranked complete calls and resources.
   - [x] Profile the base32 writer before expanding its packing loop.
         `current-base32-writer-profile` completes 1,048,576 calls after 262,144 warm-up calls.
         Its sampling summary reports 277 samples in native `toString`, 48 in the base32 writer
