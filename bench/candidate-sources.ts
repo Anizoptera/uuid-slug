@@ -329,6 +329,18 @@ function codecCandidates(source: string): readonly SourceCandidate[] {
       },
     },
     {
+      name: "duplicate-masked-pair-generation-timing",
+      get source() {
+        // Valid pairs with discarded secure draws test cost, independently of wire correctness.
+        const anchor = '    let directTextCase = typeof textCaseOrOptions === "string";';
+        return replaceOnce(
+          source,
+          anchor,
+          "    for (let index = 0; index < 32; index++) generateDefaultUuidV7Bytes();\n" + anchor,
+        );
+      },
+    },
+    {
       name: "scratch-text",
       get source() {
         return scratchText();

@@ -101,6 +101,8 @@ try {
       "uuid.toString.bytes",
       "masked.generate",
       "masked.base32.generate",
+      "masked.pair.default",
+      "masked.pair.base32",
       "masked.encode",
       "masked.encode.bytes",
       "masked.decode",

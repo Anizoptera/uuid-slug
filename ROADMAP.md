@@ -29,6 +29,18 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
       independent native or qualified-library references, measure normal variation before choosing
       a budget, and prove a material slowdown fails it. Keep timing and instrumented counts separate;
       neither establishes total allocation or protects an unmeasured runtime.
+  - [x] Protect masked UUID-plus-slug pairs in both alphabets with the existing timing gate.
+        `masked.pair.default` and `masked.pair.base32` consume and verify both results and share
+        the routine runtime selection. `current-masked-pair-timing-control.jsonl` passes unchanged
+        packed calls on Node, Bun, Deno and Chromium; `current-masked-pair-timing-defect.jsonl`
+        rejects discarded secure draws confined to pair generation for both alphabets on each
+        runtime. Reuse the codec candidate owner and independently packed committed reference.
+        This proves the injected slowdown is detected, not total allocation or remote CI execution.
+  - [x] Finish the masked-pair protection delivery after the complete check passes.
+        `/tmp/uuid-slug-masked-pair-protection-check-final.log` passes the complete check without
+        changing test timeouts, performance budgets or protected calls. Earlier execution failures
+        remain in the corresponding `-check.log`, `-check-retry.log` and isolated Node log;
+        their cause is unresolved, and they do not justify a weaker gate.
   - [x] Make the root agent instructions forbid bypassing primary-call protection by removing
         workloads, skipping runtimes, weakening independent references or loosening budgets.
         Harness changes require an unchanged control and a valid-output waste mutation rejected
