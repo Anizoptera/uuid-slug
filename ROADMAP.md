@@ -266,6 +266,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `current-native-base32-focused-packed.jsonl` repeats the native base64url gain but leaves
         base32 unresolved with a slower median. Test whether separating general input conversion
         from the ordinary preset body removes that cost; retain native selection either way.
+        `current-native-preset-body-primary-packed.jsonl` leaves Bun effects unresolved and
+        detects a small Node base64url loss. Exact base64url arrays must call the existing writer
+        directly when native encoding is absent, avoiding the new general-helper hop.
   - [x] Profile the base32 writer before expanding its packing loop.
         `current-base32-writer-profile` completes 1,048,576 calls after 262,144 warm-up calls.
         Its sampling summary reports 277 samples in native `toString`, 48 in the base32 writer

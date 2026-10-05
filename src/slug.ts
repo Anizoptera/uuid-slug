@@ -242,17 +242,20 @@ export function uuidBytesToPlainSlug(
   // general conversion; masked tails never enter here. Keep base32 controls in the comparison
   // when changing this dispatch (bench/PERFORMANCE.md).
   if (
-    nativePlainUuidBase64 &&
     (offsetOrAlphabet === 0 || offsetOrAlphabet === BASE64URL_NAME) &&
     (alphabet === undefined || (offsetOrAlphabet === 0 && alphabet === BASE64URL_NAME)) &&
     isUint8Array(bytes) &&
     bytes.length === 16
   ) {
-    try {
-      return nativePlainUuidBase64.call(bytes, NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug;
-    } catch {
-      nativePlainUuidBase64 = undefined;
+    if (nativePlainUuidBase64) {
+      try {
+        return nativePlainUuidBase64.call(bytes, NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug;
+      } catch {
+        nativePlainUuidBase64 = undefined;
+      }
     }
+    // An absent capability must not add a normalization call for an already validated payload.
+    return encode(bytes, BASE64URL) as PlainUuidSlug;
   }
   return uuidBytesToPlainSlugGeneral(bytes, offsetOrAlphabet, alphabet);
 }
