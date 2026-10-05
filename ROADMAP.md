@@ -150,6 +150,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
   - [x] Add plain-slug decoding to the existing named-root consumer graph before another
         encoder change. Keep the consumer job visible in artifact measurements; existing
         masking and generation exclusions do not establish removal of encoding functions.
+  - [ ] Screen known-alphabet selection inside byte-to-slug conversion before adding native
+        dispatch. The default already identifies base64url, so repeating alphabet normalization
+        may add removable caller work; the fixed writer may instead dominate the complete call.
+        Compare default-only selection with both scalar presets in isolated source candidates.
+        Keep wrapper normalization, offsets, error propagation and all writers unchanged.
+        Reject absent reproducible complete-call improvement or a loss in base32 conversion.
+        Use the existing source screen, exact-byte tests and packed comparison; do not retain
+        a faster helper without a faster consumer call.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect

@@ -88,6 +88,10 @@ const groups = {
     ],
     tests: ["__test__/alphabet.test.ts"],
   },
+  slug: {
+    names: ["bytes.base64", "bytes.base32", "plain.encode", "plain.decode", "masked.encode"],
+    tests: ["__test__/alphabet.test.ts"],
+  },
   "v7-draw": {
     names: [
       "v7.string",
