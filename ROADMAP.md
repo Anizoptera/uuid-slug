@@ -21,6 +21,15 @@ configured paths. Audit a default restriction before treating it as grounds to r
 
 Execute only this sequence; older unchecked proposals below are held, not dispatch instructions.
 
+- [ ] Protect retained primary-call improvements before selecting another production candidate.
+      Audit `bench/check.ts`, `bench/resources.ts` and `bench/latency.ts` against the optimized
+      generation, conversion, paired, masking and parsed-value calls. Add missing normal-call
+      resource budgets and native-selection witnesses to the existing owner; prove the guards
+      reject restored redundant work in isolated subprocesses. Compare complete-call timing with
+      independent native or qualified-library references, measure normal variation before choosing
+      a budget, and prove a material slowdown fails it. Keep timing and instrumented counts separate;
+      neither establishes total allocation or protects an unmeasured runtime.
+
 - [x] Remove the `fastv7` qualification exclusion for counter width and random-bit allocation.
       Its installed implementation uses Web Crypto and writes UUIDv7 version/variant bits.
       The matrix and its regression test qualify it under the native baseline; the refreshed

@@ -303,6 +303,12 @@ efficiency. A reproducible misuse alone does not justify that cost.
   decision unchanged. Read `bench/README.md` §Decision before measurement for the execution order.
   Keep only one implementation candidate active until it is retained, rejected, or explicitly blocked;
   benchmark infrastructure and rejected experiments do not close production performance tasks.
+- Protect retained primary-call improvements in the existing performance gate. Count avoidable
+  work separately from timing, and compare complete calls against an independent reference so
+  slowing both package operations cannot hide a regression. Prove each new guard rejects the
+  targeted regression while the unchanged implementation passes; derive budgets from measured
+  normal variation and necessary work, never an invented tolerance. A failing gate requires
+  diagnosis and repair, not a relaxed budget. Instrumented counts do not prove total allocation.
 - Locate the bottleneck in the complete consumer call before optimizing a component. Record
   the observation that would support the proposed cause and the result that would reject it;
   retain a change only when complete-call speed or resource use improves without a material loss
