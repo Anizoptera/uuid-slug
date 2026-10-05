@@ -260,7 +260,7 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
   const selected =
     "  const selectedAlphabet = alphabetIsSecond ? offsetOrAlphabet : (alphabet ?? BASE64URL_NAME);\n";
   const nativePlain = (
-    placement: "resolved" | "default-inline" | "default-helper" = "resolved",
+    placement: "resolved" | "default-inline" | "default-helper" | "default-split" = "resolved",
   ): string => {
     // Keep writer functions out of decoder metadata; the public conversion owns this selection.
     const capability = [
@@ -281,6 +281,35 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
         "  }",
         "  const alphabetIsSecond",
       ].join("\n");
+      if (placement === "default-split") {
+        // Copy the general body intact so only native dispatch placement differs. A stale
+        // boundary must reject the experiment rather than silently drop checks or comments.
+        const start = source.indexOf(
+          "/*#__NO_SIDE_EFFECTS__*/\nexport function uuidBytesToPlainSlug(",
+        );
+        const end = source.indexOf("\n}\n\n/**\n * Decode a canonical plain slug", start) + 2;
+        if (start < 0 || end <= start) throw new Error("UUID byte conversion span is missing");
+        const originalSpan = source.slice(start, end);
+        const bodyStart = originalSpan.indexOf("  const alphabetIsSecond");
+        if (bodyStart < 0) throw new Error("UUID byte conversion body is missing");
+        const general = replaceOnce(
+          originalSpan,
+          "export function uuidBytesToPlainSlug(",
+          "function generalUuidBytesToPlainSlug(",
+        );
+        const wrapper =
+          originalSpan.slice(0, bodyStart) +
+          replaceOnce(
+            selectedNative,
+            "  const alphabetIsSecond",
+            "  return generalUuidBytesToPlainSlug(bytes, offsetOrAlphabet, alphabet);\n}",
+          );
+        return replaceOnce(
+          replaceOnce(source, originalSpan, wrapper + "\n\n" + general),
+          "const SLUG_ALPHABET_BY_LENGTH:",
+          capability + "const SLUG_ALPHABET_BY_LENGTH:",
+        );
+      }
       const helper =
         placement === "default-helper"
           ? [
@@ -340,6 +369,12 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
       name: "native-default-helper",
       get source() {
         return nativePlain("default-helper");
+      },
+    },
+    {
+      name: "native-default-split",
+      get source() {
+        return nativePlain("default-split");
       },
     },
     {
