@@ -5,7 +5,7 @@ import { generationNameFilter } from "./generation-case";
 import { measureGenerationCases } from "./generation-measure";
 import { createConversionCases } from "./conversion-cases";
 
-const conversions = createConversionCases();
+const conversions = createConversionCases(undefined, undefined, generationCases);
 const browserCases = [...generationCases, ...conversions.cases];
 
 /** Yield through a posted task without using elapsed time as a readiness signal. */

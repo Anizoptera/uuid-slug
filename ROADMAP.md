@@ -50,6 +50,15 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Compare each primary call with its main qualified rivals and same-output native floor.
       Reuse applicable evidence; refresh stale comparisons after retained changes. Record speed
       and resource gaps separately, and rank unresolved gaps before selecting implementation work.
+  - [x] Compare Chromium UUIDv7 slug generation with browser-capable rivals composed with native
+        base64url encoding. Pass generators into the existing conversion corpus and add native
+        typed-array compositions outside its Buffer branch. Validate complete outputs before
+        timing. A repeated material rival advantage selects production profiling; parity or a
+        negligible gap preserves the current writer. Host rankings cannot settle browser costs.
+        `current-primary-v7-slug-typedarray-ranking.jsonl` contains fresh-process comparisons
+        with native typed-array compositions, including `fastv7`. The default package call is
+        faster than the tested qualified rivals on Chromium and every measured host. Preserve
+        production; this warmed throughput result does not establish allocation parity.
   - [x] Expose primary text/byte conversion corpus rows through the existing runtime profiler.
         Preserve owned slug-decoder rows and corpus witnesses; measure the package and `uuid`
         together across Node Current, Bun, Deno and Chromium before claiming resource parity.
@@ -223,8 +232,8 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Node LTS and Chromium favor the package on the compared generation and conversion calls;
         this does not prove missing native floors. Slugid loses both text/slug conversions on every
         measured host. Short-uuid also costs more, but uses a different numeric wire spelling.
-        Paired output has only a package composition control; Chromium UUIDv7 slug generation,
-        immutable values and masking lack qualified external comparisons. Resource parity remains
+        Paired output has only a package composition control; immutable values and masking lack
+        qualified external comparisons. Chromium UUIDv7 slug comparisons use the refreshed report above. Resource parity remains
         open; timing and instrumented operation counts cannot establish total allocation.
       `current-primary-v4-text-refresh.jsonl` retains a Bun default-text loss in three processes.
       `current-primary-v7-slug-refresh.jsonl` does not reproduce the old Bun native-slug loss;

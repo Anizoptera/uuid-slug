@@ -320,5 +320,27 @@ export function createConversionCases(
       });
     }
   }
+  if (toBase64) {
+    // Browser callers can compose a library generator with native encoding without Buffer.
+    // Time parsing too: a text-only generator cannot supply the encoder's bytes for free.
+    for (const generator of generators) {
+      const text = generator.comparable === "v7.text.secure";
+      if (!text && generator.comparable !== "v7.bytes.allocate.secure") continue;
+      cases.push({
+        ...generator,
+        name: generator.name.replace(
+          text ? ".text" : ".bytes.allocate",
+          text ? ".slug.base64url.from-text.typedarray" : ".slug.base64url.from-bytes.typedarray",
+        ),
+        comparable: "v7.slug.base64url.secure",
+        implementation: "generated-native-typedarray-encoding",
+        operation: () =>
+          toBase64.call(
+            text ? parse(generator.operation() as string) : (generator.operation() as Uint8Array),
+            base64Options,
+          ),
+      });
+    }
+  }
   return { cases, unsupported };
 }

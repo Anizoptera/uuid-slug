@@ -191,6 +191,23 @@ test("conversion profiles use the selected package implementation", () => {
   expect(calls).toBeGreaterThan(0);
 });
 
+test("browser slug rivals include native encoding of the generated UUID", () => {
+  const generator: GenerationCase = {
+    name: "fixture.v7.text",
+    comparable: "v7.text.secure",
+    implementation: "fixture",
+    operation: () => "01990d4d-e600-7123-a456-789abcdef012",
+    qualification: "qualified",
+    version: 7,
+  };
+  const candidate = createConversionCases(undefined, undefined, [generator]).cases.find(
+    ({ name }) => name === "fixture.v7.slug.base64url.from-text.typedarray",
+  );
+  expect(candidate).toBeDefined();
+  expect(candidate!.operation()).toBe("AZkNTeYAcSOkVniavN7wEg");
+  verifyGenerationCase(candidate!);
+});
+
 test("pair witnesses reject two valid spellings of different UUIDs", () => {
   const uuid = "01990d4d-e600-7000-8000-000000000000";
   const slug = uuidStringToPlainSlug(uuid);
