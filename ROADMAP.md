@@ -806,10 +806,21 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         block copying. A repeated composed-call gain supports inspecting the pair's sequence
         work; parity or a direct-pair lead rejects that rewrite before adding a scratch path.
         All three `current-bun-pair-draw-after-pool-*` screens favor the composed call.
-  - [ ] Profile those exact two Bun corpus calls after equal counted preparation and with equal
+  - [x] Profile those exact two Bun corpus calls after equal counted preparation and with equal
         completed calls. Sequence-frame CPU supports reusing the independent draw for borrowed
         defaults; formatting or wrapper cost instead selects its owner. Keep configured generator
         layouts, reentrancy, clock errors, entropy failure and pair consistency unchanged.
+        `current-bun-pair-fixed-*` completes every equal-count memory and sampling pass.
+        Composed calls reduce caller CPU but raise process CPU in every pair; sampling totals
+        reverse the unsampled ranking. Frames identify different draw stacks, not sequence cost
+        in isolation. Do not retain public-call composition or claim combined resource improvement.
+  - [ ] Screen the independent timestamp writer into the existing borrowed default buffer.
+        Keep configured draws and owned-byte defaults intact; compare default pairs and base32hex
+        slugs with unchanged text and owned-byte controls. Removing sequence work may help, while
+        entropy copying or the reentrancy boundary may erase it. Reject on lost payload bits,
+        wrong clocks, mismatched pair output, changed failures, or absent repeated complete-call
+        gain; only a survivor earns packed and equal-call resource comparisons.
+        Extract the keyless candidate owner before extension; preserve existing output and failures.
 - [x] Screen the argument-free UUIDv7 value call without its empty options record and absent-field
       readers; preserve the owned bytes, immutable value, payload layout and thrown entropy failure.
       Require the lost-throw mutation to fail both runtime tests before timing. Compare the full
