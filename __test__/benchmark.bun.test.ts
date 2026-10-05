@@ -331,6 +331,10 @@ test("native pair compositions generate once and preserve both spellings", () =>
 });
 
 test("primary resource guards reject restored work on the measured runtime", async () => {
+  const selected = process.env.UUID_SLUG_RESOURCE_TEST_RUNTIME;
+  if (selected !== undefined && selected !== "deno")
+    throw new Error("UUID_SLUG_RESOURCE_TEST_RUNTIME accepts only deno; omit it for Node and Bun.");
+  const runtimes = selected === "deno" ? [selected] : ["node", process.execPath];
   const reports = join(import.meta.dir, "..", "bench", "reports");
   await mkdir(reports, { recursive: true });
   const directory = await mkdtemp(join(reports, "resource-gate-"));
@@ -349,13 +353,16 @@ test("primary resource guards reject restored work on the measured runtime", asy
     expect(built.success).toBe(true);
     // Baseline and defects use the same module and process boundary. No shared source is edited.
     await Promise.all(
-      ["node", process.execPath].map(async (runtime) => {
+      runtimes.map(async (runtime) => {
         const probes = [
           ["", ""],
           ["owned-temporary", "default owned UUIDv4 bytes: buffers=2 exceeds 1"],
           ["duplicate-pair", "the pair must construct exactly its UUID and slug strings"],
           ["weak-map-state", "parsed UUID from text: weakWrites=1 exceeds 0"],
           ["masked-temporary", "masked string encode: buffers=1 exceeds 0"],
+          ...(runtime === "deno"
+            ? [["native-revalidation", "trust native output without reparsing it"]]
+            : []),
           ...(runtime === process.execPath
             ? [
                 ["native-revalidation", "trust native output without reparsing it"],
@@ -369,7 +376,11 @@ test("primary resource guards reject restored work on the measured runtime", asy
         ];
         await Promise.all(
           probes.map(async ([mode, diagnostic]) => {
-            const child = Bun.spawn([runtime, join(directory, "resources.mjs")], {
+            const executable =
+              runtime === "deno"
+                ? [runtime, "run", "--allow-all", "--node-modules-dir=manual", "--cached-only"]
+                : [runtime];
+            const child = Bun.spawn([...executable, join(directory, "resources.mjs")], {
               env: {
                 ...process.env,
                 UUID_SLUG_PROFILE_MODULE: join(directory, "resource-regression-probe.mjs"),

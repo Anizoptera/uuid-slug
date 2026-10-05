@@ -29,8 +29,8 @@ try {
       naming: "[name].mjs",
     });
     if (!result.success) throw new AggregateError(result.logs, "Performance gate build failed");
-    // These instruments depend on Node/Bun hooks; other hosts use the packed timing comparison
-    // without repeating those hosts' counters or pretending that they prove browser resources.
+    // These hosts own the related-operation timing budgets. Deno shares only the resource
+    // counter below; browser timing cannot stand in for browser resource instrumentation.
     for (const selected of hostRuntimes) {
       const runtime = selected === "bun" ? process.execPath : selected;
       for (const name of ["resources", "latency"]) {
@@ -38,6 +38,27 @@ try {
         console.log(`${runtime}: ${name}\n${output.trim()}`);
       }
     }
+  }
+  if (selectedRuntimes.includes("deno")) {
+    // Deno can use the same forwarding counters and defect fixtures through Node compatibility.
+    // Select only its subprocesses; replaying Node/Bun here would repeat already-owned evidence.
+    console.log(`Deno resource runtime: ${(await command("deno", ["--version"], root)).trim()}`);
+    const proof = Bun.spawn(
+      [
+        process.execPath,
+        "test",
+        "__test__/benchmark.bun.test.ts",
+        "--test-name-pattern=primary resource guards",
+      ],
+      {
+        cwd: root,
+        env: { ...process.env, UUID_SLUG_RESOURCE_TEST_RUNTIME: "deno" },
+        stdout: "inherit",
+        stderr: "inherit",
+      },
+    );
+    if ((await proof.exited) !== 0)
+      throw new Error("Deno primary resource regression proof failed");
   }
   // Compare complete calls against independently packed committed code when production changes.
   // Related-operation ratios cannot catch shared slowdowns. Skip unchanged production graphs;

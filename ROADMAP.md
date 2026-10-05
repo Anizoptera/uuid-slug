@@ -73,6 +73,15 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         text must keep its allocation-free scratch path in both alphabets. The shared benchmark
         test runs unchanged and result-preserving defective entries in isolated Node and Bun
         processes. Require the intended diagnostic, not merely a nonzero exit; retain failed bundles.
+  - [x] Extend the existing primary resource counter and defect fixtures to Deno.
+        The selected Deno gate must pass unchanged calls and reject extra owned arrays, duplicate
+        paired generation, WeakMap state, masked text temporaries and native UUIDv4 revalidation.
+        Reuse the same budgets and specific failure diagnostics; print the executing runtime.
+        The focused resource test and `perf:check` Deno selection pass locally; remote CI is unverified.
+  - [ ] Run the same primary resource oracles on Chromium.
+        Browser execution needs browser-compatible imports and a packed API; preserve real
+        forwarding wrappers and their same-intrinsic controls. Retain the lane only after
+        unchanged primary calls pass and redundant-work mutations fail.
   - [x] Resolve the unchanged Bun slug-guard timing failure before committing new guards.
         The retained failing bundle reports a ratio above its unchanged budget, while an isolated
         replay of those same bytes passes. A fixed short call-count warm-up may leave engine
