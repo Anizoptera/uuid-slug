@@ -10,6 +10,17 @@ propose public-document changes and hold them for explicit approval, including g
 
 Deliver retained improvements to ordinary single-ID calls; a rejected experiment does not close a performance gap.
 
+- [ ] Compare direct alphabet selection with the shared own-property lookup through ordinary
+      byte/text conversion, slug generation and paired output on Node Current and Bun. The lookup
+      may add removable dispatch work, or compilation may already erase it. Preserve wrapper
+      normalization, unknown-name rejection and both encodings; swap the base32 result to prove
+      existing wire oracles reach the selector before timing. Reject absent reproduced complete-call
+      gains or a material control loss; expand a survivor to packed/runtime/resource evidence only.
+      `current-slug-alphabet-mutation.log` rejects the wrong-alphabet result in Node and Bun.
+      `current-slug-alphabet-screen.log` improves byte conversion in both orders on Node Current
+      and Bun, while paired/text controls include mixed effects. Keep production unchanged;
+      compare the same substitution through packed calls before resource/profile expansion.
+
 - [x] Screen Node-compatible UUIDv4 selection in the Bun adapter through `generateUuidV4()`
       and uppercase text, with byte and UUIDv7 calls as controls. Direct-method evidence supports
       removable method cost; public dispatch may erase it, or the added import may raise startup
