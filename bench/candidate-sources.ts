@@ -108,35 +108,6 @@ function v4Candidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
-      name: "cold-v4-preset",
-      get source() {
-        const start = source.indexOf(anchor);
-        const end = source.indexOf("\n/**\n * Generate UUIDv4 text from the caller", start);
-        if (start < 0 || end < start) throw new Error("UUIDv4 public body span is missing");
-        const body = source.slice(start, end);
-        // Preserve the entire fallback and preset body; only the public hot entry is smaller.
-        const cold = replaceOnce(
-          body,
-          "export function generateUuidV4<",
-          "function generateUuidV4WithCase<",
-        );
-        const hot = [
-          anchor.slice(0, anchor.indexOf("  if (!isUuidTextCase")),
-          "  const native = runtime.uuidV4;",
-          "  if (textCase !== UUID_TEXT_LOWERCASE || !native || native !== nativeUuidV4Trust.trusted) return generateUuidV4WithCase(textCase);",
-          "  try {",
-          "    const value = native();",
-          '    if (typeof value === "string") return value as UuidV4StringFor<Case>;',
-          "    return generatedOrThrow(value);",
-          "  } catch (cause) {",
-          "    return generatedOrThrow(portableAfterNative<UuidTextCase>(cause, generatePortableUuidV4, UUID_TEXT_LOWERCASE, UUID_V4_GENERATION)) as UuidV4StringFor<Case>;",
-          "  }",
-          "}\n",
-        ].join("\n");
-        return source.slice(0, start) + hot + cold + source.slice(end);
-      },
-    },
-    {
       name: "inline-native",
       get source() {
         return inlineNative();
