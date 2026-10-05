@@ -856,6 +856,15 @@ function v7Candidates(source: string, uuidSource?: string): readonly SourceCandi
 }
 
 function v4Candidates(source: string): readonly SourceCandidate[] {
+  const trustedTextReturn = (loseCase = false) =>
+    replaceOnce(
+      source,
+      "      uuid = native();",
+      "      const generated = native();\n" +
+        (loseCase
+          ? "      return generated as UuidV4StringFor<Case>;"
+          : "      return (textCase === UUID_TEXT_UPPERCASE ? generated.toUpperCase() : generated) as UuidV4StringFor<Case>;"),
+    );
   // Isolate the extra native helper call from preset checks and failure containment. Copy its
   // entire body and comments into the public implementation; only its return boundary changes.
   // The string-first variant tests recognition cost separately from helper placement.
@@ -925,6 +934,20 @@ function v4Candidates(source: string): readonly SourceCandidate[] {
     );
   return [
     { name: "baseline", source },
+    {
+      // A trusted native success returns text; only validation or fallback can create a package
+      // error. Compare early success return with shared discrimination through complete calls.
+      name: "trusted-text-return",
+      get source() {
+        return trustedTextReturn();
+      },
+    },
+    {
+      name: "trusted-text-return-lost-case",
+      get source() {
+        return trustedTextReturn(true);
+      },
+    },
     {
       name: "inline-native",
       get source() {

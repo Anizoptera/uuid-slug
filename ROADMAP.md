@@ -35,6 +35,10 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       selected capability. Screen only that branch placement, preserving every failure cause and
       both output cases; reject if existing failure mutations or repeated complete calls do not
       support it. Keep this gap open and do not rerun these rejected native shapes unchanged.
+      Use the existing `v4 trusted-text-return` source screen, with its `-lost-case` mutation
+      required to fail the trusted native uppercase oracle before timing. Error discrimination
+      may be removable native-success work, or the engine may already eliminate it. A separated
+      complete-call gain selects packed and equal-call resource comparisons; no gain rejects it.
 
 - [ ] Close the Bun owned UUIDv7 byte gap before another default-slug tweak. The maintained
       owned-byte screens trail `uuid`; equal-call memory captures retain more heap and resident
