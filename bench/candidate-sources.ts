@@ -6,7 +6,6 @@ import { poolCandidates } from "./pool-candidates";
 import { alphabetCandidates } from "./alphabet-candidates";
 import { keylessCandidates } from "./keyless-candidates";
 import { v7Candidates } from "./v7-draw-candidates";
-import { plainConversionCandidates } from "./plain-conversion-candidates";
 
 export type { SourceCandidate } from "./candidate-source";
 
@@ -20,7 +19,6 @@ export const CANDIDATE_GROUPS = [
   "value",
   "value-options",
   "pool",
-  "plain-conversion",
 ] as const;
 export type CandidateGroup = (typeof CANDIDATE_GROUPS)[number];
 export const CANDIDATE_FILES = {
@@ -33,7 +31,6 @@ export const CANDIDATE_FILES = {
   value: "src/v7-value.ts",
   "value-options": "src/v7-value-options.ts",
   pool: "src/runtime/pool.ts",
-  "plain-conversion": "src/slug.ts",
 } as const satisfies Record<CandidateGroup, string>;
 
 function v4Candidates(source: string): readonly SourceCandidate[] {
@@ -236,7 +233,6 @@ export function createSourceCandidates(
   uuidSource?: string,
 ): readonly SourceCandidate[] {
   const builders = {
-    "plain-conversion": plainConversionCandidates,
     v4: v4Candidates,
     "v7-draw": (value: string) => v7Candidates(value, uuidSource),
     alphabet: alphabetCandidates,

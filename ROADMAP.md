@@ -914,12 +914,12 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       the ranked runtimes. Numeric short-uuid costs remain separately measured; resource parity stays open.
 - [ ] Close Bun base64url encoding and Deno owned decoding gaps; compare native conversion with
       full validation and plain Uint8Array ownership rather than an incomplete Buffer-only floor.
-  - [ ] Screen native base64url selection at the validated plain-conversion boundary. Both
-        public converters already supply exactly 16 bytes and no mask tail; the shared encoder
-        repeats those distinctions. Select the Bun capability once, keep other runtimes on the
-        existing encoder, and retain base32hex and native-throw fallback. A complete conversion
-        loss or absent repeated gain rejects the specialization. Prove native present, absent,
-        throw and corrupted output before timing; compare byte and UUID-text conversion separately.
+  - [x] Reject native base64url selection at the validated plain-conversion boundary.
+        `current-native-plain-boundary-screen.log` passes runtime, resource and native-capability
+        proofs before timing; corrupted output fails its independent byte oracle. Both Bun orders
+        improve byte encoding but slow base32hex byte conversion, while UUID-text conversion does
+        not improve. Keep the shared production encoder; preserve source and samples in
+        `candidates-plain-conversion-czgKTo`, with no rejected fixture or routing left to maintain.
   - [x] Screen Bun native plain encoding with an early branch and module-selected dispatch;
         both pass payload, absence, native-throw and resource proofs, and the corrupted-output
         oracle fails as intended. Two independent host screens leave conversion and pair gains
