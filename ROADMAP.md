@@ -50,6 +50,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Compare each primary call with its main qualified rivals and same-output native floor.
       Reuse applicable evidence; refresh stale comparisons after retained changes. Record speed
       and resource gaps separately, and rank unresolved gaps before selecting implementation work.
+  - [x] Expose primary text/byte conversion corpus rows through the existing runtime profiler.
+        Preserve owned slug-decoder rows and corpus witnesses; measure the package and `uuid`
+        together across Node Current, Bun, Deno and Chromium before claiming resource parity.
+        `current-primary-conversion-runtime-resource-comparison` contains the selected rows
+        on every runtime. Caller CPU favors the package on Node Current, Bun and Deno;
+        sampled and retained heap observations do not establish total allocation parity.
   - [x] Refresh ordinary owned UUIDv7 bytes and primary conversion throughput comparisons.
         `current-primary-v7-owned-ranking-repeat.jsonl` does not reproduce the old Deno loss.
         `current-primary-conversion-ranking.jsonl` shows Deno's faster Buffer slug decoder uses

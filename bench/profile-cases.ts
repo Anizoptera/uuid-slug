@@ -39,11 +39,14 @@ export function createProfileCases(
 ): ProfileSuite {
   // Reuse exact-byte and private-array witnesses; pass the loaded package so packed profiles
   // cannot silently measure the factory's source import instead of their selected artifact.
-  const ownedDecoders = createConversionCases(nodeBuffer, api).cases.filter(
-    (candidate) => candidate.comparable === "conversion.slug.bytes" && candidate.ownedBytes,
+  const primaryConversions = createConversionCases(nodeBuffer, api).cases.filter(
+    (candidate) =>
+      (candidate.comparable === "conversion.slug.bytes" && candidate.ownedBytes) ||
+      candidate.comparable === "conversion.text.bytes" ||
+      candidate.comparable === "conversion.bytes.text",
   );
-  const decoderProfiles = Object.fromEntries(
-    ownedDecoders.map((candidate) => [candidate.name, () => candidate.operation()]),
+  const conversionProfiles = Object.fromEntries(
+    primaryConversions.map((candidate) => [candidate.name, () => candidate.operation()]),
   );
   const base32hexName = api.BASE32HEX;
   const base64urlName = api.BASE64URL;
@@ -520,7 +523,7 @@ export function createProfileCases(
   }
 
   const cases = {
-    ...decoderProfiles,
+    ...conversionProfiles,
     ...migrationScalingCases,
     control: (index) => ids[index & 255] as string,
     ...createUuidV4ProfileCases(api, into, privateV4Api),
@@ -1004,7 +1007,7 @@ export function createProfileCases(
   } satisfies Record<string, ProfileCase>;
 
   function verify(): void {
-    for (const candidate of ownedDecoders) verifyGenerationCase(candidate);
+    for (const candidate of primaryConversions) verifyGenerationCase(candidate);
     for (const [name, operation] of Object.entries(cases)) {
       for (const index of [0, 255]) {
         into.fill(0x55);

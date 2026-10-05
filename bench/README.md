@@ -437,6 +437,8 @@ UUID_SLUG_PROFILE_FILTER=plain.encode bun run bench:profile:native
 
 Use `UUID_SLUG_PROFILE_FILTER=conversion.slug.bytes` to profile package decoding against
 native decoding into fresh plain arrays and Buffer decoding followed by a private copy.
+Use `conversion.text.bytes` or `conversion.bytes.text` for complete UUID conversion comparisons
+against `uuid` and the available native functions; these use the same checked conversion corpus.
 The conversion corpus checks exact bytes and separate backing storage before profiling.
 Host profiles include Buffer copies; browsers include the available typed-array methods.
 Compare CPU and sampled allocation with completed call counts; setup, warm-up and engine
