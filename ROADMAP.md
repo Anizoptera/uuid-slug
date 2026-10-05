@@ -904,6 +904,24 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         root-value controls; the evidence cannot rule out material primary-call losses. Keep the
         source candidate isolated and production unchanged. Resolve timing under conditions where
         unchanged controls are stable before widening runtime coverage or creating another seam.
+        Reuse `candidates-codec-sj0ECr/profile.mjs` and its existing runtime-specific API bundles
+        for default masked strings, default masked pairs and codec-value controls. Fresh processes
+        in alternating order must distinguish a consistent wrapper loss from scheduling noise;
+        no rebuild or new measurement driver is required. Reject a stable primary-runtime loss
+        rather than layering another optimization onto this candidate.
+        `current-codec-scratch-focused-*` reuses those bundles without rebuilding. Longer focused
+        windows still vary substantially in unchanged value controls, so another timing replay
+        under the same conditions has no retention value. Verify nested custom-mask generation
+        preserves both pair identities before revisiting timing; shared scratch must not escape
+        into callback input or alter an outer result when the callback generates another pair.
+        The shared nested-generation witness passes against the isolated candidate's Node and
+        Bun API bundles in `/tmp/uuid-slug-codec-scratch-nested-node.log` and `-bun.log`.
+        This closes that identity-isolation question, not the unresolved speed comparison.
+        The focused reports also retain thread CPU and completed calls. Node masked-string CPU
+        per call is lower in each process pair, but masked-pair direction varies; Bun codec-value
+        CPU is higher in each pair. These counters include harness and yielding work, so they
+        neither attribute a cause nor establish parity. Do not discard the value controls or
+        retain the shared substitution solely from the Node string or allocation result.
   - [x] Screen fixed message-block expansion inside the current inline Feistel round through
         masked encoding, decoding and generation, including both alphabets. Both Bun decoding
         profiles attribute their largest sampled cost to the cipher. Expanding its three absorption

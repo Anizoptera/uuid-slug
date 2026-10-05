@@ -888,6 +888,39 @@ export const codecBoundaryCases = [
     },
   },
   {
+    name: "isolates nested custom-mask generation",
+    run() {
+      let codec: UuidV7MaskingCodec | undefined;
+      let nested: { uuid: string; slug: MaskedOrSentinelUuidV7Slug } | undefined;
+      let entered = false;
+      const transform = (input: Uint8Array) => {
+        const before = input.slice();
+        if (codec && !entered) {
+          entered = true;
+          nested = unwrap(codec.generateUuidV7WithMaskedSlug());
+          entered = false;
+          assert.deepEqual(input, before);
+        }
+        return input.map((byte) => byte ^ 0x5a);
+      };
+      const mask = unwrap(
+        createCustomUuidV7Mask({
+          diagnosticLabel: "nested generation",
+          mask: transform,
+          unmask: transform,
+        }),
+      );
+      codec = createUuidV7MaskingCodec({ mask });
+      const outer = unwrap(codec.generateUuidV7WithMaskedSlug());
+      const reader = codec;
+      // Decoding must not trigger a third generation and overwrite the nested pair being checked.
+      codec = undefined;
+      assert.equal(reader.maskedSlugToUuidString(outer.slug), outer.uuid);
+      assert.ok(nested);
+      assert.equal(reader.maskedSlugToUuidString(nested.slug), nested.uuid);
+    },
+  },
+  {
     name: "isolates nested custom-mask calls",
     run() {
       const first = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
