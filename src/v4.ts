@@ -11,16 +11,13 @@ import {
   RNG_UNAVAILABLE,
   portableAfterNative,
   UuidSlugError,
-  validatedNativeOrFallback,
 } from "./errors.ts";
-import type { NativeTrust } from "./errors.ts";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
 import type { UuidRandomFill, UuidTextCase, UuidV4Bytes, UuidV4StringFor } from "./types.ts";
 import {
   bytesToUuidString,
   formatUuidBytesUnchecked,
   isUuidTextCase,
-  isUuidV4String,
   resolveUuidTextCase,
 } from "./uuid.ts";
 
@@ -40,7 +37,6 @@ const REENTRANT_GENERATION_MESSAGE =
  */
 const random = new Uint8Array(16);
 let generating = false;
-const nativeUuidV4Trust: NativeTrust = { trusted: undefined };
 
 /**
  * Generate UUIDv4 bytes with platform randomness in a new plain 16-byte `Uint8Array`.
@@ -144,6 +140,7 @@ export function drawUuidV4Scratch(): Uint8Array | UuidSlugError {
 
 /**
  * Generate UUIDv4 text with platform cryptographic randomness, lowercase by default.
+ * Native runtime results are trusted without additional output guarantees.
  *
  * @param textCase - Built-in output spelling. Omit for lowercase.
  * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
@@ -166,27 +163,18 @@ export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
   // Keep native generation in this public function instead of another helper call; the complete
   // Bun text call improves with this shape. Portable-first runtimes leave before native handling.
   // A successful string needs no local Error check; only a failed result reaches the throw seam.
-  // Remeasure each output form if native trust, case normalization, host APIs or engine inlining
+  // Trust proper native output directly: validation and identity tracking impose guarantees
+  // beyond the default native baseline. Configured entropy still validates at its caller seam.
+  // Remeasure each output form if case normalization, host APIs or engine inlining
   // changes; bench/PERFORMANCE.md owns the evidence.
   const native = runtime.uuidV4;
   if (!native) return generatedOrThrow(generatePortableUuidV4(textCase));
   let uuid: string | UuidSlugError;
-  if (native === nativeUuidV4Trust.trusted) {
-    try {
-      uuid = native();
-    } catch (nativeCause) {
-      uuid = portableAfterNative<UuidTextCase>(
-        nativeCause,
-        generatePortableUuidV4,
-        UUID_TEXT_LOWERCASE,
-        UUID_V4_GENERATION,
-      );
-    }
-  } else {
-    uuid = validatedNativeOrFallback<UuidTextCase>(
-      nativeUuidV4Trust,
-      native,
-      isUuidV4String,
+  try {
+    uuid = native();
+  } catch (nativeCause) {
+    uuid = portableAfterNative<UuidTextCase>(
+      nativeCause,
       generatePortableUuidV4,
       UUID_TEXT_LOWERCASE,
       UUID_V4_GENERATION,

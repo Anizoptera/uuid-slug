@@ -10,9 +10,7 @@ import {
   readClock,
   stringInput,
   UuidSlugError,
-  validatedNativeOrFallback,
 } from "./errors.ts";
-import type { NativeTrust } from "./errors.ts";
 import { readGenerationOptions } from "./generation-options.ts";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
 import type {
@@ -25,7 +23,7 @@ import type {
 } from "./types.ts";
 import type { UuidV7PayloadLayout } from "./types.ts";
 import { readUuidV7Instant } from "./instant.ts";
-import { formatUuidBytesUnchecked, isUuidV7String, resolveUuidTextCase } from "./uuid.ts";
+import { formatUuidBytesUnchecked, resolveUuidTextCase } from "./uuid.ts";
 import { createPortableUuidV7Generator } from "./v7.ts";
 import type { PortableUuidV7Generator } from "./v7.ts";
 import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
@@ -37,7 +35,6 @@ const UUID_V7_TEXT_OPTIONS = {
 } as const satisfies Record<keyof GenerateUuidV7Options, true>;
 const AT_OPTION = "at";
 const UUID_V7_GENERATION = "UUIDv7 generation";
-const nativeUuidV7Trust: NativeTrust = { trusted: undefined };
 const UUID_V7_BYTE_OPTIONS = {
   at: true,
   generator: true,
@@ -121,32 +118,20 @@ let generateDefaultUuidV7Bytes: PortableUuidV7Generator["generateUuidV7Bytes"] |
 const portableUuidV7Text = (textCase: UuidTextCase): string | UuidSlugError =>
   (generatePortableUuidV7 ??= v7Text().generateUuidV7)(textCase);
 
-// Native trust and exception handling stay outside portable and configured public calls.
-// Reuse UUIDv4's identity protocol: validate the first result and each replacement, then trust
-// the validated host function to preserve its output shape. Revalidate every call if that
-// assumption fails; bench/PERFORMANCE.md owns complete-call and resource evidence.
+// Trust proper native results directly; validation and identity tracking add guarantees beyond
+// the default native baseline. Keep exception fallback separate from configured calls, and
+// remeasure complete calls when host capabilities change; bench/PERFORMANCE.md owns evidence.
 function generateNativeDefaultUuidV7<Case extends UuidTextCase>(
   selectedCase: Case,
 ): UuidV7StringFor<Case> | UuidSlugError {
   const native = runtime.uuidV7;
   if (!native) return portableUuidV7Text(selectedCase) as UuidV7StringFor<Case> | UuidSlugError;
   let uuid: string | UuidSlugError;
-  if (native === nativeUuidV7Trust.trusted) {
-    try {
-      uuid = native();
-    } catch (nativeCause) {
-      uuid = portableAfterNative(
-        nativeCause,
-        portableUuidV7Text,
-        UUID_TEXT_LOWERCASE,
-        UUID_V7_GENERATION,
-      );
-    }
-  } else {
-    uuid = validatedNativeOrFallback(
-      nativeUuidV7Trust,
-      native,
-      isUuidV7String,
+  try {
+    uuid = native();
+  } catch (nativeCause) {
+    uuid = portableAfterNative(
+      nativeCause,
       portableUuidV7Text,
       UUID_TEXT_LOWERCASE,
       UUID_V7_GENERATION,
@@ -168,6 +153,7 @@ function generateNativeDefaultUuidV7<Case extends UuidTextCase>(
  * Generate current-time UUIDv7 text, lowercase by default. Module-level calls do not provide
  * ordering across calls; the runtime's logical timestamp can advance during bursts. Use an
  * explicitly created generator when clock policy or payload layout must be controlled.
+ * Native runtime results are trusted without additional output guarantees.
  *
  * @param textCase - Built-in output spelling. Omit for lowercase.
  * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random

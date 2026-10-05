@@ -399,42 +399,6 @@ export function failedFallback(
   });
 }
 
-/** The native function whose values currently skip validation at one call site. */
-export interface NativeTrust {
-  trusted: (() => string) | undefined;
-}
-
-/**
- * Publish native text that passes `accepts` and trust its function by identity from then on;
- * otherwise fall back to the portable generator exactly once. Call sites publish values from
- * `trust.trusted` without calling this: per-call validation made native UUIDv4 text slower than
- * plain-slug wrappers, and Bun did not inline this call (bench/PERFORMANCE.md). Only an
- * accepted native value grants trust, so a rejected adapter stays validated on every call and a
- * replaced function is validated again. Revalidate every call if a host method can return malformed
- * values intermittently without changing identity.
- */
-export function validatedNativeOrFallback<FallbackArgument>(
-  trust: NativeTrust,
-  native: () => string,
-  accepts: (value: unknown) => boolean,
-  fallback: (argument: FallbackArgument) => string | UuidSlugError,
-  fallbackArgument: FallbackArgument,
-  operation: string,
-): string | UuidSlugError {
-  let nativeCause: unknown;
-  try {
-    const value = native();
-    if (accepts(value)) {
-      trust.trusted = native;
-      return value;
-    }
-    nativeCause = new TypeError(`Native ${operation} returned an invalid value.`);
-  } catch (cause) {
-    nativeCause = cause;
-  }
-  return portableAfterNative(nativeCause, fallback, fallbackArgument, operation);
-}
-
 /** Run the portable generator once after native generation failed; dual failures keep both causes. */
 export function portableAfterNative<FallbackArgument>(
   nativeCause: unknown,

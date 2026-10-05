@@ -1,14 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { runtime } from "#runtime";
-import {
-  generatedOrThrow,
-  isUuidSlugError,
-  portableAfterNative,
-  stringInput,
-  validatedNativeOrFallback,
-} from "./errors.ts";
-import type { NativeTrust, UuidSlugError } from "./errors.ts";
+import { generatedOrThrow, isUuidSlugError, portableAfterNative, stringInput } from "./errors.ts";
+import type { UuidSlugError } from "./errors.ts";
 import { BASE64URL as BASE64URL_ALPHABET, BASE64URL_NAME, encode } from "./alphabet.ts";
 import { readGenerationOptions } from "./generation-options.ts";
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
@@ -23,7 +17,7 @@ import type {
 } from "./types.ts";
 import { currentUuidV7Scratch, uuidV7ScratchAt } from "./v7-keyless.ts";
 import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
-import { isPlainUuidV7Slug, resolveSlugAlphabet } from "./slug.ts";
+import { resolveSlugAlphabet } from "./slug.ts";
 import { formatUuidBytesUnchecked, isUuidTextCase, resolveUuidTextCase } from "./uuid.ts";
 import type { SlugAlphabet } from "./slug.ts";
 
@@ -49,7 +43,6 @@ const GENERATOR_WITH_PLAIN_SLUG_OPTIONS = {
 } as const satisfies Record<keyof Omit<GenerateUuidV7WithPlainSlugOptions, "generator">, true>;
 const AT_OPTION = "at";
 const PLAIN_UUID_V7_SLUG_GENERATION = "plain UUIDv7 slug generation";
-const nativeUuidV7SlugTrust: NativeTrust = { trusted: undefined };
 const hasNativeUuidV7Slug = runtime.uuidV7Slug !== undefined;
 
 /** Supply the UUIDv7 bytes one slug operation encodes, from a sequence or from the module clock. */
@@ -61,38 +54,18 @@ const portableUuidV7Slug = (): string | UuidSlugError => {
   return bytes instanceof Error ? bytes : encode(bytes, BASE64URL_ALPHABET);
 };
 
-// Validate canonical length, padding, version and variant before trusting each native identity.
-// A generic plain-slug guard alone also accepts base32hex, which this capability cannot emit.
-const acceptsNativeUuidV7Slug = (value: unknown): boolean =>
-  typeof value === "string" && value.length === 22 && isPlainUuidV7Slug(value);
-
 // Direct native output removes clock, entropy, byte writing and encoding from ordinary calls.
 // Configured calls and base32hex remain portable. Remeasure complete calls and resources if this
-// boundary changes; bench/PERFORMANCE.md owns evidence. Trust has the same host-identity limit
-// as native UUID text: intermittent malformed output would require per-call validation.
+// boundary changes; bench/PERFORMANCE.md owns evidence. Trust proper native results directly;
+// result validation and identity tracking would impose stronger default guarantees.
 function nativeUuidV7Slug(): string | UuidSlugError {
   const native = runtime.uuidV7Slug;
   if (!native) return portableUuidV7Slug();
-  if (native === nativeUuidV7SlugTrust.trusted) {
-    try {
-      return native();
-    } catch (cause) {
-      return portableAfterNative(
-        cause,
-        portableUuidV7Slug,
-        undefined,
-        PLAIN_UUID_V7_SLUG_GENERATION,
-      );
-    }
+  try {
+    return native();
+  } catch (cause) {
+    return portableAfterNative(cause, portableUuidV7Slug, undefined, PLAIN_UUID_V7_SLUG_GENERATION);
   }
-  return validatedNativeOrFallback(
-    nativeUuidV7SlugTrust,
-    native,
-    acceptsNativeUuidV7Slug,
-    portableUuidV7Slug,
-    undefined,
-    PLAIN_UUID_V7_SLUG_GENERATION,
-  );
 }
 
 /** Draw for the module-level calls, where an untrusted `generator` option may select a sequence. */
@@ -217,7 +190,8 @@ export function uuidV7GeneratorSlugMethods(
 
 /**
  * Generate a plain UUIDv7 slug. Lowercase base32hex preserves UUID byte order; base64url does not
- * preserve that order under text comparison. Module calls may advance their logical timestamp
+ * preserve that order under text comparison. Native runtime results are trusted without
+ * additional output guarantees. Module calls may advance their logical timestamp
  * during bursts; select a generator when this result must join its sequence or control its clock.
  *
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.

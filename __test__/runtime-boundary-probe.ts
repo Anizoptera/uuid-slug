@@ -843,7 +843,7 @@ export const runtimeBoundaryCases = [
         assert.equal(unwrap(generatePlainUuidV7Slug("base32hex")).length, 26);
         assert.equal(nativeCalls, 2);
 
-        // A trusted function that later throws still falls back, and joins a portable failure.
+        // A native function that later throws still falls back, and joins a portable failure.
         let throwTrusted = false;
         runtime.uuidV4 = () => {
           if (throwTrusted) throw nativeCause;
@@ -969,25 +969,21 @@ export const runtimeBoundaryCases = [
         assert.equal(hasCause(dualSlug, portableCause), true);
         runtime.fillRandom = saved.fillRandom;
 
-        // Invalid replacements must not gain trust, including valid UUID text of another version.
+        // Native output is trusted directly; replacement functions must not trigger validation.
         for (const invalid of ["not-a-uuid", "123e4567-e89b-42d3-a456-426614174000"]) {
           runtime.uuidV7 = () => invalid;
-          for (let call = 0; call < 3; call += 1)
-            assert.equal(isUuidV7String(generateUuidV7()), true);
+          for (let call = 0; call < 3; call += 1) assert.equal(generateUuidV7(), invalid);
         }
         delete runtime.uuidV7;
         assert.equal(isUuidV7String(generateUuidV7()), true);
-        // Canonical version/variant checks must reject valid plain slugs of the wrong UUID,
-        // and the native base64url capability must reject a valid base32hex spelling too.
+        // The default slug path likewise publishes native output without stronger guarantees.
         for (const invalid of [
           nativeSlugValue.slice(0, -1) + "x",
           unwrap(uuidStringToPlainSlug("123e4567-e89b-42d3-a456-426614174000")),
           unwrap(uuidStringToPlainSlug(nativeValue, BASE32HEX)),
         ]) {
           runtime.uuidV7Slug = () => invalid;
-          const fallback = generatePlainUuidV7Slug();
-          assert.equal(isPlainUuidV7Slug(fallback), true);
-          assert.equal(fallback.length, 22);
+          assert.equal(generatePlainUuidV7Slug(), invalid);
         }
         delete runtime.uuidV7Slug;
         assert.equal(isPlainUuidV7Slug(generatePlainUuidV7Slug()), true);
@@ -1034,14 +1030,13 @@ export const runtimeBoundaryCases = [
     },
   },
   {
-    name: "falls back when optional native UUIDv4 generation returns malformed text",
+    name: "trusts native UUIDv4 output without additional validation",
     run(this: void) {
       const originalV4 = runtime.uuidV4;
       runtime.uuidV4 = () => "not-a-uuid";
       try {
-        // A rejected value must not make its adapter trusted for later calls.
-        for (let call = 0; call < 3; call += 1)
-          assert.equal(isUuidV4String(generateUuidV4()), true);
+        // Restoring native-result validation must fail on the first and subsequent calls.
+        for (let call = 0; call < 3; call += 1) assert.equal(generateUuidV4(), "not-a-uuid");
       } finally {
         if (originalV4) runtime.uuidV4 = originalV4;
         else delete runtime.uuidV4;
