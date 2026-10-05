@@ -73,6 +73,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         move too; the result does not close the rival gap. Reject the extra native branch and
         remove its live fixture; retain `candidates-slug-6QxHUJ`. Distinguish validation cost from
         native-call overhead before another conversion rewrite.
+  - [ ] Compare the existing fixed character-code base64url writer with Bun's Latin-1 writer
+        through complete conversion, generation, paired and masked calls. Eliminating scratch
+        writes and `Buffer.toString` may lower cost; native string construction may still be faster.
+        Reuse the existing writer without adding a new algorithm. A lost-final-byte mutation must
+        fail Node and Bun payload oracles before timing. Reject absent repeated primary-call gains
+        or a material primary loss; expand a survivor to packed/runtime/resource evidence.
 - [ ] Verify each retained change through affected runtime and packed consumer calls, preserving
       identifier and failure contracts. Rerank remaining primary gaps; stop repeating a rejected
       mechanism unless new evidence changes its premise. Keep missing evidence explicitly open.

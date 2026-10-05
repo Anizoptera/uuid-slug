@@ -42,6 +42,30 @@ export function alphabetCandidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
+      name: "character-code-base64",
+      get source() {
+        return replaceOnce(
+          source,
+          "return encodeBase64urlLatin1(createLatin1Scratch, bytes, tail);",
+          "return writeBase64url(bytes, (base64urlCodes ??= characterCodes(BASE64URL)), tail);",
+        );
+      },
+    },
+    {
+      name: "character-code-base64-lost-byte",
+      get source() {
+        return replaceOnce(
+          replaceOnce(
+            source,
+            "return encodeBase64urlLatin1(createLatin1Scratch, bytes, tail);",
+            "return writeBase64url(bytes, (base64urlCodes ??= characterCodes(BASE64URL)), tail);",
+          ),
+          "const f = bytes[15] as number;",
+          "const f = 0;",
+        );
+      },
+    },
+    {
       name: "fixed-blocks",
       get source() {
         return replaceOnce(source, loop, fixed);

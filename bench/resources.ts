@@ -309,7 +309,7 @@ try {
     errors: 0,
   });
   assert.equal(
-    (usesLatin1Text ? counts.latin1 : counts.fromCharCodes) + counts.base64,
+    counts.latin1 + counts.fromCharCodes + counts.base64,
     2,
     "the pair must construct exactly its UUID and slug strings",
   );
@@ -405,10 +405,10 @@ try {
     views: 0,
     errors: 0,
   });
-  // Plain base64url may use either native conversion; count the required string rather than
-  // imposing Latin-1 as an implementation contract. UUID text and masked tails stay separate.
+  // Slug and UUID writers may select different constructors. Count each actual string method
+  // rather than infer slug construction from the UUID text formatter selected on this host.
   assert.equal(
-    (usesLatin1Text ? counts.latin1 : counts.fromCharCodes) + counts.base64,
+    counts.latin1 + counts.fromCharCodes + counts.base64,
     1,
     "plain slug text must be constructed once",
   );

@@ -83,6 +83,8 @@ const groups = {
       "v7.base32",
       "v7.pair.default",
       "v7.pair.base32",
+      "masked.encode.bytes",
+      "masked.generate",
     ],
     tests: ["__test__/alphabet.test.ts"],
   },
