@@ -30,7 +30,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
       competitor membership, not a reliable performance winner.
       `current-native-baseline-v7-ranking-repeat.jsonl` separates the package from every tested
       qualified library on Node Current/LTS, Bun, Deno and Chromium across fresh processes.
-      Bun still trails its direct native text call; retain that gap as an implementation target.
+      Bun's small direct-native text difference is acceptable; retain delegation without further tuning.
       This throughput comparison does not establish resource parity or individual-call latency.
 
 - [x] Map primary README consumer calls to current production code and maintained rival rows:
@@ -214,7 +214,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         | Small remaining difference | Bun UUIDv4 text | `crypto-randomuuid` | `current-primary-v4-outcome-ranking.jsonl` retains a small absolute gap. Existing wrapper candidates do not justify more code; negligible differences are acceptable. Reopen only for material consumer or resource cost. |
         | Small remaining difference | Bun bytes to plain base64url slug | Native `toBase64` | Direct native delegation is retained. `current-primary-conversion-ranking.jsonl` shows a small wrapper difference; do not repeat rejected wrapper shapes solely to erase it. Preserve direct base32 selection. |
         | Preserve | Bun UUIDv4 plain slug generation | Web Crypto draw plus native base64url encoding | `current-primary-v4-outcome-ranking.jsonl` favors the package; the old loss is not a current optimization target. |
-        | Verify before changing | Bun UUIDv7 plain slug generation | `Bun.randomUUIDv7` base64url output | Package 64.56 ns versus 62.00 ns; this run loses in each process, but the preceding focused comparison favored the package. The direction across comparisons remains unresolved. |
+        | Preserve | Bun UUIDv7 plain slug generation | `Bun.randomUUIDv7` base64url output | `current-primary-v7-slug-outcome-ranking.jsonl` does not reproduce the native-floor loss and favors the package over tested qualified libraries on Node Current/LTS, Bun and Deno. Preserve direct native delegation; reopen only for a reproduced material gap. Chromium has no rival row in this filtered report, so its package timing does not establish rival parity. |
         | Small remaining difference | Bun UUIDv7 text | `Bun.randomUUIDv7` text output | `current-native-baseline-v7-ranking-repeat.jsonl` shows a small native-floor difference and a lead over tested qualified libraries, including `fastv7`. Preserve native delegation rather than adding another wrapper. |
         | Preserve | Deno owned UUIDv7 bytes | `uuidv7` | `current-primary-v7-owned-ranking-repeat.jsonl` does not reproduce the old qualified-rival loss. Preserve the independent writer; do not select a rewrite from the stale ranking. |
         | Lower runtime priority | Deno UUID text to bytes | Buffer hex decoding | Package 177.73 ns versus 166.36 ns; this floor returns Buffer rather than the package's plain owned array. Compare equivalent ownership before treating it as a qualified loss. |
@@ -270,9 +270,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         covers Node LTS. Their intervals leave small differences unresolved, including the
         broader Bun result. Retain the small selection change on the repeated focused evidence;
         resource parity and the remaining default-text rival gap stay open.
-  - [ ] Close the remaining Bun default-text rival gap only after the larger byte-to-slug
-        gap below has a production decision. Reuse native-selection evidence; do not repeat
-        rejected wrapper shapes without a changed premise.
+  - [x] Preserve Bun default text when only a negligible rival gap remains. The current ranking
+        and rejected wrapper screens above do not justify more production code. Reopen only
+        for a reproduced material speed or resource loss, not an older ranking.
   - [ ] Compare equal-call Bun `package.conversion.bytes.slug` and
       `platform.tobase64.conversion.bytes.slug` captures in reversed order. Current encoding may
       spend removable time writing scratch and constructing text, or validation and native-call
