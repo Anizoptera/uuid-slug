@@ -25,8 +25,29 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Compare each primary call with its main qualified rivals and same-output native floor.
       Reuse applicable evidence; refresh stale comparisons after retained changes. Record speed
       and resource gaps separately, and rank unresolved gaps before selecting implementation work.
+      Refresh `generateUuidV4()` and `generatePlainUuidV7Slug()` first with the maintained
+      `v4.text` and `v7.slug.base64url` filters in independent processes. Prior losses may persist,
+      or retained changes may have closed them. A current loss selects complete-call profiling;
+      parity rejects another rewrite of that call. Timing alone does not close resource parity.
+      `current-primary-v4-text-refresh.jsonl` retains a Bun default-text loss in three processes.
+      `current-primary-v7-slug-refresh.jsonl` does not reproduce the old Bun native-slug loss;
+      do not choose another slug-generation tweak from that stale ranking.
+      `current-primary-conversions-refresh.jsonl` retains Bun byte-to-plain-slug loss against
+      native `toBase64`; other conversion results favor the package apart from small Deno parsing
+      uncertainty. Guard and timestamp rows are incidental corpus output, not optimization targets.
 - [ ] Profile the actual complete calls with gaps and inspect their faster rivals. Name the
       removable work, the rival explanation, and the observation that would reject the attribution.
+      Compare equal-call Bun `package.conversion.bytes.slug` and
+      `platform.tobase64.conversion.bytes.slug` captures in reversed order. Current encoding may
+      spend removable time writing scratch and constructing text, or validation and native-call
+      containment may consume the floor gap. Attribute stacks separately from unsampled CPU;
+      no repeated resource loss or unchanged writer work rejects a writer-only explanation.
+      `current-primary-byte-slug-{0-package,1-native,2-native,3-package}` captures equal completed
+      and warm-up calls in reversed order. Package caller and process CPU exceed native in both
+      pairs; sampled package work concentrates in Latin-1 `toString` and its byte writer, whereas
+      native work concentrates in `toBase64`. Resident and committed growth vary; neither proves
+      gross allocation or a leak. Inspect a direct plain-result path that avoids the shared writer
+      dispatch; do not repeat rejected generic native branches or bound calls unchanged.
 - [ ] Change one evidenced bottleneck at a time. Reject a component-only gain, a primary-call
       regression, or a speed gain paid for by material resource loss. Never choose a mechanism
       merely because the existing experiment driver can measure it.
