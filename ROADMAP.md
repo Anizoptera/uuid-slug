@@ -399,6 +399,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         accepts comma-separated case-name substrings, and a single term retains its old meaning.
 - [ ] Profile the actual complete calls with gaps and inspect their faster rivals. Name the
       removable work, the rival explanation, and the observation that would reject the attribution.
+  - [ ] Screen native Bun UUIDv7 bytes as private input to ordinary masked generation and pairs.
+        The current masked-generation profile attributes substantial work to the sequenced byte
+        writer. Native Buffer input may remove that work without a public ownership copy; native
+        allocation or cipher cost may instead erase the benefit. Keep explicit timestamps,
+        injected generators and immutable-value payload layouts unchanged. Prove native selection,
+        every payload bit, both alphabets and one-time throwing-capability fallback before timing.
+        Reject absent complete-call gains or any primary-call regression; only a surviving screen
+        earns packed repetition, resource profiling and production integration.
   - [x] Compare owned UUIDv7 generation allocation on Node Current against qualified byte rivals.
         Reuse `generation-cases.ts` and the fixed-call V8 sampler in `profile.ts`, selecting one
         qualified case before sampling. Compare the package, `uuidv7` and `uuid` in reversed fresh

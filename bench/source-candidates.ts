@@ -290,7 +290,15 @@ try {
           ],
         ] as const
       ).map(([lane, args]) =>
-        proof([...args], tree, join(report, `${candidate.name}-${lane}-proof.log`), lane),
+        proof(
+          [...args],
+          tree,
+          join(report, `${candidate.name}-${lane}-proof.log`),
+          lane,
+          candidate.name.startsWith("native-masked-bytes")
+            ? { UUID_SLUG_NATIVE_MASKED_PROBE: "1" }
+            : undefined,
+        ),
       ),
     );
     const failures = proofs.filter((result) => result.status === "rejected");
