@@ -250,6 +250,11 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         establish whether primary conversions benefit. Reuse `latin1:direct-latin1`, compare
         complete conversion calls and masked controls, and retain only repeated gains without
         primary loss, extra resource work or broken optional-capability fallback.
+        `candidates-latin1-6cK87o` rejects byte loss on Bun before timing. The intact
+        `candidates-latin1-cdI95M` passes fallback and payload proofs, but changes unchanged
+        generation controls too. Four isolated `current-latin1-isolated-*` equal-call captures
+        do not reproduce its large base64 slowdown in caller CPU. Keep that conflict unresolved;
+        compare packed conversion calls before attributing the multi-case source result.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect
