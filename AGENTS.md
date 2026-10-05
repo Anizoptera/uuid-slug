@@ -6,6 +6,9 @@ Do not edit any public document unless the maintainer explicitly requests or app
 This includes README and generated documentation. Propose the exact change and wait for approval;
 a code change, stale text, failed check, or instruction to keep docs synchronized grants no permission.
 This restriction overrides every documentation-update instruction below.
+An explicit request to correct documentation already authorizes its factual corrections; do not
+request the same permission again. Correcting stale implementation or measurement text does not
+authorize a new public contract, guarantee, API or behavior.
 
 Protect normal consumer calls from the cost of rare misuse defenses. Before changing a shared hot
 path to handle an unusual input, read `docs/public-api.md` §Capabilities and runtime work; retain

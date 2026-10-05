@@ -349,7 +349,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         reaches one native text call with no visible arrays, views or result character reads.
         These observations support the retained selection and select no additional wrapper rewrite.
         They do not measure total allocation against qualified libraries or other runtimes.
-        Public conclusions await the approval below.
+        Correct stale public conclusions under the existing documentation-correction request.
   - [x] Screen direct native success return against the baseline without identity tracking.
         Keep preset checks and exception fallback; reject repeated primary-call losses. The
         earlier trusted-function experiment cannot settle this changed success/error boundary.
@@ -982,13 +982,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Verify each retained change through affected runtime and packed consumer calls, preserving
       identifier and failure contracts. Rerank remaining primary gaps; stop repeating a rejected
       mechanism unless new evidence changes its premise. Keep missing evidence explicitly open.
-  - [ ] Obtain exact approval before updating `bench/PERFORMANCE.md`'s native Bun conclusion
-        and owned UUIDv7 allocation evidence. Its opening text still says the native Bun default
-        is not retained, contradicting the current implementation and refreshed qualified ranking.
-        Correct that statement and replace its pending-retention instruction; preserve the initial
-        shared-implementation rejection evidence. Record the equal-call public-package allocation
-        comparison and its sampling limits. Root `AGENTS.md` requires explicit public-document
-        approval; this task does not authorize further experiments from that obsolete instruction.
+  - [x] Correct the stale native Bun conclusion in `bench/PERFORMANCE.md` under the existing
+        documentation-correction request. The default delegates to native UUIDv7 independently
+        from Node; the refreshed qualified ranking supersedes the obsolete retention instruction.
+        Preserve the initial shared-implementation rejection evidence and the measurement limits.
+  - [ ] Record the equal-call public-package owned UUIDv7 allocation comparison and its sampling
+        limits in `bench/PERFORMANCE.md`; do not turn sampled estimates into total-allocation claims.
 
 Do not optimize caller buffers, batch paths, rare misuse, failure speed, or secondary inspection
 scenarios in this effort. Their existing checks remain correctness checks, not performance work.

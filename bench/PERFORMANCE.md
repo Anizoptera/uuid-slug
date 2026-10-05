@@ -6,7 +6,7 @@ Choose each runtime's writer from repeated consumer-call measurements, including
 
 ### Native Bun default UUIDv7 text
 
-Native delegation improves Bun default text, but the shared implementation is not retained because Node default text regresses.
+Bun defaults use native UUIDv7 text generation; Node keeps its independent package generator.
 
 The focused packed comparison in `bench/reports/native-v7-default-packed-isolated.log` compares
 the candidate with commit `840937b` on Bun 1.4.2 and Node 26.10.0. Each of twelve fresh process
@@ -25,10 +25,12 @@ The resource witnesses in `native-v7-resources-baseline-bun.jsonl` and
 call per warmed preset-text operation. They observe no byte-array or view construction on either
 warmed path and do not measure allocations inside native generation.
 
-Keep the native Bun mechanism, but revise its shared call boundary before retention. The measured
-Node loss rejects the current shape; it does not identify inlining, branch cost or another engine
-mechanism as its cause. Configured generators, native-absent hosts, uppercase output and qualified
-competitor ranking still need their retention evidence.
+The initial shared implementation's Node loss rejects that implementation, not native Bun generation.
+`bench/reports/current-native-baseline-v7-ranking-repeat.jsonl` compares the retained default text
+with qualified libraries, including `fastv7`, across fresh processes. The package leads those
+libraries on Node Current, Node LTS, Bun, Deno and Chromium. Bun's remaining direct-native
+difference is negligible and accepted; preserve delegation rather than adding another wrapper.
+These are warmed throughput comparisons, not individual-call latency or total allocation.
 
 Owned slug decoding remains faster than the measured equivalent native calls in two resource
 captures on 2026-10-04. `bench/reports/owned-decoder-resource-clean/` and
