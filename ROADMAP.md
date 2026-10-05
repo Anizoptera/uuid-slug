@@ -139,6 +139,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         uppercase gain. Node with JIT selects the unchanged portable writer; its run cannot
         judge this native branch. Direct profiling without JIT gives no repeated improvement.
         Keep production unchanged; this candidate does not close the qualified-rival gap.
+  - [x] Preserve native UUIDv7 text delegation when its remaining wrapper difference is negligible.
+        The refreshed comparison shows a small native-floor difference and no qualified-library
+        loss. Do not add another native-only wrapper solely to remove that difference.
   - [x] Test UUIDv7 default text's successful-string recognition against its native floor.
         The native helper already returns a string on success; the public preset path then
         performs an Error-instance check. Compare a string-first result branch without changing

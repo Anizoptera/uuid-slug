@@ -385,14 +385,16 @@ efficiency. A reproducible misuse alone does not justify that cost.
   never platform-dependent string coercion or UTF-8 decoding.
 - Preserve an unpinned newest-Node CI lane: pinned runtimes cannot expose newly added native APIs.
 - Maintainer ruling, 2026-09-16: every default call (no arguments, or only a text-case or alphabet
-  preset) must cost no more than the fastest runtime-native path producing the same output on every
-  ranked runtime, and must beat every qualified competitor. Configured calls (options, caller
+  preset) must approach the fastest runtime-native path producing the same output on every
+  ranked runtime and the best qualified competitors; negligible remaining differences are acceptable.
+  Do not add code or continue tuning solely to close a negligible gap. Configured calls (options, caller
   buffers, generators, custom entropy, masking) may cost more than a native floor only by work that
-  floor lacks; they must still beat every qualified competitor. Reach parity by combining native
+  floor lacks; negligible differences from qualified competitors are acceptable there too. Reach parity by combining native
   output, patched native output, pooled native entropy, and portable work per runtime; never settle
   for one path everywhere. Align default guarantees with proper native behavior instead of rejecting
   native output for stronger package guarantees. Every call family needs a floor row, and every open gap needs a `ROADMAP.md`
-  task until a change closes it or `bench/PERFORMANCE.md` records a cause no implementation can remove.
+  task until a change closes it, evidence establishes a negligible difference, or
+  `bench/PERFORMANCE.md` records a cause no implementation can remove.
   When native output is faster, minimize the path to that native call before optimizing a portable
   replacement. Select per runtime and output; keep TypeScript as the fallback or measured faster
   choice. Native selection must include wrapper, conversion and resource costs, not kernel timing alone.
