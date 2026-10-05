@@ -275,6 +275,16 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `current-native-containment-focused-packed.jsonl` retains the Bun base32 loss and
         leaves base64url unresolved. Remove the containment helper; consolidate exact-array
         validation and preset selection so each primary call makes one writer choice.
+        `current-native-common-preset-focused-packed.jsonl` leaves both runtimes unresolved;
+        Bun base32's median loss is smaller. Compare equal completed-call CPU and resource captures
+        in reversed order before another implementation change; do not infer parity from noise.
+        `current-native-common-base{32,64}-{0-baseline,1-current,2-current,3-baseline}` completes
+        equal-call reversed captures. Caller CPU falls in both pairs for both alphabets; heap
+        differences do not establish total allocation. Preserve the candidate for ranked-runtime
+        and decoder-only graph checks; timing parity and full resource parity remain unresolved.
+        `current-native-common-ranked-packed.jsonl` and `current-native-common-lts-packed.jsonl`
+        resolve Chromium and Node LTS base64url gains and JITless gains for both alphabets.
+        Other intervals include parity; no ranked comparison resolves a primary-call loss.
   - [x] Profile the base32 writer before expanding its packing loop.
         `current-base32-writer-profile` completes 1,048,576 calls after 262,144 warm-up calls.
         Its sampling summary reports 277 samples in native `toString`, 48 in the base32 writer
