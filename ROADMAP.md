@@ -886,6 +886,24 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Change one evidenced bottleneck at a time. Reject a component-only gain, a primary-call
       regression, or a speed gain paid for by material resource loss. Never choose a mechanism
       merely because the existing experiment driver can measure it.
+  - [ ] Screen codec-private storage through complete masked generation calls.
+        The resource gate observes one payload array in each masked string or pair call. Replace
+        only the package-default draw with generation into the existing codec scratch; custom
+        generators, explicit timestamps and immutable values retain their original paths. Extra
+        caller-buffer checks may erase the saved allocation. Reject without repeated Node/Bun
+        complete-call gains, exact masked round trips and lower array counts; preserve independent
+        value controls and existing nested custom-mask isolation tests. Only a survivor earns a
+        private unchecked draw seam or a wider packed-runtime comparison.
+        `candidates-codec-sj0ECr` passes Node/Bun behavior and resource proofs; its scratch candidate
+        removes the visible payload-array construction from all four masked calls while leaving
+        codec values at one array. Source timings vary heavily in unchanged controls, so they do
+        not establish speed parity. Compare independently packed Node/Bun calls before retention;
+        no production change follows from the allocation count alone.
+        `current-generated-codec-scratch-packed.jsonl` and `packed-source-KvDud7` retain the
+        independent packed repeat. Every speed interval remains unresolved, including unchanged
+        root-value controls; the evidence cannot rule out material primary-call losses. Keep the
+        source candidate isolated and production unchanged. Resolve timing under conditions where
+        unchanged controls are stable before widening runtime coverage or creating another seam.
   - [x] Screen fixed message-block expansion inside the current inline Feistel round through
         masked encoding, decoding and generation, including both alphabets. Both Bun decoding
         profiles attribute their largest sampled cost to the cipher. Expanding its three absorption
