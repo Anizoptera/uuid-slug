@@ -3,7 +3,6 @@
 import { strict as assert } from "node:assert";
 import {
   bytesToUuidString,
-  BASE32HEX,
   createCustomUuidV7Mask,
   deriveUuidV7Mask,
   deriveUuidV7MaskAsync,
@@ -60,63 +59,6 @@ function bits(text: string, alphabet: string, width: number) {
 }
 
 export const codecBoundaryCases = [
-  {
-    name: "native masked generation preserves bytes and keeps configured generation separate",
-    run() {
-      // Source screens opt in: the baseline must not pretend to select an unimplemented path.
-      // Fixed opaque payload bits distinguish real native delegation from a valid portable UUID.
-      if (process.env.UUID_SLUG_NATIVE_MASKED_PROBE !== "1") return;
-      const bun = (globalThis as { Bun?: { randomUUIDv7?: (encoding: "buffer") => Uint8Array } })
-        .Bun;
-      if (!bun?.randomUUIDv7) return;
-      const original = bun.randomUUIDv7;
-      const expected = unwrap(uuidStringToBytes("0190a1b2-c3d4-7e5f-ba9b-0c1d2e3f4051"));
-      let draws = 0;
-      try {
-        bun.randomUUIDv7 = (encoding) => {
-          assert.equal(encoding, "buffer");
-          draws++;
-          return new Uint8Array(expected);
-        };
-        const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
-        const slug = unwrap(codec.generateMaskedUuidV7Slug());
-        assert.deepEqual(unwrap(codec.maskedSlugToUuidBytes(slug)), expected);
-        const pair = unwrap(codec.generateUuidV7WithMaskedSlug());
-        assert.equal(pair.uuid, bytesToUuidString(expected));
-        assert.deepEqual(unwrap(codec.maskedSlugToUuidBytes(pair.slug)), expected);
-        const base32 = createUuidV7MaskingCodec({
-          mask: UUID_V7_TEST_MASK,
-          maskedSlugAlphabet: BASE32HEX,
-        });
-        assert.deepEqual(
-          unwrap(base32.maskedSlugToUuidBytes(unwrap(base32.generateMaskedUuidV7Slug()))),
-          expected,
-        );
-        assert.equal(draws, 3);
-        unwrap(codec.generateMaskedUuidV7Slug({ at: 1_234_567_890_000 }));
-        unwrap(codec.generateUuidV7Value());
-        assert.equal(draws, 3);
-        bun.randomUUIDv7 = () => {
-          draws++;
-          throw new Error("native unavailable");
-        };
-        const fallback = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
-        assert.ok(
-          isUuidV7Bytes(
-            unwrap(fallback.maskedSlugToUuidBytes(unwrap(fallback.generateMaskedUuidV7Slug()))),
-          ),
-        );
-        assert.ok(
-          isUuidV7Bytes(
-            unwrap(fallback.maskedSlugToUuidBytes(unwrap(fallback.generateMaskedUuidV7Slug()))),
-          ),
-        );
-        assert.equal(draws, 4);
-      } finally {
-        bun.randomUUIDv7 = original;
-      }
-    },
-  },
   {
     name: "offers one concise codec language without duplicating implementation work",
     run() {

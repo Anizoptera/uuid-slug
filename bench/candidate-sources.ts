@@ -296,41 +296,6 @@ export function createSourceCandidates(
 }
 
 function codecCandidates(source: string): readonly SourceCandidate[] {
-  const nativeMaskedBytes = () => {
-    const imported = replaceOnce(
-      source,
-      'import { BASE32HEX_NAME, BASE64URL_NAME } from "./alphabet.ts";',
-      'import { runtime } from "#runtime";\nimport { BASE32HEX_NAME, BASE64URL_NAME } from "./alphabet.ts";',
-    );
-    const selected = replaceOnce(
-      imported,
-      "  const encodeScratch = new Uint8Array(16);",
-      [
-        "  const encodeScratch = new Uint8Array(16);",
-        "  // Native bytes stay private to masking; no public Buffer ownership copy is needed.",
-        "  // Explicit clocks and injected generators retain their original validated path.",
-        '  const bun = (globalThis as { Bun?: { randomUUIDv7?: (encoding: "buffer") => Uint8Array } }).Bun;',
-        "  let nativeMaskedBytes = generateBytes === generateDefaultUuidV7Bytes && runtime.uuidV7",
-        "    ? bun?.randomUUIDv7 : undefined;",
-      ].join("\n"),
-    );
-    return replaceOnce(
-      selected,
-      "    try {\n      const bytes = generator",
-      [
-        "    try {",
-        "      if (nativeMaskedBytes && !generator && !Object.hasOwn(values, AT_OPTION)) {",
-        "        try {",
-        '          return nativeMaskedBytes("buffer") as UuidV7Bytes;',
-        "        } catch {",
-        "          // Stop paying for a capability that throws; the secure portable path remains.",
-        "          nativeMaskedBytes = undefined;",
-        "        }",
-        "      }",
-        "      const bytes = generator",
-      ].join("\n"),
-    );
-  };
   // Primitive-text decoders own their result; byte inputs must retain the existing copy.
   const ownedText = () =>
     replaceOnce(
@@ -352,22 +317,6 @@ function codecCandidates(source: string): readonly SourceCandidate[] {
     );
   return [
     { name: "baseline", source },
-    {
-      name: "native-masked-bytes",
-      get source() {
-        return nativeMaskedBytes();
-      },
-    },
-    {
-      name: "native-masked-bytes-lost-selection",
-      get source() {
-        return replaceOnce(
-          nativeMaskedBytes(),
-          "      if (nativeMaskedBytes && !generator",
-          "      if (nativeMaskedBytes && Object.hasOwn(values, AT_OPTION) && !generator",
-        );
-      },
-    },
     {
       name: "duplicate-value-generation-timing",
       get source() {
