@@ -509,7 +509,7 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
             encoders + "const SLUG_ALPHABET_BY_LENGTH:",
           ),
           "  return encode(\n    view.length === 16 ? view : view.subarray(offset, offset + 16),\n    alpha,\n  ) as PlainUuidSlug;",
-          "  return PLAIN_UUID_ENCODERS[alpha.name](view.length === 16 ? view : view.subarray(offset, offset + 16)) as PlainUuidSlug;",
+          "  // The selector returns only built-in alphabets; generic Alphabet.name also models private encoders.\n  return PLAIN_UUID_ENCODERS[alpha.name as SlugAlphabet](view.length === 16 ? view : view.subarray(offset, offset + 16)) as PlainUuidSlug;",
         );
       },
     },
