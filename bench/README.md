@@ -158,9 +158,6 @@ call records, alternate candidate order, and await its exit before starting anot
 Use `alphabet native-branch native-dispatch` to compare Bun native plain base64url encoding
 through validated conversion, UUIDv7 generation and pair calls. Both candidates keep masked
 tails and base32hex on the existing writer and fall back if native encoding throws.
-Use `slug default-alphabet scalar-alphabets` to isolate repeated alphabet normalization from
-the unchanged encoder through complete byte-to-slug calls. Boxed strings and invalid values
-keep the original resolver; base32 conversion is a primary control for either selection shape.
 Use `alphabet fixed-blocks` to compare fixed base64url writes with the indexed loop while keeping
 buffers and string construction unchanged; `fixed-blocks-lost-byte` must fail the payload oracle
 before timing. Complete slug generation and conversion determine whether the larger body pays.
