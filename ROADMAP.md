@@ -43,7 +43,7 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       its native reference. `current-bun-byte-slug-{package,native}-profile` completes both
       equal-call passes; package sampling is dominated by native `toString`, with encoder work
       also visible. Sampling does not isolate individual boundary checks or prove allocations.
-      Next execute the pending whole-buffer Latin-1 comparison below; do not repeat rejected
+      The whole-buffer comparison below does not support retention. Do not repeat rejected
       native-encoding dispatch shapes without a changed cause or mechanism.
 
 - [ ] Close the Bun owned UUIDv7 byte gap before another default-slug tweak. The maintained
@@ -389,10 +389,12 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
           unresolved; unchanged controls also vary. Equal-call Bun profiles still rank the
           character writer and string construction first. Do not infer a generation gain
           from conversion, a resource gain from retained heap, or an engine cause from samples.
-    - [ ] Compare whole-buffer Latin-1 reads with explicit range arguments on exact-size scratch.
-          This removes argument work without a new native capability, retained closure or buffer.
-          Prove complete output with the missing-byte mutation and all-byte oracle before timing;
-          reject absent default-call gains or another primary-call loss before wider comparisons.
+    - [x] Reject whole-buffer Latin-1 reads as unsupported by the current comparison.
+          `current-whole-buffer-packed-primary.log` leaves Bun byte encoding, text conversion and
+          generation unresolved. Its intact runtime proof did not precede timing, so the replay
+          cannot support retention. The lost-byte mutation reaches slug-length and UUID-text
+          oracles; it does not qualify the intact candidate. Keep production unchanged, preserve
+          the evidence, and do not broaden or repeat this shape without a new decision-changing reason.
 - [ ] Retain a survivor only after the existing packed replays, affected-runtime profiles,
       behavior/resource proofs and full check support it. Commit the production improvement
       and obtain approval to record its benefit and limits in `bench/PERFORMANCE.md`; otherwise keep
