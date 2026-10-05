@@ -291,6 +291,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
   cannot be selected directly; never infer its cost or coverage from another path.
 - Read `bench/README.md` before benchmark work. Scope exploratory comparisons with its maintained
   filters; run all applicable runtimes only after a candidate survives the focused mechanism test.
+  Read each driver's runtime selector from that driver; comparison and profiling variables differ.
+  Verify the runtime recorded in each result before assigning it to Current or LTS evidence.
 - Before any performance experiment, record the successful consumer call, current removable cost,
   competing explanations, result that would reject the candidate, and next production decision in
   `ROADMAP.md`. Reuse valid evidence; do not run a measurement whose possible results leave that

@@ -53,7 +53,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 
         | Priority | Consumer call | Faster reference | Evidence and next decision |
         | --- | --- | --- | --- |
-        | First | Bun bytes to plain base64url slug | Native `toBase64` | After scalar selection, `current-scalar-retained-primary-bun-{0,1,2}.jsonl` retains a 22–24% loss: 42.07–43.78 ns versus 34.15–35.46 ns. Profiled package CPU also exceeds native. Reject generic native branches and placements that slow base32. |
+        | First | Bun bytes to plain base64url slug | Native `toBase64` | Direct native delegation reduces the public-call cost. `current-native-final-floor-bun-{0,1,2}.jsonl` still retains a wrapper gap: process medians are 34.87–37.36 ns versus 30.58–33.49 ns. Profile the remaining wrapper before another change; preserve direct base32 selection. |
         | Verify before changing | Bun UUIDv4 text | `crypto-randomuuid` | After direct native selection, the same three captures cross parity. The old 36.98 ns loss is superseded; no persistent current text-generation loss is established. |
         | Verify before changing | Bun UUIDv4 plain slug generation | Web Crypto draw plus native base64url encoding | The same three captures no longer reproduce the old 60.78 ns loss consistently. Do not choose another generation tweak from that stale ranking. |
         | Verify before changing | Bun UUIDv7 plain slug generation | `Bun.randomUUIDv7` base64url output | Package 64.56 ns versus 62.00 ns; this run loses in each process, but the preceding focused comparison favored the package. The direction across comparisons remains unresolved. |
@@ -294,6 +294,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `current-native-capture-decoder/` removes the new probe in every maintained optimizer.
         Raw sizes equal the baseline except for a smaller Rollup output; the checked archive
         preserves both capture annotations. Recheck complete calls on the final capture shape.
+        `current-native-capture-final-primary-packed.jsonl` leaves final timing differences
+        unresolved. `current-native-final-base{32,64}-{0-baseline,1-current,2-current,3-baseline}`
+        records lower Bun caller CPU in both reversed pairs for both alphabets; retention does
+        not prove total allocation parity. `current-native-final-floor-bun-{0,1,2}.jsonl`
+        retains a complete-call loss against native base64url in every process.
+        `current-native-final-runtime-profiles/` records Node LTS, Bun, Deno and Chromium;
+        `current-native-final-current-runtime-profiles/` supplies the explicit Node Current capture.
+        Read actual runtime records before assigning either capture to the runtime ladder.
   - [x] Profile the base32 writer before expanding its packing loop.
         `current-base32-writer-profile` completes 1,048,576 calls after 262,144 warm-up calls.
         Its sampling summary reports 277 samples in native `toString`, 48 in the base32 writer
