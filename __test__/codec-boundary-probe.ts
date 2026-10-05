@@ -893,7 +893,6 @@ export const codecBoundaryCases = [
       const first = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
       const second = "019ff19b-58b8-7000-9b1b-df713bd5562c";
       const firstBytes = unwrap(uuidStringToBytes(first));
-      const secondBytes = unwrap(uuidStringToBytes(second));
       let codec: UuidV7MaskingCodec | undefined;
       let nested: MaskedOrSentinelUuidV7Slug | UuidSlugError | undefined;
       let entered = false;
@@ -901,7 +900,7 @@ export const codecBoundaryCases = [
         const before = input.slice();
         if (codec && !entered) {
           entered = true;
-          nested = codec.uuidToMaskedSlug(secondBytes);
+          nested = codec.uuidToMaskedSlug(second);
           entered = false;
           assert.deepEqual(input, before);
         }
@@ -911,10 +910,12 @@ export const codecBoundaryCases = [
         createCustomUuidV7Mask({ diagnosticLabel: "nested", mask: transform, unmask: transform }),
       );
       codec = createUuidV7MaskingCodec({ mask });
-      const outer = unwrap(codec.uuidToMaskedSlug(firstBytes));
-      assert.equal(codec.uuidToString(outer), first);
-      if (typeof nested !== "string") assert.fail("nested encoding must return a slug");
-      assert.equal(codec.uuidToString(nested), second);
+      for (const input of [firstBytes, first]) {
+        const outer: MaskedOrSentinelUuidV7Slug = unwrap(codec.uuidToMaskedSlug(input));
+        assert.equal(codec.uuidToString(outer), first);
+        if (typeof nested !== "string") assert.fail("nested encoding must return a slug");
+        assert.equal(codec.uuidToString(nested), second);
+      }
     },
   },
   ...["constructor", "toString", "__proto__"].map((slugAlphabet) => ({

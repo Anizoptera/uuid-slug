@@ -650,6 +650,13 @@ function buildUuidSlugCodec(
   }
 
   function uuidToMaskedSlug(uuid: unknown): MaskedOrSentinelUuidV7Slug | UuidSlugError {
+    // UUID text lengths cannot be slugs. Parse into private scratch to avoid an allocation and
+    // copy; encodeMasked recognizes sentinels before mutation and custom masks isolate callbacks.
+    // Borrowed bytes retain the copy below. Remeasure complete calls if parsing or masking changes.
+    if (typeof uuid === "string" && (uuid.length === 36 || uuid.length === 32)) {
+      const bytes = uuidStringToBytes(uuid, encodeScratch);
+      return bytes instanceof Error ? bytes : encodeMasked(encodeScratch, true);
+    }
     const localBytes = exactLocalUuidBytes(uuid);
     if (localBytes) return encodeMasked(localBytes);
     const bytes = decodeUuid(uuid);

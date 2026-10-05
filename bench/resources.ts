@@ -503,6 +503,7 @@ try {
   );
   check("masked byte encode", () => codec.uuidToMaskedSlug(bytes), {
     buffers: 0,
+    copies: 1,
     base64: 1,
     errors: 0,
     hex: 0,
@@ -521,7 +522,8 @@ try {
       errors: 0,
     });
   check("masked string encode", () => codec.uuidToMaskedSlug(id), {
-    buffers: 1,
+    buffers: 0,
+    copies: 0,
     base64: 1,
     errors: 0,
     hex: 0,

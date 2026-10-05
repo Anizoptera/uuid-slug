@@ -275,6 +275,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Verify version rejection, wire identity, sentinels and custom-callback reentrancy on both
         runners. Count zero temporary arrays and copies, then compare complete masked calls and
         byte controls before widening to ranked runtimes.
+        `candidates-codec-Lz7q3N` removes one array and one copy from UUID text while keeping
+        caller-byte copies. `current-scratch-text-ranked-packed.jsonl` repeats complete calls
+        across ranked runtimes; Node Current, Bun, Chromium and Deno text gains survive, with no
+        resolved control loss. Equal-call Bun captures in `current-scratch-text-isolated-*`
+        reduce caller CPU in both orders. Retain the private scratch path; finish the LTS replay,
+        nested text-callback witness and complete gate before marking it complete.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect
