@@ -370,8 +370,47 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
       after,
     );
   };
+  const presetReturns = (native: boolean): string => {
+    const alphaSelection = [
+      "  const alpha =",
+      "    selectedAlphabet === BASE64URL_NAME",
+      "      ? BASE64URL",
+      "      : selectedAlphabet === BASE32HEX_NAME",
+      "        ? BASE32HEX",
+      "        : resolveSlugAlphabet(selectedAlphabet);",
+    ].join("\n");
+    const direct = [
+      "  const payload = view.length === 16 ? view : view.subarray(offset, offset + 16);",
+      "  if (selectedAlphabet === BASE32HEX_NAME) return encode(payload, BASE32HEX) as PlainUuidSlug;",
+      "  if (selectedAlphabet === BASE64URL_NAME) {",
+      ...(native
+        ? [
+            "    if (nativePlainUuidBase64) {",
+            "      try { return nativePlainUuidBase64.call(payload, NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug; }",
+            "      catch { nativePlainUuidBase64 = undefined; }",
+            "    }",
+          ]
+        : []),
+      "    return encode(payload, BASE64URL) as PlainUuidSlug;",
+      "  }",
+      "  const alpha = resolveSlugAlphabet(selectedAlphabet);",
+    ].join("\n");
+    return replaceOnce(native ? nativePlain() : source, alphaSelection, direct);
+  };
   return [
     { name: "baseline", source },
+    {
+      name: "preset-returns",
+      get source() {
+        return presetReturns(false);
+      },
+    },
+    {
+      name: "native-preset-returns",
+      get source() {
+        return presetReturns(true);
+      },
+    },
     {
       name: "native-public",
       get source() {
