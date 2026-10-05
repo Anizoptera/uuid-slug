@@ -258,12 +258,23 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `current-latin1-primary-packed.jsonl` keeps every requested batch across six process
         pairs. Conversion and masking intervals include no change; no material primary gain
         earns the extra factory logic. Keep the original factory and the native gap open.
-  - [ ] Remove the redundant copy after decoding primitive text for masked encoding.
+  - [x] Screen removal of the copy after decoding primitive text for masked encoding.
         `decodeUuid` allocates parsed and unmasked string results. Its shared sentinel bytes
         return from `encodeMasked` before any write. Borrowed arrays, views and immutable UUID
         objects must still copy. Reuse the existing owned-block entry only for primitive text;
         prove a borrowed-input mutation fails, count the removed copy, and compare both masked
         alphabets and byte controls before retaining the change on ranked runtimes.
+        `candidates-codec-Qg1Ion` rejects caller-buffer mutation on Node and Bun. The valid
+        `candidates-codec-SUwqDL` passes correctness, but does not resolve text gains and slows
+        Bun byte controls in both orders. Do not retain the newly allocated owned-block route.
+  - [ ] Parse primitive UUID text directly into the codec's existing private encoding scratch.
+        UUID text lengths cannot be slug lengths. Both supported UUID text spellings can use
+        the existing transactional caller-buffer parser, eliminating its temporary array and
+        the subsequent copy while preserving the reusable cipher block. Sentinels still return
+        before mutation; other representations retain their current decoder and byte ownership.
+        Verify version rejection, wire identity, sentinels and custom-callback reentrancy on both
+        runners. Count zero temporary arrays and copies, then compare complete masked calls and
+        byte controls before widening to ranked runtimes.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect

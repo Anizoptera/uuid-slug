@@ -260,8 +260,36 @@ function codecCandidates(source: string): readonly SourceCandidate[] {
       "    return encodeMasked(bytes);",
       '    return encodeMasked(bytes, typeof uuid === "string");',
     );
+  const scratchText = () =>
+    replaceOnce(
+      source,
+      "  function uuidToMaskedSlug(uuid: unknown): MaskedOrSentinelUuidV7Slug | UuidSlugError {",
+      [
+        "  function uuidToMaskedSlug(uuid: unknown): MaskedOrSentinelUuidV7Slug | UuidSlugError {",
+        '    if (typeof uuid === "string" && (uuid.length === 36 || uuid.length === 32)) {',
+        "      const bytes = uuidStringToBytes(uuid, encodeScratch);",
+        "      return bytes instanceof Error ? bytes : encodeMasked(encodeScratch, true);",
+        "    }",
+      ].join("\n"),
+    );
   return [
     { name: "baseline", source },
+    {
+      name: "scratch-text",
+      get source() {
+        return scratchText();
+      },
+    },
+    {
+      name: "scratch-text-lost-borrow",
+      get source() {
+        return replaceOnce(
+          scratchText(),
+          "    if (localBytes) return encodeMasked(localBytes);",
+          "    if (localBytes) return encodeMasked(localBytes, true);",
+        );
+      },
+    },
     {
       name: "owned-text",
       get source() {
