@@ -53,9 +53,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 
         | Priority | Consumer call | Faster reference | Evidence and next decision |
         | --- | --- | --- | --- |
-        | First | Bun UUIDv4 text | `crypto-randomuuid` | Package 36.98 ns versus 31.33 ns; each process loses, with ratios 1.164–1.201. Inspect the complete rival call before another trust-check candidate. |
-        | First | Bun bytes to plain base64url slug | Native `toBase64` | Package 48.10 ns versus 39.68 ns; each process loses, with ratios 1.199–1.258. Earlier reversed equal-call profiles also show higher package CPU; reject repeating the unsuccessful generic native branch or character-code writer. |
-        | Next | Bun UUIDv4 plain slug generation | Web Crypto draw plus native base64url encoding | Package 60.78 ns versus 55.77 ns; each process loses, with ratios 1.073–1.090. Profile generation and encoding together; do not attribute the whole gap to the converter. |
+        | First | Bun bytes to plain base64url slug | Native `toBase64` | After scalar selection, `current-scalar-retained-primary-bun-{0,1,2}.jsonl` retains a 22–24% loss: 42.07–43.78 ns versus 34.15–35.46 ns. Profiled package CPU also exceeds native. Reject generic native branches and placements that slow base32. |
+        | Verify before changing | Bun UUIDv4 text | `crypto-randomuuid` | After direct native selection, the same three captures cross parity. The old 36.98 ns loss is superseded; no persistent current text-generation loss is established. |
+        | Verify before changing | Bun UUIDv4 plain slug generation | Web Crypto draw plus native base64url encoding | The same three captures no longer reproduce the old 60.78 ns loss consistently. Do not choose another generation tweak from that stale ranking. |
         | Verify before changing | Bun UUIDv7 plain slug generation | `Bun.randomUUIDv7` base64url output | Package 64.56 ns versus 62.00 ns; this run loses in each process, but the preceding focused comparison favored the package. The direction across comparisons remains unresolved. |
         | Hold | Bun UUIDv7 text | `Bun.randomUUIDv7` text output | Package 48.97 ns versus 47.84 ns; process ratios cross parity. No confirmed optimization target. |
         | Lower runtime priority | Deno UUID text to bytes | Buffer hex decoding | Package 177.73 ns versus 166.36 ns; this floor returns Buffer rather than the package's plain owned array. Compare equivalent ownership before treating it as a qualified loss. |
@@ -203,6 +203,11 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         without changing validation or encoders, then measure default and base32 calls together.
         Reject the shape before wider measurements if either primary call reproducibly loses.
         Keep the native floor gap open; rejected placements do not prove an inherent limit.
+        `current-native-split-packed{,-repeat}.jsonl` rejects the split default-only wrapper:
+        repeated packed calls improve base64url but slow base32. Avoid revalidating already-proven
+        16-byte scalar-preset input on that path. Screen a shared exact-payload preset dispatcher
+        with native base64url and direct existing base32 encoding; other inputs keep the complete
+        original general body. Reject any repeated primary regression before a wider matrix.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect

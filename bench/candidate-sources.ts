@@ -260,7 +260,12 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
   const selected =
     "  const selectedAlphabet = alphabetIsSecond ? offsetOrAlphabet : (alphabet ?? BASE64URL_NAME);\n";
   const nativePlain = (
-    placement: "resolved" | "default-inline" | "default-helper" | "default-split" = "resolved",
+    placement:
+      | "resolved"
+      | "default-inline"
+      | "default-helper"
+      | "default-split"
+      | "presets-split" = "resolved",
   ): string => {
     // Keep writer functions out of decoder metadata; the public conversion owns this selection.
     const capability = [
@@ -270,18 +275,32 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
     ].join("\n");
     if (placement !== "resolved") {
       const signature = "): PlainUuidSlug | UuidSlugError {\n  const alphabetIsSecond";
-      const selectedNative = [
-        "  if (nativePlainUuidBase64 &&",
-        "      (offsetOrAlphabet === 0 || offsetOrAlphabet === BASE64URL_NAME) &&",
-        "      (alphabet === undefined || (offsetOrAlphabet === 0 && alphabet === BASE64URL_NAME)) &&",
-        "      isUint8Array(bytes) && bytes.length === 16) {",
-        placement === "default-helper"
-          ? "    return nativeDefaultPlainUuid(bytes, nativePlainUuidBase64);"
-          : "    try { return nativePlainUuidBase64.call(bytes, NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug; } catch { nativePlainUuidBase64 = undefined; }",
-        "  }",
-        "  const alphabetIsSecond",
-      ].join("\n");
-      if (placement === "default-split") {
+      const selectedNative =
+        placement === "presets-split"
+          ? [
+              "  if (nativePlainUuidBase64 && isUint8Array(bytes) && bytes.length === 16) {",
+              '    const selectedAlphabet = typeof offsetOrAlphabet === "number"',
+              "      ? offsetOrAlphabet === 0 ? (alphabet ?? BASE64URL_NAME) : undefined",
+              "      : alphabet === undefined ? offsetOrAlphabet : undefined;",
+              "    if (selectedAlphabet === BASE32HEX_NAME) return encode(bytes, BASE32HEX) as PlainUuidSlug;",
+              "    if (selectedAlphabet === BASE64URL_NAME) {",
+              "      try { return nativePlainUuidBase64.call(bytes, NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug; } catch { nativePlainUuidBase64 = undefined; }",
+              "    }",
+              "  }",
+              "  const alphabetIsSecond",
+            ].join("\n")
+          : [
+              "  if (nativePlainUuidBase64 &&",
+              "      (offsetOrAlphabet === 0 || offsetOrAlphabet === BASE64URL_NAME) &&",
+              "      (alphabet === undefined || (offsetOrAlphabet === 0 && alphabet === BASE64URL_NAME)) &&",
+              "      isUint8Array(bytes) && bytes.length === 16) {",
+              placement === "default-helper"
+                ? "    return nativeDefaultPlainUuid(bytes, nativePlainUuidBase64);"
+                : "    try { return nativePlainUuidBase64.call(bytes, NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug; } catch { nativePlainUuidBase64 = undefined; }",
+              "  }",
+              "  const alphabetIsSecond",
+            ].join("\n");
+      if (placement === "default-split" || placement === "presets-split") {
         // Copy the general body intact so only native dispatch placement differs. A stale
         // boundary must reject the experiment rather than silently drop checks or comments.
         const start = source.indexOf(
@@ -375,6 +394,12 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
       name: "native-default-split",
       get source() {
         return nativePlain("default-split");
+      },
+    },
+    {
+      name: "native-presets-split",
+      get source() {
+        return nativePlain("presets-split");
       },
     },
     {
