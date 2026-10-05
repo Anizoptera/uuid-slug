@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { mkdir, mkdtemp, readFile, readdir, rm, symlink } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -28,6 +28,7 @@ const RUNTIMES = [
 ] as const satisfies readonly Runtime[];
 
 interface ArtifactSet {
+  readonly tarball: string;
   readonly denoImportMap: string;
   readonly api: Readonly<Record<ArtifactRuntime, string>>;
   readonly privateAlphabetApi: Readonly<Record<ArtifactRuntime, string>>;
@@ -158,6 +159,7 @@ async function packArtifacts(root: string, outdir: string): Promise<ArtifactSet>
     }),
   );
   return {
+    tarball: join(outdir, archive),
     denoImportMap,
     api: {
       node: nodeApi,
@@ -434,6 +436,7 @@ async function main(): Promise<void> {
   const baselineRoot = join(scratch, "baseline");
   const isolatedCandidate = candidateRef !== undefined || sourceParts !== undefined;
   const candidateRoot = isolatedCandidate ? join(scratch, "candidate") : project;
+  let sourceReport: string | undefined;
   try {
     // Committed archives isolate package builds without changing branches or Git worktrees.
     const baselineArchive = join(scratch, "baseline.tar");
@@ -474,6 +477,7 @@ async function main(): Promise<void> {
       const reportRoot = join(project, "bench/reports");
       await mkdir(reportRoot, { recursive: true });
       const report = await mkdtemp(join(reportRoot, "packed-source-"));
+      sourceReport = report;
       await Bun.write(join(report, "source.txt"), candidateSource);
       await Bun.write(
         join(report, "manifest.json"),
@@ -506,6 +510,14 @@ async function main(): Promise<void> {
       packArtifacts(candidateRoot, candidateOut),
       buildHostDriver(driverRoot, scratch),
     ]);
+    if (sourceReport) {
+      // Source captures cannot prove optimizer behavior through packed exports. Keep the exact
+      // measured packages so graph inspection can reuse them after temporary builds are removed.
+      await Promise.all([
+        copyFile(baseline.tarball, join(sourceReport, "baseline.tgz")),
+        copyFile(candidate.tarball, join(sourceReport, "candidate.tgz")),
+      ]);
+    }
     // Browser engines share one compiled corpus per revision. Host-only comparisons need neither
     // that compilation nor browser startup; this matters when comparing several installed hosts.
     const needsBrowser = selectedRuntimes.some(isBrowserRuntime);
