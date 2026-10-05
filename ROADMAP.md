@@ -96,7 +96,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         for the corrected default calls. Bun UUIDv4 text loses to `crypto-randomuuid` in every
         process; Deno owned UUIDv7 bytes loses to `uuidv7` in every process. Bun UUIDv7 text
         also trails its native floor. These supersede the corresponding older ordering below.
-  - [ ] Close Bun UUIDv4 text's repeated qualified-rival loss first. Profile the corrected
+  - [x] Assess Bun UUIDv4 text's repeated qualified-rival loss. Profile the corrected
         complete caller against `crypto-randomuuid` and Web Crypto with equal work; inspect
         native selection, direct delegation and case handling before changing production code.
         Preserve configured behavior and fallback; reject a candidate without repeated
@@ -116,6 +116,8 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Reject the shared implementation and remove its experiment definition. The raw source
         and proofs remain in the reports. A later candidate must select independently for native
         defaults, uppercase and portable runtimes; do not repeat the shared helper arrangement.
+        The negligible-difference ruling ends tuning solely to erase a small wrapper gap;
+        `current-primary-v4-outcome-ranking.jsonl` does not justify another rewrite.
   - [x] Isolate UUIDv4 preset-check call overhead with the existing `literal-guards` candidate.
         The native function is already shared with the faster Bun rival. Replace only the
         successful preset predicate call with its identical two comparisons; preserve normalization,
@@ -202,12 +204,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 
         | Priority | Consumer call | Faster reference | Evidence and next decision |
         | --- | --- | --- | --- |
-        | First | Bun UUIDv4 text | `crypto-randomuuid` | `current-default-caller-generation-ranking.jsonl` and equal-work CPU profiles repeat the loss. Both call the same native generator. Remove surrounding cost without slowing Node Current or uppercase; the shared cold-body split fails that requirement. |
-        | Native floor gap | Bun bytes to plain base64url slug | Native `toBase64` | Direct native delegation reduces the public-call cost. `current-native-final-floor-bun-{0,1,2}.jsonl` still retains a wrapper gap: process medians are 34.87–37.36 ns versus 30.58–33.49 ns. Profile the remaining wrapper before another change; preserve direct base32 selection. |
-        | Verify before changing | Bun UUIDv4 plain slug generation | Web Crypto draw plus native base64url encoding | The same three captures no longer reproduce the old 60.78 ns loss consistently. Do not choose another generation tweak from that stale ranking. |
+        | Small remaining difference | Bun UUIDv4 text | `crypto-randomuuid` | `current-primary-v4-outcome-ranking.jsonl` retains a small absolute gap. Existing wrapper candidates do not justify more code; negligible differences are acceptable. Reopen only for material consumer or resource cost. |
+        | Small remaining difference | Bun bytes to plain base64url slug | Native `toBase64` | Direct native delegation is retained. `current-primary-conversion-ranking.jsonl` shows a small wrapper difference; do not repeat rejected wrapper shapes solely to erase it. Preserve direct base32 selection. |
+        | Preserve | Bun UUIDv4 plain slug generation | Web Crypto draw plus native base64url encoding | `current-primary-v4-outcome-ranking.jsonl` favors the package; the old loss is not a current optimization target. |
         | Verify before changing | Bun UUIDv7 plain slug generation | `Bun.randomUUIDv7` base64url output | Package 64.56 ns versus 62.00 ns; this run loses in each process, but the preceding focused comparison favored the package. The direction across comparisons remains unresolved. |
-        | Native floor gap | Bun UUIDv7 text | `Bun.randomUUIDv7` text output | `current-default-caller-generation-ranking.jsonl` repeats the loss after removing redundant caller unwrapping. String-first recognition fails to improve the complete call. |
-        | Lower runtime priority | Deno owned UUIDv7 bytes | `uuidv7` | `current-default-caller-generation-ranking.jsonl` repeats the qualified-rival loss. The existing sequenced generator is slower in the packed comparison; preserve the independent writer until a better mechanism survives. |
+        | Small remaining difference | Bun UUIDv7 text | `Bun.randomUUIDv7` text output | `current-native-baseline-v7-ranking-repeat.jsonl` shows a small native-floor difference and a lead over tested qualified libraries, including `fastv7`. Preserve native delegation rather than adding another wrapper. |
+        | Preserve | Deno owned UUIDv7 bytes | `uuidv7` | `current-primary-v7-owned-ranking-repeat.jsonl` does not reproduce the old qualified-rival loss. Preserve the independent writer; do not select a rewrite from the stale ranking. |
         | Lower runtime priority | Deno UUID text to bytes | Buffer hex decoding | Package 177.73 ns versus 166.36 ns; this floor returns Buffer rather than the package's plain owned array. Compare equivalent ownership before treating it as a qualified loss. |
 
         The corrected default-call report above supersedes older generation ordering. Node Current,
