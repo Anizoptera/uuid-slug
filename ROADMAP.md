@@ -10,6 +10,17 @@ propose public-document changes and hold them for explicit approval, including g
 
 Deliver retained improvements to ordinary single-ID calls; a rejected experiment does not close a performance gap.
 
+- [x] Refresh the maintained qualified corpus in three independent processes per measured host.
+      `current-primary-ranking-refresh.jsonl` retains positive fresh-process samples, rejected and
+      unsupported rows. Primary default-call losses remain concentrated on Bun UUIDv4 text,
+      byte-to-slug encoding and native UUIDv7 slug output. Owned byte generation does not regain
+      its old rival loss. Caller-buffer losses stay secondary. The larger timestamp floor gap
+      compares extraction with validation against a parse-only reference; preserve validation.
+      Keep packed and resource parity open; use the Bun default-call gaps for the next change.
+      Bun's direct Node-compatible UUIDv4 method also beats direct Web Crypto in all three
+      processes. Separate method selection from wrapper cost before another guard rewrite;
+      the earlier Node-compatible substitution's resource result remains unresolved.
+
 - [x] Re-rank ordinary owned UUIDv4/v7 bytes on Bun after independent default draws and block
       copying. Older rival gaps may persist or the retained changes may have closed them.
       Use the existing qualified corpus in fresh processes; select the largest remaining
