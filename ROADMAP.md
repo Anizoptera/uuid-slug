@@ -244,7 +244,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Its sampling summary reports 277 samples in native `toString`, 48 in the base32 writer
         and 43 in the consumer loop. Sampling locates work, not exact cost fractions. Preserve
         the compact packing loop; compare native string construction before enlarging it.
-  - [ ] Recompare direct Latin-1 construction through both primary byte-to-slug alphabets.
+  - [x] Recompare direct Latin-1 construction through both primary byte-to-slug alphabets.
         Earlier repeated comparisons resolve byte-to-text gains but leave generation effects
         unresolved. Native UUIDv7 defaults bypass this factory; their unchanged timing cannot
         establish whether primary conversions benefit. Reuse `latin1:direct-latin1`, compare
@@ -255,6 +255,15 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         generation controls too. Four isolated `current-latin1-isolated-*` equal-call captures
         do not reproduce its large base64 slowdown in caller CPU. Keep that conflict unresolved;
         compare packed conversion calls before attributing the multi-case source result.
+        `current-latin1-primary-packed.jsonl` keeps every requested batch across six process
+        pairs. Conversion and masking intervals include no change; no material primary gain
+        earns the extra factory logic. Keep the original factory and the native gap open.
+  - [ ] Remove the redundant copy after decoding primitive text for masked encoding.
+        `decodeUuid` allocates parsed and unmasked string results. Its shared sentinel bytes
+        return from `encodeMasked` before any write. Borrowed arrays, views and immutable UUID
+        objects must still copy. Reuse the existing owned-block entry only for primitive text;
+        prove a borrowed-input mutation fails, count the removed copy, and compare both masked
+        alphabets and byte controls before retaining the change on ranked runtimes.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect

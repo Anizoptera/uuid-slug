@@ -17,6 +17,7 @@ export const CANDIDATE_GROUPS = [
   "keyless",
   "format",
   "latin1",
+  "codec",
   "value",
   "value-options",
   "pool",
@@ -30,6 +31,7 @@ export const CANDIDATE_FILES = {
   keyless: "src/v7-keyless.ts",
   format: "src/uuid.ts",
   latin1: "src/runtime/portable.ts",
+  codec: "src/masking-codec.ts",
   value: "src/v7-value.ts",
   "value-options": "src/v7-value-options.ts",
   pool: "src/runtime/pool.ts",
@@ -242,11 +244,41 @@ export function createSourceCandidates(
     keyless: keylessCandidates,
     format: formatCandidates,
     latin1: latin1Candidates,
+    codec: codecCandidates,
     value: valueCandidates,
     "value-options": valueOptionCandidates,
     pool: poolCandidates,
   } satisfies Record<CandidateGroup, (source: string) => readonly SourceCandidate[]>;
   return builders[group](source);
+}
+
+function codecCandidates(source: string): readonly SourceCandidate[] {
+  // Primitive-text decoders own their result; byte inputs must retain the existing copy.
+  const ownedText = () =>
+    replaceOnce(
+      source,
+      "    return encodeMasked(bytes);",
+      '    return encodeMasked(bytes, typeof uuid === "string");',
+    );
+  return [
+    { name: "baseline", source },
+    {
+      name: "owned-text",
+      get source() {
+        return ownedText();
+      },
+    },
+    {
+      name: "owned-text-lost-borrow",
+      get source() {
+        return replaceOnce(
+          ownedText(),
+          "    if (localBytes) return encodeMasked(localBytes);",
+          "    if (localBytes) return encodeMasked(localBytes, true);",
+        );
+      },
+    },
+  ];
 }
 
 function slugCandidates(source: string): readonly SourceCandidate[] {

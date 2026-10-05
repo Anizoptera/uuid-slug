@@ -7,6 +7,7 @@ import crypto from "node:crypto";
 
 const counts = {
   buffers: 0,
+  copies: 0,
   slices: 0,
   errors: 0,
   views: 0,
@@ -51,6 +52,13 @@ globalThis.Error = new Proxy(OriginalError, {
   },
 });
 assert.ok(wrapMethod(OriginalBytes.prototype, "subarray", "views"));
+assert.ok(wrapMethod(OriginalBytes.prototype, "set", "copies"));
+// Verify the counter on the same intrinsic before package import captures any methods.
+const copyControl = new OriginalBytes(1);
+const copiesBefore = counts.copies;
+copyControl.set(new OriginalBytes([7]));
+assert.equal(copyControl[0], 7);
+assert.equal(counts.copies, copiesBefore + 1);
 assert.ok(wrapMethod(OriginalBytes.prototype, "slice", "slices"));
 wrapMethod(OriginalBytes.prototype, "toHex", "hex");
 wrapMethod(OriginalBytes.prototype, "toBase64", "base64");

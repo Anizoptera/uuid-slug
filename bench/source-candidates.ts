@@ -139,6 +139,18 @@ const groups = {
     ],
     tests: [],
   },
+  codec: {
+    names: [
+      "masked.encode",
+      "masked.encode.bytes",
+      "masked.base32.encode",
+      "masked.base32.encode.bytes",
+      "masked.generate",
+      "masked.decode",
+      "masked.base32.decode",
+    ],
+    tests: ["__test__/codec-boundary.test.ts", "__test__/mask.test.ts"],
+  },
   value: {
     names: ["value.generate", "value.generate.at", "v7.bytes"],
     tests: ["__test__/v7.test.ts"],
@@ -258,7 +270,14 @@ try {
       (
         [
           ["node", ["run", "test:node", "--", ...tests]],
-          ["bun", ["test", "__test__/runtime-boundary.bun.test.ts"]],
+          [
+            "bun",
+            [
+              "test",
+              "__test__/runtime-boundary.bun.test.ts",
+              ...(group === "codec" ? ["__test__/codec-boundary.bun.test.ts"] : []),
+            ],
+          ],
         ] as const
       ).map(([lane, args]) =>
         proof([...args], tree, join(report, `${candidate.name}-${lane}-proof.log`), lane),
