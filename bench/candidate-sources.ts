@@ -318,17 +318,6 @@ function codecCandidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
-      name: "generated-codec-scratch",
-      get source() {
-        // Measure saved payload allocation including the existing caller-buffer checks it adds.
-        return replaceOnce(
-          source,
-          "          : generateBytes();",
-          "          : generateBytes === generateDefaultUuidV7Bytes\n            ? generateDefaultUuidV7Bytes(encodeScratch)\n            : generateBytes();",
-        );
-      },
-    },
-    {
       name: "duplicate-value-generation-timing",
       get source() {
         // Discarded secure draws preserve valid returned values while exposing a codec-only slowdown.

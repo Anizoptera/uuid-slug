@@ -920,8 +920,10 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `current-generated-codec-scratch-packed.jsonl` and `packed-source-KvDud7` retain the
         independent packed repeat. Every speed interval remains unresolved, including unchanged
         root-value controls; the evidence cannot rule out material primary-call losses. Keep the
-        source candidate isolated and production unchanged. Reject adoption because the saved
+        archived candidate and production unchanged. Reject adoption because the saved
         array does not establish speed parity; widen no runtime coverage or private draw seam.
+        Remove the rejected source substitution from the live candidate inventory; archived bundles
+        retain reproducibility without offering the same unresolved experiment as active work.
         Reuse `candidates-codec-sj0ECr/profile.mjs` and its existing runtime-specific API bundles
         for default masked strings, default masked pairs and codec-value controls. Fresh processes
         in alternating order must distinguish a consistent wrapper loss from scheduling noise;
