@@ -229,6 +229,39 @@ test("pair witnesses reject two valid spellings of different UUIDs", () => {
   ).toThrow("mismatched UUID and slug payloads");
 });
 
+test("native pair compositions generate once and preserve both spellings", () => {
+  const uuid = "01990d4d-e600-7123-a456-789abcdef012";
+  const bytes = profilingApi.uuidStringToBytes(uuid);
+  if (bytes instanceof Error) throw bytes;
+  for (const text of [true, false]) {
+    let calls = 0;
+    const generator: GenerationCase = {
+      name: text ? "fixture.v7.text" : "fixture.v7.bytes.allocate",
+      comparable: text ? "v7.text.secure" : "v7.bytes.allocate.secure",
+      implementation: "fixture",
+      operation: () => {
+        calls += 1;
+        return text ? uuid : bytes;
+      },
+      qualification: "qualified",
+      version: 7,
+    };
+    const pairs = createConversionCases(Buffer, undefined, [generator]).cases.filter(
+      ({ comparable }) => comparable === "v7.pair.secure",
+    );
+    expect(pairs.map(({ name }) => name)).toEqual([
+      `fixture.v7.pair.from-${text ? "text" : "bytes"}.buffer`,
+      `fixture.v7.pair.from-${text ? "text" : "bytes"}.typedarray`,
+    ]);
+    for (const pair of pairs) {
+      const before = calls;
+      expect(pair.operation()).toEqual({ uuid, slug: "AZkNTeYAcSOkVniavN7wEg" });
+      expect(calls - before).toBe(1);
+      verifyGenerationCase(pair);
+    }
+  }
+});
+
 const entropy = {
   runtime: "fixture 1",
   candidate: "measured",

@@ -342,5 +342,58 @@ export function createConversionCases(
       });
     }
   }
+  // Paired output is one identity in two spellings, not two independent generator calls.
+  // Keep both available native encoders: their complete composition costs differ by runtime.
+  const pairEncoders: readonly (readonly [string, (input: Uint8Array) => string])[] = [
+    ...(nodeBuffer
+      ? ([
+          [
+            "buffer",
+            (input: Uint8Array) =>
+              nodeBuffer
+                .from(input.buffer, input.byteOffset, input.byteLength)
+                .toString("base64url"),
+          ],
+        ] as const)
+      : []),
+    ...(toBase64
+      ? ([["typedarray", (input: Uint8Array) => toBase64.call(input, base64Options)]] as const)
+      : []),
+  ];
+  for (const generator of generators) {
+    const text = generator.comparable === "v7.text.secure";
+    if (!text && generator.comparable !== "v7.bytes.allocate.secure") continue;
+    for (const [encoderName, encode] of pairEncoders) {
+      cases.push({
+        ...generator,
+        name: generator.name.replace(
+          text ? ".text" : ".bytes.allocate",
+          `.pair.from-${text ? "text" : "bytes"}.${encoderName}`,
+        ),
+        comparable: "v7.pair.secure",
+        implementation: "generated-native-pair",
+        operation: () => {
+          const generated = generator.operation();
+          const generatedBytes = text ? parse(generated as string) : (generated as Uint8Array);
+          const uuid = text
+            ? (generated as string)
+            : toHex
+              ? hyphenate(toHex.call(generatedBytes))
+              : nodeBuffer
+                ? hyphenate(
+                    nodeBuffer
+                      .from(
+                        generatedBytes.buffer,
+                        generatedBytes.byteOffset,
+                        generatedBytes.byteLength,
+                      )
+                      .toString("hex"),
+                  )
+                : stringify(generatedBytes);
+          return { uuid, slug: encode(generatedBytes) };
+        },
+      });
+    }
+  }
   return { cases, unsupported };
 }

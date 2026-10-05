@@ -50,6 +50,13 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Compare each primary call with its main qualified rivals and same-output native floor.
       Reuse applicable evidence; refresh stale comparisons after retained changes. Record speed
       and resource gaps separately, and rank unresolved gaps before selecting implementation work.
+  - [ ] Compare UUIDv7 text-plus-plain-slug generation with qualified rival compositions.
+        The current pair rows compare package calls only. Extend the existing conversion corpus
+        with one generator call followed by native encoding and UUID text formatting where needed;
+        the existing pair witness must reject different identities before timing. Include text
+        and owned-byte generators with Buffer and typed-array encoders when available. A repeated
+        material rival lead selects production profiling; parity closes this comparison without
+        another implementation. Measure only paired results on the ranked runtimes.
   - [x] Inspect engine CPU and sampled-allocation profiles for primary UUID text/byte conversion
         against `uuid`. Repeated unsampled caller CPU favors the package, but retained heap can
         hide temporary allocation. Reuse the existing native profiler with only those four complete
