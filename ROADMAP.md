@@ -50,6 +50,15 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Compare each primary call with its main qualified rivals and same-output native floor.
       Reuse applicable evidence; refresh stale comparisons after retained changes. Record speed
       and resource gaps separately, and rank unresolved gaps before selecting implementation work.
+  - [x] Compare Bun default UUIDv7 slug resource cost with `uuidv7` plus native typed-array
+        encoding, the fastest qualified library in the refreshed ranking. Use equal completed
+        and warm-up calls in reversed process order. Repeated higher package caller CPU or
+        continuing committed-memory growth selects profiling; retained heap alone cannot prove
+        allocation volume. Preserve production if no material resource loss reproduces.
+        `current-primary-v7-slug-resource-{0,1,2,3}` records lower package caller CPU in
+        both process orders and flat second-window committed memory for both implementations.
+        First-window commitment varies; retained heap does not establish gross allocation.
+        Preserve direct native slug generation; these observations do not select a rewrite.
   - [x] Compare Chromium UUIDv7 slug generation with browser-capable rivals composed with native
         base64url encoding. Pass generators into the existing conversion corpus and add native
         typed-array compositions outside its Buffer branch. Validate complete outputs before
