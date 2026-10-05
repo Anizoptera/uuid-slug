@@ -78,6 +78,15 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Change one evidenced bottleneck at a time. Reject a component-only gain, a primary-call
       regression, or a speed gain paid for by material resource loss. Never choose a mechanism
       merely because the existing experiment driver can measure it.
+  - [ ] Screen fixed message-block expansion inside the current inline Feistel round through
+        masked encoding, decoding and generation, including both alphabets. Both Bun decoding
+        profiles attribute their largest sampled cost to the cipher. Expanding its three absorption
+        blocks may remove message selection; the larger body may instead lose to the compact loop.
+        Earlier rejected expansion changed the outer Feistel traversal or the general hash's
+        compression rounds, not this inline message-block loop. Keep every hash round, constant,
+        key and output word unchanged. A changed length-block mutation must fail existing wire
+        oracles on Node and Bun before timing. Reject absent repeated complete-call gains or a
+        primary-call loss; expand only a survivor to packed runtime and resource evidence.
   - [x] Screen native base64url directly after `uuidBytesToPlainSlug` validation for a whole
         UUID byte array on Bun. The complete-call profile supports removable Latin-1 writer cost;
         validation and native-call containment may instead erase the gain. Keep offsets, base32hex

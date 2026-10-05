@@ -144,6 +144,21 @@ const groups = {
     names: ["v7.string", "v7.bytes", "v7.slug", "v4.string", "v4.bytes"],
     tests: ["__test__/entropy.test.ts", "__test__/v7.test.ts"],
   },
+  feistel: {
+    names: [
+      "masked.encode",
+      "masked.encode.bytes",
+      "masked.decode",
+      "masked.decode.bytes",
+      "masked.generate",
+      "masked.base32.encode",
+      "masked.base32.encode.bytes",
+      "masked.base32.decode",
+      "masked.base32.decode.bytes",
+      "masked.base32.generate",
+    ],
+    tests: ["__test__/feistel.test.ts", "__test__/alphabet.test.ts", "__test__/mask.test.ts"],
+  },
 } satisfies Record<CandidateGroup, { names: readonly string[]; tests: readonly string[] }>;
 const filename = CANDIDATE_FILES[group];
 const { names: expectedNames } = groups[group];
@@ -244,7 +259,14 @@ try {
       (
         [
           ["node", ["run", "test:node", "--", ...tests]],
-          ["bun", ["test", "__test__/runtime-boundary.bun.test.ts"]],
+          [
+            "bun",
+            [
+              "test",
+              "__test__/runtime-boundary.bun.test.ts",
+              ...(group === "feistel" ? ["__test__/wire-format.bun.test.ts"] : []),
+            ],
+          ],
         ] as const
       ).map(([lane, args]) =>
         proof([...args], tree, join(report, `${candidate.name}-${lane}-proof.log`), lane),
