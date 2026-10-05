@@ -491,7 +491,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Reject repeated base32 loss or absent complete-call gain before widening measurements.
         `candidates-slug-7ayG1n` resolves no Bun base64url gain and slows base32 in both orders.
         Reject the extra entry; keep native delegation direct.
-  - [ ] Put direct native delegation on ordinary Bun base64url conversion and finish its controls.
+  - [x] Put direct native delegation on ordinary Bun base64url conversion and finish its controls.
         Use the already-proven native method for exact arrays and scalar base64url presets;
         keep other forms and capability failure on the existing conversion. Do not add another
         indirect encoder map or wrapper. Treat measured base32 losses as unfinished implementation
@@ -539,6 +539,11 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `current-native-final-runtime-profiles/` records Node LTS, Bun, Deno and Chromium;
         `current-native-final-current-runtime-profiles/` supplies the explicit Node Current capture.
         Read actual runtime records before assigning either capture to the runtime ladder.
+        `current-primary-conversion-ranking.jsonl` supersedes the earlier native-floor target:
+        the remaining Bun base64url wrapper difference is negligible and acceptable. Native
+        delegation, ranked complete-call comparisons, reversed caller-CPU captures and decoder-only
+        removal establish retention; sampled heap does not establish total allocation parity.
+        Reopen only for a material primary-call regression, not the accepted wrapper difference.
   - [x] Screen native receiver validation against the retained shared preset dispatcher.
         Bun's final sampling capture attributes remaining caller work to the public wrapper.
         Compute the scalar selector once; native base64url validates its receiver and a
