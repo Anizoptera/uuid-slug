@@ -8,7 +8,7 @@ import cryptoRandomUuid from "crypto-randomuuid";
 
 import { generationCases } from "./generation-cases";
 import type { GenerationCase } from "./generation-case";
-import { generationNameFilter } from "./generation-case";
+import { cryptoRandomUuidCase, generationNameFilter } from "./generation-case";
 import { measureGenerationCases } from "./generation-measure";
 import { createConversionCases } from "./conversion-cases";
 
@@ -292,15 +292,7 @@ const hostCases: readonly GenerationCase[] = [
         },
       ]
     : []),
-  {
-    comparable: "v4.text.secure",
-    implementation: "node-native-or-polyfill",
-    name: "crypto-randomuuid.v4.text",
-    operation: cryptoRandomUuid,
-    qualification: "qualified",
-    secure: true,
-    version: 4,
-  },
+  cryptoRandomUuidCase(cryptoRandomUuid),
 ];
 
 const smoke = process.argv.includes("--smoke");

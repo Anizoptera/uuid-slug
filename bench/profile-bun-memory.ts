@@ -43,10 +43,14 @@ if (generationName) {
   // Reuse the qualified generation corpus so rival profiles measure the same complete call.
   // Selection precedes memory snapshots; import and corpus setup are not per-ID allocations.
   const { generationCases } = await import("./generation-cases");
-  const { verifyGenerationCase } = await import("./generation-case");
+  const { cryptoRandomUuidCase, verifyGenerationCase } = await import("./generation-case");
   const selected = [
     ...generationCases,
     ...createConversionCases(Buffer, undefined, generationCases).cases,
+    // Host-only dependencies stay outside the browser-compatible generation corpus.
+    ...(generationName === "crypto-randomuuid.v4.text"
+      ? [cryptoRandomUuidCase((await import("crypto-randomuuid")).default)]
+      : []),
   ].find(({ name }) => name === generationName);
   if (!selected || selected.qualification !== "qualified")
     throw new Error(`No qualified generation case named ${generationName}`);

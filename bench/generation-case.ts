@@ -27,6 +27,19 @@ export interface GenerationCase {
   readonly version: 4 | 7;
 }
 
+/** Keep the host-only rival's timing and profiling on the same qualified consumer call. */
+export function cryptoRandomUuidCase(operation: () => string): GenerationCase {
+  return {
+    comparable: "v4.text.secure",
+    implementation: "node-native-or-polyfill",
+    name: "crypto-randomuuid.v4.text",
+    operation,
+    qualification: "qualified",
+    secure: true,
+    version: 4,
+  };
+}
+
 /** Select related complete jobs in one build; a single term retains its substring meaning. */
 export function generationNameFilter(filter: string | null | undefined): (name: string) => boolean {
   if (!filter) return () => true;

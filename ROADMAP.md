@@ -77,6 +77,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         accepts comma-separated case-name substrings, and a single term retains its old meaning.
 - [ ] Profile the actual complete calls with gaps and inspect their faster rivals. Name the
       removable work, the rival explanation, and the observation that would reject the attribution.
+  - [ ] Compare Bun UUIDv4 text CPU and retention for the package, `crypto-randomuuid`, and bound
+        Web Crypto in equal-call reversed captures. The library directly exports Node-compatible
+        `crypto.randomUUID`; native binding may explain the loss, or package dispatch and trust
+        checks may add it. Reuse one qualified case definition for timing and profiling. Higher
+        package CPU with equivalent bound-native CPU selects wrapper attribution; a faster library
+        than both selects native method attribution. Varying memory does not prove allocation.
       Compare equal-call Bun `package.conversion.bytes.slug` and
       `platform.tobase64.conversion.bytes.slug` captures in reversed order. Current encoding may
       spend removable time writing scratch and constructing text, or validation and native-call
