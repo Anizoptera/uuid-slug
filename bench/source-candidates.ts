@@ -87,7 +87,16 @@ const groups = {
     tests: ["__test__/alphabet.test.ts"],
   },
   "v7-draw": {
-    names: ["v7.string", "v7.string.uppercase", "v7.bytes", "v7.slug", "uuid.toString.bytes"],
+    names: [
+      "v7.string",
+      "v7.string.uppercase",
+      "v7.bytes",
+      "v7.slug",
+      "v7.base32",
+      "v7.pair.default",
+      "v7.pair.base32",
+      "uuid.toString.bytes",
+    ],
     tests: ["__test__/v7.test.ts"],
   },
   keyless: {

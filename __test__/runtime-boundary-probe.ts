@@ -1165,6 +1165,9 @@ export const runtimeBoundaryCases = [
           const generate = (input?: Uint8Array) => {
             const generator = createUuidV7Generator({
               coordinateExplicitInstants,
+              // Module text writers supply their private scratch; created-generator-only calls
+              // cannot prove a specialized draw preserves each entropy bit independently.
+              ...(coordinateExplicitInstants ? {} : { textScratch: new Uint8Array(16) }),
               readUnixMs: () => 0,
               fillRandom: (bytes) => {
                 entropyBytes = bytes.length;
