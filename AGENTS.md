@@ -251,10 +251,9 @@ efficiency. A reproducible misuse alone does not justify that cost.
 
 ## Runtime boundaries and evidence
 
-- Keep `fastv7` informational only, never a competitor or performance target. Its payload uses
-  a predictable 12-bit counter and 62 random bits; its speed does not establish parity with
-  the required payload randomness. It uses Web Crypto; do not confuse fewer random bits with
-  a weak randomness source. Preserve the exclusion unless the maintainer reopens it.
+- Qualify default UUIDv7 competitors by correct wire output and secure randomness, using proper
+  native guarantees as the baseline. Counter width, zero-start counters and random-bit allocation
+  do not justify excluding `fastv7` or another rival; record those differences separately.
 
 - Before writing an experiment driver, extend its maintained owner in `bench/` or `scripts/`.
   Inspect the owner's exports and callers before editing it; a matching filename is not permission

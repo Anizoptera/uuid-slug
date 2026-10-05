@@ -371,12 +371,9 @@ export const generationCases: readonly GenerationCase[] = [
     "portable-stateful",
     () => packageUuidV7V7Object().bytes,
   ),
-  // Web Crypto supplies its tail, but the 12-bit counter starts at zero instead of a random
-  // seed. Keep this weaker payload-randomness comparison informational, never a speed target.
-  row("fastv7.v7.text", 7, "v7.text.secure", "pooled-portable", fastV7, {
-    qualification: "rejected",
-    rejectionReason: "Informational only: predictable 12-bit counter and 62 random payload bits.",
-  }),
+  // Web Crypto supplies its tail. Zero-start counters are compatible with the default native
+  // baseline; differing payload layouts and clock behavior are observations, not exclusions.
+  row("fastv7.v7.text", 7, "v7.text.secure", "pooled-portable", fastV7),
   row("uuidv7-js.v7.text", 7, "v7.text.secure", "portable-stateful", uuidv7Js),
   row("kripod.v7.text", 7, "v7.text.secure", "portable-stateful", kripodV7),
 

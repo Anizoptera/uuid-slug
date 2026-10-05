@@ -35,13 +35,11 @@ const speed = {
   iterations: 1,
 };
 
-test("fastv7 stays informational and cannot enter competitor rankings", () => {
+test("fastv7 qualifies against the default native UUIDv7 baseline", () => {
   const candidate = generationCases.find(({ name }) => name === "fastv7.v7.text");
   expect(candidate).toBeDefined();
-  expect(candidate!.qualification).toBe("rejected");
-  expect(candidate!.rejectionReason).toBe(
-    "Informational only: predictable 12-bit counter and 62 random payload bits.",
-  );
+  expect(candidate!.qualification).toBe("qualified");
+  expect(candidate!.rejectionReason).toBeUndefined();
 });
 
 test("exact profile filters exclude similarly named failure and configured calls", () => {

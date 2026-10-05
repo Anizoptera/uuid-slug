@@ -66,6 +66,8 @@ Rules:
   Default generation needs no stronger guarantees than correctly implemented primary qualified
   rivals provide; additional guarantees belong on optional configured paths. A package test or
   resource count does not establish a consumer requirement that disqualifies a rival.
+  Include `fastv7` in default UUIDv7 comparisons: its Web Crypto tail and zero-start counter
+  satisfy the native-baseline qualification. Record payload and clock differences separately.
 - Run `bun run bench:matrix --smoke` for a short comparison. Set `UUID_SLUG_BENCH_RUNTIMES` to
   colon-separated executable paths to add runtimes. Each requested runtime must produce both reports.
 - `UUID_SLUG_BENCH_ITERATIONS` and `UUID_SLUG_ENTROPY_SAMPLES` accept positive safe integers.

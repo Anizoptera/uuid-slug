@@ -20,6 +20,11 @@ configured paths. Audit a default restriction before treating it as grounds to r
 
 Execute only this sequence; older unchecked proposals below are held, not dispatch instructions.
 
+- [ ] Remove the `fastv7` qualification exclusion for counter width and random-bit allocation.
+      Its installed implementation uses Web Crypto and writes UUIDv7 version/variant bits;
+      qualify it under the native baseline, verify the matrix ranking includes it, and refresh
+      primary UUIDv7 text comparisons before using the old qualified-rival ranking again.
+
 - [x] Map primary README consumer calls to current production code and maintained rival rows:
       generate one identifier, parse or convert one identifier, and encode or decode one masked
       UUIDv7. Include paired or value calls only where they serve the same ordinary consumer job.
