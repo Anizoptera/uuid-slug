@@ -140,6 +140,9 @@ export async function inspectConsumerGraph(
   packageName: string,
 ): Promise<readonly ConsumerGraphResult[]> {
   const root = path.join(consumerRoot, "consumer-graph");
+  // Size differences cannot identify surviving work. Retain exact decoder bundles only when
+  // requested, so inspection reuses the verified compilation rather than reconstructing it.
+  const decoderBundleDir = process.env.UUID_SLUG_DECODER_BUNDLE_DIR;
   const optimizers = [
     "bun",
     "esbuild",
@@ -151,6 +154,7 @@ export async function inspectConsumerGraph(
   ] as const;
   try {
     await mkdir(root, { recursive: true });
+    if (decoderBundleDir) await mkdir(decoderBundleDir, { recursive: true });
     await Bun.write(
       path.join(root, "package.json"),
       JSON.stringify({ private: true, "@parcel/resolver-default": { packageExports: true } }),
@@ -192,6 +196,8 @@ export async function inspectConsumerGraph(
             );
         }
         await command("node", [path.join(root, caseName, "bundle.js")], consumerRoot);
+        if (job.name === "slug-decode" && decoderBundleDir)
+          await Bun.write(path.join(decoderBundleDir, `${optimizer}.js`), code);
         return {
           job: job.name,
           optimizer,

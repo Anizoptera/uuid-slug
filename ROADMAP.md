@@ -285,6 +285,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `current-native-common-ranked-packed.jsonl` and `current-native-common-lts-packed.jsonl`
         resolve Chromium and Node LTS base64url gains and JITless gains for both alphabets.
         Other intervals include parity; no ranked comparison resolves a primary-call loss.
+        `current-native-common-{baseline,current}-graph.txt` shows small decoder-only growth
+        in most optimizers. Retain the existing checker's emitted decoder bundles, identify the
+        surviving code, and remove unrelated native encoding work before closing this task.
   - [x] Profile the base32 writer before expanding its packing loop.
         `current-base32-writer-profile` completes 1,048,576 calls after 262,144 warm-up calls.
         Its sampling summary reports 277 samples in native `toString`, 48 in the base32 writer
