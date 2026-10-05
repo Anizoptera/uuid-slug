@@ -199,6 +199,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `candidates-alphabet-llSmSc` rejects leaf selection of `toBase64`: byte conversion
         slows in both orders. Keep that placement fixed for the `base64urlSlice` comparison;
         a native method working on plain arrays proves semantics only, not a complete-call gain.
+        Include direct Buffer string construction in the existing resource counter before timing
+        it; prove interception with a plain-array control. The string-construction invariant
+        must count the selected native entry rather than reject an unobserved operation.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect

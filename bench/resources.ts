@@ -54,6 +54,22 @@ assert.ok(wrapMethod(OriginalBytes.prototype, "subarray", "views"));
 assert.ok(wrapMethod(OriginalBytes.prototype, "slice", "slices"));
 wrapMethod(OriginalBytes.prototype, "toHex", "hex");
 wrapMethod(OriginalBytes.prototype, "toBase64", "base64");
+if (
+  typeof Bun !== "undefined" &&
+  wrapMethod(globalThis.Buffer.prototype, "base64urlSlice", "base64")
+) {
+  // Count the direct native entry separately from Buffer.toString. A plain array control proves
+  // the wrapper reaches the operation before package import captures the optional capability.
+  const slice = (
+    globalThis.Buffer.prototype as {
+      base64urlSlice?: (this: Uint8Array, start: number, end: number) => string;
+    }
+  ).base64urlSlice;
+  assert.ok(slice);
+  const before = counts.base64;
+  assert.equal(slice.call(new OriginalBytes([1]), 0, 1), "AQ");
+  assert.equal(counts.base64, before + 1);
+}
 // This Node/Bun harness checks Node's character-code writer and Bun's Latin-1 writer separately.
 const hasLatin1Text =
   typeof globalThis.Buffer === "function" &&
