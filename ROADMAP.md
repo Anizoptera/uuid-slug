@@ -343,8 +343,13 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         over measured libraries on all ranked runtimes, and the Bun native-floor gap is negligible.
         `current-primary-v4-outcome-ranking.jsonl` likewise leaves only an accepted small Bun
         text difference. No wrapper experiment follows from the older unresolved comparison.
-        Resource counters prove selected work only; reconcile the native resource profiles and
-        their limits before closing this evidence task. Public conclusions await the approval below.
+        `native-v7-profile-baseline/` and `native-v7-profile-candidate/` execute equal default-text
+        call counts; the native capture has lower retained heap and committed-memory growth.
+        One pair establishes neither repeatability nor total allocation. `native-v7-resources-bun.jsonl`
+        reaches one native text call with no visible arrays, views or result character reads.
+        These observations support the retained selection and select no additional wrapper rewrite.
+        They do not measure total allocation against qualified libraries or other runtimes.
+        Public conclusions await the approval below.
   - [x] Screen direct native success return against the baseline without identity tracking.
         Keep preset checks and exception fallback; reject repeated primary-call losses. The
         earlier trusted-function experiment cannot settle this changed success/error boundary.
