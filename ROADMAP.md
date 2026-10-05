@@ -50,6 +50,19 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Compare each primary call with its main qualified rivals and same-output native floor.
       Reuse applicable evidence; refresh stale comparisons after retained changes. Record speed
       and resource gaps separately, and rank unresolved gaps before selecting implementation work.
+  - [x] Inspect engine CPU and sampled-allocation profiles for primary UUID text/byte conversion
+        against `uuid`. Repeated unsampled caller CPU favors the package, but retained heap can
+        hide temporary allocation. Reuse the existing native profiler with only those four complete
+        calls. Attribute samples to implementation frames and keep setup, harness and unattributed
+        work separate. A package-specific allocation hotspot selects a focused removal candidate;
+        absent attribution or no material disadvantage does not justify more production code.
+        `current-primary-conversion-native-allocation` reaches all four selected calls on Node,
+        Bun, Deno and Chromium. V8 heap samples attribute allocations to package UUID parsing
+        and rival parsing/stringification; harness and unattributed allocations remain separate.
+        Unequal completed-call counts and uncaptured browser warm-up counts prevent raw sampled
+        totals from establishing a relative allocation disadvantage. Repeated unsampled caller
+        CPU favors the package. These profiles select no production rewrite and do not prove
+        allocation parity; reopen only with evidence of a material primary-call resource gap.
   - [x] Compare Bun default UUIDv7 slug resource cost with `uuidv7` plus native typed-array
         encoding, the fastest qualified library in the refreshed ranking. Use equal completed
         and warm-up calls in reversed process order. Repeated higher package caller CPU or
