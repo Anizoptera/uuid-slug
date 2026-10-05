@@ -54,6 +54,16 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         count. Do not attribute that retained-heap difference to per-call generation allocation.
         No CPU or continuing committed-memory loss reproduces in this warmed comparison;
         preserve the current writer. Total allocation and cold-start comparisons remain open.
+  - [x] Compare Bun's ordinary owned UUIDv4 bytes with Web Crypto and `uuid` resources.
+        The retained throughput ranking puts the native floor near the package and `uuid`
+        behind it. Use equal completed and warm-up call counts with reversed process order;
+        compare each complete secure draw and plain-owned result. A repeated CPU or continuing
+        committed-memory loss selects the next implementation target. Do not use retained heap
+        as total allocation evidence or optimize caller buffers from this single-ID comparison.
+        `current-primary-v4-owned-rivals-{0,1,2,3,4,5}` records near-equal caller CPU to
+        Web Crypto and lower caller CPU than `uuid` in both orders. Every second window keeps
+        committed memory flat. First-window process CPU changes direction against Web Crypto;
+        no repeated material resource loss selects a rewrite. Preserve the ordinary owned path.
   - [x] Refresh one complete primary-call ranking before another source candidate. Compare UUIDv4
         and UUIDv7 text, owned bytes and slugs, paired output, and the six text/byte/plain-slug
         conversions on Node Current, Bun, Node LTS, Chromium and Deno. Reuse the maintained
