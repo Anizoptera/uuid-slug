@@ -134,6 +134,19 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         slower median and an interval excluding parity.
         Preserve production. The rival gap remains open; fewer entropy bytes alone do not
         justify selecting the full sequenced generator.
+  - [ ] Profile Deno's remaining owned UUIDv7 loss independently of the held UUIDv4 contract.
+        Reuse the generation corpus and Deno CPU profiler for the package and `uuidv7`, with
+        reversed process order and the same warm-up and sample settings. Separate startup,
+        harness and GC samples from generator work. Inspect whether secure fill, timestamp
+        writing or sequence work explains the difference before choosing another source change.
+        `current-deno-owned-{0,1,2,3}` retains nonempty CPU profiles and matching qualified
+        single-case measurements in both orders. Writer work dominates both implementations;
+        package captures also attribute samples to `readClock`. Profiled throughput crosses
+        parity and does not replace the unprofiled ranking. Test direct clock invocation with
+        identical failure containment; reject without repeated complete-call improvement.
+        `candidates-keyless-n8Qu4j` repeats lower Bun owned-byte cost in both orders;
+        Node is near unchanged and Deno changes direction. Compare packed calls independently
+        before retaining the candidate; preserve every other runtime's primary-call performance.
   - [x] Refresh one complete primary-call ranking before another source candidate. Compare UUIDv4
         and UUIDv7 text, owned bytes and slugs, paired output, and the six text/byte/plain-slug
         conversions on Node Current, Bun, Node LTS, Chromium and Deno. Reuse the maintained

@@ -112,6 +112,17 @@ export function keylessCandidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
+      name: "owned-direct-clock",
+      get source() {
+        // Isolate the sampled clock wrapper without changing its failure or timestamp checks.
+        return replaceOnce(
+          source,
+          "  const clock = readClock(Date.now);\n  if (clock instanceof Error) return clock;",
+          '  let clock: number;\n  try { clock = Date.now(); }\n  catch (cause) { return new UuidSlugError(INVALID_TIMESTAMP, "Clock reading failed.", { cause }); }',
+        );
+      },
+    },
+    {
       name: "random-owned-timestamp",
       get source() {
         return randomOwned();
