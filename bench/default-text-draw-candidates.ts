@@ -58,5 +58,15 @@ export function defaultTextDrawCandidates(source: string): readonly SourceCandid
         );
       },
     },
+    {
+      name: "independent-default-text-lost-clock",
+      get source() {
+        return replaceOnce(
+          independent(),
+          "        return writeBytes(target, offset, now, seedHi(random), seedLo(random));",
+          "        return writeBytes(target, offset, 0, seedHi(random), seedLo(random));",
+        );
+      },
+    },
   ];
 }
