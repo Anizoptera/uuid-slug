@@ -158,9 +158,6 @@ call records, alternate candidate order, and await its exit before starting anot
 Use `alphabet native-branch native-dispatch` to compare Bun native plain base64url encoding
 through validated conversion, UUIDv7 generation and pair calls. Both candidates keep masked
 tails and base32hex on the existing writer and fall back if native encoding throws.
-Use `alphabet character-code-base64` to reuse the fixed character-code writer on Latin-1 hosts.
-Its `character-code-base64-lost-byte` mutation must fail Node and Bun payload oracles first;
-complete conversion, generation, paired and masked calls decide whether scratch removal pays.
 Use `alphabet fixed-blocks` to compare fixed base64url writes with the indexed loop while keeping
 buffers and string construction unchanged; `fixed-blocks-lost-byte` must fail the payload oracle
 before timing. Complete slug generation and conversion determine whether the larger body pays.
