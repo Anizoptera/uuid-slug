@@ -29,6 +29,10 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
       independent native or qualified-library references, measure normal variation before choosing
       a budget, and prove a material slowdown fails it. Keep timing and instrumented counts separate;
       neither establishes total allocation or protects an unmeasured runtime.
+  - [x] Make the root agent instructions forbid bypassing primary-call protection by removing
+        workloads, skipping runtimes, weakening independent references or loosening budgets.
+        Harness changes require an unchanged control and a valid-output waste mutation rejected
+        for the intended diagnostic; changes to protected scope or acceptable loss require a ruling.
   - [x] Include codec-backed immutable generation in the routine complete-call timing gate.
         `value.generate` uses the root generator and cannot detect a slowdown confined to
         `codec.generateUuidV7Value()`. Reuse `value.generate.codec` from the existing corpus;

@@ -309,6 +309,12 @@ efficiency. A reproducible misuse alone does not justify that cost.
   targeted regression while the unchanged implementation passes; derive budgets from measured
   normal variation and necessary work, never an invented tolerance. A failing gate requires
   diagnosis and repair, not a relaxed budget. Instrumented counts do not prove total allocation.
+  Preserve the protected successful calls and their independent references when changing the gate.
+  Never remove a workload, skip a runtime, replace a baseline with slower code, or loosen a budget
+  to pass a regression. A change to protected scope or acceptable loss requires an explicit
+  maintainer ruling. Prove harness changes with both an unchanged control and a valid-output
+  waste mutation that fails for the intended diagnostic; a broken identifier proves correctness
+  coverage, not performance or resource protection.
 - Locate the bottleneck in the complete consumer call before optimizing a component. Record
   the observation that would support the proposed cause and the result that would reject it;
   retain a change only when complete-call speed or resource use improves without a material loss
