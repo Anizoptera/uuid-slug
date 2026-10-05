@@ -10,6 +10,20 @@ propose public-document changes and hold them for explicit approval, including g
 
 Deliver retained improvements to ordinary single-ID calls; a rejected experiment does not close a performance gap.
 
+- [x] Re-rank ordinary owned UUIDv4/v7 bytes on Bun after independent default draws and block
+      copying. Older rival gaps may persist or the retained changes may have closed them.
+      Use the existing qualified corpus in fresh processes; select the largest remaining
+      complete-call gap before another rewrite, and keep resource parity separate.
+      All three `current-owned-byte-rivals-sequential-*` screens favor package bytes against
+      every qualified row; discard the overlapping `current-owned-byte-rivals-*` captures.
+      This selects another throughput target without closing packed or resource parity.
+- [ ] Screen binding the captured native base64 call once for Bun byte-to-slug conversion.
+      The rejected native branch still used `.call` for every result; intrinsic dispatch may
+      erase its kernel gain, or the conversion boundary may dominate either call shape.
+      Preserve exact bytes, masking tails, base32hex, absent/throwing native fallback and controls.
+      Move only the alphabet candidate owner before extending it; prove existing replacements
+      identical. Reject absent repeated complete-call gains before any packed/resource expansion.
+
 - [ ] Close the remaining Bun default UUIDv4 text gap. The current corpus repeatedly places
       Bun default text behind native generation and qualified
       libraries; Node default text remains faster. The complete-call Bun profile mainly samples
