@@ -839,12 +839,17 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         with independent paired processes and the requested batches. Pair gains survive packing;
         configured controls remain unresolved. Lost-prefix, lost-tail and lost-clock mutations
         reach their intended oracles before timing. Retain no production substitution yet.
-  - [ ] Distinguish recurring allocation from allocator or JIT growth for independent text draws.
+  - [x] Distinguish recurring allocation from allocator or JIT growth for independent text draws.
         `current-independent-default-text-fixed-*` and `current-independent-default-text-memory-repeat-*`
         show lower caller CPU and retained heap for pairs, but committed-memory growth conflicts.
-        Compare equal successive call windows after identical preparation in the existing profiler;
-        recurring growth rejects the candidate, while bounded initialization permits qualification
-        on the remaining runtimes. More throughput samples cannot resolve this resource question.
+        `current-independent-default-text-windows-*` brackets equal successive windows without
+        retained sample records. Committed memory stays fixed after the first window in every
+        process; process CPU gains persist. This rejects recurring committed growth under this
+        workload, not a startup-memory difference. Keep the allocation ceilings unchanged.
+  - [ ] Qualify independent text draws on installed Node LTS, Chromium and Deno, then JITless.
+        Compare packed default calls and configured controls; reject a material normal-call loss.
+        Existing primary-runtime gains and bounded memory growth justify this next comparison,
+        but neither establishes portability, fallback behavior or complete resource parity.
 - [x] Screen the argument-free UUIDv7 value call without its empty options record and absent-field
       readers; preserve the owned bytes, immutable value, payload layout and thrown entropy failure.
       Require the lost-throw mutation to fail both runtime tests before timing. Compare the full
