@@ -859,6 +859,19 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         this policy from an unrelated native capability or expose a new caller option.
         Require unselected packed graphs to retain the original draw, unchanged configured calls,
         matching allocation ceilings and repeated Bun complete-call gains before retention.
+        `current-bun-independent-text-screen.log` passes behavior and resource proofs; prefix,
+        tail and clock mutations reach their intended Bun failures. The archive-restoration
+        test rejects a type-valid mutation that retains a previous runtime policy.
+        `current-bun-independent-text-packed.log` preserves Bun pair and base32 gains, but Node
+        default and composed pairs slow down despite disabled selection. The isolated repeat
+        `current-bun-independent-text-node-pairs-repeat.log` does not reproduce either loss;
+        every selected comparison remains unresolved. `current-bun-independent-text-secondary-packed.log`
+        leaves Node LTS and Deno unresolved but finds small Chromium uppercase and pair losses.
+        `current-bun-independent-text-chromium-repeat.log` does not reproduce those losses;
+        its intervals still admit small losses. The source screen's compiled Node graph retains
+        the false policy and disabled branch. Prove removal in optimized packed consumers and
+        collect fresh Bun resource/profile evidence before production retention; benchmark uncertainty
+        does not prove zero cost on unselected hosts. Keep the broader performance tasks open.
 - [x] Screen the argument-free UUIDv7 value call without its empty options record and absent-field
       readers; preserve the owned bytes, immutable value, payload layout and thrown entropy failure.
       Require the lost-throw mutation to fail both runtime tests before timing. Compare the full
