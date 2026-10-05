@@ -29,16 +29,17 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       unbinding before timing.
       `bun-call-v4-packed.log` completes six fresh-process pairs after the full check, with no
       separated gain for either text case. Reject the wrapper; retain the original bound function.
-      Neither native selection nor binding earns a production change. Next inspect the trusted
-      success path's remaining result discrimination: moving package-error handling to the cold
-      validation and native-failure branches could remove ordinary-call work without changing the
-      selected capability. Screen only that branch placement, preserving every failure cause and
-      both output cases; reject if existing failure mutations or repeated complete calls do not
-      support it. Keep this gap open and do not rerun these rejected native shapes unchanged.
-      Use the existing `v4 trusted-text-return` source screen, with its `-lost-case` mutation
-      required to fail the trusted native uppercase oracle before timing. Error discrimination
-      may be removable native-success work, or the engine may already eliminate it. A separated
-      complete-call gain selects packed and equal-call resource comparisons; no gain rejects it.
+      Reject the trusted-success early return: `v4-trusted-return-packed-fixed-warmup.log`
+      completes equal-count warm-up comparisons without a separated complete-call gain.
+      `v4-trusted-return-screen.log` changes direction with process order; the lost-case mutation
+      reaches the uppercase oracle on both runners. Keep the captures, remove the rejected fixture,
+      and leave the native-text gap open. Do not repeat these shapes without new causal evidence.
+
+- [ ] Rank ordinary UUID-to-plain-slug and reverse conversion against the existing qualified
+      corpus before choosing another implementation. Use complete Node Current and Bun calls;
+      compare equivalent wire output and ownership. If no gap exists, select the next primary job.
+      A measured gap selects profiling of that complete call; do not assume parsing, allocation
+      or validation is its cause from source inspection alone.
 
 - [ ] Close the Bun owned UUIDv7 byte gap before another default-slug tweak. The maintained
       owned-byte screens trail `uuid`; equal-call memory captures retain more heap and resident
