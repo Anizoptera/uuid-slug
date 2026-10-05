@@ -20,6 +20,13 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       Bun's direct Node-compatible UUIDv4 method also beats direct Web Crypto in all three
       processes. Separate method selection from wrapper cost before another guard rewrite;
       the earlier Node-compatible substitution's resource result remains unresolved.
+- [x] Compare the Node-compatible and Web Crypto UUIDv4 methods in exact warmed resource windows.
+      `current-v4-method-floor-{0,1,2,3}-*` records one exact method per capture and reverses process
+      order. Later-window Node-compatible CPU is lower in both orders; later committed-memory
+      growth is zero for both methods. RSS changes do not establish a persistent penalty.
+      Both methods load before snapshots, so startup/import cost and complete package-call
+      retention remain open. Reopen method selection without treating the old cold captures
+      as evidence of steady growth or claiming resource parity.
 
 - [x] Re-rank ordinary owned UUIDv4/v7 bytes on Bun after independent default draws and block
       copying. Older rival gaps may persist or the retained changes may have closed them.

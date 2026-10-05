@@ -9,7 +9,18 @@ type PrivateV4Api = Pick<typeof import("../src/v4"), "generatePortableUuidV4">;
 /** Keep UUIDv4 output forms together so runtime selection is compared through each result. */
 export function createUuidV4ProfileCases(api: Api, into: Uint8Array, privateV4Api?: PrivateV4Api) {
   const crypto = globalThis.crypto;
+  // Load both methods before snapshots so their per-call costs do not include module setup.
+  // This comparison cannot establish the import cost of selecting either method in production.
+  const nodeRandomUuid =
+    typeof process === "undefined"
+      ? undefined
+      : (
+          process as {
+            getBuiltinModule?: (name: string) => { randomUUID?: () => string } | undefined;
+          }
+        ).getBuiltinModule?.("node:crypto")?.randomUUID;
   return {
+    ...(nodeRandomUuid ? { "native.node.v4.string": () => nodeRandomUuid() } : {}),
     ...(crypto?.randomUUID
       ? {
           "native.v4.string": () => crypto.randomUUID(),
