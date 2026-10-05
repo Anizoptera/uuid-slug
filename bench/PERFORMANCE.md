@@ -32,6 +32,25 @@ libraries on Node Current, Node LTS, Bun, Deno and Chromium. Bun's remaining dir
 difference is negligible and accepted; preserve delegation rather than adding another wrapper.
 These are warmed throughput comparisons, not individual-call latency or total allocation.
 
+### Owned UUIDv7 generation allocation
+
+Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.
+
+`bench/reports/current-primary-v7-owned-node-resources/` compares Node 26.10.0 calls after
+65,536 warm-up calls, with 262,144 measured calls per fresh process. Captures `6` and `7`
+select the normal public package through `UUID_SLUG_PROFILE_MODULE`; generation frames point
+to `dist/v7-keyless.js`. The earlier source-corpus captures remain separate.
+Estimated JavaScript allocation beneath the measured loop is 65,542,416 and 65,429,712 bytes
+for the public package, 85,332,536 and 85,206,152 for `uuidv7`, and 101,370,696 and 100,746,360
+for `uuid`. These are sampled estimates, not total allocation or independent confidence bounds.
+Most output allocation is inlined into the loop frame; that frame cannot be discarded as harness
+overhead. Setup, warm-up and allocations outside the measured loop are excluded from these totals.
+Profiling changes CPU cost; use the separate unsampled ranking for throughput decisions.
+
+The profiler reuses qualified generation calls and their payload and private-storage witnesses.
+Its forwarding-count regression fails when the corpus ignores the requested package module,
+even though the substituted generator still returns valid UUIDs.
+
 Owned slug decoding remains faster than the measured equivalent native calls in two resource
 captures on 2026-10-04. `bench/reports/owned-decoder-resource-clean/` and
 `bench/reports/owned-decoder-resource-repeat/` contain CPU, sampled allocation, heap, trace and

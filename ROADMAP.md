@@ -6,7 +6,7 @@ implementations; stronger guarantees require explicit configuration. Do not add 
 to erase a negligible remaining gap. Optimize defaults under `docs/public-api.md` §Generation
 and codecs; measure clock drift without imposing an unrequested
 never-ahead promise. Keep remote writes unauthorized. Repair agent guidance before implementation;
-propose public-document changes and hold them for explicit approval, including generated reports.
+correct requested factual documentation; obtain approval only for unrequested public changes.
 
 ## Next production decision
 
@@ -986,7 +986,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         documentation-correction request. The default delegates to native UUIDv7 independently
         from Node; the refreshed qualified ranking supersedes the obsolete retention instruction.
         Preserve the initial shared-implementation rejection evidence and the measurement limits.
-  - [ ] Record the equal-call public-package owned UUIDv7 allocation comparison and its sampling
+  - [x] Record the equal-call public-package owned UUIDv7 allocation comparison and its sampling
         limits in `bench/PERFORMANCE.md`; do not turn sampled estimates into total-allocation claims.
 
 Do not optimize caller buffers, batch paths, rare misuse, failure speed, or secondary inspection
