@@ -656,6 +656,17 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         byte loss reverses in its focused replay. Retain fixed stores with unchanged storage and
         entropy counts; preserve the indexed alternative for future runtime reviews. Native profiles
         cover Node, Bun, Deno and Chromium. Bun/Deno byte parity and total allocation remain open.
+  - [ ] Compare fixed sixteen-byte copying and erasure through complete owned v4/v7 draws.
+        `current-bun-owned-v4-profile` includes pooled copying beneath the public owned call;
+        a fixed-width path may remove loop work, or allocation and entropy may erase its benefit.
+        Require lost-output and lost-erasure mutations to fail both owning runtime lanes before
+        timing. Preserve lazy refills, all entropy bits and every other draw width. Reject absent
+        repeated Node/Bun gains or another primary-call loss before packed/resource qualification.
+        Both lost-byte and lost-erasure mutations fail Node and Bun; intact owning lanes pass.
+        Packed primary and other-runtime reports reproduce owned-byte gains. Equal-call Bun
+        resource pairs lower caller CPU and final RSS. WebKit slug loss in the broader replay
+        becomes unresolved in `current-pool-sixteen-webkit-loss.log`; do not retain while that
+        trade-off remains unresolved. Isolate the larger copy body before another comparison.
   - [x] Profile the exact module-default owned-byte call before choosing another substitution;
         separate setup from samples beneath the public generation frame, inspect allocation
         and entropy evidence, and compare the observed costs with the faster rivals' mechanisms.
@@ -714,6 +725,10 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       Bun, Chromium and Deno defaults. Native profiles cover all presets and controls. Resolve the
       second replay's unchanged Node control losses before closure; Firefox and WebKit default effects
       remain unresolved. Preserve selected-generator behavior.
+      `current-default-pair-draw-ranking.log` does not establish a composed-call advantage:
+      direct pairs lead on Node, Chromium and Deno; Bun remains close. Reject rewriting the pair
+      draw from that comparison; separate public conversions can conceal an internal difference.
+      Preserve explicit generators, instants and immutable layouts.
 - [x] Screen the argument-free UUIDv7 value call without its empty options record and absent-field
       readers; preserve the owned bytes, immutable value, payload layout and thrown entropy failure.
       Require the lost-throw mutation to fail both runtime tests before timing. Compare the full

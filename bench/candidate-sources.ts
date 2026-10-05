@@ -1,12 +1,82 @@
 // SPDX-License-Identifier: Apache-2.0
 
-/** A complete source replacement used only in an isolated benchmark checkout. */
-export interface SourceCandidate {
-  readonly name: string;
-  readonly source: string;
-  /** Replace the formatter owner too when a generator experiment shares its storage. */
-  readonly uuidSource?: string;
-}
+import { replaceOnce } from "./candidate-source";
+import type { SourceCandidate } from "./candidate-source";
+import { poolCandidates } from "./pool-candidates";
+
+export type { SourceCandidate } from "./candidate-source";
+
+const inlineClock = (value: string) =>
+  replaceOnce(
+    value,
+    "const reading = readClock(readUnixMs);",
+    "let reading: number | UuidSlugError;\n      try { reading = readUnixMs(); } catch (cause) { reading = readClock(() => { throw cause; }); }",
+  );
+
+const unrollTail = (value: string) =>
+  replaceOnce(
+    value,
+    "for (let i = 12; i < 16; i += 1) target[offset + i] = randomTail[i - 12] as number;",
+    [0, 1, 2, 3]
+      .map((index) => `target[offset + ${12 + index}] = randomTail[${index}] as number;`)
+      .join("\n    "),
+  );
+
+const inlineCounter = (value: string) => {
+  const start = value.indexOf("function writeCounter(");
+  const bodyStart = value.indexOf("{", start) + 1;
+  const bodyEnd = value.indexOf("\n}", bodyStart);
+  if (start < 0 || bodyEnd < bodyStart)
+    throw new Error("Counter writer moved; update its experiment.");
+  const body = value
+    .slice(bodyStart, bodyEnd)
+    .trim()
+    .replaceAll("bytes[", "target[")
+    .replaceAll(/\bhi\b/g, "sequenceHi")
+    .replaceAll(/\blo\b/g, "sequenceLo");
+  return replaceOnce(value, "writeCounter(target, sequenceHi, sequenceLo, offset);", body);
+};
+
+const directSeed = (value: string) =>
+  replaceOnce(
+    value,
+    "const seededCounter = (seedHi(random) * 0x1_0000_0000 + seedLo(random)) % counterModulus;\n    const payloadPrefix = fraction * counterModulus + seededCounter;\n    lastMs = ms;\n    counterHi = Math.floor(payloadPrefix / 0x1_0000_0000);\n    counterLo = payloadPrefix >>> 0;",
+    "lastMs = ms;\n    if (fractionBits === 0) { counterHi = seedHi(random); counterLo = seedLo(random); }\n    else { const seededCounter = (seedHi(random) * 0x1_0000_0000 + seedLo(random)) % counterModulus; const payloadPrefix = fraction * counterModulus + seededCounter; counterHi = Math.floor(payloadPrefix / 0x1_0000_0000); counterLo = payloadPrefix >>> 0; }",
+  );
+
+const separateContinuation = (value: string) => {
+  const start = value.indexOf("      const nextLo = (counterLo + 1) >>> 0;");
+  const end = value.indexOf("\n    }\n    if (rollback !== undefined", start);
+  if (start < 0 || end < start)
+    throw new Error("Sequence continuation moved; update its experiment.");
+  const body = value.slice(start, end);
+  const renamed = replaceOnce(
+    value,
+    "function advanceSequence(now: number, fraction: number)",
+    "function advanceConfiguredSequence(now: number, fraction: number)",
+  );
+  return replaceOnce(
+    renamed,
+    "  function bytes(out?: Uint8Array, offset = 0)",
+    "  const advanceSequence = rollback === undefined && fractionBits === 0 ? (now: number, _fraction: number): UuidSlugError | undefined => { if (now > lastMs) return reseed(now, 0);\n" +
+      body +
+      "\nreturn undefined; } : advanceConfiguredSequence;\n\n  function bytes(out?: Uint8Array, offset = 0)",
+  );
+};
+
+const preset = (value: string) =>
+  replaceOnce(
+    value,
+    "const selectedCase = resolveUuidTextCase(directCase);",
+    "const selectedCase = directCase === UUID_TEXT_LOWERCASE || directCase === UUID_TEXT_UPPERCASE ? directCase : resolveUuidTextCase(directCase);",
+  );
+
+const withUppercase = (value: string) =>
+  replaceOnce(
+    value,
+    'import { UUID_TEXT_LOWERCASE } from "./types.ts";',
+    'import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";',
+  );
 
 export const CANDIDATE_GROUPS = [
   "v7-draw",
@@ -31,15 +101,6 @@ export const CANDIDATE_FILES = {
   "value-options": "src/v7-value-options.ts",
   pool: "src/runtime/pool.ts",
 } as const satisfies Record<CandidateGroup, string>;
-
-function replaceOnce(source: string, from: string, to: string): string {
-  // An old experiment must fail after its mechanism moves, never time an unchanged replacement.
-  if (source.split(from).length !== 2)
-    throw new Error(
-      "Candidate source anchor changed. Update the experiment against its owning function before comparing it.",
-    );
-  return source.replace(from, to);
-}
 
 function v7Candidates(source: string, uuidSource?: string): readonly SourceCandidate[] {
   const narrowCounter = (lowBits: 30 | 31) => {
@@ -375,59 +436,6 @@ function v7Candidates(source: string, uuidSource?: string): readonly SourceCandi
       'typeof reading !== "number" || reading < 0 || !isValidUuidV7UnixMs(now)',
       `typeof reading !== "number" || reading < 0 || !(now <= ${ceiling})`,
     );
-  const inlineClock = (value: string) =>
-    replaceOnce(
-      value,
-      "const reading = readClock(readUnixMs);",
-      "let reading: number | UuidSlugError;\n      try { reading = readUnixMs(); } catch (cause) { reading = readClock(() => { throw cause; }); }",
-    );
-  const unrollTail = (value: string) =>
-    replaceOnce(
-      value,
-      "for (let i = 12; i < 16; i += 1) target[offset + i] = randomTail[i - 12] as number;",
-      [0, 1, 2, 3]
-        .map((index) => `target[offset + ${12 + index}] = randomTail[${index}] as number;`)
-        .join("\n    "),
-    );
-  const inlineCounter = (value: string) => {
-    const start = value.indexOf("function writeCounter(");
-    const bodyStart = value.indexOf("{", start) + 1;
-    const bodyEnd = value.indexOf("\n}", bodyStart);
-    if (start < 0 || bodyEnd < bodyStart)
-      throw new Error("Counter writer moved; update its experiment.");
-    const body = value
-      .slice(bodyStart, bodyEnd)
-      .trim()
-      .replaceAll("bytes[", "target[")
-      .replaceAll(/\bhi\b/g, "sequenceHi")
-      .replaceAll(/\blo\b/g, "sequenceLo");
-    return replaceOnce(value, "writeCounter(target, sequenceHi, sequenceLo, offset);", body);
-  };
-  const directSeed = (value: string) =>
-    replaceOnce(
-      value,
-      "const seededCounter = (seedHi(random) * 0x1_0000_0000 + seedLo(random)) % counterModulus;\n    const payloadPrefix = fraction * counterModulus + seededCounter;\n    lastMs = ms;\n    counterHi = Math.floor(payloadPrefix / 0x1_0000_0000);\n    counterLo = payloadPrefix >>> 0;",
-      "lastMs = ms;\n    if (fractionBits === 0) { counterHi = seedHi(random); counterLo = seedLo(random); }\n    else { const seededCounter = (seedHi(random) * 0x1_0000_0000 + seedLo(random)) % counterModulus; const payloadPrefix = fraction * counterModulus + seededCounter; counterHi = Math.floor(payloadPrefix / 0x1_0000_0000); counterLo = payloadPrefix >>> 0; }",
-    );
-  const separateContinuation = (value: string) => {
-    const start = value.indexOf("      const nextLo = (counterLo + 1) >>> 0;");
-    const end = value.indexOf("\n    }\n    if (rollback !== undefined", start);
-    if (start < 0 || end < start)
-      throw new Error("Sequence continuation moved; update its experiment.");
-    const body = value.slice(start, end);
-    const renamed = replaceOnce(
-      value,
-      "function advanceSequence(now: number, fraction: number)",
-      "function advanceConfiguredSequence(now: number, fraction: number)",
-    );
-    return replaceOnce(
-      renamed,
-      "  function bytes(out?: Uint8Array, offset = 0)",
-      "  const advanceSequence = rollback === undefined && fractionBits === 0 ? (now: number, _fraction: number): UuidSlugError | undefined => { if (now > lastMs) return reseed(now, 0);\n" +
-        body +
-        "\nreturn undefined; } : advanceConfiguredSequence;\n\n  function bytes(out?: Uint8Array, offset = 0)",
-    );
-  };
   const independentAnchor =
     "      const failed = advanceSequence(now, fraction);\n      if (failed) return failed;\n      return writeBytes(target, offset, lastMs, counterHi, counterLo);";
   // Module calls promise no cross-call ordering; compare fresh seeds without weakening created generators.
@@ -1154,69 +1162,6 @@ function latin1Candidates(source: string): readonly SourceCandidate[] {
   ];
 }
 
-function poolCandidates(source: string): readonly SourceCandidate[] {
-  const loop =
-    "for (let i = 0; i < length; i += 1) {\n      bytes[i] = pool[offset + i] as number;\n      pool[offset + i] = 0;\n    }";
-  // Four-byte continuations dominate ordinary UUIDv7 draws. Keep erasure and refill transactional;
-  // complete v4 and v7 calls decide whether the added size branch earns its cost.
-  const four = Array.from(
-    { length: 4 },
-    (_, i) => `bytes[${i}] = pool[offset + ${i}] as number;\n      pool[offset + ${i}] = 0;`,
-  ).join("\n      ");
-  const fixedStart = source.indexOf("    if (length === 4) {");
-  const fixedEnd = source.indexOf("    offset += length;", fixedStart);
-  // Retained production stores remain the control; preserve the old indexed alternative so
-  // later engine reviews can overturn the choice through the same complete-call comparison.
-  if (fixedStart >= 0 && fixedEnd < fixedStart)
-    throw new Error("Pool copying boundary changed; repair the source experiment before timing.");
-  const indexed =
-    fixedStart < 0
-      ? source
-      : source.slice(0, fixedStart) + `    ${loop}\n` + source.slice(fixedEnd);
-  const fixed =
-    fixedStart < 0
-      ? replaceOnce(source, loop, `if (length === 4) {\n      ${four}\n    } else ${loop}`)
-      : source;
-  // Reseeds consume ten bytes, so subsequent four-byte reads can be unaligned. A DataView
-  // handles both offsets without padding or discarding entropy; compare its retained view and
-  // unpacking work against the existing byte stores through complete generation calls.
-  const word = replaceOnce(
-    replaceOnce(
-      replaceOnce(
-        fixed,
-        "let pool: Uint8Array<ArrayBuffer> | undefined;",
-        "let pool: Uint8Array<ArrayBuffer> | undefined;\n  let poolView: DataView | undefined;",
-      ),
-      "pool ??= new Uint8Array(POOL_BYTES);",
-      "if (pool === undefined) { pool = new Uint8Array(POOL_BYTES); poolView = new DataView(pool.buffer); }",
-    ),
-    four,
-    "const word = (poolView as DataView).getUint32(offset, false);\n      (poolView as DataView).setUint32(offset, 0, false);\n      bytes[0] = word >>> 24;\n      bytes[1] = (word >>> 16) & 0xff;\n      bytes[2] = (word >>> 8) & 0xff;\n      bytes[3] = word & 0xff;",
-  );
-  return [
-    { name: "baseline", source },
-    { name: "indexed-loop", source: indexed },
-    { name: "fixed-four", source: fixed },
-    { name: "word-four", source: word },
-    {
-      name: "word-four-lost-byte",
-      source: replaceOnce(word, "bytes[3] = word & 0xff;", "bytes[3] = 0;"),
-    },
-    {
-      name: "fixed-four-lost-byte",
-      source: replaceOnce(fixed, "bytes[3] = pool[offset + 3] as number;", "bytes[3] = 0;"),
-    },
-    {
-      name: "source-cursor",
-      source: replaceOnce(
-        indexed,
-        loop,
-        "for (let i = 0, sourceOffset = offset; i < length; i += 1, sourceOffset += 1) {\n      bytes[i] = pool[sourceOffset] as number;\n      pool[sourceOffset] = 0;\n    }",
-      ),
-    },
-  ];
-}
-
 function valueOptionCandidates(source: string): readonly SourceCandidate[] {
   // All consumers only read this record. Compare one frozen empty record with per-call
   // allocation while leaving public control flow and configured reads intact.
@@ -1363,18 +1308,6 @@ function keylessCandidates(source: string): readonly SourceCandidate[] {
   // The wrapper already routes all primitive strings. Keep only the unchanged configured tail
   // in the helper, avoiding a second preset dispatch on every options call.
   const cold = replaceOnce(thin, helperDeclaration + direct, helperDeclaration + "\n");
-  const preset = (value: string) =>
-    replaceOnce(
-      value,
-      "const selectedCase = resolveUuidTextCase(directCase);",
-      "const selectedCase = directCase === UUID_TEXT_LOWERCASE || directCase === UUID_TEXT_UPPERCASE ? directCase : resolveUuidTextCase(directCase);",
-    );
-  const withUppercase = (value: string) =>
-    replaceOnce(
-      value,
-      'import { UUID_TEXT_LOWERCASE } from "./types.ts";',
-      'import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";',
-    );
   const thinPreset = () => {
     // Only the new wrapper changes; the helper retains its original selector validation.
     const header = thin.slice(0, thin.indexOf("function generateConfiguredUuidV7"));
