@@ -10,7 +10,6 @@ import type { Page } from "playwright";
 import { command } from "../scripts/command";
 import { describeSamples, medianConfidence95 } from "./statistics";
 import { CANDIDATE_FILES, CANDIDATE_GROUPS, createSourceCandidates } from "./candidate-sources";
-import { applyCandidateCompanions } from "./candidate-source";
 import type { CandidateGroup } from "./candidate-sources";
 
 type Revision = "baseline" | "candidate";
@@ -490,12 +489,6 @@ async function main(): Promise<void> {
         }),
       );
       await Bun.write(join(candidateRoot, filename), candidateSource);
-      await applyCandidateCompanions(
-        candidate,
-        candidateRoot,
-        join(report, "companion"),
-        new Map(),
-      );
       if (candidate.uuidSource !== undefined) {
         await Bun.write(join(candidateRoot, "src/uuid.ts"), candidate.uuidSource);
         await Bun.write(join(report, "uuid-source.txt"), candidate.uuidSource);

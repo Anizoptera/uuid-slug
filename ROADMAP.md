@@ -872,13 +872,18 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         the false policy and disabled branch. `packed-source-Eyyzkp` contains the measured tarballs
         and named-root pair consumers: Bun and esbuild both retain the disabled per-draw branch.
         Reject this selection shape; benchmark uncertainty does not prove zero cost on unselected hosts.
-  - [ ] Select the Bun text state updater at generator construction, outside the draw body.
+  - [x] Screen selecting the Bun text state updater at generator construction, outside the draw body.
         Keep the original sequence updater on unselected hosts and configured generators; retain
-        the existing guard, byte writer and entropy storage. Extra updater calls and state writes
+        the existing guard, byte writer and entropy storage. Changed call targets and state writes
         can erase Bun's gain. Require prefix, tail and clock mutants to fail before timing;
         reject a repeated complete-call loss or resource regression before packed qualification.
         `current-bun-independent-step-prefix-proof.log` passes the intact behavior proof and
         rejects the prefix mutation. Its tail and clock proof logs reject their intended defects.
+        `current-bun-independent-step-screen.log` has sharply changing baseline controls, so it
+        cannot settle throughput. The retained modules' `current-bun-independent-step-replay-*`
+        records repeat slower base32 pairs in both candidate processes; formatter controls stay
+        stable. Reject this shape before packing or profiling. Remove its fixtures, policy-only
+        source substitution machinery and retired restoration test; retain the measured archives.
         Keep all production performance tasks open until a qualified change reaches production.
 - [x] Screen the argument-free UUIDv7 value call without its empty options record and absent-field
       readers; preserve the owned bytes, immutable value, payload layout and thrown entropy failure.
