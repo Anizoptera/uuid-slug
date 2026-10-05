@@ -254,6 +254,16 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         accepts comma-separated case-name substrings, and a single term retains its old meaning.
 - [ ] Profile the actual complete calls with gaps and inspect their faster rivals. Name the
       removable work, the rival explanation, and the observation that would reject the attribution.
+  - [x] Profile ordinary Bun masked UUIDv7 generation with the existing fixed-call profiler.
+        Shared option, generator and result checks may add removable default-call cost; cipher
+        or entropy work may dominate instead. Use sampled stacks and unsampled caller CPU to
+        select the next mechanism. Preserve caller-supplied generator validation and wire output;
+        no sampled wrapper cost or a negligible complete-call saving rejects a wrapper rewrite.
+        `current-primary-bun-masked-generation-resource` attributes the largest top-frame group
+        to the configured sequence writer in `src/v7.ts`, followed by the cipher. The codec's
+        default byte source is `uuidV7BytesFor`, not ordinary default owned-byte generation.
+        Check the codec's published generation behavior before testing that source substitution;
+        sampled shared validation work alone does not select a wrapper rewrite.
   - [x] Compare Bun UUIDv4 text CPU and retention for the package, `crypto-randomuuid`, and bound
         Web Crypto in equal-call reversed captures. The library directly exports Node-compatible
         `crypto.randomUUID`; native binding may explain the loss, or package dispatch and trust
