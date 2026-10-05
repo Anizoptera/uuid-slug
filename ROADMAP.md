@@ -395,6 +395,30 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         accepts comma-separated case-name substrings, and a single term retains its old meaning.
 - [ ] Profile the actual complete calls with gaps and inspect their faster rivals. Name the
       removable work, the rival explanation, and the observation that would reject the attribution.
+  - [x] Compare primary owned UUID-text decoding resources on Node Current with equal calls.
+        Reuse the existing V8 collected-object allocation sampler and conversion corpus; add
+        fixed measured-call control to `bench/profile.ts` instead of creating another profiler.
+        Compare the package, qualified `uuid.parse`, and Buffer decoding followed by a private
+        plain-array copy in fresh reversed-order captures after equal warm-up calls.
+        Higher repeated package caller CPU or attributed sampled allocation selects a decoder
+        change; parity or lower package cost preserves it. Separate harness/import/GC work and
+        external backing storage from sampled JavaScript allocation; sampling is not total bytes.
+        `current-primary-owned-text-resources/` contains independent captures of each qualified
+        result, including native `fromHex`. Package allocation estimates beneath the measured
+        workload are lower in both captures than each rival; preserve the decoder. Profiled CPU
+        includes allocation-sampling overhead and cannot replace unsampled timing evidence.
+        The fixed-call regression counts forwarded real calls at partial and aligned batches;
+        padding the partial batch fails its independent count assertion without changing outputs.
+  - [x] Compare the same owned UUID-text decoding calls on Bun with its fixed-call driver.
+        Use the package, `uuid.parse`, native `fromHex`, and Buffer decoding plus a private copy.
+        Equal warm-up and completed calls and reversed process order distinguish repeated caller
+        CPU and committed-memory growth. Keep sampling in a separate pass; retained/committed
+        memory cannot establish gross allocation. Preserve the parser unless a qualified native
+        or library result demonstrates a repeated material resource advantage.
+        `current-primary-owned-text-bun-resources/` repeats the qualified complete calls in reversed
+        process order. Package caller CPU is lower than each rival in both unsampled captures;
+        both package second windows show no further committed-memory growth. Initial committed
+        capacity varies and does not prove lower gross allocation. Preserve the existing decoder.
   - [x] Screen an error-valued owned-byte source confined to masked generation.
         The sampled sequenced writer and rejected shared-entry comparison identify removable
         work in ordinary masked calls. Export the existing private selected byte function only

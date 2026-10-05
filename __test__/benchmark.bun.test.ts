@@ -740,6 +740,54 @@ test.concurrent("failed entropy instrumentation restores globals before returnin
   expect({ status, stdout, stderr }).toEqual({ status: 0, stdout: "", stderr: "" });
 });
 
+test.concurrent("fixed-call profiling counts real calls through a partial batch", async () => {
+  const api = join(import.meta.dir, "../src/index.ts");
+  const subject = join(directory, "counts-profile-calls.mjs");
+  await Bun.write(
+    subject,
+    `
+export * from ${JSON.stringify(api)};
+import { bytesToUuidString as original } from ${JSON.stringify(api)};
+let calls = 0;
+export function bytesToUuidString(...args) { calls++; return original(...args); }
+process.on("exit", () => console.error(JSON.stringify({ calls })));
+`,
+  );
+  const observed = await Promise.all(
+    [1, 64, 65].map(async (calls) => {
+      const child = Bun.spawn([process.execPath, join(import.meta.dir, "../bench/profile.ts")], {
+        env: {
+          ...process.env,
+          UUID_SLUG_PROFILE_MODULE: subject,
+          UUID_SLUG_PROFILE_FILTER: "=format",
+          UUID_SLUG_PROFILE_CALLS: String(calls),
+          UUID_SLUG_PROFILE_SAMPLES: "2",
+          UUID_SLUG_PROFILE_WARMUP_CALLS: "3",
+          UUID_SLUG_PROFILE_NATIVE_DIR: "",
+        },
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      const [stdout, stderr, status] = await Promise.all([
+        new Response(child.stdout).text(),
+        new Response(child.stderr).text(),
+        child.exited,
+      ]);
+      expect(status).toBe(0);
+      const records = stdout
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      expect(records[0].measuredCallsPerSample).toBe(calls);
+      expect(records.find((row) => row.name === "format").operations).toBe(2 * calls);
+      return JSON.parse(stderr.trim()).calls;
+    }),
+  );
+  // Setup and warm-up are identical; only actual measured calls may differ between processes.
+  expect(observed[1]! - observed[0]!).toBe(2 * (64 - 1));
+  expect(observed[2]! - observed[1]!).toBe(2 * (65 - 64));
+});
+
 test.concurrent("profiling refuses failures after its initial success witness", async () => {
   const api = join(import.meta.dir, "../src/index.ts");
   const subject = join(directory, "fails-after-witness.mjs");

@@ -91,6 +91,12 @@ const warmupCalls =
   process.env.UUID_SLUG_PROFILE_WARMUP_CALLS === undefined
     ? undefined
     : Number(process.env.UUID_SLUG_PROFILE_WARMUP_CALLS);
+const measuredCalls =
+  process.env.UUID_SLUG_PROFILE_CALLS === undefined
+    ? undefined
+    : Number(process.env.UUID_SLUG_PROFILE_CALLS);
+if (measuredCalls !== undefined && (!Number.isSafeInteger(measuredCalls) || measuredCalls < 1))
+  throw new Error("Measured calls must be a positive safe integer");
 if (warmupCalls !== undefined && (!Number.isSafeInteger(warmupCalls) || warmupCalls < 1))
   throw new Error("Warm-up calls must be a positive safe integer");
 const latencySamples =
@@ -180,6 +186,7 @@ console.log(
     samples,
     duration,
     warmup,
+    ...(measuredCalls === undefined ? {} : { measuredCallsPerSample: measuredCalls }),
     ...(beforeCaseWork ? { beforeCaseWork } : {}),
   }),
 );
@@ -201,11 +208,13 @@ for (const [name, fn] of selected) {
     let elapsed = 0;
     do {
       const began = performance.now();
-      batch(name, fn, 64, expectedError);
+      // Equal completed calls control allocation comparisons; time windows remain the default.
+      const block = measuredCalls === undefined ? 64 : Math.min(64, measuredCalls - count);
+      batch(name, fn, block, expectedError);
       maxBatchMs = Math.max(maxBatchMs, performance.now() - began);
-      count += 64;
+      count += block;
       elapsed = performance.now() - start;
-    } while (elapsed < duration);
+    } while (measuredCalls === undefined ? elapsed < duration : count < measuredCalls);
     maxUninterruptedMs = Math.max(maxUninterruptedMs, elapsed);
     ns.push((elapsed * 1e6) / count);
     operations += count;
