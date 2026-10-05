@@ -96,6 +96,25 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Reject the shared implementation and remove its experiment definition. The raw source
         and proofs remain in the reports. A later candidate must select independently for native
         defaults, uppercase and portable runtimes; do not repeat the shared helper arrangement.
+  - [x] Test UUIDv7 default text's successful-string recognition against its native floor.
+        The native helper already returns a string on success; the public preset path then
+        performs an Error-instance check. Compare a string-first result branch without changing
+        preset validation, fallback, configured calls or the declared entropy throw. Reject
+        without repeated complete-call gains on the primary runtimes; do not change failure speed.
+        `candidates-keyless-pMFYdF` does not reproduce a Bun win and slows Node Current text;
+        preserve production and remove the unsuccessful experiment definition.
+  - [x] Compare Deno owned UUIDv7 generation with the existing sequenced byte generator.
+        `uuidv7` uses a four-byte entropy draw for continuation; the package's ordinary owned
+        writer draws sixteen bytes. Test the existing generator as Deno's selected default,
+        retaining current selection elsewhere, before inventing another entropy interface.
+        Preserve ownership, clock and failure behavior. Retain only repeated complete-call
+        improvement without increased resource cost; private counters are not a new public promise.
+        `candidates-keyless-Ehwavj` changes direction between source-screen processes.
+        `packed-source-fdchFC` retains the independent packed substitution;
+        `current-deno-sequenced-owned-packed.jsonl` rejects it across six processes with a
+        slower median and an interval excluding parity.
+        Preserve production. The rival gap remains open; fewer entropy bytes alone do not
+        justify selecting the full sequenced generator.
   - [x] Refresh one complete primary-call ranking before another source candidate. Compare UUIDv4
         and UUIDv7 text, owned bytes and slugs, paired output, and the six text/byte/plain-slug
         conversions on Node Current, Bun, Node LTS, Chromium and Deno. Reuse the maintained
@@ -113,14 +132,15 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 
         | Priority | Consumer call | Faster reference | Evidence and next decision |
         | --- | --- | --- | --- |
-        | First | Bun bytes to plain base64url slug | Native `toBase64` | Direct native delegation reduces the public-call cost. `current-native-final-floor-bun-{0,1,2}.jsonl` still retains a wrapper gap: process medians are 34.87–37.36 ns versus 30.58–33.49 ns. Profile the remaining wrapper before another change; preserve direct base32 selection. |
-        | Verify before changing | Bun UUIDv4 text | `crypto-randomuuid` | After direct native selection, the same three captures cross parity. The old 36.98 ns loss is superseded; no persistent current text-generation loss is established. |
+        | First | Bun UUIDv4 text | `crypto-randomuuid` | `current-default-caller-generation-ranking.jsonl` and equal-work CPU profiles repeat the loss. Both call the same native generator. Remove surrounding cost without slowing Node Current or uppercase; the shared cold-body split fails that requirement. |
+        | Native floor gap | Bun bytes to plain base64url slug | Native `toBase64` | Direct native delegation reduces the public-call cost. `current-native-final-floor-bun-{0,1,2}.jsonl` still retains a wrapper gap: process medians are 34.87–37.36 ns versus 30.58–33.49 ns. Profile the remaining wrapper before another change; preserve direct base32 selection. |
         | Verify before changing | Bun UUIDv4 plain slug generation | Web Crypto draw plus native base64url encoding | The same three captures no longer reproduce the old 60.78 ns loss consistently. Do not choose another generation tweak from that stale ranking. |
         | Verify before changing | Bun UUIDv7 plain slug generation | `Bun.randomUUIDv7` base64url output | Package 64.56 ns versus 62.00 ns; this run loses in each process, but the preceding focused comparison favored the package. The direction across comparisons remains unresolved. |
-        | Hold | Bun UUIDv7 text | `Bun.randomUUIDv7` text output | Package 48.97 ns versus 47.84 ns; process ratios cross parity. No confirmed optimization target. |
+        | Native floor gap | Bun UUIDv7 text | `Bun.randomUUIDv7` text output | `current-default-caller-generation-ranking.jsonl` repeats the loss after removing redundant caller unwrapping. String-first recognition fails to improve the complete call. |
+        | Lower runtime priority | Deno owned UUIDv7 bytes | `uuidv7` | `current-default-caller-generation-ranking.jsonl` repeats the qualified-rival loss. The existing sequenced generator is slower in the packed comparison; preserve the independent writer until a better mechanism survives. |
         | Lower runtime priority | Deno UUID text to bytes | Buffer hex decoding | Package 177.73 ns versus 166.36 ns; this floor returns Buffer rather than the package's plain owned array. Compare equivalent ownership before treating it as a qualified loss. |
 
-        No other measured public default loses to a qualified library in this corpus. Node Current,
+        The corrected default-call report above supersedes older generation ordering. Node Current,
         Node LTS and Chromium favor the package on the compared generation and conversion calls;
         this does not prove missing native floors. Slugid loses both text/slug conversions on every
         measured host. Short-uuid also costs more, but uses a different numeric wire spelling.
