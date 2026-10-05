@@ -137,6 +137,8 @@ await Promise.all([
   Bun.write(
     `${reports}/bun-jsc-heap-stats.json`,
     JSON.stringify({
+      runtime: `bun ${Bun.version}`,
+      executable: process.execPath,
       before,
       after,
       nativeBefore,

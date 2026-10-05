@@ -36,6 +36,24 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Compare each primary call with its main qualified rivals and same-output native floor.
       Reuse applicable evidence; refresh stale comparisons after retained changes. Record speed
       and resource gaps separately, and rank unresolved gaps before selecting implementation work.
+  - [x] Compare Bun's ordinary owned UUIDv7 bytes with the fastest qualified library's resources.
+        The retained ranking favors package throughput over `uuidv7` and `uuid`; it does not
+        prove lower resource cost. Use the existing generation-case memory profiler with the
+        same completed and warm-up call counts in reversed process order. A repeated caller-CPU
+        or continuing memory-growth loss changes priority; retained heap alone cannot establish
+        total allocation parity. Keep each case's actual name, calls and runtime in its evidence.
+        The profiler's heap record lacks runtime identity; include its executing Bun version and
+        executable before retaining comparison evidence. Repeat the same captures with that metadata.
+        `current-primary-v7-owned-rival-metadata-{0,1,2,3}` records lower package caller CPU
+        in both reversed pairs and flat second-window committed memory for both implementations.
+        Package retained-heap growth is slightly larger. Compare one completed call after the
+        same warm-up to distinguish observation overhead from retained per-call work before
+        attributing that difference to the generator; this control cannot prove total allocation.
+        `current-primary-v7-owned-rival-control-{0,1}` retains at least as much heap after one
+        completed call as the million-call captures; every capture adds the same generic-object
+        count. Do not attribute that retained-heap difference to per-call generation allocation.
+        No CPU or continuing committed-memory loss reproduces in this warmed comparison;
+        preserve the current writer. Total allocation and cold-start comparisons remain open.
   - [x] Refresh one complete primary-call ranking before another source candidate. Compare UUIDv4
         and UUIDv7 text, owned bytes and slugs, paired output, and the six text/byte/plain-slug
         conversions on Node Current, Bun, Node LTS, Chromium and Deno. Reuse the maintained
