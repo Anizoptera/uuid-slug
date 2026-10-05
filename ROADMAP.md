@@ -886,7 +886,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Change one evidenced bottleneck at a time. Reject a component-only gain, a primary-call
       regression, or a speed gain paid for by material resource loss. Never choose a mechanism
       merely because the existing experiment driver can measure it.
-  - [ ] Screen codec-private storage through complete masked generation calls.
+  - [x] Screen codec-private storage through complete masked generation calls.
         The resource gate observes one payload array in each masked string or pair call. Replace
         only the package-default draw with generation into the existing codec scratch; custom
         generators, explicit timestamps and immutable values retain their original paths. Extra
@@ -902,17 +902,17 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `current-generated-codec-scratch-packed.jsonl` and `packed-source-KvDud7` retain the
         independent packed repeat. Every speed interval remains unresolved, including unchanged
         root-value controls; the evidence cannot rule out material primary-call losses. Keep the
-        source candidate isolated and production unchanged. Resolve timing under conditions where
-        unchanged controls are stable before widening runtime coverage or creating another seam.
+        source candidate isolated and production unchanged. Reject adoption because the saved
+        array does not establish speed parity; widen no runtime coverage or private draw seam.
         Reuse `candidates-codec-sj0ECr/profile.mjs` and its existing runtime-specific API bundles
         for default masked strings, default masked pairs and codec-value controls. Fresh processes
         in alternating order must distinguish a consistent wrapper loss from scheduling noise;
-        no rebuild or new measurement driver is required. Reject a stable primary-runtime loss
-        rather than layering another optimization onto this candidate.
+        no rebuild or new measurement driver is required if changed measurement conditions justify
+        reopening it. Do not layer another optimization onto an unresolved candidate.
         `current-codec-scratch-focused-*` reuses those bundles without rebuilding. Longer focused
         windows still vary substantially in unchanged value controls, so another timing replay
-        under the same conditions has no retention value. Verify nested custom-mask generation
-        preserves both pair identities before revisiting timing; shared scratch must not escape
+        under the same conditions has no retention value. Nested custom-mask generation must
+        preserve both pair identities; shared scratch must not escape
         into callback input or alter an outer result when the callback generates another pair.
         The shared nested-generation witness passes against the isolated candidate's Node and
         Bun API bundles in `/tmp/uuid-slug-codec-scratch-nested-node.log` and `-bun.log`.
