@@ -22,12 +22,18 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       `current-slug-alphabet-packed{,-all,-lts}.jsonl` reproduce conversion gains on Node,
       Chromium and Deno without a separated selected-case loss. Bun equal-call captures lower
       CPU in both orders; collected heap is retention evidence, not gross allocation.
-      Keep production unchanged until remaining runtime profiles establish resource costs.
-  - [ ] Finish packed-module selection and synchronous-only execution in `bench/profile-all.ts`;
+      `current-slug-alphabet-native-{0-baseline,1-candidate,2-candidate,3-baseline}` retains
+      every requested native format. Deno and Chromium conversion gains repeat in both orders;
+      aggregate sampled bytes per timed call decrease but include warm-up and harness work.
+  - [x] Finish packed-module selection and synchronous-only execution in `bench/profile-all.ts`;
         preserve its existing native evidence and avoid unrelated async construction. The control
         emits both byte conversions on every host; its Chromium bundle contains the candidate selector.
-  - [ ] Capture baseline/candidate native resource profiles in reversed order on remaining hosts,
+  - [x] Capture baseline/candidate native resource profiles in reversed order on remaining hosts,
         inspect CPU and allocation with each process's own completed-call counts, then retain or reject.
+  - [x] Retain direct selection after the fresh complete gate; retire its live source fixture and
+        preserve source archives, mutation failures and packed comparisons for the documentation proposal.
+        `/tmp/uuid-slug-alphabet-retention-check.log` records the complete gate; no API signature changes.
+  - [ ] Obtain approval for the exact performance conclusion and packed synchronous rerun instructions.
 
 - [x] Screen Node-compatible UUIDv4 selection in the Bun adapter through `generateUuidV4()`
       and uppercase text, with byte and UUIDv7 calls as controls. Direct-method evidence supports

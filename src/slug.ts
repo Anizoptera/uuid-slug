@@ -118,8 +118,11 @@ const SLUG_ALPHABET_CODECS = {
 /*#__NO_SIDE_EFFECTS__*/
 export function resolveSlugAlphabet(alphabet: SlugAlphabet): Alphabet | UuidSlugError {
   const name = typeof alphabet === "string" ? alphabet : stringInput(alphabet);
-  if (name !== undefined && Object.prototype.hasOwnProperty.call(SLUG_ALPHABET_CODECS, name))
-    return SLUG_ALPHABET_CODECS[name as SlugAlphabet];
+  // Fixed comparisons avoid an own-property call and keyed lookup on every conversion.
+  // Packed complete-call comparisons favor this over SLUG_ALPHABET_CODECS; remeasure if
+  // the supported alphabet vocabulary grows. Wrapper normalization remains shared.
+  if (name === BASE64URL_NAME) return BASE64URL;
+  if (name === BASE32HEX_NAME) return BASE32HEX;
   return new UuidSlugError(
     INVALID_OPTIONS,
     `Unknown slug alphabet; expected ${BASE64URL_NAME}${ALTERNATIVE_SEPARATOR}${BASE32HEX_NAME}.`,

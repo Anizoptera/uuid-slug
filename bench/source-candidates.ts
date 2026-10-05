@@ -65,19 +65,6 @@ for (const [name, value] of Object.entries({ durationMs, samples, warmupMs }))
 // Each source owner names its own caller corpus. Exhaustiveness prevents a new group silently
 // inheriting another group's file or measurements while reporting a successful screen.
 const groups = {
-  "slug-alphabet": {
-    names: [
-      "bytes.base64",
-      "bytes.base32",
-      "plain.encode",
-      "v7.slug",
-      "v7.base32",
-      "v7.pair.default",
-      "v7.pair.base32",
-      "v7.bytes",
-    ],
-    tests: ["__test__/alphabet.test.ts", "__test__/v7.test.ts"],
-  },
   v4: {
     names: [
       "package.v4.text.native",
