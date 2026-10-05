@@ -49,9 +49,11 @@ test("packed identity cannot hide changed source, output, metadata or files", as
     await writeFile(join(after, "payload.bin"), "new asset");
     expect(await identicalArtifacts(before, after)).toBe(false);
     await rm(join(after, "payload.bin"));
-    await symlink(join(after, "src/index.ts"), join(after, "README.md.link"));
+    // The README exemption must apply only to ordinary files, never symlinks.
+    await rm(join(after, "README.md"));
+    await symlink(join(after, "src/index.ts"), join(after, "README.md"));
     await expectIdentityFailure(before, after, "Unsupported packed file kind");
-    await rm(join(after, "README.md.link"));
+    await rm(join(after, "README.md"));
     await rm(join(after, "dist/index.js"));
     await expectIdentityFailure(before, after, "compiled files");
     await copyFile(join(before, "dist/index.js"), join(after, "dist/index.js"));
