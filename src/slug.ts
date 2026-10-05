@@ -91,6 +91,16 @@ let nativePlainUuidBase64 =
         }
       ).toBase64;
 const NATIVE_PLAIN_UUID_BASE64_OPTIONS = { alphabet: BASE64URL_NAME, omitPadding: true } as const;
+// Contain the optional host's exceptions without putting its handler on base32 calls. Disable a
+// failing capability once; remeasure both alphabets when changing this call boundary.
+function encodeNativePlainUuidBase64(bytes: Uint8Array): PlainUuidSlug {
+  try {
+    return nativePlainUuidBase64!.call(bytes, NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug;
+  } catch {
+    nativePlainUuidBase64 = undefined;
+    return encode(bytes, BASE64URL) as PlainUuidSlug;
+  }
+}
 // Keep general normalization separate from ordinary exact-array presets so its branch count does
 // not grow their hot body. Remeasure complete calls if accepted input forms or dispatch change.
 function uuidBytesToPlainSlugGeneral(
@@ -247,13 +257,7 @@ export function uuidBytesToPlainSlug(
     isUint8Array(bytes) &&
     bytes.length === 16
   ) {
-    if (nativePlainUuidBase64) {
-      try {
-        return nativePlainUuidBase64.call(bytes, NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug;
-      } catch {
-        nativePlainUuidBase64 = undefined;
-      }
-    }
+    if (nativePlainUuidBase64) return encodeNativePlainUuidBase64(bytes);
     // An absent capability must not add a normalization call for an already validated payload.
     return encode(bytes, BASE64URL) as PlainUuidSlug;
   }

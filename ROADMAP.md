@@ -269,6 +269,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `current-native-preset-body-primary-packed.jsonl` leaves Bun effects unresolved and
         detects a small Node base64url loss. Exact base64url arrays must call the existing writer
         directly when native encoding is absent, avoiding the new general-helper hop.
+        `current-native-preset-fallback-focused-packed.jsonl` favors Bun base64url and Node
+        base32, but resolves a Bun base32 loss. Isolate native exception containment from the
+        ordinary public body; compare both complete calls before attributing the loss to it.
   - [x] Profile the base32 writer before expanding its packing loop.
         `current-base32-writer-profile` completes 1,048,576 calls after 262,144 warm-up calls.
         Its sampling summary reports 277 samples in native `toString`, 48 in the base32 writer
