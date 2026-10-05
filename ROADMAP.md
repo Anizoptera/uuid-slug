@@ -142,12 +142,18 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Compare each primary call with its main qualified rivals and same-output native floor.
       Reuse applicable evidence; refresh stale comparisons after retained changes. Record speed
       and resource gaps separately, and rank unresolved gaps before selecting implementation work.
-  - [ ] Resolve Deno UUID-text decoding against equivalent native ownership.
+  - [x] Resolve Deno UUID-text decoding against equivalent native ownership.
         Raw Buffer text and slug decoders lack the package's plain-array ownership. Keep both
         incomplete native floors timed and
         add the copy-inclusive text decoder to the existing corpus. Prove exact payload and private
         backing storage before repeating the focused Deno comparison. A repeated material lead
         for equivalent native output selects production profiling; otherwise preserve the parser.
+        `current-primary-text-owned/deno-{0,1,2}.jsonl` measures the package, `uuid`, native
+        `fromHex`, raw Buffer and Buffer with a private plain-array copy in fresh Deno processes.
+        Each copy-inclusive native process median is slower than the package; preserve parsing.
+        The shared text/slug ownership tests reject borrowed native output and accept exact copied
+        payloads. Fixed case order and noisy batches do not establish small-effect equivalence,
+        total allocation parity or individual-call latency; no native substitution follows.
   - [x] Compare UUIDv7 text-plus-plain-slug generation with qualified rival compositions.
         Do not infer rival parity from package-only pair rows. Use the existing conversion corpus
         with one generator call followed by native encoding and UUID text formatting where needed;
@@ -362,7 +368,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         | Preserve | UUIDv7 plain slug generation on ranked hosts and Chromium | Native generation and qualified library compositions | `current-primary-v7-slug-typedarray-ranking.jsonl` includes browser-capable qualified rivals with native encoding and favors the package on every measured runtime. Preserve production; reopen only for a reproduced material gap. |
         | Small remaining difference | Bun UUIDv7 text | `Bun.randomUUIDv7` text output | `current-native-baseline-v7-ranking-repeat.jsonl` shows a small native-floor difference and a lead over tested qualified libraries, including `fastv7`. Preserve native delegation rather than adding another wrapper. |
         | Preserve | Deno owned UUIDv7 bytes | `uuidv7` | `current-primary-v7-owned-ranking-repeat.jsonl` does not reproduce the old qualified-rival loss. Preserve the independent writer; do not select a rewrite from the stale ranking. |
-        | Lower runtime priority | Deno UUID text to bytes | Buffer hex decoding | Package 177.73 ns versus 166.36 ns; this floor returns Buffer rather than the package's plain owned array. Compare equivalent ownership before treating it as a qualified loss. |
+        | Preserve | Deno UUID text to bytes | Buffer hex decoding | `current-primary-text-owned/` retains the raw floor separately and measures equivalent native output with a private plain-array copy. The copy-inclusive decoder and native `fromHex` trail the package in each fresh process; preserve parsing. This does not establish total allocation parity. |
 
         The corrected default-call report above supersedes older generation ordering. Node Current,
         Node LTS and Chromium favor the package on the compared generation and conversion calls;
