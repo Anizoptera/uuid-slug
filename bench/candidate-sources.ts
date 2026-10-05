@@ -19,7 +19,6 @@ export const CANDIDATE_GROUPS = [
   "value",
   "value-options",
   "pool",
-  "feistel",
 ] as const;
 export type CandidateGroup = (typeof CANDIDATE_GROUPS)[number];
 export const CANDIDATE_FILES = {
@@ -32,7 +31,6 @@ export const CANDIDATE_FILES = {
   value: "src/v7-value.ts",
   "value-options": "src/v7-value-options.ts",
   pool: "src/runtime/pool.ts",
-  feistel: "src/feistel.ts",
 } as const satisfies Record<CandidateGroup, string>;
 
 function v4Candidates(source: string): readonly SourceCandidate[] {
@@ -244,38 +242,8 @@ export function createSourceCandidates(
     value: valueCandidates,
     "value-options": valueOptionCandidates,
     pool: poolCandidates,
-    feistel: feistelCandidates,
   } satisfies Record<CandidateGroup, (source: string) => readonly SourceCandidate[]>;
   return builders[group](source);
-}
-
-function feistelCandidates(source: string): readonly SourceCandidate[] {
-  // Preserve the round arithmetic verbatim; only select the three fixed message words sooner.
-  // Outer Feistel traversal and the general hash's compression loops are separate experiments.
-  const start = "    for (let block = 0; block < 3; block += 1) {\n";
-  const end = "    // Two four-round squeezes yield the two output words.";
-  const from = source.indexOf(start);
-  const until = source.indexOf(end, from);
-  if (from < 0 || until < 0)
-    throw new Error("Fixed Feistel message-block loop is missing; inspect its current owner.");
-  const loop = source.slice(from, until);
-  const prefix = start + "      const m = block === 0 ? right0 : block === 1 ? right1 : 8 << 24;\n";
-  const suffix = "    }\n";
-  if (!loop.startsWith(prefix) || !loop.endsWith(suffix))
-    throw new Error("Feistel message-block boundaries changed; do not time an unrelated span.");
-  const body = loop.slice(prefix.length, -suffix.length);
-  const expanded = ["right0", "right1", "8 << 24"]
-    .map((message) => "    {\n      const m = " + message + ";\n" + body + suffix)
-    .join("");
-  const intact = replaceOnce(source, loop, expanded);
-  return [
-    { name: "baseline", source },
-    { name: "fixed-message-blocks", source: intact },
-    {
-      name: "fixed-message-blocks-wrong-length",
-      source: replaceOnce(intact, "      const m = 8 << 24;", "      const m = 7 << 24;"),
-    },
-  ];
 }
 
 function latin1Candidates(source: string): readonly SourceCandidate[] {
