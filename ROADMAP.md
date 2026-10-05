@@ -29,6 +29,16 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
       independent native or qualified-library references, measure normal variation before choosing
       a budget, and prove a material slowdown fails it. Keep timing and instrumented counts separate;
       neither establishes total allocation or protects an unmeasured runtime.
+  - [x] Bound avoidable allocation in masked generation and codec-value generation.
+        The existing resource gate measures warmed masked strings, masked pairs in both alphabets
+        and codec values. Each currently constructs one payload array; the ceiling permits fewer,
+        forbids extra arrays, views, copies, slices and errors, and imposes no generation guarantee.
+        Result-preserving temporary-array mutations fail for masked strings, pairs and codec values
+        while unchanged controls pass on Node, Bun, Deno and Chromium. Evidence is in
+        `/tmp/uuid-slug-masked-generation-resource-proof.log`, its `-deno.log` and `-chromium.log`;
+        `/tmp/uuid-slug-masked-generation-resource-observation-bun.jsonl` retains observed counts.
+        These instruments protect visible operations, not total engine allocation.
+        `/tmp/uuid-slug-masked-generation-resource-check-final.log` passes the complete check.
   - [x] Protect masked UUID-plus-slug pairs in both alphabets with the existing timing gate.
         `masked.pair.default` and `masked.pair.base32` consume and verify both results and share
         the routine runtime selection. `current-masked-pair-timing-control.jsonl` passes unchanged

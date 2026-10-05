@@ -543,6 +543,19 @@ try {
     hex: 0,
     chars: 22,
   });
+  // Warm lazy generator state before counting per-ID work; setup is a different resource boundary.
+  for (const [name, call] of [
+    ["default masked UUIDv7 slug", () => codec.generateMaskedUuidV7Slug()],
+    ["base32 masked UUIDv7 slug", () => base32Codec.generateMaskedUuidV7Slug()],
+    ["default masked UUIDv7 pair", () => codec.generateUuidV7WithMaskedSlug()],
+    ["base32 masked UUIDv7 pair", () => base32Codec.generateUuidV7WithMaskedSlug()],
+    ["codec UUIDv7 value", () => codec.generateUuidV7Value()],
+  ] as const) {
+    assert.ok(!(call() instanceof Error));
+    // The current generator constructs one payload array; fewer allocations remain permitted.
+    // Count extra arrays separately from timing so valid identifiers cannot hide discarded work.
+    check(name, call, { buffers: 1, views: 0, copies: 0, slices: 0, errors: 0 });
+  }
   const indexedSentinelBytes = api.uuidStringToBytes(sentinelDefinitions[15]!.uuid);
   assert.ok(!(indexedSentinelBytes instanceof Error));
   for (const [name, input] of [

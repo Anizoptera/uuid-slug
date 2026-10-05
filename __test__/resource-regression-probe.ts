@@ -68,7 +68,34 @@ export const parseUuid = new Proxy(api.parseUuid, {
 export const createUuidV7MaskingCodec = new Proxy(api.createUuidV7MaskingCodec, {
   apply(target, receiver, args) {
     const codec: ReturnType<typeof target> = Reflect.apply(target, receiver, args);
-    if (mode !== "masked-temporary" || codec instanceof Error) return codec;
+    if (codec instanceof Error) return codec;
+    if (
+      mode === "masked-slug-temporary" ||
+      mode === "masked-pair-temporary" ||
+      mode === "codec-value-temporary"
+    )
+      return {
+        ...codec,
+        generateMaskedUuidV7Slug: new Proxy(codec.generateMaskedUuidV7Slug, {
+          apply(generate, generateReceiver, inputs) {
+            if (mode === "masked-slug-temporary") new Uint8Array(16).fill(0);
+            return Reflect.apply(generate, generateReceiver, inputs);
+          },
+        }),
+        generateUuidV7WithMaskedSlug: new Proxy(codec.generateUuidV7WithMaskedSlug, {
+          apply(generate, generateReceiver, inputs) {
+            if (mode === "masked-pair-temporary") new Uint8Array(16).fill(0);
+            return Reflect.apply(generate, generateReceiver, inputs);
+          },
+        }),
+        generateUuidV7Value: new Proxy(codec.generateUuidV7Value, {
+          apply(generate, generateReceiver, inputs) {
+            if (mode === "codec-value-temporary") new Uint8Array(16).fill(0);
+            return Reflect.apply(generate, generateReceiver, inputs);
+          },
+        }),
+      };
+    if (mode !== "masked-temporary") return codec;
     return {
       ...codec,
       uuidToMaskedSlug: new Proxy(codec.uuidToMaskedSlug, {
