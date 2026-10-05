@@ -387,6 +387,19 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         accepts comma-separated case-name substrings, and a single term retains its old meaning.
 - [ ] Profile the actual complete calls with gaps and inspect their faster rivals. Name the
       removable work, the rival explanation, and the observation that would reject the attribution.
+  - [x] Screen the existing error-valued default byte entry for ordinary masked generation.
+        The Bun profile attributes substantial masked-generation work to the sequenced writer.
+        The isolated substitution selects the owned writer only for argument-free internal calls;
+        explicit-time, caller storage, injected generators and immutable payload layouts stay intact.
+        Cipher work or shared-code effects can erase the proposed sequence saving; measure complete
+        masked calls in both alphabets and immutable generation controls before selecting retention.
+        `candidates-keyless-WMLQIQ` passes Node/Bun behavior and the resource counter but its short
+        samples vary widely even on unchanged calls. The focused reversed-order replay reuses
+        its compiled modules with longer warm-up and multiple batches.
+        The retained `*-prepared-*.jsonl` replay still changes direction on Bun masked generation
+        and varies substantially on unchanged controls. Reject retention and remove the candidate
+        definition; its exact substituted source remains in the report. These observations do not
+        establish a gain, a regression cause or necessity of the configured sequence writer.
   - [x] Profile ordinary Bun masked UUIDv7 generation with the existing fixed-call profiler.
         Shared option, generator and result checks may add removable default-call cost; cipher
         or entropy work may dominate instead. Use sampled stacks and unsampled caller CPU to

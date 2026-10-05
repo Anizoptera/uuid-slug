@@ -109,7 +109,12 @@ const groups = {
     tests: ["__test__/v7.test.ts"],
   },
   keyless: {
+    // The internal byte entry also serves codecs; its callers need controls beyond root generation.
     names: [
+      "masked.generate",
+      "masked.base32.generate",
+      "value.generate",
+      "value.generate.codec",
       "v7.string",
       "v7.string.uppercase",
       "v7.at",
@@ -120,7 +125,7 @@ const groups = {
       "v7.pair.default",
       "v7.pair.base32",
     ],
-    tests: ["__test__/v7.test.ts"],
+    tests: ["__test__/v7.test.ts", "__test__/mask.test.ts", "__test__/codec-boundary.test.ts"],
   },
   format: {
     names: ["v7.string", "v7.string.uppercase", "uuid.toString.bytes", "v7.bytes", "v7.slug"],
