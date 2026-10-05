@@ -244,8 +244,23 @@ export function createConversionCases(
         throw new Error("Native UUID decoding requires a canonical slug");
       return nodeBuffer.from(input, "base64url");
     };
-    add("platform.buffer.conversion.text.bytes", "conversion.text.bytes", texts, bytes, (input) =>
-      nodeBuffer.from(input.replaceAll("-", ""), "hex"),
+    add(
+      "platform.buffer.conversion.text.bytes",
+      "conversion.text.bytes",
+      texts,
+      bytes,
+      (input) => nodeBuffer.from(input.replaceAll("-", ""), "hex"),
+      false,
+      "Returns a Buffer rather than a caller-private plain Uint8Array; keep its cost as an incomplete native floor.",
+    );
+    add(
+      "platform.buffer-copy.conversion.text.bytes",
+      "conversion.text.bytes",
+      texts,
+      bytes,
+      // The copy buys the same private plain-array result as package parsing, not extra guarantees.
+      (input) => new Uint8Array(nodeBuffer.from(input.replaceAll("-", ""), "hex")),
+      true,
     );
     add("platform.buffer.conversion.bytes.text", "conversion.bytes.text", bytes, texts, (input) =>
       hyphenate(view(input).toString("hex")),

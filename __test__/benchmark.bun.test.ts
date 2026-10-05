@@ -267,22 +267,29 @@ test("allocated generation witnesses reject Buffer and reused backing storage", 
   ).not.toThrow();
 });
 
-test("native Buffer decoding remains timed without qualifying as an owned result", () => {
-  const { cases } = createConversionCases(Buffer);
-  const borrowed = cases.find(({ name }) => name === "platform.buffer.conversion.slug.bytes");
-  const owned = cases.find(({ name }) => name === "platform.buffer-copy.conversion.slug.bytes");
-  expect(borrowed).toBeDefined();
-  expect(owned).toBeDefined();
-  expect(borrowed!.qualification).toBe("rejected");
-  expect(borrowed!.rejectionReason).toContain("caller-private plain Uint8Array");
-  expect(() => verifyGenerationCase(borrowed!)).not.toThrow();
-  // Matching bytes do not establish the ownership the qualified comparison requires.
-  expect(() => verifyGenerationCase({ ...borrowed!, ownedBytes: true })).toThrow(
-    "fresh plain Uint8Array storage",
-  );
-  expect(owned!.qualification).toBe("qualified");
-  expect(() => verifyGenerationCase(owned!)).not.toThrow();
-});
+test.each(["slug", "text"])(
+  "native Buffer %s decoding remains timed without qualifying as an owned result",
+  (source) => {
+    const { cases } = createConversionCases(Buffer);
+    const borrowed = cases.find(
+      ({ name }) => name === `platform.buffer.conversion.${source}.bytes`,
+    );
+    const owned = cases.find(
+      ({ name }) => name === `platform.buffer-copy.conversion.${source}.bytes`,
+    );
+    expect(borrowed).toBeDefined();
+    expect(owned).toBeDefined();
+    expect(borrowed!.qualification).toBe("rejected");
+    expect(borrowed!.rejectionReason).toContain("caller-private plain Uint8Array");
+    expect(() => verifyGenerationCase(borrowed!)).not.toThrow();
+    // Matching bytes do not establish the ownership the qualified comparison requires.
+    expect(() => verifyGenerationCase({ ...borrowed!, ownedBytes: true })).toThrow(
+      "fresh plain Uint8Array storage",
+    );
+    expect(owned!.qualification).toBe("qualified");
+    expect(() => verifyGenerationCase(owned!)).not.toThrow();
+  },
+);
 
 test("conversion profiles use the selected package implementation", () => {
   let calls = 0;

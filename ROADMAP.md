@@ -142,6 +142,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Compare each primary call with its main qualified rivals and same-output native floor.
       Reuse applicable evidence; refresh stale comparisons after retained changes. Record speed
       and resource gaps separately, and rank unresolved gaps before selecting implementation work.
+  - [ ] Resolve Deno UUID-text decoding against equivalent native ownership.
+        Raw Buffer text and slug decoders lack the package's plain-array ownership. Keep both
+        incomplete native floors timed and
+        add the copy-inclusive text decoder to the existing corpus. Prove exact payload and private
+        backing storage before repeating the focused Deno comparison. A repeated material lead
+        for equivalent native output selects production profiling; otherwise preserve the parser.
   - [x] Compare UUIDv7 text-plus-plain-slug generation with qualified rival compositions.
         Do not infer rival parity from package-only pair rows. Use the existing conversion corpus
         with one generator call followed by native encoding and UUID text formatting where needed;
