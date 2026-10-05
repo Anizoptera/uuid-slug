@@ -35,11 +35,16 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       reaches the uppercase oracle on both runners. Keep the captures, remove the rejected fixture,
       and leave the native-text gap open. Do not repeat these shapes without new causal evidence.
 
-- [ ] Rank ordinary UUID-to-plain-slug and reverse conversion against the existing qualified
-      corpus before choosing another implementation. Use complete Node Current and Bun calls;
-      compare equivalent wire output and ownership. If no gap exists, select the next primary job.
-      A measured gap selects profiling of that complete call; do not assume parsing, allocation
-      or validation is its cause from source inspection alone.
+- [x] Rank ordinary UUID-to-plain-slug and reverse conversion against the qualified corpus.
+      `current-uuid-slug-conversion-ranking.log` favors the package against slugid on every measured
+      runtime; this proves neither native-floor nor resource parity. Keep those separate gaps open.
+      `current-byte-slug-encoding-ranking.log` identifies Bun byte-to-slug encoding behind native
+      `toBase64`, while the other measured runtimes favor the package. Profile that Bun call and
+      its native reference. `current-bun-byte-slug-{package,native}-profile` completes both
+      equal-call passes; package sampling is dominated by native `toString`, with encoder work
+      also visible. Sampling does not isolate individual boundary checks or prove allocations.
+      Next execute the pending whole-buffer Latin-1 comparison below; do not repeat rejected
+      native-encoding dispatch shapes without a changed cause or mechanism.
 
 - [ ] Close the Bun owned UUIDv7 byte gap before another default-slug tweak. The maintained
       owned-byte screens trail `uuid`; equal-call memory captures retain more heap and resident
