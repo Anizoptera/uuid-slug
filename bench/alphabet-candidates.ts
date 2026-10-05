@@ -13,6 +13,33 @@ export function alphabetCandidates(source: string): readonly SourceCandidate[] {
     'const bunPlainToBase64 = typeof Bun !== "undefined" ? nativeToBase64 : undefined;\n';
   const call =
     "if (bunPlainToBase64 && bytes.length === 16 && alpha === BASE64URL && tailBits === 0) {\n    try { return bunPlainToBase64.call(bytes, BASE64_OPTIONS); } catch { /* Keep the existing writer when the optional native capability fails. */ }\n  }\n";
+  // Keep the public dispatcher and base32 writer unchanged. This tests whether placing native
+  // selection inside the base64 writer avoids the losses from enlarging shared callers.
+  const nativeLeaf = () => {
+    const signature = "  tail: number,\n): string {\n  const scratch = (base64urlScratch";
+    return replaceOnce(
+      replaceOnce(
+        replaceOnce(
+          source,
+          capability,
+          native.replace("const bunPlain", "let bunPlain") + capability,
+        ),
+        "return encodeBase64urlLatin1(createLatin1Scratch, bytes, tail);",
+        "return encodeBase64urlLatin1(createLatin1Scratch, bytes, tail, tailBits);",
+      ),
+      signature,
+      [
+        "  tail: number,",
+        "  tailBits: number,",
+        "): string {",
+        "  if (tailBits === 0 && bunPlainToBase64) {",
+        "    try { return bunPlainToBase64.call(bytes, BASE64_OPTIONS); }",
+        "    catch { bunPlainToBase64 = undefined; }",
+        "  }",
+        "  const scratch = (base64urlScratch",
+      ].join("\n"),
+    );
+  };
   // Keep native string construction, tables and tails identical; complete slug calls decide
   // whether removing five loop iterations earns the larger fixed body.
   const loop = [
@@ -41,6 +68,12 @@ export function alphabetCandidates(source: string): readonly SourceCandidate[] {
   }).join("\n");
   return [
     { name: "baseline", source },
+    {
+      name: "native-leaf",
+      get source() {
+        return nativeLeaf();
+      },
+    },
     {
       name: "fixed-blocks",
       get source() {

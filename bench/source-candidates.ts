@@ -264,12 +264,14 @@ try {
       const nativePlain =
         candidate.name === "native-branch" ||
         candidate.name === "native-dispatch" ||
+        candidate.name === "native-leaf" ||
         candidate.name === "native-public" ||
         candidate.name === "native-default-inline" ||
         candidate.name === "native-default-helper";
       for (const mode of ["present", "absent", "throw"]) {
         const output = await command("bun", ["__test__/alphabet-native-probe.ts", mode], tree, {
           UUID_SLUG_EXPECT_NATIVE_PLAIN: nativePlain ? "1" : "0",
+          UUID_SLUG_PROBE_NATIVE_DISABLE: candidate.name === "native-leaf" ? "1" : "0",
           UUID_SLUG_PROBE_PUBLIC_PLAIN: group === "slug" ? "1" : "0",
         });
         await writeFile(join(report, `${candidate.name}-native-${mode}.jsonl`), output);

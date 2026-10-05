@@ -57,7 +57,7 @@ assert.equal(calls, plainCalls, "masked tails and base32hex must keep the existi
 assert.equal(
   calls,
   process.env.UUID_SLUG_EXPECT_NATIVE_PLAIN === "1" && mode !== "absent"
-    ? mode === "throw" && publicCall
+    ? mode === "throw" && (publicCall || process.env.UUID_SLUG_PROBE_NATIVE_DISABLE === "1")
       ? 1
       : publicCall
         ? 768

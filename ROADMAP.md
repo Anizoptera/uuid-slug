@@ -190,6 +190,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Length and input-kind checks must prove the selected UUID before calling native code;
         boxed selectors, offsets and other byte forms keep the existing path. Base32 still decides
         whether the public shape is acceptable; a native-only kernel result cannot override it.
+        `candidates-slug-HgXTbi` rejects both default placements: base32 slows in both orders
+        despite faster base64url. Keep public dispatch unchanged. Screen Bun's optional
+        `Buffer.prototype.base64urlSlice` inside the base64url writer instead; first isolate that
+        placement with the existing native encoder. Prove exact bytes,
+        capability absence and failure before timing complete calls. Reject any repeated primary
+        regression. The deciding axis is native writer placement, not weaker validation.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect
