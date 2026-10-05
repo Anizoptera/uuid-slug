@@ -79,7 +79,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         also trails its native floor. These supersede the corresponding older ordering below.
   - [ ] Close Bun UUIDv4 text's repeated qualified-rival loss first. Profile the corrected
         complete caller against `crypto-randomuuid` and Web Crypto with equal work; inspect
-        native selection, trust dispatch and case handling before changing production code.
+        native selection, direct delegation and case handling before changing production code.
         Preserve configured behavior and fallback; reject a candidate without repeated
         complete-call improvement. Then address Deno owned UUIDv7 bytes and the native-floor
         gaps already listed here. Do not reopen rejected base64 wrapper shapes unchanged.
@@ -104,14 +104,21 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Current; the native kernel and configured entropy paths are not this experiment's target.
         `candidates-v4-CVrsro` is slower on Bun in both orders. Keep the existing predicate;
         another spelling of its checks does not close the native-call wrapper gap.
-  - [ ] Remove native-result validation and function-identity trust tracking from default UUIDv4
+  - [x] Remove native-result validation and function-identity trust tracking from default UUIDv4
         and UUIDv7 calls after reconciling their documentation. Trust proper native results;
         preserve caller-input validation, secure randomness, output spelling and native-exception
         fallback. Extra guarantees belong only on explicit configurable paths. This ruling is
-        settled and must not be raised for approval again.
+        settled and must not be raised for approval again. Shared Node and Bun probes require
+        direct native output for text and slugs; reinstating UUIDv4 result validation fails its
+        focused regression. The complete check and emitted declaration help verify the change.
   - [ ] Verify direct native delegation in Node and Bun, then compare complete primary calls
         with the same-output native implementations and qualified rivals. Record repeated speed
         and resource evidence; removing unnecessary guarantees alone does not prove a speed gain.
+        `current-direct-native-baseline-packed.jsonl` and
+        `current-direct-native-other-runtime-packed.jsonl` repeat complete calls on Node Current,
+        Bun, Deno, Chromium, Firefox, WebKit and Node Current without JIT. Every timing difference
+        is unresolved; native and rival parity remain open. Keep direct delegation as the ruled
+        baseline, not as a claimed speedup. Default wrapper work remains the next primary target.
   - [x] Test UUIDv7 default text's successful-string recognition against its native floor.
         The native helper already returns a string on success; the public preset path then
         performs an Error-instance check. Compare a string-first result branch without changing
@@ -899,7 +906,7 @@ scenarios in this effort. Their existing checks remain correctness checks, not p
       `native-v7-identical-baseline-controls.log`. Equal-call Bun slug profiles locate the same
       portable clock, entropy, byte-writing and base64url work; they expose no added native
       default work. Keep `native-v7-slug-*-profile/`; sampled stacks do not prove cost equality.
-      Keep the trusted native fast path: the shared validation helper parses every result.
+      Trust proper native output directly; do not restore the removed validation helper.
       Return native fallback errors unchanged; the public default call alone owns the throw.
       Replace the capture-free native selection closure with one named function; cache selection
       in the existing public default slot. Require the native/absent/failure tests, initialization
@@ -912,7 +919,7 @@ scenarios in this effort. Their existing checks remain correctness checks, not p
       this falsifies attributing that pattern to the candidate. Shared-process results do not
       establish packed parity or an allocation mechanism. Keep both interleaved raw logs.
       Fold the forwarding native function into its helper: retain one lazy selected call,
-      native replacement validation and portable fallback, with configured handling unchanged.
+      direct native delegation and exception fallback, with configured handling unchanged.
       The folded native boundary and full check pass. Keep `native-v7-folded-candidate.patch`
       and its interleaved screen; require the packed controls before retaining the cut.
       Both folded packed replays favor Bun default text. Uppercase and control uncertainty
@@ -1760,10 +1767,10 @@ a physical lower bound for the complete call.
 - [x] Compare independent module draws and direct payload writing without weakening created
       generators. Reject the extra secure-source refills despite modest Bun text and slug gains;
       keep the module-mode bit oracle and its maintained lost-bit falsifier.
-- [ ] Bun UUIDv4 text: ablate the default parameter plus `isUuidTextCase` check and the
-      trusted-identity comparison separately. The maintained default-parameter, argument-count and
+- [ ] Bun UUIDv4 text: isolate the default parameter and `isUuidTextCase` check.
+      The maintained default-parameter, argument-count and
       direct-preset screens do not establish a worthwhile gain on both primary runtimes; keep
-      trusted-identity work open. Rejected: removing
+      the remaining native wrapper gap open. Identity tracking must not return. Rejected: removing
       the `try` (saves 1 ns, breaks native-failure fallback) and import-time validation (draws
       entropy before a heap snapshot).
 - [x] Reject one native UUIDv4 call site with trust validation inside its exception boundary.
@@ -1771,7 +1778,7 @@ a physical lower bound for the complete call.
       text calls in both process orders. `current-v4-single-callsite-fallback-proof.log` rejects
       the lost-fallback mutation in both runners. Timing preceded that mutation proof, so it is
       rejection evidence only. Preserve the captured source and raw samples; retain no fixture.
-      The remaining trusted-identity cost and native floor gap stay open.
+      Identity tracking is removed; the native floor gap stays open.
 - [x] Screen owned UUIDv4 construction on Node, Bun and Deno. Reject explicit buffers and scratch
       copies after repeated primary-host losses and unresolved Deno direction; retain ordinary
       construction without another dispatch branch. Shared slab views cannot satisfy private

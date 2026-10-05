@@ -1543,8 +1543,8 @@ The 2026-09-12 review probed Node 26.8.2, Bun 1.4.2, Deno 2.9.6, and Chromium
 153 twice. Node and Bun expose `node:crypto.randomUUIDv7`; Deno does not. The probe detected no
 counter in Node's 74 payload bits, and consecutive same-millisecond values ordered near chance.
 Bun's generator advances a 12-bit counter (50,000-sample entropy probe of 2026-08-12 on Node
-26.7.0 and Bun 1.3.14). Module-level text promises no ordering. A native text or slug function is
-validated until one of its own values passes, then trusted by identity; see Native floors. Bun also exposes
+26.7.0 and Bun 1.3.14). Module-level text promises no ordering. Default native text and slug results
+are trusted directly without result validation or identity tracking; see Native floors. Bun also exposes
 `Bun.randomUUIDv7`: its buffer form is a `Buffer`, explicit zero is accepted, and NaN throws
 `ERR_OUT_OF_RANGE`. Keep runtime dispatch capability-based because shared Node API names do not
 imply shared implementation.
@@ -1663,13 +1663,25 @@ Node 26.8.2's `crypto.randomUUIDv7` draws its 12 bits after the timestamp random
 and encoded no timestamp ahead of the clock during a burst of 2 million calls, but it is slower than
 the package generator.
 
-Native UUIDv4 text needs a trust step instead of per-call validation. Validating every native
+Default native output needs neither result validation nor identity tracking; stronger guarantees
+belong only to explicit configurable paths under `docs/public-api.md`. Validating every native
 UUIDv7 value cost 61–63 ns against a 41–43 ns floor on Bun, while trusting a validated function reached the floor. A shared trust helper
 added a call Bun did not inline, costing 38–40 ns for UUIDv4 text against 31–33 ns with the trusted
-call at each call site, so call sites publish trusted values directly and the helper owns only
-validation and fallback. Remeasure if Bun changes the `randomUUIDv7` overflow policy or clock
+call at each call site. These measurements do not justify preserving a trust step on defaults.
+Remeasure if Bun changes the `randomUUIDv7` overflow policy or clock
 argument, if Node's native UUIDv7 text overtakes the portable generator, or if a runtime adds native
 UUIDv7 bytes.
+
+The packed comparison `current-direct-native-baseline-packed.jsonl` compares `91c6d52` with
+`a52bf59` on Node 26.10.0 and Bun 1.4.2, using six alternating fresh-process pairs, seven
+16 ms batches and 128 ms warm-up per call. Removing native-result validation and identity tracking
+leaves every measured timing difference unresolved. Bun UUIDv4 text has ratio 0.988 [0.91, 1.01],
+UUIDv7 text 0.988 [0.92, 1.01], and UUIDv7 slug 0.989 [0.97, 1.05]. The change enforces the native
+baseline and removes unnecessary machinery; it does not establish a throughput win or native parity.
+
+`current-direct-native-other-runtime-packed.jsonl` repeats UUIDv4 text, UUIDv7 text and UUIDv7
+slug calls with the same settings on Chromium 153.0.8010.12, Firefox 155.0, WebKit 26.6, Deno
+2.9.7 and Node 26.10.0 without JIT. Every timing difference remains unresolved on those hosts too.
 
 The corpus replays also marked Bun explicit-time caller output and selected-generator bytes 10–17%
 slower twice. Neither reproduced alone or after warming keyless text, slug, and byte calls: three
@@ -1770,8 +1782,8 @@ Remaining gaps and their causes:
   (`v4-native-text-resource-intact.log`, `candidates-v4-p8bvne/`). Together with repeated throughput
   and collected-heap observations, this earns removal of the private helper and the ordinary native
   success Error check. It does not establish native-floor parity, gross allocation parity or absence
-  of small cross-runtime differences; those remain open. Preserve native identity validation,
-  fallback and dual-failure causes when remeasuring.
+  of small cross-runtime differences; those remain open. Trust proper native output directly;
+  preserve exception fallback and dual-failure causes when remeasuring.
   The committed implementation's packed replay (`v4-inline-production-floors.jsonl`) uses
   eight fresh-process pairs on Node 26.10.0 and Bun 1.4.2, 20 ms batches and 32 ms warm-up.
   Bun default text reads 38 to 35 ns, ratio 0.933 [0.92, 0.96]; uppercase is unresolved.
@@ -2391,7 +2403,8 @@ higher-priority Node reject the extra entropy work.
 Validating every native result rejected native dispatch on 2026-09-12: two focused replays measured
 Node native at 234 ns and 240 ns against 147 ns and 156 ns portable, and two broader replays
 measured Bun native at 121 ns against 111 ns and 112 ns portable. Native floors supersedes the Bun
-decision: Bun now trusts a validated native function by identity. Node keeps portable UUIDv7 text.
+decision: Bun trusts native output directly without result validation or identity tracking.
+Node keeps portable UUIDv7 text.
 
 ### Portable UUIDv4 ownership paths
 
@@ -3338,7 +3351,7 @@ informational for module-level defaults, not a qualification failure. After a bu
 `uuidv7`, `uniku`, `uuidv7-js`, `@kripod/uuidv7`, and this package stayed at or behind the clock. This package also starts its 42-bit sequence
 from a random seed. `fastv7` and `@kripod/uuidv7` both use a zero-start counter with 62 random bits;
 that shared choice does not disqualify one of them. Faster mechanisms remain candidates when
-they preserve the requested identifier and published guarantees.
+they preserve the requested identifier; default guarantees must not exceed proper native behavior.
 Validated text timestamp extraction trailed `uuidv7-js` by 3–8% on Node, Bun, and Deno and by
 14–15% on Chromium in both runs. `uniku` timestamp results are not ranked because its call accepts
 non-v7 UUID text.
