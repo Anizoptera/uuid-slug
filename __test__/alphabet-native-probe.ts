@@ -6,11 +6,37 @@ import { strict as assert } from "node:assert";
 // tested by replacing a method after the encoder has already captured it.
 const mode = process.argv[2];
 assert.ok(mode === "present" || mode === "absent" || mode === "throw" || mode === "corrupt");
+// Freeze the independent oracle before replacing either native method: Buffer's text writer
+// may call its prototype method, which would otherwise contaminate both sides of the assertion.
+const expected = Array.from({ length: 256 }, (_, seed) =>
+  Buffer.from(Uint8Array.from({ length: 16 }, (_byte, index) => seed * 197 + index * 131)).toString(
+    "base64url",
+  ),
+);
 const descriptor = Object.getOwnPropertyDescriptor(Uint8Array.prototype, "toBase64");
 const original = descriptor?.value as
   | ((this: Uint8Array, options: { alphabet: "base64url"; omitPadding: boolean }) => string)
   | undefined;
 let calls = 0;
+if (process.env.UUID_SLUG_PROBE_NATIVE_SLICE === "1") {
+  const slice = Object.getOwnPropertyDescriptor(Buffer.prototype, "base64urlSlice")?.value as
+    | ((this: Uint8Array, start: number, end: number) => string)
+    | undefined;
+  // eslint-disable-next-line no-extend-native -- Fresh-process capability selection needs the actual optional Buffer method replaced before import.
+  Object.defineProperty(Buffer.prototype, "base64urlSlice", {
+    configurable: true,
+    value:
+      mode === "absent"
+        ? undefined
+        : function (this: Uint8Array, start: number, end: number) {
+            calls += 1;
+            if (mode === "throw") throw new Error("native encoding unavailable");
+            assert.ok(slice, "present-capability proof requires the real native Buffer encoder");
+            const result = slice.call(this, start, end);
+            return mode === "corrupt" ? result.slice(0, 21) + "A" : result;
+          },
+  });
+}
 // eslint-disable-next-line no-extend-native -- This isolated process must select the real import-time capability boundary before importing the encoder.
 Object.defineProperty(Uint8Array.prototype, "toBase64", {
   configurable: true,
@@ -31,19 +57,10 @@ const { uuidBytesToPlainSlug } = await import("../src/slug");
 const publicCall = process.env.UUID_SLUG_PROBE_PUBLIC_PLAIN === "1";
 for (let seed = 0; seed < 256; seed += 1) {
   const bytes = Uint8Array.from({ length: 16 }, (_, index) => seed * 197 + index * 131);
-  assert.equal(
-    publicCall ? uuidBytesToPlainSlug(bytes) : encode(bytes, BASE64URL),
-    Buffer.from(bytes).toString("base64url"),
-  );
+  assert.equal(publicCall ? uuidBytesToPlainSlug(bytes) : encode(bytes, BASE64URL), expected[seed]);
   if (publicCall) {
-    assert.equal(
-      uuidBytesToPlainSlug(bytes, BASE64URL_NAME),
-      Buffer.from(bytes).toString("base64url"),
-    );
-    assert.equal(
-      uuidBytesToPlainSlug(bytes, 0, BASE64URL_NAME),
-      Buffer.from(bytes).toString("base64url"),
-    );
+    assert.equal(uuidBytesToPlainSlug(bytes, BASE64URL_NAME), expected[seed]);
+    assert.equal(uuidBytesToPlainSlug(bytes, 0, BASE64URL_NAME), expected[seed]);
   }
 }
 const plainCalls = calls;

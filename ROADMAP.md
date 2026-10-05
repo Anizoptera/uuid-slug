@@ -196,6 +196,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         placement with the existing native encoder. Prove exact bytes,
         capability absence and failure before timing complete calls. Reject any repeated primary
         regression. The deciding axis is native writer placement, not weaker validation.
+        `candidates-alphabet-llSmSc` rejects leaf selection of `toBase64`: byte conversion
+        slows in both orders. Keep that placement fixed for the `base64urlSlice` comparison;
+        a native method working on plain arrays proves semantics only, not a complete-call gain.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect

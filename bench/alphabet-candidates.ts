@@ -15,15 +15,14 @@ export function alphabetCandidates(source: string): readonly SourceCandidate[] {
     "if (bunPlainToBase64 && bytes.length === 16 && alpha === BASE64URL && tailBits === 0) {\n    try { return bunPlainToBase64.call(bytes, BASE64_OPTIONS); } catch { /* Keep the existing writer when the optional native capability fails. */ }\n  }\n";
   // Keep the public dispatcher and base32 writer unchanged. This tests whether placing native
   // selection inside the base64 writer avoids the losses from enlarging shared callers.
-  const nativeLeaf = () => {
+  const nativeLeaf = (bufferSlice = false) => {
     const signature = "  tail: number,\n): string {\n  const scratch = (base64urlScratch";
+    const selectedNative = bufferSlice
+      ? 'let bunPlainToBase64 = typeof Bun === "undefined" ? undefined : (process as { getBuiltinModule?: (name: string) => { Buffer?: { prototype: { base64urlSlice?: (start: number, end: number) => string } } } }).getBuiltinModule?.("node:buffer")?.Buffer?.prototype.base64urlSlice;\n'
+      : native.replace("const bunPlain", "let bunPlain");
     return replaceOnce(
       replaceOnce(
-        replaceOnce(
-          source,
-          capability,
-          native.replace("const bunPlain", "let bunPlain") + capability,
-        ),
+        replaceOnce(source, capability, selectedNative + capability),
         "return encodeBase64urlLatin1(createLatin1Scratch, bytes, tail);",
         "return encodeBase64urlLatin1(createLatin1Scratch, bytes, tail, tailBits);",
       ),
@@ -33,7 +32,9 @@ export function alphabetCandidates(source: string): readonly SourceCandidate[] {
         "  tailBits: number,",
         "): string {",
         "  if (tailBits === 0 && bunPlainToBase64) {",
-        "    try { return bunPlainToBase64.call(bytes, BASE64_OPTIONS); }",
+        bufferSlice
+          ? "    try { return bunPlainToBase64.call(bytes, 0, 16); }"
+          : "    try { return bunPlainToBase64.call(bytes, BASE64_OPTIONS); }",
         "    catch { bunPlainToBase64 = undefined; }",
         "  }",
         "  const scratch = (base64urlScratch",
@@ -72,6 +73,12 @@ export function alphabetCandidates(source: string): readonly SourceCandidate[] {
       name: "native-leaf",
       get source() {
         return nativeLeaf();
+      },
+    },
+    {
+      name: "native-slice-leaf",
+      get source() {
+        return nativeLeaf(true);
       },
     },
     {
