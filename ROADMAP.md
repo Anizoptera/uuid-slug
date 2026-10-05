@@ -21,6 +21,13 @@ configured paths. Audit a default restriction before treating it as grounds to r
 
 Execute only this sequence; older unchecked proposals below are held, not dispatch instructions.
 
+- [ ] Measure the complete routine lane and pre-commit hook against the feedback-loop limits in
+      `bench/README.md` §Regression protection. Attribute excess time to their actual commands;
+      repair routing or redundant work without weakening primary-call regression detection.
+- [ ] Close the base32hex competitor comparison before another encoding rewrite. Compare the
+      same lowercase, unpadded UUID payload and privately owned decoded bytes using a qualified
+      external encoder in the existing corpus. A repeated material rival win requires a profile;
+      parity closes the comparison without additional production code.
 - [ ] Protect retained primary-call improvements before selecting another production candidate.
       Audit `bench/check.ts`, `bench/resources.ts` and `bench/latency.ts` against the optimized
       generation, conversion, paired, masking and parsed-value calls. Add missing normal-call

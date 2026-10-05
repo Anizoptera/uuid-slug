@@ -342,6 +342,16 @@ An observed zero p99 is below clock resolution, not a zero-cost call; the report
 
 ## Regression protection
 
+Keep routine verification fast enough for ordinary development without weakening its evidence.
+
+The target, warning and error ceilings are respectively 0.3/1/5 seconds per unit case,
+3/20/30 seconds per fast lane, 1/10/20 seconds per git hook, and 30/240/300 seconds per
+complete routine lane. A test file is not a lane. Measure the complete invocation, including
+builds, subprocesses and cleanup; retain 4–8 times headroom in CI design. Exceeding an error
+ceiling is a verification defect, not acceptable closure. Reuse unchanged builds and parallelize
+independent checks; isolate timing from competing work. Do not meet a ceiling by dropping protected
+calls, weakening oracles, skipping cleanup or substituting simulated code for shipped code.
+
 Run `bun run build && bun run perf:check` to check the package under the selected Node and Bun.
 `bun run check` runs this lane after other checks finish, so competing tests cannot distort its timings.
 The current-runtime CI lane also runs it with the newest Node and Bun.
