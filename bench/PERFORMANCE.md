@@ -3794,6 +3794,20 @@ Host and browser records must retain acquisition order; summaries compute median
 with seven batches per call and preserves nonmonotonic arrays. This reporting check establishes
 neither adequate warm-up nor a faster complete lane. Routine timing policy remains unchanged.
 
+`current-warmup-interleaved/` retains four fresh processes per host and preparation setting,
+alternating host and setting order. Elapsed 32 ms preparation and fixed 4,096, 16,384 and 65,536
+calls cover the same six operations on Bun 1.4.2 and Node 24.21.0: 32 processes, 192 call records
+and 1,344 chronological batches. Every setting has sampling-window overruns; unchanged costs
+vary substantially within settings. Bun's first elapsed-control decoding preparation consumes
+9.362 ms of caller-thread CPU during 64.401 ms of wall time. Elapsed preparation therefore does
+not establish equal executed work in this screen. A process snapshot after acquisition shows other
+CPU consumers but cannot attribute earlier pauses or separate scheduling from engine work.
+
+The interleaved Node screen enables explicit GC; the routine packed comparison does not.
+This difference prevents treating it as routine-lane evidence. Four processes per setting also
+cannot qualify the family-wise gate or establish smaller-loss sensitivity. The data do not select
+a preparation policy; repeat only with matched GC settings and a discriminating pause observation.
+
 ### Unchanged packed graph checks
 
 Skip primary-call regression timing when independently packed output is byte-identical; measuring
