@@ -379,6 +379,27 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
       },
     },
     {
+      name: "exact-range",
+      get source() {
+        // Exact length and numeric zero prove the same range without calling the general guard.
+        return replaceOnce(
+          source,
+          "  const badRange = checkRange(view.length, offset, 16);",
+          "  const badRange = view.length === 16 && offset === 0 ? undefined : checkRange(view.length, offset, 16);",
+        );
+      },
+    },
+    {
+      name: "exact-range-lost-offset",
+      get source() {
+        return replaceOnce(
+          source,
+          "  const badRange = checkRange(view.length, offset, 16);",
+          "  const badRange = view.length === 16 ? undefined : checkRange(view.length, offset, 16);",
+        );
+      },
+    },
+    {
       name: "native-default-inline",
       get source() {
         return nativePlain("default-inline");

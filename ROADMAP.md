@@ -197,7 +197,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         `candidates-alphabet-JVQdV3` rejects direct Buffer leaf encoding too: byte conversion
         slows in both orders after behavior, fallback and resource proofs pass. None of these
         native placements closes the primary gap; retain the scalar-selected production path.
-  - [ ] Isolate a small native default dispatcher from the existing general conversion body.
+  - [x] Isolate a small native default dispatcher from the existing general conversion body.
         The public default shortcuts enlarge that body and slow base32; native leaf calls retain
         normalization cost and fail to beat the current complete call. Extract the original body
         without changing validation or encoders, then measure default and base32 calls together.
@@ -212,6 +212,13 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         next: move native try/catch into the existing small helper while keeping the shared
         preset dispatcher identical. This distinguishes that placement's cost without relaxing
         fallback guarantees or changing the encoder. Reject another base32 loss.
+        `candidates-slug-uyUWUU` retains a base32 loss with outlined exception handling too.
+        Reject these wrapper shapes; no production change is justified by their base64url gain.
+  - [ ] Remove repeated range validation for exact 16-byte inputs at numeric offset zero.
+        Those two facts prove the complete range; all other inputs retain the original check.
+        Screen the existing conversion without native dispatch changes. Prove invalid offsets
+        still fail by removing that condition in an isolated mutant, then compare both alphabets.
+        Retain only repeated complete-call gain without another primary loss or resource cost.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect
