@@ -403,6 +403,26 @@ function slugCandidates(source: string): readonly SourceCandidate[] {
       },
     },
     {
+      name: "native-presets-helper",
+      get source() {
+        // Reuse the exact helper while keeping preset dispatch and the general body fixed.
+        // Only exception placement differs from native-presets-split.
+        const helperSource = nativePlain("default-helper");
+        const start = helperSource.indexOf("function nativeDefaultPlainUuid(");
+        const end = helperSource.indexOf("const SLUG_ALPHABET_BY_LENGTH:", start);
+        if (start < 0 || end <= start) throw new Error("Native helper span is missing");
+        return replaceOnce(
+          replaceOnce(
+            nativePlain("presets-split"),
+            "const SLUG_ALPHABET_BY_LENGTH:",
+            helperSource.slice(start, end) + "const SLUG_ALPHABET_BY_LENGTH:",
+          ),
+          "      try { return nativePlainUuidBase64.call(bytes, NATIVE_PLAIN_UUID_BASE64_OPTIONS) as PlainUuidSlug; } catch { nativePlainUuidBase64 = undefined; }",
+          "      return nativeDefaultPlainUuid(bytes, nativePlainUuidBase64);",
+        );
+      },
+    },
+    {
       name: "default-alphabet",
       get source() {
         return replaceOnce(

@@ -208,6 +208,10 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         16-byte scalar-preset input on that path. Screen a shared exact-payload preset dispatcher
         with native base64url and direct existing base32 encoding; other inputs keep the complete
         original general body. Reject any repeated primary regression before a wider matrix.
+        `candidates-slug-gE3Poq` still slows base32 in both orders. Test only exception placement
+        next: move native try/catch into the existing small helper while keeping the shared
+        preset dispatcher identical. This distinguishes that placement's cost without relaxing
+        fallback guarantees or changing the encoder. Reject another base32 loss.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect

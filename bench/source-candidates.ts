@@ -270,6 +270,7 @@ try {
         candidate.name === "native-default-inline" ||
         candidate.name === "native-default-split" ||
         candidate.name === "native-presets-split" ||
+        candidate.name === "native-presets-helper" ||
         candidate.name === "native-default-helper";
       for (const mode of ["present", "absent", "throw"]) {
         const output = await command("bun", ["__test__/alphabet-native-probe.ts", mode], tree, {
