@@ -11,20 +11,14 @@ import { command } from "../scripts/command";
 import { describeSamples, medianConfidence, medianConfidence95 } from "./statistics";
 import { CANDIDATE_FILES, CANDIDATE_GROUPS, createSourceCandidates } from "./candidate-sources";
 import type { CandidateGroup } from "./candidate-sources";
+import { COMPARISON_RUNTIMES as RUNTIMES, selectComparisonRuntimes } from "./comparison-runtimes";
+import type {
+  BrowserComparisonRuntime as BrowserRuntime,
+  ComparisonRuntime as Runtime,
+} from "./comparison-runtimes";
 
 type Revision = "baseline" | "candidate";
-type BrowserRuntime = "chromium" | "firefox" | "webkit";
-type Runtime = "node" | "bun" | BrowserRuntime | "deno" | "node-jitless";
 type ArtifactRuntime = "node" | "bun" | "chromium" | "deno";
-const RUNTIMES = [
-  "node",
-  "bun",
-  "chromium",
-  "firefox",
-  "webkit",
-  "deno",
-  "node-jitless",
-] as const satisfies readonly Runtime[];
 
 interface ArtifactSet {
   readonly tarball: string;
@@ -93,21 +87,13 @@ const nodeExecutable = process.env.UUID_SLUG_COMPARE_NODE_EXECUTABLE ?? "node";
 // Every record names the runtime release it measured, so a result file cannot be attributed to a
 // release other than the one that produced it.
 const runtimeVersions = new Map<Runtime, string>();
-const selectedRuntimes = (process.env.UUID_SLUG_COMPARE_RUNTIMES?.split(":").filter(Boolean) ?? [
-  ...RUNTIMES,
-]) as Runtime[];
+const selectedRuntimes = selectComparisonRuntimes(
+  process.env.UUID_SLUG_COMPARE_RUNTIMES ?? RUNTIMES.join(":"),
+);
 if (!Number.isSafeInteger(rounds) || rounds < 1)
   throw new Error("UUID_SLUG_COMPARE_ROUNDS must be a positive safe integer");
 if (!Number.isSafeInteger(samples) || samples < 1)
   throw new Error("UUID_SLUG_PROFILE_SAMPLES must be a positive safe integer");
-if (
-  selectedRuntimes.length === 0 ||
-  new Set(selectedRuntimes).size !== selectedRuntimes.length ||
-  selectedRuntimes.some((runtime) => !RUNTIMES.includes(runtime))
-)
-  throw new Error(
-    `UUID_SLUG_COMPARE_RUNTIMES must list distinct values from ${RUNTIMES.join(":")}`,
-  );
 
 function shuffledRuntimes(seed: number): Runtime[] {
   const values = [...selectedRuntimes];

@@ -5,25 +5,38 @@ import { mkdir, mkdtemp, rm, rmdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { command } from "../scripts/command";
 import { performanceBaseline } from "./check-inputs";
+import { selectComparisonRuntimes } from "./comparison-runtimes";
 
 const root = resolve(import.meta.dir, "..");
+const selectedRuntimes = selectComparisonRuntimes(
+  process.env.UUID_SLUG_COMPARE_RUNTIMES ?? "node:bun",
+);
 const reports = join(import.meta.dir, "reports");
-await mkdir(reports, { recursive: true });
-const directory = await mkdtemp(join(reports, "check-"));
+const hostRuntimes = selectedRuntimes.filter((runtime) => runtime === "node" || runtime === "bun");
+let directory: string | undefined;
+if (hostRuntimes.length) {
+  await mkdir(reports, { recursive: true });
+  directory = await mkdtemp(join(reports, "check-"));
+}
 let passed = false;
 try {
-  const result = await Bun.build({
-    entrypoints: [join(import.meta.dir, "resources.ts"), join(import.meta.dir, "latency.ts")],
-    target: "node",
-    packages: "external",
-    outdir: directory,
-    naming: "[name].mjs",
-  });
-  if (!result.success) throw new AggregateError(result.logs, "Performance gate build failed");
-  for (const runtime of ["node", process.execPath]) {
-    for (const name of ["resources", "latency"]) {
-      const output = await command(runtime, [join(directory, `${name}.mjs`)], root);
-      console.log(`${runtime}: ${name}\n${output.trim()}`);
+  if (directory) {
+    const result = await Bun.build({
+      entrypoints: [join(import.meta.dir, "resources.ts"), join(import.meta.dir, "latency.ts")],
+      target: "node",
+      packages: "external",
+      outdir: directory,
+      naming: "[name].mjs",
+    });
+    if (!result.success) throw new AggregateError(result.logs, "Performance gate build failed");
+    // These instruments depend on Node/Bun hooks; other hosts use the packed timing comparison
+    // without repeating those hosts' counters or pretending that they prove browser resources.
+    for (const selected of hostRuntimes) {
+      const runtime = selected === "bun" ? process.execPath : selected;
+      for (const name of ["resources", "latency"]) {
+        const output = await command(runtime, [join(directory, `${name}.mjs`)], root);
+        console.log(`${runtime}: ${name}\n${output.trim()}`);
+      }
     }
   }
   // Compare complete calls against independently packed committed code when production changes.
@@ -88,7 +101,7 @@ try {
         cwd: root,
         env: {
           ...process.env,
-          UUID_SLUG_COMPARE_RUNTIMES: "node:bun",
+          UUID_SLUG_COMPARE_RUNTIMES: selectedRuntimes.join(":"),
           UUID_SLUG_PROFILE_FILTER: primaryCalls.map((name) => `=${name}`).join(","),
         },
         stdout: "inherit",
@@ -100,13 +113,15 @@ try {
   }
   passed = true;
 } finally {
-  // Failure output names the exact executable and bundle; deleting it would prevent that replay.
-  if (passed) await rm(directory, { recursive: true, force: true });
-  else
-    console.error(
-      `Performance check failed. Files remain in ${directory}; rerun the failing command with the same environment.`,
-    );
-  await rmdir(reports).catch((error: NodeJS.ErrnoException) => {
-    if (error.code !== "ENOENT" && error.code !== "ENOTEMPTY") throw error;
-  });
+  if (directory) {
+    // Failure output names the exact executable and bundle; deleting it would prevent that replay.
+    if (passed) await rm(directory, { recursive: true, force: true });
+    else
+      console.error(
+        `Performance check failed. Files remain in ${directory}; rerun the failing command with the same environment.`,
+      );
+    await rmdir(reports).catch((error: NodeJS.ErrnoException) => {
+      if (error.code !== "ENOENT" && error.code !== "ENOTEMPTY") throw error;
+    });
+  }
 }

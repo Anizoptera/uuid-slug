@@ -15,6 +15,7 @@ import type { GenerationCase } from "../bench/generation-case";
 import { generationCases } from "../bench/generation-cases";
 import { createConversionCases } from "../bench/conversion-cases";
 import { performanceBaseline } from "../bench/check-inputs";
+import { COMPARISON_RUNTIMES, selectComparisonRuntimes } from "../bench/comparison-runtimes";
 import { command } from "../scripts/command";
 import { uuidStringToPlainSlug } from "../src/index";
 import * as profilingApi from "../src/index";
@@ -37,6 +38,14 @@ const speed = {
   elapsedMs: 10,
   iterations: 1,
 };
+
+test("performance runtime selection preserves every requested host and rejects omissions", () => {
+  expect(selectComparisonRuntimes(COMPARISON_RUNTIMES.join(":"))).toEqual([...COMPARISON_RUNTIMES]);
+  expect(selectComparisonRuntimes("deno:chromium")).toEqual(["deno", "chromium"]);
+  expect(selectComparisonRuntimes("node:bun")).toEqual(["node", "bun"]);
+  for (const invalid of ["", "bun:bun", "chromiu", "node:", ":bun", "deno::chromium"])
+    expect(() => selectComparisonRuntimes(invalid)).toThrow("must list distinct values");
+});
 
 test("performance routing uses real changes and refuses missing parent history", async () => {
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-performance-inputs-"));

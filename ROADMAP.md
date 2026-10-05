@@ -55,6 +55,17 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         redundant secure generation on both. The routing fixture rejects missing parent history
         and distinguishes pending source, committed source and documentation-only changes.
         Keep additional-runtime comparisons explicit until their routine execution is verified.
+  - [x] Verify and route primary timing protection on Deno and Chromium through the existing CI workflow.
+        Reuse the primary call inventory and packed comparison; unchanged complete calls must pass
+        and result-preserving redundant generation and slug validation must fail on both runtimes.
+        Do not duplicate Node/Bun acquisition or run the same TypeScript timing lane for both Rust
+        build profiles. Keep resource coverage separate and declare branches this timing cannot prove.
+        Give timing its own job so acquisition does not consume the combined WASM test budget;
+        detect production changes before installing engines or rebuilding packages.
+        `current-primary-timing-web-deno-control.jsonl` passes every selected complete call;
+        the matching generation and guard defect reports reject redundant work on both runtimes.
+        This proves local packed execution and the gate's rejection behavior, not a remote CI run
+        or browser/Deno resource-counter coverage.
   - [x] Extend deterministic primary-call resource protection and prove its rejection paths.
         Native UUIDv4 text must skip revalidation and extra draws; ordinary owned UUIDv4/UUIDv7
         bytes need no temporary arrays; Bun plain base64url must reach native encoding; base32
