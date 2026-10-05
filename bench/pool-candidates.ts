@@ -53,7 +53,7 @@ export function poolCandidates(source: string): readonly SourceCandidate[] {
         return replaceOnce(
           source,
           "bytes[i + 3] = pool[sourceOffset + 3] as number;",
-          "bytes[i + 3] = 0;",
+          "bytes[i + 3] = pool[sourceOffset + 2] as number;",
         );
       },
     },

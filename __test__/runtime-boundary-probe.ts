@@ -1270,23 +1270,26 @@ export const runtimeBoundaryCases = [
     },
   },
   {
-    name: "four-byte pooled draws copy every byte and erase exactly the consumed range",
+    name: "pooled draws copy every byte and erase exactly the consumed range",
     run(this: void) {
       let source: Uint8Array | undefined;
       const fill = pooledFill((bytes) => {
         source = bytes;
         for (let i = 0; i < bytes.length; i += 1) bytes[i] = (i % 251) + 1;
       });
-      for (const offset of [0, 4, 8]) {
-        const output = new Uint8Array(4);
+      let offset = 0;
+      // Distinct source bytes expose duplication; sixteen-byte draws also start unaligned.
+      for (const length of [4, 4, 4, 16, 16, 16]) {
+        const output = new Uint8Array(length);
         assert.equal(fill(output), undefined);
         assert.deepEqual(
           Array.from(output),
-          [1, 2, 3, 4].map((i) => i + offset),
+          Array.from({ length }, (_, i) => offset + i + 1),
         );
         assert.ok(source);
-        assert.ok(source.subarray(0, offset + 4).every((byte) => byte === 0));
-        assert.equal(source[offset + 4], offset + 5);
+        assert.ok(source.subarray(0, offset + length).every((byte) => byte === 0));
+        assert.equal(source[offset + length], offset + length + 1);
+        offset += length;
       }
     },
   },

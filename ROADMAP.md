@@ -719,6 +719,8 @@ keep contract changes reserved for Art, and claim impossibility only with a name
   - [ ] Obtain approval for the exact `bench/PERFORMANCE.md` update: qualify its final four-byte
         retention paragraph to include sixteen-byte blocks, and record the packed comparisons,
         isolated controls, counted warm-up resource captures and native/source profile limits.
+  - [ ] Strengthen the existing distinct-byte pooled-draw oracle for sixteen-byte, unaligned
+        draws; require a duplicate-byte mutation to fail both Node and Bun before closing it.
   - [x] Profile the exact module-default owned-byte call before choosing another substitution;
         separate setup from samples beneath the public generation frame, inspect allocation
         and entropy evidence, and compare the observed costs with the faster rivals' mechanisms.
