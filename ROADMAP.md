@@ -179,29 +179,30 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         modestly in the other two; UUIDv4 slug generation no longer reproduces its prior loss consistently.
         These complete-call observations supersede those stale Bun gap priorities, not the
         retained scalar-selection comparison. Keep native encoding as the next target.
-  - [ ] Screen direct native encoding inside the scalar-selected public byte conversion.
+  - [x] Screen direct native encoding inside the scalar-selected public byte conversion.
         The changed premise is reduced caller normalization, not a new generic encoder branch.
         Capture the native capability once outside shared alphabet metadata; preserve the original
         encoder for other hosts, base32 and native failure. Use the existing native probe through
         the public conversion, and reject base32 loss, decoder retention or absent repeated gain.
         `candidates-slug-Xd0mcf` improves base64url but slows base32 in both orders, so reject
-        the post-normalization native branch. Next compare an exact valid default/preset path
-        before general normalization, with inline native failure handling versus a small helper.
-        Length and input-kind checks must prove the selected UUID before calling native code;
-        boxed selectors, offsets and other byte forms keep the existing path. Base32 still decides
-        whether the public shape is acceptable; a native-only kernel result cannot override it.
+        the post-normalization native branch. Exact valid default/preset shortcuts preserve
+        input validation but still need complete-call comparisons with base32 controls.
         `candidates-slug-HgXTbi` rejects both default placements: base32 slows in both orders
-        despite faster base64url. Keep public dispatch unchanged. Screen Bun's optional
-        `Buffer.prototype.base64urlSlice` inside the base64url writer instead; first isolate that
-        placement with the existing native encoder. Prove exact bytes,
-        capability absence and failure before timing complete calls. Reject any repeated primary
-        regression. The deciding axis is native writer placement, not weaker validation.
+        despite faster base64url. Leaf-writer comparisons preserve public dispatch and validation;
+        prove exact bytes, capability absence and failure before timing complete calls.
         `candidates-alphabet-llSmSc` rejects leaf selection of `toBase64`: byte conversion
-        slows in both orders. Keep that placement fixed for the `base64urlSlice` comparison;
-        a native method working on plain arrays proves semantics only, not a complete-call gain.
-        Include direct Buffer string construction in the existing resource counter before timing
-        it; prove interception with a plain-array control. The string-construction invariant
-        must count the selected native entry rather than reject an unobserved operation.
+        slows in both orders. A native method working on plain arrays proves semantics only,
+        not a complete-call gain. The resource counter covers direct Buffer construction with
+        a plain-array interception control; its invariant counts the selected native entry.
+        `candidates-alphabet-JVQdV3` rejects direct Buffer leaf encoding too: byte conversion
+        slows in both orders after behavior, fallback and resource proofs pass. None of these
+        native placements closes the primary gap; retain the scalar-selected production path.
+  - [ ] Isolate a small native default dispatcher from the existing general conversion body.
+        The public default shortcuts enlarge that body and slow base32; native leaf calls retain
+        normalization cost and fail to beat the current complete call. Extract the original body
+        without changing validation or encoders, then measure default and base32 calls together.
+        Reject the shape before wider measurements if either primary call reproducibly loses.
+        Keep the native floor gap open; rejected placements do not prove an inherent limit.
   - [x] Profile ordinary masked text encoding and byte decoding on Bun in equal-call windows.
         Cipher rounds may dominate, or UUID parsing, packing, validation and string construction
         may consume more work. Capture each exact call independently in reversed order; inspect
