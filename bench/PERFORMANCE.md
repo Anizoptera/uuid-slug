@@ -3744,6 +3744,27 @@ general-input ranking, individual-call latency, total allocation or a precise co
 from three process observations. Recompare when the public rival codec gains lowercase output,
 its implementation changes, or a changed runtime narrows this measured lead.
 
+### Lowercase scure component comparison
+
+Keep the current base32hex implementation for this corpus; removing the rival's case conversion
+does not reveal a throughput gap that warrants a production rewrite.
+
+`current-base32-scure-components.jsonl` and `current-base32-scure-components-repeat.jsonl`
+include all four existing calls and scure's exported `__TESTS.radix2(5)` and lowercase
+`__TESTS.alphabet` composition. Setup occurs once, outside timing. These are actual release-pinned
+components from `@scure/base` 2.4.0, not a documented configurable public codec. The public-codec
+rows remain separate. Both comparisons use the same independent fixed spellings and fresh-owned-byte
+qualification as the public-codec comparison above.
+
+Each replay has 60 qualified rows across Node 24.21.0 and 26.10.0, Bun 1.4.2, Deno 2.9.7 and
+Chromium 153.0.8010.12. Each row has three fresh-process observations, each summarizing five
+15 ms batches after 40 ms warm-up. Across both replays, package median costs are 0.102–0.525 times
+the lowercase component costs. Node Current ratios are 0.140–0.520 and Bun ratios are 0.298–0.507.
+
+The two UUID payloads and fixed case order limit the conclusion to these warmed calls; three
+process observations do not establish precise confidence intervals, general-input dominance,
+individual-call latency or total allocation. Recompare when either implementation or runtime changes.
+
 ### Unchanged packed graph checks
 
 Skip primary-call regression timing when independently packed output is byte-identical; measuring

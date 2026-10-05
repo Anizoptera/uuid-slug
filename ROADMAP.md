@@ -38,6 +38,13 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
       parity closes the comparison without additional production code.
       Both scure replays favor the package for the measured primary conversions; conditions and
       limitations live in `bench/PERFORMANCE.md` §Plain base32hex conversions against scure.
+- [x] Challenge the base32hex comparison with scure's exported lowercase components.
+      Configure its digit and alphabet converters once; compare the same four complete calls
+      against the existing fixed payload and owned-byte witnesses. The public codec's case fold
+      may explain its loss; a repeated material component win requires profiling before a rewrite.
+      Keep this release-pinned mechanism distinct from the documented public codec.
+      Both replays favor the package; no production rewrite follows from this corpus.
+      Evidence and limits live in `bench/PERFORMANCE.md` §Lowercase scure component comparison.
 - [ ] Protect retained primary-call improvements before selecting another production candidate.
       Audit `bench/check.ts`, `bench/resources.ts` and `bench/latency.ts` against the optimized
       generation, conversion, paired, masking and parsed-value calls. Add missing normal-call

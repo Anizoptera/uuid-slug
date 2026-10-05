@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { Buffer } from "node:buffer";
-import { base32hexnopad } from "@scure/base";
+import { __TESTS as scureComponents, base32hexnopad } from "@scure/base";
 import { parse, stringify, validate } from "uuid";
 import { unwrap } from "../dev/unwrap";
 import {
@@ -23,6 +23,14 @@ const texts = ["01990d4d-e600-7123-a456-789abcdef012", "01990d4d-e601-7fed-b012-
 const slugs = ["AZkNTeYAcSOkVniavN7wEg", "AZkNTeYBf-2wEjRWeJq83g"];
 // Python's RFC 4648 b32hexencode supplies these independent lowercase, unpadded witnesses.
 const base32Slugs = ["06cgqjf601oi792mf2dbpnng28", "06cgqjf605vurc0i6hb7h6lsro"];
+// Configure the actual exported components once to remove case folding from complete calls.
+// This release-pinned mechanism is not a documented configurable public codec.
+const scureDigits = scureComponents.radix2(5);
+const scureLetters = scureComponents.alphabet("0123456789abcdefghijklmnopqrstuv");
+const scureLowercaseBase32 = {
+  encode: (input: Uint8Array) => scureLetters.encode(scureDigits.encode(input)),
+  decode: (input: string) => scureDigits.decode(scureLetters.decode(input)),
+};
 const bytes = [
   new Uint8Array([1, 153, 13, 77, 230, 0, 113, 35, 164, 86, 120, 154, 188, 222, 240, 18]),
   new Uint8Array([1, 153, 13, 77, 230, 1, 127, 237, 176, 18, 52, 86, 120, 154, 188, 222]),
@@ -163,7 +171,7 @@ export function createConversionCases(
   add("package.conversion.base32.text", "conversion.base32.text", base32Slugs, texts, (input) =>
     unwrap(api.plainSlugToUuidString(input)),
   );
-  // The public scure codec uses uppercase; its test-only alphabet helpers are not consumer APIs.
+  // The documented scure codec uses uppercase; component rows below measure direct lowercase work.
   // Charge required case conversion to the complete lowercase call, not to untimed setup.
   add("scure.conversion.bytes.base32", "conversion.bytes.base32", bytes, base32Slugs, (input) =>
     base32hexnopad.encode(input).toLowerCase(),
@@ -181,6 +189,35 @@ export function createConversionCases(
   );
   add("scure.conversion.base32.text", "conversion.base32.text", base32Slugs, texts, (input) =>
     stringify(base32hexnopad.decode(input.toUpperCase())),
+  );
+  add(
+    "scure-components.conversion.bytes.base32",
+    "conversion.bytes.base32",
+    bytes,
+    base32Slugs,
+    scureLowercaseBase32.encode,
+  );
+  add(
+    "scure-components.conversion.base32.bytes",
+    "conversion.base32.bytes",
+    base32Slugs,
+    bytes,
+    scureLowercaseBase32.decode,
+    true,
+  );
+  add(
+    "scure-components.conversion.text.base32",
+    "conversion.text.base32",
+    texts,
+    base32Slugs,
+    (input) => scureLowercaseBase32.encode(parse(input)),
+  );
+  add(
+    "scure-components.conversion.base32.text",
+    "conversion.base32.text",
+    base32Slugs,
+    texts,
+    (input) => stringify(scureLowercaseBase32.decode(input)),
   );
   add(
     "platform.regex.conversion.text.guard",
