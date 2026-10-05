@@ -109,51 +109,8 @@ export function keylessCandidates(source: string): readonly SourceCandidate[] {
     const header = thin.slice(0, thin.indexOf("function generateConfiguredUuidV7"));
     return preset(withUppercase(header)) + thin.slice(header.length);
   };
-  // Default pairs need matching spellings, not configured-generator sequence state. Reuse the
-  // proved owned writer before adding private scratch coordination; fresh-array and entropy
-  // costs can erase the removed sequence work. Configured draws and owned defaults stay intact.
-  const independentDefault = () => {
-    const drawStart = source.indexOf("/*\n * Slug and pair writers encode their bytes");
-    const drawEnd = source.indexOf("export const uuidV7ScratchAt", drawStart);
-    if (drawStart < 0 || drawEnd < drawStart)
-      throw new Error("Default slug draw moved; update its independent-byte experiment.");
-    return replaceOnce(
-      source,
-      source.slice(drawStart, drawEnd),
-      [
-        "// Default spellings reuse one independent owned draw; configured calls retain their",
-        "// generator and private scratch. Allocation must earn complete-call speed and resource",
-        "// improvement over borrowed sequence draws (bench/PERFORMANCE.md).",
-        "export const currentUuidV7Scratch = (): Uint8Array | UuidSlugError =>",
-        "  generateDefaultOwnedUuidV7Bytes();",
-        "",
-      ].join("\n"),
-    );
-  };
   return [
     { name: "baseline", source },
-    {
-      name: "independent-default-owned",
-      get source() {
-        return independentDefault();
-      },
-    },
-    {
-      name: "independent-default-owned-lost-byte",
-      get source() {
-        return replaceOnce(
-          independentDefault(),
-          "  return bytes as UuidV7Bytes;",
-          "  bytes[15] = 0;\n  return bytes as UuidV7Bytes;",
-        );
-      },
-    },
-    {
-      name: "independent-default-owned-lost-clock",
-      get source() {
-        return replaceOnce(independentDefault(), "  bytes[0] = high >>> 8;", "  bytes[0] = 0;");
-      },
-    },
     {
       name: "random-owned-timestamp",
       get source() {
