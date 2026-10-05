@@ -3803,10 +3803,26 @@ vary substantially within settings. Bun's first elapsed-control decoding prepara
 not establish equal executed work in this screen. A process snapshot after acquisition shows other
 CPU consumers but cannot attribute earlier pauses or separate scheduling from engine work.
 
-The interleaved Node screen enables explicit GC; the routine packed comparison does not.
-This difference prevents treating it as routine-lane evidence. Four processes per setting also
-cannot qualify the family-wise gate or establish smaller-loss sensitivity. The data do not select
-a preparation policy; repeat only with matched GC settings and a discriminating pause observation.
+The original interleaved Node screen enables explicit GC; the routine packed comparison does not.
+`current-warmup-interleaved-matched-gc/` repeats the same process and batch counts with GC disabled
+on both hosts. Every setting still has overruns, so explicit GC is not their sole explanation.
+Bun decoding medians with 4,096 preparation calls range from 85.093 to 150.520 ns, versus 64.319
+to 76.229 ns for elapsed controls. Reject that count for equivalent preparation on this screen.
+Larger counts remain unresolved. Four processes per setting cannot qualify the family-wise gate
+or establish smaller-loss sensitivity; these data do not select a preparation policy.
+
+`current-fixed-warmup-control-65536.jsonl` passes the six-call packed unchanged control with
+16 process pairs per host. Recorded preparation totals 3.676 seconds; the earlier elapsed control
+records 12.295 seconds under a different acquisition epoch. The matching `codec-defect` report
+rejects discarded generation confined to codec values on both hosts for the intended diagnostic.
+That large mutation does not establish smaller-loss sensitivity.
+
+`current-fixed-warmup-full-control-65536.jsonl` passes every primary call on Node 24.21.0 and Bun
+1.4.2 in 98.433 seconds, including packing and cleanup. Its filter comes from `bench/check.ts`;
+all 3,072 records retain seven batches and 65,536 preparation calls. Preparation totals 22.384
+seconds; sampling alone requires at least 64.512 seconds. This is the packed comparison, not the
+complete routine lane. No routine policy change follows until detection and remaining acquisition
+costs meet the feedback-loop requirements.
 
 ### Unchanged packed graph checks
 

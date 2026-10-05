@@ -38,16 +38,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         independent process counts, sample windows and family-wise uncertainty. Reject a setting
         that loses targeted detection or materially changes control timing; no screen closes the
         complete-lane or browser requirement.
-        The fixed-call pilot reduces preparation work but does not establish equivalent Bun
-        timing; the larger-count control has sampling overruns. Keep policy unchanged and resolve
-        these differences with chronological captures before selecting another setting.
-        Interleave elapsed and geometric fixed-call preparation on unchanged code in fresh
-        processes, retaining all six control calls and chronological batches. Persistent slopes
-        or differing costs reject equivalent preparation; a short screen cannot qualify a policy.
-        The interleaved screen retains every sample but still has large overruns under every
-        setting; elapsed preparation does not establish equal CPU work. Node's explicit GC differs
-        from the routine lane, so match that setting before any qualifying replay. Evidence and
-        remaining limits live in `bench/PERFORMANCE.md` §Fixed-call warm-up screen.
+        Matched-GC chronological captures still overrun under every setting; reject 4,096 calls
+        because Bun decoding remains slower than every elapsed control. The 65,536-call packed
+        unchanged control passes the full existing primary inventory; the six-call codec-value
+        waste fixture fails for its intended diagnostic on both hosts. These proofs establish
+        neither smaller-loss sensitivity nor the complete routine budget. Sampling now dominates
+        the measured comparison. Keep policy unchanged while investigating that cost and targeted
+        detection; derive every full filter from `bench/check.ts`, never a parallel list. Evidence
+        and limits live in `bench/PERFORMANCE.md` §Fixed-call warm-up screen.
   - [x] Avoid packed timing when only benchmark dependencies change. `bench/check-inputs.ts`
         treats every manifest and lock change as production work; the scure dev-only addition
         therefore runs the whole timing comparison. Preserve detection of changed build tools,
