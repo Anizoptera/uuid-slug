@@ -24,9 +24,13 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
       Its installed implementation uses Web Crypto and writes UUIDv7 version/variant bits.
       The matrix and its regression test qualify it under the native baseline; the refreshed
       `current-native-baseline-v7-qualified-ranking.jsonl` includes it in primary text comparisons.
-- [ ] Resolve primary UUIDv7 text rankings with `fastv7` included before reusing old rankings.
+- [x] Resolve primary UUIDv7 text rankings with `fastv7` included before reusing old rankings.
       The refreshed run has severalfold process variation in unchanged calls; it establishes
       competitor membership, not a reliable performance winner.
+      `current-native-baseline-v7-ranking-repeat.jsonl` separates the package from every tested
+      qualified library on Node Current/LTS, Bun, Deno and Chromium across fresh processes.
+      Bun still trails its direct native text call; retain that gap as an implementation target.
+      This throughput comparison does not establish resource parity or individual-call latency.
 
 - [x] Map primary README consumer calls to current production code and maintained rival rows:
       generate one identifier, parse or convert one identifier, and encode or decode one masked
