@@ -309,10 +309,7 @@ try {
           `Candidate build failed: ${candidate.name}/${runtime}`,
         );
       await Bun.write(join(report, `${candidate.name}-${runtime}.mjs`), result.outputs[0]!);
-      if (
-        (group === "keyless" && candidate.name.startsWith("random-owned-timestamp")) ||
-        (group === "v7-draw" && candidate.name.startsWith("independent-default-text"))
-      ) {
+      if (group === "keyless" && candidate.name.startsWith("random-owned-timestamp")) {
         // Generator clock tests cannot reach a new module-default writer. Isolate the process
         // so its captured clock and timestamp ceiling cannot alter another proof or timing run.
         const clockProof = [
@@ -321,9 +318,7 @@ try {
           "const api = await import(process.env.UUID_SLUG_PROFILE_MODULE);",
           "for (const instant of [0, 255, 256, 65535, 65536, 4294967295, 4294967296, 281474976710655]) {",
           "  clock = instant;",
-          candidate.name.startsWith("independent-default-text")
-            ? '  const pair = api.generateUuidV7WithPlainSlug(); const bytes = api.plainSlugToUuidBytes(pair.slug); if (api.bytesToUuidString(bytes) !== pair.uuid) throw new Error("Default pair spellings disagree");'
-            : "  const bytes = api.generateUuidV7Bytes();",
+          "  const bytes = api.generateUuidV7Bytes();",
           "  let encoded = 0n;",
           "  for (let i = 0; i < 6; i++) encoded = (encoded << 8n) | BigInt(bytes[i]);",
           '  if (encoded !== BigInt(instant)) throw new Error("Default UUIDv7 bytes lost timestamp bits");',

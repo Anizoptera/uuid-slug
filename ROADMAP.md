@@ -829,7 +829,7 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         `current-independent-default-owned-resource-ceiling.log` reaches the repeated pair and
         rejects its fresh byte array. Reject this mechanism before timing and remove its fixtures;
         the source and mutation proofs remain in `candidates-keyless-*` captures.
-  - [ ] Screen independent default draws inside the existing text-generator guard and buffer.
+  - [x] Screen independent default draws inside the existing text-generator guard and buffer.
         Keep created generators and explicit instants on their existing sequence paths. Reuse the
         timestamp writer without a fresh per-call array or duplicate guard. A new branch can slow
         configured calls, and full entropy draws can erase sequence savings; include those controls.
@@ -839,17 +839,26 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         with independent paired processes and the requested batches. Pair gains survive packing;
         configured controls remain unresolved. Lost-prefix, lost-tail and lost-clock mutations
         reach their intended oracles before timing. Retain no production substitution yet.
-  - [x] Distinguish recurring allocation from allocator or JIT growth for independent text draws.
+  - [x] Check whether native memory keeps growing across equal-call windows.
         `current-independent-default-text-fixed-*` and `current-independent-default-text-memory-repeat-*`
         show lower caller CPU and retained heap for pairs, but committed-memory growth conflicts.
         `current-independent-default-text-windows-*` brackets equal successive windows without
         retained sample records. Committed memory stays fixed after the first window in every
         process; process CPU gains persist. This rejects recurring committed growth under this
         workload, not a startup-memory difference. Keep the allocation ceilings unchanged.
-  - [ ] Qualify independent text draws on installed Node LTS, Chromium and Deno, then JITless.
+  - [x] Qualify independent text draws across ranked runtimes, stopping on a material loss.
         Compare packed default calls and configured controls; reject a material normal-call loss.
         Existing primary-runtime gains and bounded memory growth justify this next comparison,
         but neither establishes portability, fallback behavior or complete resource parity.
+        `current-independent-default-text-secondary-packed.log` rejects universal selection:
+        ordinary Node LTS and Deno calls regress while Chromium pairs improve. The higher-rung
+        losses decide rejection without JITless timing. Remove the universal fixtures and routing;
+        keep the private-buffer payload oracle and complete-call controls.
+  - [ ] Screen Bun-only independent text draws through the private runtime selection boundary.
+        Prefer a selected module constant that optimizers erase on other hosts; do not infer
+        this policy from an unrelated native capability or expose a new caller option.
+        Require unselected packed graphs to retain the original draw, unchanged configured calls,
+        matching allocation ceilings and repeated Bun complete-call gains before retention.
 - [x] Screen the argument-free UUIDv7 value call without its empty options record and absent-field
       readers; preserve the owned bytes, immutable value, payload layout and thrown entropy failure.
       Require the lost-throw mutation to fail both runtime tests before timing. Compare the full
