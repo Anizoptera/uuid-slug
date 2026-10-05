@@ -2,6 +2,7 @@
 
 import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join, resolve as resolveReportDirectory } from "node:path";
+import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 import { command } from "../scripts/command";
@@ -13,6 +14,16 @@ const reports = process.env.UUID_SLUG_PROFILE_NATIVE_DIR
   : join(import.meta.dir, "reports");
 const smoke = process.argv.includes("--smoke");
 const native = process.argv.includes("--native");
+const synchronousOnly = process.argv.includes("--sync");
+// Packed comparisons must profile the retained public graph, not rebuild the working tree.
+// Private implementations belong to the local graph and cannot prove an overridden package.
+const publicModule = process.env.UUID_SLUG_PROFILE_MODULE;
+const publicModulePath = publicModule
+  ? Bun.resolveSync(
+      publicModule.startsWith("file:") ? fileURLToPath(publicModule) : publicModule,
+      project,
+    )
+  : undefined;
 if (native && process.env.UUID_SLUG_PROFILE_LATENCY_SAMPLES !== undefined)
   throw new Error("Sample call latency separately from native profiling");
 const samples = process.env.UUID_SLUG_PROFILE_SAMPLES ?? (smoke ? "1" : "7");
@@ -30,7 +41,7 @@ const environment: Readonly<Record<string, string>> = {
   UUID_SLUG_PROFILE_MS: duration,
   UUID_SLUG_PROFILE_SAMPLES: samples,
   UUID_SLUG_PROFILE_WARMUP_MS: warmup,
-  UUID_SLUG_PROFILE_PRIVATE: "1",
+  UUID_SLUG_PROFILE_PRIVATE: publicModule ? "0" : "1",
   ...(process.env.UUID_SLUG_PROFILE_LATENCY_SAMPLES === undefined
     ? {}
     : { UUID_SLUG_PROFILE_LATENCY_SAMPLES: process.env.UUID_SLUG_PROFILE_LATENCY_SAMPLES }),
@@ -131,6 +142,18 @@ async function build(entry: string, target: "browser" | "node", conditions: stri
     conditions,
     outdir: reports,
     naming: name,
+    plugins: publicModulePath
+      ? [
+          {
+            name: "profile-public-module",
+            setup(builder) {
+              builder.onResolve({ filter: /^\.\.\/src\/index$/ }, () => ({
+                path: publicModulePath,
+              }));
+            },
+          },
+        ]
+      : [],
   });
   if (!result.success)
     throw new AggregateError(
@@ -155,9 +178,9 @@ async function runHost(
   console.log(`${name}: ${lines.length - headerRows} measurement records`);
 }
 
-async function runBrowser(entry: string, asyncEntry: string) {
+async function runBrowser(entry: string, asyncEntry?: string) {
   const script = await Bun.file(entry).text();
-  const asyncScript = await Bun.file(asyncEntry).text();
+  const asyncScript = asyncEntry ? await Bun.file(asyncEntry).text() : undefined;
   const server = Bun.serve({
     port: 0,
     fetch(request) {
@@ -182,7 +205,7 @@ async function runBrowser(entry: string, asyncEntry: string) {
     const query = new URLSearchParams({ samples, duration, warmup });
     if (process.env.UUID_SLUG_PROFILE_LATENCY_SAMPLES !== undefined)
       query.set("latencySamples", process.env.UUID_SLUG_PROFILE_LATENCY_SAMPLES);
-    query.set("private", "1");
+    query.set("private", publicModule ? "0" : "1");
     if (filter) query.set("filter", filter);
     await page.goto(`${server.url.href}?${query}`);
     await page.waitForFunction(() => "runUuidSlugProfile" in globalThis);
@@ -227,17 +250,20 @@ async function runBrowser(entry: string, asyncEntry: string) {
       await session.send("HeapProfiler.takeHeapSnapshot");
     }
     if (rows.length === 0) throw new Error("Chromium emitted no profile rows");
-    await page.addScriptTag({ type: "module", url: "/profile-async.mjs" });
-    const asyncRows = await page.evaluate(async () => {
-      const run = (
-        globalThis as typeof globalThis & {
-          runUuidSlugAsyncProfile?: () => Promise<readonly Record<string, unknown>[]>;
-        }
-      ).runUuidSlugAsyncProfile;
-      if (!run) throw new Error("Browser async profile module did not prepare");
-      return run();
-    });
-    if (asyncRows.length === 0) throw new Error("Chromium emitted no async profile rows");
+    if (!synchronousOnly) await page.addScriptTag({ type: "module", url: "/profile-async.mjs" });
+    const asyncRows = synchronousOnly
+      ? []
+      : await page.evaluate(async () => {
+          const run = (
+            globalThis as typeof globalThis & {
+              runUuidSlugAsyncProfile?: () => Promise<readonly Record<string, unknown>[]>;
+            }
+          ).runUuidSlugAsyncProfile;
+          if (!run) throw new Error("Browser async profile module did not prepare");
+          return run();
+        });
+    if (!synchronousOnly && asyncRows.length === 0)
+      throw new Error("Chromium emitted no async profile rows");
     await Bun.write(join(reports, "chromium.json"), JSON.stringify(rows));
     await Bun.write(join(reports, "chromium-async.json"), JSON.stringify(asyncRows));
     if (native) {
@@ -313,7 +339,7 @@ async function runExitProfiles(nodeEntry: string, denoEntry: string): Promise<vo
     ],
     {
       ...environment,
-      UUID_SLUG_PROFILE_MODULE: new URL("../dist/index.js", import.meta.url).href,
+      UUID_SLUG_PROFILE_MODULE: publicModule ?? new URL("../dist/index.js", import.meta.url).href,
     },
   );
   const bunProfile = join(import.meta.dir, "profile.ts");
@@ -363,15 +389,15 @@ async function runExitProfiles(nodeEntry: string, denoEntry: string): Promise<vo
 async function main() {
   await mkdir(reports, { recursive: true });
   if (native) await resetNativeFiles();
-  await command("bun", ["run", "build"], project);
+  if (!publicModule) await command("bun", ["run", "build"], project);
   const [nodeEntry, denoEntry, browserEntry, asyncNodeEntry, asyncDenoEntry, asyncBrowserEntry] =
     await Promise.all([
       build("profile", "node"),
       build("profile", "node", ["deno"]),
       build("profile-browser", "browser"),
-      build("profile-async", "node"),
-      build("profile-async", "node", ["deno"]),
-      build("profile-async", "browser"),
+      synchronousOnly ? undefined : build("profile-async", "node"),
+      synchronousOnly ? undefined : build("profile-async", "node", ["deno"]),
+      synchronousOnly ? undefined : build("profile-async", "browser"),
     ]);
   const nodeVersion = (await command(nodeExecutable, ["--version"], project)).trim();
   const nodeReport = `node-${nodeVersion.replace(/[^0-9A-Za-z.-]/g, "-")}`;
@@ -394,19 +420,23 @@ async function main() {
     ],
     {
       ...(native ? nativeEnvironment("deno-inspector") : environment),
-      UUID_SLUG_PROFILE_MODULE: new URL("../dist/index.js", import.meta.url).href,
+      UUID_SLUG_PROFILE_MODULE: publicModule ?? new URL("../dist/index.js", import.meta.url).href,
     },
   );
   await runBrowser(browserEntry, asyncBrowserEntry);
-  await runHost(`${nodeReport}-async`, nodeExecutable, [asyncNodeEntry], nodeEnvironment, 0);
-  await runHost("bun-async", "bun", [join(import.meta.dir, "profile-async.ts")], environment, 0);
-  await runHost(
-    "deno-async",
-    "deno",
-    ["run", "--allow-env", "--allow-read", asyncDenoEntry],
-    environment,
-    0,
-  );
+  if (!synchronousOnly) {
+    if (!asyncNodeEntry || !asyncDenoEntry || !asyncBrowserEntry)
+      throw new Error("Async profile builds must finish before executing async cases");
+    await runHost(`${nodeReport}-async`, nodeExecutable, [asyncNodeEntry], nodeEnvironment, 0);
+    await runHost("bun-async", "bun", [join(import.meta.dir, "profile-async.ts")], environment, 0);
+    await runHost(
+      "deno-async",
+      "deno",
+      ["run", "--allow-env", "--allow-read", asyncDenoEntry],
+      environment,
+      0,
+    );
+  }
   if (native) {
     await runExitProfiles(nodeEntry, denoEntry);
     await requireNativeFiles();

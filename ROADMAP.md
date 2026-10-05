@@ -18,8 +18,16 @@ Deliver retained improvements to ordinary single-ID calls; a rejected experiment
       gains or a material control loss; expand a survivor to packed/runtime/resource evidence only.
       `current-slug-alphabet-mutation.log` rejects the wrong-alphabet result in Node and Bun.
       `current-slug-alphabet-screen.log` improves byte conversion in both orders on Node Current
-      and Bun, while paired/text controls include mixed effects. Keep production unchanged;
-      compare the same substitution through packed calls before resource/profile expansion.
+      and Bun, while paired/text controls include mixed effects. Packed comparisons in
+      `current-slug-alphabet-packed{,-all,-lts}.jsonl` reproduce conversion gains on Node,
+      Chromium and Deno without a separated selected-case loss. Bun equal-call captures lower
+      CPU in both orders; collected heap is retention evidence, not gross allocation.
+      Keep production unchanged until remaining runtime profiles establish resource costs.
+  - [ ] Finish packed-module selection and synchronous-only execution in `bench/profile-all.ts`;
+        preserve its existing native evidence and avoid unrelated async construction. The control
+        emits both byte conversions on every host; its Chromium bundle contains the candidate selector.
+  - [ ] Capture baseline/candidate native resource profiles in reversed order on remaining hosts,
+        inspect CPU and allocation with each process's own completed-call counts, then retain or reject.
 
 - [x] Screen Node-compatible UUIDv4 selection in the Bun adapter through `generateUuidV4()`
       and uppercase text, with byte and UUIDv7 calls as controls. Direct-method evidence supports
