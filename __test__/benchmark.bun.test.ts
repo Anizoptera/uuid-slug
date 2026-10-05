@@ -409,7 +409,26 @@ test("primary resource guards reject restored work on the measured runtime", asy
           ...RESOURCE_REGRESSION_CASES,
           ...(runtime === process.execPath
             ? [
-                ["duplicate-native", "preset generation must use exactly one native ID"],
+                [
+                  "duplicate-native",
+                  "Bun default UUIDv7 text must reach its native generator once",
+                ],
+                [
+                  "lost-native-v7-text",
+                  "Bun default UUIDv7 text must reach its native generator once",
+                ],
+                [
+                  "lost-native-v7-slug",
+                  "Bun default UUIDv7 slug must reach its native generator once",
+                ],
+                [
+                  "native-v7-text-revalidation",
+                  "trusted native UUIDv7 text must not reparse every UUID",
+                ],
+                [
+                  "native-v7-slug-revalidation",
+                  "trusted native UUIDv7 slugs must skip repeated validation",
+                ],
                 [
                   "lost-native-encoder",
                   "ordinary Bun base64url must reach its native encoder once",

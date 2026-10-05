@@ -34,8 +34,22 @@ export const generateUuidV4Bytes = new Proxy(api.generateUuidV4Bytes, {
 
 export const generateUuidV7 = new Proxy(api.generateUuidV7, {
   apply(target, receiver, args) {
+    if (mode === "lost-native-v7-text") return api.generateUuidV7({ at: Date.now() });
     const result: ReturnType<typeof target> = Reflect.apply(target, receiver, args);
     if (mode === "duplicate-native") Reflect.apply(target, receiver, args);
+    if (mode === "native-v7-text-revalidation" && typeof result === "string")
+      for (let index = 0; index < result.length; index++) result.charCodeAt(index);
+    return result;
+  },
+});
+
+export const generatePlainUuidV7Slug = new Proxy(api.generatePlainUuidV7Slug, {
+  apply(target, receiver, args) {
+    // Explicit-time generation preserves valid output while bypassing native default selection.
+    if (mode === "lost-native-v7-slug") return api.generatePlainUuidV7Slug({ at: Date.now() });
+    const result: ReturnType<typeof target> = Reflect.apply(target, receiver, args);
+    if (mode === "native-v7-slug-revalidation" && typeof result === "string")
+      for (let index = 0; index < result.length; index++) result.charCodeAt(index);
     return result;
   },
 });

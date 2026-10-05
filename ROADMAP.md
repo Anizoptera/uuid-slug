@@ -29,6 +29,13 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
       independent native or qualified-library references, measure normal variation before choosing
       a budget, and prove a material slowdown fails it. Keep timing and instrumented counts separate;
       neither establishes total allocation or protects an unmeasured runtime.
+  - [x] Require available Bun native UUIDv7 selection for default text and base64url slugs.
+        Capture capability before package import so observed dispatch cannot choose its own budget.
+        The existing isolated fixtures reject valid-output portable substitutions and native
+        revalidation for both calls. Node/Bun proof passes 27 assertions; Deno passes 11 and
+        packed Chromium passes its unchanged control and shared defects. Evidence is in
+        `/tmp/uuid-slug-native-v7-resource-selection-{proof,deno,chromium}.log`.
+        The complete check passes in the corresponding `-check.log`; production is unchanged.
   - [x] Protect root immutable UUIDv7 generation from extra payload allocation.
         `value.generate` has independent timing coverage and a warmed root resource witness.
         Its one-array ceiling permits less work and forbids extra views, copies, slices and errors.

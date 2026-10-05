@@ -114,7 +114,8 @@ if (typeof process !== "undefined" && process.versions?.node) {
 wrapMethod(globalThis.crypto, "randomUUID", "nativeV4");
 assert.ok(wrapMethod(globalThis.crypto, "getRandomValues", "draws"));
 assert.ok(wrapMethod(WeakMap.prototype, "set", "weakWrites"));
-if (typeof Bun !== "undefined") wrapMethod(Bun, "randomUUIDv7", "nativeV7");
+const hasNativeUuidV7 = typeof Bun !== "undefined" && typeof Bun.randomUUIDv7 === "function";
+if (hasNativeUuidV7) assert.ok(wrapMethod(Bun, "randomUUIDv7", "nativeV7"));
 
 try {
   const api: typeof import("../src/index") = await import(
@@ -329,6 +330,13 @@ try {
     errors: 0,
   });
   const nativePreset = counts.nativeV7 > 0;
+  // Availability is independent of package dispatch; observing zero must not bless lost delegation.
+  if (hasNativeUuidV7)
+    assert.equal(
+      counts.nativeV7,
+      1,
+      "Bun default UUIDv7 text must reach its native generator once",
+    );
   assert.equal(
     counts.buffers,
     nativePreset ? 0 : 1,
@@ -343,6 +351,12 @@ try {
     errors: 0,
   });
   const nativeSlug = counts.nativeV7 > 0;
+  if (hasNativeUuidV7)
+    assert.equal(
+      counts.nativeV7,
+      1,
+      "Bun default UUIDv7 slug must reach its native generator once",
+    );
   assert.equal(counts.buffers, nativePreset && !nativeSlug ? 1 : 0);
   assert.equal(counts.views, nativePreset && !nativeSlug ? 1 : 0);
   // Portable text or slug presets initialize shared state; two native presets leave it lazy.
