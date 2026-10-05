@@ -407,6 +407,15 @@ try {
     views: 0,
     errors: 0,
   });
+  for (const [name, call] of [
+    ["default UUIDv4 slug", () => api.generatePlainUuidV4Slug()],
+    ["base32 UUIDv4 slug", () => api.generatePlainUuidV4Slug(api.BASE32HEX)],
+    ["base32 UUIDv7 slug", () => api.generatePlainUuidV7Slug(api.BASE32HEX)],
+  ] as const) {
+    assert.equal(typeof call(), "string");
+    // Reusable generation and encoding storage is warmed; per-ID arrays are redundant work.
+    check(name, call, { buffers: 0, views: 0, copies: 0, slices: 0, errors: 0 });
+  }
   const entropyBurst = Number(process.env.UUID_SLUG_RESOURCE_ENTROPY_BURST ?? 0);
   if (
     !Number.isSafeInteger(entropyBurst) ||
@@ -631,6 +640,14 @@ try {
   check("parsed UUID masked encode", () => codec.uuidToMaskedSlug(parsed), { errors: 0 });
   check("parsed UUID from text", () => api.parseUuid(id), {
     buffers: 1,
+    errors: 0,
+    weakWrites: 0,
+  });
+  check("parsed UUID from plain slug", () => api.parseUuid(slug), {
+    buffers: 1,
+    views: 0,
+    copies: 0,
+    slices: 0,
     errors: 0,
     weakWrites: 0,
   });

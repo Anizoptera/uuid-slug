@@ -4,6 +4,10 @@
 export const RESOURCE_REGRESSION_CASES = [
   ["", ""],
   ["owned-temporary", "default owned UUIDv4 bytes: buffers=2 exceeds 1"],
+  ["v4-slug-temporary", "default UUIDv4 slug: buffers=1 exceeds 0"],
+  ["v4-base32-temporary", "base32 UUIDv4 slug: buffers=1 exceeds 0"],
+  ["v7-base32-temporary", "base32 UUIDv7 slug: buffers=1 exceeds 0"],
+  ["slug-parse-temporary", "parsed UUID from plain slug: buffers=2 exceeds 1"],
   ["duplicate-pair", "the pair must construct exactly its UUID and slug strings"],
   ["weak-map-state", "parsed UUID from text: weakWrites=1 exceeds 0"],
   ["masked-temporary", "masked string encode: buffers=1 exceeds 0"],

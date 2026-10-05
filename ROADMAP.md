@@ -29,6 +29,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
       independent native or qualified-library references, measure normal variation before choosing
       a budget, and prove a material slowdown fails it. Keep timing and instrumented counts separate;
       neither establishes total allocation or protects an unmeasured runtime.
+  - [x] Protect allocation for UUIDv4 slug generation in both alphabets, UUIDv7 base32 generation
+        and immutable parsing from a plain slug. Warmed generation allows no payload arrays;
+        parsing allows one private array. The existing resource gate rejects discarded-array
+        mutations on Node, Bun, Deno and packed Chromium while unchanged controls pass.
+        `/tmp/uuid-slug-primary-slug-resource-{proof,deno,chromium}.log` retains the proofs.
+        Independent timing rows remain separate; these counts do not establish total allocation.
   - [x] Require available Bun native UUIDv7 selection for default text and base64url slugs.
         Capture capability before package import so observed dispatch cannot choose its own budget.
         The existing isolated fixtures reject valid-output portable substitutions and native

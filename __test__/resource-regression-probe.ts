@@ -50,6 +50,19 @@ export const generatePlainUuidV7Slug = new Proxy(api.generatePlainUuidV7Slug, {
     const result: ReturnType<typeof target> = Reflect.apply(target, receiver, args);
     if (mode === "native-v7-slug-revalidation" && typeof result === "string")
       for (let index = 0; index < result.length; index++) result.charCodeAt(index);
+    if (mode === "v7-base32-temporary" && args[0] === api.BASE32HEX) new Uint8Array(16).fill(0);
+    return result;
+  },
+});
+
+export const generatePlainUuidV4Slug = new Proxy(api.generatePlainUuidV4Slug, {
+  apply(target, receiver, args) {
+    const result: ReturnType<typeof target> = Reflect.apply(target, receiver, args);
+    if (
+      (mode === "v4-slug-temporary" && args.length === 0) ||
+      (mode === "v4-base32-temporary" && args[0] === api.BASE32HEX)
+    )
+      new Uint8Array(16).fill(0);
     return result;
   },
 });
@@ -75,6 +88,8 @@ export const parseUuid = new Proxy(api.parseUuid, {
   apply(target, receiver, args) {
     const result: ReturnType<typeof target> = Reflect.apply(target, receiver, args);
     if (mode === "weak-map-state" && !(result instanceof Error)) oldState.set(result, args[0]);
+    if (mode === "slug-parse-temporary" && typeof args[0] === "string" && args[0].length === 22)
+      new Uint8Array(16).fill(0);
     return result;
   },
 });
