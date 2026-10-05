@@ -802,6 +802,14 @@ keep contract changes reserved for Art, and claim impossibility only with a name
       direct pairs lead on Node, Chromium and Deno; Bun remains close. Reject rewriting the pair
       draw from that comparison; separate public conversions can conceal an internal difference.
       Preserve explicit generators, instants and immutable layouts.
+  - [x] Recompare default Bun pairs with one owned-byte draw and both public conversions after
+        block copying. A repeated composed-call gain supports inspecting the pair's sequence
+        work; parity or a direct-pair lead rejects that rewrite before adding a scratch path.
+        All three `current-bun-pair-draw-after-pool-*` screens favor the composed call.
+  - [ ] Profile those exact two Bun corpus calls after equal counted preparation and with equal
+        completed calls. Sequence-frame CPU supports reusing the independent draw for borrowed
+        defaults; formatting or wrapper cost instead selects its owner. Keep configured generator
+        layouts, reentrancy, clock errors, entropy failure and pair consistency unchanged.
 - [x] Screen the argument-free UUIDv7 value call without its empty options record and absent-field
       readers; preserve the owned bytes, immutable value, payload layout and thrown entropy failure.
       Require the lost-throw mutation to fail both runtime tests before timing. Compare the full
