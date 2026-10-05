@@ -16,6 +16,10 @@ const api: typeof import("../src/index") = await import(
   process.env.UUID_SLUG_PROFILE_MODULE ?? "../src/index"
 );
 const calls = Number(process.env.UUID_SLUG_PROFILE_CALLS ?? 32_768);
+const warmupCalls =
+  process.env.UUID_SLUG_PROFILE_WARMUP_CALLS === undefined
+    ? 0
+    : Number(process.env.UUID_SLUG_PROFILE_WARMUP_CALLS);
 // Sampling counts depend on profiler scheduling; use caller CPU for the unsampled fixed-call pass.
 // Process CPU also includes helper threads, so keep the two observations distinct.
 const threadCpuUsage = (
@@ -23,6 +27,8 @@ const threadCpuUsage = (
 ).threadCpuUsage?.bind(process);
 if (!Number.isSafeInteger(calls) || calls < 1)
   throw new Error("UUID_SLUG_PROFILE_CALLS must be a positive safe integer");
+if (!Number.isSafeInteger(warmupCalls) || warmupCalls < 0)
+  throw new Error("UUID_SLUG_PROFILE_WARMUP_CALLS must be a nonnegative safe integer");
 const filter = process.env.UUID_SLUG_PROFILE_FILTER;
 const generationName = process.env.UUID_SLUG_PROFILE_GENERATION_CASE;
 const cases: [string, ProfileCase][] = [];
@@ -66,15 +72,18 @@ function consume(value: ReturnType<(typeof cases)[number][1]>, index: number): v
   else sink ^= uuidObjectChecksum(value, index) ?? 1;
 }
 
+// Explicit equal-count preparation separates repeated-call retention from initialization;
+// leaving it absent preserves cold captures. Both modes include the same successful calls.
+if (warmupCalls > 0) runCases(warmupCalls);
 Bun.gc(true);
 const before = heapStats();
 const nativeBefore = memoryUsage();
 console.error("UUID_SLUG_MIMALLOC_BEFORE");
 Bun.unsafe.mimallocDump();
-function runCases(): void {
+function runCases(callsToRun = calls): void {
   for (const [name, operation] of cases) {
     const expectedError = name.startsWith("invalid.");
-    for (let index = 0; index < calls; index += 1) {
+    for (let index = 0; index < callsToRun; index += 1) {
       const value = operation(index);
       if (expectedError !== value instanceof Error)
         throw new Error(`Unexpected outcome for ${name}`, { cause: value });
@@ -107,6 +116,7 @@ await Promise.all([
       calls,
       // Each selected case executes this many calls in each pass.
       memoryCalls: calls,
+      warmupCalls,
       cpuUs: cpu.user + cpu.system,
       threadCpuUs: threadCpu && threadCpu.user + threadCpu.system,
       samplingCalls: calls,

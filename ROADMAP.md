@@ -686,6 +686,24 @@ keep contract changes reserved for Art, and claim impossibility only with a name
         Both mutations fail their intended Node/Bun assertions and intact lanes pass.
         `current-pool-block-offset-jitless.log` reproduces a byte gain; requalify primary and
         remaining runtime calls, equal-call resources and native profiles before retention.
+        `current-pool-block-offset-packed-primary.log` separates Node owned-v4/v7 and Bun
+        owned-v4 gains; other primary calls remain unresolved. Compare equal-call Bun owned-v4
+        CPU and retention next: worse resource use rejects a throughput-only improvement.
+        `current-pool-block-offset-resource-*` lowers Bun caller CPU in each matched pair;
+        resident growth increases in two pairs and final RSS varies. These captures include
+        initialization and do not establish allocation parity. Keep retention open; a repeated
+        primary-call loss on the remaining runtimes rejects this candidate before further profiling.
+        `current-pool-block-offset-packed-other.log` preserves byte gains but separates WebKit
+        slug/pair losses and a small Chromium text loss. Isolate each affected call without
+        preceding allocation work: persistence rejects the candidate; disappearance leaves the
+        mixed-workload attribution unresolved rather than proving the candidate harmless.
+        Extend the existing Bun memory owner with opt-in counted warm-up before its snapshots.
+        Compare the same draw count after equal preparation: a retained-memory loss that persists
+        rejects retention; disappearance separates initialization from repeated-call cost.
+        The isolated WebKit slug/pair and Chromium text comparisons do not reproduce their
+        mixed losses. `current-pool-block-offset-warm-resource-*` preserves lower Bun caller
+        CPU in every pair while resident and heap differences change direction; no repeated
+        retained-memory loss is established. Qualify Node LTS and selected native profiles next.
   - [x] Profile the exact module-default owned-byte call before choosing another substitution;
         separate setup from samples beneath the public generation frame, inspect allocation
         and entropy evidence, and compare the observed costs with the faster rivals' mechanisms.
