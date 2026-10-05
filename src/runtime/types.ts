@@ -15,7 +15,7 @@ export interface Runtime {
    * Hooks are detached from the adapter, so `this: void` rejects implementations that depend on
    * method binding.
    */
-  /** Native values are untrusted until the public generator validates their representation. */
+  /** Native UUIDv4 text; default calls trust the proper native generator's result directly. */
   uuidV4?(this: void): string;
   /** Native current-time UUIDv7 text; configured clocks and sequence state stay on generators. */
   uuidV7?(this: void): string;

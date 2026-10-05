@@ -395,6 +395,21 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         accepts comma-separated case-name substrings, and a single term retains its old meaning.
 - [ ] Profile the actual complete calls with gaps and inspect their faster rivals. Name the
       removable work, the rival explanation, and the observation that would reject the attribution.
+  - [x] Screen an error-valued owned-byte source confined to masked generation.
+        The sampled sequenced writer and rejected shared-entry comparison identify removable
+        work in ordinary masked calls. Export the existing private selected byte function only
+        between internal modules and select it in public codec construction for no-option draws.
+        Leave codec immutable values, explicit instants and injected generators on their current
+        paths. Reuse the source-screen and packed drivers with a captured keyless companion file.
+        Cipher cost or callback dispatch may erase the saving; reject without repeated complete
+        masked-call gains on primary runtimes, or on a primary resource or correctness loss.
+        `candidates-codec-9adhlm` passes Node/Bun behavior, layout and resource witnesses.
+        `current-owned-masked-source-current-packed.jsonl` resolves lower Node Current masked
+        slug/pair cost in both alphabets, but Bun masked gains remain unresolved and both Bun
+        immutable-value controls resolve slower. Reject retention under the primary no-regression
+        requirement; the result does not establish a cause for those control losses.
+        `packed-source-ffiw84` preserves both substituted files and packages. Remove the rejected
+        candidate and unused companion-file support; keep masked-pair measurement coverage.
   - [x] Prove the codec-value layout guard rejects the faster shared-entry substitution.
         Codec-backed values attach a sequenced layout to bytes from `uuidV7BytesFor`;
         substituting independent payloads there makes their reported layout false.

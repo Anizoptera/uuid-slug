@@ -698,6 +698,8 @@ export function createProfileCases(
       ),
     "masked.generate": () => codec.generateMaskedUuidV7Slug(),
     "masked.base32.generate": () => base32Codec.generateMaskedUuidV7Slug(),
+    "masked.pair.default": () => codec.generateUuidV7WithMaskedSlug(),
+    "masked.pair.base32": () => base32Codec.generateUuidV7WithMaskedSlug(),
     "masked.generate.selected-generator": () =>
       codec.generateMaskedUuidV7Slug({ generator: selectedGenerator }),
     "masked.pair.selected-generator": () =>
@@ -1046,7 +1048,7 @@ export function createProfileCases(
               (ids[index & 255]!.charCodeAt(index % 36) ^ 7 ^ (instant + (index & 255)) ^ 1))
         )
           throw new Error(`${name} did not preserve the parsed UUID fields`);
-        if (name.startsWith("v7.pair.")) {
+        if (name.startsWith("v7.pair.") || name.startsWith("masked.pair.")) {
           if (
             typeof value !== "object" ||
             !("uuid" in value) ||
@@ -1054,7 +1056,11 @@ export function createProfileCases(
             !api.isUuidV7Text(value.uuid) ||
             value.uuid.length !== 36 ||
             typeof value.slug !== "string" ||
-            api.plainSlugToUuidString(value.slug as string) !== value.uuid.toLowerCase()
+            (name.startsWith("masked.pair.")
+              ? (name === "masked.pair.base32" ? base32Codec : codec).maskedSlugToUuidString(
+                  value.slug as string,
+                )
+              : api.plainSlugToUuidString(value.slug as string)) !== value.uuid.toLowerCase()
           )
             throw new Error(`${name} returned mismatched UUID and slug payloads`);
         }
