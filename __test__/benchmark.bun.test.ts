@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // A successful matrix requires measurements from every requested child, not merely one survivor.
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -259,6 +259,75 @@ test("native pair compositions generate once and preserve both spellings", () =>
       expect(calls - before).toBe(1);
       verifyGenerationCase(pair);
     }
+  }
+});
+
+test("primary resource guards reject restored work on the measured runtime", async () => {
+  const reports = join(import.meta.dir, "..", "bench", "reports");
+  await mkdir(reports, { recursive: true });
+  const directory = await mkdtemp(join(reports, "resource-gate-"));
+  let passed = false;
+  try {
+    const built = await Bun.build({
+      entrypoints: [
+        join(import.meta.dir, "resource-regression-probe.ts"),
+        join(import.meta.dir, "..", "bench", "resources.ts"),
+      ],
+      target: "node",
+      packages: "external",
+      outdir: directory,
+      naming: "[name].mjs",
+    });
+    expect(built.success).toBe(true);
+    // Baseline and defects use the same module and process boundary. No shared source is edited.
+    await Promise.all(
+      ["node", process.execPath].map(async (runtime) => {
+        const probes = [
+          ["", ""],
+          ["owned-temporary", "default owned UUIDv4 bytes: buffers=2 exceeds 1"],
+          ["duplicate-pair", "the pair must construct exactly its UUID and slug strings"],
+          ["weak-map-state", "parsed UUID from text: weakWrites=1 exceeds 0"],
+          ["masked-temporary", "masked string encode: buffers=1 exceeds 0"],
+          ...(runtime === process.execPath
+            ? [
+                ["native-revalidation", "trust native output without reparsing it"],
+                ["duplicate-native", "preset generation must use exactly one native ID"],
+                [
+                  "lost-native-encoder",
+                  "ordinary Bun base64url must reach its native encoder once",
+                ],
+              ]
+            : []),
+        ];
+        await Promise.all(
+          probes.map(async ([mode, diagnostic]) => {
+            const child = Bun.spawn([runtime, join(directory, "resources.mjs")], {
+              env: {
+                ...process.env,
+                UUID_SLUG_PROFILE_MODULE: join(directory, "resource-regression-probe.mjs"),
+                UUID_SLUG_RESOURCE_REGRESSION: mode,
+              },
+              stdout: "pipe",
+              stderr: "pipe",
+            });
+            const [stdout, stderr, status] = await Promise.all([
+              new Response(child.stdout).text(),
+              new Response(child.stderr).text(),
+              child.exited,
+            ]);
+            expect({ runtime, mode, status, output: status === 0 ? "" : stdout + stderr }).toEqual(
+              mode
+                ? { runtime, mode, status: 1, output: expect.stringContaining(diagnostic!) }
+                : { runtime, mode, status: 0, output: "" },
+            );
+          }),
+        );
+      }),
+    );
+    passed = true;
+  } finally {
+    if (passed) await rm(directory, { recursive: true, force: true });
+    else console.error(`Resource regression proof failed; bundles remain in ${directory}.`);
   }
 });
 

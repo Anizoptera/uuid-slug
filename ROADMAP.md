@@ -29,6 +29,23 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
       independent native or qualified-library references, measure normal variation before choosing
       a budget, and prove a material slowdown fails it. Keep timing and instrumented counts separate;
       neither establishes total allocation or protects an unmeasured runtime.
+  - [x] Extend deterministic primary-call resource protection and prove its rejection paths.
+        Native UUIDv4 text must skip revalidation and extra draws; ordinary owned UUIDv4/UUIDv7
+        bytes need no temporary arrays; Bun plain base64url must reach native encoding; base32
+        must keep its direct writer. Parsed values must avoid redundant WeakMap writes, and masked
+        text must keep its allocation-free scratch path in both alphabets. The shared benchmark
+        test runs unchanged and result-preserving defective entries in isolated Node and Bun
+        processes. Require the intended diagnostic, not merely a nonzero exit; retain failed bundles.
+  - [x] Resolve the unchanged Bun slug-guard timing failure before committing new guards.
+        The retained failing bundle reports a ratio above its unchanged budget, while an isolated
+        replay of those same bytes passes. A fixed short call-count warm-up may leave engine
+        compilation inside the samples. Change warm-up alone to match the competitor matrix's
+        timed preparation, retain every ratio and the existing limits, then repeat fresh processes.
+        Reject the correction if normal calls still fail or the deliberate slowdown stops failing.
+        `current-primary-gate-warmup/` retains every ratio from fresh Node and Bun processes.
+        All selected calls pass their unchanged limits; the benchmark regression suite still
+        rejects deliberately repeated parsing. This does not prove the cause of the earlier
+        failure or add independent timing protection for primary generation and conversion.
 
 - [x] Remove the `fastv7` qualification exclusion for counter width and random-bit allocation.
       Its installed implementation uses Web Crypto and writes UUIDv7 version/variant bits.

@@ -19,6 +19,8 @@ const counts = {
   textSlices: 0,
   draws: 0,
   nativeV7: 0,
+  nativeV4: 0,
+  weakWrites: 0,
 };
 const OriginalBytes = Uint8Array;
 const OriginalError = Error;
@@ -61,7 +63,7 @@ assert.equal(copyControl[0], 7);
 assert.equal(counts.copies, copiesBefore + 1);
 assert.ok(wrapMethod(OriginalBytes.prototype, "slice", "slices"));
 wrapMethod(OriginalBytes.prototype, "toHex", "hex");
-wrapMethod(OriginalBytes.prototype, "toBase64", "base64");
+const hasNativeBase64 = wrapMethod(OriginalBytes.prototype, "toBase64", "base64");
 if (
   typeof Bun !== "undefined" &&
   wrapMethod(globalThis.Buffer.prototype, "base64urlSlice", "base64")
@@ -104,7 +106,10 @@ const expectTextFormatter = (message: string) => {
 assert.ok(wrapMethod(String.prototype, "charCodeAt", "chars"));
 assert.ok(wrapMethod(String.prototype, "slice", "textSlices"));
 assert.ok(wrapMethod(crypto, "randomFillSync", "draws"));
+assert.ok(wrapMethod(crypto, "randomUUID", "nativeV4"));
+wrapMethod(globalThis.crypto, "randomUUID", "nativeV4");
 assert.ok(wrapMethod(globalThis.crypto, "getRandomValues", "draws"));
+assert.ok(wrapMethod(WeakMap.prototype, "set", "weakWrites"));
 if (typeof Bun !== "undefined") wrapMethod(Bun, "randomUUIDv7", "nativeV7");
 
 try {
@@ -194,6 +199,7 @@ try {
   assert.ok(id.charCodeAt(process.pid % id.length) > 0);
   assert.equal(id.slice(0, 1), "0");
   assert.equal(String.fromCharCode(65), "A");
+  new WeakMap<object, number>().set(copyControl, 1);
   assert.ok(
     counts.buffers > 0 &&
       counts.slices > 0 &&
@@ -201,6 +207,7 @@ try {
       counts.errors > 0 &&
       counts.chars > 0 &&
       counts.textSlices > 0 &&
+      counts.weakWrites === 1 &&
       counts.fromCharCodes > 0,
     JSON.stringify(counts),
   );
@@ -233,7 +240,20 @@ try {
   ] as const) {
     assert.equal(typeof api.generateUuidV4(textCase), "string");
     check(name, () => api.generateUuidV4(textCase), { buffers: 0, views: 0, errors: 0 });
+    if (typeof Bun !== "undefined")
+      assert.equal(counts.nativeV4, 1, `${name}: preserve Bun's direct native selection`);
+    if (counts.nativeV4) {
+      assert.equal(counts.nativeV4, 1, `${name}: draw one native UUID, not discarded IDs`);
+      assert.equal(counts.draws, 0, `${name}: native success must skip portable entropy`);
+      assert.equal(counts.chars, 0, `${name}: trust native output without reparsing it`);
+    }
   }
+  // A fresh owned result needs one array. Extra temporary arrays repeat the removed copy work.
+  for (const [name, call] of [
+    ["default owned UUIDv4 bytes", () => api.generateUuidV4Bytes()],
+    ["default owned UUIDv7 bytes", () => api.generateUuidV7Bytes()],
+  ] as const)
+    check(name, call, { buffers: 1, views: 0, errors: 0 });
   for (const value of [id, id.slice(0, -1) + "!", "!".repeat(36)])
     check("UUID predicate", () => api.isUuidV7String(value), { buffers: 0, errors: 0, views: 0 });
   for (const value of [slug as string, (slug as string).slice(0, -1) + "B", "!".repeat(22)])
@@ -436,6 +456,15 @@ try {
     1,
     "plain slug text must be constructed once",
   );
+  if (typeof Bun !== "undefined" && hasNativeBase64)
+    assert.equal(counts.base64, 1, "ordinary Bun base64url must reach its native encoder once");
+  check("exact base32hex slug formatting", () => api.uuidBytesToPlainSlug(bytes, api.BASE32HEX), {
+    buffers: 0,
+    views: 0,
+    errors: 0,
+    base64: 0,
+  });
+  expectTextFormatter("base32hex must keep its direct writer");
   check("masked base32hex formatting", () => base32Codec.uuidToMaskedSlug(bytes), {
     buffers: 0,
     views: 0,
@@ -528,6 +557,12 @@ try {
     errors: 0,
     hex: 0,
   });
+  check("masked base32hex string encode", () => base32Codec.uuidToMaskedSlug(id), {
+    buffers: 0,
+    copies: 0,
+    views: 0,
+    errors: 0,
+  });
   check("masked byte decode", () => codec.maskedSlugToUuidBytes(masked as string), {
     buffers: 1,
     errors: 0,
@@ -553,7 +588,16 @@ try {
     check(name, call, { buffers: 0, views: 0, errors: 0 });
   check("parsed UUID text conversion", () => api.uuidToString(parsed), { buffers: 0, errors: 0 });
   check("parsed UUID masked encode", () => codec.uuidToMaskedSlug(parsed), { errors: 0 });
-  check("parsed UUID from text", () => api.parseUuid(id), { buffers: 1, errors: 0 });
+  check("parsed UUID from text", () => api.parseUuid(id), {
+    buffers: 1,
+    errors: 0,
+    weakWrites: 0,
+  });
+  check("parsed UUID from bytes", () => api.parseUuid(bytes), {
+    buffers: 1,
+    errors: 0,
+    weakWrites: 0,
+  });
   // Canonical lowercase text is already the default output, so it must not be parsed and rebuilt.
   const canonical = { buffers: 0, errors: 0, hex: 0, chars: 0 };
   check("canonical UUID text", () => api.uuidToString(id), canonical);

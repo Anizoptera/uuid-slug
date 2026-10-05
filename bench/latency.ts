@@ -92,10 +92,16 @@ function measure(operation: Operation): number {
   return (cpu.user + cpu.system) / calls;
 }
 for (const pair of pairs) {
-  for (let i = 0; i < 4096; i += 1) {
-    unwrap(pair.subject(i));
-    unwrap(pair.reference(i));
-  }
+  // A small fixed call count can finish before the engine compiles either operation, putting
+  // compilation into the first timing samples. Warm both sides for the competitor matrix's normal
+  // preparation window; retain the existing budgets and all measured ratios.
+  const warmupStart = performance.now();
+  do {
+    for (let i = 0; i < 4096; i += 1) {
+      unwrap(pair.subject(i));
+      unwrap(pair.reference(i));
+    }
+  } while (performance.now() - warmupStart < 32);
   const ratios: number[] = [];
   for (let round = 0; round < 9; round += 1) {
     let subject: number;
