@@ -245,7 +245,9 @@ try {
       );
     if (group === "alphabet") {
       const nativePlain =
-        candidate.name === "native-branch" || candidate.name === "native-dispatch";
+        candidate.name === "native-branch" ||
+        candidate.name === "native-bound-call" ||
+        candidate.name === "native-dispatch";
       for (const mode of ["present", "absent", "throw"]) {
         const output = await command("bun", ["__test__/alphabet-native-probe.ts", mode], tree, {
           UUID_SLUG_EXPECT_NATIVE_PLAIN: nativePlain ? "1" : "0",

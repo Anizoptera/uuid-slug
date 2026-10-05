@@ -13,6 +13,10 @@ export function alphabetCandidates(source: string): readonly SourceCandidate[] {
     'const bunPlainToBase64 = typeof Bun !== "undefined" ? nativeToBase64 : undefined;\n';
   const call =
     "if (bunPlainToBase64 && bytes.length === 16 && alpha === BASE64URL && tailBits === 0) {\n    try { return bunPlainToBase64.call(bytes, BASE64_OPTIONS); } catch { /* Keep the existing writer when the optional native capability fails. */ }\n  }\n";
+  // Binding the intrinsic call once changes dispatch only; output and fallback stay identical.
+  // Complete conversions must reproduce a gain before this extra startup closure earns retention.
+  const boundNative =
+    'const bunPlainToBase64 = typeof Bun !== "undefined" && nativeToBase64 ? nativeToBase64.call.bind(nativeToBase64) as (bytes: Uint8Array, options: typeof BASE64_OPTIONS) => string : undefined;\n';
   // Keep native string construction, tables and tails identical; complete slug calls decide
   // whether removing five loop iterations earns the larger fixed body.
   const loop = [
@@ -60,6 +64,16 @@ export function alphabetCandidates(source: string): readonly SourceCandidate[] {
           replaceOnce(source, capability, native + capability),
           declaration,
           declaration + "\n  " + call,
+        );
+      },
+    },
+    {
+      name: "native-bound-call",
+      get source() {
+        return replaceOnce(
+          replaceOnce(source, capability, boundNative + capability),
+          declaration,
+          declaration + "\n  " + replaceOnce(call, "bunPlainToBase64.call(", "bunPlainToBase64("),
         );
       },
     },
