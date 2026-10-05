@@ -16,6 +16,7 @@ const api: typeof import("../src/index") = await import(
   process.env.UUID_SLUG_PROFILE_MODULE ?? "../src/index"
 );
 const calls = Number(process.env.UUID_SLUG_PROFILE_CALLS ?? 32_768);
+const memoryWindows = Number(process.env.UUID_SLUG_PROFILE_MEMORY_WINDOWS ?? 1);
 const warmupCalls =
   process.env.UUID_SLUG_PROFILE_WARMUP_CALLS === undefined
     ? 0
@@ -27,6 +28,8 @@ const threadCpuUsage = (
 ).threadCpuUsage?.bind(process);
 if (!Number.isSafeInteger(calls) || calls < 1)
   throw new Error("UUID_SLUG_PROFILE_CALLS must be a positive safe integer");
+if (!Number.isSafeInteger(memoryWindows) || memoryWindows < 1)
+  throw new Error("UUID_SLUG_PROFILE_MEMORY_WINDOWS must be a positive safe integer");
 if (!Number.isSafeInteger(warmupCalls) || warmupCalls < 0)
   throw new Error("UUID_SLUG_PROFILE_WARMUP_CALLS must be a nonnegative safe integer");
 const filter = process.env.UUID_SLUG_PROFILE_FILTER;
@@ -104,6 +107,27 @@ const nativeAfter = memoryUsage();
 console.error("UUID_SLUG_MIMALLOC_AFTER");
 Bun.unsafe.mimallocDump();
 
+// Equal windows in one process distinguish continuing native growth from initialization.
+// Emit observations instead of retaining them; snapshots and sampling must follow all windows.
+for (let window = 1; window < memoryWindows; window += 1) {
+  Bun.gc(true);
+  const start = memoryUsage();
+  const cpuStart = process.cpuUsage();
+  runCases();
+  const windowCpu = process.cpuUsage(cpuStart);
+  Bun.gc(true);
+  console.log(
+    JSON.stringify({
+      kind: "memory-window",
+      window,
+      calls,
+      before: start,
+      after: memoryUsage(),
+      cpuUs: windowCpu.user + windowCpu.system,
+    }),
+  );
+}
+
 await Promise.all([
   Bun.write(
     `${reports}/bun-jsc-heap-stats.json`,
@@ -116,6 +140,7 @@ await Promise.all([
       calls,
       // Each selected case executes this many calls in each pass.
       memoryCalls: calls,
+      memoryWindows,
       warmupCalls,
       cpuUs: cpu.user + cpu.system,
       threadCpuUs: threadCpu && threadCpu.user + threadCpu.system,
