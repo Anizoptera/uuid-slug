@@ -264,6 +264,18 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         default byte source is `uuidV7BytesFor`, not ordinary default owned-byte generation.
         Check the codec's published generation behavior before testing that source substitution;
         sampled shared validation work alone does not select a wrapper rewrite.
+  - [ ] Screen ordinary owned-byte generation as the masking codec's default byte source.
+        The codec promises secure UUIDv7 bytes and its masked wire format, not shared ordering.
+        Change only public codec construction; retain explicit-time generation, selected generators,
+        immutable-value payload layout and the injected failure seam. Existing Node/Bun wire,
+        timestamp, entropy and generator-failure witnesses must pass before timing. Reject without
+        repeated complete masked-generation gains or on a material primary-call resource loss.
+        `candidates-codec-BzjRUN` rejects the first substitution because public byte generation
+        throws its existing entropy error and the codec wrapped it again. Preserve that error
+        unchanged only for the package-owned default; keep injected callback containment intact.
+        `current-codec-default-owned-screen-cause-preserved.jsonl` passes Node, Bun and resource
+        witnesses. Bun masked generation improves in both orders, but a large baseline variation
+        and slower base32 decode controls require independent packed comparisons before retention.
   - [x] Compare Bun UUIDv4 text CPU and retention for the package, `crypto-randomuuid`, and bound
         Web Crypto in equal-call reversed captures. The library directly exports Node-compatible
         `crypto.randomUUID`; native binding may explain the loss, or package dispatch and trust
