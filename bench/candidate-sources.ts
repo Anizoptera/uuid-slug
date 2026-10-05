@@ -318,6 +318,17 @@ function codecCandidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
+      name: "duplicate-value-generation-timing",
+      get source() {
+        // Discarded secure draws preserve valid returned values while exposing a codec-only slowdown.
+        return replaceOnce(
+          source,
+          "  function generateUuidV7Value(valueOptions?: UuidV7MaskingCodecValueOptions) {",
+          "  function generateUuidV7Value(valueOptions?: UuidV7MaskingCodecValueOptions) {\n    for (let index = 0; index < 32; index++) generateDefaultUuidV7Bytes();",
+        );
+      },
+    },
+    {
       name: "scratch-text",
       get source() {
         return scratchText();

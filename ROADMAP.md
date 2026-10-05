@@ -29,6 +29,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
       independent native or qualified-library references, measure normal variation before choosing
       a budget, and prove a material slowdown fails it. Keep timing and instrumented counts separate;
       neither establishes total allocation or protects an unmeasured runtime.
+  - [x] Include codec-backed immutable generation in the routine complete-call timing gate.
+        `value.generate` uses the root generator and cannot detect a slowdown confined to
+        `codec.generateUuidV7Value()`. Reuse `value.generate.codec` from the existing corpus;
+        compare it against independently packed committed code with the same primary timing policy.
+        `current-codec-value-timing-control.jsonl` passes unchanged Node/Bun complete calls;
+        `current-codec-value-timing-defect.jsonl` rejects discarded secure draws confined to
+        codec-value generation on both hosts. This proves that workload's routing and the
+        injected slowdown, not detection of changes smaller than measurement uncertainty.
   - [x] Make packed revision comparisons reject resolved primary-call slowdowns.
         Reuse `bench/compare.ts` with a named committed baseline and exact successful-call filters;
         changing two related package operations must not change the reference. Keep fresh processes
@@ -387,7 +395,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         accepts comma-separated case-name substrings, and a single term retains its old meaning.
 - [ ] Profile the actual complete calls with gaps and inspect their faster rivals. Name the
       removable work, the rival explanation, and the observation that would reject the attribution.
-  - [ ] Prove the codec-value layout guard rejects the faster shared-entry substitution.
+  - [x] Prove the codec-value layout guard rejects the faster shared-entry substitution.
         Codec-backed values attach a sequenced layout to bytes from `uuidV7BytesFor`;
         substituting independent payloads there makes their reported layout false.
         Keep masked-generation changes separate from immutable-value generation.
@@ -402,7 +410,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Reject this shared-entry substitution before any further timing.
         The shared Node/Bun probe freezes only the clock and checks the counter carried by
         generated immutable values, without imposing ordering on ordinary default UUID calls.
-        Prove it rejects `keyless codec-value-lost-layout` before selecting a narrower replacement.
+        `candidates-keyless-zCNuJs` passes the unchanged implementation and rejects
+        `keyless codec-value-lost-layout` in both Node and Bun at this exact counter witness,
+        before timing. Any replacement must preserve truthful generated-value metadata.
   - [x] Screen the existing error-valued default byte entry for ordinary masked generation.
         The Bun profile attributes substantial masked-generation work to the sequenced writer.
         The isolated substitution selects the owned writer only for argument-free internal calls;

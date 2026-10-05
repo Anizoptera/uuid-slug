@@ -113,6 +113,8 @@ try {
       "value.parse.slug",
       "value.parse.bytes",
       "value.generate",
+      // Codec values use a different generator entry; the root-value control cannot protect it.
+      "value.generate.codec",
       "value.toString",
       "value.toPlainSlug",
       "value.toPlainSlug.base32",
