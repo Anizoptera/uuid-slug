@@ -51,6 +51,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Change one evidenced bottleneck at a time. Reject a component-only gain, a primary-call
       regression, or a speed gain paid for by material resource loss. Never choose a mechanism
       merely because the existing experiment driver can measure it.
+  - [ ] Screen native base64url directly after `uuidBytesToPlainSlug` validation for a whole
+        UUID byte array on Bun. The complete-call profile supports removable Latin-1 writer cost;
+        validation and native-call containment may instead erase the gain. Keep offsets, base32hex
+        and masked output on the existing writer. Prove native selection, absence, throwing fallback
+        and rejected output corruption before timing. Reject unrepeated complete-call gains or a
+        material primary control loss; expand only a survivor to packed and resource evidence.
 - [ ] Verify each retained change through affected runtime and packed consumer calls, preserving
       identifier and failure contracts. Rerank remaining primary gaps; stop repeating a rejected
       mechanism unless new evidence changes its premise. Keep missing evidence explicitly open.

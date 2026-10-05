@@ -26,9 +26,13 @@ Object.defineProperty(Uint8Array.prototype, "toBase64", {
         },
 });
 const { encode, BASE64URL, BASE32HEX } = await import("../src/alphabet");
+const plainEncode =
+  process.env.UUID_SLUG_NATIVE_PROBE_TARGET === "slug"
+    ? (await import("../src/slug")).uuidBytesToPlainSlug
+    : (bytes: Uint8Array) => encode(bytes, BASE64URL);
 for (let seed = 0; seed < 256; seed += 1) {
   const bytes = Uint8Array.from({ length: 16 }, (_, index) => seed * 197 + index * 131);
-  assert.equal(encode(bytes, BASE64URL), Buffer.from(bytes).toString("base64url"));
+  assert.equal(plainEncode(bytes), Buffer.from(bytes).toString("base64url"));
 }
 const plainCalls = calls;
 const payload = new Uint8Array(16);
