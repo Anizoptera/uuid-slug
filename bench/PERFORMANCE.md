@@ -3877,6 +3877,21 @@ a single interrupted batch cannot explain them. The source diff adds only the di
 draw. Engine state, generated-code effects and scheduling remain competing explanations;
 inspect the complete preceding workload before attributing this to the preparation count.
 
+Eight baseline V8 captures retain the same packed graph and full preparation history in
+`current-preparation-v8-trace/`, with optimization traces, CPU profiles and all 48 timing rows.
+They reproduce codec medians near 120 ns and 300 ns. Captures 0 and 7 are slow; capture 1 is
+fast. All three show `uuidObjectChecksum` wrong-map deoptimization and reoptimization before
+timing, so that event's presence cannot distinguish them. These instrumented captures include
+startup and preparation; isolate the measured codec interval before attributing sampled CPU.
+
+Reject timestamp-based clipping in the `markers/` captures: V8 profile and `process.hrtime()`
+timestamps have different origins on this host. The `codec/` captures instead start and stop the
+inspector around the codec samples, retaining the full preceding workload. All eight return
+every primary row and a nonempty profile; their codec intervals contain only 11–21 CPU samples,
+including inspector and task work. A slow capture remains, but these small counts cannot identify
+its cause. Extend only the diagnostic codec interval before comparing sampled stacks; do not
+use instrumented throughput to qualify routine timing policy.
+
 ### Unchanged packed graph checks
 
 Skip primary-call regression timing when independently packed output is byte-identical; measuring
