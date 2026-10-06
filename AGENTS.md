@@ -270,6 +270,9 @@ efficiency. A reproducible misuse alone does not justify that cost.
   not exclude them from project type checking.
   Keep failed check artifacts available for the reproduction command in the error; clean up
   successful checks. A command naming a deleted bundle cannot diagnose the failure.
+  Run compiler diagnostics through the retained profiler executable and capture stdout verbatim;
+  `bench/compare.ts` requires JSON-only host output. Require a working control for the requested
+  compiler artifact before interpreting a missing trace as evidence about package execution.
 - Repair missing or ineffective guidance before changing the plan or implementation. Put the
   trigger, required action and reason in the nearest `AGENTS.md` visible when the work starts;
   a rule buried in another document cannot prevent a mistake unless that file is explicitly loaded.

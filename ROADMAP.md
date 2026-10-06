@@ -137,8 +137,10 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         omit preceding timed calls. Preserve the complete-workload failure and unresolved cause;
         none authorizes a decoding repair or a relaxed timing rule.
         Node LTS and Deno controls pass, but both miss the intended computation loss. Reject
-        extending this setting to those hosts. Check Deno's optimized computation witness before
-        enlarging its samples; browser comparisons do not yet forward fixed-call settings.
+        extending this setting to those hosts. Deno's compiler graph retains the computation
+        after register allocation in a traced compilation; it does not establish the untraced
+        execution state. Keep the fixture and timing miss; browser comparisons do not yet forward
+        fixed-call settings. Screen the adjacent 32,768 measured calls with preparation fixed.
         Evidence lives in `bench/PERFORMANCE.md` §Fixed measured-call screen.
   - [x] Compare primary owned UUIDv7 generation resources on Bun against qualified libraries.
         Matched reversed-order captures show lower package caller CPU than `uuidv7`, a changing

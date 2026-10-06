@@ -4058,6 +4058,17 @@ extending the setting to those hosts. Deno's near-one ratio does not establish w
 injected computation survives optimization; increasing sampling alone cannot settle that.
 Reports are `current-fixed-measured-one-batch-lts-deno-{control,defect}.jsonl`.
 
+A Deno compiler-graph capture of the packed candidate retains the computation after register
+allocation: instruction 239 loads byte 15, instruction 273 calls `ToNumberConvertBigInt`, and
+instruction 285 stores byte 15. The graph identifies `src/masking-codec.ts` and includes the
+injected source. The complete workload returns all 48 fixed-count records. This rejects
+elimination in that traced compilation, not every untraced execution state; graph tracing changes
+compiler scheduling and its timings cannot select code. Evidence is
+`current-deno-codec-turbo/candidate/turbo-generateUuidV7Value-314.json` and adjacent `raw.log`.
+The assembly-printing control emits no assembly; graph tracing does produce compiler evidence.
+Launch the retained profiler directly for these diagnostics: compiler messages invalidate the
+comparison's JSON-only stdout protocol. Keep the timing miss unresolved.
+
 Equal counts let the mean batch timing and aggregate CPU use the same call weighting.
 Node's first candidate codec record averages 570 ns against 205 ns of caller-thread CPU
 per call; Bun's baseline round four averages 750 ns against 79 ns. CPU covers the wider
