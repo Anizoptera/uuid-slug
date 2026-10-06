@@ -214,10 +214,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
           assembly after the existing draw. Native call and failure-containment costs may erase
           that gain; the shared-writer loss makes placement the competing explanation.
           Require native-present, absent, throwing and corrupt-output witnesses before timing.
-          Reject `native-entry`: its short reversed-order screen does not reproduce a useful
-          base64url gain and loses base32 in both orders. Isolate `preset-fast` next: known
-          primitive base64url needs no general normalization. Keep every other input on that
-          normalizer; base32 or other primary-call loss rejects this change too.
+          Reject `preset-fast`: isolated calls show a small preset benefit alongside a base32
+          cost, which does not earn another branch. Longer mixed-job windows still vary sharply;
+          isolated alphabets are more stable, without establishing a GC, allocation or JIT cause.
+          Isolated native placement has a small repeated base64url benefit and no clear base32
+          loss. Isolated public-call comparisons retain a small gap against native floors.
+          Before retention, reuse the existing native capture, options and fallback state in
+          `src/slug.ts`; duplicated probes do not earn ownership for this small gain. Require
+          repeated packed complete-call and resource evidence before any production change.
       - [x] Keep the UUIDv4 candidate factory in its own file before extending the registry.
             Its body and comments remain byte-identical except for export visibility;
             the complete check passes. UUIDv4 slug candidates have a separate source owner.

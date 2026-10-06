@@ -142,14 +142,40 @@ public-call dispatch, unsupported capabilities and fallback costs remain unmeasu
 
 `candidates-v4-slug-PMge43/` screens native encoding inside UUIDv4 slug generation on Bun 1.4.2.
 Two fresh processes per implementation use reversed order, 16 ms preparation and three 5 ms
-batches. Base64url medians are 51.3 and 49.1 ns against baseline 51.1 and 52.4 ns; the gain does
-not repeat. Base32 medians are 49.0 and 49.2 ns against 45.0 and 46.5 ns. Reject this placement
-from the short screen; these batches provide no confidence interval or individual-call latency.
+batches; UUIDv4 text and owned-byte jobs precede the slug calls. Base64url medians are 51.3 and
+49.1 ns against baseline 51.1 and 52.4 ns; the gain does not repeat. Base32 medians are 49.0
+and 49.2 ns against 45.0 and 46.5 ns. This screen does not justify retention. These batches
+provide no confidence interval or individual-call latency.
 Both implementations pass Node and Bun runtime tests and the existing resource counters.
 The native candidate reaches two native calls with the method present, zero when absent and
 one when throwing; fallback preserves the observed secure payload. Changing the first returned
 character fails the independent byte oracle. This proves the selected paths, not a resource gain.
-Isolate preset recognition before combining another native implementation with public dispatch.
+The isolated comparisons below supersede this mixed-job screen's placement rejection.
+
+Each isolated process selects one alphabet, reuses the same built module and profiler, and uses
+64 ms preparation followed by seven 20 ms batches. Two fresh processes per implementation run
+in baseline/candidate/candidate/baseline order. Native entry reports base64url medians of 42.1
+and 42.4 ns against 43.9 and 44.9 ns; base32 reports 43.5 and 43.7 ns against 43.9 and 44.1 ns.
+The small base64url gain repeats without the earlier base32 loss. It earns further comparison,
+not production retention or duplicated capability probes.
+
+`candidates-v4-slug-lM14MI/` isolates primitive-preset recognition. Base64url medians are 42.2
+and 42.8 ns against 44.2 and 43.4 ns; base32 reports 43.5 and 43.5 ns against 43.1 and 42.5 ns.
+Reject that extra branch: the small gain accompanies a base32 cost. Longer mixed-job windows
+also retain sharp within-process drift, so more batches alone do not settle that comparison.
+Isolation changes the evidence; these captures do not identify GC, allocation or JIT as its cause.
+
+The `floor-isolated-*` captures in `candidates-v4-slug-PMge43/` use the same preparation and
+batch settings, with package/native-scratch/pooled-composition order followed by its reverse.
+Package medians are 46.2 and 46.8 ns; native scratch reports 43.7 and 42.6 ns; native encoding
+after the actual package draw reports 42.1 and 42.8 ns. Aggregate caller CPU per completed call
+is respectively 46.6 and 46.8, 43.3 and 42.7, and 42.3 and 42.7 ns. The composition excludes
+public dispatch and fallback. Compare within each measurement: selecting a generation case adds
+an operation wrapper that the ordinary case lacks. The remaining gap is small.
+All isolated figures have only two process observations per implementation and no confidence
+interval; batches are not independent process samples. They establish neither individual-call
+tails nor total allocation. Native integration remains open pending shared ownership and packed
+complete-call speed and resource evidence.
 
 ### Owned UUIDv7 generation allocation
 
