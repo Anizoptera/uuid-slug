@@ -3846,6 +3846,22 @@ primary call nor establishes a faster complete routine lane; routine policy rema
 family-wise interval includes no loss. This miss prevents treating the one-millisecond screen
 as proof that shorter windows caused better detection. Retain both misses when evaluating policy.
 
+Full unchanged controls with 65,536 preparation calls pass every primary call in 63.713 seconds
+with 1 ms windows and 48.832 seconds with one-third-millisecond windows. The corresponding
+`current-fixed-warmup-full-control-65536-ms1.jsonl` and
+`current-fixed-warmup-full-control-65536-ms-third.jsonl` reports each retain
+all 3,072 records, seven batches and the routine process counts and uncertainty. Packing and
+cleanup are included; other routine checks are not. The narrow one-third-millisecond control
+passes; its defect report rejects the one-draw codec loss on both hosts. These separate-epoch
+screens do not establish reliable full-inventory defect detection or CI headroom; repeat the
+decision-relevant controls and losses before retention. Routine policy remains unchanged.
+
+Short requested windows do not bound observed uninterrupted time. The full 1 ms control reaches
+36.889 ms on Node and 107.951 ms on Bun; the one-third-millisecond control reaches 16.748 ms
+and 29.339 ms. These wall-clock observations include descheduling and do not attribute a pause
+to package execution. Preparation totals 26.440 and 27.495 seconds respectively, so preparation
+and process overhead must be examined before shrinking sampling further.
+
 ### Unchanged packed graph checks
 
 Skip primary-call regression timing when independently packed output is byte-identical; measuring

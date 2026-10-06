@@ -57,6 +57,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
   - [ ] Keep the one-draw misses and repeat controls before adopting any sampling policy.
         Preserve every runtime, primary call, independent process count and uncertainty rule;
         a passing narrow screen cannot establish complete-lane speed or detection.
+        Full one-millisecond and one-third-millisecond unchanged controls pass; the narrower
+        defect screen rejects both hosts. Preparation and process overhead now dominate; inspect
+        those costs before shrinking sampling further. Keep window overruns and detection misses.
   - [x] Avoid packed timing when only benchmark dependencies change. `bench/check-inputs.ts`
         treats every manifest and lock change as production work; the scure dev-only addition
         therefore runs the whole timing comparison. Preserve detection of changed build tools,
