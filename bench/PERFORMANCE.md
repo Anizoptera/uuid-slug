@@ -4026,6 +4026,16 @@ seconds in the control and 100.931 in the defect; recorded preparation adds 25.4
 these records do not split it further. Detection has not been repeated, and neither capture
 establishes complete-lane or CI headroom. Test sampling cost before adding another driver.
 
+One batch of 16,384 calls, with the same preparation and process pairs, retains all 3,072
+records on Node 26.10.0 and Bun 1.4.2. The control exits zero in 30.437 seconds; the defect
+exits one in 27.547 seconds, detecting codec computation on both hosts. Their family-wide
+intervals are [1.015, 1.165] and [1.186, 1.340]. Bun `plain.decode` also fails with interval
+[1.252, 1.467]; the source mutation preserves output but its wider process effects remain
+unresolved. Reports are `current-fixed-measured-16384-one-batch-current-{control,defect}.jsonl`.
+This single screen does not prove repeated detection, other-runtime coverage or complete-lane
+headroom. Changing both the Node release and sample count also prevents attributing the
+elapsed difference from the earlier screen to sampling alone.
+
 Equal counts let the mean batch timing and aggregate CPU use the same call weighting.
 Node's first candidate codec record averages 570 ns against 205 ns of caller-thread CPU
 per call; Bun's baseline round four averages 750 ns against 79 ns. CPU covers the wider
