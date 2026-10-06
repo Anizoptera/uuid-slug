@@ -16,6 +16,25 @@ export function v4SlugCandidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
+      name: "shared-converter",
+      get source() {
+        // Reuse native capture and failure state before extracting another writer. The existing
+        // converter's exact-array checks may erase the gain; complete generation decides that.
+        return replaceOnce(
+          replaceOnce(
+            replaceOnce(source, "BASE64URL_NAME, encode", "BASE64URL, BASE64URL_NAME, encode"),
+            "import { resolveSlugAlphabet }",
+            "import { resolveSlugAlphabet, uuidBytesToPlainSlug }",
+          ),
+          "  return encode(generatedOrThrow(drawUuidV4Scratch()), resolved) as PlainUuidV4Slug;",
+          [
+            "  const bytes = generatedOrThrow(drawUuidV4Scratch());",
+            "  return (resolved === BASE64URL ? uuidBytesToPlainSlug(bytes) : encode(bytes, resolved)) as PlainUuidV4Slug;",
+          ].join("\n"),
+        );
+      },
+    },
+    {
       name: "preset-fast",
       get source() {
         // Isolate preset recognition before combining it with native encoding. Wrapped strings

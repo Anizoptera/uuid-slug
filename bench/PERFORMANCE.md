@@ -177,6 +177,15 @@ interval; batches are not independent process samples. They establish neither in
 tails nor total allocation. Native integration remains open pending shared ownership and packed
 complete-call speed and resource evidence.
 
+`candidates-v4-slug-ZdXXc8/` tests generation through the existing `uuidBytesToPlainSlug`
+converter, reusing its native probe, options and permanent fallback state. Node and Bun runtime
+proofs and resource counters pass; native present, absent and throwing calls report 2, 0 and 1
+attempts, and native corruption fails the observed-byte oracle. The same isolated settings
+give base64url medians of 44.0 and 45.7 ns against 43.7 and 44.8 ns; caller CPU reports 43.8
+and 44.9 ns against 43.2 and 44.1 ns. Base32 medians are 43.7 and 45.1 ns against 44.8 and
+44.7 ns. Reject this candidate: it adds no reproduced complete-call gain. These comparisons
+do not isolate the converter's byte checks from dispatch, inlining or process variability.
+
 ### Owned UUIDv7 generation allocation
 
 Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.

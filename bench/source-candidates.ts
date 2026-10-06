@@ -308,7 +308,8 @@ try {
       // A retained slug baseline can already delegate natively. Its public probe must exercise
       // that selected capability rather than assume only a named candidate can use it.
       const nativePlain =
-        (group === "v4-slug" && candidate.name === "native-entry") ||
+        (group === "v4-slug" &&
+          (candidate.name === "native-entry" || candidate.name === "shared-converter")) ||
         (group === "slug" && candidate.source.includes("captureNativePlainUuidBase64()")) ||
         candidate.name === "native-branch" ||
         candidate.name === "native-dispatch" ||

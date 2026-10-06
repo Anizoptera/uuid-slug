@@ -222,6 +222,11 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
           Before retention, reuse the existing native capture, options and fallback state in
           `src/slug.ts`; duplicated probes do not earn ownership for this small gain. Require
           repeated packed complete-call and resource evidence before any production change.
+          Reject `shared-converter`: reusing `uuidBytesToPlainSlug` reaches the native encoder
+          and passes payload and fallback proofs, but isolated complete calls do not reproduce
+          a gain. Production remains unchanged. A shared unchecked writer remains a live
+          alternative; weigh its added ownership and full verification against the small gap
+          before extending the source-candidate harness or extracting production code.
       - [x] Keep the UUIDv4 candidate factory in its own file before extending the registry.
             Its body and comments remain byte-identical except for export visibility;
             the complete check passes. UUIDv4 slug candidates have a separate source owner.
