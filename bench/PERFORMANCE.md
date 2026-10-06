@@ -3948,6 +3948,23 @@ no production baseline for this worktree, so these measurements exclude changed-
 packed timing and do not close that lane or cold CI headroom. Logs are
 `/tmp/uuid-slug-case-preparation-{check,hook}.log`.
 
+### Reduced before-all preparation screen
+
+Reject reduced preparation because the computation defect passes the protected comparison.
+
+The original profiler uses 16,384 preparation calls, seven one-millisecond batches and
+16 process pairs on Node 24.21.0 and Bun 1.4.2. Both the unchanged control and BigInt
+byte-computation defect retain 3,072 records across 64 complete process groups, with every
+primary call present once per group and seven positive finite samples per record.
+The control exits zero in 59.754 seconds; codec-value median ratios are 0.999 on Node
+and 0.904 on Bun, with family-wide intervals [0.752, 1.841] and [0.569, 2.058].
+The defect also exits zero in 48.737 seconds despite ratios of 1.033 and 1.321;
+its family-wide intervals [0.952, 1.174] and [0.760, 2.523] include parity on both hosts.
+These observations reject this setting without establishing that preparation count causes
+the misses or broad timing shifts. Stop the count reduction and retain the original policy.
+Raw reports are `current-preparation-16384-{control,defect}.jsonl` in `bench/reports/`;
+execution logs are `/tmp/uuid-slug-preparation-16384-{control,defect}.log`.
+
 ### Unchanged packed graph checks
 
 Skip primary-call regression timing when independently packed output is byte-identical; measuring

@@ -82,12 +82,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         screen; separate epochs do not establish its cause. Restore the original profiler and
         retain the source captures. Evidence lives in `bench/PERFORMANCE.md`
         §Per-case preparation screen; routine timing policy remains unchanged.
-  - [ ] Screen fewer before-all preparation calls with the original profiler.
-        Start with the geometric step below the tested count; retain every primary call,
-        process pair, sample window and uncertainty rule. Require repeated unchanged controls
-        and computation-defect detection before expanding toward the rejected low-count boundary.
-        Stop shrinking when control timings change materially or targeted detection weakens;
-        preparation placement is no longer an active candidate.
+  - [x] Reject fewer before-all preparation calls with the original profiler.
+        The halved preparation count preserves the full primary inventory, process pairs,
+        sample windows and uncertainty rule, but the computation defect passes on both hosts.
+        Stop shrinking preparation; the acceptance criterion requires targeted detection.
+        Keep the original timing policy. Evidence and limits live in `bench/PERFORMANCE.md`
+        §Reduced before-all preparation screen.
   - [x] Avoid packed timing when only benchmark dependencies change. `bench/check-inputs.ts`
         treats every manifest and lock change as production work; the scure dev-only addition
         therefore runs the whole timing comparison. Preserve detection of changed build tools,
