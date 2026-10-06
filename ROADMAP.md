@@ -72,6 +72,35 @@ do not block production optimization; the calibration tasks below are held, not 
       orders despite improved base64url calls. Passing the constant does not restore specialization;
       the broader attribution remains unresolved. Keep production and remove the temporary candidate.
 
+- [x] Reject the ordinary UUIDv4 base64url preset before general alphabet resolution, sharing
+      conversion's captured native method and permanent fallback state.
+      `v4-bundled-call-profile-l3HjLx/` repeats the public wall and caller-CPU loss
+      against package draw plus native encoding; samples reach the fixed writer and
+      Latin-1 conversion. Entropy alone cannot explain the difference.
+      `candidates-v4-slug-iNNimC/` passes behavior, resource and native-failure proofs. Mixed
+      profiles recover the base64url gain but repeat the base32 caller-CPU loss in both orders.
+      Base32 samples reach generic `encode` more often, with similar fixed-writer counts.
+      Keep its captured source, not the rejected candidate.
+
+- [x] Reject retention of native base64url selection with direct UUIDv4 base32 dispatch.
+      Keep the public-call gap open until packed evidence distinguishes useful gains
+      from preparation and scheduling effects. Remove the prototype and its unused
+      alphabet replacement plumbing; source captures retain the experiment.
+      `candidates-v4-slug-tZSZe8/` proves the direct writer is reached: a wrong-tail mutation
+      fails its public length oracle before timing. Profiles remove generic `encode` samples,
+      but base32 total cost remains mixed; one baseline also slows substantially.
+      `candidates-v4-slug-Qgexfu/` screens early recognition of both presets with the
+      original boxed-input path and passes behavior, resource and corruption proofs.
+      `packed-source-20NrVT/` builds and executes the preset-first candidate in packed
+      processes, but unchanged controls vary and both slug intervals include losses.
+      `packed-source-xLocIM/` times out before completing its first corpus; partial
+      wall and caller-CPU costs diverge sharply. It supplies no paired verdict.
+      `packed-source-6cEBVm/` completes every requested case in repeated packed
+      processes. Both slug comparisons still include losses; conversion remains
+      unresolved too. These results do not establish safe retention or a cause.
+      Caller CPU improves base64url generation in every pair but worsens plain
+      conversion in all but one pair; that evidence also rejects retention.
+
 - [x] Reject direct UUIDv4 slug use of the existing captured native encoder and options.
       Shared live bindings preserve conversion's body without another successful writer call.
       `bench/reports/candidates-v4-slug-QnhUb8/` retains source captures, runtime/resource proofs
@@ -91,6 +120,33 @@ do not block production optimization; the calibration tasks below are held, not 
       `bench/reports/routine-default-control-C2P26B/work-summary.json` retains stage times,
       per-process inventory checks and runtime versions. This pipeline forces skipped timing
       work; it does not prove changed-code branch routing, defect detection or CI headroom.
+  - [x] Remove redundant test work and nested runner startup before committing.
+        `/tmp/uuid-slug-preset-rejection-check-final.log` and `-retry.log` fail
+        memory profiling and runtime subprocess tests at their existing deadlines.
+        `/tmp/uuid-slug-memory-witness-isolated.log` passes the same memory witness
+        alone. Earlier complete checks pass; the differing execution conditions
+        remain unresolved. Preserve deadlines and oracles; do not retry to a green verdict.
+        `/tmp/uuid-slug-workers-two-check.log` rejects reducing Node workers:
+        subprocess timeouts remain and broaden. Keep the original configuration.
+        `/tmp/uuid-slug-host-contention.txt` records severe host load and unrelated
+        builds. This observation does not prove the timeout cause. Resume complete
+        checks and performance decisions under controlled host contention; do not
+        weaken deadlines or alter unrelated processes.
+  - [x] Remove the redundant random ambiguity loop. The existing fixed fixture
+        rejects plain-first codec decoding with the wrong UUID in
+        `/tmp/uuid-slug-ambiguity-fixed-red.log`; production restoration passes
+        byte comparison. `/tmp/uuid-slug-core-without-random-loop.log` passes all
+        remaining core cases. Other wire and payload coverage stays unchanged.
+  - [x] Replace nested test-runner startup for the native UUIDv7 capability probe
+        with a compiled standalone entry in the same host. Preserve its canary,
+        assertions, fresh module graph and cleanup. Reject missing-case success,
+        incorrect runtime selection or loss of the native-fallback falsifier.
+        `/tmp/uuid-slug-native-host-red-node.log` and `-red-bun.log` reject a
+        dropped native cause at the existing cause assertion; restoration passes
+        byte comparison. `/tmp/uuid-slug-boundary-selection-invalid.log` rejects
+        an unknown case. `/tmp/uuid-slug-lean-native-host-check-final.log` passes
+        the complete check, including both runtime suites and the performance gate.
+        This result does not establish CI headroom or resolve host scheduling causes.
   - [x] Remove repeated timeout work from the matrix hang witness without shortening its
         startup allowance. One throughput hang now requires healthy same-member entropy and
         control progress; isolated timeout-removal and progress-removal mutations fail for

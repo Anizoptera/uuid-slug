@@ -3,6 +3,11 @@
 import { nativeUuidV7CapabilityCanary } from "./native-v7-capability-fixture";
 
 import { strict as assert } from "node:assert";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { command } from "../scripts/command";
 import vm from "node:vm";
 import nodeCrypto from "node:crypto";
 import { POOL_BYTES, pooledFill } from "../src/runtime/pool";
@@ -67,6 +72,8 @@ function thrownBy(call: () => unknown): unknown {
 }
 
 const drawUuidV4Text = () => generateUuidV4();
+const NATIVE_UUID_V7_DEFAULTS_CASE =
+  "native UUIDv7 defaults preserve payload, configured clocks and fallback causes";
 const drawOwnedUuidV4Bytes = () => generateUuidV4Bytes();
 const drawUuidV4Slug = () => generatePlainUuidV4Slug();
 const drawCallerUuidV4Bytes = () => {
@@ -92,7 +99,7 @@ const hasCause = (value: unknown, target: unknown): boolean =>
   (value instanceof AggregateError && value.errors.some((cause) => hasCause(cause, target))) ||
   (value instanceof Error && hasCause(value.cause, target));
 
-export const runtimeBoundaryCases = [
+export const runtimeBoundaryCases: { name: string; run(this: void): void | Promise<void> }[] = [
   {
     name: "plain slug conversion validates offsets even on an exact UUID payload",
     run(this: void) {
@@ -902,19 +909,34 @@ export const runtimeBoundaryCases = [
     },
   },
   {
-    name: "native UUIDv7 defaults preserve payload, configured clocks and fallback causes",
+    name: NATIVE_UUID_V7_DEFAULTS_CASE,
     async run(this: void) {
       if (process.env.UUID_SLUG_NATIVE_V7_PROBE !== "1") {
         // The fixture exposes capability before public imports; cached selection needs a fresh host.
-        const { execFileSync } = await import("node:child_process");
-        const args = process.versions.bun
-          ? ["test", "__test__/runtime-boundary.bun.test.ts"]
-          : ["node_modules/vitest/vitest.mjs", "run", "__test__/runtime-boundary.test.ts"];
-        execFileSync(process.execPath, [...args, "-t", "native UUIDv7 defaults"], {
-          cwd: new URL("..", import.meta.url),
-          env: { ...process.env, UUID_SLUG_NATIVE_V7_PROBE: "1" },
-          stdio: "pipe",
-        });
+        const root = fileURLToPath(new URL("..", import.meta.url));
+        const directory = await mkdtemp(join(tmpdir(), "uuid-slug-runtime-boundary-"));
+        const executable = join(directory, "probe.mjs");
+        let passed = false;
+        try {
+          await command(
+            "bun",
+            [
+              "build",
+              fileURLToPath(new URL("./runtime-boundary-host.ts", import.meta.url)),
+              `--target=${process.versions.bun ? "bun" : "node"}`,
+              "--outfile",
+              executable,
+            ],
+            root,
+          );
+          await command(process.execPath, [executable, NATIVE_UUID_V7_DEFAULTS_CASE], root, {
+            UUID_SLUG_NATIVE_V7_PROBE: "1",
+          });
+          passed = true;
+        } finally {
+          // Preserve failed bundles for the exact command in the diagnostic.
+          if (passed) await rm(directory, { recursive: true, force: true });
+        }
         return;
       }
       assert.equal(runtime.uuidV7, nativeUuidV7CapabilityCanary);
