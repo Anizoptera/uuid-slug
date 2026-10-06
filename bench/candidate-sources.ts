@@ -320,11 +320,11 @@ function codecCandidates(source: string): readonly SourceCandidate[] {
     {
       name: "duplicate-value-generation-timing",
       get source() {
-        // Discarded secure draws preserve valid returned values while exposing a codec-only slowdown.
+        // One discarded secure draw tests an avoidable codec-only cost without changing the output contract.
         return replaceOnce(
           source,
           "  function generateUuidV7Value(valueOptions?: UuidV7MaskingCodecValueOptions) {",
-          "  function generateUuidV7Value(valueOptions?: UuidV7MaskingCodecValueOptions) {\n    for (let index = 0; index < 32; index++) generateDefaultUuidV7Bytes();",
+          "  function generateUuidV7Value(valueOptions?: UuidV7MaskingCodecValueOptions) {\n    generateDefaultUuidV7Bytes();",
         );
       },
     },

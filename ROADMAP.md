@@ -46,6 +46,17 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         the measured comparison. Keep policy unchanged while investigating that cost and targeted
         detection; derive every full filter from `bench/check.ts`, never a parallel list. Evidence
         and limits live in `bench/PERFORMANCE.md` §Fixed-call warm-up screen.
+  - [x] Strengthen the existing codec-value timing defect from many discarded draws to one.
+        The large loss cannot distinguish usable sampling policies. Require the established
+        preparation and sampling policy to expose its detection limits, then vary the
+        sampling window alone with fixed preparation, process counts and uncertainty. Reject a
+        shorter window if unchanged controls fail or the intended codec diagnostic disappears.
+        The established replay misses Node; fixed preparation with the original window misses
+        Bun. The one-millisecond screen rejects both, but different epochs do not establish why.
+        Evidence and limits live in `bench/PERFORMANCE.md` §Single-draw codec timing defect.
+  - [ ] Keep the one-draw misses and repeat controls before adopting any sampling policy.
+        Preserve every runtime, primary call, independent process count and uncertainty rule;
+        a passing narrow screen cannot establish complete-lane speed or detection.
   - [x] Avoid packed timing when only benchmark dependencies change. `bench/check-inputs.ts`
         treats every manifest and lock change as production work; the scure dev-only addition
         therefore runs the whole timing comparison. Preserve detection of changed build tools,

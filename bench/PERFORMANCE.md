@@ -3824,6 +3824,28 @@ seconds; sampling alone requires at least 64.512 seconds. This is the packed com
 complete routine lane. No routine policy change follows until detection and remaining acquisition
 costs meet the feedback-loop requirements.
 
+### Single-draw codec timing defect
+
+Use one discarded secure draw to expose an avoidable codec-value cost; many draws conceal a
+gate's inability to detect smaller losses. The fixture changes no output contract or runtime policy.
+
+`current-codec-single-draw-established-policy.jsonl` retains 16 packed process pairs, seven
+3 ms batches and elapsed 32 ms preparation for six calls on Node 24.21.0 and Bun 1.4.2. Bun
+rejects the codec-value loss for the intended diagnostic. Node's median ratio is 1.583, but its
+family-wise interval includes no loss, so that path remains unresolved rather than detected.
+
+`current-fixed-warmup-control-65536-ms1.jsonl` passes unchanged calls; the matching
+`current-codec-single-draw-ms1.jsonl` rejects the single-draw loss on both hosts. They retain
+the same process counts, seven batches and uncertainty, with 65,536 preparation calls and 1 ms
+sampling windows. All 384 timing records appear in each report. Separate acquisition epochs
+cannot attribute the detection difference to one setting. This screen neither qualifies every
+primary call nor establishes a faster complete routine lane; routine policy remains unchanged.
+
+`current-codec-single-draw-ms3-fixed.jsonl` keeps 65,536 preparation calls with the original
+3 ms sampling window. Node rejects the one-draw loss; Bun's median ratio is 1.715 but its
+family-wise interval includes no loss. This miss prevents treating the one-millisecond screen
+as proof that shorter windows caused better detection. Retain both misses when evaluating policy.
+
 ### Unchanged packed graph checks
 
 Skip primary-call regression timing when independently packed output is byte-identical; measuring
