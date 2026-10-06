@@ -318,13 +318,13 @@ function codecCandidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
-      name: "duplicate-value-generation-timing",
+      name: "bigint-byte-generation-timing",
       get source() {
-        // One discarded secure draw tests an avoidable codec-only cost without changing the output contract.
+        // Equivalent byte arithmetic tests timing beyond resources.ts constructor and entropy counters.
         return replaceOnce(
           source,
-          "  function generateUuidV7Value(valueOptions?: UuidV7MaskingCodecValueOptions) {",
-          "  function generateUuidV7Value(valueOptions?: UuidV7MaskingCodecValueOptions) {\n    generateDefaultUuidV7Bytes();",
+          "    return generated instanceof Error",
+          "    if (!(generated instanceof Error)) generated[15] = Number(BigInt.asUintN(8, BigInt(generated[15] as number)));\n    return generated instanceof Error",
         );
       },
     },

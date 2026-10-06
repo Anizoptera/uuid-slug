@@ -64,8 +64,17 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Inspect engine evidence for codec-value processes whose entire batch sequence shifts,
         keeping the full preceding workload. A narrow case cannot reproduce that preparation history.
         V8 captures reproduce both timing states on the same baseline; the checksum deoptimization
-        appears in both. Case-scoped inspector captures retain only 11–21 samples; extend only
-        that diagnostic interval to discriminate package, harness and task costs. Keep earlier work.
+        appears in both. Longer codec-only diagnostic windows show generation, clock and value
+        construction costs without establishing removable wrapper overhead. Keep timing policy
+        unchanged; resolve the smaller computation-loss miss before shortening routine windows.
+  - [x] Replace the discarded-draw timing fixture if resource checks already reject its loss.
+        Matched packed Node and Bun resource controls pass and the extra draw fails the buffer
+        budget. Screen equivalent BigInt byte computation instead: successful codec values must
+        preserve every byte and pass resource checks while timing exposes the extra computation.
+        Owning runtime tests and packed resource checks pass. Both full defect replays reject
+        Bun; only the repeat rejects Node. The matched unchanged full control passes. Keep this
+        timing-only calibration and its miss; evidence lives in `bench/PERFORMANCE.md`
+        §Codec computation timing defect. Timing-policy selection remains unfinished.
   - [x] Avoid packed timing when only benchmark dependencies change. `bench/check-inputs.ts`
         treats every manifest and lock change as production work; the scure dev-only addition
         therefore runs the whole timing comparison. Preserve detection of changed build tools,

@@ -3892,6 +3892,38 @@ including inspector and task work. A slow capture remains, but these small count
 its cause. Extend only the diagnostic codec interval before comparing sampled stacks; do not
 use instrumented throughput to qualify routine timing policy.
 
+The longer `codec-long/` captures extend only codec sampling to 20 ms on Node 24.21.0.
+All eight retain 48 primary rows and 489–888 CPU samples in that interval. Generation, clock
+reading and immutable value construction contribute more self samples than the harness loop.
+The early slow sequence does not remain slow throughout longer windows; these instrumented
+captures do not establish removable wrapper overhead or a routine preparation policy.
+
+### Codec computation timing defect
+
+Use computation the resource counters cannot see to assess timing detection beyond those counters.
+
+The discarded codec draw already fails `resources.ts` on Node 24.21.0 and Bun 1.4.2:
+`codec UUIDv7 value: buffers=2 exceeds 1`. Matching unchanged packed controls exit zero with
+one buffer. The `codec:bigint-byte-generation-timing` replacement converts the final generated
+byte to BigInt and back modulo 256, preserving the byte, errors, entropy and sequence state.
+The source screen passes 177 Node tests, 80 Bun tests and the resource witness; both packed
+resource lanes also exit zero. Constructor counts do not measure engine-internal allocation.
+
+Two full packed comparisons with 32,768 preparation calls and seven one-millisecond batches
+retain 3,072 records each, covering every primary call in 16 process pairs on each host.
+Node codec ratios are 1.064 and 1.055, with family-wide intervals [0.987, 1.129] and
+[1.006, 1.109]; only the repeat detects Node. Bun ratios are 1.246 and 1.240, with intervals
+[1.108, 1.324] and [1.141, 1.352]; both detect Bun. Both checks exit one for the intended
+codec diagnostic, in 49.274 and 51.264 seconds. These measurements expose a timing-only loss
+and inconsistent detection of the smaller Node loss; they do not justify changing timing policy.
+Raw reports are `current-bigint-byte-full-defect.jsonl` and its `-replay` counterpart.
+The matched full unchanged control exits zero in 44.354 seconds with the same inventory,
+preparation, process count and sampling settings; `current-bigint-byte-full-control.jsonl`
+retains its records. One unchanged control does not establish a false-positive rate.
+Reproduce the source screen with `bun bench/source-candidates.ts codec bigint-byte-generation-timing`;
+use the same substitution through `bench/compare.ts --source-candidate=codec:bigint-byte-generation-timing`
+for packed comparisons, preserving the primary inventory from `bench/check.ts`.
+
 ### Unchanged packed graph checks
 
 Skip primary-call regression timing when independently packed output is byte-identical; measuring
