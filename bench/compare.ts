@@ -508,11 +508,16 @@ async function main(): Promise<void> {
         group === "v7-draw"
           ? await readFile(join(candidateRoot, "src/uuid.ts"), "utf8")
           : undefined;
-      const candidate = createSourceCandidates(group, source, uuidSource).find(
+      const slugSource =
+        group === "v4-slug"
+          ? await readFile(join(candidateRoot, "src/slug.ts"), "utf8")
+          : undefined;
+      const candidate = createSourceCandidates(group, source, uuidSource, slugSource).find(
         ({ name }) => name === sourceParts[1],
       );
       if (!candidate) throw new Error(`Unknown ${group} source candidate: ${sourceParts[1]}`);
       const candidateSource = candidate.source;
+      const candidateSlugSource = candidate.slugSource;
       const reportRoot = join(project, "bench/reports");
       await mkdir(reportRoot, { recursive: true });
       const report = await mkdtemp(join(reportRoot, "packed-source-"));
@@ -532,6 +537,10 @@ async function main(): Promise<void> {
       if (candidate.uuidSource !== undefined) {
         await Bun.write(join(candidateRoot, "src/uuid.ts"), candidate.uuidSource);
         await Bun.write(join(report, "uuid-source.txt"), candidate.uuidSource);
+      }
+      if (candidateSlugSource !== undefined) {
+        await Bun.write(join(candidateRoot, "src/slug.ts"), candidateSlugSource);
+        await Bun.write(join(report, "slug-source.txt"), candidateSlugSource);
       }
       console.error(`Packed source candidate evidence: ${report}`);
     }

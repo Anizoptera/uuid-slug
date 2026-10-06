@@ -227,6 +227,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
           a gain. Production remains unchanged. A shared unchecked writer remains a live
           alternative; weigh its added ownership and full verification against the small gap
           before extending the source-candidate harness or extracting production code.
+          Screen `shared-writer` in an isolated two-file substitution: copy the existing
+          native/fallback body into one internal unchecked writer, then call it from validated
+          conversion and UUIDv4 base64url generation. It adds no probe, buffer or options state.
+          Repeated conversion, base32 or other-runtime loss rejects the extraction; no useful
+          generation gain rejects retention. Preserve every copied comment and the same draw.
+          Source proofs and exact-body comparison pass. Isolated generation retains a small
+          gain, while conversion and base32 directions vary. Compare packed consumers with
+          the same committed baseline next; retain only useful speed without resource loss.
       - [x] Keep the UUIDv4 candidate factory in its own file before extending the registry.
             Its body and comments remain byte-identical except for export visibility;
             the complete check passes. UUIDv4 slug candidates have a separate source owner.

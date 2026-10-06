@@ -6,6 +6,8 @@ export interface SourceCandidate {
   readonly source: string;
   /** Replace the formatter owner too when a generator experiment shares its storage. */
   readonly uuidSource?: string;
+  /** Replace the plain-slug owner too when generation shares its native writer. */
+  readonly slugSource?: string;
 }
 
 export function replaceOnce(source: string, from: string, to: string): string {

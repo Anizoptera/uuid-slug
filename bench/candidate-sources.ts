@@ -46,10 +46,11 @@ export function createSourceCandidates(
   group: CandidateGroup,
   source: string,
   uuidSource?: string,
+  slugSource?: string,
 ): readonly SourceCandidate[] {
   const builders = {
     v4: v4Candidates,
-    "v4-slug": v4SlugCandidates,
+    "v4-slug": (value: string) => v4SlugCandidates(value, slugSource),
     "v7-draw": (value: string) => v7Candidates(value, uuidSource),
     alphabet: alphabetCandidates,
     slug: slugCandidates,

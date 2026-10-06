@@ -186,6 +186,19 @@ and 44.9 ns against 43.2 and 44.1 ns. Base32 medians are 43.7 and 45.1 ns agains
 44.7 ns. Reject this candidate: it adds no reproduced complete-call gain. These comparisons
 do not isolate the converter's byte checks from dispatch, inlining or process variability.
 
+`candidates-v4-slug-REuaL1/` extracts the existing native/fallback writer unchanged into one
+internal function shared by conversion and generation. The 521-byte body and comments match
+exactly; no native probe, options object, entropy buffer or fallback state is duplicated.
+Node and Bun behavior and resource proofs pass. Native present, absent and throwing captures
+report 2, 0 and 1 attempts; native corruption fails the independent observed-byte oracle.
+The first isolated Bun screen uses the settings above. Generation medians are 42.1 and 52.0 ns
+against 43.5 and 54.6 ns; base32 reports 43.6 and 44.4 ns against 42.7 and 43.8 ns; conversion
+reports 69.4 and 70.6 ns against 79.0 and 69.4 ns. These process shifts do not establish a cause.
+The reversed repeat reports generation at 42.1 and 42.6 ns against 44.4 and 43.4 ns, base32 at
+43.1 and 43.5 ns against 44.4 and 43.4 ns, and conversion at 72.0 and 67.6 ns against 69.2 and
+69.0 ns. Generation retains a small benefit; other directions vary. Production retention needs
+packed complete-call and resource comparisons; these source batches provide no confidence interval.
+
 ### Owned UUIDv7 generation allocation
 
 Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.

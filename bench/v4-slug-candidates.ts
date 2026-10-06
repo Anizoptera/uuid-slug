@@ -3,7 +3,7 @@
 import { replaceOnce } from "./candidate-source";
 import type { SourceCandidate } from "./candidate-source";
 
-export function v4SlugCandidates(source: string): readonly SourceCandidate[] {
+export function v4SlugCandidates(source: string, slugSource?: string): readonly SourceCandidate[] {
   // The shared alphabet substitution loses complete calls. Isolate selection at the slug
   // entry instead; keep secure drawing, preset normalization and base32 writing unchanged.
   const native = [
@@ -13,8 +13,57 @@ export function v4SlugCandidates(source: string): readonly SourceCandidate[] {
     "const V4_SLUG_BASE64_OPTIONS = { alphabet: BASE64URL_NAME, omitPadding: true } as const;",
     "",
   ].join("\n");
+  function sharedWriterSource() {
+    if (slugSource === undefined) throw new Error("Shared writer requires the plain-slug source.");
+    const start = slugSource.indexOf("      if (nativePlainUuidBase64) {");
+    const ending = "      return encode(bytes, BASE64URL) as PlainUuidSlug;\n";
+    const end = slugSource.indexOf(ending, start);
+    if (start < 0 || end < 0) throw new Error("Native plain writer anchors changed.");
+    // Copy the complete body and its comments unchanged before replacing the original span.
+    const body = slugSource.slice(start, end + ending.length);
+    const helper = [
+      "// Validated conversion and generation share native capture and permanent fallback state.",
+      "// Keep input checks at their owners; remeasure both complete calls after changing this split.",
+      "export function encodePlainUuidBase64urlUnchecked(bytes: Uint8Array): PlainUuidSlug {",
+      body,
+      "}",
+      "",
+    ].join("\n");
+    const withHelper = replaceOnce(
+      slugSource,
+      "// Keep general normalization separate",
+      helper + "// Keep general normalization separate",
+    );
+    const context =
+      "    }\n  }\n  return uuidBytesToPlainSlugGeneral(bytes, offsetOrAlphabet, alphabet);";
+    return replaceOnce(
+      withHelper,
+      body + context,
+      "      return encodePlainUuidBase64urlUnchecked(bytes);\n" + context,
+    );
+  }
   return [
     { name: "baseline", source },
+    {
+      name: "shared-writer",
+      get source() {
+        return replaceOnce(
+          replaceOnce(
+            replaceOnce(source, "BASE64URL_NAME, encode", "BASE64URL, BASE64URL_NAME, encode"),
+            "import { resolveSlugAlphabet }",
+            "import { resolveSlugAlphabet, encodePlainUuidBase64urlUnchecked }",
+          ),
+          "  return encode(generatedOrThrow(drawUuidV4Scratch()), resolved) as PlainUuidV4Slug;",
+          [
+            "  const bytes = generatedOrThrow(drawUuidV4Scratch());",
+            "  return (resolved === BASE64URL ? encodePlainUuidBase64urlUnchecked(bytes) : encode(bytes, resolved)) as PlainUuidV4Slug;",
+          ].join("\n"),
+        );
+      },
+      get slugSource() {
+        return sharedWriterSource();
+      },
+    },
     {
       name: "shared-converter",
       get source() {

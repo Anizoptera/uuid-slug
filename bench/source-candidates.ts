@@ -207,7 +207,11 @@ const uuidSource =
   group === "v7-draw"
     ? await command("git", ["show", `${revision}:src/uuid.ts`], project)
     : undefined;
-const candidates = createSourceCandidates(group, source, uuidSource);
+const slugSource =
+  group === "v4-slug"
+    ? await command("git", ["show", `${revision}:src/slug.ts`], project)
+    : undefined;
+const candidates = createSourceCandidates(group, source, uuidSource, slugSource);
 const requested = new Set(process.argv.slice(3));
 for (const name of requested)
   if (!candidates.some((candidate) => candidate.name === name))
@@ -258,9 +262,16 @@ try {
   );
   for (const candidate of selected) {
     const candidateSource = candidate.source;
+    const candidateSlugSource = candidate.slugSource ?? slugSource;
     await Promise.all([
       writeFile(join(tree, filename), candidateSource),
       writeFile(join(report, `${candidate.name}-source.txt`), candidateSource),
+      ...(candidateSlugSource === undefined
+        ? []
+        : [
+            writeFile(join(tree, "src/slug.ts"), candidateSlugSource),
+            writeFile(join(report, `${candidate.name}-slug-source.txt`), candidateSlugSource),
+          ]),
       ...(uuidSource === undefined
         ? []
         : [
@@ -309,7 +320,9 @@ try {
       // that selected capability rather than assume only a named candidate can use it.
       const nativePlain =
         (group === "v4-slug" &&
-          (candidate.name === "native-entry" || candidate.name === "shared-converter")) ||
+          (candidate.name === "native-entry" ||
+            candidate.name === "shared-converter" ||
+            candidate.name === "shared-writer")) ||
         (group === "slug" && candidate.source.includes("captureNativePlainUuidBase64()")) ||
         candidate.name === "native-branch" ||
         candidate.name === "native-dispatch" ||
