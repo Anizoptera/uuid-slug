@@ -207,59 +207,23 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
           screen; no pooling penalty is established. The shared native-writer candidate still loses.
           Evidence and limits live in `bench/PERFORMANCE.md` §Bun UUIDv4 slug resources.
     - [ ] Screen native encoding at the UUIDv4 slug entry while retaining the existing draw.
-          The composition bypasses public dispatch and fallback, so its gain cannot prove a
-          production gain. Preserve base32 and capability-absent or throwing behavior; reject
-          integration if complete-call speed or resources lose on another primary runtime.
-          Test `v4-slug native-entry` through `generatePlainUuidV4Slug()`: it removes Latin-1
-          assembly after the existing draw. Native call and failure-containment costs may erase
-          that gain; the shared-writer loss makes placement the competing explanation.
+          Preserve conversion, base32, other runtimes, secure entropy and failure behavior.
+          Reuse native capture, options and permanent fallback state in `src/slug.ts`; duplicate
+          probes do not earn ownership. Preserve copied implementation spans and comments exactly.
           Require native-present, absent, throwing and corrupt-output witnesses before timing.
-          Reject `preset-fast`: isolated calls show a small preset benefit alongside a base32
-          cost, which does not earn another branch. Longer mixed-job windows still vary sharply;
-          isolated alphabets are more stable, without establishing a GC, allocation or JIT cause.
-          Isolated native placement has a small repeated base64url benefit and no clear base32
-          loss. Isolated public-call comparisons retain a small gap against native floors.
-          Before retention, reuse the existing native capture, options and fallback state in
-          `src/slug.ts`; duplicated probes do not earn ownership for this small gain. Require
-          repeated packed complete-call and resource evidence before any production change.
-          Reject `shared-converter`: reusing `uuidBytesToPlainSlug` reaches the native encoder
-          and passes payload and fallback proofs, but isolated complete calls do not reproduce
-          a gain. Production remains unchanged. A shared unchecked writer remains a live
-          alternative; weigh its added ownership and full verification against the small gap
-          before extending the source-candidate harness or extracting production code.
-          Screen `shared-writer` in an isolated two-file substitution: copy the existing
-          native/fallback body into one internal unchecked writer, then call it from validated
-          conversion and UUIDv4 base64url generation. It adds no probe, buffer or options state.
-          Repeated conversion, base32 or other-runtime loss rejects the extraction; no useful
-          generation gain rejects retention. Preserve every copied comment and the same draw.
-          Source proofs and exact-body comparison pass. Isolated generation retains a small
-          gain, while conversion and base32 directions vary. Packed comparisons do not establish
-          a useful gain; Node base32 loss appears in the first comparison and remains unresolved
-          in the repeat. Reject this extraction for retention, not native encoding itself.
-          Preserve production; next integration must leave unsupported outputs on their existing
-          writer and remove repeated per-call selection before another packed screen. Require
-          useful repeated complete-call gain and resource evidence before retention.
-          Screen `shared-selected` to isolate initialization-time writer selection from the
-          rejected per-call branch. Reuse the same extracted native body and fallback state;
-          capability-absent hosts select their existing encoder directly. Native base32 still
-          uses its existing encoder. A missing useful generation gain or conversion/base32 loss
-          rejects retention; source survival selects repeated packed comparisons, not adoption.
-          Source proofs and exact body preservation pass. Isolated Bun generation retains a
-          small benefit; Node base32 is near the control initially, then both implementations
-          shift widely. Conversion remains variable. Packed comparisons leave generation gains
-          unresolved and expose Bun base32 and conversion losses. Reject this extraction for
-          retention; it does not reproduce the earlier Node base32 loss or establish its cause.
-          Keep native integration open. The remaining added wrapper is a live cost hypothesis,
-          not a finding; any further candidate must remove it while sharing the same native
-          state and preserving unsupported outputs, then earn useful packed gain and resources.
-          Screen `shared-direct`: the shared writer handles alphabet selection itself, and
-          generation selects that function or the existing encoder once. Remove the extra
-          closure and call without duplicating native capture or fallback state. Missing useful
-          generation gain or any conversion/base32 loss rejects retention; repeat packed calls
-          only after the owning behavior and resource proofs and focused screen pass.
-          Those proofs pass and preserve the copied native body exactly. Isolated generation
-          shows a small Bun benefit; Node, base32 and conversion directions do not establish
-          a loss. Compare packed complete calls before selecting profiles or production changes.
+          Source or composed native gains select packed testing only. Require useful repeated
+          packed complete-call gain and resource evidence without another primary-call loss.
+          Reject integrations that add no useful gain; do not abandon a faster native capability
+          because one integration loses. `bench/PERFORMANCE.md` §Bun UUIDv4 slug resources owns
+          rejected candidates, their evidence and limits; do not repeat those screens unchanged.
+          `shared-direct` passes behavior and resource proofs with exact native-body preservation.
+          Elapsed-window packed comparisons remain unresolved with unequal completed work;
+          their batch medians cannot explain aggregate caller CPU. Keep both observations.
+          Equal-call comparisons repeat the Bun generation benefit and base32 loss direction;
+          the second base32 interval remains unresolved. Preserve production. The candidate
+          still sends base32 through an extra function before its existing encoder; next
+          integration must call that encoder directly, without another native probe or state.
+          These different epochs do not establish the cause of greater fixed-call stability.
       - [x] Keep the UUIDv4 candidate factory in its own file before extending the registry.
             Its body and comments remain byte-identical except for export visibility;
             the complete check passes. UUIDv4 slug candidates have a separate source owner.

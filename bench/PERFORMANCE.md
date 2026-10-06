@@ -243,6 +243,22 @@ Node generation, base32 and conversion directions do not establish a loss. Two o
 per implementation provide no confidence interval or total allocation evidence; the small
 generation benefit selects packed comparisons, not production retention.
 
+Do not retain `shared-direct` yet: generation gain does not establish preservation of base32.
+`v4-slug-shared-direct-packed-lAjiEA/` retains two elapsed-window comparisons on Node 26.10.0
+and Bun 1.4.2 with the earlier packed settings. Every interval includes no change; the repeat
+has sharply unequal completed work and extreme batch shifts. A Bun base32 baseline process
+reports a 3,682 ns batch median but 36,418 microseconds of caller CPU across 681,152 calls.
+Those statistics have different call weights and measurement scopes; their difference is not
+proof of scheduling, collection or execution cost.
+Two further comparisons change only the measured-call setting to 262,144 calls per sample;
+each retains 72 measurements of 1,835,008 completed calls. Bun generation ratios are
+0.965 [0.943, 0.9996] and 0.933 [0.901, 0.980]. Base32 ratios are 1.073 [1.026, 1.478] and
+1.030 [0.997, 1.071], while conversion
+and all Node jobs remain unresolved. This repeats a generation benefit and a base32 loss
+direction, but the second base32 interval includes no change. Preserve production; further
+integration must avoid sending base32 through the extra writer. Separate process epochs do
+not prove why the fixed-call records are more stable, and neither mode establishes total allocation.
+
 ### Owned UUIDv7 generation allocation
 
 Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.
