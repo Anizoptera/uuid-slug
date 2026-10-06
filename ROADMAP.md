@@ -47,6 +47,15 @@ do not block production optimization; the calibration tasks below are held, not 
       Keep production; the separate function does not remove the integration penalty.
       Captured source and measurements preserve the experiment without retained driver code.
 
+- [ ] Attribute the repeated shared-binding base32 CPU loss with native Bun profiles of the
+      retained mixed-call bundles. Distinguish byte drawing, encoding and string construction
+      from compilation or harness work. Require the profiled comparison to repeat the loss;
+      missing or differently weighted samples cannot establish its cause. Select no new shape
+      until the profile identifies removable work or rules out the proposed attribution.
+      `candidates-v4-slug-QnhUb8/*-mixed-profile-*` repeats the base32 thread-CPU loss in
+      both process orders. Native samples reach the unchanged base32 encoder; its small
+      subtree counts do not identify removable work or establish a string-construction cause.
+
 - [x] Reject direct UUIDv4 slug use of the existing captured native encoder and options.
       Shared live bindings preserve conversion's body without another successful writer call.
       `bench/reports/candidates-v4-slug-QnhUb8/` retains source captures, runtime/resource proofs
