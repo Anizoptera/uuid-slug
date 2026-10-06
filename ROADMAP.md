@@ -58,8 +58,10 @@ do not block production optimization; the calibration tasks below are held, not 
       `*-mixed-correlated-*` brackets every measured case inside its native profile and excludes
       preparation samples. Both candidate base32 captures show generic `encode` self samples;
       neither baseline capture does. Inlining and one unstable baseline prevent causal attribution.
-      Test constant-alphabet dispatch after validation; require the CPU loss and dispatcher
-      samples to disappear together without another primary-call loss before selecting that shape.
+      `candidates-v4-slug-TixXAF/` rejects constant-alphabet dispatch after validation: native
+      profiles retain generic dispatcher samples and repeat the base32 CPU loss in both process
+      orders despite improved base64url calls. Passing the constant does not restore specialization;
+      the broader attribution remains unresolved. Keep production and remove the temporary candidate.
 
 - [x] Reject direct UUIDv4 slug use of the existing captured native encoder and options.
       Shared live bindings preserve conversion's body without another successful writer call.
