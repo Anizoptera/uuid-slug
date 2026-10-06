@@ -16,6 +16,18 @@ export function v4SlugCandidates(source: string): readonly SourceCandidate[] {
   return [
     { name: "baseline", source },
     {
+      name: "preset-fast",
+      get source() {
+        // Isolate preset recognition before combining it with native encoding. Wrapped strings
+        // and other alphabets still use the existing normalizer, including its failure boundary.
+        return replaceOnce(
+          replaceOnce(source, "BASE64URL_NAME, encode", "BASE64URL, BASE64URL_NAME, encode"),
+          "  const resolved = resolveSlugAlphabet(alphabet);",
+          "  const resolved = alphabet === BASE64URL_NAME ? BASE64URL : resolveSlugAlphabet(alphabet);",
+        );
+      },
+    },
+    {
       name: "native-entry",
       get source() {
         return replaceOnce(

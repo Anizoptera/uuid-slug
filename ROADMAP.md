@@ -214,6 +214,10 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
           assembly after the existing draw. Native call and failure-containment costs may erase
           that gain; the shared-writer loss makes placement the competing explanation.
           Require native-present, absent, throwing and corrupt-output witnesses before timing.
+          Reject `native-entry`: its short reversed-order screen does not reproduce a useful
+          base64url gain and loses base32 in both orders. Isolate `preset-fast` next: known
+          primitive base64url needs no general normalization. Keep every other input on that
+          normalizer; base32 or other primary-call loss rejects this change too.
       - [x] Keep the UUIDv4 candidate factory in its own file before extending the registry.
             Its body and comments remain byte-identical except for export visibility;
             the complete check passes. UUIDv4 slug candidates have a separate source owner.

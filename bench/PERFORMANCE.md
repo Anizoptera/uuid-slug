@@ -140,6 +140,17 @@ measure gross allocation. Sampling confirms native `toBase64` replaces the packa
 `toString`. Small process counts, fixed case order and engine variability limit the comparison;
 public-call dispatch, unsupported capabilities and fallback costs remain unmeasured for this composition.
 
+`candidates-v4-slug-PMge43/` screens native encoding inside UUIDv4 slug generation on Bun 1.4.2.
+Two fresh processes per implementation use reversed order, 16 ms preparation and three 5 ms
+batches. Base64url medians are 51.3 and 49.1 ns against baseline 51.1 and 52.4 ns; the gain does
+not repeat. Base32 medians are 49.0 and 49.2 ns against 45.0 and 46.5 ns. Reject this placement
+from the short screen; these batches provide no confidence interval or individual-call latency.
+Both implementations pass Node and Bun runtime tests and the existing resource counters.
+The native candidate reaches two native calls with the method present, zero when absent and
+one when throwing; fallback preserves the observed secure payload. Changing the first returned
+character fails the independent byte oracle. This proves the selected paths, not a resource gain.
+Isolate preset recognition before combining another native implementation with public dispatch.
+
 ### Owned UUIDv7 generation allocation
 
 Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.
