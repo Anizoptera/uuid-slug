@@ -52,6 +52,15 @@ do not block production optimization; the calibration tasks below are held, not 
       from compilation or harness work. Require the profiled comparison to repeat the loss;
       missing or differently weighted samples cannot establish its cause. Select no new shape
       until the profile identifies removable work or rules out the proposed attribution.
+      `v4-complete-call-attribution-4RjOHL/` retains fresh source and Bun-bundled
+      comparisons of the same corpus. Package draw plus native encoding is faster than the
+      public call in each process. Source calls do not consistently trail the scratch-native floor,
+      while bundled calls trail it in each process. The composition retains package entropy and
+      failure handling but excludes public alphabet selection and encoding fallback, so entropy
+      alone cannot explain its gain. Source and
+      bundle preparation remain different populations; execution order does not establish a
+      compilation cause. Profile the bundled public call against that composition before another
+      integration candidate. This diagnostic does not close the public-call or resource gap.
       `candidates-v4-slug-QnhUb8/*-mixed-profile-*` repeats the base32 thread-CPU loss in
       both process orders. Native samples reach the unchanged base32 encoder; its small
       subtree counts do not identify removable work or establish a string-construction cause.
