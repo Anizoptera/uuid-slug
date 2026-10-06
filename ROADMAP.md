@@ -47,6 +47,19 @@ do not block production optimization; the calibration tasks below are held, not 
       `/tmp/uuid-slug-base32-qualified-red.log` rejects broad requalification
       using the real UUIDv7 generator; `-green.log` passes the narrowed exception.
 
+- [x] Reject the shared native base64url writer whose callable switches permanently to
+      portable encoding after failure. Complete `generatePlainUuidV4Slug()` has a retained
+      native-encoding gap; the package draw followed by native encoding already beats direct
+      drawing, so preserve entropy. Earlier helpers still checked native availability inside
+      every call. Remove that check without duplicating capture, options or failure state.
+      Helper overhead may erase the gain, shared dispatch may slow conversion, and base32
+      preparation may still regress. Reject on any repeated primary-call loss or absent useful
+      Bun slug gain. Native-present, absent, throwing and corruption proofs precede the source
+      screen; only a survivor earns packed, resource and remaining-runtime comparisons.
+      `candidates-v4-slug-dsMLRG/` passes those proofs and improves Bun base64url generation,
+      but both reversed-order fresh processes slow base32 generation. Preserve production;
+      remove the temporary candidate. This rejects retention, not the native capability.
+
 - [x] Reject the existing `v4-slug shared-converter` candidate against the open Bun
       UUIDv4 plain-slug gap. Reuse the unchanged public converter's native capture
       and fallback without extracting its body or adding another encoding owner.
