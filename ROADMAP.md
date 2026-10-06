@@ -27,6 +27,14 @@ do not block production optimization; the calibration tasks below are held, not 
       Reuse unchanged evidence; refresh only missing or changed comparisons. Profile the largest
       material gap on Node Current or Bun, screen one attributed fix, then verify ranked runtimes.
 
+- [ ] Remove the discarded decode array from primary `uuidToString(plainUuidSlug)` calls.
+      The universal converter still allocates bytes that never escape. Direct-decoder delegation
+      removes that array but does not establish preservation of Node mixed and compact text costs.
+      `candidates-slug-aDrL0t/` retains source, packed comparisons and the focused Node controls;
+      keep production unchanged and reject this integration. Any replacement must isolate decoding
+      work without adding dispatch cost to other primary calls, preserve error precedence, and
+      pass complete-call and resource comparisons before retention.
+
 - [x] Remove temporary byte allocation from primary plain-slug-to-UUID-text conversion
       only if complete-call measurements preserve both alphabets, cases and other primary calls.
       Decode directly into existing private scratch after normalization; preserve public owned-byte
