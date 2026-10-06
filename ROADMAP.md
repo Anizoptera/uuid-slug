@@ -136,6 +136,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         reproduce the decoding loss. Shared correctness setup executes every case; the screens
         omit preceding timed calls. Preserve the complete-workload failure and unresolved cause;
         none authorizes a decoding repair or a relaxed timing rule.
+        Node LTS and Deno controls pass, but both miss the intended computation loss. Reject
+        extending this setting to those hosts. Check Deno's optimized computation witness before
+        enlarging its samples; browser comparisons do not yet forward fixed-call settings.
         Evidence lives in `bench/PERFORMANCE.md` §Fixed measured-call screen.
   - [x] Compare primary owned UUIDv7 generation resources on Bun against qualified libraries.
         Matched reversed-order captures show lower package caller CPU than `uuidv7`, a changing

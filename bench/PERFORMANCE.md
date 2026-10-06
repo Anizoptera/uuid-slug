@@ -4051,6 +4051,13 @@ timed calls. None reproduces the full-inventory loss conclusively. They do not i
 cause or justify treating it as noise. Reports are
 `current-fixed-measured-one-batch-bun-decoder-{isolated,codec-preparation,primary-preparation}.jsonl`.
 
+The same one-batch setting retains all 3,072 records on Node 24.21.0 and Deno 2.9.7.
+Both the control and computation defect exit zero. The codec ratios are 1.063 [0.977, 1.115]
+on Node and 0.997 [0.962, 1.077] on Deno, using family-wide intervals. These misses reject
+extending the setting to those hosts. Deno's near-one ratio does not establish whether the
+injected computation survives optimization; increasing sampling alone cannot settle that.
+Reports are `current-fixed-measured-one-batch-lts-deno-{control,defect}.jsonl`.
+
 Equal counts let the mean batch timing and aggregate CPU use the same call weighting.
 Node's first candidate codec record averages 570 ns against 205 ns of caller-thread CPU
 per call; Bun's baseline round four averages 750 ns against 79 ns. CPU covers the wider
