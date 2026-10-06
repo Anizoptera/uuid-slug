@@ -7,12 +7,14 @@ import { alphabetCandidates } from "./alphabet-candidates";
 import { keylessCandidates } from "./keyless-candidates";
 import { v7Candidates } from "./v7-draw-candidates";
 import { v4Candidates } from "./v4-candidates";
+import { v4SlugCandidates } from "./v4-slug-candidates";
 
 export type { SourceCandidate } from "./candidate-source";
 
 export const CANDIDATE_GROUPS = [
   "v7-draw",
   "v4",
+  "v4-slug",
   "alphabet",
   "slug",
   "keyless",
@@ -27,6 +29,7 @@ export type CandidateGroup = (typeof CANDIDATE_GROUPS)[number];
 export const CANDIDATE_FILES = {
   "v7-draw": "src/v7.ts",
   v4: "src/v4.ts",
+  "v4-slug": "src/v4-slug.ts",
   alphabet: "src/alphabet.ts",
   slug: "src/slug.ts",
   keyless: "src/v7-keyless.ts",
@@ -46,6 +49,7 @@ export function createSourceCandidates(
 ): readonly SourceCandidate[] {
   const builders = {
     v4: v4Candidates,
+    "v4-slug": v4SlugCandidates,
     "v7-draw": (value: string) => v7Candidates(value, uuidSource),
     alphabet: alphabetCandidates,
     slug: slugCandidates,

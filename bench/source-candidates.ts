@@ -65,6 +65,10 @@ for (const [name, value] of Object.entries({ durationMs, samples, warmupMs }))
 // Each source owner names its own caller corpus. Exhaustiveness prevents a new group silently
 // inheriting another group's file or measurements while reporting a successful screen.
 const groups = {
+  "v4-slug": {
+    names: ["v4.slug", "v4.base32", "v4.string", "v4.bytes", "plain.encode", "v7.slug"],
+    tests: ["__test__/alphabet.test.ts"],
+  },
   v4: {
     names: [
       "package.v4.text.native",
@@ -300,10 +304,11 @@ try {
         failures.map((result) => result.reason),
         `Candidate rejected before timing: ${candidate.name}`,
       );
-    if (group === "alphabet" || group === "slug") {
+    if (group === "alphabet" || group === "slug" || group === "v4-slug") {
       // A retained slug baseline can already delegate natively. Its public probe must exercise
       // that selected capability rather than assume only a named candidate can use it.
       const nativePlain =
+        (group === "v4-slug" && candidate.name === "native-entry") ||
         (group === "slug" && candidate.source.includes("captureNativePlainUuidBase64()")) ||
         candidate.name === "native-branch" ||
         candidate.name === "native-dispatch" ||
@@ -322,7 +327,9 @@ try {
       for (const mode of ["present", "absent", "throw"]) {
         const output = await command("bun", ["__test__/alphabet-native-probe.ts", mode], tree, {
           UUID_SLUG_EXPECT_NATIVE_PLAIN: nativePlain ? "1" : "0",
-          UUID_SLUG_PROBE_NATIVE_DISABLE: candidate.name.endsWith("-leaf") ? "1" : "0",
+          UUID_SLUG_PROBE_NATIVE_DISABLE:
+            group === "v4-slug" || candidate.name.endsWith("-leaf") ? "1" : "0",
+          UUID_SLUG_PROBE_V4_SLUG: group === "v4-slug" ? "1" : "0",
           UUID_SLUG_PROBE_NATIVE_SLICE: candidate.name === "native-slice-leaf" ? "1" : "0",
           UUID_SLUG_PROBE_PUBLIC_PLAIN: group === "slug" ? "1" : "0",
         });
@@ -339,6 +346,7 @@ try {
           env: {
             ...process.env,
             UUID_SLUG_EXPECT_NATIVE_PLAIN: "1",
+            UUID_SLUG_PROBE_V4_SLUG: group === "v4-slug" ? "1" : "0",
             UUID_SLUG_PROBE_NATIVE_SLICE: candidate.name === "native-slice-leaf" ? "1" : "0",
             UUID_SLUG_PROBE_PUBLIC_PLAIN: group === "slug" ? "1" : "0",
           },

@@ -18,6 +18,8 @@ const original = descriptor?.value as
   | ((this: Uint8Array, options: { alphabet: "base64url"; omitPadding: boolean }) => string)
   | undefined;
 let calls = 0;
+const v4Call = process.env.UUID_SLUG_PROBE_V4_SLUG === "1";
+let generatedExpected: string | undefined;
 if (process.env.UUID_SLUG_PROBE_NATIVE_SLICE === "1") {
   const slice = Object.getOwnPropertyDescriptor(Buffer.prototype, "base64urlSlice")?.value as
     | ((this: Uint8Array, start: number, end: number) => string)
@@ -45,15 +47,20 @@ Object.defineProperty(Uint8Array.prototype, "toBase64", {
       ? undefined
       : function (this: Uint8Array, options: { alphabet: "base64url"; omitPadding: boolean }) {
           calls += 1;
+          // Observe the actual secure payload passed to native encoding, independently of its
+          // returned text. This also proves fallback encodes the same draw after a native failure.
+          if (v4Call) generatedExpected = Buffer.from(this).toString("base64url");
           if (mode === "throw") throw new Error("native encoding unavailable");
           assert.ok(original, "present-capability proof requires the real native encoder");
           const result = original.call(this, options);
+          if (mode === "corrupt" && v4Call)
+            return (result[0] === "A" ? "B" : "A") + result.slice(1);
           return mode === "corrupt" ? result.slice(0, 21) + "A" : result;
         },
 });
 const { encode, BASE64URL, BASE32HEX, BASE64URL_NAME, BASE32HEX_NAME } =
   await import("../src/alphabet");
-const { uuidBytesToPlainSlug } = await import("../src/slug");
+const { uuidBytesToPlainSlug, generatePlainUuidV4Slug } = await import("../src/index");
 const publicCall = process.env.UUID_SLUG_PROBE_PUBLIC_PLAIN === "1";
 for (let seed = 0; seed < 256; seed += 1) {
   const bytes = Uint8Array.from({ length: 16 }, (_, index) => seed * 197 + index * 131);
@@ -63,6 +70,19 @@ for (let seed = 0; seed < 256; seed += 1) {
     assert.equal(uuidBytesToPlainSlug(bytes, 0, BASE64URL_NAME), expected[seed]);
   }
 }
+if (v4Call) {
+  for (let index = 0; index < 2; index += 1) {
+    generatedExpected = undefined;
+    const slug =
+      index % 2 === 0 ? generatePlainUuidV4Slug() : generatePlainUuidV4Slug(BASE64URL_NAME);
+    if (generatedExpected !== undefined) assert.equal(slug, generatedExpected);
+    const bytes = Buffer.from(slug, "base64url");
+    assert.equal(bytes.length, 16);
+    assert.equal(bytes[6]! >>> 4, 4);
+    assert.equal(bytes[8]! & 0xc0, 0x80);
+    assert.equal(bytes.toString("base64url"), slug, "generated spelling must be canonical");
+  }
+}
 const plainCalls = calls;
 const payload = new Uint8Array(16);
 for (let tail = 0; tail < 16; tail += 1) {
@@ -70,15 +90,18 @@ for (let tail = 0; tail < 16; tail += 1) {
   assert.equal(encode(payload, BASE32HEX), "0".repeat(26));
   if (publicCall) assert.equal(uuidBytesToPlainSlug(payload, BASE32HEX_NAME), "0".repeat(26));
 }
+if (v4Call) assert.equal(generatePlainUuidV4Slug(BASE32HEX_NAME).length, 26);
 assert.equal(calls, plainCalls, "masked tails and base32hex must keep the existing writer");
 assert.equal(
   calls,
   process.env.UUID_SLUG_EXPECT_NATIVE_PLAIN === "1" && mode !== "absent"
     ? mode === "throw" && (publicCall || process.env.UUID_SLUG_PROBE_NATIVE_DISABLE === "1")
       ? 1
-      : publicCall
-        ? 768
-        : 256
+      : v4Call
+        ? 2
+        : publicCall
+          ? 768
+          : 256
     : 0,
   "the proof must reach exactly the selected native plain calls",
 );
