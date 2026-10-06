@@ -88,6 +88,11 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Stop shrinking preparation; the acceptance criterion requires targeted detection.
         Keep the original timing policy. Evidence and limits live in `bench/PERFORMANCE.md`
         §Reduced before-all preparation screen.
+  - [x] Reject the shared ending-clock candidate for the protected comparison.
+        One timestamp reports both durations and removes an adjacent read, but the full
+        computation-defect comparison still misses Node. Restore the original profiler;
+        a passing unchanged control and Bun rejection do not satisfy both-host detection.
+        Evidence and limits live in `bench/PERFORMANCE.md` §Shared ending-clock screen.
   - [x] Avoid packed timing when only benchmark dependencies change. `bench/check-inputs.ts`
         treats every manifest and lock change as production work; the scure dev-only addition
         therefore runs the whole timing comparison. Preserve detection of changed build tools,

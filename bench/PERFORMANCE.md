@@ -3965,6 +3965,24 @@ the misses or broad timing shifts. Stop the count reduction and retain the origi
 Raw reports are `current-preparation-16384-{control,defect}.jsonl` in `bench/reports/`;
 execution logs are `/tmp/uuid-slug-preparation-16384-{control,defect}.log`.
 
+### Shared ending-clock screen
+
+Reject the shared ending-clock candidate because the full comparison still misses Node's defect.
+
+The candidate uses one timestamp for block duration and total elapsed time, replacing two
+adjacent ending reads. Preparation remains 32,768 calls with seven one-millisecond batches
+and 16 process pairs on Node 24.21.0 and Bun 1.4.2. Both reports retain 3,072 complete
+records with seven positive finite samples each. The unchanged control exits zero in
+45.234 seconds; codec-value ratios are 0.974 and 0.989 with family-wide intervals
+[0.898, 1.070] and [0.869, 1.210]. The computation defect exits one in 48.205 seconds:
+Bun's ratio 1.275 is detected with interval [1.188, 1.339], while Node's ratio 1.046
+remains unresolved with interval [0.960, 1.137]. This fails the both-host detection criterion;
+it does not establish that clock reads explain prior misses or quantify their overhead.
+The original profiler remains unchanged. Reports are `current-shared-end-clock-{control,defect}.jsonl`;
+raw source captures are `current-preparation-v8-trace/before-shared-end-clock-{baseline,candidate}.ts.txt`.
+Logs are `/tmp/uuid-slug-shared-end-clock-{tests,control,defect}.log`. The owning benchmark
+tests pass all 53 cases, including partial-batch call counts and failures after an initial witness.
+
 ### Unchanged packed graph checks
 
 Skip primary-call regression timing when independently packed output is byte-identical; measuring
