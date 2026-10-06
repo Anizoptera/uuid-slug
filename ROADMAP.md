@@ -38,6 +38,15 @@ do not block production optimization; the calibration tasks below are held, not 
       do not consistently repeat that loss; preparation changes remain a live explanation,
       not an established cause. Keep production and the primary native-encoding gap open.
 
+- [x] Reject shared-output-split for ordinary UUIDv4 slug generation on Bun. Keep normalization,
+      one secure draw and the existing captured native method and fallback state. Move native
+      base64url work into a separate private function; base32 keeps its direct encoder outside
+      that exception frame. Shared compilation or helper-call cost may erase the benefit.
+      `candidates-v4-slug-kAUmDe/` passes Node/Bun behavior, native fallback, corruption and
+      resource proofs but shows no base64url gain and a base32 loss in both process orders.
+      Keep production; the separate function does not remove the integration penalty.
+      Captured source and measurements preserve the experiment without retained driver code.
+
 - [x] Reject direct UUIDv4 slug use of the existing captured native encoder and options.
       Shared live bindings preserve conversion's body without another successful writer call.
       `bench/reports/candidates-v4-slug-QnhUb8/` retains source captures, runtime/resource proofs
