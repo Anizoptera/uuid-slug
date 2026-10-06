@@ -3924,6 +3924,30 @@ Reproduce the source screen with `bun bench/source-candidates.ts codec bigint-by
 use the same substitution through `bench/compare.ts --source-candidate=codec:bigint-byte-generation-timing`
 for packed comparisons, preserving the primary inventory from `bench/check.ts`.
 
+### Per-case preparation screen
+
+Reject immediate per-case preparation: the screen still misses the Bun computation defect.
+
+The before-all and before-case controls use the same extracted preparation helper with
+32,768 calls, seven one-millisecond batches and 16 process pairs per host. Each control and
+the before-case defect report retains 3,072 complete primary-call records. Both controls exit
+zero in 49.487 and 63.972 seconds. Before-case Bun codec process medians span 65–291 ns on
+the baseline and 75–267 ns on the identical candidate, versus medians near 60 ns in the
+before-all control. The before-case defect exits one in 46.990 seconds, detecting Node's
+1.061 ratio with family-wide interval [1.020, 2.026] but missing Bun's 1.110 ratio. Broad
+unchanged shifts remain; separate epochs cannot attribute them to placement alone.
+Keep the original profiler and timing policy. Reports are
+`current-case-preparation-{before-all-control,before-each-control,before-each-defect}.jsonl`;
+the baseline and rejected profiler source captures are under `current-preparation-v8-trace/`
+as `before-case-placement-{baseline,candidate}.ts.txt`. The rejected source selects placement
+with `UUID_SLUG_PROFILE_WARMUP_BEFORE_CASE`; native captures and prior-work probes retain
+before-all preparation. These source captures are experiments, not supported profiler options.
+The restored worktree's `bun run check` and actual `.githooks/pre-commit` both exit zero,
+with `/usr/bin/time -p` wall times of 7.42 and 6.78 seconds. `performanceBaseline()` returns
+no production baseline for this worktree, so these measurements exclude changed-production
+packed timing and do not close that lane or cold CI headroom. Logs are
+`/tmp/uuid-slug-case-preparation-{check,hook}.log`.
+
 ### Unchanged packed graph checks
 
 Skip primary-call regression timing when independently packed output is byte-identical; measuring

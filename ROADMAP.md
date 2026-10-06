@@ -75,6 +75,19 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Bun; only the repeat rejects Node. The matched unchanged full control passes. Keep this
         timing-only calibration and its miss; evidence lives in `bench/PERFORMANCE.md`
         §Codec computation timing defect. Timing-policy selection remains unfinished.
+  - [x] Reject immediate per-case preparation as the host timing-policy candidate.
+        Matched before-all and before-case unchanged controls pass, but before-case preparation
+        leaves broad codec timing shifts and misses the computation defect on Bun. The same
+        helper, call counts, sample windows, process pairs and uncertainty isolate the placement
+        screen; separate epochs do not establish its cause. Restore the original profiler and
+        retain the source captures. Evidence lives in `bench/PERFORMANCE.md`
+        §Per-case preparation screen; routine timing policy remains unchanged.
+  - [ ] Screen fewer before-all preparation calls with the original profiler.
+        Start with the geometric step below the tested count; retain every primary call,
+        process pair, sample window and uncertainty rule. Require repeated unchanged controls
+        and computation-defect detection before expanding toward the rejected low-count boundary.
+        Stop shrinking when control timings change materially or targeted detection weakens;
+        preparation placement is no longer an active candidate.
   - [x] Avoid packed timing when only benchmark dependencies change. `bench/check-inputs.ts`
         treats every manifest and lock change as production work; the scure dev-only addition
         therefore runs the whole timing comparison. Preserve detection of changed build tools,
