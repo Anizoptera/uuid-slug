@@ -310,6 +310,24 @@ test("conversion profiles use the selected package implementation", () => {
   expect(calls).toBeGreaterThan(0);
 });
 
+test("base32 composition preserves unrelated generator rejection", () => {
+  const generator = generationCases.find(({ name }) => name === "uuid.v7.bytes.allocate");
+  if (!generator) throw new Error("The real UUIDv7 byte competitor is missing");
+  const rejected: GenerationCase = {
+    ...generator,
+    qualification: "rejected",
+    rejectionReason: "Unrelated generator rejection",
+  };
+  const { cases } = createConversionCases(undefined, undefined, [rejected]);
+  const composed = cases.filter(({ comparable }) => comparable === "v7.slug.base32hex.secure");
+  expect(composed.length).toBeGreaterThan(0);
+  for (const candidate of composed) {
+    verifyGenerationCase(candidate);
+    expect(candidate.qualification).toBe("rejected");
+    expect(candidate.rejectionReason).toBe(rejected.rejectionReason);
+  }
+});
+
 test("browser slug rivals include native encoding of the generated UUID", () => {
   const generator: GenerationCase = {
     name: "fixture.v7.text",

@@ -2,6 +2,9 @@
 
 import { bytesToUuidString, plainSlugToUuidBytes } from "../src/index";
 
+// Only this native byte result loses its ownership objection when consumed as a slug string.
+export const BUN_UUID_V7_BUFFER_CASE = "platform.bun.v7.bytes.allocate";
+
 export type GenerationValue =
   | number
   | string

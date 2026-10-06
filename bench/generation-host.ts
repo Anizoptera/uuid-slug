@@ -8,7 +8,12 @@ import cryptoRandomUuid from "crypto-randomuuid";
 
 import { generationCases } from "./generation-cases";
 import type { GenerationCase } from "./generation-case";
-import { bunUuidV7TextCase, cryptoRandomUuidCase, generationNameFilter } from "./generation-case";
+import {
+  BUN_UUID_V7_BUFFER_CASE,
+  bunUuidV7TextCase,
+  cryptoRandomUuidCase,
+  generationNameFilter,
+} from "./generation-case";
 import { measureGenerationCases } from "./generation-measure";
 import { createConversionCases } from "./conversion-cases";
 
@@ -193,7 +198,7 @@ const hostCases: readonly GenerationCase[] = [
     ? (
         [
           // A Node `Buffer`, not the plain `Uint8Array` this package returns; timed as a floor only.
-          ["platform.bun.v7.bytes.allocate", "v7.bytes.allocate.secure", () => bunUuidV7("buffer")],
+          [BUN_UUID_V7_BUFFER_CASE, "v7.bytes.allocate.secure", () => bunUuidV7("buffer")],
           [
             "platform.bun-copy.v7.bytes.allocate",
             "v7.bytes.allocate.secure",
@@ -229,7 +234,7 @@ const hostCases: readonly GenerationCase[] = [
           secure: true,
           version: 7,
         };
-        if (name === "platform.bun.v7.bytes.allocate")
+        if (name === BUN_UUID_V7_BUFFER_CASE)
           Object.assign(candidate, {
             qualification: "rejected",
             rejectionReason: "Native Buffer is not a caller-private plain Uint8Array result.",

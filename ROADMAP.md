@@ -42,6 +42,10 @@ do not block production optimization; the calibration tasks below are held, not 
       Fixed order, warm batches and shared host conditions limit inference;
       these results do not prove individual-call latency or allocation parity.
       Preserve production; this comparison identifies no throughput fix.
+      Base32 composition preserves generator rejections except the named native
+      Bun Buffer's byte-ownership objection, which cannot apply to a returned string.
+      `/tmp/uuid-slug-base32-qualified-red.log` rejects broad requalification
+      using the real UUIDv7 generator; `-green.log` passes the narrowed exception.
 
 - [x] Reject the existing `v4-slug shared-converter` candidate against the open Bun
       UUIDv4 plain-slug gap. Reuse the unchanged public converter's native capture

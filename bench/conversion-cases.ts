@@ -16,6 +16,7 @@ import {
   uuidStringToPlainSlug,
 } from "../src/index";
 import type { GenerationCase, GenerationValue } from "./generation-case";
+import { BUN_UUID_V7_BUFFER_CASE } from "./generation-case";
 
 // These independent fixed spellings expose payload loss without asking the package to verify itself.
 // They describe this small warm corpus, not the full accepted-input space of any implementation.
@@ -445,7 +446,11 @@ export function createConversionCases(
     const text = generator.comparable === `v${generator.version}.text.secure`;
     if (!text && generator.comparable !== `v${generator.version}.bytes.allocate.secure`) continue;
     const generation = { ...generator };
-    delete generation.rejectionReason;
+    // A string cannot expose native Buffer storage; no other rejection is waived.
+    if (generator.name === BUN_UUID_V7_BUFFER_CASE) {
+      generation.qualification = "qualified";
+      delete generation.rejectionReason;
+    }
     for (const [encoderName, encode] of base32Encoders) {
       cases.push({
         ...generation,
@@ -455,8 +460,6 @@ export function createConversionCases(
         ),
         comparable: `v${generator.version}.slug.base32hex.secure`,
         implementation: "generated-lowercase-base32-encoding",
-        // A string does not expose generator storage; Buffer ownership cannot reject this job.
-        qualification: "qualified",
         operation: () =>
           encode(
             text ? parse(generator.operation() as string) : (generator.operation() as Uint8Array),
