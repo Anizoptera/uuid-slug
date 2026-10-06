@@ -300,6 +300,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
   filters; run all applicable runtimes only after a candidate survives the focused mechanism test.
   Read each driver's runtime selector from that driver; comparison and profiling variables differ.
   Verify the runtime recorded in each result before assigning it to Current or LTS evidence.
+  Await a terminal exit code before launching another timing process; a returned process handle
+  still owns unfinished work and must be drained first.
   Benchmark the caller code each overload requires. Defaults that return identifiers directly
   must not pay for error-value unwrapping; retain it for conversions and configured calls that
   return errors. Keep the existing output and failure witnesses outside timed caller work.
