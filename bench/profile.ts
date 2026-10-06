@@ -227,6 +227,9 @@ for (const [name, fn] of selected) {
   gc?.();
   const heapBefore = process.memoryUsage();
   const heapAllocationBefore = readHeapAllocationTotal?.() ?? 0;
+  // Bun exit profiles use epoch timestamps; these bounds retain case attribution after inlining.
+  // Keep both clocks outside caller CPU and batch timing; wall-clock changes limit correlation.
+  const measurementStartedUnixMs = Date.now();
   const cpuBefore = process.cpuUsage();
   const threadCpuBefore = threadCpuUsage?.();
   const resourceBefore = process.resourceUsage();
@@ -255,6 +258,7 @@ for (const [name, fn] of selected) {
   const cpu = process.cpuUsage(cpuBefore);
   const threadCpu = threadCpuBefore && threadCpuUsage?.(threadCpuBefore);
   const resourceAfter = process.resourceUsage();
+  const measurementEndedUnixMs = Date.now();
   // This interval includes harness allocations and yields, but neither reporting nor forced GC.
   // Counter reads stay outside batch clocks and caller-CPU scope; this is engine heap, not total memory.
   const heapAllocatedBytes = readHeapAllocationTotal
@@ -271,6 +275,8 @@ for (const [name, fn] of selected) {
       name,
       ns,
       operations,
+      measurementStartedUnixMs,
+      measurementEndedUnixMs,
       warmupWork: warmupWork.get(name),
       maxBatchMs,
       maxUninterruptedMs,
