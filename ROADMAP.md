@@ -128,9 +128,10 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Screen one batch at that same call count on installed Node 26 and Bun, preserving
         preparation, fresh-process pairs and family-wide uncertainty. A failed control or missed
         defect rejects the reduction; a survivor still needs repeated and other-runtime proof.
-        The first one-batch control passes on Node 26 and Bun, and the defect catches codec
-        computation on both. Keep the extra Bun decoding failure; repeat the identical screen
-        before changing defaults or attributing speed to sampling rather than runtime differences.
+        Both identical one-batch controls pass on Node 26 and Bun; both defects catch codec
+        computation on both hosts and also flag Bun decoding. Keep that wider effect unresolved.
+        Verify other runtimes and complete-lane headroom before changing defaults; compare sample
+        counts on the same runtime before attributing elapsed savings to sampling alone.
         Evidence lives in `bench/PERFORMANCE.md` §Fixed measured-call screen.
   - [x] Compare primary owned UUIDv7 generation resources on Bun against qualified libraries.
         Matched reversed-order captures show lower package caller CPU than `uuidv7`, a changing

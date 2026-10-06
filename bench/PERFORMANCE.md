@@ -4036,6 +4036,13 @@ This single screen does not prove repeated detection, other-runtime coverage or 
 headroom. Changing both the Node release and sample count also prevents attributing the
 elapsed difference from the earlier screen to sampling alone.
 
+An identical repeat retains the complete inventory and passes the control in 31.031 seconds.
+The defect exits one in 27.758 seconds, with codec intervals [1.005, 1.153] on Node and
+[1.158, 1.292] on Bun. Bun decoding also fails again, with interval [1.310, 1.523].
+Reports are `current-fixed-measured-16384-one-batch-current-repeat-{control,defect}.jsonl`.
+Both primary-host screens detect this computation defect; they do not establish detection of
+every material loss, its effect on decoding, other-runtime coverage or complete-lane headroom.
+
 Equal counts let the mean batch timing and aggregate CPU use the same call weighting.
 Node's first candidate codec record averages 570 ns against 205 ns of caller-thread CPU
 per call; Bun's baseline round four averages 750 ns against 79 ns. CPU covers the wider
