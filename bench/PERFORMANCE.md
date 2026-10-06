@@ -66,6 +66,25 @@ The profiler reuses qualified generation calls and their payload and private-sto
 Its forwarding-count regression fails when the corpus ignores the requested package module,
 even though the substituted generator still returns valid UUIDs.
 
+On Bun 1.4.2, equal-call captures select no owned UUIDv7 generator change. Six fresh processes
+run the package, `uuidv7`, and `uuid`, then reverse that order. Each uses 65,536 preparation
+calls, two windows of 2,097,152 measured calls, and a separate sampling pass of that size.
+Every case passes the qualified corpus's payload and private-storage witnesses before profiling.
+
+| Generator | First-window caller CPU, two processes (µs) | Second-window committed growth (bytes) |
+| --- | --- | --- |
+| Package | 78,734; 73,899 | 0; 0 |
+| `uuidv7` | 87,887; 88,585 | 0; 1,048,576 |
+| `uuid` | 77,640; 81,968 | 3,145,728; 3,670,016 |
+
+Package caller CPU is lower than `uuidv7` in both orders; its comparison with `uuid` changes
+direction. These captures show neither a repeated package CPU disadvantage nor continuing
+package committed-memory growth. Preserve generation; first-window capacity varies, and retained
+heap and sampled stacks do not establish gross allocation parity, leak freedom or confidence bounds.
+Raw captures are `bench/reports/current-primary-v7-owned-bun-resources/{0,1,2,3,4,5}/`.
+Reproduce with `bench/profile-bun-memory.ts`, its fixed-call controls, and the named qualified
+generation cases; native Buffer-copy comparisons remain separate from this library comparison.
+
 Owned slug decoding remains faster than the measured equivalent native calls in two resource
 captures on 2026-10-04. `bench/reports/owned-decoder-resource-clean/` and
 `bench/reports/owned-decoder-resource-repeat/` contain CPU, sampled allocation, heap, trace and

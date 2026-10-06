@@ -107,6 +107,11 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         tests do not compensate for missing the computation defect on both hosts. Keep the
         restored profiler and family-wide rule; process variability remains unresolved.
         Evidence lives in `bench/PERFORMANCE.md` §Local checksum accumulation screen.
+  - [x] Compare primary owned UUIDv7 generation resources on Bun against qualified libraries.
+        Matched reversed-order captures show lower package caller CPU than `uuidv7`, a changing
+        direction against `uuid`, and flat second-window package commitment. Preserve generation;
+        these captures do not establish gross allocation parity or native Buffer-copy costs.
+        Evidence and limits live in `bench/PERFORMANCE.md` §Owned UUIDv7 generation allocation.
   - [x] Compare current Bun default UUIDv7 text resources directly with its native call.
         The earlier profile pair compares portable and native-backed package revisions, not
         the current package against the native function. Share the host corpus's exact native
