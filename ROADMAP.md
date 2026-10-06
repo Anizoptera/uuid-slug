@@ -27,6 +27,15 @@ do not block production optimization; the calibration tasks below are held, not 
       Reuse unchanged evidence; refresh only missing or changed comparisons. Profile the largest
       material gap on Node Current or Bun, screen one attributed fix, then verify ranked runtimes.
 
+- [x] Reject direct UUIDv4 slug use of the existing captured native encoder and options.
+      Shared live bindings preserve conversion's body without another successful writer call.
+      `bench/reports/candidates-v4-slug-QnhUb8/` retains source captures, runtime/resource proofs
+      and native present, absent, throwing and corruption witnesses.
+      Both process orders improve base64url generation but slow base32 generation; this
+      rejects retention without proving the slowdown's cause. Production and experiment code
+      remain unchanged. Two process observations per implementation do not
+      establish confidence intervals, total allocation or packed-consumer performance.
+
 - [ ] Measure the complete routine lane and pre-commit hook against the feedback-loop limits in
       `bench/README.md` §Regression protection. Attribute excess time to their actual commands;
       repair routing or redundant work without weakening primary-call regression detection.
