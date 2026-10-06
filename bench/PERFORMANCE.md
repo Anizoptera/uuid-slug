@@ -47,6 +47,39 @@ small-difference ruling. Each report directory retains heap statistics, sampling
 adjacent `.jsonl` files retain the second window. Logs are
 `/tmp/uuid-slug-native-v7-text-resources-{4,5,6,7}.log`.
 
+### Reported Node engine allocation
+
+Preserve the Node calls below; both process orders report lower engine heap allocation and caller CPU than each tested matching alternative.
+
+Node allocation comparisons under `current-primary-native-heap-allocation/` load the built
+public `dist/index.js` API on Node 26.10.0. Fresh processes reverse case order between paired
+passes, with 65,536 preparation calls and 262,144 measured calls. The qualified corpus checks payloads
+before measurement; owned byte-generation and slug-decoding rows also check private storage.
+`text-byte-ownership.jsonl` separately passes the existing payload and private-storage oracle
+for every measured text-to-byte alternative, including native hex and Buffer with a copy.
+The installed libraries are `uuid` 14.0.2, `uuidv7` 1.2.1, `fastv7` 1.0.2 and `slugid` 5.0.1.
+The table gives observed reported heap bytes per call, rounded to whole bytes, not confidence bounds.
+
+| Complete call | Package | Matching alternatives |
+| --- | --- | --- |
+| UUIDv4 text | 75–78 | `uuid`: 662–664; Web Crypto: 657–658; `crypto-randomuuid`: 657–662 |
+| Owned UUIDv4 bytes | 245–260 | `uuid`: 361–369; Web Crypto: 376 |
+| UUIDv4 base64url slug | 59–64 | `slugid`: 934–969; Web Crypto with native encoding: 488 |
+| UUIDv7 text | 106–111 | `fastv7`: 682–686; `uuid`: 1,100–1,109; `uuidv7`: 1,440–1,443 |
+| Owned UUIDv7 bytes | 263–265 | `uuidv7`: 319–320; `uuid`: 401–407 |
+| UUID text to bytes | 243–244 | `uuid`: 386–391; native hex: 516–522; Buffer with a copy: 683–695 |
+| Bytes to UUID text | 69–70 | Native hex: 498–499; Buffer: 607–615; `uuid`: 707–717 |
+| Plain slug to owned bytes | 245–247 | Native base64: 282–284; Buffer with a copy: 356–366; native decoding into a fresh array: 364–366 |
+
+These counter differences include harness and engine work; external backing storage is outside
+their scope. Caller CPU includes yields, while batch timing has a narrower scope and large
+outliers. These captures do not replace the throughput ranking or establish total allocation,
+individual-call latency, other-runtime parity, or costs for unmeasured input forms. UUIDv7 slug
+generation reports 92–94 bytes per call without a matching allocation comparison; keep that gap open.
+The additional `crypto-randomuuid` captures reuse its existing qualified case factory. The final
+profiler executes that case on Node Current, Node LTS, Bun and Deno; only qualified hosts report
+the heap-allocation field. No regression threshold follows from these two-process comparisons.
+
 ### Owned UUIDv7 generation allocation
 
 Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.

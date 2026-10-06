@@ -169,6 +169,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         observation separate from a regression budget: only two process pairs are measured,
         and harness and engine work remain included. Bun and Node LTS omit the metric.
         Evidence lives in `bench/PERFORMANCE.md` §Fixed measured-call screen.
+  - [x] Compare reported engine allocation for primary Node Current calls against qualified rivals.
+        Reversed fresh-process captures favor the package's reported heap allocation and caller
+        CPU in every measured matching job. Preserve those implementations; a repeated material
+        disadvantage would reopen profiling. `profile.ts` reuses the qualified corpus and the
+        existing `crypto-randomuuid` case factory rather than a substitute native function.
+        External storage, other calls and other runtimes remain open. `bench/PERFORMANCE.md`
+        §Reported Node engine allocation owns the comparisons and limits; the selected rival
+        executes on all installed hosts.
   - [x] Compare primary owned UUIDv7 generation resources on Bun against qualified libraries.
         Matched reversed-order captures show lower package caller CPU than `uuidv7`, a changing
         direction against `uuid`, and flat second-window package commitment. Preserve generation;

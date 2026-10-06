@@ -7,6 +7,7 @@ import { setImmediate as yieldToLoop } from "node:timers/promises";
 import { writeFile } from "node:fs/promises";
 import inspector from "node:inspector/promises";
 import * as v8 from "node:v8";
+import cryptoRandomUuid from "crypto-randomuuid";
 import originalFixtures from "../rust/uuid-slug/tests/fixtures/fixtures-original-slugs.json" with { type: "json" };
 import { assertProfileOutcome, createProfileCases, selectProfileCases } from "./profile-cases";
 import { sampleCallLatency } from "./call-latency";
@@ -79,8 +80,11 @@ if (generationName) {
   // It honors PROFILE_MODULE for package rows too; retain the same graph as the profiler API.
   // Select before sampling; corpus setup and imports are not per-identifier allocation.
   const { generationCases } = await import("./generation-cases");
-  const { verifyGenerationCase } = await import("./generation-case");
-  const selected = generationCases.find(({ name }) => name === generationName);
+  const { cryptoRandomUuidCase, verifyGenerationCase } = await import("./generation-case");
+  const cryptoRandomCase = cryptoRandomUuidCase(cryptoRandomUuid);
+  const selected =
+    generationCases.find(({ name }) => name === generationName) ??
+    (generationName === cryptoRandomCase.name ? cryptoRandomCase : undefined);
   if (!selected || selected.qualification !== "qualified")
     throw new Error(`No qualified generation case named ${generationName}`);
   verifyGenerationCase(selected);
