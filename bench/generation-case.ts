@@ -127,7 +127,8 @@ export function verifyGenerationCase(candidate: GenerationCase): void {
       typeof value !== "string" ||
       value.length !== 22 ||
       !(bytes instanceof Uint8Array) ||
-      bytes[6]! >>> 4 !== candidate.version
+      bytes[6]! >>> 4 !== candidate.version ||
+      (bytes[8]! & 0xc0) !== 0x80
     )
       throw new Error(
         `${candidate.name} did not return a base64url UUIDv${candidate.version} slug`,

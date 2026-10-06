@@ -327,6 +327,25 @@ test("browser slug rivals include native encoding of the generated UUID", () => 
   verifyGenerationCase(candidate!);
 });
 
+test("slug generation witnesses reject non-RFC UUID variants", () => {
+  const candidate: GenerationCase = {
+    comparable: "v7.slug.secure",
+    implementation: "fixture",
+    name: "slug variant",
+    operation: () => "AZkNTeYAcACAAAAAAAAAAA",
+    qualification: "qualified",
+    version: 7,
+  };
+  expect(() => verifyGenerationCase(candidate)).not.toThrow();
+  for (const variant of ["0", "4", "c"]) {
+    const slug = uuidStringToPlainSlug(`01990d4d-e600-7000-${variant}000-000000000000`);
+    if (slug instanceof Error) throw slug;
+    expect(() => verifyGenerationCase({ ...candidate, operation: () => slug })).toThrow(
+      "did not return a base64url UUIDv7 slug",
+    );
+  }
+});
+
 test("pair witnesses reject two valid spellings of different UUIDs", () => {
   const uuid = "01990d4d-e600-7000-8000-000000000000";
   const slug = uuidStringToPlainSlug(uuid);
