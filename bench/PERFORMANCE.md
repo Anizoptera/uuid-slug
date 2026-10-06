@@ -3990,6 +3990,21 @@ Restore the original profiler; these separate captures establish no lane-speed i
 Raw reports are `current-local-checksum-{control,defect}.jsonl`; original and
 candidate source captures are in `current-preparation-v8-trace/before-local-checksum-*.ts.txt`.
 
+### Independent compiled-loop screen
+
+Reject independently compiled loops because both hosts miss the targeted computation defect.
+
+Each case compiles the same typed loop separately and returns its checksum once per batch.
+Both reports retain all 48 calls across 64 process groups, with 32,768 preparation calls,
+seven one-millisecond batches and 16 process pairs on Node 24.21.0 and Bun 1.4.2.
+The unchanged control exits zero in 54.750 seconds. The defect exits one in 77.546 seconds
+for Node `plain.decode`, while codec-value ratios of 1.120 and 1.213 remain unresolved:
+their family-wide intervals are [0.728, 1.236] and [0.493, 2.353]. An unrelated failure
+cannot prove targeted detection. Preserve the original profiler and timing policy; these
+captures do not establish the cause of process variation or a lane-speed improvement.
+Reports are `current-isolated-loops-{control,defect}.jsonl`; source captures are
+`current-preparation-v8-trace/{before-isolated-loops-baseline,isolated-loops-candidate}.ts.txt`.
+
 ### Per-case preparation screen
 
 Reject immediate per-case preparation: the screen still misses the Bun computation defect.

@@ -107,6 +107,11 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         tests do not compensate for missing the computation defect on both hosts. Keep the
         restored profiler and family-wide rule; process variability remains unresolved.
         Evidence lives in `bench/PERFORMANCE.md` §Local checksum accumulation screen.
+  - [x] Reject independently compiled timing loops: the complete comparison misses the codec
+        computation defect on both hosts, despite failing an unrelated Node decoding row.
+        Restore the original profiler; independent loop construction does not resolve this
+        screen's detection failure. Evidence lives in `bench/PERFORMANCE.md`
+        §Independent compiled-loop screen.
   - [x] Compare primary owned UUIDv7 generation resources on Bun against qualified libraries.
         Matched reversed-order captures show lower package caller CPU than `uuidv7`, a changing
         direction against `uuid`, and flat second-window package commitment. Preserve generation;
