@@ -632,6 +632,8 @@ export function createProfileCases(
     },
     "plain.encode": (index) => api.uuidStringToPlainSlug(ids[index & 255] as string),
     "plain.decode": (index) => api.uuidToString(slugs[index & 255] as string),
+    "plain.decode.uppercase": (index) =>
+      api.uuidToString(slugs[index & 255] as string, api.UUID_TEXT_UPPERCASE),
     "plain.decode.text": (index) => api.plainSlugToUuidString(slugs[index & 255] as string),
     "plain.decode.text.base32": (index) => api.plainSlugToUuidString(base32[index & 255] as string),
     "plain.decode.text.uppercase": (index) =>
@@ -645,6 +647,8 @@ export function createProfileCases(
     "base32.encode": (index) =>
       api.uuidStringToPlainSlug(ids[index & 255] as string, base32hexName),
     "base32.decode": (index) => api.uuidToString(base32[index & 255] as string),
+    "base32.decode.uppercase": (index) =>
+      api.uuidToString(base32[index & 255] as string, api.UUID_TEXT_UPPERCASE),
     "slug.bytes": (index) => api.uuidToBytes(slugs[index & 255] as string),
     "slug.base32.bytes": (index) => api.uuidToBytes(base32[index & 255] as string),
     "slug.into": (index) => api.uuidToBytes(slugs[index & 255] as string, into, 4),
@@ -720,6 +724,8 @@ export function createProfileCases(
       codec.uuidToBytes(plainOnlySlugs[index % plainOnlySlugs.length] as string),
     "uuid.toString.canonical": (index) => api.uuidToString(ids[index & 255] as string),
     "uuid.toString.mixed": (index) => api.uuidToString(mixedIds[index & 255] as string),
+    "uuid.toString.mixed.uppercase": (index) =>
+      api.uuidToString(mixedIds[index & 255] as string, api.UUID_TEXT_UPPERCASE),
     "uuid.toString.compact": (index) => api.uuidToString(compactIds[index & 255] as string),
     "uuid.toString.urn": (index) => api.uuidToString(urnIds[index & 255] as string),
     "uuid.toString.braced": (index) => api.uuidToString(bracedIds[index & 255] as string),
@@ -1027,7 +1033,7 @@ export function createProfileCases(
           continue;
         }
         assertNormalizedUuidProfileOutcome(name, value, ids, index);
-        if (name.startsWith("plain.decode.text")) {
+        if (name.startsWith("plain.decode") || name.startsWith("base32.decode")) {
           const expectedUuid = ids[index & 255];
           if (
             !expectedUuid ||

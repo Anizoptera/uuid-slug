@@ -27,13 +27,26 @@ do not block production optimization; the calibration tasks below are held, not 
       Reuse unchanged evidence; refresh only missing or changed comparisons. Profile the largest
       material gap on Node Current or Bun, screen one attributed fix, then verify ranked runtimes.
 
-- [ ] Remove the discarded decode array from primary `uuidToString(plainUuidSlug)` calls.
-      The universal converter still allocates bytes that never escape. Direct-decoder delegation
-      removes that array but does not establish preservation of Node mixed and compact text costs.
-      `candidates-slug-aDrL0t/` retains source, packed comparisons and the focused Node controls;
-      keep production unchanged and reject this integration. Any replacement must isolate decoding
-      work without adding dispatch cost to other primary calls, preserve error precedence, and
-      pass complete-call and resource comparisons before retention.
+- [x] Remove the discarded decode array from primary `uuidToString(plainUuidSlug)` calls.
+      Keep private slug decoding and direct normalization of canonical UUID text; compact and
+      wrapped text retain the existing parser. Preserve error precedence, borrowed bytes and
+      canonical-text shortcuts without another validator, decoder or retained state.
+      `candidates-slug-aDrL0t/` rejects direct-decoder delegation against text controls.
+      `candidates-slug-FOpDMW/` rejects public caller-buffer slug decoding after repeated whole-call
+      losses; it adds validation and copying, but their causal share is unmeasured.
+      `candidates-slug-nr8UyQ/` improves Node text calls but slows Bun text controls.
+      `candidates-slug-PjGo5e/` improves canonical mixed text but rejects compact-text reconstruction.
+      `packed-source-9zYyUo/` retains the surviving canonical-normalization source and packages.
+      `universal-text-retained/uuid-slug-universal-production-packed-main.log` retains six complete process pairs
+      across Node Current, Bun, Deno and all three browser engines, including both output cases.
+      The separate JITless log uses fewer completed calls to fit the child timeout.
+      No interval resolves a slowdown; compact-text caller CPU remains mixed, including small
+      Bun losses. Matching compiled native profiles under `universal-text-native-baseline/`
+      and `universal-text-native-production-compiled/` report lower Node/Deno heap allocation
+      for both alphabets and text cases; Bun's cumulative counter is unavailable.
+      Resource guards reject restored arrays on Node, Bun, Deno and Chromium. Removing the
+      canonical guard fails input validation; the restored source passes. The full check exits zero.
+      These observations do not prove individual-call latency or total allocation parity.
 
 - [x] Remove temporary byte allocation from primary plain-slug-to-UUID-text conversion
       only if complete-call measurements preserve both alphabets, cases and other primary calls.

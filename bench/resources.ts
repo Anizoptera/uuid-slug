@@ -123,6 +123,7 @@ try {
   );
   const id = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
   const compactId = id.replaceAll("-", "");
+  const mixedId = id.toUpperCase();
   const time = 0x0190a1b2c3d4;
   const bytes = api.uuidStringToBytes(id);
   assert.ok(!(bytes instanceof Error));
@@ -500,6 +501,12 @@ try {
       errors: 0,
     });
     expectTextFormatter("plain decoding must construct only the requested UUID text");
+    check(`universal ${name}`, () => api.uuidToString(input, textCase), {
+      buffers: 0,
+      views: 0,
+      errors: 0,
+    });
+    expectTextFormatter("universal slug decoding must construct only the requested UUID text");
   }
   check("exact base32hex slug formatting", () => api.uuidBytesToPlainSlug(bytes, api.BASE32HEX), {
     buffers: 0,
@@ -674,6 +681,15 @@ try {
   // Canonical lowercase text is already the default output, so it must not be parsed and rebuilt.
   const canonical = { buffers: 0, errors: 0, hex: 0, chars: 0 };
   check("canonical UUID text", () => api.uuidToString(id), canonical);
+  for (const textCase of [api.UUID_TEXT_LOWERCASE, api.UUID_TEXT_UPPERCASE] as const)
+    check(`canonical mixed UUID text ${textCase}`, () => api.uuidToString(mixedId, textCase), {
+      buffers: 0,
+      views: 0,
+      copies: 0,
+      errors: 0,
+      fromCharCodes: 0,
+      latin1: 0,
+    });
   check("codec canonical UUID text", () => codec.uuidToString(id), canonical);
   const sentinel = codec.sentinels[0];
   assert.ok(sentinel);

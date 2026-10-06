@@ -472,6 +472,10 @@ describe("plain UUID slugs", () => {
   it("accepts and recognizes mixed-case hyphenated and compact UUID input", () => {
     const mixed = SAMPLE_V7_A.toUpperCase().replace("58B8", "58b8");
     const compact = mixed.replaceAll("-", "");
+    for (const input of [mixed, compact]) {
+      expect(uuidToString(input)).toBe(SAMPLE_V7_A);
+      expect(uuidToString(input, UUID_TEXT_UPPERCASE)).toBe(SAMPLE_V7_A.toUpperCase());
+    }
     expect(bytesToUuidString(unwrap(uuidStringToBytes(mixed)))).toBe(SAMPLE_V7_A);
     expect(bytesToUuidString(unwrap(uuidStringToBytes(compact)))).toBe(SAMPLE_V7_A);
     expect(uuidStringToPlainSlug(compact)).toBe(uuidStringToPlainSlug(SAMPLE_V7_A));
@@ -534,6 +538,22 @@ describe("plain UUID slugs", () => {
     }
     expect(plainSlugToUuidString(`urn:uuid:${SAMPLE_V7_A}`)).toBeInstanceOf(UuidSlugError);
     expect(plainSlugToUuidString(`{${SAMPLE_V7_A}}`)).toBeInstanceOf(UuidSlugError);
+  });
+
+  it("keeps normalized UUID text validation and input-error precedence", () => {
+    const mixed = SAMPLE_V7_A.toUpperCase();
+    for (let position = 0; position < mixed.length; position++) {
+      for (const replacement of ["g", "\u212A", "\u0130", "\uff21", " "]) {
+        const input = mixed.slice(0, position) + replacement + mixed.slice(position + 1);
+        expect(uuidToString(input)).toMatchObject({ code: "invalid_uuid" });
+        expect(
+          Reflect.apply(uuidToString, undefined, [input, Symbol("invalid case")]),
+        ).toMatchObject({ code: "invalid_uuid" });
+      }
+    }
+    expect(Reflect.apply(uuidToString, undefined, [mixed, Symbol("invalid case")])).toMatchObject({
+      code: "invalid_options",
+    });
   });
 
   it("normalizes genuine String objects without invoking caller coercion", () => {

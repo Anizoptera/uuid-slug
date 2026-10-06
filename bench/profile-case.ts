@@ -44,7 +44,7 @@ export function assertNormalizedUuidProfileOutcome(
 ): void {
   if (
     (name.startsWith("uuid.toString.") || name === "codec.toString.mixed") &&
-    value !== ids[index & 255]
+    value !== (name.endsWith(".uppercase") ? ids[index & 255]?.toUpperCase() : ids[index & 255])
   )
     throw new Error(
       `${name} returned a different UUID; check its input and conversion before timing`,

@@ -552,7 +552,28 @@ export function uuidToString(
     if (selectedCase instanceof Error) return selectedCase;
     return formatUuidBytesUnchecked(localBytes, 0, selectedCase);
   }
-  const bytes = decodeKeylessUuid(uuid);
+  const input = typeof uuid === "string" ? uuid : readObjectUuidInput(uuid);
+  // Canonical mixed text needs only case normalization, not uuidStringToBytes and formatting.
+  // Compact and wrapped text keep that parser; reconstructing them slowed complete calls.
+  // Remeasure these boundaries when the guard or native string operations change.
+  if (typeof input === "string" && input.length === 36) {
+    const lower = input.toLowerCase();
+    if (isUuidString(lower)) {
+      const selectedCase = resolveUuidTextCase(textCase);
+      if (selectedCase instanceof Error) return selectedCase;
+      return selectedCase === UUID_TEXT_LOWERCASE ? lower : lower.toUpperCase();
+    }
+  }
+  // Only text leaves this call. Reuse private scratch instead of an owned decode array;
+  // public caller-buffer decoding adds validation and copying (bench/PERFORMANCE.md).
+  const alpha = typeof input === "string" ? SLUG_ALPHABET_BY_LENGTH[input.length] : undefined;
+  const decoded =
+    typeof input === "string"
+      ? alpha
+        ? decodeInto(input, alpha, textSlugScratch, 0, 16)
+        : uuidStringToBytes(input)
+      : input;
+  const bytes = typeof decoded === "number" ? textSlugScratch : decoded;
   if (bytes instanceof Error || (bytes === uuid && isUuidSlugError(bytes))) return bytes;
   const selectedCase = resolveUuidTextCase(textCase);
   if (selectedCase instanceof Error) return selectedCase;
