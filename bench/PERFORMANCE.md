@@ -3862,6 +3862,21 @@ and 29.339 ms. These wall-clock observations include descheduling and do not att
 to package execution. Preparation totals 26.440 and 27.495 seconds respectively, so preparation
 and process overhead must be examined before shrinking sampling further.
 
+Do not adopt 32,768 preparation calls with one-third-millisecond windows: the repeated full
+defect misses Node despite a large median loss. The two unchanged controls exit zero in 31.122
+and 32.630 seconds; the defect runs exit one in 29.328 and 36.681 seconds. All four reports
+retain 3,072 records, seven batches, 16 process pairs and the full primary inventory. Their names
+are `current-fixed-warmup-full-{control,defect}-32768-ms-third.jsonl`, with `-replay` before
+the extension for repeats. The first defect detects codec ratios 1.584 on Node and 1.719 on Bun;
+the repeat detects Bun's 1.741 but leaves Node's 1.632 unresolved. Other diagnostics include
+Node formatting and Bun UUIDv7 text or plain decoding; their causes remain unresolved.
+
+Node's repeated defect has baseline codec batches near 300 ns in rounds 4 and 6, versus near
+120 ns in rounds 5 and 7. The slower baseline sequences stay slow across all seven batches;
+a single interrupted batch cannot explain them. The source diff adds only the discarded codec
+draw. Engine state, generated-code effects and scheduling remain competing explanations;
+inspect the complete preceding workload before attributing this to the preparation count.
+
 ### Unchanged packed graph checks
 
 Skip primary-call regression timing when independently packed output is byte-identical; measuring

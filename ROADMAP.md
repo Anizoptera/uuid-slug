@@ -60,6 +60,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Full one-millisecond and one-third-millisecond unchanged controls pass; the narrower
         defect screen rejects both hosts. Preparation and process overhead now dominate; inspect
         those costs before shrinking sampling further. Keep window overruns and detection misses.
+        Two full 32,768-call controls pass, but the repeated full defect misses Node; do not adopt.
+        Inspect engine evidence for codec-value processes whose entire batch sequence shifts,
+        keeping the full preceding workload. A narrow case cannot reproduce that preparation history.
   - [x] Avoid packed timing when only benchmark dependencies change. `bench/check-inputs.ts`
         treats every manifest and lock change as production work; the scure dev-only addition
         therefore runs the whole timing comparison. Preserve detection of changed build tools,
