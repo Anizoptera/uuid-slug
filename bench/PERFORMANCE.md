@@ -4005,6 +4005,24 @@ captures do not establish the cause of process variation or a lane-speed improve
 Reports are `current-isolated-loops-{control,defect}.jsonl`; source captures are
 `current-preparation-v8-trace/{before-isolated-loops-baseline,isolated-loops-candidate}.ts.txt`.
 
+### Fixed measured-call screen
+
+Do not adopt 8,192 measured calls per batch because the full comparison misses Node's defect.
+
+The unchanged profiler uses 32,768 preparation calls and seven equal-call batches in
+16 process pairs on Node 24.21.0 and Bun 1.4.2. Each report retains 3,072 primary-call records,
+each with 57,344 completed calls. The control exits zero in 39.688 seconds; the defect exits
+one in 55.551 seconds for Bun's codec computation. Node's ratio 1.038 remains unresolved
+with family-wide interval [0.952, 1.128]; Bun's ratio 1.261 has interval [1.005, 1.467].
+Reports are `current-fixed-measured-8192-{control,defect}.jsonl`.
+
+Equal counts let the mean batch timing and aggregate CPU use the same call weighting.
+Node's first candidate codec record averages 570 ns against 205 ns of caller-thread CPU
+per call; Bun's baseline round four averages 750 ns against 79 ns. CPU covers the wider
+interval including inter-batch yields, so those gaps bound time outside that thread's CPU.
+They do not identify the cause or justify replacing wall timing with CPU. Unequal elapsed
+batches' median timings and aggregate CPU have different weights and cannot support that bound.
+
 ### Per-case preparation screen
 
 Reject immediate per-case preparation: the screen still misses the Bun computation defect.

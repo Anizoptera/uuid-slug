@@ -67,6 +67,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         appears in both. Longer codec-only diagnostic windows show generation, clock and value
         construction costs without establishing removable wrapper overhead. Keep timing policy
         unchanged; resolve the smaller computation-loss miss before shortening routine windows.
+        Compare CPU and wall time only with matching call weights: elapsed-batch medians and
+        aggregate CPU per call have different weights. Equal-call records show wall time beyond
+        the broader CPU scope, but CPU variation still leaves execution causes unresolved.
   - [x] Replace the discarded-draw timing fixture if resource checks already reject its loss.
         Matched packed Node and Bun resource controls pass and the extra draw fails the buffer
         budget. Screen equivalent BigInt byte computation instead: successful codec values must
@@ -112,6 +115,17 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Restore the original profiler; independent loop construction does not resolve this
         screen's detection failure. Evidence lives in `bench/PERFORMANCE.md`
         §Independent compiled-loop screen.
+  - [ ] Screen the existing fixed-call measurement mode without changing the profiler.
+        Elapsed windows can stop after preemption with different amounts of completed work;
+        fixed calls may reduce that distortion, while execution-state variation may remain.
+        Start at 8,192 calls per batch, near recorded primary-call counts; inspect the adjacent
+        geometric counts before retention. Preserve preparation, process pairs, result reads
+        and uncertainty. Require unchanged controls and the intended defect on both hosts;
+        a miss keeps the policy open, and a survivor still needs complete-lane evidence.
+        The 8,192-call control passes; its computation defect catches Bun but misses Node.
+        Keep the setting unadopted; screen 16,384 calls to distinguish inadequate batch work
+        from persistent process variation. Evidence lives in `bench/PERFORMANCE.md`
+        §Fixed measured-call screen.
   - [x] Compare primary owned UUIDv7 generation resources on Bun against qualified libraries.
         Matched reversed-order captures show lower package caller CPU than `uuidv7`, a changing
         direction against `uuid`, and flat second-window package commitment. Preserve generation;
