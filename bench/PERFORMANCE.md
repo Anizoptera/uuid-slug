@@ -284,6 +284,19 @@ outliers; equal call counts align workload size but do not align batch medians w
 or remove harness scope. Profile the variable package execution before selecting another candidate;
 these source captures prove neither packed performance nor gross allocation or individual-call tails.
 
+Exit CPU profiles locate ordinary encoding work but do not explain the extreme package batches.
+`v4-slug-native-cpu-17IAlM/` retains Bun 1.4.2 profiles and their own call records for the same
+three qualified calls in reversed process order with unchanged sample and measured-call settings.
+Package medians are 45.5 and 43.5 ns, with caller CPU of 46.1 and 43.2 ns; the extreme batches
+do not reproduce. Native scratch medians are 42.5 and 42.9 ns; pooled-native medians are 41.8
+and 42.1 ns. Every capture completes 1,835,008 measured calls. Descendants of `batch` account
+for 95 and 96 package samples out of 126 and 122 total samples; native `toString` contributes
+38 and 44, and the Latin-1 `text` function contributes 12 and 16. Native scratch and pooled
+captures instead concentrate in `toBase64`. The shared batch frame combines preparation and
+measurement; startup remains outside its descendants. Coarse sampling and profiler overhead
+prevent attribution of a small complete-call difference or an absent pause. Preserve production;
+these profiles select no further implementation and establish no cause for the variable batches.
+
 ### Owned UUIDv7 generation allocation
 
 Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.

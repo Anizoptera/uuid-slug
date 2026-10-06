@@ -234,6 +234,10 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
           verdict; pooled-native measurements establish no draw penalty. Profile variable
           package execution before another implementation candidate. Keep all observations;
           source throughput and aggregate CPU do not establish allocation or packed behavior.
+          Reversed Bun exit CPU profiles locate ordinary Latin-1 string construction but do
+          not reproduce the extreme batches; the shared batch frame includes preparation.
+          Preserve production and the unresolved pauses. Do not use these profiles to select
+          another integration or infer a negligible stable gap; coarse sampling cannot decide it.
           These different epochs do not establish the cause of greater fixed-call stability.
       - [x] Keep the UUIDv4 candidate factory in its own file before extending the registry.
             Its body and comments remain byte-identical except for export visibility;
