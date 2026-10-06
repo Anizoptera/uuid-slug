@@ -252,6 +252,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
           Keep native integration open. The remaining added wrapper is a live cost hypothesis,
           not a finding; any further candidate must remove it while sharing the same native
           state and preserving unsupported outputs, then earn useful packed gain and resources.
+          Screen `shared-direct`: the shared writer handles alphabet selection itself, and
+          generation selects that function or the existing encoder once. Remove the extra
+          closure and call without duplicating native capture or fallback state. Missing useful
+          generation gain or any conversion/base32 loss rejects retention; repeat packed calls
+          only after the owning behavior and resource proofs and focused screen pass.
+          Those proofs pass and preserve the copied native body exactly. Isolated generation
+          shows a small Bun benefit; Node, base32 and conversion directions do not establish
+          a loss. Compare packed complete calls before selecting profiles or production changes.
       - [x] Keep the UUIDv4 candidate factory in its own file before extending the registry.
             Its body and comments remain byte-identical except for export visibility;
             the complete check passes. UUIDv4 slug candidates have a separate source owner.

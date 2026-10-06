@@ -323,7 +323,8 @@ try {
           (candidate.name === "native-entry" ||
             candidate.name === "shared-converter" ||
             candidate.name === "shared-writer" ||
-            candidate.name === "shared-selected")) ||
+            candidate.name === "shared-selected" ||
+            candidate.name === "shared-direct")) ||
         (group === "slug" && candidate.source.includes("captureNativePlainUuidBase64()")) ||
         candidate.name === "native-branch" ||
         candidate.name === "native-dispatch" ||

@@ -45,6 +45,40 @@ export function v4SlugCandidates(source: string, slugSource?: string): readonly 
   return [
     { name: "baseline", source },
     {
+      name: "shared-direct",
+      get source() {
+        // Remove the selected wrapper's extra call, not the shared native failure state.
+        return replaceOnce(
+          replaceOnce(
+            replaceOnce(
+              source,
+              "import { resolveSlugAlphabet }",
+              "import { resolveSlugAlphabet, nativePlainUuidSlugWriter }",
+            ),
+            "/**\n * Generate a plain UUIDv4 slug",
+            "// Absent hosts use their existing encoder directly; native support shares one writer.\nconst encodeV4Slug = nativePlainUuidSlugWriter ?? encode;\n\n/**\n * Generate a plain UUIDv4 slug",
+          ),
+          "return encode(generatedOrThrow(drawUuidV4Scratch()), resolved)",
+          "return encodeV4Slug(generatedOrThrow(drawUuidV4Scratch()), resolved)",
+        );
+      },
+      get slugSource() {
+        return replaceOnce(
+          replaceOnce(
+            replaceOnce(
+              sharedWriterSource(),
+              "export function encodePlainUuidBase64urlUnchecked(bytes: Uint8Array): PlainUuidSlug {",
+              "export function encodePlainUuidSlugUnchecked(bytes: Uint8Array, alpha: Alphabet): PlainUuidSlug {\n  // Unsupported native outputs retain the existing encoder without another wrapper call.\n  if (alpha !== BASE64URL) return encode(bytes, alpha) as PlainUuidSlug;",
+            ),
+            "return encodePlainUuidBase64urlUnchecked(bytes);",
+            "return encodePlainUuidSlugUnchecked(bytes, BASE64URL);",
+          ),
+          "// Keep general normalization separate",
+          "export const nativePlainUuidSlugWriter: typeof encodePlainUuidSlugUnchecked | undefined = nativePlainUuidBase64 ? encodePlainUuidSlugUnchecked : undefined;\n\n// Keep general normalization separate",
+        );
+      },
+    },
+    {
       name: "shared-selected",
       get source() {
         // Select once so absent hosts retain the direct encoder; measure the native wrapper

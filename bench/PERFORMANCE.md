@@ -234,6 +234,15 @@ selection does not reproduce the earlier Node base32 loss, but these observation
 its cause or establish parity. Preserve production and the native-encoding gap; a useful gain
 without conversion or base32 loss remains unproved.
 
+`candidates-v4-slug-YSqgjc/` tests `shared-direct`, which removes the selected closure and puts
+alphabet selection in the shared writer. Node and Bun behavior and resource proofs pass; the
+521-byte native body and comments have one exact copy. Present, absent and throwing probes
+report 2, 0 and 1 native attempts, and corruption fails the generated-payload oracle. With
+the same isolated settings, Bun generation reports 41.6 and 41.9 ns against 43.3 and 43.4 ns.
+Node generation, base32 and conversion directions do not establish a loss. Two observations
+per implementation provide no confidence interval or total allocation evidence; the small
+generation benefit selects packed comparisons, not production retention.
+
 ### Owned UUIDv7 generation allocation
 
 Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.
