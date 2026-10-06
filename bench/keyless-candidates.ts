@@ -10,13 +10,6 @@ const preset = (value: string) =>
     "const selectedCase = directCase === UUID_TEXT_LOWERCASE || directCase === UUID_TEXT_UPPERCASE ? directCase : resolveUuidTextCase(directCase);",
   );
 
-const withUppercase = (value: string) =>
-  replaceOnce(
-    value,
-    'import { UUID_TEXT_LOWERCASE } from "./types.ts";',
-    'import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";',
-  );
-
 export function keylessCandidates(source: string): readonly SourceCandidate[] {
   // Reuse the secure fill rather than retaining UUIDv4 generation in unrelated consumers. Only
   // the no-argument public byte path changes; immutable values still use their declared layout.
@@ -107,7 +100,7 @@ export function keylessCandidates(source: string): readonly SourceCandidate[] {
   const thinPreset = () => {
     // Only the new wrapper changes; the helper retains its original selector validation.
     const header = thin.slice(0, thin.indexOf("function generateConfiguredUuidV7"));
-    return preset(withUppercase(header)) + thin.slice(header.length);
+    return preset(header) + thin.slice(header.length);
   };
   return [
     { name: "baseline", source },
@@ -199,7 +192,7 @@ export function keylessCandidates(source: string): readonly SourceCandidate[] {
     {
       name: "preset-fast",
       get source() {
-        return preset(withUppercase(source));
+        return preset(source);
       },
     },
     {

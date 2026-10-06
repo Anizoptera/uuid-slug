@@ -12,6 +12,22 @@ correct requested factual documentation; obtain approval only for unrequested pu
 
 Deliver retained improvements to ordinary single-ID calls; a rejected experiment does not close a performance gap.
 
+- [x] Screen UUIDv7 no-argument text without case validation and compare exact-preset validation
+      skipping separately. Preserve configured calls, uppercase, native fallback and entropy errors.
+      Reject absent repeated whole-call gains or repeated primary-call losses; only a survivor earns
+      packed and resource proof. Reuse the existing keyless candidate driver and runtime tests.
+      `candidates-keyless-Gsuw2V/` and `candidates-keyless-AnbozS/` show no repeated useful
+      gain; large outliers prevent causal attribution. Keep production and remove the new prototype.
+      The preset screen's stale uppercase-import helper is unnecessary in the current source.
+
+- [x] Compare Bun UUIDv7 paired output with one native Buffer draw and both string encodings.
+      Buffer ownership cannot reject a string-only result. Compare native Buffer and typed-array
+      encoders, then reuse the internal formatter to remove redundant caller-input validation.
+      `current-native-v7-pair-floor-{0,1,2,3,4,5}.jsonl` retains completed whole-call measurements
+      and payload witnesses. Neither public-formatter composition nor the two trusted-byte
+      comparisons beat the existing pair. Preserve production; fixed order and warm batches do
+      not establish individual-call latency, allocation parity or an impossibility result.
+
 Optimize only primary consumer use cases. Profile every actual hotspot and performance or resource
 gap against the main qualified rivals for those calls, then fix the gaps. Other scenarios are
 excluded from optimization during this effort; existing correctness contracts remain protected.

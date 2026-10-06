@@ -5,6 +5,10 @@ import crypto from "node:crypto";
 import { Buffer } from "node:buffer";
 import { strict as assert } from "node:assert";
 import cryptoRandomUuid from "crypto-randomuuid";
+import { bytesToUuidString } from "../src/index";
+import { unwrap } from "../dev/unwrap";
+import { formatUuidBytesUnchecked } from "../src/uuid";
+import { UUID_TEXT_LOWERCASE } from "../src/types";
 
 import { generationCases } from "./generation-cases";
 import type { GenerationCase } from "./generation-case";
@@ -29,6 +33,12 @@ const bunUuidV7 = (
     };
   }
 ).Bun?.randomUUIDv7;
+const nativeBase64 = (
+  Uint8Array.prototype as {
+    toBase64?: (options: { alphabet: "base64url"; omitPadding: boolean }) => string;
+  }
+).toBase64;
+const nativeBase64Options = { alphabet: "base64url", omitPadding: true } as const;
 
 // Native UUIDv4 supplies exactly the 74 random bits UUIDv7 keeps after replacing its timestamp
 // and version. Compare complete text calls without depending on native UUIDv7 counter overflow.
@@ -194,6 +204,63 @@ const hostCases: readonly GenerationCase[] = [
     note: "Independent native UUIDv4 payload with package-clock timestamp; lower bound without package validation or native-failure fallback.",
   })),
   ...(bunUuidV7 ? [bunUuidV7TextCase(() => bunUuidV7())] : []),
+  ...(bunUuidV7
+    ? [
+        {
+          comparable: "v7.pair.secure",
+          implementation: "platform",
+          name: "platform.bun.v7.pair.from-buffer",
+          qualification: "qualified",
+          secure: true,
+          version: 7,
+          operation: () => {
+            // Only strings escape: Buffer ownership needs no copy, and one draw keeps both IDs equal.
+            const bytes = bunUuidV7("buffer") as Buffer;
+            return { uuid: unwrap(bytesToUuidString(bytes)), slug: bytes.toString("base64url") };
+          },
+        } satisfies GenerationCase,
+      ]
+    : []),
+  ...(bunUuidV7 && nativeBase64
+    ? [
+        {
+          comparable: "v7.pair.secure",
+          implementation: "platform",
+          name: "platform.bun.v7.pair.from-native-base64",
+          qualification: "qualified",
+          secure: true,
+          version: 7,
+          operation: () => {
+            // Compare both native encoders; their Buffer and typed-array call costs can differ.
+            const bytes = bunUuidV7("buffer") as Buffer;
+            return {
+              uuid: unwrap(bytesToUuidString(bytes)),
+              slug: nativeBase64.call(bytes, nativeBase64Options),
+            };
+          },
+        } satisfies GenerationCase,
+      ]
+    : []),
+  ...(bunUuidV7 && nativeBase64
+    ? [
+        {
+          comparable: "v7.pair.secure",
+          implementation: "platform",
+          name: "platform.bun.v7.pair.from-native-trusted-bytes",
+          qualification: "qualified",
+          secure: true,
+          version: 7,
+          operation: () => {
+            // Native generation owns validation; reuse the internal formatter without caller-input checks.
+            const bytes = bunUuidV7("buffer") as Buffer;
+            return {
+              uuid: formatUuidBytesUnchecked(bytes, 0, UUID_TEXT_LOWERCASE),
+              slug: nativeBase64.call(bytes, nativeBase64Options),
+            };
+          },
+        } satisfies GenerationCase,
+      ]
+    : []),
   ...(bunUuidV7
     ? (
         [
