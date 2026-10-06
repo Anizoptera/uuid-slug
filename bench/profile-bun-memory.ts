@@ -43,9 +43,13 @@ if (generationName) {
   // Reuse the qualified generation corpus so rival profiles measure the same complete call.
   // Selection precedes memory snapshots; import and corpus setup are not per-ID allocations.
   const { generationCases } = await import("./generation-cases");
-  const { cryptoRandomUuidCase, verifyGenerationCase } = await import("./generation-case");
+  const { bunUuidV7TextCase, cryptoRandomUuidCase, verifyGenerationCase } =
+    await import("./generation-case");
+  // Match the host corpus's captured call; repeated property lookup is not native generation work.
+  const nativeUuidV7 = Bun.randomUUIDv7;
   const selected = [
     ...generationCases,
+    bunUuidV7TextCase(() => nativeUuidV7()),
     ...createConversionCases(Buffer, undefined, generationCases).cases,
     // Host-only dependencies stay outside the browser-compatible generation corpus.
     ...(generationName === "crypto-randomuuid.v4.text"

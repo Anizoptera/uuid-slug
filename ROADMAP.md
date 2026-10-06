@@ -93,6 +93,17 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         computation-defect comparison still misses Node. Restore the original profiler;
         a passing unchanged control and Bun rejection do not satisfy both-host detection.
         Evidence and limits live in `bench/PERFORMANCE.md` §Shared ending-clock screen.
+  - [x] Compare current Bun default UUIDv7 text resources directly with its native call.
+        The earlier profile pair compares portable and native-backed package revisions, not
+        the current package against the native function. Share the host corpus's exact native
+        text case with the memory profiler; keep qualification and consumed results intact.
+        Use equal completed and preparation calls in reversed fresh-process order. Repeated
+        higher caller CPU or continuing committed-memory growth selects implementation profiling;
+        absent such a loss preserves direct delegation. Retained heap is not total allocation.
+        Reversed matched captures show a small caller-CPU difference, flat second-window
+        committed memory and native-generation-dominated samples. Preserve direct delegation;
+        first-window commitment and sampled stacks do not establish total allocation parity.
+        Evidence lives in `bench/PERFORMANCE.md` §Native Bun default UUIDv7 text.
   - [x] Avoid packed timing when only benchmark dependencies change. `bench/check-inputs.ts`
         treats every manifest and lock change as production work; the scure dev-only addition
         therefore runs the whole timing comparison. Preserve detection of changed build tools,

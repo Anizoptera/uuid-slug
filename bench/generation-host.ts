@@ -8,7 +8,7 @@ import cryptoRandomUuid from "crypto-randomuuid";
 
 import { generationCases } from "./generation-cases";
 import type { GenerationCase } from "./generation-case";
-import { cryptoRandomUuidCase, generationNameFilter } from "./generation-case";
+import { bunUuidV7TextCase, cryptoRandomUuidCase, generationNameFilter } from "./generation-case";
 import { measureGenerationCases } from "./generation-measure";
 import { createConversionCases } from "./conversion-cases";
 
@@ -190,10 +190,10 @@ const hostCases: readonly GenerationCase[] = [
     version: 7 as const,
     note: "Independent native UUIDv4 payload with package-clock timestamp; lower bound without package validation or native-failure fallback.",
   })),
+  ...(bunUuidV7 ? [bunUuidV7TextCase(() => bunUuidV7())] : []),
   ...(bunUuidV7
     ? (
         [
-          ["platform.bun.v7.text", "v7.text.secure", () => bunUuidV7()],
           // A Node `Buffer`, not the plain `Uint8Array` this package returns; timed as a floor only.
           ["platform.bun.v7.bytes.allocate", "v7.bytes.allocate.secure", () => bunUuidV7("buffer")],
           [

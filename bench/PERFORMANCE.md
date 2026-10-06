@@ -32,6 +32,21 @@ libraries on Node Current, Node LTS, Bun, Deno and Chromium. Bun's remaining dir
 difference is negligible and accepted; preserve delegation rather than adding another wrapper.
 These are warmed throughput comparisons, not individual-call latency or total allocation.
 
+Matched current-package/native captures `current-native-v7-text-resources-4` through `-7`
+use Bun 1.4.2, 65,536 preparation calls and two windows of 2,097,152 completed calls.
+The order is package, native, native, package. The native case shares its definition and
+captured function call with the host corpus. Package caller CPU is 89.061 and 88.384 ms against native
+86.946 and 87.807 ms. Second-window process CPU is 88.311 and 87.352 ms against native
+88.073 and 87.356 ms. Every second window keeps committed memory flat. First-window
+commitment varies and cannot establish per-call allocation. JavaScriptCore profiles assign
+924/971 and 930/977 package samples to native `randomUUIDv7`, versus 920/948 and 968/986
+native samples. The remaining samples include the package wrapper and harness; sampling
+does not measure gross allocation or an exact CPU ratio. These captures select no material
+resource loss for another wrapper rewrite. Preserve direct delegation under the accepted
+small-difference ruling. Each report directory retains heap statistics, sampling and a snapshot;
+adjacent `.jsonl` files retain the second window. Logs are
+`/tmp/uuid-slug-native-v7-text-resources-{4,5,6,7}.log`.
+
 ### Owned UUIDv7 generation allocation
 
 Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.

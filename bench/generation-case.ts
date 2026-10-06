@@ -40,6 +40,19 @@ export function cryptoRandomUuidCase(operation: () => string): GenerationCase {
   };
 }
 
+/** Keep native text timing and memory profiling on the same complete call. */
+export function bunUuidV7TextCase(operation: GenerationCase["operation"]): GenerationCase {
+  return {
+    comparable: "v7.text.secure",
+    implementation: "platform",
+    name: "platform.bun.v7.text",
+    operation,
+    qualification: "qualified",
+    secure: true,
+    version: 7,
+  };
+}
+
 /** Select related complete jobs in one build; a single term retains its substring meaning. */
 export function generationNameFilter(filter: string | null | undefined): (name: string) => boolean {
   if (!filter) return () => true;
