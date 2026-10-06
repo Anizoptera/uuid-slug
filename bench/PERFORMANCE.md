@@ -3939,6 +3939,20 @@ Reproduce the source screen with `bun bench/source-candidates.ts codec bigint-by
 use the same substitution through `bench/compare.ts --source-candidate=codec:bigint-byte-generation-timing`
 for packed comparisons, preserving the primary inventory from `bench/check.ts`.
 
+Optimized-code captures on Node 24.21.0 retain the fixture's final-byte work despite the
+immutable-value checksum observing only the version field. The real retained profiler runs
+32,768 preparation calls per case and seven batches: twenty milliseconds for the codec alone,
+then one millisecond per case for the complete primary inventory. The complete capture contains
+all 48 cases and positive finite samples.
+Its optimized codec frame retains the byte-15 load, heap-allocation sequence, conversion call
+and byte-15 store; elimination of that sequence does not explain this capture. Raw compiler
+output is `current-codec-bigint-optimized-code.log` and `current-codec-bigint-full-optimized-code.log`.
+Run Node with `--print-opt-code --trace-opt --trace-deopt`
+against the retained `candidates-codec-VFbLst/profile.mjs` and its
+candidate module, using the same profile controls and the recorded primary inventory.
+Compiler tracing changes execution cost. These two processes establish neither uninstrumented
+timing sensitivity nor the cause of other processes' misses; keep the timing policy unchanged.
+
 ### Per-case preparation screen
 
 Reject immediate per-case preparation: the screen still misses the Bun computation defect.

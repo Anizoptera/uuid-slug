@@ -93,6 +93,16 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         computation-defect comparison still misses Node. Restore the original profiler;
         a passing unchanged control and Bun rejection do not satisfy both-host detection.
         Evidence and limits live in `bench/PERFORMANCE.md` §Shared ending-clock screen.
+  - [x] Check that the codec computation fixture survives optimized execution before changing
+        the timing harness. The immutable-value checksum reads the version field, while the
+        fixture rewrites a different byte. Capture optimized code through the retained real
+        profiler and candidate; distinguish removed arithmetic from surviving arithmetic and
+        measurement variability. Retained arithmetic rejects elimination in that compiled frame;
+        eliminated arithmetic requires a valid computation witness before further policy screens.
+        Narrow and complete-inventory V8 captures retain the final-byte load, allocation,
+        conversion and store in the optimized codec frame. Preserve the fixture and timing
+        policy; this capture rejects elimination there without explaining other process misses.
+        Evidence and limits live in `bench/PERFORMANCE.md` §Codec computation timing defect.
   - [x] Compare current Bun default UUIDv7 text resources directly with its native call.
         The earlier profile pair compares portable and native-backed package revisions, not
         the current package against the native function. Share the host corpus's exact native
