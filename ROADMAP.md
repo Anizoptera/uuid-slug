@@ -221,8 +221,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
           their batch medians cannot explain aggregate caller CPU. Keep both observations.
           Equal-call comparisons repeat the Bun generation benefit and base32 loss direction;
           the second base32 interval remains unresolved. Preserve production. The candidate
-          still sends base32 through an extra function before its existing encoder; next
-          integration must call that encoder directly, without another native probe or state.
+          still sends base32 through an extra function before its existing encoder; reject
+          that integration for retention while this trade-off remains unsecured.
+          Reject `shared-entry` for retention: direct base32 dispatch and native-first selection
+          pass the same proofs, but equal-call source observations establish no useful repeated
+          generation gain and both Node conversion observations are slower. Preserve production;
+          no packed expansion is justified by this screen. Before another integration, compare
+          current complete generation with the scratch-backed native floor under the same
+          fixed-call settings; a negligible remaining gap must stop further tuning.
           These different epochs do not establish the cause of greater fixed-call stability.
       - [x] Keep the UUIDv4 candidate factory in its own file before extending the registry.
             Its body and comments remain byte-identical except for export visibility;

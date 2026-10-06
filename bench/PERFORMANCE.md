@@ -259,6 +259,20 @@ direction, but the second base32 interval includes no change. Preserve productio
 integration must avoid sending base32 through the extra writer. Separate process epochs do
 not prove why the fixed-call records are more stable, and neither mode establishes total allocation.
 
+Do not retain `shared-entry`: its equal-call source screen establishes no useful repeated generation gain.
+`candidates-v4-slug-lHxa4t/` keeps direct base32 dispatch and checks native availability before
+alphabet selection. Node and Bun behavior and resource proofs pass; the native body and comments
+remain one exact 521-byte copy. Present, absent and throwing probes report 2, 0 and 1 native
+attempts, while corruption fails the independent generated-payload oracle before timing.
+Separate exact-case processes run baseline, candidate, candidate, baseline with 7 samples of
+262,144 calls and 64 ms warm-up on Node 26.10.0 and Bun 1.4.2. Every capture completes 1,835,008 calls.
+Bun generation medians are 42.5 and 41.6 ns against 42.6 and 42.5 ns; base32 reports 42.7 and
+43.1 ns against 42.5 and 42.5 ns. Node generation reports 42.7 and 43.1 ns against 42.5 and
+42.3 ns, and conversion reports 87.7 and 89.4 ns against 85.9 and 86.4 ns. The small generation
+differences do not earn packed expansion or production code. Two independent observations per
+implementation establish neither an uncertainty interval nor total allocation; the screen rejects
+this integration for retention, not the native capability or the existence of another useful design.
+
 ### Owned UUIDv7 generation allocation
 
 Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.

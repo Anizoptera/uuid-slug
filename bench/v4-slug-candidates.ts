@@ -45,6 +45,32 @@ export function v4SlugCandidates(source: string, slugSource?: string): readonly 
   return [
     { name: "baseline", source },
     {
+      name: "shared-entry",
+      get source() {
+        // Base32 calls its encoder directly; absent hosts avoid both the native helper and
+        // alphabet comparison. Compare complete calls because the availability branch still costs.
+        return replaceOnce(
+          replaceOnce(
+            replaceOnce(source, "BASE64URL_NAME, encode", "BASE64URL, BASE64URL_NAME, encode"),
+            "import { resolveSlugAlphabet }",
+            "import { resolveSlugAlphabet, nativePlainUuidBase64urlWriter }",
+          ),
+          "  return encode(generatedOrThrow(drawUuidV4Scratch()), resolved) as PlainUuidV4Slug;",
+          [
+            "  const bytes = generatedOrThrow(drawUuidV4Scratch());",
+            "  return (nativePlainUuidBase64urlWriter && resolved === BASE64URL ? nativePlainUuidBase64urlWriter(bytes) : encode(bytes, resolved)) as PlainUuidV4Slug;",
+          ].join("\n"),
+        );
+      },
+      get slugSource() {
+        return replaceOnce(
+          sharedWriterSource(),
+          "// Keep general normalization separate",
+          "export const nativePlainUuidBase64urlWriter: typeof encodePlainUuidBase64urlUnchecked | undefined = nativePlainUuidBase64 ? encodePlainUuidBase64urlUnchecked : undefined;\n\n// Keep general normalization separate",
+        );
+      },
+    },
+    {
       name: "shared-direct",
       get source() {
         // Remove the selected wrapper's extra call, not the shared native failure state.
