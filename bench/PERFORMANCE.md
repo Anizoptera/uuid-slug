@@ -80,6 +80,50 @@ The additional `crypto-randomuuid` captures reuse its existing qualified case fa
 profiler executes that case on Node Current, Node LTS, Bun and Deno; only qualified hosts report
 the heap-allocation field. No regression threshold follows from these two-process comparisons.
 
+### Bun UUIDv4 slug resources
+
+Scratch-backed native generation exposes a Bun UUIDv4 slug gap; replacing only the writer does not close it.
+
+`current-primary-v4-slug-bun-resources/` retains Bun 1.4.2 profiles from fresh processes in
+reversed order. Repeated-call captures use 65,536 preparation calls, two windows of 1,048,576
+completed calls and a separate sampling pass. The qualified corpus checks that each result decodes as a
+UUIDv4 slug before measurement. Caller CPU is unsampled; committed and resident memory are
+process observations after collection, not gross allocation or per-ID memory.
+
+The initial package captures report 46.9–48.7 ns of caller CPU per call, against
+48.5–51.7 ns for Web Crypto with an allocated array and 196.0–213.8 ns for `slugid`.
+Package first-window commitment rises by 36.2–37.9 MB, compared with 5.8–14.5 MB for the
+native composition. Package second-window commitment stays flat, but resident memory rises
+by 5.5–6.4 MB. One-call controls after identical preparation have only 0–0.13 MB of first-window
+commitment growth; observation alone does not reproduce the large increase.
+
+The `alphabet:native-leaf` screen in `candidates-alphabet-Wx7UPz/` passes Node and Bun
+behavioral proofs and resource counts. Bun native present, absent and throwing probes pass;
+deliberate native-output corruption fails the intended oracle. Profiles confirm `toBase64`
+replaces sampled Latin-1 `toString` execution. Yet the
+matched candidate captures do not reduce commitment reproducibly: baseline increases are
+37.7 and 44.9 MB, versus 45.1 and 42.7 MB with native encoding. The short throughput screen
+also loses UUIDv4 slug generation in both orders, at 60.7 and 69.7 ns versus 55.2 and 53.5 ns.
+Reject this candidate; sampled string construction did not establish the memory cause.
+
+The native floor need not allocate bytes when it returns only a slug. The maintained corpus
+therefore retains both allocating and scratch-backed native calls, with shared encoding options.
+The repeated memory captures prefixed `scratch-` report:
+
+| Complete call | Caller CPU per call, two processes (ns) | First-window commitment growth (MB) | Second-window commitment growth (MB) |
+| --- | --- | --- | --- |
+| Package | 49.0; 48.8 | 33.9; 38.2 | 0; 0 |
+| Native, allocated bytes | 47.6; 48.4 | 11.5; 11.8 | 0; 0 |
+| Native, private scratch | 43.8; 43.4 | 27.7; 15.9 | 0; 8.0 |
+
+`scratch-ranked.jsonl` retains three fresh-process medians per call after 16 ms preparation,
+with five 5 ms batches per process. Bun package medians are 51.0 ns; native scratch medians
+are 43.8–45.6 ns. Node Current, Node LTS, Deno and Chromium favor the package against their
+available measured rivals. The scratch-backed row executes wherever `toBase64` is available;
+Node LTS has no such row. These small samples provide no confidence interval or latency-tail
+proof. Keep the Bun complete-call difference and unresolved memory behavior open; neither
+the native-writer screen nor these observations establish a removable pooling cost.
+
 ### Owned UUIDv7 generation allocation
 
 Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.

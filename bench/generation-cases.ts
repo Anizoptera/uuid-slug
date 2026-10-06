@@ -24,6 +24,7 @@ import { unwrap } from "../dev/unwrap";
 // Candidate comparisons must call the requested package graph, not the working-tree baseline.
 // Keep the default import literal so browser builds still contain the ordinary package.
 const {
+  BASE64URL,
   createUuidV7Generator,
   createUuidV7MaskingCodec,
   uuidBytesToPlainSlug,
@@ -73,6 +74,7 @@ function asUuidV4<Bytes extends Uint8Array>(bytes: Bytes, offset = 0): Bytes {
   return bytes;
 }
 const hasToBase64 = typeof (Uint8Array.prototype as { toBase64?: unknown }).toBase64 === "function";
+const base64urlOutputOptions = { alphabet: BASE64URL, omitPadding: true } as const;
 const portableV7Options = { rng: fillV7 };
 const portableV7 = unwrap(createUuidV7Generator({}));
 const timestamp = 1_756_864_833_024;
@@ -267,9 +269,23 @@ export const generationCases: readonly GenerationCase[] = [
         row("platform.webcrypto.v4.slug.base64url", 4, "v4.slug.base64url.secure", "platform", () =>
           (
             asUuidV4(globalThis.crypto.getRandomValues(new Uint8Array(16))) as Uint8Array & {
-              toBase64(options: { alphabet: "base64url"; omitPadding: true }): string;
+              toBase64(options: typeof base64urlOutputOptions): string;
             }
-          ).toBase64({ alphabet: "base64url", omitPadding: true }),
+          ).toBase64(base64urlOutputOptions),
+        ),
+        // Slug callers receive only the string; a private scratch avoids unused owned bytes.
+        // Keep the allocating row to distinguish storage reuse from native encoding cost.
+        row(
+          "platform.webcrypto.v4.slug.scratch.base64url",
+          4,
+          "v4.slug.base64url.secure",
+          "platform",
+          () =>
+            (
+              asUuidV4(fillV4()) as Uint8Array & {
+                toBase64(options: typeof base64urlOutputOptions): string;
+              }
+            ).toBase64(base64urlOutputOptions),
         ),
       ]
     : []),

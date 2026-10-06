@@ -182,6 +182,26 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         direction against `uuid`, and flat second-window package commitment. Preserve generation;
         these captures do not establish gross allocation parity or native Buffer-copy costs.
         Evidence and limits live in `bench/PERFORMANCE.md` §Owned UUIDv7 generation allocation.
+  - [x] Compare Bun UUIDv4 plain-slug generation resources with Web Crypto plus native encoding
+        and `slugid`, using the existing qualified memory profiler. Equal completed and warm-up
+        calls in reversed fresh processes retain unsampled caller CPU and both memory windows.
+        Retained heap and native commitment do not measure gross allocation.
+        Reversed captures show lower package caller CPU but larger first-window commitment;
+        sampled package execution concentrates in Latin-1 string construction. The existing
+        `alphabet:native-leaf` candidate reaches native encoding, but commitment does not fall
+        reproducibly and the short throughput screen loses UUIDv4 slug generation in both orders.
+        Reject that candidate; one-call controls separate observation from repeated-call growth.
+        One-call controls have near-flat commitment, so observation alone does not reproduce
+        the larger first window. The native comparison allocates bytes that it never returns;
+        the shared corpus's scratch-backed floor removes that work and shares encoding options.
+        Repeated fixed-call CPU and fresh-process throughput favor it on Bun; preserve both native
+        rows to separate storage reuse from encoding. `bench/PERFORMANCE.md` §Bun UUIDv4 slug
+        resources owns the evidence and limits; no pooling cause is established.
+  - [ ] Close the Bun UUIDv4 plain-slug gap against the scratch-backed native floor. Keep its
+        lower complete-call CPU and unresolved memory observations separate; an encoding-only
+        substitution already loses. Inspect complete draw and encoding costs before selecting
+        one production candidate. Preserve other runtimes, base32 output, secure entropy and
+        failure behavior; retain only a reproduced useful gain, never a negligible timing cut.
   - [x] Compare current Bun default UUIDv7 text resources directly with its native call.
         The earlier profile pair compares portable and native-backed package revisions, not
         the current package against the native function. Share the host corpus's exact native

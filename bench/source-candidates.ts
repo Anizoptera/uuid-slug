@@ -77,6 +77,7 @@ const groups = {
   },
   alphabet: {
     names: [
+      "v4.slug",
       "bytes.base64",
       "bytes.base32",
       "plain.encode",
