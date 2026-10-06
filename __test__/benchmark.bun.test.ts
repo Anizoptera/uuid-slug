@@ -713,6 +713,8 @@ test("zero-valued entropy statistics remain valid observations", () => {
 
 let directory: string;
 let fixture: string;
+const MATRIX_HANG_TIMEOUT_MS = 1_000;
+const MATRIX_HANG_FAILSAFE_EXIT = 17;
 beforeAll(async () => {
   directory = await mkdtemp(join(tmpdir(), "uuid-slug-matrix-test-"));
   fixture = join(directory, "runtime.js");
@@ -727,7 +729,10 @@ const record = speed
       sameTickPairs: 1, orderedWithinTick: 0, peakDrawsPerTick: 2,
       burstClockChangeMs: 0, burstEndUnixMs: 0, latestEncodedUnixMs: 0, counterBits: 0,
       counterHolds: 0, minOnesRatio: 0, maxOnesRatio: 1 };
-if (mode === "hang") { setInterval(() => {}, 1000); await new Promise(() => {}); }
+if (mode === "hang" && speed) {
+  setTimeout(() => process.exit(${MATRIX_HANG_FAILSAFE_EXIT}), ${MATRIX_HANG_TIMEOUT_MS * 2});
+  await new Promise(() => {});
+}
 if (mode === "entries" && !speed) record.runtime = "different 2";
 console.log(JSON.stringify(record));
 if (mode === "exit-after") process.exit(7);
@@ -1017,12 +1022,15 @@ test.concurrent.each(["0", "-1", "1.5", "NaN", "Infinity"])(
   },
 );
 
-// The timeout bounds a deliberately hung child. The healthy control runs under the same bound, so it
-// must cover Bun startup while the commit hook runs other suites in parallel: 100 ms killed it there.
+// One hang reaches the shared transport deadline; healthy entropy then proves progress after failure.
+// Keep startup allowance under concurrent checks. The fixture fail-safe bounds a broken deadline
+// independently, and its distinct exit must fail the witness rather than masquerade as a timeout.
 test.concurrent("hung runtime cannot hold the matrix indefinitely", async () => {
-  const result = await matrix("hang", 1_000);
+  const result = await matrix("hang", MATRIX_HANG_TIMEOUT_MS);
   expect(result.status).toBe(1);
   expect(result.stderr).toContain("exited");
+  expect(result.stderr).not.toContain(`exited ${MATRIX_HANG_FAILSAFE_EXIT}`);
+  expect(result.stdout).toContain("Randomness: subject (fixture 1)");
   expect(result.stdout).toContain("Randomness: control (fixture 1)");
 });
 

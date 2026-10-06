@@ -3403,6 +3403,23 @@ throughput and startup cost. A JITless-only win may justify code when every high
 
 ## Regression protection and limits
 
+### Matrix timeout witness
+
+Hang throughput once and require healthy entropy afterwards; timing out both repeats the same transport guard.
+The existing Bun matrix witness retains its 1,000 ms startup allowance and the healthy control.
+A separate fixture timer exits 17 after 2,000 ms if the real deadline is removed; that exit must
+fail the assertion, so a broken guard cannot pass by eventually reaching the fixture's fail-safe.
+`matrix-hang-feedback-SPhWJP/` retains the source and raw results. The prior fixture fails the
+new same-member entropy assertion in 2,056.6 ms. The revised focused witness passes in 1,066.2 ms;
+under the complete hook it passes in 1,067.9 ms. In an isolated source copy, replacing the transport
+timeout with `undefined` fails on `exited 17`; skipping entropy after a failed throughput report
+fails on the missing same-member report. The original matrix source is restored byte-identically.
+Complete hook wall time is 6.33 seconds before and 6.16 seconds after; the Bun suite reports
+4.84 and 3.66 seconds. These single invocations establish neither a reproducible complete-hook
+gain nor required CI headroom. The test removes one deliberate wait and detects post-failure
+progress; the deadline and package behavior remain unchanged. A separate local complete check
+on the preceding documentation-only state passes in 8.42 seconds; changed-production cost remains open.
+
 ### Error recognition
 
 Repeated profiles on 2026-09-13 used Node 26.8.2, Node 24.21.0, Bun 1.4.2, Deno 2.9.6, and

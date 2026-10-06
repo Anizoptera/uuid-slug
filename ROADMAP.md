@@ -24,6 +24,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Measure the complete routine lane and pre-commit hook against the feedback-loop limits in
       `bench/README.md` §Regression protection. Attribute excess time to their actual commands;
       repair routing or redundant work without weakening primary-call regression detection.
+  - [x] Remove repeated timeout work from the matrix hang witness without shortening its
+        startup allowance. One throughput hang now requires healthy same-member entropy and
+        control progress; isolated timeout-removal and progress-removal mutations fail for
+        their intended diagnostics. The fixture fail-safe contains the broken deadline.
+        The full hook passes, but its timing does not establish a reproducible lane gain or
+        required CI headroom. Evidence lives in `bench/PERFORMANCE.md` §Matrix timeout witness.
   - [x] Preserve batch acquisition order in host and browser profile records. In-place sorting
         erases the timing sequence needed to distinguish preparation changes from later pauses;
         summary functions already accept unsorted samples. Remove only the reporting sorts,
