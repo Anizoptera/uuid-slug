@@ -191,6 +191,13 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         without claiming other hosts, external storage, total allocation or lane headroom.
         Proposed public measurement text needs approval before this result enters its owner.
         Raw records and allocation summaries live in `bench/reports/allocation-repeated-xKJL9z/`.
+        Reversed native captures reuse the retained packages and profiler with the complete
+        workload. Both actual caller frames are sampled beneath throughput batches; codec
+        allocation increases, but decoder counters remain nearly flat and sampled differences
+        reverse direction. The packed decoder body is byte-identical; only the intended codec
+        arithmetic differs in its module. Attribution remains unresolved because profiling
+        changes execution. Retain `native-decoder/measured-caller-summary.json`; do not select
+        a timing policy or repair unchanged decoder code from these captures.
   - [x] Compare reported engine allocation for primary Node Current calls against qualified rivals.
         Reversed fresh-process captures favor the package's reported heap allocation and caller
         CPU in every measured matching job. Preserve those implementations; a repeated material
