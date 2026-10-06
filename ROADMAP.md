@@ -175,6 +175,22 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         observation separate from a regression budget: only two process pairs are measured,
         and harness and engine work remain included. Bun and Node LTS omit the metric.
         Evidence lives in `bench/PERFORMANCE.md` §Fixed measured-call screen.
+  - [ ] Test whether reported engine allocation distinguishes the existing codec computation
+        defect from unchanged complete calls across repeated fresh processes. The successful
+        call is `maskingCodec.generateUuidV7Value()`; the removable cost is equivalent BigInt
+        byte arithmetic. Complete-workload captures also shift allocation in unrelated calls,
+        so the counter may reflect engine preparation rather than only package work. Keep the
+        same primary inventory, equal preparation and measured calls, alternating order and
+        independent process count. Reject allocation-based protection if unchanged controls
+        overlap the targeted increase; otherwise repeat before proposing a budget. Keep the
+        production implementation and current timing policy unchanged during this screen.
+        Both full unchanged allocation controls have no resolved increase. The defect resolves
+        codec allocation on both qualified hosts in both captures; timing detects Node only
+        on replay and misses Deno twice. Replay also resolves increased Node decoder allocation;
+        explain that interaction before proposing a gate. Preserve the successful separation
+        without claiming other hosts, external storage, total allocation or lane headroom.
+        Proposed public measurement text needs approval before this result enters its owner.
+        Raw records and allocation summaries live in `bench/reports/allocation-repeated-xKJL9z/`.
   - [x] Compare reported engine allocation for primary Node Current calls against qualified rivals.
         Reversed fresh-process captures favor the package's reported heap allocation and caller
         CPU in every measured matching job. Preserve those implementations; a repeated material
