@@ -273,6 +273,17 @@ differences do not earn packed expansion or production code. Two independent obs
 implementation establish neither an uncertainty interval nor total allocation; the screen rejects
 this integration for retention, not the native capability or the existence of another useful design.
 
+Matched native-floor captures do not establish a pooling penalty or a stable negligible gap.
+`v4-slug-current-native-floor-matched/` compares qualified package generation, scratch-backed
+Web Crypto with native encoding, and the actual package draw with native encoding on Bun 1.4.2.
+Six fresh processes per call retain alternating order, 7 samples of 262,144 calls and 64 ms warm-up.
+Package medians are 44.7, 166.2, 159.3, 43.4, 43.5 and 43.7 ns; caller CPU reports 49.0, 57.0,
+56.3, 43.4, 43.6 and 43.2 ns per completed call. Native scratch medians span 41.5–64.2 ns;
+pooled native medians span 40.5–43.9 ns. Every capture completes 1,835,008 calls. Preserve the
+outliers; equal call counts align workload size but do not align batch medians with aggregate CPU
+or remove harness scope. Profile the variable package execution before selecting another candidate;
+these source captures prove neither packed performance nor gross allocation or individual-call tails.
+
 ### Owned UUIDv7 generation allocation
 
 Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.

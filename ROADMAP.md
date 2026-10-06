@@ -229,6 +229,11 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
           no packed expansion is justified by this screen. Before another integration, compare
           current complete generation with the scratch-backed native floor under the same
           fixed-call settings; a negligible remaining gap must stop further tuning.
+          Matched qualified package, native scratch and pooled-native captures retain equal
+          calls and alternating process order. Variable package batches prevent a stable gap
+          verdict; pooled-native measurements establish no draw penalty. Profile variable
+          package execution before another implementation candidate. Keep all observations;
+          source throughput and aggregate CPU do not establish allocation or packed behavior.
           These different epochs do not establish the cause of greater fixed-call stability.
       - [x] Keep the UUIDv4 candidate factory in its own file before extending the registry.
             Its body and comments remain byte-identical except for export visibility;
