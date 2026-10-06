@@ -4043,6 +4043,14 @@ Reports are `current-fixed-measured-16384-one-batch-current-repeat-{control,defe
 Both primary-host screens detect this computation defect; they do not establish detection of
 every material loss, its effect on decoding, other-runtime coverage or complete-lane headroom.
 
+Bun decoder-only comparisons retain 16 process pairs and the same fixed counts. Shared
+correctness setup still exercises every case. Without bulk codec work the ratio is 1.000
+with interval [0.966, 1.029]; adding codec preparation gives 1.005 [0.980, 1.017]. Adding
+the complete primary preparation sequence gives 1.077 [0.908, 1.374], without preceding
+timed calls. None reproduces the full-inventory loss conclusively. They do not isolate its
+cause or justify treating it as noise. Reports are
+`current-fixed-measured-one-batch-bun-decoder-{isolated,codec-preparation,primary-preparation}.jsonl`.
+
 Equal counts let the mean batch timing and aggregate CPU use the same call weighting.
 Node's first candidate codec record averages 570 ns against 205 ns of caller-thread CPU
 per call; Bun's baseline round four averages 750 ns against 79 ns. CPU covers the wider

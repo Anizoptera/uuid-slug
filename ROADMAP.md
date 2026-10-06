@@ -132,6 +132,10 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         computation on both hosts and also flag Bun decoding. Keep that wider effect unresolved.
         Verify other runtimes and complete-lane headroom before changing defaults; compare sample
         counts on the same runtime before attributing elapsed savings to sampling alone.
+        Decoder-only, codec-prepared and full-primary-prepared Bun screens do not conclusively
+        reproduce the decoding loss. Shared correctness setup executes every case; the screens
+        omit preceding timed calls. Preserve the complete-workload failure and unresolved cause;
+        none authorizes a decoding repair or a relaxed timing rule.
         Evidence lives in `bench/PERFORMANCE.md` §Fixed measured-call screen.
   - [x] Compare primary owned UUIDv7 generation resources on Bun against qualified libraries.
         Matched reversed-order captures show lower package caller CPU than `uuidv7`, a changing
