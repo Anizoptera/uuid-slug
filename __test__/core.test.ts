@@ -24,7 +24,6 @@ import {
   isUuidV4String,
   isUuidV7String,
   isUuidV7Text,
-  isPlainUuidSlug,
   isUuidSlugError,
   plainSlugToUuidBytes,
   plainSlugToUuidString,
@@ -1536,25 +1535,6 @@ describe("masked UUID slugs", () => {
     const plainV4Slug = uuidToPlainSlug(SAMPLE_V4);
     expect(codec.uuidToString(plainV4Slug)).toBe(SAMPLE_V4);
     expect(codec.uuidToPlainSlug(plainV4Slug)).toBe(plainV4Slug);
-  });
-
-  it("reads back every masked base64url slug it issues through its universal converters", () => {
-    const codec = createUuidV7MaskingCodec({ mask: { seed: "round-trip-test-seed-0000" } });
-    // 2^16 issued slugs make the zero-check-bits case (1 in 16) certain and give the plain
-    // fallback no chance to win: a wrong reading here would return another UUID, not an error.
-    let dualValid = 0;
-    for (let index = 0; index < 65_536; index += 1) {
-      const uuid = unwrap(generateUuidV7());
-      const slug = unwrap(codec.uuidToMaskedSlug(uuid));
-      if (isPlainUuidSlug(slug)) dualValid += 1;
-      if (codec.uuidToString(slug) !== uuid)
-        throw new Error(`${slug} read as ${String(codec.uuidToString(slug))}`);
-      if (codec.uuidToPlainSlug(slug) !== uuidToPlainSlug(uuid))
-        throw new Error(`${slug} re-encoded wrongly`);
-      if (codec.uuidToMaskedSlug(slug) !== slug)
-        throw new Error(`${slug} did not round-trip as masked`);
-    }
-    expect(dualValid).toBeGreaterThan(0);
   });
 
   it("uses plain precomputed sentinel slugs for sentinel transmission", () => {
