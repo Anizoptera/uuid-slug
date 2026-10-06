@@ -210,6 +210,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
           The composition bypasses public dispatch and fallback, so its gain cannot prove a
           production gain. Preserve base32 and capability-absent or throwing behavior; reject
           integration if complete-call speed or resources lose on another primary runtime.
+      - [x] Keep the UUIDv4 candidate factory in its own file before extending the registry.
+            Its body and comments remain byte-identical except for export visibility;
+            the complete check passes. The separate UUIDv4 slug source owner remains pending.
   - [x] Compare current Bun default UUIDv7 text resources directly with its native call.
         The earlier profile pair compares portable and native-backed package revisions, not
         the current package against the native function. Share the host corpus's exact native
