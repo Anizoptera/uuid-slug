@@ -3981,8 +3981,10 @@ retain 3,072 records each, covering every primary call in 16 process pairs on ea
 Node codec ratios are 1.064 and 1.055, with family-wide intervals [0.987, 1.129] and
 [1.006, 1.109]; only the repeat detects Node. Bun ratios are 1.246 and 1.240, with intervals
 [1.108, 1.324] and [1.141, 1.352]; both detect Bun. Both checks exit one for the intended
-codec diagnostic, in 49.274 and 51.264 seconds. These measurements expose a timing-only loss
-and inconsistent detection of the smaller Node loss; they do not justify changing timing policy.
+codec diagnostic, in 49.274 and 51.264 seconds. These measurements expose work omitted by the
+constructor counters and inconsistent detection of the smaller Node timing loss; they do not
+justify changing timing policy. Native heap captures in §Fixed measured-call screen report
+additional allocation; passing constructor counts cannot establish allocation-neutral computation.
 Raw reports are `current-bigint-byte-full-defect.jsonl` and its `-replay` counterpart.
 The matched full unchanged control exits zero in 44.354 seconds with the same inventory,
 preparation, process count and sampling settings; `current-bigint-byte-full-control.jsonl`

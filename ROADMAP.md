@@ -76,7 +76,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         preserve every byte and pass resource checks while timing exposes the extra computation.
         Owning runtime tests and packed resource checks pass. Both full defect replays reject
         Bun; only the repeat rejects Node. The matched unchanged full control passes. Keep this
-        timing-only calibration and its miss; evidence lives in `bench/PERFORMANCE.md`
+        computation calibration and its miss; evidence lives in `bench/PERFORMANCE.md`
         §Codec computation timing defect. Timing-policy selection remains unfinished.
   - [x] Reject immediate per-case preparation as the host timing-policy candidate.
         Matched before-all and before-case unchanged controls pass, but before-case preparation
