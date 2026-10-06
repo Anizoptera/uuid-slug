@@ -19,16 +19,21 @@ Defaults need no stronger generation guarantees than correctly implemented prima
 rivals provide. Establish each rival's actual guarantees; put additional guarantees on optional
 configured paths. Audit a default restriction before treating it as grounds to reject a mechanism.
 
-Execute only this sequence; older unchecked proposals below are held, not dispatch instructions.
+Prioritize evidenced primary consumer-call gaps. Benchmark duration and timing-policy calibration
+do not block production optimization; the calibration tasks below are held, not dispatch instructions.
+
+- [ ] Reconcile the retained whole-call rankings with current production and name the fastest
+      qualified rivals, native floors and unresolved resource gaps for each primary job.
+      Reuse unchanged evidence; refresh only missing or changed comparisons. Profile the largest
+      material gap on Node Current or Bun, screen one attributed fix, then verify ranked runtimes.
 
 - [ ] Measure the complete routine lane and pre-commit hook against the feedback-loop limits in
       `bench/README.md` §Regression protection. Attribute excess time to their actual commands;
       repair routing or redundant work without weakening primary-call regression detection.
       The unchanged checks and explicit packed baseline control pass on locally selected Node
       LTS and Bun with the complete primary inventory and unmodified timing defaults. Recorded
-      preparation and minimum sampling work each exceed the hook limit; together they exceed
-      the complete-lane CI headroom allowance before packing or startup. Repair preparation and
-      sampling first; removing overhead alone cannot meet these protected feedback limits.
+      preparation and sampling describe benchmark cost, not normal-lane acceptance. Benchmarks
+      and special cases are separate from normal test lanes; their calibration remains held.
       `bench/reports/routine-default-control-C2P26B/work-summary.json` retains stage times,
       per-process inventory checks and runtime versions. This pipeline forces skipped timing
       work; it does not prove changed-code branch routing, defect detection or CI headroom.
@@ -727,7 +732,7 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         | --- | --- | --- | --- |
         | Small remaining difference | Bun UUIDv4 text | `crypto-randomuuid` | `current-primary-v4-outcome-ranking.jsonl` retains a small absolute gap. Existing wrapper candidates do not justify more code; negligible differences are acceptable. Reopen only for material consumer or resource cost. |
         | Small remaining difference | Bun bytes to plain base64url slug | Native `toBase64` | Direct native delegation is retained. `current-primary-conversion-ranking.jsonl` shows a small wrapper difference; do not repeat rejected wrapper shapes solely to erase it. Preserve direct base32 selection. |
-        | Preserve | Bun UUIDv4 plain slug generation | Web Crypto draw plus native base64url encoding | `current-primary-v4-outcome-ranking.jsonl` favors the package; the old loss is not a current optimization target. |
+        | Open | Bun UUIDv4 plain slug generation | Scratch-backed Web Crypto draw plus native base64url encoding | `current-primary-v4-slug-bun-resources/scratch-ranked.jsonl` supersedes the allocating-native comparison. Repeated complete-call CPU favors scratch-backed native encoding; memory commitment remains unresolved. Preserve the existing draw and investigate encoding integration without repeating rejected candidates. |
         | Preserve | UUIDv7 plain slug generation on ranked hosts and Chromium | Native generation and qualified library compositions | `current-primary-v7-slug-typedarray-ranking.jsonl` includes browser-capable qualified rivals with native encoding and favors the package on every measured runtime. Preserve production; reopen only for a reproduced material gap. |
         | Small remaining difference | Bun UUIDv7 text | `Bun.randomUUIDv7` text output | `current-native-baseline-v7-ranking-repeat.jsonl` shows a small native-floor difference and a lead over tested qualified libraries, including `fastv7`. Preserve native delegation rather than adding another wrapper. |
         | Preserve | Deno owned UUIDv7 bytes | `uuidv7` | `current-primary-v7-owned-ranking-repeat.jsonl` does not reproduce the old qualified-rival loss. Preserve the independent writer; do not select a rewrite from the stale ranking. |

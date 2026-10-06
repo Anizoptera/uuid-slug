@@ -321,9 +321,11 @@ efficiency. A reproducible misuse alone does not justify that cost.
   maintainer ruling. Prove harness changes with both an unchanged control and a valid-output
   waste mutation that fails for the intended diagnostic; a broken identifier proves correctness
   coverage, not performance or resource protection.
-- Keep verification inside the feedback-loop limits in `bench/README.md` §Regression protection.
-  Measure complete lanes and hooks, not one test file. A slow lane is a defect to repair without
-  weakening its defect detection, production fidelity or cleanup; it cannot close the work.
+- Keep routine verification inside the feedback-loop limits in `bench/README.md` §Regression protection.
+  Benchmarks and other special cases are outside normal test-lane duration limits. Do not make timing-policy
+  calibration a prerequisite for profiling and fixing evidenced primary consumer-call gaps.
+  Measure complete correctness lanes and hooks, not one test file; preserve their defect detection,
+  production fidelity and cleanup.
 - Locate the bottleneck in the complete consumer call before optimizing a component. Record
   the observation that would support the proposed cause and the result that would reject it;
   retain a change only when complete-call speed or resource use improves without a material loss
