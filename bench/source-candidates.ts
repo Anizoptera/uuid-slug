@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { mkdtemp, mkdir, writeFile, symlink, rm } from "node:fs/promises";
+import { cp, mkdtemp, mkdir, writeFile, symlink, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFile } from "node:child_process";
@@ -57,6 +57,11 @@ const group = groupInput as CandidateGroup;
 const durationMs = Number(process.env.UUID_SLUG_PROFILE_MS ?? "5");
 const samples = Number(process.env.UUID_SLUG_PROFILE_SAMPLES ?? "3");
 const warmupMs = Number(process.env.UUID_SLUG_PROFILE_WARMUP_MS ?? "16");
+// Module-boundary hypotheses need Bun's source graph; bundled screens erase those boundaries.
+// Source matches Bun's package entry; UUID_SLUG_CANDIDATE_BUN_GRAPH=bundle tests built callers.
+const bunGraph = process.env.UUID_SLUG_CANDIDATE_BUN_GRAPH ?? "source";
+if (bunGraph !== "source" && bunGraph !== "bundle")
+  throw new Error("UUID_SLUG_CANDIDATE_BUN_GRAPH must be source or bundle.");
 for (const [name, value] of Object.entries({ durationMs, samples, warmupMs }))
   if (!Number.isSafeInteger(value) || value < 1)
     throw new Error(
@@ -76,6 +81,7 @@ const groups = {
       "package.v4.bytes.allocate",
       "package.v4.bytes.into",
       "package.v4.slug.base64url",
+      "package.v4.slug.base32hex",
     ],
     tests: [],
   },
@@ -254,6 +260,7 @@ try {
       filename,
       candidates: selected.map(({ name }) => name),
       runtimes,
+      bunGraph,
       sampleUnit: "within-process batches",
       durationMs,
       samples,
@@ -459,6 +466,8 @@ try {
       { UUID_SLUG_PROFILE_MODULE: join(tree, "src/index.ts") },
     );
     console.log(JSON.stringify({ candidate: candidate.name, proof: "passed" }));
+    if (bunGraph === "source" && runtimes.includes("bun"))
+      await cp(tree, join(workRoot, candidate.name), { recursive: true, dereference: false });
   }
   const driverFile = join(report, "profile.mjs");
   {
@@ -479,18 +488,26 @@ try {
         runtime === "node" ? (process.env.UUID_SLUG_COMPARE_NODE_EXECUTABLE ?? "node") : runtime;
       for (let step = 0; step < selected.length; step++) {
         const candidate = selected[round === 0 ? step : selected.length - step - 1]!;
-        const module = join(report, `${candidate.name}-${runtime}.mjs`);
-        const entry = group === "v4" ? module : driverFile;
+        const module =
+          runtime === "bun" && bunGraph === "source"
+            ? join(workRoot, candidate.name, "src/index.ts")
+            : join(report, `${candidate.name}-${runtime}.mjs`);
+        const entry =
+          group === "v4"
+            ? runtime === "bun" && bunGraph === "source"
+              ? join(workRoot, candidate.name, "bench/generation-host.ts")
+              : module
+            : driverFile;
         const args = runtime === "deno" ? ["run", "-A", entry] : [entry];
         const output = await command(executable, args, project, {
-          // The v4 corpus already bundles its candidate; importing its own timing entry stalls
+          // The v4 corpus loads its own API; importing its timing entry as an API stalls
           // top-level initialization. Other groups use the separate profile driver and need it.
           UUID_SLUG_PROFILE_MODULE: group === "v4" ? "" : module,
           UUID_SLUG_PROFILE_FILTER: expectedNames.map((name) => `=${name}`).join(","),
           UUID_SLUG_PROFILE_MS: String(durationMs),
           UUID_SLUG_PROFILE_SAMPLES: String(samples),
           UUID_SLUG_PROFILE_WARMUP_MS: String(warmupMs),
-          UUID_SLUG_GENERATION_FILTER: "package.v4.",
+          UUID_SLUG_GENERATION_FILTER: expectedNames.join(","),
           UUID_SLUG_GENERATION_MS: String(durationMs),
           UUID_SLUG_GENERATION_SAMPLES: String(samples),
           UUID_SLUG_GENERATION_WARMUP_MS: String(warmupMs),
@@ -499,7 +516,14 @@ try {
         const rows = output
           .trim()
           .split("\n")
-          .map((line) => JSON.parse(line) as { name?: string; ns?: readonly number[] });
+          .map(
+            (line) =>
+              JSON.parse(line) as { apiModule?: string; name?: string; ns?: readonly number[] },
+          );
+        if (group !== "v4" && rows[0]?.apiModule !== module)
+          throw new Error(
+            `Candidate profiler loaded the wrong API graph: expected ${module}, received ${rows[0]?.apiModule ?? "no module evidence"}.`,
+          );
         const measurements = rows.filter((row) => row.name !== undefined);
         if (
           measurements.length !== expectedNames.length ||
@@ -521,6 +545,7 @@ try {
             runtime,
             candidate: candidate.name,
             round,
+            entry,
             rows: measurements.map((row) => ({ name: row.name, medianNs: sampleMedian(row.ns!) })),
           }),
         );

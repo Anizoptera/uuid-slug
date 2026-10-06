@@ -27,6 +27,50 @@ do not block production optimization; the calibration tasks below are held, not 
       Reuse unchanged evidence; refresh only missing or changed comparisons. Profile the largest
       material gap on Node Current or Bun, screen one attributed fix, then verify ranked runtimes.
 
+- [x] Resolve the Bun UUIDv4 base64url gap separately for source and bundled caller graphs.
+      Compare the current public call, scratch-backed Web Crypto plus native encoding, and
+      actual package drawing plus native encoding with identical preparation and sampling.
+      Native encoding is a live rival; mixed-call specialization and bundled graph costs may
+      instead explain the retained differences. Alternate fresh source and bundled processes.
+      A reproduced material bundled-only loss selects that graph for profiling; a source loss
+      selects its public call. If neither population repeats a useful gap, stop throughput tuning
+      and leave resource parity separate. Existing profiles cannot settle these populations.
+      `current-v4-source-bundle-floor/` retains three fresh processes per graph with all
+      requested qualified calls. Native encoding after the package draw is faster in each;
+      the bundled public call also trails scratch-backed native generation in each. One source
+      process reverses the scratch-native ranking. The gap is not confined to bundled output;
+      fixed-order preparation and warm batch medians do not establish its size or cause universally.
+
+- [x] Reject native writing in one private module shared by generation and conversion.
+      Preserve the capture, options, native body and fallback comments byte-for-byte; leave
+      base32's original statements intact. Earlier shared helpers live inside the large converter
+      module; its optimizer context may explain their primary-call losses. Moving only that owner
+      may preserve specialization, or the helper call may still erase the native benefit.
+      Native and corruption proofs precede timing. Reject absent useful repeated Bun generation
+      gains or repeated conversion/base32 losses; only a survivor earns packed and resource proof.
+      `candidates-v4-slug-Jhbt4H/` passes runtime, resource and native payload/fallback proofs.
+      Its first comparison shifts unchanged controls sharply; the second shows faster Bun
+      base64url but slower base32 and Node conversion. Preserve every record; repeat with equal
+      completed calls before deciding retention, without attributing variation to host load.
+      `candidates-v4-slug-ZPTlnT/` repeats the bundled base32 loss at equal completed calls.
+      The runner bundles Bun APIs, so neither screen tests the source module boundary.
+      Add explicit source selection to that runner, preserving separate candidate trees;
+      compare actual Bun TypeScript imports before judging the ownership hypothesis.
+      `candidates-v4-slug-4bXxJO/` loads separate TypeScript candidate graphs and repeats
+      the base32 loss in both orders despite faster base64url. Preserve production; module
+      ownership alone does not remove this integration's cost. Remove the temporary prototype.
+
+- [x] Preserve explicit Bun source-graph selection in the existing source-candidate runner.
+      Bundling removes private module boundaries, so it cannot test their source-loading effect.
+      Record the imported API path and reject a mismatch with the requested graph. Prove rejection
+      with a valid-output bundle substituted for requested source, then run an unchanged control.
+      `/tmp/uuid-slug-source-graph-red.log` rejects that substitution at the graph assertion;
+      `-green.log` passes source selection. `-bundle-control.log` passes explicit bundles on
+      Node Current and Bun. `-v4-control-final.log` passes the direct generation entry and
+      both slug alphabets. Its first control exposes the missing base32 inventory entry;
+      the selected-name owner now supplies the generation filter, preserving exact case checks.
+      Bun defaults to source; explicit bundle selection remains available for built callers.
+
 - [x] Compare complete `generatePlainUuidV4Slug(BASE32HEX)` and
       `generatePlainUuidV7Slug(BASE32HEX)` calls with the existing qualified generators
       followed by scure's public and lowercase component encoders. README's filename job

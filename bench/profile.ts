@@ -52,9 +52,8 @@ if (session) {
 }
 
 const beforeImport = performance.now();
-const api: typeof import("../src/index") = await import(
-  process.env.UUID_SLUG_PROFILE_MODULE ?? "@anizoptera/uuid-slug"
-);
+const apiModule = process.env.UUID_SLUG_PROFILE_MODULE ?? "@anizoptera/uuid-slug";
+const api: typeof import("../src/index") = await import(apiModule);
 const privateV4Api = process.env.UUID_SLUG_PROFILE_PRIVATE_MODULE
   ? await import(process.env.UUID_SLUG_PROFILE_PRIVATE_MODULE)
   : process.env.UUID_SLUG_PROFILE_PRIVATE === "1"
@@ -212,6 +211,7 @@ console.log(
   JSON.stringify({
     runtime,
     executable: process.execPath,
+    apiModule,
     importMs,
     gc: Boolean(gc),
     samples,
