@@ -45,7 +45,7 @@ const {
   typeof process !== "undefined" && process.env.UUID_SLUG_PROFILE_MODULE
     ? await import(process.env.UUID_SLUG_PROFILE_MODULE)
     : await import("../src/index");
-import { generatePortableUuidV4 } from "../src/v4";
+import { drawUuidV4Scratch, generatePortableUuidV4 } from "../src/v4";
 
 type RowOptions = Partial<
   Pick<
@@ -286,6 +286,23 @@ export const generationCases: readonly GenerationCase[] = [
                 toBase64(options: typeof base64urlOutputOptions): string;
               }
             ).toBase64(base64urlOutputOptions),
+        ),
+        // Reuse the actual package draw, including its failure boundary. This isolates native
+        // encoding from the pooled draw path without copying the pool or adding another RNG.
+        row(
+          "composition.v4.slug.pooled.base64url",
+          4,
+          "v4.slug.base64url.secure",
+          "pooled-native-encoding",
+          () =>
+            (
+              unwrap(drawUuidV4Scratch()) as Uint8Array & {
+                toBase64(options: typeof base64urlOutputOptions): string;
+              }
+            ).toBase64(base64urlOutputOptions),
+          {
+            note: "Diagnostic private package draw; public slug selection and fallback are excluded.",
+          },
         ),
       ]
     : []),

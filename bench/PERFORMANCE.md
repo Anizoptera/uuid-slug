@@ -124,6 +124,22 @@ Node LTS has no such row. These small samples provide no confidence interval or 
 proof. Keep the Bun complete-call difference and unresolved memory behavior open; neither
 the native-writer screen nor these observations establish a removable pooling cost.
 
+`current-primary-v4-slug-pooled-native/` compares the actual package byte draw followed by
+native encoding with direct Web Crypto and the same native encoder. Both use private 16-byte
+arrays; the package draw also includes its existing failure handling. This composition is not
+the published slug call. Three fresh-process Bun medians are 41.0, 41.1 and 42.8 ns, versus
+48.0–50.0 ns for the published call and 42.1–42.5 ns for direct Web Crypto plus native encoding.
+The screen does not establish a pooling penalty. Preserve the pool and test native encoding
+at slug generation; the shared `alphabet:native-leaf` candidate remains rejected.
+
+Reversed fixed-call memory captures use the same preparation and window counts above. Package
+caller CPU is 46.2 and 46.9 ns per call; pooled native composition reports 41.6 and 40.9 ns.
+First-window commitment increases by 36.9 and 38.5 MB for the package, versus 28.0 and 35.0 MB
+for the composition; all second-window commitment readings stay flat. These observations do not
+measure gross allocation. Sampling confirms native `toBase64` replaces the package's Latin-1
+`toString`. Small process counts, fixed case order and engine variability limit the comparison;
+public-call dispatch, unsupported capabilities and fallback costs remain unmeasured for this composition.
+
 ### Owned UUIDv7 generation allocation
 
 Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.

@@ -202,11 +202,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         substitution already loses. Inspect complete draw and encoding costs before selecting
         one production candidate. Preserve other runtimes, base32 output, secure entropy and
         failure behavior; retain only a reproduced useful gain, never a negligible timing cut.
-    - [ ] Isolate entropy cost with the same private scratch and native encoder, comparing
-          direct Web Crypto with the existing pool. Reject a pooled-native production candidate
-          if complete-call throughput does not improve; a direct-native advantage alone cannot
-          identify pooling as the cause. Secure entropy and valid UUID variant bits must pass
-          qualification before timing. Keep memory retention separate from allocation.
+    - [x] Compare direct Web Crypto with the actual package draw before replacing pooling.
+          Native encoding after the package draw survives the focused throughput and caller-CPU
+          screen; no pooling penalty is established. The shared native-writer candidate still loses.
+          Evidence and limits live in `bench/PERFORMANCE.md` §Bun UUIDv4 slug resources.
+    - [ ] Screen native encoding at the UUIDv4 slug entry while retaining the existing draw.
+          The composition bypasses public dispatch and fallback, so its gain cannot prove a
+          production gain. Preserve base32 and capability-absent or throwing behavior; reject
+          integration if complete-call speed or resources lose on another primary runtime.
   - [x] Compare current Bun default UUIDv7 text resources directly with its native call.
         The earlier profile pair compares portable and native-backed package revisions, not
         the current package against the native function. Share the host corpus's exact native
