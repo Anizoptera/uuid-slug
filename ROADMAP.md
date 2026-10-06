@@ -198,6 +198,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         arithmetic differs in its module. Attribution remains unresolved because profiling
         changes execution. Retain `native-decoder/measured-caller-summary.json`; do not select
         a timing policy or repair unchanged decoder code from these captures.
+        Prior-work captures retain corpus verification and compare full primary preparation,
+        preparation without bulk codec-value generation, and decoder-only preparation at both
+        original and matching decoder call counts. Every process returns the intended work.
+        Family-wide allocation intervals remain unresolved in all conditions; the ordinary
+        full-preparation interval excludes parity. Keep that observation without attributing
+        it to bulk codec work or treating these narrow captures as full-gate evidence.
+        `decoder-preparation/summary.json` and `matched-summary.json` retain paired observations;
+        this control does not settle the original full-workload shift or select a timing policy.
   - [x] Compare reported engine allocation for primary Node Current calls against qualified rivals.
         Reversed fresh-process captures favor the package's reported heap allocation and caller
         CPU in every measured matching job. Preserve those implementations; a repeated material
