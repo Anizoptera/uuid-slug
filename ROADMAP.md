@@ -233,8 +233,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
           Repeated conversion, base32 or other-runtime loss rejects the extraction; no useful
           generation gain rejects retention. Preserve every copied comment and the same draw.
           Source proofs and exact-body comparison pass. Isolated generation retains a small
-          gain, while conversion and base32 directions vary. Compare packed consumers with
-          the same committed baseline next; retain only useful speed without resource loss.
+          gain, while conversion and base32 directions vary. Packed comparisons do not establish
+          a useful gain; Node base32 loss appears in the first comparison and remains unresolved
+          in the repeat. Reject this extraction for retention, not native encoding itself.
+          Preserve production; next integration must leave unsupported outputs on their existing
+          writer and remove repeated per-call selection before another packed screen. Require
+          useful repeated complete-call gain and resource evidence before retention.
       - [x] Keep the UUIDv4 candidate factory in its own file before extending the registry.
             Its body and comments remain byte-identical except for export visibility;
             the complete check passes. UUIDv4 slug candidates have a separate source owner.

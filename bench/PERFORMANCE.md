@@ -199,6 +199,18 @@ The reversed repeat reports generation at 42.1 and 42.6 ns against 44.4 and 43.4
 69.0 ns. Generation retains a small benefit; other directions vary. Production retention needs
 packed complete-call and resource comparisons; these source batches provide no confidence interval.
 
+Do not retain this extraction: packed calls do not establish a useful generation gain without
+loss elsewhere. `v4-slug-shared-writer-packed-6GZZTS/` compares committed source through packed
+consumers on Node 26.10.0 and Bun 1.4.2, with six fresh process pairs per host, seven batches,
+20 ms sample windows and 64 ms preparation. Node base32 candidate/baseline median ratios are
+1.084 and 1.081; their reported 95% intervals are [1.084, 1.129] and [0.897, 1.129]. The direction
+repeats, but the second interval does not establish a loss. Bun generation ratios are 0.974 and
+0.718 with intervals [0.938, 1.531] and [0.370, 1.035]; neither establishes a gain. Conversion
+also remains unresolved. Process shifts prevent causal attribution; batches are not independent
+samples, and throughput does not establish individual-call tails or total allocation. Preserve
+the existing implementation. Native encoding remains a candidate only with integration that
+preserves other outputs and produces a useful repeated complete-call gain.
+
 ### Owned UUIDv7 generation allocation
 
 Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.
