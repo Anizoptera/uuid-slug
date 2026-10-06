@@ -140,7 +140,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         extending this setting to those hosts. Deno's compiler graph retains the computation
         after register allocation in a traced compilation; it does not establish the untraced
         execution state. Keep the fixture and timing miss; browser comparisons do not yet forward
-        fixed-call settings. Screen the adjacent 32,768 measured calls with preparation fixed.
+        fixed-call settings. At 32,768 measured calls the control passes and Node LTS detects
+        the defect, but Deno still misses with broad variation. Retain the partial result;
+        neither cross-runtime retention nor complete-lane headroom is proved.
         Evidence lives in `bench/PERFORMANCE.md` §Fixed measured-call screen.
   - [x] Compare primary owned UUIDv7 generation resources on Bun against qualified libraries.
         Matched reversed-order captures show lower package caller CPU than `uuidv7`, a changing

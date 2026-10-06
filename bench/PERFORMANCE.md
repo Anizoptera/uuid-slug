@@ -4069,6 +4069,12 @@ The assembly-printing control emits no assembly; graph tracing does produce comp
 Launch the retained profiler directly for these diagnostics: compiler messages invalidate the
 comparison's JSON-only stdout protocol. Keep the timing miss unresolved.
 
+Doubling measured calls to 32,768, with preparation and one batch unchanged, retains the
+complete Node LTS/Deno inventory. The control exits zero; the defect exits one for Node's
+codec ratio 1.051 [1.011, 1.101], while Deno's 1.032 [0.893, 1.222] still misses. This
+single screen neither proves repeated Node detection nor resolves Deno's execution variability.
+Reports are `current-fixed-measured-32768-one-batch-lts-deno-{control,defect}.jsonl`.
+
 Equal counts let the mean batch timing and aggregate CPU use the same call weighting.
 Node's first candidate codec record averages 570 ns against 205 ns of caller-thread CPU
 per call; Bun's baseline round four averages 750 ns against 79 ns. CPU covers the wider
