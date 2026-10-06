@@ -27,6 +27,17 @@ do not block production optimization; the calibration tasks below are held, not 
       Reuse unchanged evidence; refresh only missing or changed comparisons. Profile the largest
       material gap on Node Current or Bun, screen one attributed fix, then verify ranked runtimes.
 
+- [x] Distinguish native encoder invocation cost before another UUIDv4 slug integration.
+      Compare the actual package draw followed by direct method invocation, captured `.call`,
+      and a receiver-bound invocation through the existing qualified generation corpus.
+      Binding may remove invocation work, or all forms may cost the same and leave public
+      dispatch and encoding work unresolved. Reject binding without a repeated complete-call advantage;
+      only a surviving mechanism selects a shared production integration and fallback proofs.
+      `current-native-v4-invocation/` retains three fresh-process comparisons and their source.
+      Binding does not repeat an advantage over direct invocation; captured invocation differs
+      too little to explain the entire public-call loss. Reject additional bound-writer state.
+      Fixed-order warm batch medians do not establish individual latency or gross allocation.
+
 - [x] Compare retained resources for Bun UUIDv4 base64url generation with the qualified
       package-draw/native-encoder composition before another integration candidate.
       The composition removes portable encoding while preserving entropy; its throughput gain
