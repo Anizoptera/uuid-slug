@@ -27,14 +27,16 @@ do not block production optimization; the calibration tasks below are held, not 
       Reuse unchanged evidence; refresh only missing or changed comparisons. Profile the largest
       material gap on Node Current or Bun, screen one attributed fix, then verify ranked runtimes.
 
-- [ ] Resolve the shared-binding candidate's conflicting base32 observations before retention.
+- [x] Reject shared-binding retention after the original preparation repeats its base32 loss.
       `candidates-v4-slug-QnhUb8/*-isolated-*` does not repeat the mixed-call loss; base64url
       generation improves while conversion varies. Preserve both populations.
       `*-base32-prior-*` varies preceding base64url work with fixed call counts, but both
       implementations develop large wall/CPU differences. Two undrained process handles also
       leave timing isolation unsecured. Concurrent machine builds do not establish causation.
-      Repeat disputed controls sequentially on an uncontended host; a loss only after preceding
-      calls supports a call-history boundary. Otherwise leave the cause unresolved. Keep production.
+      `*-original-settings-*` repeats the mixed-call base32 wall and thread-CPU loss in both
+      process orders after host load falls. Fixed-call `*-sequential-*` and `*-mixed-sequential-*`
+      do not consistently repeat that loss; preparation changes remain a live explanation,
+      not an established cause. Keep production and the primary native-encoding gap open.
 
 - [x] Reject direct UUIDv4 slug use of the existing captured native encoder and options.
       Shared live bindings preserve conversion's body without another successful writer call.
