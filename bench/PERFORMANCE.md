@@ -223,6 +223,17 @@ also vary. These two observations per implementation per screen establish no ind
 confidence interval, allocation parity or cause for the shifts. The small generation benefit
 selects packed testing only; it does not justify production extraction.
 
+Do not retain `shared-selected`: packed generation gains remain unresolved and other Bun calls
+lose. `v4-slug-shared-selected-packed-FAh0dZ/` retains the failed declaration build and two
+successful comparisons after the experimental export receives its required explicit type.
+The successful comparisons use the same settings and hosts as the earlier packed screen.
+Bun generation ratios are 0.965 [0.928, 1.009] and 0.938 [0.908, 1.819]. Bun base32 reports
+1.037 [1.004, 1.072] and 1.152 [0.925, 1.319]; conversion reports 0.993 [0.965, 1.022] and
+1.035 [1.008, 1.133]. Node base32 ratios are 0.992 and 1.005, both unresolved. Initialization
+selection does not reproduce the earlier Node base32 loss, but these observations do not isolate
+its cause or establish parity. Preserve production and the native-encoding gap; a useful gain
+without conversion or base32 loss remains unproved.
+
 ### Owned UUIDv7 generation allocation
 
 Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.

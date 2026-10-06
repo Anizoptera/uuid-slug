@@ -246,8 +246,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
           rejects retention; source survival selects repeated packed comparisons, not adoption.
           Source proofs and exact body preservation pass. Isolated Bun generation retains a
           small benefit; Node base32 is near the control initially, then both implementations
-          shift widely. Conversion remains variable. Compare packed primary-runtime calls next;
-          do not infer a selection cause or resource parity from the source screen.
+          shift widely. Conversion remains variable. Packed comparisons leave generation gains
+          unresolved and expose Bun base32 and conversion losses. Reject this extraction for
+          retention; it does not reproduce the earlier Node base32 loss or establish its cause.
+          Keep native integration open. The remaining added wrapper is a live cost hypothesis,
+          not a finding; any further candidate must remove it while sharing the same native
+          state and preserving unsupported outputs, then earn useful packed gain and resources.
       - [x] Keep the UUIDv4 candidate factory in its own file before extending the registry.
             Its body and comments remain byte-identical except for export visibility;
             the complete check passes. UUIDv4 slug candidates have a separate source owner.

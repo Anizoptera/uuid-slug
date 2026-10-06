@@ -78,7 +78,7 @@ export function v4SlugCandidates(source: string, slugSource?: string): readonly 
         return replaceOnce(
           sharedWriterSource(),
           "// Keep general normalization separate",
-          "export const nativePlainUuidBase64urlWriter = nativePlainUuidBase64 ? encodePlainUuidBase64urlUnchecked : undefined;\n\n// Keep general normalization separate",
+          "export const nativePlainUuidBase64urlWriter: typeof encodePlainUuidBase64urlUnchecked | undefined = nativePlainUuidBase64 ? encodePlainUuidBase64urlUnchecked : undefined;\n\n// Keep general normalization separate",
         );
       },
     },
