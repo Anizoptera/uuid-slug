@@ -103,6 +103,10 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         conversion and store in the optimized codec frame. Preserve the fixture and timing
         policy; this capture rejects elimination there without explaining other process misses.
         Evidence and limits live in `bench/PERFORMANCE.md` §Codec computation timing defect.
+  - [x] Reject local checksum accumulation: equal fixed-call checksums and passing profiler
+        tests do not compensate for missing the computation defect on both hosts. Keep the
+        restored profiler and family-wide rule; process variability remains unresolved.
+        Evidence lives in `bench/PERFORMANCE.md` §Local checksum accumulation screen.
   - [x] Compare current Bun default UUIDv7 text resources directly with its native call.
         The earlier profile pair compares portable and native-backed package revisions, not
         the current package against the native function. Share the host corpus's exact native

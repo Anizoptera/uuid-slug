@@ -3953,6 +3953,24 @@ candidate module, using the same profile controls and the recorded primary inven
 Compiler tracing changes execution cost. These two processes establish neither uninstrumented
 timing sensitivity nor the cause of other processes' misses; keep the timing policy unchanged.
 
+### Local checksum accumulation screen
+
+Reject local checksum accumulation because the full comparison misses the computation defect.
+
+The candidate reads every result through the same checksum branches but publishes the checksum
+once per completed batch. Existing profiler tests pass before and after the change: 53 tests,
+284 assertions, and type checking exits zero. The real fixed-call formatter records 130 measured calls
+and checksum 56 with both kernels. These checks do not establish timing detection.
+Full unchanged and computation-defect comparisons retain 3,072 records each: all 48 primary
+calls in 16 process pairs on Node 24.21.0 and Bun 1.4.2, with 32,768 preparation calls and seven
+one-millisecond batches. Both exit zero, in 58.487 and 57.775 seconds respectively.
+The defect's codec ratios are 1.086 on Node and 1.218 on Bun, but their family-wide intervals
+are [0.807, 2.715] and [0.495, 1.273]. Ordinary intervals exclude parity on both hosts; they
+cannot replace the protected family-wide rule. Broad process shifts remain in both reports.
+Restore the original profiler; these separate captures establish no lane-speed improvement.
+Raw reports are `current-local-checksum-{control,defect}.jsonl`; original and
+candidate source captures are in `current-preparation-v8-trace/before-local-checksum-*.ts.txt`.
+
 ### Per-case preparation screen
 
 Reject immediate per-case preparation: the screen still misses the Bun computation defect.
