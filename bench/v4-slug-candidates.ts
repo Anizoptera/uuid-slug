@@ -45,6 +45,44 @@ export function v4SlugCandidates(source: string, slugSource?: string): readonly 
   return [
     { name: "baseline", source },
     {
+      name: "shared-selected",
+      get source() {
+        // Select once so absent hosts retain the direct encoder; measure the native wrapper
+        // through complete calls because its alphabet branch can still erase the small gain.
+        const selector = [
+          "// Select absent hosts directly; native support shares the converter's permanent fallback.",
+          "// Remeasure complete calls if this wrapper or alphabet selection changes.",
+          "function selectV4SlugWriter() {",
+          "  const nativeWriter = nativePlainUuidBase64urlWriter;",
+          "  if (!nativeWriter) return encode;",
+          "  return (bytes: Uint8Array, alpha: typeof BASE64URL) => alpha === BASE64URL ? nativeWriter(bytes) : encode(bytes, alpha);",
+          "}",
+          "const encodeV4Slug = selectV4SlugWriter();",
+          "",
+        ].join("\n");
+        return replaceOnce(
+          replaceOnce(
+            replaceOnce(
+              replaceOnce(source, "BASE64URL_NAME, encode", "BASE64URL, BASE64URL_NAME, encode"),
+              "import { resolveSlugAlphabet }",
+              "import { resolveSlugAlphabet, nativePlainUuidBase64urlWriter }",
+            ),
+            "/**\n * Generate a plain UUIDv4 slug",
+            selector + "/**\n * Generate a plain UUIDv4 slug",
+          ),
+          "return encode(generatedOrThrow(drawUuidV4Scratch()), resolved)",
+          "return encodeV4Slug(generatedOrThrow(drawUuidV4Scratch()), resolved)",
+        );
+      },
+      get slugSource() {
+        return replaceOnce(
+          sharedWriterSource(),
+          "// Keep general normalization separate",
+          "export const nativePlainUuidBase64urlWriter = nativePlainUuidBase64 ? encodePlainUuidBase64urlUnchecked : undefined;\n\n// Keep general normalization separate",
+        );
+      },
+    },
+    {
       name: "shared-writer",
       get source() {
         return replaceOnce(

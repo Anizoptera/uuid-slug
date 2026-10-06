@@ -322,7 +322,8 @@ try {
         (group === "v4-slug" &&
           (candidate.name === "native-entry" ||
             candidate.name === "shared-converter" ||
-            candidate.name === "shared-writer")) ||
+            candidate.name === "shared-writer" ||
+            candidate.name === "shared-selected")) ||
         (group === "slug" && candidate.source.includes("captureNativePlainUuidBase64()")) ||
         candidate.name === "native-branch" ||
         candidate.name === "native-dispatch" ||

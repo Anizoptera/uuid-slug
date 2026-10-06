@@ -211,6 +211,18 @@ samples, and throughput does not establish individual-call tails or total alloca
 the existing implementation. Native encoding remains a candidate only with integration that
 preserves other outputs and produces a useful repeated complete-call gain.
 
+`candidates-v4-slug-8mprBz/` tests `shared-selected`: initialization chooses the existing encoder
+directly when the shared native writer is unavailable. The unchanged 521-byte native body has
+one exact copy; Node and Bun correctness and resource proofs pass. Native present, absent and
+throwing calls report 2, 0 and 1 attempts; corrupt generation fails the observed-byte oracle.
+Isolated source processes use seven 20 ms batches after 64 ms preparation. Bun generation
+reports 41.3 and 41.3 ns against 42.9 and 43.1 ns, then 41.5 and 42.4 ns against 43.0 and
+42.8 ns in reversed order. Node base32 reports 48.7 and 48.7 ns against 48.5 and 48.7 ns in
+the first screen; the repeat shifts widely for both implementations. Conversion directions
+also vary. These two observations per implementation per screen establish no independent
+confidence interval, allocation parity or cause for the shifts. The small generation benefit
+selects packed testing only; it does not justify production extraction.
+
 ### Owned UUIDv7 generation allocation
 
 Keep the owned UUIDv7 generator: equal-call Node profiles estimate fewer allocated bytes beneath the measured loop than the qualified byte-producing rivals.

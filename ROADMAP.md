@@ -239,6 +239,15 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
           Preserve production; next integration must leave unsupported outputs on their existing
           writer and remove repeated per-call selection before another packed screen. Require
           useful repeated complete-call gain and resource evidence before retention.
+          Screen `shared-selected` to isolate initialization-time writer selection from the
+          rejected per-call branch. Reuse the same extracted native body and fallback state;
+          capability-absent hosts select their existing encoder directly. Native base32 still
+          uses its existing encoder. A missing useful generation gain or conversion/base32 loss
+          rejects retention; source survival selects repeated packed comparisons, not adoption.
+          Source proofs and exact body preservation pass. Isolated Bun generation retains a
+          small benefit; Node base32 is near the control initially, then both implementations
+          shift widely. Conversion remains variable. Compare packed primary-runtime calls next;
+          do not infer a selection cause or resource parity from the source screen.
       - [x] Keep the UUIDv4 candidate factory in its own file before extending the registry.
             Its body and comments remain byte-identical except for export visibility;
             the complete check passes. UUIDv4 slug candidates have a separate source owner.
