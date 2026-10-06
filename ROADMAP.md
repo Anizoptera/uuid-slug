@@ -27,6 +27,18 @@ do not block production optimization; the calibration tasks below are held, not 
       Reuse unchanged evidence; refresh only missing or changed comparisons. Profile the largest
       material gap on Node Current or Bun, screen one attributed fix, then verify ranked runtimes.
 
+- [x] Compare retained resources for Bun UUIDv4 base64url generation with the qualified
+      package-draw/native-encoder composition before another integration candidate.
+      The composition removes portable encoding while preserving entropy; its throughput gain
+      does not establish resource parity. Use equal prepared calls in reversed fresh processes
+      and repeated memory windows. Continuing package-only growth selects retention attribution;
+      continuing composition-only growth rejects a resource benefit. Flat later windows leave
+      gross allocation unmeasured and select encoding integration rather than a leak fix.
+      Reuse the existing qualified corpus and Bun memory profiler; retain every observation.
+      `current-primary-v4-slug-resource-warm/` repeats the composition's caller-CPU advantage
+      without continuing native commitment or retained UUID strings and bytes in either path.
+      These captures do not establish gross allocation. Select encoding integration, not leak repair.
+
 - [x] Resolve the Bun UUIDv4 base64url gap separately for source and bundled caller graphs.
       Compare the current public call, scratch-backed Web Crypto plus native encoding, and
       actual package drawing plus native encoding with identical preparation and sampling.
