@@ -143,6 +143,9 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         fixed-call settings. At 32,768 measured calls the control passes and Node LTS detects
         the defect, but Deno still misses with broad variation. Retain the partial result;
         neither cross-runtime retention nor complete-lane headroom is proved.
+        Equal-count Deno records also vary in reported caller-thread CPU. Wall-only pauses
+        cannot explain all that variation; do not replace wall timing or filter pauses from
+        this evidence. Resolve execution variability before another sampling-policy candidate.
         Evidence lives in `bench/PERFORMANCE.md` §Fixed measured-call screen.
   - [x] Compare primary owned UUIDv7 generation resources on Bun against qualified libraries.
         Matched reversed-order captures show lower package caller CPU than `uuidv7`, a changing

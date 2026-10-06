@@ -4075,6 +4075,13 @@ codec ratio 1.051 [1.011, 1.101], while Deno's 1.032 [0.893, 1.222] still misses
 single screen neither proves repeated Node detection nor resolves Deno's execution variability.
 Reports are `current-fixed-measured-32768-one-batch-lts-deno-{control,defect}.jsonl`.
 
+The same Deno defect records vary in reported caller-thread CPU too: baseline costs span
+199–251 ns per call and candidate costs span 207–267 ns. Across the 16 process pairs,
+the median paired CPU ratio is 1.026 and the paired wall ratio is 1.029. CPU includes the
+yield and surrounding instrumentation; these are descriptive ratios, without new confidence
+intervals. Removing wall-only pauses cannot remove the recorded CPU variation. These records
+do not identify its cause or justify a CPU-only gate, pause filtering or a timing-policy change.
+
 Equal counts let the mean batch timing and aggregate CPU use the same call weighting.
 Node's first candidate codec record averages 570 ns against 205 ns of caller-thread CPU
 per call; Bun's baseline round four averages 750 ns against 79 ns. CPU covers the wider
