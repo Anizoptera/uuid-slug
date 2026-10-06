@@ -23,6 +23,20 @@ const threadCpuUsage = (
   process as { threadCpuUsage?: (previous?: NodeJS.CpuUsage) => NodeJS.CpuUsage }
 ).threadCpuUsage?.bind(process);
 const isNode = !versions.bun && !versions.deno;
+// Live heap misses collected garbage; the native cumulative counter avoids GC reconstruction.
+// Bun's same-named field falls after GC. Requalify host semantics after runtime updates;
+// bench/PERFORMANCE.md owns the controls and limits. Missing counters are not zero allocation.
+const heapAllocationProbe = versions.bun
+  ? undefined
+  : (v8.getHeapStatistics() as { readonly total_allocated_bytes?: number }).total_allocated_bytes;
+const readHeapAllocationTotal = Number.isSafeInteger(heapAllocationProbe)
+  ? () => {
+      const total = v8.getHeapStatistics().total_allocated_bytes;
+      if (!Number.isSafeInteger(total) || total < 0)
+        throw new Error("Native heap allocation counter must be a nonnegative safe integer");
+      return total;
+    }
+  : undefined;
 const captureV8State = () => ({
   code: v8.getHeapCodeStatistics(),
   cpp: v8.getCppHeapStatistics("brief"),
@@ -208,6 +222,7 @@ for (const [name, fn] of selected) {
   const expectedError = assertProfileOutcome(name, witness);
   gc?.();
   const heapBefore = process.memoryUsage();
+  const heapAllocationBefore = readHeapAllocationTotal?.() ?? 0;
   const cpuBefore = process.cpuUsage();
   const threadCpuBefore = threadCpuUsage?.();
   const resourceBefore = process.resourceUsage();
@@ -236,6 +251,13 @@ for (const [name, fn] of selected) {
   const cpu = process.cpuUsage(cpuBefore);
   const threadCpu = threadCpuBefore && threadCpuUsage?.(threadCpuBefore);
   const resourceAfter = process.resourceUsage();
+  // This interval includes harness allocations and yields, but neither reporting nor forced GC.
+  // Counter reads stay outside batch clocks and caller-CPU scope; this is engine heap, not total memory.
+  const heapAllocatedBytes = readHeapAllocationTotal
+    ? readHeapAllocationTotal() - heapAllocationBefore
+    : undefined;
+  if (heapAllocatedBytes !== undefined && heapAllocatedBytes < 0)
+    throw new Error("Native heap allocation counter decreased during measurement");
   const heapAfter = process.memoryUsage();
   gc?.();
   const retained = process.memoryUsage();
@@ -262,6 +284,7 @@ for (const [name, fn] of selected) {
           resourceAfter.involuntaryContextSwitches - resourceBefore.involuntaryContextSwitches,
       },
       heapDelta: heapAfter.heapUsed - heapBefore.heapUsed,
+      heapAllocatedBytes,
       retainedDelta: retained.heapUsed - heapBefore.heapUsed,
       rss: retained.rss,
       arrayBuffers: retained.arrayBuffers,

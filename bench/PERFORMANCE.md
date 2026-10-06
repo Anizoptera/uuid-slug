@@ -4090,6 +4090,25 @@ candidate. This excludes a logged transition in those captures, not compilation 
 untraced runs. Reports are `current-deno-codec-opt-events-{0,1}-{baseline,candidate}.log`.
 Their heap deltas differ, but snapshots cannot identify a collection or its cost.
 
+Native heap statistics expose `total_allocated_bytes` on Node 26.10.0 and Deno 2.9.7.
+Allocation followed by collection increases this counter while live heap falls. Node 24.21.0
+omits the field. Bun 1.4.2 returns it, but collection reduces its value from 1,422,302 to
+906,413; that field cannot provide the same cumulative measurement. The field name and current
+Node declarations do not establish runtime semantics. Use qualified counters only; an absent
+counter is missing evidence, not zero allocation.
+Controls retain ten MiB of typed-array backing storage, while the Node Current and Deno
+counter differences remain below one MiB; the counter does not include all external storage.
+Probe source and per-host records live in `current-native-heap-counter/capability-*`.
+
+Clean profiler captures at 32,768 prepared and measured calls cover all 48 primary calls.
+In two reversed process pairs, codec computation adds 1,479,648 and 1,835,056 reported heap
+bytes on Node 26.10.0, and 1,199,112 and 1,444,168 on Deno 2.9.7. Deno's candidate batch
+timing is lower in both pairs; allocation therefore adds evidence that timing alone misses.
+The interval includes harness and engine work, excludes forced collection and reporting,
+and does not measure total process allocation or external backing storage. Two pairs cannot
+establish a regression budget. Bun and Node LTS captures omit the unavailable metric.
+Raw records and counts live in `current-native-heap-counter/`; every process returns all cases.
+
 Equal counts let the mean batch timing and aggregate CPU use the same call weighting.
 Node's first candidate codec record averages 570 ns against 205 ns of caller-thread CPU
 per call; Bun's baseline round four averages 750 ns against 79 ns. CPU covers the wider

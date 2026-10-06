@@ -151,6 +151,23 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         logged transition during codec measurement. Traced timing cannot select code or policy.
         Capture collection events next with the same workload and counts; heap deltas alone
         cannot establish whether collection shifts explain the CPU variation.
+        Mixed native traces interrupt JSON records. Use the existing native GC profiler with
+        isolated record output; retain per-case collection reports and their broader scope.
+        Reject the heap-balance prototype: invalid field access leaves no valid boundaries.
+        Allocation/collection controls support the cumulative counter on Node Current and
+        Deno. Bun's field decreases after collection; Node LTS omits it. Screen the qualified
+        direct counters instead, with unchanged controls and the existing valid-output fixture.
+        Require positive allocation and collection
+        controls before interpreting it; this does not establish external allocation or native
+        counter equivalence between hosts. Diagnostic timing cannot select a production change.
+        Put the direct observation in the existing typed host profiler, outside timed batches
+        and CPU reads. Require finite, nonnegative, monotonic counters and omit unqualified
+        metrics. Typed source avoids the invalid property access in diagnostic build banners;
+        no GC reconstruction, output interception or new regression gate is needed.
+        Reversed complete-workload captures report more heap allocation for the computation
+        fixture on both qualified hosts, despite Deno timing reversing direction. Keep the
+        observation separate from a regression budget: only two process pairs are measured,
+        and harness and engine work remain included. Bun and Node LTS omit the metric.
         Evidence lives in `bench/PERFORMANCE.md` §Fixed measured-call screen.
   - [x] Compare primary owned UUIDv7 generation resources on Bun against qualified libraries.
         Matched reversed-order captures show lower package caller CPU than `uuidv7`, a changing
