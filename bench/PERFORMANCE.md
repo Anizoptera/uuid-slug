@@ -4082,6 +4082,14 @@ yield and surrounding instrumentation; these are descriptive ratios, without new
 intervals. Removing wall-only pauses cannot remove the recorded CPU variation. These records
 do not identify its cause or justify a CPU-only gate, pause filtering or a timing-policy change.
 
+Reversed optimization-event captures return every fixed-count case on Deno. Both value
+generators, the codec wrapper and shared batch loop report TurboFan optimization before
+measurement; no optimization or deoptimization event is logged during codec measurement.
+Reported codec CPU still spans 222–251 ns per call for the baseline and 227–239 ns for the
+candidate. This excludes a logged transition in those captures, not compilation effects in
+untraced runs. Reports are `current-deno-codec-opt-events-{0,1}-{baseline,candidate}.log`.
+Their heap deltas differ, but snapshots cannot identify a collection or its cost.
+
 Equal counts let the mean batch timing and aggregate CPU use the same call weighting.
 Node's first candidate codec record averages 570 ns against 205 ns of caller-thread CPU
 per call; Bun's baseline round four averages 750 ns against 79 ns. CPU covers the wider

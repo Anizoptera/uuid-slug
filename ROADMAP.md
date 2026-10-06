@@ -146,6 +146,11 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         Equal-count Deno records also vary in reported caller-thread CPU. Wall-only pauses
         cannot explain all that variation; do not replace wall timing or filter pauses from
         this evidence. Resolve execution variability before another sampling-policy candidate.
+        Reversed Deno optimization-event captures retain the complete workload: the value
+        generators, codec wrapper and batch loop report TurboFan before measurement, with no
+        logged transition during codec measurement. Traced timing cannot select code or policy.
+        Capture collection events next with the same workload and counts; heap deltas alone
+        cannot establish whether collection shifts explain the CPU variation.
         Evidence lives in `bench/PERFORMANCE.md` §Fixed measured-call screen.
   - [x] Compare primary owned UUIDv7 generation resources on Bun against qualified libraries.
         Matched reversed-order captures show lower package caller CPU than `uuidv7`, a changing
