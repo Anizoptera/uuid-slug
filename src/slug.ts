@@ -390,10 +390,23 @@ export function plainSlugToUuidString(
 ): string | UuidSlugError {
   const selectedCase = resolveUuidTextCase(textCase);
   if (selectedCase instanceof Error) return selectedCase;
-  const bytes = plainSlugToUuidBytes(plainUuidSlug);
-  if (bytes instanceof Error) return bytes;
+  let slug = plainUuidSlug;
+  if (typeof slug !== "string") {
+    slug = normalizeUuidSlugInput(slug);
+    if (typeof slug !== "string") return slug;
+  }
+  const alpha = SLUG_ALPHABET_BY_LENGTH[slug.length];
+  // decodeInto validates while writing. Private scratch needs no transactional prevalidation
+  // or discarded owned array from plainSlugToUuidBytes; caller buffers still require both passes.
+  // Normalize before scratch is live, then decode and format without caller callbacks. Revisit
+  // reuse if either operation gains callbacks; failed writes cannot escape this private buffer.
+  // The public byte decoder owns invalid-length diagnostics, so keep that exceptional path shared.
+  const decoded = alpha
+    ? decodeInto(slug, alpha, textSlugScratch, 0, 16)
+    : plainSlugToUuidBytes(slug);
+  if (decoded instanceof Error) return decoded;
   // A successful decode yields exactly 16 bytes, so the checked formatter would repeat work.
-  return formatUuidBytesUnchecked(bytes, 0, selectedCase);
+  return formatUuidBytesUnchecked(textSlugScratch, 0, selectedCase);
 }
 
 // Package-created decode failures are local Errors. A caller-owned cross-realm package error is

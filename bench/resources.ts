@@ -128,6 +128,8 @@ try {
   assert.ok(!(bytes instanceof Error));
   const slug = api.uuidStringToPlainSlug(id);
   assert.equal(typeof slug, "string");
+  const base32Slug = api.uuidStringToPlainSlug(id, api.BASE32HEX);
+  assert.equal(typeof base32Slug, "string");
   const primary = { seed: "profile-current-seed" };
   const previous = { seed: "profile-previous-seed" };
   const codec = api.createUuidV7MaskingCodec({
@@ -486,6 +488,19 @@ try {
   );
   if (typeof Bun !== "undefined" && hasNativeBase64)
     assert.equal(counts.base64, 1, "ordinary Bun base64url must reach its native encoder once");
+  for (const [name, input, textCase] of [
+    ["plain slug to UUID text", slug, api.UUID_TEXT_LOWERCASE],
+    ["base32 plain slug to UUID text", base32Slug, api.UUID_TEXT_LOWERCASE],
+    ["plain slug to uppercase UUID text", slug, api.UUID_TEXT_UPPERCASE],
+    ["base32 plain slug to uppercase UUID text", base32Slug, api.UUID_TEXT_UPPERCASE],
+  ] as const) {
+    check(name, () => api.plainSlugToUuidString(input, textCase), {
+      buffers: 0,
+      views: 0,
+      errors: 0,
+    });
+    expectTextFormatter("plain decoding must construct only the requested UUID text");
+  }
   check("exact base32hex slug formatting", () => api.uuidBytesToPlainSlug(bytes, api.BASE32HEX), {
     buffers: 0,
     views: 0,

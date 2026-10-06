@@ -632,6 +632,12 @@ export function createProfileCases(
     },
     "plain.encode": (index) => api.uuidStringToPlainSlug(ids[index & 255] as string),
     "plain.decode": (index) => api.uuidToString(slugs[index & 255] as string),
+    "plain.decode.text": (index) => api.plainSlugToUuidString(slugs[index & 255] as string),
+    "plain.decode.text.base32": (index) => api.plainSlugToUuidString(base32[index & 255] as string),
+    "plain.decode.text.uppercase": (index) =>
+      api.plainSlugToUuidString(slugs[index & 255] as string, api.UUID_TEXT_UPPERCASE),
+    "plain.decode.text.base32.uppercase": (index) =>
+      api.plainSlugToUuidString(base32[index & 255] as string, api.UUID_TEXT_UPPERCASE),
     "uuid.toString.bytes": (index) => api.uuidToString(bytes[index & 255] as Uint8Array),
     "uuid.toBytes.bytes": (index) => api.uuidToBytes(bytes[index & 255] as Uint8Array),
     "uuid.toBytes.uuid": (index) => api.uuidToBytes(ids[index & 255] as string),
@@ -1021,6 +1027,14 @@ export function createProfileCases(
           continue;
         }
         assertNormalizedUuidProfileOutcome(name, value, ids, index);
+        if (name.startsWith("plain.decode.text")) {
+          const expectedUuid = ids[index & 255];
+          if (
+            !expectedUuid ||
+            value !== (name.endsWith(".uppercase") ? expectedUuid.toUpperCase() : expectedUuid)
+          )
+            throw new Error(`${name} changed the decoded UUID text before timing`);
+        }
         if (name.startsWith("value.generate")) {
           if (
             typeof value !== "object" ||

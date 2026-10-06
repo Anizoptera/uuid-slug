@@ -27,6 +27,21 @@ do not block production optimization; the calibration tasks below are held, not 
       Reuse unchanged evidence; refresh only missing or changed comparisons. Profile the largest
       material gap on Node Current or Bun, screen one attributed fix, then verify ranked runtimes.
 
+- [x] Remove temporary byte allocation from primary plain-slug-to-UUID-text conversion
+      only if complete-call measurements preserve both alphabets, cases and other primary calls.
+      Decode directly into existing private scratch after normalization; preserve public owned-byte
+      and transactional caller-buffer decoding. Rejected public-buffer reuse adds validation;
+      private-helper extraction and buffer-identity dispatch show owned-byte regressions.
+      `candidates-slug-dRcbh2/` retains direct-decoding source and packed comparisons.
+      Equal-call Node Current, Bun and Deno comparisons repeat lower text-call CPU for both
+      alphabets and cases without a repeated owned-byte loss. Node/Deno cumulative heap counters
+      also distinguish less allocation; Bun has no equivalent cumulative counter.
+      Browser and JITless gains remain unresolved, with no measured significant loss.
+      Resource guards reject restored temporary arrays with valid outputs on Node, Bun, Deno
+      and Chromium; the complete-call gate includes both alphabets and text cases.
+      `production-check.log` retains the successful full check. Counters do not prove total allocation;
+      batch CPU and wall times do not prove individual-call latency or a universal speed ratio.
+
 - [x] Distinguish native encoder invocation cost before another UUIDv4 slug integration.
       Compare the actual package draw followed by direct method invocation, captured `.call`,
       and a receiver-bound invocation through the existing qualified generation corpus.

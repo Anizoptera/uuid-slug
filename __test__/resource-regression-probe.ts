@@ -94,6 +94,14 @@ export const parseUuid = new Proxy(api.parseUuid, {
   },
 });
 
+export const plainSlugToUuidString = new Proxy(api.plainSlugToUuidString, {
+  apply(target, receiver, args) {
+    const result: ReturnType<typeof target> = Reflect.apply(target, receiver, args);
+    if (mode === "plain-text-temporary") new Uint8Array(16).fill(0);
+    return result;
+  },
+});
+
 export const generateUuidV7Value = new Proxy(api.generateUuidV7Value, {
   apply(target, receiver, args) {
     // Discarded storage changes resource cost without weakening the returned immutable value.
