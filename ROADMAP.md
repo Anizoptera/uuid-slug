@@ -123,9 +123,12 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
         and uncertainty. Require unchanged controls and the intended defect on both hosts;
         a miss keeps the policy open, and a survivor still needs complete-lane evidence.
         The 8,192-call control passes; its computation defect catches Bun but misses Node.
-        Keep the setting unadopted; screen 16,384 calls to distinguish inadequate batch work
-        from persistent process variation. Evidence lives in `bench/PERFORMANCE.md`
-        §Fixed measured-call screen.
+        The 16,384-call control passes and its defect catches both hosts, but neither detection
+        repetition nor routine-budget headroom is proved. Recorded sampling time dominates.
+        Screen one batch at that same call count on installed Node 26 and Bun, preserving
+        preparation, fresh-process pairs and family-wide uncertainty. A failed control or missed
+        defect rejects the reduction; a survivor still needs repeated and other-runtime proof.
+        Evidence lives in `bench/PERFORMANCE.md` §Fixed measured-call screen.
   - [x] Compare primary owned UUIDv7 generation resources on Bun against qualified libraries.
         Matched reversed-order captures show lower package caller CPU than `uuidv7`, a changing
         direction against `uuid`, and flat second-window package commitment. Preserve generation;

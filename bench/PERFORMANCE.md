@@ -4007,7 +4007,7 @@ Reports are `current-isolated-loops-{control,defect}.jsonl`; source captures are
 
 ### Fixed measured-call screen
 
-Do not adopt 8,192 measured calls per batch because the full comparison misses Node's defect.
+Keep measured-call mode experimental until detection repeats within the complete-lane budget.
 
 The unchanged profiler uses 32,768 preparation calls and seven equal-call batches in
 16 process pairs on Node 24.21.0 and Bun 1.4.2. Each report retains 3,072 primary-call records,
@@ -4015,6 +4015,16 @@ each with 57,344 completed calls. The control exits zero in 39.688 seconds; the 
 one in 55.551 seconds for Bun's codec computation. Node's ratio 1.038 remains unresolved
 with family-wide interval [0.952, 1.128]; Bun's ratio 1.261 has interval [1.005, 1.467].
 Reports are `current-fixed-measured-8192-{control,defect}.jsonl`.
+
+At 16,384 calls per batch, every record completes 114,688 calls with the same preparation,
+process pairs and uncertainty rule. The control exits zero in 115.894 seconds; the defect
+exits one in 175.067 seconds for codec computation on both hosts. Node's ratio 1.080 has
+family-wide interval [1.038, 1.179]; Bun's ratio 1.250 has interval [1.032, 3.350].
+Reports are `current-fixed-measured-16384-{control,defect}.jsonl`. Sampling consumes 68.364
+seconds in the control and 100.931 in the defect; recorded preparation adds 25.404 and
+41.474 seconds. Remaining parent time includes unmeasured setup, builds, GC and yields;
+these records do not split it further. Detection has not been repeated, and neither capture
+establishes complete-lane or CI headroom. Test sampling cost before adding another driver.
 
 Equal counts let the mean batch timing and aggregate CPU use the same call weighting.
 Node's first candidate codec record averages 570 ns against 205 ns of caller-thread CPU
