@@ -24,6 +24,14 @@ Execute only this sequence; older unchecked proposals below are held, not dispat
 - [ ] Measure the complete routine lane and pre-commit hook against the feedback-loop limits in
       `bench/README.md` §Regression protection. Attribute excess time to their actual commands;
       repair routing or redundant work without weakening primary-call regression detection.
+      The unchanged checks and explicit packed baseline control pass on locally selected Node
+      LTS and Bun with the complete primary inventory and unmodified timing defaults. Recorded
+      preparation and minimum sampling work each exceed the hook limit; together they exceed
+      the complete-lane CI headroom allowance before packing or startup. Repair preparation and
+      sampling first; removing overhead alone cannot meet these protected feedback limits.
+      `bench/reports/routine-default-control-C2P26B/work-summary.json` retains stage times,
+      per-process inventory checks and runtime versions. This pipeline forces skipped timing
+      work; it does not prove changed-code branch routing, defect detection or CI headroom.
   - [x] Remove repeated timeout work from the matrix hang witness without shortening its
         startup allowance. One throughput hang now requires healthy same-member entropy and
         control progress; isolated timeout-removal and progress-removal mutations fail for
