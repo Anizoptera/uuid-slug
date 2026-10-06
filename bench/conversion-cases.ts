@@ -434,6 +434,36 @@ export function createConversionCases(
       });
     }
   }
+  // Filename comparisons need one secure draw plus lowercase encoding, including text parsing.
+  // Reuse the encoders with independent fixed witnesses above; no setup belongs in each ID.
+  const base32Encoders = [
+    ["scure", (input: Uint8Array) => base32hexnopad.encode(input).toLowerCase()],
+    ["scure-components", scureLowercaseBase32.encode],
+  ] as const;
+  for (const generator of generators) {
+    if (generator.name.startsWith("package.") || generator.secure !== true) continue;
+    const text = generator.comparable === `v${generator.version}.text.secure`;
+    if (!text && generator.comparable !== `v${generator.version}.bytes.allocate.secure`) continue;
+    const generation = { ...generator };
+    delete generation.rejectionReason;
+    for (const [encoderName, encode] of base32Encoders) {
+      cases.push({
+        ...generation,
+        name: generator.name.replace(
+          text ? ".text" : ".bytes.allocate",
+          `.slug.base32hex.from-${text ? "text" : "bytes"}.${encoderName}`,
+        ),
+        comparable: `v${generator.version}.slug.base32hex.secure`,
+        implementation: "generated-lowercase-base32-encoding",
+        // A string does not expose generator storage; Buffer ownership cannot reject this job.
+        qualification: "qualified",
+        operation: () =>
+          encode(
+            text ? parse(generator.operation() as string) : (generator.operation() as Uint8Array),
+          ),
+      });
+    }
+  }
   // Paired output is one identity in two spellings, not two independent generator calls.
   // Keep both available native encoders: their complete composition costs differ by runtime.
   const pairEncoders: readonly (readonly [string, (input: Uint8Array) => string])[] = [

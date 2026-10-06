@@ -24,6 +24,7 @@ import { unwrap } from "../dev/unwrap";
 // Candidate comparisons must call the requested package graph, not the working-tree baseline.
 // Keep the default import literal so browser builds still contain the ordinary package.
 const {
+  BASE32HEX,
   BASE64URL,
   createUuidV7Generator,
   createUuidV7MaskingCodec,
@@ -264,6 +265,9 @@ export const generationCases: readonly GenerationCase[] = [
   row("package.v4.slug.base64url", 4, "v4.slug.base64url.secure", "portable", () =>
     generatePlainUuidV4Slug(),
   ),
+  row("package.v4.slug.base32hex", 4, "v4.slug.base32hex.secure", "portable", () =>
+    generatePlainUuidV4Slug(BASE32HEX),
+  ),
   ...(hasToBase64
     ? [
         row("platform.webcrypto.v4.slug.base64url", 4, "v4.slug.base64url.secure", "platform", () =>
@@ -371,6 +375,9 @@ export const generationCases: readonly GenerationCase[] = [
   ),
   row("package.v7.slug.base64url", 7, "v7.slug.base64url.secure", "module-default", () =>
     generatePlainUuidV7Slug(),
+  ),
+  row("package.v7.slug.base32hex", 7, "v7.slug.base32hex.secure", "module-default", () =>
+    generatePlainUuidV7Slug(BASE32HEX),
   ),
   row("uuid.v7.text.default", 7, "v7.text.secure", "portable-stateful", () => uuidV7()),
   row("uuid.v7.text.options", 7, "v7.text.secure", "portable-stateless-options", () =>

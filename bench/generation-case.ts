@@ -122,16 +122,18 @@ export function verifyGenerationCase(candidate: GenerationCase): void {
     return;
   }
   if (candidate.comparable.includes(".slug.")) {
+    // Keep alphabets separate: accepting either length would let a mislabeled row win.
+    const base32 = candidate.comparable.includes(".base32hex.");
     const bytes = typeof value === "string" ? plainSlugToUuidBytes(value) : undefined;
     if (
       typeof value !== "string" ||
-      value.length !== 22 ||
+      (base32 ? !/^[0-9a-v]{25}[048cgkos]$/.test(value) : value.length !== 22) ||
       !(bytes instanceof Uint8Array) ||
       bytes[6]! >>> 4 !== candidate.version ||
       (bytes[8]! & 0xc0) !== 0x80
     )
       throw new Error(
-        `${candidate.name} did not return a base64url UUIDv${candidate.version} slug`,
+        `${candidate.name} did not return a ${base32 ? "base32hex" : "base64url"} UUIDv${candidate.version} slug`,
       );
     return;
   }

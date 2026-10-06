@@ -27,6 +27,54 @@ do not block production optimization; the calibration tasks below are held, not 
       Reuse unchanged evidence; refresh only missing or changed comparisons. Profile the largest
       material gap on Node Current or Bun, screen one attributed fix, then verify ranked runtimes.
 
+- [x] Compare complete `generatePlainUuidV4Slug(BASE32HEX)` and
+      `generatePlainUuidV7Slug(BASE32HEX)` calls with the existing qualified generators
+      followed by scure's public and lowercase component encoders. README's filename job
+      needs generation plus encoding; fixed conversion wins cannot prove that outcome.
+      Rival drawing or composition may overturn the conversion ranking. Reuse the existing
+      corpus and witnesses, charging parsing and case conversion to each call. A repeated
+      material loss selects profiling; otherwise preserve production. Keep resource parity
+      separate from throughput and do not reopen rejected base64url shapes.
+      `current-primary-base32-generation-native.jsonl` favors both public calls
+      over every qualified measured rival in each of three fresh processes on
+      Node Current, Node LTS, Bun, Deno and Chromium. Native host generators,
+      scure's public codec and direct lowercase components remain timed.
+      Fixed order, warm batches and shared host conditions limit inference;
+      these results do not prove individual-call latency or allocation parity.
+      Preserve production; this comparison identifies no throughput fix.
+
+- [x] Reject the existing `v4-slug shared-converter` candidate against the open Bun
+      UUIDv4 plain-slug gap. Reuse the unchanged public converter's native capture
+      and fallback without extracting its body or adding another encoding owner.
+      The retained profile attributes removable work to encoding rather than entropy.
+      Converter validation may erase the gain; altered dispatch may slow base32.
+      Reject without repeated complete-call gains and unchanged conversion/base32
+      controls. A survivor needs packed and resource evidence before retention.
+      `candidates-v4-slug-StekNR/` passes behavior and resource witnesses but
+      slows complete UUIDv4 slug calls on Node Current and Bun in both orders;
+      Bun base32 also slows. Preserve production; direct converter reuse loses.
+
+- [x] Reject shared native writing before preset normalization, with the existing
+      base32 writer selected directly. Keep native state inside the shared writer
+      instead of exporting mutable encoder bindings, whose packed conversion
+      comparison regressed. Node keeps its original absent-capability path.
+      Additional helper calls may erase the native gain. Reject any repeated
+      primary conversion/base32 loss or missing UUIDv4 slug improvement; a survivor
+      requires independent packed, profile and resource evidence.
+      `candidates-v4-slug-NQ0IS0/` passes native-present, absent, throwing and
+      corruption witnesses. Bun base64url improves but base32 slows in both orders;
+      Node Current base32 also slows. Retain neither production nor that candidate.
+
+- [x] Reject shared native base64url writing before normalization while leaving
+      base32's original statement unchanged. Keep the shared native state private.
+      The previous preset split's base32 loss rejects it, without proving a cause.
+      Reject this narrower change if that loss persists, conversion regresses or
+      the UUIDv4 base64url gain disappears. Packed/resource proof still gates retention.
+      `candidates-v4-slug-bWLKsp/` passes native and corruption witnesses but
+      does not repeat a useful Bun slug gain. One candidate process instead slows
+      that call sharply; unchanged controls vary too. This supplies no retention
+      evidence or settled cause. Remove its temporary definition and preserve production.
+
 - [x] Reject shared-binding retention after the original preparation repeats its base32 loss.
       `candidates-v4-slug-QnhUb8/*-isolated-*` does not repeat the mixed-call loss; base64url
       generation improves while conversion varies. Preserve both populations.

@@ -346,6 +346,30 @@ test("slug generation witnesses reject non-RFC UUID variants", () => {
   }
 });
 
+test("base32 generation witnesses reject spelling, padding and payload defects", () => {
+  const slug = "06cgqjf601oi792mf2dbpnng28";
+  const candidate: GenerationCase = {
+    comparable: "v7.slug.base32hex.secure",
+    implementation: "fixture",
+    name: "base32 generation",
+    operation: () => slug,
+    qualification: "qualified",
+    version: 7,
+  };
+  expect(() => verifyGenerationCase(candidate)).not.toThrow();
+  for (const invalid of [
+    slug.toUpperCase(),
+    slug.slice(1),
+    slug + "=",
+    slug.slice(0, -1) + "9",
+    "00000000000000000000000000",
+  ]) {
+    expect(() => verifyGenerationCase({ ...candidate, operation: () => invalid })).toThrow(
+      "did not return a base32hex UUIDv7 slug",
+    );
+  }
+});
+
 test("pair witnesses reject two valid spellings of different UUIDs", () => {
   const uuid = "01990d4d-e600-7000-8000-000000000000";
   const slug = uuidStringToPlainSlug(uuid);

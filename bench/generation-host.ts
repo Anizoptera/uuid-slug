@@ -25,7 +25,6 @@ const bunUuidV7 = (
   }
 ).Bun?.randomUUIDv7;
 
-const conversions = createConversionCases(Buffer, undefined, generationCases);
 // Native UUIDv4 supplies exactly the 74 random bits UUIDv7 keeps after replacing its timestamp
 // and version. Compare complete text calls without depending on native UUIDv7 counter overflow.
 // These are lower-bound experiments, not adopted generators or proof of fallback behavior.
@@ -179,7 +178,6 @@ for (const conditional of [false, true]) {
 }
 const hostCases: readonly GenerationCase[] = [
   ...generationCases,
-  ...conversions.cases,
   ...[v7FromNativeV4Hex, v7FromNativeV4Codes].map((patch) => ({
     comparable: "v7.text.secure",
     implementation: "platform-v4-clock-repair",
@@ -294,6 +292,8 @@ const hostCases: readonly GenerationCase[] = [
     : []),
   cryptoRandomUuidCase(cryptoRandomUuid),
 ];
+// Compose native and host-only generators too; browser-only inventory cannot establish their floor.
+const conversions = createConversionCases(Buffer, undefined, hostCases);
 
 const smoke = process.argv.includes("--smoke");
 const options = {
@@ -304,7 +304,9 @@ const options = {
 };
 const filter = process.env.UUID_SLUG_GENERATION_FILTER;
 const matchesName = generationNameFilter(filter);
-const selected = hostCases.filter((candidate) => matchesName(candidate.name));
+const selected = [...hostCases, ...conversions.cases].filter((candidate) =>
+  matchesName(candidate.name),
+);
 if (selected.length === 0) throw new Error("Generation benchmark filter selected no cases");
 const versions = process.versions as typeof process.versions & { deno?: string };
 const runtime = versions.bun
