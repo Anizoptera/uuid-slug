@@ -1650,6 +1650,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
         "one day",
         [],
         { maxTimestampDeltaMs: 0, referenceUnixMilliseconds: timestamp },
+        { maxTimestampDeltaMs: Number.MAX_SAFE_INTEGER, referenceUnixMs: null },
       ]) {
         const result = Reflect.apply(validateUuidV7StringUnixMs, undefined, [uuid, options]);
         assert.ok(result instanceof UuidSlugError);
@@ -1682,6 +1683,36 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
         });
         assert.ok(result instanceof UuidSlugError);
         assert.equal(result.code, "invalid_timestamp");
+      }
+    },
+  },
+  {
+    name: "rejects null timestamp references through plain, masked and sentinel readers",
+    run(this: void) {
+      // A broad window makes null-to-clock substitution succeed, exposing accidental defaulting.
+      const window = { maxTimestampDeltaMs: Number.MAX_SAFE_INTEGER, referenceUnixMs: null };
+      for (const alphabet of [BASE64URL, BASE32HEX] as const) {
+        const codec = unwrap(
+          createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK, maskedSlugAlphabet: alphabet }),
+        );
+        const sentinelCodec = unwrap(
+          createUuidV7MaskingCodec({
+            mask: UUID_V7_TEST_MASK,
+            maskedSlugAlphabet: alphabet,
+            sentinels: [{ name: "timestamp", uuid }],
+          }),
+        );
+        const plain = unwrap(uuidStringToPlainSlug(uuid, alphabet));
+        const masked = unwrap(codec.uuidToMaskedSlug(uuid));
+        for (const [validate, input] of [
+          [validatePlainUuidV7SlugUnixMs, plain],
+          [codec.validateMaskedUuidV7SlugUnixMs, masked],
+          [sentinelCodec.validateMaskedUuidV7SlugUnixMs, plain],
+        ] as const) {
+          const result = Reflect.apply(validate, undefined, [input, window]);
+          assert.ok(result instanceof UuidSlugError);
+          assert.equal(result.code, INVALID_TIMESTAMP);
+        }
       }
     },
   },
@@ -1739,6 +1770,12 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
       };
       try {
         assert.equal(validateUuidV7StringUnixMs(uuid, { maxTimestampDeltaMs: 0 }), uuid);
+        assert.equal(readings, 1);
+        const result = Reflect.apply(validateUuidV7StringUnixMs, undefined, [
+          uuid,
+          { maxTimestampDeltaMs: Number.MAX_SAFE_INTEGER, referenceUnixMs: null },
+        ]);
+        assert.ok(result instanceof UuidSlugError);
         assert.equal(readings, 1);
       } finally {
         Date.now = originalNow;
