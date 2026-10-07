@@ -117,6 +117,13 @@ export type UuidVersionOf<Input> = Input extends UuidSlugError
       : Input extends UuidV7Text | PlainUuidV7Slug | UuidV7Bytes | MaskedUuidSlug
         ? 7
         : UuidVersion;
+// Plain slug brands do not carry the alphabet. A plain UUIDv4 base64url spelling can pass a
+// codec's mask check and name a UUIDv7 instead; preserving v4 alone would promise false facts.
+// Keyless readers keep the original brand. Revisit if input brands distinguish the alphabets.
+export type MaskingCodecUuidInput<Input> = Input extends PlainUuidV4Slug
+  ? PlainUuidV4Slug | MaskedUuidV7Slug
+  : Input;
+
 /** A masked payload in either spelling; its check bits are not plain-encoding padding. */
 type MaskedUuidSlug = Brand<string, "MaskedUuidSlug">;
 /**
@@ -832,20 +839,21 @@ export interface UuidV7MaskingCodec {
     this: void,
     options?: UuidV7MaskingCodecValueOptions,
   ): Uuid<7, true, true> | UuidSlugError;
-  /** Parse any accepted UUID form and retain this codec for later masked conversions. */
+  /** Parse any accepted UUID form and retain this codec. A plain-v4 slug brand cannot exclude a masked-v7 reading. */
   parseUuid<Input extends UuidInput>(
     this: void,
     uuid: Input,
-  ): Uuid<UuidVersionOf<Input>, true> | UuidSlugError;
+  ): Uuid<UuidVersionOf<MaskingCodecUuidInput<Input>>, true> | UuidSlugError;
   /**
    * Convert any accepted UUID form to normalized UUID text. A 22-character slug is read as masked
    * when it passes this codec's check and as plain otherwise.
+   * A plain UUIDv4 slug can therefore return UUIDv4 or UUIDv7 text.
    */
   uuidToString<Input extends UuidInput, Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
     uuid: Input,
     textCase?: Case,
-  ): UuidStringResult<Input, Case>;
+  ): UuidStringResult<MaskingCodecUuidInput<Input>, Case>;
   /**
    * Read one UUID out of a larger array as normalized UUID text. Bytes carry no masked spelling.
    *
@@ -860,8 +868,12 @@ export interface UuidV7MaskingCodec {
   /**
    * Convert any accepted UUID form to a new plain 16-byte array. A 22-character slug is read as
    * masked when it passes this codec's check and as plain otherwise.
+   * A plain UUIDv4 slug can therefore return UUIDv4 or UUIDv7 bytes.
    */
-  uuidToBytes<Input extends UuidInput>(this: void, uuid: Input): UuidBytesResult<Input>;
+  uuidToBytes<Input extends UuidInput>(
+    this: void,
+    uuid: Input,
+  ): UuidBytesResult<MaskingCodecUuidInput<Input>>;
   /** Convert any accepted UUID form into caller-owned storage after complete validation. */
   uuidToBytes<Output extends Uint8Array>(
     this: void,
@@ -886,12 +898,13 @@ export interface UuidV7MaskingCodec {
   /**
    * Convert any accepted UUID form to a plain UUID slug. A 22-character slug is read as masked
    * when it passes this codec's check and as plain otherwise.
+   * A plain UUIDv4 slug can therefore return a plain UUIDv4 or UUIDv7 slug.
    */
   uuidToPlainSlug<Input extends UuidInput>(
     this: void,
     uuid: Input,
     alphabet?: SlugAlphabet,
-  ): PlainUuidSlugResult<Input>;
+  ): PlainUuidSlugResult<MaskingCodecUuidInput<Input>>;
   /**
    * Read one UUID out of a larger array as a plain UUID slug. Bytes carry no masked spelling.
    *

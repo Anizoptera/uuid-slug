@@ -39,6 +39,7 @@ import type {
   UuidV7Mask,
   UuidV7MaskOptions,
   MaskedOrSentinelUuidV7Slug,
+  MaskingCodecUuidInput,
   SentinelUuidV7Slug,
   UuidSlugMigrationDecoder,
   UuidSlugMigrationOptions,
@@ -509,7 +510,7 @@ function buildUuidSlugCodec(
   function uuidToString<
     Input extends UuidInput,
     Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
-  >(uuid: Input, textCase?: Case): UuidStringResult<Input, Case>;
+  >(uuid: Input, textCase?: Case): UuidStringResult<MaskingCodecUuidInput<Input>, Case>;
   function uuidToString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     uuid: Uint8Array,
     byteOffset: number,
@@ -559,7 +560,9 @@ function buildUuidSlugCodec(
     return formatUuidBytesUnchecked(bytes, 0, selectedCase) as UuidStringFor<Case>;
   }
 
-  function uuidToBytes<Input extends UuidInput>(uuid: Input): UuidBytesResult<Input>;
+  function uuidToBytes<Input extends UuidInput>(
+    uuid: Input,
+  ): UuidBytesResult<MaskingCodecUuidInput<Input>>;
   function uuidToBytes<Output extends Uint8Array>(
     uuid: UuidInput,
     output: Output,
@@ -618,7 +621,7 @@ function buildUuidSlugCodec(
   function uuidToPlainSlug<Input extends UuidInput>(
     uuid: Input,
     alphabet?: SlugAlphabet,
-  ): PlainUuidSlugResult<Input>;
+  ): PlainUuidSlugResult<MaskingCodecUuidInput<Input>>;
   function uuidToPlainSlug(
     uuid: Uint8Array,
     byteOffset: number,

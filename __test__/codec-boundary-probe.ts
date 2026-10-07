@@ -26,6 +26,7 @@ import {
   uuidStringToBytes,
   uuidStringToPlainSlug,
   generatePlainUuidV7Slug,
+  parseUuid,
   uuidToBytes,
   uuidToPlainSlug,
   uuidToString,
@@ -59,6 +60,24 @@ function bits(text: string, alphabet: string, width: number) {
 }
 
 export const codecBoundaryCases = [
+  {
+    name: "keeps the codec's masked reading when a slug also proves plain UUIDv4 syntax",
+    run() {
+      const codec = createUuidV7MaskingCodec({ maskSeed: "conversion-test-seed-0000" });
+      const slug = "8xUgV27ITf-XIhibd0F6mQ";
+      const plainUuid = "f3152057-6ec8-4dff-9722-189b77417a99";
+      const maskedUuid = "01987008-ef3e-7f69-b677-0000000010c7";
+      assert.ok(isPlainUuidV4Slug(slug));
+      assert.equal(codec.uuidToMaskedSlug(maskedUuid), slug);
+      assert.equal(uuidToString(slug), plainUuid);
+      assert.equal(codec.uuidToString(slug), maskedUuid);
+      assert.deepEqual(codec.uuidToBytes(slug), uuidToBytes(maskedUuid));
+      assert.equal(codec.uuidToPlainSlug(slug), uuidToPlainSlug(maskedUuid));
+      assert.equal(unwrap(parseUuid(slug)).version, 4);
+      assert.equal(unwrap(codec.parseUuid(slug)).version, 7);
+      assert.equal(unwrap(parseUuid(slug, codec)).version, 7);
+    },
+  },
   {
     name: "offers one concise codec language without duplicating implementation work",
     run() {

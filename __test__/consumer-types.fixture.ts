@@ -393,6 +393,22 @@ expectType<UuidV7MaskingCodec | UuidSlugError>()(
 );
 if (codecResult instanceof Error) throw codecResult;
 const codec = codecResult;
+// A plain v4 slug may pass the codec's masked-v7 check; brands cannot select its runtime reading.
+expectType<UuidV4String | UuidV7String | UuidSlugError>()(codec.uuidToString(generatedV4Slug));
+expectType<UppercaseUuidV4String | UppercaseUuidV7String | UuidSlugError>()(
+  codec.uuidToString(generatedV4Slug, UUID_TEXT_UPPERCASE),
+);
+expectType<UuidV4Bytes | UuidV7Bytes | UuidSlugError>()(codec.uuidToBytes(generatedV4Slug));
+expectType<PlainUuidV4Slug | PlainUuidV7Slug | UuidSlugError>()(
+  codec.uuidToPlainSlug(generatedV4Slug),
+);
+expectType<Uuid<4 | 7, true> | UuidSlugError>()(codec.parseUuid(generatedV4Slug));
+expectType<Uuid<4 | 7, true> | UuidSlugError>()(parseUuid(generatedV4Slug, codec));
+expectType<UuidV4String | UuidSlugError>()(uuidToString(generatedV4Slug));
+expectType<Uuid<4> | UuidSlugError>()(parseUuid(generatedV4Slug));
+expectType<UuidV4String | UuidSlugError>()(codec.uuidToString(generatedV4));
+// @ts-expect-error Masked-first conversion cannot promise only the plain input's version.
+const onlyV4FromCodec: UuidV4String | UuidSlugError = codec.uuidToString(generatedV4Slug);
 // @ts-expect-error A plain UUIDv4 slug cannot become a masked UUIDv7 slug.
 codec.uuidToMaskedSlug(generatedV4Slug);
 // @ts-expect-error Known plain UUIDv4 provenance must survive the source-specific call.
@@ -588,6 +604,7 @@ codec.createUuidSlugMigrationDecoder({ directSlug: true });
 currentOnlyMigration.uuidSlugToUuidString("AAAAAAAAcACAAAAAAAAAAA", PLAIN_SLUG_FORMAT);
 currentOnlyMigration.uuidSlugToUuidString("AAAAAAAAcACAAAAAAAAAAA", SEEDED_MASK_FORMAT);
 void [
+  onlyV4FromCodec,
   uncheckedBytes,
   uncheckedUuid,
   storedBytes,

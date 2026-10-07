@@ -28,6 +28,7 @@ import {
 import type {
   KeylessUuidInput,
   MaskedOrSentinelUuidV7Slug,
+  MaskingCodecUuidInput,
   PlainUuidSlugForVersion,
   Uuid,
   UuidBytesForVersion,
@@ -233,13 +234,14 @@ export function parseUuid<Input extends UuidInput>(
 ): Uuid<UuidVersionOf<Input>> | UuidSlugError;
 /**
  * Parse through a masking codec and retain that codec for later masked conversions.
+ * A plain UUIDv4 slug can resolve to UUIDv7 when the codec's mask check passes.
  * External codec bytes are validated and copied. Malformed results return `invalid_options`;
  * thrown exceptions remain available as the error's `cause`.
  */
 export function parseUuid<Input extends UuidInput>(
   uuid: Input,
   maskingCodec: UuidV7MaskingCodec,
-): Uuid<UuidVersionOf<Input>, true> | UuidSlugError;
+): Uuid<UuidVersionOf<MaskingCodecUuidInput<Input>>, true> | UuidSlugError;
 export function parseUuid(uuid: unknown, maskingCodec?: UuidV7MaskingCodec): Uuid | UuidSlugError {
   const existing = LocalUuidValue.is(uuid) ? uuid : undefined;
   if (existing && (!maskingCodec || LocalUuidValue.ownMaskingCodec(existing) === maskingCodec))
@@ -283,6 +285,6 @@ export function parseUuid(uuid: unknown, maskingCodec?: UuidV7MaskingCodec): Uui
 export function parseUuidWithCodec<Input extends UuidInput>(
   uuid: Input,
   maskingCodec: UuidV7MaskingCodec,
-): Uuid<UuidVersionOf<Input>, true> | UuidSlugError {
+): Uuid<UuidVersionOf<MaskingCodecUuidInput<Input>>, true> | UuidSlugError {
   return parseUuid(uuid, maskingCodec);
 }
