@@ -2,14 +2,25 @@
 
 Audit ordinary consumer calls and shipped artifacts before declaring the TypeScript package ready.
 
+The consumer must create an ID, convert it for storage or URLs, read it back, and recover from failure without learning internal machinery. Judge defaults, names, inferred types, errors, and resource costs against those jobs.
+
 - [ ] Inventory public operations, types, defaults, ownership, failures, and runtime selection against executable consumer jobs.
-- [ ] Review every TypeScript production module for correctness, unnecessary work, ambiguous behavior, and complexity that no contract or measured advantage requires.
+- [x] Review every TypeScript production module for correctness, unnecessary work, ambiguous behavior, and complexity that no contract or measured advantage requires. Retain fixed-size writers, entropy pooling, native selection, and ordered masking checks while their wire obligations and measured advantages hold.
 - [ ] Check source and packed type inference, detached calls, editor help, error composition, and misuse rejection; distinguish missing coverage from implementation defects.
 - [ ] Reconcile performance and resource evidence with current production; preserve useful specialization and leave unresolved gaps explicit.
 - [ ] Repair evidenced defects with focused regression checks and verify each changed runtime path before retaining a change.
 - [ ] Run the complete check and packed browser checks, inspect failures, and report release blockers with exact evidence.
 
 Early falsifiers: an equivalent supported call with different behavior disproves interface consistency; a failing packed consumer disproves source-only readiness; a reproduced complete-call regression rejects simplification; a branch with no executable witness remains unverified.
+
+- [x] Infer both possible versions when a branded plain UUIDv4 slug passes a codec's masked check. The collision in `__test__/codec-boundary-probe.ts` and exact packed consumer types protect the distinction; emitted JavaScript is unchanged.
+- [x] Stop inferring immutable result versions from mutable byte brands. Exact v4 and v7 consumer assertions fail with the old inference; Node and Bun exercise changed byte contents. The complete check passes and all emitted JavaScript remains identical.
+- [ ] Preserve recognized entropy callback failures without the redundant Error-only wrappers in `src/v4.ts` and `src/v7-generator.ts`.
+- [ ] Capture mask seeds once in `src/mask.ts`; an accessor currently runs twice for a primitive string and can change the selected key material.
+- [ ] Normalize accepted base32hex timestamp-validation results before assigning canonical slug brands; uppercase input currently returns a value rejected by the corresponding plain-slug guard.
+- [ ] Reject invalid explicit destinations in parsed UUID `toBytes`; `null`, `false`, and zero currently select an owned result.
+- [ ] Reconcile option-record acceptance with `docs/public-api.md` without slowing normal calls. Construction, timestamp windows, payload layouts, and rollback policies must not silently accept host or class behavior.
+- [ ] Resolve migration-reader inference for supported TypeScript objects with extra keys or throwing accessors; construction can return an error while its public type promises a reader. Any change to the explicit infallible-construction ruling needs maintainer approval.
 
 # Native parity
 

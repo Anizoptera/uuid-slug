@@ -248,8 +248,8 @@ const parsedSlugBytes = plainSlugToUuidBytes(versionedSlug);
 if (parsedSlugBytes instanceof Error) throw parsedSlugBytes;
 const versionedSlugBytes: UuidV7Bytes = parsedSlugBytes;
 expectType<UuidV7Bytes | UuidSlugError>()(uuidToBytes(versionedSlug));
-expectType<PlainUuidV7Slug | UuidSlugError>()(uuidToPlainSlug(versionedSlugBytes));
-expectType<UppercaseUuidV7String | UuidSlugError>()(
+expectType<PlainUuidSlug | UuidSlugError>()(uuidToPlainSlug(versionedSlugBytes));
+expectType<UppercaseUuidString | UuidSlugError>()(
   uuidToString(versionedSlugBytes, UUID_TEXT_UPPERCASE),
 );
 expectType<number | UuidSlugError>()(extractUuidV7UnixMs(versionedSlugBytes));
@@ -393,6 +393,27 @@ expectType<UuidV7MaskingCodec | UuidSlugError>()(
 );
 if (codecResult instanceof Error) throw codecResult;
 const codec = codecResult;
+// A byte brand describes a past check; copying or formatting must inspect the current bytes.
+expectType<UuidString | UuidSlugError>()(uuidToString(ownedV4));
+expectType<UppercaseUuidString | UuidSlugError>()(uuidToString(ownedV4, UUID_TEXT_UPPERCASE));
+expectType<UuidBytes | UuidSlugError>()(uuidToBytes(ownedV4));
+expectType<PlainUuidSlug | UuidSlugError>()(uuidToPlainSlug(ownedV4));
+expectType<Uuid | UuidSlugError>()(parseUuid(ownedV4));
+expectType<UuidString | UuidSlugError>()(codec.uuidToString(ownedV4));
+expectType<UuidBytes | UuidSlugError>()(codec.uuidToBytes(ownedV4));
+expectType<PlainUuidSlug | UuidSlugError>()(codec.uuidToPlainSlug(ownedV4));
+expectType<Uuid<UuidVersion, true> | UuidSlugError>()(codec.parseUuid(ownedV4));
+expectType<Uuid<UuidVersion, true> | UuidSlugError>()(parseUuid(ownedV4, codec));
+expectType<UuidString | UuidSlugError>()(uuidToString(ownedV7));
+expectType<UppercaseUuidString | UuidSlugError>()(uuidToString(ownedV7, UUID_TEXT_UPPERCASE));
+expectType<UuidBytes | UuidSlugError>()(uuidToBytes(ownedV7));
+expectType<PlainUuidSlug | UuidSlugError>()(uuidToPlainSlug(ownedV7));
+expectType<Uuid | UuidSlugError>()(parseUuid(ownedV7));
+expectType<UuidString | UuidSlugError>()(codec.uuidToString(ownedV7));
+expectType<UuidBytes | UuidSlugError>()(codec.uuidToBytes(ownedV7));
+expectType<PlainUuidSlug | UuidSlugError>()(codec.uuidToPlainSlug(ownedV7));
+expectType<Uuid<UuidVersion, true> | UuidSlugError>()(codec.parseUuid(ownedV7));
+expectType<Uuid<UuidVersion, true> | UuidSlugError>()(parseUuid(ownedV7, codec));
 // A plain v4 slug may pass the codec's masked-v7 check; brands cannot select its runtime reading.
 expectType<UuidV4String | UuidV7String | UuidSlugError>()(codec.uuidToString(generatedV4Slug));
 expectType<UppercaseUuidV4String | UppercaseUuidV7String | UuidSlugError>()(

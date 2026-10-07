@@ -92,7 +92,10 @@ export type PlainUuidSlug = Brand<string, "PlainUuidSlug">;
 export type PlainUuidV4Slug = Brand<PlainUuidSlug, "PlainUuidV4Slug">;
 /** A plain slug whose decoded UUID is version 7 with the RFC variant. */
 export type PlainUuidV7Slug = Brand<PlainUuidSlug, "PlainUuidV7Slug">;
-/** Carry a validated UUID version through lossless representation changes. */
+// Byte brands record generation or a guard, but a later write can change any UUID bit. Keeping
+// their old version on immutable output would make a false promise. Infer it only from immutable
+// values; revisit if byte inputs acquire an enforced immutable representation.
+/** Carry a UUID version from immutable input; mutable bytes cannot prove their current version. */
 export type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> =
   Input extends UuidSlugError
     ? never
@@ -102,19 +105,19 @@ export type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> =
         : Version extends 7
           ? Version7
           : UnknownVersion
-      : Input extends UuidV4Text | PlainUuidV4Slug | UuidV4Bytes
+      : Input extends UuidV4Text | PlainUuidV4Slug
         ? Version4
-        : Input extends UuidV7Text | PlainUuidV7Slug | UuidV7Bytes | MaskedUuidSlug
+        : Input extends UuidV7Text | PlainUuidV7Slug | MaskedUuidSlug
           ? Version7
           : UnknownVersion;
-/** Preserve a UUID version already proved by the input; otherwise retain the complete field range. */
+/** Infer a version from immutable input; mutable bytes retain the complete version-field range. */
 export type UuidVersionOf<Input> = Input extends UuidSlugError
   ? never
   : Input extends Uuid<infer Version, boolean, boolean>
     ? Version
-    : Input extends UuidV4Text | PlainUuidV4Slug | UuidV4Bytes
+    : Input extends UuidV4Text | PlainUuidV4Slug
       ? 4
-      : Input extends UuidV7Text | PlainUuidV7Slug | UuidV7Bytes | MaskedUuidSlug
+      : Input extends UuidV7Text | PlainUuidV7Slug | MaskedUuidSlug
         ? 7
         : UuidVersion;
 // Plain slug brands do not carry the alphabet. A plain UUIDv4 base64url spelling can pass a

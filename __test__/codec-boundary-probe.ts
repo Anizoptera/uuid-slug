@@ -61,6 +61,27 @@ function bits(text: string, alphabet: string, width: number) {
 
 export const codecBoundaryCases = [
   {
+    name: "reads current byte contents instead of a stale UUID version brand",
+    run() {
+      const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
+      const bytes = unwrap(uuidStringToBytes("00000000-0000-4000-8000-000000000000"));
+      assert.ok(isUuidV4Bytes(bytes));
+      for (const version of [7, 5, 4]) {
+        bytes[6] = version << 4;
+        const expected = `00000000-0000-${version}000-8000-000000000000`;
+        assert.equal(uuidToString(bytes), expected);
+        assert.equal(codec.uuidToString(bytes), expected);
+        assert.equal(uuidToString(unwrap(uuidToPlainSlug(bytes))), expected);
+        assert.equal(uuidToString(unwrap(codec.uuidToPlainSlug(bytes))), expected);
+        assert.deepEqual(uuidToBytes(bytes), bytes);
+        assert.deepEqual(codec.uuidToBytes(bytes), bytes);
+        assert.equal(unwrap(parseUuid(bytes)).version, version);
+        assert.equal(unwrap(codec.parseUuid(bytes)).version, version);
+        assert.equal(unwrap(parseUuid(bytes, codec)).version, version);
+      }
+    },
+  },
+  {
     name: "keeps the codec's masked reading when a slug also proves plain UUIDv4 syntax",
     run() {
       const codec = createUuidV7MaskingCodec({ maskSeed: "conversion-test-seed-0000" });

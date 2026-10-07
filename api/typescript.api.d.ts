@@ -284,9 +284,9 @@ declare type PreserveUuidVersion<Input, UnknownVersion, Version4, Version7> =
         : Version extends 7
           ? Version7
           : UnknownVersion
-      : Input extends UuidV4Text | PlainUuidV4Slug | UuidV4Bytes
+      : Input extends UuidV4Text | PlainUuidV4Slug
         ? Version4
-        : Input extends UuidV7Text | PlainUuidV7Slug | UuidV7Bytes | MaskedUuidSlug
+        : Input extends UuidV7Text | PlainUuidV7Slug | MaskedUuidSlug
           ? Version7
           : UnknownVersion;
 declare type RejectKnownInput<Input, Invalid> = [
@@ -872,9 +872,9 @@ declare type UuidVersionOf<Input> = Input extends UuidSlugError
   ? never
   : Input extends Uuid<infer Version, boolean, boolean>
     ? Version
-    : Input extends UuidV4Text | PlainUuidV4Slug | UuidV4Bytes
+    : Input extends UuidV4Text | PlainUuidV4Slug
       ? 4
-      : Input extends UuidV7Text | PlainUuidV7Slug | UuidV7Bytes | MaskedUuidSlug
+      : Input extends UuidV7Text | PlainUuidV7Slug | MaskedUuidSlug
         ? 7
         : UuidVersion;
 export declare function validatePlainUuidV7SlugUnixMs<Input extends string | UuidSlugError>(
