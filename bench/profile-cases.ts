@@ -29,6 +29,10 @@ interface OriginalFixture {
   readonly slug: string;
 }
 
+const customRandomFill = (bytes: Uint8Array) => {
+  crypto.getRandomValues(bytes);
+};
+
 /** Build one public-operation corpus for every JavaScript runtime profiler. */
 export function createProfileCases(
   api: Api,
@@ -57,6 +61,8 @@ export function createProfileCases(
   const sentinelTimestampWindow = { maxTimestampDeltaMs: 0, referenceUnixMs: 0 };
   const current = { seed: "profile-current-seed" };
   const constructionByteSeed = new Uint8Array(16);
+  // Reuse the secure source and sequence; construction is not part of a per-ID caller job.
+  const customRandomGenerator = unwrap(api.createUuidV7GeneratorWithRandomFill(customRandomFill));
   const previous = { seed: "profile-previous-seed" };
   const rotationMasks = Array.from({ length: 17 }, (_, index) =>
     unwrap(
@@ -585,6 +591,8 @@ export function createProfileCases(
     "portable.rollback.into": () => portableRollingBack.generateUuidV7Bytes(into, 4),
     "construct.generator": () => api.createUuidV7Generator({ readUnixMs: () => instant }),
     "construct.generator.default": () => api.createUuidV7Generator({}),
+    "v4.string.custom-random": () => api.generateUuidV4WithRandomFill(customRandomFill),
+    "v7.string.custom-random": () => customRandomGenerator.generateUuidV7(),
     "v4.slug": () => api.generatePlainUuidV4Slug(),
     "v4.base32": () => api.generatePlainUuidV4Slug(base32hexName),
     "v7.slug": () => api.generatePlainUuidV7Slug(),
@@ -609,6 +617,9 @@ export function createProfileCases(
       api.generatePlainUuidV7Slug({ generator: structuralGenerator }),
     "v7.bytes.selected-generator": () => api.generateUuidV7Bytes({ generator: selectedGenerator }),
     "v7.string.selected-generator": () => api.generateUuidV7({ generator: selectedGenerator }),
+    "v7.string.selected-generator.at": (index) =>
+      api.generateUuidV7({ generator: selectedGenerator, at: instant + (index & 255) }),
+    "v7.string.structural-generator": () => api.generateUuidV7({ generator: structuralGenerator }),
     parse: (index) => api.uuidStringToBytes(ids[index & 255] as string),
     "parse.compact": (index) => api.uuidStringToBytes(compactIds[index & 255] as string),
     "parse.mixed": (index) => api.uuidStringToBytes(mixedIds[index & 255] as string),

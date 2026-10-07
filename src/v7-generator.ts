@@ -4,8 +4,8 @@ import { runtime } from "#runtime";
 import {
   findUnknownOption,
   INVALID_OPTIONS,
-  isError,
   isPlainRecord,
+  isSuccessfulUuidBytes,
   stringInput,
   UuidSlugError,
 } from "./errors.ts";
@@ -171,9 +171,9 @@ function buildGenerator(
     const maskingCodec = readUuidV7MaskingCodec(values.maskingCodec);
     if (maskingCodec instanceof Error) return maskingCodec;
     const generated = drawSequencedBytes(values);
-    return generated instanceof Error
-      ? generated
-      : createUuidValue<7, boolean, true>(generated, maskingCodec, generator.payloadLayout);
+    return isSuccessfulUuidBytes(generated)
+      ? createUuidValue<7, boolean, true>(generated, maskingCodec, generator.payloadLayout)
+      : generated;
   }
   // Named properties rather than a spread keep the internal draw off the public object.
   const created = stampPackageUuidV7Generator(
@@ -216,8 +216,7 @@ export function createUuidV7GeneratorWithRandomFill(
 ): UuidV7Generator | UuidSlugError {
   if (typeof fillRandom !== "function")
     return new UuidSlugError(INVALID_OPTIONS, "Generator fillRandom must be a function.");
-  return buildGenerator(options, (bytes) => {
-    const result = fillRandom(bytes);
-    return result === undefined || isError(result) ? result : undefined;
-  });
+  // The generator's draw boundary owns failure recognition and exception containment.
+  // Pass the source unchanged so marker-only failures cannot become successful draws.
+  return buildGenerator(options, fillRandom);
 }

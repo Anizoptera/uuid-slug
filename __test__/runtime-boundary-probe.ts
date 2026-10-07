@@ -101,6 +101,98 @@ const hasCause = (value: unknown, target: unknown): boolean =>
 
 export const runtimeBoundaryCases: { name: string; run(this: void): void | Promise<void> }[] = [
   {
+    name: "custom entropy preserves recognized failures and leaves caller storage and sequence untouched",
+    run(this: void) {
+      const markedFailure = Object.freeze({
+        __failure: true,
+        name: "UuidSlugError",
+        code: "rng_unavailable",
+        message: "Entropy source refused the draw",
+      });
+      const foreignFailure: unknown = vm.runInNewContext(
+        'Object.assign(new Error("Entropy source refused the draw"), { name: "UuidSlugError", code: "rng_unavailable" })',
+      );
+      const byteFailure = Object.assign(unwrap(uuidStringToBytes(uuid)), markedFailure);
+      const viewFailure = Object.assign(new DataView(new ArrayBuffer(16)), markedFailure);
+      for (const failure of [markedFailure, foreignFailure, byteFailure, viewFailure]) {
+        assert.ok(isUuidSlugError(failure));
+        assert.equal(
+          generateUuidV4WithRandomFill(() => failure),
+          failure,
+        );
+        let refused = true;
+        const generator = unwrap(
+          createUuidV7GeneratorWithRandomFill(
+            (bytes) => {
+              bytes.fill(0);
+              return refused ? failure : undefined;
+            },
+            { readUnixMs: () => 100 },
+          ),
+        );
+        const output = new Uint8Array(24).fill(0x55);
+        assert.equal(generator.generateUuidV7Bytes(output, 4), failure);
+        assert.ok(output.every((byte) => byte === 0x55));
+        const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
+        const calls = [
+          () => generator.generateUuidV7(),
+          () => generator.generateUuidV7({ at: 100, textCase: UUID_TEXT_UPPERCASE }),
+          () => generator.generateUuidV7Value(),
+          () => generator.generatePlainUuidV7Slug(),
+          () => generator.generatePlainUuidV7Slug(BASE32HEX),
+          () => generator.generateUuidV7WithPlainSlug(),
+          () => generateUuidV7({ generator }),
+          () => generateUuidV7({ generator, at: 100, textCase: UUID_TEXT_UPPERCASE }),
+          () => generateUuidV7Value({ generator }),
+          () => generatePlainUuidV7Slug({ generator }),
+          () => generateUuidV7WithPlainSlug({ generator }),
+          () => codec.generateMaskedUuidV7Slug({ generator }),
+          () => codec.generateUuidV7WithMaskedSlug({ generator }),
+          () => codec.generateUuidV7Value({ generator }),
+        ];
+        for (const call of calls) assert.equal(call(), failure);
+        refused = false;
+        const control = unwrap(
+          createUuidV7GeneratorWithRandomFill(
+            (bytes) => {
+              bytes.fill(0);
+            },
+            { readUnixMs: () => 100 },
+          ),
+        );
+        assert.equal(generator.generateUuidV7(), control.generateUuidV7());
+      }
+    },
+  },
+  {
+    name: "validated generator bytes remain usable when a failure marker cannot be read",
+    run(this: void) {
+      const expected = unwrap(uuidStringToBytes(uuid));
+      const generator = {
+        payloadLayout: unwrap(createSecureUuidV7Generator()).payloadLayout,
+        generateUuidV7Bytes(output: Uint8Array) {
+          output.set(expected);
+          Object.defineProperty(output, "__failure", {
+            get() {
+              throw new Error("Marker is inaccessible");
+            },
+          });
+          return output;
+        },
+      };
+      // Recognition must fall through to the independent byte validator, rather than invent failure.
+      assert.equal(Reflect.apply(generateUuidV7, undefined, [{ generator }]), uuid);
+      const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
+      const pair = unwrap(
+        Reflect.apply(codec.generateUuidV7WithMaskedSlug, undefined, [{ generator }]) as ReturnType<
+          typeof codec.generateUuidV7WithMaskedSlug
+        >,
+      );
+      assert.equal(pair.uuid, uuid);
+      assert.equal(codec.maskedSlugToUuidString(pair.slug), uuid);
+    },
+  },
+  {
     name: "plain slug conversion validates offsets even on an exact UUID payload",
     run(this: void) {
       const bytes = Uint8Array.from({ length: 16 }, (_, index) => index);

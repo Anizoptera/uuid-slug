@@ -61,7 +61,8 @@ export const ERROR_CODES: readonly UuidSlugErrorCode[] = /*#__PURE__*/ Object.fr
 
 const ERROR_CODE_SET: ReadonlySet<unknown> = /*#__PURE__*/ new Set(ERROR_CODES);
 const ERROR_NAME = "UuidSlugError";
-const ERROR_MARKER = "__failure";
+// Internal consumers share the protocol key without exporting it from the package root.
+export const ERROR_MARKER = "__failure";
 const OBJECT_TYPE = "object";
 const ERROR_TAG = "[object Error]";
 const ARRAY_BUFFER_TAG = "[object ArrayBuffer]";
@@ -256,6 +257,19 @@ export function isUint8Array(value: unknown): value is Uint8Array {
     ArrayBuffer.isView(value) &&
     (value instanceof Uint8Array || typedArrayTagDescriptor?.get?.call(value) === "Uint8Array")
   );
+}
+
+// A validated draw returns Uint8Array or a recognized failure, so a view check is sufficient:
+// unmarked Errors cannot be views, and marked views remain failures. Rechecking the element brand
+// adds work without narrowing this union. Arbitrary public input still needs its owning validator.
+export function isSuccessfulUuidBytes(value: Uint8Array | UuidSlugError): value is Uint8Array {
+  if (!ArrayBuffer.isView(value)) return false;
+  try {
+    return (value as Uint8Array & { readonly __failure?: unknown })[ERROR_MARKER] !== true;
+  } catch {
+    // A validated view cannot be an unmarked native Error when its marker is inaccessible.
+    return true;
+  }
 }
 
 /** Borrow bytes from supported local or cross-realm input without copying or accepting other views. */

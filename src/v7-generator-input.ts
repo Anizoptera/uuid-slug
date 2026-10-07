@@ -26,6 +26,8 @@ export interface UuidV7GenerationValues {
 export interface ValidatedUuidV7Generator {
   readonly generateUuidV7Bytes: UuidV7Generator["generateUuidV7Bytes"];
   readonly payloadLayout: UuidV7PayloadLayout;
+  // Only the private package sequence supplies text: structural generators retain byte validation.
+  readonly generateUuidV7?: PortableUuidV7Generator["generateUuidV7"];
   /** Present only on package generators, whose bytes need no validation or defensive copy. */
   readonly drawUuidV7Bytes?: PortableUuidV7Generator["drawUuidV7Bytes"];
 }

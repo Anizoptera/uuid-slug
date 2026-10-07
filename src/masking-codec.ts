@@ -10,6 +10,7 @@ import {
   INVALID_TIMESTAMP,
   INVALID_UUID_VERSION,
   RNG_UNAVAILABLE,
+  isSuccessfulUuidBytes,
   isUuidSlugError,
   isUint8Array,
   normalizeUuidSlugInput,
@@ -797,7 +798,8 @@ function buildUuidSlugCodec(
     const textCase = resolveUuidTextCase(values.textCase ?? UUID_TEXT_LOWERCASE);
     if (textCase instanceof Error) return textCase;
     const bytes = directTextCase ? generateCodecBytes() : generateCodecBytesFromValues(values);
-    if (bytes instanceof Error) return bytes;
+    // Supplied generators can return recognized failures without local Error identity.
+    if (!isSuccessfulUuidBytes(bytes)) return bytes;
     const uuid = formatUuidBytesUnchecked(bytes, 0, textCase) as UuidV7StringFor<Case>;
     const slug = encodeMasked(bytes, true);
     return slug instanceof Error ? slug : { uuid, slug };

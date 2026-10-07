@@ -441,6 +441,11 @@ try {
     );
   }
   check(
+    "selected-generator text generation",
+    () => api.generateUuidV7({ generator: selectedGenerator }),
+    { buffers: 0, views: 0, copies: 0, errors: 0 },
+  );
+  check(
     "selected-generator owned v7 generation",
     () => api.generateUuidV7Bytes({ generator: selectedGenerator }),
     {

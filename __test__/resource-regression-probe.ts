@@ -37,6 +37,13 @@ export const generateUuidV7 = new Proxy(api.generateUuidV7, {
     if (mode === "lost-native-v7-text") return api.generateUuidV7({ at: Date.now() });
     const result: ReturnType<typeof target> = Reflect.apply(target, receiver, args);
     if (mode === "duplicate-native") Reflect.apply(target, receiver, args);
+    if (
+      mode === "selected-text-temporary" &&
+      typeof args[0] === "object" &&
+      args[0] !== null &&
+      "generator" in args[0]
+    )
+      new Uint8Array(16).fill(0);
     if (mode === "native-v7-text-revalidation" && typeof result === "string")
       for (let index = 0; index < result.length; index++) result.charCodeAt(index);
     return result;

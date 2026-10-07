@@ -77,6 +77,10 @@ try {
       "v4.base32",
       "v7.string",
       "v7.string.uppercase",
+      // Selected generators own reusable text storage; default native text cannot protect it.
+      "v7.string.selected-generator",
+      "v7.string.selected-generator.at",
+      "v7.string.structural-generator",
       "v7.bytes",
       "v7.slug",
       "v7.base32",
@@ -127,6 +131,7 @@ try {
       "value.generate",
       // Codec values use a different generator entry; the root-value control cannot protect it.
       "value.generate.codec",
+      "value.generate.generator",
       "value.toString",
       "value.toPlainSlug",
       "value.toPlainSlug.base32",

@@ -3,6 +3,7 @@
 /** Keyless operations avoid codec setup. Masking stays on codecs because it requires their key. */
 import { runtime } from "#runtime";
 import {
+  ERROR_MARKER,
   fillRandomBytes,
   generatedOrThrow,
   INVALID_TIMESTAMP,
@@ -207,11 +208,26 @@ export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
   if (textCase instanceof Error) return textCase;
   const generator = readUuidV7Generator(values.generator);
   if (generator instanceof Error) return generator;
+  // Package sequences already own text scratch. Current-time text can reuse it without allocating
+  // bytes; explicit time keeps the validated draw because text delegation would reread its options.
+  // Structural generators retain the byte seam. Remeasure if either dispatch contract changes.
+  const generateText = generator?.generateUuidV7;
+  if (generateText && !Object.hasOwn(values, AT_OPTION))
+    return generateText(textCase) as UuidV7StringFor<Case> | UuidSlugError;
   const bytes = generator
     ? generateUuidV7BytesWithGenerator(generator, values, true)
     : drawFromReadOptions(v7Text(), values, keylessTextBytes);
-  return bytes instanceof Error
-    ? bytes
+  // The draw already validates bytes and recognizes failures. Inline this union check because
+  // another predicate call adds work to structural generators; no second UUID validation is needed.
+  if (!ArrayBuffer.isView(bytes)) return bytes;
+  let failed = false;
+  try {
+    failed = (bytes as Uint8Array & { readonly [ERROR_MARKER]?: unknown })[ERROR_MARKER] === true;
+  } catch {
+    // A valid view with an inaccessible marker cannot be an unmarked native Error.
+  }
+  return failed
+    ? (bytes as Uint8Array & UuidSlugError)
     : (formatUuidBytesUnchecked(bytes, 0, textCase) as UuidV7StringFor<Case>);
 }
 

@@ -48,7 +48,11 @@ export type UuidV7ClockRollbackPolicy =
       readonly toleranceMs: number;
     };
 
-/** Fill every byte requested by an explicit custom-entropy operation. */
+/**
+ * Fill every requested byte synchronously or return `UuidSlugError`.
+ * The caller owns entropy quality; partial fills cannot be detected. Recognized package errors
+ * propagate unchanged. Thrown values and other Error values become `rng_unavailable` with a cause.
+ */
 export type UuidRandomFill = (bytes: Uint8Array) => void | UuidSlugError;
 
 /** Accumulate validated value kinds without changing their runtime representation. */

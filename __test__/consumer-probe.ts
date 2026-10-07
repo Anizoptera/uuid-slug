@@ -17,6 +17,20 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   equal(api.NIL_UUID, "00000000-0000-0000-0000-000000000000", "canonical nil UUID");
   equal(api.MAX_UUID, "ffffffff-ffff-ffff-ffff-ffffffffffff", "canonical max UUID");
   equal(api.extractUuidVersion(api.MAX_UUID), 15, "UUID version inspection");
+  const entropyFailure = Object.freeze({
+    __failure: true,
+    name: "UuidSlugError",
+    code: api.RNG_UNAVAILABLE,
+    message: "Entropy source refused the draw",
+  });
+  if (!api.isUuidSlugError(entropyFailure)) throw new Error("Unrecognized entropy failure");
+  equal(
+    api.generateUuidV4WithRandomFill(() => entropyFailure),
+    entropyFailure,
+    "UUIDv4 callback failure identity",
+  );
+  const failedGenerator = unwrap(api.createUuidV7GeneratorWithRandomFill(() => entropyFailure));
+  equal(failedGenerator.generateUuidV7(), entropyFailure, "UUIDv7 callback failure identity");
   equal(
     api.generateUuidV4WithRandomFill(fillWithZeros),
     "00000000-0000-4000-8000-000000000000",

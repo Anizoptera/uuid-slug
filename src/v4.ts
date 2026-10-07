@@ -7,7 +7,6 @@ import {
   fillRandomBytes,
   generatedOrThrow,
   INVALID_OPTIONS,
-  isError,
   RNG_UNAVAILABLE,
   portableAfterNative,
   UuidSlugError,
@@ -209,10 +208,9 @@ export function generateUuidV4WithRandomFill<
   const bytes = new Uint8Array(16);
   generating = true;
   try {
-    const failed = fillRandomBytes((output) => {
-      const result = fillRandom(output);
-      return result === undefined || isError(result) ? result : undefined;
-    }, bytes);
+    // The shared draw boundary recognizes package failures before native Error identity.
+    // Filtering callback results here would discard marker-only failures and duplicate work.
+    const failed = fillRandomBytes(fillRandom, bytes);
     if (failed) return failed;
     bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40;
     bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;

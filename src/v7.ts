@@ -123,19 +123,17 @@ function writeCounter(bytes: Uint8Array, hi: number, lo: number, offset: number)
   bytes[offset + 11] = lo & 0xff;
 }
 
-/**
- * Both string forms differ only in where the instant comes from, so the byte-or-error result is
- * carried through here rather than unwrapped twice. The narrowing is an assertion because
- * `bytesToUuidString` is version-agnostic: the v7-ness is established by the caller having produced the
- * bytes, not by anything the formatter can check.
- */
+// A successful draw returns the exact private destination; callbacks cannot return that buffer.
+// Identity preserves foreign failures without a protocol scan on successful text calls. The writer,
+// rather than the version-neutral formatter, establishes the UUIDv7 brand.
 const formatUuidV7 = /* @__NO_SIDE_EFFECTS__ */ <Case extends UuidTextCase>(
   result: Uint8Array | UuidSlugError,
   textCase: Case,
+  output: Uint8Array,
 ): UuidV7StringFor<Case> | UuidSlugError =>
-  result instanceof Error
-    ? result
-    : (formatUuidBytesUnchecked(result, 0, textCase) as UuidV7StringFor<Case>);
+  result === output
+    ? (formatUuidBytesUnchecked(output, 0, textCase) as UuidV7StringFor<Case>)
+    : (result as UuidSlugError);
 
 const reenteredGeneration = /* @__NO_SIDE_EFFECTS__ */ () =>
   new UuidSlugError(
@@ -275,11 +273,14 @@ export function createPortableUuidV7Generator(
     generating = true;
     try {
       const target = out ?? new Uint8Array(16);
+      // Allocation proves the zero-offset range; caller storage and other offsets still need checks.
       const badRange =
         target === textBytes
           ? undefined
           : out === undefined
-            ? checkRange(16, offset, 16)
+            ? offset === 0
+              ? undefined
+              : checkRange(16, offset, 16)
             : checkByteRange(out, offset, 16);
       if (badRange) return badRange;
       // Split THEN validated, in that order and not the other. A readUnixMs is allowed to be
@@ -319,8 +320,13 @@ export function createPortableUuidV7Generator(
     generating = true;
     try {
       const target = out ?? new Uint8Array(16);
+      // Match current-time ownership: checking an owned zero-offset range would prove nothing new.
       const badRange =
-        out === undefined ? checkRange(16, offset, 16) : checkByteRange(out, offset, 16);
+        out === undefined
+          ? offset === 0
+            ? undefined
+            : checkRange(16, offset, 16)
+          : checkByteRange(out, offset, 16);
       if (badRange) return badRange;
       const fraction = fractionBits === 0 ? 0 : instant.fractionBucket12 >>> (12 - fractionBits);
       if (coordinateExplicitInstants) {
@@ -402,9 +408,13 @@ export function createPortableUuidV7Generator(
   ): UuidV7StringFor<Case> | UuidSlugError {
     if (typeof textCaseOrOptions === "string") {
       const textCase = resolveUuidTextCase(textCaseOrOptions);
-      return textCase instanceof Error
-        ? textCase
-        : formatUuidV7(bytes(textBytes), textCase as Case);
+      if (textCase instanceof Error) return textCase;
+      // Preset text consumes this exact destination, so passing it through a formatting helper
+      // adds no information. Keep configured calls shared; remeasure when either writer changes.
+      const result = bytes(textBytes);
+      return result === textBytes
+        ? (formatUuidBytesUnchecked(textBytes, 0, textCase) as UuidV7StringFor<Case>)
+        : (result as UuidSlugError);
     }
     let values = readGenerationOptions(
       textCaseOrOptions,
@@ -419,11 +429,11 @@ export function createPortableUuidV7Generator(
     const textCase = resolveUuidTextCase(values.textCase ?? UUID_TEXT_LOWERCASE);
     if (textCase instanceof Error) return textCase;
     if (!Object.hasOwn(values, AT_OPTION))
-      return formatUuidV7(bytes(textBytes), textCase) as UuidV7StringFor<Case>;
+      return formatUuidV7(bytes(textBytes), textCase, textBytes) as UuidV7StringFor<Case>;
     const instant = readUuidV7Instant(values.at);
     return instant instanceof Error
       ? instant
-      : (formatUuidV7(bytesAt(instant, textBytes), textCase) as UuidV7StringFor<Case>);
+      : (formatUuidV7(bytesAt(instant, textBytes), textCase, textBytes) as UuidV7StringFor<Case>);
   }
 
   return {
