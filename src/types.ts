@@ -1080,7 +1080,8 @@ export interface UuidV7MaskingCodec {
     layout: UuidV7PayloadLayout,
   ): UuidV7Payload | UuidSlugError;
   /**
-   * Decode with this codec, check the symmetric timestamp window, and return the same slug.
+   * Decode with this codec, check the symmetric timestamp window, and return a canonical slug.
+   * Base32hex output is lowercase; case-sensitive base64url is unchanged.
    * This checks clock plausibility, not expiry, authentication, replay, or issuance. TypeScript
    * rejects known UUID text because only this codec can resolve overlapping slug spellings. A
    * preceding `UuidSlugError` is returned unchanged.
@@ -1092,5 +1093,9 @@ export interface UuidV7MaskingCodec {
     this: void,
     maskedUuidSlug: SlugStringInput<Input>,
     window: UuidV7TimestampWindow,
-  ): (Input & MaskedOrSentinelUuidV7Slug) | UuidSlugError;
+  ):
+    | (Input extends PlainUuidSlug | MaskedOrSentinelUuidV7Slug
+        ? Input & MaskedOrSentinelUuidV7Slug
+        : MaskedOrSentinelUuidV7Slug)
+    | UuidSlugError;
 }

@@ -4,7 +4,7 @@ import ts from "typescript-floor";
 
 const [file, interfaceName, memberName] = process.argv.slice(2);
 if (!file || !interfaceName || !memberName)
-  throw new Error("Use: bun scripts/editor-help.ts <file> <interface> <member>.");
+  throw new Error("Use: bun scripts/editor-help.ts <file> <interface|module> <symbol>.");
 const configPath = ts.findConfigFile(process.cwd(), (path) => ts.sys.fileExists(path));
 if (!configPath) throw new Error("Run from the package directory containing tsconfig.json.");
 const config = ts.readConfigFile(configPath, (path) => ts.sys.readFile(path));
@@ -49,9 +49,15 @@ try {
     (node): node is ts.InterfaceDeclaration =>
       ts.isInterfaceDeclaration(node) && node.name.text === interfaceName,
   );
-  const members = declaration?.members.filter(
-    (member) => member.name?.getText(source) === memberName,
-  );
+  // Root functions and receiver-free methods are both consumer editor surfaces; query their
+  // actual declarations rather than copying documentation into a synthetic interface.
+  const members =
+    interfaceName === "module"
+      ? source.statements.filter(
+          (node): node is ts.FunctionDeclaration =>
+            ts.isFunctionDeclaration(node) && node.name?.text === memberName,
+        )
+      : declaration?.members.filter((member) => member.name?.getText(source) === memberName);
   if (!members?.length)
     throw new Error(`No declaration for ${interfaceName}.${memberName} in ${filename}.`);
   for (const member of members) {

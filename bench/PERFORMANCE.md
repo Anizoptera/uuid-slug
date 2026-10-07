@@ -4,6 +4,25 @@ Choose each runtime's writer from repeated consumer-call measurements, including
 
 ## Primary TypeScript call review
 
+### Canonical timestamp-validation results
+
+Reuse decoded bytes and precomputed sentinel text when timestamp validation returns canonical slug text.
+
+Packed comparisons against `d05b8a8` in `ts-release-audit-canonical-slug-compare-reuse-{1,2}.log`
+repeat the affected calls on Node 24.21.0, Bun 1.4.2, Deno 2.9.7, Chromium 153.0.8010.12,
+Firefox 155.0, WebKit 26.6 and Node without JIT. No material loss on canonical calls repeats.
+The Node 26.10.0 repeats in `ts-release-audit-canonical-slug-compare-current-{1,2}.log`
+report plain base64url cost ratios of 0.779 and 0.773 and plain base32hex ratios of 0.866 and 0.849.
+Each comparison uses six fresh process pairs; batch throughput does not establish individual-call latency.
+Uppercase base32hex calls on Bun and WebKit pay for normalization that the baseline incorrectly omitted;
+the baseline's untouched string fails the canonical result contract.
+
+The private plain decoder removes one temporary byte array per call. The existing resource guard
+rejects restoring that array while preserving correct output. Profiles in
+`ts-release-audit-canonical-slug-native/` cover the changed calls on Node, Bun, Deno and Chromium;
+Node and Bun samples reach decoding, timestamp validation and masking. These captures do not
+compare total allocation with the baseline or establish allocation parity on other runtimes.
+
 ### Native Bun default UUIDv7 text
 
 Bun defaults use native UUIDv7 text generation; Node keeps its independent package generator.

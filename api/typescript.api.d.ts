@@ -751,7 +751,11 @@ export declare interface UuidV7MaskingCodec {
     this: void,
     maskedUuidSlug: SlugStringInput<Input>,
     window: UuidV7TimestampWindow,
-  ): (Input & MaskedOrSentinelUuidV7Slug) | UuidSlugError;
+  ):
+    | (Input extends PlainUuidSlug | MaskedOrSentinelUuidV7Slug
+        ? Input & MaskedOrSentinelUuidV7Slug
+        : MaskedOrSentinelUuidV7Slug)
+    | UuidSlugError;
 }
 export declare type UuidV7MaskingCodecOptions =
   | (UuidV7MaskingCodecSharedOptions & {
@@ -884,7 +888,7 @@ declare type UuidVersionOf<Input> = Input extends UuidSlugError
 export declare function validatePlainUuidV7SlugUnixMs<Input extends string | UuidSlugError>(
   slug: PlainUuidV7SlugInput<Input>,
   window: UuidV7TimestampWindow,
-): (Input & PlainUuidV7Slug) | UuidSlugError;
+): (Input extends PlainUuidSlug ? Input & PlainUuidV7Slug : PlainUuidV7Slug) | UuidSlugError;
 export declare function validateUuidV7StringUnixMs<
   Input extends string | UuidSlugError,
   Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,

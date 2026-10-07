@@ -829,19 +829,20 @@ export function extractUuidV7Payload(
 }
 
 /**
- * Return the same plain UUIDv7 slug when its timestamp is inside the inclusive symmetric window.
+ * Return a canonical plain UUIDv7 slug when its timestamp is inside the inclusive symmetric window.
+ * Base32hex output is lowercase; case-sensitive base64url is unchanged.
  * Return `timestamp_outside_window` when it is not. Use a codec method for masked or sentinel
  * input. TypeScript rejects known UUID text, masked slugs, and UUIDv4 slugs. A preceding
  * `UuidSlugError` is returned unchanged.
  *
- * @param slug - Canonical plain UUIDv7 slug to validate and return. JavaScript also accepts a
+ * @param slug - Plain UUIDv7 slug to validate and normalize. JavaScript also accepts a
  * genuine `String` object.
  * @param window - Inclusive maximum distance from an explicit or current reference time.
  */
 export function validatePlainUuidV7SlugUnixMs<Input extends string | UuidSlugError>(
   slug: PlainUuidV7SlugInput<Input>,
   window: UuidV7TimestampWindow,
-): (Input & PlainUuidV7Slug) | UuidSlugError;
+): (Input extends PlainUuidSlug ? Input & PlainUuidV7Slug : PlainUuidV7Slug) | UuidSlugError;
 export function validatePlainUuidV7SlugUnixMs(
   slug: unknown,
   window: UuidV7TimestampWindow,
@@ -854,8 +855,16 @@ export function validatePlainUuidV7SlugUnixMs(
     if (typeof normalized !== "string") return normalized;
     plainSlug = normalized;
   }
-  const bytes = plainSlugToUuidBytes(plainSlug);
-  if (bytes instanceof Error) return bytes;
+  // Only text leaves this call. Private scratch avoids an owned decode array; the timestamp
+  // validator captures all byte fields before caller-owned window accessors can reenter.
+  const alpha = SLUG_ALPHABET_BY_LENGTH[plainSlug.length];
+  const decoded = alpha
+    ? decodeInto(plainSlug, alpha, textSlugScratch, 0, 16)
+    : plainSlugToUuidBytes(plainSlug);
+  if (decoded instanceof Error) return decoded;
+  const bytes = typeof decoded === "number" ? textSlugScratch : decoded;
   const valid = validateTimestampBytes(bytes, window);
-  return valid instanceof Error ? valid : (plainSlug as PlainUuidV7Slug);
+  if (valid instanceof Error) return valid;
+  // Fold accepted base32 text without re-encoding bytes; base64url characters carry case-sensitive bits.
+  return (plainSlug.length === 22 ? plainSlug : plainSlug.toLowerCase()) as PlainUuidV7Slug;
 }

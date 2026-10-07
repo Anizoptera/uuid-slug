@@ -389,7 +389,7 @@ pub fn uuid_slug::UuidV7MaskingCodec::masked_slug_to_uuid(&self, masked_uuid_slu
 pub fn uuid_slug::UuidV7MaskingCodec::new(options: uuid_slug::UuidV7MaskingCodecOptions) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::sentinels(&self) -> &[uuid_slug::UuidV7Sentinel]
 pub fn uuid_slug::UuidV7MaskingCodec::uuid_to_masked_slug(&self, uuid: uuid_slug::Uuid) -> core::result::Result<uuid_slug::MaskedOrSentinelUuidV7Slug, uuid_slug::Error>
-pub fn uuid_slug::UuidV7MaskingCodec::validate_masked_uuid_v7_slug_unix_ms<'a>(&self, slug: &'a str, window: uuid_slug::UuidV7TimestampWindow) -> core::result::Result<&'a str, uuid_slug::Error>
+pub fn uuid_slug::UuidV7MaskingCodec::validate_masked_uuid_v7_slug_unix_ms<'a>(&self, slug: &'a str, window: uuid_slug::UuidV7TimestampWindow) -> core::result::Result<alloc::borrow::Cow<'a, str>, uuid_slug::Error>
 impl core::marker::Freeze for uuid_slug::UuidV7MaskingCodec
 impl core::marker::Send for uuid_slug::UuidV7MaskingCodec
 impl core::marker::Sync for uuid_slug::UuidV7MaskingCodec
@@ -915,7 +915,7 @@ pub fn uuid_slug::UuidV7MaskingCodec::masked_slug_to_uuid(&self, masked_uuid_slu
 pub fn uuid_slug::UuidV7MaskingCodec::new(options: uuid_slug::UuidV7MaskingCodecOptions) -> core::result::Result<Self, uuid_slug::Error>
 pub fn uuid_slug::UuidV7MaskingCodec::sentinels(&self) -> &[uuid_slug::UuidV7Sentinel]
 pub fn uuid_slug::UuidV7MaskingCodec::uuid_to_masked_slug(&self, uuid: uuid_slug::Uuid) -> core::result::Result<uuid_slug::MaskedOrSentinelUuidV7Slug, uuid_slug::Error>
-pub fn uuid_slug::UuidV7MaskingCodec::validate_masked_uuid_v7_slug_unix_ms<'a>(&self, slug: &'a str, window: uuid_slug::UuidV7TimestampWindow) -> core::result::Result<&'a str, uuid_slug::Error>
+pub fn uuid_slug::UuidV7MaskingCodec::validate_masked_uuid_v7_slug_unix_ms<'a>(&self, slug: &'a str, window: uuid_slug::UuidV7TimestampWindow) -> core::result::Result<alloc::borrow::Cow<'a, str>, uuid_slug::Error>
 impl core::marker::Freeze for uuid_slug::UuidV7MaskingCodec
 impl core::marker::Send for uuid_slug::UuidV7MaskingCodec
 impl core::marker::Sync for uuid_slug::UuidV7MaskingCodec

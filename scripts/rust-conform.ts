@@ -488,6 +488,7 @@ export async function contractRequests(): Promise<Request[]> {
     ordinary.plain,
     first.plain,
     ts.uuidStringToPlainSlug(ordinary.uuid, "base32hex"),
+    unwrap(ts.uuidStringToPlainSlug(ordinary.uuid, "base32hex")).toUpperCase(),
     ts.uuidStringToPlainSlug("00000000-0000-4000-8000-000000000000"),
   ]) {
     if (input instanceof Error) throw input;
@@ -639,16 +640,17 @@ export async function contractRequests(): Promise<Request[]> {
       const encoded = evaluate({ op: "mask", input: ordinary.uuid, mask: key, maskedAlphabet });
       if (!("value" in encoded) || typeof encoded.value !== "string")
         throw new Error("Timestamp window fixture failed to encode");
-      for (const previous of [false, true])
-        requests.push({
-          op: "validateMaskedTimestamp",
-          input: encoded.value,
-          maskedAlphabet,
-          mask: previous ? { seed: "timestamp-new-test-key" } : key,
-          previous: previous ? [key] : [],
-          now: instant + distance,
-          window: 1,
-        });
+      for (const input of [encoded.value, encoded.value.toUpperCase()])
+        for (const previous of [false, true])
+          requests.push({
+            op: "validateMaskedTimestamp",
+            input,
+            maskedAlphabet,
+            mask: previous ? { seed: "timestamp-new-test-key" } : key,
+            previous: previous ? [key] : [],
+            now: instant + distance,
+            window: 1,
+          });
     }
   }
   for (const input of [ordinary.plain, first.plain, "AAAAAAAAQACAAAAAAAAAAA"])

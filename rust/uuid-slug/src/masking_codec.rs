@@ -4,6 +4,7 @@ use crate::{
     Error, ErrorCode, MaskedOrSentinelUuidV7Slug, MaskedUuidV7Slug, PlainUuidSlug, Uuid,
     UuidSlugAlphabet, UuidV7Mask, UuidV7Payload, UuidV7PayloadLayout,
 };
+use std::borrow::Cow;
 
 /// A named UUID emitted as a plain slug instead of through the mask.
 #[derive(Clone, Debug)]
@@ -30,6 +31,45 @@ mod tests {
         bytes[6] = 0x70;
         bytes[8] = 0x80;
         Uuid::from_uuid_bytes_array(bytes)
+    }
+
+    #[test]
+    fn timestamp_validation_borrows_canonical_slugs_and_normalizes_base32_case() -> Result<(), Error>
+    {
+        let uuid = Uuid::from_uuid_string("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")?;
+        let window = UuidV7TimestampWindow {
+            reference_unix_ms: uuid.extract_uuid_v7_unix_ms()? as f64,
+            max_timestamp_delta_ms: 0.0,
+        };
+        for masked_slug_alphabet in [UuidSlugAlphabet::Base64Url, UuidSlugAlphabet::Base32Hex] {
+            let codec = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
+                masked_slug_alphabet,
+                sentinels: vec![(
+                    "reserved".to_owned(),
+                    Uuid::from_uuid_string("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4052")?,
+                )],
+                ..UuidV7MaskingCodecOptions::new(crate::uuid_v7_test_mask())
+            })?;
+            let slug = codec.uuid_to_masked_slug(uuid)?;
+            let validated = codec.validate_masked_uuid_v7_slug_unix_ms(&slug, window)?;
+            assert!(matches!(validated, Cow::Borrowed(_)));
+            assert_eq!(validated, slug.as_str());
+            if masked_slug_alphabet == UuidSlugAlphabet::Base32Hex {
+                let uppercase = slug.to_ascii_uppercase();
+                assert_ne!(uppercase, slug.as_str());
+                let normalized = codec.validate_masked_uuid_v7_slug_unix_ms(&uppercase, window)?;
+                assert!(matches!(normalized, Cow::Owned(_)));
+                assert_eq!(normalized, slug.as_str());
+                let sentinel = &codec.sentinels()[0].plain_uuid_slug;
+                let canonical = codec.validate_masked_uuid_v7_slug_unix_ms(sentinel, window)?;
+                assert!(matches!(canonical, Cow::Borrowed(_)));
+                let uppercase = sentinel.to_ascii_uppercase();
+                let normalized = codec.validate_masked_uuid_v7_slug_unix_ms(&uppercase, window)?;
+                assert!(matches!(normalized, Cow::Owned(_)));
+                assert_eq!(normalized, sentinel.as_str());
+            }
+        }
+        Ok(())
     }
 
     #[test]
@@ -539,14 +579,23 @@ impl UuidV7MaskingCodec {
         }
     }
 
-    /// Validate under this codec's key, retaining the caller's exact accepted spelling.
+    /// Validate under this codec's key and return canonical slug text.
+    /// Canonical input stays borrowed; mixed-case base32hex becomes owned lowercase text.
     pub fn validate_masked_uuid_v7_slug_unix_ms<'a>(
         &self,
         slug: &'a str,
         window: UuidV7TimestampWindow,
-    ) -> Result<&'a str, Error> {
+    ) -> Result<Cow<'a, str>, Error> {
         window.validate_uuid_v7(self.masked_slug_to_uuid(slug)?)?;
-        Ok(slug)
+        // Decoding proved ASCII alphabet and padding. Borrow the common spelling rather than
+        // re-encoding its UUID; base64url case carries bits and must never be normalized.
+        Ok(
+            if slug.len() == 22 || !slug.bytes().any(|byte| byte.is_ascii_uppercase()) {
+                Cow::Borrowed(slug)
+            } else {
+                Cow::Owned(slug.to_ascii_lowercase())
+            },
+        )
     }
 }
 

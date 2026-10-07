@@ -70,8 +70,8 @@ UUID-slug formats. Use
 
 Use each verb for one action: `…To…` converts, `generate…` creates a UUID or slug, `create…` builds
 a reusable object, `derive…` makes a mask from a seed, `extract…` reads a field, `validate…` checks
-a rule and returns its input, and `is…` is a type guard. Do not use different verbs for the same
-action. A verb does not replace a needed UUID form, version, result, or unit.
+a rule and returns its normalized value, and `is…` is a type guard. Do not use different verbs for
+the same action. A verb does not replace a needed UUID form, version, result, or unit.
 Conversion methods accept values already in their result form. They validate and normalize them.
 On a masking codec, every universal converter reads a 22-character slug as masked when it passes
 the codec's check and as plain otherwise; the requested destination never changes that reading.

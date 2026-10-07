@@ -359,6 +359,7 @@ export function createProfileCases(
   )
     throw new Error("Portable base64url encoding differs from the public canonical spelling");
   const base32 = ids.map((id) => unwrap(api.uuidStringToPlainSlug(id, base32hexName)));
+  const uppercaseBase32 = base32.map((slug) => slug.toUpperCase());
   if (
     privateAlphabetApi &&
     privateAlphabetApi.encodePortable(bytes[0] as Uint8Array, privateAlphabetApi.BASE32HEX) !==
@@ -367,6 +368,7 @@ export function createProfileCases(
     throw new Error("Portable base32hex encoding differs from the public canonical spelling");
   const masked = ids.map((id) => unwrap(codec.uuidToMaskedSlug(id)));
   const maskedBase32 = ids.map((id) => unwrap(base32Codec.uuidToMaskedSlug(id)));
+  const uppercaseMaskedBase32 = maskedBase32.map((slug) => slug.toUpperCase());
   const maskedCustom = bytes.map((value) => unwrap(customCodec.uuidToMaskedSlug(value)));
   const oldOnly = ids
     .map((id) => unwrap(older.uuidToMaskedSlug(id)))
@@ -695,6 +697,10 @@ export function createProfileCases(
       api.validateUuidV7StringUnixMs(ids[index & 255] as string, currentTimestampWindow),
     "timestamp.slug": (index) =>
       api.validatePlainUuidV7SlugUnixMs(slugs[index & 255] as string, timestampWindow),
+    "timestamp.slug.base32": (index) =>
+      api.validatePlainUuidV7SlugUnixMs(base32[index & 255] as string, timestampWindow),
+    "timestamp.slug.base32.uppercase": (index) =>
+      api.validatePlainUuidV7SlugUnixMs(uppercaseBase32[index & 255] as string, timestampWindow),
     "timestamp.extract": (index) => api.extractUuidV7UnixMs(bytes[index & 255] as Uint8Array),
     "timestamp.extract.offset": (index) => {
       into.set(bytes[index & 255] as Uint8Array, 4);
@@ -721,6 +727,11 @@ export function createProfileCases(
     "timestamp.masked.base32": (index) =>
       base32Codec.validateMaskedUuidV7SlugUnixMs(
         maskedBase32[index & 255] as string,
+        timestampWindow,
+      ),
+    "timestamp.masked.base32.uppercase": (index) =>
+      base32Codec.validateMaskedUuidV7SlugUnixMs(
+        uppercaseMaskedBase32[index & 255] as string,
         timestampWindow,
       ),
     "masked.generate": () => codec.generateMaskedUuidV7Slug(),

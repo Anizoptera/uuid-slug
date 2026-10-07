@@ -94,7 +94,7 @@ import { generateUuidV7ValueWithGenerator, readUuidV7ValueOptions } from "./v7-v
 import { generateUuidV7BytesWithGenerator, readUuidV7Generator } from "./v7-generator-input.ts";
 import { readGenerationOptions } from "./generation-options.ts";
 
-type EncodedSentinel = { bytes: Uint8Array; slug: SentinelUuidV7Slug };
+type EncodedSentinel = { uuid: UuidV7String; bytes: Uint8Array; slug: SentinelUuidV7Slug };
 
 const CODEC_CONSTRUCTION_FAILED = "UUIDv7 masking-codec construction failed.";
 const UUID_V7_GENERATION_FAILED = "generateUuidV7Bytes threw while generating UUIDv7 bytes.";
@@ -133,7 +133,7 @@ type EncodedSentinelIndex = {
 };
 
 type SentinelState = {
-  readonly bySlug: ReadonlyMap<string, { uuid: UuidV7String; bytes: Uint8Array }>;
+  readonly bySlug: ReadonlyMap<string, EncodedSentinel>;
   readonly byUuid: ReadonlyMap<string, SentinelUuidV7Slug>;
   readonly encoded: readonly EncodedSentinel[];
   readonly encodedByFingerprint: EncodedSentinelIndex | undefined;
@@ -233,8 +233,8 @@ function createSentinels(
   const sentinels: UuidV7Sentinel[] = [];
   const names = new Set<string>();
   const byUuid = new Map<string, SentinelUuidV7Slug>();
-  const encoded: { bytes: Uint8Array; slug: SentinelUuidV7Slug }[] = [];
-  const bySlug = new Map<string, { uuid: UuidV7String; bytes: Uint8Array }>();
+  const encoded: EncodedSentinel[] = [];
+  const bySlug = new Map<string, EncodedSentinel>();
   for (const definition of definitions) {
     if (typeof definition !== "object" || definition === null)
       return new UuidSlugError(INVALID_SENTINEL, INVALID_SENTINEL_SHAPE);
@@ -284,14 +284,17 @@ function createSentinels(
     sentinels.push(sentinel);
     names.add(name);
     byUuid.set(uuid, sentinel.slug);
-    encoded.push({ bytes, slug: sentinel.slug });
-    bySlug.set(sentinel.slug, { uuid: sentinel.uuid, bytes });
+    // Share the indexed entry with byte matching; its canonical key also serves normalized
+    // timestamp results without another case-fold operation or a second retained spelling.
+    const entry = { uuid: sentinel.uuid, bytes, slug: sentinel.slug };
+    encoded.push(entry);
+    bySlug.set(sentinel.slug, entry);
     const alternate = uuidBytesToPlainSlug(
       bytes,
       alphabet === BASE64URL_NAME ? BASE32HEX_NAME : BASE64URL_NAME,
     );
     if (alternate instanceof Error) return alternate;
-    bySlug.set(alternate, { uuid: sentinel.uuid, bytes });
+    bySlug.set(alternate, { uuid: sentinel.uuid, bytes, slug: alternate as SentinelUuidV7Slug });
   }
   let encodedByFingerprint: EncodedSentinelIndex | undefined;
   // Small sets are faster and smaller as a linear scan. Larger sets amortize one immutable index;
@@ -848,21 +851,27 @@ function buildUuidSlugCodec(
   function validateMaskedUuidV7SlugUnixMs<Input extends string | UuidSlugError>(
     maskedUuidSlug: Input,
     window: UuidV7TimestampWindow,
-  ): (Input & MaskedOrSentinelUuidV7Slug) | UuidSlugError {
+  ):
+    | (Input extends PlainUuidSlug | MaskedOrSentinelUuidV7Slug
+        ? Input & MaskedOrSentinelUuidV7Slug
+        : MaskedOrSentinelUuidV7Slug)
+    | UuidSlugError;
+  function validateMaskedUuidV7SlugUnixMs(
+    maskedUuidSlug: unknown,
+    window: UuidV7TimestampWindow,
+  ): MaskedOrSentinelUuidV7Slug | UuidSlugError {
     const slug = normalizeUuidSlugInput(maskedUuidSlug);
     if (typeof slug !== "string") return slug;
+    const sentinel = findSentinel(sentinels.bySlug, slug);
     const bytes =
-      findSentinel(sentinels.bySlug, slug)?.bytes ??
-      unmaskSlug(slug, current, previousMasks) ??
-      noMaskedSlugMatch();
+      sentinel?.bytes ?? unmaskSlug(slug, current, previousMasks) ?? noMaskedSlugMatch();
     if (bytes instanceof Error) return bytes;
-    if (!isUuidV7Bytes(bytes))
-      return new UuidSlugError(
-        INVALID_UUID_VERSION,
-        "Timestamp validation requires an RFC-variant UUIDv7.",
-      );
     const valid = validateTimestampBytes(bytes, window);
-    return valid instanceof Error ? valid : (slug as Input & MaskedOrSentinelUuidV7Slug);
+    if (valid instanceof Error) return valid;
+    // The matched sentinel owns its canonical spelling in the input alphabet. Masked base32
+    // needs folding; re-encoding would repeat masking and change the selected spelling.
+    return (sentinel?.slug ??
+      (slug.length === 22 ? slug : slug.toLowerCase())) as MaskedOrSentinelUuidV7Slug;
   }
 
   function generateUuidV7Value(valueOptions?: UuidV7MaskingCodecValueOptions) {

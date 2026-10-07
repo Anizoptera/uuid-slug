@@ -549,7 +549,7 @@ try {
         referenceUnixMs: time,
       }),
     {
-      buffers: 1,
+      buffers: 0,
       errors: 0,
       hex: 0,
       chars: 22,

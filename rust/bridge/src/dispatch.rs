@@ -332,6 +332,9 @@ fn run(request: &Value) -> Result<Value, Error> {
                 max_timestamp_delta_ms: number(&request["window"]),
             }
             .validate_uuid_v7(uuid)?;
+            if request["op"] == "validatePlainUuidV7SlugUnixMs" && input.len() == 26 {
+                return Ok(json!(input.to_ascii_lowercase()));
+            }
             Ok(json!(input))
         }
         "mask" => Ok(json!(

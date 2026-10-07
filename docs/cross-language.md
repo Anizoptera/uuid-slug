@@ -89,7 +89,7 @@ through `generate_uuid_v7_with_random_fill`; the callback also owns secure entro
 | Explicit public mask | `UUID_V7_TEST_MASK`; `uuid_v7_test_mask()` |
 | Key rotation, masked conversion and sentinels | `UuidV7MaskingCodecOptions::new`, `uuid_to_masked_slug`, `masked_slug_to_uuid`, `sentinels` |
 | Known/mixed-format migration and candidates | `create_uuid_slug_migration_decoder`, `uuid_slug_to_uuid`, `uuid_slug_to_uuid_candidates`, `UuidSlugMigrationOptions` |
-| Plain timestamp window | Parse UUID or plain slug, then `UuidV7TimestampWindow::validate_uuid_v7`; retain the original text if needed |
+| Plain timestamp window | Parse the plain slug, then `UuidV7TimestampWindow::validate_uuid_v7`; lowercase accepted base32hex text and preserve case-sensitive base64url |
 | Masked timestamp window | `UuidV7MaskingCodec::validate_masked_uuid_v7_slug_unix_ms` |
 | Error classification and diagnostics | `Error::code`, `Display`, `ErrorCode::as_str`, and `std::error::Error::source` |
 

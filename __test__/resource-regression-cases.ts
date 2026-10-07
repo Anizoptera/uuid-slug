@@ -11,6 +11,7 @@ export const RESOURCE_REGRESSION_CASES = [
   ["slug-parse-temporary", "parsed UUID from plain slug: buffers=2 exceeds 1"],
   ["plain-text-temporary", "plain slug to UUID text: buffers=1 exceeds 0"],
   ["universal-text-temporary", "universal plain slug to UUID text: buffers=1 exceeds 0"],
+  ["plain-timestamp-temporary", "plain timestamp validation: buffers=1 exceeds 0"],
   ["duplicate-pair", "the pair must construct exactly its UUID and slug strings"],
   ["weak-map-state", "parsed UUID from text: weakWrites=1 exceeds 0"],
   ["masked-temporary", "masked string encode: buffers=1 exceeds 0"],

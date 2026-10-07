@@ -376,9 +376,16 @@ expectType<UppercaseUuidV7String | UuidSlugError>()(
   ),
 );
 const generatedV4Slug = generatePlainUuidV4Slug();
+declare const canonicalPlainLiteral: PlainUuidV7Slug & "068a3cm3qhv5v2kr1geisfq0a4";
+expectType<typeof canonicalPlainLiteral | UuidSlugError>()(
+  validatePlainUuidV7SlugUnixMs(canonicalPlainLiteral, { maxTimestampDeltaMs: 0 }),
+);
+expectType<PlainUuidV7Slug | UuidSlugError>()(
+  validatePlainUuidV7SlugUnixMs("068A3CM3QHV5V2KR1GEISFQ0A4", { maxTimestampDeltaMs: 0 }),
+);
 // @ts-expect-error UUIDv7 timestamp validation is undefined for a known UUIDv4 slug.
 validatePlainUuidV7SlugUnixMs(generatedV4Slug, { maxTimestampDeltaMs: 0 });
-expectType<(PlainUuidV7Slug & "AZ_xnLf5cACbG99xO9VWLAAAAAAAAAAAAAAAAA") | UuidSlugError>()(
+expectType<PlainUuidV7Slug | UuidSlugError>()(
   validatePlainUuidV7SlugUnixMs("AZ_xnLf5cACbG99xO9VWLAAAAAAAAAAAAAAAAA", {
     maxTimestampDeltaMs: 0,
   }),
@@ -536,7 +543,7 @@ expectType<UuidBytes | UuidSlugError>()(codec.uuidToBytes("AZ_xnLf5cACbG99xO9VWL
 expectType<ConsumerBuffer | UuidSlugError>()(
   codec.uuidToBytes("AZ_xnLf5cACbG99xO9VWLw", destination, 8),
 );
-expectType<(MaskedOrSentinelUuidV7Slug & "AZ_xnLf5cACbG99xO9VWLw") | UuidSlugError>()(
+expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(
   codec.validateMaskedUuidV7SlugUnixMs("AZ_xnLf5cACbG99xO9VWLw", { maxTimestampDeltaMs: 0 }),
 );
 // @ts-expect-error Removed codec methods are not part of the public interface.

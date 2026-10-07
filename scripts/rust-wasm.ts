@@ -1,7 +1,7 @@
 // Build the development Wasm bridge and run its contracts, entropy and cancellation in a browser.
 import { deepStrictEqual, strictEqual } from "node:assert";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { browserEngines } from "./browser-engines";
 import { command } from "./command";
 import { compare, contractRequests, evaluate } from "./rust-conform";
@@ -16,8 +16,20 @@ const [cargo, rustc] = await Promise.all([
   command("rustup", ["which", "rustc"], process.cwd()).then((output) => output.trim()),
 ]);
 
+// Cargo's child linker needs the selected toolchain's LLVM library on macOS;
+// exporting DYLD_LIBRARY_PATH only to the parent does not keep it available there.
+const libraryArgs =
+  process.platform === "darwin"
+    ? [
+        "--config",
+        `env.DYLD_LIBRARY_PATH.value=${JSON.stringify(join(dirname(rustc), "..", "lib"))}`,
+        "--config",
+        "env.DYLD_LIBRARY_PATH.force=true",
+      ]
+    : [];
+
 async function run(argv: string[]): Promise<void> {
-  const selected = argv[0] === "cargo" ? [cargo, ...argv.slice(1)] : argv;
+  const selected = argv[0] === "cargo" ? [cargo, ...libraryArgs, ...argv.slice(1)] : argv;
   const child = Bun.spawn(selected, {
     env: { ...process.env, RUSTC: rustc },
     stdout: "inherit",

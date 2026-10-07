@@ -23,6 +23,7 @@ import {
   isPlainUuidSlug,
   isPlainUuidV4Slug,
   isPlainUuidV7Slug,
+  validatePlainUuidV7SlugUnixMs,
   uuidStringToBytes,
   uuidStringToPlainSlug,
   generatePlainUuidV7Slug,
@@ -553,6 +554,37 @@ export const codecBoundaryCases = [
           }
         }
         assert.equal(safe.uuidToString(text.toUpperCase()), uuid);
+        const window = {
+          referenceUnixMs: unwrap(extractUuidV7UnixMs(bytes)),
+          maxTimestampDeltaMs: 0,
+        };
+        const plain = unwrap(uuidStringToPlainSlug(uuid, "base32hex"));
+        for (const spelling of [plain, plain.toUpperCase()]) {
+          const validated = unwrap(validatePlainUuidV7SlugUnixMs(spelling, window));
+          assert.equal(validated, plain);
+          assert.ok(isPlainUuidV7Slug(validated));
+        }
+        const zeroUuid = "00000000-0000-7000-8000-000000000000";
+        const zeroSlug = unwrap(uuidStringToPlainSlug(zeroUuid, "base32hex"));
+        assert.equal(
+          unwrap(
+            validatePlainUuidV7SlugUnixMs(plain, {
+              referenceUnixMs: window.referenceUnixMs,
+              get maxTimestampDeltaMs() {
+                assert.equal(uuidToString(zeroSlug), zeroUuid);
+                return 0;
+              },
+            }),
+          ),
+          plain,
+        );
+        for (const reader of [old, safe, rotated]) {
+          for (const spelling of [text, text.toUpperCase(), legacy as string]) {
+            const validated = unwrap(reader.validateMaskedUuidV7SlugUnixMs(spelling, window));
+            assert.equal(validated, spelling.length === 22 ? legacy : text);
+            assert.equal(reader.maskedSlugToUuidString(validated), uuid);
+          }
+        }
         assert.equal(old.uuidToString(uuidStringToPlainSlug(uuid, "base32hex") as string), uuid);
       }
       for (const sentinel of safe.sentinels) {
@@ -560,6 +592,15 @@ export const codecBoundaryCases = [
         assert.equal(uuidToString(sentinel.slug), sentinel.uuid);
         for (const reader of [old, safe]) {
           assert.equal(reader.uuidToString(sentinel.slug), sentinel.uuid);
+          const window = {
+            referenceUnixMs: unwrap(extractUuidV7UnixMs(sentinel.uuid)),
+            maxTimestampDeltaMs: 0,
+          };
+          for (const spelling of [sentinel.slug, sentinel.slug.toUpperCase()]) {
+            const validated = unwrap(reader.validateMaskedUuidV7SlugUnixMs(spelling, window));
+            assert.equal(validated, sentinel.slug);
+            assert.ok(isPlainUuidV7Slug(validated));
+          }
           assert.equal(
             unwrap(
               reader.createUuidSlugMigrationDecoder({ acceptPlainSlug: true }),

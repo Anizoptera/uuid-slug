@@ -721,7 +721,7 @@ known UUID version remains in the result type.
 | `extractUuidVersion(uuid)` | The UUID version nibble from UUID text, exact bytes, or a plain slug. |
 | `extractUuidV7UnixMs(value, offset?)` | Unix milliseconds from UUIDv7 text, a plain slug, or bytes. |
 | `extractUuidV7Payload(value, layout, offset?)` | Timestamp and caller-declared payload fields, with all other payload bits unchanged. |
-| `validateUuidV7StringUnixMs(uuid, window, textCase?)` / `validatePlainUuidV7SlugUnixMs(slug, window)` | UUIDv7 text in the selected case, or the original plain slug, after checking its timestamp. |
+| `validateUuidV7StringUnixMs(uuid, window, textCase?)` / `validatePlainUuidV7SlugUnixMs(slug, window)` | UUIDv7 text in the selected case, or a canonical plain slug, after checking its timestamp. Base32hex results are lowercase. |
 
 Use `parseUuid` when one UUID needs several operations. It validates and copies the input once.
 Serialization returns canonical UUID text and intentionally drops the codec and payload layout.
@@ -757,7 +757,7 @@ readers also try its configured previous masks.
 | `maskedSlugToUuidBytes(maskedUuidSlug, output?, outputOffset?)` | UUIDv7 bytes when the caller knows the slug is masked. |
 | `extractMaskedUuidV7UnixMs(maskedUuidSlug)` | Unix milliseconds from a masked slug or sentinel. |
 | `extractMaskedUuidV7Payload(maskedUuidSlug, layout)` | Timestamp and caller-declared payload fields from a masked slug or sentinel. |
-| `validateMaskedUuidV7SlugUnixMs(maskedUuidSlug, window)` | The original slug, narrowed to `MaskedOrSentinelUuidV7Slug` after checking its timestamp. |
+| `validateMaskedUuidV7SlugUnixMs(maskedUuidSlug, window)` | A canonical slug, narrowed to `MaskedOrSentinelUuidV7Slug` after checking its timestamp. Base32hex results are lowercase. |
 | `sentinels` | Readonly reserved names, UUIDs, and slugs. |
 | `createUuidSlugMigrationDecoder(options?)` | A reader for the old formats you enable; new output stays unchanged. |
 
