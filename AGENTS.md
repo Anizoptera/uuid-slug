@@ -394,6 +394,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
   needs a different trigger or permission boundary.
 - Execute packed browser code and both WebAssembly profiles in every browser engine selected by the
   workflow. Build once per profile; do not multiply equivalent compilation by browser count.
+- Resolve WebAssembly Cargo and rustc through `rustup which` from the repository root and bind
+  `RUSTC`; a bare tool on PATH can bypass the pinned compiler and its installed target.
 - Gate every runtime-dependent change in both Node Vitest and Bun tests, including branches
   outside `src/runtime/` that use optional capabilities. Neither runner covers the other's
   adapter. Share entropy cases in `__test__/entropy-probe.ts`.

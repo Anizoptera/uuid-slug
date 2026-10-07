@@ -3,16 +3,28 @@ import { deepStrictEqual, strictEqual } from "node:assert";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { browserEngines } from "./browser-engines";
+import { command } from "./command";
 import { compare, contractRequests, evaluate } from "./rust-conform";
 
 const profile = process.env.UUID_SLUG_RUST_PROFILE ?? "release";
 if (profile !== "debug" && profile !== "release")
   throw new Error(`UUID_SLUG_RUST_PROFILE must be debug or release; received ${profile}`);
 const profileArgs = profile === "release" ? ["--release"] : [];
+// PATH may select a system Rust with no Wasm target; rustup owns the repository pin and targets.
+const [cargo, rustc] = await Promise.all([
+  command("rustup", ["which", "cargo"], process.cwd()).then((output) => output.trim()),
+  command("rustup", ["which", "rustc"], process.cwd()).then((output) => output.trim()),
+]);
 
-async function run(command: string[]): Promise<void> {
-  const child = Bun.spawn(command, { stdout: "inherit", stderr: "inherit", timeout: 300_000 });
-  if ((await child.exited) !== 0) throw new Error(`Command failed: ${command.join(" ")}`);
+async function run(argv: string[]): Promise<void> {
+  const selected = argv[0] === "cargo" ? [cargo, ...argv.slice(1)] : argv;
+  const child = Bun.spawn(selected, {
+    env: { ...process.env, RUSTC: rustc },
+    stdout: "inherit",
+    stderr: "inherit",
+    timeout: 300_000,
+  });
+  if ((await child.exited) !== 0) throw new Error(`Command failed: ${selected.join(" ")}`);
 }
 
 async function bounded<T>(work: Promise<T>): Promise<T> {
