@@ -31,8 +31,9 @@ Rules:
   measurement owner instead of duplicating its clocks, samples or statistics in a temporary script.
   Isolate source substitutions from the shared working tree; retain raw output in `bench/reports/`
   and record the measured conclusion in `bench/PERFORMANCE.md`. Remove scratch when the operation
-  ends, including setup failures; preserve needed failure artifacts first. Purge successful bundles
-  and resolved failure artifacts. Store source captures as text or archives so
+  ends, including setup failures; preserve needed failure artifacts first. Put generated bundles
+  in one owned directory and remove it on success, without searching retained reports.
+  Remove resolved failure artifacts. Store source captures as text or archives so
   compiler and test discovery cannot execute them. Never cite `/tmp` evidence in durable text.
   `bun run clean` removes generated build output, not retained reports; delete failed artifacts
   only after their diagnostic is resolved. Keep reusable Cargo caches under ignored `rust/target/`.
@@ -207,8 +208,8 @@ helper in place. `string-first-lost-throw` must fail the shared generation-failu
 otherwise a fast success check could conceal a changed default-call failure contract.
 Use `v4 native-direct-return` on the direct-delegation baseline to return native success before
 fallback-error handling. Compare complete calls; preset checks and exception fallback stay intact.
-For UUIDv4 native profiling, point `UUID_SLUG_PROFILE_MODULE` at the retained
-`<candidate>-<runtime>-api.mjs` and execute the report's `profile.mjs`.
+For UUIDv4 native profiling, point `UUID_SLUG_PROFILE_MODULE` at the failed report's
+`bundles/<candidate>-<runtime>-api.mjs` and execute its `bundles/profile.mjs`.
 The UUIDv4 artifact without `-api` executes its timing corpus and is not an importable package API.
 For equal-call Bun memory comparisons, run `bench/profile-bun-memory.ts` with the candidate API
 in `UUID_SLUG_PROFILE_MODULE`, one exact case filter, and `UUID_SLUG_PROFILE_CALLS`.

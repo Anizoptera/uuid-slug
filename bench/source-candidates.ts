@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { cp, mkdtemp, mkdir, readdir, writeFile, symlink, rm } from "node:fs/promises";
+import { cp, mkdtemp, mkdir, writeFile, symlink, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFile } from "node:child_process";
@@ -270,6 +270,8 @@ try {
   const reportRoot = join(project, "bench/reports");
   await mkdir(reportRoot, { recursive: true });
   const report = await mkdtemp(join(reportRoot, `candidates-${group}-`));
+  const bundles = join(report, "bundles");
+  await mkdir(bundles);
   // Proof edits never touch the shared working tree; failures cannot erase another agent's edits.
   // An archive preserves the committed graph without creating a branch or Git worktree.
   const archive = join(workRoot, "source.tar");
@@ -438,7 +440,7 @@ try {
           result.logs,
           `Candidate build failed: ${candidate.name}/${runtime}`,
         );
-      await Bun.write(join(report, `${candidate.name}-${runtime}.mjs`), result.outputs[0]!);
+      await Bun.write(join(bundles, `${candidate.name}-${runtime}.mjs`), result.outputs[0]!);
       if (group === "keyless" && candidate.name.startsWith("random-owned-timestamp")) {
         // Generator clock tests cannot reach a new module-default writer. Isolate the process
         // so its captured clock and timestamp ceiling cannot alter another proof or timing run.
@@ -461,7 +463,7 @@ try {
           executable,
           runtime === "deno" ? ["eval", clockProof] : ["--input-type=module", "-e", clockProof],
           project,
-          { UUID_SLUG_PROFILE_MODULE: join(report, `${candidate.name}-${runtime}.mjs`) },
+          { UUID_SLUG_PROFILE_MODULE: join(bundles, `${candidate.name}-${runtime}.mjs`) },
         );
         await writeFile(join(report, `${candidate.name}-${runtime}-clock.jsonl`), output);
         if (!output.includes('"proof":"default UUIDv7 timestamp boundaries"'))
@@ -481,7 +483,7 @@ try {
             api.logs,
             `Candidate API build failed: ${candidate.name}/${runtime}`,
           );
-        await Bun.write(join(report, `${candidate.name}-${runtime}-api.mjs`), api.outputs[0]!);
+        await Bun.write(join(bundles, `${candidate.name}-${runtime}-api.mjs`), api.outputs[0]!);
       }
     }
     // Timing cannot justify a candidate that creates avoidable arrays or diagnostics. Use the
@@ -497,7 +499,7 @@ try {
     if (bunGraph === "source" && runtimes.includes("bun"))
       await cp(tree, join(workRoot, candidate.name), { recursive: true, dereference: false });
   }
-  const driverFile = join(report, "profile.mjs");
+  const driverFile = join(bundles, "profile.mjs");
   {
     const driver = await Bun.build({
       entrypoints: [join(project, "bench/profile.ts")],
@@ -519,7 +521,7 @@ try {
         const module =
           runtime === "bun" && bunGraph === "source"
             ? join(workRoot, candidate.name, "src/index.ts")
-            : join(report, `${candidate.name}-${runtime}.mjs`);
+            : join(bundles, `${candidate.name}-${runtime}.mjs`);
         const entry =
           group === "v4"
             ? runtime === "bun" && bunGraph === "source"
@@ -579,10 +581,9 @@ try {
         );
       }
     }
-  // Source captures and measurements reproduce successful screens; generated executable graphs
-  // are only needed while diagnosing a failure, so keep those only on the failing path.
-  const bundles = (await readdir(report)).filter((name) => name.endsWith(".mjs"));
-  await Promise.all(bundles.map((name) => rm(join(report, name))));
+  // Retained source and measurements reproduce successful screens; one owned directory keeps
+  // cleanup independent of filenames and leaves failed graphs at their diagnostic paths.
+  await rm(bundles, { recursive: true });
   console.log(JSON.stringify({ report }));
 } finally {
   await rm(workRoot, { recursive: true, force: true });

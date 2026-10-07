@@ -10,22 +10,28 @@ test("failed comparisons preserve diagnostics without leaving temporary checkout
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
   let archive: string | undefined;
   try {
-    // An invalid revision fails real preparation before any measurement, while Git still
-    // creates its output file. Isolated TMPDIR makes this proof independent of other jobs.
-    const child = Bun.spawn([process.execPath, "bench/compare.ts", "refs/invalid/cleanup"], {
-      cwd: project,
-      env: { ...process.env, TMPDIR: scratch, UUID_SLUG_COMPARE_RUNTIMES: "bun" },
-      stdout: "ignore",
-      stderr: "pipe",
-    });
+    // A valid baseline followed by an invalid candidate fails before measurement but leaves
+    // real source to preserve. Isolated TMPDIR makes this proof independent of other jobs.
+    const child = Bun.spawn(
+      [process.execPath, "bench/compare.ts", "HEAD", "refs/invalid/cleanup"],
+      {
+        cwd: project,
+        env: { ...process.env, TMPDIR: scratch, UUID_SLUG_COMPARE_RUNTIMES: "bun" },
+        stdout: "ignore",
+        stderr: "pipe",
+      },
+    );
     const [stderr, exitCode] = await Promise.all([new Response(child.stderr).text(), child.exited]);
     archive = /artifacts are in (.+\.tar\.gz)\./.exec(stderr)?.[1];
     expect(exitCode).not.toBe(0);
     expect(stderr).toContain("refs/invalid/cleanup");
-    expect(archive).toBeDefined();
     expect(await readdir(scratch)).toEqual([]);
     if (!archive) throw new Error("Missing failure archive diagnostic");
-    expect(await command("tar", ["-tzf", archive], project)).toContain("baseline.tar");
+    const [retained, original] = await Promise.all([
+      command("tar", ["-xOzf", archive, "./baseline/src/index.ts"], project),
+      command("git", ["show", "HEAD:src/index.ts"], project),
+    ]);
+    expect(retained).toBe(original);
   } finally {
     if (archive) await rm(dirname(archive), { recursive: true, force: true });
     await rm(scratch, { recursive: true, force: true });

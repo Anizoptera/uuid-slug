@@ -19,7 +19,7 @@ choices do not require a ruling; changes to accepted inputs or guarantees do.
 
 Audit ordinary consumer calls and shipped artifacts before release: create an ID, convert it for storage or URLs, read it back and recover from failure without learning internal machinery. Judge defaults, names, inferred types, errors and resource costs against those jobs.
 
-- [x] Remove proven abandoned scratch and completed generated bundles; preserve evidence and reusable caches. Comparisons and failing fixtures archive before removal; candidate screens clean setup failures and successful bundles. Cleanup tests must reject missing deletions and protect evidence when archival fails.
+- [x] Remove proven abandoned scratch and completed generated bundles; preserve evidence and reusable caches. Comparisons and failing fixtures archive before removal; candidate screens clean setup failures and remove successful bundles from one owned directory. Cleanup tests check retained source content, missing deletions and archive failures.
 - [ ] Prune retained scratch archives against remaining reproductions; delete copies once sources and unresolved diagnostics no longer need them. Preserve raw measurements and uncommitted source captures; do not declare archived scratch permanent evidence.
 - [ ] Repair the defects below with the smallest regressions against actual runtime paths; preserve ordinary-call speed, ownership and failures. `bench/reports/ts-release-audit-retained-defects.log` reproduces the null reference, falsy destination and omitted-storage offset defects despite passing complete and packed-browser checks. Do not restore rejected candidates or resume experiments.
 
