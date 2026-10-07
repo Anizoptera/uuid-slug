@@ -7,6 +7,7 @@ import { verifyGenerationCase } from "./generation-case";
 import { UUIDv7 as UuidV7Js } from "uuidv7-js";
 import { validate as validateRivalUuid } from "uuid";
 import { createBoundsProfileCases } from "./profile-bounds";
+import { createConstructionProfileCases } from "./profile-construction";
 import { createUuidV4ProfileCases } from "./profile-v4";
 import { assertNormalizedUuidProfileOutcome, assertProfileOutcome } from "./profile-case";
 import type { ProfileCase } from "./profile-case";
@@ -1015,41 +1016,15 @@ export function createProfileCases(
       ? { "error.native.isError": () => nativeErrorIsError(packageFailure) }
       : {}),
     "invalid.error.propagate": () => api.uuidStringToPlainSlug(packageFailure),
-    "construct.codec": () => api.createUuidV7MaskingCodec({ mask: current }),
-    "construct.mask": () => api.deriveUuidV7Mask(current),
-    "construct.mask.bytes": () =>
-      api.deriveUuidV7Mask({ seed: new Uint8Array(16), keyDerivationIterations: 1 }),
-    "construct.mask.bytes.reused": () =>
-      api.deriveUuidV7Mask({ seed: constructionByteSeed, keyDerivationIterations: 1 }),
-    "construct.mask.iterated": () =>
-      api.deriveUuidV7Mask({ ...current, keyDerivationIterations: 8 }),
-    "construct.codec.rotation": () =>
-      api.createUuidV7MaskingCodec({
-        mask: current,
-        previousMasks: [previous, { seed: "profile-third-seed" }],
-      }),
-    "construct.codec.sentinels": () => api.createUuidV7MaskingCodec({ mask: current, sentinels }),
-    "construct.codec.sentinels4": () =>
-      api.createUuidV7MaskingCodec({ mask: current, sentinels: sentinelDefinitions.slice(0, 4) }),
-    "construct.codec.sentinels8": () =>
-      api.createUuidV7MaskingCodec({ mask: current, sentinels: sentinelDefinitions.slice(0, 8) }),
-    "construct.codec.sentinels16": () =>
-      api.createUuidV7MaskingCodec({ mask: current, sentinels: sentinelDefinitions.slice(0, 16) }),
-    "construct.codec.sentinels64": () =>
-      api.createUuidV7MaskingCodec({ mask: current, sentinels: sentinelDefinitions }),
-    "construct.migration.current": () => codec.createUuidSlugMigrationDecoder(),
-    "construct.migration.plain": () =>
-      codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true }),
-    "construct.migration.original": () =>
-      codec.createUuidSlugMigrationDecoder({ acceptFixedMask: true }),
-    "construct.migration.all": () =>
-      codec.createUuidSlugMigrationDecoder({ acceptFixedMask: true, acceptPlainSlug: true }),
-    "construct.custom": () =>
-      api.createCustomUuidV7Mask({
-        diagnosticLabel: "profile-identity",
-        mask: (input) => input,
-        unmask: (input) => input,
-      }),
+    ...createConstructionProfileCases(
+      api,
+      current,
+      previous,
+      constructionByteSeed,
+      codec,
+      sentinels,
+      sentinelDefinitions,
+    ),
   } satisfies Record<string, ProfileCase>;
 
   function verify(): void {
