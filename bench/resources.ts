@@ -171,6 +171,7 @@ try {
     acceptFixedMask: true,
     acceptPlainSlug: true,
   });
+  assert.ok(!(migration instanceof Error));
   const migrationManyReader = migrationMany.createUuidSlugMigrationDecoder();
   const masked = codec.uuidToMaskedSlug(id);
   const old = older.uuidToMaskedSlug(id);

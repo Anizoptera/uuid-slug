@@ -35,6 +35,7 @@ import { isMaskHandle } from "./mask-handle.ts";
 import { deriveUuidV7Mask } from "./mask.ts";
 import { validateTimestampBytes } from "./timestamp.ts";
 import type {
+  SEEDED_MASK_FORMAT,
   EnabledMigrationFormat,
   GeneratedUuidV7,
   UuidV7Mask,
@@ -830,12 +831,17 @@ function buildUuidSlugCodec(
     return bytes instanceof Error ? bytes : extractUuidV7Payload(bytes, layout);
   }
 
-  function createUuidSlugMigrationDecoder<const Options extends UuidSlugMigrationOptions = {}>(
-    migrationOptions?: Options,
-  ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
-  function createUuidSlugMigrationDecoder<const Options extends UuidSlugMigrationOptions = {}>(
-    migrationOptions?: Options,
-  ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>> | UuidSlugError {
+  function createUuidSlugMigrationDecoder(
+    migrationOptions?: undefined,
+  ): UuidSlugMigrationDecoder<typeof SEEDED_MASK_FORMAT>;
+  // Structural typing permits extra keys and accessors; createMigration can reject either even
+  // when boolean fields type-check. Only omission removes that configuration failure boundary.
+  function createUuidSlugMigrationDecoder<const Options extends UuidSlugMigrationOptions>(
+    migrationOptions: Options | undefined,
+  ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>> | UuidSlugError;
+  function createUuidSlugMigrationDecoder(
+    migrationOptions?: UuidSlugMigrationOptions,
+  ): UuidSlugMigrationDecoder<typeof SEEDED_MASK_FORMAT> | UuidSlugError {
     return createMigration([current, ...previousMasks], sentinels.bySlug, migrationOptions);
   }
 

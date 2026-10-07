@@ -966,14 +966,16 @@ timestamp or substitute a new identity to make masking pass.
 Create a migration reader from your codec. Enable only the old formats your application issued:
 
 ```ts
+import { isUuidSlugError } from "@anizoptera/uuid-slug";
 import type { UuidV7MaskingCodec } from "@anizoptera/uuid-slug";
 
-function readLegacySlug(maskingCodec: UuidV7MaskingCodec, incomingSlug: string) {
+function createLegacyReader(maskingCodec: UuidV7MaskingCodec) {
   const migrationDecoder = maskingCodec.createUuidSlugMigrationDecoder({
     acceptFixedMask: true,
     acceptPlainSlug: true,
   });
-  return migrationDecoder.uuidSlugToUuidString(incomingSlug);
+  if (isUuidSlugError(migrationDecoder)) return migrationDecoder;
+  return (incomingSlug: string) => migrationDecoder.uuidSlugToUuidString(incomingSlug);
 }
 ```
 
@@ -982,7 +984,8 @@ seeded masking, from before package 0.2.0. Releases from 0.2.0 on write differen
 0.2.0 masked format itself is not readable.
 `acceptPlainSlug` accepts plain UUID slugs of any version, including old base64url spellings whose
 last four bits were ignored. Ordinary `uuidToString` remains strict about those trailing bits.
-Both options must be booleans; untyped malformed reader configuration returns `invalid_options`.
+Create and check the reader once, then reuse it for incoming slugs. Both options must be booleans.
+Unknown keys and inaccessible properties return `invalid_options`, including on typed objects.
 Neither option changes generation, ordinary codec methods, keys or sentinels.
 
 `uuidSlugToUuidString` returns one UUID or `UuidSlugError`: sentinels first, then current keys, then enabled

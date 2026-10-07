@@ -280,9 +280,9 @@ export function evaluate(request: Request): Outcome {
       case "unmask":
         return result(
           request.acceptPlain === true
-            ? codec
-                .createUuidSlugMigrationDecoder({ acceptPlainSlug: true })
-                .uuidSlugToUuidString(input)
+            ? unwrap(
+                codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true }),
+              ).uuidSlugToUuidString(input)
             : codec.maskedSlugToUuidString(input),
         );
       case "unmaskV7":
@@ -298,24 +298,24 @@ export function evaluate(request: Request): Outcome {
         );
       case "migration":
         return result(
-          codec
-            .createUuidSlugMigrationDecoder({
+          unwrap(
+            codec.createUuidSlugMigrationDecoder({
               acceptFixedMask: request.original === true,
               acceptPlainSlug: request.plain === true,
-            })
-            .uuidSlugToUuidString(input, request.format as UuidSlugMigrationFormat | undefined),
+            }),
+          ).uuidSlugToUuidString(input, request.format as UuidSlugMigrationFormat | undefined),
         );
       case "candidates":
         return result(
-          codec
-            .createUuidSlugMigrationDecoder({
+          unwrap(
+            codec.createUuidSlugMigrationDecoder({
               acceptFixedMask: request.original === true,
               acceptPlainSlug: request.plain === true,
-            })
-            .uuidSlugToUuidStringCandidates(
-              input,
-              request.format as UuidSlugMigrationFormat | undefined,
-            ),
+            }),
+          ).uuidSlugToUuidStringCandidates(
+            input,
+            request.format as UuidSlugMigrationFormat | undefined,
+          ),
         );
       default:
         throw new Error(`Unknown conformance operation ${request.op}`);

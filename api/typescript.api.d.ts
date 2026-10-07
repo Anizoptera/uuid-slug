@@ -687,10 +687,14 @@ export declare interface UuidV7MaskingCodec {
     byteOffset: number,
     alphabet?: SlugAlphabet,
   ): PlainUuidSlugResult<Uint8Array>;
-  createUuidSlugMigrationDecoder<const Options extends UuidSlugMigrationOptions = {}>(
+  createUuidSlugMigrationDecoder(
     this: void,
-    options?: Options,
-  ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
+    options?: undefined,
+  ): UuidSlugMigrationDecoder<typeof SEEDED_MASK_FORMAT>;
+  createUuidSlugMigrationDecoder<const Options extends UuidSlugMigrationOptions>(
+    this: void,
+    options: Options | undefined,
+  ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>> | UuidSlugError;
   generateMaskedUuidV7Slug(
     this: void,
     options?: UuidV7MaskingCodecValueOptions,

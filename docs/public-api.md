@@ -524,9 +524,10 @@ layout, rather than making ordinary calls pay for those controls or adding a dup
   capability fails.
 - Put `UuidSlugError` in a return type only when a well-typed call can fail. Masking-codec and
   UUIDv7-generator construction accept numeric settings whose valid ranges TypeScript cannot
-  express, so their types carry the union. Migration-reader construction has no such typed failure;
-  malformed untyped input still returns an error as stated at the declaration. Do not force callers
-  to narrow construction that cannot fail for typed input. Argument-free and preset-only generation
+  express, so their types carry the union. Migration-reader construction without options returns
+  the reader directly. Configured construction carries the union because typed objects can contain
+  extra keys or throwing accessors. Check construction once before reusing the reader.
+  Argument-free and preset-only generation
   has no typed failure either; its only failure, a missing secure random source, is thrown. Every
   generation call with an explicit time, a generator, caller-owned output, or custom entropy keeps
   the union, as do generator and masking-codec methods, whose custom clocks and configured

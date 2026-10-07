@@ -673,7 +673,7 @@ describe("plain UUID slugs", () => {
     expect(Reflect.apply(codec.maskedToPlainUuidSlug, undefined, [masked, base32hex])).toHaveLength(
       26,
     );
-    const migration = codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true });
+    const migration = unwrap(codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true }));
     expect(
       Reflect.apply(migration.uuidSlugToUuidString, undefined, [
         new String(plain),
@@ -741,7 +741,7 @@ describe("plain UUID slugs", () => {
     expect(unwrap(codec.generateUuidV7WithMaskedSlug(UUID_TEXT_UPPERCASE)).uuid).toMatch(
       /^[0-9A-F-]+$/,
     );
-    const migration = codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true });
+    const migration = unwrap(codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true }));
     expect(migration.uuidSlugToUuidString(plain, UUID_TEXT_UPPERCASE)).toBe(
       SAMPLE_V7_A.toUpperCase(),
     );
@@ -1495,7 +1495,7 @@ describe("masked UUID slugs", () => {
     );
     const plain = unwrap(uuidStringToPlainSlug(SAMPLE_V7_A));
     const masked = unwrap(codec.uuidToMaskedSlug(SAMPLE_V7_A));
-    const migration = codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true });
+    const migration = unwrap(codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true }));
 
     expect(Reflect.apply(codec.uuidToString, undefined, [boxedString(SAMPLE_V7_A)])).toBe(
       SAMPLE_V7_A,
@@ -1747,7 +1747,9 @@ describe("plain-slug migration", () => {
     expect(failure).toBeInstanceOf(UuidSlugError);
     expect((failure as UuidSlugError).code).toBe("invalid_uuid_slug");
     expect(
-      codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true }).uuidSlugToUuidString(foreign),
+      unwrap(codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true })).uuidSlugToUuidString(
+        foreign,
+      ),
     ).toBe("1f04e7f5-c0c6-4044-b5a3-6278bb77ffb4");
   });
 

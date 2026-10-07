@@ -105,10 +105,12 @@ export const legacyMaskCases = [
       if (slug instanceof Error) throw slug;
       assert.notEqual(slug, sentinel.slug);
       assert.equal(codec.uuidToString(slug), uuid);
-      const reader = codec.createUuidSlugMigrationDecoder({
-        acceptFixedMask: true,
-        acceptPlainSlug: true,
-      });
+      const reader = unwrap(
+        codec.createUuidSlugMigrationDecoder({
+          acceptFixedMask: true,
+          acceptPlainSlug: true,
+        }),
+      );
       assert.equal(reader.uuidSlugToUuidString(slug), sentinel.uuid);
       assert.deepEqual(reader.uuidSlugToUuidStringCandidates(slug), [sentinel.uuid, uuid]);
       assert.deepEqual(reader.uuidSlugToUuidStringCandidates(slug, "seeded-mask"), [uuid]);
@@ -120,10 +122,12 @@ export const legacyMaskCases = [
       const codec = unwrap(
         createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK, sentinels: NIL_TEST_SENTINEL }),
       );
-      const reader = codec.createUuidSlugMigrationDecoder({
-        acceptFixedMask: true,
-        acceptPlainSlug: true,
-      });
+      const reader = unwrap(
+        codec.createUuidSlugMigrationDecoder({
+          acceptFixedMask: true,
+          acceptPlainSlug: true,
+        }),
+      );
       for (const { uuid, slug, raw } of fixtures.issued) {
         const format = slug === raw ? "plain-slug" : "fixed-mask";
         assert.equal(reader.uuidSlugToUuidString(slug, format), uuid);
@@ -151,10 +155,12 @@ export const legacyMaskCases = [
     run(this: void) {
       const { seed, slug, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
       const codec = unwrap(createUuidV7MaskingCodec({ mask: { seed }, previousMasks: [{ seed }] }));
-      const reader = codec.createUuidSlugMigrationDecoder({
-        acceptFixedMask: true,
-        acceptPlainSlug: true,
-      });
+      const reader = unwrap(
+        codec.createUuidSlugMigrationDecoder({
+          acceptFixedMask: true,
+          acceptPlainSlug: true,
+        }),
+      );
       assert.equal(reader.uuidSlugToUuidString(slug), currentUuid);
       assert.deepEqual(reader.uuidSlugToUuidStringCandidates(slug), [
         currentUuid,
@@ -173,9 +179,9 @@ export const legacyMaskCases = [
       const sentinel = custom.sentinels[0];
       assert.ok(sentinel);
       assert.deepEqual(
-        custom
-          .createUuidSlugMigrationDecoder({ acceptFixedMask: true, acceptPlainSlug: true })
-          .uuidSlugToUuidStringCandidates(sentinel.slug),
+        unwrap(
+          custom.createUuidSlugMigrationDecoder({ acceptFixedMask: true, acceptPlainSlug: true }),
+        ).uuidSlugToUuidStringCandidates(sentinel.slug),
         [currentUuid],
       );
     },
@@ -186,7 +192,7 @@ export const legacyMaskCases = [
       const { seed, slug, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
       const codec = unwrap(createUuidV7MaskingCodec({ mask: { seed } }));
       const options = { acceptFixedMask: true, acceptPlainSlug: true };
-      const reader = codec.createUuidSlugMigrationDecoder(options);
+      const reader = unwrap(codec.createUuidSlugMigrationDecoder(options));
       options.acceptFixedMask = false;
       options.acceptPlainSlug = false;
       assert.deepEqual(reader.uuidSlugToUuidStringCandidates(slug), [
@@ -195,15 +201,15 @@ export const legacyMaskCases = [
         plainUuid,
       ]);
       assert.deepEqual(
-        codec
-          .createUuidSlugMigrationDecoder({ acceptFixedMask: true })
-          .uuidSlugToUuidStringCandidates(slug),
+        unwrap(
+          codec.createUuidSlugMigrationDecoder({ acceptFixedMask: true }),
+        ).uuidSlugToUuidStringCandidates(slug),
         [currentUuid, originalUuid],
       );
       assert.deepEqual(
-        codec
-          .createUuidSlugMigrationDecoder({ acceptPlainSlug: true })
-          .uuidSlugToUuidStringCandidates(slug),
+        unwrap(
+          codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true }),
+        ).uuidSlugToUuidStringCandidates(slug),
         [currentUuid, plainUuid],
       );
       const currentReader = codec.createUuidSlugMigrationDecoder();
@@ -252,11 +258,11 @@ export const legacyMaskCases = [
         }),
       );
       const custom = unwrap(
-        createUuidV7MaskingCodec({ mask: failingMask }),
-      ).createUuidSlugMigrationDecoder({
-        acceptFixedMask: true,
-        acceptPlainSlug: true,
-      });
+        unwrap(createUuidV7MaskingCodec({ mask: failingMask })).createUuidSlugMigrationDecoder({
+          acceptFixedMask: true,
+          acceptPlainSlug: true,
+        }),
+      );
       fail = true;
       for (const result of [
         custom.uuidSlugToUuidString(slug),
@@ -288,15 +294,19 @@ export const legacyMaskCases = [
         assert.equal(result.code, "invalid_options");
       }
       const cause = new Error("migration option getter failed");
-      const options = Object.defineProperty({}, "acceptPlainSlug", {
-        get() {
+      const options = {
+        get acceptPlainSlug(): boolean {
           throw cause;
         },
-      });
-      const result = Reflect.apply(codec.createUuidSlugMigrationDecoder, undefined, [options]);
+      };
+      const result = codec.createUuidSlugMigrationDecoder(options);
       assert.ok(result instanceof UuidSlugError);
       assert.equal(result.code, "invalid_options");
       assert.equal(result.cause, cause);
+      const extraKeys = { acceptPlainSlug: true, extra: true };
+      const extraResult = codec.createUuidSlugMigrationDecoder(extraKeys);
+      assert.ok(extraResult instanceof UuidSlugError);
+      assert.equal(extraResult.code, "invalid_options");
     },
   },
   {
@@ -375,9 +385,9 @@ export const legacyMaskCases = [
       assert.equal(codec.uuidToMaskedSlug(currentUuid), slug);
       assert.equal(codec.maskedSlugToUuidString(slug), currentUuid);
       assert.deepEqual(
-        codec
-          .createUuidSlugMigrationDecoder({ acceptFixedMask: true, acceptPlainSlug: true })
-          .uuidSlugToUuidStringCandidates(slug),
+        unwrap(
+          codec.createUuidSlugMigrationDecoder({ acceptFixedMask: true, acceptPlainSlug: true }),
+        ).uuidSlugToUuidStringCandidates(slug),
         [currentUuid, originalUuid, plainUuid],
       );
       assert.equal(new Set([currentUuid, originalUuid, plainUuid]).size, 3);
@@ -387,10 +397,12 @@ export const legacyMaskCases = [
     name: "preserve original raw UUIDs and their stored tail aliases without relaxing current decoding",
     run(this: void) {
       const reader = unwrap(
-        createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }),
-      ).createUuidSlugMigrationDecoder({
-        acceptPlainSlug: true,
-      });
+        unwrap(
+          createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }),
+        ).createUuidSlugMigrationDecoder({
+          acceptPlainSlug: true,
+        }),
+      );
       for (const vector of [
         ...fixtures.plain,
         ...fixtures.issued.map(({ uuid, raw }) => ({ uuid, slug: raw })),
@@ -414,8 +426,10 @@ export const legacyMaskCases = [
     name: "recover exact UUIDs from original masked producer outputs",
     run(this: void) {
       const reader = unwrap(
-        createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }),
-      ).createUuidSlugMigrationDecoder({ acceptFixedMask: true });
+        unwrap(
+          createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }),
+        ).createUuidSlugMigrationDecoder({ acceptFixedMask: true }),
+      );
       let checked = 0;
       for (const vector of fixtures.issued) {
         if (vector.slug === vector.raw) continue;
@@ -429,8 +443,10 @@ export const legacyMaskCases = [
     name: "reject a damaged original checksum",
     run(this: void) {
       const reader = unwrap(
-        createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }),
-      ).createUuidSlugMigrationDecoder({ acceptFixedMask: true });
+        unwrap(
+          createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }),
+        ).createUuidSlugMigrationDecoder({ acceptFixedMask: true }),
+      );
       const mixed = new Uint8Array(Buffer.from("TRf_4hG5uOKhvh0EPc3rew", "base64url"));
       assert.ok(
         !(

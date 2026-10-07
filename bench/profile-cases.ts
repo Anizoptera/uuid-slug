@@ -171,10 +171,12 @@ export function createProfileCases(
   const rotated = unwrap(
     api.createUuidV7MaskingCodec({ mask: current, previousMasks: [previous] }),
   );
-  const migration = rotated.createUuidSlugMigrationDecoder({
-    acceptFixedMask: true,
-    acceptPlainSlug: true,
-  });
+  const migration = unwrap(
+    rotated.createUuidSlugMigrationDecoder({
+      acceptFixedMask: true,
+      acceptPlainSlug: true,
+    }),
+  );
   const maskedOnlyMigration = codec.createUuidSlugMigrationDecoder();
   const originals = originalFixtures.filter(({ slug, raw }) => slug !== raw);
   const portable = unwrap(api.createUuidV7Generator({ readUnixMs: () => instant }));

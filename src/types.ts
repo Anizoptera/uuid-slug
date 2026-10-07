@@ -925,15 +925,21 @@ export interface UuidV7MaskingCodec {
   ): PlainUuidSlugResult<Uint8Array>;
   /**
    * Create a reader for current and explicitly enabled old formats without changing this codec.
-   * Untyped calls with invalid options return `UuidSlugError`; decode failures return it from the
-   * reader. Valid TypeScript options create the reader directly.
+   * Omitted options return the reader directly. Configured construction returns `invalid_options`
+   * for unknown keys, nonboolean settings or inaccessible properties. Check construction once
+   * before reusing the reader; decode failures return `UuidSlugError` from the reader.
    *
    * @param options - Old formats this application has actually issued. Omit for current formats only.
    */
-  createUuidSlugMigrationDecoder<const Options extends UuidSlugMigrationOptions = {}>(
+  createUuidSlugMigrationDecoder(
     this: void,
-    options?: Options,
-  ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>>;
+    options?: undefined,
+  ): UuidSlugMigrationDecoder<typeof SEEDED_MASK_FORMAT>;
+  /** Create a reusable reader with explicitly enabled old formats; check configuration failure once. */
+  createUuidSlugMigrationDecoder<const Options extends UuidSlugMigrationOptions>(
+    this: void,
+    options: Options | undefined,
+  ): UuidSlugMigrationDecoder<EnabledMigrationFormat<Options>> | UuidSlugError;
   /**
    * Generate and encode a UUIDv7 as a masked slug or its registered raw sentinel slug.
    * Options may select an explicit time and a generator whose sequence this call joins.

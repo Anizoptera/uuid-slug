@@ -603,6 +603,11 @@ const migration = codec.createUuidSlugMigrationDecoder({
   acceptFixedMask: true,
   acceptPlainSlug: true,
 });
+expectType<UuidSlugMigrationDecoder | UuidSlugError>()(migration);
+// Configuration can fail even when boolean properties type-check; guard once, then reuse.
+// @ts-expect-error A configured reader cannot be used before checking construction failure.
+migration.uuidSlugToUuidString("AAAAAAABcACAAAAAAAAAAA");
+if (isUuidSlugError(migration)) throw migration;
 expectType<UuidSlugMigrationDecoder>()(migration);
 // @ts-expect-error Migration readers accept encoded slug text, not known UUID text.
 migration.uuidSlugToUuidString(checkedUuid);
@@ -625,10 +630,37 @@ expectType<readonly UppercaseUuidString[] | UuidSlugError>()(
   ),
 );
 const plainOnlyMigration = codec.createUuidSlugMigrationDecoder({ acceptPlainSlug: true });
+expectType<
+  UuidSlugMigrationDecoder<typeof SEEDED_MASK_FORMAT | typeof PLAIN_SLUG_FORMAT> | UuidSlugError
+>()(plainOnlyMigration);
+if (isUuidSlugError(plainOnlyMigration)) throw plainOnlyMigration;
 plainOnlyMigration.uuidSlugToUuidString("AAAAAAAAcACAAAAAAAAAAA", PLAIN_SLUG_FORMAT);
 // @ts-expect-error This reader was not configured to accept the original masked format.
 plainOnlyMigration.uuidSlugToUuidString("AAAAAAAAcACAAAAAAAAAAA", FIXED_MASK_FORMAT);
 const currentOnlyMigration = codec.createUuidSlugMigrationDecoder();
+expectType<UuidSlugMigrationDecoder<typeof SEEDED_MASK_FORMAT>>()(currentOnlyMigration);
+expectType<UuidSlugMigrationDecoder<typeof SEEDED_MASK_FORMAT>>()(
+  codec.createUuidSlugMigrationDecoder(undefined),
+);
+const { createUuidSlugMigrationDecoder } = codec;
+const extraMigrationKeys = { acceptPlainSlug: true, extra: true };
+expectType<
+  UuidSlugMigrationDecoder<typeof SEEDED_MASK_FORMAT | typeof PLAIN_SLUG_FORMAT> | UuidSlugError
+>()(createUuidSlugMigrationDecoder(extraMigrationKeys));
+const inaccessibleMigrationOptions = {
+  get acceptPlainSlug(): boolean {
+    throw new Error("Inaccessible caller option");
+  },
+};
+expectType<
+  UuidSlugMigrationDecoder<typeof SEEDED_MASK_FORMAT | typeof PLAIN_SLUG_FORMAT> | UuidSlugError
+>()(createUuidSlugMigrationDecoder(inaccessibleMigrationOptions));
+declare const optionalMigrationOptions:
+  | { acceptPlainSlug: boolean; acceptFixedMask: false }
+  | undefined;
+expectType<
+  UuidSlugMigrationDecoder<typeof SEEDED_MASK_FORMAT | typeof PLAIN_SLUG_FORMAT> | UuidSlugError
+>()(createUuidSlugMigrationDecoder(optionalMigrationOptions));
 // @ts-expect-error Migration options state what input the reader accepts.
 codec.createUuidSlugMigrationDecoder({ directSlug: true });
 // @ts-expect-error A current-only reader cannot select a disabled historical format.
