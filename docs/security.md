@@ -29,10 +29,11 @@ Generation selects secure sources separately for text and byte output:
 
 - Node uses `crypto.randomUUID()` for UUIDv4 text without JIT compilation and pooled
   `crypto.randomFillSync()` for other output.
-- Bun uses Web Crypto `randomUUID()` for UUIDv4 text and pooled `getRandomValues()` for byte
-  output and UUIDv7.
+- Bun uses Node-compatible `randomUUID()` for UUIDv4 text, with Web Crypto as fallback, and
+  `Bun.randomUUIDv7()` for default UUIDv7 text and base64url slugs. Other output and configured
+  generators use pooled `getRandomValues()`.
 - Deno uses Web Crypto `randomUUID()` for UUIDv4 text and pooled `getRandomValues()` for byte
-  output and UUIDv7. Browsers use pooled `getRandomValues()` for both UUID versions.
+  output and UUIDv7. Cloudflare Workers and browsers use pooled `getRandomValues()` for both UUID versions.
 
 These choices reflect [measured call costs](../bench/PERFORMANCE.md). Each source must supply
 secure randomness or report failure.

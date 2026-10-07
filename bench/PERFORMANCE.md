@@ -64,7 +64,7 @@ does not measure gross allocation or an exact CPU ratio. These captures select n
 resource loss for another wrapper rewrite. Preserve direct delegation under the accepted
 small-difference ruling. Each report directory retains heap statistics, sampling and a snapshot;
 adjacent `.jsonl` files retain the second window. Logs are
-`/tmp/uuid-slug-native-v7-text-resources-{4,5,6,7}.log`.
+`bench/reports/retained-logs/uuid-slug-native-v7-text-resources-{4,5,6,7}.log`.
 
 ### Reported Node engine allocation
 
@@ -1201,6 +1201,12 @@ sampling found chunks and packed words to be peer seed-sized owners, not chunk d
 the aligned byte view removes the second allocation for eligible byte seeds. Keep the string chunk
 array unless a real large-seed workload values its peak-memory saving above the measured elapsed
 loss. Changing the KDF to avoid replay would change all issued identifiers.
+
+Read each mask seed and sentinel UUID once, then validate and use that captured value. An accessor
+can otherwise supply different values to validation and construction. Node and Bun mutation
+failures in `bench/reports/ts-release-audit-capture-mutation-{node,bun}.log` distinguish repeated
+reads. The retained construction comparisons do not establish a speedup or resource parity;
+this correction affects setup, not repeated identifier calls.
 
 Byte-seed capture must finish before the async constructor returns its promise. The mutation
 regression changes caller bytes and options immediately after the call and requires the original
@@ -3994,7 +4000,7 @@ The installed `uuidv7` counter uses one Number and pooled Uint32 entropy, while 
 erases consumed entropy and preserves its configured failure behavior. The aggregate gap does
 not identify which difference causes it.
 
-# Four-byte entropy copying
+# Entropy copying
 
 Fixed four-byte copies reduce measured Node generation cost while preserving consumed-byte erasure.
 
@@ -4037,9 +4043,12 @@ the maintained resource counters preserve those counts. Profiles include setup a
 Deno profiles execute compiled output, so they do not establish total per-call allocation parity
 or the cost of Deno's normal source entry. Native and competitor parity remains open.
 
-Retain the fixed stores for four-byte draws and the indexed loop for other lengths. Recompare
-through `pool indexed-loop` when draw widths or runtime typed-array handling change; the UUIDv4
-gains arise despite its unchanged copy width, so the results do not establish a loop-only cause.
+Retain fixed stores for four-byte draws and four-byte blocks for sixteen-byte draws; other widths
+keep the indexed loop. The four-byte comparison above does not measure the sixteen-byte change
+or establish a loop-only cause for its UUIDv4 gains. The retained
+`bench/reports/current-pool-block-offset-lost-byte.log` and `current-pool-block-offset-lost-erasure.log`
+show Node and Bun rejecting lost output bytes and missing erasure in the sixteen-byte path.
+Recompare complete calls when draw widths or runtime typed-array handling change.
 
 ### Plain base32hex conversions against scure
 
@@ -4090,7 +4099,7 @@ individual-call latency or total allocation. Recompare when either implementatio
 Do not replace routine elapsed-time warm-up with a fixed call count on this evidence; passing
 large-slowdown fixtures does not establish equivalent preparation or sensitivity to smaller losses.
 
-The 269.63-second full-check log `/tmp/uuid-slug-base32-check.log` contains 3,072 packed timing
+The 269.63-second full-check log `bench/reports/retained-logs/uuid-slug-base32-check.log` contains 3,072 packed timing
 rows: 48 calls, 16 process pairs and two hosts. Recorded warm-up totals 116.15 seconds; seven
 3 ms sampling windows per row require at least another 64.512 seconds. These totals exclude
 packing, startup, cleanup and other checks, so warm-up alone cannot repair the whole lane.
@@ -4426,7 +4435,7 @@ The restored worktree's `bun run check` and actual `.githooks/pre-commit` both e
 with `/usr/bin/time -p` wall times of 7.42 and 6.78 seconds. `performanceBaseline()` returns
 no production baseline for this worktree, so these measurements exclude changed-production
 packed timing and do not close that lane or cold CI headroom. Logs are
-`/tmp/uuid-slug-case-preparation-{check,hook}.log`.
+`bench/reports/retained-logs/uuid-slug-case-preparation-{check,hook}.log`.
 
 ### Reduced before-all preparation screen
 
@@ -4443,7 +4452,7 @@ its family-wide intervals [0.952, 1.174] and [0.760, 2.523] include parity on bo
 These observations reject this setting without establishing that preparation count causes
 the misses or broad timing shifts. Stop the count reduction and retain the original policy.
 Raw reports are `current-preparation-16384-{control,defect}.jsonl` in `bench/reports/`;
-execution logs are `/tmp/uuid-slug-preparation-16384-{control,defect}.log`.
+execution logs are `bench/reports/retained-logs/uuid-slug-preparation-16384-{control,defect}.log`.
 
 ### Shared ending-clock screen
 
@@ -4460,7 +4469,7 @@ remains unresolved with interval [0.960, 1.137]. This fails the both-host detect
 it does not establish that clock reads explain prior misses or quantify their overhead.
 The original profiler remains unchanged. Reports are `current-shared-end-clock-{control,defect}.jsonl`;
 raw source captures are `current-preparation-v8-trace/before-shared-end-clock-{baseline,candidate}.ts.txt`.
-Logs are `/tmp/uuid-slug-shared-end-clock-{tests,control,defect}.log`. The owning benchmark
+Logs are `bench/reports/retained-logs/uuid-slug-shared-end-clock-{tests,control,defect}.log`. The owning benchmark
 tests pass all 53 cases, including partial-batch call counts and failures after an initial witness.
 
 ### Unchanged packed graph checks
@@ -4472,11 +4481,11 @@ For the scure benchmark-only dependency addition, the complete `bun run check` t
 before the identity check and 20.10 seconds after it on Node 24.21.0 and Bun 1.4.2. These individual
 wall-clock observations include builds, subprocesses, cleanup and host scheduling; they are not
 confidence bounds or the cost of checking changed production. Both executions exit zero.
-`/tmp/uuid-slug-base32-check.log` and `/tmp/uuid-slug-base32-identity-check-pass.log` retain output.
+`bench/reports/retained-logs/uuid-slug-base32-check.log` and `bench/reports/retained-logs/uuid-slug-base32-identity-check-pass.log` retain output.
 
 Source, compiled code, manifest changes, added assets and missing files prevent the exemption;
 unsupported file kinds fail. Replacing byte comparison with unconditional success fails the
-owning mutation test in `/tmp/uuid-slug-identity-byte-defect.log`. A real changed-production
+owning mutation test in `bench/reports/retained-logs/uuid-slug-identity-byte-defect.log`. A real changed-production
 comparison against `a52bf59^` still runs sixteen fresh processes per runtime for `bytes.base32`
-on Node and Bun and exits zero in `/tmp/uuid-slug-identity-real-change.log`. Explicit source
+on Node and Bun and exits zero in `bench/reports/retained-logs/uuid-slug-identity-real-change.log`. Explicit source
 experiments also retain timing. The slower changed-production lane and CI headroom remain open.

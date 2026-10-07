@@ -289,7 +289,7 @@ for (let run = 0; run < 3; run++) {
       "--locked",
     ],
     "Rust competitor matrix",
-    { CARGO_TARGET_DIR: "/tmp/uuid-slug-rust-competitors-target" },
+    { CARGO_TARGET_DIR: join(project, "rust/target/competitors") },
   );
   const rustRecords = parseJsonLines(output);
   if (rustRecords.filter((record) => record.complete === true).length !== 1)

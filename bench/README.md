@@ -30,7 +30,11 @@ Rules:
 - Keep useful experiment drivers in this repository before running them. Extend an existing
   measurement owner instead of duplicating its clocks, samples or statistics in a temporary script.
   Isolate source substitutions from the shared working tree; retain raw output in `bench/reports/`
-  and record the measured conclusion in `bench/PERFORMANCE.md`.
+  and record the measured conclusion in `bench/PERFORMANCE.md`. Remove scratch when the operation
+  ends; preserve needed failure artifacts first. Store source captures as text or archives so
+  compiler and test discovery cannot execute them. Never cite `/tmp` evidence in durable text.
+  `bun run clean` removes generated build output, not retained reports; delete failed artifacts
+  only after their diagnostic is resolved. Keep reusable Cargo caches under ignored `rust/target/`.
 - Measure latest stable Node Current and Bun first, latest Node LTS and Chromium second, and latest
   Deno third. Measure Node Current JITless last; a JITless-only win may survive when every higher
   rung is unchanged. Older supported Node versions prove compatibility, not performance priority.

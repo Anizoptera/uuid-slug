@@ -1098,7 +1098,7 @@ change the ranking. Browser competitor comparisons use Chromium; UUID text and s
 
 | Evidence | Scope | Current result |
 | --- | --- | --- |
-| UUIDv7 text | Node, Bun, Deno, Chromium | Leads the compared packages. Module calls use portable generation without cross-form ordering; created generators add an explicit ordering contract and clock controls. |
+| UUIDv7 text | Node, Bun, Deno, Chromium | Leads the compared packages, including `fastv7`. Module calls have no cross-form ordering; created generators add an explicit ordering contract and clock controls. |
 | UUIDv4 text | Node, Bun, Deno, Chromium | Uses native generation on Bun, Deno and Node without JIT compilation; uses pooled entropy on Node with JIT compilation and Chromium. Leads the compared packages on Chromium; trails the fastest compared package on Bun. |
 | UUIDv4/v7 bytes | New arrays and caller buffers on Node, Bun, Deno, Chromium | Leads the compared packages on Node and Chromium. On Bun, UUIDv4 caller-buffer writes and both UUIDv7 byte forms trail `uuid`. On Deno, both UUIDv7 byte forms are unresolved against `uuidv7` and `uniku`. |
 | Conversion | UUID text, bytes, both plain-slug alphabets, timestamp extraction | Text timestamp extraction leads `uuidv7-js` on Node, Bun, Deno, and Chromium. The study has no comparable package for extraction from bytes or slugs. |
@@ -1159,15 +1159,17 @@ corpus runs against both implementations in CI. The npm package remains TypeScri
 | Runtime | Loads | Generation |
 | --- | --- | --- |
 | Node 20 and newer | compiled JavaScript | native UUIDv4 text without JIT compilation; pooled native entropy for other output |
-| Bun | published TypeScript | native UUIDv4 text; pooled Web Crypto for bytes and UUIDv7 |
+| Bun | published TypeScript | native default UUIDv4 text, UUIDv7 text and UUIDv7 base64url slugs; pooled Web Crypto for other output and configured generators |
 | Deno | published TypeScript | native UUIDv4 text; pooled Web Crypto for bytes and UUIDv7; no flag or import map needed |
-| Browsers, other runtimes | compiled JavaScript | the package's own generator over Web Crypto |
+| Cloudflare Workers, browsers, other compatible runtimes | compiled JavaScript | the package's own generator over Web Crypto |
 
 The npm package has no runtime dependencies or native addons to install.
 
-- Bun loads the published TypeScript source, uses Web Crypto `randomUUID` for UUIDv4 text, and
-  runs the package's own generator over pooled Web Crypto entropy for UUIDv7. `Bun.randomUUIDv7`
-  is faster but encodes timestamps ahead of the clock during bursts of calls.
+- Bun loads the published TypeScript source, uses Node-compatible `randomUUID` for UUIDv4 text
+  with Web Crypto as fallback, and uses `Bun.randomUUIDv7` for default UUIDv7 text and base64url slugs.
+  Its logical timestamp can advance ahead of the clock during bursts.
+  Create a generator explicitly when ordering, clock policy or payload
+  layout must be controlled. Other output forms use pooled Web Crypto entropy.
   If Bun loads the compiled JavaScript directly, it still uses the Bun-specific source and native
   functions. Tooling that opts into the `development` condition loads the same source.
 - Node uses native `crypto.randomUUID` for UUIDv4 text without JIT compilation. With JIT
@@ -1175,7 +1177,9 @@ The npm package has no runtime dependencies or native addons to install.
   output use pooled entropy in both modes.
 - Deno loads the published TypeScript source, uses Web Crypto `randomUUID` for UUIDv4 text,
   and runs the package's own generator for bytes and UUIDv7. No resolver flag or import map is needed.
-- Browsers and other compatible runtimes run the package's own generator over Web Crypto.
+- Cloudflare Workers, browsers and other compatible runtimes use the portable compiled code over Web Crypto.
+  Local workerd checks cover compiled code with and without `nodejs_compat`; packed-package and
+  deployed Workers verification remain open. See [edge checks](bench/README.md#profiling).
 
 Capabilities are probed once when the module loads. A missing method is left undefined, so no call
 pays for a throw and a retry. Native base64url and hex encoders are used where a runtime provides

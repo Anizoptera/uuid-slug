@@ -261,15 +261,18 @@ efficiency. A reproducible misuse alone does not justify that cost.
 - Before writing an experiment driver, extend its maintained owner in `bench/` or `scripts/`.
   Inspect the owner's exports and callers before editing it; a matching filename is not permission
   to replace a different job. Separate a driver only when its measurement or isolation boundary differs.
-  Temporary directories may hold isolated checkouts and generated artifacts, never the only copy
-  of useful experiment logic or evidence. Keep rerun instructions in `bench/README.md` and raw
-  benchmark output in ignored `bench/reports/`; conclusions belong in `bench/PERFORMANCE.md`.
+  Give scratch a cleanup scope before creating it; remove it when the operation ends, including
+  failures. Preserve necessary failure evidence in `bench/reports/` first and name its reproduction
+  command. Temporary checkouts and generated bundles are not retained evidence. Keep reusable
+  drivers in `bench/` or `scripts/`, raw results in `bench/reports/`, and conclusions in
+  `bench/PERFORMANCE.md`; durable documents must never depend on `/tmp` files.
   Extract executable baseline source outside this repository; ignored source trees can still enter
   compiler and test discovery. Keep only generated evidence and archives in `bench/reports/`;
   retain TypeScript source captures as `.ts.txt` or archives, never `.ts`, because Git ignores do
-  not exclude them from project type checking.
-  Keep failed check artifacts available for the reproduction command in the error; clean up
-  successful checks. A command naming a deleted bundle cannot diagnose the failure.
+  not exclude them from project type checking. The existing artifact check rejects executable
+  source captures in reports; never bypass it or suppress their compiler diagnostics.
+  Preserve failed artifacts until their diagnostic is resolved; then remove the disposable files.
+  Before committing, check the operation's scratch paths and stop any children it started.
   Run compiler diagnostics through the retained profiler executable and capture stdout verbatim;
   `bench/compare.ts` requires JSON-only host output. Require a working control for the requested
   compiler artifact before interpreting a missing trace as evidence about package execution.

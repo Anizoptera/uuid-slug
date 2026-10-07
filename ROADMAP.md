@@ -12,19 +12,20 @@ in speed and resource use. Configured calls may add only work their requested fe
 Negligible remaining gaps need no new code. Timing alone does not prove resource parity.
 Keep contracts in their existing owners: README, `docs/public-api.md`, `docs/design.md`,
 `docs/security.md` and `docs/cross-language.md`; this plan grants no new authority.
-Public-document changes and remote writes require explicit approval. Internal verification
+Factual documentation corrections are authorized; new public contracts and remote writes require approval. Internal verification
 choices do not require a ruling; changes to accepted inputs or guarantees do.
 
 ## Release blockers and evidence
 
 Audit ordinary consumer calls and shipped artifacts before declaring the TypeScript package ready.
 
-- [ ] Finish the release audit from existing evidence without further profiling or benchmark experiments. Keep unresolved defects explicit; rejected candidates do not justify another measurement loop or a release-ready claim.
+- [x] Keep scratch outside durable evidence paths, retain referenced logs in `bench/reports/retained-logs/`, and keep source captures inert; `artifact:check` rejects executable report captures. The retained scratch archive preserves old evidence, `clean` preserves reports, and Cargo caches stay under `rust/target/`.
+- [x] Keep factual documentation aligned with retained production: `bench/PERFORMANCE.md` distinguishes four-byte comparisons from sixteen-byte blocks and records seed/sentinel capture; README names native Bun paths, `fastv7`, and Cloudflare Workers with their verification limits. No new guarantees or experiments.
 
 The consumer must create an ID, convert it for storage or URLs, read it back, and recover from failure without learning internal machinery. Judge defaults, names, inferred types, errors, and resource costs against those jobs.
 
 - [x] Audit public calls, production modules, source/packed types, detached methods, editor help and runtime selection. `ts-release-audit-source-types.log` and the existing packed consumer fixture cover the exported generation, conversion, masking, migration, inspection and error-composition jobs; the defects below remain open.
-- [ ] Repair the defects below with the smallest effective regressions against actual runtime paths. Keep ordinary-call speed, ownership and failure behavior; do not resume experiments or adopt a rejected candidate.
+- [ ] Repair the defects below with the smallest effective regressions against actual runtime paths after cleanup. Keep ordinary-call speed, ownership and failure behavior; do not resume experiments or adopt a rejected candidate.
 - [x] Run the complete check and packed browser checks, inspect failures, and report release blockers with exact evidence. `ts-release-audit-retained-final-check-clean.log` records the passing complete check; `ts-release-audit-retained-final-web-direct.log` records extracted-package execution on Node, Bun, Deno, Chromium, Firefox and WebKit. `ts-release-audit-retained-defects.log` independently reproduces the explicit-null reference, falsy byte destination and omitted-storage offset defects on retained production. Passing gates do not close those defects.
 - [x] Keep timing protection in the complete check, not a duplicate hook invocation. `ts-release-audit-fast-routing-{check,hook}.log` and `ts-release-audit-fast-routing.log` cover the complete lane and hook with active resource falsifiers. Local duration results do not establish shared-CI headroom; no result cache is needed.
 
@@ -55,7 +56,6 @@ Use existing comparisons to identify unresolved primary-call gaps; rejected expe
 
 - [ ] Reconcile existing primary-call rankings with retained production; do not collect new profiles or benchmarks. Keep missing comparisons and resource evidence explicit rather than calling them parity.
 - [ ] Preserve regression protection in `bench/check.ts`, `bench/resources.ts` and `bench/latency.ts`. Existing valid-output waste mutations cover retained arrays, views, copies and native selection on Node, Bun, Deno and Chromium; counted work is not total allocation. Keep WebKit resource and shared-CI headroom limits explicit. Timing-policy calibration remains held and cannot block release repairs.
-- [ ] Reconcile pending public performance corrections with current `bench/PERFORMANCE.md`: sixteen-byte pool blocks and synchronous seed/sentinel capture need only their missing factual explanation, not new guarantees. Obtain approval for any unrequested public edit; do not run report generators that write public files without it.
 - [ ] Finish packed workerd consumers and entropy/clock witnesses before adding its correctness smoke lane to the existing workflow. The compiled portable corpus passed both compatibility modes; packed and deployed behavior remain unproved. Keep this follow-up separate from TypeScript release evidence and do not choose an edge-specific implementation from it.
 - [ ] HELD outside this optimization effort: secondary guards, timestamp extraction, shadowed-length defenses and timing-policy calibration. Preserve their correctness contracts; reopen optimization only by an explicit scope ruling.
 
@@ -98,10 +98,8 @@ Use existing comparisons to identify unresolved primary-call gaps; rejected expe
 
 ## Final verification and delivery
 
-- [ ] Propose the generated-report and §Native floors updates before running `bun run bench:results`,
-      which writes public documents. Hold those writes for explicit approval.
-- [ ] Propose README direction words (leads, trails, unresolved; no numbers) only where repeated
-      comparisons support the change. Hold the edit for explicit approval.
+- [ ] Correct existing report and §Native floors facts from retained evidence without running `bench:results` or new measurements; report evidence gaps as gaps.
+- [ ] Correct README direction words only where retained repeated comparisons support them; factual repairs are authorized, new guarantees are not.
 - [ ] Run `bun run check` before committing; inspect every failure and require exit zero. Apply `bench/README.md` §Regression protection to complete lanes and hooks without dropping runtime, artifact, cleanup or defect coverage. Passing gates do not close reproduced defects or missing resource evidence.
 - [ ] Report each release blocker and unresolved primary-call comparison from its evidence. Declare readiness only after the blockers are resolved; do not publish or write remotely.
 

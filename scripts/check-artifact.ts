@@ -368,6 +368,18 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
 }
 
 async function main(): Promise<void> {
+  // Git ignores do not exclude captures from compiler or test discovery. Check their location,
+  // rather than hiding them with compiler exclusions, so retained evidence stays inert.
+  const captures = Array.from(
+    new Bun.Glob("bench/reports/**/*.{ts,tsx,mts,cts,rs}").scanSync({
+      cwd: project,
+      dot: true,
+    }),
+  );
+  if (captures.length)
+    throw new Error(
+      `Executable source in bench/reports: ${captures.join(", ")}. Move reusable drivers to bench/ or scripts/; rename retained captures to .txt or archive them. Git ignores do not stop compiler discovery.`,
+    );
   const args = process.argv.slice(2);
   const web = args.includes("--web") || process.env.UUID_SLUG_ARTIFACT_WEB === "1";
   const files = args.filter((arg) => arg !== "--web");
