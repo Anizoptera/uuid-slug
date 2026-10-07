@@ -202,6 +202,10 @@ const groups = {
     names: ["v7.string", "v7.bytes", "v7.slug", "v4.string", "v4.bytes"],
     tests: ["__test__/entropy.test.ts", "__test__/v7.test.ts"],
   },
+  "parsed-value": {
+    names: ["value.toString", "value.toBytes", "value.toBytes.into", "value.toMaskedSlug"],
+    tests: ["__test__/core.test.ts"],
+  },
   timestamp: {
     names: [
       "timestamp.uuid",

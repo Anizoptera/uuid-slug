@@ -25,6 +25,7 @@ export const CANDIDATE_GROUPS = [
   "value-options",
   "pool",
   "timestamp",
+  "parsed-value",
 ] as const;
 export type CandidateGroup = (typeof CANDIDATE_GROUPS)[number];
 export const CANDIDATE_FILES = {
@@ -41,6 +42,7 @@ export const CANDIDATE_FILES = {
   "value-options": "src/v7-value-options.ts",
   pool: "src/runtime/pool.ts",
   timestamp: "src/timestamp.ts",
+  "parsed-value": "src/uuid-value.ts",
 } as const satisfies Record<CandidateGroup, string>;
 
 /** Build live alternatives from the exact checkout being measured; stale anchors fail before timing. */
@@ -64,8 +66,26 @@ export function createSourceCandidates(
     "value-options": valueOptionCandidates,
     pool: poolCandidates,
     timestamp: timestampCandidates,
+    "parsed-value": parsedValueCandidates,
   } satisfies Record<CandidateGroup, (source: string) => readonly SourceCandidate[]>;
   return builders[group](source);
+}
+
+function parsedValueCandidates(source: string): readonly SourceCandidate[] {
+  // Change only destination recognition so configuration and timestamp code stay identical.
+  return [
+    { name: "baseline", source },
+    {
+      name: "undefined-destination",
+      get source() {
+        return replaceOnce(
+          source,
+          "    if (!output) return new Uint8Array(bytes);",
+          "    if (output === undefined) return new Uint8Array(bytes);",
+        );
+      },
+    },
+  ];
 }
 
 function timestampCandidates(source: string): readonly SourceCandidate[] {
