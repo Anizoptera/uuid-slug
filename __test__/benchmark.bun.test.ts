@@ -17,6 +17,7 @@ import { createConversionCases } from "../bench/conversion-cases";
 import { performanceBaseline } from "../bench/check-inputs";
 import { COMPARISON_RUNTIMES, selectComparisonRuntimes } from "../bench/comparison-runtimes";
 import { command } from "../scripts/command";
+import { archiveAndRemoveScratch } from "../scripts/archive-scratch";
 import { RESOURCE_REGRESSION_CASES } from "./resource-regression-cases";
 import { uuidStringToPlainSlug } from "../src/index";
 import * as profilingApi from "../src/index";
@@ -143,7 +144,7 @@ test("performance routing uses real changes and refuses missing parent history",
     passed = true;
   } finally {
     if (passed) await rm(root, { recursive: true, force: true });
-    else console.error(`Performance routing proof failed; Git fixture remains in ${root}.`);
+    else await archiveAndRemoveScratch(root, join(import.meta.dir, "../bench/reports"));
   }
 });
 

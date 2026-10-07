@@ -17,10 +17,10 @@ choices do not require a ruling; changes to accepted inputs or guarantees do.
 
 ## Correctness repairs first
 
-Audit ordinary consumer calls and shipped artifacts before declaring the TypeScript package ready.
+Audit ordinary consumer calls and shipped artifacts before release: create an ID, convert it for storage or URLs, read it back and recover from failure without learning internal machinery. Judge defaults, names, inferred types, errors and resource costs against those jobs.
 
-The consumer must create an ID, convert it for storage or URLs, read it back, and recover from failure without learning internal machinery. Judge defaults, names, inferred types, errors, and resource costs against those jobs.
-
+- [x] Remove proven abandoned scratch and completed generated bundles; preserve evidence and reusable caches. Comparisons and failing fixtures archive before removal; candidate screens clean setup failures and successful bundles. Cleanup tests must reject missing deletions and protect evidence when archival fails.
+- [ ] Prune retained scratch archives against remaining reproductions; delete copies once sources and unresolved diagnostics no longer need them. Preserve raw measurements and uncommitted source captures; do not declare archived scratch permanent evidence.
 - [ ] Repair the defects below with the smallest regressions against actual runtime paths; preserve ordinary-call speed, ownership and failures. `bench/reports/ts-release-audit-retained-defects.log` reproduces the null reference, falsy destination and omitted-storage offset defects despite passing complete and packed-browser checks. Do not restore rejected candidates or resume experiments.
 
 Early falsifiers: an equivalent supported call with different behavior disproves interface consistency; a failing packed consumer disproves source-only readiness; a reproduced complete-call regression rejects simplification; a branch with no executable witness remains unverified.
@@ -76,7 +76,7 @@ Use existing comparisons to identify unresolved primary-call gaps; rejected expe
 
 ## Edge verification
 
-- [ ] Finish packed workerd consumers and entropy/clock witnesses before adding a correctness smoke lane to `.github/workflows/check.yml`. Local compiled portable code passes with and without `nodejs_compat`; packed resolution and deployed behavior remain unproved. Keep this evidence separate from the TypeScript release checks; it does not justify an edge-specific implementation.
+- [ ] Finish packed workerd consumers and entropy/clock witnesses before adding a correctness smoke lane to `.github/workflows/check.yml`. Local compiled portable code passes with and without `nodejs_compat`; packed resolution and deployed behavior remain unproved. Deployed checks require exact remote authorization. Keep this evidence separate from the TypeScript release checks; it does not justify an edge-specific implementation.
 
 ## Held work
 

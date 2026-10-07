@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { command } from "../scripts/command";
+import { archiveAndRemoveScratch } from "../scripts/archive-scratch";
 import vm from "node:vm";
 import nodeCrypto from "node:crypto";
 import { POOL_BYTES, pooledFill } from "../src/runtime/pool";
@@ -1026,8 +1027,8 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
           });
           passed = true;
         } finally {
-          // Preserve failed bundles for the exact command in the diagnostic.
           if (passed) await rm(directory, { recursive: true, force: true });
+          else await archiveAndRemoveScratch(directory, join(root, "bench/reports"));
         }
         return;
       }

@@ -8,6 +8,7 @@ import { chromium, firefox, webkit } from "playwright";
 import type { Page } from "playwright";
 
 import { command } from "../scripts/command";
+import { archiveAndRemoveScratch } from "../scripts/archive-scratch";
 import { identicalArtifacts } from "./identical-artifacts";
 import { describeSamples, medianConfidence, medianConfidence95 } from "./statistics";
 import { CANDIDATE_FILES, CANDIDATE_GROUPS, createSourceCandidates } from "./candidate-sources";
@@ -652,7 +653,12 @@ async function main(): Promise<void> {
     passed = true;
   } finally {
     if (passed) await rm(scratch, { recursive: true, force: true });
-    else console.error(`Packed comparison failed; exact artifacts remain in ${scratch}.`);
+    else {
+      await archiveAndRemoveScratch(scratch, join(project, "bench/reports"));
+      console.error(
+        `Rerun ${JSON.stringify(process.argv.slice(1))} with the original environment.`,
+      );
+    }
   }
 }
 

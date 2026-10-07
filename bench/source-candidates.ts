@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { cp, mkdtemp, mkdir, writeFile, symlink, rm } from "node:fs/promises";
+import { cp, mkdtemp, mkdir, readdir, writeFile, symlink, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFile } from "node:child_process";
@@ -265,11 +265,11 @@ if (
 const runtimes = runtimeInputs as ("node" | "bun" | "deno")[];
 const workRoot = await mkdtemp(join(tmpdir(), "uuid-slug-candidates-"));
 const tree = join(workRoot, "tree");
-// Parallel proof runs must not overwrite each other's source, manifest or failure evidence.
-const reportRoot = join(project, "bench/reports");
-await mkdir(reportRoot, { recursive: true });
-const report = await mkdtemp(join(reportRoot, `candidates-${group}-`));
 try {
+  // Parallel proof runs must not overwrite each other's source, manifest or failure evidence.
+  const reportRoot = join(project, "bench/reports");
+  await mkdir(reportRoot, { recursive: true });
+  const report = await mkdtemp(join(reportRoot, `candidates-${group}-`));
   // Proof edits never touch the shared working tree; failures cannot erase another agent's edits.
   // An archive preserves the committed graph without creating a branch or Git worktree.
   const archive = join(workRoot, "source.tar");
@@ -579,6 +579,10 @@ try {
         );
       }
     }
+  // Source captures and measurements reproduce successful screens; generated executable graphs
+  // are only needed while diagnosing a failure, so keep those only on the failing path.
+  const bundles = (await readdir(report)).filter((name) => name.endsWith(".mjs"));
+  await Promise.all(bundles.map((name) => rm(join(report, name))));
   console.log(JSON.stringify({ report }));
 } finally {
   await rm(workRoot, { recursive: true, force: true });
