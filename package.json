@@ -80,7 +80,7 @@
     "build": "tsdown",
     "changelog": "git-cliff --unreleased --prepend CHANGELOG.md --tag",
     "check": "bun run build && bun run --parallel api:check:built check:js:built check:rust bench:competitors:smoke bench:competitors:rust:check && bun run perf:check",
-    "check:fast": "bun run build && bun run --parallel api:check:built check:js:built check:rust:fast bench:competitors:smoke && bun run perf:check",
+    "check:fast": "bun run build && bun run --parallel api:check:built check:js:built check:rust:fast bench:competitors:smoke",
     "check:js": "bun run build && bun run check:js:built",
     "check:js:built": "bun run --parallel format:check lint strings:check claude-link:check typecheck:built test artifact:check",
     "check:rust": "bun scripts/check-rust.ts",
