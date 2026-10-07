@@ -40,7 +40,7 @@ export function validateTimestampBytes(
     );
   const timestamp = uuidTimestampFromBytesUnchecked(bytes, 0);
   let maxTimestampDeltaMs: number;
-  let referenceUnixMs: number | undefined;
+  let referenceUnixMs: number;
   try {
     if (typeof window !== "object" || window === null || Array.isArray(window))
       return new UuidSlugError(INVALID_TIMESTAMP, "Timestamp window must be an object.");
@@ -48,9 +48,7 @@ export function validateTimestampBytes(
     if (unknown !== undefined)
       return new UuidSlugError(INVALID_TIMESTAMP, `Unknown timestamp window option: ${unknown}.`);
     maxTimestampDeltaMs = window.maxTimestampDeltaMs;
-    // Null is invalid input; only omission requests a clock read, after one property observation.
-    referenceUnixMs = window.referenceUnixMs;
-    if (referenceUnixMs === undefined) referenceUnixMs = Date.now();
+    referenceUnixMs = window.referenceUnixMs ?? Date.now();
   } catch (cause) {
     return new UuidSlugError(INVALID_TIMESTAMP, "Timestamp window could not be read.", { cause });
   }

@@ -335,6 +335,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
   bottleneck moves because a component gain can disappear in dispatch, formatting or allocation.
 - Before using a benchmark statistic to select code, apply `bench/README.md` §Measurement limits:
   identify the independent sample unit and distinguish batch throughput from individual-call latency.
+  Read the comparison driver's own verdicts; when analyzing its JSON separately, require the selected
+  statistic on every requested row. Missing fields must fail analysis, never mean no regression.
   Before attributing a wall/CPU gap, account for call weighting and measurement scope: an
   unequal-batch median does not match aggregate CPU per call.
 - For cold-import comparisons, isolate both package graphs from the driver's static imports.
