@@ -24,6 +24,7 @@ export const CANDIDATE_GROUPS = [
   "value",
   "value-options",
   "pool",
+  "timestamp",
 ] as const;
 export type CandidateGroup = (typeof CANDIDATE_GROUPS)[number];
 export const CANDIDATE_FILES = {
@@ -39,6 +40,7 @@ export const CANDIDATE_FILES = {
   value: "src/v7-value.ts",
   "value-options": "src/v7-value-options.ts",
   pool: "src/runtime/pool.ts",
+  timestamp: "src/timestamp.ts",
 } as const satisfies Record<CandidateGroup, string>;
 
 /** Build live alternatives from the exact checkout being measured; stale anchors fail before timing. */
@@ -61,8 +63,26 @@ export function createSourceCandidates(
     value: valueCandidates,
     "value-options": valueOptionCandidates,
     pool: poolCandidates,
+    timestamp: timestampCandidates,
   } satisfies Record<CandidateGroup, (source: string) => readonly SourceCandidate[]>;
   return builders[group](source);
+}
+
+function timestampCandidates(source: string): readonly SourceCandidate[] {
+  // Substitute only clock defaulting so other pending configuration changes cannot affect timing.
+  return [
+    { name: "baseline", source },
+    {
+      name: "undefined-default",
+      get source() {
+        return replaceOnce(
+          source,
+          "    maxTimestampDeltaMs = window.maxTimestampDeltaMs;\n    referenceUnixMs = window.referenceUnixMs ?? Date.now();",
+          "    ({ maxTimestampDeltaMs, referenceUnixMs = Date.now() } = window);",
+        );
+      },
+    },
+  ];
 }
 
 function codecCandidates(source: string): readonly SourceCandidate[] {
