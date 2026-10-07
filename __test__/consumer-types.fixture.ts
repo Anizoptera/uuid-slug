@@ -37,6 +37,7 @@ import {
   FIXED_MASK_FORMAT,
   uuidStringToBytes,
   plainSlugToUuidBytes,
+  plainSlugToUuidString,
   UUID_V7_TEST_MASK,
   uuidToString,
   uuidToBytes,
@@ -213,6 +214,15 @@ const versionedUuid: UuidV7String = formattedUuid;
 const convertedSlug = uuidStringToPlainSlug(checkedUuid);
 if (convertedSlug instanceof Error) throw convertedSlug;
 const versionedSlug: PlainUuidV7Slug = convertedSlug;
+// Explicit-source decoding must preserve the same version and case facts as universal conversion.
+expectType<UuidV7String | UuidSlugError>()(plainSlugToUuidString(versionedSlug));
+expectType<UppercaseUuidV7String | UuidSlugError>()(
+  plainSlugToUuidString(versionedSlug, UUID_TEXT_UPPERCASE),
+);
+expectType<UuidV4String | UuidSlugError>()(plainSlugToUuidString(generatePlainUuidV4Slug()));
+expectType<UuidString | UuidSlugError>()(plainSlugToUuidString("AZ_xnLf5cACbG99xO9VWLw"));
+// @ts-expect-error A known UUID spelling cannot enter a plain-slug-only decoder.
+plainSlugToUuidString(checkedUuid);
 const parsedValue = parseUuid(versionedSlug);
 if (parsedValue instanceof Error) throw parsedValue;
 expectType<Uuid<7>>()(parsedValue);
