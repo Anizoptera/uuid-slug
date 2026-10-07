@@ -1,3 +1,16 @@
+# TypeScript release audit
+
+Audit ordinary consumer calls and shipped artifacts before declaring the TypeScript package ready.
+
+- [ ] Inventory public operations, types, defaults, ownership, failures, and runtime selection against executable consumer jobs.
+- [ ] Review every TypeScript production module for correctness, unnecessary work, ambiguous behavior, and complexity that no contract or measured advantage requires.
+- [ ] Check source and packed type inference, detached calls, editor help, error composition, and misuse rejection; distinguish missing coverage from implementation defects.
+- [ ] Reconcile performance and resource evidence with current production; preserve useful specialization and leave unresolved gaps explicit.
+- [ ] Repair evidenced defects with focused regression checks and verify each changed runtime path before retaining a change.
+- [ ] Run the complete check and packed browser checks, inspect failures, and report release blockers with exact evidence.
+
+Early falsifiers: an equivalent supported call with different behavior disproves interface consistency; a failing packed consumer disproves source-only readiness; a reproduced complete-call regression rejects simplification; a branch with no executable witness remains unverified.
+
 # Native parity
 
 Complete the remaining performance work without changing identifier formats, secure entropy,
