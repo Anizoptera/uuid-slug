@@ -58,6 +58,7 @@ export function createProfileCases(
   const originalMaskFormat = api.FIXED_MASK_FORMAT;
   const instant = 1_725_000_000_000;
   const timestampWindow = { maxTimestampDeltaMs: 86_400_000, referenceUnixMs: instant };
+  const currentTimestampWindow = { maxTimestampDeltaMs: 2 ** 48 };
   const sentinelTimestampWindow = { maxTimestampDeltaMs: 0, referenceUnixMs: 0 };
   const current = { seed: "profile-current-seed" };
   const constructionByteSeed = new Uint8Array(16);
@@ -688,6 +689,8 @@ export function createProfileCases(
     "guard.slug": (index) => api.isPlainUuidV7Slug(slugs[index & 255]),
     "timestamp.uuid": (index) =>
       api.validateUuidV7StringUnixMs(ids[index & 255] as string, timestampWindow),
+    "timestamp.uuid.now": (index) =>
+      api.validateUuidV7StringUnixMs(ids[index & 255] as string, currentTimestampWindow),
     "timestamp.slug": (index) =>
       api.validatePlainUuidV7SlugUnixMs(slugs[index & 255] as string, timestampWindow),
     "timestamp.extract": (index) => api.extractUuidV7UnixMs(bytes[index & 255] as Uint8Array),
@@ -752,6 +755,8 @@ export function createProfileCases(
     "value.generate.generator": () => selectedGenerator.generateUuidV7Value(),
     "value.generate.codec": () => codec.generateUuidV7Value(),
     "value.toString": (index) => values[index & 255]!.toString(),
+    "value.toBytes": (index) => values[index & 255]!.toBytes(),
+    "value.toBytes.into": (index) => values[index & 255]!.toBytes(into, 4),
     "value.toString.uppercase": (index) => values[index & 255]!.toString(api.UUID_TEXT_UPPERCASE),
     "value.toJSON": (index) => values[index & 255]!.toJSON(),
     "value.inspect.fields": (index) => {
@@ -1111,6 +1116,13 @@ export function createProfileCases(
             throw new Error(`${name} violated caller-owned output identity or boundaries`);
           const payload = name.endsWith(".into") ? value.subarray(4, 20) : value;
           if (!api.isUuidBytes(payload)) throw new Error(`${name} returned malformed UUID bytes`);
+          if (
+            name.startsWith("value.toBytes") &&
+            (api.bytesToUuidString(payload) !== ids[index & 255] ||
+              (!name.endsWith(".into") &&
+                (value.constructor !== Uint8Array || value.buffer === bytes[index & 255]!.buffer)))
+          )
+            throw new Error(`${name} changed parsed UUID bytes or their ownership`);
         } else if (typeof value === "number") {
           if (!Number.isFinite(value)) throw new Error(`${name} returned a nonfinite number`);
           if (name.startsWith("timestamp.extract.uuid") && value !== instant + index)

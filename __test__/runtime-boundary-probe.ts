@@ -1740,6 +1740,15 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
       try {
         assert.equal(validateUuidV7StringUnixMs(uuid, { maxTimestampDeltaMs: 0 }), uuid);
         assert.equal(readings, 1);
+        for (const referenceUnixMs of [null, false, "", "1234567890000"]) {
+          const result = Reflect.apply(validateUuidV7StringUnixMs, undefined, [
+            uuid,
+            { maxTimestampDeltaMs: 0, referenceUnixMs },
+          ]);
+          assert.ok(result instanceof UuidSlugError);
+          assert.equal(result.code, "invalid_timestamp");
+          assert.equal(readings, 1);
+        }
       } finally {
         Date.now = originalNow;
       }

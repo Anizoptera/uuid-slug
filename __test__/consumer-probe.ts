@@ -211,6 +211,15 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   }
   const codec = unwrap(api.createUuidV7MaskingCodec({ mask: api.UUID_V7_TEST_MASK }));
   const parsed = unwrap(api.parseUuid(uuid));
+  const invalidReference = Reflect.apply(api.validateUuidV7StringUnixMs, undefined, [
+    uuid,
+    { maxTimestampDeltaMs: 0, referenceUnixMs: null },
+  ]);
+  equal(
+    invalidReference instanceof api.UuidSlugError && invalidReference.code,
+    api.INVALID_TIMESTAMP,
+    "invalid timestamp reference",
+  );
   const external = { ...codec };
   Object.defineProperty(external, "uuidToMaskedSlug", {
     value(bytes: Uint8Array) {

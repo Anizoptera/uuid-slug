@@ -371,7 +371,8 @@ export interface UuidV7TimestampWindow {
   /** Maximum absolute difference from the reference time, inclusive. Must be finite and nonnegative. */
   readonly maxTimestampDeltaMs: number;
   /**
-   * Finite Unix milliseconds used as the reference.
+   * Finite Unix milliseconds used as the reference. Only omission selects the current clock;
+   * an explicit nonnumeric or nonfinite value returns `invalid_timestamp`.
    *
    * @defaultValue One `Date.now()` reading per validation call.
    */

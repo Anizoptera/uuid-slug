@@ -48,7 +48,9 @@ export function validateTimestampBytes(
     if (unknown !== undefined)
       return new UuidSlugError(INVALID_TIMESTAMP, `Unknown timestamp window option: ${unknown}.`);
     maxTimestampDeltaMs = window.maxTimestampDeltaMs;
-    referenceUnixMs = window.referenceUnixMs ?? Date.now();
+    // Only omission requests the clock; explicit invalid values must reach numeric validation.
+    const reference = window.referenceUnixMs;
+    referenceUnixMs = reference === undefined ? Date.now() : reference;
   } catch (cause) {
     return new UuidSlugError(INVALID_TIMESTAMP, "Timestamp window could not be read.", { cause });
   }
