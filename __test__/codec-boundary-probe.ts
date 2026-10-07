@@ -61,6 +61,27 @@ function bits(text: string, alphabet: string, width: number) {
 
 export const codecBoundaryCases = [
   {
+    name: "captures a sentinel UUID accessor once before validation",
+    run() {
+      const uuid = "01987008-ef3e-7f69-b677-0000000010c7";
+      let reads = 0;
+      const codec = createUuidV7MaskingCodec({
+        mask: UUID_V7_TEST_MASK,
+        sentinels: [
+          {
+            name: "captured",
+            get uuid() {
+              assert.equal(++reads, 1, "Sentinel UUID must be captured before validation");
+              return uuid;
+            },
+          },
+        ],
+      });
+      assert.equal(reads, 1);
+      assert.equal(codec.uuidToMaskedSlug(uuid), uuidToPlainSlug(uuid));
+    },
+  },
+  {
     name: "reads current byte contents instead of a stale UUID version brand",
     run() {
       const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });

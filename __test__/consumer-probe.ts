@@ -124,6 +124,40 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
     equal(generated.slice(0, 13), "011f71fb-0450", `${alphabet} custom readUnixMs`);
   }
   const maskOptions = { seed: "consumer-mask-seed", keyDerivationIterations: 1024 };
+  let sentinelReads = 0;
+  const capturedSentinel = unwrap(
+    api.createUuidV7MaskingCodec({
+      mask: api.UUID_V7_TEST_MASK,
+      sentinels: [
+        {
+          name: "captured",
+          get uuid() {
+            equal(++sentinelReads, 1, "sentinel UUID accessor count");
+            return uuid;
+          },
+        },
+      ],
+    }),
+  );
+  equal(sentinelReads, 1, "sentinel UUID capture");
+  equal(
+    capturedSentinel.uuidToMaskedSlug(uuid),
+    api.uuidToPlainSlug(uuid),
+    "captured sentinel output",
+  );
+  await Promise.all(
+    [api.deriveUuidV7Mask, api.deriveUuidV7MaskAsync].map(async (derive) => {
+      let reads = 0;
+      const captured = await derive({
+        get seed() {
+          equal(++reads, 1, "mask seed accessor count");
+          return maskOptions.seed;
+        },
+      });
+      if (captured instanceof Error) throw captured;
+      equal(reads, 1, "mask seed capture");
+    }),
+  );
   const synchronous = api.deriveUuidV7Mask(maskOptions);
   const asynchronous = await api.deriveUuidV7MaskAsync(maskOptions);
   if (synchronous instanceof Error) throw synchronous;

@@ -26,6 +26,33 @@ function cancelled(value: UuidV7Mask | UuidSlugError, reason: unknown): void {
 }
 export const asyncMaskCases = [
   {
+    name: "both derivations capture each seed accessor once",
+    async run(this: void) {
+      await Promise.all(
+        ["release-audit-seed", new Uint8Array(16).fill(71)].map(async (seed) => {
+          const expected = encoded(deriveUuidV7Mask({ seed }));
+          await Promise.all(
+            [deriveUuidV7Mask, deriveUuidV7MaskAsync].map(async (derive) => {
+              let reads = 0;
+              const result = await derive({
+                get seed() {
+                  assert.equal(
+                    ++reads,
+                    1,
+                    "Seed must be captured before recognition or derivation",
+                  );
+                  return seed;
+                },
+              });
+              assert.equal(reads, 1);
+              assert.equal(encoded(result), expected);
+            }),
+          );
+        }),
+      );
+    },
+  },
+  {
     name: "async derivation preserves byte tails, UTF-8 boundaries and iteration counts",
     async run(this: void) {
       const strings = [

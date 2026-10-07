@@ -238,8 +238,9 @@ function createSentinels(
       return new UuidSlugError(INVALID_SENTINEL, INVALID_SENTINEL_SHAPE);
     const name = stringInput(definition.name);
     if (name === undefined) return new UuidSlugError(INVALID_SENTINEL, INVALID_SENTINEL_SHAPE);
-    const uuidInput =
-      typeof definition.uuid === "string" ? definition.uuid : stringInput(definition.uuid);
+    // Validate the same value an accessor supplied; a second read could select a different ID.
+    const givenUuid = definition.uuid;
+    const uuidInput = typeof givenUuid === "string" ? givenUuid : stringInput(givenUuid);
     if (uuidInput === undefined) return new UuidSlugError(INVALID_SENTINEL, INVALID_SENTINEL_SHAPE);
     const unknown = findUnknownOption(definition, SENTINEL_OPTIONS);
     if (unknown !== undefined)

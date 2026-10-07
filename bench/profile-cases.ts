@@ -56,6 +56,7 @@ export function createProfileCases(
   const timestampWindow = { maxTimestampDeltaMs: 86_400_000, referenceUnixMs: instant };
   const sentinelTimestampWindow = { maxTimestampDeltaMs: 0, referenceUnixMs: 0 };
   const current = { seed: "profile-current-seed" };
+  const constructionByteSeed = new Uint8Array(16);
   const previous = { seed: "profile-previous-seed" };
   const rotationMasks = Array.from({ length: 17 }, (_, index) =>
     unwrap(
@@ -989,6 +990,8 @@ export function createProfileCases(
     "construct.mask": () => api.deriveUuidV7Mask(current),
     "construct.mask.bytes": () =>
       api.deriveUuidV7Mask({ seed: new Uint8Array(16), keyDerivationIterations: 1 }),
+    "construct.mask.bytes.reused": () =>
+      api.deriveUuidV7Mask({ seed: constructionByteSeed, keyDerivationIterations: 1 }),
     "construct.mask.iterated": () =>
       api.deriveUuidV7Mask({ ...current, keyDerivationIterations: 8 }),
     "construct.codec.rotation": () =>

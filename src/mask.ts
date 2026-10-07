@@ -73,11 +73,12 @@ function validateOptions(options: unknown, accepted: Readonly<Record<string, tru
   const unknown = findUnknownOption(input, accepted);
   if (unknown !== undefined)
     return new UuidSlugError(INVALID_MASK, `Unknown mask option: ${unknown}.`);
+  // An accessor must not choose different key material between recognition and derivation.
+  // Capture once; a byte seed also needs only one intrinsic brand check.
+  const givenSeed = input.seed;
   const seed =
-    typeof input.seed === "string" || isUint8Array(input.seed)
-      ? input.seed
-      : (stringInput(input.seed) ?? input.seed);
-  if (typeof seed !== "string" && !isUint8Array(seed))
+    typeof givenSeed === "string" || isUint8Array(givenSeed) ? givenSeed : stringInput(givenSeed);
+  if (seed === undefined)
     return new UuidSlugError(INVALID_MASK, "Mask seed must be a string or Uint8Array.");
   const givenLabel = input.diagnosticLabel;
   const diagnosticLabel = givenLabel === undefined ? "seeded" : givenLabel;
