@@ -220,9 +220,6 @@ describe("wire format compatibility", () => {
     expect(uuidStringToPlainSlug(vector.uuid)).toBe(vector.plain);
     expect(codec.uuidToMaskedSlug(vector.uuid)).toBe(vector.masked);
     expect(codec.uuidToString(vector.masked)).toBe(vector.uuid);
-    // Length is part of the wire format, not a by-product of it: 22 characters is what makes the
-    // check exactly 16 bits, so a slug that round-trips at some other length has changed format.
-    expect(vector.masked).toHaveLength(22);
   });
 });
 

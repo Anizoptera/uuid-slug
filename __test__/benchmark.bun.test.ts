@@ -1029,9 +1029,6 @@ test.concurrent.each([
   expect(result.stdout).toContain("control (fixture 1)");
   expect(result.stdout).toContain("measured");
   expect(result.stdout).toContain("Randomness: control (fixture 1)");
-  expect(result.stdout).toContain("| operation |");
-  expect(result.stdout).toContain("| --- | ---: | ---: |");
-  expect(result.stdout).toContain("| candidate | entropy source | distinct |");
   if (mode === "exit-after") expect(result.stdout).toContain("Randomness: subject (fixture 1)");
 });
 
@@ -1183,7 +1180,7 @@ test("generation report ranks the fastest package route against the fastest riva
 test.concurrent("bench:results refuses smoke settings", async () => {
   const child = Bun.spawn(
     [process.execPath, join(import.meta.dir, "..", "bench", "results.ts"), "--smoke"],
-    { stdout: "pipe", stderr: "pipe" },
+    { stdout: "ignore", stderr: "pipe" },
   );
   const [stderr, status] = await Promise.all([new Response(child.stderr).text(), child.exited]);
   expect(status).not.toBe(0);

@@ -361,6 +361,9 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Before adding test infrastructure, search `__test__/`, `bench/`, and `scripts/` by capability and
   failure, then inspect callers and package-script routing. Extend the nearest owner. Split only for
   a different oracle, runtime, isolation, or feedback boundary.
+- Keep an assertion only when it detects a material defect beyond existing guarantees. Do not
+  assert test-owned allocations or repeat facts implied by a stronger assertion; report tests
+  protect values and diagnostics, not incidental Markdown decoration.
 - Keep TypeScript tests and their fixtures in the nearest `__test__/` directory so production and
   verification code remain distinct without a second naming convention.
 - Keep routine verification in `.github/workflows/check.yml`. Add another workflow only when it

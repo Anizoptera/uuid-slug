@@ -50,7 +50,6 @@ describe("feistel mixing", () => {
     for (let i = 0; i < 512; i += 1) {
       const source = blockFrom(i);
       const mixed = apply(source, "mask");
-      expect(mixed).toHaveLength(16);
       expect([...apply(mixed, "unmask")]).toEqual([...source]);
     }
   });
