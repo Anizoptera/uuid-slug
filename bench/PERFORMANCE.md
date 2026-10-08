@@ -870,7 +870,8 @@ not proven equivalent; the focused observations reproduce the writer gains.
 Native profiles cover the changed methods on Node, Bun, Deno and Chromium.
 `primary-value-resource-check.log` records passing Node and Bun resource and latency gates;
 the changed methods create no counted arrays, views or errors. These counters do not measure
-inspection objects or total allocated bytes. Selector validation and private ownership remain intact.
+inspection objects or total allocated bytes. Selector validation remains intact; caller-buffer byte
+conversions have the private-storage defect described in §Parsed UUID value state.
 
 Default-pair comparisons retain seven fresh-process medians per row, each from five 10 ms
 batches after 32 ms warm-up, in `primary-pair-baseline.jsonl` and `primary-pair-repeat.jsonl`.
@@ -1856,6 +1857,20 @@ A parsed or generated `Uuid` keeps its bytes, codec, and payload layout in priva
 `LocalUuidValue`. The rejected module `WeakMap` cost one registration per value, which was more than
 the rest of value creation, and needed a state object and a frozen layout copy per value. Text parsed
 without a codec keeps its freshly decoded bytes; byte input and bytes returned by a codec are copied.
+
+Caller-buffer conversions can expose those private bytes. A Bun 1.4.2 source reproduction replaces
+the destination's `set` method, retains its source and fills it with zeroes; subsequent UUID reads
+change to all zeroes through `value.toBytes`, root `uuidToBytes` and codec `uuidToBytes`, as recorded
+in `ts-release-audit-private-byte-leak-reproduction.log`.
+`ts-release-audit-private-byte-copy-unretained.patch` preserves the falsifying shared regression
+and copy candidates; `ts-release-audit-private-byte-leak-red.log` proves the destination callback ran. Intrinsic copying passes
+that regression on Node and Bun but is not retained: six fresh-process pairs with three batches
+per process on WebKit 26.6 give owned/caller-write ratios 1.099 [1.05, 1.20] / 1.090 [1.04, 1.14].
+Indexed copying and an isolated indexed helper improve caller writes but leave owned-copy cost
+unresolved; a captured intrinsic gives ratios 1.136 [1.0003, 1.25] / 1.588 [1.56, 1.68].
+Raw screens are `ts-release-audit-{intrinsic,indexed,helper,captured}-copy-webkit.jsonl`.
+These batch-throughput screens do not prove other runtime costs, individual latency or total
+allocation. No tested candidate establishes the required normal-call no-loss condition.
 
 Two six-round packed replays on 2026-09-16 compared `281dc5e` with `80d3722`. Median ns per call:
 

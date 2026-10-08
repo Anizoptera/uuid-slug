@@ -460,8 +460,9 @@ efficiency. A reproducible misuse alone does not justify that cost.
   `String` cannot prove a genuine wrapper or narrow an object to a primitive.
 - Capture branded inputs generically so a known wrong representation or UUID version is rejected.
   Keep bare strings accepted: widening erases the child brand, so only runtime validation can judge them.
-- Owned byte outputs must be plain `Uint8Array`, not native `Buffer` subclasses. Adapt at the
-  runtime boundary and verify constructors in both runners; preserve caller-supplied buffers.
+- Return owned bytes as plain `Uint8Array`, not `Buffer`; verify constructors in Node and Bun.
+  Adapt at the runtime boundary, preserve caller buffers, and never pass private bytes to caller
+  functions: they could retain or change them.
 
 ## Writing public documentation
 
