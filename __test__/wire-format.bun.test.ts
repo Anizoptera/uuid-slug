@@ -13,6 +13,7 @@
  * other.
  */
 import { describe, expect, test } from "bun:test";
+import { equal } from "node:assert/strict";
 import {
   BASE32HEX,
   BASE64URL,
@@ -29,9 +30,9 @@ describe("wire format is identical across runtimes", () => {
   for (const vector of golden) {
     test(`${vector.mask} ${vector.uuid}`, () => {
       const codec = codecs[vector.mask as keyof typeof codecs];
-      expect(String(uuidStringToPlainSlug(vector.uuid))).toBe(vector.plain);
-      expect(String(codec.uuidToMaskedSlug(vector.uuid))).toBe(vector.masked);
-      expect(String(codec.uuidToString(vector.masked))).toBe(vector.uuid);
+      equal(uuidStringToPlainSlug(vector.uuid), vector.plain);
+      equal(codec.uuidToMaskedSlug(vector.uuid), vector.masked);
+      equal(codec.uuidToString(vector.masked), vector.uuid);
     });
   }
 
