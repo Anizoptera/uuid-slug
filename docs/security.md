@@ -82,7 +82,9 @@ overloads select that payload from a larger array; other payload sizes and malfo
 rejected. Invalid parsing leaves caller storage unchanged. Conversion preserves all 16-byte
 values; use UUID guards when the version or variant matters.
 
-Immutable parsed UUIDs keep private bytes. External masking codecs receive an isolated copy,
+Immutable parsed UUIDs keep private bytes during ordinary use. Default buffer writes do not
+protect against caller-replaced methods; additional adversarial hardening requires an explicitly
+requested non-default path. External masking codecs receive an isolated copy,
 and their decoded bytes are validated and copied before retention. Callback exceptions remain
 available as `cause`; a valid-shaped callback result does not prove correct masking or decoding.
 

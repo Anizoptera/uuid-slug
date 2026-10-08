@@ -22,14 +22,16 @@ Otherwise propose the exact edit and wait. Code changes, stale text, failed chec
 Correction requests authorize factual repairs without another approval, never new public contracts, guarantees, APIs or behavior.
 This restriction overrides documentation-update instructions below.
 
-Before asking, read the owning rulings and settle engineering choices and checks from evidence within authorized scope.
-Ask only about unresolved material priorities, consequences or permissions. Explain what each answer changes
-and why rulings or evidence cannot settle it. Use plain words; separate independent decisions and hold only dependent work.
-For audit findings, show the failing consumer call, triggering input, consequence and normal-call control.
-Separate observed from possible harm; a misuse reproduction alone does not establish ordinary-call harm or release impact.
+Derive choices and checks from owning rulings and in-scope evidence before asking.
+Ask only unresolved material priorities, consequences or permissions. State each answer's effect
+and why evidence cannot decide it. Use plain words, separate independent decisions, and hold only dependent work.
+Audit findings need the failing call, trigger, consequence and normal-call control.
+Separate observed from possible harm; misuse alone does not prove ordinary-call harm or release impact.
 
-Before rare-misuse defenses, read `docs/public-api.md` §Capabilities and runtime work.
-Its no-regression rule authorizes no experiments; defenses without required evidence remain unresolved.
+Default calls serve ordinary use. Adversarial overrides must add no work there.
+Hardening needs an explicitly requested non-default path; probes authorize neither.
+Keep input validation, secure randomness and wire integrity; read `docs/public-api.md` §Capabilities and runtime work.
+JavaScript tolerance need not be typed. Widen types or block release only for a failing supported job.
 
 ## Contract owners
 
@@ -409,13 +411,12 @@ Its no-regression rule authorizes no experiments; defenses without required evid
 - Before changing brands, string wrappers or input validation, read `docs/public-api.md`
   §Types and validation; preserve ergonomic raw inputs and every distinction validation proves.
 - Return owned bytes as plain `Uint8Array`, not `Buffer`; verify constructors in Node and Bun.
-  Adapt at the runtime boundary, preserve caller buffers, and never pass private bytes to caller
-  functions: they could retain or change them.
+  Adapt at the runtime boundary and preserve caller buffers. Overridden-method defenses follow
+  §Work scope; ordinary calls must not pay for adversarial hardening.
 
 ## Writing public documentation
 
-README, CHANGELOG, `docs/`, and the bench docs are read by someone who installs the package and
-never opens `src/` or `bench/`. Each rule below names a failure that has already shipped here.
+Write README, CHANGELOG, `docs/` and bench docs for consumers who never open source or benchmarks.
 
 - Use only words the reader already has: generator, seed, key, codec, slug, alphabet, buffer.
   Words from source and bench files do not reach a consumer: route, primitive, adapter, seam,
