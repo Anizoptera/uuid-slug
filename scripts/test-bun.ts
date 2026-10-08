@@ -2,12 +2,12 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-async function main(): Promise<number> {
-  // A terminated test cannot run its finally blocks. The surviving parent removes files in
+export async function runBunInScratch(args: readonly string[]): Promise<number> {
+  // A terminated child cannot run its finally blocks. The surviving parent removes files in
   // the runner's temporary directory after it exits; reusable caches stay outside.
-  const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-tests-"));
+  const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-runner-"));
   try {
-    const child = Bun.spawn([process.execPath, "--no-orphans", "test", ...process.argv.slice(2)], {
+    const child = Bun.spawn([process.execPath, "--no-orphans", ...args], {
       env: { ...process.env, TMPDIR: scratch },
       stdin: "inherit",
       stdout: "inherit",
@@ -30,4 +30,4 @@ async function main(): Promise<number> {
   }
 }
 
-process.exitCode = await main();
+if (import.meta.main) process.exitCode = await runBunInScratch(["test", ...process.argv.slice(2)]);

@@ -115,6 +115,47 @@ for (const target of ["runner", "SIGINT", "SIGTERM"] as const) {
   });
 }
 
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  test(
+    `generation benchmark ${signal} removes its built scratch`,
+    async () => {
+      const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
+      const child = Bun.spawn([process.execPath, "scripts/generation-matrix.ts", "--smoke"], {
+        cwd: project,
+        env: {
+          ...process.env,
+          TMPDIR: scratch,
+          UUID_SLUG_GENERATION_FORKS: "1",
+          UUID_SLUG_GENERATION_FILTER: "package.v4.text.native",
+        },
+        stdout: "pipe",
+        stderr: "ignore",
+        timeout: process.env.CI ? 30000 : 3000,
+      });
+      try {
+        const reader = child.stdout.getReader();
+        let output = "";
+        while (!output.includes('"name":"package.v4.text.native"')) {
+          const chunk = await reader.read();
+          if (chunk.done) throw new Error("Generation benchmark exited before producing a result.");
+          output += new TextDecoder().decode(chunk.value);
+        }
+        // Real benchmark output witnesses completed builds; cleanup must belong to the parent.
+        expect((await readdir(scratch)).length).toBeGreaterThan(0);
+        child.kill(signal);
+        await reader.cancel();
+        expect(await child.exited).not.toBe(0);
+        expect(await readdir(scratch)).toEqual([]);
+      } finally {
+        child.kill();
+        await child.exited;
+        await rm(scratch, { recursive: true, force: true });
+      }
+    },
+    process.env.CI ? 30000 : 5000,
+  );
+}
+
 test("generated-file cleanup preserves source and exact executable bytes in the archive", async () => {
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
   const reports = join(scratch, "reports");
