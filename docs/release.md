@@ -2,6 +2,10 @@
 
 A release tag publishes both verified packages by default, may select only npm or only the Rust crate, and becomes final after every selected destination exposes its exact bytes.
 
+Agents prepare releases only. Creating a release version or tag, publishing, and finalizing require
+the maintainer's final explicit authorization for the exact operation. A preparation request,
+approved plan, credentials or passing checks is not release authorization.
+
 ## Comparison releases
 
 Git release tags are the history authority. Existing lightweight tags remain valid history; new
@@ -109,5 +113,4 @@ the release once every required result is observable and matches the retained re
 Write retained archives only through `--tarball-out DIR` into a caller-owned directory, then remove
 that directory. Never parse an archive path from human-facing output.
 
-Publishing and every other remote write require separate explicit maintainer authorization for the
-exact operation.
+Every remote write requires explicit maintainer authorization for the exact operation.

@@ -450,8 +450,9 @@ never opens `src/` or `bench/`. Each rule below names a failure that has already
 
 ## Release
 
-- Remote writes require explicit maintainer authorization for each exact operation. Do not push,
-  open a pull request, upload a tag, create a release, publish, or change remote settings.
+- Prepare only. Release version changes, tags, publication, finalization and `bun run release`
+  require final explicit maintainer authorization for each operation; plans, credentials and checks
+  grant no permission. Other remote writes (pushes, pull requests, settings) also need explicit authorization.
 - MUST read `docs/release.md` in full before changing versions, release tooling or workflows,
   packaging, publication, recovery, assets, notes, or finalization.
 - Run `bun run check` before committing unless a maintainer explicitly selects narrower intermediate
