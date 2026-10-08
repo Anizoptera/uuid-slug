@@ -13,6 +13,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import {
+  archiveReportBundles,
   archiveAndRemoveGeneratedFiles,
   compactReports,
   deduplicateCapturedPackage,
@@ -20,6 +21,68 @@ import {
 import { command } from "../command";
 
 const project = resolve(import.meta.dir, "../..");
+
+test("loose bundles remain byte-recoverable without losing measurements or earlier index entries", async () => {
+  const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
+  try {
+    const reports = join(scratch, "reports");
+    const recovered = join(scratch, "recovered");
+    await Promise.all([
+      mkdir(join(reports, "first"), { recursive: true }),
+      mkdir(join(reports, "second"), { recursive: true }),
+      mkdir(recovered),
+    ]);
+    const bundles = {
+      "first/worker.mjs": "export default 1;",
+      "second/worker.mjs": "export default 2;",
+    };
+    for (const [member, bytes] of Object.entries(bundles))
+      await writeFile(join(reports, member), bytes);
+    const indexPath = join(reports, "retained-artifact-index.json");
+    await writeFile(indexPath, JSON.stringify({ earlier: { evidence: "keep extra metadata" } }));
+    await writeFile(join(reports, "measurement.jsonl"), "raw measurement");
+    await symlink(join(reports, "first/worker.mjs"), join(reports, "borrowed.mjs"));
+    expect(await archiveReportBundles(reports)).toBe(2);
+    const index = (await Bun.file(indexPath).json()) as Record<
+      string,
+      { archive: string; member: string; sha256: string; bytes: number } | { evidence: string }
+    >;
+    expect(index.earlier).toEqual({ evidence: "keep extra metadata" });
+    const first = index["first/worker.mjs"];
+    const archive = first && "archive" in first ? first.archive : undefined;
+    if (!archive) throw new Error("Archived bundles have no recovery archive");
+    await command("tar", ["-xzf", join(reports, archive), "-C", recovered], scratch);
+    for (const [member, bytes] of Object.entries(bundles)) {
+      expect(await Bun.file(join(reports, member)).exists()).toBe(false);
+      expect(await Bun.file(join(recovered, member)).text()).toBe(bytes);
+      expect(index[member]).toEqual({
+        archive,
+        member,
+        sha256: new Bun.CryptoHasher("sha256").update(bytes).digest("hex"),
+        bytes: bytes.length,
+      });
+    }
+    expect(await Bun.file(join(reports, "measurement.jsonl")).text()).toBe("raw measurement");
+    expect((await lstat(join(reports, "borrowed.mjs"))).isSymbolicLink()).toBe(true);
+    expect(await archiveReportBundles(reports)).toBe(0);
+    await writeFile(join(reports, "first/worker.mjs"), "replacement capture");
+    const collision = await archiveReportBundles(reports).catch((error: unknown) => error);
+    if (!(collision instanceof Error)) throw new Error("Indexed capture was replaced");
+    expect(collision.message).toContain("Artifact is already indexed");
+    expect(await Bun.file(join(reports, "first/worker.mjs")).text()).toBe("replacement capture");
+    await rm(join(reports, "first/worker.mjs"));
+    // An unreadable index must stop deletion rather than replacing earlier recovery information.
+    await writeFile(join(reports, "unfinished.mjs"), "export default 3;");
+    await writeFile(indexPath, "[]");
+    const invalid = await archiveReportBundles(reports).catch((error: unknown) => error);
+    if (!(invalid instanceof Error)) throw new Error("Invalid artifact index was replaced");
+    expect(invalid.message).toContain("Invalid artifact index");
+    expect(await Bun.file(join(reports, "unfinished.mjs")).text()).toBe("export default 3;");
+    expect((await readdir(reports)).some((name) => name.startsWith("bundle-archive-"))).toBe(false);
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+});
 
 test("identical captured packages share storage without losing paths or replacing damaged history", async () => {
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));

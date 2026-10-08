@@ -1,6 +1,16 @@
-import { link, lstat, mkdir, mkdtemp, readdir, rename, rm } from "node:fs/promises";
+import {
+  link,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rename,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { basename, join, resolve } from "node:path";
+import { basename, join, relative, resolve } from "node:path";
 import { command } from "./command";
 
 export async function compactReports(reports: string): Promise<number> {
@@ -130,6 +140,73 @@ export async function archiveAndRemoveGeneratedFiles(
     await rename(alias, latest);
     await Promise.all(generatedFiles.map((name) => rm(join(reports, name))));
     await compactReports(reports);
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+}
+
+export async function archiveReportBundles(reportDirectory: string): Promise<number> {
+  // Retained measurements need exact executed bytes, not loose executable duplicates. Preserve
+  // recovery metadata before removal; never infer that a failed study's bundle is disposable.
+  const reports = resolve(reportDirectory);
+  const files: string[] = [];
+  async function collect(directory: string): Promise<void> {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const file = join(directory, entry.name);
+      if (
+        entry.isDirectory() &&
+        !entry.name.startsWith(".compact-") &&
+        !entry.name.startsWith("bundle-archive-")
+      )
+        await collect(file);
+      else if (entry.isFile() && entry.name.endsWith(".mjs")) files.push(relative(reports, file));
+    }
+  }
+  await collect(reports);
+  if (files.length === 0) return 0;
+  const indexPath = join(reports, "retained-artifact-index.json");
+  // Older entries may carry additional metadata; retain it without interpreting or narrowing it.
+  let existing: unknown = {};
+  try {
+    existing = JSON.parse(await readFile(indexPath, "utf8"));
+  } catch (error) {
+    if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error;
+  }
+  if (!existing || typeof existing !== "object" || Array.isArray(existing))
+    throw new Error(`Invalid artifact index: ${indexPath}. Restore it before archiving bundles.`);
+  const index: Record<string, unknown> = { ...existing };
+  for (const member of files)
+    if (Object.hasOwn(index, member))
+      throw new Error(`Artifact is already indexed: ${member}. Keep new captures at a new path.`);
+  const scratch = await mkdtemp(join(reports, "bundle-archive-"));
+  try {
+    const snapshot = join(scratch, "bundles.tar.gz");
+    const recovered = join(scratch, "recovered");
+    await mkdir(recovered);
+    await command("tar", ["-czf", snapshot, "-C", reports, ...files], reports);
+    await command("tar", ["-xzf", snapshot, "-C", recovered], reports);
+    const retained = await retainArchive(snapshot, reports, "retained-loose-bundles");
+    // Check every member against its original, including siblings with the same basename;
+    // read once per copy instead of spawning a comparison process for every bundle.
+    for (const member of files) {
+      const [original, bytes] = await Promise.all([
+        readFile(join(reports, member)),
+        readFile(join(recovered, member)),
+      ]);
+      if (!original.equals(bytes))
+        throw new Error(`Bundle changed during archival: ${member}. Stop its writer and retry.`);
+      index[member] = {
+        archive: basename(retained),
+        member,
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+        bytes: bytes.length,
+      };
+    }
+    const replacement = join(scratch, "index.json");
+    await writeFile(replacement, `${JSON.stringify(index, null, 2)}\n`);
+    await rename(replacement, indexPath);
+    await Promise.all(files.map((member) => rm(join(reports, member))));
+    return files.length;
   } finally {
     await rm(scratch, { recursive: true, force: true });
   }
