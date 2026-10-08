@@ -23,6 +23,16 @@ rejects restoring that array while preserving correct output. Profiles in
 Node and Bun samples reach decoding, timestamp validation and masking. These captures do not
 compare total allocation with the baseline or establish allocation parity on other runtimes.
 
+Reference-only destructuring corrects explicit null references but does not meet the no-loss rule.
+`ts-release-audit-timestamp-reference-only-host.{jsonl,log}` compares it with `d5ea47f` in six
+fresh process pairs per host, with three batches per process. Node 26.10.0 uppercase base32hex
+plain validation has median cost ratio 1.050 (95% interval 1.001–1.076); Bun 1.4.2 clock-default
+text validation has ratio 1.024 (1.002–3.012). The large Bun outlier is retained. These warm
+throughput samples do not prove individual latency or total allocation, or identify a JIT cause.
+`ts-release-audit-timestamp-reference-only-rejected.patch` preserves the exact change and its
+three-reader regression, which fails on the baseline in Bun and passes on the candidate in Node and Bun.
+Other runtimes and resource comparisons remain unmeasured because this host screen rejects retention.
+
 ### Native Bun default UUIDv7 text
 
 Bun defaults use native UUIDv7 text generation; Node keeps its independent package generator.
