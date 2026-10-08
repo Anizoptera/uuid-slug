@@ -101,7 +101,8 @@ export async function compileConsumer(
       path.dirname(entry),
       // Parcel's reporter probes /dev/tty through a bundled helper unless dimensions are present.
       // Fixed dimensions avoid that irrelevant subprocess while preserving non-interactive output.
-      { COLUMNS: "80", LINES: "24" },
+      // Consumer jobs already run concurrently; do not multiply a worker pool per Parcel job.
+      { COLUMNS: "80", LINES: "24", PARCEL_WORKERS: "1" },
     );
     await rename(parcelOutput, outfile);
     await rename(`${parcelOutput}.map`, `${outfile}.map`);
