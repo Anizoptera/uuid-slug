@@ -8,7 +8,7 @@ import { chromium, firefox, webkit } from "playwright";
 import type { Page } from "playwright";
 
 import { command } from "../scripts/command";
-import { archiveAndRemoveScratch } from "../scripts/archive-scratch";
+import { archiveAndRemoveScratch, deduplicateCapturedPackage } from "../scripts/archive-scratch";
 import { identicalArtifacts } from "./identical-artifacts";
 import { describeSamples, medianConfidence, medianConfidence95 } from "./statistics";
 import { CANDIDATE_FILES, CANDIDATE_GROUPS, createSourceCandidates } from "./candidate-sources";
@@ -568,9 +568,16 @@ async function main(): Promise<void> {
     if (sourceReport) {
       // Source captures cannot prove optimizer behavior through packed exports. Keep the exact
       // measured packages so graph inspection can reuse them after temporary builds are removed.
+      // Each comparison owns fresh capture paths and never rewrites them; immutable links are safe.
+      const baselineCapture = join(sourceReport, "baseline.tgz");
+      const candidateCapture = join(sourceReport, "candidate.tgz");
       await Promise.all([
-        copyFile(baseline.tarball, join(sourceReport, "baseline.tgz")),
-        copyFile(candidate.tarball, join(sourceReport, "candidate.tgz")),
+        copyFile(baseline.tarball, baselineCapture),
+        copyFile(candidate.tarball, candidateCapture),
+      ]);
+      await Promise.all([
+        deduplicateCapturedPackage(baselineCapture, dirname(sourceReport)),
+        deduplicateCapturedPackage(candidateCapture, dirname(sourceReport)),
       ]);
     }
     // Browser engines share one compiled corpus per revision. Host-only comparisons need neither

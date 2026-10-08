@@ -12,10 +12,65 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { archiveAndRemoveGeneratedFiles, compactReports } from "../archive-scratch";
+import {
+  archiveAndRemoveGeneratedFiles,
+  compactReports,
+  deduplicateCapturedPackage,
+} from "../archive-scratch";
 import { command } from "../command";
 
 const project = resolve(import.meta.dir, "../..");
+
+test("identical captured packages share storage without losing paths or replacing damaged history", async () => {
+  const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
+  try {
+    const reports = join(scratch, "reports");
+    await mkdir(reports);
+    const first = join(scratch, "first.tgz");
+    const second = join(scratch, "second.tgz");
+    const distinct = join(scratch, "distinct.tgz");
+    await writeFile(first, "exact measured package");
+    await copyFile(first, second);
+    await writeFile(distinct, "another measured package");
+    expect((await stat(first)).ino).not.toBe((await stat(second)).ino);
+    await Promise.all(
+      [first, second, distinct].map((path) => deduplicateCapturedPackage(path, reports)),
+    );
+    expect(await Bun.file(first).text()).toBe("exact measured package");
+    expect(await Bun.file(second).text()).toBe("exact measured package");
+    expect(await Bun.file(distinct).text()).toBe("another measured package");
+    const [firstState, secondState, distinctState] = await Promise.all([
+      stat(first),
+      stat(second),
+      stat(distinct),
+    ]);
+    expect(firstState.ino).toBe(secondState.ino);
+    expect(firstState.ino).not.toBe(distinctState.ino);
+    const retained = await Promise.all(
+      (await readdir(reports)).map((name) => stat(join(reports, name))),
+    );
+    expect(retained).toHaveLength(2);
+    expect(new Set(retained.map((file) => file.ino))).toEqual(
+      new Set([firstState.ino, distinctState.ino]),
+    );
+    // Corruption must stop reuse while the independent incoming capture remains recoverable.
+    await writeFile(first, "damaged history");
+    const incoming = join(scratch, "incoming.tgz");
+    await writeFile(incoming, "exact measured package");
+    let failure: unknown;
+    try {
+      await deduplicateCapturedPackage(incoming, reports);
+    } catch (error) {
+      failure = error;
+    }
+    if (!(failure instanceof Error))
+      throw new Error("Damaged capture was accepted without an error");
+    expect(failure.message).toContain("damaged archive");
+    expect(await Bun.file(incoming).text()).toBe("exact measured package");
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+});
 
 test.skipIf(process.platform !== "darwin")(
   "report compression saves blocks without changing bytes or following symlinks",

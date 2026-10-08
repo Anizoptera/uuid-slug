@@ -38,17 +38,9 @@ efficiency. A reproducible misuse alone does not justify that cost.
 
 - Before ANY public TypeScript or Rust interface work, read `docs/public-api.md` in full. It owns
   naming, shape, types, literals, defaults, errors, effects, compatibility, comments, and proof.
-- Start from caller code. The easiest call MUST be correct; types reject known misuse; defaults add
-  no secret, lossy, compatibility, expensive, or weaker work. The declaration baseline proves none
-  of this.
-- Keep runtime acceptance and TypeScript guidance separate. Implementations accept and safely
-  reject arbitrary JavaScript values. Public TypeScript signatures accept every supported form,
-  reject provably invalid branded inputs, and infer the strictest result justified by the input.
-  Read `docs/public-api.md` §Rules before changing these boundaries; never widen declarations to
-  `unknown` just because JavaScript can bypass them.
-- Export one semantic scalar constant for every closed string callers pass or compare. Export a
-  collection only for a real iteration job; indexes NEVER identify values. Reject unknown option
-  keys and make each local runtime key map exhaustive against its public options type.
+- Start from executable consumer calls; `docs/public-api.md` §Rules and §Types and validation own
+  runtime acceptance, TypeScript inference, defaults, constants and option-key checks. A declaration
+  baseline proves signatures only.
 - Finish only when source calls, runtime paths, emitted declarations, editor help, packed consumers,
   and produced bundles independently prove the changed contract.
 
@@ -76,19 +68,12 @@ efficiency. A reproducible misuse alone does not justify that cost.
   Before rejecting a faster implementation, name the published promise or explicit maintainer
   requirement it violates. An unanswered proposal, existing test, or agent-derived plan constraint
   is not a new guarantee. Fix conflicting contract text and the roadmap before implementation.
-  Default hot paths must provide no guarantees beyond the corresponding proper native implementation.
-  Trust native results directly; do not add result validation, trust tracking, clock repair, or
-  other work to enforce stronger guarantees. Keep extra guarantees on explicit configurable paths.
-  Correct conflicting specs and tests before implementation; this ruling already authorizes that
-  correction, so do not request approval again. Caller-input validation and wire formats remain distinct.
-  Default generation needs no stronger guarantees than correctly implemented primary qualified
-  rivals provide. Put additional guarantees on optional configured paths; do not reject a rival
-  for lacking an agent-added guarantee. Identify its actual behavior before choosing the default.
-  When proper native behavior conflicts with a default guarantee, correct the guarantee and its
-  tests instead of rejecting native output. Existing tests and implementation choices cannot veto
-  the native baseline; measure differences without turning them into default requirements.
-  Read `docs/public-api.md` §Generation and codecs
-  before deciding which generation properties belong on defaults or configured generators.
+  Before choosing default or configured generation guarantees, read `docs/public-api.md`
+  §Generation and codecs. Proper native guarantees are the default ceiling; trust their output
+  without extra validation or repair. Stronger guarantees require configuration. Correct conflicting
+  specifications and tests before implementation; that correction is authorized, while caller-input
+  validation and wire formats remain protected. Identify each rival's actual guarantees; agent-added
+  guarantees cannot disqualify it.
   New guarantees require a maintainer ruling before code or tests impose them. Intra-millisecond ordering
   is explicitly not guaranteed: do not gate it or reject a native generator for lacking it. The
   exemption covers order only. Before adopting a native or alternative generator, compare every
@@ -102,33 +87,16 @@ efficiency. A reproducible misuse alone does not justify that cost.
   or its canonical 22-character spelling; reject every other length. Preserve plain-slug padding rejection.
 - Explain masking without confusing problem and scope: every UUID version exposes standardized
   fields, while this package deliberately defines a masked wire format only for UUIDv7.
-- RFC 9562 permits uppercase, lowercase, and mixed-case UUID text; it does not select a default.
-  Accept those cases and compact text, emit lowercase hyphenated text by default for one stable
-  package spelling, and keep uppercase output explicit.
 - Representation guidance must distinguish keyless root conversions from keyed codec conversions,
   state that 22-character plain and masked base64url forms overlap, and never imply that a paired
   generator computes every spelling.
-- Common representation changes need one public call. On a codec, name an alternate source
-  and result explicitly without making the caller compose intermediate conversions.
 - Before editing any public symbol, apply `docs/public-api.md` §UUID slug vocabulary and §Shape to
   its name, parameters, accepted forms, result, and detached use. That document owns the rules and
   terms. Fix dependents after a rename; never restore an unclear name to satisfy the compiler.
-- Reject context-dependent option and property names. Name the exact value they control when a cold
-  reader could infer another target; `maskedSlugAlphabet` is valid, `outputAlphabet` is not.
-- Before choosing or accepting a public name, write its detached consumer call. The name and its
-  parameter names must identify the operation, input meaning, affected output, unit, and ownership
-  without the receiver or import path. Add a missing domain term; delete words that add no meaning.
-- Do not repeat a term across both sides of a conversion name. Keep the shared term on the
-  destination when the source still names exactly one API form. Use `plainSlugToUuidString`,
-  `maskedSlugToUuidBytes`, `plainToMaskedUuidSlug`, and `maskedToPlainUuidSlug`; never copy full type
-  names into both sides mechanically.
 - A public terminology change is incomplete while an old public term remains in source, README,
   durable docs, tests, generated declarations, or packaged consumer examples, except where text
   explicitly rejects that old term. Search all owners, rebuild declarations, and compile and run
   packed consumers before committing.
-- Plain slugs are lossless encodings of all 128 UUID bits. Never impose a UUID-version, variant,
-  or timestamp restriction on plain encoding or decoding; version-specific brands only preserve
-  facts already established about a value.
 - Read `docs/cross-language.md` before Rust work or changes shared with TypeScript. It owns
   parity, approved filesystem-safe output and distribution boundaries. Keep base64url defaults;
   select filesystem-safe masked output independently from the plain-slug alphabet.
@@ -139,14 +107,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
   of issuance. Do not reject multiple matches or append fallback masks on the caller's behalf.
 - Every decoder must accept every value that a supported matching encoder can produce. Options
   may add accepted forms; they must not remove existing ones. Reject forms no encoder produces.
-- Public inputs MUST accept every recoverable, unambiguous equivalent form. The implementation owns
-  making normalization safe, deterministic, bounded, and negligible-cost; difficulty never moves
-  that burden to callers. Normalize once and return one stable form. Keep already-normalized input
-  on the least-work path. Reject only different meaning or ambiguity. Document accepted forms and
-  normalization in `docs/public-api.md` and declaration JSDoc.
-- Every UUID-text writer accepts the shared lowercase and uppercase presets, defaults to lowercase
-  without extra work, and infers the matching result type. Keep text case independent from slug
-  alphabets, masking, migration selection, UUID bits, and accepted input.
+- Before changing accepted UUID forms, normalization or text-case presets, read `docs/public-api.md`
+  §Rules and §UUID text and bytes; preserve its input equivalence, output spelling and inferred types.
 - Keyed operations belong only on the UUIDv7 masking codec holding the key, including masked timestamp
   validation. Do not add top-level masked shortcuts. Masking-codec construction requires an explicit
   private mask or `UUID_V7_TEST_MASK`; keep the published mask opt-in and remove implicit masked
@@ -213,27 +175,14 @@ efficiency. A reproducible misuse alone does not justify that cost.
   generation, whose declarations carry no union (`docs/public-api.md` §Failures and effects).
   Package-owned interfaces carry failures as values; adapt and contain exception-based
   dependencies at their boundary.
-- Make compatible calls compose without intermediate error unwrapping. Read
-  `docs/public-api.md` §Failures and effects when designing or changing composition, error
-  propagation, markers, recognition checks, or result types; it owns the required behavior and
-  verification. Never apply one universal detector blindly: check the expected successful input
-  shape first, use local `instanceof Error` for package-created intermediate results, and reserve
-  marker plus cross-realm recognition for composable inputs or uncontrolled callbacks. Read
-  §Capabilities and runtime work before selecting checks or fallback order.
-- Give every root export, overload family, public type, interface, property, method, option, and
-  callback consumer-facing JSDoc in its owning source. Explain what changes the caller's decision:
-  valid input, defaults, result and ownership, expected errors or effects, ordering, important
-  limits, and realistic misuse. Equivalent operations MUST document equivalent facts with the same
-  terms, TSDoc fields, and order; vary the wording only where their contracts differ. Document every
-  configuration property at that property. Use the representation that serves each consumer: TSDoc
-  `@param`, `@defaultValue`, `@returns`, or short `@remarks` where structured editor help
-  adds information; prose, examples, or tables where they explain a workflow better. Never add tags
-  to restate the signature. Omit facts already clear from the type.
-  Non-public declarations may use TSDoc when editor help benefits maintainers.
-- Audit public TypeScript from executable consumer calls, not the declaration baseline. Exercise
-  every overload, default, option combination, detached method, branded result, caller-owned output,
-  and expected failure that changes how a caller writes code. Compile source and packed consumers;
-  execute runtime behavior separately. `api/typescript.api.d.ts` tracks generated signatures only.
+- Before changing composition, propagation, markers, recognition or result types, read
+  `docs/public-api.md` §Failures and effects; before selecting checks or fallback order, read
+  §Capabilities and runtime work. These owners distinguish local results from foreign inputs.
+- Before writing declaration comments, read `docs/public-api.md` §Declaration comments; it owns
+  JSDoc coverage, caller-facing facts, equivalent wording and useful editor help.
+- Audit public TypeScript with executable source and packed calls covering overloads, defaults,
+  option combinations, detached methods, brands, caller output and failures. Apply `docs/public-api.md`
+  §Proof; `api/typescript.api.d.ts` records signatures only.
 - Treat public JSDoc as part of every public-source change. Update or remove affected text in the
   same edit; never leave stale documentation for a later pass. Before committing, build declarations,
   query changed symbols through the TypeScript language service, and read every changed `.d.ts`
@@ -273,7 +222,7 @@ efficiency. A reproducible misuse alone does not justify that cost.
   source captures in reports; never bypass it or suppress their compiler diagnostics.
   Preserve failed artifacts until their diagnostic is resolved; then remove the disposable files.
   Include setup in cleanup; run Bun tests, API checks and generation comparisons through their package commands so `scripts/test-bun.ts` owns temporary files after interruption. Create their scratch under `tmpdir()`, inside the supervisor's cleanup scope. Purge successful bundles and resolved failure artifacts.
-  Preserve earlier captured graphs before replacing build-input archives; compact retained reports with `bun scripts/compact-reports.ts` so evidence does not consume uncompressed disk space.
+  Preserve earlier captured graphs before replacing build-input archives. Keep captured packages immutable and share identical archives by content hash; never rewrite a linked capture in place. Read `bench/README.md` before pruning indexed evidence. Compact retained reports with `bun scripts/compact-reports.ts` without changing their bytes.
   Before committing, inspect creator-owned paths in both `/tmp` and the runtime's
   `tmpdir()`, not just filename prefixes; stop children and preserve evidence and reusable caches.
   Run compiler diagnostics through the retained profiler executable and capture stdout verbatim;
@@ -450,16 +399,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
   skip parsing, allocation and initialization that the selected capability does not need.
 - Cast probes to narrow optional capability shapes, not intersections with ambient types that
   may already declare the method required.
-- Runtime values must carry strict brands that reject unchecked strings and bytes. Keep raw
-  function and configuration inputs ergonomic, validate them at the package seam, and infer brands
-  from successful generation, parsing, conversion, and guards without caller casts.
-- Public identifier, configuration, and selector string inputs accept primitive strings and genuine
-  `String` objects.
-  Normalize wrappers once with the intrinsic string-value operation; never invoke caller-defined
-  coercion hooks. Keep TypeScript declarations and string guards primitive-only because structural
-  `String` cannot prove a genuine wrapper or narrow an object to a primitive.
-- Capture branded inputs generically so a known wrong representation or UUID version is rejected.
-  Keep bare strings accepted: widening erases the child brand, so only runtime validation can judge them.
+- Before changing brands, string wrappers or input validation, read `docs/public-api.md`
+  §Types and validation; preserve ergonomic raw inputs and every distinction validation proves.
 - Return owned bytes as plain `Uint8Array`, not `Buffer`; verify constructors in Node and Bun.
   Adapt at the runtime boundary, preserve caller buffers, and never pass private bytes to caller
   functions: they could retain or change them.

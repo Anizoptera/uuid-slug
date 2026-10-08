@@ -609,6 +609,8 @@ export without reconstructing its contract from implementation code.
 
 - Give every root export and public interface member caller-facing JSDoc. State the accepted value,
   result, error or side effect, and boundary that can change the caller's decision.
+  Cover overload families, public types and callbacks; include defaults, ownership, ordering, limits and misuse.
+  Equivalent operations use the same terms, TSDoc fields and order unless their contracts differ.
 - Explain a non-obvious public shape in caller terms: the choice it affects, the misuse it prevents,
   and the public condition that would change the advice. Keep internal alternatives, measurements,
   dispatch, and implementation constraints out of JSDoc and in nearby non-JSDoc comments.
@@ -619,9 +621,10 @@ export without reconstructing its contract from implementation code.
   ordering, security limits, and error behavior at the declaration where a caller encounters them.
 - Write in public tokens and plain language. Link to a detailed owner when the full mechanism is too
   large, but keep the decision-relevant reason inline.
-- Document every configuration property at that property. Use `@defaultValue`, `@returns`, and
+- Document every configuration property at that property. Use `@param`, `@defaultValue`, `@returns`, and
   `@remarks` only when the tag makes editor help clearer than plain prose; a tag that
   repeats the declaration is noise.
+  Use prose, examples or tables when they explain a workflow better; non-public declarations may use TSDoc for useful editor help.
 - Review each changed comment in the built declarations against its declaration and owning
   contract; comment presence does not prove accuracy.
 

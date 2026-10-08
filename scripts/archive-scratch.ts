@@ -57,12 +57,16 @@ export async function compactReports(reports: string): Promise<number> {
   return reclaimed;
 }
 
-async function retainArchive(snapshot: string, reports: string): Promise<string> {
+async function retainArchive(
+  snapshot: string,
+  reports: string,
+  prefix = "build-inputs",
+): Promise<string> {
   // Content names keep captures immutable; hard links reuse stored bytes instead of duplicating them.
   const digest = createHash("sha256")
     .update(await Bun.file(snapshot).bytes())
     .digest("hex");
-  const retained = join(reports, `build-inputs-${digest}.tar.gz`);
+  const retained = join(reports, `${prefix}-${digest}.tar.gz`);
   try {
     await link(snapshot, retained);
   } catch (error) {
@@ -72,11 +76,25 @@ async function retainArchive(snapshot: string, reports: string): Promise<string>
       .digest("hex");
     if (existing !== digest)
       throw new Error(
-        `Cannot replace build inputs: recover the damaged archive ${retained} first.`,
+        `Cannot reuse captured inputs: recover the damaged archive ${retained} first.`,
         { cause: error },
       );
   }
   return retained;
+}
+
+export async function deduplicateCapturedPackage(snapshot: string, reports: string): Promise<void> {
+  // Completed captures on the report filesystem are immutable; share bytes without changing paths.
+  // Publish a verified link before replacing the duplicate; failure must retain the caller's copy.
+  const retained = await retainArchive(snapshot, reports, "captured-package");
+  const scratch = await mkdtemp(join(reports, "package-link-"));
+  try {
+    const alias = join(scratch, "archive");
+    await link(retained, alias);
+    await rename(alias, snapshot);
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
 }
 
 export async function archiveAndRemoveGeneratedFiles(
