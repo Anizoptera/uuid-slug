@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { checkReleasedApi, typescriptDeclarations } from "./api-evolution";
 import { command } from "./command";
 import { annotateRustApi, rustDeprecations } from "./rust-deprecations";
@@ -20,7 +21,8 @@ if ((mode !== "check" && mode !== "update") || (process.argv.length > 3 && !useE
   throw new Error("Usage: bun scripts/api.ts <check|update> [--built]");
 }
 
-const work = await mkdtemp(join(root, `node_modules/.uuid-slug-api-${process.pid}-`));
+// The package supervisor owns tmpdir after interruption; projectFolder keeps extraction rooted here.
+const work = await mkdtemp(join(tmpdir(), `uuid-slug-api-${process.pid}-`));
 
 async function checkCargoPublicApiVersion(): Promise<void> {
   const expected = "0.52.0";
@@ -143,6 +145,8 @@ try {
   await checkCargoPublicApiVersion();
   if (!useExistingBuild) await command("bun", ["run", "build"], root);
   const extractorConfig = join(work, "api-extractor.json");
+  // Extractor finds the manifest beside its config; link the owner instead of copying metadata.
+  await symlink(join(root, "package.json"), join(work, "package.json"));
   await Bun.write(
     extractorConfig,
     JSON.stringify({

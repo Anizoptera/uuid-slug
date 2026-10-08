@@ -272,7 +272,7 @@ efficiency. A reproducible misuse alone does not justify that cost.
   not exclude them from project type checking. The existing artifact check rejects executable
   source captures in reports; never bypass it or suppress their compiler diagnostics.
   Preserve failed artifacts until their diagnostic is resolved; then remove the disposable files.
-  Include setup in cleanup; use `scripts/test-bun.ts` for Bun tests and `bun run bench:competitors` for generation comparisons so their surviving parent owns scratch cleanup after interruption. Purge successful bundles and resolved failure artifacts.
+  Include setup in cleanup; run Bun tests, API checks and generation comparisons through their package commands so `scripts/test-bun.ts` owns temporary files after interruption. Create their scratch under `tmpdir()`, inside the supervisor's cleanup scope. Purge successful bundles and resolved failure artifacts.
   Preserve earlier captured graphs before replacing build-input archives; compact retained reports with `bun scripts/compact-reports.ts` so evidence does not consume uncompressed disk space.
   Before committing, inspect creator-owned paths in both `/tmp` and the runtime's
   `tmpdir()`, not just filename prefixes; stop children and preserve evidence and reusable caches.

@@ -70,9 +70,9 @@
     "provenance": true
   },
   "scripts": {
-    "api:check": "bun scripts/api.ts check",
-    "api:check:built": "bun scripts/api.ts check --built",
-    "api:update": "bun scripts/api.ts update",
+    "api:check": "bun scripts/api-run.ts check",
+    "api:check:built": "bun scripts/api-run.ts check --built",
+    "api:update": "bun scripts/api-run.ts update",
     "artifact:check": "bun scripts/check-artifact.ts",
     "bench:entropy": "bun bench/entropy.ts",
     "bench:full": "bun bench/run.ts",
