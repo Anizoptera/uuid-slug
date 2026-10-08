@@ -104,7 +104,7 @@ test("browser launch failure releases the profiling server", async () => {
       [
         process.execPath,
         "-e",
-        'import { runBrowser } from "./bench/profile-all"; try { await runBrowser(process.argv[1]); process.exitCode = 1; } catch (error) { console.error(error.message); }',
+        'import { runBrowser } from "./bench/profile-all"; process.send("loaded"); try { await runBrowser(process.argv[1]); process.exitCode = 1; } catch (error) { console.error(error.message); }',
         entry,
       ],
       {
@@ -112,9 +112,16 @@ test("browser launch failure releases the profiling server", async () => {
         env: { ...process.env, PLAYWRIGHT_BROWSERS_PATH: scratch },
         stdout: "ignore",
         stderr: "pipe",
+        ipc(message) {
+          if (message === "loaded") {
+            clearTimeout(deadline);
+            deadline = setTimeout(() => child.kill(), 2000);
+          }
+        },
       },
     );
-    const deadline = setTimeout(() => child.kill(), 2000);
+    // Import time is not listener settlement; measure the leak only after the child loads.
+    let deadline = setTimeout(() => child.kill(), 2000);
     try {
       const [stderr, code] = await Promise.all([new Response(child.stderr).text(), child.exited]);
       expect(stderr).toContain("Executable doesn't exist");
