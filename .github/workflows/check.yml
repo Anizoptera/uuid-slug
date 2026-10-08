@@ -269,5 +269,9 @@ jobs:
       - if: matrix.profile == 'release'
         run: bun run bench:competitors:smoke
       - if: matrix.profile == 'release'
+        run: bunx --package workerd workerd --version
+      - if: matrix.profile == 'release'
+        env:
+          UUID_SLUG_ARTIFACT_EDGE: "1"
         run: bun run artifact:web
       - run: bun scripts/rust-wasm.ts
