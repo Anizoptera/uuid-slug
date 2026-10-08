@@ -508,8 +508,8 @@ identity and boundaries, and atomic invalid-range failure. These checks stay out
 Set `UUID_SLUG_PROFILE_NATIVE_DIR` to a separate report directory for each native-profile comparison;
 otherwise later profiles replace the default reports. Preserve each candidate's raw profiles before
 using them to justify retention.
-Set `UUID_SLUG_PROFILE_FILTER` to comma-separated case-name substrings before native profiling so startup and unrelated
-operations do not dominate attribution. `UUID_SLUG_PROFILE_WARMUP_MS`, `UUID_SLUG_PROFILE_SAMPLES`, and
+Set `UUID_SLUG_PROFILE_FILTER` to comma-separated `=case` names for bounded repairs; substrings also select matching failures and rivals.
+Use substrings only when every match belongs in the study. `UUID_SLUG_PROFILE_WARMUP_MS`, `UUID_SLUG_PROFILE_SAMPLES`, and
 `UUID_SLUG_PROFILE_MS` control per-case warm-up and timing samples. Add `--smoke` to
 `bench/profile-all.ts` only when checking harness wiring. Compare
 the current worktree with a committed baseline through `bun run bench:compare <baseline-ref>`; the

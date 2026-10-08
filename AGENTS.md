@@ -252,7 +252,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
   in for a branch it does not prove. Extend the nearest injectable harness when an affected branch
   cannot be selected directly; never infer its cost or coverage from another path.
 - Read `bench/README.md` before benchmark work. Scope exploratory comparisons with its maintained
-  filters; run all applicable runtimes only after a candidate survives the focused mechanism test.
+  filters; for bounded repairs use `=case` names, not substrings that also select failures or rivals.
+  Run all applicable runtimes only after a candidate survives the focused mechanism test.
   Read each driver's runtime selector from that driver; comparison and profiling variables differ.
   Verify the runtime recorded in each result before assigning it to Current or LTS evidence.
   Await a terminal exit code before launching another timing process; a returned process handle

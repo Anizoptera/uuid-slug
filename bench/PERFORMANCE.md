@@ -43,6 +43,18 @@ three-reader, single-getter regression. The value-based regression fails on the 
 the candidate passes the shared 54-case Node and Bun corpus. Other-runtime, resource and profile
 evidence remains absent; the null-reference defect remains open.
 
+Finite-number-first reference selection also lacks no-loss evidence. It validates supplied numbers
+before defaulting only omitted references, but remains unretained in
+`ts-release-audit-timestamp-finite-unretained.patch`. The exact-name host screen in
+`ts-release-audit-timestamp-finite-exact-host.{jsonl,log}` compares against `548468a` in six fresh process pairs per host,
+three 3 ms batches and 64 ms warm-up on Node 26.10.0 and Bun 1.4.2. Fourteen of sixteen paired
+95% median-ratio intervals include parity; Node clock-default text and Bun explicit-reference text
+favor the candidate. Bun masked-call paired medians range from 1.209 to 1.266, with intervals
+including parity. These results cannot establish no normal-call loss. The broad-filter screen also
+selected extraction and failure calls; it is diagnostic only. The null regression fails on unchanged
+production and passes in the candidate's Node/Bun corpus; resource counters do not prove total
+allocation parity. Other-runtime and profile comparisons remain unmeasured.
+
 ### Native Bun default UUIDv7 text
 
 Bun defaults use native UUIDv7 text generation; Node keeps its independent package generator.
