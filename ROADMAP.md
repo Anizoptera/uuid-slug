@@ -86,7 +86,7 @@ Audit ordinary consumer calls and shipped artifacts before release: create an ID
 
 - [ ] Preserve `bench/check.ts`, `bench/resources.ts` and `bench/latency.ts` protection without duplicate hook timing or relaxed budgets. Valid-output waste mutations cover arrays, views, copies and native selection on Node/Bun/Deno/Chromium; counts are not total allocation. WebKit resource coverage and shared-CI headroom remain open; local lane/hook timings do not close them.
 - [ ] Correct README direction words only where retained repeated comparisons support them; factual repairs are authorized, new guarantees are not.
-- [ ] Run `bun run check` before committing; require exit zero without dropping runtime, artifact, cleanup or defect coverage. Resolve packing's concurrent traversal of Cargo temporary files before release; `ts-release-audit-disk-cleanup-check-2.log` reproduces the race, while warmed-cache checks pass. Apply `bench/README.md` §Regression protection; passing gates do not close reproduced defects or missing evidence.
+- [ ] Run `bun run check` before committing; require exit zero without dropping runtime, artifact, cleanup or defect coverage. Keep packed-artifact verification after build and test producers settle; `ts-release-audit-disk-cleanup-check-2.log` reproduces concurrent packlist traversal of Cargo temporary files. Apply `bench/README.md` §Regression protection; passing gates do not close reproduced defects or missing evidence.
 - [ ] Report each release blocker and unresolved primary-call comparison from its evidence. Declare readiness only after the blockers are resolved; do not publish or write remotely.
 
 ## Proposals outside this plan

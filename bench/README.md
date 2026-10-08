@@ -349,6 +349,7 @@ An observed zero p99 is below clock resolution, not a zero-cost call; the report
 ## Regression protection
 
 Keep routine verification fast enough for ordinary development without weakening its evidence. Use `bun run test:bun` for the Bun lane: its parent removes files in the runner's temporary directory after failure or interruption; killing that parent forcibly cannot run cleanup.
+Run packed-artifact verification after repository builds and tests exit; filesystem traversal can race their temporary cache files even when those files are excluded from the package.
 
 The target, warning and error ceilings are respectively 0.3/1/5 seconds per unit case,
 3/20/30 seconds per fast lane, 1/10/20 seconds per git hook, and 30/240/300 seconds per

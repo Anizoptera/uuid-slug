@@ -510,3 +510,4 @@ never opens `src/` or `bench/`. Each rule below names a failure that has already
   packaging, publication, recovery, assets, notes, or finalization.
 - Run `bun run check` before committing unless a maintainer explicitly selects narrower intermediate
   checks for the current work; the complete check still gates final delivery.
+- Pack only after repository build and test processes exit; packlist traversal can race temporary cache files excluded from the tarball.
