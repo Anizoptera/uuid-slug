@@ -1082,11 +1082,11 @@ to pay key derivation once. These choices avoid conversions, allocations, and se
 
 The comparisons time complete calls, including validation and error handling, against native APIs
 and competing packages on Node, Bun, Deno, and Chromium. Portable fallbacks are measured separately.
-The ranking excludes calls that use `Math.random`, allow a smaller same-millisecond collision
-margin, or extract timestamps without checking the UUID version; their timings remain in the study.
+The ranking excludes insecure randomness and timestamp extraction without UUID-version checks;
+counter layouts and clock advancement are measured differences, not exclusions.
 
 The [performance study](bench/PERFORMANCE.md) also measures CPU use, allocations, retained memory,
-and responsiveness on those runtimes. Guards avoid decoded arrays and error objects; caller-buffer
+and responsiveness on those runtimes. Guards avoid decoded arrays and error objects; measured caller-buffer
 paths avoid temporary byte views. Key rotation decodes input text once, and pooled randomness
 reduces calls to the platform RNG. Node and Bun regression checks enforce these limits.
 
@@ -1100,7 +1100,8 @@ change the ranking. Browser competitor comparisons use Chromium; UUID text and s
 | --- | --- | --- |
 | UUIDv7 text | Node, Bun, Deno, Chromium | Leads the compared packages, including `fastv7`. Module calls have no cross-form ordering; created generators add an explicit ordering contract and clock controls. |
 | UUIDv4 text | Node, Bun, Deno, Chromium | Uses native generation on Bun, Deno and Node without JIT compilation; uses pooled entropy on Node with JIT compilation and Chromium. Leads the compared packages on Chromium; trails the fastest compared package on Bun. |
-| UUIDv4/v7 bytes | New arrays and caller buffers on Node, Bun, Deno, Chromium | Leads the compared packages on Node and Chromium. On Bun, UUIDv4 caller-buffer writes and both UUIDv7 byte forms trail `uuid`. On Deno, both UUIDv7 byte forms are unresolved against `uuidv7` and `uniku`. |
+| UUIDv4/v7 bytes | New arrays and caller buffers on Node, Bun, Deno, Chromium | Leads the compared packages on Node and Chromium. On Bun, caller-buffer writes trail `uuid`; owned UUIDv7 byte comparisons are unresolved. On Deno, both UUIDv7 byte forms are unresolved against `uuidv7` and `uniku`. |
+| Plain-slug generation | UUIDv4/v7 base64url | Retained Bun measurements favor native Web Crypto with reusable storage for UUIDv4 slugs; resource parity remains unresolved. Bun UUIDv7 slugs retain native delegation. |
 | Conversion | UUID text, bytes, both plain-slug alphabets, timestamp extraction | Text timestamp extraction leads `uuidv7-js` on Node, Bun, Deno, and Chromium. The study has no comparable package for extraction from bytes or slugs. |
 | Bundling | Bun, esbuild, Parcel, Rollup, Rolldown, Rspack, webpack | A named root import keeps only the code it needs. |
 
