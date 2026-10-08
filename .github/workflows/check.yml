@@ -165,13 +165,13 @@ jobs:
       - if: steps.runtime.outputs.vitest == 'true'
         run: node node_modules/vitest/vitest.mjs run
       # Current engines exercise optional native paths that pinned runtimes cannot reach.
-      - if: matrix.node == 'current-mask'
+      - if: steps.runtime.outputs.node == 'current'
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: latest
-      - if: matrix.node == 'current-mask'
+      - if: steps.runtime.outputs.node == 'current'
         run: bun run build && bun test __test__/*.bun.test.ts && bun run perf:check
-      - if: matrix.node == 'current-mask'
+      - if: steps.runtime.outputs.node == 'current'
         run: bun scripts/runtime-probe.ts runtime-reference.json
 
   # Keep timing outside the Rust-profile matrix and its combined WASM verification budget.
