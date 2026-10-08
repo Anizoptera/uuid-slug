@@ -1,11 +1,58 @@
 import { expect, test } from "bun:test";
-import { copyFile, mkdir, mkdtemp, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import {
+  copyFile,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readdir,
+  rm,
+  stat,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { archiveAndRemoveGeneratedFiles } from "../archive-scratch";
+import { archiveAndRemoveGeneratedFiles, compactReports } from "../archive-scratch";
 import { command } from "../command";
 
 const project = resolve(import.meta.dir, "../..");
+
+test.skipIf(process.platform !== "darwin")(
+  "report compression saves blocks without changing bytes or following symlinks",
+  async () => {
+    const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
+    try {
+      const reports = join(scratch, "reports");
+      await mkdir(reports);
+      const report = join(reports, "profile.json");
+      const bytes = "retained profile\n".repeat(32768);
+      await writeFile(report, bytes);
+      await symlink(report, join(reports, "alias"));
+      const before = await stat(report);
+      expect(await compactReports(reports)).toBeGreaterThan(0);
+      expect(await Bun.file(report).text()).toBe(bytes);
+      expect((await stat(report)).blocks).toBeLessThan(before.blocks);
+      expect(await compactReports(reports)).toBe(0);
+      expect((await lstat(join(reports, "alias"))).isSymbolicLink()).toBe(true);
+      expect(new Set(await readdir(reports))).toEqual(new Set(["profile.json", "alias"]));
+    } finally {
+      await rm(scratch, { recursive: true, force: true });
+    }
+  },
+);
+
+async function expectOnlyArchives(reports: string): Promise<void> {
+  const names = await readdir(reports);
+  expect(names.every((name) => name.endsWith(".tar.gz"))).toBe(true);
+  const latest = await stat(join(reports, "build-inputs.tar.gz"));
+  const captures = await Promise.all(
+    names.filter((name) => name !== "build-inputs.tar.gz").map((name) => stat(join(reports, name))),
+  );
+  // The compatibility name must share stored bytes, not keep another physical copy.
+  expect(captures.some((capture) => capture.ino === latest.ino && capture.dev === latest.dev)).toBe(
+    true,
+  );
+}
 
 for (const target of ["runner", "SIGINT", "SIGTERM"] as const) {
   test(`${target} interruption removes test fixture scratch`, async () => {
@@ -85,7 +132,68 @@ test("generated-file cleanup preserves source and exact executable bytes in the 
     expect(await Bun.file(join(recovered, "input.ts")).bytes()).toEqual(source);
     expect(await Bun.file(join(recovered, "worker.mjs")).bytes()).toEqual(bundle);
     expect(await Bun.file(join(scratch, "input.ts")).bytes()).toEqual(source);
-    expect(await readdir(reports)).toEqual(["build-inputs.tar.gz"]);
+    await expectOnlyArchives(reports);
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+});
+
+test("successful recapture preserves older sources, reuses identical archives and rejects corrupt history", async () => {
+  const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
+  const reports = join(scratch, "reports");
+  const recovered = join(scratch, "recovered");
+  const latest = join(reports, "build-inputs.tar.gz");
+  const worker = join(reports, "worker.mjs");
+  try {
+    await Promise.all([mkdir(reports), mkdir(recovered)]);
+    await writeFile(join(scratch, "input.ts"), "first source");
+    await writeFile(worker, "first bundle");
+    await archiveAndRemoveGeneratedFiles(scratch, reports, ["input.ts"], ["worker.mjs"]);
+    const first = await Bun.file(latest).bytes();
+    // Simulate a pre-existing latest-only capture; retaining new captures alone cannot protect it.
+    for (const name of await readdir(reports))
+      if (name !== "build-inputs.tar.gz") await rm(join(reports, name));
+    await writeFile(join(scratch, "input.ts"), "second source");
+    await writeFile(worker, "second bundle");
+    await archiveAndRemoveGeneratedFiles(scratch, reports, ["input.ts"], ["worker.mjs"]);
+    const names = await readdir(reports);
+    const historical = names.filter((name) => name !== "build-inputs.tar.gz");
+    let historyName: string | undefined;
+    for (const name of historical)
+      if (Buffer.from(await Bun.file(join(reports, name)).bytes()).equals(first))
+        historyName = name;
+    if (!historyName) throw new Error("The earlier capture has no recovery archive.");
+    const history = join(reports, historyName);
+    expect(await Bun.file(history).bytes()).toEqual(first);
+    await command("tar", ["-xf", history, "-C", recovered], scratch);
+    expect(await Bun.file(join(recovered, "input.ts")).text()).toBe("first source");
+    expect(await Bun.file(join(recovered, "worker.mjs")).text()).toBe("first bundle");
+    await command("tar", ["-xf", latest, "-C", recovered], scratch);
+    expect(await Bun.file(join(recovered, "input.ts")).text()).toBe("second source");
+    expect(await Bun.file(join(recovered, "worker.mjs")).text()).toBe("second bundle");
+    const historyStat = await stat(history);
+    await rm(latest);
+    await writeFile(latest, first);
+    await writeFile(worker, "third bundle");
+    await archiveAndRemoveGeneratedFiles(scratch, reports, ["input.ts"], ["worker.mjs"]);
+    expect((await stat(history)).ino).toBe(historyStat.ino);
+    await expectOnlyArchives(reports);
+    const retainedNames = await readdir(reports);
+    await rm(latest);
+    await writeFile(latest, first);
+    await writeFile(history, "corrupt archive");
+    await writeFile(worker, "pending bundle");
+    const failure = await archiveAndRemoveGeneratedFiles(
+      scratch,
+      reports,
+      ["input.ts"],
+      ["worker.mjs"],
+    ).catch((error: Error) => error);
+    expect(failure).toBeInstanceOf(Error);
+    expect((failure as Error).message).toContain("damaged archive");
+    expect(await Bun.file(latest).bytes()).toEqual(first);
+    expect(await Bun.file(worker).text()).toBe("pending bundle");
+    expect(new Set(await readdir(reports))).toEqual(new Set([...retainedNames, "worker.mjs"]));
   } finally {
     await rm(scratch, { recursive: true, force: true });
   }
@@ -116,7 +224,7 @@ test("profile builds archive their compiler inputs and remove every generated bu
     expect(await Bun.file(join(recovered, "src/index.ts")).bytes()).toEqual(
       await Bun.file(join(project, "src/index.ts")).bytes(),
     );
-    expect(await readdir(reports)).toEqual(["build-inputs.tar.gz"]);
+    await expectOnlyArchives(reports);
   } finally {
     await rm(scratch, { recursive: true, force: true });
   }
@@ -130,6 +238,7 @@ test("failed source capture preserves the generated file and previous archive", 
     await copyFile(join(project, "dist/index.js"), join(reports, "worker.mjs"));
     await archiveAndRemoveGeneratedFiles(scratch, reports, [], ["worker.mjs"]);
     const archive = await Bun.file(join(reports, "build-inputs.tar.gz")).bytes();
+    const retainedNames = await readdir(reports);
     await copyFile(join(project, "dist/index.js"), join(reports, "worker.mjs"));
     const bundle = await Bun.file(join(reports, "worker.mjs")).bytes();
     const failure = await archiveAndRemoveGeneratedFiles(
@@ -142,7 +251,7 @@ test("failed source capture preserves the generated file and previous archive", 
     expect(failure?.message).toContain("Command failed");
     expect(await Bun.file(join(reports, "worker.mjs")).bytes()).toEqual(bundle);
     expect(await Bun.file(join(reports, "build-inputs.tar.gz")).bytes()).toEqual(archive);
-    expect(new Set(await readdir(reports))).toEqual(new Set(["build-inputs.tar.gz", "worker.mjs"]));
+    expect(new Set(await readdir(reports))).toEqual(new Set([...retainedNames, "worker.mjs"]));
   } finally {
     await rm(scratch, { recursive: true, force: true });
   }

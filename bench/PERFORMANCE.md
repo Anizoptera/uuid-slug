@@ -1872,6 +1872,8 @@ Raw screens are `ts-release-audit-{intrinsic,indexed,helper,captured}-copy-webki
 These batch-throughput screens do not prove other runtime costs, individual latency or total
 allocation. No tested candidate establishes the required normal-call no-loss condition.
 
+A shared intrinsic copy with an early owned-copy return also protects cached sentinel reads. Five-path Node/Bun ownership checks pass, but the eight-pair WebKit screen leaves normal-call costs unresolved; it does not establish no loss or total-resource parity. `ts-release-audit-shared-copy-webkit.jsonl`, `ts-release-audit-shared-copy-unretained.patch` and `ts-release-audit-shared-copy-helper.ts.txt` retain the evidence and rejected implementation.
+
 Two six-round packed replays on 2026-09-16 compared `281dc5e` with `80d3722`. Median ns per call:
 
 | Route | Node 26.8.2 | Bun 1.4.2 | Chromium 153 | Deno 2.9.6 | Node 26.8.2 JITless |

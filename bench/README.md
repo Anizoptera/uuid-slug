@@ -33,7 +33,7 @@ Rules:
   and record the measured conclusion in `bench/PERFORMANCE.md`. Remove scratch when the operation
   ends, including setup failures; preserve needed failure artifacts first. Put generated bundles
   in one owned directory and remove it on success, without searching retained reports.
-  Remove resolved failure artifacts. Store source captures as text or archives so
+  Remove resolved failure artifacts; run `bun scripts/compact-reports.ts` to compress retained reports on macOS without changing paths or bytes. Store source captures as text or archives so
   compiler and test discovery cannot execute them. Never cite `/tmp` evidence in durable text.
   `bun run clean` removes generated build output, not retained reports; delete failed artifacts
   only after their diagnostic is resolved. Keep reusable Cargo caches under ignored `rust/target/`.
@@ -412,7 +412,7 @@ Run this review after every Bun or Deno version change and before periodic runti
 
 ## Profiling
 
-`profile-all.ts` archives its compiler-reported inputs and generated bundles in `build-inputs.tar.gz` after every selected stage succeeds, then removes loose bundles. Failed stages retain their files; this archive covers built inputs, not the separately executed Bun source or an external package loaded dynamically.
+`profile-all.ts` preserves compiler inputs and generated bundles in SHA-256-named archives after every selected stage succeeds, then removes loose bundles and compacts macOS reports without changing their paths or bytes. `build-inputs.tar.gz` shares the latest capture's stored bytes. Replacing that name preserves earlier captures for existing raw profiles. Failed stages retain their files; these archives cover built inputs, not separately executed Bun source or dynamic external packages.
 
 Run `bun scripts/check-artifact.ts --edge` for shared packed-consumer correctness checks inside
 local workerd requests; install workerd first or set `UUID_SLUG_WORKERD_EXECUTABLE` to its binary.

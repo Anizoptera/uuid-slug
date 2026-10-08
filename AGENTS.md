@@ -274,6 +274,7 @@ efficiency. A reproducible misuse alone does not justify that cost.
   Preserve failed artifacts until their diagnostic is resolved; then remove the disposable files.
   Include setup in cleanup; run scratch-creating Bun tests through `scripts/test-bun.ts` so their
   parent owns cleanup after runner exit. Purge successful bundles and resolved failure artifacts.
+  Preserve earlier captured graphs before replacing build-input archives; compact retained reports with `bun scripts/compact-reports.ts` so evidence does not consume uncompressed disk space.
   Before committing, inspect creator-owned paths in both `/tmp` and the runtime's
   `tmpdir()`, not just filename prefixes; stop children and preserve evidence and reusable caches.
   Run compiler diagnostics through the retained profiler executable and capture stdout verbatim;
