@@ -178,7 +178,7 @@ async function runHost(
   console.log(`${name}: ${lines.length - headerRows} measurement records`);
 }
 
-async function runBrowser(entry: string, asyncEntry?: string) {
+export async function runBrowser(entry: string, asyncEntry?: string) {
   const script = await Bun.file(entry).text();
   const asyncScript = asyncEntry ? await Bun.file(asyncEntry).text() : undefined;
   const server = Bun.serve({
@@ -194,8 +194,10 @@ async function runBrowser(entry: string, asyncEntry?: string) {
           });
     },
   });
-  const browser = await chromium.launch({ headless: true });
+  let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
   try {
+    // Launch and browser teardown can fail; neither may leave the listening socket alive.
+    browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
     const session = await page.context().newCDPSession(page);
     const traceEvents: object[] = [];
@@ -280,8 +282,11 @@ async function runBrowser(entry: string, asyncEntry?: string) {
     console.log(`chromium: ${rows.length} operations`);
     console.log(`chromium async: ${asyncRows.length} operations`);
   } finally {
-    await browser.close();
-    await server.stop(true);
+    try {
+      await browser?.close();
+    } finally {
+      await server.stop(true);
+    }
   }
 }
 
@@ -443,4 +448,4 @@ async function main() {
   }
 }
 
-await main();
+if (import.meta.main) await main();

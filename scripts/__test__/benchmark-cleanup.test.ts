@@ -6,6 +6,41 @@ import { command } from "../command";
 
 const project = resolve(import.meta.dir, "../..");
 
+test("browser launch failure releases the profiling server", async () => {
+  const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
+  const entry = join(scratch, "input.mjs");
+  try {
+    await writeFile(entry, "export {};\n");
+    // An absent real browser fails before profiling; a leaked listener prevents normal exit.
+    const child = Bun.spawn(
+      [
+        process.execPath,
+        "-e",
+        'import { runBrowser } from "./bench/profile-all"; try { await runBrowser(process.argv[1]); process.exitCode = 1; } catch (error) { console.error(error.message); }',
+        entry,
+      ],
+      {
+        cwd: project,
+        env: { ...process.env, PLAYWRIGHT_BROWSERS_PATH: scratch },
+        stdout: "ignore",
+        stderr: "pipe",
+      },
+    );
+    const deadline = setTimeout(() => child.kill(), 2000);
+    try {
+      const [stderr, code] = await Promise.all([new Response(child.stderr).text(), child.exited]);
+      expect(stderr).toContain("Executable doesn't exist");
+      expect(code).toBe(0);
+    } finally {
+      clearTimeout(deadline);
+      child.kill();
+      await child.exited;
+    }
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+});
+
 test("failed comparisons preserve diagnostics without leaving temporary checkouts", async () => {
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
   let archive: string | undefined;
