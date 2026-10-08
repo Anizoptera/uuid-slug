@@ -82,11 +82,11 @@ overloads select that payload from a larger array; other payload sizes and malfo
 rejected. Invalid parsing leaves caller storage unchanged. Conversion preserves all 16-byte
 values; use UUID guards when the version or variant matters.
 
-Immutable parsed UUIDs keep private bytes during ordinary use. Default buffer writes do not
-protect against caller-replaced methods; additional adversarial hardening requires an explicitly
-requested non-default path. External masking codecs receive an isolated copy,
-and their decoded bytes are validated and copied before retention. Callback exceptions remain
-available as `cause`; a valid-shaped callback result does not prove correct masking or decoding.
+With ordinary buffer methods, immutable parsed UUIDs copy bytes to output buffers; editing the copy
+leaves the UUID unchanged. Caller-replaced methods can receive retained bytes.
+External masking codecs receive an isolated copy; their decoded bytes are validated and copied
+before retention. Callback exceptions remain available as `cause`; valid-shaped results do not prove
+correct masking or decoding.
 
 TypeScript pools platform randomness without expanding it. Refills become usable only after the
 source returns successfully; a partial write followed by failure must be retried, never consumed.

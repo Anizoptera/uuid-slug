@@ -108,9 +108,9 @@ Apply these rules in order. A later rule MUST NOT weaken an earlier one.
    public implementation must accept `unknown`, validate it without throwing, and return
    `UuidSlugError` for bad input. TypeScript signatures accept every supported UUID form, reject a
    branded value when its known form or UUID version makes the call invalid, and infer every
-   version, case, slug kind, and output-ownership fact proved by the call. Runtime acceptance may
-   be broader than TypeScript guidance; widen types only for a useful supported caller job, never
-   merely to mirror runtime tolerance or expose `unknown`.
+   version, case, slug kind, and output-ownership fact proved by the call. Widen types only to
+   support useful caller operations, not merely to match JavaScript's broader acceptance.
+   Do not expose `unknown` just because implementations accept it.
 3. Preserve every visible behavior after release, or provide a migration. Hiding
    an implementation detail now is cheaper than supporting it forever.
 4. Provide the fewest independent operations that cover real caller jobs.
@@ -272,8 +272,8 @@ lowercase with hyphens. Every operation that returns UUID text accepts `"upperca
 - Use `byteOffset` for the zero-based start of a 16-byte UUID read from a larger array, and
   `outputOffset` for its write position in caller-owned storage. Omission means zero. Equivalent
   read and write operations must explain this contract with the same terms in each overload's
-  declaration documentation. Runtime readers treat `0` as omission on every accepted input;
-  this tolerance does not require TypeScript offset overloads for text or other standalone forms. Accept a non-zero
+  declaration documentation. Runtime readers treat `0` as omission on standalone forms, which need
+  no offset. This runtime tolerance does not require a TypeScript offset overload. Accept a non-zero
   `byteOffset` only with `Uint8Array` input: every other accepted form holds exactly one UUID, so an
   offset beside one is a caller mistake and returns `invalid_options`. On a masking codec a non-zero
   offset read has no masked spelling to resolve and returns exactly what the keyless reader returns;
@@ -551,13 +551,13 @@ Performance protection constrains an authorized change; it does not authorize an
 project. Follow [root agent guidance](../AGENTS.md#work-scope) before experiments, including those proposed for a
 correctness repair or release audit. Missing performance evidence is not a release prerequisite.
 
-- Default generation, parsing, conversion and buffer writes serve ordinary callers. Do not add
-  defenses against adversarial caller overrides, such as replaced buffer methods, to these paths.
-  Additional hardening requires an explicit request and belongs on a non-default path; a misuse
-  probe does not justify a new option or API. Preserve normal input validation, secure randomness,
-  caller ownership and wire integrity. Retain requested hardening only when repeated evidence on
-  every affected runtime shows no normal-call speed or resource regression; unresolved cost is not
-  permission to retain it. Verification does not authorize standalone performance experiments.
+- Keep defenses against adversarial caller behavior, such as replaced buffer methods, off default
+  generation, parsing, conversion and buffer writes. Ordinary callers must not pay for them.
+  Additional hardening requires an explicit request and a non-default path; a misuse probe alone
+  justifies neither a new API nor labeling the default unsafe. State the added protection and cost.
+  Preserve input validation, secure randomness, caller ownership and wire integrity. Retain requested
+  hardening only when repeated evidence on every affected runtime shows no normal-call speed or
+  resource regression; unresolved cost is not permission to retain it.
 - Preserve the union of useful host capabilities behind one semantic interface. Detect optional
   native capabilities once, use the cheapest valid path, and retain a portable fallback with the
   same result and error meaning.
@@ -585,9 +585,6 @@ correctness repair or release audit. Missing performance evidence is not a relea
 - Keep successful common paths free of exception-driven capability detection, repeated mask
   derivation, duplicate validation, unnecessary allocation, runtime dependencies, and work for
   opt-in features.
-- Keep ordinary validation and secure randomness on the default path. Extra protection against
-  adversarial caller behavior is opt-in, not a reason to label the normal path unsafe or add another
-  API. State the protection and its cost when an explicit request justifies that additional path.
 - Measure the consumer-sized operation and the runtime that owns it. Bulk throughput, a different
   adapter, or a green aggregate cannot justify a hot-path claim.
 

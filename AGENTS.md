@@ -23,15 +23,15 @@ Correction requests authorize factual repairs without another approval, never ne
 This restriction overrides documentation-update instructions below.
 
 Derive choices and checks from owning rulings and in-scope evidence before asking.
-Ask only unresolved material priorities, consequences or permissions. State each answer's effect
+Ask only when a material priority, consequence or permission remains unresolved. State each answer's effect
 and why evidence cannot decide it. Use plain words, separate independent decisions, and hold only dependent work.
 Audit findings need the failing call, trigger, consequence and normal-call control.
 Separate observed from possible harm; misuse alone does not prove ordinary-call harm or release impact.
 
-Default calls serve ordinary use. Adversarial overrides must add no work there.
-Hardening needs an explicitly requested non-default path; probes authorize neither.
-Keep input validation, secure randomness and wire integrity; read `docs/public-api.md` §Capabilities and runtime work.
-JavaScript tolerance need not be typed. Widen types or block release only for a failing supported job.
+Keep adversarial hardening off default paths; ordinary calls must not pay for it.
+Extra hardening requires an explicit request and a non-default path; read `docs/public-api.md` §Capabilities and runtime work.
+Preserve input validation, secure randomness, caller ownership and wire integrity.
+JavaScript may accept calls TypeScript rejects; that alone justifies neither wider types nor a release blocker.
 
 ## Contract owners
 
@@ -411,8 +411,7 @@ JavaScript tolerance need not be typed. Widen types or block release only for a 
 - Before changing brands, string wrappers or input validation, read `docs/public-api.md`
   §Types and validation; preserve ergonomic raw inputs and every distinction validation proves.
 - Return owned bytes as plain `Uint8Array`, not `Buffer`; verify constructors in Node and Bun.
-  Adapt at the runtime boundary and preserve caller buffers. Overridden-method defenses follow
-  §Work scope; ordinary calls must not pay for adversarial hardening.
+  Adapt at the runtime boundary and preserve caller buffers; apply §Work scope before adding defenses.
 
 ## Writing public documentation
 
