@@ -4,6 +4,10 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Work scope
 
+Repair wrong, missing or unreachable instructions before work: update their owning text first,
+then `ROADMAP.md`, then implementation. Put the trigger and required act in visible `AGENTS.md`
+guidance; a rule buried in an unread document does not prevent the next mistake.
+
 Release preparation does not authorize performance experiments or optimization.
 Run standalone benchmarks, profiles, candidate screens or calibration only when the maintainer
 explicitly requests performance work on the relevant consumer call. A performance gap, failing
@@ -22,10 +26,9 @@ An explicit request to correct documentation already authorizes its factual corr
 request the same permission again. Correcting stale implementation or measurement text does not
 authorize a new public contract, guarantee, API or behavior.
 
-Protect normal consumer calls from the cost of rare misuse defenses. Before changing a shared hot
-path to handle an unusual input, read `docs/public-api.md` §Capabilities and runtime work; retain
-the defense only when repeated runtime measurements show no loss of normal-call speed or resource
-efficiency. A reproducible misuse alone does not justify that cost.
+Before changing a shared path to defend against rare misuse, read `docs/public-api.md`
+§Capabilities and runtime work for its no-regression requirement. That requirement does not
+authorize experiments; an unresolved defense stays unresolved until its required evidence exists.
 
 ## Contract owners
 
@@ -240,11 +243,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
   Run compiler diagnostics through the retained profiler executable and capture stdout verbatim;
   `bench/compare.ts` requires JSON-only host output. Require a working control for the requested
   compiler artifact before interpreting a missing trace as evidence about package execution.
-- Repair missing or ineffective guidance before changing the plan or implementation. Put the
-  trigger, required action and reason in the nearest `AGENTS.md` visible when the work starts;
-  a rule buried in another document cannot prevent a mistake unless that file is explicitly loaded.
-  Read the changed text and its dependents before proceeding. Public-document repairs still need
-  approval. Enforce mechanically decidable failures in the existing harness, not a prose checker.
+- Read repaired guidance and its dependents before proceeding. Enforce mechanically decidable
+  failures in the existing harness, not a prose checker; public-document authorization still applies.
 - Use the `typescript` package for project checking; TypeScript 7 is the main compiler.
   `typescript-floor` is limited to the TypeScript 5.0 packed-consumer check and tooling that needs
   legacy in-process compiler APIs such as the parser, printer, or language service.
@@ -258,11 +258,11 @@ efficiency. A reproducible misuse alone does not justify that cost.
   `bench/PERFORMANCE.md`; link that owner from internal comments instead of copying volatile
   evidence. When behavior or dispatch changes, re-read every comment in the changed frame and update
   or remove stale reasoning.
-- Any runtime production-behavior change requires fresh behavior, resource, benchmark, and profile
-  evidence for every affected runtime selection, output form, capability-present or capability-absent
-  path, and native-success, native-fallback, or dual-failure branch. An aggregate route cannot stand
-  in for a branch it does not prove. Extend the nearest injectable harness when an affected branch
-  cannot be selected directly; never infer its cost or coverage from another path.
+- Verify runtime behavior changes through owning correctness tests and existing regression checks
+  for each affected runtime, output, capability and success or fallback branch. An aggregate result
+  cannot prove a branch it does not exercise. Extend the nearest injectable harness when necessary.
+  Fresh benchmark, resource and profile experiments require the explicit scope in §Work scope;
+  a correctness repair alone does not authorize them.
 - Read `bench/README.md` before benchmark work. Scope exploratory comparisons with its maintained
   filters; for bounded repairs use `=case` names, not substrings that also select failures or rivals.
   Run all applicable runtimes only after a candidate survives the focused mechanism test.
@@ -336,9 +336,8 @@ efficiency. A reproducible misuse alone does not justify that cost.
   identifier per call; writing many IDs into caller-owned buffers through `output` and
   `outputOffset` is a secondary job, excluded from this optimization effort. Never slow a
   single-call path to speed a batch path.
-- Surpass qualified alternatives in both performance and resource efficiency for every main use
-  case; secondary optimization is excluded from this effort. A throughput win alone does not close
-  a main-use gap: compare complete successful calls and their allocation and resource costs.
+- In authorized optimization, close primary-call speed and resource gaps together; throughput alone
+  is insufficient. Compare complete calls and allocation; secondary optimization remains excluded.
 - After every Bun or Deno version change, and before each periodic runtime review, follow
   `bench/README.md` §Capability review. Recheck native, Node-compatible, and web-compatible APIs;
   prove semantics and both selected and fallback paths. Names and API presence prove nothing else.
@@ -383,24 +382,17 @@ efficiency. A reproducible misuse alone does not justify that cost.
   method name identifies the code under test. Compare byte keys with `join(",")` or hex,
   never platform-dependent string coercion or UTF-8 decoding.
 - Preserve an unpinned newest-Node CI lane: pinned runtimes cannot expose newly added native APIs.
-- During explicitly requested performance work, every default call (no arguments, or only a text-case or alphabet
-  preset) must approach the fastest runtime-native path producing the same output on every
-  ranked runtime and the best qualified competitors; negligible remaining differences are acceptable.
-  Do not add code or continue tuning solely to close a negligible gap. Configured calls (options, caller
-  buffers, generators, custom entropy, masking) may cost more than a native floor only by work that
-  floor lacks; negligible differences from qualified competitors are acceptable there too. Reach parity by combining native
-  output, patched native output, pooled native entropy, and portable work per runtime; never settle
-  for one path everywhere. Align default guarantees with proper native behavior instead of rejecting
-  native output for stronger package guarantees. Each call family in that requested scope needs a floor row;
-  keep its open gaps in the active performance plan until a change closes them, evidence establishes a negligible difference, or
-  `bench/PERFORMANCE.md` records a cause no implementation can remove.
-  When native output is faster, minimize the path to that native call before optimizing a portable
-  replacement. Select per runtime and output; keep TypeScript as the fallback or measured faster
-  choice. Native selection must include wrapper, conversion and resource costs, not kernel timing alone.
-- During explicitly requested optimization, select implementations separately for each runtime and output. Native base64url encoding
-  does not require native base32 encoding. Keep the best existing writer for unsupported outputs;
-  if shared integration slows another primary call, fix that integration instead of abandoning
-  the faster native capability. Do not close the task while either primary regression remains.
+- Within requested performance work, bring defaults (no arguments or only case/alphabet presets)
+  close to the fastest equivalent native output and qualified rivals on each ranked runtime. Configured
+  calls may add only work the native floor lacks. Negligible differences justify no further tuning.
+  Give each requested call family a floor row; keep gaps open until repaired, shown negligible, or
+  explained by an unavoidable cause in `bench/PERFORMANCE.md`. Combine native output, patched
+  output, pooled entropy and portable work as appropriate; select per runtime and output, including
+  wrapper, conversion and resource costs. Minimize faster native delegation before replacing it.
+  Keep TypeScript for fallback or measured wins; default guarantees follow proper native behavior.
+- During requested optimization, choose per runtime and output: native base64url does not require
+  native base32. Preserve the best writer for unsupported outputs and repair shared integration
+  regressions rather than discard a faster capability; neither primary regression may remain.
 - Rank apples-to-apples consumer outcomes, not identical internals. Correct wire output, secure
   entropy are mandatory; default guarantees must not exceed proper native behavior. Weigh other differences by measured consumer
   harm. Clock rollback, sequence, buffer, ownership, validation, and failure strategies remain
