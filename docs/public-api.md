@@ -546,6 +546,10 @@ layout, rather than making ordinary calls pay for those controls or adding a dup
 
 ## Capabilities and runtime work
 
+Performance protection constrains an authorized change; it does not authorize an optimization
+project. Follow [root agent guidance](../AGENTS.md#work-scope) before experiments, including those proposed for a
+correctness repair or release audit. Missing performance evidence is not a release prerequisite.
+
 - Preserve normal-call speed and resource efficiency when defending against rare misuse. Art's
   ruling: "We can do some improvements for correctness and for prevention of misuse, but only up
   to extent while it does not damage the performance and resource efficiency of the primary use

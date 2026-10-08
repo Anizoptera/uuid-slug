@@ -2,6 +2,18 @@
 
 Preserve the published identifier contracts and verify the runtime paths that each change reaches.
 
+## Work scope
+
+Release preparation does not authorize performance experiments or optimization.
+Run standalone benchmarks, profiles, candidate screens or calibration only when the maintainer
+explicitly requests performance work on the relevant consumer call. A performance gap, failing
+misuse probe, old roadmap task or instruction below is not that request. Necessary correctness
+repairs do not reopen an optimization campaign. Revisit a rejected or inconclusive experiment
+only within authorized performance work and when new evidence changes its question or mechanism;
+a plausible rewrite, longer run or different warm-up is not new evidence.
+Keep existing required regression checks; do not add measurements or resource-parity targets to
+release readiness. The performance procedures below govern authorized work, never grant authority.
+
 Do not edit any public document unless the maintainer explicitly requests or approves that edit.
 This includes README and generated documentation. Propose the exact change and wait for approval;
 a code change, stale text, failed check, or instruction to keep docs synchronized grants no permission.
@@ -306,7 +318,7 @@ efficiency. A reproducible misuse alone does not justify that cost.
   JITless-only win when every higher rung is unchanged and its lifetime cost is justified.
 - Optimize successful consumer calls. Invalid input, rejected configuration, and other failures
   are rare by design and are not performance targets: spend no code or measurement on their speed.
-- Limit this optimization effort to primary consumer use cases. Profile actual hotspots and
+- When performance work is explicitly authorized, limit it to primary consumer use cases. Profile actual hotspots and
   performance and resource gaps against the main qualified rivals for each primary use case,
   then fix those gaps. Optimizing any other scenario is outside the authorized scope; correctness
   checks protect existing contracts but do not make those scenarios optimization targets.
@@ -371,7 +383,7 @@ efficiency. A reproducible misuse alone does not justify that cost.
   method name identifies the code under test. Compare byte keys with `join(",")` or hex,
   never platform-dependent string coercion or UTF-8 decoding.
 - Preserve an unpinned newest-Node CI lane: pinned runtimes cannot expose newly added native APIs.
-- Every default call (no arguments, or only a text-case or alphabet
+- During explicitly requested performance work, every default call (no arguments, or only a text-case or alphabet
   preset) must approach the fastest runtime-native path producing the same output on every
   ranked runtime and the best qualified competitors; negligible remaining differences are acceptable.
   Do not add code or continue tuning solely to close a negligible gap. Configured calls (options, caller
@@ -379,13 +391,13 @@ efficiency. A reproducible misuse alone does not justify that cost.
   floor lacks; negligible differences from qualified competitors are acceptable there too. Reach parity by combining native
   output, patched native output, pooled native entropy, and portable work per runtime; never settle
   for one path everywhere. Align default guarantees with proper native behavior instead of rejecting
-  native output for stronger package guarantees. Every call family needs a floor row, and every open gap needs a `ROADMAP.md`
-  task until a change closes it, evidence establishes a negligible difference, or
+  native output for stronger package guarantees. Each call family in that requested scope needs a floor row;
+  keep its open gaps in the active performance plan until a change closes them, evidence establishes a negligible difference, or
   `bench/PERFORMANCE.md` records a cause no implementation can remove.
   When native output is faster, minimize the path to that native call before optimizing a portable
   replacement. Select per runtime and output; keep TypeScript as the fallback or measured faster
   choice. Native selection must include wrapper, conversion and resource costs, not kernel timing alone.
-- Use the fastest implementation separately for each runtime and output. Native base64url encoding
+- During explicitly requested optimization, select implementations separately for each runtime and output. Native base64url encoding
   does not require native base32 encoding. Keep the best existing writer for unsupported outputs;
   if shared integration slows another primary call, fix that integration instead of abandoning
   the faster native capability. Do not close the task while either primary regression remains.

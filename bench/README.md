@@ -4,6 +4,11 @@ Measure each runtime separately; a failed or missing measurement must fail the h
 
 ## Decision before measurement
 
+Run experiments only for explicitly requested performance work on a named consumer call.
+Release preparation, correctness repairs and retained performance gaps do not authorize another
+benchmark, profile, candidate or calibration. Read [root agent guidance](../AGENTS.md#work-scope) before choosing work;
+the procedures below apply only after that scope exists. Existing required regression checks remain.
+
 Use each measurement to decide whether to retain a specific production improvement.
 
 Choose the largest unresolved cost in an ordinary successful call on Node Current or Bun.

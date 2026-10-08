@@ -30,6 +30,10 @@ the tag, version, history, or retained evidence.
 
 ## Evidence and notes
 
+Prepare releases from correctness, compatibility, package and recovery evidence.
+Missing performance comparisons do not block release preparation or authorize optimization;
+follow [root agent guidance](../AGENTS.md#work-scope) and retain the existing required regression checks.
+
 Prepare both archives once without publishing credentials, even when publishing only one. Verify version and tag agreement, packaged
 APIs, shared behavior, language parity, minimum compatible version, archive integrity, and licenses
 before any publication step. Publication must reuse the verified archives; if a registry client must
