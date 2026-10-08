@@ -91,6 +91,37 @@ test("generated-file cleanup preserves source and exact executable bytes in the 
   }
 });
 
+test("profile builds archive their compiler inputs and remove every generated bundle", async () => {
+  const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
+  const reports = join(scratch, "reports");
+  const recovered = join(scratch, "recovered");
+  const bundles = ["profile-async.browser.mjs", "profile-browser.browser.mjs"];
+  try {
+    await Promise.all([mkdir(reports), mkdir(recovered)]);
+    await command(
+      process.execPath,
+      [
+        "-e",
+        'import { buildProfile, cleanupProfileBuilds } from "./bench/profile-all"; import { basename, join } from "node:path"; const paths = await Promise.all([buildProfile("profile-async", "browser"), buildProfile("profile-browser", "browser")]); for (const path of paths) await Bun.write(join(process.argv[1], basename(path) + ".expected"), await Bun.file(path).bytes()); await cleanupProfileBuilds(); await cleanupProfileBuilds();',
+        scratch,
+      ],
+      project,
+      { UUID_SLUG_PROFILE_NATIVE_DIR: reports, UUID_SLUG_PROFILE_MODULE: "" },
+    );
+    await command("tar", ["-xf", join(reports, "build-inputs.tar.gz"), "-C", recovered], scratch);
+    for (const name of bundles)
+      expect(await Bun.file(join(recovered, name)).bytes()).toEqual(
+        await Bun.file(join(scratch, `${name}.expected`)).bytes(),
+      );
+    expect(await Bun.file(join(recovered, "src/index.ts")).bytes()).toEqual(
+      await Bun.file(join(project, "src/index.ts")).bytes(),
+    );
+    expect(await readdir(reports)).toEqual(["build-inputs.tar.gz"]);
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+});
+
 test("failed source capture preserves the generated file and previous archive", async () => {
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
   const reports = join(scratch, "reports");
@@ -161,6 +192,7 @@ test("browser launch failure releases the profiling server", async () => {
   try {
     await writeFile(entry, "export {};\n");
     // An absent real browser fails before profiling; a leaked listener prevents normal exit.
+    let loaded = false;
     const child = Bun.spawn(
       [
         process.execPath,
@@ -175,6 +207,7 @@ test("browser launch failure releases the profiling server", async () => {
         stderr: "pipe",
         ipc(message) {
           if (message === "loaded") {
+            loaded = true;
             clearTimeout(deadline);
             deadline = setTimeout(() => child.kill(), 2000);
           }
@@ -185,6 +218,8 @@ test("browser launch failure releases the profiling server", async () => {
     let deadline = setTimeout(() => child.kill(), 2000);
     try {
       const [stderr, code] = await Promise.all([new Response(child.stderr).text(), child.exited]);
+      if (!loaded)
+        throw new Error("Browser cleanup child did not load before the startup watchdog");
       expect(stderr).toContain("Executable doesn't exist");
       expect(code).toBe(0);
     } finally {

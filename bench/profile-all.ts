@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
-import { join, resolve as resolveReportDirectory } from "node:path";
+import { basename, join, resolve as resolveReportDirectory } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 import { command } from "../scripts/command";
+import { archiveAndRemoveGeneratedFiles } from "../scripts/archive-scratch";
 
 const project = join(import.meta.dir, "..");
 // Separate studies must retain their raw profiles instead of overwriting another candidate's proof.
@@ -134,7 +135,14 @@ async function requireNativeFiles(): Promise<void> {
   );
 }
 
-async function build(entry: string, target: "browser" | "node", conditions: string[] = []) {
+const buildInputs = new Set<string>();
+const generatedFiles = new Set<string>();
+
+export async function buildProfile(
+  entry: string,
+  target: "browser" | "node",
+  conditions: string[] = [],
+) {
   const name = `${entry}.${conditions[0] ?? target}.mjs`;
   const result = await Bun.build({
     entrypoints: [join(import.meta.dir, `${entry}.ts`)],
@@ -142,6 +150,7 @@ async function build(entry: string, target: "browser" | "node", conditions: stri
     conditions,
     outdir: reports,
     naming: name,
+    metafile: true,
     plugins: publicModulePath
       ? [
           {
@@ -160,7 +169,19 @@ async function build(entry: string, target: "browser" | "node", conditions: stri
       result.logs,
       `Could not build ${entry} for ${conditions[0] ?? target}`,
     );
+  if (!result.metafile) throw new Error("Profile build did not report its source inputs");
+  for (const input of Object.keys(result.metafile.inputs)) buildInputs.add(input);
+  for (const output of result.outputs) generatedFiles.add(basename(output.path));
   return join(reports, name);
+}
+
+export async function cleanupProfileBuilds(): Promise<void> {
+  // Keep built files with their compiler-listed sources, without a second input registry.
+  // Archive before deletion; incomplete runs and archive failures retain their bundles.
+  if (generatedFiles.size === 0) return;
+  await archiveAndRemoveGeneratedFiles(project, reports, [...buildInputs], [...generatedFiles]);
+  buildInputs.clear();
+  generatedFiles.clear();
 }
 
 async function runHost(
@@ -397,12 +418,12 @@ async function main() {
   if (!publicModule) await command("bun", ["run", "build"], project);
   const [nodeEntry, denoEntry, browserEntry, asyncNodeEntry, asyncDenoEntry, asyncBrowserEntry] =
     await Promise.all([
-      build("profile", "node"),
-      build("profile", "node", ["deno"]),
-      build("profile-browser", "browser"),
-      synchronousOnly ? undefined : build("profile-async", "node"),
-      synchronousOnly ? undefined : build("profile-async", "node", ["deno"]),
-      synchronousOnly ? undefined : build("profile-async", "browser"),
+      buildProfile("profile", "node"),
+      buildProfile("profile", "node", ["deno"]),
+      buildProfile("profile-browser", "browser"),
+      synchronousOnly ? undefined : buildProfile("profile-async", "node"),
+      synchronousOnly ? undefined : buildProfile("profile-async", "node", ["deno"]),
+      synchronousOnly ? undefined : buildProfile("profile-async", "browser"),
     ]);
   const nodeVersion = (await command(nodeExecutable, ["--version"], project)).trim();
   const nodeReport = `node-${nodeVersion.replace(/[^0-9A-Za-z.-]/g, "-")}`;
@@ -446,6 +467,7 @@ async function main() {
     await runExitProfiles(nodeEntry, denoEntry);
     await requireNativeFiles();
   }
+  await cleanupProfileBuilds();
 }
 
 if (import.meta.main) await main();

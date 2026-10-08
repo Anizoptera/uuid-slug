@@ -412,6 +412,8 @@ Run this review after every Bun or Deno version change and before periodic runti
 
 ## Profiling
 
+`profile-all.ts` archives its compiler-reported inputs and generated bundles in `build-inputs.tar.gz` after every selected stage succeeds, then removes loose bundles. Failed stages retain their files; this archive covers built inputs, not the separately executed Bun source or an external package loaded dynamically.
+
 Run `bun scripts/check-artifact.ts --edge` for shared packed-consumer correctness checks inside
 local workerd requests; install workerd first or set `UUID_SLUG_WORKERD_EXECUTABLE` to its binary.
 Run `bun run build && bun bench/profile-workerd.ts` to measure the compiled public package in
