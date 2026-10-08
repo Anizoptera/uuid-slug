@@ -174,8 +174,8 @@ native encoding with direct Web Crypto and the same native encoder. Both use pri
 arrays; the package draw also includes its existing failure handling. This composition is not
 the published slug call. Three fresh-process Bun medians are 41.0, 41.1 and 42.8 ns, versus
 48.0–50.0 ns for the published call and 42.1–42.5 ns for direct Web Crypto plus native encoding.
-The screen does not establish a pooling penalty. Preserve the pool and test native encoding
-at slug generation; the shared `alphabet:native-leaf` candidate remains rejected.
+The screen does not establish a pooling penalty. Preserve the pool; the integration comparisons
+below do not retain native slug generation, and `alphabet:native-leaf` remains rejected.
 
 Reversed fixed-call memory captures use the same preparation and window counts above. Package
 caller CPU is 46.2 and 46.9 ns per call; pooled native composition reports 41.6 and 40.9 ns.
@@ -326,7 +326,7 @@ Package medians are 44.7, 166.2, 159.3, 43.4, 43.5 and 43.7 ns; caller CPU repor
 56.3, 43.4, 43.6 and 43.2 ns per completed call. Native scratch medians span 41.5–64.2 ns;
 pooled native medians span 40.5–43.9 ns. Every capture completes 1,835,008 calls. Preserve the
 outliers; equal call counts align workload size but do not align batch medians with aggregate CPU
-or remove harness scope. Profile the variable package execution before selecting another candidate;
+or remove harness scope. The exit profiles below do not reproduce the variable package batches;
 these source captures prove neither packed performance nor gross allocation or individual-call tails.
 
 Exit CPU profiles locate ordinary encoding work but do not explain the extreme package batches.
@@ -1947,12 +1947,16 @@ scratch-backed comparison under Bun UUIDv4 slug resources, not only this outcome
 
 `current-primary-conversion-ranking.jsonl` retains three fresh-process medians per measured call.
 Bun byte-to-base64url conversion measures 37.0 ns against native `toBase64` at 34.8 ns;
-the rejected integrations under Native base64url encoding do not close that difference. Buffer-only byte results in
-older reports are incomplete floors even when their stored qualification says `qualified`;
-compare fresh plain arrays against `buffer-copy` or native array results. The matching Deno
-text-to-byte comparison measures 156.8 ns against native `fromHex` at 196.4 ns, rather than
-the faster Buffer-only result. Node reported heap allocation is covered above; total allocation
-and Deno source-entry parity remain unproved. This corpus covers fixed canonical inputs only.
+the rejected integrations under Native base64url encoding do not close that difference. Package
+owned slug decoding has lower medians than every measured equivalent native result on all five
+runtimes; Owned plain-slug decoding below retains the repeated ownership comparisons.
+UUID text/byte conversion also has lower medians than the measured equivalent `uuid`, native hex
+and Buffer compositions. Buffer-only byte results are incomplete floors even when an older
+report says `qualified`: they do not return private plain arrays. The Deno text-to-byte comparison
+is 156.8 ns against native `fromHex` at 196.4 ns, not the faster Buffer-only result.
+Three process medians on fixed canonical inputs do not bound equivalence or individual latency.
+Node reported heap allocation is covered above; total allocation, broader input-form comparisons
+and Deno source-entry parity remain unproved. These rankings do not justify another writer change.
 
 Two full competitor runs on 2026-09-16 measured Node 24.21.0, Bun 1.4.2, Deno 2.9.6, and Chromium;
 one-row-per-process probes added Node 26.8.2. Medians in nanoseconds, package against floor:
@@ -1987,8 +1991,10 @@ six-round comparisons against `40f3628` on 2026-10-02 measured Node 26.10.0 JITl
 at 0.545 and 0.544 of its former cost (1,031–1,052 to 562–572 ns), and uppercase at 0.571 and
 0.556 (1,051–1,054 to 586–600 ns). Both comparisons separate the improvements. The measured
 `native.v4.string` reference calls Web Crypto, not Node's fastest crypto primitive: its 503–513 ns
-still leaves a wrapper gap, so this selection does not close native parity. The Node floor-table
-cells above predate both changes.
+still leaves a gap against that reference. `bench/profile-v4.ts` also names direct Node
+`randomUUID` as `native.node.v4.string`; the two retained `uuid-slug-direct-jitless-native-direct-return-*.jsonl`
+captures contain only package calls. They establish neither the direct Node floor nor its remaining
+wrapper or total-allocation cost. Native parity remains open; the Node floor-table cells above predate both changes.
 
 Startup mode detection scans existing CLI arguments backwards and stops at the last explicit
 setting. It parses `NODE_OPTIONS` only when no CLI setting settles the answer and the environment
