@@ -59,9 +59,9 @@ Use existing comparisons to identify unresolved primary-call gaps; rejected expe
 ### Configured calls
 
 - [x] Dedicated UUID-plus-slug calls beat public composition in the latest retained matrix. Independent text draws lose on Node LTS/Deno; Bun-only dispatch retains costs on unselected graphs, and construction-selected updates slow base32 pairs. Frozen empty options raise codec-value costs. These shapes remain rejected, not pending implementations.
-- [ ] Account for missing equivalent comparisons for explicit-time `{ at }` against `uuid.v7({ msecs })`, and created/selected generators against stateful rivals. The default pair now has retained comparisons; do not treat the old missing-pair row as current. Keep unmeasured configured jobs unresolved without starting another benchmark campaign.
-- [ ] Record missing pair total-allocation and immutable-value comparisons. Retained matrices favor `generateUuidV7WithPlainSlug` over public composition, not `generateUuidV7Value` resource parity. Preserve generators, instants, layout identity and pair consistency.
-- [ ] Check generation failure handling with real caller examples. Preserve the approved default/configured distinction; any proposed change to caller-visible failure behavior requires a ruling with its consequences.
+- [x] Record configured-call evidence limits in `bench/PERFORMANCE.md` §Native floors: explicit `{ at }` versus `uuid.v7({ msecs })` and selected generators versus stateful rivals remain unmeasured; default pairs have retained throughput comparisons. No new benchmark campaign is authorized.
+- [x] Record missing pair total-allocation and immutable-value comparisons in `bench/PERFORMANCE.md` §Native floors. Retained pair throughput does not establish immutable-value resource parity; preserve generators, instants, layout identity and pair consistency.
+- [x] Check generation failures with real caller examples in `__test__/consumer-probe.ts` and the shared runtime-boundary corpus. Node and Bun exercise callback-error identity, atomic caller writes, native fallback and dual failures. Preserve the approved default/configured distinction; caller-visible changes require a ruling.
 
 ### Conversion
 

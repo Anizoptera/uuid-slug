@@ -1900,6 +1900,12 @@ Node adapter on Bun and Deno, so competitor results before 2026-09-16 do not des
 Deno routes. Deno 2.9.6 has no native UUIDv7. Chromium 153 exposes only `getRandomValues` and, in
 secure contexts, `randomUUID`; the package keeps its own UUIDv4 text there because it is faster.
 
+Default and composed UUID-plus-slug calls have retained throughput comparisons. These do not
+establish total-allocation parity for paired results or immutable UUID values. The retained
+generation corpus does not compare explicit `{ at }` calls with `uuid.v7({ msecs })`, or selected
+generators with equivalent stateful rivals. Keep those configured-call comparisons unmeasured;
+default rankings cannot establish their speed or resource parity.
+
 Two full competitor runs on 2026-09-16 measured Node 24.21.0, Bun 1.4.2, Deno 2.9.6, and Chromium;
 one-row-per-process probes added Node 26.8.2. Medians in nanoseconds, package against floor:
 
