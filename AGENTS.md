@@ -272,8 +272,9 @@ efficiency. A reproducible misuse alone does not justify that cost.
   not exclude them from project type checking. The existing artifact check rejects executable
   source captures in reports; never bypass it or suppress their compiler diagnostics.
   Preserve failed artifacts until their diagnostic is resolved; then remove the disposable files.
-  Include setup in the cleanup scope; purge successful generated bundles and resolved failure
-  artifacts. Before committing, inspect creator-owned paths in both `/tmp` and the runtime's
+  Include setup in cleanup; run scratch-creating Bun tests through `scripts/test-bun.ts` so their
+  parent owns cleanup after runner exit. Purge successful bundles and resolved failure artifacts.
+  Before committing, inspect creator-owned paths in both `/tmp` and the runtime's
   `tmpdir()`, not just filename prefixes; stop children and preserve evidence and reusable caches.
   Run compiler diagnostics through the retained profiler executable and capture stdout verbatim;
   `bench/compare.ts` requires JSON-only host output. Require a working control for the requested

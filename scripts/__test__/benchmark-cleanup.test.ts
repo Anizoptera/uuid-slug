@@ -7,6 +7,67 @@ import { command } from "../command";
 
 const project = resolve(import.meta.dir, "../..");
 
+for (const target of ["runner", "SIGINT", "SIGTERM"] as const) {
+  test(`${target} interruption removes test fixture scratch`, async () => {
+    const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-runner-cleanup-"));
+    const files = join(scratch, "files");
+    try {
+      await mkdir(files);
+      const fixture = join(scratch, "interrupted.test.ts");
+      await writeFile(
+        fixture,
+        [
+          'import { test } from "bun:test";',
+          'import { mkdtemp, writeFile } from "node:fs/promises";',
+          'import { tmpdir } from "node:os";',
+          'import { join } from "node:path";',
+          'test("interrupted", async () => {',
+          '  const root = await mkdtemp(join(tmpdir(), "fixture-"));',
+          '  await writeFile(join(root, "diagnostic"), "interrupted scratch");',
+          '  await writeFile(process.env.UUID_SLUG_INTERRUPT_WITNESS!, "fixture reached");',
+          target === "runner"
+            ? '  process.kill(process.pid, "SIGTERM");'
+            : '  console.log("ready");',
+          "  await new Promise(() => {});",
+          "});",
+        ].join("\n"),
+      );
+      const child = Bun.spawn([process.execPath, "scripts/test-bun.ts", fixture], {
+        cwd: project,
+        env: {
+          ...process.env,
+          TMPDIR: files,
+          UUID_SLUG_INTERRUPT_WITNESS: join(scratch, "witness"),
+        },
+        stdout: "pipe",
+        stderr: "ignore",
+        timeout: 2000,
+      });
+      try {
+        if (target !== "runner") {
+          const reader = child.stdout.getReader();
+          let output = "";
+          while (!output.split("\n").includes("ready")) {
+            const chunk = await reader.read();
+            if (chunk.done) throw new Error(`Fixture exited before readiness: ${output}`);
+            output += new TextDecoder().decode(chunk.value);
+          }
+          child.kill(target);
+          await reader.cancel();
+        }
+        expect(await child.exited).not.toBe(0);
+        expect(await Bun.file(join(scratch, "witness")).text()).toBe("fixture reached");
+        expect(await readdir(files)).toEqual([]);
+      } finally {
+        child.kill();
+        await child.exited;
+      }
+    } finally {
+      await rm(scratch, { recursive: true, force: true });
+    }
+  });
+}
+
 test("generated-file cleanup preserves source and exact executable bytes in the archive", async () => {
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
   const reports = join(scratch, "reports");
