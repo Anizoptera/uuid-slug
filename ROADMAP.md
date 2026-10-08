@@ -13,16 +13,16 @@ this plan adds no guarantees or acceptance criteria.
 ## Remaining work
 
 - [x] Put the release/performance scope boundary in root agent guidance and its API, benchmark and release instructions; remove optimization campaigns and historical experiment inventories from this plan.
-- [ ] Review release manifests, exports, packaged files, licenses, API baselines and version agreement. Fix actual release defects; do not turn missing performance comparisons into blockers.
+- [x] Review release manifests, exports, packaged files, licenses, API baselines and version agreement. The required repository check, npm archive validator and Cargo archive inspection pass; manifests remain at `0.4.0-dev`.
 - [ ] Review the known private-byte exposure, null timestamp reference, falsy destination, omitted-storage offset and configuration-record issues against the published contracts. Preserve their existing reproductions; use owning correctness tests for necessary repairs, not another benchmark campaign.
 - [x] Reconcile the changelog under `0.4.0`; the real note extractor includes the unreleased changes and excludes prior releases. Correct native generation and failure claims from source; preserve the existing npm-only publication note. Before publication, ensure package selection agrees with that note; the workflow default is both packages.
 - [ ] Verify source and packed consumers across the supported runtime and browser paths, plus the required Rust and WebAssembly checks. Reuse valid evidence and rebuild only what changed.
-- [ ] Verify local release preparation, history selection, archive validation and recovery without credentials, publication, version changes or tag creation. Report any step that requires the release tag rather than fabricating it.
+- [x] Verify local archive validation, version agreement, history selection and recovery through the existing release tests and archive validators. The actual annotated-tag preflight remains unavailable until the maintainer authorizes a release tag; no tag or publication is needed for this audit.
 - [ ] Remove this work's disposable output and resolved failure artifacts; preserve necessary reproductions and reusable caches.
 - [ ] Run the required repository checks, inspect every failure, commit focused changes and report the remaining release actions from evidence.
 
 ## Existing evidence
 
 API, consumer, browser, WebAssembly and cleanup evidence lives in the existing test harnesses and
-`bench/reports/ts-release-audit-*`. Historical performance conclusions belong in
+`bench/reports/ts-release-audit-*` and `bench/reports/ts-release-preparation-*`. Both WebAssembly profiles pass in the configured browser engines. Historical performance conclusions belong in
 `bench/PERFORMANCE.md`; they do not authorize more experiments or become release prerequisites.
