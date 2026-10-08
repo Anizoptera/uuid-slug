@@ -55,6 +55,18 @@ selected extraction and failure calls; it is diagnostic only. The null regressio
 production and passes in the candidate's Node/Bun corpus; resource counters do not prove total
 allocation parity. Other-runtime and profile comparisons remain unmeasured.
 
+Scalar default-parameter reference selection corrects null rejection but lacks no-loss evidence.
+`ts-release-audit-timestamp-scalar-unretained.patch` preserves the isolated substitution and driver.
+The baseline fails the three-reader witness in `candidates-timestamp-RM9XPL/null-reference-baseline-red.log`;
+the candidate passes the owning Node and Bun tests and resource counters in that directory.
+`ts-release-audit-timestamp-scalar-current.{jsonl,log}` compares eight exact successful calls with
+`e7c14eb` on Node 26.11.0 and Bun 1.4.2, using six fresh process pairs, three 10 ms batches
+and 64 ms warm-up. Fifteen paired median-ratio intervals include parity; Bun masked base32hex
+has paired ratio 5.429 (95% interval 1.177–39.855). The large variation remains in the raw samples;
+these observations reject retention but do not establish a cause or individual-call latency.
+The separate `ts-release-audit-timestamp-scalar-host.{jsonl,log}` measures Node 24.21.0,
+not Node Current. Total allocation, other-runtime and profile comparisons remain unmeasured.
+
 ### Native Bun default UUIDv7 text
 
 Bun defaults use native UUIDv7 text generation; Node keeps its independent package generator.
