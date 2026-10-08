@@ -42,7 +42,7 @@ Audit ordinary consumer calls and shipped artifacts before release: create an ID
 
 ## Retained performance evidence
 
-- [x] Reconcile retained generation and conversion evidence in `bench/PERFORMANCE.md` §Native floors and the owning sections below. Bun slug/encoding gaps, the missing direct Node JITless floor, total-allocation limits and Deno source-entry limits remain open; documentation reconciliation does not close parity. No further measurement campaign is authorized.
+- [x] Reconcile retained generation and conversion evidence in `bench/PERFORMANCE.md` §Native floors and the owning sections below. Bun slug/encoding gaps, the missing direct Node JITless floor, total-allocation limits and Deno source-entry limits remain open; documentation reconciliation does not close parity. Reuse comparisons; new optimization campaigns remain held, while required correctness-repair evidence proceeds.
 
 ### Generation
 
@@ -58,7 +58,7 @@ Audit ordinary consumer calls and shipped artifacts before release: create an ID
 ### Configured calls
 
 - [x] Dedicated UUID-plus-slug calls beat public composition in the latest retained matrix. Independent text draws lose on Node LTS/Deno; Bun-only dispatch retains costs on unselected graphs, and construction-selected updates slow base32 pairs. Frozen empty options raise codec-value costs. These shapes remain rejected, not pending implementations.
-- [x] Record configured-call evidence limits in `bench/PERFORMANCE.md` §Native floors: explicit `{ at }` versus `uuid.v7({ msecs })` and selected generators versus stateful rivals remain unmeasured; default pairs have retained throughput comparisons. No new benchmark campaign is authorized.
+- [x] Record configured-call evidence limits in `bench/PERFORMANCE.md` §Native floors: explicit `{ at }` versus `uuid.v7({ msecs })` and selected generators versus stateful rivals remain unmeasured; default pairs have retained throughput comparisons. Reuse these comparisons for evidence review; do not restart optimization.
 - [x] Record missing pair total-allocation and immutable-value comparisons in `bench/PERFORMANCE.md` §Native floors. Retained pair throughput does not establish immutable-value resource parity; preserve generators, instants, layout identity and pair consistency.
 - [x] Check generation failures with real caller examples in `__test__/consumer-probe.ts` and the shared runtime-boundary corpus. Node and Bun exercise callback-error identity, atomic caller writes, native fallback and dual failures. Preserve the approved default/configured distinction; caller-visible changes require a ruling.
 
