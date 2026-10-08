@@ -3,7 +3,7 @@
 Notable changes per release, newest first. This file is the source of the GitHub Release
 notes: the section for a version is published verbatim when its tag is pushed.
 
-## Unpublished
+## [0.4.0]
 
 - Generation with no arguments or only a spelling preset (`generateUuidV4`, `generateUuidV4Bytes`,
   `generatePlainUuidV4Slug`, `generateUuidV7`, `generateUuidV7Bytes`, `generatePlainUuidV7Slug`,
@@ -31,8 +31,6 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 - `uuid-slug` implements the same generation, encoding, masking, sentinel, rotation, migration,
   and timestamp contracts as the npm package. It is not published with 0.4.0.
-
-## [0.4.0]
 
 ### Breaking changes
 
@@ -70,7 +68,7 @@ notes: the section for a version is published verbatim when its tag is pushed.
 - Replace `validateUuidV7Fresh` and `validateUuidV7SlugFresh` with `validateUuidV7StringUnixMs` and
   `validatePlainUuidV7SlugUnixMs`. Validation requires `maxTimestampDeltaMs`; only
   `referenceUnixMs` defaults to the current clock. `hasUuidV7Entropy` is removed.
-- Expected generation, conversion, masking, and configuration failures return `UuidSlugError | T`.
+- Configured generation, conversion, masking and configuration return `UuidSlugError` for expected failures.
   Compatible calls return preceding package errors unchanged, including errors from another realm
   or package copy. Use `isUuidSlugError` instead of relying on `instanceof` or `UuidRuntimeError`.
 - Identifier, configuration, and selector string inputs normalize genuine JavaScript `String` objects without calling custom coercion hooks.
@@ -107,8 +105,8 @@ notes: the section for a version is published verbatim when its tag is pushed.
   delegate to native `toBase64` and `toHex` where a runtime provides them and measures faster.
 - Convert canonical UUID text straight to either slug alphabet, without an intermediate byte
   array, where no native encoder exists.
-- On Bun, generate UUIDv7 bytes and slugs through the portable generator; it measured faster than
-  converting the native result. Native text generation is kept.
+- On Bun, delegate default UUIDv7 text and base64url slug generation to the native generator.
+  Byte output and base32hex slugs use the portable generator.
 - Index sentinels at masking-codec construction so string and byte lookups no longer scan the list.
 - Restore the decoded block between previous-key attempts instead of allocating scratch per key,
   and mask codec-owned bytes in place.
@@ -119,8 +117,8 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 ### Fixed
 
-- Fall back to portable UUID generation when an optional native generator fails or returns invalid
-  data. Preserve both causes if fallback also fails.
+- Fall back to portable UUID generation when an optional native generator throws. Preserve both
+  causes if fallback also fails.
 - Preserve UUIDv7 sequence state and caller-owned storage after failed entropy, generation, or
   parsing.
 - Reject plain-slug byte input unless it contains exactly one 16-byte UUID.
