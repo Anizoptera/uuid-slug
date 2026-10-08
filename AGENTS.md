@@ -220,7 +220,7 @@ efficiency. A reproducible misuse alone does not justify that cost.
   retain TypeScript source captures as `.ts.txt` or archives, never `.ts`, because Git ignores do
   not exclude them from project type checking. The existing artifact check rejects executable
   source captures in reports; never bypass it or suppress their compiler diagnostics.
-  Preserve failed artifacts until their diagnostic is resolved; then remove the disposable files.
+  Keep real failures until diagnosis; expected rejection fixtures archive inside their test cleanup scope.
   Include setup in cleanup; run Bun tests, API checks and generation comparisons through their package commands so `scripts/test-bun.ts` owns temporary files after interruption. Create their scratch under `tmpdir()`, inside the supervisor's cleanup scope. Purge successful bundles and resolved failure artifacts.
   Preserve earlier captured graphs before replacing build-input archives. Keep captured packages immutable and share identical archives by content hash; never rewrite a linked capture in place. Read `bench/README.md` before pruning indexed evidence. Compact retained reports with `bun scripts/compact-reports.ts` without changing their bytes.
   Before committing, inspect creator-owned paths in both `/tmp` and the runtime's

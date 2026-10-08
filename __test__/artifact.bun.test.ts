@@ -11,7 +11,9 @@ async function rejected(files: Record<string, string>, message: string): Promise
   try {
     const tarball = join(root, "input.tgz");
     await Bun.write(tarball, new Bun.Archive(files));
-    await rejects(inspectArtifact(tarball), (error: Error) => error.message.includes(message));
+    await rejects(inspectArtifact(tarball, false, false, join(root, "reports")), (error: Error) =>
+      error.message.includes(message),
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }

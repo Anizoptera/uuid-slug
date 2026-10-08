@@ -100,7 +100,12 @@ async function validateSourceMap(
 }
 
 /** Validate the archive itself; callers supplying a tarball never invoke the packer. */
-export async function inspectArtifact(tarball: string, web = false, edge = false): Promise<void> {
+export async function inspectArtifact(
+  tarball: string,
+  web = false,
+  edge = false,
+  failureReports = path.join(project, "bench/reports"),
+): Promise<void> {
   const expected = process.env.UUID_SLUG_EXPECTED_ARCHIVE;
   if (expected) {
     const [actualBytes, expectedBytes] = await Promise.all([
@@ -380,9 +385,9 @@ export async function inspectArtifact(tarball: string, web = false, edge = false
     );
   } catch (cause) {
     failed = true;
-    // Keep the complete failing graph in reports, not executable scratch on the device.
+    // Real failures use retained reports; expected rejection tests supply their cleanup scope.
     // If archival fails, retain the originals: deleting them would destroy the only reproduction.
-    await archiveAndRemoveScratch(root, path.join(project, "bench/reports"));
+    await archiveAndRemoveScratch(root, failureReports);
     throw cause;
   } finally {
     if (!failed) await rm(root, { recursive: true, force: true });

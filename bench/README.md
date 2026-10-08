@@ -32,7 +32,7 @@ Rules:
   Isolate source substitutions from the shared working tree; retain raw output in `bench/reports/`
   and record the measured conclusion in `bench/PERFORMANCE.md`. Remove scratch when the operation
   ends, including setup failures; preserve needed failure artifacts first and resolve archive paths before changing working directories. Run generation comparisons through `bun run bench:competitors` so interruption cleanup has a surviving parent. Put generated bundles
-  in one owned directory and remove it on success, without searching retained reports.
+  in one owned directory and remove it on success, without searching retained reports. Expected rejection fixtures keep their archives inside the test cleanup scope; real failures remain recoverable until diagnosis.
   Identical immutable package captures share a content-named archive through hard links; replace files, never rewrite their links. Recover removed artifacts from `bench/reports/retained-artifact-index.json`: extract its archive member with `tar -xf ARCHIVE MEMBER` in a disposable directory, then check its recorded SHA-256 and length. Remove resolved failure artifacts; run `bun scripts/compact-reports.ts` to compress retained reports on macOS without changing paths or bytes. Store source captures as text or archives so
   compiler and test discovery cannot execute them. Never cite `/tmp` evidence in durable text.
   `bun run clean` removes generated build output, not retained reports; delete failed artifacts
