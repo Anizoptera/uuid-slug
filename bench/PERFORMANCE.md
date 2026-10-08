@@ -33,6 +33,16 @@ throughput samples do not prove individual latency or total allocation, or ident
 three-reader regression, which fails on the baseline in Bun and passes on the candidate in Node and Bun.
 Other runtimes and resource comparisons remain unmeasured because this host screen rejects retention.
 
+Null rejection inside the nullish fallback also remains unretained: the host screen cannot establish no loss.
+`ts-release-audit-timestamp-null-fallback-host.{jsonl,log}` compares this shape with `50fc749`
+in six fresh process pairs per host, with three 3 ms batches after 16 ms warm-up. All sixteen
+median ratio intervals span parity on Node 26.10.0 and Bun 1.4.2. This is inconclusive warm
+throughput evidence, not proof of equal speed, individual latency or resource cost.
+`ts-release-audit-timestamp-null-fallback-unretained.patch` preserves the candidate and its
+three-reader, single-getter regression. The value-based regression fails on the baseline in Bun;
+the candidate passes the shared 54-case Node and Bun corpus. Other-runtime, resource and profile
+evidence remains absent; the null-reference defect remains open.
+
 ### Native Bun default UUIDv7 text
 
 Bun defaults use native UUIDv7 text generation; Node keeps its independent package generator.
