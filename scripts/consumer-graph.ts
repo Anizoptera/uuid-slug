@@ -152,6 +152,7 @@ export async function inspectConsumerGraph(
     "rspack",
     "webpack",
   ] as const;
+  let completed = false;
   try {
     await mkdir(root, { recursive: true });
     if (decoderBundleDir) await mkdir(decoderBundleDir, { recursive: true });
@@ -208,8 +209,12 @@ export async function inspectConsumerGraph(
         };
       }),
     );
-    return await settleAll(cases);
+    const results = await settleAll(cases);
+    completed = true;
+    return results;
   } finally {
-    await rm(root, { recursive: true, force: true });
+    // The artifact owner archives failures with their extracted package; deleting this subtree
+    // first would leave a diagnostic command whose inputs no longer exist.
+    if (completed) await rm(root, { recursive: true, force: true });
   }
 }

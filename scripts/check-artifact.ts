@@ -3,6 +3,7 @@ import { isBuiltin } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { command } from "./command";
+import { archiveAndRemoveScratch } from "./archive-scratch";
 import { formatConsumerGraph, inspectConsumerGraph } from "./consumer-graph";
 
 // Scan all shipped files: extensions must not hide machine paths or development material.
@@ -118,6 +119,7 @@ export async function inspectArtifact(tarball: string, web = false, edge = false
     return;
   }
   const root = await mkdtemp(path.join(tmpdir(), "uuid-slug-consumer-"));
+  let failed = false;
   try {
     // Version managers resolve from cwd; temporary consumers must use the project's toolchain.
     await symlink(path.join(project, ".tool-versions"), path.join(root, ".tool-versions"));
@@ -376,8 +378,14 @@ export async function inspectArtifact(tarball: string, web = false, edge = false
     console.log(
       `Validated ${path.basename(tarball)} through extracted package exports${web ? " on Node, Bun, Deno, Chromium, Firefox and WebKit" : " on Node and Bun"}${edge ? " and local workerd (web-only and nodejs_compat)" : ""}.`,
     );
+  } catch (cause) {
+    failed = true;
+    // Keep the complete failing graph in reports, not executable scratch on the device.
+    // If archival fails, retain the originals: deleting them would destroy the only reproduction.
+    await archiveAndRemoveScratch(root, path.join(project, "bench/reports"));
+    throw cause;
   } finally {
-    await rm(root, { recursive: true, force: true });
+    if (!failed) await rm(root, { recursive: true, force: true });
   }
 }
 

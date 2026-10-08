@@ -469,6 +469,56 @@ test("failed comparisons preserve diagnostics without leaving temporary checkout
   }
 });
 
+test("packed artifact failures retain their inputs and remove executable scratch", async () => {
+  const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
+  let archive: string | undefined;
+  try {
+    const manifest = JSON.stringify({ dependencies: { unexpected: "1" } });
+    const tarball = join(scratch, "invalid.tgz");
+    await Bun.write(tarball, new Bun.Archive({ "package/package.json": manifest }));
+    const child = Bun.spawn([process.execPath, "scripts/check-artifact.ts", tarball], {
+      cwd: project,
+      env: { ...process.env, TMPDIR: scratch },
+      stdout: "ignore",
+      stderr: "pipe",
+    });
+    const [stderr, exitCode] = await Promise.all([new Response(child.stderr).text(), child.exited]);
+    archive = /artifacts are in (.+\.tar\.gz)\./.exec(stderr)?.[1];
+    expect(exitCode).not.toBe(0);
+    expect(stderr).toContain("dependencies must be empty in the artifact");
+    if (!archive) throw new Error("Missing packed failure archive diagnostic");
+    const entries = await new Bun.Archive(await Bun.file(archive).bytes()).files();
+    expect(await entries.get("./package/package.json")?.text()).toBe(manifest);
+    expect(await readdir(scratch)).toEqual(["invalid.tgz"]);
+    // The inner graph must survive too; an actual setup failure reaches its cleanup boundary
+    // without starting unrelated compilers or inventing their responses.
+    const graph = Bun.spawn(
+      [
+        process.execPath,
+        "-e",
+        'import { inspectConsumerGraph } from "./scripts/consumer-graph"; await inspectConsumerGraph(process.argv[1], "@anizoptera/uuid-slug");',
+        scratch,
+      ],
+      {
+        cwd: project,
+        env: { ...process.env, UUID_SLUG_DECODER_BUNDLE_DIR: tarball },
+        stdout: "ignore",
+        stderr: "pipe",
+      },
+    );
+    const [graphError, graphExit] = await Promise.all([
+      new Response(graph.stderr).text(),
+      graph.exited,
+    ]);
+    expect(graphExit).not.toBe(0);
+    expect(graphError).toContain("EEXIST");
+    expect((await stat(join(scratch, "consumer-graph"))).isDirectory()).toBe(true);
+  } finally {
+    if (archive) await rm(dirname(archive), { recursive: true, force: true });
+    await rm(scratch, { recursive: true, force: true });
+  }
+});
+
 test("archive failure keeps original evidence and removes incomplete archives", async () => {
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
   const reports = join(scratch, "reports");
