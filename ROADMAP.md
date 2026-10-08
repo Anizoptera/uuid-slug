@@ -22,7 +22,7 @@ this plan adds no guarantees or acceptance criteria.
 - [x] Verify local archive validation, version agreement, history selection and recovery through the existing release tests and archive validators. The actual annotated-tag preflight remains unavailable until the maintainer authorizes a release tag; no tag or publication is needed for this audit.
 - [x] Remove disposable npm, Cargo and runtime-probe outputs and generated heap/CPU snapshots; preserve reproductions, source captures, logs and reusable caches.
 - [x] Run the required repository checks and commit focused repairs; the runtime replay repair passes `bun run check` and the commit hook. No release operation is authorized.
-- [ ] Resolve the correctness-repair evidence boundary before changing shared byte writers: the immutable-value contract requires private storage, but retained rare-misuse defenses require new normal-call measurements while standalone experiments remain unauthorized. The proposed repair uses the built-in typed-array writer instead of caller-overridden `set`, without an extra copy.
+- [ ] Resolve the correctness-repair evidence boundary before changing shared byte writers: retained rare-misuse defenses require new normal-call measurements while standalone experiments remain unauthorized. An overridden output `set` exposes parsed UUID bytes through parsed, root and codec calls, and cached sentinel bytes through both codec byte readers; `bench/reports/ts-release-preparation-codec-byte-findings.log` proves later sentinel decoding changes while normal output mutation does not. The proposed repair uses the built-in typed-array writer instead of caller-overridden `set`, without an extra copy.
 
 ## Existing evidence
 
