@@ -375,6 +375,8 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Gate every runtime-dependent change in both Node Vitest and Bun tests, including branches
   outside `src/runtime/` that use optional capabilities. Neither runner covers the other's
   adapter. Share entropy cases in `__test__/entropy-probe.ts`.
+  Run Node Vitest through `bun run test:node`; focused runs use `node node_modules/vitest/vitest.mjs`
+  so Bun does not select the test worker.
 - Keep development native interop as one discovered research matrix across supported installed
   Node, Bun and Deno Node-API/FFI boundaries. Run one corpus with nonzero evidence per lane; use
   measurements to improve the adapters, never to discard one from a volatile machine snapshot.

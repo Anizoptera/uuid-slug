@@ -346,7 +346,12 @@ describe("UUIDv7 timestamp extraction", () => {
     const bounds = unwrap(uuidV7ByteBounds(0));
     expect(bytesToUuidString(bounds.startInclusive)).toBe("00000000-0000-7000-8000-000000000000");
     expect(bytesToUuidString(bounds.endInclusive)).toBe("00000000-0000-7fff-bfff-ffffffffffff");
-    expect(bounds.startInclusive).not.toBe(bounds.endInclusive);
+    const next = unwrap(uuidV7ByteBounds(0));
+    bounds.startInclusive.fill(0);
+    expect(bytesToUuidString(bounds.endInclusive)).toBe("00000000-0000-7fff-bfff-ffffffffffff");
+    bounds.endInclusive.fill(0);
+    expect(bytesToUuidString(next.startInclusive)).toBe("00000000-0000-7000-8000-000000000000");
+    expect(bytesToUuidString(next.endInclusive)).toBe("00000000-0000-7fff-bfff-ffffffffffff");
     for (const [start, end] of [[-1], [1.5], [0, 0x1_0000_0000_0000], [2, 1]]) {
       const result =
         end === undefined

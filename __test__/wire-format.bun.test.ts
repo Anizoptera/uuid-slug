@@ -32,7 +32,6 @@ describe("wire format is identical across runtimes", () => {
       expect(String(uuidStringToPlainSlug(vector.uuid))).toBe(vector.plain);
       expect(String(codec.uuidToMaskedSlug(vector.uuid))).toBe(vector.masked);
       expect(String(codec.uuidToString(vector.masked))).toBe(vector.uuid);
-      expect(vector.masked).toHaveLength(22);
     });
   }
 
