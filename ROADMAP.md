@@ -10,6 +10,13 @@ and finalization require the maintainer's final explicit authorization for each 
 Use `docs/release.md` for release preparation and recovery. Existing contract owners remain authoritative;
 this plan adds no guarantees or acceptance criteria.
 
+## TypeScript release audit
+
+- [ ] Review every exported operation, type and option against caller jobs, defaults, ownership, error composition and documented contracts.
+- [ ] Reproduce suspected contract failures with valid neighboring calls; inspect existing tests before adding a missing falsifier.
+- [ ] Verify source types, emitted declarations, editor help and actual packed consumers through the existing harness; distinguish each check's coverage.
+- [ ] Resolve findings within existing authority, record remaining consumer consequences and give a release verdict without new optimization work or release operations.
+
 ## Release holds: no release operation is authorized
 
 - [ ] Before publication, match package selection to the npm-only `0.4.0` note in `CHANGELOG.md`; the workflow defaults to both packages. Publication still requires final authorization for that exact operation.
