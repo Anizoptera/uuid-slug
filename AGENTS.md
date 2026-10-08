@@ -4,6 +4,10 @@ Preserve the published identifier contracts and verify the runtime paths that ea
 
 ## Work scope
 
+Prepare releases only. Release version changes, tags, publication, finalization and `bun run release`
+require final explicit maintainer authorization for each operation; plans, credentials and checks
+grant no permission. Other remote writes (pushes, pull requests, settings) also need explicit authorization.
+
 Repair wrong, missing or unreachable instructions before work: update their owning text first,
 then `ROADMAP.md`, then implementation. Put the trigger and required act in visible `AGENTS.md`
 guidance; a rule buried in an unread document does not prevent the next mistake.
@@ -450,9 +454,6 @@ never opens `src/` or `bench/`. Each rule below names a failure that has already
 
 ## Release
 
-- Prepare only. Release version changes, tags, publication, finalization and `bun run release`
-  require final explicit maintainer authorization for each operation; plans, credentials and checks
-  grant no permission. Other remote writes (pushes, pull requests, settings) also need explicit authorization.
 - MUST read `docs/release.md` in full before changing versions, release tooling or workflows,
   packaging, publication, recovery, assets, notes, or finalization.
 - Run `bun run check` before committing unless a maintainer explicitly selects narrower intermediate
