@@ -1,10 +1,98 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { archiveAndRemoveGeneratedFiles } from "../archive-scratch";
 import { command } from "../command";
 
 const project = resolve(import.meta.dir, "../..");
+
+test("generated-file cleanup preserves source and exact executable bytes in the archive", async () => {
+  const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
+  const reports = join(scratch, "reports");
+  const recovered = join(scratch, "recovered");
+  try {
+    await Promise.all([mkdir(reports), mkdir(recovered)]);
+    await Promise.all([
+      copyFile(join(project, "src/index.ts"), join(scratch, "input.ts")),
+      copyFile(join(project, "dist/index.js"), join(reports, "worker.mjs")),
+    ]);
+    const source = await Bun.file(join(scratch, "input.ts")).bytes();
+    const bundle = await Bun.file(join(reports, "worker.mjs")).bytes();
+    await archiveAndRemoveGeneratedFiles(scratch, reports, ["input.ts"], ["worker.mjs"]);
+    await command("tar", ["-xf", join(reports, "build-inputs.tar.gz"), "-C", recovered], scratch);
+    expect(await Bun.file(join(recovered, "input.ts")).bytes()).toEqual(source);
+    expect(await Bun.file(join(recovered, "worker.mjs")).bytes()).toEqual(bundle);
+    expect(await Bun.file(join(scratch, "input.ts")).bytes()).toEqual(source);
+    expect(await readdir(reports)).toEqual(["build-inputs.tar.gz"]);
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+});
+
+test("failed source capture preserves the generated file and previous archive", async () => {
+  const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
+  const reports = join(scratch, "reports");
+  try {
+    await mkdir(reports);
+    await copyFile(join(project, "dist/index.js"), join(reports, "worker.mjs"));
+    await archiveAndRemoveGeneratedFiles(scratch, reports, [], ["worker.mjs"]);
+    const archive = await Bun.file(join(reports, "build-inputs.tar.gz")).bytes();
+    await copyFile(join(project, "dist/index.js"), join(reports, "worker.mjs"));
+    const bundle = await Bun.file(join(reports, "worker.mjs")).bytes();
+    const failure = await archiveAndRemoveGeneratedFiles(
+      scratch,
+      reports,
+      ["missing.ts"],
+      ["worker.mjs"],
+    ).catch((error: Error) => error);
+    expect(failure).toBeInstanceOf(Error);
+    expect(failure?.message).toContain("Command failed");
+    expect(await Bun.file(join(reports, "worker.mjs")).bytes()).toEqual(bundle);
+    expect(await Bun.file(join(reports, "build-inputs.tar.gz")).bytes()).toEqual(archive);
+    expect(new Set(await readdir(reports))).toEqual(new Set(["build-inputs.tar.gz", "worker.mjs"]));
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+});
+
+for (const [name, args, env, diagnostic] of [
+  ["invalid argument", ["--invalid"], {}, "Usage: bun bench/profile-workerd.ts"],
+  ["invalid calls", [], { UUID_SLUG_PROFILE_CALLS: "0" }, "Use positive bounded"],
+  ["invalid samples", [], { UUID_SLUG_PROFILE_SAMPLES: "0" }, "Use positive bounded"],
+  ["failed build", [], {}, "Could not resolve"],
+] as const) {
+  test(`workerd ${name} creates no report artifacts`, async () => {
+    const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
+    const bench = join(scratch, "bench");
+    try {
+      await mkdir(bench);
+      await Promise.all([
+        copyFile(join(project, "bench/profile-workerd.ts"), join(bench, "profile-workerd.ts")),
+        symlink(join(project, "scripts"), join(scratch, "scripts"), "dir"),
+        symlink(join(project, "node_modules"), join(scratch, "node_modules"), "dir"),
+      ]);
+      // Real CLI and builder failures must leave no report directory, even before cleanup runs.
+      const child = Bun.spawn([process.execPath, join(bench, "profile-workerd.ts"), ...args], {
+        cwd: scratch,
+        env: {
+          ...process.env,
+          UUID_SLUG_PROFILE_CALLS: "1",
+          UUID_SLUG_PROFILE_SAMPLES: "1",
+          ...env,
+        },
+        stdout: "ignore",
+        stderr: "pipe",
+      });
+      const [stderr, code] = await Promise.all([new Response(child.stderr).text(), child.exited]);
+      expect(stderr).toContain(diagnostic);
+      expect(code).not.toBe(0);
+      expect(await readdir(bench)).toEqual(["profile-workerd.ts"]);
+    } finally {
+      await rm(scratch, { recursive: true, force: true });
+    }
+  });
+}
 
 test("browser launch failure releases the profiling server", async () => {
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));

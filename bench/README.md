@@ -420,6 +420,7 @@ package implementation; enabling Node compatibility does not select the package'
 The driver uses `bunx workerd` unless `UUID_SLUG_WORKERD_EXECUTABLE` names an installed binary.
 It records the observed runtime and compatibility date, bundle inputs, shared correctness checks,
 completed calls and raw batch durations under a fresh `bench/reports/workerd-*` directory.
+Successful runs preserve the bundle and source inputs in `build-inputs.tar.gz`, then remove the loose bundle and socket logs; failures retain their diagnostics.
 No Cloudflare account or deployment is involved.
 
 Use the existing `UUID_SLUG_PROFILE_FILTER` and `UUID_SLUG_PROFILE_SAMPLES` controls; set

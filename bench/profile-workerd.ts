@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { mkdir, mkdtemp } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { build } from "esbuild";
+import { archiveAndRemoveGeneratedFiles } from "../scripts/archive-scratch";
 
 // workerd has a request boundary and a coarse local clock, unlike the existing host runners.
 // Keep its process lifecycle here; share identifier witnesses in profile-cases instead of
 // substituting browser execution or timing HTTP dispatch as the package's per-call cost.
-await mkdir(join(import.meta.dir, "reports"), { recursive: true });
-const reports = await mkdtemp(join(import.meta.dir, "reports/workerd-"));
 const executable = process.env.UUID_SLUG_WORKERD_EXECUTABLE;
 const command = executable ? [executable] : ["bunx", "workerd"];
 const native = process.argv.includes("--native");
@@ -150,6 +149,8 @@ if (
   throw new Error(
     "workerd must load the compiled public entry and portable runtime without source or Node adapters",
   );
+await mkdir(join(import.meta.dir, "reports"), { recursive: true });
+const reports = await mkdtemp(join(import.meta.dir, "reports/workerd-"));
 await Bun.write(join(reports, "worker.mjs"), built.outputFiles[0]!.contents);
 await Bun.write(join(reports, "bundle.json"), JSON.stringify(built.metafile));
 const version = Bun.spawn([...command, "--version"], { stdout: "pipe", stderr: "pipe" });
@@ -329,3 +330,18 @@ const config :Workerd.Config = (
     await reader.cancel();
   }
 }
+// Only completed lanes permit cleanup; failed requests retain their exact diagnostic paths.
+await archiveAndRemoveGeneratedFiles(join(import.meta.dir, ".."), reports, inputs, [
+  "worker.mjs",
+  "web.capnp",
+  "node-compatible.capnp",
+]);
+await Promise.all(
+  ["web.control", "node-compatible.control"].map((name) => rm(join(reports, name))),
+);
+await Promise.all(
+  ["web.stderr", "node-compatible.stderr"].map(async (name) => {
+    const path = join(reports, name);
+    if ((await stat(path)).size === 0) await rm(path);
+  }),
+);
