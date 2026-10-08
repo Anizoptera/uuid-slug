@@ -454,6 +454,6 @@ Write README, CHANGELOG, `docs/` and bench docs for consumers who never open sou
 
 - MUST read `docs/release.md` in full before changing versions, release tooling or workflows,
   packaging, publication, recovery, assets, notes, or finalization.
-- Run `bun run check` before committing unless a maintainer explicitly selects narrower intermediate
-  checks for the current work; the complete check still gates final delivery.
+- Run `bun run check` before committing unless the maintainer selects narrower intermediate checks.
+  Commit finished parts with failed checks tracked in `ROADMAP.md`; a failed complete check prevents final delivery.
 - Pack only after repository build and test processes exit; packlist traversal can race temporary cache files excluded from the tarball.
