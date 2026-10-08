@@ -1916,6 +1916,24 @@ generation corpus does not compare explicit `{ at }` calls with `uuid.v7({ msecs
 generators with equivalent stateful rivals. Keep those configured-call comparisons unmeasured;
 default rankings cannot establish their speed or resource parity.
 
+`current-primary-v4-outcome-ranking.jsonl` and `current-v4-text-ranking.jsonl` retain three
+fresh-process medians per measured call. Runtime-selected Bun UUIDv4 text measures 32.8 and 34.1 ns,
+against `crypto-randomuuid` at 29.5 and 28.8 ns. Bun owned bytes measure 20.7 ns against
+Web Crypto at 20.1 ns in the outcome ranking. These small samples do not bound equivalence,
+individual latency, startup costs or total allocation; preserve those gaps rather than tuning
+from the medians. Deno owned bytes measure 143.6 ns against Web Crypto at 176.9 ns, but their
+total allocation and source-entry costs remain unmeasured. Bun slug floors include the later
+scratch-backed comparison under Bun UUIDv4 slug resources, not only this outcome ranking.
+
+`current-primary-conversion-ranking.jsonl` retains three fresh-process medians per measured call.
+Bun byte-to-base64url conversion measures 37.0 ns against native `toBase64` at 34.8 ns;
+the rejected integrations under Native base64url encoding do not close that difference. Buffer-only byte results in
+older reports are incomplete floors even when their stored qualification says `qualified`;
+compare fresh plain arrays against `buffer-copy` or native array results. The matching Deno
+text-to-byte comparison measures 156.8 ns against native `fromHex` at 196.4 ns, rather than
+the faster Buffer-only result. Node reported heap allocation is covered above; total allocation
+and Deno source-entry parity remain unproved. This corpus covers fixed canonical inputs only.
+
 Two full competitor runs on 2026-09-16 measured Node 24.21.0, Bun 1.4.2, Deno 2.9.6, and Chromium;
 one-row-per-process probes added Node 26.8.2. Medians in nanoseconds, package against floor:
 
