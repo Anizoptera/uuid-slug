@@ -222,9 +222,10 @@ authorize experiments; an unresolved defense stays unresolved until its required
 
 ## Runtime boundaries and evidence
 
-- Qualify default UUIDv7 competitors by correct wire output and secure randomness, using proper
-  native guarantees as the baseline. Counter width, zero-start counters and random-bit allocation
-  do not justify excluding `fastv7` or another rival; record those differences separately.
+- Cross-runtime probes replay recorded inputs and results. Test local generators separately.
+
+- Qualify UUIDv7 rivals by correct wire output, secure randomness and proper native guarantees.
+  Record counter width, zero-start counters and random-bit allocation separately; none excludes a rival.
 
 - Before writing an experiment driver, extend its maintained owner in `bench/` or `scripts/`.
   Inspect the owner's exports and callers before editing it; a matching filename is not permission

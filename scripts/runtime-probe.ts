@@ -11,13 +11,23 @@ const outcomes = requests.map((request) => evaluate(request));
 await probeConsumer(api);
 const reference = process.argv[2];
 if (reference) {
-  const expected = JSON.parse(await readFile(reference, "utf8")) as typeof outcomes;
-  deepStrictEqual(outcomes.length, expected.length, "Runtime corpus length changed");
-  outcomes.forEach((outcome, index) =>
+  // Replay producer inputs: native capabilities and fresh entropy change the local corpus.
+  // Local generation remains exercised above; positional equality needs identical UUIDs.
+  const expected = JSON.parse(await readFile(reference, "utf8")) as {
+    requests: typeof requests;
+    outcomes: typeof outcomes;
+  };
+  if (!expected.requests.length) throw new Error("Reference contract corpus is empty.");
+  deepStrictEqual(
+    expected.requests.length,
+    expected.outcomes.length,
+    "Reference corpus length changed",
+  );
+  expected.requests.forEach((request, index) =>
     deepStrictEqual(
-      outcome,
-      expected[index],
-      `Runtime mismatch: ${JSON.stringify(requests[index])}`,
+      evaluate(request),
+      expected.outcomes[index],
+      `Runtime mismatch: ${JSON.stringify(request)}`,
     ),
   );
   const runtime = process.versions.bun
@@ -25,5 +35,5 @@ if (reference) {
     : process.versions.deno
       ? `Deno ${process.versions.deno}`
       : `Node ${process.versions.node}`;
-  console.log(`${runtime}: ${outcomes.length} shared outcomes and consumer calls passed`);
-} else process.stdout.write(JSON.stringify(outcomes));
+  console.log(`${runtime}: ${expected.requests.length} shared outcomes and consumer calls passed`);
+} else process.stdout.write(JSON.stringify({ requests, outcomes }));
