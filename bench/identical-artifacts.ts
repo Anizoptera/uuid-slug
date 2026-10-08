@@ -21,6 +21,8 @@ async function shippedFiles(root: string, relative = ""): Promise<string[]> {
 export async function identicalArtifacts(baseline: string, candidate: string): Promise<boolean> {
   // Source-capable hosts and compiled hosts use different files. Compare the whole shipped graph,
   // including its manifest and any future assets; a source-only check misses build-tool changes.
+  // Bun.Transpiler drops PURE and NO_SIDE_EFFECTS annotations. A source normalizer must prove
+  // it preserves those hints before its output can replace this byte comparison.
   // The root README is documentation and is not read by the measured package calls.
   // Remove that exemption if runtime code starts reading the README.
   const [before, after] = await Promise.all([shippedFiles(baseline), shippedFiles(candidate)]);
