@@ -160,8 +160,8 @@ normal source selection does not waive this path. Keep one compiled implementati
 `#runtime` import to Bun source, Deno portable source, or Node native code. Deno also activates the
 `node` condition, so its condition must come first. Ship source maps whose inputs resolve inside the package.
 Cloudflare Workers use the portable compiled graph over Web Crypto, with or without
-`nodejs_compat`. Local compiled-code checks do not establish packed-package resolution or
-deployed entropy and clock behavior; verify those boundaries separately before claiming coverage.
+`nodejs_compat`. Run `bun scripts/check-artifact.ts --edge` to check a bundled packed consumer
+inside a local workerd request; this does not establish deployed entropy or clock behavior.
 
 ### JavaScript packaging
 

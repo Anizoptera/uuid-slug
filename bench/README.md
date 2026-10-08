@@ -412,7 +412,9 @@ Run this review after every Bun or Deno version change and before periodic runti
 
 ## Profiling
 
-Run `bun run build && bun bench/profile-workerd.ts` to exercise the compiled public package in
+Run `bun scripts/check-artifact.ts --edge` for shared packed-consumer correctness checks inside
+local workerd requests; install workerd first or set `UUID_SLUG_WORKERD_EXECUTABLE` to its binary.
+Run `bun run build && bun bench/profile-workerd.ts` to measure the compiled public package in
 local Cloudflare workerd, with and without `nodejs_compat`. Both configurations load the portable
 package implementation; enabling Node compatibility does not select the package's Node implementation.
 The driver uses `bunx workerd` unless `UUID_SLUG_WORKERD_EXECUTABLE` names an installed binary.

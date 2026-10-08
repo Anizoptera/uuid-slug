@@ -99,7 +99,7 @@ async function validateSourceMap(
 }
 
 /** Validate the archive itself; callers supplying a tarball never invoke the packer. */
-export async function inspectArtifact(tarball: string, web = false): Promise<void> {
+export async function inspectArtifact(tarball: string, web = false, edge = false): Promise<void> {
   const expected = process.env.UUID_SLUG_EXPECTED_ARCHIVE;
   if (expected) {
     const [actualBytes, expectedBytes] = await Promise.all([
@@ -347,20 +347,34 @@ export async function inspectArtifact(tarball: string, web = false): Promise<voi
         command("deno", ["run", "--conditions", "development", ...denoOptions, runner], root),
         command("deno", ["run", ...denoOptions, builtRunner], root),
       ]);
+    }
+    if (web || edge) {
       const built = await Bun.build({ entrypoints: [runner], target: "browser" });
       const output = built.outputs[0];
       if (!built.success || !output)
         throw new AggregateError(built.logs, "Browser consumer compilation failed.");
       const browserBundle = path.join(root, "browser-consumer.mjs");
       await Bun.write(browserBundle, output);
-      await command(
-        "bun",
-        [path.join(project, "scripts/check-browser-consumer.ts"), browserBundle],
-        project,
+      const checks = [
+        ...(web ? ["check-browser-consumer.ts"] : []),
+        ...(edge ? ["check-workerd-consumer.ts"] : []),
+      ];
+      const results = await Promise.allSettled(
+        checks.map((check) =>
+          command("bun", [path.join(project, "scripts", check), browserBundle], project),
+        ),
       );
+      const errors = results.filter((result) => result.status === "rejected");
+      if (errors.length)
+        throw new AggregateError(
+          errors.map((result) => result.reason),
+          `Packed web consumers failed; rerun bun scripts/check-artifact.ts${web ? " --web" : ""}${edge ? " --edge" : ""} ${JSON.stringify(tarball)}.`,
+        );
+      for (const result of results)
+        if (result.status === "fulfilled") console.log(result.value.trim());
     }
     console.log(
-      `Validated ${path.basename(tarball)} through extracted package exports${web ? " on Node, Bun, Deno, Chromium, Firefox and WebKit" : " on Node and Bun"}.`,
+      `Validated ${path.basename(tarball)} through extracted package exports${web ? " on Node, Bun, Deno, Chromium, Firefox and WebKit" : " on Node and Bun"}${edge ? " and local workerd (web-only and nodejs_compat)" : ""}.`,
     );
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -382,12 +396,14 @@ async function main(): Promise<void> {
     );
   const args = process.argv.slice(2);
   const web = args.includes("--web") || process.env.UUID_SLUG_ARTIFACT_WEB === "1";
-  const files = args.filter((arg) => arg !== "--web");
-  if (files.length > 1) throw new Error("Usage: check-artifact.ts [--web] [final.tgz]");
-  if (files[0]) return inspectArtifact(path.resolve(files[0]), web);
+  const edge = args.includes("--edge") || process.env.UUID_SLUG_ARTIFACT_EDGE === "1";
+  const files = args.filter((arg) => arg !== "--web" && arg !== "--edge");
+  if (files.length > 1) throw new Error("Usage: check-artifact.ts [--web] [--edge] [final.tgz]");
+  if (files[0]) return inspectArtifact(path.resolve(files[0]), web, edge);
   // The configured hook receives the final path; that branch never packs or invokes this one.
-  // Propagate optional browser coverage through the child without retaining or checking twice.
+  // Propagate optional web coverage through the child without retaining or checking twice.
   if (web) process.env.UUID_SLUG_ARTIFACT_WEB = "1";
+  if (edge) process.env.UUID_SLUG_ARTIFACT_EDGE = "1";
   await command(
     "bun",
     [path.join(project, "node_modules/.bin/publish-clean"), "verify", "--no-git-checks"],

@@ -1178,8 +1178,8 @@ The npm package has no runtime dependencies or native addons to install.
 - Deno loads the published TypeScript source, uses Web Crypto `randomUUID` for UUIDv4 text,
   and runs the package's own generator for bytes and UUIDv7. No resolver flag or import map is needed.
 - Cloudflare Workers, browsers and other compatible runtimes use the portable compiled code over Web Crypto.
-  Local workerd checks cover compiled code with and without `nodejs_compat`; packed-package and
-  deployed Workers verification remain open. See [edge checks](bench/README.md#profiling).
+  Local workerd checks run the packed consumer inside a request with and without `nodejs_compat`;
+  deployed Workers verification remains open. See [edge checks](bench/README.md#profiling).
 
 Capabilities are probed once when the module loads. A missing method is left undefined, so no call
 pays for a throw and a retry. Native base64url and hex encoders are used where a runtime provides

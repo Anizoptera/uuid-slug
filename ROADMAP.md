@@ -76,7 +76,7 @@ Use existing comparisons to identify unresolved primary-call gaps; rejected expe
 
 ## Edge verification
 
-- [ ] Finish packed workerd consumers and entropy/clock witnesses before adding a correctness smoke lane to `.github/workflows/check.yml`. Local compiled portable code passes with and without `nodejs_compat`; packed resolution and deployed behavior remain unproved. Deployed checks require exact remote authorization. Keep this evidence separate from the TypeScript release checks; it does not justify an edge-specific implementation.
+- [ ] Wire `scripts/check-artifact.ts --edge` into `.github/workflows/check.yml`; retain the shared packed-consumer checks inside requests in web-only and `nodejs_compat` configurations. `bench/reports/ts-release-audit-packed-workerd.log` covers local packed calls; failure, syntax and missing-input probes leave no scratch. Review entropy and timestamp witnesses before closing coverage. Local workerd does not prove deployment; deployed checks require exact remote authorization.
 
 ## Held work
 
