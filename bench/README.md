@@ -10,9 +10,9 @@ Choose the largest unresolved cost in an ordinary successful call on Node Curren
 Limit optimization to primary README consumer jobs. Compare current complete calls with the main
 qualified rivals, profile their actual hotspots and resource gaps, and select the largest evidenced
 gap before changing a component. Secondary scenarios are excluded from this effort; correctness
-checks do not authorize performance work on them. Follow the current sequence in `ROADMAP.md`.
-Record the call, current evidence, competing explanations, rejection condition and next action in
-`ROADMAP.md` before execution. Inspect the faster native or competing implementation; a local
+checks do not authorize performance work on them.
+Before execution, identify the call, current evidence, competing explanations, rejection condition
+and next action. Inspect the faster native or competing implementation; a local
 candidate ranking cannot establish that the best available mechanism was considered.
 
 Use the existing tests and profiler to distinguish the explanations, then screen one candidate
