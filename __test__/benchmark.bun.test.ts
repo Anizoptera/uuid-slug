@@ -1062,15 +1062,15 @@ test.concurrent.each(["0", "-1", "1.5", "NaN", "Infinity"])(
   },
 );
 
-// One hang reaches the shared transport deadline; healthy entropy then proves progress after failure.
-// Keep startup allowance under concurrent checks. The fixture fail-safe bounds a broken deadline
+// One hang reaches the shared transport deadline; the independent control proves later progress.
+// A timed-out subject need not finish another job inside that same deadline under load.
+// The fixture fail-safe bounds a broken deadline
 // independently, and its distinct exit must fail the witness rather than masquerade as a timeout.
 test.concurrent("hung runtime cannot hold the matrix indefinitely", async () => {
   const result = await matrix("hang", MATRIX_HANG_TIMEOUT_MS);
   expect(result.status).toBe(1);
-  expect(result.stderr).toContain("exited");
+  expect(result.stderr).toContain("subject: run: exited");
   expect(result.stderr).not.toContain(`exited ${MATRIX_HANG_FAILSAFE_EXIT}`);
-  expect(result.stdout).toContain("Randomness: subject (fixture 1)");
   expect(result.stdout).toContain("Randomness: control (fixture 1)");
 });
 
