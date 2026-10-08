@@ -2,7 +2,7 @@
 
 ## High-level requirements
 
-Finish the TypeScript release audit without further profiling or benchmark experiments.
+Finish the TypeScript release audit; reuse retained evidence and verify necessary fixes under `AGENTS.md` §Runtime boundaries and evidence.
 Preserve published identifiers, supported calls, caller data, secure entropy and ownership.
 Optimize primary single-ID calls only; secondary and caller-buffer optimization remain held.
 Rank Node Current and Bun first, Node LTS and Chromium next, then Deno and Node JITless.
