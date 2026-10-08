@@ -51,6 +51,12 @@ libraries on Node Current, Node LTS, Bun, Deno and Chromium. Bun's remaining dir
 difference is negligible and accepted; preserve delegation rather than adding another wrapper.
 These are warmed throughput comparisons, not individual-call latency or total allocation.
 
+The retained `current-primary-v7-slug-outcome-ranking.jsonl` and
+`current-primary-v7-slug-typedarray-ranking.jsonl` each provide three fresh-process medians
+per row. Bun package base64url slugs measure 62.699 and 63.965 ns against native slugs at
+66.410 and 65.579 ns. These samples support keeping native delegation; they do not establish
+an exact speed advantage, total allocation or equivalence for other alphabets and configured calls.
+
 Matched current-package/native captures `current-native-v7-text-resources-4` through `-7`
 use Bun 1.4.2, 65,536 preparation calls and two windows of 2,097,152 completed calls.
 The order is package, native, native, package. The native case shares its definition and
@@ -351,6 +357,10 @@ direction. These captures show neither a repeated package CPU disadvantage nor c
 package committed-memory growth. Preserve generation; first-window capacity varies, and retained
 heap and sampled stacks do not establish gross allocation parity, leak freedom or confidence bounds.
 Raw captures are `bench/reports/current-primary-v7-owned-bun-resources/{0,1,2,3,4,5}/`.
+The retained `current-primary-v7-owned-ranking-repeat.jsonl` has three fresh-process medians
+per row. Bun reports 32.636 ns for the package, 36.682 for `uuid` and 37.069 for `uuidv7`;
+Deno reports 148.323, 191.850 and 157.073 ns respectively. These observations do not bound
+small differences or total allocation. Older byte losses do not justify another rewrite.
 Reproduce with `bench/profile-bun-memory.ts`, its fixed-call controls, and the named qualified
 generation cases; native Buffer-copy comparisons remain separate from this library comparison.
 
