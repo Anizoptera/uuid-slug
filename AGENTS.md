@@ -11,28 +11,25 @@ grant no permission. Other remote writes (pushes, pull requests, settings) also 
 Fix wrong, missing or unreachable instructions first, then `ROADMAP.md`, then implementation.
 Put the trigger and required action in visible `AGENTS.md`; unread rules cannot prevent mistakes.
 
-Standalone benchmarks, profiles, candidate screens, calibration and optimization require an explicit
-maintainer request naming the consumer call. Release preparation, gaps, failed misuse probes,
-old plans, correctness repairs and procedures grant no authority. When authorized,
-revisit rejected or inconclusive experiments only when new evidence changes the question or mechanism;
+Standalone benchmarks, profiles, candidate screens, calibration and optimization require an explicit maintainer request naming the consumer call.
+Release preparation, gaps, failed misuse probes, old plans, correctness repairs and procedures grant no authority.
+Revisit rejected or inconclusive experiments only with new evidence changing the question or mechanism;
 rewrites, longer runs and different warm-ups are not new evidence. Keep required regression checks.
 New measurements and resource-parity targets NEVER gate release preparation; report dependent repairs as unresolved.
 
-Do not edit any public document unless the maintainer explicitly requests or approves that edit.
-This includes README and generated documentation. Propose the exact change and wait for approval;
-a code change, stale text, failed check, or instruction to keep docs synchronized grants no permission.
-This restriction overrides every documentation-update instruction below.
-An explicit request to correct documentation already authorizes its factual corrections; do not
-request the same permission again. Correcting stale implementation or measurement text does not
-authorize a new public contract, guarantee, API or behavior.
+Edit public docs, including README and generated docs, only with an explicit maintainer request or approval.
+Otherwise propose the exact edit and wait. Code changes, stale text, failed checks and sync instructions do not authorize edits.
+Correction requests authorize factual repairs without another approval, never new public contracts, guarantees, APIs or behavior.
+This restriction overrides documentation-update instructions below.
 
-Before escalating an audit finding, show its failing consumer call, consequence, triggering input
-and normal-call control. Separate observed harm from possible harm; a reproduction alone does not
-prove release impact. Establish the need before asking the maintainer to choose checks or repairs.
+Before asking, read the owning rulings and settle engineering choices and checks from evidence within authorized scope.
+Ask only about unresolved material priorities, consequences or permissions. Explain what each answer changes
+and why rulings or evidence cannot settle it. Use plain words; separate independent decisions and hold only dependent work.
+For audit findings, show the failing consumer call, triggering input, consequence and normal-call control.
+Separate observed from possible harm; a misuse reproduction alone does not establish ordinary-call harm or release impact.
 
-Before changing a shared path to defend against rare misuse, read `docs/public-api.md`
-§Capabilities and runtime work for its no-regression requirement. That requirement does not
-authorize experiments; an unresolved defense stays unresolved until its required evidence exists.
+Before rare-misuse defenses, read `docs/public-api.md` §Capabilities and runtime work.
+Its no-regression rule authorizes no experiments; defenses without required evidence remain unresolved.
 
 ## Contract owners
 
