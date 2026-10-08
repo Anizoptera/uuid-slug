@@ -8,7 +8,15 @@ import { formatConsumerGraph, inspectConsumerGraph } from "./consumer-graph";
 
 // Scan all shipped files: extensions must not hide machine paths or development material.
 const BUILD_PATH_LEAK = /(?:\/Users\/|\/home\/[a-z]|[A-Z]:\\Users\\)/;
-const FORBIDDEN_PATHS = new Set(["bench", "test", ".github", "scripts", "AGENTS.md", "NOTICE"]);
+const FORBIDDEN_PATHS = new Set([
+  "bench",
+  "test",
+  "__test__",
+  ".github",
+  "scripts",
+  "AGENTS.md",
+  "NOTICE",
+]);
 // Exact spellings distinguish source-owned promises from annotations the optimizer may add itself.
 const OPTIMIZER_ANNOTATIONS = [
   "/*#__PURE__*/",

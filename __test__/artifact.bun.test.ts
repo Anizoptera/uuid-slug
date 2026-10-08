@@ -153,8 +153,10 @@ test("refuses optimizer annotations stripped from JavaScript", () =>
     },
     "Optimizer annotation /*#__PURE__*/ was stripped",
   ));
-test("refuses development files", () =>
-  rejected({ ...base, "package/test/hidden.js": "" }, "Forbidden artifact path"));
+test.each(["test/hidden.js", "src/__test__/hidden.ts", "dist/__test__/hidden.js"])(
+  "refuses development files at %s",
+  (name) => rejected({ ...base, [`package/${name}`]: "" }, "Forbidden artifact path"),
+);
 test("refuses a duplicated Node implementation tree", () =>
   rejected(
     { ...base, "package/dist/node/index.js": "export {};" },
