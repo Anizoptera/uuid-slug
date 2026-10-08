@@ -21,6 +21,7 @@ Use `docs/release.md` for preparation and recovery; this plan does not change ex
 Fix the reproduced declaration defects without changing UUID bits, wire formats, native generation,
 or caller-owned storage identity. Type promises must follow supplied arguments and validated values.
 
+- [x] Separate masking-codec declarations from the oversized shared type owner without changing signatures, comments or executable imports.
 - [ ] Correct case inference for omitted selectors, explicit generics and reusable options; keep literal presets precise and add source and packed-consumer regressions.
 - [ ] Remove obsolete UUID brands from written output types while retaining array subtypes; cover v4/v7 replacement, conversion and parsed-value writers.
 - [ ] Require options when a generator call claims retained configuration; preserve no-options calls and reject invented capabilities.
