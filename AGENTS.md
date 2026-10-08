@@ -12,11 +12,11 @@ Fix wrong, missing or unreachable instructions first, then `ROADMAP.md`, then im
 Put the trigger and required action in visible `AGENTS.md`; unread rules cannot prevent mistakes.
 
 Standalone benchmarks, profiles, candidate screens, calibration and optimization require an explicit
-maintainer request for the relevant consumer call. Release preparation, gaps, failed misuse probes,
-old plans, correctness repairs and these procedures grant no authority. Within authorized work,
+maintainer request naming the consumer call. Release preparation, gaps, failed misuse probes,
+old plans, correctness repairs and procedures grant no authority. When authorized,
 revisit rejected or inconclusive experiments only when new evidence changes the question or mechanism;
-rewrites, longer runs and different warm-ups are not new evidence. Keep required regression checks;
-do not add measurements or resource-parity targets to release readiness.
+rewrites, longer runs and different warm-ups are not new evidence. Keep required regression checks.
+New measurements and resource-parity targets NEVER gate release preparation; report dependent repairs as unresolved.
 
 Do not edit any public document unless the maintainer explicitly requests or approves that edit.
 This includes README and generated documentation. Propose the exact change and wait for approval;
