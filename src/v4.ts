@@ -40,8 +40,8 @@ let generating = false;
 /**
  * Generate UUIDv4 bytes with platform randomness in a new plain 16-byte `Uint8Array`.
  *
- * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
- * source. No supported runtime lacks one, so this is not expected during normal operation.
+ * @throws `UuidSlugError` with code `rng_unavailable` when generation cannot obtain
+ * secure randomness.
  */
 export function generateUuidV4Bytes(): UuidV4Bytes;
 /**
@@ -142,8 +142,8 @@ export function drawUuidV4Scratch(): Uint8Array | UuidSlugError {
  * Native runtime results are trusted without additional output guarantees.
  *
  * @param textCase - Built-in output spelling. Omit for lowercase.
- * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
- * source. No supported runtime lacks one, so this is not expected during normal operation.
+ * @throws `UuidSlugError` with code `rng_unavailable` when generation cannot obtain
+ * secure randomness.
  */
 export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   textCase?: Case,

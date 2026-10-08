@@ -104,9 +104,9 @@ Apply these rules in order. A later rule MUST NOT weaken an earlier one.
    normalization safe, deterministic, bounded, and negligible-cost; difficulty never moves that
    burden to callers. Normalize once and return one stable form. Keep already-normalized input on
    the least-work path. Reject only different meaning or ambiguity.
-   Separate runtime acceptance from TypeScript guidance. JavaScript may pass any value, so every
-   public implementation must accept `unknown`, validate it without throwing, and return
-   `UuidSlugError` for bad input. TypeScript signatures accept every supported UUID form, reject a
+   Separate runtime acceptance from TypeScript guidance. Validate arbitrary JavaScript inputs and
+   return `UuidSlugError` for invalid input; this does not remove the generation exception in
+   §Failures and effects. TypeScript signatures accept every supported UUID form, reject a
    branded value when its known form or UUID version makes the call invalid, and infer every
    version, case, slug kind, and output-ownership fact proved by the call. Widen types only to
    support useful caller operations, not merely to match JavaScript's broader acceptance.
@@ -507,10 +507,9 @@ layout, rather than making ordinary calls pay for those controls or adding a dup
   recognition capabilities.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Package-owned interfaces
   carry failures as values; adapt and contain exception-based dependencies at their boundary.
-  Throw only from argument-free or preset-only generation, and only `rng_unavailable`: no caller
-  input can cause it and no supported runtime produces it, so the declaration carries no union
-  and states the throw with `@throws`. Validate a preset before drawing so untyped misuse still
-  returns its error value.
+  Throw only `rng_unavailable` from argument-free or preset-only generation when generation cannot
+  obtain secure randomness. These calls return identifiers directly; document the exception with
+  `@throws`. Validate a preset before drawing so untyped misuse still returns its error value.
 - Keep the stack trace on every `UuidSlugError`. Omit it only where the stack carries no
   information, never to make a failure cheaper; failures are not a performance target.
 - Name each error code for the caller's recovery action. Each message identifies the failed
@@ -523,13 +522,13 @@ layout, rather than making ordinary calls pay for those controls or adding a dup
   when they add no data or behavior and would make a newly reachable code a source break. Validate
   configuration at construction when possible; preserve the original cause when an external
   capability fails.
-- Put `UuidSlugError` in a return type only when a well-typed call can fail. Masking-codec and
+- Put `UuidSlugError` in the return type only when a well-typed call can return it. Masking-codec and
   UUIDv7-generator construction accept numeric settings whose valid ranges TypeScript cannot
   express, so their types carry the union. Migration-reader construction without options returns
   the reader directly. Configured construction carries the union because typed objects can contain
   extra keys or throwing accessors. Check construction once before reusing the reader.
-  Argument-free and preset-only generation
-  has no typed failure either; its only failure, a missing secure random source, is thrown. Every
+  Argument-free and preset-only generation returns identifiers directly; failure to obtain secure
+  randomness is thrown. Every
   generation call with an explicit time, a generator, caller-owned output, or custom entropy keeps
   the union, as do generator and masking-codec methods, whose custom clocks and configured
   timestamp ranges can fail.

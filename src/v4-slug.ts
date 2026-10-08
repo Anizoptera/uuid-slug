@@ -13,8 +13,8 @@ import type { SlugAlphabet } from "./slug.ts";
  * filesystem-safe but cannot make random UUIDv4 values chronological.
  *
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
- * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
- * source. No supported runtime lacks one, so this is not expected during normal operation.
+ * @throws `UuidSlugError` with code `rng_unavailable` when generation cannot obtain
+ * secure randomness.
  */
 export function generatePlainUuidV4Slug(alphabet?: SlugAlphabet): PlainUuidV4Slug;
 export function generatePlainUuidV4Slug(

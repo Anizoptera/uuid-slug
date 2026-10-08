@@ -195,8 +195,8 @@ export function uuidV7GeneratorSlugMethods(
  * during bursts; select a generator when this result must join its sequence or control its clock.
  *
  * @param alphabet - Output spelling. Omit for the shorter 22-character base64url form.
- * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
- * source. No supported runtime lacks one, so this is not expected during normal operation.
+ * @throws `UuidSlugError` with code `rng_unavailable` when generation cannot obtain
+ * secure randomness.
  */
 export function generatePlainUuidV7Slug(alphabet?: SlugAlphabet): PlainUuidV7Slug;
 /** Generate a plain UUIDv7 slug with optional time, alphabet, and sequence state. */
@@ -232,8 +232,8 @@ export function generatePlainUuidV7Slug(
  * @param alphabet - Slug spelling. Omit for the shorter 22-character base64url form.
  * @param textCase - UUID text spelling. Pass it alone to keep the default slug alphabet.
  * @returns UUID text plus one slug in the selected alphabet.
- * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
- * source. No supported runtime lacks one, so this is not expected during normal operation.
+ * @throws `UuidSlugError` with code `rng_unavailable` when generation cannot obtain
+ * secure randomness.
  */
 export function generateUuidV7WithPlainSlug(
   alphabet?: SlugAlphabet,

@@ -20,8 +20,8 @@ const UUID_V7_VALUE_OPTIONS = {
 /**
  * Generate an immutable UUIDv7 for the current clock reading with the module payload layout.
  *
- * @throws `UuidSlugError` with code `rng_unavailable` when the runtime has no secure random
- * source. No supported runtime lacks one, so this is not expected during normal operation.
+ * @throws `UuidSlugError` with code `rng_unavailable` when generation cannot obtain
+ * secure randomness.
  */
 export function generateUuidV7Value(): Uuid<7, false, true>;
 /** Generate an immutable UUIDv7 with optional time, generator, and retained masking codec. */

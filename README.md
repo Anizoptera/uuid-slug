@@ -83,7 +83,7 @@ base32hex does. Masked slugs expose no useful time order.
 The TypeScript types preserve known UUID versions, text case, slug kind, and caller-owned buffer
 types. Expected failures return `UuidSlugError`; invalid writes leave caller storage unchanged.
 Generation with no arguments or only a spelling preset returns its value directly and throws only
-when the runtime has no secure random source.
+when generation cannot obtain secure randomness.
 Generator, masking-codec, and migration methods can be detached without binding `this`.
 Stable error codes distinguish malformed encodings, UUIDs, buffers, options, masks, sentinels and
 timestamps from unavailable entropy, cancellation, wrong UUID versions, and timestamps outside a window.
@@ -679,8 +679,7 @@ the matching API. For access to stored records, check existence and authorizatio
 
 Generation, conversion, and validation return the result below or `UuidSlugError`. Generation with
 no arguments or only a spelling preset returns its result directly; it throws `UuidSlugError` with
-code `rng_unavailable` when the runtime has no secure random source, which no supported runtime
-lacks. When you supply
+code `rng_unavailable` when generation cannot obtain secure randomness. When you supply
 an output array, the exact array and its type are preserved; otherwise byte outputs are new plain
 `Uint8Array` values. Invalid input leaves caller storage unchanged.
 
