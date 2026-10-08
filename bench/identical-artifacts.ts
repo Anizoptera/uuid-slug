@@ -18,9 +18,13 @@ async function shippedFiles(root: string, relative = ""): Promise<string[]> {
 }
 
 /** Compare real packed outputs before spending time measuring an unchanged implementation. */
-export async function identicalArtifacts(baseline: string, candidate: string): Promise<boolean> {
-  // Source-capable hosts and compiled hosts use different files. Compare the whole shipped graph,
-  // including its manifest and any future assets; a source-only check misses build-tool changes.
+export async function compareArtifacts(
+  baseline: string,
+  candidate: string,
+): Promise<{ readonly all: boolean; readonly compiled: boolean }> {
+  // Normal Node calls load compiled code, not source or declarations. Compare both views once;
+  // source hosts and custom Node options need the full graph. Keep manifests and assets in both.
+  // Remove the compiled exemption if built code starts reading source or declaration files.
   // Bun.Transpiler drops PURE and NO_SIDE_EFFECTS annotations. A source normalizer must prove
   // it preserves those hints before its output can replace this byte comparison.
   // The root README is documentation and is not read by the measured package calls.
@@ -34,10 +38,12 @@ export async function identicalArtifacts(baseline: string, candidate: string): P
     )
       throw new Error("Packed identity requires a manifest, source and compiled files");
   }
-  if (before.length !== after.length || before.some((name, index) => name !== after[index]))
-    return false;
+  const beforeFiles = new Set(before);
+  const afterFiles = new Set(after);
+  const files = [...new Set([...before, ...after])];
   const equal = await Promise.all(
-    before.map(async (name) => {
+    files.map(async (name) => {
+      if (!beforeFiles.has(name) || !afterFiles.has(name)) return false;
       const [left, right] = await Promise.all([
         readFile(join(baseline, name)),
         readFile(join(candidate, name)),
@@ -45,5 +51,13 @@ export async function identicalArtifacts(baseline: string, candidate: string): P
       return left.equals(right);
     }),
   );
-  return equal.every(Boolean);
+  return {
+    all: equal.every(Boolean),
+    compiled: equal.every(
+      (same, index) =>
+        same ||
+        files[index]?.endsWith(".d.ts") ||
+        (files[index]?.startsWith("src/") && files[index]?.endsWith(".ts")),
+    ),
+  };
 }

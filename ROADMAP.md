@@ -11,7 +11,7 @@ Use `docs/release.md` for preparation and recovery; this plan does not change ex
 
 ## Release holds: no release operation is authorized
 
-- [ ] Make the packed `value.toMaskedSlug` comparison reject actual slowdowns without rejecting unchanged Node code; preserve protected workloads, budgets and source-runtime checks.
+- [ ] Skip normal Node timing only for identical packed manifests, compiled code and runtime assets; retain source-runtime timing and all other checks, and prove code, annotations, assets and metadata changes still require comparison.
 - [ ] Before publication, match package selection to the npm-only `0.4.0` note in `CHANGELOG.md`; the workflow defaults to both packages. Publication still requires final authorization for that exact operation.
 - [ ] Before publication, review the candidate commit's CI results for supported runtimes, operating systems and architectures. Workflow configuration does not prove execution.
 - [ ] After authorized tag creation, follow `docs/release.md`: prove the annotated tag identifies the checked-out commit, verify both archives and reuse their exact bytes. Tag authorization does not authorize publication or finalization.

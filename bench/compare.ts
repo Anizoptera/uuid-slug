@@ -9,7 +9,7 @@ import type { Page } from "playwright";
 
 import { command } from "../scripts/command";
 import { archiveAndRemoveScratch, deduplicateCapturedPackage } from "../scripts/archive-scratch";
-import { identicalArtifacts } from "./identical-artifacts";
+import { compareArtifacts } from "./identical-artifacts";
 import { describeSamples, medianConfidence, medianConfidence95 } from "./statistics";
 import { CANDIDATE_FILES, CANDIDATE_GROUPS, createSourceCandidates } from "./candidate-sources";
 import type { CandidateGroup } from "./candidate-sources";
@@ -90,7 +90,7 @@ const nodeExecutable = process.env.UUID_SLUG_COMPARE_NODE_EXECUTABLE ?? "node";
 // Every record names the runtime release it measured, so a result file cannot be attributed to a
 // release other than the one that produced it.
 const runtimeVersions = new Map<Runtime, string>();
-const selectedRuntimes = selectComparisonRuntimes(
+let selectedRuntimes = selectComparisonRuntimes(
   process.env.UUID_SLUG_COMPARE_RUNTIMES ?? RUNTIMES.join(":"),
 );
 if (!Number.isSafeInteger(rounds) || rounds < 1)
@@ -553,16 +553,24 @@ async function main(): Promise<void> {
       packArtifacts(candidateRoot, candidateOut),
     ]);
     // Explicit source experiments still run, including byte-identical timing controls.
-    if (
-      regressionCheck &&
-      !sourceParts &&
-      (await identicalArtifacts(baseline.root, candidate.root))
-    ) {
-      console.error(
-        "Packed runtime graphs and manifests are byte-identical; regression timing is unnecessary.",
-      );
-      passed = true;
-      return;
+    if (regressionCheck && !sourceParts) {
+      const identity = await compareArtifacts(baseline.root, candidate.root);
+      // Custom conditions or loaders may select source. Only normal Node execution can use
+      // compiled identity; source and browser comparisons retain the full-file requirement.
+      selectedRuntimes = selectedRuntimes.filter((runtime) => {
+        const unchanged =
+          identity.all ||
+          (identity.compiled &&
+            !process.env.NODE_OPTIONS &&
+            (runtime === "node" || runtime === "node-jitless"));
+        if (unchanged)
+          console.error(`Skipping ${runtime} timing: its packed executable files are identical.`);
+        return !unchanged;
+      });
+      if (selectedRuntimes.length === 0) {
+        passed = true;
+        return;
+      }
     }
     const driver = await buildHostDriver(driverRoot, scratch);
     if (sourceReport) {

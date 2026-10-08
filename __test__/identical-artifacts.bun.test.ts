@@ -4,14 +4,14 @@ import { copyFile, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "bun:test";
-import { identicalArtifacts } from "../bench/identical-artifacts";
+import { compareArtifacts } from "../bench/identical-artifacts";
 
 async function expectIdentityFailure(
   before: string,
   after: string,
   message: string,
 ): Promise<void> {
-  const result = await identicalArtifacts(before, after).catch((error: unknown) => error);
+  const result = await compareArtifacts(before, after).catch((error: unknown) => error);
   expect(result).toHaveProperty("message", expect.stringContaining(message));
 }
 
@@ -33,22 +33,46 @@ test("packed identity cannot hide changed source, output, metadata or files", as
         files.map((name) => copyFile(join(import.meta.dir, "..", name), join(root, name))),
       ),
     );
-    expect(await identicalArtifacts(before, after)).toBe(true);
+    expect(await compareArtifacts(before, after)).toEqual({ all: true, compiled: true });
     await writeFile(join(after, "README.md"), "Documentation does not execute.");
-    expect(await identicalArtifacts(before, after)).toBe(true);
+    expect(await compareArtifacts(before, after)).toEqual({ all: true, compiled: true });
     // Each mutation must settle and restore before the next can identify a different defect.
     /* eslint-disable no-await-in-loop */
     for (const name of files) {
       const filename = join(after, name);
       const original = await readFile(filename);
       await writeFile(filename, Buffer.concat([original, Buffer.from("\nchanged")]));
-      expect(await identicalArtifacts(before, after)).toBe(false);
+      expect(await compareArtifacts(before, after)).toEqual({
+        all: false,
+        compiled: name === "src/index.ts",
+      });
       await writeFile(filename, original);
     }
+    for (const name of ["src/extra.ts", "dist/index.d.ts"]) {
+      await writeFile(join(after, name), "export type Value = string;");
+      expect(await compareArtifacts(before, after)).toEqual({ all: false, compiled: true });
+      await copyFile(join(after, name), join(before, name));
+      await writeFile(join(after, name), "export type Value = number;");
+      expect(await compareArtifacts(before, after)).toEqual({ all: false, compiled: true });
+      await rm(join(after, name));
+      expect(await compareArtifacts(before, after)).toEqual({ all: false, compiled: true });
+      await rm(join(before, name));
+    }
+    const compiled = join(after, "dist/index.js");
+    const originalCode = await readFile(compiled);
+    for (const annotation of ["/*#__PURE__*/", "/*#__NO_SIDE_EFFECTS__*/"]) {
+      await writeFile(compiled, Buffer.concat([originalCode, Buffer.from(annotation)]));
+      expect(await compareArtifacts(before, after)).toEqual({ all: false, compiled: false });
+    }
     /* eslint-enable no-await-in-loop */
+    await writeFile(compiled, originalCode);
+    await writeFile(join(after, "src/payload.bin"), "source-directory asset");
+    expect(await compareArtifacts(before, after)).toEqual({ all: false, compiled: false });
+    await rm(join(after, "src/payload.bin"));
     await writeFile(join(after, "payload.bin"), "new asset");
-    expect(await identicalArtifacts(before, after)).toBe(false);
+    expect(await compareArtifacts(before, after)).toEqual({ all: false, compiled: false });
     await rm(join(after, "payload.bin"));
+    expect(await compareArtifacts(before, after)).toEqual({ all: true, compiled: true });
     // The README exemption must apply only to ordinary files, never symlinks.
     await rm(join(after, "README.md"));
     await symlink(join(after, "src/index.ts"), join(after, "README.md"));

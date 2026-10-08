@@ -368,10 +368,11 @@ Run `bun run build && bun run perf:check` to check the package under the selecte
 `bun run check` runs this lane after other checks finish, so competing tests cannot distort its timings.
 The current-runtime CI lane also runs it with the newest Node and Bun.
 
-Skip regression timing only when independently built and packed packages have identical manifests
-and shipped files, apart from the root README. Compare both source and compiled output because
-runtime selection can use either. A missing graph, unreadable file or unsupported file kind fails
-the check; any difference retains the full comparison. README changes cannot change these calls.
+Skip normal Node timing when independently packed manifests, compiled code and runtime assets
+are identical; source and declaration changes alone do not change those calls. With custom Node
+options, or on source runtimes, require all shipped files to match. Exclude the root README.
+Keep type, package, correctness and resource checks. Missing graphs, unreadable files and unsupported
+file kinds fail; executable and optimizer-annotation changes retain timing.
 
 - `resources.ts` counts real constructor, view, encoding, text-read and entropy calls in isolated
   processes. Positive controls must reach each instrument before a zero count can pass. Guards must
