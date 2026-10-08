@@ -59,6 +59,9 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Start from executable consumer calls; `docs/public-api.md` §Rules and §Types and validation own
   runtime acceptance, TypeScript inference, defaults, constants and option-key checks. A declaration
   baseline proves signatures only.
+- Check omitted arguments with explicit generics and reusable typed options before publishing
+  inferred case or retained capabilities. Check buffer writes against pre-existing UUID brands
+  and parsed-value reuse against retained context; types must describe the resulting value.
 - Finish only when source calls, runtime paths, emitted declarations, editor help, packed consumers,
   and produced bundles independently prove the changed contract.
 

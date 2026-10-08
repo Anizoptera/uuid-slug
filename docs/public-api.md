@@ -449,6 +449,12 @@ layout, rather than making ordinary calls pay for those controls or adding a dup
   narrowing an object to a branded primitive would be unsound.
 - Make invalid combinations unrepresentable when TypeScript can infer the distinction without a
   cast or annotation. Do not move runtime-only uncertainty into elaborate caller-facing generics.
+- Infer non-default text case and retained configuration only from supplied runtime arguments.
+  Omission must keep its real default even with explicit generics or reusable typed options.
+- Buffer writes preserve storage identity and useful array subtypes, but invalidate prior UUID
+  brands. A mutable array's old brand cannot describe the bytes another writer replaces.
+- Parsing an existing immutable UUID must preserve its known capabilities when the runtime retains
+  them. Reject every known non-v7 parsed value at v7-only operations, not just UUIDv4.
 - Name generics by their job: `Input` captures a value for branded validation, while `Output`
   preserves the exact caller-owned byte-array subtype returned after a successful write.
 - Capture string and byte inputs generically and reject a captured brand that proves the

@@ -16,6 +16,19 @@ Use `docs/release.md` for preparation and recovery; this plan does not change ex
 - [x] Check setup, isolation, cleanup and completion signals; reuse equivalent work without merging independent runtime or package evidence.
 - [x] Run the affected checks and complete local lane, review the total diff, and commit each finished repair without changing release contracts.
 
+## Public TypeScript repair
+
+Fix the reproduced declaration defects without changing UUID bits, wire formats, native generation,
+or caller-owned storage identity. Type promises must follow supplied arguments and validated values.
+
+- [ ] Correct case inference for omitted selectors, explicit generics and reusable options; keep literal presets precise and add source and packed-consumer regressions.
+- [ ] Remove obsolete UUID brands from written output types while retaining array subtypes; cover v4/v7 replacement, conversion and parsed-value writers.
+- [ ] Require options when a generator call claims retained configuration; preserve no-options calls and reject invented capabilities.
+- [ ] Preserve parsed UUID capabilities where runtime reuse retains them; verify explicit codec replacement and duplicate-package boundaries before retaining any type promise.
+- [ ] Reject every known non-v7 parsed value at v7-only methods; keep unknown versions accepted with runtime validation.
+- [ ] Verify the documented slug ambiguity, generation failure split and error-routing marker against existing rulings; repair any misleading caller guidance without changing those contracts by inference.
+- [ ] Regenerate declarations, inspect editor help, run source and packed consumers and the complete check, audit the total diff and commit each self-contained repair.
+
 ## Release holds: no release operation is authorized
 
 - [ ] Before publication, match package selection to the npm-only `0.4.0` note in `CHANGELOG.md`; the workflow defaults to both packages. Publication still requires final authorization for that exact operation.
