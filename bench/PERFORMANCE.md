@@ -1876,6 +1876,8 @@ A shared intrinsic copy with an early owned-copy return also protects cached sen
 
 An unbound captured `Uint8Array.prototype.set`, invoked with `.call`, bypasses the destination method in the Bun source witness. Two fresh Bun process pairs give owned-copy medians of 23.02/22.97 ns for the baseline and 24.32/25.82 ns for the candidate; caller writes remain near the baseline. These short batch samples do not establish a confidence interval, individual latency or total allocation, so they do not justify retention. `candidates-parsed-value-vkPtLK/` retains the exact sources, ownership witnesses, resource counters and raw samples; `ts-release-audit-unbound-copy-unretained.patch` retains the rerunnable experiment.
 
+Isolating caller-range validation and intrinsic copying in a private writer also passes the Bun ownership witness. Its Bun source screen has large outliers on unchanged calls, so it cannot establish cost or its cause. Eight fresh-process packed WebKit pairs with three batches each give owned-copy ratio 0.995 [0.940, 1.070] and caller-write ratio 1.028 [0.895, 1.058]; both remain unresolved. No retention follows. `candidates-parsed-value-7JDh8z/`, `packed-source-6tkAX7/`, `ts-release-audit-isolated-private-write-webkit.{jsonl,log}` and `ts-release-audit-isolated-private-write-unretained.patch` preserve sources, witnesses, resources, measured packages and the rerunnable substitution. These samples do not establish individual latency, total allocation or other-runtime parity.
+
 Two six-round packed replays on 2026-09-16 compared `281dc5e` with `80d3722`. Median ns per call:
 
 | Route | Node 26.8.2 | Bun 1.4.2 | Chromium 153 | Deno 2.9.6 | Node 26.8.2 JITless |
