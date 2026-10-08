@@ -8,19 +8,15 @@ Prepare releases only. Release version changes, tags, publication, finalization 
 require final explicit maintainer authorization for each operation; plans, credentials and checks
 grant no permission. Other remote writes (pushes, pull requests, settings) also need explicit authorization.
 
-Repair wrong, missing or unreachable instructions before work: update their owning text first,
-then `ROADMAP.md`, then implementation. Put the trigger and required act in visible `AGENTS.md`
-guidance; a rule buried in an unread document does not prevent the next mistake.
+Fix wrong, missing or unreachable instructions first, then `ROADMAP.md`, then implementation.
+Put the trigger and required action in visible `AGENTS.md`; unread rules cannot prevent mistakes.
 
-Release preparation does not authorize performance experiments or optimization.
-Run standalone benchmarks, profiles, candidate screens or calibration only when the maintainer
-explicitly requests performance work on the relevant consumer call. A performance gap, failing
-misuse probe, old roadmap task or instruction below is not that request. Necessary correctness
-repairs do not reopen an optimization campaign. Revisit a rejected or inconclusive experiment
-only within authorized performance work and when new evidence changes its question or mechanism;
-a plausible rewrite, longer run or different warm-up is not new evidence.
-Keep existing required regression checks; do not add measurements or resource-parity targets to
-release readiness. The performance procedures below govern authorized work, never grant authority.
+Standalone benchmarks, profiles, candidate screens, calibration and optimization require an explicit
+maintainer request for the relevant consumer call. Release preparation, gaps, failed misuse probes,
+old plans, correctness repairs and these procedures grant no authority. Within authorized work,
+revisit rejected or inconclusive experiments only when new evidence changes the question or mechanism;
+rewrites, longer runs and different warm-ups are not new evidence. Keep required regression checks;
+do not add measurements or resource-parity targets to release readiness.
 
 Do not edit any public document unless the maintainer explicitly requests or approves that edit.
 This includes README and generated documentation. Propose the exact change and wait for approval;
@@ -29,6 +25,10 @@ This restriction overrides every documentation-update instruction below.
 An explicit request to correct documentation already authorizes its factual corrections; do not
 request the same permission again. Correcting stale implementation or measurement text does not
 authorize a new public contract, guarantee, API or behavior.
+
+Before escalating an audit finding, show its failing consumer call, consequence, triggering input
+and normal-call control. Separate observed harm from possible harm; a reproduction alone does not
+prove release impact. Establish the need before asking the maintainer to choose checks or repairs.
 
 Before changing a shared path to defend against rare misuse, read `docs/public-api.md`
 §Capabilities and runtime work for its no-regression requirement. That requirement does not
