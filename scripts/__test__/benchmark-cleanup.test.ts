@@ -11,7 +11,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import {
   archiveAndRemoveGeneratedFiles,
   compactReports,
@@ -326,6 +326,36 @@ test("profile builds archive their compiler inputs and remove every generated bu
   }
 });
 
+test("Bun async profiling calls the selected package instead of working-tree source", async () => {
+  const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
+  try {
+    const selected = join(scratch, "selected.mjs");
+    // A distinct failing implementation proves the call crosses the requested package boundary;
+    // ordinary package behavior could pass even if the profiler ignored its selection.
+    await writeFile(
+      selected,
+      'export function deriveUuidV7MaskAsync() { throw new Error("Selected async package reached"); } export function isUuidSlugError() { return false; }',
+    );
+    const child = Bun.spawn([process.execPath, "bench/profile-async.ts"], {
+      cwd: project,
+      env: { ...process.env, UUID_SLUG_PROFILE_MODULE: selected },
+      stdout: "pipe",
+      stderr: "pipe",
+      timeout: 2000,
+    });
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+      child.exited,
+    ]);
+    expect(exitCode).not.toBe(0);
+    expect(stderr).toContain("Selected async package reached");
+    expect(stdout).toBe("");
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+});
+
 test("failed source capture preserves the generated file and previous archive", async () => {
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
   const reports = join(scratch, "reports");
@@ -542,6 +572,27 @@ test("archive failure keeps original evidence and removes incomplete archives", 
     expect(stderr).toContain("ENOENT");
     expect(await Bun.file(evidence).text()).toBe("retain this diagnostic");
     expect(await readdir(reports)).toEqual([]);
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+});
+
+test("scratch archival resolves relative paths before changing the archiver directory", async () => {
+  const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-cleanup-"));
+  const reports = join(scratch, "reports");
+  const input = join(scratch, "input");
+  try {
+    await mkdir(input);
+    await writeFile(join(input, "evidence"), "exact relative input");
+    const { archiveAndRemoveScratch } = await import("../archive-scratch");
+    await archiveAndRemoveScratch(relative(project, input), relative(project, reports));
+    const [capture] = await readdir(reports);
+    if (!capture) throw new Error("Relative input was not archived");
+    const entries = await new Bun.Archive(
+      await Bun.file(join(reports, capture, "artifacts.tar.gz")).bytes(),
+    ).files();
+    expect(await entries.get("./evidence")?.text()).toBe("exact relative input");
+    expect(await readdir(scratch)).toEqual(["reports"]);
   } finally {
     await rm(scratch, { recursive: true, force: true });
   }

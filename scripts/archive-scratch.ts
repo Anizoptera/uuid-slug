@@ -1,6 +1,6 @@
 import { link, lstat, mkdir, mkdtemp, readdir, rename, rm } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { basename, join } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { command } from "./command";
 
 export async function compactReports(reports: string): Promise<number> {
@@ -138,16 +138,19 @@ export async function archiveAndRemoveGeneratedFiles(
 export async function archiveAndRemoveScratch(directory: string, reports: string): Promise<void> {
   // Failed graphs must remain reproducible without leaving executable checkouts in system
   // scratch. Delete only after archival succeeds; an archive failure must not erase evidence.
-  await mkdir(reports, { recursive: true });
-  const destination = await mkdtemp(join(reports, `${basename(directory)}-`));
+  // Resolve both paths before tar changes cwd; relative input must still name the caller's files.
+  const scratch = resolve(directory);
+  const reportRoot = resolve(reports);
+  await mkdir(reportRoot, { recursive: true });
+  const destination = await mkdtemp(join(reportRoot, `${basename(scratch)}-`));
   const archive = join(destination, "artifacts.tar.gz");
   try {
-    await command("tar", ["-czf", archive, "-C", directory, "."], reports);
+    await command("tar", ["-czf", archive, "-C", scratch, "."], reportRoot);
   } catch (error) {
     await rm(destination, { recursive: true, force: true });
     throw error;
   }
-  await rm(directory, { recursive: true, force: true });
+  await rm(scratch, { recursive: true, force: true });
   console.error(
     `Failure artifacts are in ${archive}. Extract into a disposable directory with tar -xzf; remove that directory and the archive after diagnosis.`,
   );

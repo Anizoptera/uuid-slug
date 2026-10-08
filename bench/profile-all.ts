@@ -48,6 +48,9 @@ const environment: Readonly<Record<string, string>> = {
     : { UUID_SLUG_PROFILE_LATENCY_SAMPLES: process.env.UUID_SLUG_PROFILE_LATENCY_SAMPLES }),
 };
 const nodeEnvironment = nodeOptions ? { ...environment, NODE_OPTIONS: nodeOptions } : environment;
+// Candidate files can import the package's #runtime map; resolve installed dependencies
+// without fetching replacements during a profile, as the packed-consumer checks do.
+const denoPackageOptions = ["--node-modules-dir=manual", "--cached-only"];
 
 const nativeFiles = [
   "node-inspector.cpuprofile",
@@ -353,6 +356,7 @@ async function runExitProfiles(nodeEntry: string, denoEntry: string): Promise<vo
     "deno",
     [
       "run",
+      ...denoPackageOptions,
       "--cpu-prof",
       `--cpu-prof-dir=${reports}`,
       "--cpu-prof-name=deno-cli.cpuprofile",
@@ -439,6 +443,7 @@ async function main() {
     "deno",
     [
       "run",
+      ...denoPackageOptions,
       "--allow-env",
       "--allow-read",
       ...(native ? ["--allow-sys", `--allow-write=${reports}`] : []),
@@ -458,7 +463,7 @@ async function main() {
     await runHost(
       "deno-async",
       "deno",
-      ["run", "--allow-env", "--allow-read", asyncDenoEntry],
+      ["run", ...denoPackageOptions, "--allow-env", "--allow-read", asyncDenoEntry],
       environment,
       0,
     );

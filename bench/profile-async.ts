@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { deriveUuidV7MaskAsync, isUuidSlugError } from "../src/index";
+import type * as PublicApi from "../src/index";
+
+// Source-loaded Bun must select the same package as compiled host and browser profiles.
+// Keep the literal fallback import so the build's public-module substitution still reaches it.
+const selectedModule =
+  typeof process === "undefined" ? undefined : process.env.UUID_SLUG_PROFILE_MODULE;
+const api: typeof PublicApi = selectedModule
+  ? await import(selectedModule)
+  : await import("../src/index");
+const { deriveUuidV7MaskAsync, isUuidSlugError } = api;
 
 interface AsyncProfileRow {
   readonly callMs: number;

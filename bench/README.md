@@ -31,7 +31,7 @@ Rules:
   measurement owner instead of duplicating its clocks, samples or statistics in a temporary script.
   Isolate source substitutions from the shared working tree; retain raw output in `bench/reports/`
   and record the measured conclusion in `bench/PERFORMANCE.md`. Remove scratch when the operation
-  ends, including setup failures; preserve needed failure artifacts first. Run generation comparisons through `bun run bench:competitors` so interruption cleanup has a surviving parent. Put generated bundles
+  ends, including setup failures; preserve needed failure artifacts first and resolve archive paths before changing working directories. Run generation comparisons through `bun run bench:competitors` so interruption cleanup has a surviving parent. Put generated bundles
   in one owned directory and remove it on success, without searching retained reports.
   Identical immutable package captures share a content-named archive through hard links; replace files, never rewrite their links. Recover removed artifacts from `bench/reports/retained-artifact-index.json`: extract its archive member with `tar -xf ARCHIVE MEMBER` in a disposable directory, then check its recorded SHA-256 and length. Remove resolved failure artifacts; run `bun scripts/compact-reports.ts` to compress retained reports on macOS without changing paths or bytes. Store source captures as text or archives so
   compiler and test discovery cannot execute them. Never cite `/tmp` evidence in durable text.
@@ -412,6 +412,9 @@ Run this review after every Bun or Deno version change and before periodic runti
    requires review again. Generated capability inventories and reports stay under `bench/reports/`.
 
 ## Profiling
+
+Before comparing profiles, prove that every host loads the selected `UUID_SLUG_PROFILE_MODULE`; a working-tree fallback cannot measure a candidate.
+Keep Deno package resolution in manual, cached-only mode so shipped `#runtime` mappings work without fetching dependencies during a profile.
 
 `profile-all.ts` preserves compiler inputs and generated bundles in SHA-256-named archives after every selected stage succeeds, then removes loose bundles and compacts macOS reports without changing their paths or bytes. `build-inputs.tar.gz` shares the latest capture's stored bytes. Replacing that name preserves earlier captures for existing raw profiles. Failed stages retain their files; these archives cover built inputs, not separately executed Bun source or dynamic external packages.
 
