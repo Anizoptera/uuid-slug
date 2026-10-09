@@ -62,6 +62,10 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Check omitted arguments with explicit generics and reusable typed options before publishing
   inferred case or retained capabilities. Check buffer writes against pre-existing UUID brands
   and parsed-value reuse against retained context; types must describe the resulting value.
+- Reject assignments that invent parsed UUID presets; optional method arguments alone do not
+  distinguish retained capabilities in TypeScript's structural assignability.
+- Anchor overload edits at their enclosing declaration and signature boundary; compare emitted
+  JavaScript before accepting a type-only repair so a matching implementation line cannot change behavior.
 - Finish only when source calls, runtime paths, emitted declarations, editor help, packed consumers,
   and produced bundles independently prove the changed contract.
 

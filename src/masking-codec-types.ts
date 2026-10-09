@@ -14,6 +14,7 @@ import type {
   PlainUuidSlugResult,
   PlainUuidV7Slug,
   PlainUuidV7SlugInput,
+  ParsedUuidResult,
   SlugStringInput,
   Uuid,
   UuidBytesResult,
@@ -21,7 +22,9 @@ import type {
   UuidSlugMigrationDecoder,
   UuidSlugMigrationOptions,
   UuidStringResult,
+  UuidOutput,
   UuidTextCase,
+  UuidTextCaseArguments,
   UuidV7Bytes,
   UuidV7Mask,
   UuidV7MaskOptions,
@@ -33,7 +36,6 @@ import type {
   UuidV7StringFor,
   UuidV7TimestampWindow,
   UuidV7ValueInput,
-  UuidVersionOf,
 } from "./types.ts";
 
 /** Key rotation, sentinel, and output options shared by both ways of supplying the writer mask. */
@@ -123,11 +125,11 @@ export interface UuidV7MaskingCodec {
     this: void,
     options?: UuidV7MaskingCodecValueOptions,
   ): Uuid<7, true, true> | UuidSlugError;
-  /** Parse any accepted UUID form and retain this codec. A plain-v4 slug brand cannot exclude a masked-v7 reading. */
+  /** Parse any accepted UUID form, retain this codec and preserve an existing payload layout. A plain-v4 slug brand cannot exclude a masked-v7 reading. */
   parseUuid<Input extends UuidInput>(
     this: void,
     uuid: Input,
-  ): Uuid<UuidVersionOf<MaskingCodecUuidInput<Input>>, true> | UuidSlugError;
+  ): ParsedUuidResult<Input, true> | UuidSlugError;
   /**
    * Convert any accepted UUID form to normalized UUID text. A 22-character slug is read as masked
    * when it passes this codec's check and as plain otherwise.
@@ -136,7 +138,7 @@ export interface UuidV7MaskingCodec {
   uuidToString<Input extends UuidInput, Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
     uuid: Input,
-    textCase?: Case,
+    ...textCase: UuidTextCaseArguments<Case>
   ): UuidStringResult<MaskingCodecUuidInput<Input>, Case>;
   /**
    * Read one UUID out of a larger array as normalized UUID text. Bytes carry no masked spelling.
@@ -147,7 +149,7 @@ export interface UuidV7MaskingCodec {
     this: void,
     uuid: Uint8Array,
     byteOffset: number,
-    textCase?: Case,
+    ...textCase: UuidTextCaseArguments<Case>
   ): UuidStringResult<Uint8Array, Case>;
   /**
    * Convert any accepted UUID form to a new plain 16-byte array. A 22-character slug is read as
@@ -164,7 +166,7 @@ export interface UuidV7MaskingCodec {
     uuid: UuidInput,
     output: Output,
     outputOffset?: number,
-  ): Output | UuidSlugError;
+  ): UuidOutput<Output> | UuidSlugError;
   /**
    * Copy one UUID out of a larger array. Bytes carry no masked spelling.
    *
@@ -178,7 +180,7 @@ export interface UuidV7MaskingCodec {
     byteOffset: number,
     output: Output,
     outputOffset?: number,
-  ): Output | UuidSlugError;
+  ): UuidOutput<Output> | UuidSlugError;
   /**
    * Convert any accepted UUID form to a plain UUID slug. A 22-character slug is read as masked
    * when it passes this codec's check and as plain otherwise.
@@ -240,7 +242,7 @@ export interface UuidV7MaskingCodec {
    */
   generateUuidV7WithMaskedSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
-    textCase?: Case,
+    ...textCase: UuidTextCaseArguments<Case>
   ): GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, Case> | UuidSlugError;
   /** Generate the pair through selected sequence state at an explicit time or the current clock. */
   generateUuidV7WithMaskedSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
@@ -251,7 +253,7 @@ export interface UuidV7MaskingCodec {
    * Convert UUID text, 16 UUID bytes, a plain slug, or a masked slug to this masking codec's
    * current masked spelling. A 22-character slug is read as masked when it passes this codec's
    * check and as plain otherwise. Other UUID versions
-   * return `invalid_uuid_version`. TypeScript rejects known UUIDv4 values; unbranded external
+   * return `invalid_uuid_version`. TypeScript rejects known non-v7 values; unbranded external
    * values are validated when called. Timestamps outside the codec's inclusive configured range
    * return `invalid_timestamp`; sentinels are
    * returned as plain slugs without masking and retain the full UUIDv7 timestamp range. A preceding
@@ -304,7 +306,7 @@ export interface UuidV7MaskingCodec {
   >(
     this: void,
     maskedUuidSlug: SlugStringInput<Input>,
-    textCase?: Case,
+    ...textCase: UuidTextCaseArguments<Case>
   ): UuidV7StringFor<Case> | UuidSlugError;
   /**
    * Decode to a new plain 16-byte `Uint8Array`. Use this when the caller needs binary output. A
@@ -330,7 +332,7 @@ export interface UuidV7MaskingCodec {
     maskedUuidSlug: SlugStringInput<Input>,
     output: Output,
     outputOffset?: number,
-  ): Output | UuidSlugError;
+  ): UuidOutput<Output> | UuidSlugError;
   /**
    * Decode a masked slug or registered sentinel with this codec and return its UUIDv7 Unix
    * timestamp in milliseconds. Success proves format integrity, not issuance or authorization. A

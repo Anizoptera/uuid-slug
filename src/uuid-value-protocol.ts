@@ -4,6 +4,7 @@ import type { UuidV7MaskingCodec, UuidV7PayloadLayout } from "./types.ts";
 import { isUint8Array } from "./errors.ts";
 
 export const UUID_VALUE_BYTES = Symbol.for("@anizoptera/uuid-slug.uuid-value-bytes");
+export const UUID_VALUE_CONTEXT = Symbol.for("@anizoptera/uuid-slug.uuid-value-context");
 
 /**
  * Base of every UUID value this package copy creates. Readers recognize values through it without
@@ -49,6 +50,15 @@ export class LocalUuidValue {
 
   static ownPayloadLayout(value: LocalUuidValue): UuidV7PayloadLayout | undefined {
     return value.#payloadLayout;
+  }
+
+  [UUID_VALUE_CONTEXT]() {
+    // Foreign readers need presets as well as bits. Copy the layout so this protocol cannot
+    // expose mutable private state; the original caller already owns the retained codec.
+    return {
+      maskingCodec: this.#maskingCodec,
+      payloadLayout: this.#payloadLayout && { ...this.#payloadLayout },
+    };
   }
 }
 

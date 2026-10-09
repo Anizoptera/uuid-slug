@@ -158,8 +158,10 @@ function buildGenerator(
     const instant = readUuidV7Instant(values.at);
     return instant instanceof Error ? instant : generator.drawUuidV7Bytes(instant);
   };
-  function generateUuidV7Value<const Options extends UuidV7GeneratorValueOptions = {}>(
-    valueOptions?: Options,
+  // Omission cannot prove a retained codec; the configured overload requires its runtime options.
+  function generateUuidV7Value(valueOptions?: undefined): Uuid<7, false, true> | UuidSlugError;
+  function generateUuidV7Value<const Options extends UuidV7GeneratorValueOptions>(
+    valueOptions: Options,
   ):
     | Uuid<7, Options extends { readonly maskingCodec: UuidV7MaskingCodec } ? true : false, true>
     | UuidSlugError;

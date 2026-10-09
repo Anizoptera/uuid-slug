@@ -28,20 +28,21 @@ import {
 import type {
   KeylessUuidInput,
   MaskedOrSentinelUuidV7Slug,
-  MaskingCodecUuidInput,
   PlainUuidSlugForVersion,
+  ParsedUuidResult,
   Uuid,
   UuidBytesForVersion,
   UuidInput,
   UuidInspection,
   UuidStringForVersion,
+  UuidOutput,
   UuidTextCase,
+  UuidTextCaseArguments,
   UuidV7MaskingCodec,
   UuidV7Payload,
   UuidV7PayloadLayout,
   UuidVariant,
   UuidVersion,
-  UuidVersionOf,
 } from "./types.ts";
 import {
   formatUuidBytesUnchecked,
@@ -50,7 +51,8 @@ import {
   uuidTimestampFromBytesUnchecked,
   uuidVersion,
 } from "./uuid.ts";
-import { LocalUuidValue, UUID_VALUE_BYTES } from "./uuid-value-protocol.ts";
+import { LocalUuidValue, UUID_VALUE_BYTES, UUID_VALUE_CONTEXT } from "./uuid-value-protocol.ts";
+import { readUuidV7PayloadLayout } from "./v7-payload.ts";
 
 const MASKING_CODEC_REQUIRED = "A masking codec is required for masked UUID output.";
 const PAYLOAD_LAYOUT_REQUIRED = "A UUIDv7 payload layout is required.";
@@ -105,7 +107,7 @@ class ParsedUuidValue<
   }
 
   toString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-    textCase?: Case,
+    ...textCase: UuidTextCaseArguments<Case>
   ): UuidStringForVersion<Version, Case>;
   toString(
     textCase: unknown = UUID_TEXT_LOWERCASE,
@@ -120,7 +122,10 @@ class ParsedUuidValue<
   }
 
   toBytes(): UuidBytesForVersion<Version>;
-  toBytes<Output extends Uint8Array>(output: Output, outputOffset?: number): Output | UuidSlugError;
+  toBytes<Output extends Uint8Array>(
+    output: Output,
+    outputOffset?: number,
+  ): UuidOutput<Output> | UuidSlugError;
   toBytes(output?: Uint8Array, outputOffset = 0): Uint8Array | UuidSlugError {
     const bytes = LocalUuidValue.ownBytes(this);
     if (!output) return new Uint8Array(bytes);
@@ -143,7 +148,7 @@ class ParsedUuidValue<
   }
 
   toMaskedSlug(
-    ...codecArgument: HasMaskingCodec extends true
+    ...codecArgument: [HasMaskingCodec] extends [true]
       ? readonly [maskingCodec?: UuidV7MaskingCodec]
       : readonly [maskingCodec: UuidV7MaskingCodec]
   ): MaskedOrSentinelUuidV7Slug | UuidSlugError {
@@ -180,7 +185,7 @@ class ParsedUuidValue<
   }
 
   extractV7Payload(
-    ...layoutArgument: HasPayloadLayout extends true
+    ...layoutArgument: [HasPayloadLayout] extends [true]
       ? readonly [payloadLayout?: UuidV7PayloadLayout]
       : readonly [payloadLayout: UuidV7PayloadLayout]
   ): UuidV7Payload | UuidSlugError {
@@ -228,12 +233,47 @@ export function createUuidValue<
   );
 }
 
-/** Parse any keyless UUID form once into an immutable reusable UUID value. */
+function readForeignUuidContext(value: unknown):
+  | {
+      readonly maskingCodec: UuidV7MaskingCodec | undefined;
+      readonly payloadLayout: UuidV7PayloadLayout | undefined;
+    }
+  | UuidSlugError
+  | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  try {
+    const read = Reflect.get(value, UUID_VALUE_CONTEXT);
+    if (typeof read !== "function") return undefined;
+    const context: unknown = Reflect.apply(read, value, []);
+    if (typeof context !== "object" || context === null)
+      return new UuidSlugError(INVALID_OPTIONS, "UUID construction context must be an object.");
+    const source = context as { readonly maskingCodec?: unknown; readonly payloadLayout?: unknown };
+    const maskingCodec = source.maskingCodec;
+    if (
+      maskingCodec !== undefined &&
+      (typeof maskingCodec !== "object" ||
+        maskingCodec === null ||
+        typeof (maskingCodec as { readonly uuidToMaskedSlug?: unknown }).uuidToMaskedSlug !==
+          "function")
+    )
+      return new UuidSlugError(INVALID_OPTIONS, MASKING_CODEC_REQUIRED);
+    const layout = source.payloadLayout;
+    const payloadLayout = layout === undefined ? undefined : readUuidV7PayloadLayout(layout);
+    if (payloadLayout instanceof Error) return payloadLayout;
+    return { maskingCodec: maskingCodec as UuidV7MaskingCodec | undefined, payloadLayout };
+  } catch (cause) {
+    return new UuidSlugError(INVALID_OPTIONS, "Reading UUID construction context failed.", {
+      cause,
+    });
+  }
+}
+
+/** Parse any keyless UUID form once; an existing UUID retains its codec and payload-layout presets. */
 export function parseUuid<Input extends UuidInput>(
   uuid: KeylessUuidInput<Input>,
-): Uuid<UuidVersionOf<Input>> | UuidSlugError;
+): ParsedUuidResult<Input> | UuidSlugError;
 /**
- * Parse through a masking codec and retain that codec for later masked conversions.
+ * Parse through a masking codec, replacing any preset codec and retaining an existing payload layout.
  * A plain UUIDv4 slug can resolve to UUIDv7 when the codec's mask check passes.
  * External codec bytes are validated and copied. Malformed results return `invalid_options`;
  * thrown exceptions remain available as the error's `cause`.
@@ -241,11 +281,14 @@ export function parseUuid<Input extends UuidInput>(
 export function parseUuid<Input extends UuidInput>(
   uuid: Input,
   maskingCodec: UuidV7MaskingCodec,
-): Uuid<UuidVersionOf<MaskingCodecUuidInput<Input>>, true> | UuidSlugError;
-export function parseUuid(uuid: unknown, maskingCodec?: UuidV7MaskingCodec): Uuid | UuidSlugError {
+): ParsedUuidResult<Input, true> | UuidSlugError;
+export function parseUuid(
+  uuid: unknown,
+  maskingCodec?: UuidV7MaskingCodec,
+): Uuid<UuidVersion, boolean, boolean> | UuidSlugError {
   const existing = LocalUuidValue.is(uuid) ? uuid : undefined;
   if (existing && (!maskingCodec || LocalUuidValue.ownMaskingCodec(existing) === maskingCodec))
-    return uuid as Uuid;
+    return uuid as Uuid<UuidVersion, boolean, boolean>;
   let parsed: Uint8Array | UuidSlugError;
   if (!maskingCodec) parsed = decodeKeylessUuid(uuid);
   else {
@@ -273,11 +316,19 @@ export function parseUuid(uuid: unknown, maskingCodec?: UuidV7MaskingCodec): Uui
     }
   }
   if (isUuidSlugError(parsed)) return parsed;
+  // Read context only after successful parsing, so preceding failures skip protocol callbacks.
+  // A borrowed array is the decoded input itself; it has no parsed-value presets. Reuse that
+  // observation instead of probing raw storage again. Foreign values need a validated snapshot.
+  const foreignContext =
+    existing || parsed === uuid || typeof uuid === "string"
+      ? undefined
+      : readForeignUuidContext(uuid);
+  if (foreignContext instanceof Error) return foreignContext;
   // Text decoders and local codecs own fresh bytes; external codec storage was isolated above.
   return createUuidValue(
     maskingCodec || typeof uuid === "string" ? parsed : new Uint8Array(parsed),
-    maskingCodec,
-    existing ? LocalUuidValue.ownPayloadLayout(existing) : undefined,
+    maskingCodec ?? foreignContext?.maskingCodec,
+    existing ? LocalUuidValue.ownPayloadLayout(existing) : foreignContext?.payloadLayout,
   );
 }
 
@@ -285,6 +336,6 @@ export function parseUuid(uuid: unknown, maskingCodec?: UuidV7MaskingCodec): Uui
 export function parseUuidWithCodec<Input extends UuidInput>(
   uuid: Input,
   maskingCodec: UuidV7MaskingCodec,
-): Uuid<UuidVersionOf<MaskingCodecUuidInput<Input>>, true> | UuidSlugError {
+): ParsedUuidResult<Input, true> | UuidSlugError {
   return parseUuid(uuid, maskingCodec);
 }

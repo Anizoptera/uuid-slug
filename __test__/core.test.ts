@@ -1191,7 +1191,6 @@ describe("plain UUID slugs", () => {
 
     const generated = unwrap(generateUuidV7Value({ at: 123 }));
     const reparsed = unwrap(parseUuid(generated, second));
-    // @ts-expect-error The reparsed type does not record the layout that the value keeps.
     expect(reparsed.extractV7Payload()).toMatchObject({ unixMs: 123 });
 
     const retained = unwrap(uuidStringToBytes(SAMPLE_V7_A));

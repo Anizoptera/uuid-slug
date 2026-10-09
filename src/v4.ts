@@ -12,7 +12,14 @@ import {
   UuidSlugError,
 } from "./errors.ts";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
-import type { UuidRandomFill, UuidTextCase, UuidV4Bytes, UuidV4StringFor } from "./types.ts";
+import type {
+  UuidRandomFill,
+  UuidOutput,
+  UuidTextCase,
+  UuidTextCaseArguments,
+  UuidV4Bytes,
+  UuidV4StringFor,
+} from "./types.ts";
 import {
   bytesToUuidString,
   formatUuidBytesUnchecked,
@@ -54,7 +61,7 @@ export function generateUuidV4Bytes(): UuidV4Bytes;
 export function generateUuidV4Bytes<Output extends Uint8Array>(
   output: Output,
   outputOffset?: number,
-): Output | UuidSlugError;
+): UuidOutput<Output> | UuidSlugError;
 export function generateUuidV4Bytes(
   output?: Uint8Array,
   outputOffset = 0,
@@ -146,7 +153,7 @@ export function drawUuidV4Scratch(): Uint8Array | UuidSlugError {
  * secure randomness.
  */
 export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-  textCase?: Case,
+  ...textCase: UuidTextCaseArguments<Case>
 ): UuidV4StringFor<Case>;
 export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   textCase: Case = UUID_TEXT_LOWERCASE as Case,
@@ -191,6 +198,12 @@ export function generateUuidV4<Case extends UuidTextCase = typeof UUID_TEXT_LOWE
  * @param fillRandom - Fill the complete array from the caller's chosen source.
  * @param textCase - Built-in output spelling. Omit for lowercase.
  */
+export function generateUuidV4WithRandomFill<
+  Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+>(
+  fillRandom: UuidRandomFill,
+  ...textCase: UuidTextCaseArguments<Case>
+): UuidV4StringFor<Case> | UuidSlugError;
 export function generateUuidV4WithRandomFill<
   Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
 >(

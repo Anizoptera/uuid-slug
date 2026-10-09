@@ -3,7 +3,13 @@
 import { INVALID_TIMESTAMP, UuidSlugError } from "./errors.ts";
 import { runtime } from "#runtime";
 import { UUID_TEXT_LOWERCASE, UUID_TEXT_UPPERCASE } from "./types.ts";
-import type { UuidTextCase, UuidV7Bounds, UuidV7Bytes, UuidV7StringFor } from "./types.ts";
+import type {
+  UuidTextCase,
+  UuidTextCaseArguments,
+  UuidV7Bounds,
+  UuidV7Bytes,
+  UuidV7StringFor,
+} from "./types.ts";
 import { resolveUuidTextCase } from "./uuid.ts";
 import { rejectUuidV7UnixMs } from "./v7-timestamp.ts";
 
@@ -130,7 +136,7 @@ const selectedTextEndpoint =
  */
 export function uuidV7StringBounds<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   startUnixMs: number,
-  textCase?: Case,
+  ...textCase: UuidTextCaseArguments<Case>
 ): UuidV7Bounds<UuidV7StringFor<Case>> | UuidSlugError;
 /**
  * Return canonical bounds containing every RFC-variant UUIDv7 in an inclusive Unix-millisecond
@@ -144,7 +150,7 @@ export function uuidV7StringBounds<Case extends UuidTextCase = typeof UUID_TEXT_
 export function uuidV7StringBounds<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   startUnixMs: number,
   endUnixMs: number,
-  textCase?: Case,
+  ...textCase: UuidTextCaseArguments<Case>
 ): UuidV7Bounds<UuidV7StringFor<Case>> | UuidSlugError;
 export function uuidV7StringBounds(
   startUnixMs: number,

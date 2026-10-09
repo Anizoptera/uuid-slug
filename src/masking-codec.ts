@@ -59,7 +59,9 @@ import type {
   UuidStringResult,
   UuidBytesResult,
   PlainUuidSlugResult,
+  UuidOutput,
   UuidTextCase,
+  UuidTextCaseArguments,
   UuidV7StringFor,
   UuidV7Payload,
   UuidV7PayloadLayout,
@@ -516,11 +518,14 @@ function buildUuidSlugCodec(
   function uuidToString<
     Input extends UuidInput,
     Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
-  >(uuid: Input, textCase?: Case): UuidStringResult<MaskingCodecUuidInput<Input>, Case>;
+  >(
+    uuid: Input,
+    ...textCase: UuidTextCaseArguments<Case>
+  ): UuidStringResult<MaskingCodecUuidInput<Input>, Case>;
   function uuidToString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     uuid: Uint8Array,
     byteOffset: number,
-    textCase?: Case,
+    ...textCase: UuidTextCaseArguments<Case>
   ): UuidStringResult<Uint8Array, Case>;
   function uuidToString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     uuid: unknown,
@@ -533,7 +538,10 @@ function buildUuidSlugCodec(
     let textCase: Case;
     if (typeof byteOffsetOrCase === "number") {
       if (isUint8Array(uuid) || byteOffsetOrCase !== 0)
-        return keylessUuidToString(uuid as Uint8Array, byteOffsetOrCase, caseAfterOffset);
+        // Public overloads require the non-default case; the implementation alone admits omission.
+        return keylessUuidToString(uuid as Uint8Array, byteOffsetOrCase, caseAfterOffset) as
+          | UuidStringFor<Case>
+          | UuidSlugError;
       textCase = caseAfterOffset ?? (UUID_TEXT_LOWERCASE as Case);
     } else textCase = byteOffsetOrCase;
     const selectedCase = resolveUuidTextCase(textCase);
@@ -573,14 +581,14 @@ function buildUuidSlugCodec(
     uuid: UuidInput,
     output: Output,
     outputOffset?: number,
-  ): Output | UuidSlugError;
+  ): UuidOutput<Output> | UuidSlugError;
   function uuidToBytes(uuid: Uint8Array, byteOffset: number): UuidBytesResult<Uint8Array>;
   function uuidToBytes<Output extends Uint8Array>(
     uuid: Uint8Array,
     byteOffset: number,
     output: Output,
     outputOffset?: number,
-  ): Output | UuidSlugError;
+  ): UuidOutput<Output> | UuidSlugError;
   function uuidToBytes(
     uuid: unknown,
     outputOrByteOffset?: unknown,
@@ -684,6 +692,10 @@ function buildUuidSlugCodec(
 
   function maskedSlugToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     maskedUuidSlug: string | UuidSlugError,
+    ...textCase: UuidTextCaseArguments<Case>
+  ): UuidV7StringFor<Case> | UuidSlugError;
+  function maskedSlugToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
+    maskedUuidSlug: string | UuidSlugError,
     textCase: Case = UUID_TEXT_LOWERCASE as Case,
   ): UuidV7StringFor<Case> | UuidSlugError {
     const slug = normalizeUuidSlugInput(maskedUuidSlug);
@@ -709,7 +721,7 @@ function buildUuidSlugCodec(
     maskedUuidSlug: string | UuidSlugError,
     output: Output,
     outputOffset?: number,
-  ): Output | UuidSlugError;
+  ): UuidOutput<Output> | UuidSlugError;
   function maskedSlugToUuidBytes(
     maskedUuidSlug: string | UuidSlugError,
     output?: Uint8Array,
@@ -772,7 +784,7 @@ function buildUuidSlugCodec(
   }
 
   function generateUuidV7WithMaskedSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-    textCase?: Case,
+    ...textCase: UuidTextCaseArguments<Case>
   ): GeneratedUuidV7<MaskedOrSentinelUuidV7Slug, Case> | UuidSlugError;
   function generateUuidV7WithMaskedSlug<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     options: GenerateUuidV7WithMaskedSlugOptions<Case>,

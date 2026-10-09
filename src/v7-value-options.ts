@@ -17,6 +17,16 @@ export type UuidV7ValueOptionValues = Pick<
 export function generateUuidV7ValueWithGenerator(
   generator: ValidatedUuidV7Generator,
   options: Pick<UuidV7ValueOptionValues, "at">,
+  maskingCodec: UuidV7MaskingCodec,
+): Uuid<7, true, true> | UuidSlugError;
+export function generateUuidV7ValueWithGenerator(
+  generator: ValidatedUuidV7Generator,
+  options: Pick<UuidV7ValueOptionValues, "at">,
+  maskingCodec?: UuidV7MaskingCodec,
+): Uuid<7, boolean, true> | UuidSlugError;
+export function generateUuidV7ValueWithGenerator(
+  generator: ValidatedUuidV7Generator,
+  options: Pick<UuidV7ValueOptionValues, "at">,
   maskingCodec?: UuidV7MaskingCodec,
 ): Uuid<7, boolean, true> | UuidSlugError {
   const generated = generateUuidV7BytesWithGenerator(generator, options);

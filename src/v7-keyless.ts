@@ -18,7 +18,9 @@ import type {
   GenerateUuidV7Options,
   GenerateUuidV7BytesIntoOptions,
   GenerateUuidV7BytesOptions,
+  UuidOutput,
   UuidTextCase,
+  UuidTextCaseArguments,
   UuidV7Bytes,
   UuidV7StringFor,
 } from "./types.ts";
@@ -161,7 +163,7 @@ function generateNativeDefaultUuidV7<Case extends UuidTextCase>(
  * secure randomness.
  */
 export function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-  textCase?: Case,
+  ...textCase: UuidTextCaseArguments<Case>
 ): UuidV7StringFor<Case>;
 /**
  * Generate UUIDv7 text at an explicit time or the current clock reading. Explicit time does not
@@ -250,7 +252,7 @@ export function generateUuidV7Bytes(): UuidV7Bytes;
 export function generateUuidV7Bytes<Output extends Uint8Array>(
   output: Output,
   outputOffset?: number,
-): Output | UuidSlugError;
+): UuidOutput<Output> | UuidSlugError;
 /** Generate package-owned UUIDv7 bytes at an explicit time or the current clock reading. */
 export function generateUuidV7Bytes(
   options: GenerateUuidV7BytesOptions,
@@ -258,7 +260,7 @@ export function generateUuidV7Bytes(
 /** Write UUIDv7 bytes at an explicit time or the current clock reading into caller-owned storage. */
 export function generateUuidV7Bytes<Output extends Uint8Array>(
   options: GenerateUuidV7BytesIntoOptions<Output>,
-): Output | UuidSlugError;
+): UuidOutput<Output> | UuidSlugError;
 export function generateUuidV7Bytes(
   outOrOptions?:
     | Uint8Array

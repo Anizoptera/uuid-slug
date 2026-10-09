@@ -486,6 +486,17 @@ codec.uuidToMaskedSlug(parsedV4Value);
 parsedV4Value.toMaskedSlug(codec);
 // @ts-expect-error A parsed UUIDv4 has no UUIDv7 payload.
 parsedV4Value.extractV7Payload(payloadLayout);
+declare const parsedV1Value: Uuid<1>;
+// @ts-expect-error A known v1 UUID cannot be masked as UUIDv7.
+codec.uuidToMaskedSlug(parsedV1Value);
+// @ts-expect-error A known v1 UUID has no masked UUIDv7 spelling.
+parsedV1Value.toMaskedSlug(codec);
+// @ts-expect-error A known v1 UUID has no UUIDv7 payload.
+parsedV1Value.extractV7Payload(payloadLayout);
+declare const parsedUnknownVersion: Uuid;
+expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(parsedUnknownVersion.toMaskedSlug(codec));
+// @ts-expect-error A generic cannot retain a codec without supplying its options.
+generator.generateUuidV7Value<{ maskingCodec: UuidV7MaskingCodec }>();
 expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(codec.generateMaskedUuidV7Slug());
 expectType<MaskedOrSentinelUuidV7Slug | UuidSlugError>()(
   codec.generateMaskedUuidV7Slug({ at: new Date(0), generator }),
@@ -806,3 +817,70 @@ declare const reusableGenerationOptions: readonly [
   GenerateUuidV7WithMaskedSlugOptions,
 ];
 void reusableGenerationOptions;
+
+// @ts-expect-error An uppercase result requires an actual uppercase selector.
+generateUuidV7<typeof UUID_TEXT_UPPERCASE>();
+// @ts-expect-error An uppercase result requires an actual uppercase selector.
+generateUuidV4<typeof UUID_TEXT_UPPERCASE>();
+// @ts-expect-error An uppercase result requires an actual uppercase selector.
+bytesToUuidString<typeof UUID_TEXT_UPPERCASE>(new Uint8Array(16));
+// @ts-expect-error Uppercase options cannot omit the selector and silently use lowercase.
+const omittedUppercaseOptions: GenerateUuidV7Options<typeof UUID_TEXT_UPPERCASE> = {};
+// @ts-expect-error Uppercase pair options cannot omit the selector.
+const omittedUppercasePairOptions: GenerateUuidV7WithPlainSlugOptions<typeof UUID_TEXT_UPPERCASE> =
+  {};
+// @ts-expect-error Uppercase masked-pair options cannot omit the selector.
+const omittedUppercaseMaskedOptions: GenerateUuidV7WithMaskedSlugOptions<
+  typeof UUID_TEXT_UPPERCASE
+> = {};
+void [omittedUppercaseOptions, omittedUppercasePairOptions, omittedUppercaseMaskedOptions];
+
+const overwrittenV7Buffer = generateUuidV4Bytes(generateUuidV7Bytes());
+const overwrittenStorage: Uint8Array | UuidSlugError = overwrittenV7Buffer;
+void overwrittenStorage;
+// @ts-expect-error Writing v4 bytes invalidates the destination's old v7 brand.
+expectType<UuidV7Bytes | UuidSlugError>()(overwrittenV7Buffer);
+const overwrittenV4Buffer = generateUuidV7Bytes(generateUuidV4Bytes());
+// @ts-expect-error Writing v7 bytes invalidates the destination's old v4 brand.
+expectType<UuidV4Bytes | UuidSlugError>()(overwrittenV4Buffer);
+const copiedIntoV7Buffer = uuidToBytes(versionedV4, generateUuidV7Bytes());
+// @ts-expect-error A copy cannot retain a conflicting destination UUID version.
+expectType<UuidV7Bytes | UuidSlugError>()(copiedIntoV7Buffer);
+
+const reparsedPresets = parseUuid(generatedUuidValue);
+if (reparsedPresets instanceof Error) throw reparsedPresets;
+reparsedPresets.toMaskedSlug();
+reparsedPresets.extractV7Payload();
+const reparsedWithCodec = codec.parseUuid(generatedUuidValue);
+if (reparsedWithCodec instanceof Error) throw reparsedWithCodec;
+reparsedWithCodec.extractV7Payload();
+
+// @ts-expect-error An unbound UUID cannot acquire a codec through assignment.
+const inventedCodecPreset: Uuid<7, true> = parsedValue;
+// @ts-expect-error An unbound UUID cannot acquire a payload layout through assignment.
+const inventedLayoutPreset: Uuid<7, false, true> = parsedValue;
+void [inventedCodecPreset, inventedLayoutPreset];
+
+const uncertainPresets: Uuid<7, boolean, boolean> = reparsedPresets;
+const generalUuid: Uuid = reparsedPresets;
+uuidToString(generalUuid);
+uuidToString(uncertainPresets);
+parseUuid(uncertainPresets);
+// @ts-expect-error An unknown codec preset does not permit omission.
+uncertainPresets.toMaskedSlug();
+// @ts-expect-error An unknown layout preset does not permit omission.
+uncertainPresets.extractV7Payload();
+declare const mixedInput: Uuid<7, true, true> | UuidV7String;
+const reparsedMixed = parseUuid(mixedInput);
+if (reparsedMixed instanceof Error) throw reparsedMixed;
+// @ts-expect-error A raw-string variant has no retained codec.
+reparsedMixed.toMaskedSlug();
+// @ts-expect-error A raw-string variant has no retained layout.
+reparsedMixed.extractV7Payload();
+
+declare const specializedOutput: UuidV7Bytes & { readonly storageLabel: "caller-owned" };
+const parsedWrite = parsedValue.toBytes(specializedOutput);
+if (parsedWrite instanceof Error) throw parsedWrite;
+expectType<"caller-owned">()(parsedWrite.storageLabel);
+// @ts-expect-error A parsed write cannot retain the destination's prior UUID brand.
+expectType<UuidV7Bytes>()(parsedWrite);

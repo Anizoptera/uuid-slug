@@ -11,6 +11,24 @@ const fillWithZeros = (bytes: Uint8Array) => {
   bytes.fill(0);
 };
 
+/** Reparse actual values from a separately loaded package copy without losing their presets. */
+export function probeUuidCopies(api: typeof Api, foreign: typeof Api): void {
+  const codec = unwrap(foreign.createUuidV7MaskingCodec({ mask: foreign.UUID_V7_TEST_MASK }));
+  const generated = unwrap(foreign.generateUuidV7Value({ at: 123, maskingCodec: codec }));
+  const expectedSlug = unwrap(generated.toMaskedSlug());
+  const reused = unwrap(api.parseUuid(generated));
+  equal(unwrap(reused.toMaskedSlug()), expectedSlug, "foreign retained masking codec");
+  equal(unwrap(reused.extractV7Payload()).unixMs, 123, "foreign retained payload layout");
+  const replacement = unwrap(api.createUuidV7MaskingCodec({ maskSeed: "replacement-copy-key" }));
+  const replaced = unwrap(api.parseUuid(generated, replacement));
+  equal(
+    unwrap(replaced.toMaskedSlug()),
+    unwrap(replacement.uuidToMaskedSlug(generated.toBytes())),
+    "explicit replacement codec",
+  );
+  equal(unwrap(replaced.extractV7Payload()).unixMs, 123, "layout after codec replacement");
+}
+
 /** Exercise public calls through the module supplied by the consumer's own resolver. */
 export async function probeConsumer(api: typeof Api): Promise<void> {
   equal(api.MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS, 2 ** 42 - 1, "masked timestamp offset");

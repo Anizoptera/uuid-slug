@@ -21,7 +21,9 @@ import type {
   GenerateUuidV7BytesIntoOptions,
   GenerateUuidV7BytesOptions,
   GenerateUuidV7Options,
+  UuidOutput,
   UuidTextCase,
+  UuidTextCaseArguments,
   UuidV7Bytes,
   UuidV7ClockRollbackPolicy,
   UuidV7Generator,
@@ -354,13 +356,13 @@ export function createPortableUuidV7Generator(
   function generateUuidV7Bytes<Output extends Uint8Array>(
     out: Output,
     offset?: number,
-  ): Output | UuidSlugError;
+  ): UuidOutput<Output> | UuidSlugError;
   function generateUuidV7Bytes(
     options: Omit<GenerateUuidV7BytesOptions, "generator">,
   ): UuidV7Bytes | UuidSlugError;
   function generateUuidV7Bytes<Output extends Uint8Array>(
     options: Omit<GenerateUuidV7BytesIntoOptions<Output>, "generator">,
-  ): Output | UuidSlugError;
+  ): UuidOutput<Output> | UuidSlugError;
   function generateUuidV7Bytes(
     outOrOptions?:
       | Uint8Array
@@ -396,7 +398,7 @@ export function createPortableUuidV7Generator(
   }
 
   function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-    textCase?: Case,
+    ...textCase: UuidTextCaseArguments<Case>
   ): UuidV7StringFor<Case> | UuidSlugError;
   function generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     options: Omit<GenerateUuidV7Options<Case>, "generator">,

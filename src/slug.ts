@@ -48,7 +48,9 @@ import type {
   UuidStringResult,
   UuidBytesResult,
   PlainUuidSlugResult,
+  UuidOutput,
   UuidTextCase,
+  UuidTextCaseArguments,
   UuidV4StringFor,
   UuidV7StringFor,
   UuidVersion,
@@ -291,7 +293,7 @@ export function plainSlugToUuidBytes<
   plainUuidSlug: PlainUuidSlugInput<Input>,
   output: Output,
   outputOffset?: number,
-): Output | UuidSlugError;
+): UuidOutput<Output> | UuidSlugError;
 export function plainSlugToUuidBytes(
   plainUuidSlug: string | UuidSlugError,
   output?: Uint8Array,
@@ -379,7 +381,7 @@ export function plainSlugToUuidString<
   Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
 >(
   plainUuidSlug: PlainUuidSlugInput<Input>,
-  textCase?: Case,
+  ...textCase: UuidTextCaseArguments<Case>
 ):
   | PreserveUuidVersion<Input, UuidStringFor<Case>, UuidV4StringFor<Case>, UuidV7StringFor<Case>>
   | UuidSlugError;
@@ -469,14 +471,14 @@ export function uuidToBytes<Input extends UuidInput, Output extends Uint8Array>(
   uuid: KeylessUuidInput<Input>,
   output: Output,
   outputOffset?: number,
-): Output | UuidSlugError;
+): UuidOutput<Output> | UuidSlugError;
 export function uuidToBytes(uuid: Uint8Array, byteOffset: number): UuidBytesResult<Uint8Array>;
 export function uuidToBytes<Output extends Uint8Array>(
   uuid: Uint8Array,
   byteOffset: number,
   output: Output,
   outputOffset?: number,
-): Output | UuidSlugError;
+): UuidOutput<Output> | UuidSlugError;
 export function uuidToBytes(
   uuid: unknown,
   outputOrByteOffset?: unknown,
@@ -526,11 +528,14 @@ export function uuidToBytes(
 export function uuidToString<
   Input extends UuidInput,
   Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
->(uuid: KeylessUuidInput<Input>, textCase?: Case): UuidStringResult<Input, Case>;
+>(
+  uuid: KeylessUuidInput<Input>,
+  ...textCase: UuidTextCaseArguments<Case>
+): UuidStringResult<Input, Case>;
 export function uuidToString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   uuid: Uint8Array,
   byteOffset: number,
-  textCase?: Case,
+  ...textCase: UuidTextCaseArguments<Case>
 ): UuidStringResult<Uint8Array, Case>;
 export function uuidToString(
   uuid: unknown,

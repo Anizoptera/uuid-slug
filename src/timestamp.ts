@@ -11,6 +11,7 @@ import {
 import { UUID_TEXT_LOWERCASE } from "./types.ts";
 import type {
   UuidTextCase,
+  UuidTextCaseArguments,
   UuidV7StringFor,
   UuidV7StringInput,
   UuidV7TimestampWindow,
@@ -90,7 +91,7 @@ export function validateUuidV7StringUnixMs<
 >(
   uuid: UuidV7StringInput<Input>,
   window: UuidV7TimestampWindow,
-  textCase?: Case,
+  ...textCase: UuidTextCaseArguments<Case>
 ): UuidV7StringFor<Case> | UuidSlugError;
 export function validateUuidV7StringUnixMs(
   uuid: unknown,

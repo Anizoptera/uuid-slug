@@ -23,6 +23,7 @@ import type {
   UuidV7String,
   UuidStringFor,
   UuidTextCase,
+  UuidTextCaseArguments,
 } from "./types.ts";
 import {
   SEEDED_MASK_FORMAT,
@@ -181,7 +182,7 @@ export function createMigration(
 
   function uuidSlugToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     uuidSlug: string | UuidSlugError,
-    textCase?: Case,
+    ...textCase: UuidTextCaseArguments<Case>
   ): UuidStringFor<Case> | UuidSlugError;
   function uuidSlugToUuidString(
     uuidSlug: string | UuidSlugError,
@@ -218,7 +219,7 @@ export function createMigration(
 
   function uuidSlugToUuidStringCandidates<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     uuidSlug: string | UuidSlugError,
-    textCase?: Case,
+    ...textCase: UuidTextCaseArguments<Case>
   ): readonly UuidStringFor<Case>[] | UuidSlugError;
   function uuidSlugToUuidStringCandidates(
     uuidSlug: string | UuidSlugError,

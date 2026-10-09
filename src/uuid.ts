@@ -25,7 +25,9 @@ import type {
   UuidString,
   UuidStringFor,
   UuidText,
+  UuidOutput,
   UuidTextCase,
+  UuidTextCaseArguments,
   UuidStringInput,
   UuidV4String,
   UuidV4Text,
@@ -233,7 +235,7 @@ export function uuidStringToBytes<Input extends string | UuidSlugError, Output e
   uuid: UuidStringInput<Input>,
   output: Output,
   outputOffset?: number,
-): Output | UuidSlugError;
+): UuidOutput<Output> | UuidSlugError;
 export function uuidStringToBytes(
   uuid: string | UuidSlugError,
   out?: Uint8Array,
@@ -322,12 +324,12 @@ export function uuidStringToBytes(
  */
 export function bytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   bytes: UuidByteInput | UuidSlugError,
-  textCase?: Case,
+  ...textCase: UuidTextCaseArguments<Case>
 ): UuidStringFor<Case> | UuidSlugError;
 export function bytesToUuidString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
   bytes: Uint8Array | UuidSlugError,
   byteOffset: number,
-  textCase?: Case,
+  ...textCase: UuidTextCaseArguments<Case>
 ): UuidStringFor<Case> | UuidSlugError;
 /*#__NO_SIDE_EFFECTS__*/
 export function bytesToUuidString(

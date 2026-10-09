@@ -22,12 +22,14 @@ Fix the reproduced declaration defects without changing UUID bits, wire formats,
 or caller-owned storage identity. Type promises must follow supplied arguments and validated values.
 
 - [x] Separate masking-codec declarations from the oversized shared type owner without changing signatures, comments or executable imports.
-- [ ] Correct case inference for omitted selectors, explicit generics and reusable options; keep literal presets precise and add source and packed-consumer regressions.
-- [ ] Remove obsolete UUID brands from written output types while retaining array subtypes; cover v4/v7 replacement, conversion and parsed-value writers.
-- [ ] Require options when a generator call claims retained configuration; preserve no-options calls and reject invented capabilities.
-- [ ] Preserve parsed UUID capabilities where runtime reuse retains them; verify explicit codec replacement and duplicate-package boundaries before retaining any type promise.
-- [ ] Reject every known non-v7 parsed value at v7-only methods; keep unknown versions accepted with runtime validation.
-- [ ] Verify the documented slug ambiguity, generation failure split and error-routing marker against existing rulings; repair any misleading caller guidance without changing those contracts by inference.
+- [x] Correct case inference for omitted selectors, explicit generics and reusable options; source and packed-consumer fixtures reject the reproduced omissions.
+- [x] Remove obsolete UUID brands from written output types while retaining array subtypes; fixtures cover v4/v7 replacement, conversion and parsed-value writers.
+- [x] Require options when a generator call claims retained configuration; fixtures preserve no-options calls and reject invented capabilities.
+- [x] Reject assignments that invent codec or payload-layout presets; fixtures preserve general `Uuid` storage and unknown capabilities without runtime state.
+- [x] Preserve parsed UUID capabilities, including explicit codec replacement and separately loaded package copies; `probeUuidCopies` executes both retained presets.
+- [x] Reject known non-v7 parsed values at v7-only methods; fixtures retain unknown-version calls for runtime validation.
+- [x] Verify slug ambiguity, the generation failure split and the error-routing marker against `docs/public-api.md` and runtime tests; these are explicit contracts, not unresolved API defects.
+- [ ] Resolve the full-lane `Uuid.toMaskedSlug(codec)` slowdown without weakening budgets or protected calls. Isolated conversion and the parsed-value sequence do not reproduce it; moving the context snapshot and using a positional argument both fail the complete check. Keep the original conversion bodies and verify only the necessary cross-copy context change; `bench/reports/api-positional-complete.log` retains the failed candidate.
 - [ ] Regenerate declarations, inspect editor help, run source and packed consumers and the complete check, audit the total diff and commit each self-contained repair.
 
 ## Release holds: no release operation is authorized

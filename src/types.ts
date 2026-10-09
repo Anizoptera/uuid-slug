@@ -28,6 +28,16 @@ export const UUID_V7_ROLLBACK_ERROR = "error";
 /** Select the hexadecimal letter case of UUID text output. JavaScript also accepts genuine `String` objects. */
 export type UuidTextCase = typeof UUID_TEXT_LOWERCASE | typeof UUID_TEXT_UPPERCASE;
 
+// Only case sets containing the runtime default may omit the selector. A required uppercase
+// tuple prevents explicit generics from inventing a spelling without changing runtime work.
+export type UuidTextCaseArguments<Case extends UuidTextCase> =
+  typeof UUID_TEXT_LOWERCASE extends Case ? [textCase?: Case] : [textCase: Case];
+
+// Keep selector inference at the property while requiring a non-default selector in reusable options.
+type UuidTextCaseOptions<Case extends UuidTextCase> = typeof UUID_TEXT_LOWERCASE extends Case
+  ? { readonly textCase?: Case }
+  : { readonly textCase: Case };
+
 /** The complete four-bit UUID version field, whether assigned or reserved. */
 export type UuidVersion = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15;
 
@@ -232,26 +242,35 @@ export interface Uuid<
   HasMaskingCodec extends boolean = false,
   HasPayloadLayout extends boolean = false,
 > {
+  // Only true promises a preset; false discards that knowledge so general Uuid storage stays valid.
+  // Optional phantom state rejects invented presets without adding runtime properties;
+  // method arity alone is assignable in both directions.
+  /** Compile-time preset distinctions; no property is stored on the UUID. */
+  readonly [brand]?: {
+    readonly maskingCodec: [HasMaskingCodec] extends [true] ? true : boolean;
+    readonly payloadLayout: [HasPayloadLayout] extends [true] ? true : boolean;
+  };
   /** The UUID version field. */
   readonly version: Version;
+  // Bit-only operations share a receiver type so unions of different presets remain callable.
   /** Return stable UUID facts in one serializable record. */
-  inspect(this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>): UuidInspection<Version>;
+  inspect(this: Uuid<Version, boolean, boolean>): UuidInspection<Version>;
   /** Return canonical UUID text, lowercase by default. */
   toString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
-    this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
-    textCase?: Case,
+    this: Uuid<Version, boolean, boolean>,
+    ...textCase: UuidTextCaseArguments<Case>
   ): UuidStringForVersion<Version, Case>;
   /** Return a new plain 16-byte UUID array. */
-  toBytes(this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>): UuidBytesForVersion<Version>;
+  toBytes(this: Uuid<Version, boolean, boolean>): UuidBytesForVersion<Version>;
   /** Write the UUID into caller-owned storage after validating the complete destination range. */
   toBytes<Output extends Uint8Array>(
-    this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
+    this: Uuid<Version, boolean, boolean>,
     output: Output,
     outputOffset?: number,
-  ): Output | UuidSlugError;
+  ): UuidOutput<Output> | UuidSlugError;
   /** Return a plain UUID slug, using base64url by default. */
   toPlainSlug(
-    this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
+    this: Uuid<Version, boolean, boolean>,
     alphabet?: SlugAlphabet,
   ): PlainUuidSlugForVersion<Version>;
   /**
@@ -261,24 +280,24 @@ export interface Uuid<
    */
   toMaskedSlug(
     this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
-    ...codec: Version extends 4
-      ? readonly [maskingCodec: never]
-      : HasMaskingCodec extends true
+    ...codec: 7 extends Version
+      ? [HasMaskingCodec] extends [true]
         ? readonly [maskingCodec?: UuidV7MaskingCodec]
         : readonly [maskingCodec: UuidV7MaskingCodec]
+      : readonly [maskingCodec: never]
   ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
   /** Decode UUIDv7 payload fields using an explicit or generated preset layout. */
   extractV7Payload(
     this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
-    ...layout: Version extends 4
-      ? readonly [payloadLayout: never]
-      : HasPayloadLayout extends true
+    ...layout: 7 extends Version
+      ? [HasPayloadLayout] extends [true]
         ? readonly [payloadLayout?: UuidV7PayloadLayout]
         : readonly [payloadLayout: UuidV7PayloadLayout]
+      : readonly [payloadLayout: never]
   ): UuidV7Payload | UuidSlugError;
   /** Serialize as canonical lowercase UUID text; capabilities are process-local. */
   toJSON(
-    this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
+    this: Uuid<Version, boolean, boolean>,
   ): UuidStringForVersion<Version, typeof UUID_TEXT_LOWERCASE>;
 }
 
@@ -328,10 +347,10 @@ export type UuidV7BytesInput<Input extends UuidByteInput | UuidSlugError> = Reje
   Input,
   UuidV4Bytes
 >;
-/** Reject known UUIDv4 values; a masking codec accepts every UUIDv7 form. */
+/** Reject known non-v7 values; a masking codec accepts every UUIDv7 form. */
 export type UuidV7ValueInput<Input extends UuidInput> = RejectKnownInput<
   Input,
-  UuidV4Text | UuidV4Bytes | PlainUuidV4Slug | Uuid<4, boolean, boolean>
+  UuidV4Text | UuidV4Bytes | PlainUuidV4Slug | AnyUuidForVersion<Exclude<UuidVersion, 7>>
 >;
 /** Exactly 16 validated UUID bytes. Package-owned values are plain `Uint8Array`. */
 export type UuidBytes = Brand<Uint8Array, "UuidBytes">;
@@ -340,16 +359,32 @@ export type UuidV4Bytes = Brand<UuidBytes, "UuidV4Bytes">;
 /** UUID bytes with version 7 and RFC variant bits. */
 export type UuidV7Bytes = Brand<UuidBytes, "UuidV7Bytes">;
 
+// Writers preserve the array and its methods, but prior UUID facts describe the replaced bytes.
+// Strip only the package brand; erasing every subtype would also discard useful caller storage APIs.
+export type UuidOutput<Output extends Uint8Array> = Output extends UuidBytes
+  ? Omit<Output, typeof brand>
+  : Output;
+
 /** A UUID byte source: a `Uint8Array`, a complete `ArrayBuffer`, or a `DataView`'s declared range. */
 export type UuidByteInput = Uint8Array | ArrayBuffer | DataView;
-type AnyUuidForVersion<Version extends UuidVersion> =
-  | Uuid<Version>
-  | Uuid<Version, false, true>
-  | Uuid<Version, true>
-  | Uuid<Version, true, true>;
+type AnyUuidForVersion<Version extends UuidVersion> = Uuid<Version, boolean, boolean>;
 type AnyUuid =
   | AnyUuidForVersion<UuidVersion>
   | { [Version in UuidVersion]: AnyUuidForVersion<Version> }[UuidVersion];
+
+// Only presets shared by every successful input variant survive a reparse; raw inputs prove none.
+type UuidPreset<Input, Preset extends "maskingCodec" | "payloadLayout"> = Input extends AnyUuid
+  ? NonNullable<Input[typeof brand]>[Preset]
+  : false;
+export type ParsedUuidResult<Input, WithCodec extends boolean = false> = Uuid<
+  UuidVersionOf<WithCodec extends true ? MaskingCodecUuidInput<Input> : Input>,
+  WithCodec extends true
+    ? true
+    : [UuidPreset<Exclude<Input, UuidSlugError>, "maskingCodec">] extends [true]
+      ? true
+      : false,
+  [UuidPreset<Exclude<Input, UuidSlugError>, "payloadLayout">] extends [true] ? true : false
+>;
 /**
  * Any supported UUID text, byte, or slug input, plus a preceding package error. JavaScript
  * implementations also normalize genuine `String` objects; TypeScript uses primitive strings.
@@ -399,16 +434,18 @@ export interface UuidV7Generator {
   /** Payload layout emitted by this generator; pass it to UUIDv7 payload extraction. */
   readonly payloadLayout: UuidV7PayloadLayout;
   /** Generate an immutable UUIDv7 that remembers this generator's payload layout. */
-  generateUuidV7Value<const Options extends UuidV7GeneratorValueOptions = {}>(
+  generateUuidV7Value(this: void, options?: undefined): Uuid<7, false, true> | UuidSlugError;
+  /** Generate with supplied time or masking options; only a supplied codec is retained. */
+  generateUuidV7Value<const Options extends UuidV7GeneratorValueOptions>(
     this: void,
-    options?: Options,
+    options: Options,
   ):
     | Uuid<7, Options extends { readonly maskingCodec: UuidV7MaskingCodec } ? true : false, true>
     | UuidSlugError;
   /** Generate UUIDv7 text for the current clock reading in the selected case, lowercase by default. */
   generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: void,
-    textCase?: Case,
+    ...textCase: UuidTextCaseArguments<Case>
   ): UuidV7StringFor<Case> | UuidSlugError;
   /** Generate UUIDv7 text at an explicit time or the current clock reading. */
   generateUuidV7<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
@@ -428,7 +465,7 @@ export interface UuidV7Generator {
     this: void,
     output: Output,
     outputOffset?: number,
-  ): Output | UuidSlugError;
+  ): UuidOutput<Output> | UuidSlugError;
   /** Generate package-owned UUIDv7 bytes at an explicit time or the current clock reading. */
   generateUuidV7Bytes(
     this: void,
@@ -438,7 +475,7 @@ export interface UuidV7Generator {
   generateUuidV7Bytes<Output extends Uint8Array>(
     this: void,
     options: Omit<GenerateUuidV7BytesIntoOptions<Output>, "generator">,
-  ): Output | UuidSlugError;
+  ): UuidOutput<Output> | UuidSlugError;
   /**
    * Generate a plain UUIDv7 slug in this sequence. Lowercase base32hex preserves UUID byte order;
    * base64url does not preserve that order under text comparison.
@@ -491,14 +528,14 @@ export type UuidV7Instant =
   | { readonly seconds: number | bigint; readonly nanoseconds?: number | bigint };
 
 /** Select an explicit time and UUID text spelling for one UUIDv7. */
-export interface GenerateUuidV7Options<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE> {
+export type GenerateUuidV7Options<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE> = {
   /** Time to encode. A created generator joins its sequence; a module call stays independent. */
   readonly at?: UuidV7Instant;
   /** Generator that supplies entropy, payload layout, and sequence policy. */
   readonly generator?: UuidV7Generator;
   /** UUID text spelling. Omit for lowercase. */
   readonly textCase?: Case;
-}
+} & UuidTextCaseOptions<Case>;
 
 /** Select an explicit time and alphabet for one plain UUIDv7 slug. */
 export interface GeneratePlainUuidV7SlugOptions {
@@ -533,9 +570,9 @@ export interface GenerateUuidV7BytesIntoOptions<Output extends Uint8Array> {
 }
 
 /** Select time and both spellings for one UUIDv7 text-and-plain-slug pair. */
-export interface GenerateUuidV7WithPlainSlugOptions<
+export type GenerateUuidV7WithPlainSlugOptions<
   Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
-> {
+> = {
   /** Time to encode. A selected generator may advance it to preserve its sequence. */
   readonly at?: UuidV7Instant;
   /** Slug spelling. Omit for the shorter base64url form. */
@@ -544,7 +581,7 @@ export interface GenerateUuidV7WithPlainSlugOptions<
   readonly generator?: UuidV7Generator;
   /** UUID text spelling. Omit for lowercase. */
   readonly textCase?: Case;
-}
+} & UuidTextCaseOptions<Case>;
 
 /** Select optional state for immutable UUIDv7 generation through a generator. */
 export interface UuidV7GeneratorValueOptions {
@@ -569,12 +606,12 @@ export interface UuidV7MaskingCodecValueOptions {
 }
 
 /** Select generation state and UUID text spelling for one masked UUIDv7 pair. */
-export interface GenerateUuidV7WithMaskedSlugOptions<
+export type GenerateUuidV7WithMaskedSlugOptions<
   Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
-> extends UuidV7MaskingCodecValueOptions {
+> = UuidV7MaskingCodecValueOptions & {
   /** UUID text spelling. Omit for lowercase. */
   readonly textCase?: Case;
-}
+} & UuidTextCaseOptions<Case>;
 
 /** An immutable handle for masking the recognizable fields of a UUIDv7; key material is not exposed. */
 export interface UuidV7Mask {
@@ -726,7 +763,7 @@ export interface UuidSlugMigrationDecoder<
   >(
     this: void,
     uuidSlug: SlugStringInput<Input>,
-    textCase?: Case,
+    ...textCase: UuidTextCaseArguments<Case>
   ): UuidStringFor<Case> | UuidSlugError;
   uuidSlugToUuidString<Input extends string | UuidSlugError>(
     this: void,
@@ -755,7 +792,7 @@ export interface UuidSlugMigrationDecoder<
   >(
     this: void,
     uuidSlug: SlugStringInput<Input>,
-    textCase?: Case,
+    ...textCase: UuidTextCaseArguments<Case>
   ): readonly UuidStringFor<Case>[] | UuidSlugError;
   uuidSlugToUuidStringCandidates<Input extends string | UuidSlugError>(
     this: void,
