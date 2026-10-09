@@ -29,8 +29,8 @@ or caller-owned storage identity. Type promises must follow supplied arguments a
 - [x] Preserve parsed UUID capabilities, including explicit codec replacement and separately loaded package copies; `probeUuidCopies` executes both retained presets.
 - [x] Reject known non-v7 parsed values at v7-only methods; fixtures retain unknown-version calls for runtime validation.
 - [x] Verify slug ambiguity, the generation failure split and the error-routing marker against `docs/public-api.md` and runtime tests; these are explicit contracts, not unresolved API defects.
-- [ ] Resolve the full-lane `Uuid.toMaskedSlug(codec)` slowdown without weakening budgets or protected calls. Isolated conversion and the parsed-value sequence do not reproduce it; moving the context snapshot and using a positional argument both fail the complete check. Keep the original conversion bodies and verify only the necessary cross-copy context change; `bench/reports/api-positional-complete.log` retains the failed candidate.
-- [ ] Regenerate declarations, inspect editor help, run source and packed consumers and the complete check, audit the total diff and commit each self-contained repair.
+- [ ] Resolve the full-lane Node `Uuid.toMaskedSlug(codec)` slowdown without weakening protected calls or budgets. The original conversion bodies are retained; isolated conversion and the parsed-value sequence do not reproduce the full-lane loss. Context placement and positional arguments do not repair it. `bench/reports/api-minimal-complete.log` passes the gate but still reports a slower median; timing parity remains unproved. Further standalone profiling or optimization needs the named-call authorization in `AGENTS.md` §Work scope.
+- [x] Regenerate declarations, inspect source and emitted editor help, run source and packed consumers and the complete check, audit the total diff and commit the API repair. `1e5e72e` contains the repair; `bench/reports/api-minimal-complete.log` records the complete check's zero exit and the unresolved timing evidence.
 
 ## Release holds: no release operation is authorized
 
