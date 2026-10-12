@@ -471,4 +471,5 @@ Write README, CHANGELOG, `docs/` and bench docs for consumers who never open sou
   packaging, publication, recovery, assets, notes, or finalization.
 - Run `bun run check` before committing unless the maintainer selects narrower intermediate checks.
   Commit finished parts with failed checks tracked in `ROADMAP.md`; a failed complete check prevents final delivery.
+- Every CI job invoking the normal packed-artifact check must install Node, Bun and Deno; its default package-resolution probes execute all three. `--web` adds browser execution, not the first Deno requirement.
 - Pack only after repository build and test processes exit; packlist traversal can race temporary cache files excluded from the tarball.

@@ -5,20 +5,21 @@
 Prepare the repository for release. Preserve supported calls, identifier formats, caller data,
 secure randomness and package compatibility. Stop performance experiments and optimization work.
 Apply `AGENTS.md` §Work scope before selecting any task; old experiment plans grant no authority.
-Keep the planned first release at `0.4.0`. Prepare only; release version changes, tags, publication
-and finalization require the maintainer's final explicit authorization for each operation.
+Release `0.4.0` to npm only. Push the current state and require candidate CI success before
+creating and pushing the release version and tag, publishing to npm and finalizing the release.
+These remote operations and the temporary npm-only selector are authorized; do not publish the Rust crate.
 Use `docs/release.md` for preparation and recovery; this plan does not change existing contracts or checks.
 
 ## Verified local baseline
 
 - [x] Local correctness, packed consumers, tree shaking, native interop, both browser WebAssembly profiles and version agreement pass. Evidence: `bench/reports/composition-cleanup-final.log` and `bench/reports/local-release-*.log`; reuse only for unchanged code and toolchains. Coverage is limited to installed hosts; tree-shaking proof covers module boundaries, not individual methods of returned codec objects.
 
-## Release steps requiring authorization
+## Authorized release steps
 
-- [ ] After explicit push authorization, run candidate CI and review its supported runtime, OS and architecture results, including Windows. Local evidence cannot replace candidate CI.
-- [ ] Before an authorized release tag push, select npm with `RELEASE_PACKAGES_ON_TAG=npm`; manual dispatch must also select npm. The workflow defaults to both packages, but `CHANGELOG.md` excludes the Rust crate from `0.4.0`. Changing the remote variable requires separate authorization.
-- [ ] After explicit release-version and tag authorization, follow `docs/release.md`: verify the annotated tag identifies the checked-out commit, prepare and verify both archives without publication credentials, and retain their exact bytes. Version or tag authorization does not authorize publication.
-- [ ] With explicit authorization for each operation, follow `docs/release.md`: publish only npm, verify registry and attachment bytes against retained archives, and finalize only after all selected results and notes match.
+- [ ] Repair CI runtime setup: the default packed-artifact check requires Deno in the main check and credentials-free release preparation. Review the corrected candidate's runtime, OS and architecture results, including Windows; local evidence cannot replace candidate CI.
+- [ ] Before the release tag push, set `RELEASE_PACKAGES_ON_TAG=npm` and verify readback; manual dispatch must also select npm. The prior variable is absent: restore that state after finalization so this release does not change later publication defaults.
+- [ ] With green candidate CI, create `0.4.0` through the release command and verify its annotated tag identifies the checked-out commit. Push the release and require credentials-free archive verification before publication; retain both archives' exact bytes per `docs/release.md`.
+- [ ] Publish only npm through release CI, verify registry and attachment bytes against retained archives, and finalize only after all selected results and notes match `docs/release.md`.
 
 ## Non-blocking timing follow-up
 

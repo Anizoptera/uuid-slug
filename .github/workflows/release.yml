@@ -74,6 +74,11 @@ jobs:
           fallback: none
       - if: steps.evidence.outputs.found != 'true'
         run: bun run build
+      # Fresh npm archives must pass the default Deno package-resolution probe before publishing.
+      - if: steps.evidence.outputs.found != 'true'
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: latest
       - if: steps.evidence.outputs.found != 'true'
         run: bun scripts/release-package.ts prepare
       - if: steps.evidence.outputs.found != 'true'

@@ -40,6 +40,10 @@ jobs:
         with:
           node-version-file: .tool-versions
           package-manager-cache: false
+      # The default packed-artifact check executes Deno package-resolution probes too.
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: latest
       - run: bun run check:js && bun run perf:check
 
   rust-native:
@@ -206,7 +210,7 @@ jobs:
           UUID_SLUG_COMPARE_RUNTIMES: deno:chromium
         run: bun run build && bun run perf:check
 
-  # Packed browser/Deno consumers need external engines, so keep their setup outside local check.
+  # Browser execution and Wasm compilation need tools outside the main packed-artifact check.
   browser:
     runs-on: ubuntu-latest
     timeout-minutes: 5
