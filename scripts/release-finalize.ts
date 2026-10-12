@@ -78,13 +78,37 @@ async function github(url: string, token: string, init?: RequestInit): Promise<R
   return fetch(url, {
     ...init,
     headers,
-    signal: AbortSignal.timeout(20_000),
+    signal: init?.signal ?? AbortSignal.timeout(20_000),
   });
 }
 
 async function jsonResponse(response: Response, context: string): Promise<unknown> {
   if (!response.ok) throw new Error(`${context} failed: HTTP ${response.status}.`);
   return response.json();
+}
+
+async function draftByTag(
+  repository: string,
+  tag: string,
+  token: string,
+): Promise<Release | undefined> {
+  // The tag endpoint excludes drafts; list them for recovery instead of creating a duplicate.
+  const signal = AbortSignal.timeout(20_000);
+  for (let page = 1; ; page++) {
+    signal.throwIfAborted();
+    const value = await jsonResponse(
+      await github(
+        `https://api.github.com/repos/${repository}/releases?per_page=100&page=${page}`,
+        token,
+        { signal },
+      ),
+      "Read draft releases",
+    );
+    if (!Array.isArray(value)) throw new Error("GitHub releases are not an array.");
+    const found = value.find((entry) => object(entry, "GitHub release").tag_name === tag);
+    if (found) return release(found);
+    if (value.length < 100) return undefined;
+  }
 }
 
 /** Publish a draft only after selected registries and GitHub expose the retained bytes and notes. */
@@ -137,11 +161,15 @@ async function finalizeRelease(cwd: string, options: FinalizeOptions): Promise<v
   let response = await github(byTag, options.token);
   let current: Release;
   if (response.status === 404) {
-    response = await github(`${api}/repos/${options.repository}/releases`, options.token, {
-      method: "POST",
-      body: JSON.stringify({ tag_name: inputs.tag, name: inputs.tag, body: notes, draft: true }),
-    });
-    current = release(await jsonResponse(response, "Create draft release"));
+    const draft = await draftByTag(options.repository, inputs.tag, options.token);
+    if (draft) current = draft;
+    else {
+      response = await github(`${api}/repos/${options.repository}/releases`, options.token, {
+        method: "POST",
+        body: JSON.stringify({ tag_name: inputs.tag, name: inputs.tag, body: notes, draft: true }),
+      });
+      current = release(await jsonResponse(response, "Create draft release"));
+    }
   } else current = release(await jsonResponse(response, "Read release"));
   if (!current.draft) {
     if (current.body !== notes) throw new Error("Final release notes differ from retained notes.");
@@ -177,7 +205,10 @@ async function finalizeRelease(cwd: string, options: FinalizeOptions): Promise<v
     );
   }
   const refreshed = release(
-    await jsonResponse(await github(byTag, options.token), "Verify release"),
+    await jsonResponse(
+      await github(`${api}/repos/${options.repository}/releases/${current.id}`, options.token),
+      "Verify release",
+    ),
   );
   for (const item of archives) {
     const asset = refreshed.assets.find(({ name }) => name === basename(item.archive.file));
