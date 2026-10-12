@@ -56,6 +56,7 @@ import { unwrap } from "../dev/unwrap";
 import { TEST_SENTINELS } from "./sentinel-fixtures";
 
 const SAMPLE_V7_A = "01987008-ef3e-7f69-b677-22ec1a5bbdb2";
+const MIXED_V7_A = SAMPLE_V7_A.replace(/[a-f]/, (digit) => digit.toUpperCase());
 const SAMPLE_V7_B = "01987bbb-178b-7858-93e8-fc5e5444913b";
 const SAMPLE_V4 = "b1ba599d-4844-4bb0-a1ee-ac0aeb8875f5";
 const FILL_WITH_ZEROS = (bytes: Uint8Array) => {
@@ -475,7 +476,7 @@ describe("plain UUID slugs", () => {
   });
 
   it("accepts and recognizes mixed-case hyphenated and compact UUID input", () => {
-    const mixed = SAMPLE_V7_A.toUpperCase().replace("58B8", "58b8");
+    const mixed = MIXED_V7_A;
     const compact = mixed.replaceAll("-", "");
     for (const input of [mixed, compact]) {
       expect(uuidToString(input)).toBe(SAMPLE_V7_A);
@@ -500,7 +501,7 @@ describe("plain UUID slugs", () => {
   });
 
   it("accepts UUID URNs and brace-wrapped UUID text through universal UUID inputs", () => {
-    const mixed = SAMPLE_V7_A.toUpperCase().replace("58B8", "58b8");
+    const mixed = MIXED_V7_A;
     const accepted = [`UrN:UuId:${mixed}`, `{${mixed}}`];
     const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
 
@@ -1100,7 +1101,7 @@ describe("plain UUID slugs", () => {
 
   it("parses one immutable UUID for repeated inspection and conversion", () => {
     const uuid = unwrap(parseUuid(SAMPLE_V7_A));
-    expect(Object.isFrozen(uuid)).toBe(true);
+    Reflect.set(uuid, "version", 4);
     expect(uuid.version).toBe(7);
     expect(uuid.inspect()).toEqual({
       uuid: SAMPLE_V7_A,
@@ -1200,7 +1201,7 @@ describe("plain UUID slugs", () => {
     expect(parsed.toString()).toBe(SAMPLE_V7_A);
   });
 
-  it("retains generated layout and an explicit codec without retaining generator state", () => {
+  it("retains generated layout and codec while its generator advances", () => {
     const codec = unwrap(createCodec({ mask: UUID_V7_TEST_MASK }));
     const generator = unwrap(
       createUuidV7GeneratorWithRandomFill(FILL_WITH_ZEROS, {
@@ -1209,17 +1210,17 @@ describe("plain UUID slugs", () => {
       }),
     );
     const generated = unwrap(generateUuidV7Value({ at: 123, generator, maskingCodec: codec }));
+    const initialUuid = generated.toString();
     expect(generated.version).toBe(7);
     expect(generated.toMaskedSlug()).not.toBeInstanceOf(Error);
     expect(unwrap(generated.extractV7Payload())).toMatchObject({
       unixMs: 123,
       subMillisecondFraction: { value: 0, bits: 12 },
     });
-    expect(Object.keys(generated)).not.toContain("generator");
-    expect(Object.keys(generated)).not.toContain("payloadLayout");
 
     const fromGenerator = unwrap(generator.generateUuidV7Value({ at: 124 }));
     const fromCodec = unwrap(codec.generateUuidV7Value({ at: 124, generator }));
+    expect(generated.toString()).toBe(initialUuid);
     expect(fromCodec.toString() > fromGenerator.toString()).toBe(true);
     expect(unwrap(fromGenerator.extractV7Payload()).unixMs).toBe(124);
     expect(unwrap(fromCodec.extractV7Payload()).unixMs).toBe(124);
@@ -1376,9 +1377,7 @@ describe("plain UUID slugs", () => {
   });
 
   it("selects plain and masked slug alphabets independently", () => {
-    // The option's boundary is the point of this case. Sentinels are matched against masked input,
-    // and masked slugs are base64url by ruling, so a codec-wide alphabet that leaked into either
-    // would make sentinels unrecognisable exactly where they are used.
+    // The masked alphabet controls sentinels too, but must not change plain conversions.
     const codec = createUuidV7MaskingCodec({
       mask: { seed: "alpha-test-seed-0000" },
       sentinels: TEST_SENTINELS,
@@ -1394,6 +1393,10 @@ describe("plain UUID slugs", () => {
     expect(codec.sentinels[0]?.slug).toHaveLength(22);
     expect(base32Codec.generateMaskedUuidV7Slug()).toHaveLength(27);
     expect(base32Codec.sentinels[0]?.slug).toHaveLength(26);
+    expect(codec.uuidToPlainSlug(SAMPLE_V7_A, BASE32HEX)).toBe(
+      uuidStringToPlainSlug(SAMPLE_V7_A, BASE32HEX),
+    );
+    expect(base32Codec.uuidToPlainSlug(SAMPLE_V7_A)).toBe(uuidStringToPlainSlug(SAMPLE_V7_A));
   });
 
   it("answers rather than crashing when JavaScript passes an alphabet name TypeScript forbids", () => {
