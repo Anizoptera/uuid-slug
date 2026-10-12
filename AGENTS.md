@@ -474,6 +474,7 @@ Write README, CHANGELOG, `docs/` and bench docs for consumers who never open sou
 - Run `bun run check` before committing unless the maintainer selects narrower intermediate checks.
   Commit finished parts with failed checks tracked in `ROADMAP.md`; a failed complete check prevents final delivery.
 - The release command owns the temporary stable-version context. API checks must distinguish that transition from an actual tagged commit and ordinary development; never disable the commit hook.
+- Install nightly in each job that generates Rust public API reports; another job's toolchain setup does not carry over.
 - Every CI job invoking the normal packed-artifact check must install Node, Bun and Deno; its default package-resolution probes execute all three. `--web` adds browser execution, not the first Deno requirement.
 - Build before Node Vitest in each CI checkout; entropy subprocesses import the compiled Node adapter, so a source-only runtime probe cannot prepare those tests.
 - Pack only after repository build and test processes exit; packlist traversal can race temporary cache files excluded from the tarball.

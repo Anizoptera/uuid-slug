@@ -65,6 +65,9 @@ jobs:
       - name: Install the repository Rust toolchain
         if: steps.evidence.outputs.found != 'true'
         run: rustc --version && rustup show active-toolchain
+      - name: Install nightly for Rust archive API reports
+        if: steps.evidence.outputs.found != 'true'
+        run: rustup toolchain install nightly --profile minimal
       - if: steps.evidence.outputs.found != 'true'
         run: cargo install cargo-public-api --version 0.52.0 --locked
       - if: steps.evidence.outputs.found != 'true'
