@@ -36,6 +36,9 @@ import { MAX_UUID_V7_UNIX_MS, isValidUuidV7UnixMs } from "./v7-timestamp.ts";
 interface PortableUuidV7GeneratorOptions {
   /** Return Unix milliseconds; selected fraction bits consume the fractional part. */
   readonly readUnixMs?: () => number;
+  // Package-owned clocks split epoch and elapsed time before addition. Read this bucket only
+  // after their paired timestamp succeeds; caller clocks retain their numeric contract.
+  readonly readFractionBucket12?: () => number;
   /** Fill every byte. Returned or thrown failures are contained by generation. */
   readonly fillRandom: (bytes: Uint8Array<ArrayBuffer>) => unknown;
   /** Policy already validated at the public seam. */
@@ -304,7 +307,9 @@ export function createPortableUuidV7Generator(
       const fraction =
         fractionBits === 0
           ? 0
-          : Math.min(2 ** fractionBits - 1, Math.floor((reading - now) * 2 ** fractionBits));
+          : options.readFractionBucket12 !== undefined
+            ? options.readFractionBucket12() >>> (12 - fractionBits)
+            : Math.min(2 ** fractionBits - 1, Math.floor((reading - now) * 2 ** fractionBits));
       const failed = advanceSequence(now, fraction);
       if (failed) return failed;
       return writeBytes(target, offset, lastMs, counterHi, counterLo);

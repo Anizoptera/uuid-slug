@@ -11,6 +11,96 @@ const fillWithZeros = (bytes: Uint8Array) => {
   bytes.fill(0);
 };
 
+function probeFineInstants(api: typeof Api): void {
+  const temporal = (
+    globalThis as {
+      Temporal?: { Instant: { fromEpochNanoseconds(value: bigint): { epochNanoseconds: bigint } } };
+    }
+  ).Temporal;
+  // At a current-era epoch, converting to floating milliseconds loses these boundary bits.
+  // Read the wire directly so a matching mistake in the package's payload reader cannot pass.
+  for (const [nanoseconds, expected] of [
+    [244n, 0],
+    [245n, 1],
+    [999_999n, 4095],
+  ] as const) {
+    const epochNanoseconds = 1_700_000_000_000_000_000n + nanoseconds;
+    const inputs: Api.UuidV7Instant[] = [
+      { epochNanoseconds },
+      { seconds: 1_700_000_000, nanoseconds: Number(nanoseconds) },
+    ];
+    if (temporal) inputs.push(temporal.Instant.fromEpochNanoseconds(epochNanoseconds));
+    for (const at of inputs) {
+      const generator = unwrap(
+        api.createUuidV7Generator({
+          subMillisecondFractionBits: 12,
+        }),
+      );
+      const bytes = unwrap(generator.generateUuidV7Bytes({ at }));
+      const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      equal(
+        bytes.subarray(0, 6).reduce((ms, byte) => ms * 256 + byte, 0),
+        1_700_000_000_000,
+        "fine instant millisecond",
+      );
+      equal(view.getUint16(6) & 0x0fff, expected, "fine instant fraction bucket");
+    }
+  }
+}
+
+function probeFractionClock(api: typeof Api): void {
+  const clock = globalThis.performance;
+  if (clock === undefined) return;
+  const descriptor = Object.getOwnPropertyDescriptor(clock, "now");
+  const nativeNow = clock.now.bind(clock);
+  let reading: { origin: number; elapsed: number } | undefined;
+  let clockReads = 0;
+  // Observe the real selected clock without replacing its values or waiting for a timer tick.
+  // A Date-only regression must fail even when this host rounds the observed fraction to zero.
+  Object.defineProperty(clock, "now", {
+    configurable: true,
+    value() {
+      const value = nativeNow();
+      reading = { origin: clock.timeOrigin, elapsed: value };
+      clockReads++;
+      return value;
+    },
+  });
+  try {
+    for (const fractionBits of [1, 6, 12]) {
+      for (let sample = 0; sample < 8; sample++) {
+        const before = clockReads;
+        const generator = unwrap(
+          api.createUuidV7Generator({
+            subMillisecondFractionBits: fractionBits,
+          }),
+        );
+        const bytes = unwrap(generator.generateUuidV7Bytes());
+        if (reading === undefined || clockReads !== before + 1)
+          throw new Error(
+            "Configured fraction generation did not read the available high-resolution clock",
+          );
+        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+        equal(
+          bytes.subarray(0, 6).reduce((ms, byte) => ms * 256 + byte, 0),
+          Math.floor(reading.origin) +
+            Math.floor(reading.elapsed) +
+            Math.floor((reading.origin % 1) + (reading.elapsed % 1)),
+          "fraction clock millisecond",
+        );
+        equal(
+          (view.getUint16(6) & 0x0fff) >>> (12 - fractionBits),
+          Math.floor((((reading.origin % 1) + (reading.elapsed % 1)) % 1) * 2 ** fractionBits),
+          "fraction clock bucket",
+        );
+      }
+    }
+  } finally {
+    if (descriptor) Object.defineProperty(clock, "now", descriptor);
+    else Reflect.deleteProperty(clock, "now");
+  }
+}
+
 /** Reparse actual values from a separately loaded package copy without losing their presets. */
 export function probeUuidCopies(api: typeof Api, foreign: typeof Api): void {
   const codec = unwrap(foreign.createUuidV7MaskingCodec({ mask: foreign.UUID_V7_TEST_MASK }));
@@ -35,6 +125,8 @@ export function probeUuidCopies(api: typeof Api, foreign: typeof Api): void {
 
 /** Exercise public calls through the module supplied by the consumer's own resolver. */
 export async function probeConsumer(api: typeof Api): Promise<void> {
+  probeFineInstants(api);
+  probeFractionClock(api);
   equal(api.MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS, 2 ** 42 - 1, "masked timestamp offset");
   equal(api.NIL_UUID, "00000000-0000-0000-0000-000000000000", "canonical nil UUID");
   equal(api.MAX_UUID, "ffffffff-ffff-ffff-ffff-ffffffffffff", "canonical max UUID");

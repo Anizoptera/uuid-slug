@@ -70,10 +70,26 @@ const UUID_V7_GENERATOR_VALUE_OPTIONS = {
 const AT_OPTION = "at";
 
 const highResolutionClock = globalThis.performance;
-const readHighResolutionUnixMs =
-  highResolutionClock === undefined
-    ? Date.now
-    : () => highResolutionClock.timeOrigin + highResolutionClock.now();
+function createHighResolutionClock(clock: Performance) {
+  let fractionBucket12 = 0;
+  const origin = clock.timeOrigin;
+  const originMs = Math.floor(origin);
+  const originFraction = origin - originMs;
+  // Adding the epoch to elapsed time first rounds fine clock bits away. Split each reading
+  // before addition; keep the bucket beside its integer timestamp without allocating per draw.
+  // This clock belongs to one generator so reentrant calls on another cannot overwrite it.
+  return {
+    readUnixMs() {
+      const elapsed = clock.now();
+      const elapsedMs = Math.floor(elapsed);
+      const fraction = originFraction + (elapsed - elapsedMs);
+      const carry = Math.floor(fraction);
+      fractionBucket12 = Math.floor((fraction - carry) * 4096);
+      return originMs + elapsedMs + carry;
+    },
+    readFractionBucket12: () => fractionBucket12,
+  };
+}
 
 function validatedRollback(
   value: unknown,
@@ -146,9 +162,14 @@ function buildGenerator(
   const rollback = validatedRollback(clockRollback);
   if (rollback instanceof Error) return rollback;
   const fractionBits = (subMillisecondFractionBits as number | undefined) ?? 0;
+  const clock =
+    readUnixMs === undefined && fractionBits !== 0 && highResolutionClock !== undefined
+      ? createHighResolutionClock(highResolutionClock)
+      : undefined;
   const generator = createPortableUuidV7Generator({
     ...(rollback === undefined ? {} : { clockRollback: rollback }),
-    readUnixMs: readUnixMs ?? (fractionBits === 0 ? Date.now : readHighResolutionUnixMs),
+    readUnixMs: readUnixMs ?? Date.now,
+    ...clock,
     subMillisecondFractionBits: fractionBits,
     fillRandom,
   });
