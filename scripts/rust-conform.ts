@@ -18,6 +18,24 @@ import { loadRustBridge } from "./rust-bridge";
 
 type Request = Record<string, unknown> & { op: string; input?: string };
 type Outcome = { value: unknown } | { error: string };
+// Measure the transport's native time representation independently of UUID generation.
+// The portable corpus remains mandatory; capable hosts also execute adjacent nanosecond cases.
+export const systemTimePrecisionProbe = {
+  op: "preservesSystemTimeNanoseconds",
+} as const;
+
+export function fineSystemTimeRequests(): Request[] {
+  return [
+    {
+      op: "generateSequence",
+      fractionBits: 12,
+      steps: [244, 245, 999_999].map((nanoseconds) => ({
+        at: { seconds: 1_700_000_000, nanoseconds },
+        byte: 0,
+      })),
+    },
+  ];
+}
 const custom = unwrap(
   ts.createCustomUuidV7Mask({
     diagnosticLabel: "custom-mix",
@@ -706,10 +724,21 @@ if (import.meta.main) {
   const requests = await contractRequests();
   const bridge = await loadRustBridge();
   try {
+    const precision = JSON.parse(bridge.evaluate(JSON.stringify([systemTimePrecisionProbe])));
+    if (
+      !Array.isArray(precision) ||
+      precision.length !== 1 ||
+      typeof precision[0]?.value !== "boolean"
+    )
+      throw new Error(`${bridge.transport} omitted the native SystemTime precision observation`);
+    const fineSystemTime = precision[0].value === true;
+    if (fineSystemTime) requests.push(...fineSystemTimeRequests());
     compare(requests, JSON.parse(bridge.evaluate(JSON.stringify(requests))));
     if (bridge.plain("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f0000") !== "AZChssPUfl-KmwwdLj8AAA")
       throw new Error(`${bridge.transport} plain conversion diverged from its wire vector.`);
-    console.log(`${bridge.transport}: ${requests.length} shared contract observations passed`);
+    console.log(
+      `${bridge.transport}: exact SystemTime nanoseconds=${fineSystemTime}; ${requests.length} shared contract observations passed`,
+    );
   } finally {
     bridge.close();
   }

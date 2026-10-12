@@ -159,6 +159,14 @@ fn masking_codec(request: &Value) -> Result<UuidV7MaskingCodec, Error> {
 fn run(request: &Value) -> Result<Value, Error> {
     let input = request["input"].as_str().unwrap_or("");
     match text(request, "op")? {
+        "preservesSystemTimeNanoseconds" => {
+            // Neither bridge conversion nor generation may decide its own fine-case coverage.
+            let epoch = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
+            let elapsed = (epoch + std::time::Duration::from_nanos(245))
+                .duration_since(epoch)
+                .map_err(|_| Error::new(ErrorCode::InvalidTimestamp))?;
+            Ok(Value::Bool(elapsed.subsec_nanos() == 245))
+        }
         "generateSequence" => {
             let fraction_bits = request["fractionBits"].as_u64().unwrap_or(0) as u8;
             let mut generator = uuid_slug::UuidV7Generator::new()

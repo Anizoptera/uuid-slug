@@ -22,6 +22,7 @@ export async function runNativeConformance(
     [
       "bun",
       "build",
+      "--check",
       "scripts/rust-conform.ts",
       "--target=node",
       "--outfile=rust/target/conform.mjs",
@@ -31,7 +32,8 @@ export async function runNativeConformance(
     {},
   );
   const lanes = await nativeMatrix("scripts/rust-conform.ts", "rust/target/conform.mjs");
-  const results = await Promise.all(
+  // Report each verified host immediately, but drain every child before surfacing a failure.
+  const results = await Promise.allSettled(
     lanes.map(async (lane) => {
       const output = await run(lane.command, {
         ...lane.env,
@@ -39,10 +41,10 @@ export async function runNativeConformance(
       });
       if (!output.startsWith(`${lane.expectedTransport}: `) || !output.endsWith(" passed"))
         throw new Error(`${lane.host} ${lane.transport} returned an unexpected result: ${output}`);
-      return `${lane.label}: ${output}`;
+      console.log(`${lane.label}: ${output}`);
     }),
   );
-  for (const result of results) console.log(result);
+  for (const result of results) if (result.status === "rejected") throw result.reason;
 }
 
 if (import.meta.main) await runNativeConformance();

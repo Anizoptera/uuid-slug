@@ -500,6 +500,45 @@ mod tests {
         assert_eq!((first_fraction.value, first_fraction.bits), (0, 12));
         assert_eq!((second_fraction.value, second_fraction.bits), (1, 12));
 
+        // Keep the adjacent nanosecond boundary wherever SystemTime can represent it;
+        // the portable samples above must not hide truncation on finer hosts.
+        let fine_epoch = UNIX_EPOCH + Duration::from_secs(1_700_000_000);
+        let fine_at = fine_epoch + Duration::from_nanos(245);
+        if fine_at
+            .duration_since(fine_epoch)
+            .expect("positive duration")
+            .subsec_nanos()
+            == 245
+        {
+            let mut fine_generator =
+                UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
+            for (nanoseconds, expected) in [(244, 0), (245, 1)] {
+                let generated = fine_generator.generate_uuid_v7_at_with_random_fill(
+                    fine_epoch + Duration::from_nanos(nanoseconds),
+                    fill,
+                )?;
+                let bytes = generated.as_uuid_bytes();
+                assert_eq!(
+                    bytes[..6]
+                        .iter()
+                        .fold(0u64, |ms, byte| ms * 256 + u64::from(*byte)),
+                    1_700_000_000_000
+                );
+                assert_eq!(
+                    (u16::from(bytes[6] & 15) << 8) | u16::from(bytes[7]),
+                    expected
+                );
+            }
+            assert!(
+                UuidV7Generator::new()
+                    .generate_uuid_v7_at_with_random_fill(
+                        UNIX_EPOCH - Duration::from_nanos(1),
+                        fill,
+                    )
+                    .is_err()
+            );
+        }
+
         let endpoint = UNIX_EPOCH + Duration::from_millis(MAX_UUID_V7_UNIX_MS);
         assert_eq!(
             UuidV7Generator::new()

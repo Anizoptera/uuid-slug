@@ -4,7 +4,13 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { browserEngines } from "./browser-engines";
 import { command } from "./command";
-import { compare, contractRequests, evaluate } from "./rust-conform";
+import {
+  compare,
+  contractRequests,
+  evaluate,
+  fineSystemTimeRequests,
+  systemTimePrecisionProbe,
+} from "./rust-conform";
 
 const profile = process.env.UUID_SLUG_RUST_PROFILE ?? "release";
 if (profile !== "debug" && profile !== "release")
@@ -129,6 +135,7 @@ try {
       const browser = await browserEngine.launch({ headless: true });
       try {
         const requests = await contractRequests();
+        const fineRequests = fineSystemTimeRequests();
         for (const failEntropy of [false, true]) {
           const context = await browser.newContext();
           try {
@@ -137,7 +144,12 @@ try {
             await page.goto(server.url.toString());
             const observation = await bounded(
               page.evaluate(
-                async ({ requests: inputs, failEntropy: rejectEntropy }) => {
+                async ({
+                  requests: inputs,
+                  fineRequests: fineInputs,
+                  precisionProbe,
+                  failEntropy: rejectEntropy,
+                }) => {
                   const demand = (condition: boolean, message: string) => {
                     if (!condition)
                       throw new Error(
@@ -159,7 +171,16 @@ try {
                   const moduleUrl = "/bridge.js";
                   const wasm = await import(moduleUrl);
                   await wasm.default();
-                  const contracts = JSON.parse(wasm.evaluate(JSON.stringify(inputs)));
+                  const precision = JSON.parse(wasm.evaluate(JSON.stringify([precisionProbe])));
+                  demand(
+                    Array.isArray(precision) &&
+                      precision.length === 1 &&
+                      typeof precision[0]?.value === "boolean",
+                    "Native SystemTime precision observation is missing",
+                  );
+                  const fineSystemTime = precision[0].value === true;
+                  const selectedInputs = fineSystemTime ? [...inputs, ...fineInputs] : inputs;
+                  const contracts = JSON.parse(wasm.evaluate(JSON.stringify(selectedInputs)));
                   demand(draws === 0, "Deterministic contracts unexpectedly requested entropy");
                   const generated = [4, 7].map((uuidVersion) => {
                     const before = draws;
@@ -179,6 +200,7 @@ try {
                   if (rejectEntropy)
                     return {
                       contracts,
+                      fineSystemTime,
                       generated,
                       draws,
                       polls: 0,
@@ -259,6 +281,7 @@ try {
                     );
                     return {
                       contracts,
+                      fineSystemTime,
                       generated,
                       draws,
                       polls,
@@ -272,10 +295,13 @@ try {
                     channel.port2.close();
                   }
                 },
-                { requests, failEntropy },
+                { requests, fineRequests, precisionProbe: systemTimePrecisionProbe, failEntropy },
               ),
             );
-            compare(requests, observation.contracts);
+            const selectedRequests = observation.fineSystemTime
+              ? [...requests, ...fineRequests]
+              : requests;
+            compare(selectedRequests, observation.contracts);
             if (failEntropy)
               deepStrictEqual(observation.generated, [
                 { error: "rng_unavailable" },
@@ -306,7 +332,8 @@ try {
                 adapter: `${browserName} Wasm`,
                 profile,
                 entropyFailure: failEntropy,
-                contracts: requests.length,
+                contracts: selectedRequests.length,
+                exactSystemTimeNanoseconds: observation.fineSystemTime,
                 draws: observation.draws,
                 polls: observation.polls,
                 hostTasks: observation.hostTasks,
