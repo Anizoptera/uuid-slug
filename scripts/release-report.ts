@@ -79,7 +79,7 @@ export async function verifyNpmIdentity(
   return metadata;
 }
 
-async function measureLinkedSizes(
+export async function measureLinkedSizes(
   cwd: string,
   crate: string,
   work: string,
@@ -95,14 +95,27 @@ async function measureLinkedSizes(
     ),
     Bun.write(
       join(driver, "src/main.rs"),
-      `use std::hint::black_box;\nuse uuid_slug::{public_mask, Uuid, UuidV7MaskingCodec, UuidV7MaskingCodecOptions};\nfn main() {\n let uuid = Uuid::parse("01890f3e-93b8-7cc6-a76b-b2a67b746c2a").unwrap();\n black_box(UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions::new(public_mask())).unwrap().encode_uuid(uuid));\n}\n`,
+      `use std::hint::black_box;\nuse uuid_slug::{uuid_v7_test_mask, Uuid, UuidV7MaskingCodec, UuidV7MaskingCodecOptions};\nfn main() {\n let uuid = Uuid::from_uuid_string("01890f3e-93b8-7cc6-a76b-b2a67b746c2a").unwrap();\n black_box(UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions::new(uuid_v7_test_mask())).unwrap().uuid_to_masked_slug(uuid).unwrap());\n}\n`,
     ),
   ]);
   const manifest = join(driver, "Cargo.toml");
   const base = ["build", "--release", "--manifest-path", manifest];
-  const env = { CARGO_TARGET_DIR: target };
-  await command("cargo", base, cwd, env);
-  await command("cargo", [...base, "--target", "wasm32-unknown-unknown"], cwd, env);
+  // Resolve from the repository, not the external driver or a system Cargo on PATH.
+  const [cargo, rustc] = await Promise.all(
+    ["cargo", "rustc"].map(async (tool) => (await command("rustup", ["which", tool], cwd)).trim()),
+  );
+  if (!cargo || !rustc) throw new Error("Repository Rust toolchain could not be resolved.");
+  // macOS linker children need Cargo to forward the selected compiler's LLVM library path.
+  if (process.platform === "darwin")
+    base.push(
+      "--config",
+      `env.DYLD_LIBRARY_PATH.value=${JSON.stringify(join(dirname(rustc), "..", "lib"))}`,
+      "--config",
+      "env.DYLD_LIBRARY_PATH.force=true",
+    );
+  const env = { CARGO_TARGET_DIR: target, RUSTC: rustc };
+  await command(cargo, base, cwd, env);
+  await command(cargo, [...base, "--target", "wasm32-unknown-unknown"], cwd, env);
   return {
     native: (await stat(join(target, "release/uuid-slug-linked-probe"))).size,
     wasm: (await stat(join(target, "wasm32-unknown-unknown/release/uuid-slug-linked-probe.wasm")))
@@ -164,8 +177,13 @@ async function rustApi(
   manifest: string,
 ): Promise<{ declarations: string; package: CargoReleaseSurface }> {
   const base = ["public-api", "--manifest-path", manifest, "--color=never", "--simplified"];
-  const all = await command("cargo", [...base, "--all-features"], cwd);
-  const minimal = await command("cargo", [...base, "--no-default-features"], cwd);
+  // API extraction alone uses nightly; installed system Cargo may not select it automatically.
+  const env = {
+    RUSTC: (await command("rustup", ["which", "--toolchain", "nightly", "rustc"], cwd)).trim(),
+    RUSTDOC: (await command("rustup", ["which", "--toolchain", "nightly", "rustdoc"], cwd)).trim(),
+  };
+  const all = await command("cargo", [...base, "--all-features"], cwd, env);
+  const minimal = await command("cargo", [...base, "--no-default-features"], cwd, env);
   const manifestSurface = await rustReleaseSurface(cwd, manifest);
   return {
     package: manifestSurface,
