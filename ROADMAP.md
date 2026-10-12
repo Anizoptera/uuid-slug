@@ -45,6 +45,12 @@ known-misuse rejection, generation effects and executable JavaScript.
 - [x] Challenge preset independence and bound-method compatibility; retained red diagnostics expose unrelated-capability receiver constraints and overload-order binding failures. Receivers depend only on the used preset and bound omission remains valid.
 - [x] Regenerate and review the preset-order declarations and editor help; `bench/reports/composition-preset-complete.log` records the complete check's zero exit. Executable JavaScript remains unchanged, and unsuppressed negative controls fail at the intended expressions under the packed-consumer compiler settings.
 
+## Interrupted-check cleanup
+
+- [x] Reproduce a Node descendant performing a late write after child-only interruption; the signal mutation fails at the late-write assertion, while process-group interruption passes. Readiness and stream closure supply completion signals.
+- [x] Stop the owned process group on POSIX, retain Windows supervision and archive then remove the owned interrupted-check declarations.
+- [x] Verify the lifecycle repair with the owning supervisor checks and complete check; `bench/reports/composition-cleanup-final.log` records the complete check's zero exit. Owned scratch is absent from both temporary roots; Windows execution remains part of candidate CI.
+
 ## Release holds: no release operation is authorized
 
 - [ ] Before publication, match package selection to the npm-only `0.4.0` note in `CHANGELOG.md`; the workflow defaults to both packages. Publication still requires final authorization for that exact operation.
