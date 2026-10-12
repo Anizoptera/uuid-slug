@@ -1,10 +1,66 @@
 import { expect, test } from "bun:test";
+import { rejects } from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { command } from "../command";
 import {
+  checkReleasedApi,
   selectReleaseTag,
   typescriptDeclarations,
   validateVersion,
   verifyEvolution,
 } from "../api-evolution";
+
+test("pending development work uses the tagged HEAD as its release baseline", async () => {
+  const root = await mkdtemp(join(tmpdir(), "uuid-slug-post-release-"));
+  const current = reports("export declare function published(): void;", "");
+  const writeVersion = async (version: string) => {
+    await Promise.all([
+      Bun.write(join(root, "package.json"), JSON.stringify({ name: "fixture", version })),
+      Bun.write(join(root, "rust/Cargo.toml"), `[workspace.package]\nversion = "${version}"\n`),
+      Bun.write(
+        join(root, "rust/Cargo.lock"),
+        ["uuid-slug", "uuid-slug-bridge"]
+          .map((name) => `[[package]]\nname = "${name}"\nversion = "${version}"\n`)
+          .join("\n"),
+      ),
+    ]);
+  };
+  try {
+    await writeVersion("0.4.0");
+    await Promise.all([
+      Bun.write(join(root, "rust/uuid-slug/Cargo.toml"), '[package]\nname = "uuid-slug"\n'),
+      Bun.write(join(root, "api/typescript.api.d.ts"), current.typescript),
+      Bun.write(join(root, "api/rust.api.md"), current.rust),
+    ]);
+    await command("git", ["init", "--quiet"], root);
+    await command("git", ["config", "user.name", "Release fixture"], root);
+    await command("git", ["config", "user.email", "fixture@example.invalid"], root);
+    await command("git", ["add", "."], root);
+    await command("git", ["commit", "--quiet", "-m", "release"], root);
+    await command("git", ["-c", "tag.gpgSign=false", "tag", "-a", "v0.4.0", "-m", "release"], root);
+    await checkReleasedApi(root, current);
+    await writeVersion("0.4.1-dev");
+    await checkReleasedApi(root, current);
+    await rejects(
+      checkReleasedApi(root, {
+        ...current,
+        typescript: `${current.typescript}\nexport declare function added(): void;`,
+      }),
+      /does not satisfy the minor API change/,
+    );
+    await command("git", ["tag", "-d", "v0.4.0"], root);
+    await command(
+      "git",
+      ["-c", "tag.gpgSign=false", "tag", "-a", "v0.9.0", "-m", "wrong version"],
+      root,
+    );
+    await rejects(checkReleasedApi(root, current), /does not match package.json 0.4.0/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 function reports(ts: string, rust: string, rustDeprecated = "(none)", minimalRust = rust) {
   return {

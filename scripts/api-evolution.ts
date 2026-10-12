@@ -332,7 +332,15 @@ export async function checkReleasedApi(root: string, current: ApiReports): Promi
     throw new Error(
       `HEAD has multiple release tags (${tagsAtHead.join(", ")}); keep only the intended release tag before retrying.`,
     );
-  const tagged = tagsAtHead[0] ?? "";
+  let tagged = tagsAtHead[0] ?? "";
+  if (tagged) {
+    const committed = JSON.parse(await command("git", ["show", "HEAD:package.json"], root)) as {
+      version: string;
+    };
+    // A tag identifies committed bytes; a pending version transition compares against that release.
+    validateVersion(committed.version, tagged);
+    if (manifest.version !== committed.version) tagged = "";
+  }
   const pendingReleaseVersion = process.env.UUID_SLUG_RELEASE_VERSION;
   validateVersion(manifest.version, tagged || undefined, pendingReleaseVersion);
   await checkReleaseVersion(root, manifest.version);
