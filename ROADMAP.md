@@ -51,6 +51,15 @@ known-misuse rejection, generation effects and executable JavaScript.
 - [x] Stop the owned process group on POSIX, retain Windows supervision and archive then remove the owned interrupted-check declarations.
 - [x] Verify the lifecycle repair with the owning supervisor checks and complete check; `bench/reports/composition-cleanup-final.log` records the complete check's zero exit. Owned scratch is absent from both temporary roots; Windows execution remains part of candidate CI.
 
+## Local release readiness
+
+- [x] Execute packed consumers on Deno, Chromium, Firefox and WebKit; `bun run artifact:web` exits zero, with output in `bench/reports/local-release-web.log`.
+- [x] Execute the packed consumer on local workerd with and without Node compatibility; `bun scripts/check-artifact.ts --edge` exits zero after installing the missing workerd tool. Output is in `bench/reports/local-release-edge.log`; package dependencies remain unchanged.
+- [x] Execute both WebAssembly profiles across Chromium, Firefox and WebKit; `bench/reports/local-release-wasm-{debug,release}.log` records successful normal and failed-entropy contexts, cancellation, seed ownership and host-task yielding.
+- [x] Verify named-root tree shaking through the artifact check's existing consumer graph: every consumer bundle executes, and unrelated generation, masking and parsed-value modules are rejected across the supported optimizer families. Decoder-only consumption has its own job; this proves the tested module boundaries, not removal of each unused method from a returned codec object.
+- [x] Verify version agreement and explicit npm-only selection; `bench/reports/local-release-preflight.log` records matching development versions, npm selection and no npm runtime dependencies. Versions, tags and remote settings remain unchanged.
+- [x] Record local evidence and verify owned temporary paths are absent. Local preparation passes on the installed runtimes and host; candidate CI and tagged archive identity remain unverified. The recorded Node timing gap remains non-blocking under `docs/release.md` §Evidence and notes; performance parity is not claimed.
+
 ## Release holds: no release operation is authorized
 
 - [ ] Before publication, match package selection to the npm-only `0.4.0` note in `CHANGELOG.md`; the workflow defaults to both packages. Publication still requires final authorization for that exact operation.
