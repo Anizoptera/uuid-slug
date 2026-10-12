@@ -94,7 +94,7 @@ test("refuses a changed private runtime map", () =>
     },
     "Packed imports are wrong",
   ));
-test("refuses runtime conditions before source conditions", () =>
+test("refuses reordered package export conditions", () =>
   rejected(
     {
       ...base,
@@ -102,17 +102,12 @@ test("refuses runtime conditions before source conditions", () =>
         ...manifest,
         exports: {
           ...manifest.exports,
-          ".": {
-            node: "./dist/node/index.js",
-            types: "./dist/index.d.ts",
-            bun: "./src/index.ts",
-            development: "./src/index.ts",
-            default: "./dist/index.js",
-          },
+          // eslint-disable-next-line unicorn/no-array-reverse -- Entries are fresh; preserve the ES2022 compiler floor.
+          ".": Object.fromEntries(Object.entries(manifest.exports["."]).reverse()),
         },
       }),
     },
-    'must be ordered "types", "bun", "deno", "development", then "default"',
+    "Packed exports are wrong",
   ));
 test("finds machine paths in extensionless files", () =>
   rejected({ ...base, "package/leak": "/Users/builder/private" }, "Build-machine path"));

@@ -84,10 +84,7 @@ async function validateSourceMap(
     )
       throw new Error(`Source map input must stay inside the package: ${name} -> ${input}`);
     const resolved = path.posix.normalize(path.posix.join(path.posix.dirname(name), input));
-    if (
-      !resolved.startsWith("package/") ||
-      (!entries.has(resolved) && typeof embedded[index] !== "string")
-    )
+    if (!resolved.startsWith("package/") || !entries.has(resolved))
       throw new Error(`Source map input must stay inside the package: ${name} -> ${input}`);
     if (name.endsWith(".js.map")) {
       const sourceText = (await entries.get(resolved)?.text()) ?? "";
@@ -176,17 +173,6 @@ export async function inspectArtifact(
       if (Object.keys(manifest[field] ?? {}).length)
         throw new Error(`${field} must be empty in the artifact.`);
     const repositoryManifest = await Bun.file(path.join(project, "package.json")).json();
-    const conditionOrder = Object.keys(repositoryManifest.exports["."]);
-    for (const [subpath, target] of Object.entries(manifest.exports ?? {})) {
-      if (subpath === "./package.json" || typeof target !== "object" || target === null) continue;
-      if (JSON.stringify(Object.keys(target)) !== JSON.stringify(conditionOrder))
-        throw new Error(
-          `${subpath} export conditions must be ordered ${conditionOrder
-            .slice(0, -1)
-            .map((condition: string) => JSON.stringify(condition))
-            .join(", ")}, then ${JSON.stringify(conditionOrder.at(-1))}.`,
-        );
-    }
     if (JSON.stringify(manifest.exports) !== JSON.stringify(repositoryManifest.exports))
       throw new Error(
         `Packed exports are wrong.\nExpected: ${JSON.stringify(repositoryManifest.exports)}\nReceived: ${JSON.stringify(manifest.exports)}`,
