@@ -38,15 +38,8 @@ export function normalizeDeclarations(source: string): string {
   const print = (node: ts.Node): string =>
     printer.printNode(ts.EmitHint.Unspecified, node, file).trim();
   const visit = (node: ts.Node, owners: readonly string[]): void => {
-    const name =
-      (ts.isClassDeclaration(node) ||
-        ts.isEnumDeclaration(node) ||
-        ts.isInterfaceDeclaration(node) ||
-        ts.isModuleDeclaration(node)) &&
-      node.name
-        ? node.name.getText(file)
-        : undefined;
-    if (name && isDeclarationContainer(node)) {
+    if (isDeclarationContainer(node) && node.name) {
+      const name = node.name.getText(file);
       const path = [...owners, name];
       const shell = ts.isClassDeclaration(node)
         ? ts.factory.updateClassDeclaration(
