@@ -9,59 +9,17 @@ Keep the planned first release at `0.4.0`. Prepare only; release version changes
 and finalization require the maintainer's final explicit authorization for each operation.
 Use `docs/release.md` for preparation and recovery; this plan does not change existing contracts or checks.
 
-## Verification audit
+## Verified local baseline
 
-- [x] Map local checks, CI checks and test helpers to the failures they detect; identify duplicate executions, unused helpers and misplaced test code.
-- [x] Read test oracles against their production owners; remove tautologies and unsupported guarantees, and repair false-green or fragile checks with minimal reproducers.
-- [x] Check setup, isolation, cleanup and completion signals; reuse equivalent work without merging independent runtime or package evidence.
-- [x] Run the affected checks and complete local lane, review the total diff, and commit each finished repair without changing release contracts.
+- [x] Local correctness, packed consumers, tree shaking, native interop, both browser WebAssembly profiles and version agreement pass. Evidence: `bench/reports/composition-cleanup-final.log` and `bench/reports/local-release-*.log`; reuse only for unchanged code and toolchains. Coverage is limited to installed hosts; tree-shaking proof covers module boundaries, not individual methods of returned codec objects.
 
-## Public TypeScript repair
+## Release steps requiring authorization
 
-Fix the reproduced declaration defects without changing UUID bits, wire formats, native generation,
-or caller-owned storage identity. Type promises must follow supplied arguments and validated values.
+- [ ] After explicit push authorization, run candidate CI and review its supported runtime, OS and architecture results, including Windows. Local evidence cannot replace candidate CI.
+- [ ] Before an authorized release tag push, select npm with `RELEASE_PACKAGES_ON_TAG=npm`; manual dispatch must also select npm. The workflow defaults to both packages, but `CHANGELOG.md` excludes the Rust crate from `0.4.0`. Changing the remote variable requires separate authorization.
+- [ ] After explicit release-version and tag authorization, follow `docs/release.md`: verify the annotated tag identifies the checked-out commit, prepare and verify both archives without publication credentials, and retain their exact bytes. Version or tag authorization does not authorize publication.
+- [ ] With explicit authorization for each operation, follow `docs/release.md`: publish only npm, verify registry and attachment bytes against retained archives, and finalize only after all selected results and notes match.
 
-- [x] Separate masking-codec declarations from the oversized shared type owner without changing signatures, comments or executable imports.
-- [x] Correct case inference for omitted selectors, explicit generics and reusable options; source and packed-consumer fixtures reject the reproduced omissions.
-- [x] Remove obsolete UUID brands from written output types while retaining array subtypes; fixtures cover v4/v7 replacement, conversion and parsed-value writers.
-- [x] Require options when a generator call claims retained configuration; fixtures preserve no-options calls and reject invented capabilities.
-- [x] Reject assignments that invent codec or payload-layout presets; fixtures preserve general `Uuid` storage and unknown capabilities without runtime state.
-- [x] Preserve parsed UUID capabilities, including explicit codec replacement and separately loaded package copies; `probeUuidCopies` executes both retained presets.
-- [x] Reject known non-v7 parsed values at v7-only methods; fixtures retain unknown-version calls for runtime validation.
-- [x] Verify slug ambiguity, the generation failure split and the error-routing marker against `docs/public-api.md` and runtime tests; these are explicit contracts, not unresolved API defects.
-- [ ] Resolve the full-lane Node `Uuid.toMaskedSlug(codec)` slowdown without weakening protected calls or budgets. The original conversion bodies are retained; isolated conversion and the parsed-value sequence do not reproduce the full-lane loss. Context placement and positional arguments do not repair it. `bench/reports/api-minimal-complete.log` passes the gate but still reports a slower median; timing parity remains unproved. Further standalone profiling or optimization needs the named-call authorization in `AGENTS.md` §Work scope.
-- [x] Regenerate declarations, inspect source and emitted editor help, run source and packed consumers and the complete check, audit the total diff and commit the API repair. `1e5e72e` contains the repair; `bench/reports/api-minimal-complete.log` records the complete check's zero exit and the unresolved timing evidence.
+## Non-blocking timing follow-up
 
-## TypeScript composition repair
-
-Accept supported value unions without caller casts or duplicate dispatch. Preserve precise results,
-known-misuse rejection, generation effects and executable JavaScript.
-
-- [x] Reproduce mixed versions, mixed presets, text/byte extraction and optional generation options in the existing consumer fixture; retained red compiler output identifies receiver and overload failures.
-- [x] Repair parsed-value receivers; retain explicit-case inference, caller storage types and wrong-receiver rejection.
-- [x] Bridge supported extraction and generation unions; preserve whole-union branded rejection and the undefined-options generation exception.
-- [x] Regenerate declarations, inspect source and emitted editor help, prove executable JavaScript unchanged and execute source and packed consumers on both supported compilers.
-- [x] Run the complete existing check and inspect every diff hunk; `bench/reports/composition-complete.log` records the zero exit after removing the unnecessary output-writer receiver generic without suppressions. Preserve unresolved performance and release holds.
-- [x] Challenge preset independence and bound-method compatibility; retained red diagnostics expose unrelated-capability receiver constraints and overload-order binding failures. Receivers depend only on the used preset and bound omission remains valid.
-- [x] Regenerate and review the preset-order declarations and editor help; `bench/reports/composition-preset-complete.log` records the complete check's zero exit. Executable JavaScript remains unchanged, and unsuppressed negative controls fail at the intended expressions under the packed-consumer compiler settings.
-
-## Interrupted-check cleanup
-
-- [x] Reproduce a Node descendant performing a late write after child-only interruption; the signal mutation fails at the late-write assertion, while process-group interruption passes. Readiness and stream closure supply completion signals.
-- [x] Stop the owned process group on POSIX, retain Windows supervision and archive then remove the owned interrupted-check declarations.
-- [x] Verify the lifecycle repair with the owning supervisor checks and complete check; `bench/reports/composition-cleanup-final.log` records the complete check's zero exit. Owned scratch is absent from both temporary roots; Windows execution remains part of candidate CI.
-
-## Local release readiness
-
-- [x] Execute packed consumers on Deno, Chromium, Firefox and WebKit; `bun run artifact:web` exits zero, with output in `bench/reports/local-release-web.log`.
-- [x] Execute the packed consumer on local workerd with and without Node compatibility; `bun scripts/check-artifact.ts --edge` exits zero after installing the missing workerd tool. Output is in `bench/reports/local-release-edge.log`; package dependencies remain unchanged.
-- [x] Execute both WebAssembly profiles across Chromium, Firefox and WebKit; `bench/reports/local-release-wasm-{debug,release}.log` records successful normal and failed-entropy contexts, cancellation, seed ownership and host-task yielding.
-- [x] Verify named-root tree shaking through the artifact check's existing consumer graph: every consumer bundle executes, and unrelated generation, masking and parsed-value modules are rejected across the supported optimizer families. Decoder-only consumption has its own job; this proves the tested module boundaries, not removal of each unused method from a returned codec object.
-- [x] Verify version agreement and explicit npm-only selection; `bench/reports/local-release-preflight.log` records matching development versions, npm selection and no npm runtime dependencies. Versions, tags and remote settings remain unchanged.
-- [x] Record local evidence and verify owned temporary paths are absent. Local preparation passes on the installed runtimes and host; candidate CI and tagged archive identity remain unverified. The recorded Node timing gap remains non-blocking under `docs/release.md` §Evidence and notes; performance parity is not claimed.
-
-## Release holds: no release operation is authorized
-
-- [ ] Before publication, match package selection to the npm-only `0.4.0` note in `CHANGELOG.md`; the workflow defaults to both packages. Publication still requires final authorization for that exact operation.
-- [ ] Before publication, review the candidate commit's CI results for supported runtimes, operating systems and architectures. Workflow configuration does not prove execution.
-- [ ] After authorized tag creation, follow `docs/release.md`: prove the annotated tag identifies the checked-out commit, verify both archives and reuse their exact bytes. Tag authorization does not authorize publication or finalization.
+- [ ] Only with explicit named-call authorization, resolve the full-lane Node `Uuid.toMaskedSlug(codec)` timing gap without weakening protected calls or budgets. `bench/reports/api-minimal-complete.log` passes the gate but does not prove parity. Original conversion bodies remain; isolated calls and parsed-value sequences do not reproduce the loss, and context placement and positional arguments do not repair it. This does not block release preparation (`docs/release.md` §Evidence and notes).
