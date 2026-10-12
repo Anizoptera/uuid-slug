@@ -99,7 +99,7 @@ describe("entropy source", () => {
   });
 
   it.each(byteGenerators)("returns plain Uint8Array bytes from %s", (_name, generate) => {
-    expect((generate() as Uint8Array).constructor.name).toBe("Uint8Array");
+    expect((generate() as Uint8Array).constructor).toBe(Uint8Array);
   });
 
   it("leaves every v4 bit random except the six the RFC fixes", () => {

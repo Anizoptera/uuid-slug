@@ -62,7 +62,7 @@ describe("bun runtime", () => {
   test("returns plain Uint8Array bytes, never a node Buffer", () => {
     for (const [name, generate] of byteGenerators) {
       const bytes = generate();
-      expect([name, (bytes as Uint8Array).constructor.name]).toEqual([name, "Uint8Array"]);
+      expect([name, (bytes as Uint8Array).constructor]).toEqual([name, Uint8Array]);
     }
   });
 

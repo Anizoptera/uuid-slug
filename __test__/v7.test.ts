@@ -170,6 +170,8 @@ describe("uuidv7 sequence state", () => {
     expect(timestampOf(bytesOf(generator))).toBe(100);
     now = 96;
     expect(timestampOf(bytesOf(generator))).toBe(100);
+    now = 95;
+    expect(timestampOf(bytesOf(generator))).toBe(100);
     now = 94;
     expect(timestampOf(bytesOf(generator))).toBe(94);
   });
@@ -375,6 +377,9 @@ describe("uuidv7 buffer handling", () => {
     const target = new Uint8Array(32).fill(0xab);
     const result = generator.generateUuidV7Bytes(target, 8);
     expect(result).toBe(target);
+    expect([...target.subarray(8, 24)]).toEqual([
+      0, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 0,
+    ]);
     // Spread, not `slice` alone: `Uint8Array.prototype.slice` returns a Uint8Array, and `toEqual`
     // treats that as unequal to a plain array however identical the contents.
     expect([...target.slice(0, 8)]).toEqual(Array.from<number>({ length: 8 }).fill(0xab));
