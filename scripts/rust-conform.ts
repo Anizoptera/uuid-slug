@@ -574,8 +574,9 @@ export async function contractRequests(): Promise<Request[]> {
       op: "generateSequence",
       fractionBits: 12,
       steps: [
-        { at: { seconds: 0, nanoseconds: 244 }, byte },
-        { at: { seconds: 0, nanoseconds: 245 }, byte },
+        // Whole 100 ns ticks preserve distinct inputs through Windows SystemTime too.
+        { at: { seconds: 0, nanoseconds: 200 }, byte },
+        { at: { seconds: 0, nanoseconds: 300 }, byte },
         { at: { seconds: 281_474_976_710, nanoseconds: 655_000_000 }, byte },
         { at: { seconds: 281_474_976_710, nanoseconds: 656_000_000 }, byte },
       ],
