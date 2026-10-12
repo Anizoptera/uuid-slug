@@ -189,6 +189,7 @@ async function packArtifacts(root: string, outdir: string): Promise<ArtifactSet>
 
 async function buildHostDriver(root: string, outdir: string): Promise<string> {
   const result = await Bun.build({
+    check: true,
     entrypoints: [join(root, "bench/profile.ts")],
     target: "node",
     outdir,
@@ -207,6 +208,7 @@ async function buildBrowserDriver(
   revision: Revision,
 ): Promise<string> {
   const result = await Bun.build({
+    check: true,
     entrypoints: [join(root, "bench/profile-browser.ts")],
     target: "browser",
     outdir,

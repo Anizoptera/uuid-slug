@@ -22,6 +22,7 @@ let passed = false;
 try {
   if (directory) {
     const result = await Bun.build({
+      check: true,
       entrypoints: [join(import.meta.dir, "resources.ts"), join(import.meta.dir, "latency.ts")],
       target: "node",
       packages: "external",

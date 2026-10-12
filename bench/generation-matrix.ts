@@ -159,6 +159,7 @@ async function build(
   outdir: string,
 ): Promise<string> {
   const result = await Bun.build({
+    check: true,
     entrypoints: [join(import.meta.dir, entry)],
     outdir,
     naming: `${name}.mjs`,

@@ -15,7 +15,7 @@ os-rng = ["dep:getrandom"]
 wasm-js = ["os-rng", "getrandom/wasm_js", "dep:js-sys"]
 
 [dependencies]
-uuid = { version = "1.26", default-features = false }
+uuid = { version = "1.28", default-features = false }
 data-encoding = { version = "2.11", default-features = false, features = ["alloc"] }
 getrandom = { version = "0.4", default-features = false, optional = true }
 

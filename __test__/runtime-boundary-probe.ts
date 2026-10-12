@@ -72,6 +72,23 @@ function thrownBy(call: () => unknown): unknown {
   throw new Error("expected the call to throw");
 }
 
+// Only the outermost draw reenters. An unrefused nested draw fills different bytes and returns,
+// so the outer result or the missing refusal fails here instead of recursing until the stack
+// overflows into an entropy failure that looks like the refusal.
+const reentered = <Result>(outer: () => Result, inner: () => unknown): Result => {
+  let depth = 0;
+  let nested: unknown;
+  runtime.fillRandom = (bytes) => {
+    depth += 1;
+    bytes.fill(depth === 1 ? 0x11 : 0x22);
+    if (depth === 1) nested = thrownBy(inner);
+  };
+  const result = outer();
+  assert.ok(nested instanceof UuidSlugError);
+  assert.equal(nested.code, "rng_unavailable");
+  return result;
+};
+
 const drawUuidV4Text = () => generateUuidV4();
 const NATIVE_UUID_V7_DEFAULTS_CASE =
   "native UUIDv7 defaults preserve payload, configured clocks and fallback causes";
@@ -1015,6 +1032,7 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
             "bun",
             [
               "build",
+              "--check",
               fileURLToPath(new URL("./runtime-boundary-host.ts", import.meta.url)),
               `--target=${process.versions.bun ? "bun" : "node"}`,
               "--outfile",
@@ -1464,22 +1482,6 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
       const expectedText = "11111111-1111-4111-9111-111111111111";
       const expectedBytes = Array.from(unwrap(uuidStringToBytes(expectedText)));
       const expectedSlug = unwrap(uuidStringToPlainSlug(expectedText));
-      // Only the outermost draw reenters. An unrefused nested draw fills different bytes and returns,
-      // so the outer result or the missing refusal fails here instead of recursing until the stack
-      // overflows into an entropy failure that looks like the refusal.
-      const reentered = <Result>(outer: () => Result, inner: () => unknown): Result => {
-        let depth = 0;
-        let nested: unknown;
-        runtime.fillRandom = (bytes) => {
-          depth += 1;
-          bytes.fill(depth === 1 ? 0x11 : 0x22);
-          if (depth === 1) nested = thrownBy(inner);
-        };
-        const result = outer();
-        assert.ok(nested instanceof UuidSlugError);
-        assert.equal(nested.code, "rng_unavailable");
-        return result;
-      };
       try {
         // Portable text, slugs, and caller-buffer writes share one module scratch array.
         delete runtime.uuidV4;

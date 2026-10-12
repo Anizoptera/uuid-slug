@@ -454,6 +454,7 @@ test("primary resource guards reject restored work on the measured runtime", asy
   let passed = false;
   try {
     const built = await Bun.build({
+      check: true,
       entrypoints: [
         join(import.meta.dir, "resource-regression-probe.ts"),
         join(import.meta.dir, "..", "bench", "resources.ts"),

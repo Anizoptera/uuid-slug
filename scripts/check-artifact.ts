@@ -207,6 +207,21 @@ export async function inspectArtifact(
     await mkdir(modules, { recursive: true });
     await symlink(extracted, path.join(modules, "uuid-slug"), "dir");
 
+    // Bundling checks executable modules; declaration emission belongs to the source build.
+    const graphConfig = path.join(root, "graph-tsconfig.json");
+    await Bun.write(
+      graphConfig,
+      JSON.stringify({
+        extends: path.join(project, "tsconfig.json"),
+        compilerOptions: {
+          declaration: false,
+          declarationMap: false,
+          noEmit: true,
+          typeRoots: [path.join(project, "node_modules/@types")],
+        },
+      }),
+    );
+
     // Each target resolves its actual export condition. Checking every shipped module also
     // catches a dependency in a currently unreferenced module, without parsing JS by regex.
     const graphs = await Promise.allSettled(
@@ -223,6 +238,8 @@ export async function inspectArtifact(
           .map((name) => path.join(root, name));
         if (!entrypoints.length) throw new Error(`No ${target} modules in the archive.`);
         const result = await Bun.build({
+          check: true,
+          tsconfig: graphConfig,
           entrypoints,
           target,
           throw: false,
@@ -267,6 +284,7 @@ export async function inspectArtifact(
     ]);
 
     const probe = await Bun.build({
+      check: true,
       entrypoints: [path.join(project, "__test__/consumer-probe.ts")],
       target: "browser",
       outdir: root,
@@ -277,6 +295,7 @@ export async function inspectArtifact(
     await Bun.write(developmentEntry, `import "${manifest.name}";\n`);
     let loadedDevelopmentSource = false;
     const development = await Bun.build({
+      check: true,
       entrypoints: [developmentEntry],
       target: "browser",
       conditions: ["development"],
@@ -334,6 +353,7 @@ export async function inspectArtifact(
         project,
       ),
       command("node", [path.join(project, "node_modules/typescript/bin/tsc"), "-p", root], project),
+      command("bun", ["check"], root),
       command("node", [runner], root),
       command("bun", [runner], root),
       command("bun", [builtRunner], root),
@@ -364,7 +384,7 @@ export async function inspectArtifact(
       ]);
     }
     if (web || edge) {
-      const built = await Bun.build({ entrypoints: [runner], target: "browser" });
+      const built = await Bun.build({ check: true, entrypoints: [runner], target: "browser" });
       const output = built.outputs[0];
       if (!built.success || !output)
         throw new AggregateError(built.logs, "Browser consumer compilation failed.");

@@ -430,6 +430,7 @@ try {
     for (const runtime of runtimes) {
       const entry = group === "v4" ? "bench/generation-host.ts" : "src/index.ts";
       const result = await Bun.build({
+        check: true,
         entrypoints: [join(tree, entry)],
         target: runtime === "deno" ? "node" : runtime,
         ...(runtime === "deno" ? { conditions: ["deno"] } : {}),
@@ -473,6 +474,7 @@ try {
         // The v4 timing artifact executes its corpus at import. Preserve a separate public API
         // graph for the existing profiler so its call counts and stacks measure the candidate.
         const api = await Bun.build({
+          check: true,
           entrypoints: [join(tree, "src/index.ts")],
           target: runtime === "deno" ? "node" : runtime,
           ...(runtime === "deno" ? { conditions: ["deno"] } : {}),
@@ -502,6 +504,7 @@ try {
   const driverFile = join(bundles, "profile.mjs");
   {
     const driver = await Bun.build({
+      check: true,
       entrypoints: [join(project, "bench/profile.ts")],
       target: "node",
       format: "esm",

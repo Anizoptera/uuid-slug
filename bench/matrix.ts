@@ -44,6 +44,7 @@ const runtimes: readonly Runtime[] = [
 async function bundle(entry: string, reports: string): Promise<string> {
   const outfile = join(reports, `${entry}.node.mjs`);
   const built = await Bun.build({
+    check: true,
     entrypoints: [join(here, `${entry}.ts`)],
     target: "node",
     outdir: reports,

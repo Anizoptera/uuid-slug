@@ -148,6 +148,7 @@ export async function buildProfile(
 ) {
   const name = `${entry}.${conditions[0] ?? target}.mjs`;
   const result = await Bun.build({
+    check: true,
     entrypoints: [join(import.meta.dir, `${entry}.ts`)],
     target,
     conditions,

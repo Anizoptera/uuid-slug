@@ -65,6 +65,7 @@ export async function compileConsumer(
   await mkdir(outdir, { recursive: true });
   if (optimizer === "bun") {
     const result = await Bun.build({
+      check: true,
       entrypoints: [entry],
       minify: true,
       naming: "bundle.js",

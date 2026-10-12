@@ -15,6 +15,7 @@ export async function checkChromiumResources(): Promise<void> {
     // Result-preserving defects separate a resource rejection from incorrect identifiers.
     // Keep the existing fixture and budgets as the oracle; only the browser build differs.
     const result = await Bun.build({
+      check: true,
       entrypoints: [join(import.meta.dir, "resources.ts")],
       target: "browser",
       outdir: directory,

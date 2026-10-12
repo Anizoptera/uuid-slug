@@ -1,9 +1,32 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "bun:test";
+import { expect, test } from "bun:test";
 import { rejects } from "node:assert/strict";
 import { inspectArtifact } from "../scripts/check-artifact";
+import { compileConsumer } from "../scripts/consumer-bundlers";
+
+test("checked Bun consumer builds reject type errors before writing bundles", async () => {
+  const root = await mkdtemp(join(tmpdir(), "uuid-slug-checked-bundle-"));
+  try {
+    const entry = join(root, "consumer.ts");
+    await Bun.write(entry, "export const value: number = 1;");
+    const control = await compileConsumer("bun", entry, join(root, "control"));
+    expect(control.code.byteLength).toBeGreaterThan(0);
+    // Valid JavaScript with a wrong type distinguishes checking from successful transpilation.
+    await Bun.write(entry, 'export const value: number = "invalid";');
+    const failed = join(root, "failed");
+    await rejects(
+      compileConsumer("bun", entry, failed),
+      (error: Error) =>
+        error instanceof AggregateError &&
+        error.errors.some((diagnostic: Error) => diagnostic.message.startsWith("TS2322")),
+    );
+    expect(await Bun.file(join(failed, "bundle.js")).exists()).toBe(false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 /** Minimal archives isolate rejection guards before consumer execution could reject instead. */
 async function rejected(files: Record<string, string>, message: string): Promise<void> {
