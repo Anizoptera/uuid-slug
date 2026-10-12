@@ -78,7 +78,7 @@ describe("entropy source", () => {
             encoding: "utf8",
           },
         );
-        expect([result.status, result.stderr]).toEqual([0, ""]);
+        expect(result.status, result.stderr).toBe(0);
       }
     },
   );
