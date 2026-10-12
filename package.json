@@ -1,6 +1,6 @@
 {
   "name": "@anizoptera/uuid-slug",
-  "version": "0.4.0",
+  "version": "0.4.0-dev",
   "description": "Zero-dependency UUIDv4/v7 generation, lossless base64url and base32hex slugs for any UUID, and reversible UUIDv7 masking for databases, URLs, and files.",
   "keywords": [
     "base32hex",

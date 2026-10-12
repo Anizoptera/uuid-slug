@@ -144,6 +144,7 @@ async function declaration(
   label: string,
   name: string,
   version: string,
+  historical = false,
 ): Promise<{ declarations: string; package: NpmReleaseSurface }> {
   const extracted = join(work, `npm-${label}`);
   const rollup = join(extracted, "public.d.ts");
@@ -163,6 +164,10 @@ async function declaration(
       mainEntryPointFilePath: join(packageRoot, "dist/index.d.ts"),
       compiler: { tsconfigFilePath: join(root, "tsconfig.json") },
       dtsRollup: { enabled: true, untrimmedFilePath: rollup },
+      // Published comments cannot be repaired; compare signatures without imposing newer prose rules.
+      ...(historical
+        ? { messages: { tsdocMessageReporting: { default: { logLevel: "warning" } } } }
+        : {}),
     }),
   );
   await command("api-extractor", ["run", "--local", "--config", config], root);
@@ -336,6 +341,7 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
                 comparison.tag,
                 inputs.name,
                 comparison.tag.slice(1),
+                true,
               );
               const declarations = apiDifference(
                 previousTypeScript.declarations,
