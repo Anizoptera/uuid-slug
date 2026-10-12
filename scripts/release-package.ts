@@ -45,6 +45,8 @@ async function pack(
     ],
     cwd,
     request.mode === PUBLISH ? { UUID_SLUG_EXPECTED_ARCHIVE: request.reviewedArchive } : undefined,
+    // Packing includes the artifact hook; allow the release job's bounded CI budget.
+    { timeoutMs: 240_000 },
   );
   return archive(directory);
 }

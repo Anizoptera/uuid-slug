@@ -15,7 +15,7 @@ Use `docs/release.md` for preparation and recovery; this plan does not change ex
 
 ## Authorized release steps
 
-- [ ] Repair the release command's stable-version commit-hook transition and require renewed candidate CI; precision, package and runtime verification remain mandatory.
+- [ ] Require renewed candidate CI before versioning and publication; retain precision, cleaned-artifact, package and runtime verification.
 - [x] Updated dependency and Actions checks pass locally, including separate TypeScript and Bun project and packed-consumer checks, checked Bun builds and their failing control. Evidence: `bench/reports/release-updated-complete.log`, `release-packed-bun-checker.log`, `release-checked-bundle-red.log` and `release-deno-updated-complete.log`. TypeScript 5 remains the compatibility fixture; Cargo's `crypto-common` requires `generic-array =0.14.7` (`release-rust-generic-array.log`). Require corrected candidate CI before release.
 - [ ] Before the release tag push, set `RELEASE_PACKAGES_ON_TAG=npm` and verify readback; manual dispatch must also select npm. The prior variable is absent: restore that state after finalization so this release does not change later publication defaults.
 - [ ] With green candidate CI, create `0.4.0` through the release command and verify its annotated tag identifies the checked-out commit. Push the release and require credentials-free archive verification before publication; retain both archives' exact bytes per `docs/release.md`.

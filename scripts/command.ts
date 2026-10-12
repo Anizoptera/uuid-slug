@@ -30,6 +30,7 @@ export async function command(
   args: string[],
   cwd: string,
   env?: Readonly<Record<string, string>>,
+  options?: { readonly timeoutMs: number },
 ): Promise<string> {
   const childEnvironment = Object.fromEntries(
     Object.entries({ ...process.env, ...env }).filter(([name]) => !GIT_LOCAL_ENVIRONMENT.has(name)),
@@ -42,7 +43,7 @@ export async function command(
         PATH: `${join(cwd, "node_modules/.bin")}${delimiter}${process.env.PATH ?? ""}`,
       },
       encoding: "utf8",
-      timeout: 30_000,
+      timeout: options?.timeoutMs ?? 30_000,
       maxBuffer: 4 * 1024 * 1024,
     });
     return result.stdout;
