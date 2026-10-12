@@ -451,6 +451,10 @@ layout, rather than making ordinary calls pay for those controls or adding a dup
   cast or annotation. Do not move runtime-only uncertainty into elaborate caller-facing generics.
 - Infer non-default text case and retained configuration only from supplied runtime arguments.
   Omission must keep its real default even with explicit generics or reusable typed options.
+- Accept a union when every member supports the requested operation. Test mixed UUID versions,
+  mixed presets, text/byte inputs and optional configuration directly; separately valid branches
+  do not prove that TypeScript can call their union. Infer parsed results from the actual receiver;
+  widening a receiver must not let a borrowed method claim another UUID version or missing preset.
 - Buffer writes preserve storage identity and useful array subtypes, but invalidate prior UUID
   brands. A mutable array's old brand cannot describe the bytes another writer replaces.
 - Parsing an existing immutable UUID must preserve its known capabilities when the runtime retains
@@ -538,6 +542,9 @@ layout, rather than making ordinary calls pay for those controls or adding a dup
   generation call with an explicit time, a generator, caller-owned output, or custom entropy keeps
   the union, as do generator and masking-codec methods, whose custom clocks and configured
   timestamp ranges can fail.
+  Forwarded options may be undefined: that branch keeps the ordinary default's result and effect.
+  A union containing configured and default calls therefore carries error values and may also throw
+  `rng_unavailable` on its default branch. Do not invent retained configuration from that branch.
 - Classify sentinel-list shape and duplicate names or UUIDs as `invalid_sentinel`. Keep malformed
   UUID text as `invalid_uuid` and a wrong UUID version as `invalid_uuid_version`; these failures
   require different caller repairs.
@@ -638,6 +645,8 @@ shape, its rejected live alternatives, and the strongest remaining trade-off. Th
 applicable links:
 
 - declaration inference for current names and options, plus compiler rejection of removed ones;
+- union calls and optional-options forwarding, with incompatible branded members, missing presets
+  and borrowed receivers rejected for the intended reason;
 - plain behavior and each construction invariant or failure path in Node and Bun;
 - actual adapter selection in Deno and every browser engine selected by the check workflow when that
   path can differ;

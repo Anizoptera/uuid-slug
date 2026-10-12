@@ -23,9 +23,13 @@ const UUID_V7_VALUE_OPTIONS = {
  * @throws `UuidSlugError` with code `rng_unavailable` when generation cannot obtain
  * secure randomness.
  */
-export function generateUuidV7Value(): Uuid<7, false, true>;
-/** Generate an immutable UUIDv7 with optional time, generator, and retained masking codec. */
-export function generateUuidV7Value<const Options extends UuidV7ValueOptions = {}>(
+export function generateUuidV7Value(options?: undefined): Uuid<7, false, true>;
+/**
+ * Generate an immutable UUIDv7 with optional time, generator, and retained masking codec.
+ * Only a supplied codec is retained; an undefined options branch uses default generation.
+ * @throws `UuidSlugError` with code `rng_unavailable` if options are undefined and secure randomness is unavailable.
+ */
+export function generateUuidV7Value<const Options extends UuidV7ValueOptions | undefined = {}>(
   options: Options,
 ):
   | Uuid<7, Options extends { readonly maskingCodec: UuidV7MaskingCodec } ? true : false, true>

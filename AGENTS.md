@@ -64,6 +64,8 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   and parsed-value reuse against retained context; types must describe the resulting value.
 - Reject assignments that invent parsed UUID presets; optional method arguments alone do not
   distinguish retained capabilities in TypeScript's structural assignability.
+- Test supported unions and optional-options forwarding, not just each branch separately. Receiver
+  repairs must preserve inferred versions and reject borrowed methods that invent version or preset facts.
 - Anchor overload edits at their enclosing declaration and signature boundary; compare emitted
   JavaScript before accepting a type-only repair so a matching implementation line cannot change behavior.
 - Finish only when source calls, runtime paths, emitted declarations, editor help, packed consumers,

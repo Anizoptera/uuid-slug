@@ -230,6 +230,43 @@ export async function probeConsumer(api: typeof Api): Promise<void> {
   }
   const codec = unwrap(api.createUuidV7MaskingCodec({ mask: api.UUID_V7_TEST_MASK }));
   const parsed = unwrap(api.parseUuid(uuid));
+  // Exercise the same union calls compiled by consumer fixtures through the loaded package.
+  const fieldLayout = { subMillisecondFractionBits: 0, counterBits: 0 };
+  for (const input of [uuid, parsed.toBytes()]) {
+    equal(api.extractUuidV7UnixMs(input), parsed.inspect().unixMs, "union timestamp");
+    equal(
+      unwrap(api.extractUuidV7Payload(input, fieldLayout)).unixMs,
+      parsed.inspect().unixMs,
+      "union payload",
+    );
+  }
+  const v4Value = unwrap(api.parseUuid(api.generateUuidV4()));
+  for (const value of [v4Value, parsed]) {
+    equal(api.isUuidText(value.toString()), true, "mixed-version UUID text");
+    equal(value.toBytes().length, 16, "mixed-version UUID bytes");
+    equal(
+      unwrap(api.uuidToString(value.toPlainSlug())),
+      value.toJSON(),
+      "mixed-version plain conversion",
+    );
+  }
+  const boundValue = unwrap(api.parseUuid(uuid, codec));
+  for (const value of [parsed, boundValue]) {
+    equal(
+      unwrap(value.toMaskedSlug(codec)),
+      unwrap(codec.uuidToMaskedSlug(uuid)),
+      "mixed-preset explicit codec",
+    );
+    equal(
+      unwrap(value.extractV7Payload(fieldLayout)).unixMs,
+      parsed.inspect().unixMs,
+      "mixed-preset explicit layout",
+    );
+  }
+  for (const options of [undefined, { at: 123 }])
+    equal(unwrap(api.generateUuidV7Value(options)).version, 7, "optional immutable generation");
+  for (const selection of [api.BASE32HEX, { alphabet: api.BASE32HEX, at: 123 }] as const)
+    equal(unwrap(api.generatePlainUuidV7Slug(selection)).length, 26, "union plain generation");
   const external = { ...codec };
   Object.defineProperty(external, "uuidToMaskedSlug", {
     value(bytes: Uint8Array) {

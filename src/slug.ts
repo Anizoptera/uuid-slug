@@ -748,6 +748,10 @@ export function extractUuidV7UnixMs<Input extends UuidByteInput | UuidSlugError>
   value: UuidV7BytesInput<Input>,
   byteOffset?: number,
 ): number | UuidSlugError;
+/** Read Unix milliseconds from supported text/byte unions; a preceding error passes through unchanged. */
+export function extractUuidV7UnixMs<Input extends string | UuidByteInput | UuidSlugError>(
+  value: UuidV7TimestampInput<Input>,
+): number | UuidSlugError;
 /*#__NO_SIDE_EFFECTS__*/
 export function extractUuidV7UnixMs(
   value: string | UuidByteInput | UuidSlugError,
@@ -798,6 +802,11 @@ export function extractUuidV7Payload<Input extends UuidByteInput | UuidSlugError
   value: UuidV7BytesInput<Input>,
   layout: UuidV7PayloadLayout,
   byteOffset?: number,
+): UuidV7Payload | UuidSlugError;
+/** Interpret supported text/byte unions under the supplied layout; a preceding error passes through unchanged. */
+export function extractUuidV7Payload<Input extends string | UuidByteInput | UuidSlugError>(
+  value: UuidV7TimestampInput<Input>,
+  layout: UuidV7PayloadLayout,
 ): UuidV7Payload | UuidSlugError;
 /*#__NO_SIDE_EFFECTS__*/
 export function extractUuidV7Payload(

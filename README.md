@@ -724,6 +724,8 @@ known UUID version remains in the result type.
 
 Use `parseUuid` when one UUID needs several operations. It validates and copies the input once.
 Serialization returns canonical UUID text and intentionally drops the codec and payload layout.
+Mixed-version parsed values support text, byte, plain-slug and inspection calls without narrowing.
+When only some values retain a codec or payload layout, pass that configuration explicitly.
 
 ```ts
 const uuid = parseUuid(input, codec);

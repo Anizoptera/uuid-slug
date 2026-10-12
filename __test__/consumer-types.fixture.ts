@@ -884,3 +884,38 @@ if (parsedWrite instanceof Error) throw parsedWrite;
 expectType<"caller-owned">()(parsedWrite.storageLabel);
 // @ts-expect-error A parsed write cannot retain the destination's prior UUID brand.
 expectType<UuidV7Bytes>()(parsedWrite);
+
+// A union must retain operations valid for every member without narrowing the caller's storage.
+declare const mixedVersions: Uuid<4> | Uuid<7>;
+expectType<UuidV4String | UuidV7String>()(mixedVersions.toString());
+expectType<UuidV4Bytes | UuidV7Bytes>()(mixedVersions.toBytes());
+mixedVersions.toBytes(new Uint8Array(16));
+expectType<4 | 7>()(mixedVersions.inspect().version);
+mixedVersions.toPlainSlug();
+mixedVersions.toJSON();
+declare const mixedPresets: Uuid<7, true, true> | Uuid<7>;
+mixedPresets.toMaskedSlug(codec);
+mixedPresets.extractV7Payload({ subMillisecondFractionBits: 0, counterBits: 0 });
+// @ts-expect-error One unbound member prevents implicit codec selection.
+mixedPresets.toMaskedSlug();
+// @ts-expect-error One unbound member prevents implicit payload interpretation.
+mixedPresets.extractV7Payload();
+// @ts-expect-error Borrowing a method cannot invent the receiver's UUID version.
+expectType<UuidV4String | UppercaseUuidV4String>()(parsedV4Value.toString.call(parsedValue));
+// @ts-expect-error A receiver must be a complete parsed UUID, not just a version field.
+parsedV4Value.toString.call({ version: 4 });
+
+declare const mixedV7Input: UuidV7String | UuidV7Bytes;
+extractUuidV7UnixMs(mixedV7Input);
+extractUuidV7Payload(mixedV7Input, { subMillisecondFractionBits: 0, counterBits: 0 });
+declare const invalidMixedV7Input: UuidV7String | UuidV4Bytes;
+// @ts-expect-error A known v4 member must reject the whole union.
+extractUuidV7UnixMs(invalidMixedV7Input);
+// @ts-expect-error A known v4 member must reject the whole union.
+extractUuidV7Payload(invalidMixedV7Input, { subMillisecondFractionBits: 0, counterBits: 0 });
+declare const optionalValueOptions: UuidSlugApi.UuidV7ValueOptions | undefined;
+generateUuidV7Value(optionalValueOptions);
+declare const optionalGeneratorValueOptions: UuidSlugApi.UuidV7GeneratorValueOptions | undefined;
+generator.generateUuidV7Value(optionalGeneratorValueOptions);
+declare const alphabetOrOptions: UuidSlugApi.SlugAlphabet | GeneratePlainUuidV7SlugOptions;
+generatePlainUuidV7Slug(alphabetOrOptions);

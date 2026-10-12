@@ -203,6 +203,14 @@ export function generatePlainUuidV7Slug(alphabet?: SlugAlphabet): PlainUuidV7Slu
 export function generatePlainUuidV7Slug(
   options: GeneratePlainUuidV7SlugOptions,
 ): PlainUuidV7Slug | UuidSlugError;
+/**
+ * Forward either an alphabet preset or generation options without branching at the call site.
+ * Configured failures return `UuidSlugError`.
+ * @throws `UuidSlugError` with code `rng_unavailable` when a preset or undefined branch cannot obtain secure randomness.
+ */
+export function generatePlainUuidV7Slug(
+  alphabetOrOptions: SlugAlphabet | GeneratePlainUuidV7SlugOptions | undefined,
+): PlainUuidV7Slug | UuidSlugError;
 export function generatePlainUuidV7Slug(
   alphabetOrOptions: SlugAlphabet | GeneratePlainUuidV7SlugOptions = BASE64URL_NAME,
 ): PlainUuidV7Slug | UuidSlugError {

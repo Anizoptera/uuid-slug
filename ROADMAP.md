@@ -32,6 +32,18 @@ or caller-owned storage identity. Type promises must follow supplied arguments a
 - [ ] Resolve the full-lane Node `Uuid.toMaskedSlug(codec)` slowdown without weakening protected calls or budgets. The original conversion bodies are retained; isolated conversion and the parsed-value sequence do not reproduce the full-lane loss. Context placement and positional arguments do not repair it. `bench/reports/api-minimal-complete.log` passes the gate but still reports a slower median; timing parity remains unproved. Further standalone profiling or optimization needs the named-call authorization in `AGENTS.md` §Work scope.
 - [x] Regenerate declarations, inspect source and emitted editor help, run source and packed consumers and the complete check, audit the total diff and commit the API repair. `1e5e72e` contains the repair; `bench/reports/api-minimal-complete.log` records the complete check's zero exit and the unresolved timing evidence.
 
+## TypeScript composition repair
+
+Accept supported value unions without caller casts or duplicate dispatch. Preserve precise results,
+known-misuse rejection, generation effects and executable JavaScript.
+
+- [x] Reproduce mixed versions, mixed presets, text/byte extraction and optional generation options in the existing consumer fixture; retained red compiler output identifies receiver and overload failures.
+- [x] Repair parsed-value receivers; retain explicit-case inference, caller storage types and wrong-receiver rejection.
+- [x] Bridge supported extraction and generation unions; preserve whole-union branded rejection and the undefined-options generation exception.
+- [x] Regenerate declarations, inspect source and emitted editor help, prove executable JavaScript unchanged and execute source and packed consumers on both supported compilers.
+- [x] Run the complete existing check and inspect every diff hunk; `bench/reports/composition-complete.log` records the zero exit after removing the unnecessary output-writer receiver generic without suppressions. Preserve unresolved performance and release holds.
+- [ ] Challenge preset independence and bound-method compatibility before final closure; a codec preset must not depend on retained layout, or a layout on retained codec.
+
 ## Release holds: no release operation is authorized
 
 - [ ] Before publication, match package selection to the npm-only `0.4.0` note in `CHANGELOG.md`; the workflow defaults to both packages. Publication still requires final authorization for that exact operation.

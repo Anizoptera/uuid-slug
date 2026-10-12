@@ -252,27 +252,36 @@ export interface Uuid<
   };
   /** The UUID version field. */
   readonly version: Version;
-  // Bit-only operations share a receiver type so unions of different presets remain callable.
+  // Infer bit facts from the actual receiver so mixed versions stay callable. Merely widening
+  // the receiver while retaining Version would let a borrowed method invent a version brand.
   /** Return stable UUID facts in one serializable record. */
-  inspect(this: Uuid<Version, boolean, boolean>): UuidInspection<Version>;
+  inspect<Receiver extends AnyUuid>(this: Receiver): UuidInspection<Receiver["version"]>;
   /** Return canonical UUID text, lowercase by default. */
   toString<Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE>(
     this: Uuid<Version, boolean, boolean>,
     ...textCase: UuidTextCaseArguments<Case>
   ): UuidStringForVersion<Version, Case>;
+  /** Convert a mixed-version receiver while retaining every version it proves. */
+  toString<
+    Case extends UuidTextCase = typeof UUID_TEXT_LOWERCASE,
+    Receiver extends AnyUuid = AnyUuid,
+  >(
+    this: Receiver,
+    ...textCase: UuidTextCaseArguments<Case>
+  ): UuidStringForVersion<Receiver["version"], Case>;
   /** Return a new plain 16-byte UUID array. */
-  toBytes(this: Uuid<Version, boolean, boolean>): UuidBytesForVersion<Version>;
+  toBytes<Receiver extends AnyUuid>(this: Receiver): UuidBytesForVersion<Receiver["version"]>;
   /** Write the UUID into caller-owned storage after validating the complete destination range. */
   toBytes<Output extends Uint8Array>(
-    this: Uuid<Version, boolean, boolean>,
+    this: AnyUuid,
     output: Output,
     outputOffset?: number,
   ): UuidOutput<Output> | UuidSlugError;
   /** Return a plain UUID slug, using base64url by default. */
-  toPlainSlug(
-    this: Uuid<Version, boolean, boolean>,
+  toPlainSlug<Receiver extends AnyUuid>(
+    this: Receiver,
     alphabet?: SlugAlphabet,
-  ): PlainUuidSlugForVersion<Version>;
+  ): PlainUuidSlugForVersion<Receiver["version"]>;
   /**
    * Return the masked UUIDv7 spelling using an explicit or preset masking codec.
    * External codec callbacks receive isolated bytes; malformed results return `invalid_options`,
@@ -286,6 +295,12 @@ export interface Uuid<
         : readonly [maskingCodec: UuidV7MaskingCodec]
       : readonly [maskingCodec: never]
   ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
+  // An explicit owner needs no preset evidence; omission still uses the guarded overload above.
+  /** Convert UUIDv7 with an explicit codec, including receivers with mixed preset capabilities. */
+  toMaskedSlug(
+    this: Uuid<Version, boolean, boolean>,
+    maskingCodec: 7 extends Version ? UuidV7MaskingCodec : never,
+  ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
   /** Decode UUIDv7 payload fields using an explicit or generated preset layout. */
   extractV7Payload(
     this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
@@ -295,10 +310,15 @@ export interface Uuid<
         : readonly [payloadLayout: UuidV7PayloadLayout]
       : readonly [payloadLayout: never]
   ): UuidV7Payload | UuidSlugError;
-  /** Serialize as canonical lowercase UUID text; capabilities are process-local. */
-  toJSON(
+  /** Interpret UUIDv7 with an explicit layout, including receivers with mixed preset capabilities. */
+  extractV7Payload(
     this: Uuid<Version, boolean, boolean>,
-  ): UuidStringForVersion<Version, typeof UUID_TEXT_LOWERCASE>;
+    payloadLayout: 7 extends Version ? UuidV7PayloadLayout : never,
+  ): UuidV7Payload | UuidSlugError;
+  /** Serialize as canonical lowercase UUID text; capabilities are process-local. */
+  toJSON<Receiver extends AnyUuid>(
+    this: Receiver,
+  ): UuidStringForVersion<Receiver["version"], typeof UUID_TEXT_LOWERCASE>;
 }
 
 /*
@@ -337,11 +357,9 @@ export type PlainUuidV7SlugInput<Input extends string | UuidSlugError> = RejectK
   Input,
   UuidText | MaskedUuidSlug | PlainUuidV4Slug
 >;
-/** Reject masked slugs and known UUIDv4 values; only UUIDv7 text or a plain UUIDv7 slug carries a timestamp. */
-export type UuidV7TimestampInput<Input extends string | UuidSlugError> = RejectKnownInput<
-  Input,
-  MaskedUuidSlug | UuidV4Text | PlainUuidV4Slug
->;
+/** Reject masked slugs and known UUIDv4 values across text and byte timestamp inputs. */
+export type UuidV7TimestampInput<Input extends string | UuidByteInput | UuidSlugError> =
+  RejectKnownInput<Input, MaskedUuidSlug | UuidV4Text | PlainUuidV4Slug | UuidV4Bytes>;
 /** Reject known UUIDv4 bytes; the operation needs UUIDv7 bytes. */
 export type UuidV7BytesInput<Input extends UuidByteInput | UuidSlugError> = RejectKnownInput<
   Input,
@@ -436,7 +454,7 @@ export interface UuidV7Generator {
   /** Generate an immutable UUIDv7 that remembers this generator's payload layout. */
   generateUuidV7Value(this: void, options?: undefined): Uuid<7, false, true> | UuidSlugError;
   /** Generate with supplied time or masking options; only a supplied codec is retained. */
-  generateUuidV7Value<const Options extends UuidV7GeneratorValueOptions>(
+  generateUuidV7Value<const Options extends UuidV7GeneratorValueOptions | undefined>(
     this: void,
     options: Options,
   ):
