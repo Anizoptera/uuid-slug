@@ -228,7 +228,11 @@ function typescriptDeprecations(source: string): ReadonlySet<string> {
   return deprecated;
 }
 
-export function validateVersion(version: string, tag?: string): void {
+export function validateVersion(
+  version: string,
+  tag?: string,
+  pendingReleaseVersion?: string,
+): void {
   const core = String.raw`(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)`;
   if (tag) {
     if (tag !== `v${version}`)
@@ -239,6 +243,10 @@ export function validateVersion(version: string, tag?: string): void {
       throw new Error(
         `Tagged release ${version} must use stable X.Y.Z without -dev. Return to development and recreate it with bun run release <X.Y.Z>.`,
       );
+  } else if (version === pendingReleaseVersion && new RegExp(`^${core}$`).test(version)) {
+    // Git runs the commit hook before creating the tag; only the release command's exact target
+    // may enter that interval. An actual tag always takes the stricter branch above.
+    return;
   } else if (!new RegExp(`^${core}-dev$`).test(version)) {
     throw new Error(`Development version ${version} must use X.Y.Z-dev.`);
   }
@@ -262,6 +270,7 @@ export function verifyEvolution(
   after: ApiReports,
   packageLevels: readonly ReleaseLevel[] = [],
   tagged = true,
+  pendingReleaseVersion?: string,
 ): void {
   const oldRust = sections(before.rust);
   const newRust = sections(after.rust);
@@ -283,7 +292,7 @@ export function verifyEvolution(
     oldTsNormalized !== newTsNormalized ||
     oldRustEntries.size !== newRustEntries.size ||
     [...oldRustEntries].some((entry) => !newRustEntries.has(entry));
-  validateVersion(currentVersion, tagged ? `v${currentVersion}` : undefined);
+  validateVersion(currentVersion, tagged ? `v${currentVersion}` : undefined, pendingReleaseVersion);
   if (!changed) return;
   const removed =
     [...oldTsEntries].some((entry) => !newTsEntries.has(entry)) ||
@@ -324,7 +333,8 @@ export async function checkReleasedApi(root: string, current: ApiReports): Promi
       `HEAD has multiple release tags (${tagsAtHead.join(", ")}); keep only the intended release tag before retrying.`,
     );
   const tagged = tagsAtHead[0] ?? "";
-  validateVersion(manifest.version, tagged || undefined);
+  const pendingReleaseVersion = process.env.UUID_SLUG_RELEASE_VERSION;
+  validateVersion(manifest.version, tagged || undefined, pendingReleaseVersion);
   await checkReleaseVersion(root, manifest.version);
   const tag = selectReleaseTag(tags, tagged);
   if (!tag) {
@@ -355,6 +365,7 @@ export async function checkReleasedApi(root: string, current: ApiReports): Promi
     current,
     packageLevels,
     !!tagged,
+    pendingReleaseVersion,
   );
   console.log(`Released API: compatible with ${tag}`);
 }

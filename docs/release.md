@@ -93,6 +93,7 @@ annotated tag message are the version number only. Do not encode publication sel
 add a release bot.
 The release command must reject a tag that differs from the manifest or lacks a nonempty changelog
 section. Publication copies that section verbatim.
+Use the release command to check the stable manifest before Git creates its tag; ordinary untagged work must use `-dev`.
 
 Keep `@anizoptera/publish-clean` as a registry dependency and publication in
 `.github/workflows/release.yml`, whose filename is bound to trusted publishing. Verification of the

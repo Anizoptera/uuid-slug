@@ -1,6 +1,6 @@
 // Reject release candidates whose versions, notes, or Git tags do not identify the checked commit.
 import { rejects } from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { chmod, mkdtemp, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { expect, test } from "bun:test";
@@ -8,6 +8,56 @@ import { command } from "../command";
 import { preflightRelease } from "../release-notes";
 import { releaseSelection } from "../release-selection";
 import { checkReleaseVersion, setDevelopmentVersion } from "../release-version";
+
+test(
+  "the release command scopes stable verification through the real pnpm commit and tag",
+  async () => {
+    const root = await mkdtemp(join(tmpdir(), "uuid-slug-release-command-"));
+    const project = resolve(import.meta.dir, "../..");
+    const original = '{"name":"release-fixture","version":"0.5.0-dev"}\n';
+    try {
+      await Bun.write(join(root, "package.json"), original);
+      await Bun.write(join(root, ".tool-versions"), Bun.file(join(project, ".tool-versions")));
+      await Bun.write(join(root, ".gitignore"), "node_modules/\nscripts/check-version.mjs\n");
+      await Bun.write(join(root, "node_modules/.bin/.keep"), "");
+      await symlink(join(project, "node_modules/.bin/pnpm"), join(root, "node_modules/.bin/pnpm"));
+      await command("git", ["init", "--quiet"], root);
+      await command("git", ["config", "user.name", "Release fixture"], root);
+      await command("git", ["config", "user.email", "fixture@example.invalid"], root);
+      await command("git", ["add", "package.json", ".tool-versions", ".gitignore"], root);
+      await command("git", ["commit", "--quiet", "-m", "fixture"], root);
+      // Exercise the production validator inside Git's actual pre-tag hook, not a simulated order.
+      await Bun.write(
+        join(root, "scripts/check-version.mjs"),
+        `import { validateVersion } from ${JSON.stringify(join(project, "scripts/api-evolution.ts"))};\nconst manifest = await Bun.file("package.json").json();\nvalidateVersion(manifest.version, undefined, process.env.UUID_SLUG_RELEASE_VERSION);\n`,
+      );
+      const hook = join(root, ".git/hooks/pre-commit");
+      await Bun.write(hook, "#!/bin/sh\nexec bun scripts/check-version.mjs\n");
+      await chmod(hook, 0o755);
+      await rejects(
+        command("pnpm", ["version", "--allow-same-version", "--message", "%s", "0.5.0"], root, {
+          UUID_SLUG_RELEASE_VERSION: "",
+        }),
+        (error: unknown) =>
+          error instanceof Error &&
+          error.cause instanceof Error &&
+          error.cause.message.includes("Development version 0.5.0 must use X.Y.Z-dev"),
+      );
+      expect(await command("git", ["tag", "--list", "v0.5.0"], root)).toBe("");
+      await Bun.write(join(root, "package.json"), original);
+      await command("git", ["add", "package.json"], root);
+      await command(process.execPath, [join(project, "scripts/release.ts"), "0.5.0"], root);
+      expect((await Bun.file(join(root, "package.json")).json()).version).toBe("0.5.0");
+      expect((await command("git", ["cat-file", "-t", "v0.5.0"], root)).trim()).toBe("tag");
+      expect(await command("git", ["rev-parse", "v0.5.0^{}"], root)).toBe(
+        await command("git", ["rev-parse", "HEAD"], root),
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+  process.env.CI ? 20_000 : 5_000,
+);
 
 test("release publication defaults to both packages and rejects invalid selections", () => {
   expect(releaseSelection(undefined)).toBe("both");

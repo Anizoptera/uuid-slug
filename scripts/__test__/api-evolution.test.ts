@@ -197,6 +197,12 @@ test("development and release versions use distinct forms", () => {
   expect(() => verifyEvolution("0.4.0", "0.4.1", unchanged, unchanged, [], false)).toThrow(
     "must use X.Y.Z-dev",
   );
+  expect(() =>
+    verifyEvolution("0.4.0", "0.4.1", unchanged, unchanged, [], false, "0.4.1"),
+  ).not.toThrow();
+  expect(() =>
+    verifyEvolution("0.4.0", "0.4.1", unchanged, unchanged, ["minor"], false, "0.4.1"),
+  ).toThrow("does not satisfy the minor API change");
   expect(() => verifyEvolution("0.4.0", "0.4.1-dev", unchanged, unchanged)).toThrow(
     /must use stable.*bun run release/s,
   );
@@ -210,6 +216,13 @@ test("a release tag must match the stable manifest version", () => {
   expect(() => validateVersion("0.5.0", "v0.5.1")).toThrow(
     /does not match package\.json.*bun run release/s,
   );
+});
+
+test("only the exact pending release can use a stable version before its tag exists", () => {
+  expect(() => validateVersion("0.5.0", undefined, "0.5.0")).not.toThrow();
+  expect(() => validateVersion("0.5.0")).toThrow("must use X.Y.Z-dev");
+  expect(() => validateVersion("0.5.0", undefined, "0.5.1")).toThrow("must use X.Y.Z-dev");
+  expect(() => validateVersion("0.5.0", "v0.5.1", "0.5.0")).toThrow("does not match");
 });
 
 test("tagged verification compares the predecessor, not the candidate", () => {

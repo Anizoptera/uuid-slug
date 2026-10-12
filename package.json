@@ -94,7 +94,7 @@
     "prepublishOnly": "bun run publish:clean",
     "preversion": "bun run check",
     "publish:clean": "printf '%s\\n' '\n  There is no local publish. Releases are published by CI, from a pushed tag.\n\n    bun run changelog v<next>   draft the section from the commits since the last tag\n    $EDITOR CHANGELOG.md        say what a consumer gets, not what changed in the tree\n    git commit -am <msg>        the bump aborts on a dirty tree\n    bun run release <next>      runs the lane, then commits and annotates the tag\n    git push --follow-tags      .github/workflows/release.yml publishes it\n\n  Why not from here: npm refuses to sign a publish that did not come from a cloud CI\n  runner, so a laptop release is permanently unsigned. This repo also holds no npm\n  token -- release.yml authenticates over OIDC against the trusted publisher bound to\n  that workflow filename.\n\n  The tag is the release. Nothing else publishes.\n' >&2; exit 1",
-    "release": "pnpm version --allow-same-version --message %s",
+    "release": "bun scripts/release.ts",
     "test": "bun run --parallel test:node test:bun",
     "test:bun": "bun scripts/test-bun.ts --parallel=2 __test__/*.bun.test.ts scripts/__test__/*.test.ts",
     "test:node": "vitest run",
