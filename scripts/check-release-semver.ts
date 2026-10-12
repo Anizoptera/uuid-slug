@@ -58,7 +58,7 @@ const work = await mkdtemp(join(tmpdir(), "uuid-slug-semver-check-"));
 try {
   const changed = await rustSemverDifference(
     root,
-    join(fixture, "seeded-mask"),
+    join(fixture, "current"),
     join(fixture, "baseline"),
     join(work, "changed"),
   );

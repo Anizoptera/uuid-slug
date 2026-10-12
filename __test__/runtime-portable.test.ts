@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * `runtime/portable.ts` is the adapter browsers and Deno resolve, and the one no lane executes as a
- * consequence of its own `#runtime` condition — vitest resolves `node`, `bun test` resolves `bun`.
- * It is imported directly here for that reason.
+ * Direct imports exercise browser capability selection even when Vitest itself runs on Node or Deno.
  *
  * These cases protect the portable adapter's selected path, not merely host capability presence.
  * Browser UUIDv4 text stays on the faster pooled byte path even where `randomUUID` exists;
@@ -19,7 +17,7 @@ const fill = (bytes: Uint8Array) => {
 /** Re-imported per case: the probe runs once at module load, so the stub must precede it. */
 async function adapterWith(cryptoStub: unknown, deno?: unknown) {
   vi.stubGlobal("crypto", cryptoStub);
-  if (deno !== undefined) vi.stubGlobal("Deno", deno);
+  vi.stubGlobal("Deno", deno);
   vi.resetModules();
   return (await import("../src/runtime/portable")).runtime;
 }

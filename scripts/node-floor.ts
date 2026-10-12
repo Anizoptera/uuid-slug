@@ -3,6 +3,7 @@ const { engines } = await Bun.file(new URL("../package.json", import.meta.url)).
 export const floor = /^>=(\d+)$/.exec(engines.node)?.[1];
 if (!floor) throw new Error("engines.node must declare a supported >=major floor.");
 const selected = process.env.SELECTED_NODE;
+const CURRENT_NODE = "current";
 if (!selected) throw new Error("SELECTED_NODE must identify a runtime matrix member.");
 if (selected === "matrix") {
   // Published majors, not LTS labels, define the coverage of an open-ended support range.
@@ -25,11 +26,10 @@ if (selected === "matrix") {
   ordered.sort(([left], [right]) => left - right);
   const versions = ordered.map(([, version]) => version.slice(1));
   // Keep newest Node unpinned without executing that same major twice.
-  versions[versions.length - 1] = "seeded-mask";
+  versions[versions.length - 1] = CURRENT_NODE;
   console.log(`matrix=${JSON.stringify([...new Set([`${floor}.0.0`, ...versions])])}`);
 } else {
-  const node =
-    selected === "floor" ? `${floor}.0.0` : selected === "seeded-mask" ? "current" : selected;
+  const node = selected === "floor" ? `${floor}.0.0` : selected;
   const runner = await Bun.file(
     new URL("../node_modules/vitest/package.json", import.meta.url),
   ).json();
@@ -37,7 +37,7 @@ if (selected === "matrix") {
     new URL("../node_modules/vite/package.json", import.meta.url),
   ).json();
   const tooling =
-    selected === "seeded-mask" ||
+    selected === CURRENT_NODE ||
     [runner, compiler].every((tool) => Bun.semver.satisfies(node, tool.engines.node));
   console.log(`node=${node}\nvitest=${tooling}`);
 }

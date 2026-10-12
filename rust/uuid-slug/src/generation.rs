@@ -484,10 +484,11 @@ mod tests {
         use std::time::{Duration, UNIX_EPOCH};
 
         let mut generator = UuidV7Generator::new().with_sub_millisecond_fraction_bits(12)?;
+        // The samples must remain distinct in every native SystemTime representation.
         let first = generator
-            .generate_uuid_v7_at_with_random_fill(UNIX_EPOCH + Duration::from_nanos(244), fill)?;
+            .generate_uuid_v7_at_with_random_fill(UNIX_EPOCH + Duration::from_nanos(200), fill)?;
         let second = generator
-            .generate_uuid_v7_at_with_random_fill(UNIX_EPOCH + Duration::from_nanos(245), fill)?;
+            .generate_uuid_v7_at_with_random_fill(UNIX_EPOCH + Duration::from_nanos(300), fill)?;
         let first_fraction = first
             .extract_uuid_v7_payload(generator.payload_layout())?
             .sub_millisecond_fraction
@@ -513,14 +514,14 @@ mod tests {
         );
         assert!(
             UuidV7Generator::new()
-                .generate_uuid_v7_at_with_random_fill(UNIX_EPOCH - Duration::from_nanos(1), fill)
+                .generate_uuid_v7_at_with_random_fill(UNIX_EPOCH - Duration::from_nanos(100), fill)
                 .is_err()
         );
         let mut output = [19; 16];
         assert!(
             UuidV7Generator::new()
                 .generate_uuid_v7_at_into_with_random_fill(
-                    UNIX_EPOCH - Duration::from_nanos(1),
+                    UNIX_EPOCH - Duration::from_nanos(100),
                     &mut output,
                     0,
                     fill,

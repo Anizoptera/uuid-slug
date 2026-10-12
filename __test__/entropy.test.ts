@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Where this package's randomness comes from, on the runtime vitest resolves — Node.
+ * Check entropy on Vitest's selected runtime; Node JIT-selection probes run only on Node.
  * `__test__/runtime.bun.test.ts` proves the same of Bun's adapter; see `entropy-probe.ts` for why
  * neither run substitutes for the other.
  *
@@ -28,10 +28,12 @@ import { generateUuidV4, generateUuidV4Bytes } from "../src/index";
 import { runtime as nodeRuntime } from "../src/runtime/node";
 
 describe("entropy source", () => {
-  it("selects native UUIDv4 only when Node actually runs without the JIT", () => {
-    // Real processes distinguish NODE_OPTIONS from CLI overrides. The V8 executable heap is an
-    // independent observation of the process mode, not a copy of the adapter's flag parser.
-    const script = `
+  it.runIf(!process.versions.deno)(
+    "selects native UUIDv4 only when Node actually runs without the JIT",
+    () => {
+      // Real processes distinguish NODE_OPTIONS from CLI overrides. The V8 executable heap is an
+      // independent observation of the process mode, not a copy of the adapter's flag parser.
+      const script = `
       import { strict as assert } from 'node:assert';
       import { getHeapStatistics } from 'node:v8';
       import { runtime } from './dist/node/runtime.js';
@@ -56,33 +58,41 @@ describe("entropy source", () => {
       assert.equal(extractUuidV7UnixMs(bounds.endInclusive), 0xffffffffffff);
       assert.equal(parsedTimestamps, disabled ? 2 : 0);
     `;
-    for (const [options, flags] of [
-      ["", []],
-      ["--jitless", []],
-      ['"--jitless"', []],
-      ["--jitless --no-jitless", []],
-      ["--no-jitless --jitless", []],
-      ["--jitless", ["--no-jitless"]],
-      ["--no-jitless", ["--jitless"]],
-      ["", ["--jitless", "--no-jitless"]],
-      ["", ["--no-jitless", "--jitless"]],
-    ] as const) {
-      const result = spawnSync(process.execPath, [...flags, "--input-type=module", "-e", script], {
-        cwd: new URL("..", import.meta.url),
-        env: { ...process.env, NODE_OPTIONS: options },
-        encoding: "utf8",
-      });
-      expect([result.status, result.stderr]).toEqual([0, ""]);
-    }
-  });
-  it("generates UUIDv4 text from the package's attributable pool on Node with the JIT", () => {
-    // With the JIT, native text is slower than the pooled portable path, so the adapter omits it and text
-    // must draw through `fillRandom`, where the source can be attributed.
-    expect(nodeRuntime.uuidV4).toBeUndefined();
-    const used = attributedSourcesFor(() => generateUuidV4());
-    expect(used).not.toEqual([]);
-    expect(insecureAmong(used)).toEqual([]);
-  });
+      for (const [options, flags] of [
+        ["", []],
+        ["--jitless", []],
+        ['"--jitless"', []],
+        ["--jitless --no-jitless", []],
+        ["--no-jitless --jitless", []],
+        ["--jitless", ["--no-jitless"]],
+        ["--no-jitless", ["--jitless"]],
+        ["", ["--jitless", "--no-jitless"]],
+        ["", ["--no-jitless", "--jitless"]],
+      ] as const) {
+        const result = spawnSync(
+          process.execPath,
+          [...flags, "--input-type=module", "-e", script],
+          {
+            cwd: new URL("..", import.meta.url),
+            env: { ...process.env, NODE_OPTIONS: options },
+            encoding: "utf8",
+          },
+        );
+        expect([result.status, result.stderr]).toEqual([0, ""]);
+      }
+    },
+  );
+  it.runIf(!process.versions.deno)(
+    "generates UUIDv4 text from the package's attributable pool on Node with the JIT",
+    () => {
+      // With the JIT, native text is slower than the pooled portable path, so the adapter omits it and text
+      // must draw through `fillRandom`, where the source can be attributed.
+      expect(nodeRuntime.uuidV4).toBeUndefined();
+      const used = attributedSourcesFor(() => generateUuidV4());
+      expect(used).not.toEqual([]);
+      expect(insecureAmong(used)).toEqual([]);
+    },
+  );
 
   it.each(generators)("never reaches for Math.random in %s", (_name, generate) => {
     expect(insecureAmong(sourcesUsedBy(generate))).toEqual([]);
