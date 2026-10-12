@@ -64,9 +64,9 @@ bump. Before the first release, keep the planned version unless the maintainer c
 ### Set the development version
 
 Run `bun run version:set <X.Y.Z-dev>` when the planned release version changes. The command updates
-`package.json`, `rust/Cargo.toml`, and `rust/Cargo.lock`, then checks that all three versions match.
-It restores all three files if the update fails. Agents run it whenever the rule above changes the
-target. A dev bump NEVER runs `bun run release` or creates a release commit or tag. Release tags and
+`package.json`, `rust/Cargo.toml`, and both Cargo lockfiles, then checks workspace version agreement.
+It restores all version files if an update fails.
+A dev bump NEVER runs `bun run release` or creates a release commit or tag. Release tags and
 published manifests never use the `-dev` suffix.
 
 The commit hook checks two independent rules. Generated declarations must match the reviewed

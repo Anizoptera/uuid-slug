@@ -35,6 +35,11 @@ test("one command updates every development version owner", async () => {
         join(root, "rust/Cargo.lock"),
         'version = 4\n\n[[package]]\nname = "uuid-slug"\nversion = "0.4.1-dev"\n\n[[package]]\nname = "uuid-slug-bridge"\nversion = "0.4.1-dev"\n',
       ),
+      Bun.write(
+        join(root, "bench/rust-competitors/Cargo.toml"),
+        '[package]\nname = "version-consumer"\nversion = "0.0.0"\n[dependencies]\nuuid-slug = { path = "../../rust/uuid-slug" }\n[workspace]\n',
+      ),
+      Bun.write(join(root, "bench/rust-competitors/src/main.rs"), "fn main() {}"),
       ...names.flatMap((name) => [
         Bun.write(
           join(root, `rust/${name}/Cargo.toml`),
@@ -44,9 +49,28 @@ test("one command updates every development version owner", async () => {
       ]),
     ]);
 
+    await command(
+      "cargo",
+      ["generate-lockfile", "--manifest-path", "bench/rust-competitors/Cargo.toml", "--offline"],
+      root,
+    );
+
     await setDevelopmentVersion(root, "0.4.0-dev");
     expect((await Bun.file(join(root, "package.json")).json()).version).toBe("0.4.0-dev");
     await checkReleaseVersion(root, "0.4.0-dev");
+    await command(
+      "cargo",
+      [
+        "metadata",
+        "--manifest-path",
+        "bench/rust-competitors/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--format-version",
+        "1",
+      ],
+      root,
+    );
 
     for (const [path, error] of [
       ["rust/Cargo.toml", /Rust version 0\.4\.1-dev does not match.*version:set/s],
@@ -61,28 +85,33 @@ test("one command updates every development version owner", async () => {
       await Bun.write(join(root, path), source);
     }
 
-    const before = await Promise.all(
-      ["package.json", "rust/Cargo.toml", "rust/Cargo.lock"].map((path) =>
-        Bun.file(join(root, path)).text(),
-      ),
-    );
+    const versionPaths = [
+      "package.json",
+      "rust/Cargo.toml",
+      "rust/Cargo.lock",
+      "bench/rust-competitors/Cargo.lock",
+    ];
+    const before = await Promise.all(versionPaths.map((path) => Bun.file(join(root, path)).text()));
     await rejects(
       setDevelopmentVersion(root, "0.5.0"),
       /version:set accepts only.*version:set <X\.Y\.Z-dev>.*bun run release <X\.Y\.Z>/s,
     );
-    const after = await Promise.all(
-      ["package.json", "rust/Cargo.toml", "rust/Cargo.lock"].map((path) =>
-        Bun.file(join(root, path)).text(),
-      ),
-    );
+    const after = await Promise.all(versionPaths.map((path) => Bun.file(join(root, path)).text()));
     expect(after).toEqual(before);
+
+    const benchmarkManifest = Bun.file(join(root, "bench/rust-competitors/Cargo.toml"));
+    const benchmarkText = await benchmarkManifest.text();
+    await Bun.write(benchmarkManifest, "invalid");
+    await rejects(setDevelopmentVersion(root, "0.4.2-dev"), /synchronize the release lockfile/);
+    expect(
+      await Promise.all(versionPaths.map((path) => Bun.file(join(root, path)).text())),
+    ).toEqual(before);
+    await Bun.write(benchmarkManifest, benchmarkText);
 
     await Bun.write(join(root, "rust/uuid-slug/Cargo.toml"), "invalid");
     await rejects(setDevelopmentVersion(root, "0.4.2-dev"), /synchronize the release lockfile/);
     const restored = await Promise.all(
-      ["package.json", "rust/Cargo.toml", "rust/Cargo.lock"].map((path) =>
-        Bun.file(join(root, path)).text(),
-      ),
+      versionPaths.map((path) => Bun.file(join(root, path)).text()),
     );
     expect(restored).toEqual(before);
   } finally {

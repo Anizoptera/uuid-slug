@@ -1,5 +1,6 @@
-// Keep the npm manifest, Cargo manifest, and lockfile on one version.
+// Keep npm, the Rust workspace and its locked path consumers on one version.
 import { isDeepStrictEqual } from "node:util";
+import { rm } from "node:fs/promises";
 
 interface Workspace {
   workspace: { package: { version: string } };
@@ -46,12 +47,18 @@ export async function syncReleaseVersion(cwd: string, version: string): Promise<
     await Bun.write(file, updated);
   }
   // Cargo updates only workspace package entries without resolving newer dependencies.
-  const child = Bun.spawn(
-    ["cargo", "update", "--workspace", "--manifest-path", "rust/Cargo.toml", "--offline"],
-    { cwd, stdout: "ignore", stderr: "inherit" },
-  );
-  if ((await child.exited) !== 0)
-    throw new Error("Cargo could not synchronize the release lockfile; do not tag.");
+  const manifests = ["rust/Cargo.toml"];
+  // The benchmark is a path consumer; its lock records the workspace package's version too.
+  if (await Bun.file(`${cwd}/bench/rust-competitors/Cargo.toml`).exists())
+    manifests.push("bench/rust-competitors/Cargo.toml");
+  for (const manifestPath of manifests) {
+    const child = Bun.spawn(
+      ["cargo", "update", "--workspace", "--manifest-path", manifestPath, "--offline"],
+      { cwd, stdout: "ignore", stderr: "inherit" },
+    );
+    if ((await child.exited) !== 0)
+      throw new Error("Cargo could not synchronize the release lockfile; do not tag.");
+  }
   await checkReleaseVersion(cwd, version);
 }
 
@@ -72,6 +79,8 @@ export async function setDevelopmentVersion(cwd: string, version: string): Promi
     "rust/Cargo.toml": cargoSource,
     "rust/Cargo.lock": lockSource,
   };
+  const benchmarkLock = Bun.file(`${cwd}/bench/rust-competitors/Cargo.lock`);
+  const benchmarkSource = (await benchmarkLock.exists()) ? await benchmarkLock.text() : undefined;
   const manifest = JSON.parse(packageSource) as Record<string, unknown> & { version?: unknown };
   if (typeof manifest.version !== "string") throw new Error("package.json has no string version.");
   const oldLiteral = `"version": ${JSON.stringify(manifest.version)}`;
@@ -87,6 +96,8 @@ export async function setDevelopmentVersion(cwd: string, version: string): Promi
     await syncReleaseVersion(cwd, version);
   } catch (error) {
     await Promise.all(paths.map((path) => Bun.write(`${cwd}/${path}`, originals[path])));
+    if (benchmarkSource !== undefined) await Bun.write(benchmarkLock, benchmarkSource);
+    else await rm(`${cwd}/bench/rust-competitors/Cargo.lock`, { force: true });
     throw error;
   }
 }
