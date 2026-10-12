@@ -336,7 +336,7 @@ try {
           [
             "bun",
             [
-              "test",
+              "scripts/test-bun.ts",
               "__test__/runtime-boundary.bun.test.ts",
               ...(group === "codec" ? ["__test__/codec-boundary.bun.test.ts"] : []),
             ],

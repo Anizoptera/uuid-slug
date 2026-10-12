@@ -179,7 +179,7 @@ jobs:
         with:
           deno-version: latest
       - if: steps.runtime.outputs.node == 'current'
-        run: bun run build && bun test __test__/*.bun.test.ts && bun run perf:check
+        run: bun run build && bun scripts/test-bun.ts __test__/*.bun.test.ts && bun run perf:check
       - if: steps.runtime.outputs.node == 'current'
         run: bun scripts/runtime-probe.ts runtime-reference.json
 

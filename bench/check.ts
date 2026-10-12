@@ -47,7 +47,7 @@ try {
     const proof = Bun.spawn(
       [
         process.execPath,
-        "test",
+        "scripts/test-bun.ts",
         "__test__/benchmark.bun.test.ts",
         "--test-name-pattern=primary resource guards",
       ],
