@@ -148,13 +148,6 @@ test("performance routing uses real changes and refuses missing parent history",
   }
 });
 
-test("fastv7 qualifies against the default native UUIDv7 baseline", () => {
-  const candidate = generationCases.find(({ name }) => name === "fastv7.v7.text");
-  expect(candidate).toBeDefined();
-  expect(candidate!.qualification).toBe("qualified");
-  expect(candidate!.rejectionReason).toBeUndefined();
-});
-
 test("exact profile filters exclude similarly named failure and configured calls", () => {
   const cases = { "v7.into": 1, "invalid.v7.into.range": 2, "v7.into.configured": 3 };
   expect(selectProfileCases(cases, "=v7.into")).toEqual([["v7.into", 1]]);

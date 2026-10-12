@@ -21,8 +21,9 @@ function encodeBase32Reference(bytes: Uint8Array, tail = 0, tailBits = 0): strin
   const chars = Math.ceil((bytes.length * 8 + tailBits) / 5);
   value <<= BigInt(chars * 5 - bytes.length * 8 - tailBits);
   let expected = "";
+  // RFC digit values must be independent of the production alphabet or both can agree on corrupt output.
   for (let i = chars - 1; i >= 0; i -= 1)
-    expected += BASE32HEX.chars[Number((value >> BigInt(i * 5)) & 31n)];
+    expected += "0123456789abcdefghijklmnopqrstuv"[Number((value >> BigInt(i * 5)) & 31n)];
   return expected;
 }
 
