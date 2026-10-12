@@ -262,7 +262,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Use the `typescript` package for project checking; TypeScript 7 is the main compiler.
   `typescript-floor` is limited to the TypeScript 5.0 packed-consumer check and tooling that needs
   legacy in-process compiler APIs such as the parser, printer, or language service.
-- Run Bun's built-in project checker as a separate lane beside TypeScript, not a replacement. Every Bun bundler check uses `check: true` or CLI `--check`; use `bun --check` for the project because its `check` package script otherwise takes precedence.
+- Run Bun's built-in project checker as a separate lane beside TypeScript, not a replacement. Inventory both `Bun.build` calls and Bun CLI argument arrays; every bundler check uses `check: true` or CLI `--check`. Use `bun --check` for the project because its `check` package script otherwise takes precedence.
 - Document every performance-motivated function and branch inside its owning implementation. Use
   ordinary code comments to state why the shape exists, the strongest live alternative it rejects,
   the boundary where the choice stops applying, and the change that requires remeasurement. Public
@@ -388,6 +388,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   adapter. Share entropy cases in `__test__/entropy-probe.ts`.
   Run Node Vitest through `bun run test:node`; focused runs use `node node_modules/vitest/vitest.mjs`
   so Bun does not select the test worker.
+- Keep portable clock cases and finer-precision cases together. Probe actual time representation, not OS names; test native Temporal inputs where available and preserve the configured UUIDv7 layout. For high-resolution clocks, combine whole milliseconds and fractions separately: adding the epoch first can round across a fraction boundary.
 - Keep development native interop as one discovered research matrix across supported installed
   Node, Bun and Deno Node-API/FFI boundaries. Run one corpus with nonzero evidence per lane; use
   measurements to improve the adapters, never to discard one from a volatile machine snapshot.

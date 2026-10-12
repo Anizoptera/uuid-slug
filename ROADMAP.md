@@ -10,15 +10,12 @@ creating and pushing the release version and tag, publishing to npm and finalizi
 These remote operations and the temporary npm-only selector are authorized; do not publish the Rust crate.
 Update npm and Rust dependencies, including build and development tools, and update CI actions through `actions-up` before release; preserve required compatibility-test fixtures and consumer contracts.
 Use the latest Bun, check the project with Bun and TypeScript separately, and enable type checking in every Bun bundler verification.
+Verify finer time precision where the OS or runtime supplies it, including supplied instants and configured clocks; retain portable cases and the caller-selected payload layout.
 Use `docs/release.md` for preparation and recovery; this plan does not change existing contracts or checks.
-
-## Verified local baseline
-
-- [x] Local correctness, packed consumers, tree shaking, native interop, both browser WebAssembly profiles and version agreement pass. Evidence: `bench/reports/composition-cleanup-final.log` and `bench/reports/local-release-*.log`; reuse only for unchanged code and toolchains. Coverage is limited to installed hosts; tree-shaking proof covers module boundaries, not individual methods of returned codec objects.
 
 ## Authorized release steps
 
-- [ ] Repair CI runtime setup: the default packed-artifact check requires Deno in the main check and credentials-free release preparation. Review the corrected candidate's runtime, OS and architecture results, including Windows; local evidence cannot replace candidate CI.
+- [ ] Correct high-resolution JavaScript clock rounding; verify separate native clock components, portable and fine supplied-time boundaries, and precision-loss failure controls. Require the corrected candidate's full runtime, OS, architecture and browser CI; local evidence cannot replace candidate CI.
 - [x] Updated dependency and Actions checks pass locally, including separate TypeScript and Bun project and packed-consumer checks, checked Bun builds and their failing control. Evidence: `bench/reports/release-updated-complete.log`, `release-packed-bun-checker.log`, `release-checked-bundle-red.log` and `release-deno-updated-complete.log`. TypeScript 5 remains the compatibility fixture; Cargo's `crypto-common` requires `generic-array =0.14.7` (`release-rust-generic-array.log`). Require corrected candidate CI before release.
 - [ ] Before the release tag push, set `RELEASE_PACKAGES_ON_TAG=npm` and verify readback; manual dispatch must also select npm. The prior variable is absent: restore that state after finalization so this release does not change later publication defaults.
 - [ ] With green candidate CI, create `0.4.0` through the release command and verify its annotated tag identifies the checked-out commit. Push the release and require credentials-free archive verification before publication; retain both archives' exact bytes per `docs/release.md`.
