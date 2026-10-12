@@ -42,7 +42,8 @@ known-misuse rejection, generation effects and executable JavaScript.
 - [x] Bridge supported extraction and generation unions; preserve whole-union branded rejection and the undefined-options generation exception.
 - [x] Regenerate declarations, inspect source and emitted editor help, prove executable JavaScript unchanged and execute source and packed consumers on both supported compilers.
 - [x] Run the complete existing check and inspect every diff hunk; `bench/reports/composition-complete.log` records the zero exit after removing the unnecessary output-writer receiver generic without suppressions. Preserve unresolved performance and release holds.
-- [ ] Challenge preset independence and bound-method compatibility before final closure; a codec preset must not depend on retained layout, or a layout on retained codec.
+- [x] Challenge preset independence and bound-method compatibility; retained red diagnostics expose unrelated-capability receiver constraints and overload-order binding failures. Receivers depend only on the used preset and bound omission remains valid.
+- [x] Regenerate and review the preset-order declarations and editor help; `bench/reports/composition-preset-complete.log` records the complete check's zero exit. Executable JavaScript remains unchanged, and unsuppressed negative controls fail at the intended expressions under the packed-consumer compiler settings.
 
 ## Release holds: no release operation is authorized
 

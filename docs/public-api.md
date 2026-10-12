@@ -375,6 +375,8 @@ layout, rather than making ordinary calls pay for those controls or adding a dup
   A UUID generated through a generator retains an immutable copy of that generator's payload layout
   for later payload inspection; other UUIDs must provide the layout. Types must distinguish
   calls with and without each preset so omission is rejected before runtime.
+  Codec and payload-layout presets are independent: omission may depend only on the preset that
+  operation uses. Keep omission valid when a preset method is bound to its UUID receiver.
 - Retaining a masking codec keeps its key-bearing state reachable for the parsed UUID's lifetime.
   Only explicit construction with that codec may incur this retention. Serialization preserves the
   UUID value but not codec, payload layout, source spelling, or other construction context, so a
@@ -542,7 +544,8 @@ layout, rather than making ordinary calls pay for those controls or adding a dup
   generation call with an explicit time, a generator, caller-owned output, or custom entropy keeps
   the union, as do generator and masking-codec methods, whose custom clocks and configured
   timestamp ranges can fail.
-  Forwarded options may be undefined: that branch keeps the ordinary default's result and effect.
+  Immutable UUIDv7 and plain-slug generation accept forwarded options that may be undefined;
+  that branch keeps the ordinary default's result and effect.
   A union containing configured and default calls therefore carries error values and may also throw
   `rng_unavailable` on its default branch. Do not invent retained configuration from that branch.
 - Classify sentinel-list shape and duplicate names or UUIDs as `invalid_sentinel`. Keep malformed

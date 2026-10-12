@@ -919,3 +919,11 @@ declare const optionalGeneratorValueOptions: UuidSlugApi.UuidV7GeneratorValueOpt
 generator.generateUuidV7Value(optionalGeneratorValueOptions);
 declare const alphabetOrOptions: UuidSlugApi.SlugAlphabet | GeneratePlainUuidV7SlugOptions;
 generatePlainUuidV7Slug(alphabetOrOptions);
+
+// Independent retained capabilities must not constrain each other's default calls.
+declare const sharedCodecPreset: Uuid<7, true> | Uuid<7, true, true>;
+sharedCodecPreset.toMaskedSlug();
+declare const sharedLayoutPreset: Uuid<7, false, true> | Uuid<7, true, true>;
+sharedLayoutPreset.extractV7Payload();
+generatedUuidValue.toMaskedSlug.bind(generatedUuidValue)();
+generatedUuidValue.extractV7Payload.bind(generatedUuidValue)();

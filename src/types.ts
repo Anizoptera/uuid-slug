@@ -282,38 +282,39 @@ export interface Uuid<
     this: Receiver,
     alphabet?: SlugAlphabet,
   ): PlainUuidSlugForVersion<Receiver["version"]>;
+  // Explicit configuration needs no preset evidence. Keep the preset overload last so bind/call
+  // retain its omission rule; the other retained capability cannot affect this operation.
+  /** Convert UUIDv7 with an explicit codec, including receivers with mixed preset capabilities. */
+  toMaskedSlug(
+    this: Uuid<Version, boolean, boolean>,
+    maskingCodec: 7 extends Version ? UuidV7MaskingCodec : never,
+  ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
   /**
    * Return the masked UUIDv7 spelling using an explicit or preset masking codec.
    * External codec callbacks receive isolated bytes; malformed results return `invalid_options`,
    * and thrown exceptions remain available as the error's `cause`.
    */
   toMaskedSlug(
-    this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
+    this: Uuid<Version, HasMaskingCodec, boolean>,
     ...codec: 7 extends Version
       ? [HasMaskingCodec] extends [true]
         ? readonly [maskingCodec?: UuidV7MaskingCodec]
         : readonly [maskingCodec: UuidV7MaskingCodec]
       : readonly [maskingCodec: never]
   ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
-  // An explicit owner needs no preset evidence; omission still uses the guarded overload above.
-  /** Convert UUIDv7 with an explicit codec, including receivers with mixed preset capabilities. */
-  toMaskedSlug(
+  /** Interpret UUIDv7 with an explicit layout, including receivers with mixed preset capabilities. */
+  extractV7Payload(
     this: Uuid<Version, boolean, boolean>,
-    maskingCodec: 7 extends Version ? UuidV7MaskingCodec : never,
-  ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
+    payloadLayout: 7 extends Version ? UuidV7PayloadLayout : never,
+  ): UuidV7Payload | UuidSlugError;
   /** Decode UUIDv7 payload fields using an explicit or generated preset layout. */
   extractV7Payload(
-    this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
+    this: Uuid<Version, boolean, HasPayloadLayout>,
     ...layout: 7 extends Version
       ? [HasPayloadLayout] extends [true]
         ? readonly [payloadLayout?: UuidV7PayloadLayout]
         : readonly [payloadLayout: UuidV7PayloadLayout]
       : readonly [payloadLayout: never]
-  ): UuidV7Payload | UuidSlugError;
-  /** Interpret UUIDv7 with an explicit layout, including receivers with mixed preset capabilities. */
-  extractV7Payload(
-    this: Uuid<Version, boolean, boolean>,
-    payloadLayout: 7 extends Version ? UuidV7PayloadLayout : never,
   ): UuidV7Payload | UuidSlugError;
   /** Serialize as canonical lowercase UUID text; capabilities are process-local. */
   toJSON<Receiver extends AnyUuid>(

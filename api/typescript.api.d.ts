@@ -358,28 +358,28 @@ export declare interface Uuid<
     alphabet?: SlugAlphabet,
   ): PlainUuidSlugForVersion<Receiver["version"]>;
   toMaskedSlug(
-    this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
+    this: Uuid<Version, boolean, boolean>,
+    maskingCodec: 7 extends Version ? UuidV7MaskingCodec : never,
+  ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
+  toMaskedSlug(
+    this: Uuid<Version, HasMaskingCodec, boolean>,
     ...codec: 7 extends Version
       ? [HasMaskingCodec] extends [true]
         ? readonly [maskingCodec?: UuidV7MaskingCodec]
         : readonly [maskingCodec: UuidV7MaskingCodec]
       : readonly [maskingCodec: never]
   ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
-  toMaskedSlug(
-    this: Uuid<Version, boolean, boolean>,
-    maskingCodec: 7 extends Version ? UuidV7MaskingCodec : never,
-  ): MaskedOrSentinelUuidV7Slug | UuidSlugError;
   extractV7Payload(
-    this: Uuid<Version, HasMaskingCodec, HasPayloadLayout>,
+    this: Uuid<Version, boolean, boolean>,
+    payloadLayout: 7 extends Version ? UuidV7PayloadLayout : never,
+  ): UuidV7Payload | UuidSlugError;
+  extractV7Payload(
+    this: Uuid<Version, boolean, HasPayloadLayout>,
     ...layout: 7 extends Version
       ? [HasPayloadLayout] extends [true]
         ? readonly [payloadLayout?: UuidV7PayloadLayout]
         : readonly [payloadLayout: UuidV7PayloadLayout]
       : readonly [payloadLayout: never]
-  ): UuidV7Payload | UuidSlugError;
-  extractV7Payload(
-    this: Uuid<Version, boolean, boolean>,
-    payloadLayout: 7 extends Version ? UuidV7PayloadLayout : never,
   ): UuidV7Payload | UuidSlugError;
   toJSON<Receiver extends AnyUuid>(
     this: Receiver,

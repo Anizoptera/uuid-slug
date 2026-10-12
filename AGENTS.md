@@ -66,6 +66,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   distinguish retained capabilities in TypeScript's structural assignability.
 - Test supported unions and optional-options forwarding, not just each branch separately. Receiver
   repairs must preserve inferred versions and reject borrowed methods that invent version or preset facts.
+  Vary retained capabilities independently and check bound preset calls; overload order affects bind/call.
 - Anchor overload edits at their enclosing declaration and signature boundary; compare emitted
   JavaScript before accepting a type-only repair so a matching implementation line cannot change behavior.
 - Finish only when source calls, runtime paths, emitted declarations, editor help, packed consumers,

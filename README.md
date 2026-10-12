@@ -726,6 +726,7 @@ Use `parseUuid` when one UUID needs several operations. It validates and copies 
 Serialization returns canonical UUID text and intentionally drops the codec and payload layout.
 Mixed-version parsed values support text, byte, plain-slug and inspection calls without narrowing.
 When only some values retain a codec or payload layout, pass that configuration explicitly.
+Each preset is independent; binding its method to the UUID preserves the corresponding default.
 
 ```ts
 const uuid = parseUuid(input, codec);
@@ -831,6 +832,10 @@ Also exported from the package root:
   `UuidSlugErrorCode` types the `code` property; `isUuidSlugError` recognizes package errors across
   JavaScript realms and duplicate package copies.
 - `BASE64URL` and `BASE32HEX` select slug output without copying string literals.
+
+When forwarding optional settings to `generateUuidV7Value` or `generatePlainUuidV7Slug`,
+an undefined value uses default generation and may throw `rng_unavailable`.
+Configured branches return failures as values; handle both effects when the settings can be absent.
 
 ### Masking codec options
 
