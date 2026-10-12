@@ -175,6 +175,10 @@ jobs:
         with:
           bun-version: latest
       - if: steps.runtime.outputs.node == 'current'
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: latest
+      - if: steps.runtime.outputs.node == 'current'
         run: bun run build && bun test __test__/*.bun.test.ts && bun run perf:check
       - if: steps.runtime.outputs.node == 'current'
         run: bun scripts/runtime-probe.ts runtime-reference.json
