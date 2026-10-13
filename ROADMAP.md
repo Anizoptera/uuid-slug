@@ -2,6 +2,8 @@
 
 ## Release notes
 
+- [x] Audit the release/compatibility test files and runner routing; require owned changes and parsed Markdown, retain distinct identity/history/version failures, and prove the old owner assertion accepts a wrong-owner mutation that the repaired test rejects. Retry coverage changes Git history after retaining inputs; verification uses the existing hook.
+
 - [x] Review the combined release-notes diff from `65992d1^`; retain the unresolved hidden-type omission below and protect the repaired default-export, ordering, preparation-selection and first-publication cases.
 - [ ] Resolve hidden-type changes without publishing private helper inventories: `Options.at` becoming required leaves the public `generate(options: Options)` line unchanged and currently produces an empty diff; the consumer-output design remains open.
 - [x] Classify root export-condition reordering as breaking and show known archive sizes without a predecessor; both existing regression cases fail before the repair and pass afterward.

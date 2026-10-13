@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import { rejects } from "node:assert/strict";
+import { fromMarkdown } from "mdast-util-from-markdown";
 import {
   apiDiff,
   minimumRelease,
@@ -13,9 +14,13 @@ import type { ReleaseReport } from "../release-report";
 
 test("release API diff exposes removals and additions without restating unchanged lines", () => {
   expect(
-    apiDiff("export declare function old(): void;\nshared", "shared\nexport type New = 1;\n"),
+    apiDiff(
+      "export declare function old(): void;\nexport declare function shared(): void;",
+      "export declare function shared(): void;\nexport type New = 1;\n",
+    ),
   ).toBe("```diff\n- export declare function old(): void;\n+ export type New = 1;\n```");
-  expect(apiDiff("same\n", "same\n")).toBe("No packaged TypeScript declaration changes.");
+  const stable = "export declare const stable: number;";
+  expect(apiDiff(stable, stable)).toBe("No packaged TypeScript declaration changes.");
 });
 
 test("public release diff omits private helpers while retaining changed exported members", () => {
@@ -31,7 +36,8 @@ test("public release diff omits private helpers while retaining changed exported
   expect(report).not.toContain("Helper");
   expect(report).not.toContain("unchanged");
   expect(report).not.toContain("[brand]");
-  expect(report).toContain("[Symbol.toStringTag]");
+  expect(report).toContain("- Value: readonly [Symbol.toStringTag]: 'before';");
+  expect(report).toContain("+ Value: readonly [Symbol.toStringTag]: 'after';");
   expect(publicApiDifference(before, before)).toBe("");
 });
 
@@ -131,6 +137,9 @@ test("publication notes use only the latest comparison and selected package", ()
   const both = consumerReleaseNotes("Upgrade instructions.\n", report, "both");
   expect(both).toContain("crate change");
   expect(both).toContain("replacement()");
+  expect(
+    consumerReleaseNotes("First release.\n", { current: { npm: 12 }, comparisons: [] }, "npm"),
+  ).toContain("| npm | 12 B |");
 });
 test("stable version distance must satisfy the derived release level", () => {
   expect(satisfiesMinimum("0.3.0", "0.4.0", "minor")).toBe(true);
@@ -145,17 +154,26 @@ test("multiline declaration diffs preserve content and cannot close their own fe
   const before = "export type Text = `old`;";
   const after = 'export interface Text {\n value: "```";\n}';
   const report = apiDiff(before, after);
-  expect(report).toContain("- export type Text = `old`;");
-  expect(report).toContain('+ Text: value: "```";');
-  expect(report.startsWith("````diff\n")).toBe(true);
-  expect(report.endsWith("\n````")).toBe(true);
-  expect(report).not.toContain("(added)");
+  const document = fromMarkdown(report);
+  expect(document.children).toHaveLength(1);
+  const block = document.children[0];
+  expect(block?.type).toBe("code");
+  if (block?.type === "code") {
+    expect(block.lang).toBe("diff");
+    expect(block.value).toContain("- export type Text = `old`;");
+    expect(block.value).toContain('+ Text: value: "```";');
+    for (const line of block.value.split("\n")) expect(line).toMatch(/^[+-] /);
+  }
 });
 
 test("API comparison detects moved members and changed overload priority", () => {
   const before = "export interface A {\n x: string;\n}\nexport interface B {\n y: number;\n}";
   const after = "export interface A {\n y: number;\n}\nexport interface B {\n x: string;\n}";
-  expect(apiDiff(before, after)).not.toContain("No packaged");
+  const movedMembers = apiDiff(before, after);
+  expect(movedMembers).toContain("- A: x: string;");
+  expect(movedMembers).toContain("+ B: x: string;");
+  expect(movedMembers).toContain("- B: y: number;");
+  expect(movedMembers).toContain("+ A: y: number;");
   const narrow = "export declare function f(x: string): 1;";
   const broad = "export declare function f(x: unknown): 2;";
   const unchanged = "export declare function unrelated(): boolean;";
@@ -163,7 +181,9 @@ test("API comparison detects moved members and changed overload priority", () =>
   expect(moved).toContain("- " + narrow);
   expect(moved).toContain("+ " + broad);
   expect(moved).not.toContain("unrelated");
-  expect(apiDiff(`${narrow}\n${narrow}`, narrow)).not.toContain("No packaged");
+  const repeated = apiDiff(`${narrow}\n${narrow}`, narrow);
+  expect(repeated.split("- " + narrow)).toHaveLength(3);
+  expect(repeated.split("+ " + narrow)).toHaveLength(2);
 });
 
 test("hyphens in build metadata do not waive stable compatibility", () => {
@@ -200,6 +220,7 @@ test("retained archives identify the selected package version and Git source", a
   expect(await verifyNpmIdentity(npm, "pkg", "1.2.3")).toMatchObject({ version: "1.2.3" });
   await verifyCrateIdentity(crate, "1.2.3", "abc");
   await rejects(verifyNpmIdentity(npm, "pkg", "1.2.4"), /does not identify/);
+  await rejects(verifyNpmIdentity(npm, "other-package", "1.2.3"), /does not identify/);
   await rejects(verifyCrateIdentity(crate, "1.2.3", "def"), /does not identify/);
   await rejects(
     verifyCrateIdentity(

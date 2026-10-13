@@ -8,6 +8,7 @@ import { tagReleaseFixture } from "../../__test__/release-fixture";
 import { command } from "../command";
 import { collectReleaseInputs } from "../release-inputs";
 import { readRetainedArchive, registryVersion } from "../release-inputs";
+import { releaseComparisons } from "../release-history";
 
 test("retained archive consumers reject changed bytes and unsupported digests", async () => {
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-retained-"));
@@ -77,6 +78,13 @@ test("input retries preserve their comparison basis and reject changed candidate
     const record = join(root, "history/release-inputs.json");
     await Bun.write(record, JSON.stringify(initial));
     const collect = () => collectReleaseInputs(root, "v1.2.3", join(root, "history"), candidate);
+    expect(await collect()).toEqual(initial);
+    await command(
+      "git",
+      ["-c", "tag.gpgsign=false", "tag", "-a", "v1.2.2", "-m", "Historical release"],
+      root,
+    );
+    expect(await releaseComparisons(root, "v1.2.3")).toEqual({ immediate: "v1.2.2" });
     expect(await collect()).toEqual(initial);
     await Bun.write(record, JSON.stringify({ ...initial, commit: "different commit" }));
     await rejects(collect(), /different package, version, tag, or commit/);
