@@ -1,5 +1,16 @@
 # Remaining work
 
+## README wording
+
+- [x] Repair writing rules and related explanations: retain precise terms, describe concrete failures, and keep general security advice out of the opening.
+- [x] Shorten README wording without changing the exact slogan, identifier formats or public API.
+- [ ] Complete masked generation and decoding examples; name the plain and masked readers beside format-selection advice.
+- [ ] Separate output choices from accepted UUID text; remove the duplicate diagram only after verifying the table preserves its distinctions.
+- [ ] Move sentinel, buffer and payload recipes to the existing reference; read each destination before removing the source and preserve limits, ownership and reasons.
+- [ ] Consolidate ordering explanations, state the masking range in useful units, and describe the existing stored-ID compatibility policy without adding guarantees.
+- [ ] Highlight unchanged database keys, compact URLs and filenames, offline IDs, buffers, types, migration and runtime support once where each changes a reader's choice.
+- [ ] Run the final examples, check links and desktop layout, inspect the total diff, and commit through the complete check hook.
+
 ## Release notes
 
 Show consumers the minimal API changes from the latest release in Markdown diff blocks.

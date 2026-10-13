@@ -14,7 +14,7 @@ owns the wire format, [security.md](security.md) owns trust boundaries, and
 | UUID text | Default output is 36-character hyphenated lowercase text; callers may request uppercase. Parsers also accept compact text, UUID URNs, brace-wrapped text, and mixed case. | [RFC 9562 §4](https://www.rfc-editor.org/rfc/rfc9562.html#section-4) permits uppercase, lowercase, and mixed case; it does not choose a default case. This package emits lowercase by default to give each UUID one stable spelling, match common UUID implementations, and align with lowercase base32hex. | `UuidString`, `UuidV4String`, `UuidV7String`; parameter `uuid` on universal converters and `uuidString` on text-only operations. |
 | UUID bytes | Exactly 16 bytes for a standalone value; an explicit offset selects 16 bytes from a larger array. | Successful owned output is a plain `Uint8Array`. Caller-owned output is returned unchanged by identity and is not written on failure. | `UuidBytes`, `UuidV4Bytes`, `UuidV7Bytes`; parameter `uuid` on universal converters and `uuidBytes` on byte-only operations. |
 | Plain UUID slug | 22 unpadded base64url characters or 26 lowercase base32hex characters. | Keyless and lossless for any UUID. It contains all 128 UUID bits. Noncanonical padding and spellings are rejected. | `PlainUuidSlug`, `PlainUuidV4Slug`, `PlainUuidV7Slug`; parameter `plainUuidSlug` when the source must be known. |
-| Masked UUIDv7 slug | 22 base64url characters or 27 lowercase base32hex characters. | Requires its masking codec, carries the UUIDv7 payload plus a 16-bit check, and keeps a configured 2^42-millisecond UUIDv7 timestamp range. It proves format integrity, not issuance. | `MaskedUuidV7Slug`; parameter `maskedUuidSlug` when the source must be known. |
+| Masked UUIDv7 slug | 22 base64url characters or 27 lowercase base32hex characters. | Requires its masking codec, carries the UUIDv7 payload plus a 16-bit check, and keeps a configured 2^42-millisecond UUIDv7 timestamp range. Incorrect keys can pass the check by chance. | `MaskedUuidV7Slug`; parameter `maskedUuidSlug` when the source must be known. |
 | Sentinel UUIDv7 slug | A configured UUIDv7 written as its ordinary 22- or 26-character plain slug. | It is a plain slug, not a masked payload. Every plain-slug operation accepts it. A masking codec only preserves its spelling when writing masked results. | `SentinelUuidV7Slug`; masking results use `MaskedOrSentinelUuidV7Slug`. |
 
 `base64url` and `base32hex` name alphabets, not value kinds. A length selects the alphabet only
@@ -475,8 +475,8 @@ layout, rather than making ordinary calls pay for those controls or adding a dup
 - Use structural checks where values can cross realms or duplicate package copies. An
   `instanceof` fast path is acceptable only when the same interface has a correct cross-realm path
   and measurement shows the fast path removes meaningful work.
-- A brand proves only the property the package checked. Never imply issuance, authenticity,
-  timestamp validity, ownership, or secrecy from syntax alone.
+- A brand records only the checked property. Keep format checks separate from record lookup,
+  access checks, timestamp-window validation and key selection.
 
 ## Failures and effects
 
@@ -512,7 +512,7 @@ layout, rather than making ordinary calls pay for those controls or adding a dup
   inference separately from JavaScript behavior. Follow `bench/README.md` for runtime coverage,
   repetitions, and failure controls; a predicate microbenchmark cannot establish total call cost.
 - Mark every `UuidSlugError` through one immutable prototype property named `__failure`. Test that
-  marker first with `=== true`; its meaning is package failure routing, not authentication. For an
+  marker first with `=== true` to recognize a composable package error. For an
   unmarked value, test local `instanceof Error` first, then use `Error.isError` when available or the
   cross-realm intrinsic Error tag otherwise; finally require the package error name and a known code. Put a
   successful operation's existing string or byte check before this general detector so ordinary

@@ -97,9 +97,8 @@ After the last round, write `right0 right1` to bytes 0–7 and `left0 left1` to 
 orientation makes the same routine decrypt when it consumes the round keys in reverse order.
 The Feistel structure supplies reversibility independently of the round function's security.
 
-The HalfSipHash reference-vector tests constrain the round function's implementation. They do
-not establish the security of this key schedule or four-round network. Masking is an
-obfuscation feature, not an authenticated encryption interface.
+The HalfSipHash reference vectors check the round function, not the cryptographic strength of
+this key schedule or four-round network. See [security limits](security.md).
 
 `createCustomUuidV7Mask` adapts separate forward and reverse callbacks to the same block layout.
 It supplies an isolated input, requires a 16-byte result or package error, and checks representative
@@ -122,9 +121,8 @@ Decoding extracts the outer tag bits, reverses the mix, reads the inner tag, res
 bits, and adds the selected range start. It recomputes the tag from the restored UUID and
 compares both parts. A mismatch returns `invalid_uuid_slug`.
 
-The short tag rejects many incorrect decodes, but it is not authentication. About one random
-22-character string in 65,536 passes one mask's check. A passing result is a candidate for a
-store lookup; it does not establish that anyone issued the UUID.
+About one random 22-character base64url string in 65,536 passes one mask's 16-bit check.
+An incorrect key can therefore return a UUID instead of an error, including an existing record's ID.
 
 ## Mask selection and sentinels
 

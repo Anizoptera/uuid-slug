@@ -11,11 +11,11 @@ grant no permission. Other remote writes (pushes, pull requests, settings) also 
 Fix wrong, missing or unreachable instructions first, then `ROADMAP.md`, then implementation.
 Put the trigger and required action in visible `AGENTS.md`; unread rules cannot prevent mistakes.
 
-Standalone benchmarks, profiles, candidate screens, calibration and optimization require an explicit maintainer request naming the consumer call.
-Release preparation, gaps, failed misuse probes, old plans, correctness repairs and procedures grant no authority.
-Revisit rejected or inconclusive experiments only with new evidence changing the question or mechanism;
-rewrites, longer runs and different warm-ups are not new evidence. Keep required regression checks.
-New measurements and resource-parity targets NEVER gate release preparation; report dependent repairs as unresolved.
+Standalone benchmarks, profiles, screens, calibration and optimization need an explicit request naming the consumer call.
+Release preparation, gaps, probes, plans, repairs and procedures grant no authority.
+Revisit rejected or inconclusive experiments only with new evidence changing the question or mechanism,
+not rewrites, longer runs or warm-ups. Keep regression checks; new measurements and resource-parity targets
+must not gate release preparation. Report dependent repairs as unresolved.
 
 Edit public docs, including README and generated docs, only with an explicit maintainer request or approval.
 Otherwise propose the exact edit and wait. Code changes, stale text, failed checks and sync instructions do not authorize edits.
@@ -133,8 +133,8 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   Preserve length-based alphabet inference for plain decoding.
 - Masked slugs and sentinels are core functionality. Sentinels use precomputed plain slugs per
   codec and are never masked; registered sentinels retain the full UUIDv7 timestamp range. Decode
-  returns the first passing candidate in caller-specified key order, never proof
-  of issuance. Do not reject multiple matches or append fallback masks on the caller's behalf.
+  returns the first candidate whose 16-bit check passes, in caller-specified key order;
+  incorrect keys can pass by chance. Do not reject multiple matches or append fallback masks.
 - Every decoder must accept every value that a supported matching encoder can produce. Options
   may add accepted forms; they must not remove existing ones. Reject forms no encoder produces.
 - Before changing accepted UUID forms, normalization or text-case presets, read `docs/public-api.md`
@@ -174,11 +174,10 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Read `docs/public-api.md` §Package entries before changing exports or bundling. Keep each export
   path aligned with its owning source and built module. Use a facade only to hide internal exports
   or join owners. Retain a subpath only while packed measurements show lower consumer work.
-- Tree-shaking checks start from named root imports for each distinct consumer job. Execute every
-  result, require unrelated heavy code to be absent, and compare independent optimizer families;
-  subpaths are the direct-ESM alternative, not a substitute for a removable root graph.
-  Compare decoder-only bundles before adding writer functions to shared alphabet metadata;
-  a conversion speedup cannot justify retaining encoding code for a caller that only decodes.
+- Check tree shaking from named root imports for each consumer job. Execute each bundle,
+  exclude unrelated heavy code and compare independent optimizers. Subpaths serve direct ESM,
+  never replace removable root imports. Compare decoder-only bundles before adding writers to
+  shared alphabet metadata; conversion speed cannot justify retaining unused encoding code.
 - Read `docs/cross-language.md` §JavaScript packaging before changing emitted module boundaries,
   internal exports, moved code, import-time initialization, tsdown, minification, source maps,
   `sideEffects`, or optimizer annotations. Before deleting a moved file, account for every original
@@ -186,18 +185,15 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   source-owned `PURE` and `NO_SIDE_EFFECTS` annotation.
 - Public prose names caller-facing tokens such as `"base32hex"`; executable examples pass the
   exported semantic constant. Documentation-alignment gates are ruled out; test API behavior instead.
-- Hoist every repeated semantic runtime string in a file, including alphabet names and diagnostics, to
-  one named scalar constant in its narrowest semantic owner. Build internal tuples and sets from those
-  names only when runtime work requires them; never recover meaning through numeric indexes such as
-  `ERROR_CODES[3]`. Reuse that owner
-  across files only when the value is genuinely one shared concept and the import does not retain
-  unrelated code; otherwise keep a private file-local constant. Never build a root string catalog
-  or runtime lookup object: both retain unrelated values and weaken tree shaking. Keep `typeof`
-  operands literal because TypeScript narrows from the literal but not an equivalent constant;
-  do not trade type safety, a stable emitted declaration, or a hot-path helper call for textual
-  deduplication. Before claiming completion, search all `src` runtime expressions for every moved
-  literal, inspect each hit, and run the declaration/API and packed tree-shaking checks; type-only
-  literals may repeat only when the published type cannot reference the private runtime owner.
+- Hoist repeated semantic runtime strings, including alphabets and diagnostics, to named scalar
+  constants in the narrowest owner. Build tuples or sets only for runtime work; never use numeric
+  indexes for meaning. Share across files only for one concept without retaining unrelated code;
+  otherwise use private local constants. Never build root string catalogs or runtime lookup objects;
+  they retain unrelated values and weaken tree shaking.
+  Keep `typeof` operands literal for TypeScript narrowing. Do not weaken types or declarations,
+  or add hot-path helper calls, for deduplication. Search all `src` runtime expressions for each moved
+  literal, inspect every hit, and run declaration/API and packed tree-shaking checks. Type-only
+  repetition is allowed only when the published type cannot reference the private runtime owner.
 - Keep repository-only docs, benchmarks, and Rust sources out of the npm tarball when the package
   does not need them at runtime; README links do not require shipping their targets.
 - Return `UuidSlugError` for every caller-caused or recoverable failure. Never add a throwing
@@ -213,19 +209,14 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Audit public TypeScript with executable source and packed calls covering overloads, defaults,
   option combinations, detached methods, brands, caller output and failures. Apply `docs/public-api.md`
   §Proof; `api/typescript.api.d.ts` records signatures only.
-- Treat public JSDoc as part of every public-source change. Update or remove affected text in the
-  same edit; never leave stale documentation for a later pass. Before committing, build declarations,
-  query changed symbols through the TypeScript language service, and read every changed `.d.ts`
-  entry as a cold consumer. Presence checks catch omissions only; they do not prove the published
-  text is useful, correct, complete, or current.
-- Comments carry contracts and design decisions. Before deleting or rewriting one, list its useful
-  claims. Every non-trivial decision must retain its reason, supporting evidence or assumption,
-  the meaningful alternative it rejects, and what would change the decision beside its owner.
-  Verify each claim is still true. Keep caller-facing claims in JSDoc and move implementation
-  constraints, rejected alternatives, invalidating assumptions, and measurement triggers to the
-  nearest owning implementation comment. A rejected alternative must cite the symbol or evidence
-  that establishes why it loses. Delete only repetition, false claims, work history, or facts made
-  obvious by the code. Re-read every comment in a changed function after the edit.
+- Update affected public JSDoc with its source, never later. Before committing, build declarations,
+  query changed symbols through the TypeScript language service and read each changed `.d.ts` as a
+  cold consumer. Presence checks find omissions, not incorrect, incomplete or unhelpful wording.
+- Before deleting or rewriting a comment, list and verify its useful claims. Keep each non-trivial
+  decision's reason, evidence or assumption, rejected alternative and what would change it beside its owner.
+  Keep caller facts in JSDoc; put implementation constraints and remeasurement triggers in local
+  comments. Cite the symbol or evidence that rejects an alternative. Delete only repetition, false
+  claims, history or obvious facts. Re-read every comment in the changed function.
 - When moving or extracting code, copy the complete source span byte-for-byte, including every
   comment and blank line. Prove the copy identical before editing it, read the final destination,
   then remove the source last. A token or syntax diff cannot prove comment preservation.
@@ -238,92 +229,72 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Qualify UUIDv7 rivals by correct wire output, secure randomness and proper native guarantees.
   Record counter width, zero-start counters and random-bit allocation separately; none excludes a rival.
 
-- Before writing an experiment driver, extend its maintained owner in `bench/` or `scripts/`.
-  Inspect the owner's exports and callers before editing it; a matching filename is not permission
-  to replace a different job. Separate a driver only when its measurement or isolation boundary differs.
-  Give scratch a cleanup scope before creating it; remove it when the operation ends, including
-  failures. Preserve necessary failure evidence in `bench/reports/` first and name its reproduction
-  command. Temporary checkouts and generated bundles are not retained evidence. Keep reusable
-  drivers in `bench/` or `scripts/`, raw results in `bench/reports/`, and conclusions in
-  `bench/PERFORMANCE.md`; durable documents must never depend on `/tmp` files.
-  Extract executable baseline source outside this repository; ignored source trees can still enter
-  compiler and test discovery. Keep only generated evidence and archives in `bench/reports/`;
-  retain TypeScript source captures as `.ts.txt` or archives, never `.ts`, because Git ignores do
-  not exclude them from project type checking. The existing artifact check rejects executable
-  source captures in reports; never bypass it or suppress their compiler diagnostics.
+- Extend existing experiment drivers in `bench/` or `scripts/`; read exports and callers first.
+  Matching filenames do not establish ownership. Split only for a different measurement or isolation.
+  Scope scratch cleanup before creation, including failures. Archive necessary failure evidence in
+  `bench/reports/` with its reproduction command; remove temporary checkouts and bundles.
+  Keep drivers in `bench/` or `scripts/`, raw results in `bench/reports/`, conclusions in
+  `bench/PERFORMANCE.md`; durable docs must not depend on `/tmp`.
+  Extract executable baselines outside the repo. Git ignores do not exclude compiler or test discovery:
+  reports hold generated evidence and archives only, with TS captures as `.ts.txt` or archives.
+  Never bypass the artifact check or suppress executable-capture compiler errors.
   Keep real failures until diagnosis; expected rejection fixtures archive inside their test cleanup scope.
-  Include setup in cleanup; run Node and Bun tests, API checks and generation comparisons through their package commands so `scripts/test-bun.ts` owns temporary files after interruption. Create their scratch under `tmpdir()`, inside the supervisor's cleanup scope. Purge successful bundles and resolved failure artifacts.
-  Preserve earlier captured graphs before replacing build-input archives. Keep captured packages immutable and share identical archives by content hash; never rewrite a linked capture in place. Read `bench/README.md` before pruning indexed evidence. Compact retained reports with `bun scripts/compact-reports.ts` without changing their bytes.
-  Before committing, inspect creator-owned paths in both `/tmp` and the runtime's
-  `tmpdir()`, not just filename prefixes; stop children and preserve evidence and reusable caches.
-  Run compiler diagnostics through the retained profiler executable and capture stdout verbatim;
-  `bench/compare.ts` requires JSON-only host output. Require a working control for the requested
-  compiler artifact before interpreting a missing trace as evidence about package execution.
+  Include setup in cleanup. Run Node/Bun tests, API checks and generation comparisons through package
+  commands so `scripts/test-bun.ts` supervises scratch under `tmpdir()`, including interruption.
+  Purge successful bundles and resolved failure artifacts. Preserve earlier graphs before replacing build captures;
+  keep packages immutable and share archives by content hash, never rewrite linked captures.
+  Read `bench/README.md` before pruning; `bun scripts/compact-reports.ts` preserves retained bytes.
+  Before committing, inspect creator-owned paths in `/tmp` and runtime `tmpdir()`, not just prefixes;
+  stop children, preserving evidence and reusable caches. Capture compiler diagnostics verbatim
+  through the retained profiler. `bench/compare.ts` needs JSON-only host output; prove the requested
+  compiler artifact works before interpreting a missing package trace.
 - Read repaired guidance and its dependents before proceeding. Enforce mechanically decidable
   failures in the existing harness, not a prose checker; public-document authorization still applies.
 - Use the `typescript` package for project checking; TypeScript 7 is the main compiler.
   `typescript-floor` is limited to the TypeScript 5.0 packed-consumer check and tooling that needs
   legacy in-process compiler APIs such as the parser, printer, or language service.
 - Run Bun's built-in project checker as a separate lane beside TypeScript, not a replacement. Inventory both `Bun.build` calls and Bun CLI argument arrays; every bundler check uses `check: true` or CLI `--check`. Use `bun --check` for the project because its `check` package script otherwise takes precedence.
-- Document every performance-motivated function and branch inside its owning implementation. Use
-  ordinary code comments to state why the shape exists, the strongest live alternative it rejects,
-  the boundary where the choice stops applying, and the change that requires remeasurement. Public
-  JSDoc is only for external callers: accepted inputs, results, errors, effects, guarantees, and
-  usage decisions; it MUST NOT expose implementation choices or internal reasoning. Non-public
-  declarations may use TSDoc and should explain maintainer-facing constraints when editor help is
-  useful. Keep runtime versions, numeric results, workloads, and statistical limits only in
-  `bench/PERFORMANCE.md`; link that owner from internal comments instead of copying volatile
-  evidence. When behavior or dispatch changes, re-read every comment in the changed frame and update
-  or remove stale reasoning.
+- Explain every performance-motivated function and branch in local comments: why it exists,
+  the strongest rejected alternative, its boundary and remeasurement trigger. Public JSDoc covers
+  caller inputs, results, failures, effects, guarantees and choices, never internal reasoning.
+  Non-public TSDoc may explain constraints when editor help is useful. Keep versions, numbers,
+  workloads and statistical limits in `bench/PERFORMANCE.md`; link it rather than copy them.
+  After behavior or dispatch changes, read every affected comment and repair stale reasoning.
 - Verify runtime behavior changes through owning correctness tests and existing regression checks
   for each affected runtime, output, capability and success or fallback branch. An aggregate result
   cannot prove a branch it does not exercise. Extend the nearest injectable harness when necessary.
   Fresh benchmark, resource and profile experiments require the explicit scope in §Work scope;
   a correctness repair alone does not authorize them.
-- Read `bench/README.md` before benchmark work. Scope exploratory comparisons with its maintained
-  filters; for bounded repairs use `=case` names, not substrings that also select failures or rivals.
-  Run all applicable runtimes only after a candidate survives the focused mechanism test.
-  Read each driver's runtime selector from that driver; comparison and profiling variables differ.
-  Verify the runtime recorded in each result before assigning it to Current or LTS evidence.
-  Await a terminal exit code before launching another timing process; a returned process handle
-  still owns unfinished work and must be drained first.
-  Benchmark the caller code each overload requires. Defaults that return identifiers directly
-  must not pay for error-value unwrapping; retain it for conversions and configured calls that
-  return errors. Keep the existing output and failure witnesses outside timed caller work.
-- Before any performance experiment, record the successful consumer call, current removable cost,
-  competing explanations, result that would reject the candidate, and next production decision in
-  `ROADMAP.md`. Reuse valid evidence; do not run a measurement whose possible results leave that
-  decision unchanged. Read `bench/README.md` §Decision before measurement for the execution order.
-  Keep only one implementation candidate active until it is retained, rejected, or explicitly blocked;
-  benchmark infrastructure and rejected experiments do not close production performance tasks.
-- Protect retained primary-call improvements in the existing performance gate. Count avoidable
-  work separately from timing, and compare complete calls against an independent reference so
-  slowing both package operations cannot hide a regression. Prove each new guard rejects the
-  targeted regression while the unchanged implementation passes; derive budgets from measured
-  normal variation and necessary work, never an invented tolerance. A failing gate requires
-  diagnosis and repair, not a relaxed budget. Instrumented counts do not prove total allocation.
-  Preserve the protected successful calls and their independent references when changing the gate.
-  Never remove a workload, skip a runtime, replace a baseline with slower code, or loosen a budget
-  to pass a regression. A change to protected scope or acceptable loss requires an explicit
-  maintainer ruling. Prove harness changes with both an unchanged control and a valid-output
-  waste mutation that fails for the intended diagnostic; a broken identifier proves correctness
-  coverage, not performance or resource protection.
-- Keep routine verification inside the feedback-loop limits in `bench/README.md` §Regression protection.
-  Benchmarks and other special cases are outside normal test-lane duration limits. Do not make timing-policy
-  calibration a prerequisite for profiling and fixing evidenced primary consumer-call gaps.
-  Measure complete correctness lanes and hooks, not one test file; preserve their defect detection,
-  production fidelity and cleanup.
-- Locate the bottleneck in the complete consumer call before optimizing a component. Record
-  the observation that would support the proposed cause and the result that would reject it;
-  retain a change only when complete-call speed or resource use improves without a material loss
-  on the other axis. Reprofile after the
-  bottleneck moves because a component gain can disappear in dispatch, formatting or allocation.
-- Before using a benchmark statistic to select code, apply `bench/README.md` §Measurement limits:
-  identify the independent sample unit and distinguish batch throughput from individual-call latency.
-  Read the comparison driver's own verdicts; when analyzing its JSON separately, require the selected
-  statistic on every requested row. Missing fields must fail analysis, never mean no regression.
-  Before attributing a wall/CPU gap, account for call weighting and measurement scope: an
-  unequal-batch median does not match aggregate CPU per call.
+- Read `bench/README.md` before benchmarks. Use maintained exploratory filters and exact `=case`
+  names for bounded repairs, not substrings selecting failures or rivals. Test the mechanism before
+  all runtimes. Read each driver's selector; comparison and profiling variables differ. Verify the
+  recorded runtime before labeling Current/LTS evidence. Drain each timing process to terminal exit
+  before starting another. Time the caller code required by each overload: unwrap error values only
+  for calls returning them. Keep output and failure witnesses outside timed work.
+- Before performance experiments, record the successful call, removable cost, rival explanations, rejection
+  result and next production decision in `ROADMAP.md`. Reuse evidence; measure only when results
+  can change that decision. Follow `bench/README.md` §Decision before measurement. Keep one candidate
+  active until retained, rejected or explicitly blocked; infrastructure and rejections do not close
+  production performance tasks.
+- Protect primary-call gains in the existing performance gate. Count avoidable work separately;
+  compare complete calls with independent references so slowing both operations cannot hide a loss.
+  Derive budgets from normal variation and necessary work. New guards must reject their target
+  regression while unchanged code passes; counts alone do not measure total allocation.
+  Diagnose and fix failures. Never pass by dropping workloads or runtimes, slowing baselines or
+  relaxing budgets. Changed protected scope or acceptable loss needs a maintainer ruling.
+  Preserve successful calls and references. Test harness changes with an unchanged control and a
+  valid-output waste mutation that fails with the intended diagnostic; broken IDs test correctness only.
+- Keep routine checks within `bench/README.md` §Regression protection limits; benchmarks and special
+  cases are exempt. Calibration must not block profiling or fixing evidenced primary-call gaps.
+  Measure complete lanes and hooks, preserving defect detection, production fidelity and cleanup.
+- Locate the complete-call bottleneck before component optimization. Record observations supporting
+  and refuting the proposed cause. Retain gains in speed or resources only without material loss on
+  the other axis. Reprofile moved bottlenecks: dispatch, formatting or allocation can erase component gains.
+- Before selecting code from a statistic, apply `bench/README.md` §Measurement limits: identify
+  independent samples and distinguish batch throughput from call latency. Read driver verdicts;
+  separate JSON analysis must require the selected statistic on every row and fail on missing fields.
+  Account for weighting and scope before attributing wall/CPU gaps: unequal-batch medians do not
+  match aggregate CPU per call.
 - For cold-import comparisons, isolate both package graphs from the driver's static imports.
   Resolve both entry paths before timing; importing a graph the driver already loaded measures
   its module cache, not startup. Keep cached-import observations out of the comparison.
@@ -335,48 +306,36 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   JITless-only win when every higher rung is unchanged and its lifetime cost is justified.
 - Optimize successful consumer calls. Invalid input, rejected configuration, and other failures
   are rare by design and are not performance targets: spend no code or measurement on their speed.
-- When performance work is explicitly authorized, limit it to primary consumer use cases. Profile actual hotspots and
-  performance and resource gaps against the main qualified rivals for each primary use case,
-  then fix those gaps. Optimizing any other scenario is outside the authorized scope; correctness
-  checks protect existing contracts but do not make those scenarios optimization targets.
-- Before choosing an experiment, map its complete consumer call to a primary README job and
-  current rival evidence. Read the current execution sequence in `ROADMAP.md`; older unchecked
-  proposals do not authorize work. Repair conflicting instructions and specifications first,
-  then the plan, then code, so subsequent agents receive the same scope before acting.
-  Rank the primary calls together before selecting a component change. Keep their named fastest
-  qualified rivals, native floors, speed gaps and resource-evidence limits in `ROADMAP.md`;
-  missing comparisons stay missing, and a convenient candidate cannot replace that ranking.
-- Choose performance workloads from ordinary README consumer jobs: single-ID generation, parsing
-  and conversion first. An unusual input or convenient probe never establishes workload priority;
-  keep its verification bounded to the correctness defect it can expose.
-- Rank one-ID-per-call paths above batch paths. Most consumers generate, parse, or convert one
-  identifier per call; writing many IDs into caller-owned buffers through `output` and
-  `outputOffset` is a secondary job, excluded from this optimization effort. Never slow a
-  single-call path to speed a batch path.
+- Authorized performance work covers primary consumer calls only: profile and fix their speed
+  and resource gaps against qualified rivals. Correctness coverage authorizes no other optimization.
+- Map each experiment's complete call to a primary README job and current rival evidence.
+  Follow `ROADMAP.md`'s current sequence, not older unchecked proposals. Repair instructions and
+  specs before the plan, then code. Rank primary calls together before selecting a component;
+  retain their fastest qualified rivals, native floors, speed gaps and resource-evidence limits
+  in `ROADMAP.md`. Missing comparisons stay missing; convenient candidates cannot replace ranking.
+- Prioritize ordinary README jobs: single-ID generation, parsing and conversion. Bound unusual
+  inputs and convenient probes to their correctness defect; they cannot set optimization priority.
+- Most callers handle one ID per call. Batch writes through `output` and `outputOffset` are
+  secondary and excluded from optimization; never slow single calls to speed batches.
 - In authorized optimization, close primary-call speed and resource gaps together; throughput alone
   is insufficient. Compare complete calls and allocation; secondary optimization remains excluded.
-- After every Bun or Deno version change, and before each periodic runtime review, follow
-  `bench/README.md` §Capability review. Recheck native, Node-compatible, and web-compatible APIs;
-  prove semantics and both selected and fallback paths. Names and API presence prove nothing else.
-- Benchmark every portable encoder and fallback directly on Node, Bun, Deno, and Chromium, even
-  where normal dispatch selects a native path. For that portable path, first rank runtimes where
-  normal dispatch uses it by the priority above; rank every runtime that shadows it with a native
-  implementation last, regardless of that runtime's primary-path rank. Shadowed runtimes verify
-  portability but do not steer fallback trade-offs.
-- Never act on one performance run. Repeat the decision-relevant workload and retain an optimization
-  only when the effect reproduces and its uncertainty excludes no material change; otherwise report
-  the result as unresolved. A statistically detectable but negligible effect does not earn code.
-- Correctness of supported normal calls outranks every performance result. Rare misuse defenses
-  must also satisfy the no-regression rule above. Before timing a candidate, map the contracts and
-  failure modes its changed mechanism can break, inspect whether existing tests distinguish them,
-  add the smallest missing falsifiers, and mutate the mechanism to prove those tests reach it. Run
-  the owning runtime tests before and after measurement; reject speedups with an unsecured invariant.
-- Before adding test infrastructure, search `__test__/`, `bench/`, and `scripts/` by capability and
-  failure, then inspect callers and package-script routing. Extend the nearest owner. Split only for
-  a different oracle, runtime, isolation, or feedback boundary.
-- Keep an assertion only when it detects a material defect beyond existing guarantees. Do not
-  assert test-owned allocations or repeat facts implied by a stronger assertion; report tests
-  protect values and diagnostics, not incidental Markdown decoration.
+- Follow `bench/README.md` §Capability review after Bun/Deno updates and before periodic reviews.
+  Recheck native, Node-compatible and web APIs; prove semantics, selected paths and fallbacks.
+  Names and API presence alone are insufficient.
+- Benchmark every portable encoder and fallback on Node, Bun, Deno and Chromium, even behind native
+  defaults. Rank runtimes using that fallback by the priority above; native-shadowed runtimes come
+  last regardless of primary-path rank. They verify portability, not fallback trade-offs.
+- Repeat decision-relevant workloads; retain gains only when reproducible and uncertainty excludes
+  no material change. Otherwise report unresolved. Negligible effects do not earn code.
+- Normal-call correctness outranks speed; rare misuse defenses must also avoid regressions.
+  Before timing, map contracts and failure modes, check existing tests and add minimal missing
+  falsifiers. Mutate the mechanism to prove detection. Run owning runtime tests before and after
+  measurement; reject speedups with unprotected invariants.
+- Before adding test infrastructure, search `__test__/`, `bench/` and `scripts/` by capability and
+  failure; inspect callers and package commands. Extend the nearest owner; split only for a different
+  oracle, runtime, isolation or feedback boundary.
+- Keep assertions only for material defects beyond existing guarantees. Do not test fixture-owned
+  allocations or facts implied by stronger assertions. Report tests protect values and diagnostics, not incidental Markdown decoration.
 - Keep TypeScript tests and their fixtures in the nearest `__test__/` directory so production and
   verification code remain distinct without a second naming convention.
 - Keep routine verification in `.github/workflows/check.yml`. Add another workflow only when it
@@ -405,22 +364,20 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   method name identifies the code under test. Compare byte keys with `join(",")` or hex,
   never platform-dependent string coercion or UTF-8 decoding.
 - Preserve an unpinned newest-Node CI lane: pinned runtimes cannot expose newly added native APIs.
-- Within requested performance work, bring defaults (no arguments or only case/alphabet presets)
-  close to the fastest equivalent native output and qualified rivals on each ranked runtime. Configured
-  calls may add only work the native floor lacks. Negligible differences justify no further tuning.
-  Give each requested call family a floor row; keep gaps open until repaired, shown negligible, or
-  explained by an unavoidable cause in `bench/PERFORMANCE.md`. Combine native output, patched
-  output, pooled entropy and portable work as appropriate; select per runtime and output, including
-  wrapper, conversion and resource costs. Minimize faster native delegation before replacing it.
-  Keep TypeScript for fallback or measured wins; default guarantees follow proper native behavior.
+- In requested optimization, bring argument-free and case/alphabet-preset calls close to equivalent
+  native floors and qualified rivals on each ranked runtime. Configured calls add only missing work;
+  negligible gaps need no tuning. Give each call family a floor row and keep gaps open until repaired,
+  negligible or explained as unavoidable in `bench/PERFORMANCE.md`. Select native, patched-native,
+  pooled-entropy or portable work per runtime and output, including wrapper, conversion and resource
+  costs. Minimize faster native delegation before replacing it. Use TypeScript for fallback or
+  measured wins; default guarantees follow proper native behavior.
 - During requested optimization, choose per runtime and output: native base64url does not require
   native base32. Preserve the best writer for unsupported outputs and repair shared integration
   regressions rather than discard a faster capability; neither primary regression may remain.
-- Rank apples-to-apples consumer outcomes, not identical internals. Correct wire output, secure
-  entropy are mandatory; default guarantees must not exceed proper native behavior. Weigh other differences by measured consumer
-  harm. Clock rollback, sequence, buffer, ownership, validation, and failure strategies remain
-  comparable unless their effect materially weakens the requested result. Keep weaker rows timed
-  and inspect faster mechanisms that could preserve our guarantees; keep native primitives as floors.
+- Compare consumer outcomes: correct wire output and secure entropy are mandatory; default guarantees
+  must not exceed proper native behavior. Weigh clock, sequence, buffer, ownership, validation and
+  failure differences by material consumer harm. Time weaker rows and inspect faster mechanisms
+  that could preserve guarantees; keep native primitives as floors.
 - Probe optional capabilities once at module load; absent methods remain undefined. A defined
   method that throws for an absent capability creates exception-driven fallback on every call.
 - Minimize startup work too: reuse existing inputs, stop when precedence settles the answer, and
@@ -436,10 +393,11 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 
 Write README, CHANGELOG, `docs/` and bench docs for consumers who never open source or benchmarks.
 
-- Use only words the reader already has: generator, seed, key, codec, slug, alphabet, buffer.
-  Words from source and bench files do not reach a consumer: route, primitive, adapter, seam,
-  headline, domain, page, or "schema" for a mask. They leak after hours in those files, so before
-  committing consumer text, grep it for them.
+- Use established technical terms such as hexadecimal when they name the exact concept.
+  Explain unfamiliar terms before use; omit internal vocabulary that does not help the caller.
+- Put limits beside the affected call. Name what can go wrong and what the caller must do;
+  replace abstract disclaimers such as "proof of issuance" with concrete decoding behavior.
+  Keep general security advice out of the opening and unrelated API guidance.
 - Every sentence has a subject and a verb. A list of noun phrases ("generation, validation, and
   conversion") is a feature blurb; it is longer than the sentence it replaced and says less.
 - A rewrite touches only lines with a named defect. Copy sound lines byte for byte. Afterwards,
@@ -447,21 +405,18 @@ Write README, CHANGELOG, `docs/` and bench docs for consumers who never open sou
   regression, revert it.
 - Examples must construct reusable codecs and masks outside per-ID calls. Show setup and repeated
   use separately; a comment saying to reuse a codec does not repair an example that rebuilds it.
-- Numbers, dates, runtime versions, and percentages live only in `bench/PERFORMANCE.md`. README
-  gives direction: leads, trails, or unresolved, and against which package. A number in README is
-  stale at the next runtime release and nothing regenerates it.
+- Keep benchmark numbers, dates, runtime versions and percentages in `bench/PERFORMANCE.md`.
+  README names the rival and direction: leads, trails or unresolved. Measurements rot on runtime updates.
 - Every claim has an owner. A guarantee cites a test that fails without it and needs a maintainer
   ruling before it enters README §Guarantees; `docs/security.md` outranks README where they
   disagree. A performance claim cites `bench/PERFORMANCE.md`. A "cannot" or "never" about a
   runtime or another package cites the probe that showed it. A claim with no possible owner is
   deleted, not softened.
-- Every term is defined before first use and every referent exists. "The responsiveness target"
-  with no definition anywhere is a defect, however plausible it reads.
+- Define terms before use; every referent must exist. An undefined "responsiveness target" is a defect.
 - Delete test: remove the sentence; if the reader loses nothing, it stays deleted. "Optimized",
   "robust", "seamless", "powerful", and "simply" never survive it.
-- Shapes that read as machine-written and hide missing content: em-dashes, bold-label lists
-  ("**Speed:** ..."), "not only ... but", a trailing "-ing" clause that adds a consequence, groups
-  of three for rhythm, Title Case headings. Reject them on sight.
+- Reject em-dashes, bold-label lists, "not only ... but", empty trailing "-ing" clauses,
+  rhythmic groups of three and Title Case headings; they hide missing content.
 - Put the TL;DR first: the consumer benefit, a concrete UUID/slug comparison, strongest supported claims,
   and navigation. Install and the primary quick-start follow immediately. Keep detailed diagrams,
   limits, runtime tables, and advanced examples with their owning sections. Use emphasis to help

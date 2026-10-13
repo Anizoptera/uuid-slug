@@ -9,7 +9,7 @@ This reference covers types, call signatures, codec configuration and migration.
 
 Branded types distinguish values this library has validated or produced. Plain strings and byte
 arrays are not assignable to them; pass raw input directly to package operations or use a guard when
-you need to retain the narrowed type. A brand proves format, not issuance or permission to access a record.
+you need to retain the narrowed type.
 JavaScript consumers do not need TypeScript. The shipped declarations compile with TypeScript 5.0
 and newer.
 
@@ -63,9 +63,9 @@ Lossless conversion preserves a known UUID version in its result type. Byte conv
 owned branded array when it allocates and the caller's exact array subtype when it writes into
 supplied storage.
 
-**Some masked slugs also pass plain-slug guards.** Canonical trailing bits, version, and variant
-can all match by chance. A guard answers "is this well formed", never "is this mine". Decode with
-the matching API. For access to stored records, check existence and authorization separately.
+Some masked slugs pass plain-slug guards because their trailing bits, version and variant match
+by chance. Choose the decoder from the known format; guards cannot distinguish these slugs.
+See [masking security](../README.md#masking-security) for incorrect-key decoding.
 
 ## API
 
@@ -117,8 +117,8 @@ calls on the generator join this sequence; module-level `at` calls use independe
 With the default preserve policy, successful current-time calls on one generator strictly increase
 in UUID byte order, including calls made within one millisecond. Module-level generation uses the
 fastest validated secure path for each output form and does not promise ordering across calls.
-Created generators do not coordinate with reset-policy calls after their tolerance, other
-generators, package copies, workers, or processes. Set `clockRollback` to reset or
+Reset-policy calls beyond their tolerance can break that order. Other generators, package copies,
+workers and processes have separate state. Set `clockRollback` to reset or
 return `invalid_timestamp` when total skew exceeds an inclusive tolerance. Use
 `createUuidV7GeneratorWithRandomFill` only when the application must own entropy; its callback must
 fill every requested byte or return `UuidSlugError`.
@@ -491,6 +491,5 @@ the check.
 
 `validatePlainUuidV7SlugUnixMs` starts from a plain slug; `maskingCodec.validateMaskedUuidV7SlugUnixMs` starts from
 a slug decoded with that masking codec. Success returns the same spelling with its UUIDv7 slug type.
-The window accepts timestamps on either side of the reference time; it does not enforce expiry,
-authentication, or replay prevention. Use ordinary decoding for permanent identifiers. For links
-with expiration or one-time use, check the stored expiry and consumption state as well.
+The window accepts timestamps before and after the reference time. Use ordinary decoding for
+permanent IDs. For expiring or single-use links, check stored expiry and consumption state too.

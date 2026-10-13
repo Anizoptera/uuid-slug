@@ -100,7 +100,7 @@ the maximum UUIDv7 timestamp so the mapping above cannot hide precision or range
 TypeScript additionally exports `isUuidSlugError` because JavaScript values can cross realms or
 load from duplicate package copies. Rust exposes `ErrorCode` as the typed classification so adding
 a diagnostic source does not change how callers match a failure; bridges serialize
-`ErrorCode::as_str()`. Error recognition classifies failures; it does not authenticate untrusted objects.
+`ErrorCode::as_str()`.
 Both implementations use stable codes for control flow and case-specific messages for diagnostics.
 Messages can add detail; callers must not parse them. Underlying runtime and callback failures stay
 available through `cause` in TypeScript and `source()` in Rust.

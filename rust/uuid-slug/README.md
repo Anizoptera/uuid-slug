@@ -37,9 +37,9 @@ Decoding infers the representation; nonzero padding is rejected. Sentinels remai
 Every decoder accepts every value that a supported matching encoder can produce.
 
 Masking supports UUIDv7 only. It replaces the recognizable UUIDv7 layout, including its timestamp,
-with a keyed reversible payload. It is obfuscation, not authentication or encryption for secrets.
-Its 16-bit check can accept an unissued UUID; look up decoded candidates in your own store. Each
-configured key adds a possible candidate. Pass `uuid_v7_test_mask()` explicitly only for examples
+with a keyed reversible payload. Its cryptographic strength is not established.
+An incorrect key can pass the 16-bit check and return the wrong UUID; look up decoded records
+and check caller access. Each read key adds that risk. Use `uuid_v7_test_mask()` only for examples
 and wire fixtures because its seed is public. Keep your private seed and iteration count to read issued IDs.
 Masking stores a timestamp offset from `timestamp_range_start_unix_ms` and restores the UUID's
 timestamp on decode. The inclusive end is the start plus `MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`; plain slugs
@@ -108,7 +108,7 @@ Preserve-order clock rollback is the default. Use `with_clock_rollback_policy` t
 v4 IDs. Failures return `Error`, retaining the underlying cause. Match `Error::code()` against
 `ErrorCode`; use `ErrorCode::as_str()` only when a text protocol needs the shared TypeScript
 spelling. Use `Display` for the case-specific diagnostic; do not parse its text. Within-millisecond
-ordering is not a cross-language guarantee. IDs are not bearer secrets.
+ordering is not a cross-language guarantee.
 
 Default feature `os-rng` provides platform entropy. Disable default features for pure conversion,
 masking, or caller-supplied entropy. Browser generation additionally requires `wasm-js`.

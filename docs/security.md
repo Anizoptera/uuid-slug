@@ -1,6 +1,6 @@
 # Security boundaries
 
-Use UUIDs as identifiers, not passwords, access tokens, or proof of authorization.
+Use UUIDs to identify records; check access in your application.
 
 Default hot paths trust proper native runtime results and provide no stronger guarantees than
 those implementations. Extra guarantees belong only to explicitly configured calls; validating
@@ -53,16 +53,17 @@ new random bits. Observing one UUID reveals the next counter value in that milli
 UUID's bit pattern nor a duplicate-free sample proves secure generation.
 
 Every UUID version exposes standardized fields. This package masks UUIDv7, replacing its layout,
-including timestamp, version, and variant positions, with a keyed reversible payload. It is obfuscation, not
-authenticated encryption. Use a private random seed and retain its exact bytes and iteration count
+including timestamp, version, and variant positions, with a keyed reversible payload. Its cryptographic
+strength is not established. Use a private random seed and retain its exact bytes and iteration count
 to read issued values. The exported public mask is for explicit tests and examples; codec
 construction never selects it by omission.
 Masking stores a 42-bit timestamp offset from the codec's configured start and restores the full
 timestamp on decode. It rejects timestamps outside that range. Truncating the offset would make
 distinct UUIDs encode to the same slug. Plain slugs and raw sentinel slugs preserve the full
 UUIDv7 timestamp range.
-The 16-bit check filters candidates; look up the intended record and check authorization separately.
-More read keys add possible candidates. Base32 changes the spelling, not the masking strength.
+An incorrect key can pass the 16-bit check by chance and return the wrong UUID. More read keys
+increase that risk. Look up the decoded record and check caller access.
+Base32 changes the spelling, not the masking strength.
 
 Generator entropy failures report `rng_unavailable`; caller buffers and sequence state remain unchanged.
 Rust retains the entropy provider's error. In browsers, `getrandom` reports its Web Crypto error
