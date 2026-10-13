@@ -174,7 +174,7 @@ jobs:
       - run: node runtime-probe.mjs runtime-reference.json
       # Product support is wider than the development runner's engine range.
       - if: steps.runtime.outputs.vitest == 'true'
-        run: node node_modules/vitest/vitest.mjs run
+        run: bun run test:node
       # Current engines exercise optional native paths that pinned runtimes cannot reach.
       - if: steps.runtime.outputs.node == 'current'
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0

@@ -36,7 +36,7 @@ Keep checks only when they distinguish a material defect from allowed behavior; 
   - [x] Remove repeated API-removal and deprecation cases while retaining their stronger controls; report assertions ignore Markdown decoration but reject selection of a slower result.
 - [x] Remove proved redundancy and repair actionable gaps in small verified commits; demonstrate affected checks reject the intended defect and allowed behavior passes.
 - [ ] Run complete local lanes and hooks, inspect discovery and cleanup, and summarize retained evidence and unresolved limitations without claiming universal coverage.
-  - [ ] Supervise Node Vitest scratch cleanup with the existing runner; interrupt an actual worker after its file witness, require no leftover files, and prove bypassing supervision fails the same case.
+  - [x] Supervise Node Vitest scratch cleanup with the existing runner; interrupt an actual worker after its file witness, require no leftover files, and prove bypassing supervision fails the same case.
   - [x] Make the pre-commit hook own the complete check instead of repeating a manual complete check with another fast check; retain every gate, avoid cache or bypass state, and measure the full hook invocation. Its measured duration remains above the warning threshold but below the error ceiling.
   - [x] Give CI's Bun case and subprocess deadlines slower-runner headroom without raising local deadlines or overriding caller-selected flags; a real hung case must time out and clean its scratch. Reversing flag precedence must fail that witness.
 
