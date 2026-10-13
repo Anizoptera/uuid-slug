@@ -257,13 +257,14 @@ mod tests {
                     .is_err()
             );
         }
-        let mut out = [165; 18];
+        // Different initial bytes make a missing write observable.
+        let mut out = [0x55; 18];
         assert_eq!(
             UuidSlugAlphabet::Base64Url.plain_slug_to_uuid_bytes_into(&text, &mut out, 1)?,
             &bytes
         );
-        assert_eq!(&out[..1], &[165]);
-        assert_eq!(&out[17..], &[165]);
+        assert_eq!(&out[..1], &[0x55]);
+        assert_eq!(&out[17..], &[0x55]);
         let saved = out;
         assert!(
             UuidSlugAlphabet::Base64Url

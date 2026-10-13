@@ -238,7 +238,7 @@ mod tests {
         let uuid = Uuid::from_uuid_string("00000000-0000-7000-8000-000000000000")?;
         for sentinels in [
             vec![(String::new(), uuid)],
-            vec![("nil".to_owned(), uuid), ("nil".to_owned(), uuid)],
+            vec![("nil".to_owned(), uuid), ("nil".to_owned(), uuid_at(1))],
         ] {
             let error = UuidV7MaskingCodec::new(UuidV7MaskingCodecOptions {
                 sentinels,

@@ -780,6 +780,12 @@ mod tests {
                 .extract_uuid_v7_unix_ms()?,
             100
         );
+        assert_eq!(
+            generator
+                .generate_uuid_v7_with_random_fill(95.0, fill)?
+                .extract_uuid_v7_unix_ms()?,
+            100
+        );
         assert!(
             generator
                 .generate_uuid_v7_with_random_fill(94.0, |_| Err(Error::new(
@@ -800,18 +806,26 @@ mod tests {
 
     #[test]
     fn rollback_error_recovers_without_consuming_state() -> Result<(), Error> {
-        let mut generator = UuidV7Generator::new()
-            .with_clock_rollback_policy(UuidV7ClockRollbackPolicy::Error { tolerance_ms: 0 });
-        let first = generator.generate_uuid_v7_with_random_fill(100.0, fill)?;
-        assert_eq!(
-            generator
-                .generate_uuid_v7_with_random_fill(99.0, fill)
-                .unwrap_err()
-                .code(),
-            ErrorCode::InvalidTimestamp
-        );
-        let recovered = generator.generate_uuid_v7_with_random_fill(100.0, fill)?;
-        assert_ne!(first, recovered);
+        for (tolerance_ms, rejected, accepted) in [(0, 99.0, 100.0), (5, 94.0, 95.0)] {
+            let mut generator = UuidV7Generator::new()
+                .with_clock_rollback_policy(UuidV7ClockRollbackPolicy::Error { tolerance_ms });
+            let first = generator.generate_uuid_v7_with_random_fill(100.0, fill)?;
+            assert_eq!(
+                generator
+                    .generate_uuid_v7_with_random_fill(rejected, fill)
+                    .unwrap_err()
+                    .code(),
+                ErrorCode::InvalidTimestamp
+            );
+            assert_eq!(
+                generator
+                    .generate_uuid_v7_with_random_fill(accepted, fill)?
+                    .extract_uuid_v7_unix_ms()?,
+                100
+            );
+            let recovered = generator.generate_uuid_v7_with_random_fill(100.0, fill)?;
+            assert_ne!(first, recovered);
+        }
         Ok(())
     }
 }

@@ -9,7 +9,7 @@ Keep checks only when they distinguish a material defect from allowed behavior; 
 
 - [ ] Map every test, fixture, static check, hook and CI lane to its execution owner; find omitted discovery, duplicate execution and TypeScript verification outside `__test__`.
   - [x] Check runtime string ownership for quoted and backtick literals through the actual CLI; the old checker must miss the template cases while type literals and `typeof` narrowing remain accepted.
-- [ ] Audit UUID generation, entropy, parsing, alphabets, masking, migration, buffers and runtime capabilities against their implementations; identify independent oracles, missed boundaries, tautologies and uncontrolled state.
+  - [ ] Audit UUID generation, entropy, parsing, alphabets, masking, migration, buffers and runtime capabilities against their implementations; identify independent oracles, missed boundaries, tautologies and uncontrolled state.
   - [x] Keep the base32 reference independent of production digit metadata; swapping production digits must fail its existing encoding case while the restored implementation passes.
   - [x] Require the caller-buffer generation case to verify written UUID bytes, not just untouched surroundings; removing the write must fail. Cover the exact rollback-tolerance boundary and compare owned output constructors by identity.
   - [x] Exercise genuine mixed-case UUIDs instead of a stale replacement; verify parsed-value immutability by attempted mutation and generated-value stability by advancing its generator. Check plain conversion on codecs using different masked alphabets.
@@ -20,6 +20,8 @@ Keep checks only when they distinguish a material defect from allowed behavior; 
       - [ ] Trace retained codec and migration rejection cases through production guards and key-order behavior; distinguish intended callback injection from simulated providers.
 - [ ] Audit packed consumers, compiler contracts, browsers, native/Wasm parity, release integrity and recovery; preserve distinct distribution and runtime evidence.
   - [ ] Finish the packed consumer corpus, compiler fixture, optimizer witnesses and native/Wasm cases; inspect real producer formats before changing compiler compatibility checks.
+    - [x] Require Rust buffer-write and duplicate-name cases to reach their intended guards; missing writes and a removed name guard must pass the old cases and fail the repaired cases. Cover inclusive rollback tolerance for reset and error policies without removing zero-tolerance evidence.
+    - [ ] Compile a real deprecated Rust member with a function-pointer generic owner; check whether producer output defeats annotation path matching before changing that parser, and replace synthetic rustdoc-only evidence with actual compiler output.
   - [x] Preserve packed export order with the complete export-map comparison; an order-only fixture must fail when that guard is removed. Reject missing source-map inputs without an unreachable embedded-source fallback.
   - [x] Execute optimizer generation witnesses against canonical spelling, version and variant bits, and compare masking with the retained wire vector; a wrong-version production stamp must fail every selected optimizer while the restored package passes.
 - [ ] Audit benchmark/resource guards and harness lifecycle for false greens, duplicated work, timing guesses, isolation leaks and misleading diagnostics; keep existing protected workloads and budgets.
