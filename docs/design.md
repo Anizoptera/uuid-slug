@@ -5,11 +5,8 @@ Preserve the wire layout when changing masking so previously issued slugs remain
 Read [README.md](../README.md) for the consumer contract. This document explains the byte layout,
 key schedule, and limits needed to audit or reimplement the built-in scheme.
 
-Every UUID version has standardized fields. This wire format covers the complete compact UUIDv7
-payload so its public spelling exposes none of those fixed positions. UUIDv7's timestamp is the
-most sensitive field, but it is not the only structure being hidden.
-The package generates UUIDv4 and UUIDv7 only. Generic parsing and plain encoding still preserve
-other UUID versions without adding version-specific behavior.
+UUIDs expose standard fields. This format hides the UUIDv7 timestamp, version and variant positions
+with a keyed reversible payload; plain encoding remains version-neutral.
 
 ## Representations and bit budget
 

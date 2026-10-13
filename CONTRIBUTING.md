@@ -16,8 +16,8 @@ performance experiments require an explicit request for the affected consumer ca
 repair or an old performance gap does not authorize them. Keep existing required regression checks.
 Read [work scope](AGENTS.md#work-scope) before proposing an experiment.
 
-Run `bun run check` before each commit. The hook runs every fast check and checks public API first.
-It reports how to update an intentional baseline change. Run `bun run api:update`, review both
+The pre-commit hook runs `bun run check`, including public API checks; do not repeat it manually
+for the same unchanged tree. It reports how to update an intentional baseline change. Run `bun run api:update`, review both
 diffs, and include them in the pull request. Merging is the maintainer decision; no separate
 acceptance step exists.
 
@@ -39,11 +39,11 @@ Read `docs/release.md` before changing versions, public API, package metadata, o
 Commit each self-contained, verified change. Keep unrelated work out and name the files explicitly
 when staging or committing.
 
-Use a focused Conventional Commit title. Add one short body only when it explains a reason, consumer
+Use a focused Conventional Commit title and a short body explaining a reason, consumer
 effect, constraint, or limit that the diff does not show. State facts and exact evidence. Do not add
 activity logs, praise, filler, or guessed intent. Keep each message line unwrapped.
 
-Never commit after a failed check. Fix or explain the failure first.
+Track failed checks in `ROADMAP.md`; they block final delivery. Fix them before marking work complete.
 
 ## Review
 

@@ -391,19 +391,19 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 
 ## Writing public documentation
 
-Write README for adopters: sell the useful capabilities, then show how to use them.
-Keep engineering and measurement detail in its owning reference; public copy is not an internal report.
+README is roughly 60% marketing and 40% technical guidance. Write public docs as the proud author:
+lead with concrete strengths and explain their value. State supported advantages directly, without
+defensive hedging. Keep internal engineering and measurement detail in its owning reference.
 
 - Use established technical terms such as hexadecimal when they name the exact concept.
   Explain unfamiliar terms before use; omit internal vocabulary that does not help the caller.
 - Put limits beside the affected call. Name what can go wrong and what the caller must do;
   replace abstract disclaimers such as "proof of issuance" with concrete decoding behavior.
   Keep general security advice out of the opening and unrelated API guidance.
-- Every sentence has a subject and a verb. A list of noun phrases ("generation, validation, and
-  conversion") is a feature blurb; it is longer than the sentence it replaced and says less.
-- A rewrite touches only lines with a named defect. Copy sound lines byte for byte. Afterwards,
-  compare each replaced line with its original: equal or greater length with fewer verbs is a
-  regression, revert it.
+- Write direct sentences; keep headings and table labels short. Each claim must tell the reader
+  what they get or what to do.
+- Change only lines with a named defect; preserve useful claims and sound wording.
+  Reject edits that add words without adding information.
 - Examples must construct reusable codecs and masks outside per-ID calls. Show setup and repeated
   use separately; a comment saying to reuse a codec does not repair an example that rebuilds it.
 - State README performance advantages by operation and runtime: fastest calls, native parity
@@ -415,8 +415,7 @@ Keep engineering and measurement detail in its owning reference; public copy is 
   runtime or another package cites the probe that showed it. A claim with no possible owner is
   deleted, not softened.
 - Define terms before use; every referent must exist. An undefined "responsiveness target" is a defect.
-- Delete test: remove the sentence; if the reader loses nothing, it stays deleted. "Optimized",
-  "robust", "seamless", "powerful", and "simply" never survive it.
+- Preserve approved copy exactly. Delete text that adds no useful information, not concrete strengths.
 - Reject em-dashes, bold-label lists, "not only ... but", empty trailing "-ing" clauses,
   rhythmic groups of three and Title Case headings; they hide missing content.
 - Put the TL;DR first: the consumer benefit, a concrete UUID/slug comparison, strongest supported claims,

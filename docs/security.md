@@ -1,11 +1,5 @@
 # Security boundaries
 
-Use UUIDs to identify records; check access in your application.
-
-Default hot paths trust proper native runtime results and provide no stronger guarantees than
-those implementations. Extra guarantees belong only to explicitly configured calls; validating
-native results does not prove the security of the platform that produced them.
-
 Built-in generation draws from platform cryptographic randomness. TypeScript uses native UUID
 methods when available, otherwise Node crypto or Web Crypto. Rust uses fallible `getrandom`;
 browser generation requires `wasm-js`. Neither implementation substitutes non-cryptographic
@@ -14,8 +8,7 @@ spelling preset throws `UuidSlugError` with code `rng_unavailable` in that case;
 generation call returns it, and Rust returns `Err` on every path. Separately named custom-entropy
 calls accept a synchronous fill callback for controlled runtimes and deterministic work. The caller
 must fill every requested byte securely or return `UuidSlugError`; a successful weak or partial
-fill cannot be detected from its output. A plausible-looking UUID does not establish that
-cryptographic entropy was used.
+fill cannot be detected from its output.
 Built-in generation covers UUIDv4 and UUIDv7 only. Version-neutral parsing and plain conversion
 accept other UUID versions but add no generation or security behavior for them.
 
@@ -42,15 +35,13 @@ The platform source choices are documented by [Node](https://nodejs.org/api/cryp
 [Web Crypto](https://www.w3.org/TR/webcrypto/#Crypto-method-getRandomValues),
 [Bun](https://bun.sh/docs/runtime/utils#bunrandomuuidv7) and
 [getrandom](https://docs.rs/getrandom/latest/getrandom/#supported-targets). Review the selected
-backend when changing a runtime, target or dependency; selecting a secure API is not an audit of
-the operating system that implements it.
+backend when changing a runtime, target or dependency.
 System entropy can block during early boot while the OS initializes its RNG. Applications with
 strict response deadlines must keep that draw off their event loop; never substitute weaker bytes
 to meet a deadline. See [getrandom's early-boot limits](https://docs.rs/getrandom/latest/getrandom/#early-boot).
 
 Within one millisecond, the portable generator increments its visible 42-bit counter and draws 32
-new random bits. Observing one UUID reveals the next counter value in that millisecond. Neither a
-UUID's bit pattern nor a duplicate-free sample proves secure generation.
+new random bits. Observing one UUID reveals the next counter value in that millisecond.
 
 Every UUID version exposes standardized fields. This package masks UUIDv7, replacing its layout,
 including timestamp, version, and variant positions, with a keyed reversible payload. Its cryptographic

@@ -317,7 +317,7 @@ Also exported from the package root:
   keys belong to the masking codec. Both return an error for other UUID versions; a v4's first six bytes
   are random and must not be presented as a timestamp.
 - `extractUuidVersion` reads the four-bit version field from UUID text, either plain-slug alphabet,
-  or bytes. It does not prove the RFC variant or that another version-specific operation accepts it.
+  or bytes. Use a version-specific guard to validate the version and RFC variant together.
 - `deriveUuidV7Mask` builds a mask from a seed; `deriveUuidV7MaskAsync` adds cooperative
   cancellation; `createCustomUuidV7Mask` adapts separate forward and reverse callbacks.
   `UUID_V7_TEST_MASK` is the explicit, published-key choice for deterministic examples.
@@ -497,8 +497,8 @@ compatible readers available for rollback: an old-only reader cannot read newly 
 
 Updating the database does not update bookmarks, shared links, cookies or client storage.
 Remove compatibility only when the old IDs in those places no longer need to work.
-No recent legacy traffic does not prove that old links are gone. To keep old URLs after removing
-their decoder, retain an application-owned mapping from each supported old slug to its UUID.
+To keep old URLs after removing their decoder, retain an application-owned mapping from each
+supported old slug to its UUID.
 
 Keep keys, timestamp-range starts, and sentinel definitions with every format still in use.
 Preserve UUIDs outside the configured masked range as UUID text or plain slugs. Never truncate a

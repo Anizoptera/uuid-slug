@@ -35,8 +35,8 @@ const { uuid, slug } = generateUuidV7WithPlainSlug();
 ```
 
 Use `generateUuidV4()` for random IDs, `generateUuidV7()` for timestamped IDs, or
-`generatePlainUuidV7Slug()` for just the slug. Anyone can decode plain slugs;
-[masking](#masked-slugs) hides UUIDv7 fields.
+`generatePlainUuidV7Slug()` for just the slug. Plain slugs preserve your UUID;
+[masking](#masked-slugs) hides its UUIDv7 fields with your key.
 Default generation returns the ID and throws `rng_unavailable` only without secure randomness.
 [Conversions return errors as values](#handling-errors).
 
@@ -81,8 +81,7 @@ regardless of its generator.
 
 A masking codec holds the keys and settings to encode and decode UUIDv7 slugs.
 
-These outputs encode the same UUIDv7.
-Sizes are characters, except for UUID bytes.
+All examples encode the same UUIDv7; sizes are characters except for bytes.
 
 | Representation | Size | Example | Meaning and use |
 | --- | ---: | --- | --- |
@@ -113,8 +112,7 @@ Use `uuidStringToPlainSlug` to encode a UUID and `plainSlugToUuidString` to reco
 Decoders reject `=` padding and nonzero unused bits in the last character.
 `isPlainUuidSlug` checks canonical spelling and returns a boolean.
 
-Pass `BASE32HEX` to a plain-slug writer, for example `generatePlainUuidV7Slug(BASE32HEX)`.
-See [ordering](#ordering-and-key-distribution) before choosing a sort order.
+Pass `BASE32HEX` to a plain-slug writer, for example `generatePlainUuidV7Slug(BASE32HEX)`; see [ordering](#ordering-and-key-distribution).
 
 `uuidToString` infers the alphabet from the length, 22 or 26, so old slugs survive alphabet changes.
 It returns lowercase UUID text by default.
@@ -123,7 +121,8 @@ Preserve base64url case; lowercasing changes the value.
 
 ### Masked slugs
 
-Codecs default to base64url; set `maskedSlugAlphabet: BASE32HEX` for lowercase base32hex.
+Hide UUIDv7 timestamps and other standard fields with a reusable masking codec.
+Codecs default to base64url; set `maskedSlugAlphabet: BASE32HEX` for lowercase filenames.
 
 Supply either `maskSeed` or `mask`; neither or both returns `invalid_mask`.
 Use `maskSeed` for a secret; `mask` accepts a derived mask, derivation options or
@@ -200,7 +199,7 @@ function idForImportedRecord(recordedAt: Date) {
 ```
 
 Use one created generator across output forms to share a sequence, including `at` calls.
-Each call generates and formats once. Module-level calls remain independent.
+Module-level calls remain independent.
 
 Calls use fresh randomness even at identical timestamps. For retries, retain the first ID or
 use a deduplication key; existing records keep their UUIDs. Masked IDs need a
@@ -276,8 +275,9 @@ on the service; client code exposes the seed. Plain generation and conversion ne
 
 ## Handling errors
 
-Conversions return `T | UuidSlugError`; async mask construction resolves to the same union.
-Chain compatible conversions; check `isUuidSlugError` where you handle failure.
+Conversions return `T | UuidSlugError` and pass errors through unchanged.
+Async mask construction resolves to the same union.
+Chain compatible calls and check `isUuidSlugError` once where you handle failure.
 It recognizes package errors across realms and package copies.
 
 ```ts
@@ -290,7 +290,7 @@ function saveUuid(uuidText: string, save: (bytes: Uint8Array) => void) {
 }
 ```
 
-Conversions pass errors through unchanged. Check intermediate results only when you also need their values.
+Check intermediate results only when you also need their values.
 
 Handle errors by `code`, with constants such as `INVALID_BUFFER` and the `UuidSlugErrorCode` type.
 Use `message` for diagnostics; wording can change while codes stay stable.
@@ -323,7 +323,7 @@ Each export also documents its accepted input, result and failures in editor hov
 | Mask, unmask, rotate keys, or reserve sentinels | `createUuidV7MaskingCodec` and its methods |
 | Read explicitly enabled old formats | `maskingCodec.createUuidSlugMigrationDecoder` |
 
-TypeScript distinguishes UUID versions, text case, plain and masked slugs, and caller-owned buffers.
+Types catch UUID-version and plain/masked mix-ups; results retain text case and buffer ownership.
 Generator, masking-codec and migration methods need no `this` binding.
 
 ## Measured performance
