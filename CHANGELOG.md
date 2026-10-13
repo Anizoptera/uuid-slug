@@ -55,7 +55,7 @@ notes: the section for a version is published verbatim when its tag is pushed.
 - Read UUIDv7 timestamps with `extractUuidV7UnixMs`; use codec methods for masked slugs. Masked writers return `invalid_timestamp` beyond their range; `MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS` exposes the limit.
 - Decode into new or caller-owned bytes. Owned results are plain `Uint8Array`; writes preserve the caller's buffer subtype and leave its contents unchanged on failure.
 - Use `createCustomUuidV7Mask` for a reversible byte transform. Select `BASE32HEX` as `maskedSlugAlphabet` for lowercase filenames: masked slugs use 27 characters and sentinels use 26. Readers also accept base64url.
-- Bun and Deno load the published TypeScript source; other consumers load compiled ESM.
+- Bun, Deno and the `development` export condition load the published TypeScript source; other consumers load compiled ESM.
 
 ### Performance and fixes
 

@@ -88,6 +88,8 @@ jobs:
         run: bun scripts/release-crate.ts prepare
       - name: Bind Git history to reviewed registry archives
         if: steps.evidence.outputs.found != 'true'
+        env:
+          UUID_SLUG_RELEASE_PACKAGES: ${{ steps.packages.outputs.selected }}
         run: |
           npm_archive=(release-artifacts/reviewed-npm/*.tgz)
           crate_archive=(rust/target/reviewed-crate/*.crate)
