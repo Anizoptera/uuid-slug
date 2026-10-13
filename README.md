@@ -15,7 +15,7 @@ Slug: AZirzRI0eryd7wEjRWeJqw
 
 Plain slugs shorten any UUID without losing bits. Masked slugs hide UUIDv7 fields with your key;
 they are not encryption or access control. Plain base64url UUIDv7 slugs are almost time-ordered.
-Choose base32hex for exact timestamp order and case-insensitive filenames.
+Use plain base32hex UUIDv7 slugs for ASCII timestamp sorting and case-insensitive filenames.
 
 Use the same JavaScript or TypeScript API on Node, Bun, Deno, browsers and Workers.
 
@@ -24,6 +24,7 @@ Use the same JavaScript or TypeScript API on Node, Bun, Deno, browsers and Worke
 ## Install
 
 Run `bun add @anizoptera/uuid-slug`, or replace `bun` with `npm` or `pnpm`.
+The package uses ES modules; see [runtime support](#runtime).
 
 ## Quick start
 
@@ -43,9 +44,9 @@ secure randomness is unavailable. [Conversions return errors as values](#handlin
 
 - [Install](#install)
 - [Quick start](#quick-start)
-- [Convert existing IDs](#keep-your-existing-uuids) · [Bytes](#work-with-uuid-bytes) · [Representations](#representations)
-- [Recorded time](#generate-at-a-recorded-time) · [Extract time](#use-the-uuid-as-the-timestamp-source) · [Ordering](#ordering-and-key-distribution)
-- [Masking](#masked-slugs) · [Sentinels](#sentinels) · [Security limits](#what-masking-is-not)
+- [Convert existing IDs](#keep-your-existing-uuids) · [Representations](#representations)
+- [Plain slugs](#plain-slugs) · [Masking](#masked-slugs) · [Sentinels](#sentinels) · [Bytes](#work-with-uuid-bytes)
+- [Recorded time](#generate-at-a-recorded-time) · [Extract time](#use-the-uuid-as-the-timestamp-source) · [Ordering](#ordering-and-key-distribution) · [Security limits](#what-masking-is-not)
 - [Errors](#handling-errors) · [Types](docs/api.md#types)
 - [API](#api) · [TypeScript API map](#typescript-api-map)
 - [Codec options](docs/api.md#masking-codec-options) · [Migration](docs/api.md#reading-original-slugs-during-migration)
@@ -61,7 +62,7 @@ Encode your stored UUID; decode incoming slugs before querying that same key. Pl
 accepts every UUID version, including IDs from databases and other libraries. It preserves all
 bits, so shortening adds no collisions and needs no mapping table. Plain slugs use standard
 encodings, so you can recover the UUID without this library. Masked UUIDv7 slugs also recover the
-original UUID, but need the matching masking codec.
+original UUID, but require the matching key and settings.
 
 ```ts
 import { isUuidSlugError, plainSlugToUuidString, uuidStringToPlainSlug } from "@anizoptera/uuid-slug";
@@ -76,6 +77,201 @@ Generation supports UUIDv4 and UUIDv7. Parsing, inspection and plain-slug conver
 other versions too. UUIDv4 has 122 random bits. UUIDv7 stores time in 48 bits and uses its other
 74 payload bits for randomness, counters or fractions. Conversion and masking preserve those
 bits from any RFC 9562 UUIDv7; they do not depend on which library generated it.
+
+## Representations
+
+A masking codec holds your keys and settings for encoding and decoding UUIDv7 slugs.
+
+These spellings encode the same UUIDv7. The sentinel row describes a reserved ID.
+Sizes are characters, except for the byte representation.
+
+| Representation | Size | Example | Meaning and use |
+| --- | ---: | --- | --- |
+| Compact UUID text | 32 | `0198abcd12347abc9def0123456789ab` | Input; hexadecimal may use mixed case |
+| Canonical UUID text | 36 | `0198abcd-1234-7abc-9def-0123456789ab` | Input and the only emitted UUID text; lowercase by default or uppercase on request |
+| Brace-wrapped UUID text | 38 | `{0198abcd-1234-7abc-9def-0123456789ab}` | Input; braces require canonical text and hexadecimal may use mixed case |
+| UUID URN | 45 | `urn:uuid:0198abcd-1234-7abc-9def-0123456789ab` | Input; prefix is case-insensitive and requires canonical text; hexadecimal may use mixed case |
+| UUID bytes | 16 | `01 98 ab cd 12 34 7a bc 9d ef 01 23 45 67 89 ab` | Compact storage; output can use a new array or caller-owned storage; URLs need text encoding |
+| Plain base64url slug | 22 | `AZirzRI0eryd7wEjRWeJqw` | Lossless for any UUID; case-sensitive; almost time-ordered for UUIDv7 |
+| Plain base32hex slug | 26 | `06canj8i6htbp7ff04hkaps9lc` | Keyless and lossless; writes lowercase, accepts mixed case; UUIDv7 values sort by timestamp under ASCII comparison |
+| Masked base64url UUIDv7 slug | 22 | `ap225Qa_y6wN5LQCJgwH0z` | Short opaque form with a 16-bit check; case-sensitive, unordered, and decoding requires its codec |
+| Masked base32hex UUIDv7 slug | 27 | `daerdp86nv5qo3f4mg12c307qco` | Opaque and unordered; output is lowercase, input may use mixed case, and decoding requires its codec |
+| Sentinel UUIDv7 slug | 22/26 | Configured | A recognizable plain slug reserved by a codec; size follows its selected alphabet |
+
+The masked examples use the public `UUID_V7_TEST_MASK`, which is unsuitable for private IDs.
+Plain slugs preserve all UUID bits without a timestamp limit. Masked slugs need their matching
+codec. Alphabet and masking are separate choices: use base32hex for case-insensitive storage,
+and masking to hide recognizable UUIDv7 fields.
+
+Plain and masked base64url slugs have the same length and can identify different UUIDs.
+Use a source-specific converter when you know which form was issued. A masking codec's general
+converter uses the first passing mask, then plain decoding if every mask rejects it.
+
+Generate bytes once when you need several representations, then convert only those you use.
+Use paired generation when you need UUID text plus one slug.
+
+```mermaid
+flowchart LR
+  T["Canonical UUID text<br>36 characters"] <--> B["UUID bytes<br>16 bytes"]
+  T <--> S["Plain slug<br>22 base64url or 26 base32hex<br>any UUID version, no key"]
+  B <--> S
+  B -- "masking codec, UUIDv7 only" --> M["Masked slug<br>22 base64url or 27 base32hex"]
+  M -- "masking codec, check must pass" --> B
+  N["Sentinel<br>a reserved UUIDv7"] -- "masking codec writes it as a plain slug" --> S
+```
+
+## Two kinds of slug
+
+### Plain slugs
+
+Use `uuidStringToPlainSlug` to encode a UUID and `plainSlugToUuidString` to recover it.
+Decoders reject `=` padding and nonzero unused bits in the last character.
+`isPlainUuidSlug` checks canonical spelling and returns a boolean.
+
+Pass `BASE32HEX` to any plain-slug writer for lowercase output that preserves UUIDv7 timestamp
+order under ASCII comparison, for example `generatePlainUuidV7Slug(BASE32HEX)`.
+Use one representation when sorting; database collations and natural file sorting can differ.
+See [ordering](#ordering-and-key-distribution).
+
+`uuidToString` infers the alphabet from the length, 22 or 26, so both spellings remain readable
+after you switch output. It accepts uppercase base32hex and returns lowercase UUID text by default.
+Decode to a UUID before comparing identities or building a cache key:
+different spellings can identify the same record. Preserve base64url case; lowercasing it changes
+the value. Choose base32hex when storage cannot preserve case distinctions.
+
+### Masked slugs
+
+Codecs write base64url by default; set
+`maskedSlugAlphabet: BASE32HEX` for lowercase base32hex. Both recover the same UUIDv7.
+
+Supply exactly one of `maskSeed` or `mask`; supplying neither or both returns `invalid_mask`.
+Use `maskSeed` for your secret, or `mask` for a separately derived mask, derivation options or
+`UUID_V7_TEST_MASK`. The test mask is public: anyone can decode IDs made with it.
+
+```ts
+import {
+  createUuidV7MaskingCodec,
+  isUuidSlugError,
+} from "@anizoptera/uuid-slug";
+
+function createPublicIdGenerator(seed: string) {
+  const maskingCodec = createUuidV7MaskingCodec({ maskSeed: seed });
+  if (isUuidSlugError(maskingCodec)) return maskingCodec;
+  return maskingCodec.generateMaskedUuidV7Slug;
+}
+```
+
+Call `createPublicIdGenerator(seed)` at startup and check its result. Keep the returned function
+and call it for each new ID; key derivation runs once. Masking-codec methods need no `bind`.
+Use [async mask derivation](docs/api.md#masking-codec-options) when setup must yield or be cancelled.
+
+**Generate the seed; do not think one up.** For example, run `openssl rand -base64 32` and
+store the result outside your source repository. Seeds shorter than 16 bytes are rejected, but
+length alone does not make a seed unpredictable: a known UUID/slug pair allows offline guesses.
+
+Changing the seed or `keyDerivationIterations` changes the keys. Keep the old settings in
+`previousMasks` while their slugs must remain readable; new slugs use the current keys.
+Retain each live format's timestamp-range start and sentinel definitions too.
+Deploy readers for both formats before changing writers; old bookmarks still need their decoder.
+See [format migration](docs/api.md#changing-an-existing-id-format).
+`keyDerivationIterations` defaults to `1`; increasing it adds construction and guessing cost,
+but does not turn a human-chosen seed into a suitable secret.
+
+- A decoded slug is a candidate, not proof of issuance. Roughly one random 22-character base64url value in
+  65,536 passes the check and decodes to a well-formed, possibly unissued UUID. When accessing a
+  stored record, check that it exists and that the caller may access it. A wrong candidate can name
+  an existing record: a lookup alone does not prove correct decoding. Every extra
+  mask you try adds another opportunity for false acceptance; the combined rate is
+  at most the sum of the individual rates. Keep the rotation list short.
+- Masking keeps the UUIDv7 timestamp within a configured range of `2^42`
+  milliseconds. `timestampRangeStartUnixMs` sets the inclusive first millisecond; the inclusive
+  last is `timestampRangeStartUnixMs + MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`. The default start is `0`, which
+  preserves existing slugs. Masking returns `invalid_timestamp` outside the selected range.
+  Truncating would make different UUIDs share a slug. Plain slugs have no such limit;
+  registered sentinels are always plain slugs and therefore retain the full UUIDv7 timestamp range.
+
+See [codec options](docs/api.md#masking-codec-options) and the [wire layout](docs/design.md#representations-and-bit-budget).
+
+### Sentinels
+
+Sentinels are application-selected UUIDv7 values that are never masked, so they stay
+recognisable in logs and support tickets. Codecs default to no sentinels; configure only identities
+your application has reserved:
+
+| Name            | UUID                                   | Slug                     |
+| --------------- | -------------------------------------- | ------------------------ |
+| `nil`           | `00000000-0000-7000-8000-000000000000` | `AAAAAAAAcACAAAAAAAAAAA` |
+| `anonymous`     | `00000000-0001-7000-8000-000000000000` | `AAAAAAABcACAAAAAAAAAAA` |
+| `unknown`       | `00000000-0002-7000-8000-000000000000` | `AAAAAAACcACAAAAAAAAAAA` |
+
+Read the validated names, UUIDs, and slugs from `maskingCodec.sentinels`:
+
+```ts
+import { createUuidV7MaskingCodec, isUuidSlugError } from "@anizoptera/uuid-slug";
+
+function createSentinels(seed: string) {
+  const maskingCodec = createUuidV7MaskingCodec({
+    maskSeed: seed,
+    sentinels: [{ name: "unknownUser", uuid: "00000000-0002-7000-8000-000000000000" }],
+  });
+  return isUuidSlugError(maskingCodec) ? maskingCodec : maskingCodec.sentinels;
+}
+```
+
+Each sentinel name must be nonempty and unique within the masking codec. Each sentinel UUID must also be
+unique. Its input accepts every UUID text spelling above; `maskingCodec.sentinels` exposes normalized lowercase text.
+
+Sentinels keep their spelling across seed rotation when the alphabet and reserved UUIDs stay the
+same. This lets reserved identities remain recognizable while ordinary IDs use the new mask.
+The example named `nil` is an application sentinel, not the all-zero UUID; that UUID
+is not UUIDv7 and cannot be a masking-codec sentinel.
+
+Keep sentinel definitions stable while their slugs are in use. Decoding checks sentinels first, so they
+are reserved even if a mask could produce the same text. Encoding rejects a non-sentinel UUID
+whose masked output collides with a reserved slug, using `invalid_mask`; it never returns
+a slug that would decode to the wrong sentinel.
+
+## Work with UUID bytes
+
+Decode a masked public ID directly into your database or protocol buffer using your masking codec:
+
+```ts
+import type { UuidV7MaskingCodec } from "@anizoptera/uuid-slug";
+
+function decodePublicId(maskingCodec: UuidV7MaskingCodec, publicId: string, record: Uint8Array, offset: number) {
+  return maskingCodec.maskedSlugToUuidBytes(publicId, record, offset);
+}
+```
+
+Write a UUID directly into a binary record, leaving its other fields untouched:
+
+```ts
+import { uuidStringToBytes } from "@anizoptera/uuid-slug";
+
+function convertUuid() {
+  const record = new Uint8Array(32);
+  return uuidStringToBytes("01990d4d-e600-7000-8000-000000000000", record, 8);
+}
+```
+
+`uuidStringToBytes` accepts mixed-case canonical or compact text, UUID URNs and brace-wrapped
+canonical text. It allocates a plain `Uint8Array` or writes 16 bytes at the requested offset.
+`bytesToUuidString` reads at an optional offset and returns lowercase hyphenated text.
+Every UUID-text writer accepts `UUID_TEXT_UPPERCASE` or `"uppercase"`; use `UUID_TEXT_LOWERCASE`
+to select the default explicitly. Text case does not change slug alphabets or accepted input.
+`Buffer` works because it is a `Uint8Array`. A standalone `ArrayBuffer` must contain exactly 16
+bytes. A `DataView` must declare an exact 16-byte range, which can select a UUID inside a larger
+buffer without copying. Offsets apply only to `Uint8Array`; other typed arrays and array-like values
+are rejected. Use `isUuidBytes`, `isUuidV4Bytes`, or `isUuidV7Bytes` when unknown binary input must
+be narrowed before storage or version-specific work.
+
+For a binary database key or protocol field, use `uuidBytesToPlainSlug(record, offset)` and
+`plainSlugToUuidBytes(slug, record, offset)` to avoid UUID text and temporary slices. Use
+`maskingCodec.maskedSlugToUuidBytes(slug, record, offset)` for known masked IDs. These writes return the original
+array, not a view of the UUID. Read it back at the same offset. Copy bytes you need to keep before
+reusing the buffer.
+
+Without an offset, `uuidBytesToPlainSlug` requires exactly 16 bytes.
 
 ## Assign IDs before saving or syncing
 
@@ -151,197 +347,6 @@ imports. It has millisecond precision and does not prove when an external event 
 Keep a separate field for other dates, finer precision, editable times, or date queries your UUID
 index cannot serve. Changing the timestamp inside a UUID changes the ID.
 
-## Representations
-
-These spellings encode the same UUIDv7. The sentinel row describes a reserved ID.
-Sizes are characters, except for the byte representation.
-
-| Representation | Size | Example | Meaning and use |
-| --- | ---: | --- | --- |
-| Compact UUID text | 32 | `0198abcd12347abc9def0123456789ab` | Input; hexadecimal may use mixed case |
-| Canonical UUID text | 36 | `0198abcd-1234-7abc-9def-0123456789ab` | Input and the only emitted UUID text; lowercase by default or uppercase on request |
-| Brace-wrapped UUID text | 38 | `{0198abcd-1234-7abc-9def-0123456789ab}` | Input; braces require canonical text and hexadecimal may use mixed case |
-| UUID URN | 45 | `urn:uuid:0198abcd-1234-7abc-9def-0123456789ab` | Input; prefix is case-insensitive and requires canonical text; hexadecimal may use mixed case |
-| UUID bytes | 16 | `01 98 ab cd 12 34 7a bc 9d ef 01 23 45 67 89 ab` | Compact storage; output can use a new array or caller-owned storage; URLs need text encoding |
-| Plain base64url slug | 22 | `AZirzRI0eryd7wEjRWeJqw` | Lossless for any UUID; case-sensitive; almost time-ordered for UUIDv7 |
-| Plain base32hex slug | 26 | `06canj8i6htbp7ff04hkaps9lc` | Keyless and lossless; output is lowercase, input may use mixed case, and UUIDv7 values sort by timestamp |
-| Masked base64url UUIDv7 slug | 22 | `ap225Qa_y6wN5LQCJgwH0z` | Short opaque form with a 16-bit check; case-sensitive, unordered, and decoding requires its codec |
-| Masked base32hex UUIDv7 slug | 27 | `daerdp86nv5qo3f4mg12c307qco` | Opaque and unordered; output is lowercase, input may use mixed case, and decoding requires its codec |
-| Sentinel UUIDv7 slug | 22/26 | Configured | A recognizable plain slug reserved by a codec; size follows its selected alphabet |
-
-The masked examples use the public `UUID_V7_TEST_MASK`, which is unsuitable for private IDs.
-Plain slugs preserve all UUID bits without a timestamp limit. Masked slugs need their matching
-codec. Alphabet and masking are separate choices: use base32hex for case-insensitive storage,
-and masking to hide recognizable UUIDv7 fields.
-
-Plain and masked base64url slugs have the same length and can identify different UUIDs.
-Use a source-specific converter when you know which form was issued. A masking codec's general
-converter uses the first passing mask, then plain decoding if every mask rejects it.
-
-Generate bytes once when you need several representations, then convert only those you use.
-Use paired generation when you need UUID text plus one slug.
-
-```mermaid
-flowchart LR
-  T["Canonical UUID text<br>36 characters"] <--> B["UUID bytes<br>16 bytes"]
-  T <--> S["Plain slug<br>22 base64url or 26 base32hex<br>any UUID version, no key"]
-  B <--> S
-  B -- "masking codec, UUIDv7 only" --> M["Masked slug<br>22 base64url or 27 base32hex"]
-  M -- "masking codec, check must pass" --> B
-  N["Sentinel<br>a reserved UUIDv7"] -- "masking codec writes it as a plain slug" --> S
-```
-
-## Work with UUID bytes
-
-Decode a masked public ID directly into your database or protocol buffer using your masking codec:
-
-```ts
-import type { UuidV7MaskingCodec } from "@anizoptera/uuid-slug";
-
-function decodePublicId(maskingCodec: UuidV7MaskingCodec, publicId: string, record: Uint8Array, offset: number) {
-  return maskingCodec.maskedSlugToUuidBytes(publicId, record, offset);
-}
-```
-
-Write a UUID directly into a binary record, leaving its other fields untouched:
-
-```ts
-import { uuidStringToBytes } from "@anizoptera/uuid-slug";
-
-function convertUuid() {
-  const record = new Uint8Array(32);
-  return uuidStringToBytes("01990d4d-e600-7000-8000-000000000000", record, 8);
-}
-```
-
-`uuidStringToBytes` accepts mixed-case canonical or compact text, UUID URNs and brace-wrapped
-canonical text. It allocates a plain `Uint8Array` or writes 16 bytes at the requested offset.
-`bytesToUuidString` reads at an optional offset and returns lowercase hyphenated text.
-Every UUID-text writer accepts `UUID_TEXT_UPPERCASE` or `"uppercase"`; use `UUID_TEXT_LOWERCASE`
-to select the default explicitly. Text case does not change slug alphabets or accepted input.
-`Buffer` works because it is a `Uint8Array`. A standalone `ArrayBuffer` must contain exactly 16
-bytes. A `DataView` must declare an exact 16-byte range, which can select a UUID inside a larger
-buffer without copying. Offsets apply only to `Uint8Array`; other typed arrays and array-like values
-are rejected. Use `isUuidBytes`, `isUuidV4Bytes`, or `isUuidV7Bytes` when unknown binary input must
-be narrowed before storage or version-specific work.
-
-For a binary database key or protocol field, use `uuidBytesToPlainSlug(record, offset)` and
-`plainSlugToUuidBytes(slug, record, offset)` to avoid UUID text and temporary slices. Use
-`maskingCodec.maskedSlugToUuidBytes(slug, record, offset)` for known masked IDs. These writes return the original
-array, not a view of the UUID. Read it back at the same offset. Copy bytes you need to keep before
-reusing the buffer.
-
-Without an offset, `uuidBytesToPlainSlug` requires exactly 16 bytes.
-
-## Two kinds of slug
-
-### Plain slugs
-
-Use `uuidStringToPlainSlug` to encode a UUID and `plainSlugToUuidString` to recover it.
-Plain slugs have no padding; decoders reject nonzero padding bits.
-`isPlainUuidSlug` checks canonical spelling and returns a boolean.
-
-Pass `BASE32HEX` to any plain-slug writer for lowercase output that preserves UUIDv7 timestamp
-order under ASCII comparison, for example `generatePlainUuidV7Slug(BASE32HEX)`.
-Use one representation when sorting; database collations and natural file sorting can differ.
-See [ordering](#ordering-and-key-distribution).
-
-`uuidToString` infers the alphabet from the length, 22 or 26, so both spellings remain readable
-after you switch output. It accepts uppercase base32hex and returns lowercase UUID text by default.
-Decode to a UUID before comparing identities or building a cache key:
-different spellings can identify the same record. Preserve base64url case; lowercasing it changes
-the value. Choose base32hex when storage cannot preserve case distinctions.
-
-### Masked slugs
-
-Create a masking codec with your private key. It writes base64url by default; set
-`maskedSlugAlphabet: BASE32HEX` for lowercase base32hex. Both recover the same UUIDv7.
-
-Create the codec once and reuse its generator:
-
-```ts
-import {
-  createUuidV7MaskingCodec,
-  isUuidSlugError,
-} from "@anizoptera/uuid-slug";
-
-function createPublicIdGenerator(seed: string) {
-  const maskingCodec = createUuidV7MaskingCodec({ maskSeed: seed });
-  if (isUuidSlugError(maskingCodec)) return maskingCodec;
-  return maskingCodec.generateMaskedUuidV7Slug;
-}
-```
-
-Call `createPublicIdGenerator(seed)` at startup and check its result. Keep the returned function
-and call it for each new ID; key derivation runs once. Masking-codec methods need no `bind`.
-
-**Generate the seed; do not think one up.** For example, run `openssl rand -base64 32` and
-store the result outside your source repository. Seeds shorter than 16 bytes are rejected, but
-length alone does not make a seed unpredictable: a known UUID/slug pair allows offline guesses.
-
-Changing the seed or `keyDerivationIterations` changes the keys. Keep the old settings in
-`previousMasks` while their slugs must remain readable; new slugs use the current keys.
-Retain each live format's timestamp-range start and sentinel definitions too.
-Deploy readers for both formats before changing writers; old bookmarks still need their decoder.
-See [format migration](docs/api.md#changing-an-existing-id-format).
-`keyDerivationIterations` defaults to `1`; increasing it adds construction and guessing cost,
-but does not turn a human-chosen seed into a suitable secret.
-
-- A decoded slug is a candidate, not proof of issuance. Roughly one random 22-character string in
-  65,536 passes the check and decodes to a well-formed, possibly unissued UUID. When accessing a
-  stored record, check that it exists and that the caller may access it. A wrong candidate can name
-  an existing record: a lookup alone does not prove correct decoding. Every extra
-  mask you try adds another opportunity for false acceptance; the combined rate is
-  at most the sum of the individual rates. Keep the rotation list short.
-- Masking keeps the UUIDv7 timestamp within a configured range of `2^42`
-  milliseconds. `timestampRangeStartUnixMs` sets the inclusive first millisecond; the inclusive
-  last is `timestampRangeStartUnixMs + MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`. The default start is `0`, which
-  preserves existing slugs. Masking returns `invalid_timestamp` outside the selected range.
-  Truncating would make different UUIDs share a slug. Plain slugs have no such limit;
-  registered sentinels are always plain slugs and therefore retain the full UUIDv7 timestamp range.
-
-Choose a range that covers your IDs. See [codec options](docs/api.md#masking-codec-options) and
-the [wire layout](docs/design.md#representations-and-bit-budget).
-
-### Sentinels
-
-Sentinels are application-selected UUIDv7 values that are never masked, so they stay
-recognisable in logs and support tickets. Codecs default to no sentinels; configure only identities
-your application has reserved:
-
-| Name            | UUID                                   | Slug                     |
-| --------------- | -------------------------------------- | ------------------------ |
-| `nil`           | `00000000-0000-7000-8000-000000000000` | `AAAAAAAAcACAAAAAAAAAAA` |
-| `anonymous`     | `00000000-0001-7000-8000-000000000000` | `AAAAAAABcACAAAAAAAAAAA` |
-| `unknown`       | `00000000-0002-7000-8000-000000000000` | `AAAAAAACcACAAAAAAAAAAA` |
-
-Read the validated names, UUIDs, and slugs from `maskingCodec.sentinels`:
-
-```ts
-import { createUuidV7MaskingCodec, isUuidSlugError } from "@anizoptera/uuid-slug";
-
-function createSentinels(seed: string) {
-  const maskingCodec = createUuidV7MaskingCodec({
-    maskSeed: seed,
-    sentinels: [{ name: "unknownUser", uuid: "00000000-0002-7000-8000-000000000000" }],
-  });
-  return isUuidSlugError(maskingCodec) ? maskingCodec : maskingCodec.sentinels;
-}
-```
-
-Each sentinel name must be nonempty and unique within the masking codec. Each sentinel UUID must also be
-unique. Its input accepts every UUID text spelling above; `maskingCodec.sentinels` exposes normalized lowercase text.
-
-Sentinels keep their spelling across seed rotation when the alphabet and reserved UUIDs stay the
-same. This lets reserved identities remain recognizable while ordinary IDs use the new mask.
-The example named `nil` is an application sentinel, not the all-zero UUID; that UUID
-is not UUIDv7 and cannot be a masking-codec sentinel.
-
-Keep sentinel definitions stable while their slugs are in use. Decoding checks sentinels first, so they
-are reserved even if a mask could produce the same text. Encoding rejects a non-sentinel UUID
-whose masked output collides with a reserved slug, using `invalid_mask`; it never returns
-a slug that would decode to the wrong sentinel.
-
 ## Ordering and key distribution
 
 Base64url UUIDv7 slugs are almost time-ordered. Nearby timestamps keep similar prefixes, but
@@ -359,7 +364,6 @@ payload bits to zero and the second sets them to one. Pass an inclusive end mill
 longer interval. Use these bounds only where comparison follows UUID wire-byte order; SQL Server's
 `uniqueidentifier` order does not.
 
-Use plain slugs to keep time grouping, and base32hex for chronological text sorting.
 Masking scrambles the timestamp, so masked filenames need decoding or separate dates for
 chronological sorting.
 
@@ -398,10 +402,6 @@ async function findAuthorizedRecord<Record>(
   return record !== undefined && canRead(record) ? record : undefined;
 }
 ```
-
-Supply exactly one of `maskSeed` or `mask`; supplying neither or both returns `invalid_mask`.
-Use `maskSeed` for your secret, or `mask` for a separately derived mask, derivation options or
-`UUID_V7_TEST_MASK`. The test mask is public: anyone can decode IDs made with it.
 
 A browser can use a masked ID returned by your service without knowing the seed. Keep private
 masking and decoding on a trusted service; shipping the seed in client code makes it public.
@@ -448,7 +448,7 @@ Each export also documents its accepted input, result and failures in editor hov
 | Generate an immutable UUIDv7 value | `generateUuidV7Value`, or its generator and masking-codec methods |
 | Control UUIDv7 time, sequence, rollback, or entropy | `createUuidV7Generator`, `createUuidV7GeneratorWithRandomFill` |
 | Convert UUID text, bytes, and plain slugs | `uuidToString`, `uuidToBytes`, `uuidToPlainSlug`, plus source-specific converters |
-| Parse once for repeated work | `parseUuid` returns an immutable `Uuid` value |
+| Parse once for repeated work | [`parseUuid`](docs/api.md#convert-and-inspect-ids) returns an immutable `Uuid` value |
 | Inspect version, variant, timestamp, or payload | `Uuid.inspect`, `extractUuidVersion`, `extractUuidV7UnixMs`, `extractUuidV7Payload` |
 | Narrow untrusted input | `isUuidText`, `isUuidString`, `isUuidBytes`, `isPlainUuidSlug`, their v4/v7 guards, and `isUuidSlugError` |
 | Build UUIDv7 database range keys | `uuidV7StringBounds`, `uuidV7ByteBounds` |
@@ -525,7 +525,7 @@ See [security limits](docs/security.md) for entropy failures and masking.
 
 ## Runtime
 
-The npm package is ESM-only. It needs no native addons or WebAssembly installation.
+The npm package needs no native addons or WebAssembly installation.
 
 The [Rust crate](rust/uuid-slug) uses the same identifier formats. Cross-language masked reads
 require matching seeds, iteration counts and timestamp ranges; see [cross-language contracts](docs/cross-language.md).
