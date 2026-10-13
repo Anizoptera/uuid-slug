@@ -322,7 +322,9 @@ Keep agent rules in `AGENTS.md`; engineering and measurement detail stays in its
   returned inputs or unneeded conversions. Comments cannot excuse extra work.
   Show result brands/error unions; readers have no IDE. Input annotations must add meaning, not
   repeat `string` on a literal. No casts to invent validation. Use `typeof` for scalar/error unions;
-  use the helper for object/error unions or unknown inputs. Show alternatives, not duplicate checks.
+  use the helper for object/error unions or unknown inputs. Preserve examples that teach alternative
+  checks. Read their comments before deleting either; label the choices. Showing both for explanation
+  does not recommend doing both in production.
   Error guards recognize returned errors; they do not test call correctness. State time units.
 - Performance copy MUST sell speed, memory/resource efficiency and small bundles together.
   "Native APIs with TypeScript fallbacks" alone fails: it names machinery, not a gain.
