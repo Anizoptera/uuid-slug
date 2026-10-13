@@ -30,12 +30,13 @@ Keep checks only when they distinguish a material defect from allowed behavior; 
   - [x] Preserve packed export order with the complete export-map comparison; an order-only fixture must fail when that guard is removed. Reject missing source-map inputs without an unreachable embedded-source fallback.
   - [x] Execute optimizer generation witnesses against canonical spelling, version and variant bits, and compare masking with the retained wire vector; a wrong-version production stamp must fail every selected optimizer while the restored package passes.
 - [x] Audit benchmark/resource guards and harness lifecycle for false greens, duplicated work, timing guesses, isolation leaks and misleading diagnostics; keep existing protected workloads and budgets.
-  - [ ] Prepare the identical Node conformance bundle and installed-host matrix once per Rust check; keep debug and release executions independent and report the first profile before building the next.
+  - [x] Prepare the identical Node conformance bundle and installed-host matrix once per Rust check; keep debug and release executions independent and report the first profile before building the next.
   - [x] Check the complete Bun lane with shared modules in shuffled orders; retain isolated execution because the apparent speed gain varies with order. Preserve every file and case, separate Node execution, and retain local/CI deadlines and cleanup.
   - [x] Route CI runtime tests, Deno resource proofs and candidate correctness probes through the existing scratch supervisor without changing test selection.
   - [x] Remove repeated API-removal and deprecation cases while retaining their stronger controls; report assertions ignore Markdown decoration but reject selection of a slower result.
 - [x] Remove proved redundancy and repair actionable gaps in small verified commits; demonstrate affected checks reject the intended defect and allowed behavior passes.
 - [ ] Run complete local lanes and hooks, inspect discovery and cleanup, and summarize retained evidence and unresolved limitations without claiming universal coverage.
+  - [ ] Supervise Node Vitest scratch cleanup with the existing runner; interrupt an actual worker after its file witness, require no leftover files, and prove bypassing supervision fails the same case.
   - [x] Make the pre-commit hook own the complete check instead of repeating a manual complete check with another fast check; retain every gate, avoid cache or bypass state, and measure the full hook invocation. Its measured duration remains above the warning threshold but below the error ceiling.
   - [x] Give CI's Bun case and subprocess deadlines slower-runner headroom without raising local deadlines or overriding caller-selected flags; a real hung case must time out and clean its scratch. Reversing flag precedence must fail that witness.
 

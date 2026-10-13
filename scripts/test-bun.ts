@@ -20,7 +20,8 @@ export async function runBunInScratch(args: readonly string[]): Promise<number> 
       // Isolate this runner's group so interruption reaches native extraction children too.
       // Windows retains Bun's no-orphans supervision; POSIX signals only this new group.
       detached: USE_PROCESS_GROUP,
-      env: { ...process.env, TMPDIR: scratch },
+      // Node uses TEMP/TMP on Windows and TMPDIR on POSIX; keep both hosts in this scope.
+      env: { ...process.env, TMPDIR: scratch, TMP: scratch, TEMP: scratch },
       stdin: "inherit",
       stdout: "inherit",
       stderr: "inherit",

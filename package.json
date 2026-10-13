@@ -97,7 +97,7 @@
     "release": "bun scripts/release.ts",
     "test": "bun run --parallel test:node test:bun",
     "test:bun": "bun scripts/test-bun.ts --parallel=2 __test__/*.bun.test.ts scripts/__test__/*.test.ts",
-    "test:node": "vitest run",
+    "test:node": "bun scripts/test-node.ts",
     "typecheck": "bun run build && bun run typecheck:built",
     "typecheck:built": "bun node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
     "typecheck:bun": "bun --check",

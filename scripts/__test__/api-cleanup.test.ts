@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { verificationTimeoutMs } from "../test-bun";
@@ -7,6 +7,62 @@ import { verificationTimeoutMs } from "../test-bun";
 const root = resolve(import.meta.dir, "../..");
 const DESCENDANT_READY = "extraction-ready";
 const DESCENDANT_LATE_WRITE = "late-write";
+
+test("Node worker interruption removes generated verification files", async () => {
+  const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-node-cleanup-"));
+  const files = join(scratch, "files");
+  try {
+    await mkdir(files);
+    await symlink(join(root, "node_modules"), join(scratch, "node_modules"), "junction");
+    const config = join(scratch, "vitest.config.mjs");
+    await writeFile(config, 'export default { test: { include: ["worker.test.ts"] } };');
+    await writeFile(
+      join(scratch, "worker.test.ts"),
+      [
+        'import { test } from "vitest";',
+        'import { mkdirSync, writeFileSync } from "node:fs";',
+        'import { join } from "node:path";',
+        'if (process.versions.bun) throw new Error("Expected an actual Node worker");',
+        'const work = join(process.env.TMPDIR, "generated");',
+        'mkdirSync(work); writeFileSync(join(work, "probe.mjs"), "ready");',
+        'test("interruption", async () => { process.stdout.write("node-worker-ready\\n"); await new Promise(() => {}); });',
+      ].join("\n"),
+    );
+    const child = Bun.spawn(
+      [process.execPath, "scripts/test-node.ts", "--root", scratch, "--config", config],
+      {
+        cwd: root,
+        env: { ...process.env, TMPDIR: files },
+        stdout: "pipe",
+        stderr: "inherit",
+        timeout: verificationTimeoutMs(5000),
+      },
+    );
+    try {
+      const reader = child.stdout.getReader();
+      let output = "";
+      while (!output.includes("node-worker-ready")) {
+        const chunk = await reader.read();
+        if (chunk.done) throw new Error("Node worker exited before its file witness.");
+        output += new TextDecoder().decode(chunk.value);
+      }
+      expect(
+        (await readdir(files, { recursive: true })).some((file) => file.endsWith("probe.mjs")),
+      ).toBe(true);
+      child.kill("SIGTERM");
+      while (!(await reader.read()).done) {
+        /* Drain inherited worker output through termination. */
+      }
+      expect(await child.exited).not.toBe(0);
+      expect(await readdir(files)).toEqual([]);
+    } finally {
+      child.kill();
+      await child.exited;
+    }
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+});
 
 test("runner interruption stops Node descendants before scratch cleanup", async () => {
   const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-api-cleanup-"));

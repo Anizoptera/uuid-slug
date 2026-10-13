@@ -250,7 +250,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   not exclude them from project type checking. The existing artifact check rejects executable
   source captures in reports; never bypass it or suppress their compiler diagnostics.
   Keep real failures until diagnosis; expected rejection fixtures archive inside their test cleanup scope.
-  Include setup in cleanup; run Bun tests, API checks and generation comparisons through their package commands so `scripts/test-bun.ts` owns temporary files after interruption. Create their scratch under `tmpdir()`, inside the supervisor's cleanup scope. Purge successful bundles and resolved failure artifacts.
+  Include setup in cleanup; run Node and Bun tests, API checks and generation comparisons through their package commands so `scripts/test-bun.ts` owns temporary files after interruption. Create their scratch under `tmpdir()`, inside the supervisor's cleanup scope. Purge successful bundles and resolved failure artifacts.
   Preserve earlier captured graphs before replacing build-input archives. Keep captured packages immutable and share identical archives by content hash; never rewrite a linked capture in place. Read `bench/README.md` before pruning indexed evidence. Compact retained reports with `bun scripts/compact-reports.ts` without changing their bytes.
   Before committing, inspect creator-owned paths in both `/tmp` and the runtime's
   `tmpdir()`, not just filename prefixes; stop children and preserve evidence and reusable caches.
@@ -386,8 +386,8 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Gate every runtime-dependent change in both Node Vitest and Bun tests, including branches
   outside `src/runtime/` that use optional capabilities. Neither runner covers the other's
   adapter. Share entropy cases in `__test__/entropy-probe.ts`.
-  Run Node Vitest through `bun run test:node`; focused runs use `node node_modules/vitest/vitest.mjs`
-  so Bun does not select the test worker.
+  Run Node Vitest through `bun run test:node`; focused runs use `bun scripts/test-node.ts`
+  so the supervisor cleans interrupted work while Node remains the test worker.
 - Keep portable clock cases and finer-precision cases together. Probe actual time representation, not OS names; test native Temporal inputs where available and preserve the configured UUIDv7 layout. For high-resolution clocks, combine whole milliseconds and fractions separately: adding the epoch first can round across a fraction boundary.
 - Keep development native interop as one discovered research matrix across supported installed
   Node, Bun and Deno Node-API/FFI boundaries. Run one corpus with nonzero evidence per lane; use
