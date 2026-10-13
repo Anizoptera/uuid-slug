@@ -8,6 +8,7 @@ Preserve supported calls, identifier formats, caller data and package compatibil
 Keep checks only when they distinguish a material defect from allowed behavior; preserve supported contracts, regression cases, runtime fidelity and cleanup. Change test internals locally; do not republish or change public guarantees.
 
 - [ ] Map every test, fixture, static check, hook and CI lane to its execution owner; find omitted discovery, duplicate execution and TypeScript verification outside `__test__`.
+  - [ ] Move the native contract corpus intact into `__test__`; keep existing script commands and imports working through a small launcher, prove byte identity before adapting its entry, and run every discovered native transport afterward.
   - [x] Check runtime string ownership for quoted and backtick literals through the actual CLI; the old checker must miss the template cases while type literals and `typeof` narrowing remain accepted.
   - [x] Route the existing Darwin-only compression case to a macOS CI job; Linux-only discovery skips the platform behavior that the check protects. Preserve byte identity, symlinks, storage savings and cleanup without repeating the rest of the script suite.
 - [ ] Audit UUID generation, entropy, parsing, alphabets, masking, migration, buffers and runtime capabilities against their implementations; identify independent oracles, missed boundaries, tautologies and uncontrolled state.
