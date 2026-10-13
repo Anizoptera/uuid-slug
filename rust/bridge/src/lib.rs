@@ -59,7 +59,7 @@ unsafe fn write_into(
             return 0;
         };
         let Ok(output_bytes) = operation(input).map(String::into_bytes) else {
-            return usize::MAX;
+            return 0;
         };
         let required = output_bytes.len();
         if capacity < required {
@@ -173,6 +173,21 @@ mod ffi_tests {
             },
             0
         );
+        let before = output.clone();
+        let invalid_uuid = b"not a UUID";
+        // SAFETY: both slices remain live and non-overlapping for the call.
+        assert_eq!(
+            unsafe {
+                super::uuid_slug_plain_into(
+                    invalid_uuid.as_ptr(),
+                    invalid_uuid.len(),
+                    output.as_mut_ptr(),
+                    output.len(),
+                )
+            },
+            0
+        );
+        assert_eq!(output, before);
     }
 }
 
