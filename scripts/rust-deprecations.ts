@@ -20,9 +20,12 @@ interface RustdocItem {
     readonly trait?: { readonly items: readonly number[] };
     readonly impl?: { readonly trait: object | null; readonly items: readonly number[] };
     readonly variant?: {
-      readonly kind: {
-        readonly struct?: { readonly fields: readonly number[] };
-      };
+      readonly kind:
+        | "plain"
+        | {
+            readonly struct?: { readonly fields: readonly number[] };
+            readonly tuple?: readonly (number | null)[];
+          };
     };
   };
 }
@@ -99,15 +102,18 @@ export function annotateRustApi(source: string, deprecated: ReadonlySet<string>)
     .join("\n");
 }
 
+const EMPTY_RUSTDOC_CHILDREN: readonly number[] = [];
+
 function rustdocChildren(item: RustdocItem): readonly number[] {
   // Tuple fields remain inside their parent's declaration, not separate report entries.
+  const kind = item.inner.variant?.kind;
   return (
     item.inner.struct?.kind.plain?.fields ??
     item.inner.enum?.variants ??
     item.inner.union?.fields ??
     item.inner.trait?.items ??
-    item.inner.variant?.kind.struct?.fields ??
-    []
+    (typeof kind === "object" ? kind.struct?.fields : undefined) ??
+    EMPTY_RUSTDOC_CHILDREN
   );
 }
 
