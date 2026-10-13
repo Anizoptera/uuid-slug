@@ -6,7 +6,7 @@
 [![Runtime deps](https://img.shields.io/badge/runtime_deps-0-2ea44f)](package.json)
 [![License](https://img.shields.io/github/license/Anizoptera/uuid-slug)](LICENSE)
 
-Fastest UUIDv4/v7 generation and handling, short base64url slugs and configurable UUIDv7 masked slugs. Zero runtime dependencies, tree-shakable. One efficient ID across your database, URLs and files.
+Fastest UUIDv4/v7 generation and handling, short base64/base32 plain and masked slugs.  Zero runtime dependencies, tree-shakable.  One efficient ID across database, URLs and files.
 
 ```text
 UUID: 0198abcd-1234-7abc-9def-0123456789ab
