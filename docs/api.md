@@ -188,13 +188,12 @@ instead, because that string cannot identify its meaning itself.
 
 A byte offset is the zero-based index where one 16-byte UUID starts inside a larger `Uint8Array`.
 Omit it for a standalone 16-byte array. Output offsets select where a method writes; input offsets
-select where it reads. Bytes outside that 16-byte range stay unchanged. An offset of `0` always means
-the same as omitting it. Only `Uint8Array` input accepts a non-zero input offset: every other
+select where it reads. Bytes outside that 16-byte range stay unchanged. Pass an input offset,
+including `0`, for an array larger than 16 bytes. Only `Uint8Array` accepts a non-zero input offset: every other
 accepted form holds exactly one UUID, with no surrounding bytes to skip.
 
-Masking is possible for any UUID version, but this library supports it only for UUIDv7.
-Its fixed version, variant, and 42-bit timestamp offset leave room for a 16-bit check without
-lengthening the default 22-character slug. Plain slugs support every UUID version.
+Masking accepts UUIDv7 only. Its [wire layout](design.md#representations-and-bit-budget) leaves
+room for a 16-bit check in the default 22-character slug. Plain slugs accept every UUID version.
 
 Use an independent generator when the application owns the clock:
 
@@ -337,10 +336,9 @@ async function createResponsiveCodec(
 }
 ```
 
-The async form derives the same keys and accepts the same seed settings. It splits encoding,
-packing and hashing into cooperative work slices, allowing host tasks to run during long
-construction. Aborting the supplied `AbortSignal` stops derivation and returns `UuidSlugError` with code `aborted` and
-`signal.reason` as its cause. Invalid options return `invalid_mask`; unexpected construction
+The async form derives the same keys with the same seed settings and yields during long work.
+Abort the supplied `AbortSignal` to stop derivation: it returns `UuidSlugError` with code
+`aborted` and `signal.reason` as its cause. Invalid options return `invalid_mask`; unexpected
 failures retain their cause. No partially derived mask is returned.
 
 Options are captured when called. Byte seeds are copied before the first suspension, so later
@@ -349,10 +347,8 @@ Copying a very large byte seed, plus allocation, GC, and host scheduling, can st
 than one work slice. Small derivations need no host yield. Construct once and reuse the mask;
 passing seed options to each new codec would repeat derivation.
 
-`previousMasks` is how you rotate a seed or timestamp range. Decoding tries `mask` first, then each entry in the
-order you list them, and the first whose check passes wins. Put the newest first, and keep the
-list short. Nothing else is ever tried: a masking codec decodes with the masks you gave it and no
-others.
+Use `previousMasks` to rotate a seed or timestamp range. Decoding tries the current mask, then
+previous masks in the order you supply; the first passing check wins. Keep the list short.
 
 ```ts
 import { createUuidV7MaskingCodec } from "@anizoptera/uuid-slug";
