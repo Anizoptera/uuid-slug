@@ -81,8 +81,8 @@ its declaration comment; your editor shows it on hover.
 
 ### Generate IDs
 
-Import these functions from the package root. UUIDv7 text and byte methods also exist on an
-independent generator; UUIDv4 and plain-slug generation remain module-level.
+Import these functions from the package root. UUIDv7 generation methods also exist on an
+independent generator; UUIDv4 generation remains module-level.
 
 | Call | Successful result |
 | --- | --- |
@@ -97,6 +97,31 @@ independent generator; UUIDv4 and plain-slug generation remain module-level.
 | `uuidV7ByteBounds(startMs, endMs?)` | The same inclusive bounds as two owned byte arrays. |
 | `createUuidV7Generator(options?)` | An independent UUIDv7 sequence using platform cryptographic entropy; invalid numeric ranges or clock policies return `UuidSlugError`. |
 | `createUuidV7GeneratorWithRandomFill(fill, options?)` | An independent UUIDv7 generator using an explicit synchronous entropy source. |
+
+#### Custom clocks and ordering
+
+Use `createUuidV7Generator({ readUnixMs })` for an application clock or time-dependent tests.
+Each generator has its own sequence state. A fixed clock does not make IDs repeatable:
+randomness still comes from the runtime.
+
+Set `subMillisecondFractionBits` from 1 through 12 to encode the clock fraction before the
+generator's random-start counter. `payloadLayout` exposes the exact split for later extraction.
+Without `readUnixMs`, this mode uses the runtime's high-resolution clock when available and falls
+back to `Date.now()`. The selected width states the UUID layout, not the clock's real accuracy.
+If another reading lands in the same fraction bucket, the generator increments the counter. If the
+counter fills, it advances the logical fraction and then the millisecond timestamp. The default
+preserve policy applies the same rule when the clock moves backward, so extracted time can be later
+than the supplied instant. A reset policy may move backward after its tolerance. Explicit `at`
+calls on the generator join this sequence; module-level `at` calls use independent randomness.
+
+With the default preserve policy, successful current-time calls on one generator strictly increase
+in UUID byte order, including calls made within one millisecond. Module-level generation uses the
+fastest validated secure path for each output form and does not promise ordering across calls.
+Created generators do not coordinate with reset-policy calls after their tolerance, other
+generators, package copies, workers, or processes. Set `clockRollback` to reset or
+return `invalid_timestamp` when total skew exceeds an inclusive tolerance. Use
+`createUuidV7GeneratorWithRandomFill` only when the application must own entropy; its callback must
+fill every requested byte or return `UuidSlugError`.
 
 ### Convert and inspect IDs
 
@@ -121,12 +146,14 @@ When only some values retain a codec or payload layout, pass that configuration 
 Each preset is independent; binding its method to the UUID preserves the corresponding default.
 
 ```ts
-const uuid = parseUuid(input, codec);
-if (uuid instanceof Error) return uuid;
+import { isUuidSlugError, parseUuid } from "@anizoptera/uuid-slug";
+import type { UuidV7MaskingCodec } from "@anizoptera/uuid-slug";
 
-const facts = uuid.inspect();
-const stored = uuid.toBytes();
-const publicId = uuid.toMaskedSlug();
+function inspectPublicId(input: string, maskingCodec: UuidV7MaskingCodec) {
+  const uuid = parseUuid(input, maskingCodec);
+  if (isUuidSlugError(uuid)) return uuid;
+  return { facts: uuid.inspect(), stored: uuid.toBytes(), publicId: uuid.toMaskedSlug() };
+}
 ```
 
 ### Use a masking codec
@@ -287,7 +314,7 @@ Share one derived mask between codecs to avoid repeating key derivation, for exa
 use base64url and filenames use base32hex. Each masking codec chooses its alphabet and sentinels; keep
 sentinel definitions the same if the codecs must read each other's output.
 
-Diagnostic labels name masks in diagnostics. Slugs contain no diagnosticLabel, so a diagnosticLabel cannot select the decoding
+`diagnosticLabel` identifies a mask in error messages, not in slugs. It cannot select a decoding
 key. Services must use the same seed bytes and iteration count to derive matching keys.
 String seeds use UTF-8: base64 text and the bytes it encodes are different seeds.
 
