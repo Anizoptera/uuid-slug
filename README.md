@@ -9,7 +9,7 @@ Fastest UUIDv4/v7 generation and handling for TS, Rust, and WASM, short base64/b
 [![License](https://img.shields.io/github/license/Anizoptera/uuid-slug)](LICENSE)
 
 - **The fastest compliant UUIDv4/v7 generation and handling across all JS/TS runtimes!**
-- 6+ distinct UUID representations are supported!
+  - 6+ distinct UUID representations are supported!
 
 - **Best performance**, lowest memory and resource allocation on EVERY runtime!
   - Same API that works most efficiently on Node, Bun, Deno, browsers and cloud workers. Native fast paths and portable fallbacks are used automatically.
@@ -21,7 +21,7 @@ Fastest UUIDv4/v7 generation and handling for TS, Rust, and WASM, short base64/b
   - 16-byte binary UUID for storage or transport.
   - **Short 22-character base64url slug for URLs** (39% shorter than a naive UUID text).
   - 26-character base32hex lowercase slug suits case-insensitive (e.g., cross-OS) filenames. Plain UUIDv7 slugs in this alphabet sort by timestamp under ASCII comparison.
-  - Optional **UUIDv7 masked slug form that hides timestamp and UUID structure.** Expose your IDs without revealing their creation time or nature!
+  - Optional **[UUIDv7 masked slug](#masked-slugs) form that hides timestamp and UUID structure.** Expose your IDs without revealing their creation time or nature!
   - _Any UUID can be converted into a slug, and vice versa. Existing database keys stay unchanged; no mapping table is needed._
 
 - **Most complete functionality. Anything you need to do with UUIDv4/v7 + most operations are applicable to any UUID!**
@@ -32,9 +32,9 @@ Fastest UUIDv4/v7 generation and handling for TS, Rust, and WASM, short base64/b
   - Async key derivation yields during long work and can be cancelled.
   - Optional UUID object for multiple operations over one ID.
   - Timestamp and ordering tools for UUIDv7: timestamp extraction, time-range queries, supplied times and clock controls.
-  - Optional, special UUID sentinel values for testing, debugging, tracing and development needs.
+  - Optional, [special UUID sentinel values](#sentinels) for testing, debugging, tracing and development needs.
   - Optimal, **safe and most efficient defaults!**
-  
+
 - **Intuitive, ergonomic, agent-friendly manually tailored API.**
   - Strict types, validation, typed errors, safe buffer writes and one-check composition to prevent integration mistakes.
   - Types catch UUID-version and plain/masked mix-ups before execution. Compatible conversions chain with one error check; failures have stable codes.
@@ -95,8 +95,7 @@ Default generation returns the ID and throws `rng_unavailable` only without secu
 ## Keep your existing UUIDs
 
 Encode stored UUIDs; decode incoming slugs before querying the same keys.
-Plain encoding preserves every bit, so it adds no collisions. Standard encodings let you decode
-plain slugs without this library; masked slugs need the matching key and settings.
+Plain encoding preserves every bit. Standard encodings let you decode plain slugs without this library; **masked slugs need the matching key and settings**.
 
 ```ts
 import { plainSlugToUuidString, uuidStringToPlainSlug } from "@anizoptera/uuid-slug";
@@ -105,6 +104,9 @@ import type { PlainUuidSlug, UuidSlugError, UuidString } from "@anizoptera/uuid-
 const slug: PlainUuidSlug | UuidSlugError = uuidStringToPlainSlug("0198abcd-1234-7abc-9def-0123456789ab");
 if (typeof slug === "string") console.log(slug);
 else console.error(slug.message);
+
+// Correctness of any call can be tested for errors safely with the helper directly:
+if (!isUuidSlugError(slug)) console.log(slug);
 
 const uuid: UuidString | UuidSlugError = plainSlugToUuidString("AZirzRI0eryd7wEjRWeJqw");
 if (typeof uuid === "string") console.log(uuid); // The database key for this incoming URL slug.
@@ -126,14 +128,11 @@ All examples encode the same UUIDv7; sizes are characters except for bytes.
 | Masked base64url UUIDv7 slug | 22 | `ap225Qa_y6wN5LQCJgwH0z` | Opaque, case-sensitive, unordered; 16-bit check; requires its codec to decode |
 | Masked base32hex UUIDv7 slug | 27 | `daerdp86nv5qo3f4mg12c307qco` | Opaque, unordered; writes lowercase, accepts mixed case; requires its codec to decode |
 
-Parsers accept mixed-case canonical or compact hexadecimal text, brace-wrapped canonical text
-and UUID URNs. See [input examples](docs/api.md#uuid-text-input).
+Parsers accept mixed-case canonical or compact hexadecimal text, brace-wrapped canonical text and UUID URNs. See [input examples](docs/api.md#uuid-text-input).
 Masked examples use the public `UUID_V7_TEST_MASK`; use a private seed for your IDs.
 
 Plain and masked base64url slugs can look identical but decode to different UUIDs.
-Read known plain IDs with `plainSlugToUuidString` and known masked IDs with
-`maskingCodec.maskedSlugToUuidString`. General codec readers try masks first, then plain decoding
-only if every mask rejects the slug.
+Read known plain IDs with `plainSlugToUuidString` and known masked IDs with `maskingCodec.maskedSlugToUuidString`. General codec readers try masks first, then plain decoding only if every mask rejects the slug.
 
 Generate bytes once when you need several representations, then convert only those you use.
 Use paired generation when you need UUID text plus one slug.
@@ -142,25 +141,28 @@ Use paired generation when you need UUID text plus one slug.
 
 ### Plain slugs
 
+_Examples: `AZirzRI0eryd7wEjRWeJqw` (base64url), `06canj8i6htbp7ff04hkaps9lc` (base32hex)_
+
 Use `uuidStringToPlainSlug` to encode a UUID and `plainSlugToUuidString` to recover it.
 Decoders reject `=` padding and nonzero unused bits in the last character.
 `isPlainUuidSlug` checks canonical spelling and returns a boolean.
 
 Pass `BASE32HEX` to a plain-slug writer, for example `generatePlainUuidV7Slug(BASE32HEX)`; see [ordering](#ordering-and-key-distribution).
 
-`uuidToString` infers the alphabet from the length, 22 or 26, so old slugs survive alphabet changes.
+`uuidToString` infers the alphabet from the length automatically, 22 or 26, so old slugs survive alphabet changes.
 It returns lowercase UUID text by default.
 Decode before comparing IDs or building cache keys: different spellings can identify the same record.
 Preserve base64url case; lowercasing changes the value.
 
 ### Masked slugs
 
+_Examples: `ap225Qa_y6wN5LQCJgwH0z` (base64url), `daerdp86nv5qo3f4mg12c307qco` (base32hex)_
+
 Hide UUIDv7 timestamps and other standard fields with a reusable masking codec.
 Codecs default to base64url; set `maskedSlugAlphabet: BASE32HEX` for lowercase filenames.
 
 Supply either `maskSeed` or `mask`; neither or both returns `invalid_mask`.
-Use `maskSeed` for a secret; `mask` accepts a derived mask, derivation options or
-`UUID_V7_TEST_MASK`. Anyone can decode IDs made with the public test mask.
+Use `maskSeed` for a secret; `mask` accepts a derived mask, derivation options or `UUID_V7_TEST_MASK`. **Anyone can decode IDs made with that public test mask!  AVOID USING IT IN PRODUCTION!**
 
 ```ts
 import {
@@ -177,7 +179,7 @@ const maskingCodec: UuidV7MaskingCodec | UuidSlugError = createUuidV7MaskingCode
 if (isUuidSlugError(maskingCodec)) {
   console.error(maskingCodec.message);
 } else {
-  const storedUuid: string = "0198abcd-1234-7abc-9def-0123456789ab";
+  const storedUuid = "0198abcd-1234-7abc-9def-0123456789ab";
   const slug: MaskedOrSentinelUuidV7Slug | UuidSlugError = maskingCodec.uuidToMaskedSlug(storedUuid);
   if (typeof slug === "string") console.log(slug);
   else console.error(slug.message);
@@ -240,7 +242,7 @@ It returns an immutable `Uuid` object, not a string. Changes to its byte outputs
 import { isUuidSlugError, parseUuid } from "@anizoptera/uuid-slug";
 import type { PlainUuidSlug, Uuid, UuidBytes, UuidInspection, UuidSlugError } from "@anizoptera/uuid-slug";
 
-const input: string = "0198abcd-1234-7abc-9def-0123456789ab";
+const input = "0198abcd-1234-7abc-9def-0123456789ab";
 const uuid: Uuid | UuidSlugError = parseUuid(input);
 if (isUuidSlugError(uuid)) {
   console.error(uuid.message);
@@ -266,9 +268,9 @@ See [accepted time forms and configured fractional precision](docs/api.md#suppli
 
 ```ts
 import { BASE32HEX, generatePlainUuidV7Slug } from "@anizoptera/uuid-slug";
-import type { PlainUuidV7Slug, UuidSlugError, UuidV7Instant } from "@anizoptera/uuid-slug";
+import type { PlainUuidV7Slug, UuidSlugError } from "@anizoptera/uuid-slug";
 
-const recordedAt: UuidV7Instant = "2026-01-01T12:00:00Z";
+const recordedAt = "2026-01-01T12:00:00Z"; // or Date or unix timestamp, etc.
 const slug: PlainUuidV7Slug | UuidSlugError = generatePlainUuidV7Slug({ at: recordedAt, alphabet: BASE32HEX });
 if (typeof slug === "string") console.log(slug);
 else console.error(slug.message);
@@ -292,7 +294,7 @@ If it is the time you need, omit a separate field:
 import { extractUuidV7UnixMs } from "@anizoptera/uuid-slug";
 import type { UuidSlugError } from "@anizoptera/uuid-slug";
 
-const incomingId: string = "AZirzRI0eryd7wEjRWeJqw";
+const incomingId = "AZirzRI0eryd7wEjRWeJqw";
 const unixMs: number | UuidSlugError = extractUuidV7UnixMs(incomingId);
 if (typeof unixMs === "number") console.log(unixMs);
 else console.error(unixMs.message);
@@ -371,11 +373,8 @@ Failed entropy draws, clock readings and custom transforms retain their exceptio
 
 ## API
 
-Use the [TypeScript reference](docs/api.md) for [types](docs/api.md#types),
-[call signatures](docs/api.md#api), [codec options](docs/api.md#masking-codec-options),
-[migration](docs/api.md#reading-original-slugs-during-migration) and
-[timestamp windows](docs/api.md#validating-timestamp-windows).
-Each export also documents its accepted input, result and failures in editor hover help.
+Use the [TypeScript reference](docs/api.md) for [types](docs/api.md#types), [call signatures](docs/api.md#api), [codec options](docs/api.md#masking-codec-options), [migration](docs/api.md#reading-original-slugs-during-migration) and [timestamp windows](docs/api.md#validating-timestamp-windows).
+Each export also documents its accepted input, result and failures in JSDoc.
 
 ## TypeScript API map
 
@@ -403,11 +402,8 @@ Generator, masking-codec and migration methods need no `this` binding.
 ## Guarantees
 
 - Generated IDs have RFC 9562 version and variant bits.
-- Built-in generators use cryptographically secure runtime randomness without weaker fallbacks.
-  If it is unavailable, argument-free or preset-only generation throws `UuidSlugError` with code
-  `rng_unavailable`. Calls with explicit time, a generator, caller output or custom entropy return it.
-- UUIDs can collide. Use a uniqueness constraint where duplicates could overwrite or misidentify
-  data. On conflict creating a record, keep the existing record and generate a new ID.
+- Built-in generators use cryptographically secure runtime randomness without weaker fallbacks. If it is unavailable, argument-free or preset-only generation throws `UuidSlugError` with code `rng_unavailable`. Calls with explicit time, a generator, caller output or custom entropy return it.
+- UUIDs **can** still collide even with a very low probability. Use a uniqueness constraint where duplicates could overwrite or misidentify critical data. On conflict creating a record, keep the existing record and generate a new ID.
 - Default calls retain the selected native generator's ordering and clock behavior.
   Use a created generator to control ordering and clock rollback. Native failures fall back to
   the package's generator; if both fail, the error retains both causes.
@@ -432,13 +428,12 @@ Generator, masking-codec and migration methods need no `this` binding.
 
 NPM package uses ES modules. Native APIs and portable TypeScript are selected automatically for each runtime and output, so the caller code does not need to choose or coordinate the implementations. When the runtime supports it, the implementation is chosen statically through the 'package.json' exports. 
 
-The [Rust crate](rust/uuid-slug) uses the same identifier formats. Cross-language masked reads
-require matching seeds, iteration counts and timestamp ranges; see [cross-language contracts](docs/cross-language.md).
+The [Rust crate](rust/uuid-slug) uses the same identifier formats. Cross-language masked reads require matching seeds, iteration counts and timestamp ranges; see [cross-language contracts](docs/cross-language.md).
 
 | Runtime | Package code |
 | --- | --- |
-| Node 20 and newer | Compiled JavaScript |
-| Bun | TypeScript source |
+| Node 20 and newer | Uses compiled JavaScript |
+| Bun | Uses TypeScript source |
 | Deno | TypeScript source; no flag or import map needed |
 | Cloudflare Workers, browsers and other compatible runtimes | Compiled JavaScript over Web Crypto |
 
