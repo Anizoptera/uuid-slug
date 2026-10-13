@@ -149,4 +149,5 @@ test("export-condition priority changes show only the reordered conditions", () 
   expect(conditional.report).toContain('- "bun": "./bun.ts"');
   expect(conditional.report).toContain('+ "default": "./index.js"');
   expect(conditional.report).not.toContain("./index.d.ts");
+  expect(conditional.level).toBe("major");
 });

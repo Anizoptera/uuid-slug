@@ -132,7 +132,12 @@ function exportsLevel(before: unknown, after: unknown): ReleaseLevel {
     oldEntries.some(([name, target]) => JSON.stringify(target) !== JSON.stringify(newExports[name]))
   )
     return "major";
-  return Object.keys(after).length > oldEntries.length ? "minor" : "patch";
+  const names = Object.keys(after);
+  // Root conditions have priority too; unchanged targets do not make reordering compatible.
+  let retained = 0;
+  for (const name of names) if (name === oldEntries[retained]?.[0]) retained++;
+  if (retained !== oldEntries.length) return "major";
+  return names.length > oldEntries.length ? "minor" : "patch";
 }
 
 function metadataRecords(value: unknown): string {

@@ -320,7 +320,8 @@ export function satisfiesMinimum(
 }
 
 export function sizeDelta(current: number | undefined, previous: number | undefined): string {
-  if (current === undefined || previous === undefined) return "unavailable";
+  if (current === undefined) return "unavailable";
+  if (previous === undefined) return `${current} B`;
   const absolute = current - previous;
   if (previous === 0) return `${current} B (${absolute >= 0 ? "+" : ""}${absolute} B)`;
   const percentage = (absolute / previous) * 100;

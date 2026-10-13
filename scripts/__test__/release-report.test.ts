@@ -165,7 +165,7 @@ test("hyphens in build metadata do not waive stable compatibility", () => {
 
 test("release size deltas never invent a percentage for zero or missing denominators", () => {
   expect(sizeDelta(12, 0)).toBe("12 B (+12 B)");
-  expect(sizeDelta(12, undefined)).toBe("unavailable");
+  expect(sizeDelta(12, undefined)).toBe("12 B");
   expect(sizeDelta(12, 8)).toBe("12 B (+4 B, +50.0%)");
 });
 
