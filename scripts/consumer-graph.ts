@@ -5,6 +5,12 @@ import path from "node:path";
 import { command } from "./command";
 import { compileConsumer } from "./consumer-bundlers";
 import type { Optimizer } from "./consumer-bundlers";
+import vectors from "../rust/uuid-slug/tests/fixtures/fixtures-wire-format.json";
+
+const maskedVector = vectors.find(
+  ({ mask, uuid }) => mask === "default" && uuid === "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051",
+);
+if (!maskedVector) throw new Error("The retained default-mask consumer vector is missing.");
 
 const VERSION_MODULES = {
   4: new Set(["v4.js", "v4.ts"]),
@@ -59,9 +65,10 @@ const jobs = [
   },
   {
     name: "slug-v4",
+    // Read wire bits without a package decoder import, which would change the graph being measured.
     imports: "generatePlainUuidV4Slug",
     probe:
-      'const value = generatePlainUuidV4Slug(); if (value.length !== 22) throw new Error("generatePlainUuidV4Slug failed");',
+      'const value = generatePlainUuidV4Slug(); const bytes = atob(value.replaceAll("-", "+").replaceAll("_", "/")); if (!/^[A-Za-z0-9_-]{21}[AQgw]$/.test(value) || bytes.length !== 16 || bytes.charCodeAt(6) >>> 4 !== 4 || (bytes.charCodeAt(8) & 0xc0) !== 0x80) throw new Error("generatePlainUuidV4Slug failed");',
     masked: false,
     uuidValue: false,
     versions: [4],
@@ -70,7 +77,7 @@ const jobs = [
     name: "slug-v7",
     imports: "generatePlainUuidV7Slug",
     probe:
-      'const value = generatePlainUuidV7Slug(); if (value.length !== 22) throw new Error("generatePlainUuidV7Slug failed");',
+      'const value = generatePlainUuidV7Slug(); const bytes = atob(value.replaceAll("-", "+").replaceAll("_", "/")); if (!/^[A-Za-z0-9_-]{21}[AQgw]$/.test(value) || bytes.length !== 16 || bytes.charCodeAt(6) >>> 4 !== 7 || (bytes.charCodeAt(8) & 0xc0) !== 0x80) throw new Error("generatePlainUuidV7Slug failed");',
     masked: false,
     uuidValue: false,
     versions: [7],
@@ -78,8 +85,7 @@ const jobs = [
   {
     name: "masked",
     imports: "createUuidV7MaskingCodec, UUID_V7_TEST_MASK",
-    probe:
-      'const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }); if (codec instanceof Error || codec.uuidToMaskedSlug("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051") instanceof Error) throw new Error("masked codec failed");',
+    probe: `const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }); if (codec instanceof Error || codec.uuidToMaskedSlug(${JSON.stringify(maskedVector.uuid)}) !== ${JSON.stringify(maskedVector.masked)}) throw new Error("masked codec failed");`,
     masked: true,
     uuidValue: true,
     versions: [7],

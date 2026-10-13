@@ -16,6 +16,7 @@ Keep checks only when they distinguish a material defect from allowed behavior; 
 - [ ] Audit packed consumers, compiler contracts, browsers, native/Wasm parity, release integrity and recovery; preserve distinct distribution and runtime evidence.
   - [ ] Finish the packed consumer corpus, compiler fixture, optimizer witnesses and native/Wasm cases; inspect real producer formats before changing compiler compatibility checks.
   - [x] Preserve packed export order with the complete export-map comparison; an order-only fixture must fail when that guard is removed. Reject missing source-map inputs without an unreachable embedded-source fallback.
+  - [x] Execute optimizer generation witnesses against canonical spelling, version and variant bits, and compare masking with the retained wire vector; a wrong-version production stamp must fail every selected optimizer while the restored package passes.
 - [ ] Audit benchmark/resource guards and harness lifecycle for false greens, duplicated work, timing guesses, isolation leaks and misleading diagnostics; keep existing protected workloads and budgets.
   - [x] Route CI runtime tests, Deno resource proofs and candidate correctness probes through the existing scratch supervisor without changing test selection.
 - [ ] Remove proved redundancy and repair actionable gaps in small verified commits; demonstrate affected checks reject the intended defect and allowed behavior passes.
