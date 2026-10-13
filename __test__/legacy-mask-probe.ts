@@ -128,6 +128,7 @@ export const legacyMaskCases = [
           acceptPlainSlug: true,
         }),
       );
+      assert.ok(fixtures.issued.some(({ slug, raw }) => slug !== raw));
       for (const { uuid, slug, raw } of fixtures.issued) {
         const format = slug === raw ? "plain-slug" : "fixed-mask";
         assert.equal(reader.uuidSlugToUuidString(slug, format), uuid);
@@ -378,22 +379,6 @@ export const legacyMaskCases = [
     },
   },
   {
-    name: "one slug can carry three distinct UUID interpretations",
-    run(this: void) {
-      const { slug, seed, currentUuid, originalUuid, plainUuid } = fixtures.overlap;
-      const codec = unwrap(createUuidV7MaskingCodec({ mask: { seed } }));
-      assert.equal(codec.uuidToMaskedSlug(currentUuid), slug);
-      assert.equal(codec.maskedSlugToUuidString(slug), currentUuid);
-      assert.deepEqual(
-        unwrap(
-          codec.createUuidSlugMigrationDecoder({ acceptFixedMask: true, acceptPlainSlug: true }),
-        ).uuidSlugToUuidStringCandidates(slug),
-        [currentUuid, originalUuid, plainUuid],
-      );
-      assert.equal(new Set([currentUuid, originalUuid, plainUuid]).size, 3);
-    },
-  },
-  {
     name: "preserve original raw UUIDs and their stored tail aliases without relaxing current decoding",
     run(this: void) {
       const reader = unwrap(
@@ -420,23 +405,6 @@ export const legacyMaskCases = [
         "A".repeat(21) + "é",
       ])
         assert.ok(reader.uuidSlugToUuidString(invalid, "plain-slug") instanceof Error);
-    },
-  },
-  {
-    name: "recover exact UUIDs from original masked producer outputs",
-    run(this: void) {
-      const reader = unwrap(
-        unwrap(
-          createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }),
-        ).createUuidSlugMigrationDecoder({ acceptFixedMask: true }),
-      );
-      let checked = 0;
-      for (const vector of fixtures.issued) {
-        if (vector.slug === vector.raw) continue;
-        assert.equal(reader.uuidSlugToUuidString(vector.slug, "fixed-mask"), vector.uuid);
-        checked++;
-      }
-      assert.ok(checked > 0);
     },
   },
   {

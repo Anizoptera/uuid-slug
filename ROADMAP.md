@@ -15,6 +15,8 @@ Keep checks only when they distinguish a material defect from allowed behavior; 
   - [ ] Finish runtime-boundary, codec-boundary, legacy migration and native encoder probes against their actual selected and fallback implementations.
     - [x] Use independent native-radix references for alphabet output and check-tail bits; a swapped production digit must fail both runtime runners. Replace default burst timing assumptions with actual wire-field fidelity and remove duplicate fallback and object-shape assertions.
     - [ ] Finish codec-boundary and legacy migration cases; inspect their guards, independent vectors and failure precedence before removing overlap.
+      - [x] Mutate the same codec options object passed to construction; a live-options production mutation must fail. Exercise sentinel metadata mutation and consolidate repeated migration vectors without losing the nonempty masked corpus witness.
+      - [ ] Trace retained codec and migration rejection cases through production guards and key-order behavior; distinguish intended callback injection from simulated providers.
 - [ ] Audit packed consumers, compiler contracts, browsers, native/Wasm parity, release integrity and recovery; preserve distinct distribution and runtime evidence.
   - [ ] Finish the packed consumer corpus, compiler fixture, optimizer witnesses and native/Wasm cases; inspect real producer formats before changing compiler compatibility checks.
   - [x] Preserve packed export order with the complete export-map comparison; an order-only fixture must fail when that guard is removed. Reject missing source-map inputs without an unreachable embedded-source fallback.

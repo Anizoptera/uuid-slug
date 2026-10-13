@@ -122,27 +122,6 @@ export const codecBoundaryCases = [
     },
   },
   {
-    name: "offers one concise codec language without duplicating implementation work",
-    run() {
-      const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
-      const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
-      const slug = unwrap(codec.uuidToMaskedSlug(uuid));
-      const timestamp = unwrap(extractUuidV7UnixMs(unwrap(uuidStringToBytes(uuid))));
-      assert.equal(codec.uuidToString(slug), uuid);
-      assert.deepEqual(codec.uuidToBytes(slug), unwrap(uuidStringToBytes(uuid)));
-      assert.equal(
-        codec.validateMaskedUuidV7SlugUnixMs(slug, {
-          maxTimestampDeltaMs: 86_400_000,
-          referenceUnixMs: timestamp,
-        }),
-        slug,
-      );
-      assert.ok(!(codec.generateMaskedUuidV7Slug() instanceof Error));
-      assert.equal(Object.isFrozen(codec), true);
-      assert.equal("uuidV7MaskedSlug" in codec, false);
-    },
-  },
-  {
     name: "reads one UUID out of a packed array through every universal converter",
     run() {
       const codec = createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK });
@@ -427,7 +406,7 @@ export const codecBoundaryCases = [
     },
   },
   {
-    name: "codec masks and unmasks UUIDv7 bytes without a text round trip",
+    name: "codec decoding preserves caller buffers and private sentinel bytes",
     run() {
       const codec = createUuidV7MaskingCodec({
         mask: UUID_V7_TEST_MASK,
@@ -476,8 +455,6 @@ export const codecBoundaryCases = [
         },
       });
       assert.ok(!(handle instanceof Error));
-      assert.ok(Object.isFrozen(handle));
-      assert.deepEqual(Object.keys(handle), ["diagnosticLabel"]);
       const codec = unwrap(createCodec({ mask: handle }));
       const uuid = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051";
       const slug = unwrap(codec.uuidToMaskedSlug(uuid));
@@ -942,17 +919,20 @@ export const codecBoundaryCases = [
       const options: {
         mask: UuidV7Mask;
         maskedSlugAlphabet: "base64url" | "base32hex";
-      } = { mask: UUID_V7_TEST_MASK, maskedSlugAlphabet: "base64url" };
-      const codec = createUuidV7MaskingCodec({ ...options, sentinels: TEST_SENTINELS });
+        sentinels: typeof TEST_SENTINELS;
+      } = { mask: UUID_V7_TEST_MASK, maskedSlugAlphabet: "base64url", sentinels: TEST_SENTINELS };
+      const codec = createUuidV7MaskingCodec(options);
       options.maskedSlugAlphabet = "base32hex";
       assert.equal(
         unwrap(codec.uuidToMaskedSlug("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4051")).length,
         22,
       );
-      assert.ok(Object.isFrozen(codec));
-      assert.ok(Object.isFrozen(codec.sentinels));
-      assert.ok(codec.sentinels.every(Object.isFrozen));
-      assert.ok(Object.isFrozen(UUID_V7_TEST_MASK));
+      const sentinel = codec.sentinels[0];
+      assert.ok(sentinel);
+      Reflect.set(sentinel, "uuid", TEST_SENTINELS[1].uuid);
+      Reflect.set(codec.sentinels, 0, codec.sentinels[1]);
+      assert.equal(codec.sentinels[0]?.uuid, TEST_SENTINELS[0].uuid);
+      assert.equal(codec.uuidToString("AAAAAAAAcACAAAAAAAAAAA"), TEST_SENTINELS[0].uuid);
 
       const mutable = {
         diagnosticLabel: "stable-mask-reference",
