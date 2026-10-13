@@ -65,6 +65,23 @@ An incorrect key can pass the 16-bit check by chance and return the wrong UUID. 
 increase that risk. Look up the decoded record and check caller access.
 Base32 changes the spelling, not the masking strength.
 
+```ts
+import { isUuidSlugError } from "@anizoptera/uuid-slug";
+import type { UuidV7MaskingCodec, UuidV7String } from "@anizoptera/uuid-slug";
+
+async function findAuthorizedRecord<Record>(
+  maskingCodec: UuidV7MaskingCodec,
+  slug: string,
+  findByUuid: (uuid: UuidV7String) => Promise<Record | undefined>,
+  canRead: (record: Record) => boolean,
+) {
+  const uuid = maskingCodec.maskedSlugToUuidString(slug);
+  if (isUuidSlugError(uuid)) return uuid;
+  const record = await findByUuid(uuid);
+  return record !== undefined && canRead(record) ? record : undefined;
+}
+```
+
 Generator entropy failures report `rng_unavailable`; caller buffers and sequence state remain unchanged.
 Rust retains the entropy provider's error. In browsers, `getrandom` reports its Web Crypto error
 code rather than retaining the original JavaScript exception. TypeScript retains that exception.

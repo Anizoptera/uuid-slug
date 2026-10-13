@@ -46,7 +46,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   Position the package by the complete consumer contract: base64url and base32hex plain slugs for
   any UUID, caller-owned storage, UUIDv7 masking and migration, typed failures, and adaptive runtime
   paths. Keep version-neutral encoding separate from UUIDv7-only masking. Generation alone is not
-  distinctive. State measured losses as gaps, never hide them with hype.
+  distinctive. Keep measured gaps in `bench/PERFORMANCE.md`; do not imply wins on those calls.
 - Generate only UUIDv4 and UUIDv7. Keep parsing, inspection, and plain-slug conversion
   version-neutral so other UUID versions work without version-specific machinery. Add support for
   another generated version only after the maintainer reopens it for concrete demand.
@@ -391,7 +391,8 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 
 ## Writing public documentation
 
-Write README, CHANGELOG, `docs/` and bench docs for consumers who never open source or benchmarks.
+Write README for adopters: sell the useful capabilities, then show how to use them.
+Keep engineering and measurement detail in its owning reference; public copy is not an internal report.
 
 - Use established technical terms such as hexadecimal when they name the exact concept.
   Explain unfamiliar terms before use; omit internal vocabulary that does not help the caller.
@@ -405,11 +406,12 @@ Write README, CHANGELOG, `docs/` and bench docs for consumers who never open sou
   regression, revert it.
 - Examples must construct reusable codecs and masks outside per-ID calls. Show setup and repeated
   use separately; a comment saying to reuse a codec does not repair an example that rebuilds it.
-- Keep benchmark numbers, dates, runtime versions and percentages in `bench/PERFORMANCE.md`.
-  README names the rival and direction: leads, trails or unresolved. Measurements rot on runtime updates.
+- State README performance advantages by operation and runtime: fastest calls, native parity
+  for negligible differences, and lower memory use. Keep rival names, numbers, gaps and methods
+  in `bench/PERFORMANCE.md`; readers need the result, not a rival inventory.
 - Every claim has an owner. A guarantee cites a test that fails without it and needs a maintainer
   ruling before it enters README §Guarantees; `docs/security.md` outranks README where they
-  disagree. A performance claim cites `bench/PERFORMANCE.md`. A "cannot" or "never" about a
+  disagree. A "cannot" or "never" about a
   runtime or another package cites the probe that showed it. A claim with no possible owner is
   deleted, not softened.
 - Define terms before use; every referent must exist. An undefined "responsiveness target" is a defect.

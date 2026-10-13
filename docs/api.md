@@ -98,6 +98,14 @@ independent generator; UUIDv4 generation remains module-level.
 | `createUuidV7Generator(options?)` | An independent UUIDv7 sequence using platform cryptographic entropy; invalid numeric ranges or clock policies return `UuidSlugError`. |
 | `createUuidV7GeneratorWithRandomFill(fill, options?)` | An independent UUIDv7 generator using an explicit synchronous entropy source. |
 
+#### Supplied time
+
+`at` accepts Unix-millisecond `number` or `bigint`, `Date`, zoned ISO text, a
+Temporal-style `epochMilliseconds` or `epochNanoseconds` object, or a `{ seconds, nanoseconds }`
+timestamp. Text needs a time zone. UUIDs store the containing millisecond; configured generators
+can store fractions too. The default layout stores none. See [clocks and ordering](#custom-clocks-and-ordering)
+for precision, counter overflow and rollback.
+
 #### Custom clocks and ordering
 
 Use `createUuidV7Generator({ readUnixMs })` for an application clock or time-dependent tests.
@@ -128,6 +136,27 @@ fill every requested byte or return `UuidSlugError`.
 Root functions need no key. They accept UUID text, UUID bytes, and both plain-slug alphabets. A
 known UUID version remains in the result type.
 
+#### UUID text input
+
+| Representation | Size | Example | Meaning and use |
+| --- | ---: | --- | --- |
+| Compact UUID text | 32 | `0198abcd12347abc9def0123456789ab` | Input; mixed-case hexadecimal |
+| Canonical UUID text | 36 | `0198abcd-1234-7abc-9def-0123456789ab` | Only UUID text output; accepts mixed case; lowercase default, uppercase optional |
+| Brace-wrapped UUID text | 38 | `{0198abcd-1234-7abc-9def-0123456789ab}` | Input; requires canonical text; accepts mixed case |
+| UUID URN | 45 | `urn:uuid:0198abcd-1234-7abc-9def-0123456789ab` | Input; requires canonical text; accepts mixed case in prefix and UUID |
+
+#### Conversion calls
+
+```mermaid
+flowchart LR
+  T["Canonical UUID text<br>36 characters"] <--> B["UUID bytes<br>16 bytes"]
+  T <--> S["Plain slug<br>22 base64url or 26 base32hex<br>any UUID version, no key"]
+  B <--> S
+  B -- "masking codec, UUIDv7 only" --> M["Masked slug<br>22 base64url or 27 base32hex"]
+  M -- "masking codec, check must pass" --> B
+  N["Sentinel<br>a reserved UUIDv7"] -- "masking codec writes it as a plain slug" --> S
+```
+
 | Call | Successful result |
 | --- | --- |
 | `uuidToString(uuid, textCase?)` / `(bytes, byteOffset, textCase?)` | Canonical UUID text from UUID text, bytes, or a plain slug, or from one UUID inside a larger array. |
@@ -155,6 +184,64 @@ function inspectPublicId(input: string, maskingCodec: UuidV7MaskingCodec) {
   return { facts: uuid.inspect(), stored: uuid.toBytes(), publicId: uuid.toMaskedSlug() };
 }
 ```
+
+#### Work with UUID bytes
+
+Decode a masked ID into a database or protocol buffer:
+
+```ts
+import type { UuidV7MaskingCodec } from "@anizoptera/uuid-slug";
+
+function decodePublicId(maskingCodec: UuidV7MaskingCodec, publicId: string, record: Uint8Array, offset: number) {
+  return maskingCodec.maskedSlugToUuidBytes(publicId, record, offset);
+}
+```
+
+Write a UUID into a binary record without changing other fields:
+
+```ts
+import { uuidStringToBytes } from "@anizoptera/uuid-slug";
+
+function convertUuid() {
+  const record = new Uint8Array(32);
+  return uuidStringToBytes("01990d4d-e600-7000-8000-000000000000", record, 8);
+}
+```
+
+`uuidStringToBytes` accepts mixed-case canonical or compact text, URNs and brace-wrapped canonical
+text. It allocates a plain `Uint8Array` or writes 16 bytes at your offset.
+`bytesToUuidString` reads at an optional offset and returns lowercase hyphenated text.
+Every UUID-text writer accepts `UUID_TEXT_UPPERCASE` or `"uppercase"`; `UUID_TEXT_LOWERCASE`
+selects the default explicitly. Text case changes neither slug alphabets nor accepted input.
+`Buffer` works as a `Uint8Array`. `ArrayBuffer` inputs must have exactly 16 bytes; `DataView`
+must select a 16-byte range and can read larger buffers without copying. Only `Uint8Array`
+accepts offsets. Other typed arrays and array-like values are rejected. Narrow unknown input
+with `isUuidBytes`, `isUuidV4Bytes` or `isUuidV7Bytes` before storage or version-specific work.
+
+Use `uuidBytesToPlainSlug(record, offset)` and `plainSlugToUuidBytes(slug, record, offset)`
+to avoid text and temporary slices. Use `maskingCodec.maskedSlugToUuidBytes(slug, record, offset)`
+for known masked IDs. Writes return your array, not a UUID view. Read at the same offset;
+copy bytes you need to retain before reusing the buffer.
+
+Without an offset, `uuidBytesToPlainSlug` requires exactly 16 bytes.
+
+#### UUIDv7 payload fields
+
+UUIDs do not identify their generator or payload layout.
+Call `extractUuidV7Payload(value, layout)` only with a known layout:
+
+```ts
+import { extractUuidV7Payload } from "@anizoptera/uuid-slug";
+
+function payloadFromKnownLayout(uuid: string) {
+  return extractUuidV7Payload(uuid, { subMillisecondFractionBits: 12, counterBits: 14 });
+}
+```
+
+The result includes each value's bit width and undeclared low bits in `remaining`.
+A fraction value `n` stored in `b` bits represents the encoded time bucket
+`[unixMs + n / 2**b, unixMs + (n + 1) / 2**b)` milliseconds. It does not recover a more exact time.
+Use `maskingCodec.extractMaskedUuidV7Payload(slug, layout)` for masked slugs and sentinels.
 
 ### Use a masking codec
 
@@ -254,6 +341,41 @@ Also exported from the package root:
 When forwarding optional settings to `generateUuidV7Value` or `generatePlainUuidV7Slug`,
 an undefined value uses default generation and may throw `rng_unavailable`.
 Configured branches return failures as values; handle both effects when the settings can be absent.
+
+### Sentinels
+
+Sentinels are reserved UUIDv7 values kept plain for recognition in logs and support tickets.
+Codecs have none by default; configure only IDs your application reserves:
+
+| Name            | UUID                                   | Slug                     |
+| --------------- | -------------------------------------- | ------------------------ |
+| `nil`           | `00000000-0000-7000-8000-000000000000` | `AAAAAAAAcACAAAAAAAAAAA` |
+| `anonymous`     | `00000000-0001-7000-8000-000000000000` | `AAAAAAABcACAAAAAAAAAAA` |
+| `unknown`       | `00000000-0002-7000-8000-000000000000` | `AAAAAAACcACAAAAAAAAAAA` |
+
+Read their validated names, UUIDs and slugs from `maskingCodec.sentinels`:
+
+```ts
+import { createUuidV7MaskingCodec, isUuidSlugError } from "@anizoptera/uuid-slug";
+
+function createSentinels(seed: string) {
+  const maskingCodec = createUuidV7MaskingCodec({
+    maskSeed: seed,
+    sentinels: [{ name: "unknownUser", uuid: "00000000-0002-7000-8000-000000000000" }],
+  });
+  return isUuidSlugError(maskingCodec) ? maskingCodec : maskingCodec.sentinels;
+}
+```
+
+Sentinel names and UUIDs must be unique within the codec; names must be nonempty.
+Input accepts every UUID text form above; `maskingCodec.sentinels` returns lowercase text.
+
+Sentinel spelling survives seed rotation if the alphabet and reserved UUIDs stay unchanged.
+The example `nil` is an application sentinel, not the all-zero UUID, which is not UUIDv7.
+
+Keep sentinel definitions unchanged while their slugs remain in use. Decoding checks them first.
+Encoding returns `invalid_mask` if a non-sentinel's masked output matches a reserved slug;
+otherwise it would decode to the wrong UUID.
 
 ### Masking codec options
 

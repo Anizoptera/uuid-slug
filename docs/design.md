@@ -43,6 +43,7 @@ four check bits.
 Masking stores the UUIDv7 timestamp as an unsigned offset from the codec's configured range start.
 The offset accepts zero through 2^42 - 1, inclusive. The default start is zero and preserves the
 existing wire format. The selected range must fit inside UUIDv7's 48-bit timestamp field.
+The inclusive last millisecond is `timestampRangeStartUnixMs + MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`.
 Truncation would let different UUIDs share a slug. The full masked payload uses 27 base32hex
 characters; forcing it into 26 would lose bits. Its three padding bits must be zero. Masked output
 has no useful chronological ordering in either alphabet.
