@@ -5,11 +5,7 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 ## [0.4.0]
 
-Generation, plain conversion and keyed masking have separate APIs. Plain slugs preserve every UUID bit; masking is UUIDv7-only.
-
 ### Breaking changes
-
-Update generation and masking calls:
 
 ```diff
 - uuidV4()
@@ -33,8 +29,23 @@ Update generation and masking calls:
 - Replace `codec.migration` with `codec.createUuidSlugMigrationDecoder`. Read through `uuidSlugToUuidString` or `uuidSlugToUuidStringCandidates`; enable old formats with `acceptFixedMask` and `acceptPlainSlug`.
 - Replace freshness validators with `validateUuidV7StringUnixMs` and `validatePlainUuidV7SlugUnixMs`. Set `maxTimestampDeltaMs` explicitly; `referenceUnixMs` defaults to the current time. `hasUuidV7Entropy` is removed.
 - Default generation returns an identifier directly and throws `rng_unavailable` when secure randomness is unavailable. Configured generation, conversions and codec methods return `UuidSlugError` for expected failures. Compatible calls pass preceding errors through unchanged; use `isUuidSlugError` to recognize them.
-- Types distinguish UUID versions, plain slugs and masked UUIDv7 slugs. Rename `MaskSchema*` to `UuidV7Mask*`, `UuidSlugCodec*` to `UuidV7MaskingCodec*`, `UuidSlugMigration` to `UuidSlugMigrationDecoder`, `MigrationFormat` to `UuidSlugMigrationFormat`, `FreshValidationOptions` to `UuidV7TimestampWindow`, `UuidV7SentinelDefinition` to `UuidV7SentinelConfig`, and `PublicUuidV7Slug` to `MaskedOrSentinelUuidV7Slug`. `MaskedUuidSlug` is removed.
+- TypeScript brands reject known UUID-version and representation mismatches. `MaskedUuidSlug` is removed.
 - Use named alphabet, migration-format and error constants instead of arrays. Error codes `invalid_mask_schema` and `invalid_base32` become `invalid_mask` and `invalid_base32hex`. Unknown alphabets and unknown option keys return `invalid_options`.
+
+```diff
+- MaskSchema / MaskSchemaOptions / AsyncMaskSchemaOptions
++ UuidV7Mask / UuidV7MaskOptions / AsyncUuidV7MaskOptions
+- UuidSlugCodec / UuidSlugCodecOptions
++ UuidV7MaskingCodec / UuidV7MaskingCodecOptions
+- UuidSlugMigration / MigrationFormat
++ UuidSlugMigrationDecoder / UuidSlugMigrationFormat
+- FreshValidationOptions
++ UuidV7TimestampWindow
+- UuidV7SentinelDefinition
++ UuidV7SentinelConfig
+- PublicUuidV7Slug
++ MaskedOrSentinelUuidV7Slug
+```
 
 ### Added
 
