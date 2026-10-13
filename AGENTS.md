@@ -41,7 +41,9 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
   copy implementation reasoning or create parallel inventories in other docs.
 - Keep README's TypeScript API map synchronized with every public capability, representation, and
   decision-changing boundary; propose changes to the existing row or bullet instead of another inventory.
-- Position the package by the complete consumer contract: base64url and base32hex plain slugs for
+- README's opening paragraph must name UUIDv4/v7 generation, plain base64url slugs and configurable
+  masked UUIDv7 slugs together, so consumers see the full purpose before examples or storage advice.
+  Position the package by the complete consumer contract: base64url and base32hex plain slugs for
   any UUID, caller-owned storage, UUIDv7 masking and migration, typed failures, and adaptive runtime
   paths. Keep version-neutral encoding separate from UUIDv7-only masking. Generation alone is not
   distinctive. State measured losses as gaps, never hide them with hype.

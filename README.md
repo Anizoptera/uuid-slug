@@ -6,18 +6,20 @@
 [![Runtime deps](https://img.shields.io/badge/runtime_deps-0-2ea44f)](package.json)
 [![License](https://img.shields.io/github/license/Anizoptera/uuid-slug)](LICENSE)
 
-Keep UUIDs as database keys and use shorter spellings of the same IDs in URLs and filenames.
-A plain slug preserves all 128 UUID bits in 22 base64url characters instead of 36 UUID-text
-characters. It needs no key or mapping table; decoding returns the original UUID.
+Generate UUIDv4 and UUIDv7, encode any UUID as a lossless base64url slug, and create configurable
+masked UUIDv7 slugs with your private key. Use shorter IDs in URLs and filenames while keeping
+the same UUID database keys; no mapping table is needed.
 
 ```text
 UUID: 0198abcd-1234-7abc-9def-0123456789ab
 Slug: AZirzRI0eryd7wEjRWeJqw
 ```
 
-Generate UUIDv4 (random) or UUIDv7 (timestamped), or shorten existing UUIDs of any version.
-Lowercase base32hex supports case-insensitive filenames and timestamp-sorted plain UUIDv7 slugs
-under ASCII comparison. Mask UUIDv7 fields with a private key; masking is not encryption or access control.
+UUIDv4 is random; UUIDv7 includes a timestamp. Plain slugs need no key and preserve all 128 UUID
+bits in 22 base64url characters instead of 36 UUID-text characters. Lowercase base32hex also
+supports case-insensitive filenames and timestamp-sorted plain UUIDv7 slugs under ASCII comparison.
+Configure UUIDv7 masking with keys, key rotation, reserved IDs, the slug alphabet and a timestamp range.
+Masking hides recognizable UUID fields; it is not encryption or access control.
 
 It supports JavaScript and TypeScript on Node 20+, Bun, Deno, browsers and Workers, with no runtime
 dependencies. Reuse your buffers; conversions return typed errors, and named imports let supported
