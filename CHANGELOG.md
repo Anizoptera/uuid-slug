@@ -5,7 +5,7 @@ notes: the section for a version is published verbatim when its tag is pushed.
 
 ## [0.4.0]
 
-Generation, plain conversion and keyed masking have separate APIs. Plain slugs preserve every UUID bit; masking is UUIDv7-only. This release publishes the npm package, not the Rust crate.
+Generation, plain conversion and keyed masking have separate APIs. Plain slugs preserve every UUID bit; masking is UUIDv7-only.
 
 ### Breaking changes
 

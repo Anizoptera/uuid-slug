@@ -8,7 +8,8 @@ import {
   satisfiesMinimum,
   sizeDelta,
 } from "../release-comparison";
-import { verifyCrateIdentity, verifyNpmIdentity } from "../release-report";
+import { consumerReleaseNotes, verifyCrateIdentity, verifyNpmIdentity } from "../release-report";
+import type { ReleaseReport } from "../release-report";
 
 test("release API diff exposes removals and additions without restating unchanged lines", () => {
   expect(
@@ -19,16 +20,54 @@ test("release API diff exposes removals and additions without restating unchange
 
 test("public release diff omits private helpers while retaining changed exported members", () => {
   const before = normalizeDeclarations(
-    "declare type Helper = 1; export interface Value { x: string; unchanged: boolean; }",
+    "declare type Helper = 1; declare const brand: unique symbol; export interface Value { x: string; unchanged: boolean; readonly [brand]: 1; readonly [Symbol.toStringTag]: 'before'; }",
   );
   const after = normalizeDeclarations(
-    "declare type Helper = 2; export interface Value { x: number; unchanged: boolean; }",
+    "declare type Helper = 2; declare const brand: unique symbol; export interface Value { x: number; unchanged: boolean; readonly [brand]: 2; readonly [Symbol.toStringTag]: 'after'; }",
   );
   const report = publicApiDifference(before, after);
   expect(report).toContain("- Value: x: string;");
   expect(report).toContain("+ Value: x: number;");
   expect(report).not.toContain("Helper");
   expect(report).not.toContain("unchanged");
+  expect(report).not.toContain("[brand]");
+  expect(report).toContain("[Symbol.toStringTag]");
+  expect(publicApiDifference(before, before)).toBe("");
+});
+
+test("publication notes use only the latest comparison and selected package", () => {
+  const report: ReleaseReport = {
+    current: { npm: 12, crate: 30, native: 999, wasm: 888 },
+    comparisons: [
+      {
+        role: "releaseLine",
+        tag: "v0.1.0",
+        minimum: "minor",
+        previous: {},
+        npmApi: "old npm inventory",
+        crateApi: "old crate inventory",
+      },
+      {
+        role: "immediate",
+        tag: "v0.3.0",
+        minimum: "minor",
+        previous: { npm: 8, crate: 20 },
+        npmApi: "```diff\n- old()\n+ replacement()\n```",
+        crateApi: "crate change",
+      },
+    ],
+  };
+  const npm = consumerReleaseNotes("Upgrade instructions.\n", report, "npm");
+  expect(npm).toContain("- old()\n+ replacement()");
+  expect(npm).toContain("12 B (+4 B, +50.0%)");
+  for (const omitted of ["crate", "v0.1.0", "inventory", "999", "888"])
+    expect(npm).not.toContain(omitted);
+  const crate = consumerReleaseNotes("Upgrade instructions.\n", report, "crate");
+  expect(crate).toContain("crate change");
+  expect(crate).not.toContain("replacement()");
+  const both = consumerReleaseNotes("Upgrade instructions.\n", report, "both");
+  expect(both).toContain("crate change");
+  expect(both).toContain("replacement()");
 });
 test("stable version distance must satisfy the derived release level", () => {
   expect(satisfiesMinimum("0.3.0", "0.4.0", "minor")).toBe(true);
@@ -56,6 +95,11 @@ test("API comparison detects moved members and changed overload priority", () =>
   expect(apiDiff(before, after)).not.toContain("No packaged");
   const narrow = "export declare function f(x: string): 1;";
   const broad = "export declare function f(x: unknown): 2;";
+  const unchanged = "export declare function unrelated(): boolean;";
+  const moved = apiDiff(`${narrow}\n${broad}\n${unchanged}`, `${broad}\n${narrow}\n${unchanged}`);
+  expect(moved).toContain("- " + narrow);
+  expect(moved).toContain("+ " + broad);
+  expect(moved).not.toContain("unrelated");
   expect(apiDiff(`${narrow}\n${broad}`, `${broad}\n${narrow}`)).not.toContain("No packaged");
   expect(apiDiff(`${narrow}\n${narrow}`, narrow)).not.toContain("No packaged");
 });

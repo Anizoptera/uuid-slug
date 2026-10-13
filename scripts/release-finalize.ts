@@ -5,6 +5,8 @@ import { readRetainedArchive } from "./release-inputs";
 import { crateChecksum, verifyCrateChecksum } from "./release-crate";
 import { preflightRelease } from "./release-notes";
 import { releaseSelection } from "./release-selection";
+import { consumerReleaseNotes } from "./release-report";
+import type { ReleaseReport } from "./release-report";
 import { registryIntegrity, verifyIntegrity } from "./registry-integrity";
 
 interface Asset {
@@ -118,7 +120,6 @@ async function finalizeRelease(cwd: string, options: FinalizeOptions): Promise<v
   const inputs = (await Bun.file(
     join(artifacts, "history/release-inputs.json"),
   ).json()) as ReleaseInputs;
-  const notes = await Bun.file(join(artifacts, "notes.md")).text();
   const checked = await preflightRelease(root, inputs.tag);
   if (
     inputs.name !== checked.name ||
@@ -126,14 +127,14 @@ async function finalizeRelease(cwd: string, options: FinalizeOptions): Promise<v
     inputs.commit !== checked.commit
   )
     throw new Error("Retained release inputs do not identify the checked package and commit.");
-  if (!notes.startsWith(checked.notes))
-    throw new Error("Retained release notes differ from the changelog.");
   const npmArchive = { ...inputs.candidate.npm, file: resolve(root, inputs.candidate.npm.file) };
   const crateArchive = {
     ...inputs.candidate.crate,
     file: resolve(root, inputs.candidate.crate.file),
   };
   const selected = releaseSelection(process.env.UUID_SLUG_RELEASE_PACKAGES);
+  const report = (await Bun.file(join(artifacts, "release-report.json")).json()) as ReleaseReport;
+  const notes = consumerReleaseNotes(checked.notes, report, selected);
   const archives: FinalArchive[] = [];
   if (selected !== "crate") {
     const [npmBytes, npmPublished] = await Promise.all([

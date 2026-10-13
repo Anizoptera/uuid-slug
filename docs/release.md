@@ -51,6 +51,8 @@ Release notes contain the committed `CHANGELOG.md` section verbatim, followed by
 API changes from the latest release in Markdown diff blocks and package sizes.
 Keep complete API comparisons internal to compatibility checks. Do not publish declaration
 inventories, private helper types, repeated older API comparisons, or API attachments.
+Include only the packages selected for publication; keep unpublished implementations and their
+reports out of consumer notes.
 Report npm and crate compressed bytes separately
 from matched linked native and WebAssembly caller probes. State absolute changes; state percentages
 only for nonzero denominators. Generated tables do not belong in the changelog.

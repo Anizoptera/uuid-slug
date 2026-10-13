@@ -100,6 +100,23 @@ function declarationDiff(removed: readonly string[], added: readonly string[]): 
   return `${fence}diff\n${body}\n${fence}`;
 }
 
+function declarationFamilies(source: string): Map<string, string[]> {
+  // Pure reorder changes need the affected overload family, not the entire declaration inventory.
+  // These headers come from normalizeDeclarations; this does not parse nested TypeScript syntax.
+  const families = new Map<string, string[]>();
+  for (const row of source.split("\n").filter(Boolean)) {
+    const text = displayDeclaration(row);
+    const member = /^([\w.]+): (?:readonly )?(\w+)(?=[:(<])/.exec(text);
+    const name = member
+      ? `${member[1]}.${member[2]}`
+      : (/\b(?:function|const|type|interface|class|enum) (\w+)/.exec(text)?.[1] ?? text);
+    const rows = families.get(name);
+    if (rows) rows.push(row);
+    else families.set(name, [row]);
+  }
+  return families;
+}
+
 export function apiDifference(before: string, after: string, language: string): ApiDifference {
   if (before === after) return { report: `No packaged ${language} changes.`, level: "patch" };
   const oldLines = new Set(
@@ -120,11 +137,22 @@ export function apiDifference(before: string, after: string, language: string): 
   let retained = 0;
   for (const line of after.split("\n")) if (line === previous[retained]) retained++;
   // Sets cannot detect moved members, repeated declarations, or overload precedence.
-  if (!removed.length && !added.length)
+  if (!removed.length && !added.length) {
+    const oldFamilies = declarationFamilies(before);
+    const newFamilies = declarationFamilies(after);
+    const changed = [...oldFamilies.keys()].filter(
+      (name) => JSON.stringify(oldFamilies.get(name)) !== JSON.stringify(newFamilies.get(name)),
+    );
     return {
-      report: `Declaration order or repetition changed.\n\n${declarationDiff(before.split("\n").filter(Boolean), after.split("\n").filter(Boolean))}`,
+      report: changed.length
+        ? declarationDiff(
+            changed.flatMap((name) => oldFamilies.get(name) ?? []),
+            changed.flatMap((name) => newFamilies.get(name) ?? []),
+          )
+        : "Declaration order changed; public signatures are unchanged.",
       level: "major",
     };
+  }
   return {
     report: declarationDiff(removed, added),
     level: removed.length || retained !== previous.length ? "major" : "minor",
@@ -140,26 +168,35 @@ export const apiDiff = (before: string, after: string): string =>
 
 // Compatibility checks retain private dependencies; upgrade notes show only caller-facing rows.
 function publicRows(source: string): string {
-  const rows = source.split("\n").filter(Boolean);
+  const rows = source.split("\n").filter(Boolean).map(displayDeclaration);
+  const privateSymbols = rows.flatMap((row) => {
+    const symbol = /^declare const (\w+): unique symbol;$/.exec(row)?.[1];
+    return symbol ? [symbol] : [];
+  });
   const owners = new Set(
     rows.flatMap((row) => {
-      const declaration = displayDeclaration(row);
-      const owner = /^([\w.]+): export\b/.exec(declaration)?.[1];
+      const owner = /^([\w.]+): export\b/.exec(row)?.[1];
       return owner ? [owner] : [];
     }),
   );
   return rows
-    .filter((row) => {
-      const declaration = displayDeclaration(row);
+    .filter((declaration) => {
       if (declaration.startsWith("export ")) return true;
       const owner = /^([\w.]+): /.exec(declaration)?.[1];
-      return owner !== undefined && owners.has(owner) && !declaration.includes("readonly [");
+      return (
+        owner !== undefined &&
+        owners.has(owner) &&
+        !privateSymbols.some((symbol) => declaration.includes(`readonly [${symbol}]`))
+      );
     })
+    .map((row) => JSON.stringify(row))
     .join("\n");
 }
 
 export function publicApiDifference(before: string, after: string): string {
-  return apiDifference(publicRows(before), publicRows(after), "public API").report;
+  const previous = publicRows(before);
+  const current = publicRows(after);
+  return previous === current ? "" : apiDifference(previous, current, "public API").report;
 }
 
 export function minimumRelease(

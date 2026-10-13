@@ -470,6 +470,7 @@ Write README, CHANGELOG, `docs/` and bench docs for consumers who never open sou
 ## Release
 
 - Release notes explain what changes for consumers and how to upgrade. Show only the minimal public API changes from the latest release in Markdown diff blocks; never publish declaration inventories, private helper types, repeated older comparisons, or API attachments. Read the body as a cold reader before publication.
+- Describe only the packages being published; unpublished implementations and their reports are not consumer release notes.
 
 - MUST read `docs/release.md` in full before changing versions, release tooling or workflows,
   packaging, publication, recovery, assets, notes, or finalization.

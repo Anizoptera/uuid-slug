@@ -16,6 +16,8 @@ import type { ReleaseInputs, RetainedArchive } from "./release-inputs";
 import { readRetainedArchive } from "./release-inputs";
 import { preflightRelease } from "./release-notes";
 import { taggedVersionGuidance } from "./release-version";
+import { releaseSelection } from "./release-selection";
+import type { ReleaseSelection } from "./release-selection";
 import {
   cargoSurfaceDifference,
   npmReleaseSurface,
@@ -24,11 +26,46 @@ import {
 } from "./release-surface";
 import type { CargoReleaseSurface, NpmReleaseSurface } from "./release-surface";
 
-interface Sizes {
+export interface Sizes {
   readonly npm?: number;
   readonly crate?: number;
   readonly native?: number;
   readonly wasm?: number;
+}
+
+export interface ReleaseReport {
+  readonly current: Sizes;
+  readonly comparisons: readonly {
+    readonly role: "immediate" | "releaseLine";
+    readonly tag: string;
+    readonly minimum: ReleaseLevel | undefined;
+    readonly previous: Sizes;
+    readonly npmApi: string | undefined;
+    readonly crateApi: string | undefined;
+  }[];
+}
+
+export function consumerReleaseNotes(
+  notes: string,
+  report: ReleaseReport,
+  selected: ReleaseSelection,
+): string {
+  // Publication selection can change on retry; render from retained evidence, not stale notes.
+  const latest = report.comparisons.find(({ role }) => role === "immediate");
+  const api = [
+    selected !== "crate" ? latest?.npmApi : undefined,
+    selected !== "npm" ? latest?.crateApi : undefined,
+  ].filter((value): value is string => value !== undefined && value !== "");
+  const keys =
+    selected === "npm"
+      ? (["npm"] as const)
+      : selected === "crate"
+        ? (["crate"] as const)
+        : (["npm", "crate"] as const);
+  const rows = keys.map(
+    (key) => `| ${key} | ${sizeDelta(report.current[key], latest?.previous[key])} |`,
+  );
+  return `${notes}${api.length ? `\n## API changes since ${latest?.tag}\n\n${api.join("\n\n")}\n` : ""}\n## Package size\n\nCompressed archive bytes; these are not installed sizes.\n\n| Package | Size and change from ${latest?.tag ?? "first publication"} |\n| --- | ---: |\n${rows.join("\n")}\n`;
 }
 
 interface CommandResult {
@@ -253,17 +290,6 @@ export async function rustSemverDifference(
     : { report: "No Rust semantic compatibility violations.", level: "patch" };
 }
 
-function sizeTable(current: Sizes, previous: Sizes): string {
-  return [
-    "| Artifact | Current | Change |",
-    "| --- | ---: | ---: |",
-    ...(["npm", "crate", "native", "wasm"] as const).map(
-      (key) =>
-        `| ${key} | ${current[key] === undefined ? "unavailable" : `${current[key]} B`} | ${sizeDelta(current[key], previous[key]).replace(/^\d+ B /, "")} |`,
-    ),
-  ].join("\n");
-}
-
 async function historicalEvidence(
   root: string,
   work: string,
@@ -353,16 +379,21 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
                 previousTypeScript.package,
                 currentDeclaration.package,
               );
-              return combineDifferences(
-                {
-                  level: declarations.level,
-                  report: publicApiDifference(
+              return {
+                ...combineDifferences(declarations, metadata),
+                report: [
+                  publicApiDifference(
                     previousTypeScript.declarations,
                     currentDeclaration.declarations,
                   ),
-                },
-                metadata,
-              );
+                  JSON.stringify(previousTypeScript.package) !==
+                  JSON.stringify(currentDeclaration.package)
+                    ? metadata.report
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join("\n\n"),
+              };
             })()
           : undefined;
         const rust = previousCrateRoot
@@ -374,7 +405,17 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
                 "Rust declaration",
               );
               const metadata = cargoSurfaceDifference(previousRust.package, currentRust.package);
-              return combineDifferences(declarations, metadata);
+              return {
+                ...combineDifferences(declarations, metadata),
+                report: [
+                  previousRust.declarations !== currentRust.declarations ? declarations.report : "",
+                  JSON.stringify(previousRust.package) !== JSON.stringify(currentRust.package)
+                    ? metadata.report
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join("\n\n"),
+              };
             })()
           : undefined;
         const rustSemver = previous.crateRoot
@@ -396,33 +437,29 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
           throw new Error(
             `${inputs.version} is below the ${minimum} release required from ${comparison.tag}. Option 1: return to development and remove the incompatible consumer changes while keeping the changelog accurate. Option 2: ${taggedVersionGuidance}`,
           );
-        const api = [
-          `#### TypeScript\n\n${typescript?.report ?? "Unavailable because npm has no release history."}`,
-          `#### Rust\n\n${rust?.report ?? "Unavailable because crates.io has no release history."}${rustSemver ? `\n\n${rustSemver.report}` : ""}`,
-        ].join("\n\n");
         return {
+          role: comparison.role,
+          tag: comparison.tag,
           minimum,
-          api:
-            comparison.role === "immediate"
-              ? `## API changes since ${comparison.tag}\n\n${api}`
-              : undefined,
-          text: `### Compared with ${comparison.tag}\n\n${sizeTable(current, previous.sizes)}`,
+          previous: previous.sizes,
+          npmApi: typescript?.report,
+          crateApi: rust?.report,
         };
       }),
     );
-    const report = {
+    const report: ReleaseReport = {
       current,
-      comparisons: inputs.comparisons.map(({ role, tag }, index) => ({
-        role,
-        tag,
-        minimum: sections[index]?.minimum,
-      })),
+      comparisons: sections,
     };
     await Promise.all([
       Bun.write(join(directory, "release-report.json"), `${JSON.stringify(report, null, 2)}\n`),
       Bun.write(
         join(directory, "notes.md"),
-        `${notes}\n${sections.find(({ api }) => api !== undefined)?.api ?? ""}\n\n## Package sizes\n\nnpm and crate sizes are compressed archives; native and wasm sizes are linked caller examples, not installed package sizes.\n\n${sections.map(({ text }) => text).join("\n\n")}\n`,
+        consumerReleaseNotes(
+          notes,
+          report,
+          releaseSelection(process.env.UUID_SLUG_RELEASE_PACKAGES),
+        ),
       ),
     ]);
   } finally {
