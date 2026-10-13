@@ -26,7 +26,7 @@ dependencies. Reuse your buffers; conversions return typed errors, and named imp
 bundlers remove unused features. Built-in generation uses secure randomness. For UUID text alone,
 a native generator or UUID-only library may suffice.
 
-[Install](#install) · [Quick start](#quick-start) · [Contents](#contents) · [API](#api) · [Performance](#measured-performance)
+[Install](#install) · [Quick start](#quick-start) · [Before you adopt](#before-you-adopt) · [API](#api) · [Performance](#measured-performance)
 
 ## Install
 
@@ -44,6 +44,24 @@ If you need only the slug, use `generatePlainUuidV7Slug()`. Plain slugs need no 
 anyone can decode them. Use [masking](#masked-slugs) when you want to hide UUIDv7 fields.
 Default generation returns the identifier directly and throws `rng_unavailable` only when
 secure randomness is unavailable. [Conversions return errors as values](#handling-errors).
+
+## Before you adopt
+
+Keep standard UUIDs in storage so adopting slugs does not require replacing database keys.
+
+| Decision | What you need to know |
+| --- | --- |
+| Choose an ID | Use UUIDv4 for random IDs or UUIDv7 for an embedded timestamp. Choose a [representation](#representations) separately. |
+| Fit your application | The package is ESM-only. See [runtime requirements](#runtime); it needs no runtime dependencies, native addons or WebAssembly installation. |
+| Control cost | Generate the output you need, reuse buffers and codecs, and import only the functions you use. [Performance comparisons](#measured-performance) distinguish wins from remaining gaps. |
+| Handle failures | Conversions and configured generation return errors as values. Default generation can throw when secure randomness is unavailable. See [error handling](#handling-errors). |
+| Require ordering | UUIDv7 records time, not a global sequence. Independent generators do not coordinate. See [ordering](#ordering-and-key-distribution). |
+| Keep masked links readable | Retain each live format's keys, timestamp-range start and reserved IDs. [Migration](docs/api.md#changing-an-existing-id-format) requires compatible readers before new writers. |
+| Protect records | Masking hides UUID fields; authorization still belongs to your application. See [security limits](#what-masking-is-not). |
+| Upgrade the package | Review the [changelog](CHANGELOG.md). Incompatible changes require a major release, or a minor release before the first major release; APIs must be deprecated in a published release before removal. See [release policy](docs/release.md). |
+
+Report bugs through [GitHub issues](https://github.com/Anizoptera/uuid-slug/issues).
+The package uses the [Apache-2.0 license](LICENSE).
 
 ## TypeScript API map
 
@@ -80,6 +98,7 @@ Use a source-specific converter when you know which form was issued.
 
 - [Install](#install)
 - [Quick start](#quick-start)
+- [Before you adopt](#before-you-adopt) · [TypeScript API map](#typescript-api-map)
 - [Convert existing IDs](#keep-your-existing-uuids) · [Bytes](#work-with-uuid-bytes) · [Representations](#representations)
 - [Recorded time](#generate-at-a-recorded-time) · [Extract time](#use-the-uuid-as-the-timestamp-source) · [Ordering](#ordering-and-key-distribution)
 - [Masking](#masked-slugs) · [Sentinels](#sentinels) · [Security limits](#what-masking-is-not)
