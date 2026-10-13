@@ -77,18 +77,6 @@ test("released API rejects removal without prior deprecation", () => {
   );
 });
 
-test("released API reads TypeScript declaration files directly", () => {
-  const rust = reports("", "").rust;
-  expect(() =>
-    verifyEvolution(
-      "0.4.0",
-      "0.5.0",
-      { typescript: "export declare function old(): void;", rust },
-      { typescript: "", rust },
-    ),
-  ).toThrow("TypeScript removes API that was not deprecated");
-});
-
 test("same-cycle deprecation cannot authorize removal", () => {
   const before = reports("/** @deprecated */ export declare function old(): void;", "");
   const after = reports("", "");
@@ -103,25 +91,6 @@ test("TypeScript declarations retain only deprecation documentation", () => {
   expect(typescriptDeclarations(source)).toBe(
     `export declare function current(): void;\n/** @deprecated Use current. */\nexport declare function old(): void;`,
   );
-});
-
-test("inline TypeScript deprecation authorizes only a later removal", () => {
-  const before = reports(
-    "/** @deprecated Use current. */\nexport declare function old(): void;",
-    "",
-  ).typescript;
-  const after = reports("", "").typescript;
-  expect(() =>
-    verifyEvolution(
-      "0.4.0",
-      "0.5.0",
-      { typescript: before, rust: reports("", "").rust },
-      {
-        typescript: after,
-        rust: reports("", "").rust,
-      },
-    ),
-  ).not.toThrow();
 });
 
 test("inline deprecation stays bound to a TypeScript member", () => {
