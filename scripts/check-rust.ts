@@ -1,6 +1,6 @@
 // Check Rust feature boundaries and every native transport exposed by installed hosts.
 import { buildRustBridge } from "./rust-bridge";
-import { runNativeConformance } from "./rust-conform-matrix";
+import { prepareNativeConformance } from "./rust-conform-matrix";
 import { checkReleaseVersion } from "./release-version";
 
 const manifest = "rust/Cargo.toml";
@@ -135,6 +135,7 @@ await run([
   "-D",
   "warnings",
 ]);
+let verifyNativeProfile: Awaited<ReturnType<typeof prepareNativeConformance>> | undefined;
 for (const profile of fast ? [] : (["debug", "release"] as const)) {
   const profileArgs = profile === "release" ? ["--release"] : [];
   await run([
@@ -163,5 +164,6 @@ for (const profile of fast ? [] : (["debug", "release"] as const)) {
     ...profileArgs,
   ]);
   // Fresh processes load the exact profile and isolate host-specific native state.
-  await runNativeConformance(profile, false);
+  verifyNativeProfile ??= await prepareNativeConformance();
+  await verifyNativeProfile(profile);
 }

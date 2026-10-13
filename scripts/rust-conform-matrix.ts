@@ -13,11 +13,8 @@ async function run(command: readonly string[], env: Readonly<Record<string, stri
   return output.trim();
 }
 
-export async function runNativeConformance(
-  profile: "debug" | "release" = "release",
-  build = true,
-): Promise<void> {
-  if (build) await buildRustBridge(profile);
+export async function prepareNativeConformance() {
+  // Rust profiles select different libraries at execution, not different JavaScript or hosts.
   await run(
     [
       "bun",
@@ -32,19 +29,27 @@ export async function runNativeConformance(
     {},
   );
   const lanes = await nativeMatrix("scripts/rust-conform.ts", "rust/target/conform.mjs");
-  // Report each verified host immediately, but drain every child before surfacing a failure.
-  const results = await Promise.allSettled(
-    lanes.map(async (lane) => {
-      const output = await run(lane.command, {
-        ...lane.env,
-        UUID_SLUG_RUST_PROFILE: profile,
-      });
-      if (!output.startsWith(`${lane.expectedTransport}: `) || !output.endsWith(" passed"))
-        throw new Error(`${lane.host} ${lane.transport} returned an unexpected result: ${output}`);
-      console.log(`${lane.label}: ${output}`);
-    }),
-  );
-  for (const result of results) if (result.status === "rejected") throw result.reason;
+  return async (profile: "debug" | "release"): Promise<void> => {
+    // Report each verified host immediately, but drain every child before surfacing a failure.
+    const results = await Promise.allSettled(
+      lanes.map(async (lane) => {
+        const output = await run(lane.command, {
+          ...lane.env,
+          UUID_SLUG_RUST_PROFILE: profile,
+        });
+        if (!output.startsWith(`${lane.expectedTransport}: `) || !output.endsWith(" passed"))
+          throw new Error(
+            `${lane.host} ${lane.transport} returned an unexpected result: ${output}`,
+          );
+        console.log(`${lane.label}: ${output}`);
+      }),
+    );
+    for (const result of results) if (result.status === "rejected") throw result.reason;
+  };
 }
 
-if (import.meta.main) await runNativeConformance();
+if (import.meta.main) {
+  await buildRustBridge("release");
+  const verify = await prepareNativeConformance();
+  await verify("release");
+}
