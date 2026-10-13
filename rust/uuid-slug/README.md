@@ -1,9 +1,7 @@
 # uuid-slug
 
-Encode any UUID as a 22-character base64url or 26-character base32hex slug. UUIDv7 also supports
-reversible masking and 27-character lowercase masked filenames.
-The crate generates UUIDv4 and UUIDv7. It parses, inspects, and plainly encodes other UUID versions
-without version-specific machinery.
+The crate generates UUIDv4/v7 and encodes any UUID as a 22-character base64url or 26-character base32hex slug.
+UUIDv7 fields can be masked with a key; lowercase masked slugs use 27 characters for case-insensitive filenames.
 
 Install the crate from crates.io or this repository.
 
@@ -30,11 +28,8 @@ Slug conversions return `PlainUuidSlug`, `MaskedUuidV7Slug`, or
 `MaskedOrSentinelUuidV7Slug`, so Rust keeps representations distinct. Borrow one anywhere an
 `&str` is accepted, format it with `Display`, or convert it into `String` without copying its text.
 
-Plain slugs hold all 128 UUID bits without version, variant, or timestamp limits: 22 base64url or
-26 lowercase base32hex characters.
-Masked slugs hold the same 132-bit payload in 22 base64url or 27 base32hex characters.
-Decoding infers the representation; nonzero padding is rejected. Sentinels remain raw UUIDs.
-Every decoder accepts every value that a supported matching encoder can produce.
+Plain slugs preserve all 128 UUID bits without version, variant or timestamp limits.
+Masked slugs preserve the 132-bit payload. Decoding infers the representation and rejects nonzero padding.
 
 Masking supports UUIDv7 only. It replaces the recognizable UUIDv7 layout, including its timestamp,
 with a keyed reversible payload. Its cryptographic strength is not established.
@@ -45,7 +40,9 @@ Masking stores a timestamp offset from `timestamp_range_start_unix_ms` and resto
 timestamp on decode. The inclusive end is the start plus `MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS`; plain slugs
 retain the full UUIDv7 timestamp range. Registered sentinels are always plain slugs and are never masked.
 
-Keep previous keys while stored identifiers still need them. The current key writes new masks;
+## Key rotation
+
+Keep previous keys while stored identifiers still need them. The current key writes new slugs;
 previous keys only add read candidates. Install readers for the new key and spelling before
 switching writers. A rollback must retain those readers or it can strand newly issued identifiers.
 Here, `stored` is an existing slug written with the previous key.
@@ -82,6 +79,8 @@ Use `uuid_slug_to_uuid_candidates` for explicit lookup across possible formats o
 your store. Disable each legacy reader only after its stored values are migrated; neither option
 enables the unsupported 0.2.0 masked format.
 
+## Generation and timestamps
+
 `UuidV7Generator` owns its sequence. `generate_uuid_v7()` reads the system clock;
 `generate_uuid_v7_at(SystemTime)` accepts an exact standard-library time. Both use secure platform
 entropy and join the same sequence. Use `generate_uuid_v7_at_unix_ms()` only when a numeric interop
@@ -104,19 +103,14 @@ configured range instead of truncating them. Same-millisecond ordering depends o
 `None` for one millisecond. Use the bounds only with comparison in UUID wire-byte order.
 Preserve-order clock rollback is the default. Use `with_clock_rollback_policy` to reset or return
 `InvalidTimestamp` after a chosen total-skew tolerance.
-`generate_uuid_v4()` generates
-v4 IDs. Failures return `Error`, retaining the underlying cause. Match `Error::code()` against
+`generate_uuid_v4()` creates random IDs. Failures return `Error`, retaining the underlying cause. Match `Error::code()` against
 `ErrorCode`; use `ErrorCode::as_str()` only when a text protocol needs the shared TypeScript
 spelling. Use `Display` for the case-specific diagnostic; do not parse its text. Within-millisecond
 ordering is not a cross-language guarantee.
 
+## Features
+
 Default feature `os-rng` provides platform entropy. Disable default features for pure conversion,
 masking, or caller-supplied entropy. Browser generation additionally requires `wasm-js`.
 `derive_uuid_v7_mask_async` returns an opaque, cancelable, bounded-work future without an
-executor dependency; its executor must schedule unrelated host tasks between polls. The concrete
-derivation state is private so scheduling internals do not become caller obligations.
-
-`uuid` handles strict-guarded parsing and formatting; `data-encoding` handles both alphabets.
-`getrandom` remains the fallible entropy source because upstream UUID random constructors panic on
-entropy failure. A small stack adapter preserves the mask's four external check bits. This shares
-encoding machinery without adding separate architecture-specific dependencies.
+executor dependency; its executor must schedule unrelated host tasks between polls.

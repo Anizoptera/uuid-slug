@@ -509,7 +509,7 @@ layout, rather than making ordinary calls pay for those controls or adding a dup
   composed calls. Keep marker-only checks separate from marker-plus-verification checks. State
   any difference in accepted values before comparing performance; compatibility checks are a
   separate cost, not an automatic addition. Preserve diagnostics and error identity, and test
-  inference separately from JavaScript behavior. Follow `bench/README.md` for runtime coverage,
+  inference separately from JavaScript behavior. Follow `bench/methods.md` for runtime coverage,
   repetitions, and failure controls; a predicate microbenchmark cannot establish total call cost.
 - Mark every `UuidSlugError` through one immutable prototype property named `__failure`. Test that
   marker first with `=== true` to recognize a composable package error. For an

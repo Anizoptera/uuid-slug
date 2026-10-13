@@ -1,7 +1,8 @@
 # Performance work
 
 Apply `../AGENTS.md` §Work scope before starting experiments; keep required regression checks.
-Read `README.md` for commands and measurement mechanics; `PERFORMANCE.md` owns measured conclusions.
+Read `README.md` for commands, `methods.md` for experiment and measurement mechanics,
+and `PERFORMANCE.md` for measured conclusions.
 
 ## Choose the decision
 
@@ -88,7 +89,7 @@ Read `README.md` for commands and measurement mechanics; `PERFORMANCE.md` owns m
   bundles, resolved failures and temporary checkouts. Before committing, inspect creator-owned paths
   in `/tmp` and runtime `tmpdir()`, stop children, and preserve reusable caches.
 - Keep package captures immutable and share identical content by hash. Preserve earlier graphs
-  before replacing captures; replace linked files, never rewrite them. Read `README.md` before pruning;
+  before replacing captures; replace linked files, never rewrite them. Read `methods.md` before pruning;
   `scripts/compact-reports.ts` preserves bytes.
 - Use package commands for Node/Bun tests, API checks and generation comparisons so supervisors
   own interruption cleanup. Include setup in cleanup; generated verification files must not remain.
@@ -100,7 +101,7 @@ Read `README.md` for commands and measurement mechanics; `PERFORMANCE.md` owns m
 
 ## Measurements
 
-- Follow `README.md` §Measurement limits. Identify independent samples; batch throughput is not
+- Follow `methods.md` §Measurement limits. Identify independent samples; batch throughput is not
   individual-call latency. Account for unequal batch weighting before comparing wall and CPU costs.
   Read driver verdicts; require the selected statistic in every analyzed record and fail on missing fields.
   Keep direct runtime operations separate from composed pipeline outcomes.
@@ -131,5 +132,5 @@ Read `README.md` for commands and measurement mechanics; `PERFORMANCE.md` owns m
   slowing baselines or loosening budgets; changed scope or acceptable loss needs explicit authorization.
 - Prove harness changes with an unchanged control and a valid-output waste mutation that fails for
   the intended diagnostic. Broken IDs prove correctness coverage, not performance/resource protection.
-- Follow `README.md` §Regression protection for complete lanes and hooks, including cleanup.
+- Follow `methods.md` §Regression protection for complete lanes and hooks, including cleanup.
   Benchmarks are exempt from routine-lane limits; calibration must not block evidenced primary-call repairs.

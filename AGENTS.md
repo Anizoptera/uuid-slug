@@ -237,7 +237,7 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Cross-runtime probes replay recorded inputs and results. Test local generators separately.
 
 - Before performance work, driver changes or evidence cleanup, READ `bench/AGENTS.md` even when
-  working in `src/`. It owns priorities, experiments and gates; `bench/README.md` owns commands and mechanics.
+  working in `src/`. It owns priorities, experiments and gates; `bench/README.md` owns commands and reports.
 - Read repaired guidance and its dependents before proceeding. Enforce mechanically decidable
   failures in the existing harness, not a prose checker; public-document authorization still applies.
 - Use the `typescript` package for project checking; TypeScript 7 is the main compiler.
@@ -305,6 +305,10 @@ README is roughly 60% marketing and 40% technical guidance. Write public docs as
 lead with concrete strengths and explain their value. State supported advantages directly, without
 defensive hedging. Keep internal engineering and measurement detail in its owning reference.
 
+Every README serves its users, not agents. Package readers need benefits and working calls;
+benchmark readers need commands and reports. Keep agent policy in `AGENTS.md` and experimental
+catalogues in linked references so routine use does not require reading research internals.
+
 - Use established technical terms such as hexadecimal when they name the exact concept.
   Explain unfamiliar terms before use; omit internal vocabulary that does not help the caller.
 - Put limits beside the affected call. Name what can go wrong and what the caller must do;
@@ -312,13 +316,18 @@ defensive hedging. Keep internal engineering and measurement detail in its ownin
   Keep general security advice out of the opening and unrelated API guidance.
 - Write direct sentences; keep headings and table labels short. Each claim must tell the reader
   what they get or what to do.
+- Describe features and benefits as facts about the library or capability, not sales commands
+  addressed to "you". Reserve imperatives for actual setup and usage steps; declarative wording
+  must preserve the strength of the claim, not add hedging or force every sentence into passive voice.
 - Change only lines with a named defect; preserve useful claims and sound wording.
   Reject edits that add words without adding information.
 - Examples must construct reusable codecs and masks outside per-ID calls. Show setup and repeated
   use separately; a comment saying to reuse a codec does not repair an example that rebuilds it.
-- State README performance advantages by operation and runtime: fastest calls, native parity
-  for negligible differences, and lower memory use. Keep rival names, numbers, gaps and methods
-  in `bench/PERFORMANCE.md`; readers need the result, not a rival inventory.
+- Lead performance copy with consumer gains: speed, low memory use and small bundles.
+  Describe native APIs or TypeScript fallbacks only to explain those gains, never as the whole pitch.
+  Preserve approved positioning; do not turn benchmark rows into a README feature table.
+  Keep operation/runtime rankings, rival comparisons, numbers, gaps and methods in
+  `bench/PERFORMANCE.md`; they explain measurements, not how to use the library.
 - Every claim has an owner. A guarantee cites a test that fails without it and needs a maintainer
   ruling before it enters README §Guarantees; `docs/security.md` outranks README where they
   disagree. A "cannot" or "never" about a

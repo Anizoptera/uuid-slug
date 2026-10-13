@@ -13,13 +13,13 @@ UUID: 0198abcd-1234-7abc-9def-0123456789ab
 Slug: AZirzRI0eryd7wEjRWeJqw
 ```
 
-Keep your UUID database keys; no slug mapping table. Generate IDs offline.
-Plain slugs encode any UUID; masked slugs hide UUIDv7 fields with your key.
-Use base64url for short URLs or lowercase base32hex for case-insensitive filenames.
+UUID database keys stay unchanged; no slug mapping table is needed. Generation works offline.
+Plain slugs encode any UUID; masked slugs hide UUIDv7 fields with a key.
+Base64url gives short URLs; lowercase base32hex suits case-insensitive filenames.
 
-Use JavaScript or TypeScript on Node, Bun, Deno, browsers and Workers, with no native addons or WebAssembly.
+The package supports JavaScript and TypeScript on Node, Bun, Deno, browsers and Workers, with no native addons or WebAssembly.
 
-[Install](#install) · [Quick start](#quick-start) · [Contents](#contents) · [API](#api) · [Performance](#measured-performance)
+[Install](#install) · [Quick start](#quick-start) · [Contents](#contents) · [API](#api) · [Performance](#performance)
 
 ## Install
 
@@ -35,8 +35,7 @@ const { uuid, slug } = generateUuidV7WithPlainSlug();
 ```
 
 Use `generateUuidV4()` for random IDs, `generateUuidV7()` for timestamped IDs, or
-`generatePlainUuidV7Slug()` for just the slug. Plain slugs preserve your UUID;
-[masking](#masked-slugs) hides its UUIDv7 fields with your key.
+`generatePlainUuidV7Slug()` for just the slug.
 Default generation returns the ID and throws `rng_unavailable` only without secure randomness.
 [Conversions return errors as values](#handling-errors).
 
@@ -50,7 +49,7 @@ Default generation returns the ID and throws `rng_unavailable` only without secu
 - [Errors](#handling-errors) · [Types](docs/api.md#types)
 - [API](#api) · [TypeScript API map](#typescript-api-map)
 - [Codec options](docs/api.md#masking-codec-options) · [Migration](docs/api.md#reading-original-slugs-during-migration)
-- [Measured performance](#measured-performance)
+- [Performance](#performance)
 - [Guarantees](#guarantees)
 - [Runtime](#runtime)
 - [Upgrades and support](#upgrades-and-support)
@@ -58,10 +57,9 @@ Default generation returns the ID and throws `rng_unavailable` only without secu
 
 ## Keep your existing UUIDs
 
-Encode stored UUIDs; decode incoming slugs before querying the same keys. Plain encoding accepts
-every UUID version, including IDs from databases and other libraries. It preserves every bit:
-no added collisions or mapping table. Standard encodings let you decode plain slugs without
-this library; masked UUIDv7 slugs need the matching key and settings.
+Encode stored UUIDs; decode incoming slugs before querying the same keys.
+Plain encoding preserves every bit, so it adds no collisions. Standard encodings let you decode
+plain slugs without this library; masked slugs need the matching key and settings.
 
 ```ts
 import { isUuidSlugError, plainSlugToUuidString, uuidStringToPlainSlug } from "@anizoptera/uuid-slug";
@@ -71,11 +69,6 @@ const uuid = plainSlugToUuidString(slug);
 if (isUuidSlugError(uuid)) console.error(uuid.message);
 else console.log(uuid); // Use this UUID to look up the existing record.
 ```
-
-Generation supports UUIDv4/v7; parsing, inspection and plain conversion accept other versions.
-UUIDv4 has 122 random bits. UUIDv7 has 48 timestamp bits and 74 payload bits for randomness,
-counters or fractions. Conversion and masking preserve those bits from any RFC 9562 UUIDv7,
-regardless of its generator.
 
 ## Representations
 
@@ -183,7 +176,6 @@ See [buffer examples and accepted byte forms](docs/api.md#work-with-uuid-bytes).
 
 Create IDs before saving, even offline. Related records can reference them without a database round
 trip and keep them after synchronization. No central allocator or worker number is needed.
-On the server, validate client IDs and ownership; a valid UUID does not authorize record creation or replacement.
 
 ## Generate at a recorded time
 
@@ -227,7 +219,6 @@ UUIDv4 has no timestamp and is rejected.
 
 For known fraction and counter layouts, use [payload extraction](docs/api.md#uuidv7-payload-fields).
 
-Assign IDs from generation time or a supplied event time.
 Keep separate fields for other dates, finer precision, editable times or queries the UUID index
 cannot serve. Changing the timestamp changes the ID.
 
@@ -249,10 +240,8 @@ SQL Server's `uniqueidentifier` uses a different order.
 
 Decode masked filenames or store dates separately to sort them chronologically.
 
-Database write speed and key distribution depend on storage sorting and partition rules;
-measure them before choosing masking for that purpose. For hash partitioning, hash the UUID so a spelling
-change does not move the record. Changing public URLs leaves the UUID index unchanged.
-Sentinels remain plain and keep their grouping.
+Changing public URLs leaves the UUID index unchanged. For hash partitioning, hash the UUID
+so a spelling change does not move the record.
 
 With unchanged settings, built-in masking gives the same UUID the same slug: URLs and filenames
 stay stable, and repeated uses are recognizable. Rotation can change the slug;
@@ -264,10 +253,8 @@ Masking hides UUIDv7 fields; the matching key restores them. Its cryptographic s
 including against attacks using known UUID/slug pairs. See the [design](docs/design.md)
 and [security limits](docs/security.md).
 
-Roughly one random 22-character base64url value in 65,536 passes a mask's 16-bit check.
-It can decode to an ID you never generated, or to the wrong existing record, even with a
-custom transform. More read keys add chances of incorrect decoding; the combined rate is
-at most their sum. Keep the rotation list short. Look up the decoded ID and check caller access;
+An incorrect key can pass the 16-bit check and return the wrong UUID.
+Keep the rotation list short and confirm decoded IDs against your records;
 see the [record lookup example](docs/security.md).
 
 A browser can use your service's masked IDs without the seed. Keep private masking and decoding
@@ -326,20 +313,13 @@ Each export also documents its accepted input, result and failures in editor hov
 Types catch UUID-version and plain/masked mix-ups; results retain text case and buffer ownership.
 Generator, masking-codec and migration methods need no `this` binding.
 
-## Measured performance
+## Performance
 
-| Operation | Result |
-| --- | --- |
-| UUIDv7 text | Fastest on Node, Bun, Deno and Chromium. |
-| UUIDv7 text and base64url slugs on Bun | On par with native generation. |
-| UUIDv4 text | Fastest on Chromium. |
-| UUIDv4/v7 bytes | Fastest on Node and Chromium. |
-| UUIDv7 timestamp extraction | Fastest validated text extraction on Node, Bun, Deno and Chromium. |
-| UUID text/byte generation and plain conversion on Node | Lower heap allocation. |
+Leading performance, low allocation and small bundles on Node, Bun, Deno and browsers.
+IDs can be written directly into caller-owned buffers, and parsed UUIDs can be reused.
+Tree shaking removes unused features.
 
 ## Guarantees
-
-See [security limits](docs/security.md) for entropy failures and masking.
 
 - Generated IDs have RFC 9562 version and variant bits.
 - Built-in generators use cryptographically secure runtime randomness without weaker fallbacks.
@@ -378,9 +358,6 @@ require matching seeds, iteration counts and timestamp ranges; see [cross-langua
 | Bun | TypeScript source |
 | Deno | TypeScript source; no flag or import map needed |
 | Cloudflare Workers, browsers and other compatible runtimes | Compiled JavaScript over Web Crypto |
-
-Generation selects native functions or the package's generator for each runtime and output.
-See [entropy sources](docs/security.md) for the secure-randomness requirements and fallback choices.
 
 Bun's native UUIDv7 timestamp can advance ahead of the clock during bursts. Create a generator
 to control ordering, clock policy or payload layout.
