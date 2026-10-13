@@ -29,7 +29,7 @@ test.each(vitestHosts)(
           `if ((process.versions.deno ? "deno" : process.versions.bun ? "bun" : "node") !== ${JSON.stringify(runtime)}) throw new Error("Wrong Vitest worker runtime");`,
           'const work = join(process.env.TMPDIR, "generated");',
           'mkdirSync(work); writeFileSync(join(work, "probe.mjs"), "ready");',
-          'test("interruption", async () => { process.stdout.write("node-worker-ready\\n"); await new Promise(() => {}); });',
+          'test("interruption", async () => { process.stdout.write("vitest-worker-ready\\n"); await new Promise(() => {}); });',
         ].join("\n"),
       );
       const child = Bun.spawn(
@@ -45,9 +45,9 @@ test.each(vitestHosts)(
       try {
         const reader = child.stdout.getReader();
         let output = "";
-        while (!output.includes("node-worker-ready")) {
+        while (!output.includes("vitest-worker-ready")) {
           const chunk = await reader.read();
-          if (chunk.done) throw new Error("Node worker exited before its file witness.");
+          if (chunk.done) throw new Error("Vitest worker exited before its file witness.");
           output += new TextDecoder().decode(chunk.value);
         }
         expect(
