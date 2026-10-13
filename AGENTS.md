@@ -13,7 +13,7 @@ READ the owner before changing its subject; these references hold the detailed r
 | Rust, shared formats, package entries or bundling | `docs/cross-language.md` |
 | Experiments, profiles, evidence cleanup or performance gates | `bench/AGENTS.md`, then `bench/README.md` |
 | Versions, packaging, release tooling or publication | `docs/release.md` in full |
-| Consumer copy or generation guarantees | README opening for voice, affected section and its relevant reference |
+| Consumer copy or generation guarantees | §Writing public documentation, then README opening, affected section and reference |
 
 ## Work scope
 
@@ -301,54 +301,54 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 
 ## Writing public documentation
 
-Package README is roughly 60% marketing and 40% technical guidance. Write as the proud author:
-lead with concrete supported strengths and their value, without defensive hedging.
-Package readers need benefits and working calls; benchmark readers need commands and reports.
-Keep agent policy in `AGENTS.md`; keep engineering detail, measurements and experimental
-catalogues in their owning references so routine use does not require research internals.
+README is roughly 60% marketing and 40% usage. It MUST explain why the complete library is worth
+adopting, make ordinary calls obvious, and explain what keeps stored IDs usable. Generation alone
+is not the pitch. State supported strengths with the author's confidence, never timid summaries
+of implementation. Bench readers need commands and reports, not package marketing or agent rules.
+Keep agent rules in `AGENTS.md`; engineering and measurement detail stays in its owning reference.
 
-- Use established technical terms such as hexadecimal when they name the exact concept.
-  Explain unfamiliar terms before use; omit internal vocabulary that does not help the caller.
-- Put limits beside the affected call. Name what can go wrong and what the caller must do;
-  replace abstract disclaimers such as "proof of issuance" with concrete decoding behavior.
-  Keep general security advice out of the opening and unrelated API guidance.
-- Use short, concrete claims and labels. State what a feature saves or enables before its controls;
-  keep unrelated benefits separate. Category labels and API lists alone are no explanation.
-- Describe features and benefits as facts about the library or capability, not sales commands
-  addressed to "you". Reserve imperatives for actual setup and usage steps; declarative wording
-  must preserve the strength of the claim, not add hedging or force every sentence into passive voice.
-- Change only lines with a named defect. Preserve approved copy exactly; add words only for added
-  information. Delete text only when it adds no useful information, never concrete strengths.
-- Construct example codecs and masks once, outside per-ID calls. Show setup and reuse;
-  a comment cannot repair repeated construction.
-  Show direct calls, not forwarding wrappers, redundant returned inputs or unnecessary conversions.
-  Narrow `string | UuidSlugError` with `typeof value === "string"`; use `isUuidSlugError` for
-  unknown inputs or object results that need it.
-  Annotate example inputs and results with public types. Preserve known brands; `string` is for unchecked input.
-- Lead performance copy with consumer gains: speed, low memory use and small bundles.
-  Describe native APIs or TypeScript fallbacks only to explain those gains, never as the whole pitch.
-  Preserve approved positioning; do not turn benchmark rows into a README feature table.
-  Keep operation/runtime rankings, rival comparisons, numbers, gaps and methods in
-  `bench/PERFORMANCE.md`; they explain measurements, not how to use the library.
-- Every claim has an owner. A guarantee cites a test that fails without it and needs a maintainer
-  ruling before it enters README §Guarantees; `docs/security.md` outranks README where they
-  disagree. A "cannot" or "never" about a
-  runtime or another package cites the probe that showed it. A claim with no possible owner is
-  deleted, not softened.
+- Use established terms where they add precision; explain unfamiliar ones. Cut internal jargon.
+- Put limits/warnings beside the affected call, with the failure and fix. Explain actual decoding
+  behavior, not "proof of issuance". Keep general security advice out of the opening and unrelated calls.
+- Every claim MUST give a concrete gain, caller action or boundary. Name what the reader can do,
+  avoid or decide because of it. "Efficient", "ergonomic" or "complete" alone fails this test.
+  State the gain before its controls; keep distinct gains separate. Short empty copy still fails.
+- State benefits as facts, not "Get..." sales commands. Imperatives belong in usage and warnings.
+  DO NOT weaken a supported claim or force passive voice to make it sound like documentation.
+- Before rewriting, identify each useful claim and where it survives. Change only named defects;
+  preserve approved copy exactly otherwise. Cut repetition, never capabilities, reasons or boundaries.
+- Examples MUST stand alone: import used names and compile changed code with the project compiler.
+  Construct and check reusable codecs once. Show direct calls; no forwarding wrappers, redundant
+  returned inputs or unneeded conversions. Comments cannot excuse extra work.
+  Show result brands/error unions; readers have no IDE. Input annotations must add meaning, not
+  repeat `string` on a literal. No casts to invent validation. Use `typeof` for scalar/error unions;
+  use the helper for object/error unions or unknown inputs. Show alternatives, not duplicate checks.
+  Error guards recognize returned errors; they do not test call correctness. State time units.
+- Performance copy MUST sell speed, memory/resource efficiency and small bundles together.
+  "Native APIs with TypeScript fallbacks" alone fails: it names machinery, not a gain.
+  Preserve approved positioning. DO NOT put rival-by-runtime benchmark rows in README;
+  rankings, measured gaps, timings and methods belong in `bench/PERFORMANCE.md`, not the pitch.
+- Claims need an owning contract or evidence. Guarantees need a ruling and a test that fails without
+  them; `docs/security.md` wins conflicts. A runtime/competitor "cannot" or "never" needs its probe.
+  Delete claims with no possible owner; do not soften them.
 - Define terms before use; every referent must exist.
-- Use bold main benefits with short nested details to make the opening easy to scan.
-  Name each benefit once; its details explain concrete uses, savings or controls.
-  Preserve approved emphasis; a marketing claim does not become filler because it is prominent.
-  Group opening capabilities by benefit or consumer job, not by exported symbol.
-- Reject em-dashes, "not only ... but", empty trailing "-ing" clauses,
-  rhythmic groups of three and Title Case headings; they hide missing content.
-- Put purpose before badges. Lead with performance, resource use, deployment, representations
-  and API ergonomics; order by consumer value and breadth.
-  Explain representation sizes and jobs: storage, URLs and filenames for the same UUID.
-  Surface optional controls without complicating ordinary calls. Keep full examples, limits,
-  diagrams and runtime tables with their owning sections.
-  Follow with navigation, a copyable installation command and quick start.
-  Check local heading links and opening density; render only to settle layout questions.
+- Group benefits, not exports. Each main bullet names an advantage; children add facts, not synonyms.
+  Keep strengths rivals share; the combination matters. Preserve approved emphasis; judge information,
+  not markup or sentence fragments. REJECT labels alone; show their meaning underneath:
+
+  | Empty label alone | Concrete meaning |
+  | --- | --- |
+  | Optional UUID object | Parse once; reuse the validated UUID for conversion and inspection. |
+  | Multiple representations | One UUID for storage, short URLs and lowercase filenames; no mapping table. |
+  | Ergonomic API | Types catch representation mix-ups; compatible conversions chain with one error check. |
+
+- Put purpose before badges. Rank gains by consumer reach and consequence, not implementation order.
+  Surface speed/resources, deployment/bundles, unchanged IDs across representations and useful API
+  controls before installation. Advanced controls must not make the default call look complicated.
+  Link opening benefits to their sections. Show sizes and labeled values beside representation definitions;
+  readers entering through an anchor must understand it without hunting another table.
+  Follow with a copyable installation command and quick start. Keep detailed examples, limits,
+  diagrams and runtime tables with their jobs. Check links; render only to resolve a layout question.
 - State matching cross-language formats and implementation availability; put publication status
   beside installation. Link release policy; keep recovery and key-retention requirements explicit
   to protect stored IDs.

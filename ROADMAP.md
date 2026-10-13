@@ -15,6 +15,9 @@ These items track unresolved copy; they do not authorize README edits or new mea
 - [ ] State near the opening that plain conversion is lossless and the TypeScript package needs no native addon or WebAssembly.
 - [ ] Clarify "at every site" and replace "manually tailored" with a concrete API benefit, preserving the confident tone.
 - [ ] Use lowercase `npm`, format `package.json` as code, and remove trailing whitespace.
+- [ ] Import `isUuidSlugError` in the existing-ID conversion example so that snippet stands alone.
+- [ ] Describe the error helper as recognizing returned error values, not testing correctness of any call. Show its scalar guard as an alternative; sequential guards currently print the same successful slug twice.
+- [ ] Specify Unix milliseconds, not the ambiguous "Unix timestamp", in the recorded-time example comment.
 - [ ] Surface plain decoding without keys or this library, and retained settings for masked decoding, earlier in the adoption guidance.
 - [ ] Resolve adoption questions about production-use evidence and maintenance/support commitments from evidence or a maintainer ruling; do not infer them from benchmarks or invent promises.
 
