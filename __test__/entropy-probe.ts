@@ -92,11 +92,19 @@ export function sourcesUsedBy(generate: () => unknown, calls = 100): string[] {
  * source on the very first call rather than never attributing one.
  */
 export function attributedSourcesFor(generate: () => unknown, attempts = 20_000): string[] {
-  for (let i = 0; i < attempts; i += 1) {
-    const used = sourcesUsedBy(generate);
-    if (used.length > 0) return used;
+  // Keep one instrument across refill windows; reinstalling it repeats control draws and patches.
+  const sources = instrument();
+  try {
+    sources.reset();
+    for (let i = 0; i < attempts; i += 1) {
+      for (let call = 0; call < 100; call += 1) generate();
+      const used = sources.used();
+      if (used.length > 0) return used;
+    }
+    return [];
+  } finally {
+    sources.restore();
   }
-  return [];
 }
 
 /**
