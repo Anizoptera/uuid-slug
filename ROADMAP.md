@@ -1,5 +1,10 @@
 # Remaining work
 
+## README cleanup
+
+- [ ] Put package choice, installation and working examples first; keep the capability map and consumer limits, remove repeated explanations, and move detailed call tables and advanced recipes to one linked reference without changing contracts.
+- [ ] Review linked public docs, execute changed examples, check rendered navigation and reread the total diff; commit through the existing complete hook, then remove this finished section.
+
 ## Release notes
 
 Show consumers the minimal API changes from the latest release in Markdown diff blocks.

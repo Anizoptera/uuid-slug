@@ -156,5 +156,5 @@ base64url spelling, because converting a safe payload back must not change its i
 
 New masked output uses only the layout above. `codec.createUuidSlugMigrationDecoder` can separately read the original
 fixed permutation/XOR layout when enabled; its four-bit check cannot establish identity either.
-The format published in 0.2.0 remains unsupported. See README's migration sections for format
-selection and record lookup; do not add an old layout to ordinary decoding.
+The format published in 0.2.0 remains unsupported. See the [migration reference](api.md#reading-original-slugs-during-migration)
+for format selection and record lookup; do not add an old layout to ordinary decoding.
