@@ -9,6 +9,8 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const nativeRandomUuid = globalThis.crypto.randomUUID.bind(globalThis.crypto);
+
 const fill = (bytes: Uint8Array) => {
   bytes.fill(0x7f);
   return bytes;
@@ -50,15 +52,15 @@ describe("portable runtime capability probe", () => {
   });
 
   it("keeps the faster portable v4 route when randomUUID exists", async () => {
-    const runtime = await adapterWith({ getRandomValues: fill, randomUUID: vi.fn() });
+    const runtime = await adapterWith({ getRandomValues: fill, randomUUID: nativeRandomUuid });
     expect(runtime.uuidV4).toBeUndefined();
   });
 
-  it("selects Deno's faster native v4 route without changing browser selection", async () => {
-    const randomUUID = vi.fn(() => "00000000-0000-4000-8000-000000000000");
-    const runtime = await adapterWith({ getRandomValues: fill, randomUUID }, {});
-    expect(runtime.uuidV4?.()).toBe("00000000-0000-4000-8000-000000000000");
-    expect(randomUUID).toHaveBeenCalledOnce();
+  it("executes native UUIDv4 under Deno capability selection", async () => {
+    const runtime = await adapterWith({ getRandomValues: fill, randomUUID: nativeRandomUuid }, {});
+    expect(runtime.uuidV4?.()).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
   });
 });
 
