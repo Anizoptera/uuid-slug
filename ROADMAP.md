@@ -6,6 +6,7 @@
 - [ ] Resolve hidden-type changes without publishing private helper inventories: `Options.at` becoming required leaves the public `generate(options: Options)` line unchanged and currently produces an empty diff; the consumer-output design remains open.
 - [x] Classify root export-condition reordering as breaking and show known archive sizes without a predecessor; both existing regression cases fail before the repair and pass afterward.
 - [x] Pass workflow publication selection to fresh preparation previews and restore the development export-condition source-loading fact in the changelog; actionlint validates the changed workflow.
+- [x] Retain type changes to values exported only as default; the isolated regression fails before the export lookup repair and passes afterward.
 
 - [x] Separate compatibility classification from Markdown rendering; level-only callers share the same comparison without building discarded reports, and release-level precedence has one owner.
 

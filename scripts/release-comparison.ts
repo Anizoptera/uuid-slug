@@ -59,7 +59,9 @@ export function normalizeDeclarations(source: string): string {
     file.statements.flatMap((node) =>
       ts.isExportDeclaration(node) && node.exportClause && ts.isNamedExports(node.exportClause)
         ? node.exportClause.elements.map((entry) => (entry.propertyName ?? entry.name).text)
-        : [],
+        : ts.isExportAssignment(node) && ts.isIdentifier(node.expression)
+          ? [node.expression.text]
+          : [],
     ),
   );
   const privateSymbols = new Set(

@@ -72,6 +72,14 @@ test("public diffs isolate named variables and retain default exports", () => {
   expect(report).not.toContain("internal");
 });
 
+test("default-only exports retain changes to their underlying value", () => {
+  const before = normalizeDeclarations("declare const selected: string; export default selected;");
+  const after = normalizeDeclarations("declare const selected: number; export default selected;");
+  const report = publicApiDifference(before, after);
+  expect(report).toContain("- declare const selected: string;");
+  expect(report).toContain("+ declare const selected: number;");
+});
+
 test.each(['"read value"', "[Symbol.iterator]", "read$"])(
   "reordered overloads retain compiler member %s",
   (name) => {
