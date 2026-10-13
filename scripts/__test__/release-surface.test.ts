@@ -150,4 +150,10 @@ test("export-condition priority changes show only the reordered conditions", () 
   expect(conditional.report).toContain('+ "default": "./index.js"');
   expect(conditional.report).not.toContain("./index.d.ts");
   expect(conditional.level).toBe("major");
+  expect(
+    npmSurfaceDifference(
+      npmReleaseSurface({ exports: { ".": "./index.js", "./other": "./other.js" } }),
+      npmReleaseSurface({ exports: { "./other": "./other.js", ".": "./index.js" } }),
+    ).level,
+  ).toBe("patch");
 });
