@@ -471,7 +471,8 @@ Write README, CHANGELOG, `docs/` and bench docs for consumers who never open sou
 
 - MUST read `docs/release.md` in full before changing versions, release tooling or workflows,
   packaging, publication, recovery, assets, notes, or finalization.
-- Run `bun run check` before committing unless the maintainer selects narrower intermediate checks.
+- Let the pre-commit hook run `bun run check` before Git creates the commit unless the maintainer selects narrower intermediate checks.
+  Do not repeat that command manually for the same unchanged tree unless a failure or changed evidence requires another run.
   Commit finished parts with failed checks tracked in `ROADMAP.md`; a failed complete check prevents final delivery.
 - The release command owns the temporary stable-version context. API checks must distinguish that transition from an actual tagged commit and ordinary development; never disable the commit hook.
 - Install nightly in each job that generates Rust public API reports; another job's toolchain setup does not carry over.

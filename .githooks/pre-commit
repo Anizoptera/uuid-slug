@@ -2,4 +2,4 @@
 set -eu
 
 # The required complete check owns timing; keep this hook within the feedback budget.
-bun run check:fast
+bun run check
