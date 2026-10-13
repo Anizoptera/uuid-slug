@@ -21,6 +21,7 @@
         "esbuild": "0.28.2",
         "fastv7": "^1.0.2",
         "git-cliff": "^2.14.2",
+        "github-slugger": "^2.0.0",
         "mdast-util-from-markdown": "^2.1.0",
         "oxfmt": "^0.72.0",
         "oxlint": "^1.87.0",
@@ -922,6 +923,8 @@
     "git-cliff-windows-arm64": ["git-cliff-windows-arm64@2.14.2", "", { "os": "win32", "cpu": "arm64" }, "sha512-0oc0xD/6A+BvInz8imBJulXVOlR9M0nL+d3ibL0lwJvxUVTMQzvoCnsn9OxpsdzXrEisnTvaf+GExoKVJkUcDw=="],
 
     "git-cliff-windows-x64": ["git-cliff-windows-x64@2.14.2", "", { "os": "win32", "cpu": "x64" }, "sha512-RFmCMiwGMU8O+rF//wxT7L10ssoDtzI+QFxlbjpA8E1BAEafkmLTQkKalT88ipEweD46P+Sfc20v8RXuE7V/UA=="],
+
+    "github-slugger": ["github-slugger@2.0.0", "", {}, "sha512-IaOQ9puYtjrkq7Y0Ygl9KDZnrf/aiUJYUpVf89y8kyaxbRG7Y1SrX/jaumrv81vc61+kiMempujsM3Yw7w5qcw=="],
 
     "globals": ["globals@13.24.0", "", { "dependencies": { "type-fest": "^0.20.2" } }, "sha512-AhO5QUcj8llrbG09iWhPU2B204J1xnPeL8kQmVorSsy+Sjj1sk8gIyh6cUocGmH4L0UuhAJy+hJMRA4mgA4mFQ=="],
 

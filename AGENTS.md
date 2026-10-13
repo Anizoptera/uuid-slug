@@ -317,7 +317,7 @@ Keep agent rules in `AGENTS.md`; engineering and measurement detail stays in its
   DO NOT weaken a supported claim or force passive voice to make it sound like documentation.
 - Before rewriting, identify each useful claim and where it survives. Change only named defects;
   preserve approved copy exactly otherwise. Cut repetition, never capabilities, reasons or boundaries.
-- Examples MUST stand alone: import used names and compile changed code with the project compiler.
+- Examples MUST stand alone. After building, run `bun scripts/check-readme.ts` for README links and TS examples.
   Construct and check reusable codecs once. Show direct calls; no forwarding wrappers, redundant
   returned inputs or unneeded conversions. Comments cannot excuse extra work.
   Show result brands/error unions; readers have no IDE. Input annotations must add meaning, not
