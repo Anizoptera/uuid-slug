@@ -15,7 +15,7 @@ const owners = new Map<string, string>([
 ]);
 const violations: string[] = [];
 
-function isTypeofOperand(node: ts.StringLiteral): boolean {
+function isTypeofOperand(node: ts.StringLiteralLike): boolean {
   const expression = node.parent;
   if (!ts.isBinaryExpression(expression)) return false;
   const other = expression.left === node ? expression.right : expression.left;
@@ -34,7 +34,7 @@ for await (const path of new Bun.Glob("**/*.ts").scan("src")) {
     // Module paths and type literals are not runtime values. Empty strings are independent
     // accumulator identities; `typeof` literals stay inline because TypeScript narrows from them.
     if (
-      ts.isStringLiteral(node) &&
+      (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) &&
       node.text !== "" &&
       !ts.isLiteralTypeNode(node.parent) &&
       !ts.isImportDeclaration(node.parent) &&
