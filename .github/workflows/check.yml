@@ -108,6 +108,9 @@ jobs:
       - name: Install the packaged API extractor
         if: matrix.runner == 'ubuntu-24.04'
         run: cargo install cargo-public-api --version 0.52.0 --locked
+      - name: Install nightly for Rust API reports
+        if: matrix.runner == 'ubuntu-24.04'
+        run: rustup toolchain install nightly --profile minimal
       - name: Install the Rust compatibility checker from its release archive
         if: matrix.runner == 'ubuntu-24.04'
         uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8 # v2.87.28

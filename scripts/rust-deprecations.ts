@@ -8,7 +8,9 @@ interface RustdocItem {
     readonly function?: object;
     readonly static?: object;
     readonly struct?: {
-      readonly kind: { readonly plain?: { readonly fields: readonly number[] } };
+      readonly kind: {
+        readonly plain?: { readonly fields: readonly number[] };
+      };
       readonly impls: readonly number[];
     };
     readonly struct_field?: object;
@@ -17,7 +19,11 @@ interface RustdocItem {
     readonly union?: { readonly fields: readonly number[]; readonly impls: readonly number[] };
     readonly trait?: { readonly items: readonly number[] };
     readonly impl?: { readonly trait: object | null; readonly items: readonly number[] };
-    readonly variant?: object;
+    readonly variant?: {
+      readonly kind: {
+        readonly struct?: { readonly fields: readonly number[] };
+      };
+    };
   };
 }
 
@@ -45,6 +51,16 @@ function rustPath(declaration: string): string | undefined {
     if (declaration[cursor] !== "<") continue;
     let depth = 0;
     do {
+      // A const character can contain a delimiter; lifetime names have no closing quote.
+      if (declaration[cursor] === "'" && declaration[cursor + 2] === "'") {
+        cursor += 3;
+        continue;
+      }
+      // Rust's return arrow is one token, not a closing generic delimiter.
+      if (declaration.slice(cursor, cursor + 2) === "->") {
+        cursor += 2;
+        continue;
+      }
       const token = declaration[cursor++];
       if (token === "<") depth++;
       else if (token === ">") depth--;
@@ -83,26 +99,34 @@ export function annotateRustApi(source: string, deprecated: ReadonlySet<string>)
     .join("\n");
 }
 
+function rustdocChildren(item: RustdocItem): readonly number[] {
+  // Tuple fields remain inside their parent's declaration, not separate report entries.
+  return (
+    item.inner.struct?.kind.plain?.fields ??
+    item.inner.enum?.variants ??
+    item.inner.union?.fields ??
+    item.inner.trait?.items ??
+    item.inner.variant?.kind.struct?.fields ??
+    []
+  );
+}
+
 export function rustDeprecations(rustdoc: Rustdoc): string[] {
   const deprecated = new Set<string>();
   const add = (id: number, owner: readonly string[]): void => {
     const item = rustdoc.index[id];
     if (!item?.name) return;
-    if (item.deprecation)
-      deprecated.add(`${rustdocKind(item)} ${[...owner, item.name].join("::")}`);
+    const path = [...owner, item.name];
+    if (item.deprecation) deprecated.add(`${rustdocKind(item)} ${path.join("::")}`);
+    // Enum fields keep their variant's path; a flat traversal drops their deprecations.
+    for (const child of rustdocChildren(item)) add(child, path);
   };
   for (const [id, path] of Object.entries(rustdoc.paths)) {
     if (path.crate_id !== 0) continue;
     const item = rustdoc.index[id];
     if (!item) continue;
     if (item.deprecation) deprecated.add(`${rustdocKind(item)} ${path.path.join("::")}`);
-    const children =
-      item.inner.struct?.kind.plain?.fields ??
-      item.inner.enum?.variants ??
-      item.inner.union?.fields ??
-      item.inner.trait?.items ??
-      [];
-    for (const child of children) add(child, path.path);
+    for (const child of rustdocChildren(item)) add(child, path.path);
     const impls =
       item.inner.struct?.impls ?? item.inner.enum?.impls ?? item.inner.union?.impls ?? [];
     for (const impl of impls) {

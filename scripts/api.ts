@@ -7,6 +7,10 @@ import { checkReleasedApi, typescriptDeclarations } from "./api-evolution";
 import { command } from "./command";
 import { annotateRustApi, rustDeprecations } from "./rust-deprecations";
 import type { Rustdoc } from "./rust-deprecations";
+import {
+  checkRustDeprecationCompiler,
+  resolveRustApiEnvironment,
+} from "./__test__/rust-deprecations-compiler";
 
 const root = resolve(import.meta.dir, "..");
 const apiDirectory = join(root, "api");
@@ -175,10 +179,8 @@ try {
   ];
   // Homebrew cargo is not a rustup proxy; a nightly installation alone cannot select rustdoc.
   // Bind only API extraction so normal product checks keep the repository's stable toolchain.
-  const rustApiEnvironment = {
-    RUSTC: (await command("rustup", ["which", "--toolchain", "nightly", "rustc"], root)).trim(),
-    RUSTDOC: (await command("rustup", ["which", "--toolchain", "nightly", "rustdoc"], root)).trim(),
-  };
+  const rustApiEnvironment = await resolveRustApiEnvironment();
+  await checkRustDeprecationCompiler(rustApiEnvironment);
   const rustTarget = (
     JSON.parse(
       await command(
