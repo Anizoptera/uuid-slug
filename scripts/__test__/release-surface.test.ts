@@ -115,3 +115,38 @@ test("a new npm subpath is additive but a changed target is breaking", () => {
     npmSurfaceDifference(before, npmReleaseSurface({ exports: { ".": "./other.js" } })).level,
   ).toBe("major");
 });
+
+test("export-condition priority changes show only the reordered conditions", () => {
+  const before = npmReleaseSurface({
+    exports: {
+      ".": { bun: "./bun.ts", default: "./index.js", types: "./index.d.ts" },
+      "./other": "./other.js",
+    },
+  });
+  const after = npmReleaseSurface({
+    exports: {
+      ".": { default: "./index.js", bun: "./bun.ts", types: "./index.d.ts" },
+      "./other": "./other.js",
+    },
+  });
+  const { level, report } = npmSurfaceDifference(before, after);
+  expect(level).toBe("major");
+  expect(report).toContain("```diff");
+  expect(report).toContain('- ".": {');
+  expect(report).toContain('+ ".": {');
+  expect(report).toContain('-   "bun": "./bun.ts",');
+  expect(report).toContain('+   "default": "./index.js",');
+  expect(report).not.toContain("./other");
+  expect(report).not.toContain("unchanged");
+  const conditional = npmSurfaceDifference(
+    npmReleaseSurface({
+      exports: { bun: "./bun.ts", default: "./index.js", types: "./index.d.ts" },
+    }),
+    npmReleaseSurface({
+      exports: { default: "./index.js", bun: "./bun.ts", types: "./index.d.ts" },
+    }),
+  );
+  expect(conditional.report).toContain('- "bun": "./bun.ts"');
+  expect(conditional.report).toContain('+ "default": "./index.js"');
+  expect(conditional.report).not.toContain("./index.d.ts");
+});

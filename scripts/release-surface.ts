@@ -140,10 +140,14 @@ function exportsLevel(before: unknown, after: unknown): ReleaseLevel {
 }
 
 function metadataRecords(value: unknown): string {
-  return (JSON.stringify(value, null, 2) ?? "unset")
-    .split("\n")
-    .map((line) => JSON.stringify(line))
-    .join("\n");
+  // Keep each export path with its conditions; isolated JSON lines hide which import changes.
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? Object.entries(value)
+        .map(([name, target]) =>
+          JSON.stringify(`${JSON.stringify(name)}: ${JSON.stringify(target, null, 2)}`),
+        )
+        .join("\n")
+    : JSON.stringify(JSON.stringify(value) ?? "unset");
 }
 
 export function npmSurfaceDifference(

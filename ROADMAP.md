@@ -2,7 +2,8 @@
 
 ## Release notes
 
-- [ ] Replace printed-name heuristics with compiler-owned declaration metadata; first reproduce omitted `$`/Unicode members and reordered quoted/computed overloads, then preserve public visibility, private brands and compatibility classification through the complete gate.
+- [x] Preserve compiler names and visibility in public diffs; omitted names, reordered overloads, export aliases and private brands have direct regression cases and pass the complete gate.
+- [x] Show changed export-condition priority as a diff, keeping the affected import path and omitting unrelated entries; direct regressions cover subpath and root-condition forms.
 
 - [x] Generate only the minimal public API changes from the latest release as Markdown diff blocks; preserve internal compatibility checks, omit inventories, private helper types, repeated older comparisons and API attachments.
 - [x] Rewrite the 0.4.0 changelog as concise consumer changes and upgrade instructions, preserving relevant limits and breaking changes.

@@ -215,8 +215,9 @@ export function apiDifference(before: string, after: string, language: string): 
   const removed = [...oldLines].filter((line) => !newLines.has(line));
   const added = [...newLines].filter((line) => !oldLines.has(line));
   const previous = before.split("\n").filter(Boolean);
+  const current = after.split("\n").filter(Boolean);
   let retained = 0;
-  for (const line of after.split("\n")) if (line === previous[retained]) retained++;
+  for (const line of current) if (line === previous[retained]) retained++;
   // Sets cannot detect moved members, repeated declarations, or overload precedence.
   if (!removed.length && !added.length) {
     const oldFamilies = declarationFamilies(before);
@@ -224,6 +225,15 @@ export function apiDifference(before: string, after: string, language: string): 
     const changed = [...oldFamilies.keys()].filter(
       (name) => JSON.stringify(oldFamilies.get(name)) !== JSON.stringify(newFamilies.get(name)),
     );
+    // Ordered metadata has no overload families; show moved rows instead of claiming no API effect.
+    if (!changed.length && previous.some((row) => !row.startsWith("{")))
+      return {
+        report: declarationDiff(
+          previous.filter((row, index) => row !== current[index]),
+          current.filter((row, index) => row !== previous[index]),
+        ),
+        level: "major",
+      };
     return {
       report: changed.length
         ? declarationDiff(
