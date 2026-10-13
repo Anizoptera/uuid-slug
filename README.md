@@ -6,33 +6,31 @@
 [![Runtime deps](https://img.shields.io/badge/runtime_deps-0-2ea44f)](package.json)
 [![License](https://img.shields.io/github/license/Anizoptera/uuid-slug)](LICENSE)
 
-Generate random UUIDs (v4) or timestamped UUIDs (v7), and encode any UUID as a shorter,
-lossless slug. A UUID is a
-128-bit identifier; a slug is the same identifier in text suitable for URLs and filenames:
+Keep UUIDs as database keys and use shorter spellings of the same IDs in URLs and filenames.
+A plain slug preserves all 128 UUID bits in 22 base64url characters instead of 36 UUID-text
+characters. It needs no key or mapping table; decoding returns the original UUID.
 
 ```text
 UUID: 0198abcd-1234-7abc-9def-0123456789ab
 Slug: AZirzRI0eryd7wEjRWeJqw
 ```
 
-Use this package when you need short URLs, case-insensitive filenames, binary storage or
-reversible UUIDv7 masking. For UUID text alone, a UUID-only library or native generator may suffice.
-It has no runtime dependencies, writes into caller-owned buffers, and returns typed conversion
-errors. Built-in generation uses secure randomness; named imports let bundlers remove unused code.
+Generate UUIDv4 (random) or UUIDv7 (timestamped), or shorten existing UUIDs of any version.
+Lowercase base32hex supports case-insensitive filenames and timestamp-sorted plain UUIDv7 slugs
+under ASCII comparison. Mask UUIDv7 fields with a private key; masking is not encryption or access control.
+
+It supports JavaScript and TypeScript on Node 20+, Bun, Deno, browsers and Workers, with no runtime
+dependencies. Reuse your buffers; conversions return typed errors, and named imports let supported
+bundlers remove unused features. Built-in generation uses secure randomness. For UUID text alone,
+a native generator or UUID-only library may suffice.
 
 [Install](#install) · [Quick start](#quick-start) · [Contents](#contents) · [API](#api) · [Performance](#measured-performance)
 
 ## Install
 
-```bash
-bun add @anizoptera/uuid-slug
-pnpm add @anizoptera/uuid-slug
-npm add @anizoptera/uuid-slug
-```
+Run `bun add @anizoptera/uuid-slug`, or replace `bun` with `npm` or `pnpm`.
 
 ## Quick start
-
-Generate one UUID for storage and its plain slug for URLs:
 
 ```ts
 import { generateUuidV7WithPlainSlug } from "@anizoptera/uuid-slug";
