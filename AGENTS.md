@@ -316,13 +316,19 @@ catalogues in linked references so routine use does not require reading research
   Keep general security advice out of the opening and unrelated API guidance.
 - Write direct sentences; keep headings and table labels short. Each claim must tell the reader
   what they get or what to do.
+  State what a feature saves or enables before its controls; keep unrelated benefits separate.
+  Category labels and API lists are no explanation.
 - Describe features and benefits as facts about the library or capability, not sales commands
   addressed to "you". Reserve imperatives for actual setup and usage steps; declarative wording
   must preserve the strength of the claim, not add hedging or force every sentence into passive voice.
 - Change only lines with a named defect; preserve useful claims and sound wording.
   Reject edits that add words without adding information.
-- Examples must construct reusable codecs and masks outside per-ID calls. Show setup and repeated
-  use separately; a comment saying to reuse a codec does not repair an example that rebuilds it.
+- Construct example codecs and masks once, outside per-ID calls. Show setup and reuse;
+  a comment cannot repair repeated construction.
+  Show direct calls, not forwarding wrappers, redundant returned inputs or unnecessary conversions.
+  Narrow `string | UuidSlugError` with `typeof value === "string"`; use `isUuidSlugError` for
+  unknown inputs or object results that need it.
+  Annotate example inputs and results with public types. Preserve known brands; `string` is for unchecked input.
 - Lead performance copy with consumer gains: speed, low memory use and small bundles.
   Describe native APIs or TypeScript fallbacks only to explain those gains, never as the whole pitch.
   Preserve approved positioning; do not turn benchmark rows into a README feature table.
@@ -337,10 +343,11 @@ catalogues in linked references so routine use does not require reading research
 - Preserve approved copy exactly. Delete text that adds no useful information, not concrete strengths.
 - Reject em-dashes, bold-label lists, "not only ... but", empty trailing "-ing" clauses,
   rhythmic groups of three and Title Case headings; they hide missing content.
-- Put the TL;DR first: the consumer benefit, a concrete UUID/slug comparison, strongest supported claims,
-  and navigation. Install and the primary quick-start follow immediately. Keep detailed diagrams,
-  limits, runtime tables, and advanced examples with their owning sections. Use emphasis to help
-  scanning; check the rendered first screen and every local heading link before committing.
+- Put common gains first: performance, resource use, adoption cost and main identifier jobs.
+  Order sections by consumer value and breadth. Include a UUID/slug comparison and navigation;
+  surface specialist benefits briefly. Keep limits, diagrams, runtime tables and examples with
+  their owning sections. Install and quick start follow the opening. Check local heading links
+  and opening density; render only to settle layout questions.
 - Prose about the writer's actions ("this pass", "was rewritten", "now supports") never enters a
   doc; git holds that. State the fact.
 
