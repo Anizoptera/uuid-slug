@@ -1,6 +1,6 @@
 # @anizoptera/uuid-slug
 
-Fastest UUIDv4/v7 generation and handling for TS, Rust, and WASM, short base64/base32 plain and masked slugs.  Zero runtime deps, tree-shakable, and optimised for your runtime.  One efficient ID for databases, URLs and files.
+High-performance UUIDv4/v7 generation and handling for TS, Rust, and WASM, short base64/base32 plain slugs and configurable masked UUIDv7 slugs.  Zero runtime deps, tree-shakable, and optimised for your runtime.  One efficient ID for databases, URLs and files.
 
 [![npm version](https://img.shields.io/npm/v/@anizoptera/uuid-slug?label=npm)](https://www.npmjs.com/package/@anizoptera/uuid-slug)
 [![CI](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml)
@@ -8,12 +8,12 @@ Fastest UUIDv4/v7 generation and handling for TS, Rust, and WASM, short base64/b
 [![Runtime deps](https://img.shields.io/badge/runtime_deps-0-2ea44f)](package.json)
 [![License](https://img.shields.io/github/license/Anizoptera/uuid-slug)](LICENSE)
 
-- **The fastest compliant UUIDv4/v7 generation and handling across all JS/TS runtimes!**
+- **Benchmark-leading UUIDv7 text generation on Node, Bun, Deno and browsers!**
   - 6+ distinct UUID representations are supported!
 
-- **Best performance**, lowest memory and resource allocation on EVERY runtime!
-  - Same API that works most efficiently on Node, Bun, Deno, browsers and cloud workers. Native fast paths and portable fallbacks are used automatically.
-  - _For even higher performance IDs can be generated or decoded directly into caller-owned buffers; failed validation leaves them unchanged._
+- **Leading performance**, low memory and resource allocation!
+  - Same API across Node, Bun, Deno, browsers and cloud workers. Native fast paths and portable fallbacks are used automatically.
+  - _IDs can be generated or decoded directly into caller-owned buffers; failed validation leaves them unchanged._
 
 - **Zero runtime dependencies.** Small runtime-optimised bundles on Node, Bun, Deno and browsers.
 
@@ -22,9 +22,9 @@ Fastest UUIDv4/v7 generation and handling for TS, Rust, and WASM, short base64/b
   - **Short 22-character base64url slug for URLs** (39% shorter than a naive UUID text).
   - 26-character base32hex lowercase slug suits case-insensitive (e.g., cross-OS) filenames. Plain UUIDv7 slugs in this alphabet sort by timestamp under ASCII comparison.
   - Optional **[UUIDv7 masked slug](#masked-slugs) form that hides timestamp and UUID structure.** Expose your IDs without revealing their creation time or nature!
-  - _Any UUID can be converted into a slug, and vice versa. Existing database keys stay unchanged; no mapping table is needed._
+  - _Any UUID can be converted into a lossless plain slug, and vice versa. Existing database keys stay unchanged; no mapping table is needed._
 
-- **Most complete functionality. Anything you need to do with UUIDv4/v7 + most operations are applicable to any UUID!**
+- **UUIDv4/v7 generation, conversion and inspection, configurable UUIDv7 masking, and plain conversion for any UUID!**
   - **Full control over guarantees and options.** Control ordering, clock policy, custom payload layout and more.
   - UUIDv7 can use recorded times or an application clock, with configurable handling of clock rollback.
   - IDs and relationships can be created offline, before saving or syncing, without a central allocator or worker number.
@@ -38,12 +38,12 @@ Fastest UUIDv4/v7 generation and handling for TS, Rust, and WASM, short base64/b
 - **Intuitive, ergonomic, agent-friendly manually tailored API.**
   - Strict types, validation, typed errors, safe buffer writes and one-check composition to prevent integration mistakes.
   - Types catch UUID-version and plain/masked mix-ups before execution. Compatible conversions chain with one error check; failures have stable codes.
-  - **Tree shaking removes ANY unused features, including masking and key derivation if you don't use them.**
+  - **Named imports let supported bundlers remove unused features, including masking and key derivation.**
 
 - TypeScript and Rust implementations that encode and decode the same formats, including masked IDs with matching key settings.
 
 
-[Install](#install) · [Quick start](#quick-start) · [Contents](#contents) · [API](#api) · [Performance](#performance)
+[Install](#install) · [Quick start](#quick-start) · [Contents](#contents) · [API](#api) · [Performance](bench/PERFORMANCE.md)
 
 
 ## Install
@@ -79,7 +79,7 @@ Default generation returns the ID and throws `rng_unavailable` only without secu
 
 ## Contents
 
-- [Performance](#performance) · [Features](#features) · [Install](#install) · [Quick start](#quick-start)
+- [Performance](bench/PERFORMANCE.md) · [Install](#install) · [Quick start](#quick-start)
 - [Convert existing IDs](#keep-your-existing-uuids) · [Representations](#representations)
 - [Plain slugs](#plain-slugs) · [Masking](#masked-slugs) · [Sentinels](#sentinels) · [Bytes](#work-with-uuid-bytes)
 - [Parse once](#parse-once-for-repeated-work) · [Offline IDs](#assign-ids-before-saving-or-syncing)
@@ -98,14 +98,14 @@ Encode stored UUIDs; decode incoming slugs before querying the same keys.
 Plain encoding preserves every bit. Standard encodings let you decode plain slugs without this library; **masked slugs need the matching key and settings**.
 
 ```ts
-import { plainSlugToUuidString, uuidStringToPlainSlug } from "@anizoptera/uuid-slug";
+import { isUuidSlugError, plainSlugToUuidString, uuidStringToPlainSlug } from "@anizoptera/uuid-slug";
 import type { PlainUuidSlug, UuidSlugError, UuidString } from "@anizoptera/uuid-slug";
 
 const slug: PlainUuidSlug | UuidSlugError = uuidStringToPlainSlug("0198abcd-1234-7abc-9def-0123456789ab");
 if (typeof slug === "string") console.log(slug);
 else console.error(slug.message);
 
-// Correctness of any call can be tested for errors safely with the helper directly:
+// Alternative to the typeof check: the helper recognizes returned error values.
 if (!isUuidSlugError(slug)) console.log(slug);
 
 const uuid: UuidString | UuidSlugError = plainSlugToUuidString("AZirzRI0eryd7wEjRWeJqw");
@@ -270,7 +270,7 @@ See [accepted time forms and configured fractional precision](docs/api.md#suppli
 import { BASE32HEX, generatePlainUuidV7Slug } from "@anizoptera/uuid-slug";
 import type { PlainUuidV7Slug, UuidSlugError } from "@anizoptera/uuid-slug";
 
-const recordedAt = "2026-01-01T12:00:00Z"; // or Date or unix timestamp, etc.
+const recordedAt = "2026-01-01T12:00:00Z"; // Also accepts Date or Unix milliseconds.
 const slug: PlainUuidV7Slug | UuidSlugError = generatePlainUuidV7Slug({ at: recordedAt, alphabet: BASE32HEX });
 if (typeof slug === "string") console.log(slug);
 else console.error(slug.message);
@@ -426,7 +426,7 @@ Generator, masking-codec and migration methods need no `this` binding.
 
 ## Runtime
 
-NPM package uses ES modules. Native APIs and portable TypeScript are selected automatically for each runtime and output, so the caller code does not need to choose or coordinate the implementations. When the runtime supports it, the implementation is chosen statically through the 'package.json' exports. 
+The npm package uses ES modules. Native APIs and portable TypeScript are selected automatically for each runtime and output, so the caller code does not need to choose or coordinate the implementations. When the runtime supports it, the implementation is chosen statically through the `package.json` exports.
 
 The [Rust crate](rust/uuid-slug) uses the same identifier formats. Cross-language masked reads require matching seeds, iteration counts and timestamp ranges; see [cross-language contracts](docs/cross-language.md).
 
