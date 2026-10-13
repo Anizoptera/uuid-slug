@@ -341,7 +341,10 @@ catalogues in linked references so routine use does not require reading research
   deleted, not softened.
 - Define terms before use; every referent must exist. An undefined "responsiveness target" is a defect.
 - Preserve approved copy exactly. Delete text that adds no useful information, not concrete strengths.
-- Reject em-dashes, bold-label lists, "not only ... but", empty trailing "-ing" clauses,
+- Use bold main benefits with short nested details to make the opening easy to scan.
+  Name each benefit once; its details explain concrete uses, savings or controls.
+  Preserve approved emphasis; a marketing claim does not become filler because it is prominent.
+- Reject em-dashes, "not only ... but", empty trailing "-ing" clauses,
   rhythmic groups of three and Title Case headings; they hide missing content.
 - Put common gains first: performance, resource use, adoption cost and main identifier jobs.
   Order sections by consumer value and breadth. Include a UUID/slug comparison and navigation;

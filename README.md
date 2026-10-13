@@ -1,45 +1,60 @@
 # @anizoptera/uuid-slug
 
+Fastest UUIDv4/v7 generation and handling for TS, Rust, and WASM, short base64/base32 plain and masked slugs.  Zero runtime deps, tree-shakable, and optimised for your runtime.  One efficient ID for databases, URLs and files.
+
 [![npm version](https://img.shields.io/npm/v/@anizoptera/uuid-slug?label=npm)](https://www.npmjs.com/package/@anizoptera/uuid-slug)
 [![CI](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml/badge.svg?branch=main)](https://github.com/Anizoptera/uuid-slug/actions/workflows/check.yml)
 [![Node >=20](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](package.json)
 [![Runtime deps](https://img.shields.io/badge/runtime_deps-0-2ea44f)](package.json)
 [![License](https://img.shields.io/github/license/Anizoptera/uuid-slug)](LICENSE)
 
-Fastest UUIDv4/v7 generation and handling, short base64/base32 plain and masked slugs.  Zero runtime dependencies, tree-shakable, optimised for your runtime.  One efficient ID across database, URLs and files.
+- **The fastest compliant UUIDv4/v7 generation and handling across all JS/TS runtimes!**
+- 6+ distinct UUID representations are supported!
 
-```text
-UUID: 0198abcd-1234-7abc-9def-0123456789ab
-Slug: AZirzRI0eryd7wEjRWeJqw
-```
+- **Best performance**, lowest memory and resource allocation on EVERY runtime!
+  - Same API that works most efficiently on Node, Bun, Deno, browsers and cloud workers. Native fast paths and portable fallbacks are used automatically.
+  - _For even higher performance IDs can be generated or decoded directly into caller-owned buffers; failed validation leaves them unchanged._
 
-## Performance
+- **Zero runtime dependencies.** Small runtime-optimised bundles on Node, Bun, Deno and browsers.
 
-Leading performance, low allocation and small bundles on Node, Bun, Deno and browsers.
-IDs can be generated or decoded directly into caller-owned buffers; failed validation leaves them unchanged.
-Parsing once avoids decoding the same input for each conversion or inspection.
-Tree shaking removes unused features, including masking and key derivation from plain-only bundles.
+- **One UUID for storage, URLs and files, providing the most efficient representation at every site!**
+  - 16-byte binary UUID for storage or transport.
+  - **Short 22-character base64url slug for URLs** (39% shorter than a naive UUID text).
+  - 26-character base32hex lowercase slug suits case-insensitive (e.g., cross-OS) filenames. Plain UUIDv7 slugs in this alphabet sort by timestamp under ASCII comparison.
+  - Optional **UUIDv7 masked slug form that hides timestamp and UUID structure.** Expose your IDs without revealing their creation time or nature!
+  - _Any UUID can be converted into a slug, and vice versa. Existing database keys stay unchanged; no mapping table is needed._
 
-## Features
+- **Most complete functionality. Anything you need to do with UUIDv4/v7 + most operations are applicable to any UUID!**
+  - **Full control over guarantees and options.** Control ordering, clock policy, custom payload layout and more.
+  - UUIDv7 can use recorded times or an application clock, with configurable handling of clock rollback.
+  - IDs and relationships can be created offline, before saving or syncing, without a central allocator or worker number.
+  - Masking key rotation and format migration keep old IDs readable while new IDs use current settings. Reserved IDs stay recognizable after rotation.
+  - Async key derivation yields during long work and can be cancelled.
+  - Optional UUID object for multiple operations over one ID.
+  - Timestamp and ordering tools for UUIDv7: timestamp extraction, time-range queries, supplied times and clock controls.
+  - Optional, special UUID sentinel values for testing, debugging, tracing and development needs.
+  - Optimal, **safe and most efficient defaults!**
+  
+- **Intuitive, ergonomic, agent-friendly manually tailored API.**
+  - Strict types, validation, typed errors, safe buffer writes and one-check composition to prevent integration mistakes.
+  - Types catch UUID-version and plain/masked mix-ups before execution. Compatible conversions chain with one error check; failures have stable codes.
+  - **Tree shaking removes ANY unused features, including masking and key derivation if you don't use them.**
 
-- Any UUID becomes a lossless 22-character base64url slug. Existing database keys stay unchanged; no mapping table is needed.
-- UUIDv7 masking hides timestamps and other fields without replacing the UUID, including IDs from other generators.
-- The same calls work on Node, Bun, Deno, browsers and Workers, without native addons or WebAssembly. Native fast paths and portable fallbacks are automatic.
-- Types catch UUID-version and plain/masked mix-ups before execution. Compatible conversions chain with one error check; failures have stable codes.
-- IDs and relationships can be created offline, before saving or syncing, without a central allocator or worker number.
-- Lowercase base32hex suits case-insensitive filenames. Plain UUIDv7 slugs in this alphabet sort by timestamp under ASCII comparison.
-- UUIDv7 supplies timestamps without a database lookup and bounds for time-range queries on UUID keys.
-- Key rotation and format migration keep old IDs readable while new IDs use current settings. Reserved IDs stay recognizable after rotation.
-- TypeScript and Rust encode and decode the same formats, including masked IDs with matching key settings.
-- UUIDv7 can use recorded times or an application clock, with configurable handling of clock rollback.
-- Async key derivation yields during long work and can be cancelled.
+- TypeScript and Rust implementations that encode and decode the same formats, including masked IDs with matching key settings.
+
 
 [Install](#install) · [Quick start](#quick-start) · [Contents](#contents) · [API](#api) · [Performance](#performance)
 
+
 ## Install
 
-Run `bun add @anizoptera/uuid-slug`; replace `bun add` with `npm install` or `pnpm add`.
-The package uses ES modules; see [runtime support](#runtime).
+Use your favorite TS/JS package manager (npm/bun/pnpm/yarn/..), e.g.:
+```
+bun install @anizoptera/uuid-slug
+```
+
+_WASM and Rust versions will be published soon._
+
 
 ## Quick start
 
@@ -60,6 +75,7 @@ Use `generateUuidV4()` for random IDs, `generateUuidV7()` for timestamped IDs, o
 `generatePlainUuidV7Slug()` for just the slug.
 Default generation returns the ID and throws `rng_unavailable` only without secure randomness.
 [Conversions return errors as values](#handling-errors).
+
 
 ## Contents
 
@@ -414,8 +430,7 @@ Generator, masking-codec and migration methods need no `this` binding.
 
 ## Runtime
 
-Native APIs and portable TypeScript are selected automatically for each runtime and output;
-caller code does not choose or coordinate the implementations.
+NPM package uses ES modules. Native APIs and portable TypeScript are selected automatically for each runtime and output, so the caller code does not need to choose or coordinate the implementations. When the runtime supports it, the implementation is chosen statically through the 'package.json' exports. 
 
 The [Rust crate](rust/uuid-slug) uses the same identifier formats. Cross-language masked reads
 require matching seeds, iteration counts and timestamp ranges; see [cross-language contracts](docs/cross-language.md).
@@ -427,24 +442,23 @@ require matching seeds, iteration counts and timestamp ranges; see [cross-langua
 | Deno | TypeScript source; no flag or import map needed |
 | Cloudflare Workers, browsers and other compatible runtimes | Compiled JavaScript over Web Crypto |
 
-Bun's native UUIDv7 timestamp can advance ahead of the clock during bursts. Create a generator
-to control ordering, clock policy or payload layout.
+Bun's native UUIDv7 timestamp can advance ahead of the clock during bursts. Create a generator to control ordering, clock policy or payload layout.
 
-Conversion and timestamp extraction need no randomness, so read-only tools and static builds
-can use them. Generation needs secure randomness. See
-[runtime coverage](docs/cross-language.md#distribution-and-dependencies).
+Conversion and timestamp extraction need no randomness, so read-only tools and static builds can use them. Generation needs secure randomness. See [runtime coverage](docs/cross-language.md#distribution-and-dependencies).
+
 
 ## Upgrades and support
 
-Check the [changelog](CHANGELOG.md) before upgrading. Breaking changes require a major release,
-or a minor release before 1.0. APIs must be deprecated in a published release before removal;
-see the [release policy](docs/release.md).
-Supported identifier formats remain readable across upgrades. Retain the
-[matching mask settings and migration readers](docs/api.md#changing-an-existing-id-format) for stored masked IDs.
-Plain slugs recover standard UUIDs without keys or this library. Masked IDs need their keys,
-range settings and sentinel definitions; custom masks also need their transform implementation.
+Check the [changelog](CHANGELOG.md) before upgrading. And see the [release policy](docs/release.md).
+
+Supported identifier formats remain readable across upgrades. Retain the [matching mask settings and migration readers](docs/api.md#changing-an-existing-id-format) for stored masked IDs.
+
+Plain slugs recover standard UUIDs without keys or this library. Masked IDs need their keys, range settings and sentinel definitions; custom masks also need their transform implementation.
+
 The built-in [wire format](docs/design.md) is documented for independent decoders.
+
 Report bugs through [GitHub issues](https://github.com/Anizoptera/uuid-slug/issues).
+
 
 ## License
 
