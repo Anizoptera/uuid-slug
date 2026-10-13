@@ -7,6 +7,7 @@ import {
   combineDifferences,
   minimumRelease,
   normalizeDeclarations,
+  publicApiDifference,
   satisfiesMinimum,
   sizeDelta,
 } from "./release-comparison";
@@ -258,7 +259,7 @@ function sizeTable(current: Sizes, previous: Sizes): string {
     "| --- | ---: | ---: |",
     ...(["npm", "crate", "native", "wasm"] as const).map(
       (key) =>
-        `| ${key} | ${current[key] ?? "unavailable"} | ${sizeDelta(current[key], previous[key])} |`,
+        `| ${key} | ${current[key] === undefined ? "unavailable" : `${current[key]} B`} | ${sizeDelta(current[key], previous[key]).replace(/^\d+ B /, "")} |`,
     ),
   ].join("\n");
 }
@@ -352,7 +353,16 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
                 previousTypeScript.package,
                 currentDeclaration.package,
               );
-              return combineDifferences(declarations, metadata);
+              return combineDifferences(
+                {
+                  level: declarations.level,
+                  report: publicApiDifference(
+                    previousTypeScript.declarations,
+                    currentDeclaration.declarations,
+                  ),
+                },
+                metadata,
+              );
             })()
           : undefined;
         const rust = previousCrateRoot
@@ -392,7 +402,11 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
         ].join("\n\n");
         return {
           minimum,
-          text: `## ${comparison.role === "immediate" ? "Previous release" : "Previous release line"}: ${comparison.tag}\n\n### Minimum compatible release\n\n${minimum}\n\n### Packaged API\n\n${api}\n\n### Size\n\n${sizeTable(current, previous.sizes)}`,
+          api:
+            comparison.role === "immediate"
+              ? `## API changes since ${comparison.tag}\n\n${api}`
+              : undefined,
+          text: `### Compared with ${comparison.tag}\n\n${sizeTable(current, previous.sizes)}`,
         };
       }),
     );
@@ -408,7 +422,7 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
       Bun.write(join(directory, "release-report.json"), `${JSON.stringify(report, null, 2)}\n`),
       Bun.write(
         join(directory, "notes.md"),
-        `${notes}${sections.map(({ text }) => text).join("\n\n")}\n`,
+        `${notes}\n${sections.find(({ api }) => api !== undefined)?.api ?? ""}\n\n## Package sizes\n\nnpm and crate sizes are compressed archives; native and wasm sizes are linked caller examples, not installed package sizes.\n\n${sections.map(({ text }) => text).join("\n\n")}\n`,
       ),
     ]);
   } finally {

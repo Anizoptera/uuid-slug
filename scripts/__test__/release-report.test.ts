@@ -1,13 +1,34 @@
 import { expect, test } from "bun:test";
 import { rejects } from "node:assert/strict";
-import { apiDiff, minimumRelease, satisfiesMinimum, sizeDelta } from "../release-comparison";
+import {
+  apiDiff,
+  minimumRelease,
+  normalizeDeclarations,
+  publicApiDifference,
+  satisfiesMinimum,
+  sizeDelta,
+} from "../release-comparison";
 import { verifyCrateIdentity, verifyNpmIdentity } from "../release-report";
 
 test("release API diff exposes removals and additions without restating unchanged lines", () => {
   expect(
     apiDiff("export declare function old(): void;\nshared", "shared\nexport type New = 1;\n"),
-  ).toBe("- `export declare function old(): void;`\n- `export type New = 1;` (added)");
+  ).toBe("```diff\n- export declare function old(): void;\n+ export type New = 1;\n```");
   expect(apiDiff("same\n", "same\n")).toBe("No packaged TypeScript declaration changes.");
+});
+
+test("public release diff omits private helpers while retaining changed exported members", () => {
+  const before = normalizeDeclarations(
+    "declare type Helper = 1; export interface Value { x: string; unchanged: boolean; }",
+  );
+  const after = normalizeDeclarations(
+    "declare type Helper = 2; export interface Value { x: number; unchanged: boolean; }",
+  );
+  const report = publicApiDifference(before, after);
+  expect(report).toContain("- Value: x: string;");
+  expect(report).toContain("+ Value: x: number;");
+  expect(report).not.toContain("Helper");
+  expect(report).not.toContain("unchanged");
 });
 test("stable version distance must satisfy the derived release level", () => {
   expect(satisfiesMinimum("0.3.0", "0.4.0", "minor")).toBe(true);
@@ -16,6 +37,17 @@ test("stable version distance must satisfy the derived release level", () => {
   expect(satisfiesMinimum("2.0.0-beta.1", "2.0.0", "major")).toBe(true);
   expect(satisfiesMinimum("1.3.0", "2.0.0-beta.1", "prerelease")).toBe(true);
   expect(satisfiesMinimum("9007199254740992.0.0", "9007199254740993.0.0", "major")).toBe(true);
+});
+
+test("multiline declaration diffs preserve content and cannot close their own fence", () => {
+  const before = "export type Text = `old`;";
+  const after = 'export interface Text {\n value: "```";\n}';
+  const report = apiDiff(before, after);
+  expect(report).toContain("- export type Text = `old`;");
+  expect(report).toContain('+ Text: value: "```";');
+  expect(report.startsWith("````diff\n")).toBe(true);
+  expect(report.endsWith("\n````")).toBe(true);
+  expect(report).not.toContain("(added)");
 });
 
 test("API comparison detects moved members and changed overload priority", () => {

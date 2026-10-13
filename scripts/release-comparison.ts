@@ -80,7 +80,24 @@ export function normalizeDeclarations(source: string): string {
 }
 
 function displayDeclaration(line: string): string {
-  return (line.startsWith('"') ? (JSON.parse(line) as string) : line).replaceAll("`", "\\`");
+  return line.startsWith('"') ? (JSON.parse(line) as string) : line;
+}
+
+// Prefix every physical line so multiline declarations remain readable Markdown diff blocks.
+function declarationLines(values: readonly string[], prefix: string): string[] {
+  return values.flatMap((value) =>
+    displayDeclaration(value)
+      .split("\n")
+      .map((line) => prefix + line),
+  );
+}
+
+function declarationDiff(removed: readonly string[], added: readonly string[]): string {
+  const body = [...declarationLines(removed, "- "), ...declarationLines(added, "+ ")].join("\n");
+  const fence = "`".repeat(
+    Math.max(3, ...[...body.matchAll(/`+/g)].map(([run]) => run.length + 1)),
+  );
+  return `${fence}diff\n${body}\n${fence}`;
 }
 
 export function apiDifference(before: string, after: string, language: string): ApiDifference {
@@ -105,14 +122,11 @@ export function apiDifference(before: string, after: string, language: string): 
   // Sets cannot detect moved members, repeated declarations, or overload precedence.
   if (!removed.length && !added.length)
     return {
-      report: `Declaration order or ownership changed.\n\nBefore:\n\n\`\`\`text\n${before}\n\`\`\`\n\nAfter:\n\n\`\`\`text\n${after}\n\`\`\``,
+      report: `Declaration order or repetition changed.\n\n${declarationDiff(before.split("\n").filter(Boolean), after.split("\n").filter(Boolean))}`,
       level: "major",
     };
   return {
-    report: [
-      ...removed.map((line) => `- \`${displayDeclaration(line)}\``),
-      ...added.map((line) => `- \`${displayDeclaration(line)}\` (added)`),
-    ].join("\n"),
+    report: declarationDiff(removed, added),
     level: removed.length || retained !== previous.length ? "major" : "minor",
   };
 }
@@ -123,6 +137,30 @@ export const apiDiff = (before: string, after: string): string =>
     normalizeDeclarations(after),
     "TypeScript declaration",
   ).report;
+
+// Compatibility checks retain private dependencies; upgrade notes show only caller-facing rows.
+function publicRows(source: string): string {
+  const rows = source.split("\n").filter(Boolean);
+  const owners = new Set(
+    rows.flatMap((row) => {
+      const declaration = displayDeclaration(row);
+      const owner = /^([\w.]+): export\b/.exec(declaration)?.[1];
+      return owner ? [owner] : [];
+    }),
+  );
+  return rows
+    .filter((row) => {
+      const declaration = displayDeclaration(row);
+      if (declaration.startsWith("export ")) return true;
+      const owner = /^([\w.]+): /.exec(declaration)?.[1];
+      return owner !== undefined && owners.has(owner) && !declaration.includes("readonly [");
+    })
+    .join("\n");
+}
+
+export function publicApiDifference(before: string, after: string): string {
+  return apiDifference(publicRows(before), publicRows(after), "public API").report;
+}
 
 export function minimumRelease(
   version: string,

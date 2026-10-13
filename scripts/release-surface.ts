@@ -1,4 +1,5 @@
 import { command } from "./command";
+import { apiDifference } from "./release-comparison";
 import type { ApiDifference, ReleaseLevel } from "./release-comparison";
 
 export interface CargoReleaseSurface {
@@ -138,6 +139,13 @@ function exportsLevel(before: unknown, after: unknown): ReleaseLevel {
   return Object.keys(after).length > oldEntries.length ? "minor" : "patch";
 }
 
+function metadataRecords(value: unknown): string {
+  return (JSON.stringify(value, null, 2) ?? "unset")
+    .split("\n")
+    .map((line) => JSON.stringify(line))
+    .join("\n");
+}
+
 export function npmSurfaceDifference(
   before: NpmReleaseSurface,
   after: NpmReleaseSurface,
@@ -154,12 +162,16 @@ export function npmSurfaceDifference(
   }
   if (JSON.stringify(before.exports) !== JSON.stringify(after.exports)) {
     levels.push(exportsLevel(before.exports, after.exports));
-    changes.push("exports changed.");
+    changes.push(
+      `Package export conditions:\n\n${apiDifference(metadataRecords(before.exports), metadataRecords(after.exports), "export conditions").report}`,
+    );
   }
   for (const field of ["main", "module", "sideEffects", "type", "types"] as const) {
     if (JSON.stringify(before[field]) !== JSON.stringify(after[field])) {
       levels.push("major");
-      changes.push(`${field} changed.`);
+      changes.push(
+        `${field}: ${JSON.stringify(before[field]) ?? "unset"} → ${JSON.stringify(after[field]) ?? "unset"}.`,
+      );
     }
   }
   return changes.length

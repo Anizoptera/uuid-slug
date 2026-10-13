@@ -47,8 +47,11 @@ Require the candidate's annotated tag to resolve to the checked-out commit befor
 publication. Preserve tag objects in release checkouts; a matching version string cannot identify
 the source that verification exercised. This does not change historical lightweight-tag selection.
 
-Release notes contain the committed `CHANGELOG.md` section verbatim, followed by generated API and
-size differences against each selected comparison. Report npm and crate compressed bytes separately
+Release notes contain the committed `CHANGELOG.md` section verbatim, followed by the minimal public
+API changes from the latest release in Markdown diff blocks and package sizes.
+Keep complete API comparisons internal to compatibility checks. Do not publish declaration
+inventories, private helper types, repeated older API comparisons, or API attachments.
+Report npm and crate compressed bytes separately
 from matched linked native and WebAssembly caller probes. State absolute changes; state percentages
 only for nonzero denominators. Generated tables do not belong in the changelog.
 
