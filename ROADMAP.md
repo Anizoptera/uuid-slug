@@ -2,6 +2,8 @@
 
 ## Release notes
 
+- [x] Reuse declaration lines across comparison and overload grouping; remove duplicate assertions while retaining the existing diff, ordering, publication-selection and compatibility cases.
+
 - [x] Preserve compiler names and visibility in public diffs; omitted names, reordered overloads, export aliases and private brands have direct regression cases and pass the complete gate.
 - [x] Show changed export-condition priority as a diff, keeping the affected import path and omitting unrelated entries; direct regressions cover subpath and root-condition forms.
 

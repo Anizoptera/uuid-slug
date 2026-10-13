@@ -185,14 +185,14 @@ function declarationDiff(removed: readonly string[], added: readonly string[]): 
   return `${fence}diff\n${body}\n${fence}`;
 }
 
-function declarationFamilies(source: string): Map<string, string[]> {
+function declarationFamilies(rows: readonly string[]): Map<string, string[]> {
   // Pure reorder changes need the affected overload family, not the entire declaration inventory.
   // normalizeDeclarations carries the compiler's family; never guess names from signature text.
   const families = new Map<string, string[]>();
-  for (const row of source.split("\n").filter(Boolean)) {
+  for (const row of rows) {
     const name = row.startsWith("{") ? (JSON.parse(row) as DeclarationRecord).family : row;
-    const rows = families.get(name);
-    if (rows) rows.push(row);
+    const family = families.get(name);
+    if (family) family.push(row);
     else families.set(name, [row]);
   }
   return families;
@@ -200,28 +200,18 @@ function declarationFamilies(source: string): Map<string, string[]> {
 
 export function apiDifference(before: string, after: string, language: string): ApiDifference {
   if (before === after) return { report: `No packaged ${language} changes.`, level: "patch" };
-  const oldLines = new Set(
-    before
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean),
-  );
-  const newLines = new Set(
-    after
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean),
-  );
-  const removed = [...oldLines].filter((line) => !newLines.has(line));
-  const added = [...newLines].filter((line) => !oldLines.has(line));
   const previous = before.split("\n").filter(Boolean);
   const current = after.split("\n").filter(Boolean);
+  const oldLines = new Set(previous.map((line) => line.trim()).filter(Boolean));
+  const newLines = new Set(current.map((line) => line.trim()).filter(Boolean));
+  const removed = [...oldLines].filter((line) => !newLines.has(line));
+  const added = [...newLines].filter((line) => !oldLines.has(line));
   let retained = 0;
   for (const line of current) if (line === previous[retained]) retained++;
   // Sets cannot detect moved members, repeated declarations, or overload precedence.
   if (!removed.length && !added.length) {
-    const oldFamilies = declarationFamilies(before);
-    const newFamilies = declarationFamilies(after);
+    const oldFamilies = declarationFamilies(previous);
+    const newFamilies = declarationFamilies(current);
     const changed = [...oldFamilies.keys()].filter(
       (name) => JSON.stringify(oldFamilies.get(name)) !== JSON.stringify(newFamilies.get(name)),
     );

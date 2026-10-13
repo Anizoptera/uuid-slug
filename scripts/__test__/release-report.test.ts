@@ -155,7 +155,6 @@ test("API comparison detects moved members and changed overload priority", () =>
   expect(moved).toContain("- " + narrow);
   expect(moved).toContain("+ " + broad);
   expect(moved).not.toContain("unrelated");
-  expect(apiDiff(`${narrow}\n${broad}`, `${broad}\n${narrow}`)).not.toContain("No packaged");
   expect(apiDiff(`${narrow}\n${narrow}`, narrow)).not.toContain("No packaged");
 });
 
@@ -180,8 +179,6 @@ test("the strongest structural or maintainer-classified change sets the minimum 
 
 test("release classification ignores changelog headings inside examples", () => {
   expect(minimumRelease("1.2.4", "```md\n### Breaking changes\n### Added\n```", [])).toBe("patch");
-  expect(minimumRelease("1.3.0", "### Added\n\n- Public behavior.\n", [])).toBe("minor");
-  expect(minimumRelease("2.0.0", "### Breaking changes\n\n- Public behavior.\n", [])).toBe("major");
 });
 
 test("retained archives identify the selected package version and Git source", async () => {
