@@ -187,10 +187,11 @@ for (const target of ["runner", "SIGINT", "SIGTERM", "deadline"] as const) {
           'import { mkdtemp, writeFile } from "node:fs/promises";',
           'import { tmpdir } from "node:os";',
           'import { join } from "node:path";',
+          'const root = await mkdtemp(join(tmpdir(), "fixture-"));',
+          'await writeFile(join(root, "diagnostic"), "interrupted scratch");',
+          'await writeFile(process.env.UUID_SLUG_INTERRUPT_WITNESS!, "fixture reached");',
+          // Prepare storage before the case deadline, so I/O cannot impersonate the deliberate hang.
           'test("interrupted", async () => {',
-          '  const root = await mkdtemp(join(tmpdir(), "fixture-"));',
-          '  await writeFile(join(root, "diagnostic"), "interrupted scratch");',
-          '  await writeFile(process.env.UUID_SLUG_INTERRUPT_WITNESS!, "fixture reached");',
           target === "runner"
             ? '  process.kill(process.pid, "SIGTERM");'
             : '  console.log("ready");',
