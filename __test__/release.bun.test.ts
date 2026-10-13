@@ -82,6 +82,7 @@ test("artifact validation rejects a credential-bearing repack before publication
   const root = await mkdtemp(join(tmpdir(), "uuid-slug-identity-"));
   const expected = join(root, "reviewed.tgz");
   const actual = join(root, "repacked.tgz");
+  const previous = process.env.UUID_SLUG_EXPECTED_ARCHIVE;
   try {
     await Promise.all([Bun.write(expected, "reviewed"), Bun.write(actual, "different")]);
     process.env.UUID_SLUG_EXPECTED_ARCHIVE = expected;
@@ -89,7 +90,8 @@ test("artifact validation rejects a credential-bearing repack before publication
     await Bun.write(actual, "reviewed");
     await inspectArtifact(actual);
   } finally {
-    delete process.env.UUID_SLUG_EXPECTED_ARCHIVE;
+    if (previous === undefined) delete process.env.UUID_SLUG_EXPECTED_ARCHIVE;
+    else process.env.UUID_SLUG_EXPECTED_ARCHIVE = previous;
     await rm(root, { recursive: true, force: true });
   }
 });
