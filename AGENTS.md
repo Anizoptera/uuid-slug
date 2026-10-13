@@ -474,6 +474,7 @@ Write README, CHANGELOG, `docs/` and bench docs for consumers who never open sou
 - Let the pre-commit hook run `bun run check` before Git creates the commit unless the maintainer selects narrower intermediate checks.
   Do not repeat that command manually for the same unchanged tree unless a failure or changed evidence requires another run.
   Commit finished parts with failed checks tracked in `ROADMAP.md`; a failed complete check prevents final delivery.
+- Commit only after staging succeeds and `git diff --cached` contains every intended hunk; `git mv` stages the rename before its consumer edits, and a failed `git add` leaves that partial index intact.
 - The release command owns the temporary stable-version context. API checks must distinguish that transition from an actual tagged commit and ordinary development; never disable the commit hook.
 - Install nightly in each job that generates Rust public API reports; another job's toolchain setup does not carry over.
 - Every CI job invoking the normal packed-artifact check must install Node, Bun and Deno; its default package-resolution probes execute all three. `--web` adds browser execution, not the first Deno requirement.
