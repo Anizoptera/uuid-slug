@@ -271,7 +271,9 @@ jobs:
       - if: matrix.profile == 'release'
         env:
           UUID_SLUG_TEST_RUNTIME: deno
-        run: deno run --allow-all --node-modules-dir=manual --cached-only node_modules/vitest/vitest.mjs run
+        run: bun scripts/test-vitest.ts
+      - if: matrix.profile == 'release'
+        run: bun scripts/test-bun.ts scripts/__test__/api-cleanup.test.ts --test-name-pattern 'deno worker interruption'
       - if: matrix.profile == 'release'
         run: |
           bun build --check scripts/runtime-probe.ts --target=node --conditions=deno --outfile=runtime-probe.mjs

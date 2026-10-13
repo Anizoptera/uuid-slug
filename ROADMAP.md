@@ -7,6 +7,9 @@ Preserve supported calls, identifier formats, caller data and package compatibil
 
 Keep checks only when they distinguish a material defect from allowed behavior; preserve supported contracts, regression cases, runtime fidelity and cleanup. Change test internals locally; do not republish or change public guarantees.
 
+- [x] Close the unsupervised Deno Vitest lane: share one Node/Deno launcher, preserve each actual runtime and Deno permissions, and run the existing interruption witness under both hosts. A surviving generated file or substituted runtime rejects the change.
+- [ ] Inspect Deno's two conditional entropy skips against its actual randomness selection; remove inappropriate skip reporting or repair missing behavior evidence without pretending Node injection reaches Deno's provider.
+
 - [x] Map every test, fixture, static check, hook and CI lane to its execution owner; find omitted discovery, duplicate execution and TypeScript verification outside `__test__`.
   - [x] Move the native contract corpus intact into `__test__`; keep existing script commands and imports working through a small launcher, prove byte identity before adapting its entry, and run every discovered native transport afterward.
   - [x] Check runtime string ownership for quoted and backtick literals through the actual CLI; the old checker must miss the template cases while type literals and `typeof` narrowing remain accepted.

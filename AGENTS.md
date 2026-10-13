@@ -386,8 +386,8 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 - Gate every runtime-dependent change in both Node Vitest and Bun tests, including branches
   outside `src/runtime/` that use optional capabilities. Neither runner covers the other's
   adapter. Share entropy cases in `__test__/entropy-probe.ts`.
-  Run Node Vitest through `bun run test:node`; focused runs use `bun scripts/test-node.ts`
-  so the supervisor cleans interrupted work while Node remains the test worker.
+  Run Node Vitest through `bun run test:node`; focused runs use `bun scripts/test-vitest.ts`.
+  Deno uses the same launcher with `UUID_SLUG_TEST_RUNTIME=deno`; the supervisor cleans interrupted work while the selected host remains the test worker.
 - Keep portable clock cases and finer-precision cases together. Probe actual time representation, not OS names; test native Temporal inputs where available and preserve the configured UUIDv7 layout. For high-resolution clocks, combine whole milliseconds and fractions separately: adding the epoch first can round across a fraction boundary.
 - Keep development native interop as one discovered research matrix across supported installed
   Node, Bun and Deno Node-API/FFI boundaries. Run one corpus with nonzero evidence per lane; use
