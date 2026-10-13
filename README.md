@@ -13,11 +13,26 @@ UUID: 0198abcd-1234-7abc-9def-0123456789ab
 Slug: AZirzRI0eryd7wEjRWeJqw
 ```
 
-UUID database keys stay unchanged; no slug mapping table is needed. Generation works offline.
-Plain slugs encode any UUID; masked slugs hide UUIDv7 fields with a key.
-Base64url gives short URLs; lowercase base32hex suits case-insensitive filenames.
+## Performance
 
-The package supports JavaScript and TypeScript on Node, Bun, Deno, browsers and Workers, with no native addons or WebAssembly.
+Leading performance, low allocation and small bundles on Node, Bun, Deno and browsers.
+IDs can be generated or decoded directly into caller-owned buffers; failed validation leaves them unchanged.
+Parsing once avoids decoding the same input for each conversion or inspection.
+Tree shaking removes unused features, including masking and key derivation from plain-only bundles.
+
+## Features
+
+- Any UUID becomes a lossless 22-character base64url slug. Existing database keys stay unchanged; no mapping table is needed.
+- UUIDv7 masking hides timestamps and other fields without replacing the UUID, including IDs from other generators.
+- The same calls work on Node, Bun, Deno, browsers and Workers, without native addons or WebAssembly. Native fast paths and portable fallbacks are automatic.
+- Types catch UUID-version and plain/masked mix-ups before execution. Compatible conversions chain with one error check; failures have stable codes.
+- IDs and relationships can be created offline, before saving or syncing, without a central allocator or worker number.
+- Lowercase base32hex suits case-insensitive filenames. Plain UUIDv7 slugs in this alphabet sort by timestamp under ASCII comparison.
+- UUIDv7 supplies timestamps without a database lookup and bounds for time-range queries on UUID keys.
+- Key rotation and format migration keep old IDs readable while new IDs use current settings. Reserved IDs stay recognizable after rotation.
+- TypeScript and Rust encode and decode the same formats, including masked IDs with matching key settings.
+- UUIDv7 can use recorded times or an application clock, with configurable handling of clock rollback.
+- Async key derivation yields during long work and can be cancelled.
 
 [Install](#install) · [Quick start](#quick-start) · [Contents](#contents) · [API](#api) · [Performance](#performance)
 
@@ -28,11 +43,18 @@ The package uses ES modules; see [runtime support](#runtime).
 
 ## Quick start
 
+One call returns the same ID as `uuid` for storage and `slug` for URLs:
+
 ```ts
 import { generateUuidV7WithPlainSlug } from "@anizoptera/uuid-slug";
+import type { GeneratedUuidV7, PlainUuidV7Slug } from "@anizoptera/uuid-slug";
 
-const { uuid, slug } = generateUuidV7WithPlainSlug();
+const { uuid, slug }: GeneratedUuidV7<PlainUuidV7Slug> = generateUuidV7WithPlainSlug();
 ```
+
+`uuid` has type `UuidV7String`; `slug` has type `PlainUuidV7Slug`.
+These are ordinary strings at runtime; TypeScript retains their UUID version and representation.
+Unchecked external IDs remain `string` inputs; conversion and parsing validate them.
 
 Use `generateUuidV4()` for random IDs, `generateUuidV7()` for timestamped IDs, or
 `generatePlainUuidV7Slug()` for just the slug.
@@ -41,15 +63,14 @@ Default generation returns the ID and throws `rng_unavailable` only without secu
 
 ## Contents
 
-- [Install](#install)
-- [Quick start](#quick-start)
+- [Performance](#performance) · [Features](#features) · [Install](#install) · [Quick start](#quick-start)
 - [Convert existing IDs](#keep-your-existing-uuids) · [Representations](#representations)
 - [Plain slugs](#plain-slugs) · [Masking](#masked-slugs) · [Sentinels](#sentinels) · [Bytes](#work-with-uuid-bytes)
+- [Parse once](#parse-once-for-repeated-work) · [Offline IDs](#assign-ids-before-saving-or-syncing)
 - [Recorded time](#generate-at-a-recorded-time) · [Extract time](#use-the-uuid-as-the-timestamp-source) · [Ordering](#ordering-and-key-distribution) · [Security limits](#masking-security)
 - [Errors](#handling-errors) · [Types](docs/api.md#types)
 - [API](#api) · [TypeScript API map](#typescript-api-map)
 - [Codec options](docs/api.md#masking-codec-options) · [Migration](docs/api.md#reading-original-slugs-during-migration)
-- [Performance](#performance)
 - [Guarantees](#guarantees)
 - [Runtime](#runtime)
 - [Upgrades and support](#upgrades-and-support)
@@ -62,12 +83,16 @@ Plain encoding preserves every bit, so it adds no collisions. Standard encodings
 plain slugs without this library; masked slugs need the matching key and settings.
 
 ```ts
-import { isUuidSlugError, plainSlugToUuidString, uuidStringToPlainSlug } from "@anizoptera/uuid-slug";
+import { plainSlugToUuidString, uuidStringToPlainSlug } from "@anizoptera/uuid-slug";
+import type { PlainUuidSlug, UuidSlugError, UuidString } from "@anizoptera/uuid-slug";
 
-const slug = uuidStringToPlainSlug("0198abcd-1234-7abc-9def-0123456789ab");
-const uuid = plainSlugToUuidString(slug);
-if (isUuidSlugError(uuid)) console.error(uuid.message);
-else console.log(uuid); // Use this UUID to look up the existing record.
+const slug: PlainUuidSlug | UuidSlugError = uuidStringToPlainSlug("0198abcd-1234-7abc-9def-0123456789ab");
+if (typeof slug === "string") console.log(slug);
+else console.error(slug.message);
+
+const uuid: UuidString | UuidSlugError = plainSlugToUuidString("AZirzRI0eryd7wEjRWeJqw");
+if (typeof uuid === "string") console.log(uuid); // The database key for this incoming URL slug.
+else console.error(uuid.message);
 ```
 
 ## Representations
@@ -125,24 +150,30 @@ Use `maskSeed` for a secret; `mask` accepts a derived mask, derivation options o
 import {
   createUuidV7MaskingCodec,
   isUuidSlugError,
+  UUID_V7_TEST_MASK,
 } from "@anizoptera/uuid-slug";
-import type { UuidV7MaskingCodec } from "@anizoptera/uuid-slug";
+import type { MaskedOrSentinelUuidV7Slug, UuidSlugError, UuidV7MaskingCodec } from "@anizoptera/uuid-slug";
 
-function createPublicIds(seed: string) {
-  return createUuidV7MaskingCodec({ maskSeed: seed });
-}
+const maskingCodec: UuidV7MaskingCodec | UuidSlugError = createUuidV7MaskingCodec({
+  mask: UUID_V7_TEST_MASK,
+});
 
-function generateAndRead(publicIds: UuidV7MaskingCodec) {
-  const pair = publicIds.generateUuidV7WithMaskedSlug();
-  if (isUuidSlugError(pair)) return pair;
-  const recovered = publicIds.maskedSlugToUuidString(pair.slug);
-  return isUuidSlugError(recovered) ? recovered : { ...pair, recovered };
+if (isUuidSlugError(maskingCodec)) {
+  console.error(maskingCodec.message);
+} else {
+  const storedUuid: string = "0198abcd-1234-7abc-9def-0123456789ab";
+  const slug: MaskedOrSentinelUuidV7Slug | UuidSlugError = maskingCodec.uuidToMaskedSlug(storedUuid);
+  if (typeof slug === "string") console.log(slug);
+  else console.error(slug.message);
 }
 ```
 
-Call `createPublicIds(seed)` once, check the result, then pass the codec to `generateAndRead`.
-Reuse it for subsequent IDs so key derivation runs once. Its methods need no `bind`.
-Use [async mask derivation](docs/api.md#masking-codec-options) when setup must yield or be cancelled.
+Construct and check the codec once; reuse it to avoid per-ID key derivation.
+Its methods need no `bind`. The public test mask makes this example reproducible; production codecs need a private seed.
+Masking accepts UUIDv7s from other generators and preserves all their payload bits.
+For new IDs, `maskingCodec.generateUuidV7WithMaskedSlug()` returns the UUID and slug together;
+`maskingCodec.generateMaskedUuidV7Slug()` returns just the slug. Both can return `UuidSlugError`.
+[Async mask derivation](docs/api.md#masking-codec-options) lets other work run during long setup and supports cancellation.
 
 Generate a random seed, for example with `openssl rand -base64 32`, and keep it outside source control.
 Seeds need at least 16 bytes; length alone does not prevent offline guessing from known UUID/slug pairs.
@@ -167,10 +198,43 @@ their slugs remain in use. See [sentinel setup and collision handling](docs/api.
 
 ## Work with UUID bytes
 
+Generation can write an ID into an existing binary record:
+
+```ts
+import { generateUuidV7Bytes, isUuidSlugError } from "@anizoptera/uuid-slug";
+import type { UuidSlugError } from "@anizoptera/uuid-slug";
+
+const record: Uint8Array = new Uint8Array(32);
+const result: Uint8Array | UuidSlugError = generateUuidV7Bytes(record, 8);
+if (isUuidSlugError(result)) console.error(result.message);
+else console.log(result); // The same record, with its ID at bytes 8 through 23.
+```
+
 Write directly into your database or protocol buffer with `uuidStringToBytes`,
 `plainSlugToUuidBytes` or `maskingCodec.maskedSlugToUuidBytes`. Pass the array and offset;
 the call returns your array and leaves other bytes unchanged. Failed validation leaves the buffer unchanged.
 See [buffer examples and accepted byte forms](docs/api.md#work-with-uuid-bytes).
+
+## Parse once for repeated work
+
+`parseUuid` validates and decodes an ID once for repeated conversion and inspection.
+It returns an immutable `Uuid` object, not a string. Changes to its byte outputs leave the retained UUID unchanged.
+
+```ts
+import { isUuidSlugError, parseUuid } from "@anizoptera/uuid-slug";
+import type { PlainUuidSlug, Uuid, UuidBytes, UuidInspection, UuidSlugError } from "@anizoptera/uuid-slug";
+
+const input: string = "0198abcd-1234-7abc-9def-0123456789ab";
+const uuid: Uuid | UuidSlugError = parseUuid(input);
+if (isUuidSlugError(uuid)) {
+  console.error(uuid.message);
+} else {
+  const bytes: UuidBytes = uuid.toBytes();
+  const slug: PlainUuidSlug = uuid.toPlainSlug();
+  const details: UuidInspection = uuid.inspect();
+  console.log(bytes, slug, details);
+}
+```
 
 ## Assign IDs before saving or syncing
 
@@ -180,14 +244,18 @@ trip and keep them after synchronization. No central allocator or worker number 
 ## Generate at a recorded time
 
 Set `at` on UUIDv7 generation calls to encode a record's time instead of now.
-Pass a `Date` or Unix milliseconds; see [other time inputs and precision](docs/api.md#supplied-time).
+It accepts a `Date`, Unix milliseconds, zoned ISO text, Temporal-style instants and
+`{ seconds, nanoseconds }` timestamps without manual conversion.
+See [accepted time forms and configured fractional precision](docs/api.md#supplied-time).
 
 ```ts
 import { BASE32HEX, generatePlainUuidV7Slug } from "@anizoptera/uuid-slug";
+import type { PlainUuidV7Slug, UuidSlugError, UuidV7Instant } from "@anizoptera/uuid-slug";
 
-function idForImportedRecord(recordedAt: Date) {
-  return generatePlainUuidV7Slug({ at: recordedAt, alphabet: BASE32HEX });
-}
+const recordedAt: UuidV7Instant = "2026-01-01T12:00:00Z";
+const slug: PlainUuidV7Slug | UuidSlugError = generatePlainUuidV7Slug({ at: recordedAt, alphabet: BASE32HEX });
+if (typeof slug === "string") console.log(slug);
+else console.error(slug.message);
 ```
 
 Use one created generator across output forms to share a sequence, including `at` calls.
@@ -205,12 +273,13 @@ Read UUIDv7's millisecond timestamp without a database lookup or UUID-text conve
 If it is the time you need, omit a separate field:
 
 ```ts
-import { extractUuidV7UnixMs, isUuidSlugError } from "@anizoptera/uuid-slug";
+import { extractUuidV7UnixMs } from "@anizoptera/uuid-slug";
+import type { UuidSlugError } from "@anizoptera/uuid-slug";
 
-function dateFromId(uuidOrPlainSlug: string) {
-  const unixMs = extractUuidV7UnixMs(uuidOrPlainSlug);
-  return isUuidSlugError(unixMs) ? unixMs : new Date(unixMs);
-}
+const incomingId: string = "AZirzRI0eryd7wEjRWeJqw";
+const unixMs: number | UuidSlugError = extractUuidV7UnixMs(incomingId);
+if (typeof unixMs === "number") console.log(unixMs);
+else console.error(unixMs.message);
 ```
 
 `extractUuidV7UnixMs(bytes, offset)` reads from a larger buffer.
@@ -233,9 +302,9 @@ most significant bits first. Equal-length slugs sort by timestamp even across fi
 Clocks can move backwards, and UUIDv7 does not promise creation order within a millisecond.
 Compare one spelling at a time; database collations and natural file sorting can differ from ASCII.
 
-`uuidV7StringBounds(ms)` returns the lowest and highest UUIDv7 for that millisecond:
-both fix the first 48 timestamp bits, with all 74 payload bits zero in the first and one in the second.
-Pass an inclusive end millisecond for a longer interval. Compare in UUID wire-byte order;
+`uuidV7StringBounds(startMs, endMs)` builds inclusive bounds for time-range queries on UUID keys.
+The bounds cover every UUIDv7 in the interval, regardless of its payload.
+For one millisecond, use `uuidV7StringBounds(ms)`. Compare in UUID wire-byte order;
 SQL Server's `uniqueidentifier` uses a different order.
 
 Decode masked filenames or store dates separately to sort them chronologically.
@@ -264,17 +333,18 @@ on the service; client code exposes the seed. Plain generation and conversion ne
 
 Conversions return `T | UuidSlugError` and pass errors through unchanged.
 Async mask construction resolves to the same union.
-Chain compatible calls and check `isUuidSlugError` once where you handle failure.
-It recognizes package errors across realms and package copies.
+Compatible chains need one final check. For string results, `typeof result === "string"`
+keeps the branded string type; the other branch is `UuidSlugError`.
+Use `isUuidSlugError` for object results or unknown input. It recognizes package errors
+across realms and package copies.
 
 ```ts
-import { isUuidSlugError, plainSlugToUuidBytes, uuidStringToPlainSlug } from "@anizoptera/uuid-slug";
+import { isUuidSlugError, uuidStringToBytes } from "@anizoptera/uuid-slug";
+import type { UuidBytes, UuidSlugError } from "@anizoptera/uuid-slug";
 
-function saveUuid(uuidText: string, save: (bytes: Uint8Array) => void) {
-  const bytes = plainSlugToUuidBytes(uuidStringToPlainSlug(uuidText));
-  if (isUuidSlugError(bytes)) return bytes;
-  save(bytes);
-}
+const bytes: UuidBytes | UuidSlugError = uuidStringToBytes("0198abcd-1234-7abc-9def-0123456789ab");
+if (isUuidSlugError(bytes)) console.error(bytes.code, bytes.message);
+else console.log(bytes);
 ```
 
 Check intermediate results only when you also need their values.
@@ -301,23 +371,18 @@ Each export also documents its accepted input, result and failures in editor hov
 | Generate an immutable UUIDv7 value | `generateUuidV7Value`, or its generator and masking-codec methods |
 | Control UUIDv7 time, sequence, rollback, or entropy | `createUuidV7Generator`, `createUuidV7GeneratorWithRandomFill` |
 | Convert UUID text, bytes, and plain slugs | `uuidToString`, `uuidToBytes`, `uuidToPlainSlug`, plus source-specific converters |
-| Parse once for repeated work | [`parseUuid`](docs/api.md#convert-and-inspect-ids) returns an immutable `Uuid` value |
+| Parse once for repeated work | [`parseUuid`](#parse-once-for-repeated-work) returns an immutable `Uuid` object |
 | Inspect version, variant, timestamp, or payload | `Uuid.inspect`, `extractUuidVersion`, `extractUuidV7UnixMs`, `extractUuidV7Payload` |
 | Narrow untrusted input | `isUuidText`, `isUuidString`, `isUuidBytes`, `isPlainUuidSlug`, their v4/v7 guards, and `isUuidSlugError` |
 | Build UUIDv7 database range keys | `uuidV7StringBounds`, `uuidV7ByteBounds` |
 | Validate a UUIDv7 timestamp window | `validateUuidV7StringUnixMs` and the plain or masked slug equivalents |
-| Create UUIDv7 masking | `deriveUuidV7Mask`, `deriveUuidV7MaskAsync`, `createCustomUuidV7Mask` |
+| Derive UUIDv7 masks, with optional async cancellation | `deriveUuidV7Mask`, `deriveUuidV7MaskAsync` |
+| Use an application-defined reversible masking transform | [`createCustomUuidV7Mask`](docs/api.md#masking-codec-options) |
 | Mask, unmask, rotate keys, or reserve sentinels | `createUuidV7MaskingCodec` and its methods |
 | Read explicitly enabled old formats | `maskingCodec.createUuidSlugMigrationDecoder` |
 
 Types catch UUID-version and plain/masked mix-ups; results retain text case and buffer ownership.
 Generator, masking-codec and migration methods need no `this` binding.
-
-## Performance
-
-Leading performance, low allocation and small bundles on Node, Bun, Deno and browsers.
-IDs can be written directly into caller-owned buffers, and parsed UUIDs can be reused.
-Tree shaking removes unused features.
 
 ## Guarantees
 
@@ -349,6 +414,9 @@ Tree shaking removes unused features.
 
 ## Runtime
 
+Native APIs and portable TypeScript are selected automatically for each runtime and output;
+caller code does not choose or coordinate the implementations.
+
 The [Rust crate](rust/uuid-slug) uses the same identifier formats. Cross-language masked reads
 require matching seeds, iteration counts and timestamp ranges; see [cross-language contracts](docs/cross-language.md).
 
@@ -373,6 +441,9 @@ or a minor release before 1.0. APIs must be deprecated in a published release be
 see the [release policy](docs/release.md).
 Supported identifier formats remain readable across upgrades. Retain the
 [matching mask settings and migration readers](docs/api.md#changing-an-existing-id-format) for stored masked IDs.
+Plain slugs recover standard UUIDs without keys or this library. Masked IDs need their keys,
+range settings and sentinel definitions; custom masks also need their transform implementation.
+The built-in [wire format](docs/design.md) is documented for independent decoders.
 Report bugs through [GitHub issues](https://github.com/Anizoptera/uuid-slug/issues).
 
 ## License
