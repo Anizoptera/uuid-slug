@@ -11,7 +11,16 @@ const fillWithZeros = (bytes: Uint8Array) => {
   bytes.fill(0);
 };
 
-function probeFineInstants(api: typeof Api): void {
+// Source and packed declarations own distinct brands; this probe needs only byte output.
+interface TimePrecisionApi {
+  createUuidV7Generator(options: { readonly subMillisecondFractionBits: number }):
+    | {
+        generateUuidV7Bytes(options?: { readonly at: Api.UuidV7Instant }): Uint8Array | Error;
+      }
+    | Error;
+}
+
+function probeFineInstants(api: TimePrecisionApi): void {
   const temporal = (
     globalThis as {
       Temporal?: { Instant: { fromEpochNanoseconds(value: bigint): { epochNanoseconds: bigint } } };
@@ -48,7 +57,7 @@ function probeFineInstants(api: typeof Api): void {
   }
 }
 
-function probeFractionClock(api: typeof Api): void {
+function probeFractionClock(api: TimePrecisionApi): void {
   const clock = globalThis.performance;
   if (clock === undefined) return;
   const descriptor = Object.getOwnPropertyDescriptor(clock, "now");
@@ -101,6 +110,12 @@ function probeFractionClock(api: typeof Api): void {
   }
 }
 
+/** Check explicit fine instants and the host clock through the selected generator implementation. */
+export function probeUuidV7TimePrecision(api: TimePrecisionApi): void {
+  probeFineInstants(api);
+  probeFractionClock(api);
+}
+
 /** Reparse actual values from a separately loaded package copy without losing their presets. */
 export function probeUuidCopies(api: typeof Api, foreign: typeof Api): void {
   const codec = unwrap(foreign.createUuidV7MaskingCodec({ mask: foreign.UUID_V7_TEST_MASK }));
@@ -125,8 +140,7 @@ export function probeUuidCopies(api: typeof Api, foreign: typeof Api): void {
 
 /** Exercise public calls through the module supplied by the consumer's own resolver. */
 export async function probeConsumer(api: typeof Api): Promise<void> {
-  probeFineInstants(api);
-  probeFractionClock(api);
+  probeUuidV7TimePrecision(api);
   equal(api.MAX_MASKED_UUID_V7_TIMESTAMP_OFFSET_MS, 2 ** 42 - 1, "masked timestamp offset");
   equal(api.NIL_UUID, "00000000-0000-0000-0000-000000000000", "canonical nil UUID");
   equal(api.MAX_UUID, "ffffffff-ffff-ffff-ffff-ffffffffffff", "canonical max UUID");
