@@ -1,107 +1,35 @@
 # Benchmarks
 
-Measure each runtime separately; a failed or missing measurement must fail the harness.
+The harness reports each runtime separately and rejects failed or missing measurements.
 
 ## Decision before measurement
 
-Run experiments only for explicitly requested performance work on a named consumer call.
-Release preparation, correctness repairs and retained performance gaps do not authorize another
-benchmark, profile, candidate or calibration. Read [root agent guidance](../AGENTS.md#work-scope) before choosing work;
-the procedures below apply only after that scope exists. Existing required regression checks remain.
+Read [bench agent guidance](AGENTS.md) for scope, priorities, experiments and retention rules.
 
-Use each measurement to decide whether to retain a specific production improvement.
+### Reports and controls
 
-Choose the largest unresolved cost in an ordinary successful call on Node Current or Bun.
-Limit optimization to primary README consumer jobs. Compare current complete calls with the main
-qualified rivals, profile their actual hotspots and resource gaps, and select the largest evidenced
-gap before changing a component. Secondary scenarios are excluded from this effort; correctness
-checks do not authorize performance work on them.
-Before execution, identify the call, current evidence, competing explanations, rejection condition
-and next action. Inspect the faster native or competing implementation; a local
-candidate ranking cannot establish that the best available mechanism was considered.
+Recover archived artifacts from `bench/reports/retained-artifact-index.json`: extract the named member
+with `tar -xf ARCHIVE MEMBER` in a disposable directory, then check its recorded SHA-256 and length.
+`bun scripts/compact-reports.ts` compresses retained reports on macOS without changing paths or bytes.
+`bun run clean` removes generated build output, not retained reports. Reusable Cargo caches use `rust/target/`.
 
-Use the existing tests and profiler to distinguish the explanations, then screen one candidate
-through the complete call. Repeat a survivor in independent packed processes and inspect resource
-costs before retention. Parallelize preparation, not competing timing processes. Reuse builds and
-observations when their inputs remain unchanged. Investigate conflicting instruments before another
-replay; more samples do not repair a comparison that measures different work.
-
-Stop the experiment when evidence supports retention or rejection. An unresolved comparison keeps
-the gap open; name the missing observation instead of starting a wider matrix or another candidate.
-Complete the required correctness checks before committing. Failure or interruption is not a pass.
-
-Rules:
-
-- Keep useful experiment drivers in this repository before running them. Extend an existing
-  measurement owner instead of duplicating its clocks, samples or statistics in a temporary script.
-  Isolate source substitutions from the shared working tree; retain raw output in `bench/reports/`
-  and record the measured conclusion in `bench/PERFORMANCE.md`. Remove scratch when the operation
-  ends, including setup failures; preserve needed failure artifacts first and resolve archive paths before changing working directories. Run generation comparisons through `bun run bench:competitors` so interruption cleanup has a surviving parent. Put generated bundles
-  in one owned directory and remove it on success, without searching retained reports. Expected rejection fixtures keep their archives inside the test cleanup scope; real failures remain recoverable until diagnosis.
-  Identical immutable package captures share a content-named archive through hard links; replace files, never rewrite their links. Recover removed artifacts from `bench/reports/retained-artifact-index.json`: extract its archive member with `tar -xf ARCHIVE MEMBER` in a disposable directory, then check its recorded SHA-256 and length. Remove resolved failure artifacts; run `bun scripts/compact-reports.ts` to compress retained reports on macOS without changing paths or bytes. Store source captures as text or archives so
-  compiler and test discovery cannot execute them. Never cite `/tmp` evidence in durable text.
-  `bun run clean` removes generated build output, not retained reports; delete failed artifacts
-  only after their diagnostic is resolved. Keep reusable Cargo caches under ignored `rust/target/`.
-- Measure latest stable Node Current and Bun first, latest Node LTS and Chromium second, and latest
-  Deno third. Measure Node Current JITless last; a JITless-only win may survive when every higher
-  rung is unchanged. Older supported Node versions prove compatibility, not performance priority.
-- Keep direct runtime operations separate from composed pipeline operations.
-- Compare performance and resource efficiency against qualified alternatives for each main use
-  case. A throughput win with worse allocation or resource costs does not meet the main-use goal;
-  do not optimize secondary scenarios during the primary-only effort.
-- Target the largest unresolved primary-call cost on the primary runtimes before small gains or
-  auxiliary hosts. Use current public-call profiles to choose the mechanism; defer smaller
-  experiments while a more prominent cost remains unexplained or untested.
-- For a rare-misuse defense, measure ordinary successful calls against the unchanged implementation
-  before retaining it. Faster rejection is not a benefit that offsets slower normal calls or more
-  resource use. Apply the acceptance rule in [public-api.md](../docs/public-api.md#capabilities-and-runtime-work).
-- Keep benchmark dependencies in `devDependencies`.
-- Before concluding that no further optimization is justified, measure the same public result against
-  the native function and the fastest live competitor, then inspect each faster implementation.
-  Local candidate comparisons can select the best candidate offered while missing a better design.
-- Run the same candidate set in smoke and full modes so CI detects adapter rot.
-- Before timing a candidate, name the contracts and failure modes its changed mechanism can affect.
-  Run their owning tests, add any missing direct falsifier, and mutate the mechanism to prove the
-  tests fail for the intended defect. A faster result has no standing until those tests pass again.
 - Competitor and randomness figures are informational. Process failures, empty output and
   malformed records fail the matrix while successful measurements remain visible.
-- Compare consumer outcomes, not implementation choices. Correct wire output and secure entropy
-  remain required; default guarantees must not exceed proper native behavior. Weigh other differences
-  by measured consumer harm. Keep a
-  materially weaker result out of the comparable ranking, but inspect any faster mechanism that could
-  preserve the requested result. Correct stronger default guarantees instead of rejecting proper
-  native behavior. Record the exact mismatch and recheck it after updates.
-  Name the violated contract when rejecting a row. Timestamp advancement alone does not violate
-  a module-level never-ahead guarantee: that guarantee is not published. Keep drift observations
-  separate from qualification; apply [generation policy](../docs/public-api.md#generation-and-codecs).
-  Default generation needs no stronger guarantees than correctly implemented primary qualified
-  rivals provide; additional guarantees belong on optional configured paths. A package test or
-  resource count does not establish a consumer requirement that disqualifies a rival.
-  Include `fastv7` in default UUIDv7 comparisons: its Web Crypto tail and zero-start counter
-  satisfy the native-baseline qualification. Record payload and clock differences separately.
 - Run `bun run bench:matrix --smoke` for a short comparison. Set `UUID_SLUG_BENCH_RUNTIMES` to
   colon-separated executable paths to add runtimes. Each requested runtime must produce both reports.
 - `UUID_SLUG_BENCH_ITERATIONS` and `UUID_SLUG_ENTROPY_SAMPLES` accept positive safe integers.
 - Conversion rows use fixed inputs and include returned-error handling. Rotation rows distinguish
   current-key success from previous-key success; key derivation is outside the measured calls.
-- Conversion comparisons must check exact bytes or text against fixed expected values before
-  timing. Native floors include dehyphenation, padding rejection and output formatting where the
-  requested result needs them; report an absent capability instead of timing a substitute as native.
-  Owned decoding compares native arrays, native writes into a fresh array, and Buffer decoding
-  followed by a copy. A view over Buffer's pooled storage does not provide private backing storage.
-  Keep Buffer-only decoding timed with an explicit ownership rejection; it cannot win the
-  equivalent-result ranking for an owned plain array.
-  Qualified allocated-generation rows must also return fresh plain arrays with separate backing
-  storage. Bun's Buffer-only generation stays timed but rejected; native copying comparisons
-  include `Uint8Array.from`, the copying constructor and a fresh array followed by `set`.
+- Owned decoding compares native arrays, native writes into a fresh array, and Buffer decoding
+  followed by a copy. Buffer-only decoding and Bun generation rows carry ownership rejections;
+  owned output requires a plain array with private backing storage. Copying rows include `Uint8Array.from`, the copying
+  constructor and a fresh array followed by `set`.
 - The entropy audit brackets its existing draw burst with wall-clock reads. Compare the largest
   encoded timestamp with the ending clock. The difference and clock change are observations,
   not proof that the wall clock stayed monotonic throughout the burst. Encoded-timestamp counts
   alone cannot establish wall-clock drift.
 - Node runs bundles of the benchmark source; Bun runs the TypeScript directly. Inlining may affect
   the comparison. These measurements do not establish the cost of an installed package import.
-- Do not publish benchmark reports as package claims.
-- Use smoke runs in CI and heavy runs manually.
 
 Run `bun bench/source-candidates.ts v7-draw independent-direct` to screen that source substitution
 against its baseline, or use `v4 argument-fast` for the UUIDv4 default-call comparison. Candidate
@@ -119,12 +47,10 @@ extend noisy source screens without rebuilding between equivalent short runs. Th
 their actual settings, and every selected case must return that sample count.
 Use `v7-draw duplicate-text-scratch` to restore the redundant private array; the cold text-generator
 resource witness must reject it before timing.
-UUIDv7 source screens time ordinary single-ID text, owned bytes and slugs. During the primary-only
-effort, configured and caller-buffer paths remain correctness coverage, not optimization targets.
+UUIDv7 source screens time ordinary single-ID text, owned bytes and slugs.
 Use `v7-draw bounded-clock` to compare a truncation plus timestamp bound with the separate
 safe-integer check; `bounded-clock-overflow` must fail the shared Node/Bun clock oracle.
-These short batch samples select experiments, not retained optimizations or individual-call p99;
-add any missing mechanism falsifier before using a candidate's timings to decide a change.
+These short batch samples select experiments, not retained optimizations or individual-call p99.
 Use `v7-draw number-counter` to compare an exact 42-bit number with split counter words.
 `number-counter-overflow` must fail the timestamp-ceiling oracle before timing.
 Use `v7-draw numeric-state` to isolate mutable numeric storage from clock, sequence and formatting
@@ -295,11 +221,6 @@ integration, while a gain requires those costs and overflow behavior to be measu
 Run `bun run bench:competitors:rust` for one isolated Rust generator timing process. Its own
 lockfile pins the inspected releases without adding benchmark-only crates to the product workspace.
 
-Re-run the full matrix for each release candidate and after changing a competitor or runtime
-version. Upgrade benchmark packages only in `devDependencies`, inspect changed public calls and
-source mechanisms, update the shared case inventory when capabilities change, then run smoke before
-the full matrix. A version change never inherits an earlier performance or compatibility verdict.
-
 Run `bun run bench:results` to refresh the tracked reports in `bench/results/`: `matrix.md` with
 package throughput and randomness per runtime, `competitors.md` with its raw `competitors.jsonl`,
 and `rust-competitors.md` with its raw `rust-competitors.jsonl`. The Rust report combines three
@@ -397,25 +318,7 @@ file kinds fail; executable and optimizer-annotation changes retain timing.
 
 ## Capability review
 
-Run this review after every Bun or Deno version change and before periodic runtime performance work:
-
-1. Read the installed runtime's types and docs, its release notes since the last reviewed version,
-   and current upstream API docs. Search three sets separately: runtime-native APIs, Node-compatible
-   APIs, and web or Chromium-compatible APIs. Include additions, changed behavior, deprecations, and
-   removals relevant to package routes or benchmark evidence. Node and Chromium inventories are
-   candidate sources for Bun and Deno, not proof of support.
-2. Probe each candidate on every installed runtime and record the exact runtime version. Check the
-   callable shape, output, ownership, errors, limits, and sync or async behavior needed by this
-   package. A property check alone is insufficient; equal names can hide different semantics.
-3. Detect capability first and probe once at module load. Use runtime identity only when repeated
-   public-route measurements show that equal semantics need different implementations. Treat a
-   missing or unsuitable method as unavailable; never use repeated exception-driven fallback.
-4. Run the selected path and compatible fallback through the same public-route corpus. Prove wire
-   results, errors, ownership, and resource behavior before comparing speed. Run decision-relevant
-   measurements twice and apply the runtime priority ladder above.
-5. Keep only decision-changing conclusions in `bench/PERFORMANCE.md`: observed versions and
-   behavior, selected path, rejected live alternatives, evidence limits, and the condition that
-   requires review again. Generated capability inventories and reports stay under `bench/reports/`.
+See [bench agent guidance](AGENTS.md#capability-review) for runtime review requirements.
 
 ## Profiling
 
@@ -527,7 +430,7 @@ rotates runtime order, and emits JSON Lines containing raw samples and per-opera
 retention, not gross allocation; sampled profiles are estimates; forced GC changes the workload;
 `maxBatchMs` and `maxUninterruptedMs` are observations, not universal latency bounds.
 Set `UUID_SLUG_COMPARE_RUNTIMES` to a distinct colon-separated subset of
-`node:bun:chromium:firefox:webkit:deno:node-jitless` for a narrow comparison. Use all runtimes before retaining a change.
+`node:bun:chromium:firefox:webkit:deno:node-jitless` for a narrow comparison.
 Browser engines share one built corpus per revision; host-only comparisons skip browser compilation and startup.
 Set `UUID_SLUG_COMPARE_NODE_EXECUTABLE` to compare with a specific Node release; without it the
 driver runs the `node` that the project directory resolves, which may not be Node Current. Every record
@@ -537,5 +440,4 @@ prints one line per summarized row: release, baseline and candidate medians, the
 The current worktree owns the comparison corpus and drivers; packed revisions supply only the code
 under test. A baseline must not remove the newer case intended to distinguish it. If packing fails
 because Parcel crashes (SIGSEGV) in the consumer-graph check, rerun the replay; the crash says
-nothing about the candidate. Every timing probe must read each result: a loop that discards results
-lets V8 skip work, and native `randomUUID` then read 23 ns instead of 139 ns on Node 26.8.2.
+nothing about the candidate.

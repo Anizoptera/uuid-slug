@@ -43,7 +43,7 @@ Use a focused Conventional Commit title and a short body explaining a reason, co
 effect, constraint, or limit that the diff does not show. State facts and exact evidence. Do not add
 activity logs, praise, filler, or guessed intent. Keep each message line unwrapped.
 
-Track failed checks in `ROADMAP.md`; they block final delivery. Fix them before marking work complete.
+Track failed checks with unfinished work; they block final delivery. Fix them before marking work complete.
 
 ## Review
 

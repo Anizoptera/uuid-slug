@@ -606,6 +606,8 @@ correctness repair or release audit. Missing performance evidence is not a relea
 
 ## Compatibility
 
+- Do not add old API aliases, compatibility subpaths or a decoder for 0.2.0. That release had no
+  consumers; this exception does not permit breaking other issued formats.
 - Preserve every issued identifier and every input produced by a supported matching encoder.
   Options may add accepted forms but must not remove existing ones.
 - Treat names, types, overload priority, defaults, accepted inputs, outputs, errors, side effects,
