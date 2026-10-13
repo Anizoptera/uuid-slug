@@ -88,6 +88,9 @@ jobs:
           restore-keys: rust-${{ matrix.runner }}-${{ hashFiles('rust-toolchain.toml', 'rust/Cargo.lock', 'rust/**/Cargo.toml') }}-
       - run: bun install --frozen-lockfile
       - run: bun run check:rust
+      - name: Verify macOS report compression
+        if: matrix.runner == 'macos-15'
+        run: bun scripts/test-bun.ts scripts/__test__/benchmark-cleanup.test.ts -t "report compression saves blocks"
       - name: Select the newest native-research hosts
         if: matrix.runner == 'ubuntu-24.04'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
