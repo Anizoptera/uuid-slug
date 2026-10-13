@@ -35,6 +35,61 @@ test("public release diff omits private helpers while retaining changed exported
   expect(publicApiDifference(before, before)).toBe("");
 });
 
+test.each(["Value$", "Ω"])("public changes retain compiler-valid owner %s", (name) => {
+  const before = normalizeDeclarations(`export interface ${name} { x: string; }`);
+  const after = normalizeDeclarations(`export interface ${name} { x: number; }`);
+  const report = publicApiDifference(before, after);
+  expect(report).toContain(`- ${name}: x: string;`);
+  expect(report).toContain(`+ ${name}: x: number;`);
+});
+
+test("named exports retain alias changes and callable symbol members", () => {
+  const before = normalizeDeclarations(
+    "declare const key: unique symbol; declare interface Value { [key](): string; } export { key, Value as Public };",
+  );
+  const after = normalizeDeclarations(
+    "declare const key: unique symbol; declare interface Value { [key](): number; } export { key, Value as Renamed };",
+  );
+  const report = publicApiDifference(before, after);
+  expect(report).toContain("- export { key, Value as Public };");
+  expect(report).toContain("+ export { key, Value as Renamed };");
+  expect(report).toContain("- Value: [key](): string;");
+  expect(report).toContain("+ Value: [key](): number;");
+});
+
+test("public diffs isolate named variables and retain default exports", () => {
+  const before = normalizeDeclarations(
+    "declare const selected: string, internal: boolean; export { selected }; export default selected;",
+  );
+  const after = normalizeDeclarations(
+    "declare const selected: number, internal: boolean; export { selected }; export default 1;",
+  );
+  const report = publicApiDifference(before, after);
+  expect(report).toContain("- declare const selected: string;");
+  expect(report).toContain("+ declare const selected: number;");
+  expect(report).toContain("- export default selected;");
+  expect(report).toContain("+ export default 1;");
+  expect(report).not.toContain("internal");
+});
+
+test.each(['"read value"', "[Symbol.iterator]", "read$"])(
+  "reordered overloads retain compiler member %s",
+  (name) => {
+    const first = `${name}(x: string): 1;`;
+    const second = `${name}(x: unknown): 2;`;
+    const before = normalizeDeclarations(
+      `export interface Value { ${first} ${second} stable: boolean; }`,
+    );
+    const after = normalizeDeclarations(
+      `export interface Value { ${second} ${first} stable: boolean; }`,
+    );
+    const report = publicApiDifference(before, after);
+    expect(report).toContain("- Value: " + first);
+    expect(report).toContain("+ Value: " + second);
+    expect(report).not.toContain("stable");
+  },
+);
+
 test("publication notes use only the latest comparison and selected package", () => {
   const report: ReleaseReport = {
     current: { npm: 12, crate: 30, native: 999, wasm: 888 },
