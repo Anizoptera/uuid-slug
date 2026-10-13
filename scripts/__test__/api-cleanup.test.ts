@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { verificationTimeoutMs } from "../test-bun";
 
 const root = resolve(import.meta.dir, "../..");
 const DESCENDANT_READY = "extraction-ready";
@@ -34,7 +35,7 @@ test("runner interruption stops Node descendants before scratch cleanup", async 
       env: { ...process.env, TMPDIR: files },
       stdout: "pipe",
       stderr: "ignore",
-      timeout: 2000,
+      timeout: verificationTimeoutMs(2000),
     });
     try {
       const reader = child.stdout.getReader();

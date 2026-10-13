@@ -19,6 +19,7 @@ import {
   deduplicateCapturedPackage,
 } from "../archive-scratch";
 import { command } from "../command";
+import { verificationTimeoutMs } from "../test-bun";
 
 const project = resolve(import.meta.dir, "../..");
 
@@ -172,7 +173,7 @@ async function expectOnlyArchives(reports: string): Promise<void> {
   );
 }
 
-for (const target of ["runner", "SIGINT", "SIGTERM"] as const) {
+for (const target of ["runner", "SIGINT", "SIGTERM", "deadline"] as const) {
   test(`${target} interruption removes test fixture scratch`, async () => {
     const scratch = await mkdtemp(join(tmpdir(), "uuid-slug-runner-cleanup-"));
     const files = join(scratch, "files");
@@ -197,7 +198,8 @@ for (const target of ["runner", "SIGINT", "SIGTERM"] as const) {
           "});",
         ].join("\n"),
       );
-      const child = Bun.spawn([process.execPath, "scripts/test-bun.ts", fixture], {
+      const deadlineArgs = target === "deadline" ? ["--timeout=" + verificationTimeoutMs(100)] : [];
+      const child = Bun.spawn([process.execPath, "scripts/test-bun.ts", ...deadlineArgs, fixture], {
         cwd: project,
         env: {
           ...process.env,
@@ -205,11 +207,12 @@ for (const target of ["runner", "SIGINT", "SIGTERM"] as const) {
           UUID_SLUG_INTERRUPT_WITNESS: join(scratch, "witness"),
         },
         stdout: "pipe",
-        stderr: "ignore",
-        timeout: 2000,
+        stderr: "pipe",
+        timeout: verificationTimeoutMs(2000),
       });
       try {
-        if (target !== "runner") {
+        const stderr = new Response(child.stderr).text();
+        if (target === "SIGINT" || target === "SIGTERM") {
           const reader = child.stdout.getReader();
           let output = "";
           while (!output.split("\n").includes("ready")) {
@@ -220,7 +223,9 @@ for (const target of ["runner", "SIGINT", "SIGTERM"] as const) {
           child.kill(target);
           await reader.cancel();
         }
-        expect(await child.exited).not.toBe(0);
+        const [status, diagnostic] = await Promise.all([child.exited, stderr]);
+        expect(status).not.toBe(0);
+        if (target === "deadline") expect(diagnostic).toMatch(/timed out/i);
         expect(await Bun.file(join(scratch, "witness")).text()).toBe("fixture reached");
         expect(await readdir(files)).toEqual([]);
       } finally {
@@ -404,7 +409,7 @@ test("Bun async profiling calls the selected package instead of working-tree sou
       env: { ...process.env, UUID_SLUG_PROFILE_MODULE: selected },
       stdout: "pipe",
       stderr: "pipe",
-      timeout: 2000,
+      timeout: verificationTimeoutMs(2000),
     });
     const [stdout, stderr, exitCode] = await Promise.all([
       new Response(child.stdout).text(),
@@ -507,13 +512,13 @@ test("browser launch failure releases the profiling server", async () => {
           if (message === "loaded") {
             loaded = true;
             clearTimeout(deadline);
-            deadline = setTimeout(() => child.kill(), 2000);
+            deadline = setTimeout(() => child.kill(), verificationTimeoutMs(2000));
           }
         },
       },
     );
     // Import time is not listener settlement; measure the leak only after the child loads.
-    let deadline = setTimeout(() => child.kill(), 2000);
+    let deadline = setTimeout(() => child.kill(), verificationTimeoutMs(2000));
     try {
       const [stderr, code] = await Promise.all([new Response(child.stderr).text(), child.exited]);
       if (!loaded)

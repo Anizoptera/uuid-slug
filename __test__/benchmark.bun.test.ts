@@ -17,6 +17,7 @@ import { createConversionCases } from "../bench/conversion-cases";
 import { performanceBaseline } from "../bench/check-inputs";
 import { COMPARISON_RUNTIMES, selectComparisonRuntimes } from "../bench/comparison-runtimes";
 import { command } from "../scripts/command";
+import { verificationTimeoutMs } from "../scripts/test-bun";
 import { archiveAndRemoveScratch } from "../scripts/archive-scratch";
 import { RESOURCE_REGRESSION_CASES } from "./resource-regression-cases";
 import { uuidStringToPlainSlug } from "../src/index";
@@ -969,7 +970,7 @@ export function isUuidV7String(value) { ${extraWork} return original(value); }
     env: { ...process.env, UUID_SLUG_PROFILE_MODULE: subject },
     stdout: "pipe",
     stderr: "pipe",
-    timeout: 5000,
+    timeout: verificationTimeoutMs(5000),
   });
   const [stdout, stderr, status] = await Promise.all([
     new Response(child.stdout).text(),

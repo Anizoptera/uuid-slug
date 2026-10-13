@@ -6,6 +6,11 @@ const INTERRUPT_SIGNAL = "SIGINT";
 const TERMINATE_SIGNAL = "SIGTERM";
 const USE_PROCESS_GROUP = process.platform !== "win32";
 
+/** Keep local hang bounds while allowing the slower shared CI execution required by policy. */
+export function verificationTimeoutMs(localTimeoutMs: number): number {
+  return localTimeoutMs * (process.env.CI ? 15 : 1);
+}
+
 export async function runBunInScratch(args: readonly string[]): Promise<number> {
   // A terminated child cannot run its finally blocks. The surviving parent removes files in
   // the runner's temporary directory after it exits; reusable caches stay outside.
@@ -49,4 +54,8 @@ export async function runBunInScratch(args: readonly string[]): Promise<number> 
   }
 }
 
-if (import.meta.main) process.exitCode = await runBunInScratch(["test", ...process.argv.slice(2)]);
+if (import.meta.main) {
+  // Shared CI runners need 15× the local case deadline; explicit caller flags still follow it.
+  const timeout = "--timeout=" + verificationTimeoutMs(5000);
+  process.exitCode = await runBunInScratch(["test", timeout, ...process.argv.slice(2)]);
+}
