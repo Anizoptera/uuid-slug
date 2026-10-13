@@ -4,7 +4,11 @@
 
 These items track unresolved copy; they do not authorize README edits or new measurements.
 
-- [ ] Repair navigation links to removed `#performance` and `#features` headings without restoring redundant sections.
+- [ ] Repair navigation links to removed `#performance` and `#features` headings; verify every README heading and file link reaches the intended explanation without restoring redundant sections.
+- [ ] Link opening benefits to working examples and details. Connect related sections where the next question concerns representations, types/errors, buffers, ordering, masking, rotation, migration or recovery; use descriptive link text and avoid repeated links that add no navigation value.
+- [ ] Read each section as a direct entry point. Keep the definitions, types, defaults, units and limits needed to understand its claims and use its examples there; link shared detail instead of copying it. Merge repetition only when the section remains usable on its own.
+- [ ] Reconcile the opening, examples, representation/API tables and guarantees with each other and their owning contracts. Fix inconsistent names, accepted forms, results, runtime requirements, package availability and upgrade/recovery guidance; preserve distinct benefits and supported claims.
+- [ ] Proofread the complete README for typos, grammar, ambiguous references and formatting after those repairs; preserve approved tone and sound wording. Compile changed examples independently and recheck affected links after heading edits.
 - [ ] Reconcile "fastest across all" and "lowest allocation on EVERY runtime" with the measured call boundaries in `bench/PERFORMANCE.md`: owned UUIDv7 byte generation records Bun/Deno losses; allocation comparisons do not establish every-runtime leadership. Preserve approved positioning without implying wins on those calls.
 - [ ] Distinguish implemented TS/Rust/WASM support from published packages near installation; replace "published soon" with concrete availability when known.
 - [ ] Merge repeated ordering, supplied-time and clock-control bullets while retaining configurable rollback and payload layouts.
