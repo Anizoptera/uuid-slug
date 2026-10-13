@@ -46,12 +46,8 @@ function isDeclarationContainer(node: ts.Node): node is DeclarationContainer {
   );
 }
 
-export function combineDifferences(...differences: readonly ApiDifference[]): ApiDifference {
-  const levels = new Set(differences.map(({ level }) => level));
-  return {
-    report: differences.map(({ report }) => report).join("\n\n"),
-    level: levels.has("major") ? "major" : levels.has("minor") ? "minor" : "patch",
-  };
+export function combineReleaseLevels(...levels: readonly ReleaseLevel[]): ReleaseLevel {
+  return levels.includes("major") ? "major" : levels.includes("minor") ? "minor" : "patch";
 }
 
 export function normalizeDeclarations(source: string): string {
@@ -198,8 +194,7 @@ function declarationFamilies(rows: readonly string[]): Map<string, string[]> {
   return families;
 }
 
-export function apiDifference(before: string, after: string, language: string): ApiDifference {
-  if (before === after) return { report: `No packaged ${language} changes.`, level: "patch" };
+function compareApi(before: string, after: string) {
   const previous = before.split("\n").filter(Boolean);
   const current = after.split("\n").filter(Boolean);
   const oldLines = new Set(previous.map((line) => line.trim()).filter(Boolean));
@@ -208,6 +203,22 @@ export function apiDifference(before: string, after: string, language: string): 
   const added = [...newLines].filter((line) => !oldLines.has(line));
   let retained = 0;
   for (const line of current) if (line === previous[retained]) retained++;
+  // Additions are minor only when every old row survives in order; sets alone miss overload priority.
+  const level: ReleaseLevel =
+    (!removed.length && !added.length) || removed.length > 0 || retained !== previous.length
+      ? "major"
+      : "minor";
+  return { previous, current, removed, added, level };
+}
+
+export function apiChangeLevel(before: string, after: string): ReleaseLevel {
+  // Compatibility checks need the decision, not Markdown for an inventory nobody will read.
+  return before === after ? "patch" : compareApi(before, after).level;
+}
+
+export function apiDifference(before: string, after: string, language: string): ApiDifference {
+  if (before === after) return { report: `No packaged ${language} changes.`, level: "patch" };
+  const { previous, current, removed, added, level } = compareApi(before, after);
   // Sets cannot detect moved members, repeated declarations, or overload precedence.
   if (!removed.length && !added.length) {
     const oldFamilies = declarationFamilies(previous);
@@ -222,7 +233,7 @@ export function apiDifference(before: string, after: string, language: string): 
           previous.filter((row, index) => row !== current[index]),
           current.filter((row, index) => row !== previous[index]),
         ),
-        level: "major",
+        level,
       };
     return {
       report: changed.length
@@ -231,12 +242,12 @@ export function apiDifference(before: string, after: string, language: string): 
             changed.flatMap((name) => newFamilies.get(name) ?? []),
           )
         : "Declaration order changed; public signatures are unchanged.",
-      level: "major",
+      level,
     };
   }
   return {
     report: declarationDiff(removed, added),
-    level: removed.length || retained !== previous.length ? "major" : "minor",
+    level,
   };
 }
 
@@ -278,12 +289,7 @@ export function minimumRelease(
     : headings.has("Added")
       ? "minor"
       : "patch";
-  const strongest =
-    declared === "major" || languages.includes("major")
-      ? "major"
-      : declared === "minor" || languages.includes("minor")
-        ? "minor"
-        : "patch";
+  const strongest = combineReleaseLevels(declared, ...languages);
   return version.startsWith("0.") && strongest === "major" ? "minor" : strongest;
 }
 

@@ -4,7 +4,8 @@ import { basename, dirname, join, resolve } from "node:path";
 import { command } from "./command";
 import {
   apiDifference,
-  combineDifferences,
+  apiChangeLevel,
+  combineReleaseLevels,
   minimumRelease,
   normalizeDeclarations,
   publicApiDifference,
@@ -370,17 +371,16 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
                 comparison.tag.slice(1),
                 true,
               );
-              const declarations = apiDifference(
+              const declarationLevel = apiChangeLevel(
                 previousTypeScript.declarations,
                 currentDeclaration.declarations,
-                "TypeScript declaration",
               );
               const metadata = npmSurfaceDifference(
                 previousTypeScript.package,
                 currentDeclaration.package,
               );
               return {
-                ...combineDifferences(declarations, metadata),
+                level: combineReleaseLevels(declarationLevel, metadata.level),
                 report: [
                   publicApiDifference(
                     previousTypeScript.declarations,
@@ -406,7 +406,7 @@ async function releaseReport(cwd: string, artifacts = "release-artifacts"): Prom
               );
               const metadata = cargoSurfaceDifference(previousRust.package, currentRust.package);
               return {
-                ...combineDifferences(declarations, metadata),
+                level: combineReleaseLevels(declarations.level, metadata.level),
                 report: [
                   previousRust.declarations !== currentRust.declarations ? declarations.report : "",
                   JSON.stringify(previousRust.package) !== JSON.stringify(currentRust.package)

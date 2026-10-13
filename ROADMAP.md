@@ -2,6 +2,8 @@
 
 ## Release notes
 
+- [x] Separate compatibility classification from Markdown rendering; level-only callers share the same comparison without building discarded reports, and release-level precedence has one owner.
+
 - [x] Reuse declaration lines across comparison and overload grouping; remove duplicate assertions while retaining the existing diff, ordering, publication-selection and compatibility cases.
 
 - [x] Preserve compiler names and visibility in public diffs; omitted names, reordered overloads, export aliases and private brands have direct regression cases and pass the complete gate.

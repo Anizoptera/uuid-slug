@@ -1,5 +1,5 @@
 import { command } from "./command";
-import { apiDifference } from "./release-comparison";
+import { apiDifference, combineReleaseLevels } from "./release-comparison";
 import type { ApiDifference, ReleaseLevel } from "./release-comparison";
 
 export interface CargoReleaseSurface {
@@ -124,10 +124,6 @@ function compareFloor(
   return "patch";
 }
 
-function strongest(levels: readonly ReleaseLevel[]): ReleaseLevel {
-  return levels.includes("major") ? "major" : levels.includes("minor") ? "minor" : "patch";
-}
-
 function exportsLevel(before: unknown, after: unknown): ReleaseLevel {
   if (!before || !after || typeof before !== "object" || typeof after !== "object") return "major";
   const oldEntries = Object.entries(before);
@@ -179,7 +175,7 @@ export function npmSurfaceDifference(
     }
   }
   return changes.length
-    ? { report: changes.join("\n"), level: strongest(levels) }
+    ? { report: changes.join("\n"), level: combineReleaseLevels(...levels) }
     : { report: "No npm package metadata changes.", level: "patch" };
 }
 
@@ -208,6 +204,6 @@ export function cargoSurfaceDifference(
     changes.push("A library target was added.");
   }
   return changes.length
-    ? { report: changes.join("\n"), level: strongest(levels) }
+    ? { report: changes.join("\n"), level: combineReleaseLevels(...levels) }
     : { report: "No Cargo package metadata changes.", level: "patch" };
 }

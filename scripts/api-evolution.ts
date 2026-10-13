@@ -1,7 +1,7 @@
 import ts from "typescript-floor";
 import { command } from "./command";
 import {
-  apiDifference,
+  apiChangeLevel,
   minimumRelease,
   normalizeDeclarations,
   satisfiesMinimum,
@@ -303,12 +303,8 @@ export function verifyEvolution(
     );
   const levels: ReleaseLevel[] = [
     ...packageLevels,
-    apiDifference(oldTsNormalized, newTsNormalized, "TypeScript declaration").level,
-    apiDifference(
-      [...oldRustEntries].join("\n"),
-      [...newRustEntries].join("\n"),
-      "Rust declaration",
-    ).level,
+    apiChangeLevel(oldTsNormalized, newTsNormalized),
+    apiChangeLevel([...oldRustEntries].join("\n"), [...newRustEntries].join("\n")),
   ];
   const minimum = minimumRelease(currentVersion.split("-", 1)[0] ?? currentVersion, "", levels);
   if (!satisfiesMinimum(previousVersion, currentVersion, minimum))
