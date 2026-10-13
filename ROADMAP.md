@@ -2,9 +2,9 @@
 
 ## Release notes
 
-- [ ] Generate only the minimal public API changes from the latest release as Markdown diff blocks; preserve internal compatibility checks, omit inventories, private helper types, repeated older comparisons and API attachments.
-- [ ] Rewrite the 0.4.0 changelog as concise consumer changes and upgrade instructions, preserving relevant limits and breaking changes.
-- [ ] Verify report generation and complete checks, commit scoped files, update the authorized published GitHub 0.4.0 notes, and read back exact text and unchanged release assets.
+- [x] Generate only the minimal public API changes from the latest release as Markdown diff blocks; preserve internal compatibility checks, omit inventories, private helper types, repeated older comparisons and API attachments.
+- [x] Rewrite the 0.4.0 changelog as concise consumer changes and upgrade instructions, preserving relevant limits and breaking changes.
+- [x] Verify report generation and complete checks, commit scoped files, update the authorized published GitHub 0.4.0 notes, and read back exact text and unchanged release assets.
 
 Preserve supported calls, identifier formats, caller data and package compatibility. Apply
 `AGENTS.md` §Work scope; further optimization needs explicit named-call authorization.
