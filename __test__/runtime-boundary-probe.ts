@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { nativeUuidV7CapabilityCanary } from "./native-v7-capability-fixture";
+import { encodeBase32hexReference } from "./base32hex-reference";
 
 import { strict as assert } from "node:assert";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -105,13 +106,6 @@ const timestamp = 1_234_567_890_000;
 const uuid = "011f71fb-0450-7121-8848-484a12121212";
 const makeGenerator = () =>
   createUuidV7Generator({ readUnixMs: () => timestamp, fillRandom: (bytes) => bytes.fill(0x12) });
-const compareBytes = (left: Uint8Array, right: Uint8Array) => {
-  for (let index = 0; index < left.length; index += 1) {
-    const difference = (left[index] as number) - (right[index] as number);
-    if (difference !== 0) return difference;
-  }
-  return 0;
-};
 const hasCause = (value: unknown, target: unknown): boolean =>
   value === target ||
   (value instanceof AggregateError && value.errors.some((cause) => hasCause(cause, target))) ||
@@ -445,16 +439,12 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
         ] as const)
           for (const tailBits of widths) {
             for (let tail = 0; tail < 1 << tailBits; tail += 1) {
-              let bits = 0n;
-              for (const byte of bytes) bits = (bits << 8n) | BigInt(byte);
-              bits = (bits << BigInt(tailBits)) | BigInt(tail);
-              const width = alphabet.bitsPerChar;
-              const mask = (1n << BigInt(width)) - 1n;
-              const length = Math.ceil((128 + tailBits) / width);
-              bits <<= BigInt(length * width - 128 - tailBits);
-              let text = "";
-              for (let digit = length - 1; digit >= 0; digit -= 1)
-                text += alphabet.chars[Number((bits >> BigInt(digit * width)) & mask)];
+              const text =
+                alphabet === BASE32HEX_ALPHABET
+                  ? encodeBase32hexReference(bytes, tail, tailBits)
+                  : Buffer.concat([Buffer.from(bytes), Buffer.of(tail << (8 - tailBits))])
+                      .toString("base64url")
+                      .slice(0, Math.ceil((128 + tailBits) / 6));
               assert.equal(encode(bytes, alphabet, tail, tailBits), text);
             }
           }
@@ -716,44 +706,25 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
       const generator = unwrap(createSecureUuidV7Generator({ readUnixMs: () => timestamp }));
       const first = unwrap(uuidStringToBytes(generator.generateUuidV7()));
       const second = unwrap(generator.generateUuidV7Bytes());
-      assert.ok(compareBytes(second, first) > 0);
-      assert.ok(Object.isFrozen(generator));
-      assert.deepEqual(Reflect.ownKeys(generator), [
-        "payloadLayout",
-        "generateUuidV7",
-        "generateUuidV7Bytes",
-        "generatePlainUuidV7Slug",
-        "generateUuidV7WithPlainSlug",
-        "generateUuidV7Value",
-      ]);
+      assert.ok(Buffer.compare(second, first) > 0);
     },
   },
   {
     name: "codec-generated values retain the counter their preset layout describes",
     run(this: void) {
       const codec = unwrap(createUuidV7MaskingCodec({ mask: UUID_V7_TEST_MASK }));
-      {
-        // Only values carrying a generator layout need this sequence witness; ordinary default
-        // UUID bytes and text have no corresponding ordering or counter promise.
-        let first = unwrap(unwrap(codec.generateUuidV7Value()).extractV7Payload());
-        assert.ok(first.counter);
-        assert.equal(first.counter.bits, 42);
-        let comparisons = 0;
-        // The module generator captures its clock before this test. Observe equal timestamps
-        // rather than pretending that replacing Date.now changes an already captured function.
-        for (let index = 0; index < 64; index++) {
-          const second = unwrap(unwrap(codec.generateUuidV7Value()).extractV7Payload());
-          assert.ok(first.counter);
-          assert.ok(second.counter);
-          assert.equal(second.counter.bits, 42);
-          if (second.unixMs === first.unixMs && first.counter.value !== (1n << 42n) - 1n) {
-            assert.equal(second.counter.value, first.counter.value + 1n);
-            comparisons++;
-          }
-          first = second;
-        }
-        assert.ok(comparisons > 0, "the burst must reach the same-millisecond counter witness");
-      }
+      // Module defaults promise representation fidelity, not sequence ordering or a clock speed.
+      const value = unwrap(codec.generateUuidV7Value());
+      const payload = unwrap(value.extractV7Payload());
+      assert.ok(payload.counter);
+      assert.equal(payload.counter.bits, 42);
+      const bytes = value.toBytes();
+      const wire = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      let counter = BigInt(wire.getUint16(6) & 0x0fff);
+      counter = (counter << 6n) | BigInt(wire.getUint8(8) & 0x3f);
+      for (let index = 9; index < 12; index++)
+        counter = (counter << 8n) | BigInt(wire.getUint8(index));
+      assert.equal(payload.counter.value, counter);
     },
   },
   {
@@ -1175,22 +1146,6 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
     },
   },
   {
-    name: "falls back when optional native UUIDv4 generation throws",
-    run(this: void) {
-      const nativeCause = new Error("native string generator failed");
-      const originalV4 = runtime.uuidV4;
-      runtime.uuidV4 = () => {
-        throw nativeCause;
-      };
-      try {
-        assert.equal(isUuidV4String(generateUuidV4()), true);
-      } finally {
-        if (originalV4) runtime.uuidV4 = originalV4;
-        else delete runtime.uuidV4;
-      }
-    },
-  },
-  {
     name: "trusts native UUIDv4 output without additional validation",
     run(this: void) {
       const originalV4 = runtime.uuidV4;
@@ -1356,7 +1311,6 @@ export const runtimeBoundaryCases: { name: string; run(this: void): void | Promi
               const text = explicit
                 ? generator.generateUuidV7({ at: 0, textCase })
                 : generator.generateUuidV7(textCase);
-              assert.equal(typeof text, "string");
               assert.ok(typeof text === "string");
               return BigInt("0x" + text.replaceAll("-", ""));
             }

@@ -13,6 +13,8 @@ Keep checks only when they distinguish a material defect from allowed behavior; 
   - [x] Require the caller-buffer generation case to verify written UUID bytes, not just untouched surroundings; removing the write must fail. Cover the exact rollback-tolerance boundary and compare owned output constructors by identity.
   - [x] Exercise genuine mixed-case UUIDs instead of a stale replacement; verify parsed-value immutability by attempted mutation and generated-value stability by advancing its generator. Check plain conversion on codecs using different masked alphabets.
   - [ ] Finish runtime-boundary, codec-boundary, legacy migration and native encoder probes against their actual selected and fallback implementations.
+    - [x] Use independent native-radix references for alphabet output and check-tail bits; a swapped production digit must fail both runtime runners. Replace default burst timing assumptions with actual wire-field fidelity and remove duplicate fallback and object-shape assertions.
+    - [ ] Finish codec-boundary and legacy migration cases; inspect their guards, independent vectors and failure precedence before removing overlap.
 - [ ] Audit packed consumers, compiler contracts, browsers, native/Wasm parity, release integrity and recovery; preserve distinct distribution and runtime evidence.
   - [ ] Finish the packed consumer corpus, compiler fixture, optimizer witnesses and native/Wasm cases; inspect real producer formats before changing compiler compatibility checks.
   - [x] Preserve packed export order with the complete export-map comparison; an order-only fixture must fail when that guard is removed. Reject missing source-map inputs without an unreachable embedded-source fallback.

@@ -86,7 +86,7 @@ if (v4Call) {
 const plainCalls = calls;
 const payload = new Uint8Array(16);
 for (let tail = 0; tail < 16; tail += 1) {
-  assert.equal(encode(payload, BASE64URL, tail, 4), "A".repeat(21) + BASE64URL.chars[tail]);
+  assert.equal(encode(payload, BASE64URL, tail, 4), "A".repeat(21) + "ABCDEFGHIJKLMNOP"[tail]);
   assert.equal(encode(payload, BASE32HEX), "0".repeat(26));
   if (publicCall) assert.equal(uuidBytesToPlainSlug(payload, BASE32HEX_NAME), "0".repeat(26));
 }

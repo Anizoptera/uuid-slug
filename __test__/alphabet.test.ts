@@ -10,22 +10,10 @@ import {
 } from "../src/index";
 import { WIRE_FORMAT_CODECS as codecs } from "./wire-format-codecs";
 import golden from "../rust/uuid-slug/tests/fixtures/fixtures-wire-format.json";
+import { encodeBase32hexReference } from "./base32hex-reference";
 
 const bytesFrom = (length: number) =>
   Uint8Array.from({ length }, (_, index) => (Math.imul(length + 1, 131) + index * 197) & 0xff);
-
-function encodeBase32Reference(bytes: Uint8Array, tail = 0, tailBits = 0): string {
-  let value = 0n;
-  for (const byte of bytes) value = (value << 8n) | BigInt(byte);
-  value = (value << BigInt(tailBits)) | BigInt(tail);
-  const chars = Math.ceil((bytes.length * 8 + tailBits) / 5);
-  value <<= BigInt(chars * 5 - bytes.length * 8 - tailBits);
-  let expected = "";
-  // RFC digit values must be independent of the production alphabet or both can agree on corrupt output.
-  for (let i = chars - 1; i >= 0; i -= 1)
-    expected += "0123456789abcdefghijklmnopqrstuv"[Number((value >> BigInt(i * 5)) & 31n)];
-  return expected;
-}
 
 describe("bit-packing codec", () => {
   // An oracle only has value when it can fail independently of the code under test. Comparing
@@ -37,7 +25,7 @@ describe("bit-packing codec", () => {
         Math.imul(seed + 1, index * 197 + 131),
       );
       expect(uuidBytesToPlainSlug(bytes)).toBe(Buffer.from(bytes).toString("base64url"));
-      expect(encode(bytes, BASE32HEX)).toBe(encodeBase32Reference(bytes));
+      expect(encode(bytes, BASE32HEX)).toBe(encodeBase32hexReference(bytes));
     }
   });
 
@@ -46,7 +34,7 @@ describe("bit-packing codec", () => {
   it("encodes base32hex identically to a bit-level reference", () => {
     for (let length = 1; length <= 33; length += 1) {
       const bytes = bytesFrom(length);
-      expect(encode(bytes, BASE32HEX)).toBe(encodeBase32Reference(bytes));
+      expect(encode(bytes, BASE32HEX)).toBe(encodeBase32hexReference(bytes));
     }
   });
 
@@ -105,7 +93,7 @@ describe("bit-packing codec", () => {
         Math.imul(seed + 1, index * 197 + 131),
       );
       const out = new Uint8Array(16);
-      expect(decodeInto(encodeBase32Reference(bytes), BASE32HEX, out, 0, 16)).toBe(0);
+      expect(decodeInto(encodeBase32hexReference(bytes), BASE32HEX, out, 0, 16)).toBe(0);
       expect(out).toEqual(bytes);
     }
   });
@@ -126,7 +114,7 @@ describe("bit-packing codec", () => {
   it("writes and reads the 27-character base32hex masked tail against a bit-level reference", () => {
     const bytes = bytesFrom(16);
     for (let tail = 0; tail < 16; tail += 1) {
-      const expected = encodeBase32Reference(bytes, tail, 4);
+      const expected = encodeBase32hexReference(bytes, tail, 4);
       expect(encode(bytes, BASE32HEX, tail, 4)).toBe(expected);
       for (const spelling of [expected, expected.toUpperCase()]) {
         const out = new Uint8Array(16);
@@ -134,7 +122,7 @@ describe("bit-packing codec", () => {
         expect(out).toEqual(bytes);
       }
     }
-    const valid = encodeBase32Reference(bytes, 5, 4);
+    const valid = encodeBase32hexReference(bytes, 5, 4);
     expect(
       decodeInto(`${valid.slice(0, 26)}1`, BASE32HEX, new Uint8Array(16), 0, 16, 4),
     ).toMatchObject({

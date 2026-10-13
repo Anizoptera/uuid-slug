@@ -2,6 +2,7 @@
 
 import { strict as assert } from "node:assert";
 import { Buffer } from "node:buffer";
+import { encodeBase32hexReference } from "./base32hex-reference";
 
 // A fresh process owns the capability replacement before either factory captures its method.
 const mode = process.argv[2];
@@ -53,11 +54,7 @@ for (let bit = 0; bit < 128; bit += 1) {
   assert.equal(bytesToUuidString(bytes), text);
   assert.equal(bytesToUuidString(bytes, UUID_TEXT_UPPERCASE), text.toUpperCase());
   assert.equal(uuidBytesToPlainSlug(bytes), Buffer.from(bytes).toString("base64url"));
-  // Numeric base32 uses the same digit alphabet; shifting supplies the two zero padding bits.
-  assert.equal(
-    uuidBytesToPlainSlug(bytes, BASE32HEX),
-    (BigInt("0x" + hex) << 2n).toString(32).padStart(26, "0"),
-  );
+  assert.equal(uuidBytesToPlainSlug(bytes, BASE32HEX), encodeBase32hexReference(bytes));
 }
 assert.equal(
   calls - genericCalls,
