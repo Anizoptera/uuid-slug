@@ -1,5 +1,23 @@
 # Remaining work
 
+## README review
+
+These items track unresolved copy; they do not authorize README edits or new measurements.
+
+- [ ] Repair navigation links to removed `#performance` and `#features` headings without restoring redundant sections.
+- [ ] Reconcile "fastest across all" and "lowest allocation on EVERY runtime" with the measured call boundaries in `bench/PERFORMANCE.md`: owned UUIDv7 byte generation records Bun/Deno losses; allocation comparisons do not establish every-runtime leadership. Preserve approved positioning without implying wins on those calls.
+- [ ] Distinguish implemented TS/Rust/WASM support from published packages near installation; replace "published soon" with concrete availability when known.
+- [ ] Merge repeated ordering, supplied-time and clock-control bullets while retaining configurable rollback and payload layouts.
+- [ ] Merge repeated type-safety and composition bullets while retaining validation, buffer integrity and stable error codes.
+- [ ] Merge overlapping sentinel and reserved-ID bullets while retaining recognizable values, rotation behavior and application uses.
+- [ ] Qualify the any-UUID conversion claim as plain-slug conversion; masking remains UUIDv7-only and requires matching keys and settings.
+- [ ] Explain the optional UUID object's benefit: validate and decode once, then reuse it for conversion and inspection.
+- [ ] State near the opening that plain conversion is lossless and the TypeScript package needs no native addon or WebAssembly.
+- [ ] Clarify "at every site" and replace "manually tailored" with a concrete API benefit, preserving the confident tone.
+- [ ] Use lowercase `npm`, format `package.json` as code, and remove trailing whitespace.
+- [ ] Surface plain decoding without keys or this library, and retained settings for masked decoding, earlier in the adoption guidance.
+- [ ] Resolve adoption questions about production-use evidence and maintenance/support commitments from evidence or a maintainer ruling; do not infer them from benchmarks or invent promises.
+
 ## Release notes
 
 Show consumers the minimal API changes from the latest release in Markdown diff blocks.

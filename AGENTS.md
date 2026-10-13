@@ -13,7 +13,7 @@ READ the owner before changing its subject; these references hold the detailed r
 | Rust, shared formats, package entries or bundling | `docs/cross-language.md` |
 | Experiments, profiles, evidence cleanup or performance gates | `bench/AGENTS.md`, then `bench/README.md` |
 | Versions, packaging, release tooling or publication | `docs/release.md` in full |
-| Consumer copy or generation guarantees | README and its relevant reference |
+| Consumer copy or generation guarantees | README opening for voice, affected section and its relevant reference |
 
 ## Work scope
 
@@ -301,28 +301,24 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 
 ## Writing public documentation
 
-README is roughly 60% marketing and 40% technical guidance. Write public docs as the proud author:
-lead with concrete strengths and explain their value. State supported advantages directly, without
-defensive hedging. Keep internal engineering and measurement detail in its owning reference.
-
-Every README serves its users, not agents. Package readers need benefits and working calls;
-benchmark readers need commands and reports. Keep agent policy in `AGENTS.md` and experimental
-catalogues in linked references so routine use does not require reading research internals.
+Package README is roughly 60% marketing and 40% technical guidance. Write as the proud author:
+lead with concrete supported strengths and their value, without defensive hedging.
+Package readers need benefits and working calls; benchmark readers need commands and reports.
+Keep agent policy in `AGENTS.md`; keep engineering detail, measurements and experimental
+catalogues in their owning references so routine use does not require research internals.
 
 - Use established technical terms such as hexadecimal when they name the exact concept.
   Explain unfamiliar terms before use; omit internal vocabulary that does not help the caller.
 - Put limits beside the affected call. Name what can go wrong and what the caller must do;
   replace abstract disclaimers such as "proof of issuance" with concrete decoding behavior.
   Keep general security advice out of the opening and unrelated API guidance.
-- Write direct sentences; keep headings and table labels short. Each claim must tell the reader
-  what they get or what to do.
-  State what a feature saves or enables before its controls; keep unrelated benefits separate.
-  Category labels and API lists are no explanation.
+- Use short, concrete claims and labels. State what a feature saves or enables before its controls;
+  keep unrelated benefits separate. Category labels and API lists alone are no explanation.
 - Describe features and benefits as facts about the library or capability, not sales commands
   addressed to "you". Reserve imperatives for actual setup and usage steps; declarative wording
   must preserve the strength of the claim, not add hedging or force every sentence into passive voice.
-- Change only lines with a named defect; preserve useful claims and sound wording.
-  Reject edits that add words without adding information.
+- Change only lines with a named defect. Preserve approved copy exactly; add words only for added
+  information. Delete text only when it adds no useful information, never concrete strengths.
 - Construct example codecs and masks once, outside per-ID calls. Show setup and reuse;
   a comment cannot repair repeated construction.
   Show direct calls, not forwarding wrappers, redundant returned inputs or unnecessary conversions.
@@ -339,20 +335,24 @@ catalogues in linked references so routine use does not require reading research
   disagree. A "cannot" or "never" about a
   runtime or another package cites the probe that showed it. A claim with no possible owner is
   deleted, not softened.
-- Define terms before use; every referent must exist. An undefined "responsiveness target" is a defect.
-- Preserve approved copy exactly. Delete text that adds no useful information, not concrete strengths.
+- Define terms before use; every referent must exist.
 - Use bold main benefits with short nested details to make the opening easy to scan.
   Name each benefit once; its details explain concrete uses, savings or controls.
   Preserve approved emphasis; a marketing claim does not become filler because it is prominent.
+  Group opening capabilities by benefit or consumer job, not by exported symbol.
 - Reject em-dashes, "not only ... but", empty trailing "-ing" clauses,
   rhythmic groups of three and Title Case headings; they hide missing content.
-- Put common gains first: performance, resource use, adoption cost and main identifier jobs.
-  Order sections by consumer value and breadth. Include a UUID/slug comparison and navigation;
-  surface specialist benefits briefly. Keep limits, diagrams, runtime tables and examples with
-  their owning sections. Install and quick start follow the opening. Check local heading links
-  and opening density; render only to settle layout questions.
-- Prose about the writer's actions ("this pass", "was rewritten", "now supports") never enters a
-  doc; git holds that. State the fact.
+- Put purpose before badges. Lead with performance, resource use, deployment, representations
+  and API ergonomics; order by consumer value and breadth.
+  Explain representation sizes and jobs: storage, URLs and filenames for the same UUID.
+  Surface optional controls without complicating ordinary calls. Keep full examples, limits,
+  diagrams and runtime tables with their owning sections.
+  Follow with navigation, a copyable installation command and quick start.
+  Check local heading links and opening density; render only to settle layout questions.
+- State matching cross-language formats and implementation availability; put publication status
+  beside installation. Link release policy; keep recovery and key-retention requirements explicit
+  to protect stored IDs.
+- State subject facts, never the writer's actions; git owns edit history.
 
 ## Release
 
