@@ -1,5 +1,5 @@
 // Compare every requested result, including failures, through the real native development transport.
-import { deepStrictEqual } from "node:assert";
+import { deepStrictEqual, throws } from "node:assert";
 import { readFile } from "node:fs/promises";
 import { unwrap } from "../dev/unwrap";
 import * as ts from "../src/index";
@@ -13,6 +13,7 @@ import type {
 import { bytePatterns } from "../__test__/byte-patterns";
 import { uuidTailAliases } from "../__test__/uuid-tail-aliases";
 import { uuidVariants } from "../__test__/uuid-variants";
+import { NIL_TEST_SENTINEL } from "../__test__/sentinel-fixtures";
 import { candidates as generationCandidates } from "../bench/candidates";
 import { loadRustBridge } from "./rust-bridge";
 
@@ -385,11 +386,11 @@ export async function contractRequests(): Promise<Request[]> {
     });
     for (const op of ["parse", "timestamp", "guards"]) requests.push({ op, input: value });
   }
-  const first = wire[0];
-  const ordinary = wire[3];
+  const first = wire.find((vector) => vector.uuid === NIL_TEST_SENTINEL[0]?.uuid);
+  const ordinary = wire.find((vector) => vector.mask === "default" && vector.uuid !== first?.uuid);
   if (!first || !ordinary)
     throw new Error("Wire fixtures must include sentinel and ordinary UUIDs");
-  const retainedSentinels = [{ name: "nil", uuid: first.uuid }];
+  const retainedSentinels = NIL_TEST_SENTINEL;
   for (const text of [ordinary.uuid, first.uuid, "ffffffff-ffff-ffff-ffff-ffffffffffff"]) {
     const uuid = ts.uuidStringToBytes(text);
     if (uuid instanceof Error) throw uuid;
@@ -736,6 +737,7 @@ if (import.meta.main) {
     compare(requests, JSON.parse(bridge.evaluate(JSON.stringify(requests))));
     if (bridge.plain("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f0000") !== "AZChssPUfl-KmwwdLj8AAA")
       throw new Error(`${bridge.transport} plain conversion diverged from its wire vector.`);
+    throws(() => bridge.plain("not a UUID"), /invalid_uuid|invalid length 0/);
     console.log(
       `${bridge.transport}: exact SystemTime nanoseconds=${fineSystemTime}; ${requests.length} shared contract observations passed`,
     );

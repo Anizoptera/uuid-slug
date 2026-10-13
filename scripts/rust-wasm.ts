@@ -131,11 +131,11 @@ try {
     },
   });
   try {
+    const requests = await contractRequests();
+    const fineRequests = fineSystemTimeRequests();
     for (const [browserName, browserEngine] of Object.entries(browserEngines)) {
       const browser = await browserEngine.launch({ headless: true });
       try {
-        const requests = await contractRequests();
-        const fineRequests = fineSystemTimeRequests();
         for (const failEntropy of [false, true]) {
           const context = await browser.newContext();
           try {
