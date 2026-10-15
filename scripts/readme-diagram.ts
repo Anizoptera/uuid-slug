@@ -90,6 +90,10 @@ const M32 = must(codec32.uuidToMaskedSlug(UUID));
 const ALPHA64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 const ALPHA32 = "0123456789abcdefghijklmnopqrstuv";
 const HEX = UUID.replaceAll("-", "");
+// Readers judge length as a saving against the UUID text they already store, not as a character
+// count; computed from the library's output so the figure follows any format change.
+const shorter = (slug: string) =>
+  `${Math.round((1 - slug.length / UUID.length) * 100)}% shorter than UUID text`;
 const hexBits = (hex: string) =>
   hex
     .split("")
@@ -164,7 +168,7 @@ const FORMS = {
     sort: "by time¹",
     caseRule: "any accepted",
     job: "For UUID columns and UUID-only APIs.",
-    detail: "Time-range queries on UUIDv7 keys.",
+    detail: "The standard form: every database and UUID library accepts it.",
   },
   bytes: {
     name: "Bytes",
@@ -188,7 +192,7 @@ const FORMS = {
     sort: "roughly by time²",
     caseRule: "must match",
     job: "For short URLs, logs and JSON.",
-    detail: "14 characters shorter than UUID text; standard base64url tools decode it.",
+    detail: `${shorter(P64)}; any base64url decoder returns its 16 UUID bytes.`,
   },
   p32: {
     name: "Plain base32hex",
@@ -200,7 +204,7 @@ const FORMS = {
     sort: "by time¹",
     caseRule: "any accepted",
     job: "For case-insensitive filenames and text keys.",
-    detail: "Time-range queries on the ID itself; 4 characters longer than base64url.",
+    detail: `${shorter(P32)}; time-range queries work on the ID itself.`,
   },
   m64: {
     name: "Masked base64url",
@@ -212,8 +216,7 @@ const FORMS = {
     sort: "none: decode first",
     caseRule: "must match",
     job: "For public IDs that hide the UUID's time and fields.",
-    detail:
-      "Your database keeps UUIDs. Only the matching key and settings decode it; keep old keys for old links.",
+    detail: `${shorter(M64)}. Your database keeps UUIDs. Only the matching key and settings decode it; keep old keys for old links.`,
   },
   m32: {
     name: "Masked base32hex",
@@ -225,8 +228,7 @@ const FORMS = {
     sort: "none: decode first",
     caseRule: "any accepted",
     job: "For masked IDs in case-insensitive filenames.",
-    detail:
-      "5 characters longer. The same UUID, key and settings always give the same slug; one codec reads both masked alphabets.",
+    detail: `${shorter(M32)}. The same UUID, key and settings always give the same slug; one codec reads both masked alphabets.`,
   },
 } satisfies Record<string, Form>;
 
@@ -243,7 +245,7 @@ const COPY = {
   notes: [
     "¹ UUIDv7: sorts by creation millisecond if all IDs share one case and alphabet; not event order within a millisecond.",
     "² Nearby times share prefixes, but ASCII order can swap adjacent milliseconds.",
-    "Compare decoded UUIDs, not spellings: one UUID has many valid spellings. A wrong key passes the 16-bit check about once in 65,536 tries and returns another UUID. Masking is not strong encryption.",
+    "Compare decoded UUIDs, not spellings: one UUID has many valid spellings. A wrong key passes the 16-bit check about once in 65,536 tries and returns another UUID. Its cryptographic strength is not established.",
   ],
 };
 const LEGEND: [Field, string][] = [
