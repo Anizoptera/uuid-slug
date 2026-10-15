@@ -180,7 +180,7 @@ const FORMS = {
     sort: "by time¹ (byte order)",
     caseRule: "none (binary)",
     job: "For binary storage and transport.",
-    detail: "Generate or decode straight into your buffer; errors leave it unchanged.",
+    detail: "Writes into your buffer; on error the buffer stays unchanged.",
   },
   p64: {
     name: "Plain base64url",
@@ -216,7 +216,7 @@ const FORMS = {
     sort: "none: decode first",
     caseRule: "must match",
     job: "For public IDs that hide the UUID's time and fields.",
-    detail: `${shorter(M64)}. Your database keeps UUIDs. Only the matching key and settings decode it; keep old keys for old links.`,
+    detail: `${shorter(M64)}. Decoding needs the key that made it: keep old keys, or old links break.`,
   },
   m32: {
     name: "Masked base32hex",
@@ -228,7 +228,7 @@ const FORMS = {
     sort: "none: decode first",
     caseRule: "any accepted",
     job: "For masked IDs in case-insensitive filenames.",
-    detail: `${shorter(M32)}. The same UUID, key and settings always give the same slug; one codec reads both masked alphabets.`,
+    detail: `${shorter(M32)}. Same UUID + same key = same slug. One codec decodes both masked forms.`,
   },
 } satisfies Record<string, Form>;
 
@@ -236,16 +236,16 @@ const COPY = {
   title: "One UUIDv7, six representations",
   pkg: "@anizoptera/uuid-slug",
   subtitle:
-    "Store one UUID. Every form below converts back to it losslessly (masked ones with your key). No mapping table.",
+    "Store the UUID. Every form below converts back to it exactly; masked forms need your key. No lookup table.",
   urlSafe: "All text forms are URL-safe.",
   masking:
-    "A keyed scramble hides the time and every UUID field, and decodes back to the exact UUID. 132 bits = 42-bit time offset (~139 years from a start you set) + 74 payload bits + 16-bit check.",
+    "Your key scrambles all UUID bits, so the slug shows no time or fields. The key turns it back into the same UUID. Inside: 42-bit time since your start date (~139 years) + 74 payload bits + 16-bit check.",
   overlap:
-    "Plain and masked base64url can look identical. Choose the reader for the format you issued.",
+    "Plain and masked base64url look alike. Decode each with the function for the form you issued.",
   notes: [
     "¹ UUIDv7: sorts by creation millisecond if all IDs share one case and alphabet; not event order within a millisecond.",
     "² Nearby times share prefixes, but ASCII order can swap adjacent milliseconds.",
-    "Compare decoded UUIDs, not spellings: one UUID has many valid spellings. A wrong key passes the 16-bit check about once in 65,536 tries and returns another UUID. Its cryptographic strength is not established.",
+    "Compare decoded UUIDs, not strings: one UUID has many valid spellings. A wrong key passes the check about 1 time in 65,536 and returns a wrong UUID. Masking is not proven-secure encryption.",
   ],
 };
 const LEGEND: [Field, string][] = [

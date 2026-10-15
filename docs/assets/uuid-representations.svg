@@ -205,7 +205,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <path class="ghost masked" d="M36 1170C36 1254 36 1254 36 1338L548.2 1338C548.2 1254 462.8 1254 462.8 1170Z"/>
 <text x="36" y="50" class="ink sans" font-size="34" font-weight="600">One UUIDv7, six representations</text>
 <text x="1064" y="50" class="pkg sans" font-size="20" font-weight="600" text-anchor="end">@anizoptera/uuid-slug</text>
-<text x="36" y="82" class="muted sans" font-size="18">Store one UUID. Every form below converts back to it losslessly (masked ones with your key). No mapping table.</text>
+<text x="36" y="82" class="muted sans" font-size="18">Store the UUID. Every form below converts back to it exactly; masked forms need your key. No lookup table.</text>
 <g class="lg lg-time time">
 <rect x="36" y="100" width="115.9" height="24" class="chip chip-time" rx="12"/>
 <rect x="43" y="106" width="11" height="11" class="time f" rx="2"/>
@@ -644,7 +644,7 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="446" y="458" class="key sans" font-size="16">Case</text>
 <text x="492" y="458" class="ink sans" font-size="17" font-weight="600">none (binary)</text>
 <text x="116" y="482" class="ink sans" font-size="17" font-weight="400">For binary storage and transport.</text>
-<text x="116" y="506" class="muted sans" font-size="17">Generate or decode straight into your buffer; errors leave it unchanged.</text>
+<text x="116" y="506" class="muted sans" font-size="17">Writes into your buffer; on error the buffer stays unchanged.</text>
 <text x="36" y="564" class="accent sans" font-size="16" font-weight="700">PLAIN SLUGS · any UUID · no key · the same 128 bits in fewer characters</text>
 <text x="790" y="602" class="accent sans" font-size="17" font-weight="700">One character, two fields</text>
 <text x="36" y="602" class="ink sans" font-size="24" font-weight="600">Plain base64url</text>
@@ -973,9 +973,9 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="52" y="926" class="muted sans" font-size="17">28% shorter than UUID text; time-range queries work on the ID itself.</text>
 <text x="36" y="984" class="masked f sans" font-size="16" font-weight="700">MASKED SLUGS · UUIDv7 only · need the matching key</text>
 <text x="1064" y="984" class="muted sans" font-size="15" text-anchor="end">Examples use the public demo key</text>
-<text x="36" y="1006" class="muted sans" font-size="17">A keyed scramble hides the time and every UUID field, and decodes back to the exact UUID. 132 bits = 42-bit time</text>
-<text x="36" y="1030" class="muted sans" font-size="17">offset (~139 years from a start you set) + 74 payload bits + 16-bit check.</text>
-<text x="36" y="1064" class="ink sans" font-size="17" font-weight="700">Plain and masked base64url can look identical. Choose the reader for the format you issued.</text>
+<text x="36" y="1006" class="muted sans" font-size="17">Your key scrambles all UUID bits, so the slug shows no time or fields. The key turns it back into the same UUID.</text>
+<text x="36" y="1030" class="muted sans" font-size="17">Inside: 42-bit time since your start date (~139 years) + 74 payload bits + 16-bit check.</text>
+<text x="36" y="1064" class="ink sans" font-size="17" font-weight="700">Plain and masked base64url look alike. Decode each with the function for the form you issued.</text>
 <text x="36" y="1112" class="masked f sans" font-size="24" font-weight="600">Masked base64url</text>
 <text x="286" y="1112" class="muted sans" font-size="16">22 chars · A–Z a–z 0–9 - _ · 6 bits each</text>
 <g id="gm0">
@@ -1093,8 +1093,8 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="446" y="1200" class="key sans" font-size="16">Case</text>
 <text x="492" y="1200" class="ink sans" font-size="17" font-weight="600">must match</text>
 <text x="52" y="1224" class="ink sans" font-size="17" font-weight="400">For public IDs that hide the UUID's time and fields.</text>
-<text x="52" y="1248" class="muted sans" font-size="17">39% shorter than UUID text. Your database keeps UUIDs. Only the matching key and</text>
-<text x="52" y="1272" class="muted sans" font-size="17">settings decode it; keep old keys for old links.</text>
+<text x="52" y="1248" class="muted sans" font-size="17">39% shorter than UUID text. Decoding needs the key that made it: keep old keys,</text>
+<text x="52" y="1272" class="muted sans" font-size="17">or old links break.</text>
 <text x="36" y="1324" class="masked f sans" font-size="24" font-weight="600">Masked base32hex</text>
 <text x="286" y="1324" class="muted sans" font-size="16">27 chars · 0–9 a–v · 5 bits each · lowercase</text>
 <g id="gn0">
@@ -1239,8 +1239,8 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="446" y="1412" class="key sans" font-size="16">Case</text>
 <text x="492" y="1412" class="ink sans" font-size="17" font-weight="600">any accepted</text>
 <text x="52" y="1436" class="ink sans" font-size="17" font-weight="400">For masked IDs in case-insensitive filenames.</text>
-<text x="52" y="1460" class="muted sans" font-size="17">25% shorter than UUID text. The same UUID, key and settings always give the same</text>
-<text x="52" y="1484" class="muted sans" font-size="17">slug; one codec reads both masked alphabets.</text>
+<text x="52" y="1460" class="muted sans" font-size="17">25% shorter than UUID text. Same UUID + same key = same slug. One codec decodes</text>
+<text x="52" y="1484" class="muted sans" font-size="17">both masked forms.</text>
 <text x="790" y="1110" class="accent sans" font-size="17" font-weight="700">Masking: avalanche effect</text>
 <text x="790" y="1134" class="muted sans" font-size="16">Last UUID byte · flip one bit</text>
 <text x="790" y="1166.8" class="muted sans" font-size="16">Before</text>
@@ -1341,6 +1341,6 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <path d="M36 1516H1064" class="rule" fill="none" stroke="currentColor" stroke-width="1"/>
 <text x="36" y="1546" class="muted sans" font-size="15">¹ UUIDv7: sorts by creation millisecond if all IDs share one case and alphabet; not event order within a millisecond.</text>
 <text x="36" y="1568" class="muted sans" font-size="15">² Nearby times share prefixes, but ASCII order can swap adjacent milliseconds.</text>
-<text x="36" y="1590" class="muted sans" font-size="15">Compare decoded UUIDs, not spellings: one UUID has many valid spellings. A wrong key passes the 16-bit check about once in 65,536</text>
-<text x="36" y="1612" class="muted sans" font-size="15">tries and returns another UUID. Its cryptographic strength is not established.</text>
+<text x="36" y="1590" class="muted sans" font-size="15">Compare decoded UUIDs, not strings: one UUID has many valid spellings. A wrong key passes the check about 1 time in 65,536 and</text>
+<text x="36" y="1612" class="muted sans" font-size="15">returns a wrong UUID. Masking is not proven-secure encryption.</text>
 </svg>
