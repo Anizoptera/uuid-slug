@@ -149,6 +149,7 @@ Use paired generation when you need UUID text plus one slug.
 
 _Examples: `AZirzRI0eryd7wEjRWeJqw` (base64url), `06canj8i6htbp7ff04hkaps9lc` (base32hex)_
 
+A plain slug is the UUID's 16 bytes in base64url (22 characters) or base32hex (26), with no key.
 Use `uuidStringToPlainSlug` to encode a UUID and `plainSlugToUuidString` to recover it.
 Decoders reject `=` padding and nonzero unused bits in the last character.
 `isPlainUuidSlug` checks canonical spelling and returns a boolean.
@@ -264,6 +265,7 @@ if (isUuidSlugError(uuid)) {
 
 Create IDs before saving, even offline. Related records can reference them without a database round
 trip and keep them after synchronization. No central allocator or worker number is needed.
+Any generator works, e.g. `generateUuidV7()`, wherever the record is created.
 
 ## Generate at a recorded time
 
@@ -282,14 +284,14 @@ if (typeof slug === "string") console.log(slug);
 else console.error(slug.message);
 ```
 
-Use one created generator across output forms to share a sequence, including `at` calls.
+Use one `createUuidV7Generator` generator across output forms to share a sequence, including `at` calls.
 Module-level calls remain independent.
 
 Calls use fresh randomness even at identical timestamps. For retries, retain the first ID or
 use a deduplication key; existing records keep their UUIDs. Masked IDs need a
 [timestamp range](#masked-slugs) covering the recorded time.
 
-Ordered generation can advance encoded time beyond the supplied time.
+To keep IDs in order, a generator may encode a time slightly after the one you supplied.
 
 ## Use the UUID as the timestamp source
 
