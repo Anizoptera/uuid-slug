@@ -109,7 +109,8 @@ draft before `bun run release <next>`; versioning requires a clean tree. The rel
 annotated tag message are the version number only. Do not encode publication selection in tags or
 add a release bot.
 The release command must reject a tag that differs from the manifest or lacks a nonempty changelog
-section. Publication copies that section verbatim.
+section. Publication keeps that section's prose unchanged and adds the generated parts described
+in §Evidence and notes.
 Use the release command to check the stable manifest before Git creates its tag; ordinary untagged work must use `-dev`.
 
 Keep `@anizoptera/publish-clean` as a registry dependency and publication in

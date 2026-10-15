@@ -1,25 +1,14 @@
 # Changelog
 
-Notable changes per release, newest first. This file is the source of the GitHub Release
-notes: the section for a version is published verbatim when its tag is pushed.
+Notable changes per release, newest first. Each version's GitHub Release notes are its
+section here, with the generated API changes, package size and links added.
 
 ## [0.4.0]
 
 ### Breaking changes
 
-```diff
-- uuidV4()
-+ generateUuidV4()
-- uuidV7()
-+ generateUuidV7()
-- uuidV7At(timestamp)
-+ generateUuidV7({ at: timestamp })
-- createUuidSlugCodec({ mask })
-+ createUuidV7MaskingCodec({ mask })
-- createMaskSchema({ seed, keyIterations })
-+ deriveUuidV7Mask({ seed, keyDerivationIterations })
-```
-
+- Renamed calls: `uuidV4()` → `generateUuidV4()`, `uuidV7()` → `generateUuidV7()`, `uuidV7At(timestamp)` → `generateUuidV7({ at: timestamp })`, `createUuidSlugCodec({ mask })` → `createUuidV7MaskingCodec({ mask })`, `createMaskSchema({ seed, keyIterations })` → `deriveUuidV7Mask({ seed, keyDerivationIterations })`.
+- Renamed types: `MaskSchema`, `MaskSchemaOptions` and `AsyncMaskSchemaOptions` → `UuidV7Mask`, `UuidV7MaskOptions` and `AsyncUuidV7MaskOptions`; `UuidSlugCodec` and `UuidSlugCodecOptions` → `UuidV7MaskingCodec` and `UuidV7MaskingCodecOptions`; `UuidSlugMigration` and `MigrationFormat` → `UuidSlugMigrationDecoder` and `UuidSlugMigrationFormat`; `FreshValidationOptions` → `UuidV7TimestampWindow`; `UuidV7SentinelDefinition` → `UuidV7SentinelConfig`; `PublicUuidV7Slug` → `MaskedOrSentinelUuidV7Slug`.
 - Byte and plain-slug generators use `generateUuidV4Bytes`, `generateUuidV7Bytes`, `generatePlainUuidV4Slug` and `generatePlainUuidV7Slug`. Use `generateUuidV7WithPlainSlug` when storing both forms.
 - Masking requires your private `maskSeed` or a derived `mask`, never both. The default codec, default mask and default sentinels are removed. `UUID_V7_TEST_MASK` is an explicit test key, not a private key.
 - Codecs no longer own generators or generate unmasked UUIDs. Use module functions or `createUuidV7Generator`; pass a generator to a codec's generation call when needed.
@@ -31,21 +20,6 @@ notes: the section for a version is published verbatim when its tag is pushed.
 - Default generation returns an identifier directly and throws `rng_unavailable` when secure randomness is unavailable. Configured generation, conversions and codec methods return `UuidSlugError` for expected failures. Compatible calls pass preceding errors through unchanged; use `isUuidSlugError` to recognize them.
 - TypeScript brands reject known UUID-version and representation mismatches. `MaskedUuidSlug` is removed.
 - Use named alphabet, migration-format and error constants instead of arrays. Error codes `invalid_mask_schema` and `invalid_base32` become `invalid_mask` and `invalid_base32hex`. Unknown alphabets and unknown option keys return `invalid_options`.
-
-```diff
-- MaskSchema / MaskSchemaOptions / AsyncMaskSchemaOptions
-+ UuidV7Mask / UuidV7MaskOptions / AsyncUuidV7MaskOptions
-- UuidSlugCodec / UuidSlugCodecOptions
-+ UuidV7MaskingCodec / UuidV7MaskingCodecOptions
-- UuidSlugMigration / MigrationFormat
-+ UuidSlugMigrationDecoder / UuidSlugMigrationFormat
-- FreshValidationOptions
-+ UuidV7TimestampWindow
-- UuidV7SentinelDefinition
-+ UuidV7SentinelConfig
-- PublicUuidV7Slug
-+ MaskedOrSentinelUuidV7Slug
-```
 
 ### Added
 
