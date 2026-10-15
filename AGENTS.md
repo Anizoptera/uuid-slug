@@ -285,13 +285,22 @@ JavaScript may accept calls TypeScript rejects; that alone justifies neither wid
 
 ## Writing public documentation
 
+These rules cover every text a consumer reads: README, its diagram (`scripts/readme-diagram.ts`),
+package description and release notes. Declaration comments follow `docs/public-api.md` instead.
+
 README is roughly 60% marketing and 40% usage. It MUST explain why the complete library is worth
 adopting, make ordinary calls obvious, and explain what keeps stored IDs usable. Generation alone
 is not the pitch. State supported strengths with the author's confidence, never timid summaries
 of implementation. Bench readers need commands and reports, not package marketing or agent rules.
 Keep agent rules in `AGENTS.md`; engineering and measurement detail stays in its owning reference.
 
-- Use established terms where they add precision; explain unfamiliar ones. Cut internal jargon.
+- Write as one engineer telling another: short sentences in words the reader uses. Use established
+  terms where they add precision; explain unfamiliar ones. Cut internal jargon and coined phrases
+  ("keyed scramble", "payload offset", "the reader"). Read each sentence alone: if nobody would say
+  it to the reader ("Your database keeps UUIDs") or deleting it loses nothing, cut it.
+- Give sizes as the saving the reader compares: "39% shorter than UUID text", not "14 characters
+  shorter". Character and byte counts belong in definitions. Cut facts the reader cannot act on,
+  such as bits per character.
 - Put limits/warnings beside the affected call, with the failure and fix. Explain actual decoding
   behavior, not "proof of issuance". Keep general security advice out of the opening and unrelated calls.
 - Every claim MUST give a concrete gain, caller action or boundary. Name what the reader can do,
