@@ -35,7 +35,9 @@
 // - Reduced-motion users get the still image.
 // - Copy sells. Each form says what it is "Great for"; lengths are "N% shorter than UUID text",
 //   never character counts; a limited claim leads with its value (AGENTS.md §Writing public
-//   documentation). No bits-per-character facts: a cold reader gets nothing from them.
+//   documentation). No bits-per-character facts: a cold reader gets nothing from them. Alphabets
+//   are regex character classes ("[A-Za-z0-9_-]"): developers read them at a glance, and quoted
+//   symbol lists looked cluttered.
 // - Typography: wider spaces around "·", a double space between sentences, no-break spaces
 //   between a number and its unit, and wrapped lines start new sentences at the left edge (typo,
 //   wrap).
@@ -202,7 +204,7 @@ const FORMS = {
     bitsPerChar: 6,
     field: plainField,
     masked: false,
-    facts: 'default · 22 chars · A–Z a–z 0–9 "-" "_"',
+    facts: "default · 22 chars · [A-Za-z0-9_-]",
     sort: "mostly by time²",
     caseRule: "sensitive",
     job: "Great for text storage and transport: URLs, logs, JSON.",
@@ -215,7 +217,7 @@ const FORMS = {
     bitsPerChar: 5,
     field: plainField,
     masked: false,
-    facts: "26 chars · 0–9 a–v · lowercase",
+    facts: "26 chars · [0-9a-v]",
     sort: "by time¹",
     caseRule: "insensitive",
     job: "Great for case-insensitive filenames and time-sorted text keys.",
@@ -227,7 +229,7 @@ const FORMS = {
     bitsPerChar: 6,
     field: maskedField,
     masked: true,
-    facts: 'default · 22 chars · A–Z a–z 0–9 "-" "_"',
+    facts: "default · 22 chars · [A-Za-z0-9_-]",
     sort: "none",
     caseRule: "sensitive",
     job: "Great for public URLs and APIs: text transport that hides the UUID.",
@@ -240,7 +242,7 @@ const FORMS = {
     bitsPerChar: 5,
     field: maskedField,
     masked: true,
-    facts: "27 chars · 0–9 a–v · lowercase",
+    facts: "27 chars · [0-9a-v]",
     sort: "none",
     caseRule: "insensitive",
     job: "Great for masked IDs in case-insensitive filenames.",
