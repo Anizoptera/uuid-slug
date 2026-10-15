@@ -4,7 +4,6 @@
 
 These items are leads that agents wrote, not requirements: check each against AGENTS.md §Writing public documentation before acting, and delete it if it fails. They do not authorize README edits or new measurements.
 
-- [ ] Link opening benefits to working examples and details. Connect related sections where the next question concerns representations, types/errors, buffers, ordering, masking, rotation, migration or recovery; use descriptive link text and avoid repeated links that add no navigation value.
 - [ ] Proofread and hostile-audit every public document the README links to (`docs/*.md`, `bench/README.md`, `bench/PERFORMANCE.md`, `CONTRIBUTING.md`, the Rust crate README) for a cold reader: undefined terms, needless complexity and text that gives the reader nothing. Move any agent instructions found there to the owning `AGENTS.md`.
 - [ ] Proofread the complete README for typos, grammar, ambiguous references and formatting after those repairs; preserve approved tone and sound wording. Compile changed examples independently and recheck affected links after heading edits.
 
