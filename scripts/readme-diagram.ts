@@ -263,7 +263,7 @@ const COPY = {
   notes: [
     "¹ UUIDv7: sorts by creation millisecond if all IDs share one case and alphabet; not event order within a millisecond.",
     "² Text order follows creation time for most IDs. For exact time order, use base32hex.",
-    "Compare decoded UUIDs, not strings: one UUID has many valid spellings. A wrong key passes the check about 1 time in 65,536 and returns a wrong UUID. Masking is not proven-secure encryption.",
+    "Compare decoded UUIDs, not strings: one UUID has many valid spellings. A wrong key passes the check about 1 time in 65,536 and returns a wrong UUID. Masking is not strong or secure encryption.",
   ],
 };
 const LEGEND: [Field, string][] = [

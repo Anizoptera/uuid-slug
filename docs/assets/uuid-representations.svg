@@ -1346,5 +1346,5 @@ svg:has(#gn26:hover) :is(#om21,#on26){opacity:1;transition-delay:0s}</style>
 <text x="36" y="1546" class="muted sans" font-size="15">¹ UUIDv7: sorts by creation millisecond if all IDs share one case and alphabet; not event order within a millisecond.</text>
 <text x="36" y="1568" class="muted sans" font-size="15">² Text order follows creation time for most IDs.  For exact time order, use base32hex.</text>
 <text x="36" y="1590" class="muted sans" font-size="15">Compare decoded UUIDs, not strings: one UUID has many valid spellings. </text>
-<text x="36" y="1612" class="muted sans" font-size="15">A wrong key passes the check about 1 time in 65,536 and returns a wrong UUID.  Masking is not proven-secure encryption.</text>
+<text x="36" y="1612" class="muted sans" font-size="15">A wrong key passes the check about 1 time in 65,536 and returns a wrong UUID.  Masking is not strong or secure encryption.</text>
 </svg>
