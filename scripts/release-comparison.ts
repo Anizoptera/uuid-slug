@@ -353,7 +353,11 @@ function sectionDiff(groups: readonly DiffGroup[]): string {
       rows.some(([prefix]) => prefix === "  ") ||
       (rows.length > 1 && rows.some(([, text]) => named.test(text)));
     const name =
-      roots.length > 1 ? `${roots.slice(0, -1).join(", ")} → ${roots.at(-1)}` : roots.join("");
+      roots.length > 1
+        ? `${roots.slice(0, -1).join(", ")} → ${roots.at(-1)}`
+        : rows.some(([prefix]) => prefix === "  ")
+          ? `${roots.join("")} (uses a changed private type)`
+          : roots.join("");
     return {
       header,
       lines: [

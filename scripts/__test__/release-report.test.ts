@@ -63,7 +63,8 @@ test("compatibility follows unexported types an export uses", async () => {
   ]);
   // `generate` prints identically, yet `generate({})` stops compiling. Callers cannot import the
   // unexported `Options`, so the export that uses it stands in for the change.
-  const generate = "```diff\n@@ generate @@\n  function generate(options: Options): string;\n```";
+  const generate =
+    "```diff\n@@ generate (uses a changed private type) @@\n  function generate(options: Options): string;\n```";
   expect(required).toEqual({ breaking: generate, changed: "", added: "" });
   expect(extra).toEqual({ breaking: "", changed: "", added: generate });
   // Assignability accepts a dropped optional parameter, yet `codec.encode(x, true)` stops compiling.
